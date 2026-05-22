@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from sis.models import MarketStatus, QuoteLog, Venue
-from sis.risk.halt_policy import PositionContext, evaluate_halt_reasons
+from sis.risk.halt_policy import CostContext, EventWindow, PositionContext, evaluate_halt_reasons
 
 
 def _quote(**kwargs) -> QuoteLog:
@@ -58,3 +58,33 @@ def test_halt_reasons_allow_liquidation_distance_outside_threshold() -> None:
     policy = {"halt_policy": {"liquidation": {"near_liquidation_bps": 100}}}
     position = PositionContext(side="long", liquidation_price=95, leverage=2)
     assert "BLOCK_NEAR_LIQUIDATION" not in evaluate_halt_reasons(quote, policy, position)
+
+
+def test_halt_reasons_block_event_window() -> None:
+    quote = _quote(ts_client=datetime.fromisoformat("2026-05-22T14:00:00+00:00"))
+    windows = [
+        EventWindow(
+            starts_at=datetime.fromisoformat("2026-05-22T13:30:00+00:00"),
+            ends_at=datetime.fromisoformat("2026-05-22T14:15:00+00:00"),
+            label="major_usd_event",
+        )
+    ]
+
+    assert "BLOCK_EVENT_WINDOW" in evaluate_halt_reasons(quote, {"halt_policy": {}}, event_windows=windows)
+
+
+def test_halt_reasons_block_cost_too_high() -> None:
+    quote = _quote()
+    cost = CostContext(total_cost_bps=35, max_cost_bps=20)
+
+    assert "BLOCK_COST_TOO_HIGH" in evaluate_halt_reasons(quote, {"halt_policy": {}}, cost=cost)
+
+
+def test_halt_reasons_block_registry_incomplete() -> None:
+    quote = _quote()
+
+    assert "BLOCK_REGISTRY_INCOMPLETE" in evaluate_halt_reasons(
+        quote,
+        {"halt_policy": {}},
+        registry_complete=False,
+    )

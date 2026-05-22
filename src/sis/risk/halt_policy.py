@@ -21,6 +21,19 @@ class PositionContext:
     leverage: float | None = None
 
 
+@dataclass(frozen=True)
+class CostContext:
+    total_cost_bps: float | None = None
+    max_cost_bps: float | None = None
+
+
+@dataclass(frozen=True)
+class EventWindow:
+    starts_at: datetime
+    ends_at: datetime
+    label: str = "event"
+
+
 def load_halt_policy(path: Path = Path("configs/halt_policy.yaml")) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
@@ -161,19 +174,52 @@ def leverage_reason(policy: dict, position: PositionContext | None) -> str | Non
     return None
 
 
+def cost_reason(cost: CostContext | None) -> str | None:
+    if cost is None or cost.total_cost_bps is None or cost.max_cost_bps is None:
+        return None
+    if cost.total_cost_bps > cost.max_cost_bps:
+        return "BLOCK_COST_TOO_HIGH"
+    return None
+
+
+def event_window_reason(quote: QuoteLog, event_windows: list[EventWindow] | None) -> str | None:
+    if not event_windows:
+        return None
+    ts = quote.ts_client
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=ZoneInfo("UTC"))
+    for window in event_windows:
+        starts_at = window.starts_at
+        ends_at = window.ends_at
+        if starts_at.tzinfo is None:
+            starts_at = starts_at.replace(tzinfo=ZoneInfo("UTC"))
+        if ends_at.tzinfo is None:
+            ends_at = ends_at.replace(tzinfo=ZoneInfo("UTC"))
+        if starts_at <= ts <= ends_at:
+            return "BLOCK_EVENT_WINDOW"
+    return None
+
+
 def evaluate_halt_reasons(
     quote: QuoteLog,
     policy: dict,
     position: PositionContext | None = None,
+    cost: CostContext | None = None,
+    registry_complete: bool = True,
+    event_windows: list[EventWindow] | None = None,
 ) -> list[str]:
     reasons: list[str] = []
+    if not registry_complete:
+        reasons.append("BLOCK_REGISTRY_INCOMPLETE")
     if quote.market_status.value != "open" or not quote.is_tradable:
         reasons.append("BLOCK_MARKET_CLOSED")
     for reason in (
         stale_reason(quote, policy),
         session_end_reason(quote, policy),
+        event_window_reason(quote, event_windows),
         spread_reason(quote, policy),
         mark_index_divergence_reason(quote),
+        cost_reason(cost),
         near_liquidation_reason(quote, policy, position),
         leverage_reason(policy, position),
     ):

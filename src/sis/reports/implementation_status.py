@@ -23,7 +23,7 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
     StatusItem("Epic 4", "stale/tradable/spread aggregate calculations", "DONE", "implemented for normalized quote logs"),
     StatusItem("Epic 5", "scalping policy", "DONE", "src/sis/risk/scalping_policy.py"),
     StatusItem("Epic 5", "halt policy config loader", "DONE", "src/sis/risk/halt_policy.py"),
-    StatusItem("Epic 5", "session/stale/spread/mark-index guards", "DONE", "quote-level guards implemented"),
+    StatusItem("Epic 5", "session/stale/event/spread/cost/registry/mark-index guards", "DONE", "all FR-006 BLOCK reasons are implemented"),
     StatusItem("Epic 5", "liquidation guard", "PARTIAL", "position-aware guard implemented; venue liquidation reference still required"),
     StatusItem("Epic 6", "Ostium read-only price probe", "DONE", "Builder API prices plus SDK getPairs metadata"),
     StatusItem("Epic 6", "Ostium fees/OI caps/trading metadata", "DONE", "SDK getPairs sidecar metadata merged into registry"),
