@@ -1,5 +1,5 @@
 [project]
-name = "sis-venue-probe"
+name = "marketlens-strike"
 version = "0.1.0"
 description = "Venue research and Go/No-Go engine for Ostium/gTrade QQQ/SPY/XAU swing research"
 requires-python = ">=3.11"
