@@ -6,6 +6,11 @@ from pathlib import Path
 import typer
 from loguru import logger
 
+from sis.backtest.bridge import (
+    run_backtest_bridge,
+    write_backtest_metrics_json,
+    write_backtest_report,
+)
 from sis.reports.cost_matrix import build_cost_matrix_from_quotes
 from sis.reports.evidence import build_evidence_card
 from sis.reports.go_no_go import build_go_no_go_report, write_go_no_go_markdown
@@ -99,6 +104,18 @@ def build_cost_matrix() -> None:
     out = settings.data_dir / "research/venue_cost_matrix.csv"
     build_cost_matrix_from_quotes(settings.data_dir / "normalized/quotes.parquet", out)
     logger.info("written: {}", out)
+
+
+@app.command("build-backtest")
+def build_backtest() -> None:
+    settings = get_settings()
+    metrics = run_backtest_bridge(settings.data_dir / "normalized/quotes.parquet")
+    report_path = settings.data_dir / "research/backtest_report.md"
+    metrics_path = settings.data_dir / "research/backtest_metrics.json"
+    write_backtest_report(metrics, report_path)
+    write_backtest_metrics_json(metrics, metrics_path)
+    logger.info("written: {}", report_path)
+    logger.info("written: {}", metrics_path)
 
 
 @app.command("check-halt-policy")

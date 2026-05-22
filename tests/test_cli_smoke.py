@@ -10,6 +10,7 @@ def test_help_smoke() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "probe" in result.stdout
+    assert "build-backtest" in result.stdout
 
 
 def test_check_timeframe_cli_blocks_scalping() -> None:

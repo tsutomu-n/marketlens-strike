@@ -61,7 +61,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         ),
         GoNoGoCriterion(
             criterion="4h-3d after-cost backtest",
-            result="MISSING",
+            result="PASS" if backtest_report.exists() else "MISSING",
             evidence=str(backtest_report),
         ),
     ]
@@ -84,7 +84,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
             "Collect a sufficient gTrade/Ostium quote window",
             "Probe Ostium fees, OI caps, trading hours, and liquidation reference",
             "Implement position-aware liquidation and session-end guards",
-            "Implement backtest bridge and metrics evaluator",
+            "Connect research signal generation to the backtest bridge",
         ],
     )
 

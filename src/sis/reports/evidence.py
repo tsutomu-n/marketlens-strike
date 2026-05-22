@@ -32,19 +32,20 @@ def build_evidence_card(data_dir: Path, out_dir: Path) -> Path:
         "data": {
             "normalized_quote_digest": sha256_file(data_dir / "normalized/quotes.parquet"),
             "cost_matrix_digest": sha256_file(data_dir / "research/venue_cost_matrix.csv"),
+            "backtest_report_digest": sha256_file(data_dir / "research/backtest_report.md"),
             "go_no_go_report_digest": sha256_file(data_dir / "research/go_no_go_report.md"),
         },
         "decision": "CONDITIONAL_GO",
         "blockers": [
             "Venue quote collection period not complete",
             "Ostium fees/OI caps/liquidation reference not implemented",
-            "Backtest bridge and after-cost metrics not implemented",
+            "Research signal generation is not implemented",
         ],
         "next_actions": [
             "Collect gTrade and Ostium quote logs",
             "Normalize quote logs",
             "Implement cost/risk aggregation",
-            "Implement backtest bridge",
+            "Connect research signal generation to backtest bridge",
         ],
     }
     out_path = out_dir / f"evidence_card_{run_id}.json"

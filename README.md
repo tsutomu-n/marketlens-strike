@@ -22,6 +22,7 @@ uv run sis probe ostium
 uv run sis probe ostium --read-only-live
 uv run sis check-timeframe 1m
 uv run sis build-cost-matrix
+uv run sis build-backtest
 uv run sis check-go-no-go
 uv run sis build-evidence-card
 uv run sis implementation-status --write

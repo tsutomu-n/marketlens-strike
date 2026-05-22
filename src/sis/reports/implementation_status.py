@@ -27,8 +27,8 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
     StatusItem("Epic 5", "liquidation guard", "NOT_DONE", "requires venue liquidation reference and position context"),
     StatusItem("Epic 6", "Ostium read-only price probe", "PARTIAL", "symbol and quote probe only"),
     StatusItem("Epic 6", "Ostium fees/OI caps/liquidation reference", "NOT_DONE", "requires SDK/API probe"),
-    StatusItem("Epic 7", "Backtest bridge", "NOT_DONE", "not implemented"),
-    StatusItem("Epic 8", "Go/No-Go markdown and evidence card", "PARTIAL", "status report only; metrics evaluator not complete"),
+    StatusItem("Epic 7", "Backtest bridge", "PARTIAL", "venue quote virtual execution and metrics implemented"),
+    StatusItem("Epic 8", "Go/No-Go markdown and evidence card", "PARTIAL", "metrics are included but final evaluator is not complete"),
 ]
 
 
@@ -55,8 +55,7 @@ def implementation_status_markdown() -> str:
             "",
             "- Full position-aware liquidation and session-end risk guard enforcement.",
             "- Ostium fees, OI caps, trading hours detail, and liquidation reference probe.",
-            "- Backtest bridge, virtual execution, cost integration, and metrics.",
-            "- Final Go/No-Go metrics evaluator.",
+            "- Research signal generation and final Go/No-Go metrics evaluator.",
             "",
         ]
     )
