@@ -22,7 +22,11 @@ def normalize_quotes(raw_root: Path, parquet_path: Path, duckdb_path: Path) -> i
     if not logs:
         raise FileNotFoundError(f"No raw quote JSONL files found under {raw_root}")
 
-    rows = [item.model_dump(mode="json") for item in logs]
+    rows = []
+    for item in logs:
+        row = item.model_dump(mode="json")
+        row.pop("raw_payload", None)
+        rows.append(row)
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
     frame = pl.DataFrame(rows)
     frame.write_parquet(parquet_path)
@@ -31,4 +35,3 @@ def normalize_quotes(raw_root: Path, parquet_path: Path, duckdb_path: Path) -> i
     with duckdb.connect(str(duckdb_path)) as conn:
         conn.execute("CREATE OR REPLACE TABLE quotes AS SELECT * FROM read_parquet(?)", [str(parquet_path)])
     return len(rows)
-

@@ -38,11 +38,13 @@ def test_quote_log_allows_null_bid_ask_and_raw_ref() -> None:
         source="test",
         raw_payload_sha256="abc123",
         raw_payload_ref="data/raw/example.jsonl",
+        raw_payload={"pair": {"symbol": "QQQ/USD"}},
     )
     data = quote.model_dump(mode="json")
     assert data["bid_price"] is None
     assert data["ask_price"] is None
     assert data["raw_payload_ref"] == "data/raw/example.jsonl"
+    assert data["raw_payload"] == {"pair": {"symbol": "QQQ/USD"}}
     validate(data, load_schema("quote_log_v1.schema.json"))
 
 

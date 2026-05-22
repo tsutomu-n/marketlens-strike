@@ -9,6 +9,7 @@ The handoff zip is not fully implemented. This file separates completed scaffold
 | Epic 1 | Static JSON schemas from handoff | DONE | schemas/*.schema.json |
 | Epic 2 | gTrade /trading-variables sidecar | DONE | sidecars/gtrade/src/emit_jsonl.ts |
 | Epic 2 | gTrade SPY/QQQ/XAU extraction | DONE | sidecars/gtrade/src/emit_jsonl.test.ts |
+| Epic 2 | Quote raw payload preservation | DONE | QuoteLog raw_payload plus raw_payload_ref/hash are stored in raw JSONL |
 | Epic 3 | JSONL to Parquet and DuckDB normalization | DONE | src/sis/storage/normalize.py |
 | Epic 4 | gTrade registry and initial cost matrix | DONE | sidecar fee/spread metadata plus gTrade/Ostium 4h/24h/72h holding costs are reflected |
 | Epic 4 | stale/tradable/spread aggregate calculations | DONE | implemented for normalized quote logs |

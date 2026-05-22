@@ -93,6 +93,7 @@ class QuoteLog(BaseModel):
     source: str
     raw_payload_sha256: str
     raw_payload_ref: str | None = None
+    raw_payload: dict | None = None
 
 
 class CostSnapshot(BaseModel):

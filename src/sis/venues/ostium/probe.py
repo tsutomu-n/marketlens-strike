@@ -307,6 +307,7 @@ def _quote_for_target(
         source="ostium_builder_prices_v1",
         raw_payload_sha256=raw_payload_sha256,
         raw_payload_ref=str(raw_payload_ref),
+        raw_payload=item,
     )
 
 

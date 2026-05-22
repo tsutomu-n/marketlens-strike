@@ -104,6 +104,7 @@ def test_build_ostium_quote_logs_preserves_price_references() -> None:
     assert quote.exec_sell_price == 3300.1
     assert quote.oracle_ts_ms == 1779415479000
     assert quote.is_tradable is True
+    assert quote.raw_payload == payload["prices"][0]
 
 
 def test_resolve_ostium_price_specs_merges_pair_metadata() -> None:

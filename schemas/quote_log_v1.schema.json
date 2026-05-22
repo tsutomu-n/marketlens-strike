@@ -130,6 +130,12 @@
         "string",
         "null"
       ]
+    },
+    "raw_payload": {
+      "type": [
+        "object",
+        "null"
+      ]
     }
   }
 }

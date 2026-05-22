@@ -47,8 +47,13 @@ def convert_sidecar_to_quote_logs(sidecar_path: Path, out_path: Path) -> int:
                 source="gtrade_sidecar_v1",
                 raw_payload_sha256=raw_hash,
                 raw_payload_ref=str(sidecar_path),
+                raw_payload={
+                    "pair": pair,
+                    "market_status": snapshot.get("market_status"),
+                    "network": snapshot.get("network"),
+                    "backend": snapshot.get("backend"),
+                },
             )
             append_jsonl(out_path, quote)
             count += 1
     return count
-
