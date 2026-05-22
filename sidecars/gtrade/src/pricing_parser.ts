@@ -36,6 +36,26 @@ function parsePoint(input: unknown): PricingPoint | null {
 }
 
 export function parsePricingPayload(payload: unknown): ParsedPricingPayload {
+  if (Array.isArray(payload)) {
+    const points: PricingPoint[] = [];
+    for (let idx = 0; idx + 1 < payload.length; idx += 2) {
+      const pairIndex = toFiniteNumber(payload[idx]);
+      const price = toFiniteNumber(payload[idx + 1]);
+      if (pairIndex === null || price === null) continue;
+      points.push({
+        pair_index: Math.trunc(pairIndex),
+        // The live flat-array payload currently exposes one price per pair.
+        // Use it for both fields so downstream quote generation can proceed.
+        mark_price: price,
+        index_price: price,
+      });
+    }
+    return {
+      oracle_ts_ms: null,
+      points,
+    };
+  }
+
   const root = asRecord(payload) ?? {};
   const t = toFiniteNumber(root.t ?? root.ts ?? root.timestamp ?? null);
 

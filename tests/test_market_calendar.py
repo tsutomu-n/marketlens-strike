@@ -16,13 +16,14 @@ def test_market_session_window_for_qqq_uses_xnys_and_recommended_offsets() -> No
 
 
 def test_market_session_window_for_xau_uses_commodity_config() -> None:
-    now = datetime.fromisoformat("2026-05-23T00:00:00+00:00")
+    now = datetime.fromisoformat("2026-05-22T14:01:00+00:00")
 
     window = market_session_window("gtrade", "XAU", now=now)
 
     assert window.symbol == "XAU"
     assert window.calendar == "GTRADE_COMMODITY"
     assert window.next_open_jst < window.next_close_jst
+    assert window.next_open_jst.isoformat() == "2026-05-22T07:00:00+09:00"
     assert window.recommended_start_jst == window.next_open_jst + timedelta(minutes=10)
     assert window.recommended_end_jst == window.next_close_jst - timedelta(minutes=10)
 
@@ -35,6 +36,16 @@ def test_xau_reopen_after_daily_break_closes_next_day() -> None:
     assert window.next_close_jst > window.next_open_jst
     assert window.next_open_jst.isoformat() == "2026-05-26T07:00:00+09:00"
     assert window.next_close_jst.isoformat() == "2026-05-27T06:00:00+09:00"
+
+
+def test_xau_open_session_uses_session_anchor_for_recommended_start() -> None:
+    now = datetime.fromisoformat("2026-05-22T14:01:00+00:00")  # Thu 10:01 ET
+
+    window = market_session_window("gtrade", "XAU", now=now)
+
+    assert window.next_open_jst.isoformat() == "2026-05-22T07:00:00+09:00"
+    assert window.recommended_start_jst.isoformat() == "2026-05-22T07:10:00+09:00"
+    assert window.next_close_jst.isoformat() == "2026-05-23T06:00:00+09:00"
 
 
 def test_market_session_window_rejects_unsupported_symbol() -> None:

@@ -37,3 +37,19 @@ test("parsePricingPayload supports m/i array fallback", () => {
     index_price: 99,
   });
 });
+
+test("parsePricingPayload supports flat pairIndex/price array payload", () => {
+  const parsed = parsePricingPayload([372, 0.08619989, 86, 746.2425, 90, 2365.12]);
+
+  expect(parsed.oracle_ts_ms).toBeNull();
+  expect(parsed.points).toContainEqual({
+    pair_index: 86,
+    mark_price: 746.2425,
+    index_price: 746.2425,
+  });
+  expect(parsed.points).toContainEqual({
+    pair_index: 90,
+    mark_price: 2365.12,
+    index_price: 2365.12,
+  });
+});

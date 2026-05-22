@@ -99,12 +99,25 @@ def _xau_close_for_open_time(open_et: datetime) -> datetime:
     return open_et + timedelta(hours=1)
 
 
+def _current_xau_session_open(now_et: datetime) -> datetime:
+    weekday = now_et.weekday()  # Mon=0 .. Sun=6
+    session_anchor = now_et.replace(hour=18, minute=0, second=0, microsecond=0)
+
+    if weekday == 6:
+        return session_anchor
+    if weekday in {0, 1, 2, 3, 4}:
+        if now_et.time() >= time(18, 0):
+            return session_anchor
+        return session_anchor - timedelta(days=1)
+    raise RuntimeError("Saturday is not an open XAU session")
+
+
 def _next_xau_window(now_utc: datetime) -> tuple[datetime, datetime, str]:
     now_et = now_utc.astimezone(EASTERN)
     open_now = _xau_is_market_open(now_et)
     if open_now:
         status = "OPEN"
-        next_open = now_et
+        next_open = _current_xau_session_open(now_et)
     else:
         status = "CLOSED"
         next_open = _next_xau_open(now_et)
