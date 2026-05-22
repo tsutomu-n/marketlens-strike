@@ -35,15 +35,16 @@ PowerShell 環境では以下:
 
 ## 実行内容
 
-1. `bun run collect:window` で pricing websocket と trading-variables を同時収集
-2. `uv run sis log-quotes --venue gtrade --replace` で pricing + metadata を統合
-3. `uv run sis normalize-quotes`
-4. `uv run sis build-cost-matrix`
-5. `uv run sis build-backtest`
-6. `uv run sis diagnose-quotes`
-7. `uv run sis check-go-no-go`
-8. `uv run sis build-evidence-card`
-9. `uv run sis validate-artifacts --strict`
+1. `next-live-window` で QQQ / SPY / XAU の推奨収集枠を表示
+2. `bun run gtrade:collect-window` で pricing websocket と trading-variables を同時収集
+3. `uv run sis log-quotes --venue gtrade --replace` で pricing + metadata を統合
+4. `uv run sis normalize-quotes`
+5. `uv run sis build-cost-matrix`
+6. `uv run sis build-backtest`
+7. `uv run sis diagnose-quotes`
+8. `uv run sis check-go-no-go`
+9. `uv run sis build-evidence-card`
+10. `uv run sis validate-artifacts --strict`
 
 ## 生成物
 

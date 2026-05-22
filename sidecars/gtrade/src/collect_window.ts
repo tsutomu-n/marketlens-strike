@@ -3,7 +3,33 @@ import { pathToFileURL } from "node:url";
 import { main as emitTradingVariablesOnce } from "./emit_jsonl.js";
 import { main as collectPricing } from "./pricing_collector.js";
 
-function parseArgs(argv: string[]): { durationMinutes: number; metadataIntervalSeconds: number } {
+export type CollectWindowArgs = {
+  durationMinutes: number;
+  metadataIntervalSeconds: number;
+};
+
+export type CollectWindowDeps = {
+  collectPricing: (argv: string[]) => Promise<void>;
+  emitTradingVariablesOnce: () => Promise<void>;
+  sleep: (ms: number) => Promise<void>;
+  now: () => number;
+};
+
+const defaultDeps: CollectWindowDeps = {
+  collectPricing,
+  emitTradingVariablesOnce,
+  sleep,
+  now: Date.now,
+};
+
+function positiveFinite(value: number, name: string): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`${name} must be a positive number`);
+  }
+  return value;
+}
+
+export function parseArgs(argv: string[]): CollectWindowArgs {
   let durationMinutes = 60;
   let metadataIntervalSeconds = 60;
 
@@ -20,23 +46,51 @@ function parseArgs(argv: string[]): { durationMinutes: number; metadataIntervalS
     }
   }
 
-  return { durationMinutes, metadataIntervalSeconds };
+  return {
+    durationMinutes: positiveFinite(durationMinutes, "--duration-minutes"),
+    metadataIntervalSeconds: positiveFinite(metadataIntervalSeconds, "--metadata-interval-seconds"),
+  };
 }
 
-export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
-  const args = parseArgs(argv);
-  const stopAt = Date.now() + Math.max(1, args.durationMinutes) * 60_000;
+export async function collectWindow(args: CollectWindowArgs, deps: CollectWindowDeps = defaultDeps): Promise<void> {
+  const durationMinutes = positiveFinite(args.durationMinutes, "--duration-minutes");
+  const metadataIntervalSeconds = positiveFinite(args.metadataIntervalSeconds, "--metadata-interval-seconds");
+  const stopAt = deps.now() + durationMinutes * 60_000;
 
-  const pricingTask = collectPricing(["--duration-minutes", String(args.durationMinutes)]);
+  let pricingSettled = false;
+  let pricingError: unknown = null;
+  const pricingTask = deps.collectPricing(["--duration-minutes", String(durationMinutes)])
+    .then(undefined, (err: unknown) => {
+      pricingError = err;
+    })
+    .finally(() => {
+      pricingSettled = true;
+    });
 
-  while (Date.now() < stopAt) {
-    await emitTradingVariablesOnce();
-    const remaining = stopAt - Date.now();
+  while (deps.now() < stopAt && !pricingSettled) {
+    await deps.emitTradingVariablesOnce();
+    if (pricingError !== null) {
+      throw pricingError;
+    }
+    const remaining = stopAt - deps.now();
     if (remaining <= 0) break;
-    await sleep(Math.min(args.metadataIntervalSeconds * 1000, remaining));
+    await Promise.race([
+      deps.sleep(Math.min(metadataIntervalSeconds * 1000, remaining)),
+      pricingTask,
+    ]);
+    if (pricingError !== null) {
+      throw pricingError;
+    }
   }
 
   await pricingTask;
+  if (pricingError !== null) {
+    throw pricingError;
+  }
+}
+
+export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
+  await collectWindow(parseArgs(argv));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
