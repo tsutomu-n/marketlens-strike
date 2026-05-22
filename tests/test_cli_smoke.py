@@ -19,8 +19,9 @@ def test_check_timeframe_cli_blocks_scalping() -> None:
     assert "BLOCK_SCALPING_TIMEFRAME" in result.stdout
 
 
-def test_implementation_status_reports_unfinished_scope() -> None:
+def test_implementation_status_reports_complete_scope() -> None:
     result = runner.invoke(app, ["implementation-status"])
     assert result.exit_code == 0
     assert "Backtest bridge" in result.stdout
-    assert "PARTIAL" in result.stdout
+    assert "Ostium liquidation reference" in result.stdout
+    assert "PARTIAL" not in result.stdout
