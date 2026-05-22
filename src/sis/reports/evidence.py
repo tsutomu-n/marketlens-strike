@@ -36,16 +36,17 @@ def build_evidence_card(data_dir: Path, out_dir: Path) -> Path:
         },
         "decision": "CONDITIONAL_GO",
         "blockers": [
-            "Ostium symbol/price/session probe not implemented",
             "Venue quote collection period not complete",
+            "Ostium fees/OI caps/liquidation reference not implemented",
+            "Backtest bridge and after-cost metrics not implemented",
         ],
         "next_actions": [
-            "Collect gTrade quote logs",
+            "Collect gTrade and Ostium quote logs",
             "Normalize quote logs",
-            "Implement read-only Ostium probe",
+            "Implement cost/risk aggregation",
+            "Implement backtest bridge",
         ],
     }
     out_path = out_dir / f"evidence_card_{run_id}.json"
     write_json(out_path, card)
     return out_path
-

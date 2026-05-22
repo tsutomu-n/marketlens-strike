@@ -4,7 +4,7 @@ from pathlib import Path
 
 from jsonschema import validate
 
-from sis.models import AssetClass, InstrumentSpec, QuoteLog, Venue
+from sis.models import AssetClass, InstrumentSpec, MarketSession, MarketStatus, QuoteLog, Venue
 
 
 def load_schema(name: str) -> dict:
@@ -42,3 +42,14 @@ def test_quote_log_allows_null_bid_ask_and_raw_ref() -> None:
     assert data["raw_payload_ref"] == "data/raw/example.jsonl"
     validate(data, load_schema("quote_log_v1.schema.json"))
 
+
+def test_market_session_model_exists() -> None:
+    session = MarketSession(
+        venue=Venue.GTRADE,
+        canonical_symbol="SPY",
+        market_status=MarketStatus.OPEN,
+        is_tradable=True,
+        session_source="gtrade_sidecar_v1",
+    )
+    assert session.market_status == MarketStatus.OPEN
+    assert session.is_tradable is True

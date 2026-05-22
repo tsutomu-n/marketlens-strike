@@ -3,6 +3,21 @@ from __future__ import annotations
 from pathlib import Path
 
 from sis.models import Decision, GoNoGoCriterion, GoNoGoReport
+from sis.storage.jsonl_store import read_json
+
+
+def _ostium_registry_resolved(path: Path) -> bool:
+    if not path.exists():
+        return False
+    data = read_json(path)
+    if not isinstance(data, list):
+        return False
+    return all(
+        isinstance(item, dict)
+        and item.get("active") is True
+        and item.get("venue_symbol") != "requires_probe"
+        for item in data
+    )
 
 
 def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
@@ -10,6 +25,8 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
     ostium_registry = data_dir / "registry/ostium_instrument_registry.json"
     quotes = data_dir / "normalized/quotes.parquet"
     cost_matrix = data_dir / "research/venue_cost_matrix.csv"
+    backtest_report = data_dir / "research/backtest_report.md"
+    ostium_resolved = _ostium_registry_resolved(ostium_registry)
 
     criteria = [
         GoNoGoCriterion(
@@ -19,7 +36,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         ),
         GoNoGoCriterion(
             criterion="Ostium symbol resolved",
-            result="REQUIRES_PROBE" if ostium_registry.exists() else "MISSING",
+            result="PASS" if ostium_resolved else ("REQUIRES_PROBE" if ostium_registry.exists() else "MISSING"),
             evidence=str(ostium_registry),
         ),
         GoNoGoCriterion(
@@ -37,24 +54,37 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
             result="PASS",
             evidence="configs/scalping_policy.yaml",
         ),
+        GoNoGoCriterion(
+            criterion="Fees/funding/liquidation references complete",
+            result="NOT_DONE",
+            evidence="docs/sis_venue_probe_handoff/docs/08_ostium_probe_spec.md",
+        ),
+        GoNoGoCriterion(
+            criterion="4h-3d after-cost backtest",
+            result="MISSING",
+            evidence=str(backtest_report),
+        ),
     ]
 
     blockers = [
-        item.criterion for item in criteria if item.result in {"MISSING", "REQUIRES_PROBE"}
+        item.criterion
+        for item in criteria
+        if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE"}
     ]
     decision = Decision.CONDITIONAL_GO if gtrade_registry.exists() else Decision.NO_GO
-    if quotes.exists() and cost_matrix.exists() and ostium_registry.exists() and not blockers:
+    if quotes.exists() and cost_matrix.exists() and ostium_resolved and not blockers:
         decision = Decision.GO
 
     return GoNoGoReport(
         decision=decision,
-        summary="Research scaffold status. This report does not authorize live trading.",
+        summary="Implementation status report. The handoff zip is not fully implemented and this does not authorize live trading.",
         criteria=criteria,
         blockers=blockers,
         next_actions=[
-            "Run gTrade sidecar and collect quote JSONL",
-            "Run normalize-quotes after raw quote logs exist",
-            "Implement read-only Ostium symbol and price probe",
+            "Collect a sufficient gTrade/Ostium quote window",
+            "Implement stale/tradable/spread aggregation",
+            "Probe Ostium fees, OI caps, trading hours, and liquidation reference",
+            "Implement backtest bridge and metrics evaluator",
         ],
     )
 
@@ -98,4 +128,3 @@ def write_go_no_go_markdown(report: GoNoGoReport, out_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-

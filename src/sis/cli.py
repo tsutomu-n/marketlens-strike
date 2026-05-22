@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 import typer
 from loguru import logger
@@ -8,6 +9,7 @@ from loguru import logger
 from sis.reports.cost_matrix import build_initial_cost_matrix
 from sis.reports.evidence import build_evidence_card
 from sis.reports.go_no_go import build_go_no_go_report, write_go_no_go_markdown
+from sis.reports.implementation_status import implementation_status_items, write_implementation_status
 from sis.risk.halt_policy import load_halt_policy, summarize_halt_policy
 from sis.risk.scalping_policy import check_timeframe
 from sis.settings import get_settings
@@ -121,6 +123,16 @@ def build_evidence_card_cmd() -> None:
     settings = get_settings()
     out = build_evidence_card(settings.data_dir, settings.data_dir / "evidence")
     logger.info("written: {}", out)
+
+
+@app.command("implementation-status")
+def implementation_status(write: bool = typer.Option(False, "--write")) -> None:
+    if write:
+        out = Path("docs/IMPLEMENTATION_STATUS.md")
+        write_implementation_status(out)
+        logger.info("written: {}", out)
+    for item in implementation_status_items():
+        typer.echo(f"{item.status}\t{item.area}\t{item.item}")
 
 
 @app.command("check-timeframe")

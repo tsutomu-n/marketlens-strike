@@ -48,6 +48,15 @@ class InstrumentSpec(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+class MarketSession(BaseModel):
+    venue: Venue
+    canonical_symbol: str
+    market_status: MarketStatus = MarketStatus.UNKNOWN
+    is_tradable: bool = False
+    session_source: str
+    notes: list[str] = Field(default_factory=list)
+
+
 class QuoteLog(BaseModel):
     ts_client: datetime
     venue: Venue
@@ -102,4 +111,3 @@ class GoNoGoReport(BaseModel):
     criteria: list[GoNoGoCriterion]
     blockers: list[str] = Field(default_factory=list)
     next_actions: list[str] = Field(default_factory=list)
-

@@ -24,6 +24,7 @@ uv run sis check-timeframe 1m
 uv run sis build-cost-matrix
 uv run sis check-go-no-go
 uv run sis build-evidence-card
+uv run sis implementation-status --write
 ```
 
 The gTrade sidecar lives in `sidecars/gtrade`:
@@ -38,6 +39,9 @@ bun run probe
 `sis probe ostium --read-only-live` performs a GET-only Builder API price probe,
 writes the resolved registry, preserves the raw price payload, and emits
 normalized quote JSONL under `data/raw/quotes/ostium/`.
+
+The handoff zip is not fully implemented yet. Run
+`uv run sis implementation-status --write` to refresh `docs/IMPLEMENTATION_STATUS.md`.
 
 ## Source Handoff
 
