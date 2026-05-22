@@ -14,8 +14,8 @@ The handoff zip is not fully implemented. This file separates completed scaffold
 | Epic 4 | stale/tradable/spread aggregate calculations | DONE | implemented for normalized quote logs |
 | Epic 5 | scalping policy | DONE | src/sis/risk/scalping_policy.py |
 | Epic 5 | halt policy config loader | DONE | src/sis/risk/halt_policy.py |
-| Epic 5 | session/stale/spread/mark-index guards | PARTIAL | basic quote-level guards implemented |
-| Epic 5 | liquidation guard | NOT_DONE | requires venue liquidation reference and position context |
+| Epic 5 | session/stale/spread/mark-index guards | DONE | quote-level guards implemented |
+| Epic 5 | liquidation guard | PARTIAL | position-aware guard implemented; venue liquidation reference still required |
 | Epic 6 | Ostium read-only price probe | PARTIAL | symbol and quote probe only |
 | Epic 6 | Ostium fees/OI caps/liquidation reference | NOT_DONE | requires SDK/API probe |
 | Epic 7 | Backtest bridge | PARTIAL | venue quote virtual execution and metrics implemented |
@@ -23,6 +23,5 @@ The handoff zip is not fully implemented. This file separates completed scaffold
 
 ## Not Yet Complete
 
-- Full position-aware liquidation and session-end risk guard enforcement.
 - Ostium fees, OI caps, trading hours detail, and liquidation reference probe.
 - Research signal generation and final Go/No-Go metrics evaluator.

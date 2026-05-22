@@ -83,7 +83,6 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         next_actions=[
             "Collect a sufficient gTrade/Ostium quote window",
             "Probe Ostium fees, OI caps, trading hours, and liquidation reference",
-            "Implement position-aware liquidation and session-end guards",
             "Connect research signal generation to the backtest bridge",
         ],
     )

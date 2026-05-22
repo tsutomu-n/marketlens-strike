@@ -20,3 +20,5 @@ halt_policy:
     initial_live_max: 2
     research_max: 5
     prohibited_above: 10
+  liquidation:
+    near_liquidation_bps: 100
