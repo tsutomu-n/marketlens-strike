@@ -66,9 +66,10 @@ Signal-driven backtests accept CSV files shaped like
 `templates/research_signals.template.csv`. When no signal CSV is present,
 `build-backtest` uses quote-to-quote virtual execution as a fallback.
 
-The remaining handoff gaps are tracked in `docs/IMPLEMENTATION_STATUS.md`. Run
-`uv run sis implementation-status --write` to refresh `docs/IMPLEMENTATION_STATUS.md`.
-The latest acceptance-command audit is tracked in `docs/ACCEPTANCE_AUDIT.md`.
+The handoff implementation status is tracked in `docs/IMPLEMENTATION_STATUS.md`.
+Run `uv run sis implementation-status --write` to refresh it. The latest
+acceptance-command audit and remaining live-evidence condition are tracked in
+`docs/ACCEPTANCE_AUDIT.md`.
 
 ## Source Handoff
 
