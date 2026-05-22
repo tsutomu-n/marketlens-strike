@@ -142,6 +142,67 @@ def _worst_abs_ostium_rollover_bps(long_rate: object, short_rate: object, hours:
     return max(rates) * 100 * (hours / 8)
 
 
+def _as_float(value: object) -> float | None:
+    if value in {None, ""}:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _gtrade_holding_bps(pair: dict, snapshot: dict, hours: float) -> float | None:
+    pair_index = pair.get("pair_index")
+    if pair_index is None:
+        return None
+    seconds = hours * 60 * 60
+    candidates: list[float] = []
+
+    def indexed(value: object, index: int) -> object | None:
+        if isinstance(value, list) and index < len(value):
+            return value[index]
+        if isinstance(value, dict):
+            return value.get(str(index)) or value.get(index)
+        return None
+
+    for collateral in snapshot.get("raw", {}).get("collaterals", []):
+        if not isinstance(collateral, dict) or collateral.get("isActive") is not True:
+            continue
+        borrowing_rate_raw = (
+            collateral.get("borrowingFees", {})
+            .get("v2", {})
+            .get("pairParams", [])
+        )
+        funding_data = collateral.get("fundingFees", {}).get("pairData", [])
+        funding_params = collateral.get("fundingFees", {}).get("pairParams", [])
+        index = int(pair_index)
+        borrow_item = indexed(borrowing_rate_raw, index)
+        funding_item = indexed(funding_data, index)
+        funding_param = indexed(funding_params, index)
+
+        borrow_bps = 0.0
+        if isinstance(borrow_item, dict):
+            raw_rate = _as_float(borrow_item.get("borrowingRatePerSecondP"))
+            if raw_rate is not None:
+                # SDK borrowing v2 precision: raw / 1e10 is percentage per second.
+                borrow_bps = raw_rate / 1e10 * seconds * 100
+
+        funding_bps = 0.0
+        if (
+            isinstance(funding_item, dict)
+            and isinstance(funding_param, dict)
+            and funding_param.get("fundingFeesEnabled") is True
+        ):
+            funding_rate = _as_float(funding_item.get("lastFundingRatePerSecondP"))
+            if funding_rate is not None:
+                # SDK funding precision: raw / 1e18 is fractional rate per second.
+                funding_bps = abs(funding_rate / 1e18) * seconds * 10_000
+
+        candidates.append(borrow_bps + funding_bps)
+
+    return max(candidates) if candidates else None
+
+
 def _metadata_rows(
     *,
     gtrade_sidecar_root: Path | None = None,
@@ -169,9 +230,12 @@ def _metadata_rows(
                 if fee_bps is not None:
                     row["open_fee_bps"] = fee_bps
                     row["close_fee_bps"] = fee_bps
+                row["holding_cost_4h_bps"] = _gtrade_holding_bps(pair, snapshot, 4)
+                row["holding_cost_24h_bps"] = _gtrade_holding_bps(pair, snapshot, 24)
+                row["holding_cost_72h_bps"] = _gtrade_holding_bps(pair, snapshot, 72)
                 row["notes"] = (
                     f"gTrade sidecar={sidecar_path}; fee_index={pair.get('fee_index')}; "
-                    "holding/borrowing requires per-position or fee accrual probe"
+                    "holding cost uses max active collateral borrowing/funding rate from trading-variables"
                 )
 
     if ostium_registry_path is not None and ostium_registry_path.exists():

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 import polars as pl
+import pytest
 
 from sis.reports.cost_matrix import build_cost_matrix_from_quotes
 
@@ -51,7 +52,11 @@ def test_build_cost_matrix_overlays_sidecar_and_registry_cost_metadata(tmp_path)
 
     (gtrade_sidecar_root / "2026-05-22.jsonl").write_text(
         '{"pairs":[{"canonical_symbol":"XAU","spread_bps":0,'
-        '"fee_index":"13","total_position_size_fee_p":"350000000"}]}\n',
+        '"pair_index":90,"fee_index":"13","total_position_size_fee_p":"350000000"}],'
+        '"raw":{"collaterals":[{"isActive":true,'
+        '"borrowingFees":{"v2":{"pairParams":{"90":{"borrowingRatePerSecondP":"100"}}}},'
+        '"fundingFees":{"pairParams":{"90":{"fundingFeesEnabled":true}},'
+        '"pairData":{"90":{"lastFundingRatePerSecondP":"200000000"}}}}]}}\n',
         encoding="utf-8",
     )
     ostium_registry_path.write_text(
@@ -99,6 +104,9 @@ def test_build_cost_matrix_overlays_sidecar_and_registry_cost_metadata(tmp_path)
     )
     assert gtrade_xau["open_fee_bps"] == 3.5
     assert gtrade_xau["close_fee_bps"] == 3.5
+    assert gtrade_xau["holding_cost_4h_bps"] == 0.0432
+    assert gtrade_xau["holding_cost_24h_bps"] == 0.2592
+    assert gtrade_xau["holding_cost_72h_bps"] == pytest.approx(0.7776)
     assert "fee_index=13" in gtrade_xau["notes"]
     assert ostium_xau["open_fee_bps"] == 3.0
     assert ostium_xau["holding_cost_4h_bps"] == 1.0

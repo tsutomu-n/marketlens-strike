@@ -19,7 +19,7 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
     StatusItem("Epic 2", "gTrade /trading-variables sidecar", "DONE", "sidecars/gtrade/src/emit_jsonl.ts"),
     StatusItem("Epic 2", "gTrade SPY/QQQ/XAU extraction", "DONE", "sidecars/gtrade/src/emit_jsonl.test.ts"),
     StatusItem("Epic 3", "JSONL to Parquet and DuckDB normalization", "DONE", "src/sis/storage/normalize.py"),
-    StatusItem("Epic 4", "gTrade registry and initial cost matrix", "PARTIAL", "sidecar fee/spread metadata and Ostium 4h/24h/72h rollover costs are reflected; gTrade holding conversion remains open"),
+    StatusItem("Epic 4", "gTrade registry and initial cost matrix", "DONE", "sidecar fee/spread metadata plus gTrade/Ostium 4h/24h/72h holding costs are reflected"),
     StatusItem("Epic 4", "stale/tradable/spread aggregate calculations", "DONE", "implemented for normalized quote logs"),
     StatusItem("Epic 5", "scalping policy", "DONE", "src/sis/risk/scalping_policy.py"),
     StatusItem("Epic 5", "halt policy config loader", "DONE", "src/sis/risk/halt_policy.py"),
@@ -55,7 +55,6 @@ def implementation_status_markdown() -> str:
             "## Not Yet Complete",
             "",
             "- Ostium liquidation reference verification requires `bun run ostium:probe:positions -- --user 0x...` with a trader that has real open positions.",
-            "- gTrade holding/borrowing cost reproduction requires per-position or fee accrual probe data.",
             "",
         ]
     )
