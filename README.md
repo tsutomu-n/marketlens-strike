@@ -62,8 +62,8 @@ uv run sis build-evidence-card
 ```
 
 The current implementation is complete, but the latest Go/No-Go remains
-`CONDITIONAL_GO` until collected live evidence satisfies both `stale_rate` and
-`tradable_rate` thresholds.
+`CONDITIONAL_GO_NEEDS_LIVE_WINDOW` until collected live evidence satisfies both
+`stale_rate` and `tradable_rate` thresholds.
 
 The gTrade sidecar lives in `sidecars/gtrade`:
 
