@@ -105,6 +105,7 @@ notes
 ### go_no_go_report.md
 
 - decision
+- venue decisions table
 - criteria table
 - blockers
 - next actions

@@ -11,6 +11,7 @@ from sis.storage.jsonl_store import read_jsonl
 class QuoteDiagnostic:
     venue: str
     symbol: str
+    stale_threshold_ms: int
     rows: int
     market_open_rows: int
     tradable_rate: float
@@ -53,6 +54,7 @@ def build_quote_diagnostics(
     raw_quotes_root: Path,
     venue: str | None = None,
     symbol: str | None = None,
+    stale_thresholds_ms: dict[str, int] | None = None,
 ) -> list[QuoteDiagnostic]:
     grouped: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for path in sorted(raw_quotes_root.glob("*/*.jsonl")):
@@ -68,6 +70,7 @@ def build_quote_diagnostics(
             continue
         if symbol and row_symbol != symbol:
             continue
+        threshold_ms = (stale_thresholds_ms or {}).get(row_venue, 3000 if row_venue == "gtrade" else 5000)
 
         market_open_rows = sum(1 for row in rows if row.get("market_status") == "open")
         tradable_rows = sum(1 for row in rows if row.get("is_tradable") is True)
@@ -99,7 +102,7 @@ def build_quote_diagnostics(
                     ts_ms = int(datetime.fromisoformat(ts_client.replace("Z", "+00:00")).timestamp() * 1000)
                     age = max(0, ts_ms - oracle_ts_ms)
                     oracle_ages.append(age)
-                    if age > 10_000:
+                    if age > threshold_ms:
                         stale_rows += 1
                         stale_old_oracle += 1
                 except ValueError:
@@ -123,6 +126,7 @@ def build_quote_diagnostics(
             QuoteDiagnostic(
                 venue=row_venue,
                 symbol=row_symbol,
+                stale_threshold_ms=threshold_ms,
                 rows=len(rows),
                 market_open_rows=market_open_rows,
                 tradable_rate=_pct(tradable_rows, len(rows)),

@@ -56,6 +56,10 @@ CONDITIONAL_GO
 | Criterion | Result | Evidence |
 |---|---|---|
 
+## Venue Decisions
+| Venue | Decision | Main Blocker |
+|---|---|---|
+
 ## Blockers
 ...
 

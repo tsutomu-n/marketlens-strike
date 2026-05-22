@@ -7,7 +7,7 @@ def test_build_quote_diagnostics_reports_rates(tmp_path) -> None:
     (quotes_dir / "2026-05-22.jsonl").write_text(
         "\n".join(
             [
-                '{"ts_client":"2026-05-22T00:00:10.000Z","venue":"gtrade","canonical_symbol":"QQQ","oracle_ts_ms":1779408000000,'
+                '{"ts_client":"2026-05-22T00:00:02.000Z","venue":"gtrade","canonical_symbol":"QQQ","oracle_ts_ms":1779408000000,'
                 '"mark_price":100.0,"index_price":100.0,"spread_bps":1.2,"market_status":"open","is_tradable":true}',
                 '{"ts_client":"2026-05-22T00:00:30.000Z","venue":"gtrade","canonical_symbol":"QQQ","oracle_ts_ms":1779407980000,'
                 '"mark_price":null,"index_price":100.1,"spread_bps":null,"market_status":"unknown","is_tradable":false}',
@@ -30,3 +30,40 @@ def test_build_quote_diagnostics_reports_rates(tmp_path) -> None:
     assert diag.stale_old_oracle_ts_rate == 0.5
     assert diag.market_status_unknown_rate == 0.5
     assert diag.market_closed_rate == 0.0
+
+
+def test_build_quote_diagnostics_uses_venue_stale_thresholds(tmp_path) -> None:
+    quotes_dir = tmp_path / "raw/quotes/ostium"
+    quotes_dir.mkdir(parents=True)
+    (quotes_dir / "2026-05-22.jsonl").write_text(
+        '{"ts_client":"2026-05-22T00:00:05.000Z","venue":"ostium","canonical_symbol":"XAU",'
+        '"oracle_ts_ms":1779408000000,"mark_price":100.0,"index_price":100.0,'
+        '"spread_bps":1.2,"market_status":"open","is_tradable":true}\n',
+        encoding="utf-8",
+    )
+
+    [diag] = build_quote_diagnostics(
+        tmp_path / "raw/quotes",
+        venue="ostium",
+        symbol="XAU",
+        stale_thresholds_ms={"ostium": 5_000},
+    )
+
+    assert diag.stale_threshold_ms == 5_000
+    assert diag.stale_rate == 0.0
+
+
+def test_build_quote_diagnostics_counts_missing_oracle_ts_as_stale(tmp_path) -> None:
+    quotes_dir = tmp_path / "raw/quotes/gtrade"
+    quotes_dir.mkdir(parents=True)
+    (quotes_dir / "2026-05-22.jsonl").write_text(
+        '{"ts_client":"2026-05-22T00:00:05.000Z","venue":"gtrade","canonical_symbol":"SPY",'
+        '"oracle_ts_ms":null,"mark_price":100.0,"index_price":100.0,'
+        '"spread_bps":1.2,"market_status":"open","is_tradable":true}\n',
+        encoding="utf-8",
+    )
+
+    [diag] = build_quote_diagnostics(tmp_path / "raw/quotes", venue="gtrade", symbol="SPY")
+
+    assert diag.stale_rate == 1.0
+    assert diag.stale_missing_oracle_ts_rate == 1.0

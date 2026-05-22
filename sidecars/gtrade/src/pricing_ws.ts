@@ -11,7 +11,13 @@ export type PricingWsOptions = {
   maxMessages?: number;
   durationMs?: number;
   reconnectDelayMs?: number;
+  createWebSocket?: (url: string) => PricingWebSocketLike;
   onFrame: (frame: PricingFrame) => Promise<void> | void;
+};
+
+export type PricingWebSocketLike = {
+  close: () => void;
+  addEventListener: (type: string, listener: (event: MessageEvent) => void | Promise<void>) => void;
 };
 
 export async function collectPricingFrames(options: PricingWsOptions): Promise<number> {
@@ -20,16 +26,44 @@ export async function collectPricingFrames(options: PricingWsOptions): Promise<n
   const maxMessages = options.maxMessages ?? (Number.isFinite(maxFromEnv) && maxFromEnv > 0 ? maxFromEnv : undefined);
   const durationMs = options.durationMs ?? 0;
   const reconnectDelayMs = options.reconnectDelayMs ?? 1000;
+  const hasMaxMessages = maxMessages !== undefined && maxMessages > 0;
+  const hasDuration = durationMs > 0;
+  if (!hasMaxMessages && !hasDuration) {
+    throw new Error("Either maxMessages or durationMs is required");
+  }
   const stopAt = durationMs > 0 ? Date.now() + durationMs : null;
+  const createWebSocket = options.createWebSocket ?? ((wsUrl: string) => new WebSocket(wsUrl));
 
   let count = 0;
   while (true) {
-    if (maxMessages && count >= maxMessages) break;
+    if (hasMaxMessages && count >= maxMessages) break;
     if (stopAt !== null && Date.now() >= stopAt) break;
 
     const result = await new Promise<"closed" | "errored">((resolve, reject) => {
-      const ws = new WebSocket(url);
+      const ws = createWebSocket(url);
       let closed = false;
+      let settled = false;
+      const timeout =
+        stopAt === null
+          ? undefined
+          : setTimeout(() => {
+              closeOnce();
+              resolveOnce("closed");
+            }, Math.max(0, stopAt - Date.now()));
+
+      const resolveOnce = (value: "closed" | "errored"): void => {
+        if (settled) return;
+        settled = true;
+        if (timeout !== undefined) clearTimeout(timeout);
+        resolve(value);
+      };
+
+      const rejectOnce = (err: unknown): void => {
+        if (settled) return;
+        settled = true;
+        if (timeout !== undefined) clearTimeout(timeout);
+        reject(err);
+      };
 
       const closeOnce = (): void => {
         if (!closed) {
@@ -49,27 +83,29 @@ export async function collectPricingFrames(options: PricingWsOptions): Promise<n
           const parsed = parsePricingPayload(raw);
           await options.onFrame({ ts_client: new Date().toISOString(), parsed, raw });
           count += 1;
-          if (maxMessages && count >= maxMessages) {
+          if (hasMaxMessages && count >= maxMessages) {
             closeOnce();
+            resolveOnce("closed");
           }
           if (stopAt !== null && Date.now() >= stopAt) {
             closeOnce();
+            resolveOnce("closed");
           }
         } catch (err) {
           closeOnce();
-          reject(err);
+          rejectOnce(err);
         }
       });
 
       ws.addEventListener("error", () => {
         closeOnce();
-        resolve("errored");
+        resolveOnce("errored");
       });
 
-      ws.addEventListener("close", () => resolve("closed"));
+      ws.addEventListener("close", () => resolveOnce("closed"));
     });
 
-    if (maxMessages && count >= maxMessages) break;
+    if (hasMaxMessages && count >= maxMessages) break;
     if (stopAt !== null && Date.now() >= stopAt) break;
     if (result === "errored") {
       await new Promise((resolve) => setTimeout(resolve, reconnectDelayMs));

@@ -125,9 +125,16 @@ class GoNoGoCriterion(BaseModel):
     evidence: str | None = None
 
 
+class VenueDecision(BaseModel):
+    venue: str
+    decision: Decision
+    main_blocker: str | None = None
+
+
 class GoNoGoReport(BaseModel):
     decision: Decision
     summary: str = ""
     criteria: list[GoNoGoCriterion]
+    venue_decisions: list[VenueDecision] = Field(default_factory=list)
     blockers: list[str] = Field(default_factory=list)
     next_actions: list[str] = Field(default_factory=list)

@@ -264,12 +264,27 @@ def diagnose_quotes(
     symbol: str | None = typer.Option(None, "--symbol"),
 ) -> None:
     settings = get_settings()
-    diagnostics = build_quote_diagnostics(settings.data_dir / "raw/quotes", venue=venue, symbol=symbol)
+    try:
+        policy = load_halt_policy()
+        stale_policy = policy.get("halt_policy", policy).get("stale_price", {})
+    except FileNotFoundError:
+        stale_policy = {}
+    stale_thresholds = {
+        "gtrade": int(stale_policy.get("gtrade_max_age_ms", 3000)),
+        "ostium": int(stale_policy.get("ostium_max_age_ms", 5000)),
+    }
+    diagnostics = build_quote_diagnostics(
+        settings.data_dir / "raw/quotes",
+        venue=venue,
+        symbol=symbol,
+        stale_thresholds_ms=stale_thresholds,
+    )
     if not diagnostics:
         typer.echo("No quote rows found for diagnostics.")
         raise typer.Exit(code=2)
     for item in diagnostics:
         typer.echo(f"venue={item.venue} symbol={item.symbol}")
+        typer.echo(f"stale_threshold_ms={item.stale_threshold_ms}")
         typer.echo(f"rows={item.rows}")
         typer.echo(f"market_open_rows={item.market_open_rows}")
         typer.echo(f"tradable_rate={item.tradable_rate:.4f}")

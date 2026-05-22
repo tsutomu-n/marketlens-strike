@@ -63,6 +63,7 @@ def build_evidence_card(data_dir: Path, out_dir: Path) -> Path:
             "go_no_go_report_digest": sha256_file(data_dir / "research/go_no_go_report.md"),
         },
         "decision": report.decision.value,
+        "venue_decisions": [item.model_dump(mode="json") for item in report.venue_decisions],
         "criteria": [item.model_dump(mode="json") for item in report.criteria],
         "blockers": report.blockers,
         "next_actions": report.next_actions,

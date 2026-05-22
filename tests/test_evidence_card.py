@@ -63,6 +63,8 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
 
     card = json.loads(card_path.read_text(encoding="utf-8"))
     assert card["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
+    assert card["venue_decisions"]
+    assert {item["venue"] for item in card["venue_decisions"]} == {"gtrade", "ostium"}
     assert card["blockers"] == ["tradable_rate at or above threshold"]
     assert "Liquidation reference complete" in [
         item["criterion"] for item in card["criteria"]

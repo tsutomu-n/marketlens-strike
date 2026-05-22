@@ -310,7 +310,7 @@ def _quote_aggregates(quotes_path: Path) -> pl.DataFrame | None:
     ).with_columns(
         (
             pl.when(pl.col("oracle_ts_ms").is_null())
-            .then(None)
+            .then(1.0)
             .otherwise(((pl.col("_ts_client_ms") - pl.col("oracle_ts_ms")) > 3000).cast(pl.Float64))
         ).alias("_stale"),
     )

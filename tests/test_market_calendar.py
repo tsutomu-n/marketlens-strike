@@ -27,6 +27,16 @@ def test_market_session_window_for_xau_uses_commodity_config() -> None:
     assert window.recommended_end_jst == window.next_close_jst - timedelta(minutes=10)
 
 
+def test_xau_reopen_after_daily_break_closes_next_day() -> None:
+    now = datetime.fromisoformat("2026-05-25T21:30:00+00:00")  # Mon 17:30 ET
+
+    window = market_session_window("gtrade", "XAU", now=now)
+
+    assert window.next_close_jst > window.next_open_jst
+    assert window.next_open_jst.isoformat() == "2026-05-26T07:00:00+09:00"
+    assert window.next_close_jst.isoformat() == "2026-05-27T06:00:00+09:00"
+
+
 def test_market_session_window_rejects_unsupported_symbol() -> None:
     now = datetime.now(timezone.utc)
 

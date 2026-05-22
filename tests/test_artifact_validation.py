@@ -79,3 +79,19 @@ def test_validate_artifacts_strict_flags_missing_artifacts(tmp_path) -> None:
 
     assert summary.issues
     assert any("Missing required registry artifact" in issue.message for issue in summary.issues)
+
+
+def test_validate_artifacts_checks_latest_evidence_card_only(tmp_path) -> None:
+    _write_registry(tmp_path / "data/registry/gtrade_instrument_registry.json", "gtrade")
+    _write_registry(tmp_path / "data/registry/ostium_instrument_registry.json", "ostium")
+    _write_quote(tmp_path / "data/raw/quotes/gtrade/2026-05-22.jsonl")
+    _write_backtest_metrics(tmp_path / "data/research/backtest_metrics.json")
+    legacy = tmp_path / "data/evidence/evidence_card_20260521_000000.json"
+    legacy.parent.mkdir(parents=True, exist_ok=True)
+    legacy.write_text('{"run_id":"legacy"}', encoding="utf-8")
+    _write_evidence_card(tmp_path / "data/evidence/evidence_card_20260522_000000.json")
+
+    summary = validate_artifacts(tmp_path / "data", Path("schemas"), strict=False)
+
+    assert summary.checked_files == 5
+    assert summary.issues == []

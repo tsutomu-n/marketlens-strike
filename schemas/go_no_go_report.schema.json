@@ -30,6 +30,41 @@
         "type": "object"
       }
     },
+    "venue_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "venue",
+          "decision"
+        ],
+        "properties": {
+          "venue": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "GO",
+              "CONDITIONAL_GO",
+              "CONDITIONAL_GO_DATA_READY",
+              "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+              "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST",
+              "NO_GO",
+              "NO_GO_COST",
+              "NO_GO_STALE",
+              "NO_GO_SESSION"
+            ]
+          },
+          "main_blocker": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
     "blockers": {
       "type": "array",
       "items": {

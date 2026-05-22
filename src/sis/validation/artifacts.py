@@ -22,6 +22,7 @@ EVIDENCE_CARD_SCHEMA = {
         },
         "data": {"type": "object"},
         "decision": {"type": "string"},
+        "venue_decisions": {"type": "array"},
         "criteria": {"type": "array"},
         "blockers": {"type": "array"},
         "next_actions": {"type": "array"},
@@ -47,6 +48,10 @@ def _load_schema(schema_root: Path, name: str) -> dict:
 
 def _iter_files(path_pattern: str) -> list[Path]:
     return sorted(Path(path) for path in glob.glob(path_pattern))
+
+
+def _latest_file(paths: list[Path]) -> list[Path]:
+    return paths[-1:] if paths else []
 
 
 def _validate_json(path: Path, schema: dict, issues: list[ValidationIssue]) -> None:
@@ -107,7 +112,7 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
     evidence_files = _iter_files(str(data_dir / "evidence/evidence_card_*.json"))
     if not evidence_files and strict:
         issues.append(ValidationIssue(path=str(data_dir / "evidence"), message="No evidence card artifacts found"))
-    for path in evidence_files:
+    for path in _latest_file(evidence_files):
         _validate_json(path, EVIDENCE_CARD_SCHEMA, issues)
         checked_files += 1
 

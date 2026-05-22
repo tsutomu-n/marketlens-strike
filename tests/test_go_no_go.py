@@ -1,5 +1,5 @@
-from sis.models import Decision
-from sis.reports.go_no_go import _decision_for_state, _threshold_result
+from sis.models import Decision, GoNoGoReport, VenueDecision
+from sis.reports.go_no_go import _decision_for_state, _threshold_result, write_go_no_go_markdown
 
 
 def test_threshold_result_requires_values_for_every_row() -> None:
@@ -53,3 +53,26 @@ def test_decision_for_state_go_when_ready_and_signal_backtest_present() -> None:
         blockers=[],
         signals_exists=True,
     ) == Decision.GO
+
+
+def test_go_no_go_markdown_includes_venue_decisions(tmp_path) -> None:
+    report = GoNoGoReport(
+        decision=Decision.CONDITIONAL_GO_DATA_READY,
+        criteria=[],
+        venue_decisions=[
+            VenueDecision(venue="gtrade", decision=Decision.GO, main_blocker=None),
+            VenueDecision(
+                venue="ostium",
+                decision=Decision.CONDITIONAL_GO_DATA_READY,
+                main_blocker="Liquidation reference complete",
+            ),
+        ],
+    )
+    out = tmp_path / "go_no_go_report.md"
+
+    write_go_no_go_markdown(report, out)
+
+    text = out.read_text(encoding="utf-8")
+    assert "## Venue Decisions" in text
+    assert "| gtrade | GO |  |" in text
+    assert "| ostium | CONDITIONAL_GO_DATA_READY | Liquidation reference complete |" in text

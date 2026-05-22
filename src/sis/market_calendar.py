@@ -90,7 +90,10 @@ def _xau_close_for_open_time(open_et: datetime) -> datetime:
     if weekday == 6:
         return open_et.replace(hour=17, minute=0, second=0, microsecond=0) + timedelta(days=5)
     if weekday in {0, 1, 2, 3}:
-        return open_et.replace(hour=17, minute=0, second=0, microsecond=0)
+        close = open_et.replace(hour=17, minute=0, second=0, microsecond=0)
+        if open_et.time() >= time(18, 0):
+            close += timedelta(days=1)
+        return close
     if weekday == 4:
         return open_et.replace(hour=17, minute=0, second=0, microsecond=0)
     return open_et + timedelta(hours=1)

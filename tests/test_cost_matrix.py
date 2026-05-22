@@ -78,6 +78,33 @@ def test_build_cost_matrix_stale_rate_uses_quote_capture_time(tmp_path) -> None:
     assert xau["stale_rate"] == 0.5
 
 
+def test_build_cost_matrix_counts_missing_oracle_ts_as_stale(tmp_path) -> None:
+    quotes_path = tmp_path / "quotes.parquet"
+    out_path = tmp_path / "venue_cost_matrix.csv"
+    ts = datetime.fromisoformat("2026-05-22T00:00:00+00:00")
+    pl.DataFrame(
+        [
+            {
+                "ts_client": ts.isoformat(),
+                "venue": "gtrade",
+                "canonical_symbol": "SPY",
+                "venue_symbol": "SPY/USD",
+                "spread_bps": 2.0,
+                "oracle_ts_ms": None,
+                "is_tradable": True,
+            },
+        ]
+    ).write_parquet(quotes_path)
+
+    build_cost_matrix_from_quotes(quotes_path, out_path)
+
+    matrix = pl.read_csv(out_path)
+    spy = matrix.filter((pl.col("venue") == "gtrade") & (pl.col("symbol") == "SPY")).row(
+        0, named=True
+    )
+    assert spy["stale_rate"] == 1.0
+
+
 def test_build_cost_matrix_overlays_sidecar_and_registry_cost_metadata(tmp_path) -> None:
     quotes_path = tmp_path / "quotes.parquet"
     out_path = tmp_path / "venue_cost_matrix.csv"

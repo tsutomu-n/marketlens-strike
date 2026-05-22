@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from sis.models import Decision, GoNoGoCriterion, GoNoGoReport
+from sis.models import Decision, GoNoGoCriterion, GoNoGoReport, VenueDecision
 from sis.storage.jsonl_store import read_json
 from sis.venues.ostium.positions import (
     latest_positions_sidecar,
@@ -114,6 +114,39 @@ def _holding_cost_result(rows: list[dict[str, str | None]]) -> str:
     return "MISSING"
 
 
+def _first_blocker(checks: list[GoNoGoCriterion]) -> str | None:
+    for item in checks:
+        if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "NO_GO", "PARTIAL"}:
+            return item.criterion
+    return None
+
+
+def _venue_cost_rows(rows: list[dict[str, str | None]], venue: str) -> list[dict[str, str | None]]:
+    return [row for row in rows if row.get("venue") == venue]
+
+
+def _venue_decision_from_checks(venue: str, checks: list[GoNoGoCriterion]) -> VenueDecision:
+    blocker = _first_blocker(checks)
+    if blocker is None:
+        return VenueDecision(venue=venue, decision=Decision.GO, main_blocker=None)
+    blocker_names = {item.criterion for item in checks if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "PARTIAL"}}
+    if venue == "ostium" and blocker_names.issubset(
+        {
+            "Ostium symbol resolved",
+            "Ostium fees/OI/rollover metadata complete",
+            "Liquidation reference complete",
+            "Venue cost matrix",
+            "Holding/rollover cost reproduced for target horizons",
+        }
+    ):
+        return VenueDecision(venue=venue, decision=Decision.CONDITIONAL_GO_DATA_READY, main_blocker=blocker)
+    if blocker in {"stale_rate at or below threshold", "tradable_rate at or above threshold"}:
+        return VenueDecision(venue=venue, decision=Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW, main_blocker=blocker)
+    if blocker == "spread_p90 at or below threshold":
+        return VenueDecision(venue=venue, decision=Decision.NO_GO_COST, main_blocker=blocker)
+    return VenueDecision(venue=venue, decision=Decision.NO_GO, main_blocker=blocker)
+
+
 def _next_actions(blockers: list[str], signals_exists: bool) -> list[str]:
     actions: list[str] = []
     if "stale_rate at or below threshold" in blockers:
@@ -167,6 +200,8 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
     ostium_resolved = _ostium_registry_resolved(ostium_registry)
     ostium_fees_oi_complete = _ostium_fees_oi_complete(ostium_registry)
     cost_rows = _cost_matrix_rows(cost_matrix)
+    gtrade_cost_rows = _venue_cost_rows(cost_rows, "gtrade")
+    ostium_cost_rows = _venue_cost_rows(cost_rows, "ostium")
 
     criteria = [
         GoNoGoCriterion(
@@ -249,11 +284,68 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         blockers=blockers,
         signals_exists=signals.exists(),
     )
+    gtrade_checks = [
+        criteria[0],
+        criteria[2],
+        criteria[3],
+        criteria[7],
+        GoNoGoCriterion(
+            criterion="stale_rate at or below threshold",
+            result=_threshold_result(gtrade_cost_rows, "stale_rate", maximum=MAX_STALE_RATE),
+            evidence=f"{cost_matrix}; venue=gtrade; threshold<={MAX_STALE_RATE}",
+        ),
+        GoNoGoCriterion(
+            criterion="tradable_rate at or above threshold",
+            result=_threshold_result(gtrade_cost_rows, "tradable_rate", minimum=MIN_TRADABLE_RATE),
+            evidence=f"{cost_matrix}; venue=gtrade; threshold>={MIN_TRADABLE_RATE}",
+        ),
+        GoNoGoCriterion(
+            criterion="spread_p90 at or below threshold",
+            result=_threshold_result(gtrade_cost_rows, "spread_p90_bps", maximum=MAX_SPREAD_P90_BPS),
+            evidence=f"{cost_matrix}; venue=gtrade; threshold<={MAX_SPREAD_P90_BPS}bps",
+        ),
+        GoNoGoCriterion(
+            criterion="Holding/rollover cost reproduced for target horizons",
+            result=_holding_cost_result(gtrade_cost_rows),
+            evidence=str(cost_matrix),
+        ),
+    ]
+    ostium_checks = [
+        criteria[1],
+        criteria[2],
+        criteria[3],
+        criteria[5],
+        criteria[6],
+        GoNoGoCriterion(
+            criterion="stale_rate at or below threshold",
+            result=_threshold_result(ostium_cost_rows, "stale_rate", maximum=MAX_STALE_RATE),
+            evidence=f"{cost_matrix}; venue=ostium; threshold<={MAX_STALE_RATE}",
+        ),
+        GoNoGoCriterion(
+            criterion="tradable_rate at or above threshold",
+            result=_threshold_result(ostium_cost_rows, "tradable_rate", minimum=MIN_TRADABLE_RATE),
+            evidence=f"{cost_matrix}; venue=ostium; threshold>={MIN_TRADABLE_RATE}",
+        ),
+        GoNoGoCriterion(
+            criterion="spread_p90 at or below threshold",
+            result=_threshold_result(ostium_cost_rows, "spread_p90_bps", maximum=MAX_SPREAD_P90_BPS),
+            evidence=f"{cost_matrix}; venue=ostium; threshold<={MAX_SPREAD_P90_BPS}bps",
+        ),
+        GoNoGoCriterion(
+            criterion="Holding/rollover cost reproduced for target horizons",
+            result=_holding_cost_result(ostium_cost_rows),
+            evidence=str(cost_matrix),
+        ),
+    ]
 
     return GoNoGoReport(
         decision=decision,
         summary="Implementation status report. This evaluates collected evidence and does not authorize live trading.",
         criteria=criteria,
+        venue_decisions=[
+            _venue_decision_from_checks("gtrade", gtrade_checks),
+            _venue_decision_from_checks("ostium", ostium_checks),
+        ],
         blockers=blockers,
         next_actions=_next_actions(blockers, signals.exists()),
     )
@@ -267,6 +359,10 @@ def write_go_no_go_markdown(report: GoNoGoReport, out_path: Path) -> None:
     )
     blockers = "\n".join(f"- {item}" for item in report.blockers) or "- none"
     next_actions = "\n".join(f"- {item}" for item in report.next_actions) or "- none"
+    venue_decision_rows = "\n".join(
+        f"| {item.venue} | {item.decision.value} | {item.main_blocker or ''} |"
+        for item in report.venue_decisions
+    ) or "| none |  |  |"
     out_path.write_text(
         "\n".join(
             [
@@ -285,6 +381,12 @@ def write_go_no_go_markdown(report: GoNoGoReport, out_path: Path) -> None:
                 "| Criterion | Result | Evidence |",
                 "|---|---|---|",
                 rows,
+                "",
+                "## Venue Decisions",
+                "",
+                "| Venue | Decision | Main Blocker |",
+                "|---|---|---|",
+                venue_decision_rows,
                 "",
                 "## Blockers",
                 "",
