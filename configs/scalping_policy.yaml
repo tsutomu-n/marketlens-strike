@@ -1,0 +1,20 @@
+scalping_policy:
+  default: prohibited
+  prohibited_timeframes:
+    - "1s"
+    - "5s"
+    - "15s"
+    - "1m"
+    - "5m"
+  minimum_allowed_timeframe: "30m"
+  preferred_timeframes:
+    - "4h"
+    - "1d"
+    - "3d"
+  exception_requires:
+    quote_logger_days: 14
+    positive_after_full_cost: true
+    spread_p90_under_threshold: true
+    stale_rate_under_threshold: true
+    paper_trade_positive: true
+    superiority_over_4h_to_3d: true

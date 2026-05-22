@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GoNoGoReport",
+  "type": "object",
+  "required": [
+    "decision",
+    "criteria"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "GO",
+        "CONDITIONAL_GO",
+        "NO_GO"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

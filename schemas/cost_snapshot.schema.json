@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CostSnapshot",
+  "type": "object",
+  "required": [
+    "venue",
+    "canonical_symbol"
+  ],
+  "properties": {
+    "venue": {
+      "type": "string"
+    },
+    "canonical_symbol": {
+      "type": "string"
+    },
+    "open_fee_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "close_fee_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "fixed_spread_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "spread_p50_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "spread_p90_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "holding_cost_4h_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "holding_cost_24h_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "holding_cost_72h_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "stale_rate": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "tradable_rate": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

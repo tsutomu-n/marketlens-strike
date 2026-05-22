@@ -1,0 +1,29 @@
+{
+  "run_id": "YYYYMMDD_HHMMSS",
+  "created_at": "2026-05-21T00:00:00+09:00",
+  "scope": {
+    "venues": [
+      "gtrade",
+      "ostium"
+    ],
+    "symbols": [
+      "SPY",
+      "QQQ",
+      "XAU"
+    ],
+    "timeframes": [
+      "4h",
+      "1d",
+      "3d"
+    ],
+    "scalping_policy": "prohibited_by_default"
+  },
+  "data": {
+    "raw_quote_digest": "sha256:...",
+    "normalized_quote_digest": "sha256:...",
+    "cost_matrix_digest": "sha256:..."
+  },
+  "decision": "CONDITIONAL_GO",
+  "blockers": [],
+  "next_actions": []
+}

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "InstrumentSpec",
+  "type": "object",
+  "required": [
+    "venue",
+    "canonical_symbol",
+    "venue_symbol",
+    "asset_class",
+    "api_readable"
+  ],
+  "properties": {
+    "venue": {
+      "type": "string",
+      "enum": [
+        "gtrade",
+        "ostium"
+      ]
+    },
+    "canonical_symbol": {
+      "type": "string"
+    },
+    "venue_symbol": {
+      "type": "string"
+    },
+    "pair_index": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "pair_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "asset_class": {
+      "type": "string",
+      "enum": [
+        "index",
+        "commodity",
+        "unknown"
+      ]
+    },
+    "chain": {
+      "type": [
+        "string",
+        "array",
+        "null"
+      ]
+    },
+    "collateral": {
+      "type": [
+        "string",
+        "array",
+        "null"
+      ]
+    },
+    "api_readable": {
+      "type": "boolean"
+    },
+    "api_orderable": {
+      "type": "boolean"
+    },
+    "execution_price_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "liquidation_price_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "active": {
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

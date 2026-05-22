@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QuoteLogV1",
+  "type": "object",
+  "required": [
+    "ts_client",
+    "venue",
+    "canonical_symbol",
+    "venue_symbol",
+    "source",
+    "raw_payload_sha256"
+  ],
+  "properties": {
+    "ts_client": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "venue": {
+      "type": "string",
+      "enum": [
+        "gtrade",
+        "ostium"
+      ]
+    },
+    "chain": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "canonical_symbol": {
+      "type": "string"
+    },
+    "venue_symbol": {
+      "type": "string"
+    },
+    "pair_index": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "pair_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "mark_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "index_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "oracle_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "bid_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ask_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "mid_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "exec_buy_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "exec_sell_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "spread_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "oracle_ts_ms": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "market_status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "unknown",
+        "close_only",
+        "paused"
+      ]
+    },
+    "is_tradable": {
+      "type": "boolean"
+    },
+    "source": {
+      "type": "string"
+    },
+    "raw_payload_sha256": {
+      "type": "string"
+    },
+    "raw_payload_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

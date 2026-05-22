@@ -1,0 +1,44 @@
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+from jsonschema import validate
+
+from sis.models import AssetClass, InstrumentSpec, QuoteLog, Venue
+
+
+def load_schema(name: str) -> dict:
+    return json.loads(Path("schemas", name).read_text(encoding="utf-8"))
+
+
+def test_instrument_spec_matches_schema() -> None:
+    item = InstrumentSpec(
+        venue=Venue.GTRADE,
+        canonical_symbol="QQQ",
+        venue_symbol="QQQ/USD",
+        pair_index=87,
+        asset_class=AssetClass.INDEX,
+        api_readable=True,
+    )
+    validate(item.model_dump(mode="json"), load_schema("instrument_registry.schema.json"))
+
+
+def test_quote_log_allows_null_bid_ask_and_raw_ref() -> None:
+    quote = QuoteLog(
+        ts_client=datetime.now(timezone.utc),
+        venue=Venue.GTRADE,
+        canonical_symbol="QQQ",
+        venue_symbol="QQQ/USD",
+        pair_index=87,
+        bid_price=None,
+        ask_price=None,
+        source="test",
+        raw_payload_sha256="abc123",
+        raw_payload_ref="data/raw/example.jsonl",
+    )
+    data = quote.model_dump(mode="json")
+    assert data["bid_price"] is None
+    assert data["ask_price"] is None
+    assert data["raw_payload_ref"] == "data/raw/example.jsonl"
+    validate(data, load_schema("quote_log_v1.schema.json"))
+

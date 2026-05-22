@@ -1,0 +1,22 @@
+halt_policy:
+  stale_price:
+    gtrade_max_age_ms: 3000
+    ostium_max_age_ms: 5000
+  session:
+    block_before_close_minutes: 30
+    block_after_open_minutes: 15
+  event_blackout:
+    major_usd_event:
+      before_minutes: 60
+      after_minutes: 15
+  spread:
+    max_spread_p90_bps:
+      SPY: 8
+      QQQ: 10
+      XAU: 12
+  weekend:
+    block_weekend_hold: true
+  leverage:
+    initial_live_max: 2
+    research_max: 5
+    prohibited_above: 10

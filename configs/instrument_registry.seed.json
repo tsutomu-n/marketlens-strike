@@ -1,0 +1,119 @@
+{
+  "generated_at": "2026-05-21",
+  "venues": {
+    "gtrade": [
+      {
+        "venue": "gtrade",
+        "canonical_symbol": "SPY",
+        "venue_symbol": "SPY/USD",
+        "pair_index": 86,
+        "asset_class": "index",
+        "chain": [
+          "arbitrum",
+          "base",
+          "solana"
+        ],
+        "collateral": "requires_live_probe",
+        "api_readable": true,
+        "api_orderable": true,
+        "execution_price_ref": "mark",
+        "liquidation_price_ref": "index",
+        "active": true,
+        "notes": [
+          "indices session",
+          "closed session open/close/edit unavailable"
+        ]
+      },
+      {
+        "venue": "gtrade",
+        "canonical_symbol": "QQQ",
+        "venue_symbol": "QQQ/USD",
+        "pair_index": 87,
+        "asset_class": "index",
+        "chain": [
+          "arbitrum",
+          "base",
+          "solana"
+        ],
+        "collateral": "requires_live_probe",
+        "api_readable": true,
+        "api_orderable": true,
+        "execution_price_ref": "mark",
+        "liquidation_price_ref": "index",
+        "active": true,
+        "notes": [
+          "indices session",
+          "closed session open/close/edit unavailable"
+        ]
+      },
+      {
+        "venue": "gtrade",
+        "canonical_symbol": "XAU",
+        "venue_symbol": "XAU/USD",
+        "pair_index": 90,
+        "asset_class": "commodity",
+        "chain": "requires_live_probe",
+        "collateral": "requires_live_probe",
+        "api_readable": true,
+        "api_orderable": true,
+        "execution_price_ref": "mark",
+        "liquidation_price_ref": "index",
+        "active": true,
+        "notes": [
+          "commodity session",
+          "daily maintenance break"
+        ]
+      }
+    ],
+    "ostium": [
+      {
+        "venue": "ostium",
+        "canonical_symbol": "SPX_EQUIV",
+        "venue_symbol": "requires_probe",
+        "asset_class": "index",
+        "chain": "arbitrum",
+        "collateral": "USDC",
+        "api_readable": true,
+        "api_orderable": true,
+        "execution_price_ref": "bid_ask_or_price_after_impact",
+        "liquidation_price_ref": "requires_probe",
+        "active": false,
+        "notes": [
+          "resolve current symbol via SDK/REST"
+        ]
+      },
+      {
+        "venue": "ostium",
+        "canonical_symbol": "NDX_EQUIV",
+        "venue_symbol": "requires_probe",
+        "asset_class": "index",
+        "chain": "arbitrum",
+        "collateral": "USDC",
+        "api_readable": true,
+        "api_orderable": true,
+        "execution_price_ref": "bid_ask_or_price_after_impact",
+        "liquidation_price_ref": "requires_probe",
+        "active": false,
+        "notes": [
+          "resolve current symbol via SDK/REST"
+        ]
+      },
+      {
+        "venue": "ostium",
+        "canonical_symbol": "XAU",
+        "venue_symbol": "requires_probe",
+        "asset_class": "commodity",
+        "chain": "arbitrum",
+        "collateral": "USDC",
+        "api_readable": true,
+        "api_orderable": true,
+        "execution_price_ref": "bid_ask_or_price_after_impact",
+        "liquidation_price_ref": "requires_probe",
+        "active": false,
+        "notes": [
+          "resolve current symbol via SDK/REST"
+        ]
+      }
+    ]
+  }
+}
