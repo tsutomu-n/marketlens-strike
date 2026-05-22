@@ -1,14 +1,37 @@
+# Local secrets and environment
 .env
+.env.*
+!.env.example
+
+# Local agent/workflow state
+.codex/SP_STATE.md
+
+# Python
 .venv/
 __pycache__/
+*.py[cod]
+*$py.class
 .pytest_cache/
 .ruff_cache/
-*.pyc
+.mypy_cache/
+.pyre/
+.coverage
+coverage.xml
+htmlcov/
 
+# JavaScript / TypeScript
 node_modules/
 dist/
 build/
+*.tsbuildinfo
 
+# Runtime data and research artifacts
 data/
 *.parquet
 *.duckdb
+*.duckdb.wal
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
