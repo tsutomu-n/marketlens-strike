@@ -1,6 +1,6 @@
 # Live Evidence Runbook
 
-実装前の runner 強化仕様は [docs/LIVE_EVIDENCE_RUNNER_HARDENING.md](/home/tn/projects/marketlens-strike/docs/LIVE_EVIDENCE_RUNNER_HARDENING.md) を参照。
+runner の設計メモは [docs/LIVE_EVIDENCE_RUNNER_HARDENING.md](/home/tn/projects/marketlens-strike/docs/LIVE_EVIDENCE_RUNNER_HARDENING.md) を参照。
 
 ## 目的
 
@@ -29,6 +29,17 @@ bash scripts/refresh_live_evidence.sh 120 60
 - 第1引数: 取得分数（デフォルト 120）
 - 第2引数: metadata 間隔秒（デフォルト 60）
 
+option:
+- `--dry-run`: preflight だけ表示して終了する
+- `--force`: 推奨 live window 外でも収集を続行する
+
+例:
+
+```bash
+bash scripts/refresh_live_evidence.sh --dry-run
+bash scripts/refresh_live_evidence.sh 120 60 --force
+```
+
 PowerShell 環境では以下:
 
 ```powershell
@@ -51,11 +62,22 @@ bash scripts/schedule_live_evidence.sh 22:45 120 60
 3. `uv run sis log-quotes --venue gtrade --replace` で pricing + metadata を統合
 4. `uv run sis normalize-quotes`
 5. `uv run sis build-cost-matrix`
-6. `uv run sis build-backtest`
-7. `uv run sis diagnose-quotes`
+6. `uv run sis diagnose-quotes --venue gtrade --symbol QQQ|SPY|XAU`
+7. `uv run sis build-backtest`
 8. `uv run sis check-go-no-go`
 9. `uv run sis build-evidence-card`
 10. `uv run sis validate-artifacts --strict`
+
+実際の runner は次の安全策を入れている:
+
+1. `uv` / `bun` の存在確認
+2. `next-live-window` による `QQQ` / `SPY` / `XAU` の推奨枠表示
+3. `--dry-run` なら収集せず終了
+4. 推奨枠外では `--force` なしなら停止
+5. sidecar metadata / pricing の増分行数チェック
+6. `log-quotes --replace` 後の raw quote 行数チェック
+7. `diagnose-quotes --venue gtrade --symbol ...` を symbol 別に実行
+8. 最後に artifact path と decision の summary を表示
 
 ## 生成物
 
@@ -82,5 +104,11 @@ bash scripts/schedule_live_evidence.sh 22:45 120 60
 - tradable_rate が低い:
   - `next-live-window` の推奨枠で再取得
   - index/commodity のセッション種別が一致しているか確認
+- `Current time is outside recommended gTrade live window` で止まる:
+  - 推奨枠まで待って再実行
+  - 意図的に閉場帯を取りたい場合だけ `--force` を付ける
+- `Insufficient gTrade metadata/pricing rows` で止まる:
+  - websocket / backend 接続状態を確認
+  - 収集時間と metadata 間隔が極端でないか確認
 - schema違反:
   - `uv run sis validate-artifacts --strict` の指摘パスを修正して再実行
