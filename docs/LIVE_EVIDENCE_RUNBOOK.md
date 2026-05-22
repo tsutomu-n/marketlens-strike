@@ -1,5 +1,7 @@
 # Live Evidence Runbook
 
+実装前の runner 強化仕様は [docs/LIVE_EVIDENCE_RUNNER_HARDENING.md](/home/tn/projects/marketlens-strike/docs/LIVE_EVIDENCE_RUNNER_HARDENING.md) を参照。
+
 ## 目的
 
 gTrade tradable session中に quote window を取得し、`stale_rate` / `tradable_rate` blocker を解消する。

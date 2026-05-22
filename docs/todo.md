@@ -1,5 +1,40 @@
 # MarketLens Strike Live Evidence Fix Plan
 
+## 追加タスク: refresh_live_evidence runner hardening
+
+### 目的
+
+`refresh_live_evidence.sh` / `.ps1` を単なる直列実行から、誤実行と空データ通過を防ぐ preflight 付きランナーへ強化する。
+
+### 対象ファイル
+
+- `scripts/refresh_live_evidence.sh`
+- `scripts/refresh_live_evidence.ps1`
+- `docs/LIVE_EVIDENCE_RUNBOOK.md`
+- `tests/test_cli_smoke.py`
+- `tests/` 配下の必要な追加テスト
+
+### タスク
+
+1. `refresh_live_evidence.sh` に `--dry-run` と `--force` を追加し、数値引数と option を安全に parse できるようにする。
+2. 実行開始時に `uv` / `bun` の存在確認、`next-live-window` の表示、実行モード表示を追加する。
+3. `--dry-run` 時は収集や artifact 更新を行わず、preflight 結果だけ表示して終了する。
+4. 通常実行では `next-live-window` の推奨枠を使って window 外を検知し、`--force` なしでは停止する。
+5. `bun run gtrade:collect-window` 実行後に sidecar pricing / trading variables / raw quotes の最低行数を検査し、不足時は normalize 以降へ進ませない。
+6. `uv run sis diagnose-quotes` は venue 全体一括ではなく、`QQQ` / `SPY` / `XAU` を symbol 別に実行する。
+7. 実行順を `collect -> row checks -> log-quotes -> normalize -> cost matrix -> diagnose -> backtest -> go/no-go -> evidence -> validate` に整理する。
+8. 最後に主要 artifact path、decision、diagnostics 要約をまとめた summary を表示する。
+9. PowerShell 版 `refresh_live_evidence.ps1` も同じ CLI 契約と stop condition に揃える。
+10. shell / PowerShell の新しい挙動に合わせて runbook を更新し、dry-run と force の使い分けを明記する。
+
+### 完了条件
+
+- `bash scripts/refresh_live_evidence.sh --dry-run` が data 更新なしで preflight のみ表示する。
+- 推奨 window 外の通常実行は非0終了し、`--force` 指定時のみ収集へ進む。
+- raw 行数不足時は normalize 以降へ進まず、原因が標準出力で分かる。
+- diagnostics が `QQQ` / `SPY` / `XAU` ごとに分かれて表示される。
+- shell / PowerShell の使い方が [docs/LIVE_EVIDENCE_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/LIVE_EVIDENCE_RUNBOOK.md) と一致する。
+
 ## 目的
 
 開場後の `refresh_live_evidence` 実行前に、live evidence 収集が止まらないリスク、XAU session 計算バグ、stale 判定の不一致、venue横断の Go/No-Go 判定混線を修正し、実測結果を信頼できる状態にする。
