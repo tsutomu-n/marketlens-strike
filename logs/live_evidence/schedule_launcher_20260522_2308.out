@@ -3,3 +3,52 @@ wait_seconds=170
 duration_minutes=120
 metadata_interval_seconds=120
 log_path=logs/live_evidence/live_evidence_20260522_2308.log
+
+[2026-05-22T14:08:00Z] Scheduled live evidence run starting
+
+[2026-05-22T14:08:00Z] Live evidence refresh configuration
+mode=execute
+duration_minutes=120
+metadata_interval_seconds=120
+force=0
+data_dir=data
+
+[2026-05-22T14:08:00Z] Preflight: command availability
+
+[2026-05-22T14:08:00Z] Preflight: next live window QQQ
+symbol=QQQ
+venue=gtrade
+calendar=XNYS
+now_jst=2026-05-22T23:08:00.839908+09:00
+market_status=OPEN
+next_open_jst=2026-05-22T22:30:00+09:00
+next_close_jst=2026-05-23T05:00:00+09:00
+recommended_start_jst=2026-05-22T22:45:00+09:00
+recommended_end_jst=2026-05-23T04:30:00+09:00
+
+[2026-05-22T14:08:01Z] Preflight: next live window SPY
+symbol=SPY
+venue=gtrade
+calendar=XNYS
+now_jst=2026-05-22T23:08:01.629974+09:00
+market_status=OPEN
+next_open_jst=2026-05-22T22:30:00+09:00
+next_close_jst=2026-05-23T05:00:00+09:00
+recommended_start_jst=2026-05-22T22:45:00+09:00
+recommended_end_jst=2026-05-23T04:30:00+09:00
+
+[2026-05-22T14:08:01Z] Preflight: next live window XAU
+symbol=XAU
+venue=gtrade
+calendar=GTRADE_COMMODITY
+now_jst=2026-05-22T23:08:02.457107+09:00
+market_status=OPEN
+next_open_jst=2026-05-22T07:00:00+09:00
+next_close_jst=2026-05-23T06:00:00+09:00
+recommended_start_jst=2026-05-22T07:10:00+09:00
+recommended_end_jst=2026-05-23T05:50:00+09:00
+
+[2026-05-22T14:08:02Z] Collecting gTrade window: duration=120min metadata_interval=120s
+$ cd sidecars/gtrade && bun run collect:window --duration-minutes "120" --metadata-interval-seconds "120"
+$ tsx src/collect_window.ts --duration-minutes "120" --metadata-interval-seconds "120"
+written: ../../data/raw/sidecar/gtrade/2026-05-22.jsonl sha256=bd0a86083be252257e09ad0d3e0c026b272c629afce3e5de055263cd9278c029
