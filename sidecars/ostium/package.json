@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "probe:pairs": "tsx src/emit_pairs.ts",
+    "probe:positions": "tsx src/emit_positions.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

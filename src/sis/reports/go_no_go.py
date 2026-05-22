@@ -5,6 +5,10 @@ from pathlib import Path
 
 from sis.models import Decision, GoNoGoCriterion, GoNoGoReport
 from sis.storage.jsonl_store import read_json
+from sis.venues.ostium.positions import (
+    latest_positions_sidecar,
+    positions_have_liquidation_reference,
+)
 
 MAX_STALE_RATE = 0.05
 MIN_TRADABLE_RATE = 0.95
@@ -103,6 +107,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
     backtest_report = data_dir / "research/backtest_report.md"
     backtest_metrics = data_dir / "research/backtest_metrics.json"
     signals = data_dir / "research/signals.csv"
+    ostium_positions = latest_positions_sidecar(data_dir / "raw/sidecar/ostium")
     ostium_resolved = _ostium_registry_resolved(ostium_registry)
     ostium_fees_oi_complete = _ostium_fees_oi_complete(ostium_registry)
     cost_rows = _cost_matrix_rows(cost_matrix)
@@ -140,8 +145,10 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         ),
         GoNoGoCriterion(
             criterion="Liquidation reference complete",
-            result="NOT_DONE",
-            evidence="Ostium liquidationPx requires an open position from SDK getOpenPositions",
+            result="PASS" if positions_have_liquidation_reference(ostium_positions) else "NOT_DONE",
+            evidence=str(ostium_positions)
+            if ostium_positions
+            else "Ostium liquidationPx requires an open-position sidecar from SDK getOpenPositions",
         ),
         GoNoGoCriterion(
             criterion="4h-3d after-cost backtest",

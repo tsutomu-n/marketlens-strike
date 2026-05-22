@@ -18,11 +18,11 @@ The handoff zip is not fully implemented. This file separates completed scaffold
 | Epic 5 | liquidation guard | PARTIAL | position-aware guard implemented; venue liquidation reference still required |
 | Epic 6 | Ostium read-only price probe | DONE | Builder API prices plus SDK getPairs metadata |
 | Epic 6 | Ostium fees/OI caps/trading metadata | DONE | SDK getPairs sidecar metadata merged into registry |
-| Epic 6 | Ostium liquidation reference | PARTIAL | SDK exposes liquidationPx on open positions; requires trader position data |
+| Epic 6 | Ostium liquidation reference | PARTIAL | read-only open-position sidecar implemented; requires trader position data |
 | Epic 7 | Backtest bridge | DONE | research signal CSV input, venue quote virtual execution, and metrics implemented |
 | Epic 8 | Go/No-Go markdown and evidence card | DONE | metrics evaluator, thresholds, blockers, and evidence digests implemented |
 
 ## Not Yet Complete
 
-- Ostium liquidation reference verification from real open position data.
+- Ostium liquidation reference verification requires `bun run ostium:probe:positions -- --user 0x...` with a trader that has real open positions.
 - Holding/borrowing cost reproduction remains partial where venue data is unavailable.
