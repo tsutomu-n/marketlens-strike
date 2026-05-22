@@ -1,0 +1,40 @@
+{
+  "prices": [
+    {
+      "feed_id": "feed-spx",
+      "pair": "SPX-USD",
+      "from": "SPX",
+      "to": "USD",
+      "bid": 6000.1,
+      "mid": 6000.2,
+      "ask": 6000.3,
+      "isMarketOpen": true,
+      "isDayTradingClosed": false,
+      "timestampSeconds": 1779415479
+    },
+    {
+      "feed_id": "feed-ndx",
+      "pair": "NDX-USD",
+      "from": "NDX",
+      "to": "USD",
+      "bid": 21000.1,
+      "mid": 21000.2,
+      "ask": 21000.3,
+      "isMarketOpen": true,
+      "isDayTradingClosed": false,
+      "timestampSeconds": 1779415479
+    },
+    {
+      "feed_id": "feed-xau",
+      "pair": "XAU-USD",
+      "from": "XAU",
+      "to": "USD",
+      "bid": 3300.1,
+      "mid": 3300.2,
+      "ask": 3300.3,
+      "isMarketOpen": true,
+      "isDayTradingClosed": false,
+      "timestampSeconds": 1779415479
+    }
+  ]
+}

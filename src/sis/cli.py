@@ -11,16 +11,19 @@ from sis.backtest.bridge import (
     write_backtest_metrics_json,
     write_backtest_report,
 )
+from sis.market_calendar import market_session_window
 from sis.reports.cost_matrix import build_cost_matrix_from_quotes
 from sis.reports.evidence import build_evidence_card
 from sis.reports.go_no_go import build_go_no_go_report, write_go_no_go_markdown
 from sis.reports.implementation_status import implementation_status_items, write_implementation_status
+from sis.reports.quote_diagnostics import build_quote_diagnostics
 from sis.risk.halt_policy import load_halt_policy, summarize_halt_policy
 from sis.risk.scalping_policy import check_timeframe
 from sis.settings import get_settings
 from sis.storage.jsonl_store import write_json
 from sis.storage.normalize import normalize_quotes
-from sis.venues.gtrade.quotes import convert_sidecar_to_quote_logs, latest_sidecar_file
+from sis.validation.artifacts import validate_artifacts
+from sis.venues.gtrade.quotes import convert_sidecar_to_quote_logs, latest_pricing_file, latest_sidecar_file
 from sis.venues.gtrade.registry import GTRADE_TARGETS
 from sis.venues.ostium.probe import OSTIUM_PRICES_ENDPOINT, write_ostium_live_probe_outputs
 from sis.venues.ostium.registry import OSTIUM_TARGETS
@@ -95,7 +98,14 @@ def log_quotes(
     out = settings.data_dir / f"raw/quotes/gtrade/{day}.jsonl"
     if replace and out.exists():
         out.unlink()
-    count = convert_sidecar_to_quote_logs(sidecar, out)
+    pricing = None
+    pricing_root = settings.data_dir / "raw/sidecar/gtrade-pricing"
+    if pricing_root.exists():
+        try:
+            pricing = latest_pricing_file(pricing_root)
+        except FileNotFoundError:
+            pricing = None
+    count = convert_sidecar_to_quote_logs(sidecar, out, pricing_path=pricing)
     logger.info("written {} quote rows: {}", count, out)
 
 
@@ -200,6 +210,81 @@ def check_timeframe_cmd(timeframe: str) -> None:
         return
     typer.echo(f"BLOCK: {timeframe} reason={decision.reason}")
     raise typer.Exit(code=2)
+
+
+@app.command("market-session")
+def market_session(venue: str = typer.Option(..., "--venue"), symbol: str = typer.Option(..., "--symbol")) -> None:
+    try:
+        window = market_session_window(venue, symbol)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=2) from exc
+    typer.echo(f"symbol={window.symbol}")
+    typer.echo(f"venue={window.venue}")
+    typer.echo(f"calendar={window.calendar}")
+    typer.echo(f"now_jst={window.now_jst.isoformat()}")
+    typer.echo(f"market_status={window.market_status}")
+    typer.echo(f"next_open_jst={window.next_open_jst.isoformat()}")
+    typer.echo(f"next_close_jst={window.next_close_jst.isoformat()}")
+
+
+@app.command("next-live-window")
+def next_live_window(venue: str = typer.Option(..., "--venue"), symbol: str = typer.Option(..., "--symbol")) -> None:
+    try:
+        window = market_session_window(venue, symbol)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=2) from exc
+    typer.echo(f"symbol={window.symbol}")
+    typer.echo(f"venue={window.venue}")
+    typer.echo(f"calendar={window.calendar}")
+    typer.echo(f"now_jst={window.now_jst.isoformat()}")
+    typer.echo(f"market_status={window.market_status}")
+    typer.echo(f"next_open_jst={window.next_open_jst.isoformat()}")
+    typer.echo(f"next_close_jst={window.next_close_jst.isoformat()}")
+    typer.echo(f"recommended_start_jst={window.recommended_start_jst.isoformat()}")
+    typer.echo(f"recommended_end_jst={window.recommended_end_jst.isoformat()}")
+
+
+@app.command("validate-artifacts")
+def validate_artifacts_cmd(strict: bool = typer.Option(False, "--strict")) -> None:
+    settings = get_settings()
+    summary = validate_artifacts(settings.data_dir, Path("schemas"), strict=strict)
+    typer.echo(f"checked_files={summary.checked_files}")
+    typer.echo(f"issues={len(summary.issues)}")
+    for issue in summary.issues:
+        typer.echo(f"{issue.path}: {issue.message}")
+    if summary.issues:
+        raise typer.Exit(code=2)
+
+
+@app.command("diagnose-quotes")
+def diagnose_quotes(
+    venue: str | None = typer.Option(None, "--venue"),
+    symbol: str | None = typer.Option(None, "--symbol"),
+) -> None:
+    settings = get_settings()
+    diagnostics = build_quote_diagnostics(settings.data_dir / "raw/quotes", venue=venue, symbol=symbol)
+    if not diagnostics:
+        typer.echo("No quote rows found for diagnostics.")
+        raise typer.Exit(code=2)
+    for item in diagnostics:
+        typer.echo(f"venue={item.venue} symbol={item.symbol}")
+        typer.echo(f"rows={item.rows}")
+        typer.echo(f"market_open_rows={item.market_open_rows}")
+        typer.echo(f"tradable_rate={item.tradable_rate:.4f}")
+        typer.echo(f"stale_rate={item.stale_rate:.4f}")
+        typer.echo(f"missing_mark_price_rate={item.missing_mark_price_rate:.4f}")
+        typer.echo(f"missing_index_price_rate={item.missing_index_price_rate:.4f}")
+        typer.echo(f"missing_spread_rate={item.missing_spread_rate:.4f}")
+        typer.echo(f"stale_missing_oracle_ts_rate={item.stale_missing_oracle_ts_rate:.4f}")
+        typer.echo(f"stale_old_oracle_ts_rate={item.stale_old_oracle_ts_rate:.4f}")
+        typer.echo(f"market_status_unknown_rate={item.market_status_unknown_rate:.4f}")
+        typer.echo(f"market_closed_rate={item.market_closed_rate:.4f}")
+        typer.echo(f"oracle_age_p50_ms={item.oracle_age_p50_ms}")
+        typer.echo(f"oracle_age_p90_ms={item.oracle_age_p90_ms}")
+        typer.echo(f"spread_p50_bps={item.spread_p50_bps}")
+        typer.echo(f"spread_p90_bps={item.spread_p90_bps}")
 
 
 def main() -> None:

@@ -1,0 +1,28 @@
+{
+  "lastRefreshed": "2026-05-22T00:00:00.000Z",
+  "isIndicesOpen": true,
+  "isCommoditiesOpen": false,
+  "pairs": {
+    "86": {
+      "from": "SPY",
+      "to": "USD",
+      "spreadP": "200000000",
+      "groupIndex": "5",
+      "feeIndex": "5"
+    },
+    "87": {
+      "from": "QQQ",
+      "to": "USD",
+      "spreadP": "200000000",
+      "groupIndex": "5",
+      "feeIndex": "5"
+    },
+    "90": {
+      "from": "XAU",
+      "to": "USD",
+      "spreadP": "0",
+      "groupIndex": "6",
+      "feeIndex": "13"
+    }
+  }
+}
