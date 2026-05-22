@@ -5,6 +5,7 @@
 
 # Local agent/workflow state
 .codex/SP_STATE.md
+.ai_memory/
 
 # Python
 .venv/
@@ -32,6 +33,8 @@ data/
 *.duckdb.wal
 
 # Logs and temporary files
+logs/live_evidence/*.log
+logs/live_evidence/*.out
 *.log
 tmp/
 temp/
