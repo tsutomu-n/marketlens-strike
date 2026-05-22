@@ -10,7 +10,7 @@ The handoff zip is not fully implemented. This file separates completed scaffold
 | Epic 2 | gTrade /trading-variables sidecar | DONE | sidecars/gtrade/src/emit_jsonl.ts |
 | Epic 2 | gTrade SPY/QQQ/XAU extraction | DONE | sidecars/gtrade/src/emit_jsonl.test.ts |
 | Epic 3 | JSONL to Parquet and DuckDB normalization | DONE | src/sis/storage/normalize.py |
-| Epic 4 | gTrade registry and initial cost matrix | PARTIAL | sidecar fee/spread metadata and Ostium rollover metadata are reflected; holding horizon conversion remains open |
+| Epic 4 | gTrade registry and initial cost matrix | PARTIAL | sidecar fee/spread metadata and Ostium 4h/24h/72h rollover costs are reflected; gTrade holding conversion remains open |
 | Epic 4 | stale/tradable/spread aggregate calculations | DONE | implemented for normalized quote logs |
 | Epic 5 | scalping policy | DONE | src/sis/risk/scalping_policy.py |
 | Epic 5 | halt policy config loader | DONE | src/sis/risk/halt_policy.py |
@@ -25,4 +25,4 @@ The handoff zip is not fully implemented. This file separates completed scaffold
 ## Not Yet Complete
 
 - Ostium liquidation reference verification requires `bun run ostium:probe:positions -- --user 0x...` with a trader that has real open positions.
-- Holding/borrowing cost reproduction remains partial where venue data is unavailable.
+- gTrade holding/borrowing cost reproduction requires per-position or fee accrual probe data.

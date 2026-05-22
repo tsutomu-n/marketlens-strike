@@ -127,6 +127,21 @@ def _as_bps_from_gtrade_fee(value: object) -> float | None:
         return None
 
 
+def _worst_abs_ostium_rollover_bps(long_rate: object, short_rate: object, hours: float) -> float | None:
+    rates: list[float] = []
+    for value in (long_rate, short_rate):
+        if value in {None, ""}:
+            continue
+        try:
+            rates.append(abs(float(value)))
+        except (TypeError, ValueError):
+            continue
+    if not rates:
+        return None
+    # Ostium Builder SDK exposes rolloverRate as 8hr percent by side.
+    return max(rates) * 100 * (hours / 8)
+
+
 def _metadata_rows(
     *,
     gtrade_sidecar_root: Path | None = None,
@@ -171,12 +186,27 @@ def _metadata_rows(
                 opening_fee = item.get("opening_fee_bps")
                 if isinstance(opening_fee, int | float):
                     row["open_fee_bps"] = float(opening_fee)
+                row["holding_cost_4h_bps"] = _worst_abs_ostium_rollover_bps(
+                    item.get("rollover_rate_long"),
+                    item.get("rollover_rate_short"),
+                    4,
+                )
+                row["holding_cost_24h_bps"] = _worst_abs_ostium_rollover_bps(
+                    item.get("rollover_rate_long"),
+                    item.get("rollover_rate_short"),
+                    24,
+                )
+                row["holding_cost_72h_bps"] = _worst_abs_ostium_rollover_bps(
+                    item.get("rollover_rate_long"),
+                    item.get("rollover_rate_short"),
+                    72,
+                )
                 row["notes"] = (
                     f"ostium registry={ostium_registry_path}; "
                     f"rollover_fee_per_block={item.get('rollover_fee_per_block')}; "
                     f"rollover_rate_long={item.get('rollover_rate_long')}; "
                     f"rollover_rate_short={item.get('rollover_rate_short')}; "
-                    "holding cost kept null until position/timeframe conversion is verified"
+                    "holding cost uses conservative max(abs(long), abs(short)) 8hr percent conversion"
                 )
 
     return rows

@@ -101,4 +101,7 @@ def test_build_cost_matrix_overlays_sidecar_and_registry_cost_metadata(tmp_path)
     assert gtrade_xau["close_fee_bps"] == 3.5
     assert "fee_index=13" in gtrade_xau["notes"]
     assert ostium_xau["open_fee_bps"] == 3.0
+    assert ostium_xau["holding_cost_4h_bps"] == 1.0
+    assert ostium_xau["holding_cost_24h_bps"] == 6.0
+    assert ostium_xau["holding_cost_72h_bps"] == 18.0
     assert "rollover_rate_long=-0.01" in ostium_xau["notes"]

@@ -103,7 +103,15 @@ def _holding_cost_result(rows: list[dict[str, str | None]]) -> str:
     if not rows:
         return "MISSING"
     required = ("holding_cost_4h_bps", "holding_cost_24h_bps", "holding_cost_72h_bps")
-    return "PASS" if all(row.get(column) not in {None, ""} for row in rows for column in required) else "MISSING"
+    completed = [
+        all(row.get(column) not in {None, ""} for column in required)
+        for row in rows
+    ]
+    if all(completed):
+        return "PASS"
+    if any(completed):
+        return "PARTIAL"
+    return "MISSING"
 
 
 def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
@@ -192,7 +200,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
     blockers = [
         item.criterion
         for item in criteria
-        if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "NO_GO"}
+        if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "NO_GO", "PARTIAL"}
     ]
     decision = Decision.CONDITIONAL_GO if gtrade_registry.exists() else Decision.NO_GO
     if quotes.exists() and cost_matrix.exists() and backtest_report.exists() and ostium_resolved and not blockers:
