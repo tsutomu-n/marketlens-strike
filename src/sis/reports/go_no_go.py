@@ -99,6 +99,13 @@ def _threshold_result(
     return "PASS"
 
 
+def _holding_cost_result(rows: list[dict[str, str | None]]) -> str:
+    if not rows:
+        return "MISSING"
+    required = ("holding_cost_4h_bps", "holding_cost_24h_bps", "holding_cost_72h_bps")
+    return "PASS" if all(row.get(column) not in {None, ""} for row in rows for column in required) else "MISSING"
+
+
 def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
     gtrade_registry = data_dir / "registry/gtrade_instrument_registry.json"
     ostium_registry = data_dir / "registry/ostium_instrument_registry.json"
@@ -171,6 +178,11 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
             evidence=f"{cost_matrix}; threshold<={MAX_SPREAD_P90_BPS}bps",
         ),
         GoNoGoCriterion(
+            criterion="Holding/rollover cost reproduced for target horizons",
+            result=_holding_cost_result(cost_rows),
+            evidence=str(cost_matrix),
+        ),
+        GoNoGoCriterion(
             criterion="Research signal CSV connected",
             result="PASS" if signals.exists() else "OPTIONAL_FALLBACK",
             evidence=str(signals),
@@ -194,6 +206,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         next_actions=[
             "Collect a sufficient gTrade/Ostium quote window",
             "Probe Ostium liquidation reference from read-only open position data",
+            "Verify holding/rollover cost conversion for 4h/24h/72h horizons",
             "Provide data/research/signals.csv to run signal-driven backtests instead of quote-only fallback",
         ],
     )

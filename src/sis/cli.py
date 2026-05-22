@@ -109,7 +109,12 @@ def normalize_quotes_cmd() -> None:
 def build_cost_matrix() -> None:
     settings = get_settings()
     out = settings.data_dir / "research/venue_cost_matrix.csv"
-    build_cost_matrix_from_quotes(settings.data_dir / "normalized/quotes.parquet", out)
+    build_cost_matrix_from_quotes(
+        settings.data_dir / "normalized/quotes.parquet",
+        out,
+        gtrade_sidecar_root=settings.data_dir / "raw/sidecar/gtrade",
+        ostium_registry_path=settings.data_dir / "registry/ostium_instrument_registry.json",
+    )
     logger.info("written: {}", out)
 
 

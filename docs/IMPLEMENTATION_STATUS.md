@@ -10,7 +10,7 @@ The handoff zip is not fully implemented. This file separates completed scaffold
 | Epic 2 | gTrade /trading-variables sidecar | DONE | sidecars/gtrade/src/emit_jsonl.ts |
 | Epic 2 | gTrade SPY/QQQ/XAU extraction | DONE | sidecars/gtrade/src/emit_jsonl.test.ts |
 | Epic 3 | JSONL to Parquet and DuckDB normalization | DONE | src/sis/storage/normalize.py |
-| Epic 4 | gTrade registry and initial cost matrix | PARTIAL | holding/borrowing costs are not complete |
+| Epic 4 | gTrade registry and initial cost matrix | PARTIAL | sidecar fee/spread metadata and Ostium rollover metadata are reflected; holding horizon conversion remains open |
 | Epic 4 | stale/tradable/spread aggregate calculations | DONE | implemented for normalized quote logs |
 | Epic 5 | scalping policy | DONE | src/sis/risk/scalping_policy.py |
 | Epic 5 | halt policy config loader | DONE | src/sis/risk/halt_policy.py |
