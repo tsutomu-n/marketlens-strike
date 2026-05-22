@@ -20,7 +20,7 @@ The handoff implementation is complete; current Go/No-Go may still be conditiona
 | Epic 6 | Ostium read-only price probe | DONE | Builder API prices plus SDK getPairs metadata |
 | Epic 6 | Ostium fees/OI caps/trading metadata | DONE | SDK getPairs sidecar metadata merged into registry |
 | Epic 6 | Ostium liquidation reference | DONE | read-only getOpenPositions sidecar supports trader address and bounded ALL sampling |
-| Epic 7 | Backtest bridge | DONE | research signal CSV input, venue quote virtual execution, and metrics implemented |
+| Epic 7 | Backtest bridge | DONE | research signal CSV input, venue quote virtual execution, cost matrix integration, and metrics implemented |
 | Epic 8 | Go/No-Go markdown and evidence card | DONE | metrics evaluator, thresholds, blockers, and evidence digests implemented |
 
 ## Live Evidence Still Required

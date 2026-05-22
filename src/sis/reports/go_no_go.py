@@ -136,6 +136,8 @@ def _decision_for_state(
     if not core_ready:
         return Decision.NO_GO
     if not blockers:
+        if not signals_exists:
+            return Decision.CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST
         return Decision.GO
     blocker_set = set(blockers)
     live_window_blockers = {
@@ -150,8 +152,6 @@ def _decision_for_state(
         return Decision.NO_GO_STALE
     if "tradable_rate at or above threshold" in blocker_set:
         return Decision.NO_GO_SESSION
-    if not signals_exists:
-        return Decision.CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST
     return Decision.CONDITIONAL_GO_DATA_READY
 
 

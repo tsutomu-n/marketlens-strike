@@ -29,7 +29,7 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
     StatusItem("Epic 6", "Ostium read-only price probe", "DONE", "Builder API prices plus SDK getPairs metadata"),
     StatusItem("Epic 6", "Ostium fees/OI caps/trading metadata", "DONE", "SDK getPairs sidecar metadata merged into registry"),
     StatusItem("Epic 6", "Ostium liquidation reference", "DONE", "read-only getOpenPositions sidecar supports trader address and bounded ALL sampling"),
-    StatusItem("Epic 7", "Backtest bridge", "DONE", "research signal CSV input, venue quote virtual execution, and metrics implemented"),
+    StatusItem("Epic 7", "Backtest bridge", "DONE", "research signal CSV input, venue quote virtual execution, cost matrix integration, and metrics implemented"),
     StatusItem("Epic 8", "Go/No-Go markdown and evidence card", "DONE", "metrics evaluator, thresholds, blockers, and evidence digests implemented"),
 ]
 

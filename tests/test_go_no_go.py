@@ -37,3 +37,19 @@ def test_decision_for_state_names_cost_failure() -> None:
         blockers=["Holding/rollover cost reproduced for target horizons"],
         signals_exists=True,
     ) == Decision.NO_GO_COST
+
+
+def test_decision_for_state_names_missing_signal_backtest_when_otherwise_ready() -> None:
+    assert _decision_for_state(
+        core_ready=True,
+        blockers=[],
+        signals_exists=False,
+    ) == Decision.CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST
+
+
+def test_decision_for_state_go_when_ready_and_signal_backtest_present() -> None:
+    assert _decision_for_state(
+        core_ready=True,
+        blockers=[],
+        signals_exists=True,
+    ) == Decision.GO

@@ -14,7 +14,7 @@ Example: `rtk uv run pytest` = `uv run pytest`.
 
 ## Latest Verification Snapshot
 
-- Latest full Python verification: `rtk uv run pytest` -> 42 passed.
+- Latest full Python verification: `rtk uv run pytest` -> 44 passed.
 - Latest Python lint verification: `rtk uv run ruff check .` -> passed.
 - Latest sidecar verification: `rtk bun run gtrade:typecheck && rtk bun run gtrade:test && rtk bun run ostium:typecheck && rtk bun run ostium:test` -> passed.
 - Latest live-evidence refresh command chain: `rtk bun run gtrade:probe && rtk uv run sis log-quotes --venue gtrade --replace && rtk uv run sis normalize-quotes && rtk uv run sis build-cost-matrix && rtk uv run sis build-backtest && rtk uv run sis check-go-no-go && rtk uv run sis build-evidence-card`.
