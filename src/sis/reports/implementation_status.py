@@ -19,11 +19,12 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
     StatusItem("Epic 2", "gTrade /trading-variables sidecar", "DONE", "sidecars/gtrade/src/emit_jsonl.ts"),
     StatusItem("Epic 2", "gTrade SPY/QQQ/XAU extraction", "DONE", "sidecars/gtrade/src/emit_jsonl.test.ts"),
     StatusItem("Epic 3", "JSONL to Parquet and DuckDB normalization", "DONE", "src/sis/storage/normalize.py"),
-    StatusItem("Epic 4", "gTrade registry and initial cost matrix", "PARTIAL", "live fee/spread aggregation is not complete"),
-    StatusItem("Epic 4", "stale/tradable/spread aggregate calculations", "NOT_DONE", "requires quote collection window"),
+    StatusItem("Epic 4", "gTrade registry and initial cost matrix", "PARTIAL", "holding/borrowing costs are not complete"),
+    StatusItem("Epic 4", "stale/tradable/spread aggregate calculations", "DONE", "implemented for normalized quote logs"),
     StatusItem("Epic 5", "scalping policy", "DONE", "src/sis/risk/scalping_policy.py"),
-    StatusItem("Epic 5", "halt policy config loader", "PARTIAL", "guards are not fully enforced"),
-    StatusItem("Epic 5", "session/stale/spread/mark-index/liquidation guards", "NOT_DONE", "risk guards not implemented"),
+    StatusItem("Epic 5", "halt policy config loader", "DONE", "src/sis/risk/halt_policy.py"),
+    StatusItem("Epic 5", "session/stale/spread/mark-index guards", "PARTIAL", "basic quote-level guards implemented"),
+    StatusItem("Epic 5", "liquidation guard", "NOT_DONE", "requires venue liquidation reference and position context"),
     StatusItem("Epic 6", "Ostium read-only price probe", "PARTIAL", "symbol and quote probe only"),
     StatusItem("Epic 6", "Ostium fees/OI caps/liquidation reference", "NOT_DONE", "requires SDK/API probe"),
     StatusItem("Epic 7", "Backtest bridge", "NOT_DONE", "not implemented"),
@@ -52,8 +53,7 @@ def implementation_status_markdown() -> str:
             "",
             "## Not Yet Complete",
             "",
-            "- Full halt/risk guard enforcement.",
-            "- gTrade stale/tradable/spread aggregation over a collection window.",
+            "- Full position-aware liquidation and session-end risk guard enforcement.",
             "- Ostium fees, OI caps, trading hours detail, and liquidation reference probe.",
             "- Backtest bridge, virtual execution, cost integration, and metrics.",
             "- Final Go/No-Go metrics evaluator.",
@@ -65,4 +65,3 @@ def implementation_status_markdown() -> str:
 def write_implementation_status(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(implementation_status_markdown(), encoding="utf-8")
-

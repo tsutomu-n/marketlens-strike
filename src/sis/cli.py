@@ -6,7 +6,7 @@ from pathlib import Path
 import typer
 from loguru import logger
 
-from sis.reports.cost_matrix import build_initial_cost_matrix
+from sis.reports.cost_matrix import build_cost_matrix_from_quotes
 from sis.reports.evidence import build_evidence_card
 from sis.reports.go_no_go import build_go_no_go_report, write_go_no_go_markdown
 from sis.reports.implementation_status import implementation_status_items, write_implementation_status
@@ -97,7 +97,7 @@ def normalize_quotes_cmd() -> None:
 def build_cost_matrix() -> None:
     settings = get_settings()
     out = settings.data_dir / "research/venue_cost_matrix.csv"
-    build_initial_cost_matrix(out)
+    build_cost_matrix_from_quotes(settings.data_dir / "normalized/quotes.parquet", out)
     logger.info("written: {}", out)
 
 

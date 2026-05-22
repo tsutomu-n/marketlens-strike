@@ -82,8 +82,8 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         blockers=blockers,
         next_actions=[
             "Collect a sufficient gTrade/Ostium quote window",
-            "Implement stale/tradable/spread aggregation",
             "Probe Ostium fees, OI caps, trading hours, and liquidation reference",
+            "Implement position-aware liquidation and session-end guards",
             "Implement backtest bridge and metrics evaluator",
         ],
     )
