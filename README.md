@@ -65,6 +65,7 @@ Signal-driven backtests accept CSV files shaped like
 
 The remaining handoff gaps are tracked in `docs/IMPLEMENTATION_STATUS.md`. Run
 `uv run sis implementation-status --write` to refresh `docs/IMPLEMENTATION_STATUS.md`.
+The latest acceptance-command audit is tracked in `docs/ACCEPTANCE_AUDIT.md`.
 
 ## Source Handoff
 
