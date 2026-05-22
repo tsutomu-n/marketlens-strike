@@ -22,8 +22,10 @@ uv run sis probe ostium
 uv run sis probe ostium --read-only-live
 uv run sis probe ostium --read-only-live --pairs-metadata-path data/raw/sidecar/ostium/pairs_YYYY-MM-DD.json
 uv run sis check-timeframe 1m
+uv run sis normalize-quotes
 uv run sis build-cost-matrix
 uv run sis build-backtest
+uv run sis build-backtest --signals-path data/research/signals.csv
 uv run sis check-go-no-go
 uv run sis build-evidence-card
 uv run sis implementation-status --write
@@ -51,7 +53,11 @@ bun run probe:pairs
 writes the resolved registry, preserves the raw price payload, and emits
 normalized quote JSONL under `data/raw/quotes/ostium/`.
 
-The handoff zip is not fully implemented yet. Run
+Signal-driven backtests accept CSV files shaped like
+`templates/research_signals.template.csv`. When no signal CSV is present,
+`build-backtest` uses quote-to-quote virtual execution as a fallback.
+
+The remaining handoff gaps are tracked in `docs/IMPLEMENTATION_STATUS.md`. Run
 `uv run sis implementation-status --write` to refresh `docs/IMPLEMENTATION_STATUS.md`.
 
 ## Source Handoff

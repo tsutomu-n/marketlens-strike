@@ -114,12 +114,30 @@ def build_cost_matrix() -> None:
 
 
 @app.command("build-backtest")
-def build_backtest() -> None:
+def build_backtest(
+    signals_path: Path | None = typer.Option(
+        None,
+        "--signals-path",
+        help="Optional research signal CSV. Defaults to data/research/signals.csv when present.",
+    )
+) -> None:
     settings = get_settings()
-    metrics = run_backtest_bridge(settings.data_dir / "normalized/quotes.parquet")
+    default_signals_path = settings.data_dir / "research/signals.csv"
+    selected_signals_path = signals_path or default_signals_path
+    if signals_path is not None and not selected_signals_path.exists():
+        typer.echo(f"Research signal CSV not found: {selected_signals_path}")
+        raise typer.Exit(code=2)
+    metrics = run_backtest_bridge(
+        settings.data_dir / "normalized/quotes.parquet",
+        selected_signals_path if selected_signals_path.exists() else None,
+    )
     report_path = settings.data_dir / "research/backtest_report.md"
     metrics_path = settings.data_dir / "research/backtest_metrics.json"
-    write_backtest_report(metrics, report_path)
+    write_backtest_report(
+        metrics,
+        report_path,
+        selected_signals_path if selected_signals_path.exists() else None,
+    )
     write_backtest_metrics_json(metrics, metrics_path)
     logger.info("written: {}", report_path)
     logger.info("written: {}", metrics_path)

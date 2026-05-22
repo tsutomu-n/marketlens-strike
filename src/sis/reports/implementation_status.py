@@ -28,8 +28,8 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
     StatusItem("Epic 6", "Ostium read-only price probe", "DONE", "Builder API prices plus SDK getPairs metadata"),
     StatusItem("Epic 6", "Ostium fees/OI caps/trading metadata", "DONE", "SDK getPairs sidecar metadata merged into registry"),
     StatusItem("Epic 6", "Ostium liquidation reference", "PARTIAL", "SDK exposes liquidationPx on open positions; requires trader position data"),
-    StatusItem("Epic 7", "Backtest bridge", "PARTIAL", "venue quote virtual execution and metrics implemented"),
-    StatusItem("Epic 8", "Go/No-Go markdown and evidence card", "PARTIAL", "metrics are included but final evaluator is not complete"),
+    StatusItem("Epic 7", "Backtest bridge", "DONE", "research signal CSV input, venue quote virtual execution, and metrics implemented"),
+    StatusItem("Epic 8", "Go/No-Go markdown and evidence card", "DONE", "metrics evaluator, thresholds, blockers, and evidence digests implemented"),
 ]
 
 
@@ -55,7 +55,7 @@ def implementation_status_markdown() -> str:
             "## Not Yet Complete",
             "",
             "- Ostium liquidation reference verification from real open position data.",
-            "- Research signal generation and final Go/No-Go metrics evaluator.",
+            "- Holding/borrowing cost reproduction remains partial where venue data is unavailable.",
             "",
         ]
     )
