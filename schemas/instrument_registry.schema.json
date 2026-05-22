@@ -75,6 +75,84 @@
         "null"
       ]
     },
+    "opening_fee_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "rollover_fee_per_block": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rollover_rate_long": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rollover_rate_short": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "open_interest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "buy_open_interest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sell_open_interest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "max_open_interest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "max_leverage": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "overnight_max_leverage": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "trading_hours_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "is_day_trading_closed": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "seconds_to_toggle_is_day_trading_closed": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
     "active": {
       "type": "boolean"
     },

@@ -44,6 +44,19 @@ class InstrumentSpec(BaseModel):
     api_orderable: bool = False
     execution_price_ref: str | None = None
     liquidation_price_ref: str | None = None
+    opening_fee_bps: float | None = None
+    rollover_fee_per_block: str | None = None
+    rollover_rate_long: str | None = None
+    rollover_rate_short: str | None = None
+    open_interest: str | None = None
+    buy_open_interest: str | None = None
+    sell_open_interest: str | None = None
+    max_open_interest: str | None = None
+    max_leverage: float | None = None
+    overnight_max_leverage: float | None = None
+    trading_hours_ref: str | None = None
+    is_day_trading_closed: bool | None = None
+    seconds_to_toggle_is_day_trading_closed: int | None = None
     active: bool = True
     notes: list[str] = Field(default_factory=list)
 

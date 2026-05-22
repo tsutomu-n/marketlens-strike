@@ -19,6 +19,9 @@ def test_instrument_spec_matches_schema() -> None:
         pair_index=87,
         asset_class=AssetClass.INDEX,
         api_readable=True,
+        opening_fee_bps=3,
+        max_open_interest="1000000",
+        max_leverage=100,
     )
     validate(item.model_dump(mode="json"), load_schema("instrument_registry.schema.json"))
 

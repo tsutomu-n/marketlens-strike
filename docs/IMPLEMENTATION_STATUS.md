@@ -16,12 +16,13 @@ The handoff zip is not fully implemented. This file separates completed scaffold
 | Epic 5 | halt policy config loader | DONE | src/sis/risk/halt_policy.py |
 | Epic 5 | session/stale/spread/mark-index guards | DONE | quote-level guards implemented |
 | Epic 5 | liquidation guard | PARTIAL | position-aware guard implemented; venue liquidation reference still required |
-| Epic 6 | Ostium read-only price probe | PARTIAL | symbol and quote probe only |
-| Epic 6 | Ostium fees/OI caps/liquidation reference | NOT_DONE | requires SDK/API probe |
+| Epic 6 | Ostium read-only price probe | DONE | Builder API prices plus SDK getPairs metadata |
+| Epic 6 | Ostium fees/OI caps/trading metadata | DONE | SDK getPairs sidecar metadata merged into registry |
+| Epic 6 | Ostium liquidation reference | PARTIAL | SDK exposes liquidationPx on open positions; requires trader position data |
 | Epic 7 | Backtest bridge | PARTIAL | venue quote virtual execution and metrics implemented |
 | Epic 8 | Go/No-Go markdown and evidence card | PARTIAL | metrics are included but final evaluator is not complete |
 
 ## Not Yet Complete
 
-- Ostium fees, OI caps, trading hours detail, and liquidation reference probe.
+- Ostium liquidation reference verification from real open position data.
 - Research signal generation and final Go/No-Go metrics evaluator.

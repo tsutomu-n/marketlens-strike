@@ -38,7 +38,7 @@ def build_evidence_card(data_dir: Path, out_dir: Path) -> Path:
         "decision": "CONDITIONAL_GO",
         "blockers": [
             "Venue quote collection period not complete",
-            "Ostium fees/OI caps/liquidation reference not implemented",
+            "Ostium liquidation reference requires real open position data",
             "Research signal generation is not implemented",
         ],
         "next_actions": [

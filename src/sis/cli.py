@@ -46,12 +46,19 @@ def probe_ostium(
         help="Fetch Ostium Builder API prices with a GET-only probe before writing the registry.",
     ),
     endpoint: str = typer.Option(OSTIUM_PRICES_ENDPOINT, "--endpoint", help="Ostium prices endpoint."),
+    pairs_metadata_path: Path | None = typer.Option(
+        None,
+        "--pairs-metadata-path",
+        help="Optional Ostium SDK getPairs sidecar JSON path.",
+    ),
 ) -> None:
     settings = get_settings()
     out = settings.data_dir / "registry/ostium_instrument_registry.json"
     if read_only_live:
         targets, quotes = write_ostium_live_probe_outputs(
-            data_dir=settings.data_dir, endpoint=endpoint
+            data_dir=settings.data_dir,
+            endpoint=endpoint,
+            pairs_metadata_path=pairs_metadata_path,
         )
     else:
         targets = OSTIUM_TARGETS

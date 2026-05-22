@@ -6,7 +6,11 @@ from pathlib import Path
 
 import httpx
 
-from sis.venues.ostium.probe import build_ostium_quote_logs, probe_ostium_prices
+from sis.venues.ostium.probe import (
+    build_ostium_quote_logs,
+    resolve_ostium_price_specs,
+    probe_ostium_prices,
+)
 
 
 def test_probe_ostium_prices_resolves_targets_from_builder_prices() -> None:
@@ -100,3 +104,52 @@ def test_build_ostium_quote_logs_preserves_price_references() -> None:
     assert quote.exec_sell_price == 3300.1
     assert quote.oracle_ts_ms == 1779415479000
     assert quote.is_tradable is True
+
+
+def test_resolve_ostium_price_specs_merges_pair_metadata() -> None:
+    price_payload = {
+        "prices": [
+            {
+                "feed_id": "feed-us500",
+                "pair": "US500-USD",
+                "from": "US500",
+                "to": "USD",
+                "bid": 6000.1,
+                "mid": 6000.2,
+                "ask": 6000.3,
+                "isMarketOpen": True,
+            }
+        ]
+    }
+    pair_payload = {
+        "pairs": [
+            {
+                "pair_id": "42",
+                "venue_symbol": "US500-USD",
+                "category": "indices",
+                "max_leverage": 200,
+                "overnight_max_leverage": 50,
+                "rollover_fee_per_block": "123",
+                "rollover_rate_long": "0.01",
+                "rollover_rate_short": "-0.02",
+                "open_interest": "1000",
+                "buy_open_interest": "600",
+                "sell_open_interest": "400",
+                "max_open_interest": "5000",
+                "is_market_open": True,
+            }
+        ]
+    }
+
+    specs = resolve_ostium_price_specs(price_payload, pair_metadata_payload=pair_payload)
+    spx = {spec.canonical_symbol: spec for spec in specs}["SPX_EQUIV"]
+
+    assert spx.venue_symbol == "US500-USD"
+    assert spx.pair_id == 42
+    assert spx.opening_fee_bps == 3
+    assert spx.max_leverage == 200
+    assert spx.max_open_interest == "5000"
+    assert spx.rollover_fee_per_block == "123"
+    assert "opening_fee_bps=3" in spx.notes
+    assert "max_open_interest=5000" in spx.notes
+    assert "rollover_fee_per_block=123" in spx.notes

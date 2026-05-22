@@ -23,4 +23,4 @@ def test_implementation_status_reports_unfinished_scope() -> None:
     result = runner.invoke(app, ["implementation-status"])
     assert result.exit_code == 0
     assert "Backtest bridge" in result.stdout
-    assert "NOT_DONE" in result.stdout
+    assert "PARTIAL" in result.stdout

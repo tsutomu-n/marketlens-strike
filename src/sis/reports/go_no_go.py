@@ -20,6 +20,24 @@ def _ostium_registry_resolved(path: Path) -> bool:
     )
 
 
+def _ostium_fees_oi_complete(path: Path) -> bool:
+    if not path.exists():
+        return False
+    data = read_json(path)
+    if not isinstance(data, list):
+        return False
+    target_rows = [
+        item for item in data if isinstance(item, dict) and item.get("venue") == "ostium"
+    ]
+    return bool(target_rows) and all(
+        item.get("opening_fee_bps") is not None
+        and item.get("max_open_interest") is not None
+        and item.get("rollover_fee_per_block") is not None
+        and item.get("max_leverage") is not None
+        for item in target_rows
+    )
+
+
 def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
     gtrade_registry = data_dir / "registry/gtrade_instrument_registry.json"
     ostium_registry = data_dir / "registry/ostium_instrument_registry.json"
@@ -27,6 +45,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
     cost_matrix = data_dir / "research/venue_cost_matrix.csv"
     backtest_report = data_dir / "research/backtest_report.md"
     ostium_resolved = _ostium_registry_resolved(ostium_registry)
+    ostium_fees_oi_complete = _ostium_fees_oi_complete(ostium_registry)
 
     criteria = [
         GoNoGoCriterion(
@@ -55,9 +74,14 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
             evidence="configs/scalping_policy.yaml",
         ),
         GoNoGoCriterion(
-            criterion="Fees/funding/liquidation references complete",
-            result="NOT_DONE",
+            criterion="Ostium fees/OI/rollover metadata complete",
+            result="PASS" if ostium_fees_oi_complete else "MISSING",
             evidence="docs/sis_venue_probe_handoff/docs/08_ostium_probe_spec.md",
+        ),
+        GoNoGoCriterion(
+            criterion="Liquidation reference complete",
+            result="NOT_DONE",
+            evidence="Ostium liquidationPx requires an open position from SDK getOpenPositions",
         ),
         GoNoGoCriterion(
             criterion="4h-3d after-cost backtest",
@@ -82,7 +106,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         blockers=blockers,
         next_actions=[
             "Collect a sufficient gTrade/Ostium quote window",
-            "Probe Ostium fees, OI caps, trading hours, and liquidation reference",
+            "Probe Ostium liquidation reference from read-only open position data",
             "Connect research signal generation to the backtest bridge",
         ],
     )

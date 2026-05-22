@@ -20,6 +20,7 @@ uv run sis --help
 uv run sis probe gtrade
 uv run sis probe ostium
 uv run sis probe ostium --read-only-live
+uv run sis probe ostium --read-only-live --pairs-metadata-path data/raw/sidecar/ostium/pairs_YYYY-MM-DD.json
 uv run sis check-timeframe 1m
 uv run sis build-cost-matrix
 uv run sis build-backtest
@@ -35,6 +36,15 @@ cd sidecars/gtrade
 bun install
 bun run typecheck
 bun run probe
+```
+
+The Ostium read-only metadata sidecar lives in `sidecars/ostium`:
+
+```bash
+cd sidecars/ostium
+bun install
+bun run typecheck
+bun run probe:pairs
 ```
 
 `sis probe ostium --read-only-live` performs a GET-only Builder API price probe,

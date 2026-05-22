@@ -6,6 +6,9 @@
   "scripts": {
     "gtrade:probe": "cd sidecars/gtrade && bun run probe",
     "gtrade:test": "cd sidecars/gtrade && bun test",
-    "gtrade:typecheck": "cd sidecars/gtrade && bun run typecheck"
+    "gtrade:typecheck": "cd sidecars/gtrade && bun run typecheck",
+    "ostium:probe:pairs": "cd sidecars/ostium && bun run probe:pairs",
+    "ostium:test": "cd sidecars/ostium && bun test",
+    "ostium:typecheck": "cd sidecars/ostium && bun run typecheck"
   }
 }
