@@ -1,4 +1,5 @@
-from sis.reports.go_no_go import _threshold_result
+from sis.models import Decision
+from sis.reports.go_no_go import _decision_for_state, _threshold_result
 
 
 def test_threshold_result_requires_values_for_every_row() -> None:
@@ -17,3 +18,22 @@ def test_threshold_result_blocks_values_outside_threshold() -> None:
     ]
 
     assert _threshold_result(rows, "tradable_rate", minimum=0.95) == "NO_GO"
+
+
+def test_decision_for_state_names_live_window_condition() -> None:
+    assert _decision_for_state(
+        core_ready=True,
+        blockers=[
+            "stale_rate at or below threshold",
+            "tradable_rate at or above threshold",
+        ],
+        signals_exists=False,
+    ) == Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW
+
+
+def test_decision_for_state_names_cost_failure() -> None:
+    assert _decision_for_state(
+        core_ready=True,
+        blockers=["Holding/rollover cost reproduced for target horizons"],
+        signals_exists=True,
+    ) == Decision.NO_GO_COST

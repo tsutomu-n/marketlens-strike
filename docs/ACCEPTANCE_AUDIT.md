@@ -6,6 +6,12 @@ Last audited: 2026-05-22
 
 The handoff implementation is operational. The current Go/No-Go remains conditional until live quote evidence clears the remaining threshold blockers.
 
+## Command Prefix
+
+This repository may show examples with `rtk`. If `rtk` is unavailable, run the same command without it.
+
+Example: `rtk uv run pytest` = `uv run pytest`.
+
 ## Latest Verification Snapshot
 
 - Latest full Python verification: `rtk uv run pytest` -> 38 passed.

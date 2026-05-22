@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Set up Python
+        run: uv python install 3.14
+      - name: Install Python dependencies
+        run: uv sync --dev
+      - name: Lint
+        run: uv run ruff check .
+      - name: Test
+        run: uv run pytest
+
+  sidecars:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sidecar: [gtrade, ostium]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install sidecar dependencies
+        working-directory: sidecars/${{ matrix.sidecar }}
+        run: bun install
+      - name: Typecheck sidecar
+        working-directory: sidecars/${{ matrix.sidecar }}
+        run: bun run typecheck
+      - name: Test sidecar
+        working-directory: sidecars/${{ matrix.sidecar }}
+        run: bun test

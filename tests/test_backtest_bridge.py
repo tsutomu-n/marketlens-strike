@@ -54,6 +54,56 @@ def test_backtest_bridge_runs_virtual_execution_from_quotes(tmp_path) -> None:
     assert metrics[0].cost_drag_bps == 1.0
 
 
+def test_backtest_bridge_uses_cost_matrix_when_available(tmp_path) -> None:
+    quotes_path = tmp_path / "quotes.parquet"
+    cost_matrix_path = tmp_path / "venue_cost_matrix.csv"
+    pl.DataFrame(
+        [
+            {
+                "ts_client": datetime(2026, 5, 22, 0, 0, tzinfo=timezone.utc).isoformat(),
+                "venue": "gtrade",
+                "canonical_symbol": "SPY",
+                "venue_symbol": "SPY/USD",
+                "exec_buy_price": None,
+                "exec_sell_price": None,
+                "mark_price": 100.0,
+                "mid_price": None,
+                "oracle_price": None,
+                "index_price": 100.0,
+                "spread_bps": 2.0,
+                "oracle_ts_ms": 1779415479000,
+                "market_status": "open",
+                "is_tradable": True,
+            },
+            {
+                "ts_client": datetime(2026, 5, 22, 4, 0, tzinfo=timezone.utc).isoformat(),
+                "venue": "gtrade",
+                "canonical_symbol": "SPY",
+                "venue_symbol": "SPY/USD",
+                "exec_buy_price": None,
+                "exec_sell_price": None,
+                "mark_price": 101.0,
+                "mid_price": None,
+                "oracle_price": None,
+                "index_price": 101.0,
+                "spread_bps": 2.0,
+                "oracle_ts_ms": 1779429879000,
+                "market_status": "open",
+                "is_tradable": True,
+            },
+        ]
+    ).write_parquet(quotes_path)
+    cost_matrix_path.write_text(
+        "venue,symbol,open_fee_bps,close_fee_bps,spread_p50_bps,holding_cost_4h_bps\n"
+        "gtrade,SPY,5,5,9,3\n",
+        encoding="utf-8",
+    )
+
+    metrics = run_backtest_bridge(quotes_path, cost_matrix_path=cost_matrix_path)
+
+    assert metrics[0].cost_drag_bps == 15.0
+
+
 def test_backtest_report_writes_metrics_table(tmp_path) -> None:
     quotes_path = tmp_path / "quotes.parquet"
     report_path = tmp_path / "backtest_report.md"

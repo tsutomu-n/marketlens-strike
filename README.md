@@ -14,6 +14,16 @@ uv sync --dev
 uv run sis --help
 ```
 
+## Command Prefix
+
+Some project notes use `rtk` as a local command wrapper. If `rtk` is unavailable,
+run the same command without it.
+
+```bash
+rtk uv run pytest
+uv run pytest
+```
+
 ## Main Commands
 
 ```bash

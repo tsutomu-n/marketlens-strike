@@ -144,6 +144,7 @@ def build_backtest(
     metrics = run_backtest_bridge(
         settings.data_dir / "normalized/quotes.parquet",
         selected_signals_path if selected_signals_path.exists() else None,
+        settings.data_dir / "research/venue_cost_matrix.csv",
     )
     report_path = settings.data_dir / "research/backtest_report.md"
     metrics_path = settings.data_dir / "research/backtest_metrics.json"

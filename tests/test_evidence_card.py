@@ -62,7 +62,7 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
     card_path = build_evidence_card(data_dir, data_dir / "evidence")
 
     card = json.loads(card_path.read_text(encoding="utf-8"))
-    assert card["decision"] == "CONDITIONAL_GO"
+    assert card["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert card["blockers"] == ["tradable_rate at or above threshold"]
     assert "Liquidation reference complete" in [
         item["criterion"] for item in card["criteria"]

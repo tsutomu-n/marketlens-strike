@@ -10,6 +10,9 @@ import polars as pl
 from sis.backtest.signals import ResearchSignal, load_research_signals
 
 
+CostLookup = dict[tuple[str, str], dict[str, float]]
+
+
 @dataclass(frozen=True)
 class BacktestMetrics:
     venue: str
@@ -65,7 +68,50 @@ def _exit_price(row: dict, side: str = "long") -> float | None:
     return None
 
 
-def _round_trip_cost_bps(row: dict) -> float:
+def _as_float(value: object) -> float | None:
+    if value in {None, ""}:
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _load_cost_lookup(cost_matrix_path: Path | None) -> CostLookup:
+    if cost_matrix_path is None or not cost_matrix_path.exists():
+        return {}
+    frame = pl.read_csv(cost_matrix_path)
+    lookup: CostLookup = {}
+    for row in frame.to_dicts():
+        venue = str(row.get("venue", ""))
+        symbol = str(row.get("symbol", "")).upper()
+        if not venue or not symbol:
+            continue
+        lookup[(venue, symbol)] = {
+            "open_fee_bps": _as_float(row.get("open_fee_bps")) or 0.0,
+            "close_fee_bps": _as_float(row.get("close_fee_bps")) or 0.0,
+            "spread_p50_bps": _as_float(row.get("spread_p50_bps")) or 0.0,
+            "holding_cost_4h_bps": _as_float(row.get("holding_cost_4h_bps")) or 0.0,
+        }
+    return lookup
+
+
+def _round_trip_cost_bps(row: dict, cost_lookup: CostLookup | None = None) -> float:
+    if cost_lookup:
+        key = (str(row.get("venue")), str(row.get("canonical_symbol")).upper())
+        cost = cost_lookup.get(key)
+        if cost is not None:
+            spread = _as_float(row.get("spread_bps"))
+            return (
+                cost["open_fee_bps"]
+                + cost["close_fee_bps"]
+                + (spread if spread is not None else cost["spread_p50_bps"])
+                + cost["holding_cost_4h_bps"]
+            )
     fee_bps = 10.0 if row.get("venue") == "gtrade" else 0.0
     spread = row.get("spread_bps")
     return fee_bps + (float(spread) if isinstance(spread, int | float) else 0.0)
@@ -88,7 +134,7 @@ def _max_drawdown(equity: list[float]) -> float:
     return worst
 
 
-def _metrics_for_group(group: pl.DataFrame) -> BacktestMetrics:
+def _metrics_for_group(group: pl.DataFrame, cost_lookup: CostLookup | None = None) -> BacktestMetrics:
     rows = group.sort("ts_client").to_dicts()
     venue = str(rows[0]["venue"])
     symbol = str(rows[0]["canonical_symbol"])
@@ -112,7 +158,7 @@ def _metrics_for_group(group: pl.DataFrame) -> BacktestMetrics:
             stale_rejected += 1
             continue
 
-        cost_bps = _round_trip_cost_bps(entry)
+        cost_bps = _round_trip_cost_bps(entry, cost_lookup)
         net = _net_return(entry_price, exit_price, "long", cost_bps)
         returns.append(net)
         cost_drag_bps += cost_bps
@@ -209,7 +255,11 @@ def _metrics_from_returns(
     )
 
 
-def _metrics_for_signals(quotes: pl.DataFrame, signals: list[ResearchSignal]) -> list[BacktestMetrics]:
+def _metrics_for_signals(
+    quotes: pl.DataFrame,
+    signals: list[ResearchSignal],
+    cost_lookup: CostLookup | None = None,
+) -> list[BacktestMetrics]:
     rows_by_key: dict[tuple[str, str], list[dict]] = {}
     for row in quotes.sort("ts_client").to_dicts():
         key = (str(row["venue"]), str(row["canonical_symbol"]).upper())
@@ -255,7 +305,7 @@ def _metrics_for_signals(quotes: pl.DataFrame, signals: list[ResearchSignal]) ->
                 stale_rejected += 1
                 continue
 
-            cost_bps = _round_trip_cost_bps(entry)
+            cost_bps = _round_trip_cost_bps(entry, cost_lookup)
             returns.append(_net_return(entry_price, exit_price, signal.side, cost_bps))
             cost_drag_bps += cost_bps
             equity.append(equity[-1] * (1.0 + returns[-1]))
@@ -275,7 +325,11 @@ def _metrics_for_signals(quotes: pl.DataFrame, signals: list[ResearchSignal]) ->
     return metrics
 
 
-def run_backtest_bridge(quotes_path: Path, signals_path: Path | None = None) -> list[BacktestMetrics]:
+def run_backtest_bridge(
+    quotes_path: Path,
+    signals_path: Path | None = None,
+    cost_matrix_path: Path | None = None,
+) -> list[BacktestMetrics]:
     if not quotes_path.exists():
         raise FileNotFoundError(f"Normalized quote parquet not found: {quotes_path}")
     quotes = pl.read_parquet(quotes_path)
@@ -287,13 +341,14 @@ def run_backtest_bridge(quotes_path: Path, signals_path: Path | None = None) -> 
     if missing:
         raise ValueError(f"Normalized quote parquet missing columns: {sorted(missing)}")
 
+    cost_lookup = _load_cost_lookup(cost_matrix_path)
     if signals_path is not None:
         signals = load_research_signals(signals_path)
         if signals:
-            return _metrics_for_signals(quotes, signals)
+            return _metrics_for_signals(quotes, signals, cost_lookup)
 
     return [
-        _metrics_for_group(group)
+        _metrics_for_group(group, cost_lookup)
         for (_key, group) in quotes.group_by(["venue", "canonical_symbol"], maintain_order=True)
     ]
 

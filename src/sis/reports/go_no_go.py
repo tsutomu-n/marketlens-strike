@@ -127,6 +127,34 @@ def _next_actions(blockers: list[str], signals_exists: bool) -> list[str]:
     return actions
 
 
+def _decision_for_state(
+    *,
+    core_ready: bool,
+    blockers: list[str],
+    signals_exists: bool,
+) -> Decision:
+    if not core_ready:
+        return Decision.NO_GO
+    if not blockers:
+        return Decision.GO
+    blocker_set = set(blockers)
+    live_window_blockers = {
+        "stale_rate at or below threshold",
+        "tradable_rate at or above threshold",
+    }
+    if blocker_set.issubset(live_window_blockers):
+        return Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW
+    if "4h-3d after-cost backtest" in blocker_set or "Holding/rollover cost reproduced for target horizons" in blocker_set:
+        return Decision.NO_GO_COST
+    if "stale_rate at or below threshold" in blocker_set:
+        return Decision.NO_GO_STALE
+    if "tradable_rate at or above threshold" in blocker_set:
+        return Decision.NO_GO_SESSION
+    if not signals_exists:
+        return Decision.CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST
+    return Decision.CONDITIONAL_GO_DATA_READY
+
+
 def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
     gtrade_registry = data_dir / "registry/gtrade_instrument_registry.json"
     ostium_registry = data_dir / "registry/ostium_instrument_registry.json"
@@ -215,9 +243,12 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         for item in criteria
         if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "NO_GO", "PARTIAL"}
     ]
-    decision = Decision.CONDITIONAL_GO if gtrade_registry.exists() else Decision.NO_GO
-    if quotes.exists() and cost_matrix.exists() and backtest_report.exists() and ostium_resolved and not blockers:
-        decision = Decision.GO
+    core_ready = quotes.exists() and cost_matrix.exists() and backtest_report.exists() and ostium_resolved
+    decision = _decision_for_state(
+        core_ready=core_ready,
+        blockers=blockers,
+        signals_exists=signals.exists(),
+    )
 
     return GoNoGoReport(
         decision=decision,
