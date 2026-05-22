@@ -25,4 +25,5 @@ The handoff implementation is complete; current Go/No-Go may still be conditiona
 
 ## Live Evidence Still Required
 
-- Recollect a sufficient quote window during tradable sessions until `tradable_rate` satisfies the Go/No-Go threshold.
+- Recollect a sufficient quote window with fresh venue timestamps until `stale_rate` satisfies the Go/No-Go threshold.
+- Recollect during tradable sessions until `tradable_rate` satisfies the Go/No-Go threshold.

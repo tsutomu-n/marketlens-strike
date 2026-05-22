@@ -24,6 +24,8 @@ uv run sis probe ostium --read-only-live --pairs-metadata-path data/raw/sidecar/
 bun run ostium:probe:positions -- --user 0xYourTraderAddress
 bun run ostium:probe:positions -- --user ALL --limit 20
 uv run sis check-timeframe 1m
+uv run sis log-quotes --venue gtrade
+uv run sis log-quotes --venue gtrade --replace
 uv run sis normalize-quotes
 uv run sis build-cost-matrix
 uv run sis build-backtest

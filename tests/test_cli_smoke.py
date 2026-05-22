@@ -11,6 +11,7 @@ def test_help_smoke() -> None:
     assert result.exit_code == 0
     assert "probe" in result.stdout
     assert "build-backtest" in result.stdout
+    assert "log-quotes" in result.stdout
 
 
 def test_check_timeframe_cli_blocks_scalping() -> None:

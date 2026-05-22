@@ -72,7 +72,14 @@ def probe_ostium(
 
 
 @app.command("log-quotes")
-def log_quotes(venue: str = typer.Option(..., "--venue")) -> None:
+def log_quotes(
+    venue: str = typer.Option(..., "--venue"),
+    replace: bool = typer.Option(
+        False,
+        "--replace",
+        help="Replace the generated daily quote JSONL before replaying the sidecar.",
+    ),
+) -> None:
     settings = get_settings()
     normalized_venue = venue.strip().lower()
     if normalized_venue != "gtrade":
@@ -86,6 +93,8 @@ def log_quotes(venue: str = typer.Option(..., "--venue")) -> None:
         raise typer.Exit(code=2) from exc
     day = datetime.now(timezone.utc).date().isoformat()
     out = settings.data_dir / f"raw/quotes/gtrade/{day}.jsonl"
+    if replace and out.exists():
+        out.unlink()
     count = convert_sidecar_to_quote_logs(sidecar, out)
     logger.info("written {} quote rows: {}", count, out)
 

@@ -9,11 +9,26 @@ from sis.models import QuoteLog
 from sis.storage.jsonl_store import read_jsonl
 
 
+def quote_log_identity(log: QuoteLog) -> tuple[str, str, str, str]:
+    return (
+        log.ts_client.isoformat(),
+        log.venue.value,
+        log.canonical_symbol,
+        log.raw_payload_sha256,
+    )
+
+
 def collect_quote_logs(raw_root: Path) -> list[QuoteLog]:
     logs: list[QuoteLog] = []
+    seen: set[tuple[str, str, str, str]] = set()
     for path in sorted(raw_root.glob("*/*.jsonl")):
         for row in read_jsonl(path):
-            logs.append(QuoteLog.model_validate(row))
+            log = QuoteLog.model_validate(row)
+            key = quote_log_identity(log)
+            if key in seen:
+                continue
+            seen.add(key)
+            logs.append(log)
     return logs
 
 

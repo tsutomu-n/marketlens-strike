@@ -88,7 +88,7 @@ def _threshold_result(
     for row in rows:
         value = row.get(column)
         if value in {None, ""}:
-            continue
+            return "MISSING"
         values.append(float(value))
     if not values:
         return "MISSING"
@@ -112,6 +112,19 @@ def _holding_cost_result(rows: list[dict[str, str | None]]) -> str:
     if any(completed):
         return "PARTIAL"
     return "MISSING"
+
+
+def _next_actions(blockers: list[str], signals_exists: bool) -> list[str]:
+    actions: list[str] = []
+    if "stale_rate at or below threshold" in blockers:
+        actions.append(
+            "Collect quote rows with fresh venue timestamps so stale_rate is at or below threshold"
+        )
+    if "tradable_rate at or above threshold" in blockers:
+        actions.append("Collect a sufficient gTrade/Ostium quote window during tradable sessions")
+    if not signals_exists:
+        actions.append("Provide data/research/signals.csv to run signal-driven backtests instead of quote-only fallback")
+    return actions
 
 
 def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
@@ -211,10 +224,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         summary="Implementation status report. This evaluates collected evidence and does not authorize live trading.",
         criteria=criteria,
         blockers=blockers,
-        next_actions=[
-            "Collect a sufficient gTrade/Ostium quote window",
-            "Provide data/research/signals.csv to run signal-driven backtests instead of quote-only fallback",
-        ],
+        next_actions=_next_actions(blockers, signals.exists()),
     )
 
 

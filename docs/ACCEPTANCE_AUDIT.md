@@ -4,7 +4,7 @@ Last audited: 2026-05-22
 
 ## Result
 
-The handoff implementation is operational. The current Go/No-Go remains conditional until live quote evidence clears the remaining threshold blocker.
+The handoff implementation is operational. The current Go/No-Go remains conditional until live quote evidence clears the remaining threshold blockers.
 
 ## Passed Acceptance Commands
 
@@ -13,6 +13,7 @@ rtk uv run sis --help
 rtk uv run sis probe gtrade
 rtk bun run gtrade:probe
 rtk uv run sis log-quotes --venue gtrade
+rtk uv run sis log-quotes --venue gtrade --replace
 rtk uv run sis normalize-quotes
 rtk uv run sis build-cost-matrix
 rtk uv run sis build-backtest
@@ -45,6 +46,7 @@ rtk bun run ostium:test
 
 ## Remaining Blockers
 
+- Current quote evidence does not satisfy the Go/No-Go `stale_rate` threshold. gTrade rows now preserve the venue `lastRefreshed` timestamp as `oracle_ts_ms`, and the latest captured window is stale against the current threshold.
 - Current quote evidence does not satisfy the Go/No-Go `tradable_rate` threshold. The quote window must be recollected during tradable sessions, then normalized and re-evaluated.
 
 ## Current Decision
