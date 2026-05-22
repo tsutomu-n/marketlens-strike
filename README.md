@@ -19,6 +19,7 @@ uv run sis --help
 ```bash
 uv run sis probe gtrade
 uv run sis probe ostium
+uv run sis probe ostium --read-only-live
 uv run sis check-timeframe 1m
 uv run sis build-cost-matrix
 uv run sis check-go-no-go
@@ -34,8 +35,11 @@ bun run typecheck
 bun run probe
 ```
 
+`sis probe ostium --read-only-live` performs a GET-only Builder API price probe,
+writes the resolved registry, preserves the raw price payload, and emits
+normalized quote JSONL under `data/raw/quotes/ostium/`.
+
 ## Source Handoff
 
 The implementation handoff package is preserved under
 `docs/sis_venue_probe_handoff/`.
-

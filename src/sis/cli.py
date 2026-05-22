@@ -15,7 +15,7 @@ from sis.storage.jsonl_store import write_json
 from sis.storage.normalize import normalize_quotes
 from sis.venues.gtrade.quotes import convert_sidecar_to_quote_logs, latest_sidecar_file
 from sis.venues.gtrade.registry import GTRADE_TARGETS
-from sis.venues.ostium.probe import OSTIUM_PRICES_ENDPOINT, probe_ostium_prices
+from sis.venues.ostium.probe import OSTIUM_PRICES_ENDPOINT, write_ostium_live_probe_outputs
 from sis.venues.ostium.registry import OSTIUM_TARGETS
 
 app = typer.Typer(no_args_is_help=True)
@@ -42,11 +42,17 @@ def probe_ostium(
 ) -> None:
     settings = get_settings()
     out = settings.data_dir / "registry/ostium_instrument_registry.json"
-    targets = probe_ostium_prices(endpoint=endpoint) if read_only_live else OSTIUM_TARGETS
+    if read_only_live:
+        targets, quotes = write_ostium_live_probe_outputs(
+            data_dir=settings.data_dir, endpoint=endpoint
+        )
+    else:
+        targets = OSTIUM_TARGETS
+        quotes = []
     write_json(out, [item.model_dump(mode="json") for item in targets])
     logger.info("written: {}", out)
     if read_only_live:
-        typer.echo("Ostium registry written from read-only Builder API price probe.")
+        typer.echo(f"Ostium registry and {len(quotes)} quote rows written from read-only probe.")
     else:
         typer.echo("Ostium registry written with requires_probe fields; pass --read-only-live to probe.")
 

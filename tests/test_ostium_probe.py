@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
+from pathlib import Path
 
 import httpx
 
-from sis.venues.ostium.probe import probe_ostium_prices
+from sis.venues.ostium.probe import build_ostium_quote_logs, probe_ostium_prices
 
 
 def test_probe_ostium_prices_resolves_targets_from_builder_prices() -> None:
@@ -61,3 +63,40 @@ def test_probe_ostium_prices_resolves_targets_from_builder_prices() -> None:
     assert by_symbol["XAU"].venue_symbol == "XAU-USD"
     assert by_symbol["XAU"].api_orderable is False
     assert "read-only" in by_symbol["XAU"].notes[0]
+
+
+def test_build_ostium_quote_logs_preserves_price_references() -> None:
+    payload = {
+        "prices": [
+            {
+                "feed_id": "feed-xau",
+                "pair": "XAU-USD",
+                "from": "XAU",
+                "to": "USD",
+                "bid": 3300.1,
+                "mid": 3300.2,
+                "ask": 3300.3,
+                "isMarketOpen": True,
+                "isDayTradingClosed": False,
+                "timestampSeconds": 1779415479,
+            }
+        ]
+    }
+
+    quotes = build_ostium_quote_logs(
+        payload,
+        ts_client=datetime.fromisoformat("2026-05-22T00:00:00+00:00"),
+        raw_payload_sha256="abc123",
+        raw_payload_ref=Path("data/raw/payloads/ostium/prices.json"),
+    )
+
+    assert len(quotes) == 1
+    quote = quotes[0]
+    assert quote.canonical_symbol == "XAU"
+    assert quote.venue_symbol == "XAU-USD"
+    assert quote.bid_price == 3300.1
+    assert quote.ask_price == 3300.3
+    assert quote.exec_buy_price == 3300.3
+    assert quote.exec_sell_price == 3300.1
+    assert quote.oracle_ts_ms == 1779415479000
+    assert quote.is_tradable is True
