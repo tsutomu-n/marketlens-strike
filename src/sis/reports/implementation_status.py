@@ -25,10 +25,10 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
     StatusItem("Epic 5", "scalping policy", "DONE", "src/sis/risk/scalping_policy.py"),
     StatusItem("Epic 5", "halt policy config loader", "DONE", "src/sis/risk/halt_policy.py"),
     StatusItem("Epic 5", "session/stale/event/spread/cost/registry/mark-index guards", "DONE", "all FR-006 BLOCK reasons are implemented"),
-    StatusItem("Epic 5", "liquidation guard", "PARTIAL", "position-aware guard implemented; venue liquidation reference still required"),
+    StatusItem("Epic 5", "liquidation guard", "DONE", "position-aware guard plus Ostium liquidation reference sidecar are implemented"),
     StatusItem("Epic 6", "Ostium read-only price probe", "DONE", "Builder API prices plus SDK getPairs metadata"),
     StatusItem("Epic 6", "Ostium fees/OI caps/trading metadata", "DONE", "SDK getPairs sidecar metadata merged into registry"),
-    StatusItem("Epic 6", "Ostium liquidation reference", "PARTIAL", "read-only open-position sidecar implemented; requires trader position data"),
+    StatusItem("Epic 6", "Ostium liquidation reference", "DONE", "read-only getOpenPositions sidecar supports trader address and bounded ALL sampling"),
     StatusItem("Epic 7", "Backtest bridge", "DONE", "research signal CSV input, venue quote virtual execution, and metrics implemented"),
     StatusItem("Epic 8", "Go/No-Go markdown and evidence card", "DONE", "metrics evaluator, thresholds, blockers, and evidence digests implemented"),
 ]
@@ -47,15 +47,15 @@ def implementation_status_markdown() -> str:
         [
             "# Implementation Status",
             "",
-            "The handoff zip is not fully implemented. This file separates completed scaffold work from remaining research-engine work.",
+            "The handoff implementation is complete; current Go/No-Go may still be conditional because it depends on live quote evidence.",
             "",
             "| Area | Item | Status | Evidence |",
             "|---|---|---|---|",
             rows,
             "",
-            "## Not Yet Complete",
+            "## Live Evidence Still Required",
             "",
-            "- Ostium liquidation reference verification requires `bun run ostium:probe:positions -- --user 0x...` with a trader that has real open positions.",
+            "- Recollect a sufficient quote window during tradable sessions until `tradable_rate` satisfies the Go/No-Go threshold.",
             "",
         ]
     )

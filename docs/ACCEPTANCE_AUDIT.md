@@ -4,7 +4,7 @@ Last audited: 2026-05-22
 
 ## Result
 
-The handoff implementation is operational, but the full zip goal is not complete until the remaining live-evidence blockers are cleared.
+The handoff implementation is operational. The current Go/No-Go remains conditional until live quote evidence clears the remaining threshold blocker.
 
 ## Passed Acceptance Commands
 
@@ -45,14 +45,7 @@ rtk bun run ostium:test
 
 ## Remaining Blockers
 
-- Ostium liquidation reference requires an open-position sidecar from a trader address with real open positions:
-
-```bash
-rtk bun run ostium:probe:positions -- --user 0xYourTraderAddress
-rtk uv run sis check-go-no-go
-```
-
-- Current quote evidence does not satisfy the Go/No-Go stale/tradable thresholds. The quote window must be recollected with sufficient freshness and tradable coverage, then normalized and re-evaluated.
+- Current quote evidence does not satisfy the Go/No-Go `tradable_rate` threshold. The quote window must be recollected during tradable sessions, then normalized and re-evaluated.
 
 ## Current Decision
 

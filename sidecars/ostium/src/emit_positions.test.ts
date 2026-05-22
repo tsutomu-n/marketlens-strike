@@ -51,3 +51,18 @@ test("buildPositionsLine emits read-only open positions envelope", () => {
   expect(line.position_count).toBe(1);
   expect(line.raw_payload_sha256).toBeString();
 });
+
+test("buildPositionsLine accepts ALL sentinel user", () => {
+  const line = buildPositionsLine({
+    tsClient: "2026-05-22T00:00:00.000Z",
+    user: "ALL",
+    response: {
+      pairPositions: [pairPosition],
+      marginSummary: { accountValue: "1000" },
+      time: 1779415479000
+    }
+  });
+
+  expect(line.user).toBe("ALL");
+  expect(line.position_count).toBe(1);
+});

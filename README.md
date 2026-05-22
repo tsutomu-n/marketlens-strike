@@ -22,6 +22,7 @@ uv run sis probe ostium
 uv run sis probe ostium --read-only-live
 uv run sis probe ostium --read-only-live --pairs-metadata-path data/raw/sidecar/ostium/pairs_YYYY-MM-DD.json
 bun run ostium:probe:positions -- --user 0xYourTraderAddress
+bun run ostium:probe:positions -- --user ALL --limit 20
 uv run sis check-timeframe 1m
 uv run sis normalize-quotes
 uv run sis build-cost-matrix
@@ -58,6 +59,8 @@ normalized quote JSONL under `data/raw/quotes/ostium/`.
 `bun run ostium:probe:positions -- --user 0xYourTraderAddress` is read-only and
 writes `data/raw/sidecar/ostium/positions_*.json`; Go/No-Go uses that artifact
 to verify Ostium `liquidationPx` references when real open positions exist.
+The SDK also supports `--user ALL --limit N` for a bounded read-only sample
+across all traders.
 
 Signal-driven backtests accept CSV files shaped like
 `templates/research_signals.template.csv`. When no signal CSV is present,

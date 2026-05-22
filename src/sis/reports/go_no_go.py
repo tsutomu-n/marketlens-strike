@@ -213,7 +213,6 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         blockers=blockers,
         next_actions=[
             "Collect a sufficient gTrade/Ostium quote window",
-            "Probe Ostium liquidation reference from read-only open position data",
             "Provide data/research/signals.csv to run signal-driven backtests instead of quote-only fallback",
         ],
     )

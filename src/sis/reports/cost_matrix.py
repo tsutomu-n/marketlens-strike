@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import polars as pl
@@ -299,13 +300,18 @@ def _quote_aggregates(quotes_path: Path) -> pl.DataFrame | None:
     if quotes.is_empty():
         return None
 
-    now_ms = int(__import__("time").time() * 1000)
+    ts_client_ms = [
+        int(datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp() * 1000)
+        for value in quotes["ts_client"].to_list()
+    ]
+    quotes = quotes.with_columns(pl.Series("_ts_client_ms", ts_client_ms))
     with_metrics = quotes.with_columns(
         pl.col("is_tradable").cast(pl.Float64).alias("_tradable"),
+    ).with_columns(
         (
             pl.when(pl.col("oracle_ts_ms").is_null())
             .then(None)
-            .otherwise(((pl.lit(now_ms) - pl.col("oracle_ts_ms")) > 3000).cast(pl.Float64))
+            .otherwise(((pl.col("_ts_client_ms") - pl.col("oracle_ts_ms")) > 3000).cast(pl.Float64))
         ).alias("_stale"),
     )
 

@@ -42,6 +42,42 @@ def test_build_cost_matrix_uses_normalized_quote_aggregates(tmp_path) -> None:
     assert spy["tradable_rate"] == 0.5
 
 
+def test_build_cost_matrix_stale_rate_uses_quote_capture_time(tmp_path) -> None:
+    quotes_path = tmp_path / "quotes.parquet"
+    out_path = tmp_path / "venue_cost_matrix.csv"
+    ts = datetime.fromisoformat("2026-05-22T00:00:00+00:00")
+    pl.DataFrame(
+        [
+            {
+                "ts_client": ts.isoformat(),
+                "venue": "ostium",
+                "canonical_symbol": "XAU",
+                "venue_symbol": "XAU-USD",
+                "spread_bps": 2.0,
+                "oracle_ts_ms": int(ts.timestamp() * 1000) - 1000,
+                "is_tradable": True,
+            },
+            {
+                "ts_client": ts.isoformat(),
+                "venue": "ostium",
+                "canonical_symbol": "XAU",
+                "venue_symbol": "XAU-USD",
+                "spread_bps": 2.0,
+                "oracle_ts_ms": int(ts.timestamp() * 1000) - 10_000,
+                "is_tradable": True,
+            },
+        ]
+    ).write_parquet(quotes_path)
+
+    build_cost_matrix_from_quotes(quotes_path, out_path)
+
+    matrix = pl.read_csv(out_path)
+    xau = matrix.filter((pl.col("venue") == "ostium") & (pl.col("symbol") == "XAU")).row(
+        0, named=True
+    )
+    assert xau["stale_rate"] == 0.5
+
+
 def test_build_cost_matrix_overlays_sidecar_and_registry_cost_metadata(tmp_path) -> None:
     quotes_path = tmp_path / "quotes.parquet"
     out_path = tmp_path / "venue_cost_matrix.csv"

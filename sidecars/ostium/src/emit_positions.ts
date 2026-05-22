@@ -22,13 +22,31 @@ function userFromArgs(): string | null {
   return process.env.OSTIUM_USER_ADDRESS ?? null;
 }
 
+function limitFromArgs(): number | undefined {
+  const limitFlagIndex = process.argv.findIndex((arg) => arg === "--limit");
+  const raw = limitFlagIndex >= 0
+    ? process.argv[limitFlagIndex + 1]
+    : process.argv.find((arg) => arg.startsWith("--limit="))?.slice("--limit=".length);
+  if (!raw) {
+    return undefined;
+  }
+  const limit = Number(raw);
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error("Ostium positions --limit must be a positive integer");
+  }
+  return limit;
+}
+
 function sanitizeUser(user: string): string {
   return user.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function normalizeUserAddress(user: string): `0x${string}` {
+function normalizeUser(user: string): `0x${string}` | "ALL" {
+  if (user === "ALL") {
+    return user;
+  }
   if (!/^0x[a-fA-F0-9]{40}$/.test(user)) {
-    throw new Error("Ostium user must be an EVM address like 0x...");
+    throw new Error("Ostium user must be an EVM address like 0x... or ALL");
   }
   return user as `0x${string}`;
 }
@@ -86,9 +104,10 @@ export async function main(): Promise<void> {
     throw new Error("Missing --user or OSTIUM_USER_ADDRESS for read-only open-position probe");
   }
 
+  const limit = limitFromArgs();
   const client = await OstiumClient.createReadOnly();
-  const userAddress = normalizeUserAddress(user);
-  const response = await client.getOpenPositions({ user: userAddress });
+  const normalizedUser = normalizeUser(user);
+  const response = await client.getOpenPositions({ user: normalizedUser, limit });
   const line = buildPositionsLine({ tsClient: new Date().toISOString(), user, response });
   const outPath = join(outDir, `positions_${sanitizeUser(user)}_${todayUtc()}.json`);
   await mkdir(dirname(outPath), { recursive: true });
