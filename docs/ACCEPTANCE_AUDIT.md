@@ -6,6 +6,14 @@ Last audited: 2026-05-22
 
 The handoff implementation is operational. The current Go/No-Go remains conditional until live quote evidence clears the remaining threshold blockers.
 
+## Latest Verification Snapshot
+
+- Latest full Python verification: `rtk uv run pytest` -> 38 passed.
+- Latest Python lint verification: `rtk uv run ruff check .` -> passed.
+- Latest sidecar verification: `rtk bun run gtrade:typecheck && rtk bun run gtrade:test && rtk bun run ostium:typecheck && rtk bun run ostium:test` -> passed.
+- Latest live-evidence refresh command chain: `rtk bun run gtrade:probe && rtk uv run sis log-quotes --venue gtrade --replace && rtk uv run sis normalize-quotes && rtk uv run sis build-cost-matrix && rtk uv run sis build-backtest && rtk uv run sis check-go-no-go && rtk uv run sis build-evidence-card`.
+- Latest Go/No-Go decision: `CONDITIONAL_GO`.
+
 ## Passed Acceptance Commands
 
 ```bash
@@ -48,6 +56,18 @@ rtk bun run ostium:test
 
 - Current quote evidence does not satisfy the Go/No-Go `stale_rate` threshold. gTrade rows now preserve the venue `lastRefreshed` timestamp as `oracle_ts_ms`, and the latest captured window is stale against the current threshold.
 - Current quote evidence does not satisfy the Go/No-Go `tradable_rate` threshold. The quote window must be recollected during tradable sessions, then normalized and re-evaluated.
+
+## Refresh Command
+
+```bash
+rtk bun run gtrade:probe
+rtk uv run sis log-quotes --venue gtrade --replace
+rtk uv run sis normalize-quotes
+rtk uv run sis build-cost-matrix
+rtk uv run sis build-backtest
+rtk uv run sis check-go-no-go
+rtk uv run sis build-evidence-card
+```
 
 ## Current Decision
 

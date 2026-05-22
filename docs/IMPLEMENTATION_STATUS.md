@@ -27,3 +27,15 @@ The handoff implementation is complete; current Go/No-Go may still be conditiona
 
 - Recollect a sufficient quote window with fresh venue timestamps until `stale_rate` satisfies the Go/No-Go threshold.
 - Recollect during tradable sessions until `tradable_rate` satisfies the Go/No-Go threshold.
+
+Use the replay-safe refresh path:
+
+```bash
+rtk bun run gtrade:probe
+rtk uv run sis log-quotes --venue gtrade --replace
+rtk uv run sis normalize-quotes
+rtk uv run sis build-cost-matrix
+rtk uv run sis build-backtest
+rtk uv run sis check-go-no-go
+rtk uv run sis build-evidence-card
+```

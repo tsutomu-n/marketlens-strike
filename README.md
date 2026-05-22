@@ -3,7 +3,7 @@
 Research-only venue probe for deciding whether `gTrade` and `Ostium` can support
 QQQ, SPY, and XAU swing research on 4h to 3d timeframes.
 
-This is not a trading bot. The initial implementation logs venue data, preserves
+This is not a trading bot. The implementation logs venue data, preserves
 raw payload references, builds cost/report artifacts, and blocks short-term
 scalping timeframes.
 
@@ -34,6 +34,26 @@ uv run sis check-go-no-go
 uv run sis build-evidence-card
 uv run sis implementation-status --write
 ```
+
+## Refresh Live Evidence
+
+Use `--replace` when replaying the current gTrade sidecar into the daily quote
+JSONL; ingestion and normalization are idempotent, but replacing the generated
+daily quote file avoids carrying rows produced by an older parser.
+
+```bash
+bun run gtrade:probe
+uv run sis log-quotes --venue gtrade --replace
+uv run sis normalize-quotes
+uv run sis build-cost-matrix
+uv run sis build-backtest
+uv run sis check-go-no-go
+uv run sis build-evidence-card
+```
+
+The current implementation is complete, but the latest Go/No-Go remains
+`CONDITIONAL_GO` until collected live evidence satisfies both `stale_rate` and
+`tradable_rate` thresholds.
 
 The gTrade sidecar lives in `sidecars/gtrade`:
 
