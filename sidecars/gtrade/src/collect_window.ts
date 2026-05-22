@@ -22,9 +22,9 @@ const defaultDeps: CollectWindowDeps = {
   now: Date.now,
 };
 
-function positiveFinite(value: number, name: string): number {
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error(`${name} must be a positive number`);
+function positiveInteger(value: number, name: string): number {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} must be a positive integer`);
   }
   return value;
 }
@@ -47,14 +47,14 @@ export function parseArgs(argv: string[]): CollectWindowArgs {
   }
 
   return {
-    durationMinutes: positiveFinite(durationMinutes, "--duration-minutes"),
-    metadataIntervalSeconds: positiveFinite(metadataIntervalSeconds, "--metadata-interval-seconds"),
+    durationMinutes: positiveInteger(durationMinutes, "--duration-minutes"),
+    metadataIntervalSeconds: positiveInteger(metadataIntervalSeconds, "--metadata-interval-seconds"),
   };
 }
 
 export async function collectWindow(args: CollectWindowArgs, deps: CollectWindowDeps = defaultDeps): Promise<void> {
-  const durationMinutes = positiveFinite(args.durationMinutes, "--duration-minutes");
-  const metadataIntervalSeconds = positiveFinite(args.metadataIntervalSeconds, "--metadata-interval-seconds");
+  const durationMinutes = positiveInteger(args.durationMinutes, "--duration-minutes");
+  const metadataIntervalSeconds = positiveInteger(args.metadataIntervalSeconds, "--metadata-interval-seconds");
   const stopAt = deps.now() + durationMinutes * 60_000;
 
   let pricingSettled = false;

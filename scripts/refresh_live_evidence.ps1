@@ -1,7 +1,7 @@
 param(
-  [ValidateRange(1, [int]::MaxValue)]
+  [ValidateRange(1, 2147483647)]
   [int]$DurationMinutes = 120,
-  [ValidateRange(1, [int]::MaxValue)]
+  [ValidateRange(1, 2147483647)]
   [int]$MetadataIntervalSeconds = 60
 )
 

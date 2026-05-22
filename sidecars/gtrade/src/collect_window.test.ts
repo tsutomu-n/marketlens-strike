@@ -2,9 +2,10 @@ import { expect, test } from "bun:test";
 import { collectWindow, parseArgs, type CollectWindowDeps } from "./collect_window.js";
 
 test("parseArgs rejects invalid collection durations", () => {
-  expect(() => parseArgs(["--duration-minutes", "0"])).toThrow("--duration-minutes must be a positive number");
+  expect(() => parseArgs(["--duration-minutes", "0"])).toThrow("--duration-minutes must be a positive integer");
+  expect(() => parseArgs(["--duration-minutes", "0.5"])).toThrow("--duration-minutes must be a positive integer");
   expect(() => parseArgs(["--metadata-interval-seconds", "NaN"])).toThrow(
-    "--metadata-interval-seconds must be a positive number",
+    "--metadata-interval-seconds must be a positive integer",
   );
 });
 
