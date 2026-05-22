@@ -16,7 +16,7 @@ OSTIUM_TARGETS: list[InstrumentSpec] = [
         execution_price_ref="bid_ask_or_price_after_impact",
         liquidation_price_ref="requires_probe",
         active=False,
-        notes=["resolve current symbol via SDK/REST"],
+        notes=["resolve current symbol via Builder API read-only price probe"],
     ),
     InstrumentSpec(
         venue=Venue.OSTIUM,
@@ -30,7 +30,7 @@ OSTIUM_TARGETS: list[InstrumentSpec] = [
         execution_price_ref="bid_ask_or_price_after_impact",
         liquidation_price_ref="requires_probe",
         active=False,
-        notes=["resolve current symbol via SDK/REST"],
+        notes=["resolve current symbol via Builder API read-only price probe"],
     ),
     InstrumentSpec(
         venue=Venue.OSTIUM,
@@ -44,7 +44,6 @@ OSTIUM_TARGETS: list[InstrumentSpec] = [
         execution_price_ref="bid_ask_or_price_after_impact",
         liquidation_price_ref="requires_probe",
         active=False,
-        notes=["resolve current symbol via SDK/REST"],
+        notes=["resolve current symbol via Builder API read-only price probe"],
     ),
 ]
-

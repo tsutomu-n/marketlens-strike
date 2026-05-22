@@ -15,6 +15,7 @@ from sis.storage.jsonl_store import write_json
 from sis.storage.normalize import normalize_quotes
 from sis.venues.gtrade.quotes import convert_sidecar_to_quote_logs, latest_sidecar_file
 from sis.venues.gtrade.registry import GTRADE_TARGETS
+from sis.venues.ostium.probe import OSTIUM_PRICES_ENDPOINT, probe_ostium_prices
 from sis.venues.ostium.registry import OSTIUM_TARGETS
 
 app = typer.Typer(no_args_is_help=True)
@@ -31,12 +32,23 @@ def probe_gtrade() -> None:
 
 
 @probe_app.command("ostium")
-def probe_ostium() -> None:
+def probe_ostium(
+    read_only_live: bool = typer.Option(
+        False,
+        "--read-only-live",
+        help="Fetch Ostium Builder API prices with a GET-only probe before writing the registry.",
+    ),
+    endpoint: str = typer.Option(OSTIUM_PRICES_ENDPOINT, "--endpoint", help="Ostium prices endpoint."),
+) -> None:
     settings = get_settings()
     out = settings.data_dir / "registry/ostium_instrument_registry.json"
-    write_json(out, [item.model_dump(mode="json") for item in OSTIUM_TARGETS])
+    targets = probe_ostium_prices(endpoint=endpoint) if read_only_live else OSTIUM_TARGETS
+    write_json(out, [item.model_dump(mode="json") for item in targets])
     logger.info("written: {}", out)
-    typer.echo("Ostium registry written with requires_probe fields; no live SDK call was made.")
+    if read_only_live:
+        typer.echo("Ostium registry written from read-only Builder API price probe.")
+    else:
+        typer.echo("Ostium registry written with requires_probe fields; pass --read-only-live to probe.")
 
 
 @app.command("log-quotes")
