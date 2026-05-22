@@ -1,5 +1,10 @@
-from sis.models import Decision, GoNoGoReport, VenueDecision
-from sis.reports.go_no_go import _decision_for_state, _threshold_result, write_go_no_go_markdown
+from sis.models import Decision, GoNoGoCriterion, GoNoGoReport, VenueDecision
+from sis.reports.go_no_go import (
+    _decision_for_state,
+    _threshold_result,
+    _venue_decision_from_checks,
+    write_go_no_go_markdown,
+)
 
 
 def test_threshold_result_requires_values_for_every_row() -> None:
@@ -76,3 +81,19 @@ def test_go_no_go_markdown_includes_venue_decisions(tmp_path) -> None:
     assert "## Venue Decisions" in text
     assert "| gtrade | GO |  |" in text
     assert "| ostium | CONDITIONAL_GO_DATA_READY | Liquidation reference complete |" in text
+
+
+def test_ostium_venue_decision_does_not_hide_live_window_failures() -> None:
+    decision = _venue_decision_from_checks(
+        "ostium",
+        [
+            GoNoGoCriterion(
+                criterion="stale_rate at or below threshold",
+                result="NO_GO",
+                evidence="cost matrix",
+            )
+        ],
+    )
+
+    assert decision.decision == Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW
+    assert decision.main_blocker == "stale_rate at or below threshold"

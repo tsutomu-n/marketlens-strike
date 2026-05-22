@@ -129,16 +129,19 @@ def _venue_decision_from_checks(venue: str, checks: list[GoNoGoCriterion]) -> Ve
     blocker = _first_blocker(checks)
     if blocker is None:
         return VenueDecision(venue=venue, decision=Decision.GO, main_blocker=None)
-    blocker_names = {item.criterion for item in checks if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "PARTIAL"}}
-    if venue == "ostium" and blocker_names.issubset(
-        {
-            "Ostium symbol resolved",
-            "Ostium fees/OI/rollover metadata complete",
-            "Liquidation reference complete",
-            "Venue cost matrix",
-            "Holding/rollover cost reproduced for target horizons",
-        }
-    ):
+    blocking_names = {
+        item.criterion
+        for item in checks
+        if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "NO_GO", "PARTIAL"}
+    }
+    data_readiness_blockers = {
+        "Ostium symbol resolved",
+        "Ostium fees/OI/rollover metadata complete",
+        "Liquidation reference complete",
+        "Venue cost matrix",
+        "Holding/rollover cost reproduced for target horizons",
+    }
+    if venue == "ostium" and blocking_names and blocking_names.issubset(data_readiness_blockers):
         return VenueDecision(venue=venue, decision=Decision.CONDITIONAL_GO_DATA_READY, main_blocker=blocker)
     if blocker in {"stale_rate at or below threshold", "tradable_rate at or above threshold"}:
         return VenueDecision(venue=venue, decision=Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW, main_blocker=blocker)
