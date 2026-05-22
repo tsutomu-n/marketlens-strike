@@ -33,6 +33,15 @@ PowerShell 環境では以下:
 ./scripts/refresh_live_evidence.ps1 -DurationMinutes 120 -MetadataIntervalSeconds 60
 ```
 
+指定時刻に開始したい場合:
+
+```bash
+bash scripts/schedule_live_evidence.sh 22:45 120 60
+```
+
+この scheduler は JST の `HH:MM` を受け取り、指定時刻が過ぎている場合は翌日の同時刻に回す。
+ログは `logs/live_evidence/live_evidence_YYYYMMDD_HHMM.log` に出力する。
+
 ## 実行内容
 
 1. `next-live-window` で QQQ / SPY / XAU の推奨収集枠を表示
