@@ -45,3 +45,20 @@ target-version = "py311"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sis"]
+
+[tool.pyrefly]
+project-includes = [
+  "src/**/*.py",
+  "tests/**/*.py",
+]
+
+project-excludes = [
+  "**/.venv/**",
+  "**/__pycache__/**",
+  "**/.tmp/**",
+  "**/_runs/**",
+  "**/htmlcov/**",
+  "**/dist/**",
+  "**/build/**",
+]
+
