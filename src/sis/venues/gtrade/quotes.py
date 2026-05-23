@@ -115,12 +115,56 @@ def convert_sidecar_to_quote_logs(sidecar_path: Path, out_path: Path, pricing_pa
         ts = datetime.fromisoformat(snapshot["ts_client"].replace("Z", "+00:00"))
         raw_hash = snapshot["raw_payload_sha256"]
         oracle_ts_ms = sidecar_oracle_ts_ms(snapshot)
-        for pair in snapshot.get("pairs", snapshot.get("targets", [])):
-            pair_index = pair.get("pair_index") or pair.get("pairIndex")
+        pairs_raw = snapshot.get("pairs")
+        if pairs_raw is None:
+            pairs_raw = snapshot.get("targets")
+        if pairs_raw is None:
+            pairs_raw = []
+
+        if not isinstance(pairs_raw, list):
+            raise TypeError("sidecar snapshot pairs/targets must be a list")
+
+        for pair in pairs_raw:
+            if not isinstance(pair, dict):
+                raise TypeError("sidecar snapshot pair must be an object")
+
+            pair_index_raw = pair.get("pair_index")
+            if pair_index_raw is None:
+                pair_index_raw = pair.get("pairIndex")
+            if pair_index_raw is not None and not isinstance(pair_index_raw, int):
+                raise TypeError("sidecar snapshot pair_index must be an int")
+            pair_index = pair_index_raw
+
+            asset_class_raw = pair.get("asset_class")
+            if asset_class_raw is None:
+                asset_class_raw = pair.get("assetClass")
+            if asset_class_raw is None:
+                asset_class = "unknown"
+            elif isinstance(asset_class_raw, str):
+                asset_class = asset_class_raw
+            else:
+                raise TypeError("sidecar snapshot asset_class must be a string")
+
+            canonical_symbol_raw = pair.get("canonical_symbol")
+            if canonical_symbol_raw is None:
+                canonical_symbol_raw = pair.get("canonicalSymbol")
+            if canonical_symbol_raw is None:
+                raise ValueError("sidecar snapshot canonical_symbol is required")
+            if not isinstance(canonical_symbol_raw, str):
+                raise TypeError("sidecar snapshot canonical_symbol must be a string")
+            canonical_symbol = canonical_symbol_raw
+
+            venue_symbol_raw = pair.get("venue_symbol")
+            if venue_symbol_raw is None:
+                venue_symbol_raw = pair.get("venueSymbol")
+            if venue_symbol_raw is None:
+                raise ValueError("sidecar snapshot venue_symbol is required")
+            if not isinstance(venue_symbol_raw, str):
+                raise TypeError("sidecar snapshot venue_symbol must be a string")
+            venue_symbol = venue_symbol_raw
+
             pricing_row = _closest_pricing_row(pair_index, ts, oracle_ts_ms, pricing_rows)
-            market_status, is_tradable = sidecar_market_status(
-                snapshot, pair.get("asset_class") or pair.get("assetClass") or "unknown"
-            )
+            market_status, is_tradable = sidecar_market_status(snapshot, asset_class)
             mark_price = pricing_row.get("mark_price") if pricing_row else None
             index_price = pricing_row.get("index_price") if pricing_row else None
             quote_oracle_ts_ms = (
@@ -130,8 +174,8 @@ def convert_sidecar_to_quote_logs(sidecar_path: Path, out_path: Path, pricing_pa
                 ts_client=ts,
                 venue=Venue.GTRADE,
                 chain=snapshot.get("network", "arbitrum"),
-                canonical_symbol=pair.get("canonical_symbol") or pair.get("canonicalSymbol"),
-                venue_symbol=pair.get("venue_symbol") or pair.get("venueSymbol"),
+                canonical_symbol=canonical_symbol,
+                venue_symbol=venue_symbol,
                 pair_index=pair_index,
                 mark_price=mark_price,
                 index_price=index_price,

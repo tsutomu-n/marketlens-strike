@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sis.models import MarketStatus, QuoteLog, Venue
 from sis.risk.halt_policy import CostContext, EventWindow, PositionContext, evaluate_halt_reasons
@@ -6,7 +6,8 @@ from sis.risk.halt_policy import CostContext, EventWindow, PositionContext, eval
 
 def _quote(**kwargs) -> QuoteLog:
     base = {
-        "ts_client": datetime.now(timezone.utc),
+        # Fixed weekday timestamp to keep default halt-policy tests deterministic.
+        "ts_client": datetime.fromisoformat("2026-05-22T14:00:00+00:00"),
         "venue": Venue.GTRADE,
         "canonical_symbol": "SPY",
         "venue_symbol": "SPY/USD",

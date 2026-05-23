@@ -38,3 +38,4 @@ logs/live_evidence/*.out
 *.log
 tmp/
 temp/
+.tmp/
