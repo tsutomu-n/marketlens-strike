@@ -63,5 +63,10 @@ sleep "${wait_seconds}"
 
 {
   printf '\n[%s] Scheduled live evidence run starting\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-  bash scripts/refresh_live_evidence.sh "${DURATION_MINUTES}" "${METADATA_INTERVAL_SECONDS}"
+  uv run python scripts/run_live_evidence.py \
+    --duration-minutes "${DURATION_MINUTES}" \
+    --metadata-interval-seconds "${METADATA_INTERVAL_SECONDS}" \
+    --run-id "${target_stamp}" \
+    --requested-schedule-jst "${target_display}" \
+    --log-path "${log_path}"
 } 2>&1 | tee -a "${log_path}"

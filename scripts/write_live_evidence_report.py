@@ -24,7 +24,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Wait for a live evidence run to finish, settle, and write markdown + HTML reports."
     )
-    parser.add_argument("--log-path", type=Path, required=True, help="Path to logs/live_evidence/live_evidence_*.log")
+    parser.add_argument("--log-path", type=Path, help="Path to logs/live_evidence/live_evidence_*.log")
+    parser.add_argument("--manifest-path", type=Path, help="Path to logs/live_evidence/manifests/live_evidence_*.json")
     parser.add_argument("--markdown-output-path", type=Path, help="AI-facing markdown output path.")
     parser.add_argument("--html-output-path", type=Path, help="Human-facing HTML output path.")
     parser.add_argument("--followup-output-path", type=Path, help="Auto-generated next-work markdown path.")
@@ -38,12 +39,20 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    markdown_output_path = args.markdown_output_path or default_markdown_output_path(args.log_path)
-    html_output_path = args.html_output_path or default_html_output_path(args.log_path)
-    followup_output_path = args.followup_output_path or default_followup_output_path(args.log_path)
+    if args.log_path is None and args.manifest_path is None:
+        raise SystemExit("Either --log-path or --manifest-path is required.")
+    path_source = args.log_path or args.manifest_path
+    markdown_output_path = args.markdown_output_path or default_markdown_output_path(path_source)
+    html_output_path = args.html_output_path or default_html_output_path(path_source)
+    followup_output_path = args.followup_output_path or default_followup_output_path(path_source)
     status = None
     if args.wait:
-        status = wait_for_completion(args.log_path, poll_seconds=args.poll_seconds, timeout_seconds=args.timeout_seconds)
+        status = wait_for_completion(
+            args.log_path,
+            manifest_path=args.manifest_path,
+            poll_seconds=args.poll_seconds,
+            timeout_seconds=args.timeout_seconds,
+        )
         if args.settle_seconds > 0:
             import time
 
@@ -52,6 +61,7 @@ def main() -> int:
         data_dir=args.data_dir,
         log_path=args.log_path,
         output_path=markdown_output_path,
+        manifest_path=args.manifest_path,
         status=status,
     )
     markdown_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -65,7 +75,7 @@ def main() -> int:
     print(f"written_followup: {followup_output_path}")
     print(f"status: {data.status}")
     print(f"decision: {data.decision}")
-    return 0 if data.status == "completed" else 2
+    return 0 if data.status in {"completed", "completed_with_retries"} else 2
 
 
 if __name__ == "__main__":

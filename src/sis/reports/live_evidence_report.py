@@ -2,18 +2,19 @@ from __future__ import annotations
 
 import csv
 import html
+import json
 import subprocess
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal
+from typing import Any
 
 from sis.reports.quote_diagnostics import QuoteDiagnostic, build_quote_diagnostics
 from sis.storage.jsonl_store import read_json
 from sis.validation.artifacts import ValidationSummary, validate_artifacts
 
-RunStatus = Literal["running", "completed", "failed"]
+RunStatus = str
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,7 @@ class LiveEvidenceArtifacts:
 class LiveEvidenceReportData:
     status: RunStatus
     log_path: Path
+    manifest_path: Path | None
     output_path: Path
     started_at_utc: str | None
     finished_at_utc: str | None
@@ -59,6 +61,25 @@ def parse_run_status(log_path: Path) -> RunStatus:
     return "running"
 
 
+def parse_manifest_status(manifest_path: Path | None) -> RunStatus | None:
+    if manifest_path is None or not manifest_path.exists():
+        return None
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    status = payload.get("status")
+    if isinstance(status, str):
+        return status
+    return None
+
+
+def load_manifest_payload(manifest_path: Path | None) -> dict[str, Any]:
+    if manifest_path is None or not manifest_path.exists():
+        return {}
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if isinstance(payload, dict):
+        return payload
+    return {}
+
+
 def refresh_process_running() -> bool:
     result = subprocess.run(
         ["ps", "-ef"],
@@ -75,13 +96,22 @@ def refresh_process_running() -> bool:
     return any(needle in haystack for needle in needles)
 
 
-def wait_for_completion(log_path: Path, poll_seconds: int = 15, timeout_seconds: int = 3 * 60 * 60) -> RunStatus:
+def wait_for_completion(
+    log_path: Path | None,
+    *,
+    manifest_path: Path | None = None,
+    poll_seconds: int = 15,
+    timeout_seconds: int = 3 * 60 * 60,
+) -> RunStatus:
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
-        status = parse_run_status(log_path)
+        manifest_status = parse_manifest_status(manifest_path)
+        if manifest_status and manifest_status != "running":
+            return manifest_status
+        status = parse_run_status(log_path) if log_path is not None else "running"
         if status != "running":
             return status
-        if not refresh_process_running() and log_path.exists():
+        if not refresh_process_running() and log_path is not None and log_path.exists():
             return "failed"
         time.sleep(poll_seconds)
     return "failed"
@@ -135,46 +165,70 @@ def _started_finished(log_lines: list[str]) -> tuple[str | None, str | None]:
 def build_live_evidence_report_data(
     *,
     data_dir: Path,
-    log_path: Path,
+    log_path: Path | None,
     output_path: Path,
+    manifest_path: Path | None = None,
     status: RunStatus | None = None,
 ) -> LiveEvidenceReportData:
+    manifest = load_manifest_payload(manifest_path)
+    artifact_paths = manifest.get("artifacts", {}) if isinstance(manifest.get("artifacts"), dict) else {}
     today_utc = datetime.now(timezone.utc).date().isoformat()
-    evidence_card = _latest_evidence_card(data_dir)
+    evidence_card_path = artifact_paths.get("evidence_card")
+    evidence_card = Path(evidence_card_path) if isinstance(evidence_card_path, str) and evidence_card_path else _latest_evidence_card(data_dir)
     artifacts = LiveEvidenceArtifacts(
-        sidecar_metadata=data_dir / f"raw/sidecar/gtrade/{today_utc}.jsonl",
-        sidecar_pricing=data_dir / f"raw/sidecar/gtrade-pricing/{today_utc}.jsonl",
-        raw_quotes=data_dir / f"raw/quotes/gtrade/{today_utc}.jsonl",
-        normalized_quotes=data_dir / "normalized/quotes.parquet",
-        cost_matrix=data_dir / "research/venue_cost_matrix.csv",
-        backtest_metrics=data_dir / "research/backtest_metrics.json",
-        go_no_go_report=data_dir / "research/go_no_go_report.md",
+        sidecar_metadata=Path(artifact_paths.get("sidecar_metadata", data_dir / f"raw/sidecar/gtrade/{today_utc}.jsonl")),
+        sidecar_pricing=Path(artifact_paths.get("sidecar_pricing", data_dir / f"raw/sidecar/gtrade-pricing/{today_utc}.jsonl")),
+        raw_quotes=Path(artifact_paths.get("raw_quotes", data_dir / f"raw/quotes/gtrade/{today_utc}.jsonl")),
+        normalized_quotes=Path(artifact_paths.get("normalized_quotes", data_dir / "normalized/quotes.parquet")),
+        cost_matrix=Path(artifact_paths.get("cost_matrix", data_dir / "research/venue_cost_matrix.csv")),
+        backtest_metrics=Path(artifact_paths.get("backtest_metrics", data_dir / "research/backtest_metrics.json")),
+        go_no_go_report=Path(artifact_paths.get("go_no_go_report", data_dir / "research/go_no_go_report.md")),
         evidence_card=evidence_card,
     )
-    resolved_status = status or parse_run_status(log_path)
+    manifest_status = parse_manifest_status(manifest_path)
+    resolved_status = status or manifest_status or (parse_run_status(log_path) if log_path is not None else "running")
     evidence_payload = read_json(evidence_card) if evidence_card and evidence_card.exists() else {}
     venue_decisions = evidence_payload.get("venue_decisions", []) if isinstance(evidence_payload, dict) else []
-    blockers = evidence_payload.get("blockers", []) if isinstance(evidence_payload, dict) else []
-    next_actions = evidence_payload.get("next_actions", []) if isinstance(evidence_payload, dict) else []
-    decision = evidence_payload.get("decision") if isinstance(evidence_payload, dict) else None
+    blockers = manifest.get("blockers", []) if isinstance(manifest.get("blockers"), list) else []
+    next_actions = manifest.get("next_actions", []) if isinstance(manifest.get("next_actions"), list) else []
+    if not blockers and isinstance(evidence_payload, dict):
+        blockers = evidence_payload.get("blockers", [])
+    if not next_actions and isinstance(evidence_payload, dict):
+        next_actions = evidence_payload.get("next_actions", [])
+    decision = manifest.get("decision") if isinstance(manifest.get("decision"), str) else None
+    if decision is None and isinstance(evidence_payload, dict):
+        decision = evidence_payload.get("decision")
     diagnostics = build_quote_diagnostics(
         data_dir / "raw/quotes",
         venue="gtrade",
         stale_thresholds_ms={"gtrade": 3000, "ostium": 5000},
     )
+    if not diagnostics and isinstance(manifest.get("diagnostics"), list):
+        diagnostics = []
+        for item in manifest["diagnostics"]:
+            if not isinstance(item, dict):
+                continue
+            try:
+                diagnostics.append(QuoteDiagnostic(**item))
+            except TypeError:
+                continue
     cost_rows = _load_cost_rows(artifacts.cost_matrix)
     backtest_metrics = _load_backtest_metrics(artifacts.backtest_metrics)
     validation = validate_artifacts(data_dir, Path("schemas"), strict=False)
-    log_lines = log_path.read_text(encoding="utf-8").splitlines() if log_path.exists() else []
+    log_lines = log_path.read_text(encoding="utf-8").splitlines() if log_path is not None and log_path.exists() else []
     started_at_utc, finished_at_utc = _started_finished(log_lines)
+    started_at_utc = manifest.get("started_at_utc") or started_at_utc
+    finished_at_utc = manifest.get("finished_at_utc") or finished_at_utc
+    manifest_row_counts = manifest.get("row_counts", {}) if isinstance(manifest.get("row_counts"), dict) else {}
     row_counts = {
-        "sidecar_metadata": _count_jsonl_rows(artifacts.sidecar_metadata),
-        "sidecar_pricing": _count_jsonl_rows(artifacts.sidecar_pricing),
-        "raw_quotes": _count_jsonl_rows(artifacts.raw_quotes),
+        "sidecar_metadata": int(manifest_row_counts.get("sidecar_metadata", _count_jsonl_rows(artifacts.sidecar_metadata))),
+        "sidecar_pricing": int(manifest_row_counts.get("sidecar_pricing", _count_jsonl_rows(artifacts.sidecar_pricing))),
+        "raw_quotes": int(manifest_row_counts.get("raw_quotes", _count_jsonl_rows(artifacts.raw_quotes))),
     }
     return LiveEvidenceReportData(
         status=resolved_status,
-        log_path=log_path,
+        log_path=log_path or Path(""),
+        manifest_path=manifest_path,
         output_path=output_path,
         started_at_utc=started_at_utc,
         finished_at_utc=finished_at_utc,
@@ -203,6 +257,7 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
     lines.append(f"- finished_at_utc: `{data.finished_at_utc}`")
     lines.append(f"- decision: `{data.decision}`")
     lines.append(f"- log_path: `{data.log_path}`")
+    lines.append(f"- manifest_path: `{data.manifest_path}`")
     lines.append("")
     lines.append("## Artifact Summary")
     lines.append("")
@@ -463,6 +518,7 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
 
 
 def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
+    path_source = data.log_path if str(data.log_path) not in {"", "."} else (data.manifest_path or data.log_path)
     lines = [
         "# Live Evidence Follow-up",
         "",
@@ -471,15 +527,20 @@ def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
         f"- run_status: `{data.status}`",
         f"- decision: `{data.decision}`",
         f"- markdown_report: `{data.output_path}`",
-        f"- html_report: `{default_html_output_path(data.log_path)}`",
+        f"- html_report: `{default_html_output_path(path_source)}`",
+        f"- manifest_path: `{data.manifest_path}`",
         "",
         "## Immediate Next Work",
         "",
     ]
     if data.status == "running":
         lines.append("- collection is still running; wait for terminal status before touching downstream artifacts")
-    elif data.status == "failed":
+    elif data.status in {"failed", "failed_preflight", "failed_collection"}:
         lines.append("- inspect the failure point in the log tail and fix the first blocking error before rerunning")
+    elif data.status == "partial_failed":
+        lines.append("- inspect the failed step and rerun after fixing the recorded blocker; raw data and diagnostics are already available")
+    elif data.status == "completed_with_retries":
+        lines.append("- review the retried steps and remove the underlying instability before the next live run")
     elif data.next_actions:
         lines.extend(f"- {item}" for item in data.next_actions)
     else:

@@ -22,28 +22,32 @@ uv run sis next-live-window --venue gtrade --symbol XAU
 ## 実行
 
 ```bash
-bash scripts/refresh_live_evidence.sh 120 60
+uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-interval-seconds 60
 ```
 
-引数:
-- 第1引数: 取得分数（デフォルト 120）
-- 第2引数: metadata 間隔秒（デフォルト 60）
-
-option:
+主要 option:
+- `--duration-minutes`: 取得分数（デフォルト 120）
+- `--metadata-interval-seconds`: metadata 間隔秒（デフォルト 60）
 - `--dry-run`: preflight だけ表示して終了する
 - `--force`: 推奨 live window 外でも収集を続行する
+- `--run-id`: run 識別子を固定したい時に使う
+- `--manifest-path`: manifest JSON の出力先を固定したい時に使う
+
+互換 wrapper:
+- `bash scripts/refresh_live_evidence.sh ...`
+- `./scripts/refresh_live_evidence.ps1 ...`
 
 例:
 
 ```bash
-bash scripts/refresh_live_evidence.sh --dry-run
-bash scripts/refresh_live_evidence.sh 120 60 --force
+uv run python scripts/run_live_evidence.py --dry-run
+uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-interval-seconds 60 --force
 ```
 
 PowerShell 環境では以下:
 
 ```powershell
-./scripts/refresh_live_evidence.ps1 -DurationMinutes 120 -MetadataIntervalSeconds 60
+./scripts/refresh_live_evidence.ps1 --duration-minutes 120 --metadata-interval-seconds 60
 ```
 
 指定時刻に開始したい場合:
@@ -65,7 +69,7 @@ uv run python scripts/plan_live_evidence_run.py --schedule
 - `YYYY-MM-DDTHH:MM`: その日時に一度だけ待機し、過去日時は拒否する
 
 `plan_live_evidence_run.py` は `QQQ` / `SPY` / `XAU` の共通推奨開始時刻を計算し、週末や市場休場日でも「次に3銘柄まとめて取るべき時刻」を出す。
-ログは `logs/live_evidence/live_evidence_YYYYMMDD_HHMM.log` に出力する。
+ログは `logs/live_evidence/live_evidence_YYYYMMDD_HHMM.log`、manifest は `logs/live_evidence/manifests/live_evidence_*.json` に出力する。
 
 ## 実行内容
 
@@ -79,6 +83,7 @@ uv run python scripts/plan_live_evidence_run.py --schedule
 8. `uv run sis check-go-no-go`
 9. `uv run sis build-evidence-card`
 10. `uv run sis validate-artifacts --strict`
+11. 終了後 180 秒待って Markdown / HTML / follow-up report を自動生成
 
 実際の runner は次の安全策を入れている:
 
@@ -86,10 +91,13 @@ uv run python scripts/plan_live_evidence_run.py --schedule
 2. `next-live-window` による `QQQ` / `SPY` / `XAU` の推奨枠表示
 3. `--dry-run` なら収集せず終了
 4. 推奨枠外では `--force` なしなら停止
-5. sidecar metadata / pricing の増分行数チェック
-6. `log-quotes --replace` 後の raw quote 行数チェック
-7. `diagnose-quotes --venue gtrade --symbol ...` を symbol 別に実行
-8. 最後に artifact path と decision の summary を表示
+5. 同時実行を file lock で拒否
+6. sidecar metadata / pricing の増分行数チェック
+7. 軽微な収集不足や一時失敗には限定 retry を行う
+8. `log-quotes --replace` 後の raw quote 行数チェック
+9. `diagnose-quotes --venue gtrade --symbol ...` を symbol 別に実行
+10. run manifest に step status / retry / counts / failure reason を記録
+11. 最後に artifact path と decision の summary を表示
 
 ## 生成物
 
@@ -101,6 +109,10 @@ uv run python scripts/plan_live_evidence_run.py --schedule
 - `data/research/backtest_metrics.json`
 - `data/research/go_no_go_report.md`
 - `data/evidence/evidence_card_*.json`
+- `logs/live_evidence/manifests/live_evidence_*.json`
+- `docs/live_evidence_reports/live_evidence_report_*.md`
+- `docs/live_evidence_reports/live_evidence_report_*.html`
+- `docs/live_evidence_reports/live_evidence_followup_*.md`
 
 ## 判定
 
@@ -122,5 +134,8 @@ uv run python scripts/plan_live_evidence_run.py --schedule
 - `Insufficient gTrade metadata/pricing rows` で止まる:
   - websocket / backend 接続状態を確認
   - 収集時間と metadata 間隔が極端でないか確認
+- `partial_failed`:
+  - manifest の failed step と retry 回数を確認
+  - raw / diagnostics / follow-up を見て失敗箇所だけ修正して再実行
 - schema違反:
   - `uv run sis validate-artifacts --strict` の指摘パスを修正して再実行

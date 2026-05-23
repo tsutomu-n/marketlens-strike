@@ -38,6 +38,7 @@ def test_build_and_render_live_evidence_report(tmp_path) -> None:
     today = datetime.now(timezone.utc).date().isoformat()
     data_dir = tmp_path / "data"
     log_path = tmp_path / "logs/live_evidence/live_evidence_20260522_2308.log"
+    manifest_path = tmp_path / "logs/live_evidence/manifests/live_evidence_20260522_2308.json"
     output_path = tmp_path / "docs/live_evidence_reports/report.md"
 
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -141,11 +142,40 @@ def test_build_and_render_live_evidence_report(tmp_path) -> None:
             "next_actions": ["none"],
         },
     )
+    _write_json_pretty(
+        manifest_path,
+        {
+            "run_id": "20260522_2308",
+            "status": "completed",
+            "started_at_utc": "2026-05-22T14:08:00Z",
+            "finished_at_utc": "2026-05-22T16:08:30Z",
+            "data_dir": str(data_dir),
+            "artifacts": {
+                "sidecar_metadata": str(data_dir / f"raw/sidecar/gtrade/{today}.jsonl"),
+                "sidecar_pricing": str(data_dir / f"raw/sidecar/gtrade-pricing/{today}.jsonl"),
+                "raw_quotes": str(data_dir / f"raw/quotes/gtrade/{today}.jsonl"),
+                "normalized_quotes": str(data_dir / "normalized/quotes.parquet"),
+                "cost_matrix": str(data_dir / "research/venue_cost_matrix.csv"),
+                "backtest_metrics": str(data_dir / "research/backtest_metrics.json"),
+                "go_no_go_report": str(data_dir / "research/go_no_go_report.md"),
+                "evidence_card": str(data_dir / "evidence/evidence_card_20260522_230800.json"),
+            },
+            "row_counts": {
+                "sidecar_metadata": 1,
+                "sidecar_pricing": 1,
+                "raw_quotes": 1,
+            },
+            "decision": "GO",
+            "blockers": [],
+            "next_actions": ["none"],
+        },
+    )
 
     data = build_live_evidence_report_data(
         data_dir=data_dir,
         log_path=log_path,
         output_path=output_path,
+        manifest_path=manifest_path,
         status="completed",
     )
     text = render_live_evidence_report(data)
@@ -165,10 +195,63 @@ def test_build_and_render_live_evidence_report(tmp_path) -> None:
     assert "- none" in followup_text
 
 
+def test_manifest_status_overrides_failed_log(tmp_path) -> None:
+    today = datetime.now(timezone.utc).date().isoformat()
+    data_dir = tmp_path / "data"
+    log_path = tmp_path / "logs/live_evidence/live_evidence_20260522_2308.log"
+    manifest_path = tmp_path / "logs/live_evidence/manifests/live_evidence_20260522_2308.json"
+    output_path = tmp_path / "docs/live_evidence_reports/report.md"
+
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_text("ERROR:\nold failed log\n", encoding="utf-8")
+    (data_dir / f"raw/quotes/gtrade/{today}.jsonl").parent.mkdir(parents=True, exist_ok=True)
+    (data_dir / f"raw/quotes/gtrade/{today}.jsonl").write_text(
+        '{"ts_client":"2026-05-22T14:08:01+00:00","venue":"gtrade","canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"mark_price":100.0,"index_price":100.0,"market_status":"open","is_tradable":true,"source":"test","raw_payload_sha256":"abc","spread_bps":2.0}\n',
+        encoding="utf-8",
+    )
+    _write_json_pretty(
+        manifest_path,
+        {
+            "run_id": "20260522_2308",
+            "status": "completed_with_retries",
+            "started_at_utc": "2026-05-22T14:08:00Z",
+            "finished_at_utc": "2026-05-22T16:08:30Z",
+            "data_dir": str(data_dir),
+            "artifacts": {
+                "sidecar_metadata": str(data_dir / f"raw/sidecar/gtrade/{today}.jsonl"),
+                "sidecar_pricing": str(data_dir / f"raw/sidecar/gtrade-pricing/{today}.jsonl"),
+                "raw_quotes": str(data_dir / f"raw/quotes/gtrade/{today}.jsonl"),
+            },
+            "row_counts": {"sidecar_metadata": 0, "sidecar_pricing": 0, "raw_quotes": 1},
+            "decision": "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST",
+            "next_actions": ["review retried steps"],
+        },
+    )
+
+    data = build_live_evidence_report_data(
+        data_dir=data_dir,
+        log_path=log_path,
+        manifest_path=manifest_path,
+        output_path=output_path,
+    )
+
+    assert data.status == "completed_with_retries"
+    assert data.decision == "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST"
+
+
 def test_default_output_paths_use_log_stamp() -> None:
     md_path = default_markdown_output_path(Path("logs/live_evidence/live_evidence_20260522_2308.log"))
     html_path = default_html_output_path(Path("logs/live_evidence/live_evidence_20260522_2308.log"))
     followup_path = default_followup_output_path(Path("logs/live_evidence/live_evidence_20260522_2308.log"))
+    assert md_path == Path("docs/live_evidence_reports/live_evidence_report_20260522_2308.md")
+    assert html_path == Path("docs/live_evidence_reports/live_evidence_report_20260522_2308.html")
+    assert followup_path == Path("docs/live_evidence_reports/live_evidence_followup_20260522_2308.md")
+
+
+def test_default_output_paths_use_manifest_stamp() -> None:
+    md_path = default_markdown_output_path(Path("logs/live_evidence/manifests/live_evidence_20260522_2308.json"))
+    html_path = default_html_output_path(Path("logs/live_evidence/manifests/live_evidence_20260522_2308.json"))
+    followup_path = default_followup_output_path(Path("logs/live_evidence/manifests/live_evidence_20260522_2308.json"))
     assert md_path == Path("docs/live_evidence_reports/live_evidence_report_20260522_2308.md")
     assert html_path == Path("docs/live_evidence_reports/live_evidence_report_20260522_2308.html")
     assert followup_path == Path("docs/live_evidence_reports/live_evidence_followup_20260522_2308.md")
