@@ -43,7 +43,7 @@ def normalize_quotes(raw_root: Path, parquet_path: Path, duckdb_path: Path) -> i
         row.pop("raw_payload", None)
         rows.append(row)
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
-    frame = pl.DataFrame(rows)
+    frame = pl.from_dicts(rows, infer_schema_length=None)
     frame.write_parquet(parquet_path)
 
     duckdb_path.parent.mkdir(parents=True, exist_ok=True)
