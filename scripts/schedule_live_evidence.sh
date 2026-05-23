@@ -12,11 +12,6 @@ is_positive_int() {
   [[ "$1" =~ ^[1-9][0-9]*$ ]]
 }
 
-if [[ ! "${TARGET_TIME_JST}" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then
-  echo "Target time must be HH:MM in JST, for example 22:45: ${TARGET_TIME_JST}" >&2
-  exit 2
-fi
-
 if ! is_positive_int "${DURATION_MINUTES}"; then
   echo "Duration minutes must be a positive integer: ${DURATION_MINUTES}" >&2
   exit 2
@@ -28,11 +23,23 @@ if ! is_positive_int "${METADATA_INTERVAL_SECONDS}"; then
 fi
 
 now_epoch="$(TZ=Asia/Tokyo date +%s)"
-today_jst="$(TZ=Asia/Tokyo date +%F)"
-target_epoch="$(TZ=Asia/Tokyo date -d "${today_jst} ${TARGET_TIME_JST}:00" +%s)"
 
-if (( target_epoch <= now_epoch )); then
-  target_epoch=$((target_epoch + 86400))
+if [[ "${TARGET_TIME_JST}" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then
+  today_jst="$(TZ=Asia/Tokyo date +%F)"
+  target_epoch="$(TZ=Asia/Tokyo date -d "${today_jst} ${TARGET_TIME_JST}:00" +%s)"
+  if (( target_epoch <= now_epoch )); then
+    target_epoch=$((target_epoch + 86400))
+  fi
+elif [[ "${TARGET_TIME_JST}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}[T\ ][0-9]{2}:[0-9]{2}(:[0-9]{2})?$ ]]; then
+  normalized_target="${TARGET_TIME_JST/T/ }"
+  target_epoch="$(TZ=Asia/Tokyo date -d "${normalized_target}" +%s)"
+  if (( target_epoch <= now_epoch )); then
+    echo "Absolute JST target must be in the future: ${TARGET_TIME_JST}" >&2
+    exit 2
+  fi
+else
+  echo "Target time must be HH:MM or YYYY-MM-DDTHH:MM in JST: ${TARGET_TIME_JST}" >&2
+  exit 2
 fi
 
 target_stamp="$(TZ=Asia/Tokyo date -d "@${target_epoch}" '+%Y%m%d_%H%M')"

@@ -52,7 +52,19 @@ PowerShell 環境では以下:
 bash scripts/schedule_live_evidence.sh 22:45 120 60
 ```
 
-この scheduler は JST の `HH:MM` を受け取り、指定時刻が過ぎている場合は翌日の同時刻に回す。
+日付つきの絶対指定もできる:
+
+```bash
+bash scripts/schedule_live_evidence.sh 2026-05-26T22:45 120 120
+uv run python scripts/plan_live_evidence_run.py
+uv run python scripts/plan_live_evidence_run.py --schedule
+```
+
+この scheduler は JST の `HH:MM` または `YYYY-MM-DDTHH:MM` を受け取る。
+- `HH:MM`: 指定時刻が過ぎている場合は翌日の同時刻に回す
+- `YYYY-MM-DDTHH:MM`: その日時に一度だけ待機し、過去日時は拒否する
+
+`plan_live_evidence_run.py` は `QQQ` / `SPY` / `XAU` の共通推奨開始時刻を計算し、週末や市場休場日でも「次に3銘柄まとめて取るべき時刻」を出す。
 ログは `logs/live_evidence/live_evidence_YYYYMMDD_HHMM.log` に出力する。
 
 ## 実行内容
