@@ -26,7 +26,7 @@ jobs:
         sidecar: [gtrade, ostium]
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v1
       - name: Install sidecar dependencies
         working-directory: sidecars/${{ matrix.sidecar }}
         run: bun install
