@@ -24,6 +24,10 @@ The handoff implementation is complete; current Go/No-Go may still be conditiona
 | Epic 8 | Go/No-Go markdown and evidence card | DONE | metrics evaluator, thresholds, blockers, and evidence digests implemented |
 | Epic 9 | Research layer foundation | DONE | src/sis/research/* plus ingest/build/check CLI commands and reproducible research artifacts |
 | Epic 10 | Decision engine foundation | DONE | src/sis/core/*, src/sis/risk/risk_gate.py, backtest decision logs, and decision summary artifacts |
+| Epic 11 | Paper trading foundation | DONE | src/sis/paper/* provides virtual fills, portfolio state updates, parquet writers, and daily report generation |
+| Epic 12 | Execution adapter foundation | DONE | src/sis/execution/* provides read-only adapter interfaces, order estimates, and health checks |
+| Epic 13 | State and ops foundation | DONE | src/sis/state/* and src/sis/ops/* provide reconciliation, sqlite state storage, kill switch, healthcheck, and limit checks |
+| Epic 14 | Stateful paper run pipeline | DONE | paper-step and paper-report produce orders/fills/positions/daily_pnl/report artifacts and persist paper state in sqlite |
 
 ## Live Evidence Still Required
 

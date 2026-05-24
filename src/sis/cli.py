@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
+import polars as pl
 import typer
 from loguru import logger
 
@@ -12,6 +13,10 @@ from sis.backtest.bridge import (
     write_backtest_report,
 )
 from sis.market_calendar import market_session_window
+from sis.paper.fills import PaperFill
+from sis.paper.portfolio import PaperPosition
+from sis.paper.report import build_daily_paper_report
+from sis.paper.runner import run_paper_step
 from sis.research.event_calendar import build_event_calendar
 from sis.research.feature_panel import build_feature_panel
 from sis.research.macro_ingest import build_macro_panel
@@ -188,6 +193,58 @@ def check_research_quality_cmd() -> None:
     settings = get_settings()
     out = build_research_quality_report(settings.data_dir)
     logger.info("written: {}", out)
+
+
+@app.command("paper-step")
+def paper_step_cmd(
+    state_path: Path | None = typer.Option(
+        None,
+        "--state-path",
+        help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
+    ),
+    signals_path: Path | None = typer.Option(
+        None,
+        "--signals-path",
+        help="Optional signal CSV path. Defaults to data/research/signals.csv.",
+    ),
+) -> None:
+    settings = get_settings()
+    summary = run_paper_step(
+        settings.data_dir,
+        state_path=state_path or (settings.data_dir / "state/marketlens.sqlite"),
+        signals_path=signals_path,
+    )
+    logger.info("written: {}", summary.orders_path)
+    logger.info("written: {}", summary.fills_path)
+    logger.info("written: {}", summary.positions_path)
+    logger.info("written: {}", summary.daily_pnl_path)
+    logger.info("written: {}", summary.report_path)
+    typer.echo(f"orders={summary.orders_count}")
+    typer.echo(f"fills={summary.fills_count}")
+    typer.echo(f"open_positions={summary.open_positions}")
+    typer.echo(f"realized_pnl={summary.realized_pnl}")
+
+
+@app.command("paper-report")
+def paper_report_cmd() -> None:
+    settings = get_settings()
+    fills_path = settings.data_dir / "paper/fills.parquet"
+    positions_path = settings.data_dir / "paper/positions.parquet"
+    if not fills_path.exists():
+        typer.echo(f"Paper fills parquet not found: {fills_path}")
+        raise typer.Exit(code=2)
+    fills_frame = pl.read_parquet(fills_path)
+    positions_frame = pl.read_parquet(positions_path) if positions_path.exists() else pl.DataFrame()
+    fills = fills_frame.to_dicts()
+    positions = positions_frame.to_dicts()
+    out = settings.data_dir / "reports/daily_paper_report.md"
+    text = build_daily_paper_report(
+        fills=[PaperFill.model_validate(item) for item in fills],
+        positions=[PaperPosition.model_validate(item) for item in positions],
+        out_path=out,
+    )
+    logger.info("written: {}", out)
+    typer.echo(text)
 
 
 @app.command("build-backtest")

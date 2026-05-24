@@ -65,6 +65,8 @@ uv run sis build-signals
 uv run sis check-research-quality
 uv run sis build-backtest
 uv run sis build-backtest --signals-path data/research/signals.csv
+uv run sis paper-step
+uv run sis paper-report
 uv run sis check-go-no-go
 uv run sis build-evidence-card
 uv run sis implementation-status --write
