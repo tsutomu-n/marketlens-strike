@@ -46,6 +46,7 @@ def evaluate_risk_gate(
     row: dict[str, Any],
     *,
     policy: dict | None = None,
+    enforce_live_stale: bool = False,
 ) -> RiskDecision:
     decision = check_timeframe(context.timeframe)
     reasons: list[str] = []
@@ -56,7 +57,10 @@ def evaluate_risk_gate(
     if quote.oracle_ts_ms is None:
         reasons.append("BLOCK_ORACLE_TIMESTAMP_MISSING")
 
-    reasons.extend(evaluate_halt_reasons(quote, policy or load_halt_policy()))
+    halt_reasons = evaluate_halt_reasons(quote, policy or load_halt_policy())
+    if not enforce_live_stale:
+        halt_reasons = [reason for reason in halt_reasons if reason != "BLOCK_PRICE_STALE"]
+    reasons.extend(halt_reasons)
     deduped = list(dict.fromkeys(reasons))
     stale_rejected = any(reason in {"BLOCK_PRICE_STALE", "BLOCK_ORACLE_TIMESTAMP_MISSING"} for reason in deduped)
     halt_rejected = any(reason not in {"BLOCK_PRICE_STALE", "BLOCK_ORACLE_TIMESTAMP_MISSING"} for reason in deduped)

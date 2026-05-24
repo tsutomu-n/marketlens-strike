@@ -7,7 +7,6 @@ import typer
 from loguru import logger
 
 from sis.backtest.bridge import (
-    run_backtest_bridge,
     run_backtest_bridge_with_decisions,
     write_backtest_metrics_json,
     write_backtest_report,

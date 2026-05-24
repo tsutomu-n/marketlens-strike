@@ -58,6 +58,11 @@ uv run sis log-quotes --venue gtrade
 uv run sis log-quotes --venue gtrade --replace
 uv run sis normalize-quotes
 uv run sis build-cost-matrix
+uv run sis ingest-research-data
+uv run sis build-event-calendar
+uv run sis build-feature-panel
+uv run sis build-signals
+uv run sis check-research-quality
 uv run sis build-backtest
 uv run sis build-backtest --signals-path data/research/signals.csv
 uv run sis check-go-no-go

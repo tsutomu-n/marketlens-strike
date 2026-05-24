@@ -4,7 +4,7 @@ import polars as pl
 import pytest
 
 from sis.backtest.signals import load_research_signals
-from sis.backtest.bridge import run_backtest_bridge, write_backtest_report
+from sis.backtest.bridge import run_backtest_bridge, run_backtest_bridge_with_decisions, write_backtest_report
 
 
 def test_backtest_bridge_runs_virtual_execution_from_quotes(tmp_path) -> None:
@@ -203,6 +203,69 @@ def test_backtest_bridge_uses_research_signal_csv(tmp_path) -> None:
     assert metrics[0].trade_count == 1
     assert metrics[0].exposure_ratio == 1.0
     assert metrics[0].total_return > 0
+
+
+def test_backtest_bridge_writes_decision_artifacts_for_signal_mode(tmp_path) -> None:
+    quotes_path = tmp_path / "quotes.parquet"
+    signals_path = tmp_path / "signals.csv"
+    decision_log_path = tmp_path / "decision_logs" / "backtest.jsonl"
+    decision_summary_path = tmp_path / "decision_summary.json"
+    pl.DataFrame(
+        [
+            {
+                "ts_client": datetime(2026, 5, 22, 0, 0, tzinfo=timezone.utc).isoformat(),
+                "venue": "gtrade",
+                "canonical_symbol": "QQQ",
+                "venue_symbol": "QQQ/USD",
+                "exec_buy_price": 100.0,
+                "exec_sell_price": 99.9,
+                "mark_price": 100.0,
+                "mid_price": None,
+                "oracle_price": None,
+                "index_price": 100.0,
+                "spread_bps": 2.0,
+                "oracle_ts_ms": 1779415479000,
+                "market_status": "open",
+                "is_tradable": True,
+            },
+            {
+                "ts_client": datetime(2026, 5, 22, 4, 0, tzinfo=timezone.utc).isoformat(),
+                "venue": "gtrade",
+                "canonical_symbol": "QQQ",
+                "venue_symbol": "QQQ/USD",
+                "exec_buy_price": 101.0,
+                "exec_sell_price": 100.9,
+                "mark_price": 101.0,
+                "mid_price": None,
+                "oracle_price": None,
+                "index_price": 101.0,
+                "spread_bps": 2.0,
+                "oracle_ts_ms": 1779429879000,
+                "market_status": "open",
+                "is_tradable": True,
+            },
+        ]
+    ).write_parquet(quotes_path)
+    signals_path.write_text(
+        "ts_signal,canonical_symbol,side,timeframe,signal_strength\n"
+        "2026-05-22T00:00:00+00:00,QQQ,long,4h,1.0\n",
+        encoding="utf-8",
+    )
+
+    metrics, records, summary = run_backtest_bridge_with_decisions(
+        quotes_path,
+        signals_path,
+        decision_log_path=decision_log_path,
+        decision_summary_path=decision_summary_path,
+    )
+
+    assert len(metrics) == 1
+    assert len(records) == 1
+    assert summary["executed_count"] == 1
+    assert decision_log_path.exists()
+    assert decision_summary_path.exists()
+    assert '"action":"enter_long"' in decision_log_path.read_text(encoding="utf-8")
+    assert '"mode": "signal_driven"' in decision_summary_path.read_text(encoding="utf-8")
 
 
 def test_research_signal_loader_blocks_scalping_timeframes(tmp_path) -> None:

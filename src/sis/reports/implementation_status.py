@@ -31,6 +31,8 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
     StatusItem("Epic 6", "Ostium liquidation reference", "DONE", "read-only getOpenPositions sidecar supports trader address and bounded ALL sampling"),
     StatusItem("Epic 7", "Backtest bridge", "DONE", "research signal CSV input, venue quote virtual execution, cost matrix integration, and metrics implemented"),
     StatusItem("Epic 8", "Go/No-Go markdown and evidence card", "DONE", "metrics evaluator, thresholds, blockers, and evidence digests implemented"),
+    StatusItem("Epic 9", "Research layer foundation", "DONE", "src/sis/research/* plus ingest/build/check CLI commands and reproducible research artifacts"),
+    StatusItem("Epic 10", "Decision engine foundation", "DONE", "src/sis/core/*, src/sis/risk/risk_gate.py, backtest decision logs, and decision summary artifacts"),
 ]
 
 
