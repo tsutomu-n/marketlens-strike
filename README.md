@@ -23,6 +23,7 @@ For current project status and handoff interpretation, read these first:
 3. [docs/CURRENT_PHASE_STATUS_AND_NEXT_GATE.md](/home/tn/projects/marketlens-strike/docs/CURRENT_PHASE_STATUS_AND_NEXT_GATE.md)
 4. [docs/ENGINEERING_HANDOFF_NOTE.md](/home/tn/projects/marketlens-strike/docs/ENGINEERING_HANDOFF_NOTE.md)
 5. [docs/PHASE2_COMPLETION_DEFINITION.md](/home/tn/projects/marketlens-strike/docs/PHASE2_COMPLETION_DEFINITION.md)
+6. [docs/PHASE_PROGRESSION_CRITERIA.md](/home/tn/projects/marketlens-strike/docs/PHASE_PROGRESSION_CRITERIA.md)
 
 Use them as follows:
 
@@ -31,6 +32,7 @@ Use them as follows:
 - `CURRENT_PHASE_STATUS_AND_NEXT_GATE.md`: what phase the repo is operationally in now
 - `ENGINEERING_HANDOFF_NOTE.md`: how to interpret the engineering handoff ZIP
 - `PHASE2_COMPLETION_DEFINITION.md`: what must be true before Phase 2 is considered complete
+- `PHASE_PROGRESSION_CRITERIA.md`: the formal gate for moving from one phase to the next
 
 ## Command Prefix
 
