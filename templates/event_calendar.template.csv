@@ -1,0 +1,3 @@
+event_ts,event_name,event_class,importance,before_minutes,after_minutes,action
+2026-06-10T12:30:00+00:00,CPI,inflation,high,120,60,BLOCK
+2026-06-17T18:00:00+00:00,FOMC,central_bank,high,180,120,BLOCK

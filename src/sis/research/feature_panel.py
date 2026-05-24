@@ -67,16 +67,20 @@ def build_feature_panel(data_dir: Path) -> Path:
         pl.col("close").rolling_std(window_size=20, min_samples=5).over("symbol").alias("realized_vol_20"),
     ).join(macro, on="date", how="left")
 
-    feature = feature.with_columns(
-        (pl.col("research_close") > pl.col("sma_20")).alias("close_above_sma20"),
-        pl.col("^VIX").alias("vix_level") if "^VIX" in market["symbol"].to_list() else pl.lit(None).cast(pl.Float64).alias("vix_level"),
-    )
+    symbols = set(market.get_column("symbol").to_list())
+    if "^VIX" in symbols:
+        vix_proxy = market.filter(pl.col("symbol") == "^VIX").select(["ts", pl.col("close").alias("vix_level")])
+        feature = feature.join(vix_proxy, on="ts", how="left")
+    else:
+        feature = feature.with_columns(pl.lit(None).cast(pl.Float64).alias("vix_level"))
 
-    if "UUP" in market["symbol"].to_list():
+    if "UUP" in symbols:
         dxy_proxy = market.filter(pl.col("symbol") == "UUP").select(["ts", pl.col("close").alias("dxy_proxy")])
         feature = feature.join(dxy_proxy, on="ts", how="left")
     else:
         feature = feature.with_columns(pl.lit(None).cast(pl.Float64).alias("dxy_proxy"))
+
+    feature = feature.with_columns((pl.col("research_close") > pl.col("sma_20")).alias("close_above_sma20"))
 
     if event_windows:
         is_blackout: list[bool] = []

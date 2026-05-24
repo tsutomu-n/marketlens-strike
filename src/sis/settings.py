@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     data_dir: Path = Path("data")
     log_level: str = "INFO"
+    fred_api_key: str | None = Field(default=None, validation_alias="FRED_API_KEY")
     gtrade_backend_url: str = Field(
         default="https://backend-arbitrum.gains.trade", validation_alias="GTRADE_BACKEND_URL"
     )

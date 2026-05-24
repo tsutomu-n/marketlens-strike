@@ -12,6 +12,13 @@ from sis.backtest.bridge import (
     write_backtest_report,
 )
 from sis.market_calendar import market_session_window
+from sis.research.event_calendar import build_event_calendar
+from sis.research.feature_panel import build_feature_panel
+from sis.research.macro_ingest import build_macro_panel
+from sis.research.price_ingest import build_market_panel
+from sis.research.providers import FredMacroProvider
+from sis.research.research_quality import build_research_quality_report
+from sis.research.signal_builder import build_signals
 from sis.reports.cost_matrix import build_cost_matrix_from_quotes
 from sis.reports.evidence import build_evidence_card
 from sis.reports.go_no_go import build_go_no_go_report, write_go_no_go_markdown
@@ -134,6 +141,52 @@ def build_cost_matrix() -> None:
         gtrade_sidecar_root=settings.data_dir / "raw/sidecar/gtrade",
         ostium_registry_path=settings.data_dir / "registry/ostium_instrument_registry.json",
     )
+    logger.info("written: {}", out)
+
+
+@app.command("ingest-research-data")
+def ingest_research_data() -> None:
+    settings = get_settings()
+    market_panel = build_market_panel(settings.data_dir)
+    macro_panel = build_macro_panel(
+        settings.data_dir,
+        provider=FredMacroProvider(api_key=settings.fred_api_key),
+    )
+    logger.info("written: {}", market_panel)
+    logger.info("written: {}", macro_panel)
+
+
+@app.command("build-event-calendar")
+def build_event_calendar_cmd(
+    csv_path: Path | None = typer.Option(
+        None,
+        "--csv-path",
+        help="Optional event calendar CSV path. Defaults to data/research/event_calendar.csv.",
+    )
+) -> None:
+    settings = get_settings()
+    out = build_event_calendar(settings.data_dir, csv_path=csv_path)
+    logger.info("written: {}", out)
+
+
+@app.command("build-feature-panel")
+def build_feature_panel_cmd() -> None:
+    settings = get_settings()
+    out = build_feature_panel(settings.data_dir)
+    logger.info("written: {}", out)
+
+
+@app.command("build-signals")
+def build_signals_cmd() -> None:
+    settings = get_settings()
+    out = build_signals(settings.data_dir)
+    logger.info("written: {}", out)
+
+
+@app.command("check-research-quality")
+def check_research_quality_cmd() -> None:
+    settings = get_settings()
+    out = build_research_quality_report(settings.data_dir)
     logger.info("written: {}", out)
 
 

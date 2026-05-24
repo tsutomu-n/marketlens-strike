@@ -3,8 +3,6 @@ from __future__ import annotations
 from datetime import date, timedelta
 from pathlib import Path
 
-import polars as pl
-
 from sis.research.providers import PriceProvider, ResearchFetchRequest, YahooFinancePriceProvider
 
 DEFAULT_PRICE_SYMBOLS = ["QQQ", "SPY", "GLD", "^VIX", "UUP", "USDJPY=X", "EURUSD=X"]
