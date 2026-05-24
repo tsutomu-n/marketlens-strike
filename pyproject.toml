@@ -19,6 +19,10 @@ dependencies = [
   "jsonschema>=4",
   "pyyaml>=6",
   "tenacity>=9",
+  "yfinance>=0.2",
+  "yahooquery>=2.3",
+  "fredapi>=0.5",
+  "pandas-datareader>=0.10",
 ]
 
 [project.scripts]
@@ -61,4 +65,3 @@ project-excludes = [
   "**/dist/**",
   "**/build/**",
 ]
-
