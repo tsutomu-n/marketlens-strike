@@ -133,6 +133,41 @@ An engineer receiving the ZIP and this repository should read in this order:
 6. `docs/PHASE2_COMPLETION_DEFINITION.md`
 7. the ZIP contents and `TASK_BOARD.csv`
 
+## Operations And Audit Short Path
+
+If an engineer needs the fastest current-state snapshot before reading deeper docs, use this order:
+
+1. `data/ops/operations_dashboard_summary.json`
+2. `data/ops/execution_snapshot_summary.json`
+3. `data/ops/execution_venue_comparison_summary.json`
+4. `data/ops/execution_gap_history_summary.json`
+5. `data/ops/execution_state_comparison_history_summary.json`
+6. `data/ops/execution_snapshot_drift_history_summary.json`
+7. `data/ops/execution_drift_overview_summary.json`
+8. `data/ops/audit_dashboard_summary.json`
+9. `data/ops/operations_bundle_manifest.json`
+10. `data/ops/audit_bundle_manifest.json`
+11. `data/reports/operations_dashboard.md`
+12. `data/reports/execution_venue_comparison.md`
+13. `data/reports/execution_gap_history.md`
+14. `data/reports/execution_snapshot_drift_history.md`
+15. `data/reports/execution_drift_overview.md`
+13. `data/reports/audit_dashboard.md`
+14. `data/reports/operations_audit_pack.md`
+15. `data/reports/paper_operations_runbook.md`
+
+If those artifacts are missing or stale:
+
+```bash
+uv run sis refresh-operations-artifacts
+```
+
+If paper execution plus downstream artifact refresh is needed:
+
+```bash
+uv run sis paper-operations-cycle
+```
+
 ## One-Line Summary For External Handoff
 
 Use the following summary when sharing the ZIP with an engineer:
@@ -140,4 +175,3 @@ Use the following summary when sharing the ZIP with an engineer:
 ```txt
 This ZIP is a next-phase plan based on the current marketlens-strike repository. It is not a clean-slate implementation spec. The repository already contains most of Phase 1 and a signal-CSV-compatible backtest bridge. Before Phase 2 begins, complete P1-003 live evidence collection, P1-005 diagnose review, and P1-004 strict artifact validation, then recheck Go/No-Go.
 ```
-

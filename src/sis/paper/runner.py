@@ -13,7 +13,29 @@ from sis.paper.fills import PaperFill, write_fills_parquet
 from sis.paper.orders import PaperOrder, write_orders_parquet
 from sis.paper.portfolio import PaperPortfolio, PaperPosition, write_positions_parquet
 from sis.paper.report import build_daily_paper_report
+from sis.reports.summary_normalizers import (
+    audit_summary_fields,
+    execution_comparison_flat_fields,
+    execution_drift_overview_flat_fields,
+    execution_diagnostics_flat_fields,
+    execution_gap_history_flat_fields,
+    execution_snapshot_drift_flat_fields,
+    execution_snapshot_flat_fields,
+    execution_state_comparison_flat_fields,
+    normalize_execution_comparison_summary,
+    normalize_execution_diagnostics_summary,
+    normalize_execution_drift_overview_summary,
+    normalize_execution_gap_history_summary,
+    normalize_execution_snapshot_drift_summary,
+    normalize_execution_snapshot_summary,
+    normalize_execution_state_comparison_summary,
+    normalize_phase_gate_summary,
+    normalize_readiness_summary,
+    phase_gate_flat_fields,
+    readiness_flat_fields,
+)
 from sis.state.store import StateStore
+from sis.storage.jsonl_store import read_json
 
 
 @dataclass(frozen=True)
@@ -44,6 +66,125 @@ def _build_quote_lookup(quotes: pl.DataFrame) -> dict[tuple[str, str, str], dict
         ts_key = ts.isoformat() if isinstance(ts, datetime) else str(ts)
         lookup[(str(row["venue"]), str(row["canonical_symbol"]).upper(), ts_key)] = row
     return lookup
+
+
+def _read_audit_summary(data_dir: Path) -> dict:
+    audit_dashboard_path = data_dir / "ops/audit_dashboard_summary.json"
+    audit_bundle_path = data_dir / "ops/audit_bundle_manifest.json"
+    audit_dashboard = read_json(audit_dashboard_path) if audit_dashboard_path.exists() else {}
+    audit_bundle = read_json(audit_bundle_path) if audit_bundle_path.exists() else {}
+    if not isinstance(audit_dashboard, dict):
+        audit_dashboard = {}
+    if not isinstance(audit_bundle, dict):
+        audit_bundle = {}
+    return audit_summary_fields(audit_dashboard, audit_bundle)
+
+
+def _read_phase_gate_summary(data_dir: Path) -> dict:
+    phase_gate_path = data_dir / "ops/phase_gate_review_summary.json"
+    payload = read_json(phase_gate_path) if phase_gate_path.exists() else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return normalize_phase_gate_summary(payload)
+
+
+def _read_execution_drift_overview_summary(data_dir: Path) -> dict:
+    overview_path = data_dir / "ops/execution_drift_overview_summary.json"
+    payload = read_json(overview_path) if overview_path.exists() else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return normalize_execution_drift_overview_summary(
+        {
+            **payload,
+            "report_path": str(data_dir / "reports/execution_drift_overview.md"),
+        }
+    )
+
+
+def _read_execution_summary(data_dir: Path) -> dict:
+    summary_path = data_dir / "ops/execution_snapshot_summary.json"
+    payload = read_json(summary_path) if summary_path.exists() else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return normalize_execution_snapshot_summary(
+        {
+            **payload,
+            "report_path": str(data_dir / "reports/execution_snapshot.md"),
+        }
+    )
+
+
+def _read_execution_comparison_summary(data_dir: Path) -> dict:
+    summary_path = data_dir / "ops/execution_venue_comparison_summary.json"
+    payload = read_json(summary_path) if summary_path.exists() else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return normalize_execution_comparison_summary(
+        {
+            **payload,
+            "report_path": str(data_dir / "reports/execution_venue_comparison.md"),
+        }
+    )
+
+
+def _read_execution_diagnostics_summary(data_dir: Path) -> dict:
+    summary_path = data_dir / "ops/execution_venue_diagnostics_summary.json"
+    payload = read_json(summary_path) if summary_path.exists() else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return normalize_execution_diagnostics_summary(
+        {
+            **payload,
+            "report_path": str(data_dir / "reports/execution_venue_diagnostics.md"),
+        }
+    )
+
+
+def _read_execution_gap_history_summary(data_dir: Path) -> dict:
+    summary_path = data_dir / "ops/execution_gap_history_summary.json"
+    payload = read_json(summary_path) if summary_path.exists() else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return normalize_execution_gap_history_summary(
+        {
+            **payload,
+            "report_path": str(data_dir / "reports/execution_gap_history.md"),
+        }
+    )
+
+
+def _read_execution_state_comparison_summary(data_dir: Path) -> dict:
+    summary_path = data_dir / "ops/execution_state_comparison_history_summary.json"
+    payload = read_json(summary_path) if summary_path.exists() else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return normalize_execution_state_comparison_summary(
+        {
+            **payload,
+            "report_path": str(data_dir / "reports/execution_state_comparison_history.md"),
+        }
+    )
+
+
+def _read_execution_snapshot_drift_summary(data_dir: Path) -> dict:
+    summary_path = data_dir / "ops/execution_snapshot_drift_history_summary.json"
+    payload = read_json(summary_path) if summary_path.exists() else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return normalize_execution_snapshot_drift_summary(
+        {
+            **payload,
+            "report_path": str(data_dir / "reports/execution_snapshot_drift_history.md"),
+        }
+    )
+
+
+def _read_readiness_summary(data_dir: Path) -> dict:
+    readiness_path = data_dir / "ops/readiness_snapshot.json"
+    payload = read_json(readiness_path) if readiness_path.exists() else {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return normalize_readiness_summary(payload)
 
 
 def run_paper_step(
@@ -106,6 +247,29 @@ def run_paper_step(
 
     positions = portfolio.positions()
     store.set_json("paper_positions", [position.model_dump(mode="json") for position in positions])
+    audit_summary = _read_audit_summary(data_dir)
+    phase_gate_summary = normalize_phase_gate_summary(_read_phase_gate_summary(data_dir))
+    execution_drift_overview_summary = _read_execution_drift_overview_summary(data_dir)
+    execution_summary = _read_execution_summary(data_dir)
+    execution_comparison_summary = _read_execution_comparison_summary(data_dir)
+    execution_diagnostics_summary = _read_execution_diagnostics_summary(data_dir)
+    execution_gap_history_summary = _read_execution_gap_history_summary(data_dir)
+    execution_state_comparison_summary = _read_execution_state_comparison_summary(data_dir)
+    execution_snapshot_drift_summary = _read_execution_snapshot_drift_summary(data_dir)
+    readiness_summary = _read_readiness_summary(data_dir)
+    phase_gate_fields = phase_gate_flat_fields(phase_gate_summary)
+    readiness_fields = readiness_flat_fields(readiness_summary)
+    execution_summary_fields = execution_snapshot_flat_fields(execution_summary)
+    execution_comparison_fields = execution_comparison_flat_fields(execution_comparison_summary)
+    execution_diagnostics_fields = execution_diagnostics_flat_fields(execution_diagnostics_summary)
+    execution_gap_history_fields = execution_gap_history_flat_fields(execution_gap_history_summary)
+    execution_state_comparison_fields = execution_state_comparison_flat_fields(
+        execution_state_comparison_summary
+    )
+    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(
+        execution_snapshot_drift_summary
+    )
+    execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview_summary)
     store.set_json(
         "paper_last_run",
         {
@@ -113,6 +277,27 @@ def run_paper_step(
             "fills_count": len(fills),
             "open_positions": len(positions),
             "realized_pnl": realized_pnl,
+            "audit": audit_summary,
+            "audit_summary": audit_summary,
+            "phase_gate": phase_gate_summary,
+            "phase_gate_summary": phase_gate_summary,
+            **phase_gate_fields,
+            "readiness_summary": readiness_summary,
+            **readiness_fields,
+            "execution_summary": execution_summary,
+            **execution_summary_fields,
+            "execution_comparison_summary": execution_comparison_summary,
+            **execution_comparison_fields,
+            "execution_diagnostics_summary": execution_diagnostics_summary,
+            **execution_diagnostics_fields,
+            "execution_gap_history_summary": execution_gap_history_summary,
+            **execution_gap_history_fields,
+            "execution_state_comparison_summary": execution_state_comparison_summary,
+            **execution_state_comparison_fields,
+            "execution_snapshot_drift_summary": execution_snapshot_drift_summary,
+            **execution_snapshot_drift_fields,
+            "execution_drift_overview_summary": execution_drift_overview_summary,
+            **execution_drift_fields,
         },
     )
 
@@ -134,7 +319,15 @@ def run_paper_step(
     ).write_parquet(daily_pnl_path)
 
     report_path = data_dir / "reports/daily_paper_report.md"
-    build_daily_paper_report(fills, positions, report_path)
+    build_daily_paper_report(
+        fills,
+        positions,
+        report_path,
+        audit_summary=audit_summary,
+        phase_gate_summary=phase_gate_summary,
+        readiness_summary=readiness_summary,
+        execution_drift_overview_summary=execution_drift_overview_summary,
+    )
 
     return PaperRunSummary(
         orders_count=len(orders),

@@ -75,9 +75,57 @@ def test_go_no_go_markdown_includes_venue_decisions(tmp_path) -> None:
     )
     out = tmp_path / "go_no_go_report.md"
 
-    write_go_no_go_markdown(report, out)
+    write_go_no_go_markdown(
+        report,
+        out,
+        audit_summary={
+            "overall_status": "ok",
+            "latest_operation": "audit_bundle_snapshot",
+            "bundle_history_snapshot_count": 3,
+        },
+        phase_gate_summary={
+            "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+            "phase2_entry_allowed": False,
+            "phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears",
+            "strict_validation_passed": True,
+        },
+        readiness_summary={
+            "next_phase_candidate": "Stay Phase 1",
+            "execution_ready": False,
+            "phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+            "phase2_entry_allowed": False,
+        },
+        execution_summary={
+            "overall_status": "ok",
+            "venue_count": 2,
+            "report_path": "data/reports/execution_snapshot.md",
+        },
+        execution_comparison_summary={
+            "all_registries_present": True,
+            "report_path": "data/reports/execution_venue_comparison.md",
+        },
+        execution_diagnostics_summary={
+            "overall_status": "degraded",
+            "balance_gap_detected": True,
+            "fills_gap_detected": False,
+            "report_path": "data/reports/execution_venue_diagnostics.md",
+        },
+    )
 
     text = out.read_text(encoding="utf-8")
+    assert "## Audit Summary" in text
+    assert "overall_status: ok" in text
+    assert "## Phase Gate Summary" in text
+    assert "decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in text
+    assert "## Readiness Summary" in text
+    assert "next_phase_candidate: Stay Phase 1" in text
+    assert "## Execution Snapshot" in text
+    assert "overall_status: ok" in text
+    assert "venue_count: 2" in text
+    assert "## Execution Venue Comparison" in text
+    assert "all_registries_present: True" in text
+    assert "## Execution Venue Diagnostics" in text
+    assert "balance_gap_detected: True" in text
     assert "## Venue Decisions" in text
     assert "| gtrade | GO |  |" in text
     assert "| ostium | CONDITIONAL_GO_DATA_READY | Liquidation reference complete |" in text

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Evidence Detailed Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f1e8;
+      --surface: #fffdfa;
+      --ink: #1e1b16;
+      --muted: #6b6258;
+      --line: #d8d0c3;
+      --accent: #14532d;
+      --warn: #9a3412;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+    main { max-width: 1200px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1, h2 { margin: 0 0 12px; }
+    section { margin-top: 24px; background: var(--surface); border: 1px solid var(--line); padding: 20px; }
+    .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .metric { border: 1px solid var(--line); padding: 12px; background: #fff; }
+    .metric .label { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    .metric .value { margin-top: 6px; font-size: 18px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
+    th { background: #f9f6ef; }
+    pre { margin: 0; overflow: auto; background: #171411; color: #f7f2ea; padding: 16px; }
+    .ok { color: var(--accent); }
+    .warn { color: var(--warn); }
+    ul { margin: 0; padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Live Evidence Detailed Report</h1>
+    <section>
+      <h2>Status</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Run Status</div><div class="value">completed</div></div>
+        <div class="metric"><div class="label">Decision</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Started At UTC</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Finished At UTC</div><div class="value"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Audit Summary</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Latest Operation</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Bundle History Snapshot Count</div><div class="value"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Phase Gate Summary</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Decision</div><div class="value">CONDITIONAL_GO_NEEDS_LIVE_WINDOW</div></div>
+        <div class="metric"><div class="label">Phase 2 Entry Allowed</div><div class="value">False</div></div>
+        <div class="metric"><div class="label">Reason</div><div class="value">Need live window</div></div>
+        <div class="metric"><div class="label">Strict Validation</div><div class="value">False</div></div>
+        <div class="metric"><div class="label">Strict Validation Issues</div><div class="value">2</div></div>
+        <div class="metric"><div class="label">Checked Files</div><div class="value">7</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Snapshot</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Venue Count</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Venue Comparison</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">All Registries Present</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Venue Diagnostics</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Balance Gap</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Fills Gap</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Gap History</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Entry Count</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Latest Status</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Latest Diagnostics Status</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution State Comparison History</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Entry Count</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Latest Status Match</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Mismatching Count</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Snapshot Drift History</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Entry Count</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Latest State Match</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Mismatching Snapshot Count</div><div class="value"></div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Drift Overview</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value">degraded</div></div>
+        <div class="metric"><div class="label">Diagnostics Alignment</div><div class="value">False</div></div>
+        <div class="metric"><div class="label">State Comparison Mismatch Count</div><div class="value">1</div></div>
+        <div class="metric"><div class="label">Snapshot Drift Mismatch Count</div><div class="value">1</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Artifacts</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Sidecar Metadata Rows</div><div class="value">0</div></div>
+        <div class="metric"><div class="label">Sidecar Pricing Rows</div><div class="value">0</div></div>
+        <div class="metric"><div class="label">Raw Quote Rows</div><div class="value">0</div></div>
+        <div class="metric"><div class="label">Evidence Card</div><div class="value"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Venue Decisions</h2>
+      <table>
+        <thead><tr><th>Venue</th><th>Decision</th><th>Main Blocker</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>GTrade Diagnostics</h2>
+      <table>
+        <thead><tr><th>Symbol</th><th>Rows</th><th>Open Rows</th><th>Tradable Rate</th><th>Stale Rate</th><th>Missing Mark</th><th>Missing Index</th><th>Oracle p90 ms</th><th>Spread p90 bps</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Cost Matrix Snapshot</h2>
+      <table>
+        <thead><tr><th>Venue</th><th>Symbol</th><th>Stale Rate</th><th>Tradable Rate</th><th>Spread p90 bps</th><th>Holding 4h bps</th><th>Notes</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Backtest Snapshot</h2>
+      <table>
+        <thead><tr><th>Venue</th><th>Symbol</th><th>Trade Count</th><th>Avg Trade Return</th><th>Cost Drag bps</th><th>Stale Rejected</th><th>Halt Rejected</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Validation</h2>
+      <p>checked_files=0, issue_count=0</p>
+      <ul><li>none</li></ul>
+    </section>
+    <section>
+      <h2>Blockers</h2>
+      <ul><li>none</li></ul>
+    </section>
+    <section>
+      <h2>Next Actions</h2>
+      <ul><li>none</li></ul>
+    </section>
+    <section>
+      <h2>Log Tail</h2>
+      <pre>log line</pre>
+    </section>
+  </main>
+</body>
+</html>

@@ -34,6 +34,59 @@ Use them as follows:
 - `PHASE2_COMPLETION_DEFINITION.md`: what must be true before Phase 2 is considered complete
 - `PHASE_PROGRESSION_CRITERIA.md`: the formal gate for moving from one phase to the next
 
+## Operations And Audit Fast Path
+
+When resuming the repo, use this shortest artifact path first:
+
+1. [docs/ACCEPTANCE_AUDIT.md](/home/tn/projects/marketlens-strike/docs/ACCEPTANCE_AUDIT.md)
+2. [docs/IMPLEMENTATION_STATUS.md](/home/tn/projects/marketlens-strike/docs/IMPLEMENTATION_STATUS.md)
+3. `data/ops/execution_snapshot_summary.json`
+4. `data/ops/execution_venue_comparison_summary.json`
+5. `data/ops/execution_gap_history_summary.json`
+6. `data/ops/execution_state_comparison_history_summary.json`
+7. `data/ops/execution_snapshot_drift_history_summary.json`
+8. `data/ops/execution_drift_overview_summary.json`
+9. `data/ops/operations_dashboard_summary.json`
+10. `data/ops/audit_dashboard_summary.json`
+11. `data/ops/operations_bundle_manifest.json`
+12. `data/ops/audit_bundle_manifest.json`
+
+If those files are stale or missing, refresh the full operations/audit view with:
+
+```bash
+uv run sis refresh-operations-artifacts
+```
+
+That refresh also regenerates `data/reports/phase_gate_review.md` and
+`data/ops/phase_gate_review_summary.json`.
+
+If you need the shortest Phase 1 gate recheck summary artifact:
+
+```bash
+uv run sis phase-gate-review
+```
+
+If you need the paper execution path plus all downstream operations/audit artifacts:
+
+```bash
+uv run sis paper-operations-cycle
+```
+
+That cycle also refreshes the latest phase gate review artifact.
+
+If you want the most compact human-readable restart artifacts, open these next:
+
+- `data/reports/operations_dashboard.md`
+- `data/reports/execution_venue_comparison.md`
+- `data/reports/execution_gap_history.md`
+- `data/reports/execution_state_comparison_history.md`
+- `data/reports/execution_snapshot_drift_history.md`
+- `data/reports/audit_dashboard.md`
+- `data/reports/phase_gate_review.md`
+- `data/reports/operations_audit_pack.md`
+- `data/reports/paper_operations_runbook.md`
+- `data/reports/live_evidence_followup_*.md`
+
 ## Command Prefix
 
 Some project notes use `rtk` as a local command wrapper. If `rtk` is unavailable,
@@ -67,6 +120,46 @@ uv run sis build-backtest
 uv run sis build-backtest --signals-path data/research/signals.csv
 uv run sis paper-step
 uv run sis paper-report
+uv run sis estimate-order --venue gtrade --symbol QQQ --side long
+uv run sis balance-status --venue gtrade
+uv run sis fill-status --venue gtrade --limit 20
+uv run sis execution-snapshot --venue gtrade --fills-limit 5 --order-limit 5
+uv run sis execution-venue-comparison
+uv run sis execution-venue-diagnostics
+uv run sis execution-gap-history
+uv run sis execution-state-comparison-history
+uv run sis execution-snapshot-drift-history
+uv run sis execution-drift-overview
+uv run sis order-status --venue gtrade --order-id ord-1
+uv run sis cancel-order --venue gtrade --order-id ord-1
+uv run sis close-position --venue ostium --symbol SPY --side long
+uv run sis reconcile-positions --venue ostium
+uv run sis healthcheck
+uv run sis kill-switch --enable --reason manual
+uv run sis schedule-run --run-type paper --command "uv run sis paper-step" --every-minutes 30
+uv run sis render-alert --level warn --title "Stale" --body "recollect live evidence"
+uv run sis weekly-review
+uv run sis daemon-manifest --mode paper
+uv run sis daemon-dry-run --mode paper --command "uv run sis paper-step" --every-minutes 30
+uv run sis export-state
+uv run sis restore-state --snapshot-path data/state/state_snapshot.json
+uv run sis lifecycle-report
+uv run sis monitoring-status
+uv run sis comparison-report
+uv run sis ops-review
+uv run sis operations-dashboard
+uv run sis paper-operations-runbook
+uv run sis paper-cycle-history
+uv run sis operations-bundle
+uv run sis operations-timeline
+uv run sis operations-audit-pack
+uv run sis audit-timeline
+uv run sis audit-dashboard
+uv run sis audit-bundle
+uv run sis audit-bundle-history
+uv run sis phase-gate-review
+uv run sis refresh-operations-artifacts
+uv run sis paper-operations-cycle
 uv run sis check-go-no-go
 uv run sis build-evidence-card
 uv run sis implementation-status --write

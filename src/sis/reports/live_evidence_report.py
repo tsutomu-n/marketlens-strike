@@ -11,6 +11,19 @@ from pathlib import Path
 from typing import Any
 
 from sis.reports.quote_diagnostics import QuoteDiagnostic, build_quote_diagnostics
+from sis.reports.summary_normalizers import (
+    audit_summary_fields,
+    execution_gap_history_flat_fields,
+    execution_snapshot_drift_flat_fields,
+    execution_comparison_flat_fields,
+    execution_diagnostics_flat_fields,
+    execution_drift_overview_flat_fields,
+    execution_snapshot_flat_fields,
+    execution_state_comparison_flat_fields,
+    normalize_execution_drift_overview_summary,
+    normalize_phase_gate_summary,
+    phase_gate_flat_fields,
+)
 from sis.storage.jsonl_store import read_json
 from sis.validation.artifacts import ValidationSummary, validate_artifacts
 
@@ -41,6 +54,15 @@ class LiveEvidenceReportData:
     venue_decisions: list[dict]
     blockers: list[str]
     next_actions: list[str]
+    audit_summary: dict[str, Any]
+    phase_gate_summary: dict[str, Any]
+    execution_summary: dict[str, Any]
+    execution_comparison_summary: dict[str, Any]
+    execution_diagnostics_summary: dict[str, Any]
+    execution_gap_history_summary: dict[str, Any]
+    execution_state_comparison_summary: dict[str, Any]
+    execution_snapshot_drift_summary: dict[str, Any]
+    execution_drift_overview_summary: dict[str, Any]
     quote_diagnostics: list[QuoteDiagnostic]
     cost_rows: list[dict[str, str]]
     backtest_metrics: list[dict]
@@ -169,6 +191,7 @@ def build_live_evidence_report_data(
     output_path: Path,
     manifest_path: Path | None = None,
     status: RunStatus | None = None,
+    audit_summary: dict[str, Any] | None = None,
 ) -> LiveEvidenceReportData:
     manifest = load_manifest_payload(manifest_path)
     artifact_paths = manifest.get("artifacts", {}) if isinstance(manifest.get("artifacts"), dict) else {}
@@ -191,10 +214,74 @@ def build_live_evidence_report_data(
     venue_decisions = evidence_payload.get("venue_decisions", []) if isinstance(evidence_payload, dict) else []
     blockers = manifest.get("blockers", []) if isinstance(manifest.get("blockers"), list) else []
     next_actions = manifest.get("next_actions", []) if isinstance(manifest.get("next_actions"), list) else []
+    phase_gate_summary = manifest.get("phase_gate_summary", {}) if isinstance(manifest.get("phase_gate_summary"), dict) else {}
+    execution_summary = manifest.get("execution_summary", {}) if isinstance(manifest.get("execution_summary"), dict) else {}
+    execution_comparison_summary = (
+        manifest.get("execution_comparison_summary", {})
+        if isinstance(manifest.get("execution_comparison_summary"), dict)
+        else {}
+    )
+    execution_diagnostics_summary = (
+        manifest.get("execution_diagnostics_summary", {})
+        if isinstance(manifest.get("execution_diagnostics_summary"), dict)
+        else {}
+    )
+    execution_gap_history_summary = (
+        manifest.get("execution_gap_history_summary", {})
+        if isinstance(manifest.get("execution_gap_history_summary"), dict)
+        else {}
+    )
+    execution_state_comparison_summary = (
+        manifest.get("execution_state_comparison_summary", {})
+        if isinstance(manifest.get("execution_state_comparison_summary"), dict)
+        else {}
+    )
+    execution_snapshot_drift_summary = (
+        manifest.get("execution_snapshot_drift_summary", {})
+        if isinstance(manifest.get("execution_snapshot_drift_summary"), dict)
+        else {}
+    )
+    execution_drift_overview_summary = (
+        manifest.get("execution_drift_overview_summary", {})
+        if isinstance(manifest.get("execution_drift_overview_summary"), dict)
+        else {}
+    )
     if not blockers and isinstance(evidence_payload, dict):
         blockers = evidence_payload.get("blockers", [])
     if not next_actions and isinstance(evidence_payload, dict):
         next_actions = evidence_payload.get("next_actions", [])
+    if not phase_gate_summary and isinstance(evidence_payload, dict):
+        payload_phase_gate = evidence_payload.get("phase_gate_summary")
+        if isinstance(payload_phase_gate, dict):
+            phase_gate_summary = payload_phase_gate
+    if not execution_summary and isinstance(evidence_payload, dict):
+        payload_execution = evidence_payload.get("execution_summary")
+        if isinstance(payload_execution, dict):
+            execution_summary = payload_execution
+    if not execution_comparison_summary and isinstance(evidence_payload, dict):
+        payload_execution_comparison = evidence_payload.get("execution_comparison_summary")
+        if isinstance(payload_execution_comparison, dict):
+            execution_comparison_summary = payload_execution_comparison
+    if not execution_diagnostics_summary and isinstance(evidence_payload, dict):
+        payload_execution_diagnostics = evidence_payload.get("execution_diagnostics_summary")
+        if isinstance(payload_execution_diagnostics, dict):
+            execution_diagnostics_summary = payload_execution_diagnostics
+    if not execution_gap_history_summary and isinstance(evidence_payload, dict):
+        payload_execution_gap_history = evidence_payload.get("execution_gap_history_summary")
+        if isinstance(payload_execution_gap_history, dict):
+            execution_gap_history_summary = payload_execution_gap_history
+    if not execution_state_comparison_summary and isinstance(evidence_payload, dict):
+        payload_execution_state_comparison = evidence_payload.get("execution_state_comparison_summary")
+        if isinstance(payload_execution_state_comparison, dict):
+            execution_state_comparison_summary = payload_execution_state_comparison
+    if not execution_snapshot_drift_summary and isinstance(evidence_payload, dict):
+        payload_execution_snapshot_drift = evidence_payload.get("execution_snapshot_drift_summary")
+        if isinstance(payload_execution_snapshot_drift, dict):
+            execution_snapshot_drift_summary = payload_execution_snapshot_drift
+    if not execution_drift_overview_summary and isinstance(evidence_payload, dict):
+        payload_execution_drift_overview = evidence_payload.get("execution_drift_overview_summary")
+        if isinstance(payload_execution_drift_overview, dict):
+            execution_drift_overview_summary = payload_execution_drift_overview
     decision = manifest.get("decision") if isinstance(manifest.get("decision"), str) else None
     if decision is None and isinstance(evidence_payload, dict):
         decision = evidence_payload.get("decision")
@@ -236,6 +323,27 @@ def build_live_evidence_report_data(
         venue_decisions=venue_decisions if isinstance(venue_decisions, list) else [],
         blockers=blockers if isinstance(blockers, list) else [],
         next_actions=next_actions if isinstance(next_actions, list) else [],
+        audit_summary=audit_summary if isinstance(audit_summary, dict) else {},
+        phase_gate_summary=normalize_phase_gate_summary(phase_gate_summary),
+        execution_summary=execution_summary if isinstance(execution_summary, dict) else {},
+        execution_comparison_summary=(
+            execution_comparison_summary if isinstance(execution_comparison_summary, dict) else {}
+        ),
+        execution_diagnostics_summary=(
+            execution_diagnostics_summary if isinstance(execution_diagnostics_summary, dict) else {}
+        ),
+        execution_gap_history_summary=(
+            execution_gap_history_summary if isinstance(execution_gap_history_summary, dict) else {}
+        ),
+        execution_state_comparison_summary=(
+            execution_state_comparison_summary if isinstance(execution_state_comparison_summary, dict) else {}
+        ),
+        execution_snapshot_drift_summary=(
+            execution_snapshot_drift_summary if isinstance(execution_snapshot_drift_summary, dict) else {}
+        ),
+        execution_drift_overview_summary=normalize_execution_drift_overview_summary(
+            execution_drift_overview_summary
+        ),
         quote_diagnostics=diagnostics,
         cost_rows=cost_rows,
         backtest_metrics=backtest_metrics,
@@ -247,6 +355,19 @@ def build_live_evidence_report_data(
 
 
 def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
+    phase_gate_flat = phase_gate_flat_fields(data.phase_gate_summary)
+    execution_summary_flat = execution_snapshot_flat_fields(data.execution_summary)
+    execution_comparison_flat = execution_comparison_flat_fields(data.execution_comparison_summary)
+    execution_diagnostics_flat = execution_diagnostics_flat_fields(data.execution_diagnostics_summary)
+    execution_gap_history_flat = execution_gap_history_flat_fields(data.execution_gap_history_summary)
+    execution_state_comparison_flat = execution_state_comparison_flat_fields(
+        data.execution_state_comparison_summary
+    )
+    execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
+        data.execution_snapshot_drift_summary
+    )
+    execution_drift_flat = execution_drift_overview_flat_fields(data.execution_drift_overview_summary)
+    audit_summary_flat = audit_summary_fields(data.audit_summary, data.audit_summary)
     lines: list[str] = []
     lines.append("# Live Evidence Detailed Report")
     lines.append("")
@@ -259,6 +380,130 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
     lines.append(f"- log_path: `{data.log_path}`")
     lines.append(f"- manifest_path: `{data.manifest_path}`")
     lines.append("")
+    if data.audit_summary:
+        lines.append("## Audit Summary")
+        lines.append("")
+        lines.append(f"- overall_status: `{audit_summary_flat.get('overall_status')}`")
+        lines.append(f"- latest_operation: `{audit_summary_flat.get('latest_operation')}`")
+        lines.append(
+            "- bundle_history_snapshot_count: "
+            f"`{audit_summary_flat.get('bundle_history_snapshot_count')}`"
+        )
+        lines.append("")
+    if data.phase_gate_summary:
+        lines.append("## Phase Gate Summary")
+        lines.append("")
+        lines.append(f"- decision: `{phase_gate_flat.get('phase_gate_decision')}`")
+        lines.append(f"- phase2_entry_allowed: `{phase_gate_flat.get('phase2_entry_allowed')}`")
+        lines.append(f"- phase_gate_reason: `{phase_gate_flat.get('phase_gate_reason')}`")
+        lines.append(f"- strict_validation_passed: `{phase_gate_flat.get('strict_validation_passed')}`")
+        lines.append(
+            "- phase_gate_strict_validation_issue_count: "
+            f"`{phase_gate_flat.get('phase_gate_strict_validation_issue_count')}`"
+        )
+        lines.append(
+            f"- phase_gate_checked_files: `{phase_gate_flat.get('phase_gate_checked_files')}`"
+        )
+        lines.append("")
+    if data.execution_summary:
+        lines.append("## Execution Snapshot")
+        lines.append("")
+        lines.append(f"- overall_status: `{execution_summary_flat.get('execution_overall_status')}`")
+        lines.append(f"- venue_count: `{execution_summary_flat.get('execution_venue_count')}`")
+        lines.append(f"- report_path: `{execution_summary_flat.get('execution_report_path')}`")
+        lines.append("")
+    if data.execution_comparison_summary:
+        lines.append("## Execution Venue Comparison")
+        lines.append("")
+        lines.append(
+            "- all_registries_present: "
+            f"`{execution_comparison_flat.get('execution_comparison_all_registries_present')}`"
+        )
+        lines.append(
+            f"- report_path: `{execution_comparison_flat.get('execution_comparison_report_path')}`"
+        )
+        lines.append("")
+    if data.execution_diagnostics_summary:
+        lines.append("## Execution Venue Diagnostics")
+        lines.append("")
+        lines.append(f"- overall_status: `{execution_diagnostics_flat.get('execution_diagnostics_status')}`")
+        lines.append(
+            f"- balance_gap_detected: `{execution_diagnostics_flat.get('execution_balance_gap_detected')}`"
+        )
+        lines.append(
+            f"- fills_gap_detected: `{execution_diagnostics_flat.get('execution_fills_gap_detected')}`"
+        )
+        lines.append(
+            f"- report_path: `{execution_diagnostics_flat.get('execution_diagnostics_report_path')}`"
+        )
+        lines.append("")
+    if data.execution_gap_history_summary:
+        lines.append("## Execution Gap History")
+        lines.append("")
+        lines.append(
+            f"- entry_count: `{execution_gap_history_flat.get('execution_gap_history_entry_count')}`"
+        )
+        lines.append(
+            f"- latest_status: `{execution_gap_history_flat.get('execution_gap_history_latest_status')}`"
+        )
+        lines.append(
+            "- latest_execution_diagnostics_status: "
+            f"`{execution_gap_history_flat.get('execution_gap_history_latest_diagnostics_status')}`"
+        )
+        lines.append(
+            f"- report_path: `{execution_gap_history_flat.get('execution_gap_history_report_path')}`"
+        )
+        lines.append("")
+    if data.execution_state_comparison_summary:
+        lines.append("## Execution State Comparison History")
+        lines.append("")
+        lines.append(
+            f"- entry_count: `{execution_state_comparison_flat.get('execution_state_comparison_entry_count')}`"
+        )
+        lines.append(
+            "- latest_status_match: "
+            f"`{execution_state_comparison_flat.get('execution_state_comparison_latest_status_match')}`"
+        )
+        lines.append(
+            "- mismatching_count: "
+            f"`{execution_state_comparison_flat.get('execution_state_comparison_mismatching_count')}`"
+        )
+        lines.append(
+            f"- report_path: `{execution_state_comparison_flat.get('execution_state_comparison_report_path')}`"
+        )
+        lines.append("")
+    if data.execution_snapshot_drift_summary:
+        lines.append("## Execution Snapshot Drift History")
+        lines.append("")
+        lines.append(
+            f"- entry_count: `{execution_snapshot_drift_flat.get('execution_snapshot_drift_entry_count')}`"
+        )
+        lines.append(
+            "- latest_execution_state_comparison_status_match: "
+            f"`{execution_snapshot_drift_flat.get('execution_snapshot_drift_latest_status_match')}`"
+        )
+        lines.append(
+            "- mismatching_snapshot_count: "
+            f"`{execution_snapshot_drift_flat.get('execution_snapshot_drift_mismatching_snapshot_count')}`"
+        )
+        lines.append(
+            f"- report_path: `{execution_snapshot_drift_flat.get('execution_snapshot_drift_report_path')}`"
+        )
+        lines.append("")
+    if data.execution_drift_overview_summary:
+        lines.append("## Execution Drift Overview")
+        lines.append("")
+        lines.append(f"- overall_status: `{execution_drift_flat.get('execution_drift_overview_status')}`")
+        lines.append(
+            f"- diagnostics_alignment_match: `{execution_drift_flat.get('execution_drift_overview_diagnostics_alignment_match')}`"
+        )
+        lines.append(
+            f"- state_comparison_mismatching_count: `{execution_drift_flat.get('execution_drift_overview_state_comparison_mismatching_count')}`"
+        )
+        lines.append(
+            f"- snapshot_drift_mismatching_snapshot_count: `{execution_drift_flat.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count')}`"
+        )
+        lines.append("")
     lines.append("## Artifact Summary")
     lines.append("")
     lines.append(f"- sidecar_metadata_rows: `{data.row_counts['sidecar_metadata']}`")
@@ -345,6 +590,18 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
 
 
 def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
+    phase_gate_flat = phase_gate_flat_fields(data.phase_gate_summary)
+    execution_summary_flat = execution_snapshot_flat_fields(data.execution_summary)
+    execution_comparison_flat = execution_comparison_flat_fields(data.execution_comparison_summary)
+    execution_diagnostics_flat = execution_diagnostics_flat_fields(data.execution_diagnostics_summary)
+    execution_gap_history_flat = execution_gap_history_flat_fields(data.execution_gap_history_summary)
+    execution_state_comparison_flat = execution_state_comparison_flat_fields(
+        data.execution_state_comparison_summary
+    )
+    execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
+        data.execution_snapshot_drift_summary
+    )
+    execution_drift_flat = execution_drift_overview_flat_fields(data.execution_drift_overview_summary)
     def esc(value: object) -> str:
         return html.escape("" if value is None else str(value))
 
@@ -409,6 +666,7 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
         f"<li>{esc(issue.path)}: {esc(issue.message)}</li>" for issue in data.validation.issues
     ) or "<li>none</li>"
     log_tail = html.escape("\n".join(data.log_tail))
+    audit_summary_flat = audit_summary_fields(data.audit_summary, data.audit_summary)
 
     return f"""<!DOCTYPE html>
 <html lang="ja">
@@ -455,6 +713,85 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
         <div class="metric"><div class="label">Decision</div><div class="value">{esc(data.decision)}</div></div>
         <div class="metric"><div class="label">Started At UTC</div><div class="value">{esc(data.started_at_utc)}</div></div>
         <div class="metric"><div class="label">Finished At UTC</div><div class="value">{esc(data.finished_at_utc)}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Audit Summary</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(audit_summary_flat.get('overall_status'))}</div></div>
+        <div class="metric"><div class="label">Latest Operation</div><div class="value">{esc(audit_summary_flat.get('latest_operation'))}</div></div>
+        <div class="metric"><div class="label">Bundle History Snapshot Count</div><div class="value">{esc(audit_summary_flat.get('bundle_history_snapshot_count'))}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Phase Gate Summary</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Decision</div><div class="value">{esc(phase_gate_flat.get('phase_gate_decision'))}</div></div>
+        <div class="metric"><div class="label">Phase 2 Entry Allowed</div><div class="value">{esc(phase_gate_flat.get('phase2_entry_allowed'))}</div></div>
+        <div class="metric"><div class="label">Reason</div><div class="value">{esc(phase_gate_flat.get('phase_gate_reason'))}</div></div>
+        <div class="metric"><div class="label">Strict Validation</div><div class="value">{esc(phase_gate_flat.get('strict_validation_passed'))}</div></div>
+        <div class="metric"><div class="label">Strict Validation Issues</div><div class="value">{esc(phase_gate_flat.get('phase_gate_strict_validation_issue_count'))}</div></div>
+        <div class="metric"><div class="label">Checked Files</div><div class="value">{esc(phase_gate_flat.get('phase_gate_checked_files'))}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Snapshot</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_summary_flat.get('execution_overall_status'))}</div></div>
+        <div class="metric"><div class="label">Venue Count</div><div class="value">{esc(execution_summary_flat.get('execution_venue_count'))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_summary_flat.get('execution_report_path'))}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Venue Comparison</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">All Registries Present</div><div class="value">{esc(execution_comparison_flat.get('execution_comparison_all_registries_present'))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_comparison_flat.get('execution_comparison_report_path'))}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Venue Diagnostics</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_diagnostics_flat.get('execution_diagnostics_status'))}</div></div>
+        <div class="metric"><div class="label">Balance Gap</div><div class="value">{esc(execution_diagnostics_flat.get('execution_balance_gap_detected'))}</div></div>
+        <div class="metric"><div class="label">Fills Gap</div><div class="value">{esc(execution_diagnostics_flat.get('execution_fills_gap_detected'))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_diagnostics_flat.get('execution_diagnostics_report_path'))}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Gap History</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Entry Count</div><div class="value">{esc(execution_gap_history_flat.get('execution_gap_history_entry_count'))}</div></div>
+        <div class="metric"><div class="label">Latest Status</div><div class="value">{esc(execution_gap_history_flat.get('execution_gap_history_latest_status'))}</div></div>
+        <div class="metric"><div class="label">Latest Diagnostics Status</div><div class="value">{esc(execution_gap_history_flat.get('execution_gap_history_latest_diagnostics_status'))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_gap_history_flat.get('execution_gap_history_report_path'))}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution State Comparison History</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Entry Count</div><div class="value">{esc(execution_state_comparison_flat.get('execution_state_comparison_entry_count'))}</div></div>
+        <div class="metric"><div class="label">Latest Status Match</div><div class="value">{esc(execution_state_comparison_flat.get('execution_state_comparison_latest_status_match'))}</div></div>
+        <div class="metric"><div class="label">Mismatching Count</div><div class="value">{esc(execution_state_comparison_flat.get('execution_state_comparison_mismatching_count'))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_state_comparison_flat.get('execution_state_comparison_report_path'))}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Snapshot Drift History</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Entry Count</div><div class="value">{esc(execution_snapshot_drift_flat.get('execution_snapshot_drift_entry_count'))}</div></div>
+        <div class="metric"><div class="label">Latest State Match</div><div class="value">{esc(execution_snapshot_drift_flat.get('execution_snapshot_drift_latest_status_match'))}</div></div>
+        <div class="metric"><div class="label">Mismatching Snapshot Count</div><div class="value">{esc(execution_snapshot_drift_flat.get('execution_snapshot_drift_mismatching_snapshot_count'))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_snapshot_drift_flat.get('execution_snapshot_drift_report_path'))}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Drift Overview</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_drift_flat.get('execution_drift_overview_status'))}</div></div>
+        <div class="metric"><div class="label">Diagnostics Alignment</div><div class="value">{esc(execution_drift_flat.get('execution_drift_overview_diagnostics_alignment_match'))}</div></div>
+        <div class="metric"><div class="label">State Comparison Mismatch Count</div><div class="value">{esc(execution_drift_flat.get('execution_drift_overview_state_comparison_mismatching_count'))}</div></div>
+        <div class="metric"><div class="label">Snapshot Drift Mismatch Count</div><div class="value">{esc(execution_drift_flat.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count'))}</div></div>
       </div>
     </section>
     <section>
@@ -518,6 +855,19 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
 
 
 def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
+    audit_summary_flat = audit_summary_fields(data.audit_summary, data.audit_summary)
+    phase_gate_flat = phase_gate_flat_fields(data.phase_gate_summary)
+    execution_summary_flat = execution_snapshot_flat_fields(data.execution_summary)
+    execution_comparison_flat = execution_comparison_flat_fields(data.execution_comparison_summary)
+    execution_diagnostics_flat = execution_diagnostics_flat_fields(data.execution_diagnostics_summary)
+    execution_gap_history_flat = execution_gap_history_flat_fields(data.execution_gap_history_summary)
+    execution_state_comparison_flat = execution_state_comparison_flat_fields(
+        data.execution_state_comparison_summary
+    )
+    execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
+        data.execution_snapshot_drift_summary
+    )
+    execution_drift_flat = execution_drift_overview_flat_fields(data.execution_drift_overview_summary)
     path_source = data.log_path if str(data.log_path) not in {"", "."} else (data.manifest_path or data.log_path)
     lines = [
         "# Live Evidence Follow-up",
@@ -529,6 +879,73 @@ def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
         f"- markdown_report: `{data.output_path}`",
         f"- html_report: `{default_html_output_path(path_source)}`",
         f"- manifest_path: `{data.manifest_path}`",
+        "",
+        "## Audit Summary",
+        "",
+        f"- overall_status: `{audit_summary_flat.get('overall_status')}`",
+        f"- latest_operation: `{audit_summary_flat.get('latest_operation')}`",
+        (
+            "- bundle_history_snapshot_count: "
+            f"`{audit_summary_flat.get('bundle_history_snapshot_count')}`"
+        ),
+        "",
+        "## Phase Gate Summary",
+        "",
+        f"- decision: `{phase_gate_flat.get('phase_gate_decision')}`",
+        f"- phase2_entry_allowed: `{phase_gate_flat.get('phase2_entry_allowed')}`",
+        f"- phase_gate_reason: `{phase_gate_flat.get('phase_gate_reason')}`",
+        f"- strict_validation_passed: `{phase_gate_flat.get('strict_validation_passed')}`",
+        (
+            "- phase_gate_strict_validation_issue_count: "
+            f"`{phase_gate_flat.get('phase_gate_strict_validation_issue_count')}`"
+        ),
+        f"- phase_gate_checked_files: `{phase_gate_flat.get('phase_gate_checked_files')}`",
+        "",
+        "## Execution Snapshot",
+        "",
+        f"- overall_status: `{execution_summary_flat.get('execution_overall_status')}`",
+        f"- venue_count: `{execution_summary_flat.get('execution_venue_count')}`",
+        f"- report_path: `{execution_summary_flat.get('execution_report_path')}`",
+        "",
+        "## Execution Venue Comparison",
+        "",
+        f"- all_registries_present: `{execution_comparison_flat.get('execution_comparison_all_registries_present')}`",
+        f"- report_path: `{execution_comparison_flat.get('execution_comparison_report_path')}`",
+        "",
+        "## Execution Venue Diagnostics",
+        "",
+        f"- overall_status: `{execution_diagnostics_flat.get('execution_diagnostics_status')}`",
+        f"- balance_gap_detected: `{execution_diagnostics_flat.get('execution_balance_gap_detected')}`",
+        f"- fills_gap_detected: `{execution_diagnostics_flat.get('execution_fills_gap_detected')}`",
+        f"- report_path: `{execution_diagnostics_flat.get('execution_diagnostics_report_path')}`",
+        "",
+        "## Execution Gap History",
+        "",
+        f"- entry_count: `{execution_gap_history_flat.get('execution_gap_history_entry_count')}`",
+        f"- latest_status: `{execution_gap_history_flat.get('execution_gap_history_latest_status')}`",
+        f"- latest_execution_diagnostics_status: `{execution_gap_history_flat.get('execution_gap_history_latest_diagnostics_status')}`",
+        f"- report_path: `{execution_gap_history_flat.get('execution_gap_history_report_path')}`",
+        "",
+        "## Execution State Comparison History",
+        "",
+        f"- entry_count: `{execution_state_comparison_flat.get('execution_state_comparison_entry_count')}`",
+        f"- latest_status_match: `{execution_state_comparison_flat.get('execution_state_comparison_latest_status_match')}`",
+        f"- mismatching_count: `{execution_state_comparison_flat.get('execution_state_comparison_mismatching_count')}`",
+        f"- report_path: `{execution_state_comparison_flat.get('execution_state_comparison_report_path')}`",
+        "",
+        "## Execution Snapshot Drift History",
+        "",
+        f"- entry_count: `{execution_snapshot_drift_flat.get('execution_snapshot_drift_entry_count')}`",
+        f"- latest_execution_state_comparison_status_match: `{execution_snapshot_drift_flat.get('execution_snapshot_drift_latest_status_match')}`",
+        f"- mismatching_snapshot_count: `{execution_snapshot_drift_flat.get('execution_snapshot_drift_mismatching_snapshot_count')}`",
+        f"- report_path: `{execution_snapshot_drift_flat.get('execution_snapshot_drift_report_path')}`",
+        "",
+        "## Execution Drift Overview",
+        "",
+        f"- overall_status: `{execution_drift_flat.get('execution_drift_overview_status')}`",
+        f"- diagnostics_alignment_match: `{execution_drift_flat.get('execution_drift_overview_diagnostics_alignment_match')}`",
+        f"- state_comparison_mismatching_count: `{execution_drift_flat.get('execution_drift_overview_state_comparison_mismatching_count')}`",
+        f"- snapshot_drift_mismatching_snapshot_count: `{execution_drift_flat.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count')}`",
         "",
         "## Immediate Next Work",
         "",

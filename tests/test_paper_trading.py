@@ -93,8 +93,36 @@ def test_paper_portfolio_tracks_entry_and_exit_and_writes_artifacts(tmp_path) ->
 
     fills_path = write_fills_parquet(tmp_path / "fills.parquet", [entry_fill, exit_fill])
     positions_path = write_positions_parquet(tmp_path / "positions.parquet", portfolio.positions())
-    report = build_daily_paper_report([entry_fill, exit_fill], portfolio.positions(), tmp_path / "report.md")
+    report = build_daily_paper_report(
+        [entry_fill, exit_fill],
+        portfolio.positions(),
+        tmp_path / "report.md",
+        audit_summary={
+            "overall_status": "ok",
+            "latest_operation": "audit_bundle_snapshot",
+            "bundle_history_snapshot_count": 3,
+        },
+        phase_gate_summary={
+            "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+            "phase2_entry_allowed": False,
+            "phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears",
+            "strict_validation_passed": True,
+        },
+        execution_drift_overview_summary={
+            "overall_status": "degraded",
+            "diagnostics_alignment_match": False,
+            "state_comparison_mismatching_count": 1,
+            "snapshot_drift_mismatching_snapshot_count": 1,
+            "report_path": "data/reports/execution_drift_overview.md",
+        },
+    )
 
     assert fills_path.exists()
     assert positions_path.exists()
     assert "Daily Paper Report" in report
+    assert "Audit Summary" in report
+    assert "overall_status: ok" in report
+    assert "Phase Gate Summary" in report
+    assert "decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
+    assert "Execution Drift Overview" in report
+    assert "overall_status: degraded" in report

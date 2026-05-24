@@ -140,6 +140,45 @@ def test_build_and_render_live_evidence_report(tmp_path) -> None:
             "criteria": [],
             "blockers": [],
             "next_actions": ["none"],
+            "phase_gate_summary": {
+                "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+                "phase2_entry_allowed": False,
+                "phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears",
+                "strict_validation_passed": True,
+            },
+            "execution_summary": {
+                "overall_status": "ok",
+                "venue_count": 2,
+                "report_path": "data/reports/execution_snapshot.md",
+            },
+            "execution_comparison_summary": {
+                "all_registries_present": True,
+                "report_path": "data/reports/execution_venue_comparison.md",
+            },
+            "execution_diagnostics_summary": {
+                "overall_status": "degraded",
+                "balance_gap_detected": True,
+                "fills_gap_detected": False,
+                "report_path": "data/reports/execution_venue_diagnostics.md",
+            },
+            "execution_gap_history_summary": {
+                "entry_count": 4,
+                "latest_status": "ok",
+                "latest_execution_diagnostics_status": "degraded",
+                "report_path": "data/reports/execution_gap_history.md",
+            },
+            "execution_snapshot_drift_summary": {
+                "entry_count": 3,
+                "latest_execution_state_comparison_status_match": True,
+                "mismatching_snapshot_count": 1,
+                "report_path": "data/reports/execution_snapshot_drift_history.md",
+            },
+            "execution_drift_overview_summary": {
+                "execution_drift_overview_status": "degraded",
+                "execution_drift_overview_diagnostics_alignment_match": False,
+                "execution_drift_overview_state_comparison_mismatching_count": 1,
+                "execution_drift_overview_snapshot_drift_mismatching_snapshot_count": 1,
+            },
         },
     )
     _write_json_pretty(
@@ -168,6 +207,45 @@ def test_build_and_render_live_evidence_report(tmp_path) -> None:
             "decision": "GO",
             "blockers": [],
             "next_actions": ["none"],
+            "phase_gate_summary": {
+                "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+                "phase2_entry_allowed": False,
+                "phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears",
+                "strict_validation_passed": True,
+            },
+            "execution_summary": {
+                "overall_status": "ok",
+                "venue_count": 2,
+                "report_path": "data/reports/execution_snapshot.md",
+            },
+            "execution_comparison_summary": {
+                "all_registries_present": True,
+                "report_path": "data/reports/execution_venue_comparison.md",
+            },
+            "execution_diagnostics_summary": {
+                "overall_status": "degraded",
+                "balance_gap_detected": True,
+                "fills_gap_detected": False,
+                "report_path": "data/reports/execution_venue_diagnostics.md",
+            },
+            "execution_gap_history_summary": {
+                "entry_count": 4,
+                "latest_status": "ok",
+                "latest_execution_diagnostics_status": "degraded",
+                "report_path": "data/reports/execution_gap_history.md",
+            },
+            "execution_snapshot_drift_summary": {
+                "entry_count": 3,
+                "latest_execution_state_comparison_status_match": True,
+                "mismatching_snapshot_count": 1,
+                "report_path": "data/reports/execution_snapshot_drift_history.md",
+            },
+            "execution_drift_overview_summary": {
+                "overall_status": "degraded",
+                "diagnostics_alignment_match": False,
+                "state_comparison_mismatching_count": 1,
+                "snapshot_drift_mismatching_snapshot_count": 1,
+            },
         },
     )
 
@@ -177,6 +255,11 @@ def test_build_and_render_live_evidence_report(tmp_path) -> None:
         output_path=output_path,
         manifest_path=manifest_path,
         status="completed",
+        audit_summary={
+            "overall_status": "ok",
+            "latest_operation": "audit_bundle_snapshot",
+            "bundle_history_snapshot_count": 3,
+        },
     )
     text = render_live_evidence_report(data)
     html_text = render_live_evidence_html(data)
@@ -184,13 +267,47 @@ def test_build_and_render_live_evidence_report(tmp_path) -> None:
 
     assert data.status == "completed"
     assert data.decision == "GO"
+    assert data.audit_summary["overall_status"] == "ok"
+    assert data.phase_gate_summary["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
+    assert data.execution_summary["overall_status"] == "ok"
+    assert data.execution_comparison_summary["all_registries_present"] is True
+    assert data.execution_diagnostics_summary["balance_gap_detected"] is True
+    assert data.execution_gap_history_summary["latest_status"] == "ok"
+    assert data.execution_snapshot_drift_summary["mismatching_snapshot_count"] == 1
+    assert data.execution_drift_overview_summary["overall_status"] == "degraded"
+    assert "## Audit Summary" in text
+    assert "## Phase Gate Summary" in text
+    assert "## Execution Snapshot" in text
+    assert "## Execution Venue Comparison" in text
+    assert "## Execution Venue Diagnostics" in text
+    assert "## Execution Gap History" in text
+    assert "## Execution Snapshot Drift History" in text
+    assert "## Execution Drift Overview" in text
+    assert "decision: `CONDITIONAL_GO_NEEDS_LIVE_WINDOW`" in text
     assert "## GTrade Diagnostics" in text
     assert "| SPY | 1 | 1 | 1.0000 |" in text
     assert "## Backtest Snapshot" in text
     assert "## Log Tail" in text
     assert "<!DOCTYPE html>" in html_text
+    assert "<h2>Audit Summary</h2>" in html_text
+    assert "<h2>Phase Gate Summary</h2>" in html_text
+    assert "<h2>Execution Snapshot</h2>" in html_text
+    assert "<h2>Execution Venue Comparison</h2>" in html_text
+    assert "<h2>Execution Venue Diagnostics</h2>" in html_text
+    assert "<h2>Execution Gap History</h2>" in html_text
+    assert "<h2>Execution Snapshot Drift History</h2>" in html_text
+    assert "<h2>Execution Drift Overview</h2>" in html_text
     assert "<h2>GTrade Diagnostics</h2>" in html_text
     assert "Live Evidence Detailed Report" in html_text
+    assert "## Audit Summary" in followup_text
+    assert "overall_status: `ok`" in followup_text
+    assert "## Phase Gate Summary" in followup_text
+    assert "## Execution Snapshot" in followup_text
+    assert "## Execution Venue Comparison" in followup_text
+    assert "## Execution Venue Diagnostics" in followup_text
+    assert "## Execution Gap History" in followup_text
+    assert "## Execution Snapshot Drift History" in followup_text
+    assert "## Execution Drift Overview" in followup_text
     assert "## Immediate Next Work" in followup_text
     assert "- none" in followup_text
 
@@ -225,6 +342,10 @@ def test_manifest_status_overrides_failed_log(tmp_path) -> None:
             "row_counts": {"sidecar_metadata": 0, "sidecar_pricing": 0, "raw_quotes": 1},
             "decision": "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST",
             "next_actions": ["review retried steps"],
+            "phase_gate_summary": {
+                "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+                "phase2_entry_allowed": False,
+            },
         },
     )
 
@@ -233,10 +354,12 @@ def test_manifest_status_overrides_failed_log(tmp_path) -> None:
         log_path=log_path,
         manifest_path=manifest_path,
         output_path=output_path,
+        audit_summary={"overall_status": "ok"},
     )
 
     assert data.status == "completed_with_retries"
     assert data.decision == "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST"
+    assert data.phase_gate_summary["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
 
 
 def test_default_output_paths_use_log_stamp() -> None:

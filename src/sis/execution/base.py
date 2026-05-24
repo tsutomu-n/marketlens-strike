@@ -34,6 +34,41 @@ class AdapterOrderEstimate:
     notes: list[str]
 
 
+@dataclass(frozen=True)
+class AdapterOrderStatus:
+    venue: str
+    order_id: str
+    canonical_symbol: str | None
+    side: str | None
+    quantity: float | None
+    status: str
+    notes: list[str]
+
+
+@dataclass(frozen=True)
+class AdapterFillSnapshot:
+    venue: str
+    fill_id: str
+    order_id: str | None
+    canonical_symbol: str | None
+    side: str | None
+    quantity: float | None
+    price: float | None
+    status: str
+    ts_fill: str | None
+    notes: list[str]
+
+
+@dataclass(frozen=True)
+class AdapterActionResult:
+    venue: str
+    action: str
+    target: str
+    success: bool
+    status: str
+    notes: list[str]
+
+
 class ExecutionAdapter(Protocol):
     adapter_name: str
 
@@ -42,5 +77,15 @@ class ExecutionAdapter(Protocol):
     def read_positions(self) -> list[AdapterPositionSnapshot]: ...
 
     def estimate_order(self, intent: OrderIntent) -> AdapterOrderEstimate: ...
+
+    def read_order_status(self, order_id: str) -> AdapterOrderStatus: ...
+
+    def read_order_statuses(self, limit: int | None = None) -> list[AdapterOrderStatus]: ...
+
+    def read_fills(self, limit: int | None = None) -> list[AdapterFillSnapshot]: ...
+
+    def cancel_order(self, order_id: str) -> AdapterActionResult: ...
+
+    def close_position(self, canonical_symbol: str, side: str | None = None) -> AdapterActionResult: ...
 
     def healthcheck(self) -> dict: ...

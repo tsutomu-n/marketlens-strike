@@ -5,6 +5,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sis.reports.go_no_go import build_go_no_go_report
+from sis.reports.summary_normalizers import (
+    execution_drift_overview_flat_fields,
+    normalize_execution_drift_overview_summary,
+    phase_gate_flat_fields,
+    normalize_phase_gate_summary,
+    readiness_flat_fields,
+    normalize_readiness_summary,
+)
 from sis.storage.jsonl_store import write_json
 from sis.venues.ostium.positions import latest_positions_sidecar
 
@@ -37,11 +45,31 @@ def sha256_tree(root: Path) -> str | None:
     return "sha256:" + digest.hexdigest()
 
 
-def build_evidence_card(data_dir: Path, out_dir: Path) -> Path:
+def build_evidence_card(
+    data_dir: Path,
+    out_dir: Path,
+    audit_summary: dict | None = None,
+    phase_gate_summary: dict | None = None,
+    readiness_summary: dict | None = None,
+    execution_summary: dict | None = None,
+    execution_comparison_summary: dict | None = None,
+    execution_diagnostics_summary: dict | None = None,
+    execution_drift_overview_summary: dict | None = None,
+) -> Path:
     now = datetime.now(timezone.utc)
     run_id = now.strftime("%Y%m%d_%H%M%S")
     report = build_go_no_go_report(data_dir)
     ostium_positions = latest_positions_sidecar(data_dir / "raw/sidecar/ostium")
+    normalized_phase_gate_summary = normalize_phase_gate_summary(phase_gate_summary)
+    normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
+    normalized_execution_drift_overview_summary = normalize_execution_drift_overview_summary(
+        execution_drift_overview_summary
+    )
+    phase_gate_flat = phase_gate_flat_fields(normalized_phase_gate_summary)
+    readiness_flat = readiness_flat_fields(normalized_readiness_summary)
+    execution_drift_flat = execution_drift_overview_flat_fields(
+        normalized_execution_drift_overview_summary
+    )
     card = {
         "run_id": run_id,
         "created_at": now.isoformat(),
@@ -69,6 +97,20 @@ def build_evidence_card(data_dir: Path, out_dir: Path) -> Path:
         "criteria": [item.model_dump(mode="json") for item in report.criteria],
         "blockers": report.blockers,
         "next_actions": report.next_actions,
+        "audit_summary": audit_summary if isinstance(audit_summary, dict) else {},
+        "phase_gate_summary": normalized_phase_gate_summary,
+        **phase_gate_flat,
+        "readiness_summary": normalized_readiness_summary,
+        **readiness_flat,
+        "execution_summary": execution_summary if isinstance(execution_summary, dict) else {},
+        "execution_comparison_summary": (
+            execution_comparison_summary if isinstance(execution_comparison_summary, dict) else {}
+        ),
+        "execution_diagnostics_summary": (
+            execution_diagnostics_summary if isinstance(execution_diagnostics_summary, dict) else {}
+        ),
+        "execution_drift_overview_summary": normalized_execution_drift_overview_summary,
+        **execution_drift_flat,
     }
     out_path = out_dir / f"evidence_card_{run_id}.json"
     write_json(out_path, card)

@@ -15,6 +15,18 @@ from sis.core.decision import DecisionRecord
 from sis.core.execution_plan import build_execution_plan
 from sis.core.strategy import ResearchSignalStrategy
 from sis.risk.risk_gate import evaluate_risk_gate
+from sis.reports.summary_normalizers import (
+    audit_summary_fields,
+    execution_comparison_flat_fields,
+    execution_diagnostics_flat_fields,
+    execution_drift_overview_flat_fields,
+    execution_snapshot_flat_fields,
+    normalize_execution_drift_overview_summary,
+    phase_gate_flat_fields,
+    normalize_phase_gate_summary,
+    readiness_flat_fields,
+    normalize_readiness_summary,
+)
 
 
 @dataclass(frozen=True)
@@ -366,6 +378,10 @@ def run_backtest_bridge_with_decisions(
     cost_matrix_path: Path | None = None,
     decision_log_path: Path | None = None,
     decision_summary_path: Path | None = None,
+    audit_summary: dict | None = None,
+    phase_gate_summary: dict | None = None,
+    readiness_summary: dict | None = None,
+    execution_drift_overview_summary: dict | None = None,
 ) -> tuple[list[BacktestMetrics], list[DecisionRecord], dict]:
     if not quotes_path.exists():
         raise FileNotFoundError(f"Normalized quote parquet not found: {quotes_path}")
@@ -379,10 +395,33 @@ def run_backtest_bridge_with_decisions(
         raise ValueError(f"Normalized quote parquet missing columns: {sorted(missing)}")
 
     cost_profiles = load_cost_profiles(cost_matrix_path)
+    normalized_phase_gate_summary = normalize_phase_gate_summary(phase_gate_summary)
+    normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
+    normalized_execution_drift_overview_summary = normalize_execution_drift_overview_summary(
+        execution_drift_overview_summary
+    )
+    phase_gate_flat = phase_gate_flat_fields(normalized_phase_gate_summary)
+    readiness_flat = readiness_flat_fields(normalized_readiness_summary)
+    execution_drift_flat = execution_drift_overview_flat_fields(
+        normalized_execution_drift_overview_summary
+    )
     if signals_path is not None:
         signals = load_research_signals(signals_path)
         if signals:
             metrics, records, summary = _metrics_for_signals(quotes, signals, cost_profiles)
+            if isinstance(audit_summary, dict) and any(audit_summary.values()):
+                summary["audit"] = audit_summary
+            if normalized_phase_gate_summary and any(normalized_phase_gate_summary.values()):
+                summary["phase_gate"] = normalized_phase_gate_summary
+                summary.update(phase_gate_flat)
+            if normalized_readiness_summary and any(normalized_readiness_summary.values()):
+                summary["readiness_summary"] = normalized_readiness_summary
+                summary.update(readiness_flat)
+            if normalized_execution_drift_overview_summary and any(
+                normalized_execution_drift_overview_summary.values()
+            ):
+                summary["execution_drift_overview_summary"] = normalized_execution_drift_overview_summary
+                summary.update(execution_drift_flat)
             if decision_log_path is not None:
                 _write_decision_records(records, decision_log_path)
             if decision_summary_path is not None:
@@ -401,6 +440,17 @@ def run_backtest_bridge_with_decisions(
         "blocked_reason_counts": {},
         "records_written": 0,
     }
+    if isinstance(audit_summary, dict) and any(audit_summary.values()):
+        summary["audit"] = audit_summary
+    if normalized_phase_gate_summary and any(normalized_phase_gate_summary.values()):
+        summary["phase_gate"] = normalized_phase_gate_summary
+        summary.update(phase_gate_flat)
+    if normalized_readiness_summary and any(normalized_readiness_summary.values()):
+        summary["readiness_summary"] = normalized_readiness_summary
+        summary.update(readiness_flat)
+    if normalized_execution_drift_overview_summary and any(normalized_execution_drift_overview_summary.values()):
+        summary["execution_drift_overview_summary"] = normalized_execution_drift_overview_summary
+        summary.update(execution_drift_flat)
     if decision_summary_path is not None:
         _write_decision_summary(summary, decision_summary_path)
     if decision_log_path is not None:
@@ -425,8 +475,20 @@ def write_backtest_report(
     metrics: list[BacktestMetrics],
     out_path: Path,
     signals_path: Path | None = None,
+    audit_summary: dict | None = None,
+    phase_gate_summary: dict | None = None,
+    readiness_summary: dict | None = None,
+    execution_summary: dict | None = None,
+    execution_comparison_summary: dict | None = None,
+    execution_diagnostics_summary: dict | None = None,
+    execution_drift_overview_summary: dict | None = None,
 ) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    phase_gate_summary = normalize_phase_gate_summary(phase_gate_summary)
+    readiness_summary = normalize_readiness_summary(readiness_summary)
+    execution_drift_overview_summary = normalize_execution_drift_overview_summary(
+        execution_drift_overview_summary
+    )
     source = (
         f"This report uses research signals from `{signals_path}` for virtual venue execution."
         if signals_path is not None and signals_path.exists()
@@ -447,28 +509,185 @@ def write_backtest_report(
         )
         for item in metrics
     )
-    out_path.write_text(
-        "\n".join(
+    lines = [
+        "# Backtest Bridge Report",
+        "",
+        source,
+        "",
+        "| Venue | Symbol | Trades | Total Return | Max Drawdown | Win Rate | Cost Drag bps | Cost Source | Stale Rejects | Halt Rejects |",
+        "|---|---:|---:|---:|---:|---:|---:|---|---:|---:|",
+        rows,
+        "",
+    ]
+    if isinstance(audit_summary, dict) and any(audit_summary.values()):
+        audit_summary_flat = audit_summary_fields(audit_summary, audit_summary)
+        lines.extend(
             [
-                "# Backtest Bridge Report",
+                "## Audit Summary",
                 "",
-                source,
-                "",
-                "| Venue | Symbol | Trades | Total Return | Max Drawdown | Win Rate | Cost Drag bps | Cost Source | Stale Rejects | Halt Rejects |",
-                "|---|---:|---:|---:|---:|---:|---:|---|---:|---:|",
-                rows,
+                f"- overall_status: {audit_summary_flat.get('overall_status') or ''}",
+                f"- latest_operation: {audit_summary_flat.get('latest_operation') or ''}",
+                f"- bundle_history_snapshot_count: {audit_summary_flat.get('bundle_history_snapshot_count') or ''}",
                 "",
             ]
-        ),
-        encoding="utf-8",
-    )
+        )
+    if isinstance(phase_gate_summary, dict) and any(phase_gate_summary.values()):
+        phase_gate_flat = phase_gate_flat_fields(phase_gate_summary)
+        lines.extend(
+            [
+                "## Phase Gate Summary",
+                "",
+                f"- decision: {phase_gate_flat.get('phase_gate_decision') or ''}",
+                f"- phase2_entry_allowed: {phase_gate_flat.get('phase2_entry_allowed')}",
+                f"- phase_gate_reason: {phase_gate_flat.get('phase_gate_reason') or ''}",
+                f"- strict_validation_passed: {phase_gate_flat.get('strict_validation_passed')}",
+                (
+                    "- phase_gate_strict_validation_issue_count: "
+                    f"{phase_gate_flat.get('phase_gate_strict_validation_issue_count')}"
+                ),
+                f"- phase_gate_checked_files: {phase_gate_flat.get('phase_gate_checked_files')}",
+                "",
+            ]
+        )
+    if isinstance(readiness_summary, dict) and any(readiness_summary.values()):
+        readiness_flat = readiness_flat_fields(readiness_summary)
+        lines.extend(
+            [
+                "## Readiness Summary",
+                "",
+                f"- next_phase_candidate: {readiness_flat.get('readiness_next_phase_candidate') or ''}",
+                f"- execution_ready: {readiness_flat.get('readiness_execution_ready')}",
+                f"- phase_gate_decision: {readiness_flat.get('phase_gate_decision') or ''}",
+                f"- phase2_entry_allowed: {readiness_flat.get('phase2_entry_allowed')}",
+                "",
+            ]
+        )
+    if isinstance(execution_summary, dict) and any(execution_summary.values()):
+        execution_summary_flat = execution_snapshot_flat_fields(execution_summary)
+        lines.extend(
+            [
+                "## Execution Snapshot",
+                "",
+                f"- overall_status: {execution_summary_flat.get('execution_overall_status') or ''}",
+                f"- venue_count: {execution_summary_flat.get('execution_venue_count')}",
+                f"- report_path: {execution_summary_flat.get('execution_report_path') or ''}",
+                "",
+            ]
+        )
+    if isinstance(execution_comparison_summary, dict) and any(execution_comparison_summary.values()):
+        execution_comparison_flat = execution_comparison_flat_fields(execution_comparison_summary)
+        lines.extend(
+            [
+                "## Execution Venue Comparison",
+                "",
+                (
+                    "- all_registries_present: "
+                    f"{execution_comparison_flat.get('execution_comparison_all_registries_present')}"
+                ),
+                f"- report_path: {execution_comparison_flat.get('execution_comparison_report_path') or ''}",
+                "",
+            ]
+        )
+    if isinstance(execution_diagnostics_summary, dict) and any(execution_diagnostics_summary.values()):
+        execution_diagnostics_flat = execution_diagnostics_flat_fields(
+            execution_diagnostics_summary
+        )
+        lines.extend(
+            [
+                "## Execution Venue Diagnostics",
+                "",
+                f"- overall_status: {execution_diagnostics_flat.get('execution_diagnostics_status') or ''}",
+                f"- balance_gap_detected: {execution_diagnostics_flat.get('execution_balance_gap_detected')}",
+                f"- fills_gap_detected: {execution_diagnostics_flat.get('execution_fills_gap_detected')}",
+                f"- report_path: {execution_diagnostics_flat.get('execution_diagnostics_report_path') or ''}",
+                "",
+            ]
+        )
+    if isinstance(execution_drift_overview_summary, dict) and any(execution_drift_overview_summary.values()):
+        execution_drift_flat = execution_drift_overview_flat_fields(
+            execution_drift_overview_summary
+        )
+        lines.extend(
+            [
+                "## Execution Drift Overview",
+                "",
+                f"- overall_status: {execution_drift_flat.get('execution_drift_overview_status') or ''}",
+                (
+                    "- diagnostics_alignment_match: "
+                    f"{execution_drift_flat.get('execution_drift_overview_diagnostics_alignment_match')}"
+                ),
+                (
+                    "- state_comparison_mismatching_count: "
+                    f"{execution_drift_flat.get('execution_drift_overview_state_comparison_mismatching_count')}"
+                ),
+                (
+                    "- snapshot_drift_mismatching_snapshot_count: "
+                    f"{execution_drift_flat.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count')}"
+                ),
+                f"- report_path: {execution_drift_flat.get('execution_drift_overview_report_path') or ''}",
+                "",
+            ]
+        )
+    out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def write_backtest_metrics_json(metrics: list[BacktestMetrics], out_path: Path) -> None:
-    import json
-
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(
         json.dumps([asdict(item) for item in metrics], ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+
+
+def write_backtest_metrics_summary_json(
+    metrics: list[BacktestMetrics],
+    out_path: Path,
+    *,
+    audit_summary: dict | None = None,
+    phase_gate_summary: dict | None = None,
+    readiness_summary: dict | None = None,
+    execution_summary: dict | None = None,
+    execution_comparison_summary: dict | None = None,
+    execution_diagnostics_summary: dict | None = None,
+    execution_drift_overview_summary: dict | None = None,
+) -> None:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    trade_counts = [item.trade_count for item in metrics]
+    avg_trade_returns = [item.avg_trade_return for item in metrics if item.avg_trade_return is not None]
+    normalized_phase_gate_summary = normalize_phase_gate_summary(phase_gate_summary)
+    normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
+    normalized_execution_drift_overview_summary = normalize_execution_drift_overview_summary(
+        execution_drift_overview_summary
+    )
+    phase_gate_flat = phase_gate_flat_fields(normalized_phase_gate_summary)
+    readiness_flat = readiness_flat_fields(normalized_readiness_summary)
+    execution_drift_flat = execution_drift_overview_flat_fields(
+        normalized_execution_drift_overview_summary
+    )
+    payload = {
+        "row_count": len(metrics),
+        "venues": sorted({item.venue for item in metrics}),
+        "symbols": sorted({item.canonical_symbol for item in metrics}),
+        "total_trade_count": sum(trade_counts),
+        "max_trade_count": max(trade_counts, default=0),
+        "avg_trade_return_mean": (sum(avg_trade_returns) / len(avg_trade_returns)) if avg_trade_returns else None,
+        "max_drawdown_worst": min((item.max_drawdown for item in metrics), default=None),
+        "cost_drag_bps_total": sum(item.cost_drag_bps for item in metrics),
+        "stale_rejected_total": sum(item.stale_rejected_count for item in metrics),
+        "halt_rejected_total": sum(item.halt_rejected_count for item in metrics),
+        "audit": audit_summary if isinstance(audit_summary, dict) else {},
+        "phase_gate": normalized_phase_gate_summary,
+        **phase_gate_flat,
+        "readiness_summary": normalized_readiness_summary,
+        **readiness_flat,
+        "execution": execution_summary if isinstance(execution_summary, dict) else {},
+        "execution_comparison": (
+            execution_comparison_summary if isinstance(execution_comparison_summary, dict) else {}
+        ),
+        "execution_diagnostics": (
+            execution_diagnostics_summary if isinstance(execution_diagnostics_summary, dict) else {}
+        ),
+        "execution_drift_overview_summary": normalized_execution_drift_overview_summary,
+        **execution_drift_flat,
+    }
+    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

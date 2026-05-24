@@ -4,7 +4,13 @@ import polars as pl
 import pytest
 
 from sis.backtest.signals import load_research_signals
-from sis.backtest.bridge import run_backtest_bridge, run_backtest_bridge_with_decisions, write_backtest_report
+from sis.backtest.bridge import (
+    BacktestMetrics,
+    run_backtest_bridge,
+    run_backtest_bridge_with_decisions,
+    write_backtest_metrics_summary_json,
+    write_backtest_report,
+)
 
 
 def test_backtest_bridge_runs_virtual_execution_from_quotes(tmp_path) -> None:
@@ -145,11 +151,49 @@ def test_backtest_report_writes_metrics_table(tmp_path) -> None:
     ).write_parquet(quotes_path)
 
     metrics = run_backtest_bridge(quotes_path)
-    write_backtest_report(metrics, report_path)
+    write_backtest_report(
+        metrics,
+        report_path,
+        audit_summary={
+            "overall_status": "ok",
+            "latest_operation": "audit_bundle_snapshot",
+            "bundle_history_snapshot_count": 3,
+        },
+        phase_gate_summary={
+            "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+            "phase2_entry_allowed": False,
+            "phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears",
+            "strict_validation_passed": True,
+        },
+        execution_summary={
+            "overall_status": "ok",
+            "venue_count": 2,
+            "report_path": "data/reports/execution_snapshot.md",
+        },
+        execution_comparison_summary={
+            "all_registries_present": True,
+            "report_path": "data/reports/execution_venue_comparison.md",
+        },
+        execution_diagnostics_summary={
+            "overall_status": "degraded",
+            "balance_gap_detected": True,
+            "fills_gap_detected": False,
+            "report_path": "data/reports/execution_venue_diagnostics.md",
+        },
+    )
 
     text = report_path.read_text(encoding="utf-8")
     assert "Backtest Bridge Report" in text
     assert "SPY" in text
+    assert "Audit Summary" in text
+    assert "overall_status: ok" in text
+    assert "Phase Gate Summary" in text
+    assert "decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in text
+    assert "Execution Snapshot" in text
+    assert "Execution Venue Comparison" in text
+    assert "all_registries_present: True" in text
+    assert "Execution Venue Diagnostics" in text
+    assert "balance_gap_detected: True" in text
 
 
 def test_backtest_bridge_uses_research_signal_csv(tmp_path) -> None:
@@ -257,6 +301,29 @@ def test_backtest_bridge_writes_decision_artifacts_for_signal_mode(tmp_path) -> 
         signals_path,
         decision_log_path=decision_log_path,
         decision_summary_path=decision_summary_path,
+        audit_summary={
+            "overall_status": "ok",
+            "latest_operation": "audit_bundle_snapshot",
+            "bundle_history_snapshot_count": 3,
+        },
+        phase_gate_summary={
+            "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+            "phase2_entry_allowed": False,
+            "phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears",
+            "strict_validation_passed": True,
+        },
+        readiness_summary={
+            "readiness_next_phase_candidate": "Stay Phase 1",
+            "readiness_execution_ready": False,
+            "phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+            "phase2_entry_allowed": False,
+        },
+        execution_drift_overview_summary={
+            "execution_drift_overview_status": "degraded",
+            "execution_drift_overview_diagnostics_alignment_match": False,
+            "execution_drift_overview_state_comparison_mismatching_count": 1,
+            "execution_drift_overview_snapshot_drift_mismatching_snapshot_count": 1,
+        },
     )
 
     assert len(metrics) == 1
@@ -266,6 +333,17 @@ def test_backtest_bridge_writes_decision_artifacts_for_signal_mode(tmp_path) -> 
     assert decision_summary_path.exists()
     assert '"action":"enter_long"' in decision_log_path.read_text(encoding="utf-8")
     assert '"mode": "signal_driven"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"audit"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"phase_gate"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"readiness_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"next_phase_candidate": "Stay Phase 1"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_drift_overview_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_drift_overview_status": "degraded"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"overall_status": "degraded"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_drift_overview_state_comparison_mismatching_count": 1' in decision_summary_path.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_research_signal_loader_blocks_scalping_timeframes(tmp_path) -> None:
@@ -278,3 +356,89 @@ def test_research_signal_loader_blocks_scalping_timeframes(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="BLOCK_SCALPING_TIMEFRAME"):
         load_research_signals(signals_path)
+
+
+def test_write_backtest_metrics_summary_json_includes_current_state(tmp_path) -> None:
+    metrics = [
+        BacktestMetrics(
+            venue="gtrade",
+            canonical_symbol="QQQ",
+            trade_count=2,
+            avg_trade_return=0.03,
+            total_return=0.06,
+            annual_return=0.12,
+            sharpe=1.1,
+            max_drawdown=-0.01,
+            win_rate=0.5,
+            profit_factor=1.5,
+            worst_trade=-0.02,
+            cost_drag_bps=7.0,
+            cost_source="matrix",
+            stale_rejected_count=1,
+            halt_rejected_count=0,
+            exposure_ratio=1.0,
+        )
+    ]
+    out = tmp_path / "backtest_metrics_summary.json"
+
+    write_backtest_metrics_summary_json(
+        metrics,
+        out,
+        audit_summary={
+            "overall_status": "ok",
+            "latest_operation": "audit_bundle_snapshot",
+            "bundle_history_snapshot_count": 3,
+        },
+        phase_gate_summary={
+            "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+            "phase2_entry_allowed": False,
+            "phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears",
+            "strict_validation_passed": True,
+        },
+        readiness_summary={
+            "next_phase_candidate": "Stay Phase 1",
+            "execution_ready": False,
+            "phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+            "phase2_entry_allowed": False,
+        },
+        execution_summary={
+            "overall_status": "ok",
+            "venue_count": 2,
+            "report_path": "data/reports/execution_snapshot.md",
+        },
+        execution_comparison_summary={
+            "all_registries_present": True,
+            "report_path": "data/reports/execution_venue_comparison.md",
+        },
+        execution_diagnostics_summary={
+            "overall_status": "degraded",
+            "balance_gap_detected": True,
+            "fills_gap_detected": False,
+            "report_path": "data/reports/execution_venue_diagnostics.md",
+        },
+        execution_drift_overview_summary={
+            "overall_status": "degraded",
+            "diagnostics_alignment_match": False,
+            "state_comparison_mismatching_count": 1,
+            "snapshot_drift_mismatching_snapshot_count": 1,
+            "report_path": "data/reports/execution_drift_overview.md",
+        },
+    )
+
+    text = out.read_text(encoding="utf-8")
+    assert '"total_trade_count": 2' in text
+    assert '"audit"' in text
+    assert '"phase_gate"' in text
+    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in text
+    assert '"phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears"' in text
+    assert '"phase_gate_strict_validation_passed": true' in text
+    assert '"phase2_entry_reason": "remain_in_phase1_until_live_evidence_gate_clears"' in text
+    assert '"readiness_summary"' in text
+    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in text
+    assert '"execution"' in text
+    assert '"execution_comparison"' in text
+    assert '"execution_diagnostics"' in text
+    assert '"execution_drift_overview_summary"' in text
+    assert '"execution_drift_overview_status": "degraded"' in text
+    assert '"execution_drift_overview_state_comparison_mismatching_count": 1' in text
+    assert '"execution_drift_overview_snapshot_drift_mismatching_snapshot_count": 1' in text

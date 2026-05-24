@@ -221,6 +221,57 @@ Phase 2 へ逃がさず、Phase 1 blocker を分解する。
 
 これらは設計準備であって、**Phase 2 started** を意味しない。
 
+## Restart And Review Fast Path
+
+待機中や再開時に、現在の repo 状態を最短で追うなら次の順で見る。
+
+1. `docs/ACCEPTANCE_AUDIT.md`
+2. `docs/IMPLEMENTATION_STATUS.md`
+3. `data/ops/execution_snapshot_summary.json`
+4. `data/ops/execution_venue_comparison_summary.json`
+5. `data/ops/execution_gap_history_summary.json`
+6. `data/ops/execution_state_comparison_history_summary.json`
+7. `data/ops/execution_snapshot_drift_history_summary.json`
+8. `data/ops/execution_drift_overview_summary.json`
+9. `data/ops/operations_dashboard_summary.json`
+10. `data/ops/audit_dashboard_summary.json`
+11. `data/ops/operations_bundle_manifest.json`
+12. `data/ops/audit_bundle_manifest.json`
+13. `data/ops/phase_gate_review_summary.json`
+
+人間向けの要約を先に読むなら次を使う。
+
+- `data/reports/operations_dashboard.md`
+- `data/reports/execution_venue_comparison.md`
+- `data/reports/execution_gap_history.md`
+- `data/reports/execution_snapshot_drift_history.md`
+- `data/reports/audit_dashboard.md`
+- `data/reports/phase_gate_review.md`
+- `data/reports/operations_audit_pack.md`
+- `data/reports/paper_operations_runbook.md`
+
+Phase 1 gate 再判定だけを 1 回でまとめたい時は次を使う。
+
+```bash
+uv run sis phase-gate-review
+```
+
+`uv run sis refresh-operations-artifacts` と `uv run sis paper-operations-cycle` も、
+この gate review artifact をあわせて再生成する。
+- `docs/live_evidence_reports/live_evidence_followup_*.md`
+
+これらが無い、または古い場合は次で再生成する。
+
+```bash
+uv run sis refresh-operations-artifacts
+```
+
+paper 実行から一括で current state を更新したい場合は次を使う。
+
+```bash
+uv run sis paper-operations-cycle
+```
+
 ## Important Distinction
 
 次の 3 つは別物である。
@@ -264,4 +315,3 @@ Phase 2 implementation:
 - `docs/PHASE2_COMPLETION_DEFINITION.md`
 - `docs/LIVE_EVIDENCE_RUNBOOK.md`
 - `docs/marketlens_strike_engineering_handoff.zip`
-

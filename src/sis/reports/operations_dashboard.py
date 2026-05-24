@@ -1,0 +1,287 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from sis.reports.summary_normalizers import (
+    audit_summary_fields,
+    audit_bundle_flat_fields,
+    audit_dashboard_flat_fields,
+    execution_comparison_flat_fields,
+    execution_diagnostics_flat_fields,
+    execution_gap_history_flat_fields,
+    execution_snapshot_flat_fields,
+    execution_snapshot_drift_flat_fields,
+    execution_state_comparison_flat_fields,
+    execution_drift_overview_flat_fields,
+    normalize_execution_comparison_summary,
+    normalize_execution_diagnostics_summary,
+    normalize_execution_gap_history_summary,
+    normalize_execution_snapshot_drift_summary,
+    normalize_execution_snapshot_summary,
+    normalize_execution_state_comparison_summary,
+    normalize_execution_drift_overview_summary,
+    ops_review_flat_fields,
+    normalize_phase_gate_summary,
+    phase_gate_flat_fields,
+    phase_gate_issue_preview_lines,
+)
+from sis.storage.jsonl_store import read_json, write_json
+
+
+def _safe_read_json(path: Path | None) -> dict:
+    if path is None or not path.exists():
+        return {}
+    payload = read_json(path)
+    return payload if isinstance(payload, dict) else {}
+
+
+def build_operations_dashboard(
+    *,
+    monitoring_snapshot_path: Path | None = None,
+    ops_review_summary_path: Path | None = None,
+    decision_summary_path: Path | None = None,
+    execution_snapshot_summary_path: Path | None = None,
+    execution_venue_comparison_summary_path: Path | None = None,
+    execution_venue_diagnostics_summary_path: Path | None = None,
+    execution_gap_history_summary_path: Path | None = None,
+    execution_state_comparison_history_summary_path: Path | None = None,
+    execution_snapshot_drift_history_summary_path: Path | None = None,
+    execution_drift_overview_summary_path: Path | None = None,
+    audit_dashboard_summary_path: Path | None = None,
+    audit_bundle_summary_path: Path | None = None,
+    phase_gate_summary_path: Path | None = None,
+    comparison_report_path: Path | None = None,
+    weekly_review_path: Path | None = None,
+    lifecycle_report_path: Path | None = None,
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    monitoring = _safe_read_json(monitoring_snapshot_path)
+    ops_review = _safe_read_json(ops_review_summary_path)
+    decision_summary = _safe_read_json(decision_summary_path)
+    execution_snapshot = normalize_execution_snapshot_summary(_safe_read_json(execution_snapshot_summary_path))
+    execution_comparison = normalize_execution_comparison_summary(
+        _safe_read_json(execution_venue_comparison_summary_path)
+    )
+    execution_diagnostics = normalize_execution_diagnostics_summary(
+        _safe_read_json(execution_venue_diagnostics_summary_path)
+    )
+    execution_gap_history = normalize_execution_gap_history_summary(
+        _safe_read_json(execution_gap_history_summary_path)
+    )
+    execution_state_comparison = normalize_execution_state_comparison_summary(
+        _safe_read_json(execution_state_comparison_history_summary_path)
+    )
+    execution_snapshot_drift = normalize_execution_snapshot_drift_summary(
+        _safe_read_json(execution_snapshot_drift_history_summary_path)
+    )
+    execution_drift_overview = normalize_execution_drift_overview_summary(
+        _safe_read_json(execution_drift_overview_summary_path)
+    )
+    audit_dashboard = _safe_read_json(audit_dashboard_summary_path)
+    audit_bundle = _safe_read_json(audit_bundle_summary_path)
+    phase_gate = normalize_phase_gate_summary(_safe_read_json(phase_gate_summary_path))
+    execution_snapshot_fields = execution_snapshot_flat_fields(execution_snapshot)
+    execution_comparison_fields = execution_comparison_flat_fields(execution_comparison)
+    execution_diagnostics_fields = execution_diagnostics_flat_fields(execution_diagnostics)
+    execution_gap_history_fields = execution_gap_history_flat_fields(execution_gap_history)
+    execution_state_comparison_fields = execution_state_comparison_flat_fields(
+        execution_state_comparison
+    )
+    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(
+        execution_snapshot_drift
+    )
+    execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
+    ops_review_fields = ops_review_flat_fields(ops_review)
+    audit_dashboard_fields = audit_dashboard_flat_fields(audit_dashboard)
+    audit_bundle_fields = audit_bundle_flat_fields(audit_bundle)
+    audit_summary = audit_summary_fields(audit_dashboard, audit_bundle)
+    phase_gate_fields = phase_gate_flat_fields(phase_gate)
+
+    comparison_exists = bool(comparison_report_path and comparison_report_path.exists())
+    weekly_exists = bool(weekly_review_path and weekly_review_path.exists())
+    lifecycle_exists = bool(lifecycle_report_path and lifecycle_report_path.exists())
+
+    overall_status = "ok"
+    if monitoring.get("status") == "degraded":
+        overall_status = "degraded"
+    if ops_review_fields.get("ops_latest_status") == "blocked":
+        overall_status = "blocked"
+
+    summary = {
+        "overall_status": overall_status,
+        "monitoring_status": monitoring.get("status"),
+        "ops_latest_status": ops_review_fields.get("ops_latest_status"),
+        "operations_count": ops_review_fields.get("ops_operations_count"),
+        "decision_mode": decision_summary.get("mode"),
+        "executed_count": decision_summary.get("executed_count"),
+        "blocked_count": decision_summary.get("blocked_count"),
+        "phase_gate_summary": phase_gate,
+        "audit_summary": audit_summary,
+        "execution_summary": execution_snapshot,
+        "execution_comparison_summary": execution_comparison,
+        "execution_diagnostics_summary": execution_diagnostics,
+        "execution_gap_history_summary": execution_gap_history,
+        "execution_state_comparison_summary": execution_state_comparison,
+        "execution_snapshot_drift_summary": execution_snapshot_drift,
+        "execution_drift_overview_summary": execution_drift_overview,
+        **execution_snapshot_fields,
+        **execution_comparison_fields,
+        **execution_diagnostics_fields,
+        **execution_gap_history_fields,
+        **execution_state_comparison_fields,
+        **execution_snapshot_drift_fields,
+        **execution_drift_fields,
+        **audit_dashboard_fields,
+        **audit_bundle_fields,
+        **phase_gate_fields,
+        "phase_gate_phase2_entry_allowed": phase_gate_fields.get("phase2_entry_allowed"),
+        "comparison_report_exists": comparison_exists,
+        "weekly_review_exists": weekly_exists,
+        "lifecycle_report_exists": lifecycle_exists,
+        "recommended_read_order": [
+            "docs/ACCEPTANCE_AUDIT.md",
+            "docs/IMPLEMENTATION_STATUS.md",
+            "data/ops/execution_snapshot_summary.json",
+            "data/ops/execution_venue_comparison_summary.json",
+            "data/ops/execution_venue_diagnostics_summary.json",
+            "data/ops/execution_gap_history_summary.json",
+            "data/ops/execution_state_comparison_history_summary.json",
+            "data/ops/execution_snapshot_drift_history_summary.json",
+            "data/ops/execution_drift_overview_summary.json",
+            "data/ops/operations_dashboard_summary.json",
+            "data/ops/audit_dashboard_summary.json",
+            "data/ops/operations_bundle_manifest.json",
+            "data/ops/audit_bundle_manifest.json",
+        ],
+    }
+
+    lines = [
+        "# Operations Dashboard",
+        "",
+        "## Overall",
+        "",
+        f"- overall_status: {summary['overall_status']}",
+        f"- monitoring_status: {summary['monitoring_status']}",
+        f"- ops_latest_status: {summary['ops_latest_status']}",
+        f"- operations_count: {summary['operations_count']}",
+        "",
+        "## Decision State",
+        "",
+        f"- decision_mode: {summary['decision_mode']}",
+        f"- executed_count: {summary['executed_count']}",
+        f"- blocked_count: {summary['blocked_count']}",
+        f"- execution_overall_status: {summary['execution_overall_status']}",
+        f"- execution_venue_count: {summary['execution_venue_count']}",
+        f"- execution_comparison_all_registries_present: {summary['execution_comparison_all_registries_present']}",
+        f"- execution_diagnostics_status: {summary['execution_diagnostics_status']}",
+        f"- execution_balance_gap_detected: {summary['execution_balance_gap_detected']}",
+        f"- execution_fills_gap_detected: {summary['execution_fills_gap_detected']}",
+        f"- execution_gap_history_entry_count: {summary['execution_gap_history_entry_count']}",
+        f"- execution_gap_history_latest_status: {summary['execution_gap_history_latest_status']}",
+        f"- execution_gap_history_latest_diagnostics_status: {summary['execution_gap_history_latest_diagnostics_status']}",
+        f"- execution_state_comparison_entry_count: {summary['execution_state_comparison_entry_count']}",
+        (
+            "- execution_state_comparison_latest_status_match: "
+            f"{summary['execution_state_comparison_latest_status_match']}"
+        ),
+        (
+            "- execution_state_comparison_mismatching_count: "
+            f"{summary['execution_state_comparison_mismatching_count']}"
+        ),
+        f"- execution_snapshot_drift_entry_count: {summary['execution_snapshot_drift_entry_count']}",
+        (
+            "- execution_snapshot_drift_latest_status_match: "
+            f"{summary['execution_snapshot_drift_latest_status_match']}"
+        ),
+        (
+            "- execution_snapshot_drift_mismatching_snapshot_count: "
+            f"{summary['execution_snapshot_drift_mismatching_snapshot_count']}"
+        ),
+        f"- execution_drift_overview_status: {summary['execution_drift_overview_status']}",
+        (
+            "- execution_drift_overview_diagnostics_alignment_match: "
+            f"{summary['execution_drift_overview_diagnostics_alignment_match']}"
+        ),
+        (
+            "- execution_drift_overview_state_comparison_mismatching_count: "
+            f"{summary['execution_drift_overview_state_comparison_mismatching_count']}"
+        ),
+        (
+            "- execution_drift_overview_snapshot_drift_mismatching_snapshot_count: "
+            f"{summary['execution_drift_overview_snapshot_drift_mismatching_snapshot_count']}"
+        ),
+        "",
+        "## Audit State",
+        "",
+        f"- audit_overall_status: {summary['audit_overall_status']}",
+        f"- audit_latest_operation: {summary['audit_latest_operation']}",
+        f"- audit_entry_count: {summary['audit_entry_count']}",
+        f"- audit_bundle_snapshot_count: {summary['audit_bundle_snapshot_count']}",
+        f"- audit_bundle_history_snapshot_count: {summary['audit_bundle_history_snapshot_count']}",
+        f"- audit_bundle_history_ok_count: {summary['audit_bundle_history_ok_count']}",
+        "",
+        "## Phase Gate State",
+        "",
+        f"- phase_gate_decision: {summary['phase_gate_decision']}",
+        f"- phase2_entry_allowed: {summary['phase_gate_phase2_entry_allowed']}",
+        f"- phase_gate_reason: {summary['phase_gate_reason']}",
+        f"- strict_validation_passed: {summary['phase_gate_strict_validation_passed']}",
+        f"- phase_gate_strict_validation_issue_count: {summary['phase_gate_strict_validation_issue_count']}",
+        f"- phase_gate_checked_files: {summary['phase_gate_checked_files']}",
+        f"- phase_gate_review_report_path: {summary['phase_gate_review_report_path']}",
+        "",
+        "## Strict Validation Preview",
+        "",
+    ]
+    validation_issue_previews = phase_gate_issue_preview_lines(summary)
+    if validation_issue_previews:
+        lines.extend(f"- {item}" for item in validation_issue_previews)
+    else:
+        lines.append("- issues: none")
+    lines.extend(
+        [
+            "",
+            "## Artifact Coverage",
+            "",
+            f"- comparison_report_exists: {summary['comparison_report_exists']}",
+            f"- weekly_review_exists: {summary['weekly_review_exists']}",
+            f"- lifecycle_report_exists: {summary['lifecycle_report_exists']}",
+            "",
+            "## Recommended Read Order",
+            "",
+        ]
+    )
+    lines.extend(f"- {item}" for item in summary["recommended_read_order"])
+    lines.append("")
+
+    if monitoring:
+        lines.extend(
+            [
+                "## Monitoring Hints",
+                "",
+                f"- decision_summary_exists: {monitoring.get('decision_summary_exists')}",
+                f"- daily_pnl_exists: {monitoring.get('daily_pnl_exists')}",
+                f"- operation_chain_exists: {monitoring.get('operation_chain_exists')}",
+                "",
+            ]
+        )
+
+    if ops_review:
+        lines.extend(
+            [
+                "## Ops Review Hints",
+                "",
+                f"- latest_operation: {ops_review_fields.get('ops_latest_operation')}",
+                f"- latest_scheduled_for: {ops_review_fields.get('ops_latest_scheduled_for')}",
+                "",
+            ]
+        )
+
+    text = "\n".join(lines).rstrip() + "\n"
+    if out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(text, encoding="utf-8")
+    if summary_path is not None:
+        write_json(summary_path, summary)
+    return text

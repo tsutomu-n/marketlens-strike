@@ -62,6 +62,51 @@ def _write_inputs(data_dir) -> None:
 def test_run_paper_step_writes_stateful_artifacts(tmp_path) -> None:
     data_dir = tmp_path / "data"
     _write_inputs(data_dir)
+    (data_dir / "ops").mkdir(parents=True, exist_ok=True)
+    (data_dir / "ops/audit_dashboard_summary.json").write_text(
+        '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot"}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/audit_bundle_manifest.json").write_text(
+        '{"bundle_history_snapshot_count":3}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/phase_gate_review_summary.json").write_text(
+        '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true,"strict_validation_issue_count":2,"checked_files":7}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/execution_drift_overview_summary.json").write_text(
+        '{"execution_drift_overview_status":"degraded","execution_drift_overview_diagnostics_alignment_match":false,"execution_drift_overview_state_comparison_mismatching_count":1,"execution_drift_overview_snapshot_drift_mismatching_snapshot_count":1}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/execution_snapshot_summary.json").write_text(
+        '{"execution_overall_status":"ok","execution_venue_count":2,"execution_report_path":"data/reports/execution_snapshot.md"}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/execution_venue_comparison_summary.json").write_text(
+        '{"execution_comparison_all_registries_present":true,"execution_comparison_report_path":"data/reports/execution_venue_comparison.md"}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/execution_venue_diagnostics_summary.json").write_text(
+        '{"execution_diagnostics_status":"degraded","execution_balance_gap_detected":true,"execution_fills_gap_detected":false,"execution_diagnostics_report_path":"data/reports/execution_venue_diagnostics.md"}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/execution_gap_history_summary.json").write_text(
+        '{"execution_gap_history_entry_count":4,"execution_gap_history_latest_status":"ok","execution_gap_history_latest_diagnostics_status":"degraded","execution_gap_history_report_path":"data/reports/execution_gap_history.md"}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/execution_state_comparison_history_summary.json").write_text(
+        '{"execution_state_comparison_entry_count":4,"execution_state_comparison_latest_status_match":false,"execution_state_comparison_mismatching_count":1,"execution_state_comparison_report_path":"data/reports/execution_state_comparison_history.md"}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/execution_snapshot_drift_history_summary.json").write_text(
+        '{"execution_snapshot_drift_entry_count":3,"execution_snapshot_drift_latest_status_match":true,"execution_snapshot_drift_mismatching_snapshot_count":1,"execution_snapshot_drift_report_path":"data/reports/execution_snapshot_drift_history.md"}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/readiness_snapshot.json").write_text(
+        '{"readiness_next_phase_candidate":"Stay Phase 1","readiness_execution_ready":false,"phase_gate_decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false}',
+        encoding="utf-8",
+    )
     state_path = data_dir / "state/marketlens.sqlite"
 
     summary = run_paper_step(data_dir, state_path=state_path)
@@ -74,11 +119,103 @@ def test_run_paper_step_writes_stateful_artifacts(tmp_path) -> None:
     assert summary.positions_path.exists()
     assert summary.daily_pnl_path.exists()
     assert summary.report_path.exists()
+    report_text = summary.report_path.read_text(encoding="utf-8")
+    assert "Audit Summary" in report_text
+    assert "overall_status: ok" in report_text
+    assert "Phase Gate Summary" in report_text
+    assert "decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report_text
+    assert "Readiness Summary" in report_text
+    assert "next_phase_candidate: Stay Phase 1" in report_text
+    assert "Execution Drift Overview" in report_text
+    assert "overall_status: degraded" in report_text
 
     store = StateStore(state_path)
     payload = store.get_json("paper_last_run")
     assert isinstance(payload, dict)
     assert payload["orders_count"] == 1
+    assert payload["audit"]["overall_status"] == "ok"
+    assert payload["audit_summary"]["overall_status"] == "ok"
+    assert payload["phase_gate"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
+    assert payload["phase_gate_summary"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
+    assert payload["phase_gate"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert payload["phase_gate"]["phase2_entry_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert payload["phase_gate"]["phase_gate_strict_validation_passed"] is True
+    assert payload["phase_gate"]["phase_gate_strict_validation_issue_count"] == 2
+    assert payload["phase_gate"]["phase_gate_checked_files"] == 7
+    assert payload["phase_gate"]["strict_validation_issue_count"] == 2
+    assert payload["phase_gate"]["checked_files"] == 7
+    assert payload["phase_gate_decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
+    assert payload["phase2_entry_allowed"] is False
+    assert payload["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert payload["phase_gate_strict_validation_passed"] is True
+    assert payload["phase_gate_strict_validation_issue_count"] == 2
+    assert payload["phase_gate_checked_files"] == 7
+    assert payload["strict_validation_passed"] is True
+    assert payload["readiness_summary"]["next_phase_candidate"] == "Stay Phase 1"
+    assert payload["readiness_summary"]["readiness_next_phase_candidate"] == "Stay Phase 1"
+    assert payload["readiness_summary"]["readiness_execution_ready"] is False
+    assert payload["readiness_next_phase_candidate"] == "Stay Phase 1"
+    assert payload["readiness_execution_ready"] is False
+    assert payload["execution_summary"]["execution_overall_status"] == "ok"
+    assert payload["execution_summary"]["execution_venue_count"] == 2
+    assert payload["execution_summary"]["report_path"] == str(data_dir / "reports/execution_snapshot.md")
+    assert payload["execution_overall_status"] == "ok"
+    assert payload["execution_venue_count"] == 2
+    assert payload["execution_report_path"] == str(data_dir / "reports/execution_snapshot.md")
+    assert payload["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        payload["execution_comparison_summary"]["report_path"]
+        == str(data_dir / "reports/execution_venue_comparison.md")
+    )
+    assert payload["execution_comparison_all_registries_present"] is True
+    assert payload["execution_comparison_report_path"] == str(
+        data_dir / "reports/execution_venue_comparison.md"
+    )
+    assert payload["execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
+    assert payload["execution_diagnostics_summary"]["execution_balance_gap_detected"] is True
+    assert payload["execution_diagnostics_summary"]["execution_fills_gap_detected"] is False
+    assert (
+        payload["execution_diagnostics_summary"]["report_path"]
+        == str(data_dir / "reports/execution_venue_diagnostics.md")
+    )
+    assert payload["execution_diagnostics_status"] == "degraded"
+    assert payload["execution_balance_gap_detected"] is True
+    assert payload["execution_fills_gap_detected"] is False
+    assert payload["execution_diagnostics_report_path"] == str(
+        data_dir / "reports/execution_venue_diagnostics.md"
+    )
+    assert payload["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
+    assert payload["execution_gap_history_summary"]["execution_gap_history_latest_status"] == "ok"
+    assert (
+        payload["execution_gap_history_summary"]["execution_gap_history_latest_diagnostics_status"]
+        == "degraded"
+    )
+    assert payload["execution_gap_history_report_path"] == str(
+        data_dir / "reports/execution_gap_history.md"
+    )
+    assert (
+        payload["execution_state_comparison_summary"]["execution_state_comparison_latest_status_match"]
+        is False
+    )
+    assert payload["execution_state_comparison_mismatching_count"] == 1
+    assert (
+        payload["execution_state_comparison_report_path"]
+        == str(data_dir / "reports/execution_state_comparison_history.md")
+    )
+    assert payload["execution_snapshot_drift_summary"]["execution_snapshot_drift_entry_count"] == 3
+    assert payload["execution_snapshot_drift_summary"]["execution_snapshot_drift_latest_status_match"] is True
+    assert payload["execution_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert (
+        payload["execution_snapshot_drift_report_path"]
+        == str(data_dir / "reports/execution_snapshot_drift_history.md")
+    )
+    assert payload["execution_drift_overview_summary"]["overall_status"] == "degraded"
+    assert payload["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    assert payload["execution_drift_overview_summary"]["execution_drift_overview_diagnostics_alignment_match"] is False
+    assert payload["execution_drift_overview_status"] == "degraded"
+    assert payload["execution_drift_overview_diagnostics_alignment_match"] is False
+    assert payload["execution_drift_overview_state_comparison_mismatching_count"] == 1
+    assert payload["execution_drift_overview_snapshot_drift_mismatching_snapshot_count"] == 1
     assert store.get_json("paper_positions")
 
 

@@ -23,6 +23,21 @@ from sis.reports.live_evidence_report import (
     render_live_evidence_report,
 )
 from sis.reports.quote_diagnostics import build_quote_diagnostics
+from sis.reports.summary_normalizers import (
+    audit_summary_fields,
+    normalize_execution_comparison_summary,
+    normalize_execution_diagnostics_summary,
+    normalize_execution_gap_history_summary,
+    normalize_execution_snapshot_summary,
+    normalize_execution_snapshot_drift_summary,
+    normalize_execution_state_comparison_summary,
+    execution_drift_overview_flat_fields,
+    normalize_execution_drift_overview_summary,
+    normalize_phase_gate_summary,
+    normalize_readiness_summary,
+    phase_gate_flat_fields,
+    readiness_flat_fields,
+)
 from sis.settings import get_settings
 from sis.storage.jsonl_store import read_json
 
@@ -93,6 +108,28 @@ class LiveEvidenceManifest(BaseModel):
     decision: str | None = None
     blockers: list[str] = Field(default_factory=list)
     next_actions: list[str] = Field(default_factory=list)
+    phase_gate_summary: dict[str, object] = Field(default_factory=dict)
+    phase_gate_decision: str | None = None
+    phase2_entry_allowed: bool | None = None
+    phase_gate_reason: str | None = None
+    phase_gate_strict_validation_passed: bool | None = None
+    phase_gate_strict_validation_issue_count: int | None = None
+    phase_gate_checked_files: int | None = None
+    strict_validation_passed: bool | None = None
+    readiness_summary: dict[str, object] = Field(default_factory=dict)
+    readiness_next_phase_candidate: str | None = None
+    readiness_execution_ready: bool | None = None
+    execution_summary: dict[str, object] = Field(default_factory=dict)
+    execution_comparison_summary: dict[str, object] = Field(default_factory=dict)
+    execution_diagnostics_summary: dict[str, object] = Field(default_factory=dict)
+    execution_gap_history_summary: dict[str, object] = Field(default_factory=dict)
+    execution_state_comparison_summary: dict[str, object] = Field(default_factory=dict)
+    execution_snapshot_drift_summary: dict[str, object] = Field(default_factory=dict)
+    execution_drift_overview_summary: dict[str, object] = Field(default_factory=dict)
+    execution_drift_overview_status: str | None = None
+    execution_drift_overview_diagnostics_alignment_match: bool | None = None
+    execution_drift_overview_state_comparison_mismatching_count: int | None = None
+    execution_drift_overview_snapshot_drift_mismatching_snapshot_count: int | None = None
     failure_summary: str | None = None
 
 
@@ -165,6 +202,76 @@ def load_manifest(path: Path) -> LiveEvidenceManifest:
 def write_manifest(path: Path, manifest: LiveEvidenceManifest) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_suffix(path.suffix + ".tmp")
+    if isinstance(manifest.phase_gate_summary, dict):
+        manifest.phase_gate_summary = normalize_phase_gate_summary(manifest.phase_gate_summary)
+        phase_gate_fields = phase_gate_flat_fields(manifest.phase_gate_summary)
+        manifest.phase_gate_decision = phase_gate_fields.get("phase_gate_decision")  # type: ignore[assignment]
+        manifest.phase2_entry_allowed = phase_gate_fields.get("phase2_entry_allowed")  # type: ignore[assignment]
+        manifest.phase_gate_reason = phase_gate_fields.get("phase_gate_reason")  # type: ignore[assignment]
+        manifest.phase_gate_strict_validation_passed = phase_gate_fields.get(
+            "phase_gate_strict_validation_passed"
+        )  # type: ignore[assignment]
+        manifest.phase_gate_strict_validation_issue_count = phase_gate_fields.get(
+            "phase_gate_strict_validation_issue_count"
+        )  # type: ignore[assignment]
+        manifest.phase_gate_checked_files = phase_gate_fields.get(
+            "phase_gate_checked_files"
+        )  # type: ignore[assignment]
+        manifest.strict_validation_passed = manifest.phase_gate_strict_validation_passed  # type: ignore[assignment]
+    if isinstance(manifest.readiness_summary, dict):
+        manifest.readiness_summary = normalize_readiness_summary(manifest.readiness_summary)
+        readiness_fields = readiness_flat_fields(manifest.readiness_summary)
+        manifest.readiness_next_phase_candidate = readiness_fields.get(
+            "readiness_next_phase_candidate"
+        )  # type: ignore[assignment]
+        manifest.readiness_execution_ready = readiness_fields.get(
+            "readiness_execution_ready"
+        )  # type: ignore[assignment]
+    if isinstance(manifest.execution_summary, dict):
+        manifest.execution_summary = normalize_execution_snapshot_summary(manifest.execution_summary)
+    if isinstance(manifest.execution_comparison_summary, dict):
+        manifest.execution_comparison_summary = normalize_execution_comparison_summary(
+            manifest.execution_comparison_summary
+        )
+    if isinstance(manifest.execution_diagnostics_summary, dict):
+        manifest.execution_diagnostics_summary = normalize_execution_diagnostics_summary(
+            manifest.execution_diagnostics_summary
+        )
+    if isinstance(manifest.execution_gap_history_summary, dict):
+        manifest.execution_gap_history_summary = normalize_execution_gap_history_summary(
+            manifest.execution_gap_history_summary
+        )
+    if isinstance(manifest.execution_state_comparison_summary, dict):
+        manifest.execution_state_comparison_summary = normalize_execution_state_comparison_summary(
+            manifest.execution_state_comparison_summary
+        )
+    if isinstance(manifest.execution_snapshot_drift_summary, dict):
+        manifest.execution_snapshot_drift_summary = normalize_execution_snapshot_drift_summary(
+            manifest.execution_snapshot_drift_summary
+        )
+    if isinstance(manifest.execution_drift_overview_summary, dict):
+        manifest.execution_drift_overview_summary = normalize_execution_drift_overview_summary(
+            manifest.execution_drift_overview_summary
+        )
+        execution_drift_fields = execution_drift_overview_flat_fields(
+            manifest.execution_drift_overview_summary
+        )
+        manifest.execution_drift_overview_status = execution_drift_fields.get(
+            "execution_drift_overview_status"
+        )  # type: ignore[assignment]
+        manifest.execution_drift_overview_diagnostics_alignment_match = (
+            execution_drift_fields.get("execution_drift_overview_diagnostics_alignment_match")
+        )  # type: ignore[assignment]
+        manifest.execution_drift_overview_state_comparison_mismatching_count = (
+            execution_drift_fields.get(
+                "execution_drift_overview_state_comparison_mismatching_count"
+            )
+        )  # type: ignore[assignment]
+        manifest.execution_drift_overview_snapshot_drift_mismatching_snapshot_count = (
+            execution_drift_fields.get(
+                "execution_drift_overview_snapshot_drift_mismatching_snapshot_count"
+            )
+        )  # type: ignore[assignment]
     tmp_path.write_text(json.dumps(manifest.model_dump(mode="json"), ensure_ascii=False, indent=2), encoding="utf-8")
     tmp_path.replace(path)
 
@@ -296,6 +403,141 @@ def build_artifact_paths(data_dir: Path, day: str) -> dict[str, str | None]:
     }
 
 
+def default_manifest_summary_path(run_id: str) -> Path:
+    return Path("logs/live_evidence/summaries") / f"live_evidence_summary_{run_id}.json"
+
+
+def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None) -> Path:
+    manifest = load_manifest(manifest_path)
+    if summary_path is None:
+        manifests_dir = manifest_path.parent
+        if manifests_dir.name == "manifests":
+            out_path = manifests_dir.parent / "summaries" / f"live_evidence_summary_{manifest.run_id}.json"
+        else:
+            out_path = default_manifest_summary_path(manifest.run_id)
+    else:
+        out_path = summary_path
+    execution_summary_path = Path(manifest.data_dir) / "ops/execution_snapshot_summary.json"
+    execution_summary = (
+        read_json(execution_summary_path)
+        if execution_summary_path.exists()
+        else {}
+    )
+    if not isinstance(execution_summary, dict):
+        execution_summary = {}
+    execution_summary = normalize_execution_snapshot_summary(execution_summary)
+    execution_comparison_summary_path = Path(manifest.data_dir) / "ops/execution_venue_comparison_summary.json"
+    execution_comparison_summary = (
+        read_json(execution_comparison_summary_path)
+        if execution_comparison_summary_path.exists()
+        else {}
+    )
+    if not isinstance(execution_comparison_summary, dict):
+        execution_comparison_summary = {}
+    execution_comparison_summary = normalize_execution_comparison_summary(
+        execution_comparison_summary
+    )
+    execution_diagnostics_summary_path = Path(manifest.data_dir) / "ops/execution_venue_diagnostics_summary.json"
+    execution_diagnostics_summary = (
+        read_json(execution_diagnostics_summary_path)
+        if execution_diagnostics_summary_path.exists()
+        else {}
+    )
+    if not isinstance(execution_diagnostics_summary, dict):
+        execution_diagnostics_summary = {}
+    execution_diagnostics_summary = normalize_execution_diagnostics_summary(
+        execution_diagnostics_summary
+    )
+    execution_gap_history_summary_path = Path(manifest.data_dir) / "ops/execution_gap_history_summary.json"
+    execution_gap_history_summary = (
+        read_json(execution_gap_history_summary_path)
+        if execution_gap_history_summary_path.exists()
+        else {}
+    )
+    if not isinstance(execution_gap_history_summary, dict):
+        execution_gap_history_summary = {}
+    execution_gap_history_summary = normalize_execution_gap_history_summary(
+        execution_gap_history_summary
+    )
+    execution_state_comparison_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_state_comparison_history_summary.json"
+    )
+    execution_state_comparison_summary = (
+        read_json(execution_state_comparison_summary_path)
+        if execution_state_comparison_summary_path.exists()
+        else {}
+    )
+    if not isinstance(execution_state_comparison_summary, dict):
+        execution_state_comparison_summary = {}
+    execution_state_comparison_summary = normalize_execution_state_comparison_summary(
+        execution_state_comparison_summary
+    )
+    execution_snapshot_drift_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_snapshot_drift_history_summary.json"
+    )
+    execution_snapshot_drift_summary = (
+        read_json(execution_snapshot_drift_summary_path)
+        if execution_snapshot_drift_summary_path.exists()
+        else {}
+    )
+    if not isinstance(execution_snapshot_drift_summary, dict):
+        execution_snapshot_drift_summary = {}
+    execution_snapshot_drift_summary = normalize_execution_snapshot_drift_summary(
+        execution_snapshot_drift_summary
+    )
+    execution_drift_overview_summary_path = Path(manifest.data_dir) / "ops/execution_drift_overview_summary.json"
+    execution_drift_overview_summary = (
+        read_json(execution_drift_overview_summary_path)
+        if execution_drift_overview_summary_path.exists()
+        else {}
+    )
+    if not isinstance(execution_drift_overview_summary, dict):
+        execution_drift_overview_summary = {}
+    readiness_summary_path = Path(manifest.data_dir) / "ops/readiness_snapshot.json"
+    readiness_summary = read_json(readiness_summary_path) if readiness_summary_path.exists() else {}
+    if not isinstance(readiness_summary, dict):
+        readiness_summary = {}
+    normalized_phase_gate_summary = normalize_phase_gate_summary(manifest.phase_gate_summary)
+    normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
+    normalized_execution_drift_overview_summary = normalize_execution_drift_overview_summary(
+        execution_drift_overview_summary
+    )
+    phase_gate_fields = phase_gate_flat_fields(normalized_phase_gate_summary)
+    readiness_fields = readiness_flat_fields(normalized_readiness_summary)
+    execution_drift_fields = execution_drift_overview_flat_fields(
+        normalized_execution_drift_overview_summary
+    )
+    payload = {
+        "run_id": manifest.run_id,
+        "status": manifest.status.value,
+        "started_at_utc": manifest.started_at_utc,
+        "finished_at_utc": manifest.finished_at_utc,
+        "decision": manifest.decision,
+        "blockers": list(manifest.blockers),
+        "next_actions": list(manifest.next_actions),
+        "row_counts": dict(manifest.row_counts),
+        "phase_gate_summary": normalized_phase_gate_summary,
+        **phase_gate_fields,
+        "readiness_summary": normalized_readiness_summary,
+        **readiness_fields,
+        "execution_summary": execution_summary,
+        "execution_comparison_summary": execution_comparison_summary,
+        "execution_diagnostics_summary": execution_diagnostics_summary,
+        "execution_gap_history_summary": execution_gap_history_summary,
+        "execution_state_comparison_summary": execution_state_comparison_summary,
+        "execution_snapshot_drift_summary": execution_snapshot_drift_summary,
+        "execution_drift_overview_summary": normalized_execution_drift_overview_summary,
+        **execution_drift_fields,
+        "artifacts": dict(manifest.artifacts),
+        "manifest_path": str(manifest_path),
+        "step_count": len(manifest.steps),
+        "failed_steps": [step.name for step in manifest.steps if step.status == StepOutcome.FAILED],
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return out_path
+
+
 def write_reports_for_manifest(
     manifest_path: Path,
     *,
@@ -311,6 +553,92 @@ def write_reports_for_manifest(
     followup_output_path = default_followup_output_path(stem_source)
 
     from sis.reports.live_evidence_report import build_live_evidence_report_data
+    from sis.storage.jsonl_store import read_json
+
+    audit_dashboard_path = Path(manifest.data_dir) / "ops/audit_dashboard_summary.json"
+    audit_bundle_path = Path(manifest.data_dir) / "ops/audit_bundle_manifest.json"
+    audit_dashboard = read_json(audit_dashboard_path) if audit_dashboard_path.exists() else {}
+    audit_bundle = read_json(audit_bundle_path) if audit_bundle_path.exists() else {}
+    phase_gate_path = Path(manifest.data_dir) / "ops/phase_gate_review_summary.json"
+    phase_gate_summary = read_json(phase_gate_path) if phase_gate_path.exists() else {}
+    execution_summary_path = Path(manifest.data_dir) / "ops/execution_snapshot_summary.json"
+    execution_summary = read_json(execution_summary_path) if execution_summary_path.exists() else {}
+    execution_comparison_summary_path = Path(manifest.data_dir) / "ops/execution_venue_comparison_summary.json"
+    execution_comparison_summary = (
+        read_json(execution_comparison_summary_path) if execution_comparison_summary_path.exists() else {}
+    )
+    execution_diagnostics_summary_path = Path(manifest.data_dir) / "ops/execution_venue_diagnostics_summary.json"
+    execution_diagnostics_summary = (
+        read_json(execution_diagnostics_summary_path) if execution_diagnostics_summary_path.exists() else {}
+    )
+    execution_gap_history_summary_path = Path(manifest.data_dir) / "ops/execution_gap_history_summary.json"
+    execution_gap_history_summary = (
+        read_json(execution_gap_history_summary_path) if execution_gap_history_summary_path.exists() else {}
+    )
+    execution_state_comparison_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_state_comparison_history_summary.json"
+    )
+    execution_state_comparison_summary = (
+        read_json(execution_state_comparison_summary_path)
+        if execution_state_comparison_summary_path.exists()
+        else {}
+    )
+    execution_snapshot_drift_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_snapshot_drift_history_summary.json"
+    )
+    execution_snapshot_drift_summary = (
+        read_json(execution_snapshot_drift_summary_path)
+        if execution_snapshot_drift_summary_path.exists()
+        else {}
+    )
+    execution_drift_overview_summary_path = Path(manifest.data_dir) / "ops/execution_drift_overview_summary.json"
+    execution_drift_overview_summary = (
+        read_json(execution_drift_overview_summary_path) if execution_drift_overview_summary_path.exists() else {}
+    )
+    readiness_summary_path = Path(manifest.data_dir) / "ops/readiness_snapshot.json"
+    readiness_summary = read_json(readiness_summary_path) if readiness_summary_path.exists() else {}
+    audit_summary = audit_summary_fields(
+        audit_dashboard if isinstance(audit_dashboard, dict) else {},
+        audit_bundle if isinstance(audit_bundle, dict) else {},
+    )
+    manifest.phase_gate_summary = normalize_phase_gate_summary(
+        phase_gate_summary if isinstance(phase_gate_summary, dict) else {}
+    )
+    manifest.execution_summary = normalize_execution_snapshot_summary(
+        execution_summary if isinstance(execution_summary, dict) else {}
+    )
+    manifest.execution_comparison_summary = normalize_execution_comparison_summary(
+        execution_comparison_summary if isinstance(execution_comparison_summary, dict) else {}
+    )
+    manifest.execution_diagnostics_summary = normalize_execution_diagnostics_summary(
+        execution_diagnostics_summary if isinstance(execution_diagnostics_summary, dict) else {}
+    )
+    manifest.execution_gap_history_summary = (
+        normalize_execution_gap_history_summary(
+            execution_gap_history_summary if isinstance(execution_gap_history_summary, dict) else {}
+        )
+    )
+    manifest.execution_state_comparison_summary = (
+        normalize_execution_state_comparison_summary(
+            execution_state_comparison_summary
+            if isinstance(execution_state_comparison_summary, dict)
+            else {}
+        )
+    )
+    manifest.execution_snapshot_drift_summary = (
+        normalize_execution_snapshot_drift_summary(
+            execution_snapshot_drift_summary
+            if isinstance(execution_snapshot_drift_summary, dict)
+            else {}
+        )
+    )
+    manifest.execution_drift_overview_summary = normalize_execution_drift_overview_summary(
+        execution_drift_overview_summary if isinstance(execution_drift_overview_summary, dict) else {}
+    )
+    manifest.readiness_summary = normalize_readiness_summary(
+        readiness_summary if isinstance(readiness_summary, dict) else {}
+    )
+    write_manifest(manifest_path, manifest)
 
     data = build_live_evidence_report_data(
         data_dir=Path(manifest.data_dir),
@@ -318,6 +646,7 @@ def write_reports_for_manifest(
         output_path=markdown_output_path,
         manifest_path=manifest_path,
         status=manifest.status.value,
+        audit_summary=audit_summary,
     )
     markdown_output_path.parent.mkdir(parents=True, exist_ok=True)
     html_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -325,9 +654,11 @@ def write_reports_for_manifest(
     markdown_output_path.write_text(render_live_evidence_report(data), encoding="utf-8")
     html_output_path.write_text(render_live_evidence_html(data), encoding="utf-8")
     followup_output_path.write_text(render_live_evidence_followup(data), encoding="utf-8")
+    summary_output_path = write_manifest_summary(manifest_path)
     print(f"written_markdown: {markdown_output_path}")
     print(f"written_html: {html_output_path}")
     print(f"written_followup: {followup_output_path}")
+    print(f"written_summary: {summary_output_path}")
 
 
 @app.command()
@@ -648,6 +979,9 @@ def main(
                                 manifest.decision = payload.get("decision") or manifest.decision
                                 manifest.blockers = list(payload.get("blockers", []))
                                 manifest.next_actions = list(payload.get("next_actions", []))
+                                phase_gate_summary = payload.get("phase_gate_summary")
+                                if isinstance(phase_gate_summary, dict):
+                                    manifest.phase_gate_summary = phase_gate_summary
                         write_manifest(effective_manifest_path, manifest)
 
                 run_with_manifest_step(
@@ -691,6 +1025,9 @@ def main(
                 manifest.decision = payload.get("decision") or manifest.decision
                 manifest.blockers = list(payload.get("blockers", []))
                 manifest.next_actions = list(payload.get("next_actions", []))
+                phase_gate_summary = payload.get("phase_gate_summary")
+                if isinstance(phase_gate_summary, dict):
+                    manifest.phase_gate_summary = phase_gate_summary
 
         used_retries = any(step.attempt_count > 1 for step in manifest.steps)
         if manifest.status not in {RunOutcome.FAILED_PREFLIGHT, RunOutcome.FAILED_COLLECTION}:
