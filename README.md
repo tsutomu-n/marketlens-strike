@@ -14,6 +14,24 @@ uv sync --dev
 uv run sis --help
 ```
 
+## Current Phase And Handoff Docs
+
+For current project status and handoff interpretation, read these first:
+
+1. [docs/ACCEPTANCE_AUDIT.md](/home/tn/projects/marketlens-strike/docs/ACCEPTANCE_AUDIT.md)
+2. [docs/IMPLEMENTATION_STATUS.md](/home/tn/projects/marketlens-strike/docs/IMPLEMENTATION_STATUS.md)
+3. [docs/CURRENT_PHASE_STATUS_AND_NEXT_GATE.md](/home/tn/projects/marketlens-strike/docs/CURRENT_PHASE_STATUS_AND_NEXT_GATE.md)
+4. [docs/ENGINEERING_HANDOFF_NOTE.md](/home/tn/projects/marketlens-strike/docs/ENGINEERING_HANDOFF_NOTE.md)
+5. [docs/PHASE2_COMPLETION_DEFINITION.md](/home/tn/projects/marketlens-strike/docs/PHASE2_COMPLETION_DEFINITION.md)
+
+Use them as follows:
+
+- `ACCEPTANCE_AUDIT.md`: current validation state and latest Go/No-Go
+- `IMPLEMENTATION_STATUS.md`: what is already implemented in this repo
+- `CURRENT_PHASE_STATUS_AND_NEXT_GATE.md`: what phase the repo is operationally in now
+- `ENGINEERING_HANDOFF_NOTE.md`: how to interpret the engineering handoff ZIP
+- `PHASE2_COMPLETION_DEFINITION.md`: what must be true before Phase 2 is considered complete
+
 ## Command Prefix
 
 Some project notes use `rtk` as a local command wrapper. If `rtk` is unavailable,
