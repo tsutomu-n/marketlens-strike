@@ -4,11 +4,17 @@ import math
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
+import json
 
 import polars as pl
 
 from sis.backtest.costs import CostProfile, load_cost_profiles, round_trip_cost_bps
 from sis.backtest.signals import ResearchSignal, load_research_signals
+from sis.core.context import DecisionContext
+from sis.core.decision import DecisionRecord
+from sis.core.execution_plan import build_execution_plan
+from sis.core.strategy import ResearchSignalStrategy
+from sis.risk.risk_gate import evaluate_risk_gate
 
 
 @dataclass(frozen=True)
@@ -223,7 +229,7 @@ def _metrics_for_signals(
     quotes: pl.DataFrame,
     signals: list[ResearchSignal],
     cost_profiles: dict[tuple[str, str], CostProfile] | None = None,
-) -> list[BacktestMetrics]:
+) -> tuple[list[BacktestMetrics], list[DecisionRecord], dict]:
     rows_by_key: dict[tuple[str, str], list[dict]] = {}
     for row in quotes.sort("ts_client").to_dicts():
         key = (str(row["venue"]), str(row["canonical_symbol"]).upper())
@@ -234,6 +240,11 @@ def _metrics_for_signals(
         signals_by_symbol.setdefault(signal.canonical_symbol, []).append(signal)
 
     metrics: list[BacktestMetrics] = []
+    decision_records: list[DecisionRecord] = []
+    blocked_reason_counts: dict[str, int] = {}
+    executed = 0
+    blocked = 0
+    strategy = ResearchSignalStrategy()
     for (venue, symbol), rows in rows_by_key.items():
         symbol_signals = signals_by_symbol.get(symbol, [])
         if not symbol_signals:
@@ -258,10 +269,38 @@ def _metrics_for_signals(
 
             entry = rows[entry_index]
             exit_ = rows[entry_index + 1]
-            if entry.get("oracle_ts_ms") is None:
-                stale_rejected += 1
-            if entry.get("market_status") != "open" or entry.get("is_tradable") is not True:
-                halt_rejected += 1
+            context = DecisionContext(
+                decision_ts=signal.ts_signal,
+                venue=venue,
+                canonical_symbol=symbol,
+                timeframe=signal.timeframe,
+                quote_ts=_parse_quote_ts(entry["ts_client"]),
+                signal_ts=signal.ts_signal,
+                signal_side=signal.side,
+                signal_strength=signal.signal_strength,
+                strategy_name="research_signal_strategy",
+                market_status=str(entry.get("market_status", "unknown")),
+                is_tradable=bool(entry.get("is_tradable")),
+            )
+            strategy_decision = strategy.evaluate(context)
+            risk_decision = evaluate_risk_gate(context, entry)
+            execution_plan = build_execution_plan(context, strategy_decision, risk_decision)
+            decision_records.append(
+                DecisionRecord(
+                    context=context,
+                    strategy_decision=strategy_decision,
+                    risk_decision=risk_decision,
+                    execution_plan=execution_plan.model_dump(mode="json"),
+                )
+            )
+            if not risk_decision.allowed:
+                blocked += 1
+                for reason in risk_decision.blocked_reasons:
+                    blocked_reason_counts[reason] = blocked_reason_counts.get(reason, 0) + 1
+                if risk_decision.stale_rejected:
+                    stale_rejected += 1
+                if risk_decision.halt_rejected:
+                    halt_rejected += 1
                 continue
 
             entry_price = _execution_price(entry, signal.side)
@@ -283,6 +322,7 @@ def _metrics_for_signals(
             cost_drag_bps += cost_bps
             cost_sources.append(cost_source)
             equity.append(equity[-1] * (1.0 + returns[-1]))
+            executed += 1
 
         metrics.append(
             _metrics_from_returns(
@@ -297,14 +337,36 @@ def _metrics_for_signals(
                 candidate_count=len(symbol_signals),
             )
         )
-    return metrics
+    summary = {
+        "mode": "signal_driven",
+        "signals_considered": len(signals),
+        "executed_count": executed,
+        "blocked_count": blocked,
+        "blocked_reason_counts": blocked_reason_counts,
+        "records_written": len(decision_records),
+    }
+    return metrics, decision_records, summary
 
 
-def run_backtest_bridge(
+def _write_decision_records(records: list[DecisionRecord], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for record in records:
+            handle.write(record.model_dump_json() + "\n")
+
+
+def _write_decision_summary(summary: dict, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+
+
+def run_backtest_bridge_with_decisions(
     quotes_path: Path,
     signals_path: Path | None = None,
     cost_matrix_path: Path | None = None,
-) -> list[BacktestMetrics]:
+    decision_log_path: Path | None = None,
+    decision_summary_path: Path | None = None,
+) -> tuple[list[BacktestMetrics], list[DecisionRecord], dict]:
     if not quotes_path.exists():
         raise FileNotFoundError(f"Normalized quote parquet not found: {quotes_path}")
     quotes = pl.read_parquet(quotes_path)
@@ -320,12 +382,43 @@ def run_backtest_bridge(
     if signals_path is not None:
         signals = load_research_signals(signals_path)
         if signals:
-            return _metrics_for_signals(quotes, signals, cost_profiles)
+            metrics, records, summary = _metrics_for_signals(quotes, signals, cost_profiles)
+            if decision_log_path is not None:
+                _write_decision_records(records, decision_log_path)
+            if decision_summary_path is not None:
+                _write_decision_summary(summary, decision_summary_path)
+            return metrics, records, summary
 
-    return [
+    metrics = [
         _metrics_for_group(group, cost_profiles)
         for (_key, group) in quotes.group_by(["venue", "canonical_symbol"], maintain_order=True)
     ]
+    summary = {
+        "mode": "quote_fallback",
+        "signals_considered": 0,
+        "executed_count": 0,
+        "blocked_count": 0,
+        "blocked_reason_counts": {},
+        "records_written": 0,
+    }
+    if decision_summary_path is not None:
+        _write_decision_summary(summary, decision_summary_path)
+    if decision_log_path is not None:
+        _write_decision_records([], decision_log_path)
+    return metrics, [], summary
+
+
+def run_backtest_bridge(
+    quotes_path: Path,
+    signals_path: Path | None = None,
+    cost_matrix_path: Path | None = None,
+) -> list[BacktestMetrics]:
+    metrics, _records, _summary = run_backtest_bridge_with_decisions(
+        quotes_path,
+        signals_path=signals_path,
+        cost_matrix_path=cost_matrix_path,
+    )
+    return metrics
 
 
 def write_backtest_report(

@@ -8,6 +8,7 @@ from loguru import logger
 
 from sis.backtest.bridge import (
     run_backtest_bridge,
+    run_backtest_bridge_with_decisions,
     write_backtest_metrics_json,
     write_backtest_report,
 )
@@ -204,10 +205,16 @@ def build_backtest(
     if signals_path is not None and not selected_signals_path.exists():
         typer.echo(f"Research signal CSV not found: {selected_signals_path}")
         raise typer.Exit(code=2)
-    metrics = run_backtest_bridge(
+    decision_log_path = (
+        settings.data_dir / "evidence/decision_logs" / f"backtest_decisions_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.jsonl"
+    )
+    decision_summary_path = settings.data_dir / "research/decision_summary.json"
+    metrics, _records, _summary = run_backtest_bridge_with_decisions(
         settings.data_dir / "normalized/quotes.parquet",
         selected_signals_path if selected_signals_path.exists() else None,
         settings.data_dir / "research/venue_cost_matrix.csv",
+        decision_log_path=decision_log_path,
+        decision_summary_path=decision_summary_path,
     )
     report_path = settings.data_dir / "research/backtest_report.md"
     metrics_path = settings.data_dir / "research/backtest_metrics.json"
@@ -219,6 +226,8 @@ def build_backtest(
     write_backtest_metrics_json(metrics, metrics_path)
     logger.info("written: {}", report_path)
     logger.info("written: {}", metrics_path)
+    logger.info("written: {}", decision_log_path)
+    logger.info("written: {}", decision_summary_path)
 
 
 @app.command("check-halt-policy")
