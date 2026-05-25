@@ -158,6 +158,7 @@ def build_operations_dashboard(
     execution_cancel_order_summary_path: Path | None = None,
     execution_close_position_summary_path: Path | None = None,
     execution_reconcile_positions_summary_path: Path | None = None,
+    execution_read_only_surfaces_summary_path: Path | None = None,
     daemon_manifest_summary_path: Path | None = None,
     state_export_summary_path: Path | None = None,
     state_restore_summary_path: Path | None = None,
@@ -209,6 +210,7 @@ def build_operations_dashboard(
     execution_cancel_order = safe_read_json_dict(execution_cancel_order_summary_path)
     execution_close_position = safe_read_json_dict(execution_close_position_summary_path)
     execution_reconcile_positions = safe_read_json_dict(execution_reconcile_positions_summary_path)
+    execution_read_only_surfaces = safe_read_json_dict(execution_read_only_surfaces_summary_path)
     daemon_manifest = safe_read_json_dict(daemon_manifest_summary_path)
     state_export = safe_read_json_dict(state_export_summary_path)
     state_restore = safe_read_json_dict(state_restore_summary_path)
@@ -297,6 +299,27 @@ def build_operations_dashboard(
             "report_path": "reconcile_positions_report_path",
         },
     )
+    execution_read_only_surface_fields = {
+        "execution_read_only_surfaces_venue_count": execution_read_only_surfaces.get("venue_count"),
+        "execution_read_only_surfaces_with_balance_snapshot_count": execution_read_only_surfaces.get(
+            "with_balance_snapshot_count"
+        ),
+        "execution_read_only_surfaces_with_positions_snapshot_count": execution_read_only_surfaces.get(
+            "with_positions_snapshot_count"
+        ),
+        "execution_read_only_surfaces_with_fills_snapshot_count": execution_read_only_surfaces.get(
+            "with_fills_snapshot_count"
+        ),
+        "execution_read_only_surfaces_with_order_status_snapshot_count": execution_read_only_surfaces.get(
+            "with_order_status_snapshot_count"
+        ),
+        "execution_read_only_surfaces_reconciled_venue_count": execution_read_only_surfaces.get(
+            "reconciled_venue_count"
+        ),
+        "execution_read_only_surfaces_report_path": execution_read_only_surfaces.get(
+            "execution_read_only_surfaces_report_path"
+        ),
+    }
     state_daemon_fields = {
         "daemon_manifest_mode": daemon_manifest.get("mode"),
         "daemon_manifest_command": daemon_manifest.get("command"),
@@ -367,6 +390,7 @@ def build_operations_dashboard(
         "execution_cancel_order_summary": execution_cancel_order,
         "execution_close_position_summary": execution_close_position,
         "execution_reconcile_positions_summary": execution_reconcile_positions,
+        "execution_read_only_surfaces_summary": execution_read_only_surfaces,
         "daemon_manifest_summary": daemon_manifest,
         "state_export_summary": state_export,
         "state_restore_summary": state_restore,
@@ -383,6 +407,7 @@ def build_operations_dashboard(
         **execution_cancel_fields,
         **execution_close_fields,
         **execution_reconcile_fields,
+        **execution_read_only_surface_fields,
         **state_daemon_fields,
         **audit_dashboard_fields,
         **audit_bundle_fields,
@@ -412,6 +437,7 @@ def build_operations_dashboard(
             "data/ops/execution_cancel_order_summary.json",
             "data/ops/execution_close_position_summary.json",
             "data/ops/execution_reconcile_positions_summary.json",
+            "data/ops/execution_read_only_surfaces_summary.json",
             "data/ops/daemon_manifest_summary.json",
             "data/ops/state_export_summary.json",
             "data/ops/state_restore_summary.json",
@@ -513,6 +539,28 @@ def build_operations_dashboard(
                 "- execution_reconcile_positions_missing_in_internal_count: "
                 f"{summary.get('execution_reconcile_positions_missing_in_internal_count')}"
             ),
+            f"- execution_read_only_surfaces_venue_count: {summary.get('execution_read_only_surfaces_venue_count')}",
+            (
+                "- execution_read_only_surfaces_with_balance_snapshot_count: "
+                f"{summary.get('execution_read_only_surfaces_with_balance_snapshot_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_positions_snapshot_count: "
+                f"{summary.get('execution_read_only_surfaces_with_positions_snapshot_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_fills_snapshot_count: "
+                f"{summary.get('execution_read_only_surfaces_with_fills_snapshot_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_order_status_snapshot_count: "
+                f"{summary.get('execution_read_only_surfaces_with_order_status_snapshot_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_reconciled_venue_count: "
+                f"{summary.get('execution_read_only_surfaces_reconciled_venue_count')}"
+            ),
+            f"- execution_read_only_surfaces_report_path: {summary.get('execution_read_only_surfaces_report_path')}",
             "",
             "## State And Daemon Surfaces",
             "",

@@ -49,6 +49,7 @@ from sis.reports.execution_adapter_status import (
     build_balance_status_report,
     build_fill_status_report,
     build_order_status_report,
+    build_execution_read_only_surfaces_report,
     build_reconcile_positions_report,
 )
 from sis.reports.execution_gap_history import build_execution_gap_history_report
@@ -131,6 +132,7 @@ from sis.validation.artifacts import validate_artifacts
 from sis.venues.gtrade.quotes import convert_sidecar_to_quote_logs, latest_pricing_file, latest_sidecar_file
 from sis.venues.gtrade.registry import GTRADE_TARGETS
 from sis.venues.ostium.probe import OSTIUM_PRICES_ENDPOINT, write_ostium_live_probe_outputs
+from sis.venues.ostium.positions import latest_positions_sidecar
 from sis.venues.ostium.registry import OSTIUM_TARGETS
 
 app = typer.Typer(no_args_is_help=True)
@@ -987,6 +989,7 @@ def _write_operations_dashboard(settings_data_dir: Path) -> tuple[Path, Path, st
         execution_cancel_order_summary_path=settings_data_dir / "ops/execution_cancel_order_summary.json",
         execution_close_position_summary_path=settings_data_dir / "ops/execution_close_position_summary.json",
         execution_reconcile_positions_summary_path=settings_data_dir / "ops/execution_reconcile_positions_summary.json",
+        execution_read_only_surfaces_summary_path=settings_data_dir / "ops/execution_read_only_surfaces_summary.json",
         daemon_manifest_summary_path=settings_data_dir / "ops/daemon_manifest_summary.json",
         state_export_summary_path=settings_data_dir / "ops/state_export_summary.json",
         state_restore_summary_path=settings_data_dir / "ops/state_restore_summary.json",
@@ -1087,6 +1090,140 @@ def _write_execution_drift_overview(settings_data_dir: Path) -> tuple[Path, Path
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _has_target_free_execution_observation_sources(settings_data_dir: Path) -> bool:
+    source_paths = [
+        settings_data_dir / "execution/gtrade_balance.json",
+        settings_data_dir / "execution/ostium_balance.json",
+        settings_data_dir / "execution/gtrade_fills.json",
+        settings_data_dir / "execution/ostium_fills.json",
+        settings_data_dir / "execution/gtrade_order_status.json",
+        settings_data_dir / "execution/ostium_order_status.json",
+        settings_data_dir / "paper/positions.parquet",
+    ]
+    if any(path.exists() for path in source_paths):
+        return True
+    return latest_positions_sidecar(settings_data_dir / "raw/sidecar/ostium") is not None
+
+
+def _refresh_execution_lineage_artifacts(
+    settings_data_dir: Path,
+    *,
+    only_if_sources_exist: bool = False,
+) -> dict[str, tuple[Path, Path, str]]:
+    if only_if_sources_exist and not _has_target_free_execution_observation_sources(settings_data_dir):
+        return {}
+    execution_snapshot_out, execution_snapshot_summary_out, execution_snapshot_text = _write_execution_snapshot(
+        settings_data_dir
+    )
+    execution_comparison_out, execution_comparison_summary_out, execution_comparison_text = _write_execution_venue_comparison(
+        settings_data_dir
+    )
+    execution_diagnostics_out, execution_diagnostics_summary_out, execution_diagnostics_text = _write_execution_venue_diagnostics(
+        settings_data_dir
+    )
+    gap_history_out, gap_history_summary_out, gap_history_text = _write_execution_gap_history(settings_data_dir)
+    state_comparison_out, state_comparison_summary_out, state_comparison_text = _write_execution_state_comparison_history(
+        settings_data_dir
+    )
+    snapshot_drift_out, snapshot_drift_summary_out, snapshot_drift_text = _write_execution_snapshot_drift_history(
+        settings_data_dir
+    )
+    drift_overview_out, drift_overview_summary_out, drift_overview_text = _write_execution_drift_overview(
+        settings_data_dir
+    )
+    return {
+        "execution_snapshot": (execution_snapshot_out, execution_snapshot_summary_out, execution_snapshot_text),
+        "execution_comparison": (execution_comparison_out, execution_comparison_summary_out, execution_comparison_text),
+        "execution_diagnostics": (execution_diagnostics_out, execution_diagnostics_summary_out, execution_diagnostics_text),
+        "execution_gap_history": (gap_history_out, gap_history_summary_out, gap_history_text),
+        "execution_state_comparison_history": (
+            state_comparison_out,
+            state_comparison_summary_out,
+            state_comparison_text,
+        ),
+        "execution_snapshot_drift_history": (
+            snapshot_drift_out,
+            snapshot_drift_summary_out,
+            snapshot_drift_text,
+        ),
+        "execution_drift_overview": (drift_overview_out, drift_overview_summary_out, drift_overview_text),
+    }
+
+
+def _execution_read_only_surface_for_venue(
+    settings_data_dir: Path,
+    venue: str,
+    *,
+    state_path: Path | None = None,
+    fills_limit: int = 20,
+    order_limit: int = 20,
+) -> dict[str, object]:
+    adapter = _adapter_for_venue(settings_data_dir, venue)
+    balance = adapter.read_balance()
+    positions = adapter.read_positions()
+    fills = adapter.read_fills(limit=fills_limit)
+    order_statuses = adapter.read_order_statuses(limit=order_limit)
+    health = adapter.healthcheck()
+    store = _state_store(settings_data_dir, state_path)
+    payload = store.get_json("paper_positions")
+    internal_positions = (
+        [
+            PaperPosition.model_validate(item)
+            for item in payload
+            if isinstance(item, dict) and str(item.get("venue", "")).lower() == venue
+        ]
+        if isinstance(payload, list)
+        else []
+    )
+    reconciliation = reconcile_positions(internal_positions, positions)
+    latest_fill = fills[0].__dict__ if fills else {}
+    latest_order_status = order_statuses[0].__dict__ if order_statuses else {}
+    return {
+        "venue": venue,
+        "balance_snapshot_exists": health.get("balance_snapshot_exists"),
+        "positions_snapshot_exists": health.get("positions_snapshot_exists"),
+        "fills_snapshot_exists": health.get("fills_snapshot_exists"),
+        "order_status_snapshot_exists": health.get("order_status_snapshot_exists"),
+        "currency": balance.get("currency"),
+        "equity": balance.get("equity"),
+        "available_cash": balance.get("available_cash"),
+        "fills_count": len(fills),
+        "latest_fill_id": latest_fill.get("fill_id"),
+        "latest_fill_status": latest_fill.get("status"),
+        "order_status_count": len(order_statuses),
+        "latest_order_id": latest_order_status.get("order_id"),
+        "latest_order_status": latest_order_status.get("status"),
+        "positions_count": len(positions),
+        "reconcile_matched": reconciliation.matched,
+        "reconcile_missing_in_adapter_count": len(reconciliation.missing_in_adapter),
+        "reconcile_missing_in_internal_count": len(reconciliation.missing_in_internal),
+    }
+
+
+def _write_execution_read_only_surfaces(
+    settings_data_dir: Path,
+    *,
+    state_path: Path | None = None,
+) -> tuple[Path, Path, str]:
+    venues = ["gtrade", "ostium"]
+    venue_surfaces = [
+        _execution_read_only_surface_for_venue(
+            settings_data_dir,
+            venue,
+            state_path=state_path,
+        )
+        for venue in venues
+    ]
+    out = settings_data_dir / "reports/execution_read_only_surfaces.md"
+    summary_out = settings_data_dir / "ops/execution_read_only_surfaces_summary.json"
+    text = build_execution_read_only_surfaces_report(
+        venue_surfaces=venue_surfaces,
         out_path=out,
         summary_path=summary_out,
     )
@@ -2484,6 +2621,8 @@ def daemon_dry_run_cmd(
     ),
 ) -> None:
     settings = get_settings()
+    _refresh_execution_lineage_artifacts(settings.data_dir, only_if_sources_exist=True)
+    _write_execution_read_only_surfaces(settings.data_dir, state_path=state_path)
     result = run_daemon_dry_run(
         data_dir=settings.data_dir,
         mode=mode,
@@ -3159,15 +3298,14 @@ def refresh_operations_artifacts_cmd(
         snapshot_path=settings.data_dir / "state/state_snapshot.json",
         restored=False,
     )
-    execution_snapshot_out, execution_snapshot_summary_out, _execution_snapshot_text = _write_execution_snapshot(
-        settings.data_dir
+    execution_lineage = _refresh_execution_lineage_artifacts(settings.data_dir)
+    execution_read_only_surfaces_out, execution_read_only_surfaces_summary_out, _execution_read_only_surfaces_text = _write_execution_read_only_surfaces(
+        settings.data_dir,
+        state_path=state_path,
     )
-    execution_comparison_out, execution_comparison_summary_out, _execution_comparison_text = _write_execution_venue_comparison(
-        settings.data_dir
-    )
-    execution_diagnostics_out, execution_diagnostics_summary_out, _execution_diagnostics_text = _write_execution_venue_diagnostics(
-        settings.data_dir
-    )
+    execution_snapshot_out, execution_snapshot_summary_out, _execution_snapshot_text = execution_lineage["execution_snapshot"]
+    execution_comparison_out, execution_comparison_summary_out, _execution_comparison_text = execution_lineage["execution_comparison"]
+    execution_diagnostics_out, execution_diagnostics_summary_out, _execution_diagnostics_text = execution_lineage["execution_diagnostics"]
     weekly_out, _weekly_text = _write_weekly_review(settings.data_dir)
     comparison_out, _comparison_text = _write_comparison_report(settings.data_dir)
     lifecycle_out, _lifecycle_text = _write_lifecycle_report(settings.data_dir)
@@ -3176,16 +3314,10 @@ def refresh_operations_artifacts_cmd(
     dashboard_out, dashboard_summary_out, dashboard_text = _write_operations_dashboard(settings.data_dir)
     runbook_out, runbook_summary_out, _runbook_text = _write_paper_operations_runbook(settings.data_dir)
     cycle_history_out, cycle_history_summary_out, _cycle_history_text = _write_paper_cycle_history(settings.data_dir)
-    gap_history_out, gap_history_summary_out, _gap_history_text = _write_execution_gap_history(settings.data_dir)
-    state_comparison_out, state_comparison_summary_out, _state_comparison_text = _write_execution_state_comparison_history(
-        settings.data_dir
-    )
-    snapshot_drift_out, snapshot_drift_summary_out, _snapshot_drift_text = _write_execution_snapshot_drift_history(
-        settings.data_dir
-    )
-    drift_overview_out, drift_overview_summary_out, _drift_overview_text = _write_execution_drift_overview(
-        settings.data_dir
-    )
+    gap_history_out, gap_history_summary_out, _gap_history_text = execution_lineage["execution_gap_history"]
+    state_comparison_out, state_comparison_summary_out, _state_comparison_text = execution_lineage["execution_state_comparison_history"]
+    snapshot_drift_out, snapshot_drift_summary_out, _snapshot_drift_text = execution_lineage["execution_snapshot_drift_history"]
+    drift_overview_out, drift_overview_summary_out, _drift_overview_text = execution_lineage["execution_drift_overview"]
     phase_gate_out, phase_gate_summary_out, _phase_gate_text = _write_phase_gate_review(settings.data_dir)
     remediation_planner_out, remediation_planner_summary_out, _remediation_planner_text = _write_remediation_planner(
         settings.data_dir
@@ -3509,6 +3641,8 @@ def refresh_operations_artifacts_cmd(
     logger.info("written: {}", execution_comparison_summary_out)
     logger.info("written: {}", execution_diagnostics_out)
     logger.info("written: {}", execution_diagnostics_summary_out)
+    logger.info("written: {}", execution_read_only_surfaces_out)
+    logger.info("written: {}", execution_read_only_surfaces_summary_out)
     logger.info("written: {}", monitoring_out)
     logger.info("written: {}", ops_review_out)
     logger.info("written: {}", ops_review_summary_out)
@@ -3577,6 +3711,7 @@ def refresh_operations_artifacts_cmd(
     typer.echo(f"execution_snapshot_path={execution_snapshot_out}")
     typer.echo(f"execution_comparison_path={execution_comparison_out}")
     typer.echo(f"execution_diagnostics_path={execution_diagnostics_out}")
+    typer.echo(f"execution_read_only_surfaces_path={execution_read_only_surfaces_out}")
     typer.echo(f"execution_gap_history_path={gap_history_out}")
     typer.echo(f"execution_state_comparison_history_path={state_comparison_out}")
     typer.echo(f"execution_snapshot_drift_history_path={snapshot_drift_out}")
@@ -3618,15 +3753,14 @@ def paper_operations_cycle_cmd(
         state_path=state_path,
         signals_path=signals_path,
     )
-    execution_snapshot_out, execution_snapshot_summary_out, _execution_snapshot_text = _write_execution_snapshot(
-        settings.data_dir
+    execution_lineage = _refresh_execution_lineage_artifacts(settings.data_dir)
+    execution_read_only_surfaces_out, execution_read_only_surfaces_summary_out, _execution_read_only_surfaces_text = _write_execution_read_only_surfaces(
+        settings.data_dir,
+        state_path=state_path,
     )
-    execution_comparison_out, execution_comparison_summary_out, _execution_comparison_text = _write_execution_venue_comparison(
-        settings.data_dir
-    )
-    execution_diagnostics_out, execution_diagnostics_summary_out, _execution_diagnostics_text = _write_execution_venue_diagnostics(
-        settings.data_dir
-    )
+    execution_snapshot_out, execution_snapshot_summary_out, _execution_snapshot_text = execution_lineage["execution_snapshot"]
+    execution_comparison_out, execution_comparison_summary_out, _execution_comparison_text = execution_lineage["execution_comparison"]
+    execution_diagnostics_out, execution_diagnostics_summary_out, _execution_diagnostics_text = execution_lineage["execution_diagnostics"]
     weekly_out, _weekly_text = _write_weekly_review(settings.data_dir)
     comparison_out, _comparison_text = _write_comparison_report(settings.data_dir)
     lifecycle_out, _lifecycle_text = _write_lifecycle_report(settings.data_dir)
@@ -3809,6 +3943,8 @@ def paper_operations_cycle_cmd(
     logger.info("written: {}", execution_comparison_summary_out)
     logger.info("written: {}", execution_diagnostics_out)
     logger.info("written: {}", execution_diagnostics_summary_out)
+    logger.info("written: {}", execution_read_only_surfaces_out)
+    logger.info("written: {}", execution_read_only_surfaces_summary_out)
     logger.info("written: {}", weekly_out)
     logger.info("written: {}", comparison_out)
     logger.info("written: {}", lifecycle_out)
@@ -3862,6 +3998,7 @@ def paper_operations_cycle_cmd(
     typer.echo(f"execution_snapshot_path={execution_snapshot_out}")
     typer.echo(f"execution_comparison_path={execution_comparison_out}")
     typer.echo(f"execution_diagnostics_path={execution_diagnostics_out}")
+    typer.echo(f"execution_read_only_surfaces_path={execution_read_only_surfaces_out}")
     typer.echo(f"execution_gap_history_path={gap_history_out}")
     typer.echo(f"execution_state_comparison_history_path={state_comparison_out}")
     typer.echo(f"execution_snapshot_drift_history_path={snapshot_drift_out}")

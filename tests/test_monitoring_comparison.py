@@ -13,6 +13,7 @@ from sis.reports.current_state_index import build_current_state_index
 from sis.reports.execution_adapter_status import (
     build_action_status_report,
     build_balance_status_report,
+    build_execution_read_only_surfaces_report,
     build_fill_status_report,
     build_order_status_report,
     build_reconcile_positions_report,
@@ -733,6 +734,7 @@ def test_build_operations_dashboard(tmp_path) -> None:
     execution_cancel_order = tmp_path / "execution_cancel_order.json"
     execution_close_position = tmp_path / "execution_close_position.json"
     execution_reconcile_positions = tmp_path / "execution_reconcile_positions.json"
+    execution_read_only_surfaces = tmp_path / "execution_read_only_surfaces.json"
     daemon_manifest = tmp_path / "daemon_manifest.json"
     state_export = tmp_path / "state_export.json"
     state_restore = tmp_path / "state_restore.json"
@@ -874,6 +876,18 @@ def test_build_operations_dashboard(tmp_path) -> None:
         },
     )
     write_json(
+        execution_read_only_surfaces,
+        {
+            "venue_count": 2,
+            "with_balance_snapshot_count": 1,
+            "with_positions_snapshot_count": 2,
+            "with_fills_snapshot_count": 1,
+            "with_order_status_snapshot_count": 1,
+            "reconciled_venue_count": 2,
+            "execution_read_only_surfaces_report_path": "data/reports/execution_read_only_surfaces.md",
+        },
+    )
+    write_json(
         daemon_manifest,
         {
             "mode": "paper",
@@ -989,6 +1003,7 @@ def test_build_operations_dashboard(tmp_path) -> None:
         execution_cancel_order_summary_path=execution_cancel_order,
         execution_close_position_summary_path=execution_close_position,
         execution_reconcile_positions_summary_path=execution_reconcile_positions,
+        execution_read_only_surfaces_summary_path=execution_read_only_surfaces,
         daemon_manifest_summary_path=daemon_manifest,
         state_export_summary_path=state_export,
         state_restore_summary_path=state_restore,
@@ -1181,6 +1196,13 @@ def test_build_current_state_index(tmp_path) -> None:
             "execution_reconcile_positions_matched": 1,
             "execution_reconcile_positions_missing_in_adapter_count": 0,
             "execution_reconcile_positions_missing_in_internal_count": 0,
+            "execution_read_only_surfaces_venue_count": 2,
+            "execution_read_only_surfaces_with_balance_snapshot_count": 1,
+            "execution_read_only_surfaces_with_positions_snapshot_count": 2,
+            "execution_read_only_surfaces_with_fills_snapshot_count": 1,
+            "execution_read_only_surfaces_with_order_status_snapshot_count": 1,
+            "execution_read_only_surfaces_reconciled_venue_count": 2,
+            "execution_read_only_surfaces_report_path": "data/reports/execution_read_only_surfaces.md",
             "daemon_manifest_mode": "paper",
             "daemon_manifest_command": "uv run sis paper-step",
             "daemon_manifest_state_store_path": "data/state/marketlens.sqlite",
@@ -1419,6 +1441,8 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "execution_order_status_status: working" in report
     assert "execution_cancel_order_status: blocked_read_only" in report
     assert "execution_reconcile_positions_matched: 1" in report
+    assert "execution_read_only_surfaces_venue_count: 2" in report
+    assert "execution_read_only_surfaces_with_positions_snapshot_count: 2" in report
     assert "## State And Daemon Surfaces" in report
     assert "daemon_manifest_mode: paper" in report
     assert "state_export_phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
@@ -1631,6 +1655,13 @@ def test_build_readiness_snapshot(tmp_path) -> None:
             "execution_reconcile_positions_matched": 1,
             "execution_reconcile_positions_missing_in_adapter_count": 0,
             "execution_reconcile_positions_missing_in_internal_count": 0,
+            "execution_read_only_surfaces_venue_count": 2,
+            "execution_read_only_surfaces_with_balance_snapshot_count": 1,
+            "execution_read_only_surfaces_with_positions_snapshot_count": 2,
+            "execution_read_only_surfaces_with_fills_snapshot_count": 1,
+            "execution_read_only_surfaces_with_order_status_snapshot_count": 1,
+            "execution_read_only_surfaces_reconciled_venue_count": 2,
+            "execution_read_only_surfaces_report_path": "data/reports/execution_read_only_surfaces.md",
             "daemon_manifest_mode": "paper",
             "daemon_manifest_command": "uv run sis paper-step",
             "daemon_manifest_state_store_path": "data/state/marketlens.sqlite",
@@ -1759,6 +1790,8 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["execution_order_status_status"] == "working"
     assert summary["execution_cancel_order_status"] == "blocked_read_only"
     assert summary["execution_reconcile_positions_matched"] == 1
+    assert summary["execution_read_only_surfaces_venue_count"] == 2
+    assert summary["execution_read_only_surfaces_with_positions_snapshot_count"] == 2
     assert summary["daemon_manifest_mode"] == "paper"
     assert summary["state_export_phase_gate_decision"] == "GO"
     assert summary["state_restore_restored"] is True
@@ -2171,6 +2204,60 @@ def test_build_execution_reconcile_positions_report(tmp_path) -> None:
     assert summary["matched"] == 1
     assert summary["missing_in_adapter_count"] == 1
     assert summary["run_id"] == "20260525_000000"
+
+
+def test_build_execution_read_only_surfaces_report(tmp_path) -> None:
+    out_path = tmp_path / "execution_read_only_surfaces.md"
+    summary_path = tmp_path / "execution_read_only_surfaces_summary.json"
+
+    text = build_execution_read_only_surfaces_report(
+        venue_surfaces=[
+            {
+                "venue": "gtrade",
+                "balance_snapshot_exists": True,
+                "positions_snapshot_exists": True,
+                "fills_snapshot_exists": True,
+                "order_status_snapshot_exists": True,
+                "equity": 1500.0,
+                "fills_count": 1,
+                "latest_fill_id": "fill-1",
+                "order_status_count": 1,
+                "latest_order_id": "ord-1",
+                "latest_order_status": "working",
+                "positions_count": 1,
+                "reconcile_matched": 1,
+                "reconcile_missing_in_adapter_count": 0,
+                "reconcile_missing_in_internal_count": 0,
+            },
+            {
+                "venue": "ostium",
+                "balance_snapshot_exists": False,
+                "positions_snapshot_exists": True,
+                "fills_snapshot_exists": False,
+                "order_status_snapshot_exists": False,
+                "equity": None,
+                "fills_count": 0,
+                "latest_fill_id": None,
+                "order_status_count": 0,
+                "latest_order_id": None,
+                "latest_order_status": None,
+                "positions_count": 1,
+                "reconcile_matched": 1,
+                "reconcile_missing_in_adapter_count": 0,
+                "reconcile_missing_in_internal_count": 0,
+            },
+        ],
+        out_path=out_path,
+        summary_path=summary_path,
+    )
+
+    assert "Execution Read Only Surfaces" in text
+    assert "venue_count: 2" in text
+    assert "venue_gtrade_latest_fill_id: fill-1" in text
+    summary = read_json(summary_path)
+    assert summary["venue_count"] == 2
+    assert summary["with_positions_snapshot_count"] == 2
+    assert summary["reconciled_venue_count"] == 2
 
 
 def test_build_daemon_manifest_report(tmp_path) -> None:

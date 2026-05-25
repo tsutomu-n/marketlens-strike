@@ -897,6 +897,42 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
     data_dir = tmp_path / "data"
     env = {"SIS_DATA_DIR": str(data_dir)}
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
+    (data_dir / "registry").mkdir(parents=True, exist_ok=True)
+    (data_dir / "execution").mkdir(parents=True, exist_ok=True)
+    (data_dir / "paper").mkdir(parents=True, exist_ok=True)
+    (data_dir / "raw/sidecar/ostium").mkdir(parents=True, exist_ok=True)
+    (data_dir / "registry/gtrade_instrument_registry.json").write_text("[]", encoding="utf-8")
+    (data_dir / "registry/ostium_instrument_registry.json").write_text("[]", encoding="utf-8")
+    (data_dir / "execution/gtrade_balance.json").write_text(
+        '{"currency":"USD","equity":1500.0,"available_cash":1200.0}',
+        encoding="utf-8",
+    )
+    (data_dir / "execution/gtrade_fills.json").write_text(
+        '[{"fill_id":"fill-1","order_id":"ord-1","canonical_symbol":"QQQ","side":"long","quantity":1,"price":100.5,"status":"filled","ts_fill":"2026-05-24T00:00:00+00:00"}]',
+        encoding="utf-8",
+    )
+    (data_dir / "execution/gtrade_order_status.json").write_text(
+        '[{"order_id":"ord-1","canonical_symbol":"QQQ","side":"long","quantity":1,"status":"working"}]',
+        encoding="utf-8",
+    )
+    (data_dir / "raw/sidecar/ostium/positions_2026-05-24.json").write_text(
+        '{"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80"}]}',
+        encoding="utf-8",
+    )
+    pl.DataFrame(
+        [
+            {
+                "venue": "gtrade",
+                "canonical_symbol": "QQQ",
+                "side": "long",
+                "quantity": 2.0,
+                "avg_entry_price": 100.5,
+                "opened_at": datetime(2026, 5, 24, 0, 0, tzinfo=timezone.utc),
+                "updated_at": datetime(2026, 5, 24, 1, 0, tzinfo=timezone.utc),
+                "realized_pnl": 0.0,
+            }
+        ]
+    ).write_parquet(data_dir / "paper/positions.parquet")
     (data_dir / "ops/audit_dashboard_summary.json").write_text(
         '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot"}',
         encoding="utf-8",
@@ -1001,6 +1037,15 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
     assert '"next_phase_candidate": "Stay Phase 1"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
     assert '"balance_gap_detected": true' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
     assert '"next_phase_candidate": "Stay Phase 1"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
+    execution_snapshot_summary = read_json(data_dir / "ops/execution_snapshot_summary.json")
+    assert execution_snapshot_summary["venues"][0]["positions_snapshot_exists"] is True
+    assert execution_snapshot_summary["venues"][1]["positions_snapshot_exists"] is True
+    execution_comparison_summary = read_json(data_dir / "ops/execution_venue_comparison_summary.json")
+    assert execution_comparison_summary["all_positions_snapshots_present"] is True
+    assert (data_dir / "reports/execution_read_only_surfaces.md").exists()
+    read_only_summary = read_json(data_dir / "ops/execution_read_only_surfaces_summary.json")
+    assert read_only_summary["venue_count"] == 2
+    assert read_only_summary["with_positions_snapshot_count"] == 2
 
 
 def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:
@@ -3893,14 +3938,37 @@ def test_refresh_operations_artifacts_cli(tmp_path) -> None:
     (data_dir / "registry").mkdir(parents=True, exist_ok=True)
     (data_dir / "registry/gtrade_instrument_registry.json").write_text("[]", encoding="utf-8")
     (data_dir / "registry/ostium_instrument_registry.json").write_text("[]", encoding="utf-8")
+    (data_dir / "raw/sidecar/ostium").mkdir(parents=True, exist_ok=True)
+    (data_dir / "raw/sidecar/ostium/positions_2026-05-24.json").write_text(
+        '{"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80"}]}',
+        encoding="utf-8",
+    )
+    (data_dir / "execution").mkdir(parents=True, exist_ok=True)
+    (data_dir / "execution/gtrade_balance.json").write_text(
+        '{"currency":"USD","equity":1500.0,"available_cash":1200.0}',
+        encoding="utf-8",
+    )
     (data_dir / "research/decision_summary.json").write_text(
         '{"mode":"signal_driven","executed_count":1,"blocked_count":0}',
         encoding="utf-8",
     )
-    import polars as pl
     pl.DataFrame([{"canonical_symbol": "QQQ", "avg_trade_return": 0.05}]).write_json(
         data_dir / "research/backtest_metrics.json"
     )
+    pl.DataFrame(
+        [
+            {
+                "venue": "gtrade",
+                "canonical_symbol": "QQQ",
+                "side": "long",
+                "quantity": 2.0,
+                "avg_entry_price": 100.5,
+                "opened_at": datetime(2026, 5, 24, 0, 0, tzinfo=timezone.utc),
+                "updated_at": datetime(2026, 5, 24, 1, 0, tzinfo=timezone.utc),
+                "realized_pnl": 0.0,
+            }
+        ]
+    ).write_parquet(data_dir / "paper/positions.parquet")
     pl.DataFrame([{"date": "2026-05-24", "realized_pnl": 2.0, "fills_count": 1, "open_positions": 1}]).write_parquet(
         data_dir / "paper/daily_pnl.parquet"
     )
@@ -3991,6 +4059,11 @@ def test_refresh_operations_artifacts_cli(tmp_path) -> None:
         == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     )
     assert read_json(data_dir / "ops/state_restore_summary.json")["restored"] is False
+    execution_snapshot_summary = read_json(data_dir / "ops/execution_snapshot_summary.json")
+    assert execution_snapshot_summary["venues"][0]["positions_snapshot_exists"] is True
+    assert (data_dir / "reports/execution_read_only_surfaces.md").exists()
+    read_only_summary = read_json(data_dir / "ops/execution_read_only_surfaces_summary.json")
+    assert read_only_summary["venue_count"] == 2
 
 
 def test_paper_operations_cycle_cli(tmp_path) -> None:
@@ -4157,7 +4230,7 @@ def test_paper_operations_cycle_cli(tmp_path) -> None:
     assert "execution_snapshot_drift_entry_count=0" in notes
     assert "execution_snapshot_drift_latest_status_match=None" in notes
     assert "execution_snapshot_drift_mismatching_snapshot_count=0" in notes
-    assert "execution_drift_overview_status=None" in notes
+    assert "execution_drift_overview_status=degraded" in notes
     assert "execution_drift_overview_diagnostics_alignment_match=None" in notes
     assert "execution_drift_overview_state_comparison_mismatching_count=None" in notes
     assert "execution_drift_overview_snapshot_drift_mismatching_snapshot_count=None" in notes

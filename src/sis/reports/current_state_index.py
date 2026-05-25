@@ -211,6 +211,13 @@ def build_current_state_index(
             "execution_reconcile_positions_missing_in_adapter_count",
             "execution_reconcile_positions_missing_in_internal_count",
             "execution_reconcile_positions_report_path",
+            "execution_read_only_surfaces_venue_count",
+            "execution_read_only_surfaces_with_balance_snapshot_count",
+            "execution_read_only_surfaces_with_positions_snapshot_count",
+            "execution_read_only_surfaces_with_fills_snapshot_count",
+            "execution_read_only_surfaces_with_order_status_snapshot_count",
+            "execution_read_only_surfaces_reconciled_venue_count",
+            "execution_read_only_surfaces_report_path",
             "daemon_manifest_mode",
             "daemon_manifest_command",
             "daemon_manifest_state_store_path",
@@ -616,6 +623,28 @@ def build_current_state_index(
                 "- execution_reconcile_positions_missing_in_internal_count: "
                 f"{summary.get('execution_reconcile_positions_missing_in_internal_count')}"
             ),
+            f"- execution_read_only_surfaces_venue_count: {summary.get('execution_read_only_surfaces_venue_count')}",
+            (
+                "- execution_read_only_surfaces_with_balance_snapshot_count: "
+                f"{summary.get('execution_read_only_surfaces_with_balance_snapshot_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_positions_snapshot_count: "
+                f"{summary.get('execution_read_only_surfaces_with_positions_snapshot_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_fills_snapshot_count: "
+                f"{summary.get('execution_read_only_surfaces_with_fills_snapshot_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_order_status_snapshot_count: "
+                f"{summary.get('execution_read_only_surfaces_with_order_status_snapshot_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_reconciled_venue_count: "
+                f"{summary.get('execution_read_only_surfaces_reconciled_venue_count')}"
+            ),
+            f"- execution_read_only_surfaces_report_path: {summary.get('execution_read_only_surfaces_report_path')}",
         ]
     )
     lines.extend(["", "## State And Daemon Surfaces", ""])

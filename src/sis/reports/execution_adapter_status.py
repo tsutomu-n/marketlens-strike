@@ -280,3 +280,72 @@ def build_reconcile_positions_report(
         out_path=out_path,
         summary_path=summary_path,
     )
+
+
+def build_execution_read_only_surfaces_report(
+    *,
+    venue_surfaces: list[dict[str, object]],
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    venues = [dict(item) for item in venue_surfaces]
+    venue_count = len(venues)
+    with_balance_snapshot_count = sum(bool(item.get("balance_snapshot_exists")) for item in venues)
+    with_positions_snapshot_count = sum(bool(item.get("positions_snapshot_exists")) for item in venues)
+    with_fills_snapshot_count = sum(bool(item.get("fills_snapshot_exists")) for item in venues)
+    with_order_status_snapshot_count = sum(bool(item.get("order_status_snapshot_exists")) for item in venues)
+    reconciled_venue_count = sum(item.get("reconcile_matched") is not None for item in venues)
+    summary = {
+        "venue_count": venue_count,
+        "venues": venues,
+        "with_balance_snapshot_count": with_balance_snapshot_count,
+        "with_positions_snapshot_count": with_positions_snapshot_count,
+        "with_fills_snapshot_count": with_fills_snapshot_count,
+        "with_order_status_snapshot_count": with_order_status_snapshot_count,
+        "reconciled_venue_count": reconciled_venue_count,
+        "execution_read_only_surfaces_report_path": str(out_path) if out_path is not None else None,
+        "recommended_read_order": _recommended_read_order(),
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
+    }
+    detail_lines = [
+        f"- venue_count: {venue_count}",
+        f"- with_balance_snapshot_count: {with_balance_snapshot_count}",
+        f"- with_positions_snapshot_count: {with_positions_snapshot_count}",
+        f"- with_fills_snapshot_count: {with_fills_snapshot_count}",
+        f"- with_order_status_snapshot_count: {with_order_status_snapshot_count}",
+        f"- reconciled_venue_count: {reconciled_venue_count}",
+    ]
+    for item in venues:
+        venue = item.get("venue")
+        detail_lines.extend(
+            [
+                f"- venue_{venue}_balance_snapshot_exists: {item.get('balance_snapshot_exists')}",
+                f"- venue_{venue}_positions_snapshot_exists: {item.get('positions_snapshot_exists')}",
+                f"- venue_{venue}_fills_snapshot_exists: {item.get('fills_snapshot_exists')}",
+                f"- venue_{venue}_order_status_snapshot_exists: {item.get('order_status_snapshot_exists')}",
+                f"- venue_{venue}_equity: {item.get('equity')}",
+                f"- venue_{venue}_fills_count: {item.get('fills_count')}",
+                f"- venue_{venue}_latest_fill_id: {item.get('latest_fill_id')}",
+                f"- venue_{venue}_order_status_count: {item.get('order_status_count')}",
+                f"- venue_{venue}_latest_order_id: {item.get('latest_order_id')}",
+                f"- venue_{venue}_latest_order_status: {item.get('latest_order_status')}",
+                f"- venue_{venue}_positions_count: {item.get('positions_count')}",
+                f"- venue_{venue}_reconcile_matched: {item.get('reconcile_matched')}",
+                (
+                    f"- venue_{venue}_reconcile_missing_in_adapter_count: "
+                    f"{item.get('reconcile_missing_in_adapter_count')}"
+                ),
+                (
+                    f"- venue_{venue}_reconcile_missing_in_internal_count: "
+                    f"{item.get('reconcile_missing_in_internal_count')}"
+                ),
+            ]
+        )
+    return _write_report(
+        title="Execution Read Only Surfaces",
+        summary=summary,
+        detail_lines=detail_lines,
+        out_path=out_path,
+        summary_path=summary_path,
+    )
