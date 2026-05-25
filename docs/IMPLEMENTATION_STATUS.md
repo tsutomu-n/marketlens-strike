@@ -84,6 +84,7 @@ The handoff implementation is complete; current Go/No-Go may still be conditiona
 | Epic 68 | Ostium max-leverage and client-timestamp aggregation | DONE | ostium read-only execution surfaces now propagate sidecar max_leverage and ts_client into execution read-only surface summaries plus top-level restart/readiness reports |
 | Epic 69 | Ostium rollover and return-on-equity aggregates | DONE | ostium read-only execution surfaces now aggregate position cumulative_rollover_usd and return_on_equity from positions sidecars, and those metrics propagate through execution read-only surface summaries plus top-level restart/readiness reports |
 | Epic 70 | Ostium protection and day-trade position counts | DONE | ostium read-only execution surfaces now aggregate liquidation/take-profit/stop-loss/day-trade counts from positions sidecars, and those risk-control counts propagate through execution read-only surface summaries plus top-level restart/readiness reports |
+| Epic 71 | Fill and order detail propagation | DONE | execution fill/order status artifacts now propagate latest fill order-id/symbol/side/quantity/price/timestamp plus order side/quantity into dashboard, current-state, and readiness summaries |
 
 ## Live Evidence Still Required
 

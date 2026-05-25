@@ -1059,7 +1059,15 @@ def test_build_operations_dashboard(tmp_path) -> None:
     assert "execution_balance_status_unrealized_pnl: 25.0" in report
     assert "execution_balance_status_cumulative_rollover_usd: -1.5" in report
     assert "execution_fill_status_latest_fill_id: fill-1" in report
+    assert "execution_fill_status_latest_fill_symbol: QQQ" in report
+    assert "execution_fill_status_latest_fill_side: long" in report
+    assert "execution_fill_status_latest_fill_quantity: 1" in report
+    assert "execution_fill_status_latest_fill_price: 100.5" in report
+    assert "execution_fill_status_latest_fill_ts_fill: 2026-05-24T00:00:00+00:00" in report
     assert "execution_order_status_status: working" in report
+    assert "execution_order_status_symbol: QQQ" in report
+    assert "execution_order_status_side: long" in report
+    assert "execution_order_status_quantity: 1" in report
     assert "execution_cancel_order_status: blocked_read_only" in report
     assert "execution_reconcile_positions_matched: 1" in report
     assert "audit_latest_operation: audit_bundle_snapshot" in report
@@ -1164,7 +1172,15 @@ def test_build_operations_dashboard(tmp_path) -> None:
     assert summary["execution_balance_status_unrealized_pnl"] == 25.0
     assert summary["execution_balance_status_cumulative_rollover_usd"] == -1.5
     assert summary["execution_fill_status_latest_fill_id"] == "fill-1"
+    assert summary["execution_fill_status_latest_fill_symbol"] == "QQQ"
+    assert summary["execution_fill_status_latest_fill_side"] == "long"
+    assert summary["execution_fill_status_latest_fill_quantity"] == 1
+    assert summary["execution_fill_status_latest_fill_price"] == 100.5
+    assert summary["execution_fill_status_latest_fill_ts_fill"] == "2026-05-24T00:00:00+00:00"
     assert summary["execution_order_status_status"] == "working"
+    assert summary["execution_order_status_symbol"] == "QQQ"
+    assert summary["execution_order_status_side"] == "long"
+    assert summary["execution_order_status_quantity"] == 1
     assert summary["execution_cancel_order_status"] == "blocked_read_only"
     assert summary["execution_reconcile_positions_matched"] == 1
     assert summary["daemon_manifest_mode"] == "paper"
@@ -1210,9 +1226,18 @@ def test_build_current_state_index(tmp_path) -> None:
             "execution_balance_status_cumulative_rollover_usd": -1.5,
             "execution_fill_status_fills_count": 1,
             "execution_fill_status_latest_fill_id": "fill-1",
+            "execution_fill_status_latest_fill_order_id": "ord-1",
+            "execution_fill_status_latest_fill_symbol": "QQQ",
+            "execution_fill_status_latest_fill_side": "long",
+            "execution_fill_status_latest_fill_quantity": 1,
+            "execution_fill_status_latest_fill_price": 100.5,
             "execution_fill_status_latest_fill_status": "filled",
+            "execution_fill_status_latest_fill_ts_fill": "2026-05-24T00:00:00+00:00",
             "execution_order_status_order_id": "ord-1",
             "execution_order_status_status": "working",
+            "execution_order_status_symbol": "QQQ",
+            "execution_order_status_side": "long",
+            "execution_order_status_quantity": 1,
             "execution_cancel_order_target": "ord-1",
             "execution_cancel_order_status": "blocked_read_only",
             "execution_close_position_target": "QQQ:long",
@@ -1488,7 +1513,15 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "## Execution Adapter Surfaces" in report
     assert "execution_balance_status_equity: 1500.0" in report
     assert "execution_fill_status_latest_fill_id: fill-1" in report
+    assert "execution_fill_status_latest_fill_symbol: QQQ" in report
+    assert "execution_fill_status_latest_fill_side: long" in report
+    assert "execution_fill_status_latest_fill_quantity: 1" in report
+    assert "execution_fill_status_latest_fill_price: 100.5" in report
+    assert "execution_fill_status_latest_fill_ts_fill: 2026-05-24T00:00:00+00:00" in report
     assert "execution_order_status_status: working" in report
+    assert "execution_order_status_symbol: QQQ" in report
+    assert "execution_order_status_side: long" in report
+    assert "execution_order_status_quantity: 1" in report
     assert "execution_cancel_order_status: blocked_read_only" in report
     assert "execution_reconcile_positions_matched: 1" in report
     assert "execution_read_only_surfaces_venue_count: 2" in report
@@ -1716,9 +1749,18 @@ def test_build_readiness_snapshot(tmp_path) -> None:
             "execution_balance_status_cumulative_rollover_usd": -1.5,
             "execution_fill_status_fills_count": 1,
             "execution_fill_status_latest_fill_id": "fill-1",
+            "execution_fill_status_latest_fill_order_id": "ord-1",
+            "execution_fill_status_latest_fill_symbol": "QQQ",
+            "execution_fill_status_latest_fill_side": "long",
+            "execution_fill_status_latest_fill_quantity": 1,
+            "execution_fill_status_latest_fill_price": 100.5,
             "execution_fill_status_latest_fill_status": "filled",
+            "execution_fill_status_latest_fill_ts_fill": "2026-05-24T00:00:00+00:00",
             "execution_order_status_order_id": "ord-1",
             "execution_order_status_status": "working",
+            "execution_order_status_symbol": "QQQ",
+            "execution_order_status_side": "long",
+            "execution_order_status_quantity": 1,
             "execution_cancel_order_target": "ord-1",
             "execution_cancel_order_status": "blocked_read_only",
             "execution_close_position_target": "QQQ:long",
@@ -1813,7 +1855,15 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert "## Execution Adapter Surfaces" in report
     assert "execution_balance_status_equity: 1500.0" in report
     assert "execution_fill_status_latest_fill_id: fill-1" in report
+    assert "execution_fill_status_latest_fill_symbol: QQQ" in report
+    assert "execution_fill_status_latest_fill_side: long" in report
+    assert "execution_fill_status_latest_fill_quantity: 1" in report
+    assert "execution_fill_status_latest_fill_price: 100.5" in report
+    assert "execution_fill_status_latest_fill_ts_fill: 2026-05-24T00:00:00+00:00" in report
     assert "execution_order_status_status: working" in report
+    assert "execution_order_status_symbol: QQQ" in report
+    assert "execution_order_status_side: long" in report
+    assert "execution_order_status_quantity: 1" in report
     assert "execution_cancel_order_status: blocked_read_only" in report
     assert "execution_reconcile_positions_matched: 1" in report
     assert "## State And Daemon Surfaces" in report
@@ -1888,7 +1938,15 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["execution_balance_status_unrealized_pnl"] == 25.0
     assert summary["execution_balance_status_cumulative_rollover_usd"] == -1.5
     assert summary["execution_fill_status_latest_fill_id"] == "fill-1"
+    assert summary["execution_fill_status_latest_fill_symbol"] == "QQQ"
+    assert summary["execution_fill_status_latest_fill_side"] == "long"
+    assert summary["execution_fill_status_latest_fill_quantity"] == 1
+    assert summary["execution_fill_status_latest_fill_price"] == 100.5
+    assert summary["execution_fill_status_latest_fill_ts_fill"] == "2026-05-24T00:00:00+00:00"
     assert summary["execution_order_status_status"] == "working"
+    assert summary["execution_order_status_symbol"] == "QQQ"
+    assert summary["execution_order_status_side"] == "long"
+    assert summary["execution_order_status_quantity"] == 1
     assert summary["execution_cancel_order_status"] == "blocked_read_only"
     assert summary["execution_reconcile_positions_matched"] == 1
     assert summary["execution_read_only_surfaces_venue_count"] == 2
