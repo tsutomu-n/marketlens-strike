@@ -6,6 +6,8 @@
 # Local agent/workflow state
 .codex/SP_STATE.md
 .ai_memory/
+.DS_Store
+Thumbs.db
 
 # Python
 .venv/
@@ -31,16 +33,28 @@ data/
 *.parquet
 *.duckdb
 *.duckdb.wal
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-wal
+*.db-shm
 !tests/fixtures/**/*.parquet
 !tests/fixtures/**/*.duckdb
+!tests/fixtures/**/*.sqlite
+!tests/fixtures/**/*.sqlite3
+!tests/fixtures/**/*.db
 
 # Logs and temporary files
-logs/live_evidence/*.log
-logs/live_evidence/*.out
-logs/live_evidence/locks/
-logs/live_evidence/manifests/
-logs/live_evidence/summaries/
+logs/
 *.log
 tmp/
 temp/
-.tmp/
+.tmp/*
+!.tmp/live_evidence_20260526_2245_cron_once.sh
+!.tmp/live_evidence_20260526_2245_guard.sh
+!.tmp/live_evidence_20260526_2245_status.sh
+!.tmp/live_evidence_20260527_cron_cleanup.sh
+!.tmp/live_evidence_20260527_recovery_watchdog.sh
+!.tmp/live_evidence_current_status_2026-05-26.md
