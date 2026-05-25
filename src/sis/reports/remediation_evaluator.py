@@ -1259,15 +1259,17 @@ def build_remediation_evaluator(
         "related_reports": _related_reports(out_path),
         "remediation_evaluator_report_path": str(out_path) if out_path is not None else None,
     }
+    quick_navigation = _quick_navigation(out_path)
+    related_reports = _related_reports(out_path)
 
     lines = ["# Remediation Evaluator", ""]
-    if summary["quick_navigation"]:
+    if quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend([
         "## Evaluator Summary",
@@ -1279,8 +1281,8 @@ def build_remediation_evaluator(
         f"- manual_review_count: {summary['manual_review_count']}",
         f"- partial_count: {summary['partial_count']}",
         f"- next_action_key: {summary['next_action_key']}",
-        f"- fallback_field_source_count: {len(summary['fallback_field_sources'])}",
-        f"- fallback_count_source_count: {len(summary['fallback_count_sources'])}",
+        f"- fallback_field_source_count: {len(fallback_field_sources)}",
+        f"- fallback_count_source_count: {len(fallback_count_sources)}",
         f"- operation_chain_path: {summary['operation_chain_path']}",
         f"- operations_dashboard_summary_path: {summary['operations_dashboard_summary_path']}",
         f"- live_evidence_summary_path: {summary['live_evidence_summary_path']}",
@@ -1331,7 +1333,10 @@ def build_remediation_evaluator(
             lines.append(f"- {item['action_key']}: `{item['command']}`")
             lines.append(f"  - evaluation_result: {item['evaluation_result']}")
             lines.append("  - signal_evaluations:")
-            for signal in item["signal_evaluations"]:
+            signal_evaluations = (
+                item["signal_evaluations"] if isinstance(item.get("signal_evaluations"), list) else []
+            )
+            for signal in signal_evaluations:
                 lines.append(
                     "    - signal={signal} status={status} expected={expected} observed={observed} observed_source={observed_source}".format(
                         signal=signal.get("signal"),

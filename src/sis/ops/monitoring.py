@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, Mapping
 
 import polars as pl
 
@@ -30,6 +31,10 @@ from sis.reports.summary_normalizers import (
 from sis.storage.jsonl_store import read_jsonl, write_json
 
 
+def _as_mapping(value: object) -> Mapping[str, Any] | None:
+    return value if isinstance(value, Mapping) else None
+
+
 def build_monitoring_snapshot(
     *,
     decision_summary_path: Path | None = None,
@@ -50,7 +55,7 @@ def build_monitoring_snapshot(
     readiness_summary_path: Path | None = None,
     last_healthcheck: dict | None = None,
 ) -> dict:
-    snapshot = {
+    snapshot: dict[str, object] = {
         "decision_summary_exists": bool(decision_summary_path and decision_summary_path.exists()),
         "weekly_review_exists": bool(weekly_review_path and weekly_review_path.exists()),
         "daily_pnl_exists": bool(daily_pnl_path and daily_pnl_path.exists()),
@@ -115,13 +120,13 @@ def build_monitoring_snapshot(
     audit_dashboard = safe_read_json_dict(audit_dashboard_summary_path)
     if audit_dashboard:
         snapshot["audit_dashboard"] = audit_dashboard
-        audit_summary = audit_summary_fields(audit_dashboard, snapshot.get("audit_bundle"))
+        audit_summary = audit_summary_fields(audit_dashboard, _as_mapping(snapshot.get("audit_bundle")))
         snapshot["audit_summary"] = audit_summary
         snapshot.update(audit_summary)
     audit_bundle = safe_read_json_dict(audit_bundle_summary_path)
     if audit_bundle:
         snapshot["audit_bundle"] = audit_bundle
-        audit_summary = audit_summary_fields(snapshot.get("audit_dashboard"), audit_bundle)
+        audit_summary = audit_summary_fields(_as_mapping(snapshot.get("audit_dashboard")), audit_bundle)
         snapshot["audit_summary"] = audit_summary
         snapshot.update(audit_summary)
     operations_bundle = safe_read_json_dict(operations_bundle_manifest_path)
@@ -153,9 +158,9 @@ def build_monitoring_snapshot(
         snapshot.update(readiness_flat_fields(readiness))
     snapshot.update(
         merged_latest_execution_lineage_fields(
-            snapshot.get("audit_dashboard"),
-            snapshot.get("audit_bundle"),
-            snapshot.get("operations_bundle"),
+            _as_mapping(snapshot.get("audit_dashboard")),
+            _as_mapping(snapshot.get("audit_bundle")),
+            _as_mapping(snapshot.get("operations_bundle")),
         )
     )
     snapshot["status"] = "ok" if snapshot["decision_summary_exists"] else "degraded"

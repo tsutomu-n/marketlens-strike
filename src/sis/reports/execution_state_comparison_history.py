@@ -196,15 +196,19 @@ def build_execution_state_comparison_history_report(
         "quick_navigation": _quick_navigation(out_path),
         "related_reports": _related_reports(out_path),
     }
+    quick_navigation = _quick_navigation(out_path)
+    related_reports = _related_reports(out_path)
+    summary["quick_navigation"] = quick_navigation
+    summary["related_reports"] = related_reports
 
     lines = ["# Execution State Comparison History", ""]
-    if summary["quick_navigation"]:
+    if quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend(
         [

@@ -562,8 +562,38 @@ def build_operations_dashboard(
             ]
         ),
     }
-    summary["quick_navigation"] = _quick_navigation(summary)
-    summary["related_reports"] = _related_reports(summary)
+    quick_navigation = _quick_navigation(summary)
+    related_reports = _related_reports(summary)
+    recommended_read_order_items = recommended_read_order(
+        [
+            "data/ops/execution_snapshot_summary.json",
+            "data/ops/execution_venue_comparison_summary.json",
+            "data/ops/execution_venue_diagnostics_summary.json",
+            "data/ops/execution_gap_history_summary.json",
+            "data/ops/execution_state_comparison_history_summary.json",
+            "data/ops/execution_snapshot_drift_history_summary.json",
+            "data/ops/execution_drift_overview_summary.json",
+            "data/ops/execution_balance_status_summary.json",
+            "data/ops/execution_fill_status_summary.json",
+            "data/ops/execution_order_status_summary.json",
+            "data/ops/execution_cancel_order_summary.json",
+            "data/ops/execution_close_position_summary.json",
+            "data/ops/execution_reconcile_positions_summary.json",
+            "data/ops/execution_read_only_surfaces_summary.json",
+            "data/ops/daemon_manifest_summary.json",
+            "data/ops/daemon_loop_summary.json",
+            "data/ops/notification_outbox_summary.json",
+            "data/ops/state_export_summary.json",
+            "data/ops/state_restore_summary.json",
+            "data/ops/operations_dashboard_summary.json",
+            "data/ops/audit_dashboard_summary.json",
+            "data/ops/operations_bundle_manifest.json",
+            "data/ops/audit_bundle_manifest.json",
+        ]
+    )
+    summary["quick_navigation"] = quick_navigation
+    summary["related_reports"] = related_reports
+    summary["recommended_read_order"] = recommended_read_order_items
 
     lines = [
         "# Operations Dashboard",
@@ -578,7 +608,7 @@ def build_operations_dashboard(
         "## Quick Navigation",
         "",
     ]
-    for key, value in summary["quick_navigation"].items():
+    for key, value in quick_navigation.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -854,7 +884,7 @@ def build_operations_dashboard(
             "",
         ]
     )
-    for key, value in summary["related_reports"].items():
+    for key, value in related_reports.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -881,7 +911,7 @@ def build_operations_dashboard(
             "",
         ]
     )
-    lines.extend(f"- {item}" for item in summary["recommended_read_order"])
+    lines.extend(f"- {item}" for item in recommended_read_order_items)
     lines.append("")
 
     if monitoring:

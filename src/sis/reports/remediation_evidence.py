@@ -60,10 +60,28 @@ def _observed_source_counts(entries: list[dict[str, object]]) -> dict[str, int]:
     for item in entries:
         if not isinstance(item, dict):
             continue
-        for source in item.get("observed_sources", []):
+        observed_sources = item.get("observed_sources")
+        if not isinstance(observed_sources, list):
+            continue
+        for source in observed_sources:
             if isinstance(source, str):
                 counts[source] = counts.get(source, 0) + 1
     return counts
+
+
+def _as_int(value: object, default: int = 0) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value.strip())
+        except ValueError:
+            return default
+    return default
 
 
 def _planner_summary_from_checkpoint(checkpoint: dict) -> dict:
@@ -148,7 +166,7 @@ def _needs_evidence(action: dict) -> bool:
 def _evidence_status(entries: list[dict[str, object]]) -> str:
     if not entries:
         return "no_manual_review_needed"
-    if any(int(item.get("unsupported_signal_count") or 0) > 0 for item in entries):
+    if any(_as_int(item.get("unsupported_signal_count")) > 0 for item in entries):
         return "manual_review_required"
     return "partial_review_required"
 
@@ -237,7 +255,7 @@ def build_remediation_evidence(
     partial_action_count = sum(
         1 for item in evidence_entries if str(item.get("evaluation_result")) == "partial"
     )
-    unsupported_signal_count = sum(int(item.get("unsupported_signal_count") or 0) for item in evidence_entries)
+    unsupported_signal_count = sum(_as_int(item.get("unsupported_signal_count")) for item in evidence_entries)
     next_manual_review_action_key = next(
         (
             item.get("action_key")
@@ -269,14 +287,16 @@ def build_remediation_evidence(
         "remediation_evidence_report_path": str(out_path) if out_path is not None else None,
     }
 
+    quick_navigation = _quick_navigation(out_path)
+    related_reports = _related_reports(out_path)
     lines = ["# Remediation Evidence", ""]
-    if summary["quick_navigation"]:
+    if quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend([
         "## Evidence Summary",
@@ -315,7 +335,10 @@ def build_remediation_evidence(
             lines.append(f"  - source_report_path: {item['source_report_path']}")
             lines.append(f"  - missing_required_artifact_paths: {item['missing_required_artifact_paths']}")
             lines.append("  - unresolved_signals:")
-            for signal in item["unresolved_signals"]:
+            unresolved_signals = item["unresolved_signals"] if isinstance(item.get("unresolved_signals"), list) else []
+            for signal in unresolved_signals:
+                if not isinstance(signal, dict):
+                    continue
                 lines.append(
                     "    - signal={signal} status={status} expected={expected} observed={observed}".format(
                         signal=signal.get("signal"),
@@ -325,7 +348,12 @@ def build_remediation_evidence(
                     )
                 )
             lines.append("  - candidate_artifact_paths:")
-            for path in item["candidate_artifact_paths"]:
+            candidate_artifact_paths = (
+                item["candidate_artifact_paths"]
+                if isinstance(item.get("candidate_artifact_paths"), list)
+                else []
+            )
+            for path in candidate_artifact_paths:
                 lines.append(f"    - {path}")
     else:
         lines.append("- evidence_candidates: none")

@@ -173,8 +173,11 @@ def build_operations_audit_pack(
             "phase_gate_summary": str(phase_gate_summary_path) if phase_gate_summary_path else None,
         },
     }
-    manifest["quick_navigation"] = _quick_navigation(phase_gate_summary_path, out_path)
-    manifest["related_reports"] = _related_reports(phase_gate_summary_path, out_path)
+    quick_navigation = _quick_navigation(phase_gate_summary_path, out_path)
+    related_reports = _related_reports(phase_gate_summary_path, out_path)
+    artifacts = manifest["artifacts"] if isinstance(manifest.get("artifacts"), dict) else {}
+    manifest["quick_navigation"] = quick_navigation
+    manifest["related_reports"] = related_reports
 
     lines = [
         "# Operations Audit Pack",
@@ -288,7 +291,7 @@ def build_operations_audit_pack(
         "## Quick Navigation",
         "",
     ]
-    for key, value in manifest["quick_navigation"].items():
+    for key, value in quick_navigation.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -297,7 +300,7 @@ def build_operations_audit_pack(
         "",
         ]
     )
-    for key, value in manifest["related_reports"].items():
+    for key, value in related_reports.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -318,7 +321,7 @@ def build_operations_audit_pack(
         "",
         ]
     )
-    for key, value in manifest["artifacts"].items():
+    for key, value in artifacts.items():
         lines.append(f"- {key}: {value}")
     lines.append("")
 

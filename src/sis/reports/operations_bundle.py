@@ -228,8 +228,16 @@ def build_operations_bundle_manifest(
             ]
         ),
     }
-    manifest["quick_navigation"] = _quick_navigation(phase_gate_summary_path, out_path)
-    manifest["related_reports"] = _related_reports(phase_gate_summary_path, out_path)
+    quick_navigation = _quick_navigation(phase_gate_summary_path, out_path)
+    related_reports = _related_reports(phase_gate_summary_path, out_path)
+    artifacts = manifest["artifacts"] if isinstance(manifest.get("artifacts"), dict) else {}
+    recommended_read_order_items = (
+        manifest["recommended_read_order"]
+        if isinstance(manifest.get("recommended_read_order"), list)
+        else []
+    )
+    manifest["quick_navigation"] = quick_navigation
+    manifest["related_reports"] = related_reports
 
     lines = [
         "# Operations Bundle Manifest",
@@ -287,7 +295,7 @@ def build_operations_bundle_manifest(
         "## Quick Navigation",
         "",
     ]
-    for key, value in manifest["quick_navigation"].items():
+    for key, value in quick_navigation.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -374,7 +382,7 @@ def build_operations_bundle_manifest(
         "",
         ]
     )
-    for key, value in manifest["artifacts"].items():
+    for key, value in artifacts.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -383,7 +391,7 @@ def build_operations_bundle_manifest(
             "",
         ]
     )
-    lines.extend(f"- {item}" for item in manifest["recommended_read_order"])
+    lines.extend(f"- {item}" for item in recommended_read_order_items)
     lines.append("")
 
     text = "\n".join(lines).rstrip() + "\n"

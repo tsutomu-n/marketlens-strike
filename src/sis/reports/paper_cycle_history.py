@@ -258,15 +258,24 @@ def build_paper_cycle_history_report(
         "quick_navigation": _quick_navigation(out_path),
         "related_reports": _related_reports(out_path, latest_phase_gate_review_report_path),
     }
+    quick_navigation = _quick_navigation(out_path)
+    related_reports = _related_reports(out_path, latest_phase_gate_review_report_path)
+    latest_phase_gate_issue_previews = (
+        summary["latest_phase_gate_issue_previews"]
+        if isinstance(summary.get("latest_phase_gate_issue_previews"), list)
+        else []
+    )
+    summary["quick_navigation"] = quick_navigation
+    summary["related_reports"] = related_reports
 
     lines = ["# Paper Cycle History Report", ""]
-    if summary["quick_navigation"]:
+    if quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend(
         [
@@ -314,9 +323,9 @@ def build_paper_cycle_history_report(
             "",
         ]
     )
-    if summary["latest_phase_gate_issue_previews"]:
+    if latest_phase_gate_issue_previews:
         lines.extend(["## Latest Phase Gate Issue Preview", ""])
-        lines.extend(f"- {item}" for item in summary["latest_phase_gate_issue_previews"])
+        lines.extend(f"- {item}" for item in latest_phase_gate_issue_previews)
         lines.append("")
 
     lines.extend(["## Diagnostics Status Counts", ""])

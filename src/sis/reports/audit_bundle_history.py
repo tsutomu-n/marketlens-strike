@@ -388,8 +388,15 @@ def build_audit_bundle_history_report(
             str(reports_dir / "remediation_scoreboard.md") if reports_dir else None
         ),
     }
-    summary["quick_navigation"] = _quick_navigation(summary)
-    summary["related_reports"] = _related_reports(summary)
+    quick_navigation = _quick_navigation(summary)
+    related_reports = _related_reports(summary)
+    latest_phase_gate_issue_previews = (
+        summary["latest_phase_gate_issue_previews"]
+        if isinstance(summary.get("latest_phase_gate_issue_previews"), list)
+        else []
+    )
+    summary["quick_navigation"] = quick_navigation
+    summary["related_reports"] = related_reports
 
     lines = [
         "# Audit Bundle History Report",
@@ -474,15 +481,15 @@ def build_audit_bundle_history_report(
         "",
     ]
     lines.extend(["## Quick Navigation", ""])
-    for key, value in summary["quick_navigation"].items():
+    for key, value in quick_navigation.items():
         lines.append(f"- {key}: {value}")
     lines.extend(["", "## Related Reports", ""])
-    for key, value in summary["related_reports"].items():
+    for key, value in related_reports.items():
         lines.append(f"- {key}: {value}")
     lines.append("")
-    if summary["latest_phase_gate_issue_previews"]:
+    if latest_phase_gate_issue_previews:
         lines.extend(["## Latest Phase Gate Issue Preview", ""])
-        lines.extend(f"- {item}" for item in summary["latest_phase_gate_issue_previews"])
+        lines.extend(f"- {item}" for item in latest_phase_gate_issue_previews)
         lines.append("")
 
     if snapshots:

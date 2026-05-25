@@ -243,6 +243,13 @@ def row_count(path: Path) -> int:
         return sum(1 for line in f if line.strip())
 
 
+def _require_artifact_path(artifacts: dict[str, str | None], key: str) -> Path:
+    value = artifacts.get(key)
+    if not isinstance(value, str) or not value:
+        raise PermanentStepError(f"Missing required artifact path: {key}")
+    return Path(value)
+
+
 def expected_metadata_rows(duration_minutes: int, metadata_interval_seconds: int) -> int:
     snapshots = max(1, (duration_minutes * 60) // metadata_interval_seconds)
     return max(1, (snapshots * 8 + 9) // 10)
@@ -791,9 +798,9 @@ def main(
         day = today_utc()
         artifacts = build_artifact_paths(data_dir, day)
         manifest.artifacts = artifacts
-        metadata_path = Path(artifacts["sidecar_metadata"])
-        pricing_path = Path(artifacts["sidecar_pricing"])
-        quote_path = Path(artifacts["raw_quotes"])
+        metadata_path = _require_artifact_path(artifacts, "sidecar_metadata")
+        pricing_path = _require_artifact_path(artifacts, "sidecar_pricing")
+        quote_path = _require_artifact_path(artifacts, "raw_quotes")
         min_metadata_rows = expected_metadata_rows(duration_minutes, metadata_interval_seconds)
 
         log_step("Live evidence refresh configuration")
@@ -1084,9 +1091,9 @@ def main(
 
         manifest.row_counts.update(
             {
-                "sidecar_metadata": row_count(Path(manifest.artifacts["sidecar_metadata"])),
-                "sidecar_pricing": row_count(Path(manifest.artifacts["sidecar_pricing"])),
-                "raw_quotes": row_count(Path(manifest.artifacts["raw_quotes"])),
+                "sidecar_metadata": row_count(_require_artifact_path(manifest.artifacts, "sidecar_metadata")),
+                "sidecar_pricing": row_count(_require_artifact_path(manifest.artifacts, "sidecar_pricing")),
+                "raw_quotes": row_count(_require_artifact_path(manifest.artifacts, "raw_quotes")),
             }
         )
         if not manifest.diagnostics:

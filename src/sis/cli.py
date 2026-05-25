@@ -30,7 +30,7 @@ from sis.ops.monitoring import build_monitoring_snapshot, write_monitoring_snaps
 from sis.paper.fills import PaperFill
 from sis.paper.portfolio import PaperPosition
 from sis.paper.report import build_daily_paper_report
-from sis.paper.runner import run_paper_step
+from sis.paper.runner import PaperRunSummary, run_paper_step
 from sis.research.event_calendar import build_event_calendar
 from sis.research.feature_panel import build_feature_panel
 from sis.research.macro_ingest import build_macro_panel
@@ -1811,7 +1811,7 @@ def _run_paper_step(
     *,
     state_path: Path | None,
     signals_path: Path | None,
-) -> object:
+) -> PaperRunSummary:
     return run_paper_step(
         settings_data_dir,
         state_path=state_path or (settings_data_dir / "state/marketlens.sqlite"),
@@ -3019,8 +3019,10 @@ def daemon_run_cmd(
     _write_daemon_manifest_artifacts(settings.data_dir)
     daemon_loop_report = settings.data_dir / "reports/daemon_loop.md"
     daemon_loop_summary = settings.data_dir / "ops/daemon_loop_summary.json"
+    snapshot_payload = read_json(result.loop_snapshot_path)
+    snapshot_dict = snapshot_payload if isinstance(snapshot_payload, dict) else {}
     build_daemon_loop_report(
-        snapshot=read_json(result.loop_snapshot_path),
+        snapshot=snapshot_dict,
         snapshot_path=str(result.loop_snapshot_path),
         event_log_path=str(result.event_log_path),
         out_path=daemon_loop_report,

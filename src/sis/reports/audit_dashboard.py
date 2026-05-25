@@ -257,8 +257,11 @@ def build_audit_dashboard(
             "phase_gate_summary": str(phase_gate_summary_path) if phase_gate_summary_path else None,
         },
     }
-    summary["quick_navigation"] = _quick_navigation(summary)
-    summary["related_reports"] = _related_reports(summary)
+    quick_navigation = _quick_navigation(summary)
+    related_reports = _related_reports(summary)
+    artifacts = summary["artifacts"] if isinstance(summary.get("artifacts"), dict) else {}
+    summary["quick_navigation"] = quick_navigation
+    summary["related_reports"] = related_reports
 
     lines = [
         "# Audit Dashboard",
@@ -286,7 +289,7 @@ def build_audit_dashboard(
         "## Quick Navigation",
         "",
     ]
-    for key, value in summary["quick_navigation"].items():
+    for key, value in quick_navigation.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -377,7 +380,7 @@ def build_audit_dashboard(
             "",
         ]
     )
-    for key, value in summary["related_reports"].items():
+    for key, value in related_reports.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -398,7 +401,7 @@ def build_audit_dashboard(
             "",
         ]
     )
-    for key, value in summary["artifacts"].items():
+    for key, value in artifacts.items():
         lines.append(f"- {key}: {value}")
     lines.append("")
 

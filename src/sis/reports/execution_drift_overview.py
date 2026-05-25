@@ -70,6 +70,29 @@ def build_execution_drift_overview_report(
         (state_comparison_summary, "latest"),
         (gap_history_summary, "latest"),
     )
+    quick_navigation = _quick_navigation(out_path)
+    related_reports = _related_reports(out_path)
+    artifacts = {
+        "execution_gap_history_summary": (
+            str(execution_gap_history_summary_path) if execution_gap_history_summary_path else None
+        ),
+        "execution_state_comparison_history_summary": (
+            str(execution_state_comparison_history_summary_path)
+            if execution_state_comparison_history_summary_path
+            else None
+        ),
+        "execution_snapshot_drift_history_summary": (
+            str(execution_snapshot_drift_history_summary_path)
+            if execution_snapshot_drift_history_summary_path
+            else None
+        ),
+    }
+    recommended_read_order_items = [
+        "data/ops/execution_drift_overview_summary.json",
+        "data/ops/execution_gap_history_summary.json",
+        "data/ops/execution_state_comparison_history_summary.json",
+        "data/ops/execution_snapshot_drift_history_summary.json",
+    ]
 
     diagnostics_alignment_match = (
         state_comparison_fields.get("execution_state_comparison_latest_diagnostics_status")
@@ -120,39 +143,20 @@ def build_execution_drift_overview_report(
         "execution_gap_history_summary": gap_history_summary,
         "execution_state_comparison_summary": state_comparison_summary,
         "execution_snapshot_drift_summary": snapshot_drift_summary,
-        "artifacts": {
-            "execution_gap_history_summary": (
-                str(execution_gap_history_summary_path) if execution_gap_history_summary_path else None
-            ),
-            "execution_state_comparison_history_summary": (
-                str(execution_state_comparison_history_summary_path)
-                if execution_state_comparison_history_summary_path
-                else None
-            ),
-            "execution_snapshot_drift_history_summary": (
-                str(execution_snapshot_drift_history_summary_path)
-                if execution_snapshot_drift_history_summary_path
-                else None
-            ),
-        },
-        "recommended_read_order": [
-            "data/ops/execution_drift_overview_summary.json",
-            "data/ops/execution_gap_history_summary.json",
-            "data/ops/execution_state_comparison_history_summary.json",
-            "data/ops/execution_snapshot_drift_history_summary.json",
-        ],
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        "artifacts": artifacts,
+        "recommended_read_order": recommended_read_order_items,
+        "quick_navigation": quick_navigation,
+        "related_reports": related_reports,
     }
 
     lines = ["# Execution Drift Overview", ""]
-    if summary["quick_navigation"]:
+    if quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend(
         [
@@ -181,10 +185,10 @@ def build_execution_drift_overview_report(
             "",
         ]
     )
-    for key, value in summary["artifacts"].items():
+    for key, value in artifacts.items():
         lines.append(f"- {key}: {value}")
     lines.extend(["", "## Recommended Read Order", ""])
-    lines.extend(f"- {item}" for item in summary["recommended_read_order"])
+    lines.extend(f"- {item}" for item in recommended_read_order_items)
     lines.append("")
 
     text = "\n".join(lines)

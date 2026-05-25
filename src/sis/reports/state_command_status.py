@@ -52,14 +52,16 @@ def _write_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
+    quick_navigation = summary.get("quick_navigation")
+    related_reports = summary.get("related_reports")
     lines = [f"# {title}", ""]
-    if summary["quick_navigation"]:
+    if isinstance(quick_navigation, dict) and quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if isinstance(related_reports, dict) and related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend(["## Overview", "", *detail_lines, "", "## Recommended Read Order", ""])
     lines.extend(f"- {item}" for item in _recommended_read_order())
@@ -80,7 +82,7 @@ def build_daemon_manifest_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    summary = {
+    summary: dict[str, object] = {
         **manifest,
         "daemon_manifest_path": manifest_path,
         "daemon_manifest_report_path": str(out_path) if out_path is not None else None,
@@ -116,7 +118,7 @@ def build_daemon_loop_report(
     summary_path: Path | None = None,
 ) -> str:
     latest_event = snapshot.get("latest_event") if isinstance(snapshot.get("latest_event"), dict) else {}
-    summary = {
+    summary: dict[str, object] = {
         "run_id": snapshot.get("run_id"),
         "created_at": snapshot.get("created_at"),
         "mode": snapshot.get("mode"),
@@ -165,7 +167,7 @@ def build_state_export_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    summary = {
+    summary: dict[str, object] = {
         "snapshot_path": snapshot_path,
         "state_store_path": state_store_path,
         "paper_positions_present": snapshot.get("paper_positions") is not None,
@@ -219,7 +221,7 @@ def build_state_restore_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    summary = {
+    summary: dict[str, object] = {
         "restored": restored,
         "snapshot_path": snapshot_path,
         "state_store_path": state_store_path,

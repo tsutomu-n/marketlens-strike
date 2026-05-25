@@ -54,14 +54,16 @@ def _write_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
+    quick_navigation = summary.get("quick_navigation")
+    related_reports = summary.get("related_reports")
     lines = [f"# {title}", ""]
-    if summary["quick_navigation"]:
+    if isinstance(quick_navigation, dict) and quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if isinstance(related_reports, dict) and related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend(["## Overview", "", *detail_lines, "", "## Recommended Read Order", ""])
     lines.extend(f"- {item}" for item in _recommended_read_order())
@@ -83,7 +85,7 @@ def build_healthcheck_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    summary = {
+    summary: dict[str, object] = {
         **health,
         "daily_loss_allowed": daily_loss_status.allowed,
         "daily_loss_reason": daily_loss_status.reason,
@@ -125,7 +127,7 @@ def build_kill_switch_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    summary = {
+    summary: dict[str, object] = {
         **status,
         "kill_switch_report_path": str(out_path) if out_path is not None else None,
         "recommended_read_order": _recommended_read_order(),
@@ -152,7 +154,7 @@ def build_schedule_run_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    summary = {
+    summary: dict[str, object] = {
         "run_type": run.run_type,
         "scheduled_for": run.scheduled_for.isoformat(),
         "command": run.command,
@@ -189,7 +191,7 @@ def build_alert_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    summary = {
+    summary: dict[str, object] = {
         "level": level,
         "title": title,
         "body": body,
@@ -209,7 +211,7 @@ def build_alert_report(
             f"- title: {summary['title']}",
             f"- source: {summary['source']}",
             f"- alert_path: {summary['alert_path']}",
-            f"- rendered_text: {summary['rendered_text'].strip()}",
+            f"- rendered_text: {rendered_text.strip()}",
         ],
         out_path=out_path,
         summary_path=summary_path,
@@ -225,7 +227,7 @@ def build_notification_outbox_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    summary = {
+    summary: dict[str, object] = {
         "notification_id": record.get("notification_id"),
         "created_at": record.get("created_at"),
         "status": record.get("status"),

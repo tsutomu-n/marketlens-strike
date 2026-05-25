@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Callable
+from typing import Any, Callable
 
 import polars as pl
 
@@ -101,7 +101,7 @@ def _normalize_macro_frame(frame: pl.DataFrame, provider: str) -> pl.DataFrame:
 class YahooFinancePriceProvider(PriceProvider):
     name = "yfinance"
 
-    def __init__(self, downloader: Callable[..., object] | None = None) -> None:
+    def __init__(self, downloader: Callable[..., Any] | None = None) -> None:
         if downloader is None:
             try:
                 import yfinance as yf
@@ -150,7 +150,7 @@ class YahooFinancePriceProvider(PriceProvider):
 class YahooQueryPriceProvider(PriceProvider):
     name = "yahooquery"
 
-    def __init__(self, ticker_factory: Callable[..., object] | None = None) -> None:
+    def __init__(self, ticker_factory: Callable[..., Any] | None = None) -> None:
         if ticker_factory is None:
             try:
                 from yahooquery import Ticker
@@ -181,7 +181,7 @@ class YahooQueryPriceProvider(PriceProvider):
 class FredMacroProvider(MacroProvider):
     name = "fredapi"
 
-    def __init__(self, api_key: str | None = None, fred_factory: Callable[..., object] | None = None) -> None:
+    def __init__(self, api_key: str | None = None, fred_factory: Callable[..., Any] | None = None) -> None:
         if fred_factory is None:
             try:
                 from fredapi import Fred
@@ -212,7 +212,7 @@ class FredMacroProvider(MacroProvider):
 class PandasDataReaderMacroProvider(MacroProvider):
     name = "pandas_datareader"
 
-    def __init__(self, reader: Callable[..., object] | None = None) -> None:
+    def __init__(self, reader: Callable[..., Any] | None = None) -> None:
         if reader is None:
             try:
                 from pandas_datareader import data as web

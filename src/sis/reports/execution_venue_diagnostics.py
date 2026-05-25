@@ -93,6 +93,17 @@ def build_execution_venue_diagnostics_report(
         any(row.get("order_status_snapshot_exists") is not True for row in rows) if rows else True
     )
     currency_mismatch_detected = len(currencies) > 1
+    quick_navigation = _quick_navigation(out_path)
+    related_reports = _related_reports(out_path)
+    recommended_read_order_items = recommended_read_order(
+        [
+            "data/ops/execution_venue_diagnostics_summary.json",
+            "data/ops/execution_venue_comparison_summary.json",
+            "data/ops/execution_snapshot_summary.json",
+            "data/ops/current_state_index.json",
+            "data/ops/readiness_snapshot.json",
+        ]
+    )
 
     summary = {
         "overall_status": (
@@ -146,27 +157,19 @@ def build_execution_venue_diagnostics_report(
         "artifacts": {
             "execution_venue_comparison_summary": str(execution_venue_comparison_summary_path),
         },
-        "recommended_read_order": recommended_read_order(
-            [
-                "data/ops/execution_venue_diagnostics_summary.json",
-                "data/ops/execution_venue_comparison_summary.json",
-                "data/ops/execution_snapshot_summary.json",
-                "data/ops/current_state_index.json",
-                "data/ops/readiness_snapshot.json",
-            ]
-        ),
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        "recommended_read_order": recommended_read_order_items,
+        "quick_navigation": quick_navigation,
+        "related_reports": related_reports,
     }
 
     lines = ["# Execution Venue Diagnostics", ""]
-    if summary["quick_navigation"]:
+    if quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend(
         [
@@ -190,7 +193,7 @@ def build_execution_venue_diagnostics_report(
             "",
         ]
     )
-    lines.extend(f"- {item}" for item in summary["recommended_read_order"])
+    lines.extend(f"- {item}" for item in recommended_read_order_items)
     lines.append("")
 
     text = "\n".join(lines)

@@ -11,7 +11,7 @@ from sis.risk.scalping_policy import check_timeframe
 
 
 def _quote_from_row(row: dict[str, Any]) -> QuoteLog:
-    payload = {
+    payload: dict[str, Any] = {
         "ts_client": row["ts_client"],
         "venue": Venue(str(row["venue"]).lower()),
         "canonical_symbol": str(row["canonical_symbol"]).upper(),

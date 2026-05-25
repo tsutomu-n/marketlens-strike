@@ -35,36 +35,37 @@ def _paper_last_run_dict(paper_last_run: dict, key: str) -> dict:
 
 def export_state_snapshot(store: StateStore, out_path: Path) -> Path:
     paper_last_run = store.get_json("paper_last_run")
+    paper_last_run_dict = paper_last_run if isinstance(paper_last_run, dict) else {}
     normalized_audit_summary = audit_summary_fields(
-        _paper_last_run_dict(paper_last_run, "audit"),
-        _paper_last_run_dict(paper_last_run, "audit"),
+        _paper_last_run_dict(paper_last_run_dict, "audit"),
+        _paper_last_run_dict(paper_last_run_dict, "audit"),
     )
     normalized_phase_gate_summary = normalize_phase_gate_summary(
-        _paper_last_run_dict(paper_last_run, "phase_gate")
+        _paper_last_run_dict(paper_last_run_dict, "phase_gate")
     )
     normalized_readiness_summary = normalize_readiness_summary(
-        _paper_last_run_dict(paper_last_run, "readiness_summary")
+        _paper_last_run_dict(paper_last_run_dict, "readiness_summary")
     )
     normalized_execution_summary = normalize_execution_snapshot_summary(
-        _paper_last_run_dict(paper_last_run, "execution_summary")
+        _paper_last_run_dict(paper_last_run_dict, "execution_summary")
     )
     normalized_execution_comparison_summary = normalize_execution_comparison_summary(
-        _paper_last_run_dict(paper_last_run, "execution_comparison_summary")
+        _paper_last_run_dict(paper_last_run_dict, "execution_comparison_summary")
     )
     normalized_execution_diagnostics_summary = normalize_execution_diagnostics_summary(
-        _paper_last_run_dict(paper_last_run, "execution_diagnostics_summary")
+        _paper_last_run_dict(paper_last_run_dict, "execution_diagnostics_summary")
     )
     normalized_execution_gap_history_summary = normalize_execution_gap_history_summary(
-        _paper_last_run_dict(paper_last_run, "execution_gap_history_summary")
+        _paper_last_run_dict(paper_last_run_dict, "execution_gap_history_summary")
     )
     normalized_execution_state_comparison_summary = normalize_execution_state_comparison_summary(
-        _paper_last_run_dict(paper_last_run, "execution_state_comparison_summary")
+        _paper_last_run_dict(paper_last_run_dict, "execution_state_comparison_summary")
     )
     normalized_execution_snapshot_drift_summary = normalize_execution_snapshot_drift_summary(
-        _paper_last_run_dict(paper_last_run, "execution_snapshot_drift_summary")
+        _paper_last_run_dict(paper_last_run_dict, "execution_snapshot_drift_summary")
     )
     normalized_execution_drift_overview_summary = normalize_execution_drift_overview_summary(
-        _paper_last_run_dict(paper_last_run, "execution_drift_overview_summary")
+        _paper_last_run_dict(paper_last_run_dict, "execution_drift_overview_summary")
     )
     phase_gate_flat = phase_gate_flat_fields(normalized_phase_gate_summary)
     readiness_flat = readiness_flat_fields(normalized_readiness_summary)
@@ -88,7 +89,7 @@ def export_state_snapshot(store: StateStore, out_path: Path) -> Path:
         normalized_execution_drift_overview_summary
     )
     latest_execution_lineage = latest_execution_lineage_fields_from_summary(
-        paper_last_run if isinstance(paper_last_run, dict) else {}
+        paper_last_run_dict
     )
     snapshot = {
         "paper_positions": store.get_json("paper_positions"),
