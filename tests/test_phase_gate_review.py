@@ -11,6 +11,8 @@ from sis.reports.summary_normalizers import (
     phase_gate_issue_preview_lines,
 )
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 
 def _write_registry(path: Path, venue: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -210,7 +212,7 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     )
     text = build_phase_gate_review(
         data_dir,
-        schema_root=Path("/home/tn/projects/marketlens-strike/schemas"),
+        schema_root=PROJECT_ROOT / "schemas",
         execution_snapshot_summary_path=data_dir / "ops/execution_snapshot_summary.json",
         execution_venue_comparison_summary_path=data_dir / "ops/execution_venue_comparison_summary.json",
         execution_venue_diagnostics_summary_path=data_dir / "ops/execution_venue_diagnostics_summary.json",
