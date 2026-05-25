@@ -955,7 +955,7 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
         encoding="utf-8",
     )
     (data_dir / "raw/sidecar/ostium/positions_all_2026-05-24.json").write_text(
-        '{"ts_client":"2026-05-22T07:56:39.516Z","server_time_ms":1716336000000,"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80","notional_usd":24214944.037214246,"unrealized_pnl_usd":25683.762970999986,"collateral_used_usd":2158493.9945829986,"max_withdrawable_usd":1752150.3245409152,"cumulative_rollover_usd":0.003096,"return_on_equity":0.04076676348547718,"leverage":26.8474,"max_leverage":200.0,"open_timestamp_ms":1716335999000}]}',
+        '{"ts_client":"2026-05-22T07:56:39.516Z","server_time_ms":1716336000000,"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80","notional_usd":24214944.037214246,"unrealized_pnl_usd":25683.762970999986,"collateral_used_usd":2158493.9945829986,"max_withdrawable_usd":1752150.3245409152,"cumulative_rollover_usd":0.003096,"return_on_equity":0.04076676348547718,"take_profit_px":"120","stop_loss_px":null,"is_day_trade":false,"leverage":26.8474,"max_leverage":200.0,"open_timestamp_ms":1716335999000}]}',
         encoding="utf-8",
     )
     pl.DataFrame(
@@ -1087,8 +1087,10 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
     assert read_only_summary["with_positions_snapshot_count"] == 2
     assert read_only_summary["with_positions_financial_totals_count"] == 2
     assert read_only_summary["with_positions_rollover_metrics_count"] == 1
+    assert read_only_summary["with_positions_protection_metrics_count"] == 1
     assert read_only_summary["with_positions_leverage_metrics_count"] == 1
     assert read_only_summary["with_positions_return_metrics_count"] == 1
+    assert read_only_summary["with_positions_day_trade_metrics_count"] == 1
     assert read_only_summary["with_positions_limit_metrics_count"] == 1
     assert read_only_summary["with_positions_quantity_metrics_count"] == 1
     assert read_only_summary["positions_notional_usd_total"] == 24215145.037214246
@@ -1096,6 +1098,10 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
     assert read_only_summary["positions_collateral_used_usd_total"] == 2158493.9945829986
     assert read_only_summary["positions_max_withdrawable_usd_total"] == 1752150.3245409152
     assert read_only_summary["positions_cumulative_rollover_usd_total"] == 0.003096
+    assert read_only_summary["positions_with_liquidation_price_count"] == 1
+    assert read_only_summary["positions_with_take_profit_count"] == 1
+    assert read_only_summary["positions_with_stop_loss_count"] == 0
+    assert read_only_summary["positions_day_trade_count"] == 0
     assert read_only_summary["positions_average_leverage"] == 26.8474
     assert read_only_summary["positions_average_return_on_equity"] == 0.04076676348547718
     assert read_only_summary["positions_max_leverage"] == 200.0
@@ -3999,7 +4005,7 @@ def test_refresh_operations_artifacts_cli(tmp_path) -> None:
     (data_dir / "registry/ostium_instrument_registry.json").write_text("[]", encoding="utf-8")
     (data_dir / "raw/sidecar/ostium").mkdir(parents=True, exist_ok=True)
     (data_dir / "raw/sidecar/ostium/positions_all_2026-05-24.json").write_text(
-        '{"ts_client":"2026-05-22T07:56:39.516Z","server_time_ms":1716336000000,"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80","notional_usd":24214944.037214246,"unrealized_pnl_usd":25683.762970999986,"collateral_used_usd":2158493.9945829986,"max_withdrawable_usd":1752150.3245409152,"cumulative_rollover_usd":0.003096,"return_on_equity":0.04076676348547718,"leverage":26.8474,"max_leverage":200.0,"open_timestamp_ms":1716335999000}]}',
+        '{"ts_client":"2026-05-22T07:56:39.516Z","server_time_ms":1716336000000,"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80","notional_usd":24214944.037214246,"unrealized_pnl_usd":25683.762970999986,"collateral_used_usd":2158493.9945829986,"max_withdrawable_usd":1752150.3245409152,"cumulative_rollover_usd":0.003096,"return_on_equity":0.04076676348547718,"take_profit_px":"120","stop_loss_px":null,"is_day_trade":false,"leverage":26.8474,"max_leverage":200.0,"open_timestamp_ms":1716335999000}]}',
         encoding="utf-8",
     )
     (data_dir / "execution").mkdir(parents=True, exist_ok=True)
@@ -4125,12 +4131,18 @@ def test_refresh_operations_artifacts_cli(tmp_path) -> None:
     assert read_only_summary["venue_count"] == 2
     assert read_only_summary["with_positions_financial_totals_count"] == 2
     assert read_only_summary["with_positions_rollover_metrics_count"] == 1
+    assert read_only_summary["with_positions_protection_metrics_count"] == 1
     assert read_only_summary["with_positions_leverage_metrics_count"] == 1
     assert read_only_summary["with_positions_return_metrics_count"] == 1
+    assert read_only_summary["with_positions_day_trade_metrics_count"] == 1
     assert read_only_summary["with_positions_limit_metrics_count"] == 1
     assert read_only_summary["with_positions_quantity_metrics_count"] == 1
     assert read_only_summary["positions_notional_usd_total"] == 24215145.037214246
     assert read_only_summary["positions_cumulative_rollover_usd_total"] == 0.003096
+    assert read_only_summary["positions_with_liquidation_price_count"] == 1
+    assert read_only_summary["positions_with_take_profit_count"] == 1
+    assert read_only_summary["positions_with_stop_loss_count"] == 0
+    assert read_only_summary["positions_day_trade_count"] == 0
     assert read_only_summary["positions_average_leverage"] == 26.8474
     assert read_only_summary["positions_average_return_on_equity"] == 0.04076676348547718
     assert read_only_summary["positions_max_leverage"] == 200.0

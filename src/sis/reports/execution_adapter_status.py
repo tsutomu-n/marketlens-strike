@@ -139,7 +139,13 @@ def build_fill_status_report(
         "limit": limit,
         "fills": rows,
         "latest_fill_id": rows[0]["fill_id"] if rows else None,
+        "latest_fill_order_id": rows[0]["order_id"] if rows else None,
+        "latest_fill_symbol": rows[0]["canonical_symbol"] if rows else None,
+        "latest_fill_side": rows[0]["side"] if rows else None,
+        "latest_fill_quantity": rows[0]["quantity"] if rows else None,
+        "latest_fill_price": rows[0]["price"] if rows else None,
         "latest_fill_status": rows[0]["status"] if rows else None,
+        "latest_fill_ts_fill": rows[0]["ts_fill"] if rows else None,
         "fill_status_report_path": str(out_path) if out_path is not None else None,
         "recommended_read_order": _recommended_read_order(),
         "quick_navigation": _quick_navigation(out_path),
@@ -150,7 +156,13 @@ def build_fill_status_report(
         f"- fills_count: {summary['fills_count']}",
         f"- limit: {summary['limit']}",
         f"- latest_fill_id: {summary['latest_fill_id']}",
+        f"- latest_fill_order_id: {summary['latest_fill_order_id']}",
+        f"- latest_fill_symbol: {summary['latest_fill_symbol']}",
+        f"- latest_fill_side: {summary['latest_fill_side']}",
+        f"- latest_fill_quantity: {summary['latest_fill_quantity']}",
+        f"- latest_fill_price: {summary['latest_fill_price']}",
         f"- latest_fill_status: {summary['latest_fill_status']}",
+        f"- latest_fill_ts_fill: {summary['latest_fill_ts_fill']}",
     ]
     for index, row in enumerate(rows, start=1):
         detail_lines.extend(
