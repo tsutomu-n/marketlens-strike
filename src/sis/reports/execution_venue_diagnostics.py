@@ -148,11 +148,11 @@ def build_execution_venue_diagnostics_report(
         },
         "recommended_read_order": recommended_read_order(
             [
-            "data/ops/execution_venue_diagnostics_summary.json",
-            "data/ops/execution_venue_comparison_summary.json",
-            "data/ops/execution_snapshot_summary.json",
-            "data/ops/current_state_index.json",
-            "data/ops/readiness_snapshot.json",
+                "data/ops/execution_venue_diagnostics_summary.json",
+                "data/ops/execution_venue_comparison_summary.json",
+                "data/ops/execution_snapshot_summary.json",
+                "data/ops/current_state_index.json",
+                "data/ops/readiness_snapshot.json",
             ]
         ),
         "quick_navigation": _quick_navigation(out_path),
