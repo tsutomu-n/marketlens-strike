@@ -214,3 +214,47 @@ def build_alert_report(
         out_path=out_path,
         summary_path=summary_path,
     )
+
+
+def build_notification_outbox_report(
+    *,
+    record: dict[str, object],
+    outbox_path: str,
+    latest_path: str,
+    operation_chain_path: str | None = None,
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    summary = {
+        "notification_id": record.get("notification_id"),
+        "created_at": record.get("created_at"),
+        "status": record.get("status"),
+        "sink": record.get("sink"),
+        "level": record.get("level"),
+        "title": record.get("title"),
+        "source": record.get("source"),
+        "outbox_path": outbox_path,
+        "latest_path": latest_path,
+        "operation_chain_path": operation_chain_path,
+        "notification_outbox_report_path": str(out_path) if out_path is not None else None,
+        "recommended_read_order": _recommended_read_order(),
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
+    }
+    return _write_report(
+        title="Notification Outbox",
+        summary=summary,
+        detail_lines=[
+            f"- notification_id: {summary['notification_id']}",
+            f"- status: {summary['status']}",
+            f"- sink: {summary['sink']}",
+            f"- level: {summary['level']}",
+            f"- title: {summary['title']}",
+            f"- source: {summary['source']}",
+            f"- outbox_path: {summary['outbox_path']}",
+            f"- latest_path: {summary['latest_path']}",
+            f"- operation_chain_path: {summary['operation_chain_path']}",
+        ],
+        out_path=out_path,
+        summary_path=summary_path,
+    )

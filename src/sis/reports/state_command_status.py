@@ -107,6 +107,56 @@ def build_daemon_manifest_report(
     )
 
 
+def build_daemon_loop_report(
+    *,
+    snapshot: dict[str, object],
+    snapshot_path: str,
+    event_log_path: str,
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    latest_event = snapshot.get("latest_event") if isinstance(snapshot.get("latest_event"), dict) else {}
+    summary = {
+        "run_id": snapshot.get("run_id"),
+        "created_at": snapshot.get("created_at"),
+        "mode": snapshot.get("mode"),
+        "command": snapshot.get("command"),
+        "status": snapshot.get("status"),
+        "cycles_requested": snapshot.get("cycles_requested"),
+        "cycles_completed": snapshot.get("cycles_completed"),
+        "every_minutes": snapshot.get("every_minutes"),
+        "sleep_seconds": snapshot.get("sleep_seconds"),
+        "daemon_manifest_path": snapshot.get("daemon_manifest_path"),
+        "daemon_loop_path": snapshot_path,
+        "daemon_loop_events_path": event_log_path,
+        "latest_event_status": latest_event.get("status"),
+        "latest_event_exit_code": latest_event.get("exit_code"),
+        "daemon_loop_report_path": str(out_path) if out_path is not None else None,
+        "recommended_read_order": _recommended_read_order(),
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
+    }
+    return _write_report(
+        title="Daemon Loop",
+        summary=summary,
+        detail_lines=[
+            f"- run_id: {summary.get('run_id')}",
+            f"- mode: {summary.get('mode')}",
+            f"- command: {summary.get('command')}",
+            f"- status: {summary.get('status')}",
+            f"- cycles_requested: {summary.get('cycles_requested')}",
+            f"- cycles_completed: {summary.get('cycles_completed')}",
+            f"- every_minutes: {summary.get('every_minutes')}",
+            f"- latest_event_status: {summary.get('latest_event_status')}",
+            f"- latest_event_exit_code: {summary.get('latest_event_exit_code')}",
+            f"- daemon_loop_path: {summary.get('daemon_loop_path')}",
+            f"- daemon_loop_events_path: {summary.get('daemon_loop_events_path')}",
+        ],
+        out_path=out_path,
+        summary_path=summary_path,
+    )
+
+
 def build_state_export_report(
     *,
     snapshot: dict[str, object],

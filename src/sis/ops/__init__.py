@@ -1,4 +1,4 @@
-from sis.ops.alerts import render_alert_message, write_alert
+from sis.ops.alerts import queue_notification, render_alert_message, write_alert
 from sis.ops.daemon import (
     DaemonDryRunResult,
     DaemonLoopResult,
@@ -32,6 +32,7 @@ __all__ = [
     "evaluate_max_exposure",
     "latest_operation_manifest",
     "next_interval_run",
+    "queue_notification",
     "render_alert_message",
     "run_daemon_dry_run",
     "run_daemon_loop",

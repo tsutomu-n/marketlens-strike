@@ -38,9 +38,11 @@ def test_help_smoke() -> None:
     assert "kill-switch" in result.stdout
     assert "schedule-run" in result.stdout
     assert "render-alert" in result.stdout
+    assert "notification-outbox" in result.stdout
     assert "weekly-review" in result.stdout
     assert "daemon-manifest" in result.stdout
     assert "daemon-dry-run" in result.stdout
+    assert "daemon-run" in result.stdout
     assert "export-state" in result.stdout
     assert "restore-state" in result.stdout
     assert "lifecycle-report" in result.stdout
@@ -834,6 +836,11 @@ def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
         ["render-alert", "--level", "warn", "--title", "Stale", "--body", "recollect"],
         env=env,
     )
+    notification = runner.invoke(
+        app,
+        ["notification-outbox", "--level", "warn", "--title", "Stale", "--body", "recollect"],
+        env=env,
+    )
     (data_dir / "research").mkdir(parents=True, exist_ok=True)
     (data_dir / "paper").mkdir(parents=True, exist_ok=True)
     import polars as pl
@@ -898,6 +905,21 @@ def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
     assert (data_dir / "reports/ops_alert.md").exists()
     alert_summary = read_json(data_dir / "ops/ops_alert_summary.json")
     assert alert_summary["level"] == "warn"
+    assert notification.exit_code == 0
+    assert "status=queued" in notification.stdout
+    assert "outbox_path=" in notification.stdout
+    assert "notification_outbox_report_path=" in notification.stdout
+    assert "notification_outbox_summary_path=" in notification.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in notification.stdout
+    assert (data_dir / "notifications/outbox.jsonl").exists()
+    assert (data_dir / "notifications/latest_notification.json").exists()
+    assert (data_dir / "reports/notification_outbox.md").exists()
+    notification_summary = read_json(data_dir / "ops/notification_outbox_summary.json")
+    assert notification_summary["status"] == "queued"
+    assert notification_summary["sink"] == "local_outbox"
+    latest_notification = latest_operation_manifest(data_dir / "ops/operation_manifests.jsonl")
+    assert latest_notification is not None
+    assert latest_notification["operation"] == "notification_outbox"
     assert weekly.exit_code == 0
     assert "Weekly Strategy Review" in weekly.stdout
     assert "## Quick Navigation" in weekly.stdout
@@ -1171,6 +1193,51 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
     assert read_only_summary["latest_positions_server_time_ms"] == 1716336000000
     assert read_only_summary["latest_positions_open_timestamp_ms"] == 1779580800000
     assert read_only_summary["latest_positions_updated_at"] == "2026-05-24T01:00:00+00:00"
+
+
+def test_daemon_run_cli_bounded(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+
+    result = runner.invoke(
+        app,
+        [
+            "daemon-run",
+            "--mode",
+            "paper",
+            "--command",
+            "uv run python -c \"print('daemon-ok')\"",
+            "--max-cycles",
+            "1",
+            "--sleep-seconds",
+            "0",
+        ],
+        env=env,
+    )
+
+    assert result.exit_code == 0
+    assert "status=completed" in result.stdout
+    assert "cycles_completed=1" in result.stdout
+    assert "daemon_loop_path=" in result.stdout
+    assert "daemon_loop_report_path=" in result.stdout
+    assert "daemon_loop_summary_path=" in result.stdout
+    assert "daemon_loop_events_path=" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
+    snapshot = read_json(data_dir / "ops/daemon_loop.json")
+    summary = read_json(data_dir / "ops/daemon_loop_summary.json")
+    events = read_jsonl(data_dir / "ops/daemon_loop_events.jsonl")
+    latest = latest_operation_manifest(data_dir / "ops/operation_manifests.jsonl")
+    assert (data_dir / "reports/daemon_manifest.md").exists()
+    assert (data_dir / "ops/daemon_manifest_summary.json").exists()
+    assert (data_dir / "reports/daemon_loop.md").exists()
+    assert snapshot["status"] == "completed"
+    assert summary["status"] == "completed"
+    assert snapshot["cycles_requested"] == 1
+    assert snapshot["cycles_completed"] == 1
+    assert [event["stdout"] for event in events] == ["daemon-ok\n"]
+    assert latest is not None
+    assert latest["operation"] == "daemon_loop"
+    assert latest["status"] == "completed"
 
 
 def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:

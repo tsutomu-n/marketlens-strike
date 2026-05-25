@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import polars as pl
 
-from sis.ops.alerts import render_alert_message, write_alert
+from sis.ops.alerts import queue_notification, render_alert_message, write_alert
 from sis.ops.manifest_chain import append_operation_manifest, create_operation_manifest, latest_operation_manifest
 from sis.ops.scheduler import next_interval_run, schedule_run, write_schedule, write_schedule_with_audit
 from sis.reports.weekly_review import build_weekly_review_report
@@ -98,6 +98,24 @@ def test_alert_render_and_write(tmp_path) -> None:
     assert "[WARN] Stale data" in text
     assert out.exists()
     assert "source: healthcheck" in out.read_text(encoding="utf-8")
+
+
+def test_queue_notification_writes_outbox_and_latest(tmp_path) -> None:
+    record = queue_notification(
+        outbox_path=tmp_path / "notifications/outbox.jsonl",
+        latest_path=tmp_path / "notifications/latest_notification.json",
+        level="warn",
+        title="Stale data",
+        body="recollect live evidence",
+        source="healthcheck",
+        sink="local_outbox",
+        now=datetime(2026, 5, 25, 0, 0, tzinfo=timezone.utc),
+    )
+
+    assert record["status"] == "queued"
+    assert record["notification_id"] == "20260525_000000_000000"
+    assert "recollect live evidence" in (tmp_path / "notifications/outbox.jsonl").read_text(encoding="utf-8")
+    assert "Stale data" in (tmp_path / "notifications/latest_notification.json").read_text(encoding="utf-8")
 
 
 def test_operation_manifest_chain_append_and_read_latest(tmp_path) -> None:

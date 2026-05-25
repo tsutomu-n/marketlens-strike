@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shlex
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
@@ -21,7 +22,7 @@ from sis.market_calendar import market_session_window
 from sis.ops.daily_loss_limit import evaluate_daily_loss_limit, evaluate_max_exposure
 from sis.ops.healthcheck import build_healthcheck
 from sis.ops.kill_switch import KillSwitch
-from sis.ops.alerts import write_alert
+from sis.ops.alerts import queue_notification, write_alert
 from sis.ops.daemon import create_daemon_manifest, run_daemon_dry_run, run_daemon_loop, write_daemon_manifest
 from sis.ops.manifest_chain import append_operation_manifest, create_operation_manifest, latest_operation_manifest
 from sis.ops.scheduler import next_interval_run, schedule_run, write_schedule_with_audit
@@ -81,6 +82,7 @@ from sis.reports.remediation_evaluator import build_remediation_evaluator
 from sis.reports.remediation_evidence import build_remediation_evidence
 from sis.reports.remediation_command_results import build_remediation_command_results
 from sis.reports.state_command_status import (
+    build_daemon_loop_report,
     build_daemon_manifest_report,
     build_state_export_report,
     build_state_restore_report,
@@ -90,6 +92,7 @@ from sis.reports.ops_command_status import (
     build_alert_report,
     build_healthcheck_report,
     build_kill_switch_report,
+    build_notification_outbox_report,
     build_schedule_run_report,
 )
 from sis.reports.paper_operations_runbook import build_paper_operations_runbook
@@ -992,6 +995,8 @@ def _write_operations_dashboard(settings_data_dir: Path) -> tuple[Path, Path, st
         execution_reconcile_positions_summary_path=settings_data_dir / "ops/execution_reconcile_positions_summary.json",
         execution_read_only_surfaces_summary_path=settings_data_dir / "ops/execution_read_only_surfaces_summary.json",
         daemon_manifest_summary_path=settings_data_dir / "ops/daemon_manifest_summary.json",
+        daemon_loop_summary_path=settings_data_dir / "ops/daemon_loop_summary.json",
+        notification_outbox_summary_path=settings_data_dir / "ops/notification_outbox_summary.json",
         state_export_summary_path=settings_data_dir / "ops/state_export_summary.json",
         state_restore_summary_path=settings_data_dir / "ops/state_restore_summary.json",
         audit_dashboard_summary_path=settings_data_dir / "ops/audit_dashboard_summary.json",
@@ -2818,6 +2823,83 @@ def render_alert_cmd(
         typer.echo(f"recommended_read_order_{index}={item}")
 
 
+@app.command("notification-outbox")
+def notification_outbox_cmd(
+    level: str = typer.Option(..., "--level"),
+    title: str = typer.Option(..., "--title"),
+    body: str = typer.Option(..., "--body"),
+    source: str = typer.Option("codex", "--source"),
+    sink: str = typer.Option("local_outbox", "--sink"),
+) -> None:
+    settings = get_settings()
+    outbox_path = settings.data_dir / "notifications/outbox.jsonl"
+    latest_path = settings.data_dir / "notifications/latest_notification.json"
+    record = queue_notification(
+        outbox_path=outbox_path,
+        latest_path=latest_path,
+        level=level,
+        title=title,
+        body=body,
+        source=source,
+        sink=sink,
+    )
+    operation = create_operation_manifest(
+        operation="notification_outbox",
+        mode="ops",
+        command=shlex.join(
+            [
+                "uv",
+                "run",
+                "sis",
+                "notification-outbox",
+                "--level",
+                level,
+                "--title",
+                title,
+                "--body",
+                body,
+                "--source",
+                source,
+                "--sink",
+                sink,
+            ]
+        ),
+        status=str(record["status"]),
+        artifacts=[str(outbox_path), str(latest_path)],
+        notes=[
+            f"notification_id={record['notification_id']}",
+            f"sink={sink}",
+            f"level={level}",
+        ],
+    )
+    operation_chain_path = append_operation_manifest(settings.data_dir / "ops/operation_manifests.jsonl", operation)
+    report_path = settings.data_dir / "reports/notification_outbox.md"
+    summary_path = settings.data_dir / "ops/notification_outbox_summary.json"
+    build_notification_outbox_report(
+        record=record,
+        outbox_path=str(outbox_path),
+        latest_path=str(latest_path),
+        operation_chain_path=str(operation_chain_path),
+        out_path=report_path,
+        summary_path=summary_path,
+    )
+    logger.info("written: {}", outbox_path)
+    logger.info("written: {}", latest_path)
+    logger.info("written: {}", report_path)
+    logger.info("written: {}", summary_path)
+    logger.info("appended: {}", operation_chain_path)
+    typer.echo(f"notification_id={record['notification_id']}")
+    typer.echo(f"status={record['status']}")
+    typer.echo(f"sink={record['sink']}")
+    typer.echo(f"outbox_path={outbox_path}")
+    typer.echo(f"latest_path={latest_path}")
+    typer.echo(f"notification_outbox_report_path={report_path}")
+    typer.echo(f"notification_outbox_summary_path={summary_path}")
+    typer.echo(f"operation_chain={operation_chain_path}")
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
 @app.command("weekly-review")
 def weekly_review_cmd() -> None:
     settings = get_settings()
@@ -2935,15 +3017,28 @@ def daemon_run_cmd(
         sleep_seconds=sleep_seconds,
     )
     _write_daemon_manifest_artifacts(settings.data_dir)
+    daemon_loop_report = settings.data_dir / "reports/daemon_loop.md"
+    daemon_loop_summary = settings.data_dir / "ops/daemon_loop_summary.json"
+    build_daemon_loop_report(
+        snapshot=read_json(result.loop_snapshot_path),
+        snapshot_path=str(result.loop_snapshot_path),
+        event_log_path=str(result.event_log_path),
+        out_path=daemon_loop_report,
+        summary_path=daemon_loop_summary,
+    )
     logger.info("written: {}", result.daemon_manifest_path)
     logger.info("written: {}", result.event_log_path)
     logger.info("written: {}", result.loop_snapshot_path)
+    logger.info("written: {}", daemon_loop_report)
+    logger.info("written: {}", daemon_loop_summary)
     logger.info("appended: {}", result.operation_chain_path)
     typer.echo(f"run_id={result.run_id}")
     typer.echo(f"status={result.status}")
     typer.echo(f"cycles_requested={result.cycles_requested}")
     typer.echo(f"cycles_completed={result.cycles_completed}")
     typer.echo(f"daemon_loop_path={result.loop_snapshot_path}")
+    typer.echo(f"daemon_loop_report_path={daemon_loop_report}")
+    typer.echo(f"daemon_loop_summary_path={daemon_loop_summary}")
     typer.echo(f"daemon_loop_events_path={result.event_log_path}")
     typer.echo(f"operation_chain={result.operation_chain_path}")
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):

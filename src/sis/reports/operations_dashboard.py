@@ -161,6 +161,8 @@ def build_operations_dashboard(
     execution_reconcile_positions_summary_path: Path | None = None,
     execution_read_only_surfaces_summary_path: Path | None = None,
     daemon_manifest_summary_path: Path | None = None,
+    daemon_loop_summary_path: Path | None = None,
+    notification_outbox_summary_path: Path | None = None,
     state_export_summary_path: Path | None = None,
     state_restore_summary_path: Path | None = None,
     audit_dashboard_summary_path: Path | None = None,
@@ -213,6 +215,8 @@ def build_operations_dashboard(
     execution_reconcile_positions = safe_read_json_dict(execution_reconcile_positions_summary_path)
     execution_read_only_surfaces = safe_read_json_dict(execution_read_only_surfaces_summary_path)
     daemon_manifest = safe_read_json_dict(daemon_manifest_summary_path)
+    daemon_loop = safe_read_json_dict(daemon_loop_summary_path)
+    notification_outbox = safe_read_json_dict(notification_outbox_summary_path)
     state_export = safe_read_json_dict(state_export_summary_path)
     state_restore = safe_read_json_dict(state_restore_summary_path)
     audit_dashboard = safe_read_json_dict(audit_dashboard_summary_path)
@@ -416,6 +420,22 @@ def build_operations_dashboard(
         "daemon_manifest_command": daemon_manifest.get("command"),
         "daemon_manifest_state_store_path": daemon_manifest.get("state_store_path"),
         "daemon_manifest_report_path": daemon_manifest.get("daemon_manifest_report_path"),
+        "daemon_loop_status": daemon_loop.get("status"),
+        "daemon_loop_cycles_requested": daemon_loop.get("cycles_requested"),
+        "daemon_loop_cycles_completed": daemon_loop.get("cycles_completed"),
+        "daemon_loop_latest_event_status": daemon_loop.get("latest_event_status"),
+        "daemon_loop_latest_event_exit_code": daemon_loop.get("latest_event_exit_code"),
+        "daemon_loop_path": daemon_loop.get("daemon_loop_path"),
+        "daemon_loop_events_path": daemon_loop.get("daemon_loop_events_path"),
+        "daemon_loop_report_path": daemon_loop.get("daemon_loop_report_path"),
+        "notification_outbox_status": notification_outbox.get("status"),
+        "notification_outbox_sink": notification_outbox.get("sink"),
+        "notification_outbox_level": notification_outbox.get("level"),
+        "notification_outbox_title": notification_outbox.get("title"),
+        "notification_outbox_source": notification_outbox.get("source"),
+        "notification_outbox_path": notification_outbox.get("outbox_path"),
+        "notification_outbox_latest_path": notification_outbox.get("latest_path"),
+        "notification_outbox_report_path": notification_outbox.get("notification_outbox_report_path"),
         "state_export_snapshot_path": state_export.get("snapshot_path"),
         "state_export_audit_overall_status": state_export.get("audit_overall_status"),
         "state_export_phase_gate_decision": state_export.get("phase_gate_decision"),
@@ -483,6 +503,8 @@ def build_operations_dashboard(
         "execution_reconcile_positions_summary": execution_reconcile_positions,
         "execution_read_only_surfaces_summary": execution_read_only_surfaces,
         "daemon_manifest_summary": daemon_manifest,
+        "daemon_loop_summary": daemon_loop,
+        "notification_outbox_summary": notification_outbox,
         "state_export_summary": state_export,
         "state_restore_summary": state_restore,
         **execution_snapshot_fields,
@@ -529,6 +551,8 @@ def build_operations_dashboard(
             "data/ops/execution_reconcile_positions_summary.json",
             "data/ops/execution_read_only_surfaces_summary.json",
             "data/ops/daemon_manifest_summary.json",
+            "data/ops/daemon_loop_summary.json",
+            "data/ops/notification_outbox_summary.json",
             "data/ops/state_export_summary.json",
             "data/ops/state_restore_summary.json",
             "data/ops/operations_dashboard_summary.json",
@@ -776,6 +800,14 @@ def build_operations_dashboard(
             f"- daemon_manifest_mode: {summary.get('daemon_manifest_mode')}",
             f"- daemon_manifest_command: {summary.get('daemon_manifest_command')}",
             f"- daemon_manifest_state_store_path: {summary.get('daemon_manifest_state_store_path')}",
+            f"- daemon_loop_status: {summary.get('daemon_loop_status')}",
+            f"- daemon_loop_cycles_completed: {summary.get('daemon_loop_cycles_completed')}",
+            f"- daemon_loop_latest_event_status: {summary.get('daemon_loop_latest_event_status')}",
+            f"- daemon_loop_report_path: {summary.get('daemon_loop_report_path')}",
+            f"- notification_outbox_status: {summary.get('notification_outbox_status')}",
+            f"- notification_outbox_sink: {summary.get('notification_outbox_sink')}",
+            f"- notification_outbox_level: {summary.get('notification_outbox_level')}",
+            f"- notification_outbox_report_path: {summary.get('notification_outbox_report_path')}",
             f"- state_export_snapshot_path: {summary.get('state_export_snapshot_path')}",
             f"- state_export_audit_overall_status: {summary.get('state_export_audit_overall_status')}",
             f"- state_export_phase_gate_decision: {summary.get('state_export_phase_gate_decision')}",

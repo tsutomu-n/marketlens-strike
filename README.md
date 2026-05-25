@@ -109,7 +109,9 @@ uv run sis fill-status --venue gtrade --limit 20
 uv run sis order-status --venue gtrade --order-id ord-1
 uv run sis reconcile-positions --venue ostium
 uv run sis healthcheck
+uv run sis notification-outbox --level warn --title "Stale" --body "recollect"
 uv run sis daemon-dry-run --mode paper --command "uv run sis paper-step" --every-minutes 30
+uv run sis daemon-run --mode paper --command "uv run sis paper-step" --max-cycles 1
 uv run sis current-state-index
 uv run sis readiness-snapshot
 uv run sis operations-dashboard
@@ -130,7 +132,8 @@ The remaining operational blockers are not documentation blockers:
 - fresh live evidence still needs to be recollected and re-evaluated
 - Go/No-Go must be rechecked from current evidence
 - real live execution integration is still outside the current safe surface
-- a persistent daemon loop and external notifications are not complete
+- external process supervision and provider delivery are not complete; `daemon-run`
+  provides the local command-loop runner and `notification-outbox` provides the local notification queue
 
 ## Historical Material
 

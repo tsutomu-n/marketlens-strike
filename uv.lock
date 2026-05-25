@@ -606,6 +606,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "pyrefly" },
     { name = "pytest" },
     { name = "pytest-httpx" },
     { name = "ruff" },
@@ -638,6 +639,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "pyrefly", specifier = ">=1.0.0" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-httpx", specifier = ">=0.36.2" },
     { name = "ruff", specifier = ">=0.11" },

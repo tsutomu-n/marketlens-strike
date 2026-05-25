@@ -35,6 +35,34 @@ uv run sis paper-operations-cycle
 - `data/reports/operations_dashboard.md`
 - `data/reports/audit_dashboard.md`
 
+local daemon loop を bounded smoke として実行する場合:
+
+```bash
+uv run sis daemon-run --mode paper --command "uv run sis paper-step" --max-cycles 1
+```
+
+常駐させる場合は、外部 supervisor なしであることを理解したうえで明示的に `--forever` を付けます。停止は kill switch または command failure です。
+
+主要 artifact:
+
+- `data/ops/daemon_loop.json`
+- `data/ops/daemon_loop_summary.json`
+- `data/ops/daemon_loop_events.jsonl`
+- `data/reports/daemon_loop.md`
+
+notification を provider 送信せず local queue に積む場合:
+
+```bash
+uv run sis notification-outbox --level warn --title "Stale" --body "recollect live evidence"
+```
+
+主要 artifact:
+
+- `data/notifications/outbox.jsonl`
+- `data/notifications/latest_notification.json`
+- `data/ops/notification_outbox_summary.json`
+- `data/reports/notification_outbox.md`
+
 ## Read-Only Execution Surfaces
 
 target 不要の read-only observation は refresh / daemon dry-run / paper cycle で再集約されます。

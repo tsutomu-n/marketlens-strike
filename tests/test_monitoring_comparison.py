@@ -47,6 +47,7 @@ from sis.reports.remediation_evaluator import build_remediation_evaluator
 from sis.reports.remediation_evidence import build_remediation_evidence
 from sis.reports.remediation_command_results import build_remediation_command_results
 from sis.reports.state_command_status import (
+    build_daemon_loop_report,
     build_daemon_manifest_report,
     build_state_export_report,
     build_state_restore_report,
@@ -736,6 +737,8 @@ def test_build_operations_dashboard(tmp_path) -> None:
     execution_reconcile_positions = tmp_path / "execution_reconcile_positions.json"
     execution_read_only_surfaces = tmp_path / "execution_read_only_surfaces.json"
     daemon_manifest = tmp_path / "daemon_manifest.json"
+    daemon_loop = tmp_path / "daemon_loop.json"
+    notification_outbox = tmp_path / "notification_outbox.json"
     state_export = tmp_path / "state_export.json"
     state_restore = tmp_path / "state_restore.json"
     audit_dashboard = tmp_path / "audit_dashboard.json"
@@ -909,6 +912,32 @@ def test_build_operations_dashboard(tmp_path) -> None:
         },
     )
     write_json(
+        daemon_loop,
+        {
+            "status": "completed",
+            "cycles_requested": 1,
+            "cycles_completed": 1,
+            "latest_event_status": "completed",
+            "latest_event_exit_code": 0,
+            "daemon_loop_path": "data/ops/daemon_loop.json",
+            "daemon_loop_events_path": "data/ops/daemon_loop_events.jsonl",
+            "daemon_loop_report_path": "data/reports/daemon_loop.md",
+        },
+    )
+    write_json(
+        notification_outbox,
+        {
+            "status": "queued",
+            "sink": "local_outbox",
+            "level": "warn",
+            "title": "Stale",
+            "source": "codex",
+            "outbox_path": "data/notifications/outbox.jsonl",
+            "latest_path": "data/notifications/latest_notification.json",
+            "notification_outbox_report_path": "data/reports/notification_outbox.md",
+        },
+    )
+    write_json(
         state_export,
         {
             "snapshot_path": "data/state/state_snapshot.json",
@@ -1017,6 +1046,8 @@ def test_build_operations_dashboard(tmp_path) -> None:
         execution_reconcile_positions_summary_path=execution_reconcile_positions,
         execution_read_only_surfaces_summary_path=execution_read_only_surfaces,
         daemon_manifest_summary_path=daemon_manifest,
+        daemon_loop_summary_path=daemon_loop,
+        notification_outbox_summary_path=notification_outbox,
         state_export_summary_path=state_export,
         state_restore_summary_path=state_restore,
         audit_dashboard_summary_path=audit_dashboard,
@@ -1051,6 +1082,12 @@ def test_build_operations_dashboard(tmp_path) -> None:
     assert "## Execution Adapter Surfaces" in report
     assert "## State And Daemon Surfaces" in report
     assert "daemon_manifest_mode: paper" in report
+    assert "daemon_loop_status: completed" in report
+    assert "daemon_loop_cycles_completed: 1" in report
+    assert "daemon_loop_latest_event_status: completed" in report
+    assert "notification_outbox_status: queued" in report
+    assert "notification_outbox_sink: local_outbox" in report
+    assert "notification_outbox_level: warn" in report
     assert "state_export_phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
     assert "state_restore_restored: True" in report
     assert "execution_balance_status_equity: 1500.0" in report
@@ -1184,6 +1221,14 @@ def test_build_operations_dashboard(tmp_path) -> None:
     assert summary["execution_cancel_order_status"] == "blocked_read_only"
     assert summary["execution_reconcile_positions_matched"] == 1
     assert summary["daemon_manifest_mode"] == "paper"
+    assert summary["daemon_loop_status"] == "completed"
+    assert summary["daemon_loop_cycles_completed"] == 1
+    assert summary["daemon_loop_latest_event_status"] == "completed"
+    assert summary["daemon_loop_summary"]["status"] == "completed"
+    assert summary["notification_outbox_status"] == "queued"
+    assert summary["notification_outbox_sink"] == "local_outbox"
+    assert summary["notification_outbox_level"] == "warn"
+    assert summary["notification_outbox_summary"]["status"] == "queued"
     assert summary["state_export_phase_gate_decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert summary["state_restore_restored"] is True
     assert (
@@ -1281,6 +1326,22 @@ def test_build_current_state_index(tmp_path) -> None:
             "daemon_manifest_mode": "paper",
             "daemon_manifest_command": "uv run sis paper-step",
             "daemon_manifest_state_store_path": "data/state/marketlens.sqlite",
+            "daemon_loop_status": "completed",
+            "daemon_loop_cycles_requested": 1,
+            "daemon_loop_cycles_completed": 1,
+            "daemon_loop_latest_event_status": "completed",
+            "daemon_loop_latest_event_exit_code": 0,
+            "daemon_loop_path": "data/ops/daemon_loop.json",
+            "daemon_loop_events_path": "data/ops/daemon_loop_events.jsonl",
+            "daemon_loop_report_path": "data/reports/daemon_loop.md",
+            "notification_outbox_status": "queued",
+            "notification_outbox_sink": "local_outbox",
+            "notification_outbox_level": "warn",
+            "notification_outbox_title": "Stale",
+            "notification_outbox_source": "codex",
+            "notification_outbox_path": "data/notifications/outbox.jsonl",
+            "notification_outbox_latest_path": "data/notifications/latest_notification.json",
+            "notification_outbox_report_path": "data/reports/notification_outbox.md",
             "state_export_snapshot_path": "data/state/state_snapshot.json",
             "state_export_audit_overall_status": "ok",
             "state_export_phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
@@ -1545,6 +1606,10 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "execution_read_only_surfaces_latest_positions_client_ts: 2026-05-22T07:56:39.516Z" in report
     assert "## State And Daemon Surfaces" in report
     assert "daemon_manifest_mode: paper" in report
+    assert "daemon_loop_status: completed" in report
+    assert "daemon_loop_cycles_completed: 1" in report
+    assert "notification_outbox_status: queued" in report
+    assert "notification_outbox_sink: local_outbox" in report
     assert "state_export_phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
     assert "state_restore_restored: True" in report
     assert "execution_overall_status: ok" in report
@@ -1589,6 +1654,13 @@ def test_build_current_state_index(tmp_path) -> None:
     assert summary["live_evidence_report_path"] == "docs/live_evidence_reports/live_evidence_report_20260522_2308.md"
     assert summary["quick_navigation"]["phase_gate_review_report"] == "data/reports/phase_gate_review.md"
     assert summary["related_reports"]["phase_gate_review_report"] == "data/reports/phase_gate_review.md"
+    assert summary["restart_pointers"]["daemon_loop_report"] == str(
+        tmp_path / "reports/daemon_loop.md"
+    )
+    assert (
+        summary["restart_pointers"]["notification_outbox_report"]
+        == str(tmp_path / "reports/notification_outbox.md")
+    )
     assert summary["restart_pointers"]["current_state_index_report"] == str(
         tmp_path / "current_state_index.md"
     )
@@ -1622,6 +1694,10 @@ def test_build_current_state_index(tmp_path) -> None:
     assert summary["execution_summary"]["execution_overall_status"] == "ok"
     assert summary["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
     assert summary["execution_diagnostics_summary"]["execution_diagnostics_status"] == "ok"
+    assert summary["daemon_loop_status"] == "completed"
+    assert summary["daemon_loop_cycles_completed"] == 1
+    assert summary["notification_outbox_status"] == "queued"
+    assert summary["notification_outbox_sink"] == "local_outbox"
     assert summary["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
     assert summary["execution_state_comparison_summary"]["execution_state_comparison_entry_count"] == 4
     assert summary["execution_snapshot_drift_summary"]["execution_snapshot_drift_entry_count"] == 3
@@ -1804,6 +1880,22 @@ def test_build_readiness_snapshot(tmp_path) -> None:
             "daemon_manifest_mode": "paper",
             "daemon_manifest_command": "uv run sis paper-step",
             "daemon_manifest_state_store_path": "data/state/marketlens.sqlite",
+            "daemon_loop_status": "completed",
+            "daemon_loop_cycles_requested": 1,
+            "daemon_loop_cycles_completed": 1,
+            "daemon_loop_latest_event_status": "completed",
+            "daemon_loop_latest_event_exit_code": 0,
+            "daemon_loop_path": "data/ops/daemon_loop.json",
+            "daemon_loop_events_path": "data/ops/daemon_loop_events.jsonl",
+            "daemon_loop_report_path": "data/reports/daemon_loop.md",
+            "notification_outbox_status": "queued",
+            "notification_outbox_sink": "local_outbox",
+            "notification_outbox_level": "warn",
+            "notification_outbox_title": "Stale",
+            "notification_outbox_source": "codex",
+            "notification_outbox_path": "data/notifications/outbox.jsonl",
+            "notification_outbox_latest_path": "data/notifications/latest_notification.json",
+            "notification_outbox_report_path": "data/reports/notification_outbox.md",
             "state_export_snapshot_path": "data/state/state_snapshot.json",
             "state_export_audit_overall_status": "ok",
             "state_export_phase_gate_decision": "GO",
@@ -1868,6 +1960,10 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert "execution_reconcile_positions_matched: 1" in report
     assert "## State And Daemon Surfaces" in report
     assert "daemon_manifest_mode: paper" in report
+    assert "daemon_loop_status: completed" in report
+    assert "daemon_loop_cycles_completed: 1" in report
+    assert "notification_outbox_status: queued" in report
+    assert "notification_outbox_sink: local_outbox" in report
     assert "state_export_phase_gate_decision: GO" in report
     assert "state_restore_restored: True" in report
     assert "timeline_latest_execution_overall_status: ok" in report
@@ -1978,11 +2074,22 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["execution_read_only_surfaces_latest_positions_updated_at"] == "2026-05-24T01:00:00+00:00"
     assert summary["execution_read_only_surfaces_latest_positions_client_ts"] == "2026-05-22T07:56:39.516Z"
     assert summary["daemon_manifest_mode"] == "paper"
+    assert summary["daemon_loop_status"] == "completed"
+    assert summary["daemon_loop_cycles_completed"] == 1
+    assert summary["notification_outbox_status"] == "queued"
+    assert summary["notification_outbox_sink"] == "local_outbox"
     assert summary["state_export_phase_gate_decision"] == "GO"
     assert summary["state_restore_restored"] is True
     assert summary["live_evidence_report_path"] is None
     assert summary["quick_navigation"]["phase_gate_review_report"] == "data/reports/phase_gate_review.md"
     assert summary["related_reports"]["phase_gate_review_report"] == "data/reports/phase_gate_review.md"
+    assert summary["restart_pointers"]["daemon_loop_report"] == str(
+        tmp_path / "reports/daemon_loop.md"
+    )
+    assert (
+        summary["restart_pointers"]["notification_outbox_report"]
+        == str(tmp_path / "reports/notification_outbox.md")
+    )
     assert summary["restart_pointers"]["remediation_scoreboard_report"] == str(
         tmp_path / "reports/remediation_scoreboard.md"
     )
@@ -2558,6 +2665,36 @@ def test_build_daemon_manifest_report(tmp_path) -> None:
     assert summary["mode"] == "paper"
     assert summary["daemon_manifest_path"] == "data/ops/daemon_manifest.json"
     assert summary["quick_navigation"]["state_command_report"] == str(tmp_path / "daemon_manifest.md")
+
+
+def test_build_daemon_loop_report(tmp_path) -> None:
+    report = build_daemon_loop_report(
+        snapshot={
+            "run_id": "20260525_120000",
+            "created_at": "2026-05-25T12:00:00+00:00",
+            "mode": "paper",
+            "command": "uv run sis paper-step",
+            "status": "completed",
+            "cycles_requested": 1,
+            "cycles_completed": 1,
+            "every_minutes": 30,
+            "sleep_seconds": 0,
+            "daemon_manifest_path": "data/ops/daemon_manifest.json",
+            "latest_event": {"status": "completed", "exit_code": 0},
+        },
+        snapshot_path="data/ops/daemon_loop.json",
+        event_log_path="data/ops/daemon_loop_events.jsonl",
+        out_path=tmp_path / "daemon_loop.md",
+        summary_path=tmp_path / "daemon_loop_summary.json",
+    )
+
+    assert "Daemon Loop" in report
+    assert "cycles_completed: 1" in report
+    assert "latest_event_exit_code: 0" in report
+    summary = read_json(tmp_path / "daemon_loop_summary.json")
+    assert summary["status"] == "completed"
+    assert summary["daemon_loop_path"] == "data/ops/daemon_loop.json"
+    assert summary["daemon_loop_events_path"] == "data/ops/daemon_loop_events.jsonl"
 
 
 def test_build_state_export_and_restore_report(tmp_path) -> None:

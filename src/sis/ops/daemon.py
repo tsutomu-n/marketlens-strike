@@ -142,7 +142,7 @@ def run_daemon_loop(
     while max_cycles is None or cycles_completed < max_cycles:
         cycle_index = cycles_completed + 1
         cycle_started_at = datetime.now(timezone.utc)
-        if kill_switch.enabled:
+        if kill_switch.is_enabled():
             status = "blocked"
             event = {
                 "run_id": manifest.run_id,

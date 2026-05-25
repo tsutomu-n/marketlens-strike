@@ -86,6 +86,9 @@ This generated report lists implementation coverage from the current codebase. O
 | Epic 70 | Ostium protection and day-trade position counts | DONE | ostium read-only execution surfaces now aggregate liquidation/take-profit/stop-loss/day-trade counts from positions sidecars, and those risk-control counts propagate through execution read-only surface summaries plus top-level restart/readiness reports |
 | Epic 71 | Fill and order detail propagation | DONE | execution fill/order status artifacts now propagate latest fill order-id/symbol/side/quantity/price/timestamp plus order side/quantity into dashboard, current-state, and readiness summaries |
 | Epic 72 | Execution read-only surfaces CLI | DONE | execution-read-only-surfaces regenerates the multi-venue read-only execution surface report and summary without requiring a full operations refresh |
+| Epic 73 | Local daemon loop runner | DONE | daemon-run provides bounded or explicit --forever local command-loop execution with kill-switch blocking, event logs, daemon-loop summary, and operation-chain manifest entries |
+| Epic 74 | Notification outbox foundation | DONE | notification-outbox queues local notification records, latest notification JSON, report/summary artifacts, and operation-chain entries without requiring an external notification provider |
+| Epic 75 | Daemon and notification restart aggregation | DONE | operations-dashboard, current-state-index, and readiness-snapshot now surface daemon-loop and notification-outbox summaries when present |
 
 ## Live Evidence Still Required
 

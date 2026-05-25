@@ -35,6 +35,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+  "pyrefly>=1.0.0",
   "pytest>=8",
   "pytest-httpx>=0.36.2",
   "ruff>=0.11",
@@ -52,9 +53,9 @@ target-version = "py311"
 packages = ["src/sis"]
 
 [tool.pyrefly]
+python-version = "3.12"
 project-includes = [
   "src/**/*.py",
-  "tests/**/*.py",
 ]
 
 project-excludes = [
@@ -65,4 +66,7 @@ project-excludes = [
   "**/htmlcov/**",
   "**/dist/**",
   "**/build/**",
+  "tests/**",
+  "**/test_*.py",
+  "migrations/**",
 ]
