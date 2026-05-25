@@ -37,6 +37,7 @@ data/
 # Logs and temporary files
 logs/live_evidence/*.log
 logs/live_evidence/*.out
+logs/live_evidence/locks/
 logs/live_evidence/manifests/
 logs/live_evidence/summaries/
 *.log
