@@ -2469,6 +2469,28 @@ def execution_venue_diagnostics_cmd() -> None:
         typer.echo(f"recommended_read_order_{index}={item}")
 
 
+@app.command("execution-read-only-surfaces")
+def execution_read_only_surfaces_cmd(
+    state_path: Path | None = typer.Option(
+        None,
+        "--state-path",
+        help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
+    ),
+) -> None:
+    settings = get_settings()
+    out, summary_out, text = _write_execution_read_only_surfaces(
+        settings.data_dir,
+        state_path=state_path,
+    )
+    logger.info("written: {}", out)
+    logger.info("written: {}", summary_out)
+    typer.echo(text)
+    typer.echo(f"execution_read_only_surfaces_path={out}")
+    typer.echo(f"execution_read_only_surfaces_summary_path={summary_out}")
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
 @app.command("order-status")
 def order_status_cmd(
     venue: str = typer.Option(..., "--venue"),
