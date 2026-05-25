@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import sis.live_evidence_runner as live_evidence_runner
 from sis.live_evidence_runner import (
     CollectionGateResult,
     LiveEvidenceManifest,
@@ -284,7 +285,23 @@ def test_write_manifest_summary_uses_run_id_and_phase_gate(tmp_path) -> None:
     )
 
 
-def test_write_reports_for_manifest_persists_readiness_flat_keys(tmp_path) -> None:
+def test_write_reports_for_manifest_persists_readiness_flat_keys(tmp_path, monkeypatch) -> None:
+    report_dir = tmp_path / "docs/live_evidence_reports"
+    monkeypatch.setattr(
+        live_evidence_runner,
+        "default_markdown_output_path",
+        lambda _path: report_dir / "live_evidence_report_20260522_2308.md",
+    )
+    monkeypatch.setattr(
+        live_evidence_runner,
+        "default_html_output_path",
+        lambda _path: report_dir / "live_evidence_report_20260522_2308.html",
+    )
+    monkeypatch.setattr(
+        live_evidence_runner,
+        "default_followup_output_path",
+        lambda _path: report_dir / "live_evidence_followup_20260522_2308.md",
+    )
     manifest_path = tmp_path / "manifests/live_evidence_20260522_2308.json"
     data_dir = tmp_path / "data"
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)

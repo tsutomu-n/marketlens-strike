@@ -1577,7 +1577,7 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "## Recommended Read Order" in report
     summary = read_json(tmp_path / "current_state_index.json")
     assert isinstance(summary, dict)
-    assert summary["recommended_read_order"][0] == "docs/ACCEPTANCE_AUDIT.md"
+    assert summary["recommended_read_order"][0] == "docs/CURRENT_STATE.md"
     assert summary["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
     assert summary["phase_gate_strict_validation_passed"] is True
     assert summary["phase_gate_review_report_path"] == "data/reports/phase_gate_review.md"
@@ -4010,7 +4010,7 @@ def test_build_remediation_evaluator_uses_exit_code_signal(tmp_path) -> None:
                     "evidence_status": "evidence_recorded",
                     "operator_notes": [],
                     "observed_signals": [],
-                    "evidence_paths": ["docs/IMPLEMENTATION_STATUS.md"],
+                    "evidence_paths": ["docs/CODE_STATUS.md"],
                     "latest_exit_code": 0,
                 }
             ],
@@ -5537,7 +5537,7 @@ def test_build_operations_bundle_manifest(tmp_path) -> None:
         manifest["related_reports"]["phase_gate_review_report"]
         == str(tmp_path / "reports/phase_gate_review.md")
     )
-    assert manifest["recommended_read_order"][0] == "docs/ACCEPTANCE_AUDIT.md"
+    assert manifest["recommended_read_order"][0] == "docs/CURRENT_STATE.md"
     assert manifest["phase_gate_summary"]["phase_gate_reason"] == "decision_cleared_and_phase1_gate_complete"
     assert manifest["readiness_summary"]["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert manifest["cycle_history_latest_execution_overall_status"] == "ok"

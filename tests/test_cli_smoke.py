@@ -75,7 +75,7 @@ def test_check_timeframe_cli_blocks_scalping() -> None:
     result = runner.invoke(app, ["check-timeframe", "1m"])
     assert result.exit_code == 2
     assert "BLOCK_SCALPING_TIMEFRAME" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_implementation_status_reports_complete_scope() -> None:
@@ -84,7 +84,7 @@ def test_implementation_status_reports_complete_scope() -> None:
     assert "Backtest bridge" in result.stdout
     assert "Ostium liquidation reference" in result.stdout
     assert "PARTIAL" not in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_diagnose_quotes_exits_when_no_quotes() -> None:
@@ -114,7 +114,7 @@ def test_diagnose_quotes_cli_writes_report_and_summary(tmp_path) -> None:
 
     assert result.exit_code == 0
     assert "venue=gtrade symbol=SPY" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/quote_diagnostics.md").exists()
     assert (data_dir / "ops/quote_diagnostics_summary.json").exists()
     report = (data_dir / "reports/quote_diagnostics.md").read_text(encoding="utf-8")
@@ -129,7 +129,7 @@ def test_market_session_cli_for_qqq() -> None:
     assert "symbol=QQQ" in result.stdout
     assert "calendar=XNYS" in result.stdout
     assert "next_open_jst=" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_next_live_window_cli_for_xau() -> None:
@@ -138,7 +138,7 @@ def test_next_live_window_cli_for_xau() -> None:
     assert "symbol=XAU" in result.stdout
     assert "calendar=GTRADE_COMMODITY" in result.stdout
     assert "recommended_start_jst=" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_estimate_order_cli_for_gtrade(tmp_path) -> None:
@@ -156,7 +156,7 @@ def test_estimate_order_cli_for_gtrade(tmp_path) -> None:
     assert result.exit_code == 0
     assert "estimated_cost_bps=5.0" in result.stdout
     assert "price_reference=mark" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_balance_status_cli_for_gtrade(tmp_path) -> None:
@@ -182,7 +182,7 @@ def test_balance_status_cli_for_gtrade(tmp_path) -> None:
     assert "equity=1500.0" in result.stdout
     assert "available_cash=1200.0" in result.stdout
     assert "balance_snapshot_exists=True" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/execution_balance_status.md").exists()
     assert (data_dir / "ops/execution_balance_status_summary.json").exists()
     balance_summary = read_json(data_dir / "ops/execution_balance_status_summary.json")
@@ -252,7 +252,7 @@ def test_fill_status_cli_for_gtrade(tmp_path) -> None:
     assert "fill_1_id=fill-1" in result.stdout
     assert "fill_1_symbol=QQQ" in result.stdout
     assert "fill_1_price=100.5" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/execution_fill_status.md").exists()
     assert (data_dir / "ops/execution_fill_status_summary.json").exists()
     fill_summary = read_json(data_dir / "ops/execution_fill_status_summary.json")
@@ -344,8 +344,8 @@ def test_execution_venue_comparison_cli(tmp_path) -> None:
     assert "all_positions_snapshots_present: False" in result.stdout
     assert (data_dir / "reports/execution_venue_comparison.md").exists()
     assert (data_dir / "ops/execution_venue_comparison_summary.json").exists()
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_execution_venue_diagnostics_cli(tmp_path) -> None:
@@ -369,7 +369,7 @@ def test_execution_venue_diagnostics_cli(tmp_path) -> None:
     assert "positions_snapshot_gap_detected: True" in result.stdout
     assert (data_dir / "reports/execution_venue_diagnostics.md").exists()
     assert (data_dir / "ops/execution_venue_diagnostics_summary.json").exists()
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_kill_switch_and_healthcheck_cli(tmp_path) -> None:
@@ -532,7 +532,7 @@ def test_kill_switch_and_healthcheck_cli(tmp_path) -> None:
     enable = runner.invoke(app, ["kill-switch", "--enable", "--reason", "test"], env=env)
     assert enable.exit_code == 0
     assert "enabled=True" in enable.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in enable.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in enable.stdout
     assert (data_dir / "reports/ops_kill_switch.md").exists()
     assert read_json(data_dir / "ops/ops_kill_switch_summary.json")["enabled"] is True
 
@@ -552,7 +552,7 @@ def test_kill_switch_and_healthcheck_cli(tmp_path) -> None:
     assert "execution_drift_overview_status=degraded" in health.stdout
     assert "readiness_next_phase_candidate=Stay Phase 1" in health.stdout
     assert "daily_loss_allowed=False" in health.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in health.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in health.stdout
     assert (data_dir / "reports/ops_healthcheck.md").exists()
     health_summary = read_json(data_dir / "ops/ops_healthcheck_summary.json")
     assert health_summary["status"] == "degraded"
@@ -578,7 +578,7 @@ def test_order_status_cancel_and_close_cli(tmp_path) -> None:
 
     assert status.exit_code == 0
     assert "status=working" in status.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in status.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in status.stdout
     assert (data_dir / "reports/execution_order_status.md").exists()
     order_summary = read_json(data_dir / "ops/execution_order_status_summary.json")
     assert order_summary["order_id"] == "ord-1"
@@ -587,12 +587,12 @@ def test_order_status_cancel_and_close_cli(tmp_path) -> None:
     assert order_summary["quantity"] == 1
     assert cancel.exit_code == 0
     assert "status=blocked_read_only" in cancel.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in cancel.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in cancel.stdout
     assert (data_dir / "reports/execution_cancel_order.md").exists()
     assert read_json(data_dir / "ops/execution_cancel_order_summary.json")["action"] == "cancel_order"
     assert close.exit_code == 0
     assert "status=blocked_read_only" in close.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in close.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in close.stdout
     assert (data_dir / "reports/execution_close_position.md").exists()
     assert read_json(data_dir / "ops/execution_close_position_summary.json")["action"] == "close_position"
 
@@ -722,7 +722,7 @@ def test_paper_report_cli_includes_audit_summary(tmp_path) -> None:
     assert "mismatching_snapshot_count: 1" in result.stdout
     assert "Execution Drift Overview" in result.stdout
     assert "overall_status: degraded" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
@@ -821,7 +821,7 @@ def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
 
     assert schedule.exit_code == 0
     assert "run_type=paper" in schedule.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in schedule.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in schedule.stdout
     assert '"overall_status": "ok"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
     assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
         data_dir / "ops/scheduled_run.json"
@@ -844,7 +844,7 @@ def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
     assert schedule_summary["run_type"] == "paper"
     assert alert.exit_code == 0
     assert "[WARN] Stale" in alert.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in alert.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in alert.stdout
     assert (data_dir / "reports/ops_alert.md").exists()
     alert_summary = read_json(data_dir / "ops/ops_alert_summary.json")
     assert alert_summary["level"] == "warn"
@@ -857,7 +857,7 @@ def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
     assert "Paper Last Run Audit" in weekly.stdout
     assert "Paper Last Run Phase Gate" in weekly.stdout
     assert "Paper Last Run Execution Drift Overview" in weekly.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in weekly.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in weekly.stdout
 
 
 def test_daemon_manifest_state_export_restore_and_lifecycle_cli(tmp_path) -> None:
@@ -906,7 +906,7 @@ def test_daemon_manifest_state_export_restore_and_lifecycle_cli(tmp_path) -> Non
 
     assert daemon.exit_code == 0
     assert "mode=paper" in daemon.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in daemon.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in daemon.stdout
     assert (data_dir / "reports/daemon_manifest.md").exists()
     assert (data_dir / "ops/daemon_manifest_summary.json").exists()
     assert read_json(data_dir / "ops/daemon_manifest_summary.json")["mode"] == "paper"
@@ -916,7 +916,7 @@ def test_daemon_manifest_state_export_restore_and_lifecycle_cli(tmp_path) -> Non
     assert "phase_gate_decision=CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in export_.stdout
     assert "phase_gate_reason=remain_in_phase1_until_live_evidence_gate_clears" in export_.stdout
     assert "phase_gate_strict_validation_passed=True" in export_.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in export_.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in export_.stdout
     assert (data_dir / "reports/state_export.md").exists()
     assert (data_dir / "ops/state_export_summary.json").exists()
     assert read_json(data_dir / "ops/state_export_summary.json")["audit_overall_status"] == "ok"
@@ -926,7 +926,7 @@ def test_daemon_manifest_state_export_restore_and_lifecycle_cli(tmp_path) -> Non
     assert "phase_gate_decision=CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in restore.stdout
     assert "phase_gate_reason=remain_in_phase1_until_live_evidence_gate_clears" in restore.stdout
     assert "phase_gate_strict_validation_passed=True" in restore.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in restore.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in restore.stdout
     assert (data_dir / "reports/state_restore.md").exists()
     assert (data_dir / "ops/state_restore_summary.json").exists()
     assert read_json(data_dir / "ops/state_restore_summary.json")["restored"] is True
@@ -939,7 +939,7 @@ def test_daemon_manifest_state_export_restore_and_lifecycle_cli(tmp_path) -> Non
     assert "Paper Last Run Audit" in lifecycle.stdout
     assert "Paper Last Run Phase Gate" in lifecycle.stdout
     assert "Paper Last Run Execution Drift Overview" in lifecycle.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in lifecycle.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in lifecycle.stdout
 
 
 def test_daemon_dry_run_cli(tmp_path) -> None:
@@ -1036,7 +1036,7 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
     assert result.exit_code == 0
     assert "status=planned" in result.stdout
     assert "operation_chain=" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "ops/operation_manifests.jsonl").exists()
     assert '"overall_status": "ok"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
     assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
@@ -1201,7 +1201,7 @@ def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:
     assert "execution_drift_overview_status=degraded" in monitoring.stdout
     assert "readiness_next_phase_candidate=Stay Phase 1" in monitoring.stdout
     assert "operation_chain_exists=False" in monitoring.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in monitoring.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in monitoring.stdout
     assert comparison.exit_code == 0
     assert "Paper vs Backtest Comparison" in comparison.stdout
     assert "## Quick Navigation" in comparison.stdout
@@ -1211,7 +1211,7 @@ def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:
     assert "Paper Last Run Audit" in comparison.stdout
     assert "Paper Last Run Phase Gate" in comparison.stdout
     assert "Paper Last Run Execution Drift Overview" in comparison.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in comparison.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in comparison.stdout
 
 
 def test_build_backtest_cli_includes_audit_summary(tmp_path) -> None:
@@ -1394,7 +1394,7 @@ def test_build_backtest_cli_includes_audit_summary(tmp_path) -> None:
     assert '"cycle_history_latest_execution_summary"' in (
         data_dir / "research/backtest_metrics_summary.json"
     ).read_text(encoding="utf-8")
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_check_go_no_go_cli_includes_audit_summary_in_markdown(tmp_path) -> None:
@@ -1519,7 +1519,7 @@ def test_check_go_no_go_cli_includes_audit_summary_in_markdown(tmp_path) -> None
     assert "## Audit Timeline Latest Execution" in text
     assert "## Audit Bundle History Latest Execution" in text
     assert "## Cycle History Latest Execution" in text
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_build_evidence_card_cli_includes_audit_summary(tmp_path) -> None:
@@ -1651,7 +1651,7 @@ def test_build_evidence_card_cli_includes_audit_summary(tmp_path) -> None:
         payload["related_reports"]["paper_vs_backtest_comparison_report"]
         == str(data_dir / "reports/paper_vs_backtest_comparison.md")
     )
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_normalize_and_build_cost_matrix_cli(tmp_path) -> None:
@@ -1674,10 +1674,10 @@ def test_normalize_and_build_cost_matrix_cli(tmp_path) -> None:
     build = runner.invoke(app, ["build-cost-matrix"], env=env)
 
     assert normalize.exit_code == 0
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in normalize.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in normalize.stdout
     assert (data_dir / "normalized/quotes.parquet").exists()
     assert build.exit_code == 0
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in build.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in build.stdout
     assert (data_dir / "research/venue_cost_matrix.csv").exists()
     assert (data_dir / "reports/venue_cost_matrix.md").exists()
     assert (data_dir / "ops/venue_cost_matrix_summary.json").exists()
@@ -1750,10 +1750,10 @@ def test_build_event_calendar_and_check_research_quality_cli(tmp_path) -> None:
     quality = runner.invoke(app, ["check-research-quality"], env=env)
 
     assert event_calendar.exit_code == 0
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in event_calendar.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in event_calendar.stdout
     assert (data_dir / "research/event_calendar.parquet").exists()
     assert quality.exit_code == 0
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in quality.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in quality.stdout
     assert (data_dir / "research/research_quality_report.json").exists()
 
 
@@ -1798,11 +1798,11 @@ def test_check_halt_policy_and_validate_artifacts_cli(tmp_path) -> None:
 
     assert halt.exit_code == 0
     assert "gtrade_max_age_ms=" in halt.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in halt.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in halt.stdout
     assert validate.exit_code == 0
     assert "checked_files=6" in validate.stdout
     assert "issues=0" in validate.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in validate.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in validate.stdout
 
 
 def test_phase_gate_review_cli(tmp_path, monkeypatch) -> None:
@@ -1912,7 +1912,7 @@ def test_phase_gate_review_cli(tmp_path, monkeypatch) -> None:
     assert "phase_gate_review_report:" in result.stdout
     assert "## Related Reports" in result.stdout
     assert "go_no_go_report:" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/phase_gate_review.md").exists()
     assert (data_dir / "ops/phase_gate_review_summary.json").exists()
 
@@ -1961,7 +1961,7 @@ def test_ops_review_cli(tmp_path) -> None:
     assert "ops_review_report:" in result.stdout
     assert "## Related Reports" in result.stdout
     assert "operations_dashboard_report:" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/ops_review_report.md").exists()
     assert (data_dir / "ops/ops_review_summary.json").exists()
 
@@ -2035,7 +2035,7 @@ def test_operations_dashboard_cli(tmp_path) -> None:
     assert "phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in result.stdout
     assert "phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
     assert "- data/research/backtest_metrics_summary.json: missing field" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/operations_dashboard.md").exists()
     assert (data_dir / "ops/operations_dashboard_summary.json").exists()
     assert '"recommended_read_order"' in (data_dir / "ops/operations_dashboard_summary.json").read_text(encoding="utf-8")
@@ -2138,7 +2138,7 @@ def test_paper_operations_runbook_cli(tmp_path) -> None:
     assert "paper_operations_runbook_report:" in result.stdout
     assert "phase_gate_review_report: data/reports/phase_gate_review.md" in result.stdout
     assert "Review `data/reports/remediation_scoreboard.md`" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/paper_operations_runbook.md").exists()
     assert (data_dir / "ops/paper_operations_runbook_summary.json").exists()
     assert '"execution_summary"' in (data_dir / "ops/paper_operations_runbook_summary.json").read_text(
@@ -2195,7 +2195,7 @@ def test_remediation_planner_cli(tmp_path) -> None:
     assert "source_confidence: high" in result.stdout
     assert "observed_sources: ['stdout_stderr']" in result.stdout
     assert "feedback_priority_reason: evaluation_failed" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/remediation_planner.md").exists()
     assert (data_dir / "ops/remediation_planner_summary.json").exists()
     latest = latest_operation_manifest(data_dir / "ops/operation_manifests.jsonl")
@@ -2388,7 +2388,7 @@ def test_remediation_evidence_ingest_cli(tmp_path) -> None:
             "--result",
             "pass",
             "--evidence-path",
-            "docs/IMPLEMENTATION_STATUS.md",
+            "docs/CODE_STATUS.md",
             "--stdout-summary",
             "implementation status regenerated",
             "--exit-code",
@@ -3364,7 +3364,7 @@ def test_paper_cycle_history_cli(tmp_path) -> None:
     assert "latest_readiness_next_phase: Phase 1" in result.stdout
     assert "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
     assert "- data/research/backtest_metrics_summary.json: missing field" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/paper_cycle_history_report.md").exists()
     assert (data_dir / "ops/paper_cycle_history_summary.json").exists()
 
@@ -3396,7 +3396,7 @@ def test_execution_gap_history_cli(tmp_path) -> None:
     assert "latest_readiness_next_phase: Phase 1" in result.stdout
     assert (data_dir / "reports/execution_gap_history.md").exists()
     assert (data_dir / "ops/execution_gap_history_summary.json").exists()
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_execution_state_comparison_history_cli(tmp_path) -> None:
@@ -3428,7 +3428,7 @@ def test_execution_state_comparison_history_cli(tmp_path) -> None:
     assert "latest_status_match: False" in result.stdout
     assert (data_dir / "reports/execution_state_comparison_history.md").exists()
     assert (data_dir / "ops/execution_state_comparison_history_summary.json").exists()
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_execution_snapshot_drift_history_cli(tmp_path) -> None:
@@ -3460,7 +3460,7 @@ def test_execution_snapshot_drift_history_cli(tmp_path) -> None:
     assert "latest_execution_state_comparison_status_match: False" in result.stdout
     assert (data_dir / "reports/execution_snapshot_drift_history.md").exists()
     assert (data_dir / "ops/execution_snapshot_drift_history_summary.json").exists()
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_execution_drift_overview_cli(tmp_path) -> None:
@@ -3491,7 +3491,7 @@ def test_execution_drift_overview_cli(tmp_path) -> None:
     assert "overall_status: ok" in result.stdout
     assert (data_dir / "reports/execution_drift_overview.md").exists()
     assert (data_dir / "ops/execution_drift_overview_summary.json").exists()
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_operations_bundle_cli(tmp_path) -> None:
@@ -3542,7 +3542,7 @@ def test_operations_bundle_cli(tmp_path) -> None:
     assert "operations_bundle_report:" in result.stdout
     assert f"phase_gate_review_report: {data_dir / 'reports/phase_gate_review.md'}" in result.stdout
     assert "## Related Reports" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/operations_bundle_manifest.md").exists()
     assert (data_dir / "ops/operations_bundle_manifest.json").exists()
     assert '"recommended_read_order"' in (data_dir / "ops/operations_bundle_manifest.json").read_text(encoding="utf-8")
@@ -3604,7 +3604,7 @@ def test_current_state_index_cli(tmp_path) -> None:
     assert "remediation_scoreboard_report:" in result.stdout
     assert (data_dir / "reports/current_state_index.md").exists()
     assert (data_dir / "ops/current_state_index.json").exists()
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_readiness_snapshot_cli(tmp_path) -> None:
@@ -3661,7 +3661,7 @@ def test_readiness_snapshot_cli(tmp_path) -> None:
     assert "current_state_index_report:" in result.stdout
     assert (data_dir / "reports/readiness_snapshot.md").exists()
     assert (data_dir / "ops/readiness_snapshot.json").exists()
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
 def test_operations_timeline_cli(tmp_path) -> None:
@@ -3703,7 +3703,7 @@ def test_operations_timeline_cli(tmp_path) -> None:
     assert "operations_timeline_report:" in result.stdout
     assert "## Related Reports" in result.stdout
     assert "operations_dashboard_report:" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/operations_timeline_report.md").exists()
     assert (data_dir / "ops/operations_timeline_summary.json").exists()
 
@@ -3756,7 +3756,7 @@ def test_operations_audit_pack_cli(tmp_path) -> None:
     assert "operations_audit_pack_report:" in result.stdout
     assert f"phase_gate_review_report: {data_dir / 'reports/phase_gate_review.md'}" in result.stdout
     assert "## Related Reports" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/operations_audit_pack.md").exists()
     assert (data_dir / "ops/operations_audit_pack.json").exists()
     latest = latest_operation_manifest(data_dir / "ops/operation_manifests.jsonl")
@@ -3814,7 +3814,7 @@ def test_audit_timeline_cli(tmp_path) -> None:
     assert "audit_timeline_report:" in result.stdout
     assert "## Related Reports" in result.stdout
     assert "audit_dashboard_report:" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/audit_timeline_report.md").exists()
     assert (data_dir / "ops/audit_timeline_summary.json").exists()
 
@@ -3864,7 +3864,7 @@ def test_audit_dashboard_cli(tmp_path) -> None:
     assert "phase2_entry_allowed: False" in result.stdout
     assert "phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
     assert "- data/research/backtest_metrics_summary.json: missing field" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/audit_dashboard.md").exists()
     assert (data_dir / "ops/audit_dashboard_summary.json").exists()
 
@@ -3921,7 +3921,7 @@ def test_audit_bundle_cli(tmp_path) -> None:
     assert "## Quick Navigation" in result.stdout
     assert "audit_bundle_report:" in result.stdout
     assert "## Related Reports" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/audit_bundle_manifest.md").exists()
     assert (data_dir / "ops/audit_bundle_manifest.json").exists()
     latest = latest_operation_manifest(data_dir / "ops/operation_manifests.jsonl")
@@ -3984,7 +3984,7 @@ def test_audit_bundle_history_cli(tmp_path) -> None:
     assert "audit_bundle_history_report:" in result.stdout
     assert "## Related Reports" in result.stdout
     assert "audit_dashboard_report:" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/audit_bundle_history_report.md").exists()
     assert (data_dir / "ops/audit_bundle_history_summary.json").exists()
 
@@ -4070,7 +4070,7 @@ def test_refresh_operations_artifacts_cli(tmp_path) -> None:
     assert "remediation_evaluator_path=" in result.stdout
     assert "remediation_evidence_path=" in result.stdout
     assert "remediation_command_results_path=" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert "readiness_snapshot_path=" in result.stdout
     assert (data_dir / "reports/weekly_strategy_review.md").exists()
     assert (data_dir / "reports/paper_vs_backtest_comparison.md").exists()
@@ -4243,7 +4243,7 @@ def test_paper_operations_cycle_cli(tmp_path) -> None:
     assert "phase_gate_review_path=" in result.stdout
     assert "current_state_index_path=" in result.stdout
     assert "readiness_snapshot_path=" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "paper/orders.parquet").exists()
     assert (data_dir / "reports/operations_dashboard.md").exists()
     assert (data_dir / "reports/execution_state_comparison_history.md").exists()
@@ -4379,7 +4379,7 @@ def test_reconcile_positions_cli_records_result(tmp_path) -> None:
     assert result.exit_code == 0
     assert "matched=1" in result.stdout
     assert "missing_in_adapter=0" in result.stdout
-    assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/execution_reconcile_positions.md").exists()
     reconcile_summary = read_json(data_dir / "ops/execution_reconcile_positions_summary.json")
     assert reconcile_summary["matched"] == 1

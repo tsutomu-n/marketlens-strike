@@ -37,4 +37,4 @@ def test_build_execution_snapshot_report(tmp_path) -> None:
     assert summary["execution_overall_status"] == "ok"
     assert summary["execution_venue_count"] == 1
     assert summary["execution_report_path"] == str(tmp_path / "execution_snapshot.md")
-    assert summary["recommended_read_order"][0] == "docs/ACCEPTANCE_AUDIT.md"
+    assert summary["recommended_read_order"][0] == "docs/CURRENT_STATE.md"
