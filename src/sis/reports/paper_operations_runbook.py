@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TypedDict
 
 from sis.reports.doc_paths import CODE_STATUS_DOC
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
@@ -110,17 +111,20 @@ def _related_reports(summary: dict[str, object]) -> dict[str, str]:
 
 
 def _quick_navigation(summary: dict[str, object]) -> dict[str, str]:
+    related_reports = summary.get("related_reports")
+    if not isinstance(related_reports, dict):
+        related_reports = {}
     items = (
         (
             "paper_operations_runbook_report",
             summary.get("paper_operations_runbook_report_path"),
         ),
-        ("readiness_snapshot_report", summary["related_reports"].get("readiness_snapshot_report")),
-        ("current_state_index_report", summary["related_reports"].get("current_state_index_report")),
+        ("readiness_snapshot_report", related_reports.get("readiness_snapshot_report")),
+        ("current_state_index_report", related_reports.get("current_state_index_report")),
         ("phase_gate_review_report", summary.get("phase_gate_review_report_path")),
         (
             "remediation_scoreboard_report",
-            summary["related_reports"].get("remediation_scoreboard_report"),
+            related_reports.get("remediation_scoreboard_report"),
         ),
         ("live_evidence_report", summary.get("live_evidence_report_path")),
     )
@@ -147,10 +151,35 @@ def _required_artifact_paths(summary: dict[str, object]) -> dict[str, str | None
         "phase_gate_summary_path",
         "ops_dashboard_summary_path",
     )
-    return {
-        key: summary.get(key) if isinstance(summary.get(key), str) else None
-        for key in artifact_keys
-    }
+    paths: dict[str, str | None] = {}
+    for key in artifact_keys:
+        value = summary.get(key)
+        paths[key] = value if isinstance(value, str) else None
+    return paths
+
+
+def _as_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None
+
+
+class RemediationStep(TypedDict):
+    priority: int
+    reason: str
+    commands: list[str]
 
 
 def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str]]:
@@ -179,8 +208,8 @@ def _remediation_order(
     summary: dict[str, object],
     missing_required_artifact_paths: list[str],
     artifact_recovery_commands: dict[str, list[str]],
-) -> list[dict[str, object]]:
-    steps: list[dict[str, object]] = []
+) -> list[RemediationStep]:
+    steps: list[RemediationStep] = []
     if missing_required_artifact_paths:
         commands: list[str] = []
         for name in missing_required_artifact_paths:
@@ -192,7 +221,10 @@ def _remediation_order(
                 "commands": list(dict.fromkeys(commands)),
             }
         )
-    if int(summary.get("phase_gate_strict_validation_issue_count") or 0) > 0:
+    phase_gate_strict_validation_issue_count = (
+        _as_int(summary.get("phase_gate_strict_validation_issue_count")) or 0
+    )
+    if phase_gate_strict_validation_issue_count > 0:
         steps.append(
             {
                 "priority": 2,
@@ -396,7 +428,7 @@ def _remediation_signal_snapshot_before(
 
 
 def _remediation_signal_snapshot_target(reason: str) -> dict[str, object]:
-    snapshot_map = {
+    snapshot_map: dict[str, dict[str, object]] = {
         "missing_required_artifacts": {
             "missing_required_artifact_paths": [],
             "required_artifact_paths_non_null": True,
@@ -638,7 +670,7 @@ def build_paper_operations_runbook(
         str(item["reason"]): recommend_remediation_actions(
             remediation_signal_snapshot_diffs.get(str(item["reason"])),
             preflight_commands=remediation_preflight_commands.get(str(item["reason"]), []),
-            execute_commands=item["commands"],
+            execute_commands=item.get("commands"),
             postcheck_commands=remediation_postcheck_commands.get(str(item["reason"]), []),
             source_confidence=(
                 current_provenance_hints.get(str(item["reason"]), {}).get("source_confidence")
@@ -692,8 +724,10 @@ def build_paper_operations_runbook(
     summary["remediation_recommendations"] = remediation_recommendations
     summary["paper_operations_runbook_report_path"] = str(out_path) if out_path is not None else None
     summary["live_evidence_report_path"] = readiness.get("live_evidence_report_path")
-    summary["related_reports"] = _related_reports(summary)
-    summary["quick_navigation"] = _quick_navigation(summary)
+    related_reports = _related_reports(summary)
+    quick_navigation = _quick_navigation({**summary, "related_reports": related_reports})
+    summary["related_reports"] = related_reports
+    summary["quick_navigation"] = quick_navigation
 
     lines = [
         "# Scheduled Paper Operations Runbook",
@@ -801,7 +835,7 @@ def build_paper_operations_runbook(
         "## Quick Navigation",
         "",
     ]
-    for key, value in summary["quick_navigation"].items():
+    for key, value in quick_navigation.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -810,7 +844,7 @@ def build_paper_operations_runbook(
         "",
     ]
     )
-    for key, value in summary["related_reports"].items():
+    for key, value in related_reports.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
