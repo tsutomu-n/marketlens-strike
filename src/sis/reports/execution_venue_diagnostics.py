@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import safe_read_json_dict
 from sis.storage.jsonl_store import write_json
 
@@ -145,15 +146,15 @@ def build_execution_venue_diagnostics_report(
         "artifacts": {
             "execution_venue_comparison_summary": str(execution_venue_comparison_summary_path),
         },
-        "recommended_read_order": [
-            "docs/ACCEPTANCE_AUDIT.md",
-            "docs/IMPLEMENTATION_STATUS.md",
+        "recommended_read_order": recommended_read_order(
+            [
             "data/ops/execution_venue_diagnostics_summary.json",
             "data/ops/execution_venue_comparison_summary.json",
             "data/ops/execution_snapshot_summary.json",
             "data/ops/current_state_index.json",
             "data/ops/readiness_snapshot.json",
-        ],
+            ]
+        ),
         "quick_navigation": _quick_navigation(out_path),
         "related_reports": _related_reports(out_path),
     }

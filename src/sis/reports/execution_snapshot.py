@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.doc_paths import recommended_read_order
 from sis.storage.jsonl_store import write_json
 
 
@@ -55,14 +56,14 @@ def build_execution_snapshot_report(
         "execution_venue_count": len(venue_snapshots),
         "execution_report_path": str(out_path) if out_path is not None else None,
         "venues": venue_snapshots,
-        "recommended_read_order": [
-            "docs/ACCEPTANCE_AUDIT.md",
-            "docs/IMPLEMENTATION_STATUS.md",
-            "data/ops/execution_snapshot_summary.json",
-            "data/ops/current_state_index.json",
-            "data/ops/operations_dashboard_summary.json",
-            "data/ops/phase_gate_review_summary.json",
-        ],
+        "recommended_read_order": recommended_read_order(
+            [
+                "data/ops/execution_snapshot_summary.json",
+                "data/ops/current_state_index.json",
+                "data/ops/operations_dashboard_summary.json",
+                "data/ops/phase_gate_review_summary.json",
+            ]
+        ),
         "quick_navigation": _quick_navigation(out_path),
         "related_reports": _related_reports(out_path),
     }

@@ -2,18 +2,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.doc_paths import recommended_read_order
 from sis.storage.jsonl_store import write_json
 
 
 def _recommended_read_order() -> list[str]:
-    return [
-        "docs/ACCEPTANCE_AUDIT.md",
-        "docs/IMPLEMENTATION_STATUS.md",
-        "data/ops/operations_dashboard_summary.json",
-        "data/ops/current_state_index.json",
-        "data/ops/readiness_snapshot.json",
-        "data/ops/phase_gate_review_summary.json",
-    ]
+    return recommended_read_order(
+        [
+            "data/ops/operations_dashboard_summary.json",
+            "data/ops/current_state_index.json",
+            "data/ops/readiness_snapshot.json",
+            "data/ops/phase_gate_review_summary.json",
+        ]
+    )
 
 
 def _quick_navigation(out_path: Path | None) -> dict[str, str]:

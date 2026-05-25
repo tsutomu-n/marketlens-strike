@@ -43,6 +43,7 @@ from sis.reports.audit_bundle_history import build_audit_bundle_history_report
 from sis.reports.audit_bundle import build_audit_bundle_manifest
 from sis.reports.comparison import build_paper_live_comparison_report
 from sis.reports.current_state_index import build_current_state_index
+from sis.reports.doc_paths import CODE_STATUS_DOC, recommended_read_order
 from sis.reports.execution_drift_overview import build_execution_drift_overview_report
 from sis.reports.execution_adapter_status import (
     build_action_status_report,
@@ -933,15 +934,15 @@ def _recommended_read_order(settings_data_dir: Path) -> list[str]:
             order = payload.get("recommended_read_order")
             if isinstance(order, list):
                 return [str(item) for item in order]
-    return [
-        "docs/ACCEPTANCE_AUDIT.md",
-        "docs/IMPLEMENTATION_STATUS.md",
-        "data/ops/execution_snapshot_summary.json",
-        "data/ops/operations_dashboard_summary.json",
-        "data/ops/audit_dashboard_summary.json",
-        "data/ops/operations_bundle_manifest.json",
-        "data/ops/audit_bundle_manifest.json",
-    ]
+    return recommended_read_order(
+        [
+            "data/ops/execution_snapshot_summary.json",
+            "data/ops/operations_dashboard_summary.json",
+            "data/ops/audit_dashboard_summary.json",
+            "data/ops/operations_bundle_manifest.json",
+            "data/ops/audit_bundle_manifest.json",
+        ]
+    )
 
 
 def _write_ops_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
@@ -4405,7 +4406,7 @@ def build_evidence_card_cmd() -> None:
 def implementation_status(write: bool = typer.Option(False, "--write")) -> None:
     settings = get_settings()
     if write:
-        out = Path("docs/IMPLEMENTATION_STATUS.md")
+        out = Path(CODE_STATUS_DOC)
         write_implementation_status(out)
         logger.info("written: {}", out)
     for item in implementation_status_items():
