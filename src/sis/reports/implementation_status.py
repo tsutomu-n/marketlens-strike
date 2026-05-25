@@ -85,6 +85,7 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
     StatusItem("Epic 60", "Ops command artifacts", "DONE", "healthcheck, kill-switch, schedule-run, and render-alert now write restart-friendly report and summary artifacts without changing their existing stdout surface"),
     StatusItem("Epic 61", "State and daemon command artifacts", "DONE", "daemon-manifest, export-state, and restore-state now write restart-friendly report and summary artifacts without changing their existing stdout surface"),
     StatusItem("Epic 62", "State and daemon artifact aggregation", "DONE", "operations-dashboard, current-state-index, and readiness-snapshot now surface latest daemon-manifest, export-state, and restore-state artifacts when those summaries exist"),
+    StatusItem("Epic 63", "Ostium margin-summary balance fallback", "DONE", "ostium execution balance now reuses positions sidecar margin_summary when no dedicated balance snapshot exists, and margin_used/notional/unrealized-pnl/cumulative-rollover propagate through execution adapter artifacts and top-level restart/readiness summaries"),
 ]
 
 

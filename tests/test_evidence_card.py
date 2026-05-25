@@ -209,4 +209,9 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
     assert "Liquidation reference complete" in [
         item["criterion"] for item in card["criteria"]
     ]
+    assert next(
+        item["result"]
+        for item in card["criteria"]
+        if item["criterion"] == "Liquidation reference complete"
+    ) == "PASS"
     assert "Ostium liquidation reference requires real open position data" not in json.dumps(card)

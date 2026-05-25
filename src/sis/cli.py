@@ -1164,6 +1164,26 @@ def _execution_read_only_surface_for_venue(
     fills_limit: int = 20,
     order_limit: int = 20,
 ) -> dict[str, object]:
+    def _float_or_none(value: object) -> float | None:
+        if isinstance(value, int | float):
+            return float(value)
+        if isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return None
+        return None
+
+    def _int_or_none(value: object) -> int | None:
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except ValueError:
+                return None
+        return None
+
     adapter = _adapter_for_venue(settings_data_dir, venue)
     balance = adapter.read_balance()
     positions = adapter.read_positions()
@@ -1184,6 +1204,83 @@ def _execution_read_only_surface_for_venue(
     reconciliation = reconcile_positions(internal_positions, positions)
     latest_fill = fills[0].__dict__ if fills else {}
     latest_order_status = order_statuses[0].__dict__ if order_statuses else {}
+    positions_server_time_ms = None
+    positions_notional_usd_total = None
+    positions_unrealized_pnl_usd_total = None
+    positions_collateral_used_usd_total = None
+    positions_max_withdrawable_usd_total = None
+    positions_average_leverage = None
+    positions_latest_open_timestamp_ms = None
+    if venue == "ostium":
+        positions_path = latest_positions_sidecar(settings_data_dir / "raw/sidecar/ostium")
+        if positions_path is not None:
+            payload = read_json(positions_path)
+            if isinstance(payload, dict):
+                positions_rows = payload.get("positions", [])
+                if isinstance(positions_rows, list):
+                    notional_values = [
+                        value
+                        for item in positions_rows
+                        if isinstance(item, dict)
+                        for value in [_float_or_none(item.get("notional_usd"))]
+                        if value is not None
+                    ]
+                    unrealized_values = [
+                        value
+                        for item in positions_rows
+                        if isinstance(item, dict)
+                        for value in [_float_or_none(item.get("unrealized_pnl_usd"))]
+                        if value is not None
+                    ]
+                    collateral_values = [
+                        value
+                        for item in positions_rows
+                        if isinstance(item, dict)
+                        for value in [_float_or_none(item.get("collateral_used_usd"))]
+                        if value is not None
+                    ]
+                    withdrawable_values = [
+                        value
+                        for item in positions_rows
+                        if isinstance(item, dict)
+                        for value in [_float_or_none(item.get("max_withdrawable_usd"))]
+                        if value is not None
+                    ]
+                    leverage_values = [
+                        value
+                        for item in positions_rows
+                        if isinstance(item, dict)
+                        for value in [_float_or_none(item.get("leverage"))]
+                        if value is not None
+                    ]
+                    open_timestamps = [
+                        value
+                        for item in positions_rows
+                        if isinstance(item, dict)
+                        for value in [_int_or_none(item.get("open_timestamp_ms"))]
+                        if value is not None
+                    ]
+                    positions_notional_usd_total = (
+                        sum(notional_values) if notional_values else None
+                    )
+                    positions_unrealized_pnl_usd_total = (
+                        sum(unrealized_values) if unrealized_values else None
+                    )
+                    positions_collateral_used_usd_total = (
+                        sum(collateral_values) if collateral_values else None
+                    )
+                    positions_max_withdrawable_usd_total = (
+                        sum(withdrawable_values) if withdrawable_values else None
+                    )
+                    positions_average_leverage = (
+                        sum(leverage_values) / len(leverage_values)
+                        if leverage_values
+                        else None
+                    )
+                    positions_latest_open_timestamp_ms = (
+                        max(open_timestamps) if open_timestamps else None
+                    )
+                positions_server_time_ms = _int_or_none(payload.get("server_time_ms"))
     return {
         "venue": venue,
         "balance_snapshot_exists": health.get("balance_snapshot_exists"),
@@ -1193,6 +1290,10 @@ def _execution_read_only_surface_for_venue(
         "currency": balance.get("currency"),
         "equity": balance.get("equity"),
         "available_cash": balance.get("available_cash"),
+        "margin_used": balance.get("margin_used"),
+        "notional_usd": balance.get("notional_usd"),
+        "unrealized_pnl": balance.get("unrealized_pnl"),
+        "cumulative_rollover_usd": balance.get("cumulative_rollover_usd"),
         "fills_count": len(fills),
         "latest_fill_id": latest_fill.get("fill_id"),
         "latest_fill_status": latest_fill.get("status"),
@@ -1200,6 +1301,13 @@ def _execution_read_only_surface_for_venue(
         "latest_order_id": latest_order_status.get("order_id"),
         "latest_order_status": latest_order_status.get("status"),
         "positions_count": len(positions),
+        "positions_server_time_ms": positions_server_time_ms,
+        "positions_notional_usd_total": positions_notional_usd_total,
+        "positions_unrealized_pnl_usd_total": positions_unrealized_pnl_usd_total,
+        "positions_collateral_used_usd_total": positions_collateral_used_usd_total,
+        "positions_max_withdrawable_usd_total": positions_max_withdrawable_usd_total,
+        "positions_average_leverage": positions_average_leverage,
+        "positions_latest_open_timestamp_ms": positions_latest_open_timestamp_ms,
         "reconcile_matched": reconciliation.matched,
         "reconcile_missing_in_adapter_count": len(reconciliation.missing_in_adapter),
         "reconcile_missing_in_internal_count": len(reconciliation.missing_in_internal),

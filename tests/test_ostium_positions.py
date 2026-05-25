@@ -33,7 +33,7 @@ def test_positions_have_liquidation_reference_rejects_empty_probe(tmp_path) -> N
 
 def test_latest_positions_sidecar_returns_newest_file(tmp_path) -> None:
     old_path = tmp_path / "positions_0xabc_2026-05-21.json"
-    new_path = tmp_path / "positions_0xabc_2026-05-22.json"
+    new_path = tmp_path / "positions_all_2026-05-22.json"
     write_json(old_path, {"positions": []})
     write_json(new_path, {"positions": []})
 

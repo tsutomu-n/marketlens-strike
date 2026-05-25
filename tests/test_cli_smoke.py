@@ -189,6 +189,45 @@ def test_balance_status_cli_for_gtrade(tmp_path) -> None:
     assert balance_summary["equity"] == 1500.0
 
 
+def test_balance_status_cli_for_ostium_uses_positions_margin_summary(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    registry = data_dir / "registry/ostium_instrument_registry.json"
+    positions_root = data_dir / "raw/sidecar/ostium"
+    positions_root.mkdir(parents=True, exist_ok=True)
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text("[]", encoding="utf-8")
+    (positions_root / "positions_all_2026-05-24.json").write_text(
+        (
+            '{"positions":[],"margin_summary":{"accountValue":"2184177.7575539993",'
+            '"totalCollateralUsed":"2158493.9945829986",'
+            '"totalNtlPos":"24214944.037214246",'
+            '"totalWithdrawable":"1752150.3245409152",'
+            '"totalRawPnlUsd":"25683.762970999986",'
+            '"totalCumRollover":"-1639.0377230000001"}}'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        ["balance-status", "--venue", "ostium"],
+        env={"SIS_DATA_DIR": str(data_dir)},
+    )
+
+    assert result.exit_code == 0
+    assert "venue=ostium" in result.stdout
+    assert "equity=2184177.7575539993" in result.stdout
+    assert "available_cash=1752150.3245409152" in result.stdout
+    assert "margin_used=2158493.9945829986" in result.stdout
+    assert "notional_usd=24214944.037214246" in result.stdout
+    assert "unrealized_pnl=25683.762970999986" in result.stdout
+    assert "cumulative_rollover_usd=-1639.0377230000001" in result.stdout
+    assert "balance_snapshot_exists=False" in result.stdout
+    balance_summary = read_json(data_dir / "ops/execution_balance_status_summary.json")
+    assert balance_summary["margin_used"] == 2158493.9945829986
+    assert balance_summary["notional_usd"] == 24214944.037214246
+
+
 def test_fill_status_cli_for_gtrade(tmp_path) -> None:
     data_dir = tmp_path / "data"
     execution = data_dir / "execution"

@@ -818,6 +818,10 @@ def test_build_operations_dashboard(tmp_path) -> None:
             "currency": "USD",
             "equity": 1500.0,
             "available_cash": 1200.0,
+            "margin_used": 300.0,
+            "notional_usd": 5000.0,
+            "unrealized_pnl": 25.0,
+            "cumulative_rollover_usd": -1.5,
             "balance_snapshot_exists": True,
             "balance_status_report_path": "data/reports/execution_balance_status.md",
         },
@@ -1042,6 +1046,10 @@ def test_build_operations_dashboard(tmp_path) -> None:
     assert "state_export_phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
     assert "state_restore_restored: True" in report
     assert "execution_balance_status_equity: 1500.0" in report
+    assert "execution_balance_status_margin_used: 300.0" in report
+    assert "execution_balance_status_notional_usd: 5000.0" in report
+    assert "execution_balance_status_unrealized_pnl: 25.0" in report
+    assert "execution_balance_status_cumulative_rollover_usd: -1.5" in report
     assert "execution_fill_status_latest_fill_id: fill-1" in report
     assert "execution_order_status_status: working" in report
     assert "execution_cancel_order_status: blocked_read_only" in report
@@ -1143,6 +1151,10 @@ def test_build_operations_dashboard(tmp_path) -> None:
     assert summary["execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
     assert summary["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
     assert summary["execution_balance_status_equity"] == 1500.0
+    assert summary["execution_balance_status_margin_used"] == 300.0
+    assert summary["execution_balance_status_notional_usd"] == 5000.0
+    assert summary["execution_balance_status_unrealized_pnl"] == 25.0
+    assert summary["execution_balance_status_cumulative_rollover_usd"] == -1.5
     assert summary["execution_fill_status_latest_fill_id"] == "fill-1"
     assert summary["execution_order_status_status"] == "working"
     assert summary["execution_cancel_order_status"] == "blocked_read_only"
@@ -1184,6 +1196,10 @@ def test_build_current_state_index(tmp_path) -> None:
             "execution_balance_status_currency": "USD",
             "execution_balance_status_equity": 1500.0,
             "execution_balance_status_available_cash": 1200.0,
+            "execution_balance_status_margin_used": 300.0,
+            "execution_balance_status_notional_usd": 5000.0,
+            "execution_balance_status_unrealized_pnl": 25.0,
+            "execution_balance_status_cumulative_rollover_usd": -1.5,
             "execution_fill_status_fills_count": 1,
             "execution_fill_status_latest_fill_id": "fill-1",
             "execution_fill_status_latest_fill_status": "filled",
@@ -1643,6 +1659,10 @@ def test_build_readiness_snapshot(tmp_path) -> None:
             "execution_balance_status_currency": "USD",
             "execution_balance_status_equity": 1500.0,
             "execution_balance_status_available_cash": 1200.0,
+            "execution_balance_status_margin_used": 300.0,
+            "execution_balance_status_notional_usd": 5000.0,
+            "execution_balance_status_unrealized_pnl": 25.0,
+            "execution_balance_status_cumulative_rollover_usd": -1.5,
             "execution_fill_status_fills_count": 1,
             "execution_fill_status_latest_fill_id": "fill-1",
             "execution_fill_status_latest_fill_status": "filled",
@@ -1786,6 +1806,10 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["timeline_latest_remediation_execution_plan_next_action_command"] == "uv run sis diagnose-quotes"
     assert summary["timeline_latest_remediation_scoreboard_feedback_priority_reason"] == "evaluation_failed"
     assert summary["execution_balance_status_equity"] == 1500.0
+    assert summary["execution_balance_status_margin_used"] == 300.0
+    assert summary["execution_balance_status_notional_usd"] == 5000.0
+    assert summary["execution_balance_status_unrealized_pnl"] == 25.0
+    assert summary["execution_balance_status_cumulative_rollover_usd"] == -1.5
     assert summary["execution_fill_status_latest_fill_id"] == "fill-1"
     assert summary["execution_order_status_status"] == "working"
     assert summary["execution_cancel_order_status"] == "blocked_read_only"
@@ -2096,6 +2120,10 @@ def test_build_execution_balance_status_report(tmp_path) -> None:
             "currency": "USD",
             "equity": 1500.0,
             "available_cash": 1200.0,
+            "margin_used": 300.0,
+            "notional_usd": 5000.0,
+            "unrealized_pnl": 25.0,
+            "cumulative_rollover_usd": -1.5,
             "balance_snapshot_exists": True,
             "mode": "read_only",
         },
@@ -2108,6 +2136,10 @@ def test_build_execution_balance_status_report(tmp_path) -> None:
     summary = read_json(summary_path)
     assert summary["venue"] == "gtrade"
     assert summary["equity"] == 1500.0
+    assert summary["margin_used"] == 300.0
+    assert summary["notional_usd"] == 5000.0
+    assert summary["unrealized_pnl"] == 25.0
+    assert summary["cumulative_rollover_usd"] == -1.5
     assert summary["quick_navigation"]["execution_adapter_report"] == str(out_path)
 
 
@@ -2219,6 +2251,11 @@ def test_build_execution_read_only_surfaces_report(tmp_path) -> None:
                 "fills_snapshot_exists": True,
                 "order_status_snapshot_exists": True,
                 "equity": 1500.0,
+                "available_cash": 1200.0,
+                "margin_used": 300.0,
+                "notional_usd": 5000.0,
+                "unrealized_pnl": 25.0,
+                "cumulative_rollover_usd": -1.5,
                 "fills_count": 1,
                 "latest_fill_id": "fill-1",
                 "order_status_count": 1,
@@ -2235,7 +2272,12 @@ def test_build_execution_read_only_surfaces_report(tmp_path) -> None:
                 "positions_snapshot_exists": True,
                 "fills_snapshot_exists": False,
                 "order_status_snapshot_exists": False,
-                "equity": None,
+                "equity": 2184177.7575539993,
+                "available_cash": 1752150.3245409152,
+                "margin_used": 2158493.9945829986,
+                "notional_usd": 24214944.037214246,
+                "unrealized_pnl": 25683.762970999986,
+                "cumulative_rollover_usd": -1639.0377230000001,
                 "fills_count": 0,
                 "latest_fill_id": None,
                 "order_status_count": 0,
@@ -2254,6 +2296,11 @@ def test_build_execution_read_only_surfaces_report(tmp_path) -> None:
     assert "Execution Read Only Surfaces" in text
     assert "venue_count: 2" in text
     assert "venue_gtrade_latest_fill_id: fill-1" in text
+    assert "venue_ostium_available_cash: 1752150.3245409152" in text
+    assert "venue_ostium_margin_used: 2158493.9945829986" in text
+    assert "venue_ostium_notional_usd: 24214944.037214246" in text
+    assert "venue_ostium_unrealized_pnl: 25683.762970999986" in text
+    assert "venue_ostium_cumulative_rollover_usd: -1639.0377230000001" in text
     summary = read_json(summary_path)
     assert summary["venue_count"] == 2
     assert summary["with_positions_snapshot_count"] == 2

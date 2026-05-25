@@ -60,6 +60,24 @@ class OstiumExecutionAdapter:
             return []
         return self._fills_from_payload(read_json(self._fills_snapshot_path))
 
+    @staticmethod
+    def _float_or_none(value: object) -> float | None:
+        if isinstance(value, int | float):
+            return float(value)
+        if isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return None
+        return None
+
+    def _latest_positions_payload(self) -> dict | None:
+        path = latest_positions_sidecar(self._positions_root)
+        if path is None:
+            return None
+        payload = read_json(path)
+        return payload if isinstance(payload, dict) else None
+
     def read_balance(self) -> dict:
         snapshot = self._balance_snapshot
         snapshot_exists = False
@@ -68,6 +86,30 @@ class OstiumExecutionAdapter:
             if isinstance(payload, dict):
                 snapshot = payload
                 snapshot_exists = True
+        else:
+            positions_payload = self._latest_positions_payload()
+            margin_summary = positions_payload.get("margin_summary") if positions_payload else None
+            if isinstance(margin_summary, dict):
+                snapshot = {
+                    **snapshot,
+                    "currency": str(snapshot.get("currency") or "USD"),
+                    "equity": self._float_or_none(margin_summary.get("accountValue")),
+                    "available_cash": self._float_or_none(
+                        margin_summary.get("totalWithdrawable")
+                    ),
+                    "margin_used": self._float_or_none(
+                        margin_summary.get("totalCollateralUsed")
+                    ),
+                    "notional_usd": self._float_or_none(
+                        margin_summary.get("totalNtlPos")
+                    ),
+                    "unrealized_pnl": self._float_or_none(
+                        margin_summary.get("totalRawPnlUsd")
+                    ),
+                    "cumulative_rollover_usd": self._float_or_none(
+                        margin_summary.get("totalCumRollover")
+                    ),
+                }
         return {
             "venue": self.adapter_name,
             **snapshot,
@@ -76,10 +118,7 @@ class OstiumExecutionAdapter:
         }
 
     def read_positions(self) -> list[AdapterPositionSnapshot]:
-        path = latest_positions_sidecar(self._positions_root)
-        if path is None:
-            return []
-        payload = read_json(path)
+        payload = self._latest_positions_payload()
         positions = payload.get("positions", []) if isinstance(payload, dict) else []
         snapshots: list[AdapterPositionSnapshot] = []
         for item in positions:

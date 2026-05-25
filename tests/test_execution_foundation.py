@@ -157,7 +157,7 @@ def test_ostium_execution_adapter_reads_positions_and_estimates(tmp_path) -> Non
         ],
     )
     write_json(
-        positions_root / "positions_2026-05-24.json",
+        positions_root / "positions_all_2026-05-24.json",
         {
             "positions": [
                 {
@@ -203,6 +203,41 @@ def test_ostium_execution_adapter_reads_balance_snapshot_file(tmp_path) -> None:
     assert balance["equity"] == 2222.0
     assert balance["margin_used"] == 150.0
     assert balance["balance_snapshot_exists"] is True
+
+
+def test_ostium_execution_adapter_infers_balance_from_positions_sidecar(tmp_path) -> None:
+    registry_path = tmp_path / "ostium_registry.json"
+    positions_root = tmp_path / "raw/sidecar/ostium"
+    write_json(registry_path, [])
+    write_json(
+        positions_root / "positions_all_2026-05-24.json",
+        {
+            "positions": [],
+            "margin_summary": {
+                "accountValue": "2184177.7575539993",
+                "totalCollateralUsed": "2158493.9945829986",
+                "totalNtlPos": "24214944.037214246",
+                "totalWithdrawable": "1752150.3245409152",
+                "totalRawPnlUsd": "25683.762970999986",
+                "totalCumRollover": "-1639.0377230000001",
+            },
+        },
+    )
+    adapter = OstiumExecutionAdapter(
+        registry_path=registry_path,
+        positions_root=positions_root,
+    )
+
+    balance = adapter.read_balance()
+
+    assert balance["venue"] == "ostium"
+    assert balance["equity"] == 2184177.7575539993
+    assert balance["available_cash"] == 1752150.3245409152
+    assert balance["margin_used"] == 2158493.9945829986
+    assert balance["notional_usd"] == 24214944.037214246
+    assert balance["unrealized_pnl"] == 25683.762970999986
+    assert balance["cumulative_rollover_usd"] == -1639.0377230000001
+    assert balance["balance_snapshot_exists"] is False
 
 
 def test_ostium_execution_adapter_reads_fill_snapshot_file(tmp_path) -> None:

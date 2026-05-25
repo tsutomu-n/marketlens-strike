@@ -6,7 +6,12 @@ from sis.storage.jsonl_store import read_json
 
 
 def latest_positions_sidecar(raw_sidecar_dir: Path) -> Path | None:
-    files = sorted(raw_sidecar_dir.glob("positions_*.json"))
+    files = sorted(
+        [
+            *raw_sidecar_dir.glob("positions_*.json"),
+            *raw_sidecar_dir.glob("positions_all_*.json"),
+        ]
+    )
     return files[-1] if files else None
 
 
