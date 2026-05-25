@@ -6,8 +6,6 @@
 # Local agent/workflow state
 .codex/SP_STATE.md
 .ai_memory/
-.serena/
-.codex/
 
 # Python
 .venv/
@@ -33,10 +31,14 @@ data/
 *.parquet
 *.duckdb
 *.duckdb.wal
+!tests/fixtures/**/*.parquet
+!tests/fixtures/**/*.duckdb
 
 # Logs and temporary files
 logs/live_evidence/*.log
 logs/live_evidence/*.out
+logs/live_evidence/manifests/
+logs/live_evidence/summaries/
 *.log
 tmp/
 temp/
