@@ -64,14 +64,35 @@ def _stage_rank(value: object) -> int:
 
 
 def _action_priority_key(item: dict) -> tuple[int, int, int, int, int, str]:
+    effective_priority = _as_int(item.get("effective_priority"))
+    priority = _as_int(item.get("priority"))
+    sequence = _as_int(item.get("sequence")) or 0
     return (
-        int(item.get("effective_priority") or item.get("priority") or 999),
-        int(item.get("priority") or 999),
+        effective_priority if effective_priority is not None else (priority if priority is not None else 999),
+        priority if priority is not None else 999,
         _stage_rank(item.get("stage")),
         _confidence_rank(item.get("stage_signal_confidence")),
-        int(item.get("sequence") or 0),
+        sequence,
         str(item.get("action_key") or ""),
     )
+
+
+def _as_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None
 
 
 def _observed_source_counts(actions: list[dict]) -> dict[str, int]:
@@ -186,13 +207,17 @@ def _next_action(actions: list[dict]) -> dict | None:
 def _scoreboard_status(summary: dict, actions: list[dict]) -> str:
     if not actions:
         return "no_actions"
-    if int(summary.get("fail_action_count") or 0) > 0:
+    fail_action_count = _as_int(summary.get("fail_action_count")) or 0
+    retry_action_count = _as_int(summary.get("retry_action_count")) or 0
+    pending_action_count = _as_int(summary.get("pending_action_count")) or 0
+    pass_action_count = _as_int(summary.get("pass_action_count")) or 0
+    if fail_action_count > 0:
         return "blocked"
-    if int(summary.get("retry_action_count") or 0) > 0:
+    if retry_action_count > 0:
         return "retrying"
-    if int(summary.get("pending_action_count") or 0) > 0:
+    if pending_action_count > 0:
         return "in_progress"
-    if int(summary.get("pass_action_count") or 0) == len(actions):
+    if pass_action_count == len(actions):
         return "completed"
     return "in_progress"
 
@@ -216,10 +241,10 @@ def build_remediation_scoreboard(
         observation_status_by_action,
         evaluation_result_by_action,
     )
-    pass_count = int(checkpoint.get("pass_action_count") or 0)
-    fail_count = int(checkpoint.get("fail_action_count") or 0)
-    retry_count = int(checkpoint.get("retry_action_count") or 0)
-    pending_count = int(checkpoint.get("pending_action_count") or 0)
+    pass_count = _as_int(checkpoint.get("pass_action_count")) or 0
+    fail_count = _as_int(checkpoint.get("fail_action_count")) or 0
+    retry_count = _as_int(checkpoint.get("retry_action_count")) or 0
+    pending_count = _as_int(checkpoint.get("pending_action_count")) or 0
     total_count = len(actions)
     completion_rate = 0.0 if total_count == 0 else round(pass_count / total_count, 4)
     blocking_action_items = sorted(
@@ -241,6 +266,9 @@ def build_remediation_scoreboard(
     }
     next_action = _next_action(actions)
     scoreboard_status = _scoreboard_status(checkpoint, actions)
+    quick_navigation = _quick_navigation(out_path)
+    related_reports = _related_reports(out_path)
+    observed_source_counts = _observed_source_counts(actions)
     summary = {
         "scoreboard_status": scoreboard_status,
         "planned_action_count": total_count,
@@ -259,7 +287,7 @@ def build_remediation_scoreboard(
         "blocking_action_keys": blocking_actions,
         "blocking_action_observed_sources": blocking_action_observed_sources,
         "blocking_action_stage_signal_confidence": blocking_action_stage_signal_confidence,
-        "observed_source_counts": _observed_source_counts(actions),
+        "observed_source_counts": observed_source_counts,
         "remediation_command_results_summary_path": (
             str(remediation_command_results_summary_path)
             if remediation_command_results_summary_path is not None
@@ -277,19 +305,19 @@ def build_remediation_scoreboard(
         ),
         "checkpoint_status": checkpoint.get("checkpoint_status"),
         "actions": actions,
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        "quick_navigation": quick_navigation,
+        "related_reports": related_reports,
         "remediation_scoreboard_report_path": str(out_path) if out_path is not None else None,
     }
 
     lines = ["# Remediation Scoreboard", ""]
-    if summary["quick_navigation"]:
+    if quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend([
         "## Scoreboard Summary",
@@ -313,9 +341,9 @@ def build_remediation_scoreboard(
         "## Observed Source Counts",
         "",
     ])
-    if summary["observed_source_counts"]:
-        for key in sorted(summary["observed_source_counts"]):
-            lines.append(f"- {key}: {summary['observed_source_counts'][key]}")
+    if observed_source_counts:
+        for key in sorted(observed_source_counts):
+            lines.append(f"- {key}: {observed_source_counts[key]}")
     else:
         lines.append("- observed_source_counts: none")
 
@@ -326,11 +354,11 @@ def build_remediation_scoreboard(
             "",
         ]
     )
-    if summary["blocking_action_observed_sources"]:
-        for key in sorted(summary["blocking_action_observed_sources"]):
-            lines.append(f"- {key}: {summary['blocking_action_observed_sources'][key]}")
+    if blocking_action_observed_sources:
+        for key in sorted(blocking_action_observed_sources):
+            lines.append(f"- {key}: {blocking_action_observed_sources[key]}")
             lines.append(
-                f"  - stage_signal_confidence: {summary['blocking_action_stage_signal_confidence'].get(key)}"
+                f"  - stage_signal_confidence: {blocking_action_stage_signal_confidence.get(key)}"
             )
     else:
         lines.append("- blocking_action_observed_sources: none")

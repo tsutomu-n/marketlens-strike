@@ -67,15 +67,36 @@ def _stage_rank(value: object) -> int:
 
 
 def _action_priority_key(item: dict) -> tuple[int, int, int, int, int, str, str]:
+    effective_priority = _as_int(item.get("effective_priority"))
+    priority = _as_int(item.get("priority"))
+    sequence = _as_int(item.get("sequence")) or 0
     return (
-        int(item.get("effective_priority") or item.get("priority") or 999),
-        int(item.get("priority") or 999),
+        effective_priority if effective_priority is not None else (priority if priority is not None else 999),
+        priority if priority is not None else 999,
         _stage_rank(item.get("stage")),
         _confidence_rank(item.get("stage_signal_confidence")),
-        int(item.get("sequence") or 0),
+        sequence,
         str(item.get("source") or ""),
         str(item.get("reason") or ""),
     )
+
+
+def _as_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None
 
 
 def _observed_source_counts(actions: list[dict]) -> dict[str, int]:
@@ -350,6 +371,9 @@ def build_remediation_session_checkpoint(
         if isinstance(next_action, dict)
         else None
     )
+    quick_navigation = _quick_navigation(out_path)
+    related_reports = _related_reports(out_path)
+    observed_source_counts = _observed_source_counts(merged_actions)
     summary = {
         "checkpoint_status": checkpoint_status,
         "planned_action_count": len(merged_actions),
@@ -360,7 +384,7 @@ def build_remediation_session_checkpoint(
         "next_action_command": next_action_command,
         "next_action_observed_sources": next_action_observed_sources,
         "next_action_stage_signal_confidence": next_action_stage_signal_confidence,
-        "observed_source_counts": _observed_source_counts(merged_actions),
+        "observed_source_counts": observed_source_counts,
         "remediation_session_summary_path": (
             str(remediation_session_summary_path)
             if remediation_session_summary_path is not None
@@ -384,18 +408,18 @@ def build_remediation_session_checkpoint(
             else None
         ),
         "actions": merged_actions,
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        "quick_navigation": quick_navigation,
+        "related_reports": related_reports,
         "remediation_session_checkpoint_report_path": str(out_path) if out_path is not None else None,
     }
     lines = ["# Remediation Session Checkpoint", ""]
-    if summary["quick_navigation"]:
+    if quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend([
         "## Checkpoint Summary",
@@ -423,9 +447,9 @@ def build_remediation_session_checkpoint(
         "## Observed Source Counts",
         "",
     ])
-    if summary["observed_source_counts"]:
-        for key in sorted(summary["observed_source_counts"]):
-            lines.append(f"- {key}: {summary['observed_source_counts'][key]}")
+    if observed_source_counts:
+        for key in sorted(observed_source_counts):
+            lines.append(f"- {key}: {observed_source_counts[key]}")
     else:
         lines.append("- observed_source_counts: none")
 

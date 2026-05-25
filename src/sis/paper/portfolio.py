@@ -83,7 +83,10 @@ def positions_to_frame(positions: list[PaperPosition]) -> pl.DataFrame:
                 "realized_pnl": pl.Float64,
             }
         )
-    return pl.from_dicts([position.model_dump(mode="json") for position in positions])
+    return pl.from_dicts(
+        [position.model_dump(mode="json") for position in positions],
+        infer_schema_length=None,
+    )
 
 
 def write_positions_parquet(path: Path, positions: list[PaperPosition]) -> Path:

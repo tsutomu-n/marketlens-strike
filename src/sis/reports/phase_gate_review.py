@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TypedDict
 
 from sis.reports.doc_paths import CODE_STATUS_DOC, recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
@@ -26,6 +27,12 @@ from sis.validation.artifacts import validate_artifacts
 
 
 PHASE2_ALLOWED_DECISIONS = {"GO", "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST"}
+
+
+class RemediationStep(TypedDict):
+    priority: int
+    reason: str
+    commands: list[str]
 
 
 def _reports_dir(data_dir: Path) -> Path:
@@ -90,10 +97,41 @@ def _required_artifact_paths(summary: dict[str, object]) -> dict[str, str | None
         "latest_execution_snapshot_drift_history_summary_path",
         "latest_execution_drift_overview_summary_path",
     )
-    return {
-        key: summary.get(key) if isinstance(summary.get(key), str) else None
-        for key in artifact_keys
-    }
+    paths: dict[str, str | None] = {}
+    for key in artifact_keys:
+        value = summary.get(key)
+        paths[key] = value if isinstance(value, str) else None
+    return paths
+
+
+def _as_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None
+
+
+def _as_str_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str)]
+
+
+def _as_dict_list(value: object) -> list[dict[str, object]]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
 
 
 def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str]]:
@@ -118,8 +156,8 @@ def _remediation_order(
     summary: dict[str, object],
     missing_required_artifact_paths: list[str],
     artifact_recovery_commands: dict[str, list[str]],
-) -> list[dict[str, object]]:
-    steps: list[dict[str, object]] = []
+) -> list[RemediationStep]:
+    steps: list[RemediationStep] = []
     if missing_required_artifact_paths:
         commands: list[str] = []
         for name in missing_required_artifact_paths:
@@ -131,7 +169,8 @@ def _remediation_order(
                 "commands": list(dict.fromkeys(commands)),
             }
         )
-    if int(summary.get("strict_validation_issue_count") or 0) > 0:
+    strict_validation_issue_count = _as_int(summary.get("strict_validation_issue_count")) or 0
+    if strict_validation_issue_count > 0:
         steps.append(
             {
                 "priority": 2,
@@ -329,7 +368,7 @@ def _remediation_signal_snapshot_before(
 
 
 def _remediation_signal_snapshot_target(reason: str) -> dict[str, object]:
-    snapshot_map = {
+    snapshot_map: dict[str, dict[str, object]] = {
         "missing_required_artifacts": {
             "missing_required_artifact_paths": [],
             "required_artifact_paths_non_null": True,
@@ -653,8 +692,13 @@ def build_phase_gate_review(
     summary["remediation_signal_snapshots_previous"] = previous_signal_snapshots
     summary["remediation_signal_snapshot_diffs"] = remediation_signal_snapshot_diffs
     summary["remediation_recommendations"] = remediation_recommendations
-    summary["quick_navigation"] = _quick_navigation(summary, data_dir)
-    summary["related_reports"] = _related_reports(summary, data_dir)
+    quick_navigation = _quick_navigation(summary, data_dir)
+    related_reports = _related_reports(summary, data_dir)
+    summary["quick_navigation"] = quick_navigation
+    summary["related_reports"] = related_reports
+    venue_decisions = _as_dict_list(summary.get("venue_decisions"))
+    next_actions = _as_str_list(summary.get("next_actions"))
+    recommended_read_order_items = _as_str_list(summary.get("recommended_read_order"))
 
     lines = [
         "# Phase Gate Review",
@@ -713,10 +757,10 @@ def build_phase_gate_review(
         "## Quick Navigation",
         "",
     ]
-    for key, value in summary["quick_navigation"].items():
+    for key, value in quick_navigation.items():
         lines.append(f"- {key}: {value}")
     lines.extend(["", "## Related Reports", ""])
-    for key, value in summary["related_reports"].items():
+    for key, value in related_reports.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -873,10 +917,10 @@ def build_phase_gate_review(
         )
 
     lines.extend(["", "## Venue Decisions", ""])
-    if summary["venue_decisions"]:
+    if venue_decisions:
         lines.append("| venue | decision | main_blocker |")
         lines.append("| --- | --- | --- |")
-        for item in summary["venue_decisions"]:
+        for item in venue_decisions:
             lines.append(
                 f"| {item.get('venue', '')} | {item.get('decision', '')} | {item.get('main_blocker', '') or ''} |"
             )
@@ -934,8 +978,8 @@ def build_phase_gate_review(
     )
 
     lines.extend(["", "## Next Actions", ""])
-    if summary["next_actions"]:
-        lines.extend(f"- {item}" for item in summary["next_actions"])
+    if next_actions:
+        lines.extend(f"- {item}" for item in next_actions)
     else:
         lines.extend(
             [
@@ -964,7 +1008,7 @@ def build_phase_gate_review(
     )
 
     lines.extend(["", "## Recommended Read Order", ""])
-    lines.extend(f"- {item}" for item in summary["recommended_read_order"])
+    lines.extend(f"- {item}" for item in recommended_read_order_items)
     text = "\n".join(lines) + "\n"
 
     if out_path is not None:

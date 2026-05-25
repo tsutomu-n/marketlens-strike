@@ -112,6 +112,24 @@ def _flatten_observed_sources(value: object) -> list[str]:
     return []
 
 
+def _as_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None
+
+
 def _evaluator_provenance_map(summary: dict) -> dict[str, dict[str, object]]:
     actions = summary.get("actions")
     if not isinstance(actions, list):
@@ -123,17 +141,29 @@ def _evaluator_provenance_map(summary: dict) -> dict[str, dict[str, object]]:
         key = _source_reason_key(item.get("source"), item.get("reason"))
         if key == ":":
             continue
-        entry = mapped.setdefault(
-            key,
-            {
+        entry = mapped.get(key)
+        if not isinstance(entry, dict):
+            entry = {
                 "observed_sources": [],
                 "signal_observed_sources": {},
                 "supporting_action_keys": [],
-            },
-        )
+            }
+            mapped[key] = dict(entry)
+        observed_sources = entry.get("observed_sources")
+        if not isinstance(observed_sources, list):
+            observed_sources = []
+            entry["observed_sources"] = observed_sources
+        signal_observed_sources = entry.get("signal_observed_sources")
+        if not isinstance(signal_observed_sources, dict):
+            signal_observed_sources = {}
+            entry["signal_observed_sources"] = signal_observed_sources
+        supporting_action_keys = entry.get("supporting_action_keys")
+        if not isinstance(supporting_action_keys, list):
+            supporting_action_keys = []
+            entry["supporting_action_keys"] = supporting_action_keys
         action_key = item.get("action_key")
-        if isinstance(action_key, str) and action_key not in entry["supporting_action_keys"]:
-            entry["supporting_action_keys"].append(action_key)
+        if isinstance(action_key, str) and action_key not in supporting_action_keys:
+            supporting_action_keys.append(action_key)
         signal_evaluations = item.get("signal_evaluations")
         if not isinstance(signal_evaluations, list):
             continue
@@ -143,10 +173,10 @@ def _evaluator_provenance_map(summary: dict) -> dict[str, dict[str, object]]:
             signal_name = signal.get("signal")
             observed_source = signal.get("observed_source")
             if isinstance(signal_name, str) and observed_source is not None:
-                entry["signal_observed_sources"][signal_name] = observed_source
+                signal_observed_sources[signal_name] = observed_source
             for source_name in _flatten_observed_sources(observed_source):
-                if source_name not in entry["observed_sources"]:
-                    entry["observed_sources"].append(source_name)
+                if source_name not in observed_sources:
+                    observed_sources.append(source_name)
     return mapped
 
 
@@ -169,9 +199,8 @@ def _source_confidence(observed_sources: object) -> str:
 
 
 def _effective_priority(base_priority: object, confidence: str, status: object) -> int:
-    try:
-        normalized_priority = int(base_priority)
-    except (TypeError, ValueError):
+    normalized_priority = _as_int(base_priority)
+    if normalized_priority is None:
         normalized_priority = 999
     if confidence == "high":
         if str(status) in {"regressed", "stalled"}:
@@ -432,10 +461,7 @@ def _planner_rerun_diff(
         previous_summary.get("planned_step_count")
         or previous_notes.get("planned_step_count")
     )
-    try:
-        previous_planned_step_count = int(previous_planned_step_count_raw)
-    except (TypeError, ValueError):
-        previous_planned_step_count = None
+    previous_planned_step_count = _as_int(previous_planned_step_count_raw)
     if not previous_summary and not previous_manifest:
         trend = "first_run"
     elif (
@@ -514,8 +540,8 @@ def build_remediation_planner(
     entries.sort(
         key=lambda item: (
             _feedback_priority_rank(item.get("feedback_priority_reason")),
-            int(item.get("effective_priority") or 999),
-            int(item.get("priority") or 999),
+            _as_int(item.get("effective_priority")) or 999,
+            _as_int(item.get("priority")) or 999,
             str(item.get("source")),
             str(item.get("reason")),
         )
@@ -551,6 +577,8 @@ def build_remediation_planner(
         recommended_command_chain=recommended_command_chain,
     )
     planner_entry_diffs = _planner_entry_diffs(previous_summary.get("entries"), entries)
+    quick_navigation = _quick_navigation(out_path)
+    related_reports = _related_reports(out_path)
 
     summary = {
         "planner_status": planner_status,
@@ -583,19 +611,28 @@ def build_remediation_planner(
         "planner_rerun_diff": planner_rerun_diff,
         "planner_entry_diffs": planner_entry_diffs,
         "entries": entries,
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        "quick_navigation": quick_navigation,
+        "related_reports": related_reports,
         "remediation_planner_report_path": str(out_path) if out_path is not None else None,
     }
+    command_chain_diff = (
+        planner_rerun_diff.get("command_chain_diff")
+        if isinstance(planner_rerun_diff.get("command_chain_diff"), dict)
+        else {}
+    )
+    chain_trend = command_chain_diff.get("trend")
+    chain_added = command_chain_diff.get("added")
+    chain_removed = command_chain_diff.get("removed")
+    chain_unchanged = command_chain_diff.get("unchanged")
 
     lines = ["# Remediation Planner Dry Run", ""]
-    if summary["quick_navigation"]:
+    if quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend([
         "## Planner Summary",
@@ -634,10 +671,10 @@ def build_remediation_planner(
             "",
             "## Recommended Command Chain Diff",
             "",
-            f"- trend: {planner_rerun_diff['command_chain_diff']['trend']}",
-            f"- added: {planner_rerun_diff['command_chain_diff']['added']}",
-            f"- removed: {planner_rerun_diff['command_chain_diff']['removed']}",
-            f"- unchanged: {planner_rerun_diff['command_chain_diff']['unchanged']}",
+            f"- trend: {chain_trend}",
+            f"- added: {chain_added}",
+            f"- removed: {chain_removed}",
+            f"- unchanged: {chain_unchanged}",
             "",
             "## Planner Entry Diffs",
             "",

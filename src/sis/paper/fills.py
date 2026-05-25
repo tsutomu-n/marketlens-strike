@@ -36,7 +36,10 @@ def fills_to_frame(fills: list[PaperFill]) -> pl.DataFrame:
                 "strategy_name": pl.Utf8,
             }
         )
-    return pl.from_dicts([fill.model_dump(mode="json") for fill in fills])
+    return pl.from_dicts(
+        [fill.model_dump(mode="json") for fill in fills],
+        infer_schema_length=None,
+    )
 
 
 def write_fills_parquet(path: Path, fills: list[PaperFill]) -> Path:

@@ -109,7 +109,7 @@ BASE_ROWS = [
 
 
 def _base_frame() -> pl.DataFrame:
-    return pl.DataFrame([dict(row) for row in BASE_ROWS])
+    return pl.from_dicts([dict(row) for row in BASE_ROWS], infer_schema_length=None)
 
 
 def _latest_gtrade_sidecar(sidecar_root: Path | None) -> Path | None:
@@ -120,23 +120,19 @@ def _latest_gtrade_sidecar(sidecar_root: Path | None) -> Path | None:
 
 
 def _as_bps_from_gtrade_fee(value: object) -> float | None:
-    if value in {None, ""}:
+    raw = _as_float(value)
+    if raw is None:
         return None
-    try:
-        return float(value) / 1e8
-    except (TypeError, ValueError):
-        return None
+    return raw / 1e8
 
 
 def _worst_abs_ostium_rollover_bps(long_rate: object, short_rate: object, hours: float) -> float | None:
     rates: list[float] = []
     for value in (long_rate, short_rate):
-        if value in {None, ""}:
+        parsed = _as_float(value)
+        if parsed is None:
             continue
-        try:
-            rates.append(abs(float(value)))
-        except (TypeError, ValueError):
-            continue
+        rates.append(abs(parsed))
     if not rates:
         return None
     # Ostium Builder SDK exposes rolloverRate as 8hr percent by side.
@@ -144,12 +140,19 @@ def _worst_abs_ostium_rollover_bps(long_rate: object, short_rate: object, hours:
 
 
 def _as_float(value: object) -> float | None:
-    if value in {None, ""}:
+    if isinstance(value, bool):
         return None
-    try:
+    if isinstance(value, int | float):
         return float(value)
-    except (TypeError, ValueError):
-        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            return None
+    return None
 
 
 def _gtrade_holding_bps(pair: dict, snapshot: dict, hours: float) -> float | None:
@@ -284,11 +287,12 @@ def build_initial_cost_matrix(
     ostium_registry_path: Path | None = None,
 ) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    pl.DataFrame(
+    pl.from_dicts(
         _metadata_rows(
             gtrade_sidecar_root=gtrade_sidecar_root,
             ostium_registry_path=ostium_registry_path,
-        )
+        ),
+        infer_schema_length=None,
     ).write_csv(out_path)
 
 
@@ -335,11 +339,12 @@ def build_cost_matrix_from_quotes(
     gtrade_sidecar_root: Path | None = None,
     ostium_registry_path: Path | None = None,
 ) -> None:
-    base = pl.DataFrame(
+    base = pl.from_dicts(
         _metadata_rows(
             gtrade_sidecar_root=gtrade_sidecar_root,
             ostium_registry_path=ostium_registry_path,
-        )
+        ),
+        infer_schema_length=None,
     )
     aggregates = _quote_aggregates(quotes_path)
     if aggregates is None:

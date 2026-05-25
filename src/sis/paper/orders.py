@@ -34,7 +34,10 @@ def orders_to_frame(orders: list[PaperOrder]) -> pl.DataFrame:
                 "strategy_name": pl.Utf8,
             }
         )
-    return pl.from_dicts([order.model_dump(mode="json") for order in orders])
+    return pl.from_dicts(
+        [order.model_dump(mode="json") for order in orders],
+        infer_schema_length=None,
+    )
 
 
 def write_orders_parquet(path: Path, orders: list[PaperOrder]) -> Path:

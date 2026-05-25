@@ -136,6 +136,19 @@ def build_audit_timeline_report(
     readiness_execution_ready_counts = _note_counts(audit_ops, "readiness_execution_ready=")
     latest = recent[-1] if recent else {}
     latest_notes = latest.get("notes", []) if isinstance(latest, dict) else []
+    latest_phase_gate_issue_previews = (
+        phase_gate_issue_note_previews(latest_notes) if isinstance(latest_notes, list) else []
+    )
+    phase_gate_decision_counts = _note_counts(audit_ops, "phase_gate_decision=")
+    phase2_entry_allowed_counts = _note_counts(audit_ops, "phase2_entry_allowed=")
+    phase_gate_reason_counts = _note_counts(audit_ops, "phase_gate_reason=")
+    phase_gate_strict_validation_passed_counts = _note_counts(
+        audit_ops, "phase_gate_strict_validation_passed="
+    )
+    phase_gate_strict_validation_issue_count_values = _note_counts(
+        audit_ops, "phase_gate_strict_validation_issue_count="
+    )
+    phase_gate_checked_files_values = _note_counts(audit_ops, "phase_gate_checked_files=")
     latest_execution_lineage = latest_execution_lineage_from_notes(latest_notes)
     latest_remediation_planner_status = _latest_note_from_operation(
         operations, "remediation_planner_dry_run", "planner_status="
@@ -379,7 +392,7 @@ def build_audit_timeline_report(
             else None
         ),
         "latest_phase_gate_issue_previews": (
-            phase_gate_issue_note_previews(latest_notes) if isinstance(latest_notes, list) else []
+            latest_phase_gate_issue_previews
         ),
         "latest_remediation_planner_status": latest_remediation_planner_status,
         "latest_remediation_planner_next_best_command": latest_remediation_planner_next_best_command,
@@ -427,16 +440,12 @@ def build_audit_timeline_report(
         "state_comparison_mismatching_count_values": state_comparison_mismatching_count_values,
         "readiness_next_phase_counts": readiness_next_phase_counts,
         "readiness_execution_ready_counts": readiness_execution_ready_counts,
-        "phase_gate_decision_counts": _note_counts(audit_ops, "phase_gate_decision="),
-        "phase2_entry_allowed_counts": _note_counts(audit_ops, "phase2_entry_allowed="),
-        "phase_gate_reason_counts": _note_counts(audit_ops, "phase_gate_reason="),
-        "phase_gate_strict_validation_passed_counts": _note_counts(
-            audit_ops, "phase_gate_strict_validation_passed="
-        ),
-        "phase_gate_strict_validation_issue_count_values": _note_counts(
-            audit_ops, "phase_gate_strict_validation_issue_count="
-        ),
-        "phase_gate_checked_files_values": _note_counts(audit_ops, "phase_gate_checked_files="),
+        "phase_gate_decision_counts": phase_gate_decision_counts,
+        "phase2_entry_allowed_counts": phase2_entry_allowed_counts,
+        "phase_gate_reason_counts": phase_gate_reason_counts,
+        "phase_gate_strict_validation_passed_counts": phase_gate_strict_validation_passed_counts,
+        "phase_gate_strict_validation_issue_count_values": phase_gate_strict_validation_issue_count_values,
+        "phase_gate_checked_files_values": phase_gate_checked_files_values,
         "audit_timeline_report_path": str(out_path) if out_path is not None else None,
         "audit_dashboard_report_path": str(reports_dir / "audit_dashboard.md") if reports_dir else None,
         "operations_dashboard_report_path": (
@@ -457,8 +466,10 @@ def build_audit_timeline_report(
             str(reports_dir / "remediation_scoreboard.md") if reports_dir else None
         ),
     }
-    summary["quick_navigation"] = _quick_navigation(summary)
-    summary["related_reports"] = _related_reports(summary)
+    quick_navigation = _quick_navigation(summary)
+    related_reports = _related_reports(summary)
+    summary["quick_navigation"] = quick_navigation
+    summary["related_reports"] = related_reports
 
     lines = [
         "# Audit Timeline Report",
@@ -518,7 +529,7 @@ def build_audit_timeline_report(
         "## Quick Navigation",
         "",
     ]
-    for key, value in summary["quick_navigation"].items():
+    for key, value in quick_navigation.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -527,7 +538,7 @@ def build_audit_timeline_report(
             "",
         ]
     )
-    for key, value in summary["related_reports"].items():
+    for key, value in related_reports.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
@@ -554,9 +565,9 @@ def build_audit_timeline_report(
         "",
         ]
     )
-    if summary["latest_phase_gate_issue_previews"]:
+    if latest_phase_gate_issue_previews:
         lines.extend(["## Latest Phase Gate Issue Preview", ""])
-        lines.extend(f"- {item}" for item in summary["latest_phase_gate_issue_previews"])
+        lines.extend(f"- {item}" for item in latest_phase_gate_issue_previews)
         lines.append("")
     if counts:
         for key in sorted(counts):
@@ -654,49 +665,49 @@ def build_audit_timeline_report(
     lines.append("")
 
     lines.extend(["## Phase Gate Decision Counts", ""])
-    if summary["phase_gate_decision_counts"]:
-        for key in sorted(summary["phase_gate_decision_counts"]):
-            lines.append(f"- {key}: {summary['phase_gate_decision_counts'][key]}")
+    if phase_gate_decision_counts:
+        for key in sorted(phase_gate_decision_counts):
+            lines.append(f"- {key}: {phase_gate_decision_counts[key]}")
     else:
         lines.append("- no phase gate decision notes were available")
     lines.append("")
 
     lines.extend(["## Phase 2 Entry Allowed Counts", ""])
-    if summary["phase2_entry_allowed_counts"]:
-        for key in sorted(summary["phase2_entry_allowed_counts"]):
-            lines.append(f"- {key}: {summary['phase2_entry_allowed_counts'][key]}")
+    if phase2_entry_allowed_counts:
+        for key in sorted(phase2_entry_allowed_counts):
+            lines.append(f"- {key}: {phase2_entry_allowed_counts[key]}")
     else:
         lines.append("- no phase2 entry notes were available")
     lines.append("")
 
     lines.extend(["## Phase Gate Reason Counts", ""])
-    if summary["phase_gate_reason_counts"]:
-        for key in sorted(summary["phase_gate_reason_counts"]):
-            lines.append(f"- {key}: {summary['phase_gate_reason_counts'][key]}")
+    if phase_gate_reason_counts:
+        for key in sorted(phase_gate_reason_counts):
+            lines.append(f"- {key}: {phase_gate_reason_counts[key]}")
     else:
         lines.append("- no phase gate reason notes were available")
     lines.append("")
 
     lines.extend(["## Phase Gate Strict Validation Counts", ""])
-    if summary["phase_gate_strict_validation_passed_counts"]:
-        for key in sorted(summary["phase_gate_strict_validation_passed_counts"]):
-            lines.append(f"- {key}: {summary['phase_gate_strict_validation_passed_counts'][key]}")
+    if phase_gate_strict_validation_passed_counts:
+        for key in sorted(phase_gate_strict_validation_passed_counts):
+            lines.append(f"- {key}: {phase_gate_strict_validation_passed_counts[key]}")
     else:
         lines.append("- no phase gate strict validation notes were available")
     lines.append("")
 
     lines.extend(["## Phase Gate Strict Validation Issue Count Values", ""])
-    if summary["phase_gate_strict_validation_issue_count_values"]:
-        for key in sorted(summary["phase_gate_strict_validation_issue_count_values"]):
-            lines.append(f"- {key}: {summary['phase_gate_strict_validation_issue_count_values'][key]}")
+    if phase_gate_strict_validation_issue_count_values:
+        for key in sorted(phase_gate_strict_validation_issue_count_values):
+            lines.append(f"- {key}: {phase_gate_strict_validation_issue_count_values[key]}")
     else:
         lines.append("- no phase gate strict validation issue count notes were available")
     lines.append("")
 
     lines.extend(["## Phase Gate Checked Files Values", ""])
-    if summary["phase_gate_checked_files_values"]:
-        for key in sorted(summary["phase_gate_checked_files_values"]):
-            lines.append(f"- {key}: {summary['phase_gate_checked_files_values'][key]}")
+    if phase_gate_checked_files_values:
+        for key in sorted(phase_gate_checked_files_values):
+            lines.append(f"- {key}: {phase_gate_checked_files_values[key]}")
     else:
         lines.append("- no phase gate checked files notes were available")
     lines.append("")

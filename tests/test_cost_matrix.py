@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import polars as pl
 import pytest
 
-from sis.reports.cost_matrix import build_cost_matrix_from_quotes
+from sis.reports.cost_matrix import build_cost_matrix_from_quotes, build_initial_cost_matrix
 
 
 def test_build_cost_matrix_uses_normalized_quote_aggregates(tmp_path) -> None:
@@ -176,3 +176,23 @@ def test_build_cost_matrix_overlays_sidecar_and_registry_cost_metadata(tmp_path)
     assert ostium_xau["holding_cost_24h_bps"] == 6.0
     assert ostium_xau["holding_cost_72h_bps"] == 18.0
     assert "rollover_rate_long=-0.01" in ostium_xau["notes"]
+
+
+def test_build_initial_cost_matrix_handles_mixed_int_float_schema(tmp_path) -> None:
+    out_path = tmp_path / "venue_cost_matrix.csv"
+    gtrade_sidecar_root = tmp_path / "raw/sidecar/gtrade"
+    gtrade_sidecar_root.mkdir(parents=True)
+    (gtrade_sidecar_root / "2026-05-22.jsonl").write_text(
+        '{"pairs":[{"canonical_symbol":"SPY","spread_bps":0,'
+        '"pair_index":1,"fee_index":"13","total_position_size_fee_p":"746463333000"}],'
+        '"raw":{"collaterals":[]}}\n',
+        encoding="utf-8",
+    )
+
+    build_initial_cost_matrix(out_path, gtrade_sidecar_root=gtrade_sidecar_root)
+
+    frame = pl.read_csv(out_path)
+    spy = frame.filter((pl.col("venue") == "gtrade") & (pl.col("symbol") == "SPY")).row(
+        0, named=True
+    )
+    assert spy["open_fee_bps"] == pytest.approx(7464.63333)

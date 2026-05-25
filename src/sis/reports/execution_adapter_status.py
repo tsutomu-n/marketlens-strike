@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
+from typing import Mapping
 
 from sis.execution.base import AdapterActionResult, AdapterFillSnapshot, AdapterOrderStatus
 from sis.reports.doc_paths import recommended_read_order
@@ -52,22 +53,62 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
     }
 
 
+def _as_float(value: object) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            return None
+    return None
+
+
+def _as_int(value: object) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None
+
+
 def _write_report(
     *,
     title: str,
-    summary: dict[str, object],
+    summary: Mapping[str, object],
     detail_lines: list[str],
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
+    quick_navigation = summary.get("quick_navigation")
+    related_reports = summary.get("related_reports")
     lines = [f"# {title}", ""]
-    if summary["quick_navigation"]:
+    if isinstance(quick_navigation, dict) and quick_navigation:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.extend(f"- {key}: {value}" for key, value in quick_navigation.items())
         lines.append("")
-    if summary["related_reports"]:
+    if isinstance(related_reports, dict) and related_reports:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
     lines.extend(["## Overview", "", *detail_lines, "", "## Recommended Read Order", ""])
     lines.extend(f"- {item}" for item in _recommended_read_order())
@@ -341,63 +382,57 @@ def build_execution_read_only_surfaces_report(
         item.get("positions_total_quantity") is not None for item in venues
     )
     positions_notional_usd_total = sum(
-        float(item.get("positions_notional_usd_total") or 0.0)
-        for item in venues
-        if item.get("positions_notional_usd_total") is not None
+        value for item in venues if (value := _as_float(item.get("positions_notional_usd_total"))) is not None
     )
     positions_unrealized_pnl_usd_total = sum(
-        float(item.get("positions_unrealized_pnl_usd_total") or 0.0)
+        value
         for item in venues
-        if item.get("positions_unrealized_pnl_usd_total") is not None
+        if (value := _as_float(item.get("positions_unrealized_pnl_usd_total"))) is not None
     )
     positions_collateral_used_usd_total = sum(
-        float(item.get("positions_collateral_used_usd_total") or 0.0)
+        value
         for item in venues
-        if item.get("positions_collateral_used_usd_total") is not None
+        if (value := _as_float(item.get("positions_collateral_used_usd_total"))) is not None
     )
     positions_max_withdrawable_usd_total = sum(
-        float(item.get("positions_max_withdrawable_usd_total") or 0.0)
+        value
         for item in venues
-        if item.get("positions_max_withdrawable_usd_total") is not None
+        if (value := _as_float(item.get("positions_max_withdrawable_usd_total"))) is not None
     )
     positions_cumulative_rollover_usd_total = sum(
-        float(item.get("positions_cumulative_rollover_usd_total") or 0.0)
+        value
         for item in venues
-        if item.get("positions_cumulative_rollover_usd_total") is not None
+        if (value := _as_float(item.get("positions_cumulative_rollover_usd_total"))) is not None
     )
     positions_with_liquidation_price_count = sum(
-        int(item.get("positions_with_liquidation_price_count") or 0)
+        value
         for item in venues
-        if item.get("positions_with_liquidation_price_count") is not None
+        if (value := _as_int(item.get("positions_with_liquidation_price_count"))) is not None
     )
     positions_with_take_profit_count = sum(
-        int(item.get("positions_with_take_profit_count") or 0)
+        value
         for item in venues
-        if item.get("positions_with_take_profit_count") is not None
+        if (value := _as_int(item.get("positions_with_take_profit_count"))) is not None
     )
     positions_with_stop_loss_count = sum(
-        int(item.get("positions_with_stop_loss_count") or 0)
-        for item in venues
-        if item.get("positions_with_stop_loss_count") is not None
+        value for item in venues if (value := _as_int(item.get("positions_with_stop_loss_count"))) is not None
     )
     positions_day_trade_count = sum(
-        int(item.get("positions_day_trade_count") or 0)
-        for item in venues
-        if item.get("positions_day_trade_count") is not None
+        value for item in venues if (value := _as_int(item.get("positions_day_trade_count"))) is not None
     )
     latest_positions_server_time_ms = max(
         (
-            int(item.get("positions_server_time_ms"))
+            value
             for item in venues
-            if item.get("positions_server_time_ms") is not None
+            if (value := _as_int(item.get("positions_server_time_ms"))) is not None
         ),
         default=None,
     )
     positions_average_leverage = (
         sum(
-            float(item.get("positions_average_leverage") or 0.0)
+            value
             for item in venues
-            if item.get("positions_average_leverage") is not None
+            if (value := _as_float(item.get("positions_average_leverage"))) is not None
         )
         / with_positions_leverage_metrics_count
         if with_positions_leverage_metrics_count
@@ -405,9 +440,9 @@ def build_execution_read_only_surfaces_report(
     )
     positions_average_return_on_equity = (
         sum(
-            float(item.get("positions_average_return_on_equity") or 0.0)
+            value
             for item in venues
-            if item.get("positions_average_return_on_equity") is not None
+            if (value := _as_float(item.get("positions_average_return_on_equity"))) is not None
         )
         / with_positions_return_metrics_count
         if with_positions_return_metrics_count
@@ -415,27 +450,25 @@ def build_execution_read_only_surfaces_report(
     )
     positions_max_leverage = max(
         (
-            float(item.get("positions_max_leverage"))
+            value
             for item in venues
-            if item.get("positions_max_leverage") is not None
+            if (value := _as_float(item.get("positions_max_leverage"))) is not None
         ),
         default=None,
     )
     positions_total_quantity = sum(
-        float(item.get("positions_total_quantity") or 0.0)
-        for item in venues
-        if item.get("positions_total_quantity") is not None
+        value for item in venues if (value := _as_float(item.get("positions_total_quantity"))) is not None
     )
     positions_total_realized_pnl = sum(
-        float(item.get("positions_total_realized_pnl") or 0.0)
+        value
         for item in venues
-        if item.get("positions_total_realized_pnl") is not None
+        if (value := _as_float(item.get("positions_total_realized_pnl"))) is not None
     )
     latest_positions_open_timestamp_ms = max(
         (
-            int(item.get("positions_latest_open_timestamp_ms"))
+            value
             for item in venues
-            if item.get("positions_latest_open_timestamp_ms") is not None
+            if (value := _as_int(item.get("positions_latest_open_timestamp_ms"))) is not None
         ),
         default=None,
     )
