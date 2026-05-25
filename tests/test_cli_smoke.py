@@ -954,8 +954,8 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
         '[{"order_id":"ord-1","canonical_symbol":"QQQ","side":"long","quantity":1,"status":"working"}]',
         encoding="utf-8",
     )
-    (data_dir / "raw/sidecar/ostium/positions_2026-05-24.json").write_text(
-        '{"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80"}]}',
+    (data_dir / "raw/sidecar/ostium/positions_all_2026-05-24.json").write_text(
+        '{"server_time_ms":1716336000000,"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80","notional_usd":24214944.037214246,"unrealized_pnl_usd":25683.762970999986,"collateral_used_usd":2158493.9945829986,"max_withdrawable_usd":1752150.3245409152,"leverage":26.8474,"open_timestamp_ms":1716335999000}]}',
         encoding="utf-8",
     )
     pl.DataFrame(
@@ -1085,6 +1085,19 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
     read_only_summary = read_json(data_dir / "ops/execution_read_only_surfaces_summary.json")
     assert read_only_summary["venue_count"] == 2
     assert read_only_summary["with_positions_snapshot_count"] == 2
+    assert read_only_summary["with_positions_financial_totals_count"] == 2
+    assert read_only_summary["with_positions_leverage_metrics_count"] == 1
+    assert read_only_summary["with_positions_quantity_metrics_count"] == 1
+    assert read_only_summary["positions_notional_usd_total"] == 24215145.037214246
+    assert read_only_summary["positions_unrealized_pnl_usd_total"] == 25683.762970999986
+    assert read_only_summary["positions_collateral_used_usd_total"] == 2158493.9945829986
+    assert read_only_summary["positions_max_withdrawable_usd_total"] == 1752150.3245409152
+    assert read_only_summary["positions_average_leverage"] == 26.8474
+    assert read_only_summary["positions_total_quantity"] == 2.0
+    assert read_only_summary["positions_total_realized_pnl"] == 0.0
+    assert read_only_summary["latest_positions_server_time_ms"] == 1716336000000
+    assert read_only_summary["latest_positions_open_timestamp_ms"] == 1779580800000
+    assert read_only_summary["latest_positions_updated_at"] == "2026-05-24T01:00:00+00:00"
 
 
 def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:
@@ -3978,8 +3991,8 @@ def test_refresh_operations_artifacts_cli(tmp_path) -> None:
     (data_dir / "registry/gtrade_instrument_registry.json").write_text("[]", encoding="utf-8")
     (data_dir / "registry/ostium_instrument_registry.json").write_text("[]", encoding="utf-8")
     (data_dir / "raw/sidecar/ostium").mkdir(parents=True, exist_ok=True)
-    (data_dir / "raw/sidecar/ostium/positions_2026-05-24.json").write_text(
-        '{"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80"}]}',
+    (data_dir / "raw/sidecar/ostium/positions_all_2026-05-24.json").write_text(
+        '{"server_time_ms":1716336000000,"positions":[{"venue_symbol":"US500-USD","side":"long","size":"2","entry_px":"100","liquidation_px":"80","notional_usd":24214944.037214246,"unrealized_pnl_usd":25683.762970999986,"collateral_used_usd":2158493.9945829986,"max_withdrawable_usd":1752150.3245409152,"leverage":26.8474,"open_timestamp_ms":1716335999000}]}',
         encoding="utf-8",
     )
     (data_dir / "execution").mkdir(parents=True, exist_ok=True)
@@ -4103,6 +4116,13 @@ def test_refresh_operations_artifacts_cli(tmp_path) -> None:
     assert (data_dir / "reports/execution_read_only_surfaces.md").exists()
     read_only_summary = read_json(data_dir / "ops/execution_read_only_surfaces_summary.json")
     assert read_only_summary["venue_count"] == 2
+    assert read_only_summary["with_positions_financial_totals_count"] == 2
+    assert read_only_summary["with_positions_leverage_metrics_count"] == 1
+    assert read_only_summary["with_positions_quantity_metrics_count"] == 1
+    assert read_only_summary["positions_notional_usd_total"] == 24215145.037214246
+    assert read_only_summary["positions_average_leverage"] == 26.8474
+    assert read_only_summary["positions_total_quantity"] == 2.0
+    assert read_only_summary["latest_positions_updated_at"] == "2026-05-24T01:00:00+00:00"
 
 
 def test_paper_operations_cycle_cli(tmp_path) -> None:

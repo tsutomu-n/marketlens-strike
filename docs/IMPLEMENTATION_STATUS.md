@@ -77,6 +77,10 @@ The handoff implementation is complete; current Go/No-Go may still be conditiona
 | Epic 61 | State and daemon command artifacts | DONE | daemon-manifest, export-state, and restore-state now write restart-friendly report and summary artifacts without changing their existing stdout surface |
 | Epic 62 | State and daemon artifact aggregation | DONE | operations-dashboard, current-state-index, and readiness-snapshot now surface latest daemon-manifest, export-state, and restore-state artifacts when those summaries exist |
 | Epic 63 | Ostium margin-summary balance fallback | DONE | ostium execution balance now reuses positions sidecar margin_summary when no dedicated balance snapshot exists, and margin_used/notional/unrealized-pnl/cumulative-rollover propagate through execution adapter artifacts and top-level restart/readiness summaries |
+| Epic 64 | Ostium position-row aggregates in read-only surfaces | DONE | ostium read-only execution surfaces now aggregate positions sidecar row totals and timestamps, and those notional/pnl/collateral/withdrawable/server-time fields propagate through execution read-only surface reports plus top-level restart/readiness summaries |
+| Epic 65 | Ostium leverage and latest-open aggregation | DONE | ostium read-only execution surfaces now aggregate average leverage and latest open timestamp, and those leverage/open-timing fields propagate through execution read-only surface summaries plus top-level restart/readiness reports |
+| Epic 66 | gTrade quantity and realized-pnl position aggregates | DONE | gtrade read-only execution surfaces now aggregate paper positions quantity, realized pnl, and latest updated_at from positions parquet, and those fields propagate through execution read-only surface summaries plus top-level restart/readiness reports |
+| Epic 67 | gTrade position notional and open-timestamp aggregation | DONE | gtrade read-only execution surfaces now derive position notional and latest opened_at from positions parquet, so multi-venue notional and open-timestamp summaries include gtrade instead of counting only ostium |
 
 ## Live Evidence Still Required
 

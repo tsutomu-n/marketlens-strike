@@ -1184,6 +1184,16 @@ def _execution_read_only_surface_for_venue(
                 return None
         return None
 
+    def _timestamp_ms_or_none(value: object) -> int | None:
+        if hasattr(value, "timestamp"):
+            return int(value.timestamp() * 1000)
+        if isinstance(value, str):
+            try:
+                return int(datetime.fromisoformat(value).timestamp() * 1000)
+            except ValueError:
+                return None
+        return None
+
     adapter = _adapter_for_venue(settings_data_dir, venue)
     balance = adapter.read_balance()
     positions = adapter.read_positions()
@@ -1211,6 +1221,36 @@ def _execution_read_only_surface_for_venue(
     positions_max_withdrawable_usd_total = None
     positions_average_leverage = None
     positions_latest_open_timestamp_ms = None
+    positions_total_quantity = None
+    positions_total_realized_pnl = None
+    positions_latest_updated_at = None
+    if venue == "gtrade":
+        positions_path = settings_data_dir / "paper/positions.parquet"
+        if positions_path.exists():
+            frame = pl.read_parquet(positions_path).filter(
+                pl.col("venue").cast(pl.Utf8).str.to_lowercase() == venue
+            )
+            if frame.height:
+                positions_total_quantity = float(frame["quantity"].sum()) if "quantity" in frame.columns else None
+                positions_total_realized_pnl = (
+                    float(frame["realized_pnl"].sum()) if "realized_pnl" in frame.columns else None
+                )
+                if {"quantity", "avg_entry_price"} <= set(frame.columns):
+                    positions_notional_usd_total = float(
+                        (frame["quantity"] * frame["avg_entry_price"]).sum()
+                    )
+                if "opened_at" in frame.columns:
+                    latest_opened = frame["opened_at"].max()
+                    if latest_opened is not None:
+                        positions_latest_open_timestamp_ms = _timestamp_ms_or_none(latest_opened)
+                if "updated_at" in frame.columns:
+                    latest_updated = frame["updated_at"].max()
+                    if latest_updated is not None:
+                        positions_latest_updated_at = (
+                            latest_updated.isoformat()
+                            if hasattr(latest_updated, "isoformat")
+                            else str(latest_updated)
+                        )
     if venue == "ostium":
         positions_path = latest_positions_sidecar(settings_data_dir / "raw/sidecar/ostium")
         if positions_path is not None:
@@ -1308,6 +1348,9 @@ def _execution_read_only_surface_for_venue(
         "positions_max_withdrawable_usd_total": positions_max_withdrawable_usd_total,
         "positions_average_leverage": positions_average_leverage,
         "positions_latest_open_timestamp_ms": positions_latest_open_timestamp_ms,
+        "positions_total_quantity": positions_total_quantity,
+        "positions_total_realized_pnl": positions_total_realized_pnl,
+        "positions_latest_updated_at": positions_latest_updated_at,
         "reconcile_matched": reconciliation.matched,
         "reconcile_missing_in_adapter_count": len(reconciliation.missing_in_adapter),
         "reconcile_missing_in_internal_count": len(reconciliation.missing_in_internal),

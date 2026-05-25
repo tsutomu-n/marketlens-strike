@@ -221,6 +221,19 @@ def build_current_state_index(
             "execution_read_only_surfaces_with_fills_snapshot_count",
             "execution_read_only_surfaces_with_order_status_snapshot_count",
             "execution_read_only_surfaces_reconciled_venue_count",
+            "execution_read_only_surfaces_with_positions_financial_totals_count",
+            "execution_read_only_surfaces_with_positions_leverage_metrics_count",
+            "execution_read_only_surfaces_with_positions_quantity_metrics_count",
+            "execution_read_only_surfaces_positions_notional_usd_total",
+            "execution_read_only_surfaces_positions_unrealized_pnl_usd_total",
+            "execution_read_only_surfaces_positions_collateral_used_usd_total",
+            "execution_read_only_surfaces_positions_max_withdrawable_usd_total",
+            "execution_read_only_surfaces_positions_average_leverage",
+            "execution_read_only_surfaces_positions_total_quantity",
+            "execution_read_only_surfaces_positions_total_realized_pnl",
+            "execution_read_only_surfaces_latest_positions_server_time_ms",
+            "execution_read_only_surfaces_latest_positions_open_timestamp_ms",
+            "execution_read_only_surfaces_latest_positions_updated_at",
             "execution_read_only_surfaces_report_path",
             "daemon_manifest_mode",
             "daemon_manifest_command",
@@ -651,6 +664,58 @@ def build_current_state_index(
             (
                 "- execution_read_only_surfaces_reconciled_venue_count: "
                 f"{summary.get('execution_read_only_surfaces_reconciled_venue_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_positions_financial_totals_count: "
+                f"{summary.get('execution_read_only_surfaces_with_positions_financial_totals_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_positions_leverage_metrics_count: "
+                f"{summary.get('execution_read_only_surfaces_with_positions_leverage_metrics_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_positions_quantity_metrics_count: "
+                f"{summary.get('execution_read_only_surfaces_with_positions_quantity_metrics_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_notional_usd_total: "
+                f"{summary.get('execution_read_only_surfaces_positions_notional_usd_total')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_unrealized_pnl_usd_total: "
+                f"{summary.get('execution_read_only_surfaces_positions_unrealized_pnl_usd_total')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_collateral_used_usd_total: "
+                f"{summary.get('execution_read_only_surfaces_positions_collateral_used_usd_total')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_max_withdrawable_usd_total: "
+                f"{summary.get('execution_read_only_surfaces_positions_max_withdrawable_usd_total')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_average_leverage: "
+                f"{summary.get('execution_read_only_surfaces_positions_average_leverage')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_total_quantity: "
+                f"{summary.get('execution_read_only_surfaces_positions_total_quantity')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_total_realized_pnl: "
+                f"{summary.get('execution_read_only_surfaces_positions_total_realized_pnl')}"
+            ),
+            (
+                "- execution_read_only_surfaces_latest_positions_server_time_ms: "
+                f"{summary.get('execution_read_only_surfaces_latest_positions_server_time_ms')}"
+            ),
+            (
+                "- execution_read_only_surfaces_latest_positions_open_timestamp_ms: "
+                f"{summary.get('execution_read_only_surfaces_latest_positions_open_timestamp_ms')}"
+            ),
+            (
+                "- execution_read_only_surfaces_latest_positions_updated_at: "
+                f"{summary.get('execution_read_only_surfaces_latest_positions_updated_at')}"
             ),
             f"- execution_read_only_surfaces_report_path: {summary.get('execution_read_only_surfaces_report_path')}",
         ]

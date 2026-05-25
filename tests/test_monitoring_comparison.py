@@ -1218,6 +1218,19 @@ def test_build_current_state_index(tmp_path) -> None:
             "execution_read_only_surfaces_with_fills_snapshot_count": 1,
             "execution_read_only_surfaces_with_order_status_snapshot_count": 1,
             "execution_read_only_surfaces_reconciled_venue_count": 2,
+            "execution_read_only_surfaces_with_positions_financial_totals_count": 1,
+            "execution_read_only_surfaces_with_positions_leverage_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_quantity_metrics_count": 1,
+            "execution_read_only_surfaces_positions_notional_usd_total": 24215145.037214246,
+            "execution_read_only_surfaces_positions_unrealized_pnl_usd_total": 25683.762970999986,
+            "execution_read_only_surfaces_positions_collateral_used_usd_total": 2158493.9945829986,
+            "execution_read_only_surfaces_positions_max_withdrawable_usd_total": 1752150.3245409152,
+            "execution_read_only_surfaces_positions_average_leverage": 26.8474,
+            "execution_read_only_surfaces_positions_total_quantity": 2.0,
+            "execution_read_only_surfaces_positions_total_realized_pnl": 0.0,
+            "execution_read_only_surfaces_latest_positions_server_time_ms": 1716336000000,
+            "execution_read_only_surfaces_latest_positions_open_timestamp_ms": 1779580800000,
+            "execution_read_only_surfaces_latest_positions_updated_at": "2026-05-24T01:00:00+00:00",
             "execution_read_only_surfaces_report_path": "data/reports/execution_read_only_surfaces.md",
             "daemon_manifest_mode": "paper",
             "daemon_manifest_command": "uv run sis paper-step",
@@ -1459,6 +1472,13 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "execution_reconcile_positions_matched: 1" in report
     assert "execution_read_only_surfaces_venue_count: 2" in report
     assert "execution_read_only_surfaces_with_positions_snapshot_count: 2" in report
+    assert "execution_read_only_surfaces_positions_notional_usd_total: 24215145.037214246" in report
+    assert "execution_read_only_surfaces_positions_average_leverage: 26.8474" in report
+    assert "execution_read_only_surfaces_positions_total_quantity: 2.0" in report
+    assert "execution_read_only_surfaces_positions_total_realized_pnl: 0.0" in report
+    assert "execution_read_only_surfaces_latest_positions_server_time_ms: 1716336000000" in report
+    assert "execution_read_only_surfaces_latest_positions_open_timestamp_ms: 1779580800000" in report
+    assert "execution_read_only_surfaces_latest_positions_updated_at: 2026-05-24T01:00:00+00:00" in report
     assert "## State And Daemon Surfaces" in report
     assert "daemon_manifest_mode: paper" in report
     assert "state_export_phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
@@ -1681,6 +1701,19 @@ def test_build_readiness_snapshot(tmp_path) -> None:
             "execution_read_only_surfaces_with_fills_snapshot_count": 1,
             "execution_read_only_surfaces_with_order_status_snapshot_count": 1,
             "execution_read_only_surfaces_reconciled_venue_count": 2,
+            "execution_read_only_surfaces_with_positions_financial_totals_count": 1,
+            "execution_read_only_surfaces_with_positions_leverage_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_quantity_metrics_count": 1,
+            "execution_read_only_surfaces_positions_notional_usd_total": 24215145.037214246,
+            "execution_read_only_surfaces_positions_unrealized_pnl_usd_total": 25683.762970999986,
+            "execution_read_only_surfaces_positions_collateral_used_usd_total": 2158493.9945829986,
+            "execution_read_only_surfaces_positions_max_withdrawable_usd_total": 1752150.3245409152,
+            "execution_read_only_surfaces_positions_average_leverage": 26.8474,
+            "execution_read_only_surfaces_positions_total_quantity": 2.0,
+            "execution_read_only_surfaces_positions_total_realized_pnl": 0.0,
+            "execution_read_only_surfaces_latest_positions_server_time_ms": 1716336000000,
+            "execution_read_only_surfaces_latest_positions_open_timestamp_ms": 1779580800000,
+            "execution_read_only_surfaces_latest_positions_updated_at": "2026-05-24T01:00:00+00:00",
             "execution_read_only_surfaces_report_path": "data/reports/execution_read_only_surfaces.md",
             "daemon_manifest_mode": "paper",
             "daemon_manifest_command": "uv run sis paper-step",
@@ -1816,6 +1849,19 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["execution_reconcile_positions_matched"] == 1
     assert summary["execution_read_only_surfaces_venue_count"] == 2
     assert summary["execution_read_only_surfaces_with_positions_snapshot_count"] == 2
+    assert summary["execution_read_only_surfaces_with_positions_financial_totals_count"] == 1
+    assert summary["execution_read_only_surfaces_with_positions_leverage_metrics_count"] == 1
+    assert summary["execution_read_only_surfaces_with_positions_quantity_metrics_count"] == 1
+    assert summary["execution_read_only_surfaces_positions_notional_usd_total"] == 24215145.037214246
+    assert summary["execution_read_only_surfaces_positions_unrealized_pnl_usd_total"] == 25683.762970999986
+    assert summary["execution_read_only_surfaces_positions_collateral_used_usd_total"] == 2158493.9945829986
+    assert summary["execution_read_only_surfaces_positions_max_withdrawable_usd_total"] == 1752150.3245409152
+    assert summary["execution_read_only_surfaces_positions_average_leverage"] == 26.8474
+    assert summary["execution_read_only_surfaces_positions_total_quantity"] == 2.0
+    assert summary["execution_read_only_surfaces_positions_total_realized_pnl"] == 0.0
+    assert summary["execution_read_only_surfaces_latest_positions_server_time_ms"] == 1716336000000
+    assert summary["execution_read_only_surfaces_latest_positions_open_timestamp_ms"] == 1779580800000
+    assert summary["execution_read_only_surfaces_latest_positions_updated_at"] == "2026-05-24T01:00:00+00:00"
     assert summary["daemon_manifest_mode"] == "paper"
     assert summary["state_export_phase_gate_decision"] == "GO"
     assert summary["state_restore_restored"] is True
@@ -2262,6 +2308,11 @@ def test_build_execution_read_only_surfaces_report(tmp_path) -> None:
                 "latest_order_id": "ord-1",
                 "latest_order_status": "working",
                 "positions_count": 1,
+                "positions_notional_usd_total": 201.0,
+                "positions_latest_open_timestamp_ms": 1779580800000,
+                "positions_total_quantity": 2.0,
+                "positions_total_realized_pnl": 0.0,
+                "positions_latest_updated_at": "2026-05-24T01:00:00+00:00",
                 "reconcile_matched": 1,
                 "reconcile_missing_in_adapter_count": 0,
                 "reconcile_missing_in_internal_count": 0,
@@ -2284,6 +2335,13 @@ def test_build_execution_read_only_surfaces_report(tmp_path) -> None:
                 "latest_order_id": None,
                 "latest_order_status": None,
                 "positions_count": 1,
+                "positions_server_time_ms": 1716336000000,
+                "positions_notional_usd_total": 24214944.037214246,
+                "positions_unrealized_pnl_usd_total": 25683.762970999986,
+                "positions_collateral_used_usd_total": 2158493.9945829986,
+                "positions_max_withdrawable_usd_total": 1752150.3245409152,
+                "positions_average_leverage": 26.8474,
+                "positions_latest_open_timestamp_ms": 1716335999000,
                 "reconcile_matched": 1,
                 "reconcile_missing_in_adapter_count": 0,
                 "reconcile_missing_in_internal_count": 0,
@@ -2296,15 +2354,40 @@ def test_build_execution_read_only_surfaces_report(tmp_path) -> None:
     assert "Execution Read Only Surfaces" in text
     assert "venue_count: 2" in text
     assert "venue_gtrade_latest_fill_id: fill-1" in text
+    assert "venue_gtrade_positions_notional_usd_total: 201.0" in text
+    assert "venue_gtrade_positions_latest_open_timestamp_ms: 1779580800000" in text
+    assert "venue_gtrade_positions_total_quantity: 2.0" in text
+    assert "venue_gtrade_positions_total_realized_pnl: 0.0" in text
+    assert "venue_gtrade_positions_latest_updated_at: 2026-05-24T01:00:00+00:00" in text
     assert "venue_ostium_available_cash: 1752150.3245409152" in text
     assert "venue_ostium_margin_used: 2158493.9945829986" in text
     assert "venue_ostium_notional_usd: 24214944.037214246" in text
     assert "venue_ostium_unrealized_pnl: 25683.762970999986" in text
     assert "venue_ostium_cumulative_rollover_usd: -1639.0377230000001" in text
+    assert "venue_ostium_positions_server_time_ms: 1716336000000" in text
+    assert "venue_ostium_positions_notional_usd_total: 24214944.037214246" in text
+    assert "venue_ostium_positions_unrealized_pnl_usd_total: 25683.762970999986" in text
+    assert "venue_ostium_positions_collateral_used_usd_total: 2158493.9945829986" in text
+    assert "venue_ostium_positions_max_withdrawable_usd_total: 1752150.3245409152" in text
+    assert "venue_ostium_positions_average_leverage: 26.8474" in text
+    assert "venue_ostium_positions_latest_open_timestamp_ms: 1716335999000" in text
     summary = read_json(summary_path)
     assert summary["venue_count"] == 2
     assert summary["with_positions_snapshot_count"] == 2
     assert summary["reconciled_venue_count"] == 2
+    assert summary["with_positions_financial_totals_count"] == 2
+    assert summary["with_positions_leverage_metrics_count"] == 1
+    assert summary["with_positions_quantity_metrics_count"] == 1
+    assert summary["positions_notional_usd_total"] == 24215145.037214246
+    assert summary["positions_unrealized_pnl_usd_total"] == 25683.762970999986
+    assert summary["positions_collateral_used_usd_total"] == 2158493.9945829986
+    assert summary["positions_max_withdrawable_usd_total"] == 1752150.3245409152
+    assert summary["positions_average_leverage"] == 26.8474
+    assert summary["positions_total_quantity"] == 2.0
+    assert summary["positions_total_realized_pnl"] == 0.0
+    assert summary["latest_positions_server_time_ms"] == 1716336000000
+    assert summary["latest_positions_open_timestamp_ms"] == 1779580800000
+    assert summary["latest_positions_updated_at"] == "2026-05-24T01:00:00+00:00"
 
 
 def test_build_daemon_manifest_report(tmp_path) -> None:
