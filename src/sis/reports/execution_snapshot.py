@@ -97,6 +97,7 @@ def build_execution_snapshot_report(
                 "",
                 f"- registry_exists: {snapshot.get('registry_exists')}",
                 f"- balance_snapshot_exists: {snapshot.get('balance_snapshot_exists')}",
+                f"- positions_snapshot_exists: {snapshot.get('positions_snapshot_exists')}",
                 f"- fills_snapshot_exists: {snapshot.get('fills_snapshot_exists')}",
                 f"- order_status_snapshot_exists: {snapshot.get('order_status_snapshot_exists')}",
                 f"- positions_count: {snapshot.get('positions_count')}",

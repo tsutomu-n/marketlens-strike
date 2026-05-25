@@ -174,12 +174,14 @@ def test_ostium_execution_adapter_reads_positions_and_estimates(tmp_path) -> Non
 
     positions = adapter.read_positions()
     estimate = adapter.estimate_order(OrderIntent("ostium", "SPY", "long", 1.0, "4h"))
+    health = adapter.healthcheck()
 
     assert len(positions) == 1
     assert positions[0].canonical_symbol == "SPY"
     assert positions[0].quantity == 2.0
     assert estimate.estimated_cost_bps == 3.0
     assert estimate.price_reference == "bid_ask_or_price_after_impact"
+    assert health["positions_snapshot_exists"] is True
 
 
 def test_ostium_execution_adapter_reads_balance_snapshot_file(tmp_path) -> None:

@@ -269,6 +269,7 @@ def test_execution_snapshot_cli_for_gtrade(tmp_path) -> None:
     assert "## Related Reports" in result.stdout
     assert "execution_drift_overview_report:" in result.stdout
     assert "## Venue: gtrade" in result.stdout
+    assert "positions_snapshot_exists: True" in result.stdout
     assert "positions_count: 1" in result.stdout
     assert "balance_equity: 1500.0" in result.stdout
     assert "latest_fill_id: fill-1" in result.stdout
@@ -282,7 +283,7 @@ def test_execution_venue_comparison_cli(tmp_path) -> None:
     env = {"SIS_DATA_DIR": str(data_dir)}
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
     (data_dir / "ops/execution_snapshot_summary.json").write_text(
-        '{"overall_status":"ok","venue_count":2,"venues":[{"venue":"gtrade","registry_exists":true,"balance_snapshot_exists":true,"fills_snapshot_exists":true,"order_status_snapshot_exists":true,"positions_count":0,"fills_count":1,"order_status_count":1,"balance":{"equity":1000,"currency":"USD"}},{"venue":"ostium","registry_exists":true,"balance_snapshot_exists":false,"fills_snapshot_exists":false,"order_status_snapshot_exists":true,"positions_count":1,"fills_count":0,"order_status_count":1,"balance":{"equity":null,"currency":"USD"}}]}',
+        '{"overall_status":"ok","venue_count":2,"venues":[{"venue":"gtrade","registry_exists":true,"balance_snapshot_exists":true,"positions_snapshot_exists":true,"fills_snapshot_exists":true,"order_status_snapshot_exists":true,"positions_count":0,"fills_count":1,"order_status_count":1,"balance":{"equity":1000,"currency":"USD"}},{"venue":"ostium","registry_exists":true,"balance_snapshot_exists":false,"positions_snapshot_exists":false,"fills_snapshot_exists":false,"order_status_snapshot_exists":true,"positions_count":1,"fills_count":0,"order_status_count":1,"balance":{"equity":null,"currency":"USD"}}]}',
         encoding="utf-8",
     )
 
@@ -295,6 +296,7 @@ def test_execution_venue_comparison_cli(tmp_path) -> None:
     assert "## Related Reports" in result.stdout
     assert "execution_drift_overview_report:" in result.stdout
     assert "all_registries_present: True" in result.stdout
+    assert "all_positions_snapshots_present: False" in result.stdout
     assert (data_dir / "reports/execution_venue_comparison.md").exists()
     assert (data_dir / "ops/execution_venue_comparison_summary.json").exists()
     assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout
@@ -306,7 +308,7 @@ def test_execution_venue_diagnostics_cli(tmp_path) -> None:
     env = {"SIS_DATA_DIR": str(data_dir)}
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
     (data_dir / "ops/execution_venue_comparison_summary.json").write_text(
-        '{"venues":[{"venue":"gtrade","registry_exists":true,"balance_snapshot_exists":true,"fills_snapshot_exists":true,"order_status_snapshot_exists":true,"positions_count":0,"fills_count":1,"order_status_count":1,"balance_equity":1000.0,"balance_currency":"USD"},{"venue":"ostium","registry_exists":true,"balance_snapshot_exists":false,"fills_snapshot_exists":false,"order_status_snapshot_exists":true,"positions_count":2,"fills_count":0,"order_status_count":2,"balance_equity":995.0,"balance_currency":"USD"}]}',
+        '{"venues":[{"venue":"gtrade","registry_exists":true,"balance_snapshot_exists":true,"positions_snapshot_exists":true,"fills_snapshot_exists":true,"order_status_snapshot_exists":true,"positions_count":0,"fills_count":1,"order_status_count":1,"balance_equity":1000.0,"balance_currency":"USD"},{"venue":"ostium","registry_exists":true,"balance_snapshot_exists":false,"positions_snapshot_exists":false,"fills_snapshot_exists":false,"order_status_snapshot_exists":true,"positions_count":2,"fills_count":0,"order_status_count":2,"balance_equity":995.0,"balance_currency":"USD"}]}',
         encoding="utf-8",
     )
 
@@ -319,6 +321,7 @@ def test_execution_venue_diagnostics_cli(tmp_path) -> None:
     assert "## Related Reports" in result.stdout
     assert "execution_drift_overview_report:" in result.stdout
     assert "balance_gap_detected: True" in result.stdout
+    assert "positions_snapshot_gap_detected: True" in result.stdout
     assert (data_dir / "reports/execution_venue_diagnostics.md").exists()
     assert (data_dir / "ops/execution_venue_diagnostics_summary.json").exists()
     assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in result.stdout

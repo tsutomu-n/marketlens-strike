@@ -61,6 +61,7 @@ def build_execution_venue_comparison_report(
                 "venue": snapshot.get("venue"),
                 "registry_exists": snapshot.get("registry_exists"),
                 "balance_snapshot_exists": snapshot.get("balance_snapshot_exists"),
+                "positions_snapshot_exists": snapshot.get("positions_snapshot_exists"),
                 "fills_snapshot_exists": snapshot.get("fills_snapshot_exists"),
                 "order_status_snapshot_exists": snapshot.get("order_status_snapshot_exists"),
                 "positions_count": snapshot.get("positions_count"),
@@ -81,6 +82,9 @@ def build_execution_venue_comparison_report(
         ),
         "execution_comparison_report_path": str(out_path) if out_path is not None else None,
         "all_balance_snapshots_present": all(bool(row.get("balance_snapshot_exists")) for row in comparison_rows) if comparison_rows else False,
+        "all_positions_snapshots_present": (
+            all(bool(row.get("positions_snapshot_exists")) for row in comparison_rows) if comparison_rows else False
+        ),
         "all_fill_snapshots_present": all(bool(row.get("fills_snapshot_exists")) for row in comparison_rows) if comparison_rows else False,
         "all_order_status_snapshots_present": all(bool(row.get("order_status_snapshot_exists")) for row in comparison_rows) if comparison_rows else False,
         "recommended_read_order": [
@@ -112,18 +116,19 @@ def build_execution_venue_comparison_report(
             f"- venue_count: {summary['venue_count']}",
             f"- all_registries_present: {summary['all_registries_present']}",
             f"- all_balance_snapshots_present: {summary['all_balance_snapshots_present']}",
+            f"- all_positions_snapshots_present: {summary['all_positions_snapshots_present']}",
             f"- all_fill_snapshots_present: {summary['all_fill_snapshots_present']}",
             f"- all_order_status_snapshots_present: {summary['all_order_status_snapshots_present']}",
             "",
             "## Venue Comparison",
             "",
-            "| venue | registry_exists | balance_snapshot_exists | fills_snapshot_exists | order_status_snapshot_exists | positions_count | fills_count | order_status_count | balance_equity | balance_currency |",
-            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+            "| venue | registry_exists | balance_snapshot_exists | positions_snapshot_exists | fills_snapshot_exists | order_status_snapshot_exists | positions_count | fills_count | order_status_count | balance_equity | balance_currency |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
     for row in comparison_rows:
         lines.append(
-            "| {venue} | {registry_exists} | {balance_snapshot_exists} | {fills_snapshot_exists} | {order_status_snapshot_exists} | {positions_count} | {fills_count} | {order_status_count} | {balance_equity} | {balance_currency} |".format(
+            "| {venue} | {registry_exists} | {balance_snapshot_exists} | {positions_snapshot_exists} | {fills_snapshot_exists} | {order_status_snapshot_exists} | {positions_count} | {fills_count} | {order_status_count} | {balance_equity} | {balance_currency} |".format(
                 **row
             )
         )

@@ -351,6 +351,7 @@ def _execution_snapshot_for_venue(
         "venue": venue.strip().lower(),
         "registry_exists": health.get("registry_exists"),
         "balance_snapshot_exists": health.get("balance_snapshot_exists"),
+        "positions_snapshot_exists": health.get("positions_snapshot_exists"),
         "fills_snapshot_exists": health.get("fills_snapshot_exists"),
         "order_status_snapshot_exists": health.get("order_status_snapshot_exists"),
         "positions_count": len(positions),

@@ -202,10 +202,12 @@ class OstiumExecutionAdapter:
         )
 
     def healthcheck(self) -> dict:
+        latest_positions_path = latest_positions_sidecar(self._positions_root)
         return {
             "adapter": self.adapter_name,
             "registry_exists": self._registry_path.exists(),
             "positions_root_exists": self._positions_root.exists(),
+            "positions_snapshot_exists": latest_positions_path is not None,
             "balance_snapshot_exists": bool(self._balance_snapshot_path and self._balance_snapshot_path.exists()),
             "fills_snapshot_exists": bool(self._fills_snapshot_path and self._fills_snapshot_path.exists()),
             "order_status_snapshot_exists": bool(self._order_status_path and self._order_status_path.exists()),

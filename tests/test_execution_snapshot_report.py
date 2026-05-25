@@ -11,6 +11,7 @@ def test_build_execution_snapshot_report(tmp_path) -> None:
                 "venue": "gtrade",
                 "registry_exists": True,
                 "balance_snapshot_exists": True,
+                "positions_snapshot_exists": True,
                 "fills_snapshot_exists": True,
                 "order_status_snapshot_exists": True,
                 "positions_count": 0,
@@ -27,6 +28,7 @@ def test_build_execution_snapshot_report(tmp_path) -> None:
 
     assert "Execution Snapshot" in report
     assert "## Venue: gtrade" in report
+    assert "positions_snapshot_exists: True" in report
     assert "balance_equity: 1200.0" in report
     assert "latest_fill_id: fill-1" in report
     summary = read_json(tmp_path / "execution_snapshot_summary.json")

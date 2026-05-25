@@ -84,6 +84,9 @@ def build_execution_venue_diagnostics_report(
 
     registry_gap_detected = any(row.get("registry_exists") is not True for row in rows) if rows else True
     balance_gap_detected = any(row.get("balance_snapshot_exists") is not True for row in rows) if rows else True
+    positions_snapshot_gap_detected = (
+        any(row.get("positions_snapshot_exists") is not True for row in rows) if rows else True
+    )
     fills_gap_detected = any(row.get("fills_snapshot_exists") is not True for row in rows) if rows else True
     order_status_gap_detected = (
         any(row.get("order_status_snapshot_exists") is not True for row in rows) if rows else True
@@ -96,6 +99,7 @@ def build_execution_venue_diagnostics_report(
             if rows
             and not registry_gap_detected
             and not balance_gap_detected
+            and not positions_snapshot_gap_detected
             and not fills_gap_detected
             and not order_status_gap_detected
             and not currency_mismatch_detected
@@ -104,18 +108,21 @@ def build_execution_venue_diagnostics_report(
         "venue_count": len(rows),
         "registry_gap_detected": registry_gap_detected,
         "balance_gap_detected": balance_gap_detected,
+        "positions_snapshot_gap_detected": positions_snapshot_gap_detected,
         "fills_gap_detected": fills_gap_detected,
         "execution_diagnostics_status": (
             "ok"
             if rows
             and not registry_gap_detected
             and not balance_gap_detected
+            and not positions_snapshot_gap_detected
             and not fills_gap_detected
             and not order_status_gap_detected
             and not currency_mismatch_detected
             else "degraded"
         ),
         "execution_balance_gap_detected": balance_gap_detected,
+        "execution_positions_snapshot_gap_detected": positions_snapshot_gap_detected,
         "execution_fills_gap_detected": fills_gap_detected,
         "execution_diagnostics_report_path": str(out_path) if out_path is not None else None,
         "order_status_gap_detected": order_status_gap_detected,
@@ -168,6 +175,7 @@ def build_execution_venue_diagnostics_report(
             f"- venue_count: {summary['venue_count']}",
             f"- registry_gap_detected: {summary['registry_gap_detected']}",
             f"- balance_gap_detected: {summary['balance_gap_detected']}",
+            f"- positions_snapshot_gap_detected: {summary['positions_snapshot_gap_detected']}",
             f"- fills_gap_detected: {summary['fills_gap_detected']}",
             f"- order_status_gap_detected: {summary['order_status_gap_detected']}",
             f"- currency_mismatch_detected: {summary['currency_mismatch_detected']}",

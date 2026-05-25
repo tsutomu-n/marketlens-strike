@@ -448,6 +448,7 @@ def execution_diagnostics_flat_fields(summary: Mapping[str, Any] | None) -> dict
     return {
         "execution_diagnostics_status": payload.get("overall_status"),
         "execution_balance_gap_detected": payload.get("balance_gap_detected"),
+        "execution_positions_snapshot_gap_detected": payload.get("positions_snapshot_gap_detected"),
         "execution_fills_gap_detected": payload.get("fills_gap_detected"),
         "execution_diagnostics_report_path": payload.get("report_path"),
     }
@@ -923,6 +924,11 @@ def normalize_execution_diagnostics_summary(summary: Mapping[str, Any] | None) -
         if payload.get("balance_gap_detected") is not None
         else payload.get("execution_balance_gap_detected")
     )
+    positions_snapshot_gap_detected = (
+        payload.get("positions_snapshot_gap_detected")
+        if payload.get("positions_snapshot_gap_detected") is not None
+        else payload.get("execution_positions_snapshot_gap_detected")
+    )
     fills_gap_detected = (
         payload.get("fills_gap_detected")
         if payload.get("fills_gap_detected") is not None
@@ -933,10 +939,12 @@ def normalize_execution_diagnostics_summary(summary: Mapping[str, Any] | None) -
         **payload,
         "overall_status": overall_status,
         "balance_gap_detected": balance_gap_detected,
+        "positions_snapshot_gap_detected": positions_snapshot_gap_detected,
         "fills_gap_detected": fills_gap_detected,
         "report_path": report_path,
         "execution_diagnostics_status": overall_status,
         "execution_balance_gap_detected": balance_gap_detected,
+        "execution_positions_snapshot_gap_detected": positions_snapshot_gap_detected,
         "execution_fills_gap_detected": fills_gap_detected,
         "execution_diagnostics_report_path": report_path,
     }
