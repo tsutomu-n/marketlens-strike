@@ -1218,7 +1218,7 @@ def test_build_current_state_index(tmp_path) -> None:
             "execution_read_only_surfaces_with_fills_snapshot_count": 1,
             "execution_read_only_surfaces_with_order_status_snapshot_count": 1,
             "execution_read_only_surfaces_reconciled_venue_count": 2,
-            "execution_read_only_surfaces_with_positions_financial_totals_count": 1,
+            "execution_read_only_surfaces_with_positions_financial_totals_count": 2,
             "execution_read_only_surfaces_with_positions_leverage_metrics_count": 1,
             "execution_read_only_surfaces_with_positions_quantity_metrics_count": 1,
             "execution_read_only_surfaces_positions_notional_usd_total": 24215145.037214246,
@@ -1701,7 +1701,7 @@ def test_build_readiness_snapshot(tmp_path) -> None:
             "execution_read_only_surfaces_with_fills_snapshot_count": 1,
             "execution_read_only_surfaces_with_order_status_snapshot_count": 1,
             "execution_read_only_surfaces_reconciled_venue_count": 2,
-            "execution_read_only_surfaces_with_positions_financial_totals_count": 1,
+            "execution_read_only_surfaces_with_positions_financial_totals_count": 2,
             "execution_read_only_surfaces_with_positions_leverage_metrics_count": 1,
             "execution_read_only_surfaces_with_positions_quantity_metrics_count": 1,
             "execution_read_only_surfaces_positions_notional_usd_total": 24215145.037214246,
@@ -1849,7 +1849,7 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["execution_reconcile_positions_matched"] == 1
     assert summary["execution_read_only_surfaces_venue_count"] == 2
     assert summary["execution_read_only_surfaces_with_positions_snapshot_count"] == 2
-    assert summary["execution_read_only_surfaces_with_positions_financial_totals_count"] == 1
+    assert summary["execution_read_only_surfaces_with_positions_financial_totals_count"] == 2
     assert summary["execution_read_only_surfaces_with_positions_leverage_metrics_count"] == 1
     assert summary["execution_read_only_surfaces_with_positions_quantity_metrics_count"] == 1
     assert summary["execution_read_only_surfaces_positions_notional_usd_total"] == 24215145.037214246
