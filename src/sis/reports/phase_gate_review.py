@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.doc_paths import CODE_STATUS_DOC, recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports.summary_normalizers import (
     compare_signal_snapshots,
@@ -216,7 +217,7 @@ def _remediation_preflight_expected_outputs(reason: str) -> list[str]:
     output_map = {
         "missing_required_artifacts": [
             "implementation-status exits 0",
-            "docs/IMPLEMENTATION_STATUS.md is regenerated",
+            f"{CODE_STATUS_DOC} is regenerated",
         ],
         "strict_validation_failed": [
             "validate-artifacts --strict reports the current issue count",
@@ -509,9 +510,8 @@ def build_phase_gate_review(
             else "remain_in_phase1_until_live_evidence_gate_clears"
         ),
         "phase_gate_strict_validation_passed": strict_validation_passed,
-        "recommended_read_order": [
-            "docs/ACCEPTANCE_AUDIT.md",
-            "docs/IMPLEMENTATION_STATUS.md",
+        "recommended_read_order": recommended_read_order(
+            [
             "data/ops/execution_snapshot_summary.json",
             "data/ops/execution_venue_comparison_summary.json",
             "data/ops/execution_venue_diagnostics_summary.json",
@@ -523,7 +523,8 @@ def build_phase_gate_review(
             "data/reports/phase_gate_review.md",
             "data/research/go_no_go_report.md",
             "data/evidence/evidence_card_*.json",
-        ],
+            ]
+        ),
     }
     required_artifact_paths = _required_artifact_paths(summary)
     missing_required_artifact_paths = [

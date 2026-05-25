@@ -344,7 +344,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         GoNoGoCriterion(
             criterion="Ostium fees/OI/rollover metadata complete",
             result="PASS" if ostium_fees_oi_complete else "MISSING",
-            evidence="docs/sis_venue_probe_handoff/docs/08_ostium_probe_spec.md",
+            evidence=str(ostium_registry),
         ),
         GoNoGoCriterion(
             criterion="Liquidation reference complete",

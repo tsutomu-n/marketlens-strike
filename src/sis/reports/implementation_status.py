@@ -108,9 +108,10 @@ def implementation_status_markdown() -> str:
     )
     return "\n".join(
         [
-            "# Implementation Status",
+            "# Code Status",
             "",
-            "The handoff implementation is complete; current Go/No-Go may still be conditional because it depends on live quote evidence.",
+            "This generated report lists implementation coverage from the current codebase. "
+            "Operational readiness remains conditional until fresh live evidence clears the active gates.",
             "",
             "| Area | Item | Status | Evidence |",
             "|---|---|---|---|",

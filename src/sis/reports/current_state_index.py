@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
@@ -496,9 +497,8 @@ def build_current_state_index(
             "research_quality_report": str(research_quality_report_path) if research_quality_report_path else None,
             **restart_pointers,
         },
-        "recommended_read_order": [
-            "docs/ACCEPTANCE_AUDIT.md",
-            "docs/IMPLEMENTATION_STATUS.md",
+        "recommended_read_order": recommended_read_order(
+            [
             "data/ops/current_state_index.json",
             "data/reports/current_state_index.md",
             "data/reports/readiness_snapshot.md",
@@ -530,7 +530,8 @@ def build_current_state_index(
             "data/ops/audit_bundle_manifest.json",
             "docs/live_evidence_reports/live_evidence_report_<run_id>.md",
             "data/research/backtest_metrics_summary.json",
-        ],
+            ]
+        ),
     }
 
     lines = [

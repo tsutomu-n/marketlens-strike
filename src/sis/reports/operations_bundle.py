@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports.summary_normalizers import (
     execution_comparison_flat_fields,
@@ -206,9 +207,8 @@ def build_operations_bundle_manifest(
             "paper_cycle_history_summary": str(paper_cycle_history_summary_path) if paper_cycle_history_summary_path else None,
             "phase_gate_summary": str(phase_gate_summary_path) if phase_gate_summary_path else None,
         },
-        "recommended_read_order": [
-            "docs/ACCEPTANCE_AUDIT.md",
-            "docs/IMPLEMENTATION_STATUS.md",
+        "recommended_read_order": recommended_read_order(
+            [
             "data/ops/execution_snapshot_summary.json",
             "data/ops/execution_venue_comparison_summary.json",
             "data/ops/execution_venue_diagnostics_summary.json",
@@ -225,7 +225,8 @@ def build_operations_bundle_manifest(
             "data/reports/audit_dashboard.md",
             "data/reports/operations_audit_pack.md",
             "data/reports/paper_operations_runbook.md",
-        ],
+            ]
+        ),
     }
     manifest["quick_navigation"] = _quick_navigation(phase_gate_summary_path, out_path)
     manifest["related_reports"] = _related_reports(phase_gate_summary_path, out_path)

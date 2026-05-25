@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
@@ -511,9 +512,8 @@ def build_operations_dashboard(
         "comparison_report_exists": comparison_exists,
         "weekly_review_exists": weekly_exists,
         "lifecycle_report_exists": lifecycle_exists,
-        "recommended_read_order": [
-            "docs/ACCEPTANCE_AUDIT.md",
-            "docs/IMPLEMENTATION_STATUS.md",
+        "recommended_read_order": recommended_read_order(
+            [
             "data/ops/execution_snapshot_summary.json",
             "data/ops/execution_venue_comparison_summary.json",
             "data/ops/execution_venue_diagnostics_summary.json",
@@ -535,7 +535,8 @@ def build_operations_dashboard(
             "data/ops/audit_dashboard_summary.json",
             "data/ops/operations_bundle_manifest.json",
             "data/ops/audit_bundle_manifest.json",
-        ],
+            ]
+        ),
     }
     summary["quick_navigation"] = _quick_navigation(summary)
     summary["related_reports"] = _related_reports(summary)

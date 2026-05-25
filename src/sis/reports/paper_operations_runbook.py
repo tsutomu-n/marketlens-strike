@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.doc_paths import CODE_STATUS_DOC
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports.summary_normalizers import (
     compare_signal_snapshots,
@@ -279,7 +280,7 @@ def _remediation_preflight_expected_outputs(reason: str) -> list[str]:
     output_map = {
         "missing_required_artifacts": [
             "implementation-status exits 0",
-            "docs/IMPLEMENTATION_STATUS.md is regenerated",
+            f"{CODE_STATUS_DOC} is regenerated",
         ],
         "strict_validation_failed": [
             "validate-artifacts --strict reports the current issue count",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports.summary_normalizers import (
     execution_comparison_flat_fields,
@@ -493,9 +494,8 @@ def build_readiness_snapshot(
             "live_evidence_report": restart_pointers.get("live_evidence_report"),
             **restart_pointers,
         },
-        "recommended_read_order": [
-            "docs/ACCEPTANCE_AUDIT.md",
-            "docs/IMPLEMENTATION_STATUS.md",
+        "recommended_read_order": recommended_read_order(
+            [
             "data/ops/readiness_snapshot.json",
             "data/reports/readiness_snapshot.md",
             "data/ops/current_state_index.json",
@@ -524,7 +524,8 @@ def build_readiness_snapshot(
             "data/reports/state_restore.md",
             "docs/live_evidence_reports/live_evidence_report_<run_id>.md",
             "data/research/backtest_metrics_summary.json",
-        ],
+            ]
+        ),
     }
 
     lines = [
