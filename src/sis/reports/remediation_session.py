@@ -63,7 +63,7 @@ def _stage_rank(value: object) -> int:
     }.get(str(value or ""), 99)
 
 
-def _action_sort_key(item: dict) -> tuple[int, int, int, int, int, str, str]:
+def _action_sort_key(item: dict) -> tuple[int, int, int, int, int, int, str, str]:
     return (
         _feedback_priority_rank(item.get("feedback_priority_reason")),
         int(item.get("effective_priority") or item.get("priority") or 999),

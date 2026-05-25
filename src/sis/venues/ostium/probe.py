@@ -264,11 +264,18 @@ def _spread_bps(item: dict[str, Any]) -> float | None:
     bid = item.get("bid")
     ask = item.get("ask")
     mid = item.get("mid")
-    if not all(isinstance(value, int | float) for value in (bid, ask, mid)):
+    if not isinstance(bid, int | float):
         return None
-    if mid == 0:
+    if not isinstance(ask, int | float):
         return None
-    return float((ask - bid) / mid * 10_000)
+    if not isinstance(mid, int | float):
+        return None
+    bid_value = float(bid)
+    ask_value = float(ask)
+    mid_value = float(mid)
+    if mid_value == 0:
+        return None
+    return float((ask_value - bid_value) / mid_value * 10_000)
 
 
 def _market_status(item: dict[str, Any]) -> tuple[MarketStatus, bool]:

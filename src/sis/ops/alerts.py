@@ -43,7 +43,7 @@ def queue_notification(
     now: datetime | None = None,
 ) -> dict[str, object]:
     current = now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
-    record = {
+    record: dict[str, object] = {
         "notification_id": current.strftime("%Y%m%d_%H%M%S_%f"),
         "created_at": current.isoformat(),
         "status": "queued",

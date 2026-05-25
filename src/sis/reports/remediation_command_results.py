@@ -49,7 +49,10 @@ def _observed_source_counts(entries: list[dict[str, object]]) -> dict[str, int]:
     for item in entries:
         if not isinstance(item, dict):
             continue
-        for source in item.get("observed_sources", []):
+        observed_sources = item.get("observed_sources")
+        if not isinstance(observed_sources, list):
+            continue
+        for source in observed_sources:
             if isinstance(source, str):
                 counts[source] = counts.get(source, 0) + 1
     return counts

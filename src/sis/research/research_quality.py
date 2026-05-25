@@ -8,7 +8,7 @@ from sis.storage.jsonl_store import write_json
 
 
 def _dataset_summary(frame: pl.DataFrame, time_column: str | None) -> dict:
-    summary = {
+    summary: dict[str, object] = {
         "rows": frame.height,
         "columns": frame.columns,
         "missing_by_column": {name: int(frame.get_column(name).null_count()) for name in frame.columns},
@@ -44,8 +44,9 @@ def build_research_quality_report(data_dir: Path) -> Path:
 
     feature = pl.read_parquet(paths["feature_panel"])
     summaries["feature_panel"] = _dataset_summary(feature, "ts")
+    trade_allowed_mean = feature.get_column("trade_allowed").mean() if feature.height and "trade_allowed" in feature.columns else None
     summaries["feature_panel"]["trade_allowed_rate"] = (
-        float(feature.get_column("trade_allowed").mean()) if feature.height and "trade_allowed" in feature.columns else None
+        float(trade_allowed_mean) if isinstance(trade_allowed_mean, int | float) else None
     )
 
     signals = pl.read_csv(paths["signals"])

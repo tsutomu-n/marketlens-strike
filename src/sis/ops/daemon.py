@@ -144,7 +144,7 @@ def run_daemon_loop(
         cycle_started_at = datetime.now(timezone.utc)
         if kill_switch.is_enabled():
             status = "blocked"
-            event = {
+            event: dict[str, object] = {
                 "run_id": manifest.run_id,
                 "cycle_index": cycle_index,
                 "started_at": cycle_started_at.isoformat(),
@@ -170,7 +170,7 @@ def run_daemon_loop(
         cycle_status = "completed" if completed.returncode == 0 else "failed"
         if cycle_status == "failed":
             status = "failed"
-        event = {
+        event: dict[str, object] = {
             "run_id": manifest.run_id,
             "cycle_index": cycle_index,
             "started_at": cycle_started_at.isoformat(),
