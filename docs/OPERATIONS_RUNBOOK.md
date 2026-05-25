@@ -115,6 +115,8 @@ uv run sis phase-gate-review
 
 live evidence report は `docs/live_evidence_reports/` に出ます。最新運用判断は `data/reports/phase_gate_review.md` と `data/reports/readiness_snapshot.md` で確認します。
 
+`XNYS` や `QQQ` / `SPY` / `XAU` の市場カレンダー差分は `docs/XNYS_MARKET_CALENDAR.md` を読む。
+
 ## Remediation
 
 remediation chain は dry-run の運用支援です。実 command の自動実行ではありません。
