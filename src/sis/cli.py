@@ -22,7 +22,7 @@ from sis.ops.daily_loss_limit import evaluate_daily_loss_limit, evaluate_max_exp
 from sis.ops.healthcheck import build_healthcheck
 from sis.ops.kill_switch import KillSwitch
 from sis.ops.alerts import write_alert
-from sis.ops.daemon import create_daemon_manifest, run_daemon_dry_run, write_daemon_manifest
+from sis.ops.daemon import create_daemon_manifest, run_daemon_dry_run, run_daemon_loop, write_daemon_manifest
 from sis.ops.manifest_chain import append_operation_manifest, create_operation_manifest, latest_operation_manifest
 from sis.ops.scheduler import next_interval_run, schedule_run, write_schedule_with_audit
 from sis.ops.monitoring import build_monitoring_snapshot, write_monitoring_snapshot
@@ -2900,6 +2900,51 @@ def daemon_dry_run_cmd(
     typer.echo(f"run_id={result.run_id}")
     typer.echo(f"status={result.status}")
     typer.echo(f"scheduled_for={result.scheduled_for}")
+    typer.echo(f"operation_chain={result.operation_chain_path}")
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("daemon-run")
+def daemon_run_cmd(
+    mode: str = typer.Option("paper", "--mode"),
+    command: str = typer.Option("uv run sis paper-step", "--command"),
+    every_minutes: int = typer.Option(30, "--every-minutes"),
+    max_cycles: int = typer.Option(1, "--max-cycles", min=1),
+    forever: bool = typer.Option(False, "--forever", help="Run until kill-switch or command failure."),
+    sleep_seconds: float | None = typer.Option(
+        None,
+        "--sleep-seconds",
+        help="Override sleep between cycles. Useful for bounded local smoke runs.",
+    ),
+    state_path: Path | None = typer.Option(
+        None,
+        "--state-path",
+        help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
+    ),
+) -> None:
+    settings = get_settings()
+    result = run_daemon_loop(
+        data_dir=settings.data_dir,
+        mode=mode,
+        command=command,
+        state_store_path=state_path or (settings.data_dir / "state/marketlens.sqlite"),
+        every_minutes=every_minutes,
+        kill_switch=KillSwitch(settings.data_dir / "state/kill_switch.flag"),
+        max_cycles=None if forever else max_cycles,
+        sleep_seconds=sleep_seconds,
+    )
+    _write_daemon_manifest_artifacts(settings.data_dir)
+    logger.info("written: {}", result.daemon_manifest_path)
+    logger.info("written: {}", result.event_log_path)
+    logger.info("written: {}", result.loop_snapshot_path)
+    logger.info("appended: {}", result.operation_chain_path)
+    typer.echo(f"run_id={result.run_id}")
+    typer.echo(f"status={result.status}")
+    typer.echo(f"cycles_requested={result.cycles_requested}")
+    typer.echo(f"cycles_completed={result.cycles_completed}")
+    typer.echo(f"daemon_loop_path={result.loop_snapshot_path}")
+    typer.echo(f"daemon_loop_events_path={result.event_log_path}")
     typer.echo(f"operation_chain={result.operation_chain_path}")
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
         typer.echo(f"recommended_read_order_{index}={item}")

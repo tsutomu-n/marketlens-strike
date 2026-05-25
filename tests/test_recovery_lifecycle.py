@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from datetime import datetime, timezone
 
-from sis.ops.daemon import create_daemon_manifest, run_daemon_dry_run, write_daemon_manifest
+from sis.ops.daemon import create_daemon_manifest, run_daemon_dry_run, run_daemon_loop, write_daemon_manifest
 from sis.ops.kill_switch import KillSwitch
 from sis.ops.manifest_chain import latest_operation_manifest
 from sis.reports.lifecycle import build_strategy_lifecycle_report
@@ -530,3 +531,66 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
     assert latest["scheduled_for"] == "2026-05-24T12:30:00+00:00"
     assert "execution_diagnostics_status=degraded" in latest["notes"]
     assert "readiness_next_phase=Stay Phase 1" in latest["notes"]
+
+
+def test_daemon_loop_runs_bounded_command_and_writes_events(tmp_path) -> None:
+    calls: list[list[str]] = []
+
+    def runner(args: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="cycle-ok\n", stderr="")
+
+    result = run_daemon_loop(
+        data_dir=tmp_path / "data",
+        mode="paper",
+        command="uv run sis paper-step",
+        state_store_path=tmp_path / "data/state/marketlens.sqlite",
+        every_minutes=30,
+        kill_switch=KillSwitch(tmp_path / "data/state/kill_switch.flag"),
+        max_cycles=2,
+        sleep_seconds=0,
+        command_runner=runner,
+        now=datetime(2026, 5, 24, 12, 0, tzinfo=timezone.utc),
+    )
+    snapshot = json.loads(result.loop_snapshot_path.read_text(encoding="utf-8"))
+    events = result.event_log_path.read_text(encoding="utf-8").strip().splitlines()
+    latest = latest_operation_manifest(result.operation_chain_path)
+
+    assert result.status == "completed"
+    assert result.cycles_completed == 2
+    assert calls == [["uv", "run", "sis", "paper-step"], ["uv", "run", "sis", "paper-step"]]
+    assert snapshot["status"] == "completed"
+    assert snapshot["cycles_requested"] == 2
+    assert snapshot["cycles_completed"] == 2
+    assert snapshot["latest_event"]["stdout"] == "cycle-ok\n"
+    assert len(events) == 2
+    assert latest is not None
+    assert latest["operation"] == "daemon_loop"
+    assert latest["status"] == "completed"
+
+
+def test_daemon_loop_blocks_when_kill_switch_is_enabled(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    kill_switch = KillSwitch(data_dir / "state/kill_switch.flag")
+    kill_switch.enable("operator_stop")
+
+    result = run_daemon_loop(
+        data_dir=data_dir,
+        mode="paper",
+        command="uv run sis paper-step",
+        state_store_path=data_dir / "state/marketlens.sqlite",
+        every_minutes=30,
+        kill_switch=kill_switch,
+        max_cycles=1,
+        sleep_seconds=0,
+        now=datetime(2026, 5, 24, 12, 0, tzinfo=timezone.utc),
+    )
+    snapshot = json.loads(result.loop_snapshot_path.read_text(encoding="utf-8"))
+    latest = latest_operation_manifest(result.operation_chain_path)
+
+    assert result.status == "blocked"
+    assert result.cycles_completed == 0
+    assert snapshot["status"] == "blocked"
+    assert snapshot["latest_event"]["notes"] == ["kill_switch_enabled"]
+    assert latest is not None
+    assert latest["status"] == "blocked"

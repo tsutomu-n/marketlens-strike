@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import shlex
+import subprocess
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,13 +15,14 @@ from sis.ops.scheduler import next_interval_run, write_schedule_with_audit
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
     execution_comparison_flat_fields,
+    execution_diagnostics_flat_fields,
+    execution_drift_overview_flat_fields,
     execution_gap_history_flat_fields,
     execution_snapshot_drift_flat_fields,
     execution_snapshot_flat_fields,
     execution_state_comparison_flat_fields,
+    defaulted_all_latest_execution_lineage_fields,
     normalize_execution_comparison_summary,
-    execution_diagnostics_flat_fields,
-    execution_drift_overview_flat_fields,
     normalize_execution_diagnostics_summary,
     normalize_execution_drift_overview_summary,
     normalize_execution_gap_history_summary,
@@ -25,11 +30,11 @@ from sis.reports.summary_normalizers import (
     normalize_execution_snapshot_summary,
     normalize_execution_state_comparison_summary,
     normalize_readiness_summary,
-    defaulted_all_latest_execution_lineage_fields,
     phase_gate_flat_fields,
     phase_gate_nested_fields,
     readiness_flat_fields,
 )
+from sis.storage.jsonl_store import append_jsonl
 from sis.storage.jsonl_store import write_json
 
 
@@ -52,6 +57,18 @@ class DaemonDryRunResult:
     schedule_path: Path
     operation_chain_path: Path
     dry_run_snapshot_path: Path
+
+
+@dataclass(frozen=True)
+class DaemonLoopResult:
+    run_id: str
+    status: str
+    cycles_requested: int | None
+    cycles_completed: int
+    daemon_manifest_path: Path
+    event_log_path: Path
+    loop_snapshot_path: Path
+    operation_chain_path: Path
 
 
 def create_daemon_manifest(*, mode: str, command: str, state_store_path: Path, notes: list[str] | None = None) -> DaemonRunManifest:
@@ -80,6 +97,144 @@ def write_daemon_manifest(path: Path, manifest: DaemonRunManifest) -> Path:
         },
     )
     return path
+
+
+def run_daemon_loop(
+    *,
+    data_dir: Path,
+    mode: str,
+    command: str,
+    state_store_path: Path,
+    every_minutes: int,
+    kill_switch: KillSwitch,
+    max_cycles: int | None = 1,
+    sleep_seconds: float | None = None,
+    now: datetime | None = None,
+    command_runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+) -> DaemonLoopResult:
+    if max_cycles is not None and max_cycles < 1:
+        raise ValueError("max_cycles must be >= 1 or None for persistent mode")
+    command_args = shlex.split(command)
+    if not command_args:
+        raise ValueError("command must not be empty")
+
+    current = now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+    manifest = create_daemon_manifest(
+        mode=mode,
+        command=command,
+        state_store_path=state_store_path,
+        notes=[
+            "daemon_loop",
+            "local_command_runner",
+            "persistent_runtime" if max_cycles is None else "bounded_runtime",
+            f"interval_minutes={every_minutes}",
+        ],
+    )
+    daemon_manifest_path = write_daemon_manifest(data_dir / "ops/daemon_manifest.json", manifest)
+    event_log_path = data_dir / "ops/daemon_loop_events.jsonl"
+    loop_snapshot_path = data_dir / "ops/daemon_loop.json"
+    runner = command_runner or subprocess.run
+    cycles_completed = 0
+    status = "completed"
+    events: list[dict[str, object]] = []
+    delay_seconds = sleep_seconds if sleep_seconds is not None else every_minutes * 60
+
+    while max_cycles is None or cycles_completed < max_cycles:
+        cycle_index = cycles_completed + 1
+        cycle_started_at = datetime.now(timezone.utc)
+        if kill_switch.enabled:
+            status = "blocked"
+            event = {
+                "run_id": manifest.run_id,
+                "cycle_index": cycle_index,
+                "started_at": cycle_started_at.isoformat(),
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "status": "blocked",
+                "command": command,
+                "exit_code": None,
+                "stdout": "",
+                "stderr": "",
+                "notes": ["kill_switch_enabled"],
+            }
+            append_jsonl(event_log_path, event)
+            events.append(event)
+            break
+
+        completed = runner(
+            command_args,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        cycles_completed += 1
+        cycle_status = "completed" if completed.returncode == 0 else "failed"
+        if cycle_status == "failed":
+            status = "failed"
+        event = {
+            "run_id": manifest.run_id,
+            "cycle_index": cycle_index,
+            "started_at": cycle_started_at.isoformat(),
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "status": cycle_status,
+            "command": command,
+            "exit_code": completed.returncode,
+            "stdout": completed.stdout[-4000:] if completed.stdout else "",
+            "stderr": completed.stderr[-4000:] if completed.stderr else "",
+            "notes": ["command_executed"],
+        }
+        append_jsonl(event_log_path, event)
+        events.append(event)
+        if status == "failed":
+            break
+        if max_cycles is not None and cycles_completed >= max_cycles:
+            break
+        if delay_seconds > 0:
+            time.sleep(delay_seconds)
+
+    write_json(
+        loop_snapshot_path,
+        {
+            "run_id": manifest.run_id,
+            "created_at": manifest.created_at,
+            "mode": manifest.mode,
+            "command": manifest.command,
+            "status": status,
+            "cycles_requested": max_cycles,
+            "cycles_completed": cycles_completed,
+            "every_minutes": every_minutes,
+            "sleep_seconds": delay_seconds,
+            "daemon_manifest_path": str(daemon_manifest_path),
+            "event_log_path": str(event_log_path),
+            "latest_event": events[-1] if events else None,
+            "notes": manifest.notes,
+        },
+    )
+    operation_manifest = create_operation_manifest(
+        operation="daemon_loop",
+        mode=mode,
+        command=command,
+        status=status,
+        scheduled_for=None,
+        parent_run_id=manifest.run_id,
+        artifacts=[str(daemon_manifest_path), str(event_log_path), str(loop_snapshot_path)],
+        notes=[
+            "daemon_loop",
+            f"cycles_requested={max_cycles}",
+            f"cycles_completed={cycles_completed}",
+        ],
+        now=current,
+    )
+    operation_chain_path = append_operation_manifest(data_dir / "ops/operation_manifests.jsonl", operation_manifest)
+    return DaemonLoopResult(
+        run_id=manifest.run_id,
+        status=status,
+        cycles_requested=max_cycles,
+        cycles_completed=cycles_completed,
+        daemon_manifest_path=daemon_manifest_path,
+        event_log_path=event_log_path,
+        loop_snapshot_path=loop_snapshot_path,
+        operation_chain_path=operation_chain_path,
+    )
 
 
 def run_daemon_dry_run(

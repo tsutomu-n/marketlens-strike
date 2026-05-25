@@ -1,5 +1,13 @@
 from sis.ops.alerts import render_alert_message, write_alert
-from sis.ops.daemon import DaemonDryRunResult, DaemonRunManifest, create_daemon_manifest, run_daemon_dry_run, write_daemon_manifest
+from sis.ops.daemon import (
+    DaemonDryRunResult,
+    DaemonLoopResult,
+    DaemonRunManifest,
+    create_daemon_manifest,
+    run_daemon_dry_run,
+    run_daemon_loop,
+    write_daemon_manifest,
+)
 from sis.ops.daily_loss_limit import DailyLossStatus, evaluate_daily_loss_limit, evaluate_max_exposure
 from sis.ops.healthcheck import build_healthcheck
 from sis.ops.kill_switch import KillSwitch
@@ -10,6 +18,7 @@ from sis.ops.scheduler import ScheduledRun, next_interval_run, schedule_run, wri
 __all__ = [
     "DailyLossStatus",
     "DaemonDryRunResult",
+    "DaemonLoopResult",
     "DaemonRunManifest",
     "KillSwitch",
     "OperationManifest",
@@ -25,6 +34,7 @@ __all__ = [
     "next_interval_run",
     "render_alert_message",
     "run_daemon_dry_run",
+    "run_daemon_loop",
     "schedule_run",
     "write_alert",
     "write_daemon_manifest",
