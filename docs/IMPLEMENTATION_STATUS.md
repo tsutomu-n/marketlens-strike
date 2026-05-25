@@ -82,6 +82,7 @@ The handoff implementation is complete; current Go/No-Go may still be conditiona
 | Epic 66 | gTrade quantity and realized-pnl position aggregates | DONE | gtrade read-only execution surfaces now aggregate paper positions quantity, realized pnl, and latest updated_at from positions parquet, and those fields propagate through execution read-only surface summaries plus top-level restart/readiness reports |
 | Epic 67 | gTrade position notional and open-timestamp aggregation | DONE | gtrade read-only execution surfaces now derive position notional and latest opened_at from positions parquet, so multi-venue notional and open-timestamp summaries include gtrade instead of counting only ostium |
 | Epic 68 | Ostium max-leverage and client-timestamp aggregation | DONE | ostium read-only execution surfaces now propagate sidecar max_leverage and ts_client into execution read-only surface summaries plus top-level restart/readiness reports |
+| Epic 69 | Ostium rollover and return-on-equity aggregates | DONE | ostium read-only execution surfaces now aggregate position cumulative_rollover_usd and return_on_equity from positions sidecars, and those metrics propagate through execution read-only surface summaries plus top-level restart/readiness reports |
 
 ## Live Evidence Still Required
 
