@@ -832,7 +832,13 @@ def test_build_operations_dashboard(tmp_path) -> None:
             "venue": "gtrade",
             "fills_count": 1,
             "latest_fill_id": "fill-1",
+            "latest_fill_order_id": "ord-1",
+            "latest_fill_symbol": "QQQ",
+            "latest_fill_side": "long",
+            "latest_fill_quantity": 1,
+            "latest_fill_price": 100.5,
             "latest_fill_status": "filled",
+            "latest_fill_ts_fill": "2026-05-24T00:00:00+00:00",
             "fill_status_report_path": "data/reports/execution_fill_status.md",
         },
     )
@@ -843,6 +849,8 @@ def test_build_operations_dashboard(tmp_path) -> None:
             "order_id": "ord-1",
             "status": "working",
             "symbol": "QQQ",
+            "side": "long",
+            "quantity": 1,
             "order_status_report_path": "data/reports/execution_order_status.md",
         },
     )

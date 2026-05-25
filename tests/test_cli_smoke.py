@@ -257,6 +257,12 @@ def test_fill_status_cli_for_gtrade(tmp_path) -> None:
     assert (data_dir / "ops/execution_fill_status_summary.json").exists()
     fill_summary = read_json(data_dir / "ops/execution_fill_status_summary.json")
     assert fill_summary["fills_count"] == 1
+    assert fill_summary["latest_fill_order_id"] == "ord-1"
+    assert fill_summary["latest_fill_symbol"] == "QQQ"
+    assert fill_summary["latest_fill_side"] == "long"
+    assert fill_summary["latest_fill_quantity"] == 1
+    assert fill_summary["latest_fill_price"] == 100.5
+    assert fill_summary["latest_fill_ts_fill"] == "2026-05-24T00:00:00+00:00"
 
 
 def test_execution_snapshot_cli_for_gtrade(tmp_path) -> None:
@@ -574,7 +580,11 @@ def test_order_status_cancel_and_close_cli(tmp_path) -> None:
     assert "status=working" in status.stdout
     assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in status.stdout
     assert (data_dir / "reports/execution_order_status.md").exists()
-    assert read_json(data_dir / "ops/execution_order_status_summary.json")["order_id"] == "ord-1"
+    order_summary = read_json(data_dir / "ops/execution_order_status_summary.json")
+    assert order_summary["order_id"] == "ord-1"
+    assert order_summary["symbol"] == "QQQ"
+    assert order_summary["side"] == "long"
+    assert order_summary["quantity"] == 1
     assert cancel.exit_code == 0
     assert "status=blocked_read_only" in cancel.stdout
     assert "recommended_read_order_1=docs/ACCEPTANCE_AUDIT.md" in cancel.stdout
