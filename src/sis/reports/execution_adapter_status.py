@@ -306,8 +306,17 @@ def build_execution_read_only_surfaces_report(
     with_positions_financial_totals_count = sum(
         item.get("positions_notional_usd_total") is not None for item in venues
     )
+    with_positions_rollover_metrics_count = sum(
+        item.get("positions_cumulative_rollover_usd_total") is not None for item in venues
+    )
     with_positions_leverage_metrics_count = sum(
         item.get("positions_average_leverage") is not None for item in venues
+    )
+    with_positions_return_metrics_count = sum(
+        item.get("positions_average_return_on_equity") is not None for item in venues
+    )
+    with_positions_limit_metrics_count = sum(
+        item.get("positions_max_leverage") is not None for item in venues
     )
     with_positions_quantity_metrics_count = sum(
         item.get("positions_total_quantity") is not None for item in venues
@@ -332,6 +341,11 @@ def build_execution_read_only_surfaces_report(
         for item in venues
         if item.get("positions_max_withdrawable_usd_total") is not None
     )
+    positions_cumulative_rollover_usd_total = sum(
+        float(item.get("positions_cumulative_rollover_usd_total") or 0.0)
+        for item in venues
+        if item.get("positions_cumulative_rollover_usd_total") is not None
+    )
     latest_positions_server_time_ms = max(
         (
             int(item.get("positions_server_time_ms"))
@@ -349,6 +363,24 @@ def build_execution_read_only_surfaces_report(
         / with_positions_leverage_metrics_count
         if with_positions_leverage_metrics_count
         else None
+    )
+    positions_average_return_on_equity = (
+        sum(
+            float(item.get("positions_average_return_on_equity") or 0.0)
+            for item in venues
+            if item.get("positions_average_return_on_equity") is not None
+        )
+        / with_positions_return_metrics_count
+        if with_positions_return_metrics_count
+        else None
+    )
+    positions_max_leverage = max(
+        (
+            float(item.get("positions_max_leverage"))
+            for item in venues
+            if item.get("positions_max_leverage") is not None
+        ),
+        default=None,
     )
     positions_total_quantity = sum(
         float(item.get("positions_total_quantity") or 0.0)
@@ -376,6 +408,14 @@ def build_execution_read_only_surfaces_report(
         ),
         default=None,
     )
+    latest_positions_client_ts = max(
+        (
+            str(item.get("positions_client_ts"))
+            for item in venues
+            if item.get("positions_client_ts") is not None
+        ),
+        default=None,
+    )
     summary = {
         "venue_count": venue_count,
         "venues": venues,
@@ -385,18 +425,25 @@ def build_execution_read_only_surfaces_report(
         "with_order_status_snapshot_count": with_order_status_snapshot_count,
         "reconciled_venue_count": reconciled_venue_count,
         "with_positions_financial_totals_count": with_positions_financial_totals_count,
+        "with_positions_rollover_metrics_count": with_positions_rollover_metrics_count,
         "with_positions_leverage_metrics_count": with_positions_leverage_metrics_count,
+        "with_positions_return_metrics_count": with_positions_return_metrics_count,
+        "with_positions_limit_metrics_count": with_positions_limit_metrics_count,
         "with_positions_quantity_metrics_count": with_positions_quantity_metrics_count,
         "positions_notional_usd_total": positions_notional_usd_total,
         "positions_unrealized_pnl_usd_total": positions_unrealized_pnl_usd_total,
         "positions_collateral_used_usd_total": positions_collateral_used_usd_total,
         "positions_max_withdrawable_usd_total": positions_max_withdrawable_usd_total,
+        "positions_cumulative_rollover_usd_total": positions_cumulative_rollover_usd_total,
         "positions_average_leverage": positions_average_leverage,
+        "positions_average_return_on_equity": positions_average_return_on_equity,
+        "positions_max_leverage": positions_max_leverage,
         "positions_total_quantity": positions_total_quantity,
         "positions_total_realized_pnl": positions_total_realized_pnl,
         "latest_positions_server_time_ms": latest_positions_server_time_ms,
         "latest_positions_open_timestamp_ms": latest_positions_open_timestamp_ms,
         "latest_positions_updated_at": latest_positions_updated_at,
+        "latest_positions_client_ts": latest_positions_client_ts,
         "execution_read_only_surfaces_report_path": str(out_path) if out_path is not None else None,
         "recommended_read_order": _recommended_read_order(),
         "quick_navigation": _quick_navigation(out_path),
@@ -410,18 +457,25 @@ def build_execution_read_only_surfaces_report(
         f"- with_order_status_snapshot_count: {with_order_status_snapshot_count}",
         f"- reconciled_venue_count: {reconciled_venue_count}",
         f"- with_positions_financial_totals_count: {with_positions_financial_totals_count}",
+        f"- with_positions_rollover_metrics_count: {with_positions_rollover_metrics_count}",
         f"- with_positions_leverage_metrics_count: {with_positions_leverage_metrics_count}",
+        f"- with_positions_return_metrics_count: {with_positions_return_metrics_count}",
+        f"- with_positions_limit_metrics_count: {with_positions_limit_metrics_count}",
         f"- with_positions_quantity_metrics_count: {with_positions_quantity_metrics_count}",
         f"- positions_notional_usd_total: {positions_notional_usd_total}",
         f"- positions_unrealized_pnl_usd_total: {positions_unrealized_pnl_usd_total}",
         f"- positions_collateral_used_usd_total: {positions_collateral_used_usd_total}",
         f"- positions_max_withdrawable_usd_total: {positions_max_withdrawable_usd_total}",
+        f"- positions_cumulative_rollover_usd_total: {positions_cumulative_rollover_usd_total}",
         f"- positions_average_leverage: {positions_average_leverage}",
+        f"- positions_average_return_on_equity: {positions_average_return_on_equity}",
+        f"- positions_max_leverage: {positions_max_leverage}",
         f"- positions_total_quantity: {positions_total_quantity}",
         f"- positions_total_realized_pnl: {positions_total_realized_pnl}",
         f"- latest_positions_server_time_ms: {latest_positions_server_time_ms}",
         f"- latest_positions_open_timestamp_ms: {latest_positions_open_timestamp_ms}",
         f"- latest_positions_updated_at: {latest_positions_updated_at}",
+        f"- latest_positions_client_ts: {latest_positions_client_ts}",
     ]
     for item in venues:
         venue = item.get("venue")
@@ -448,11 +502,15 @@ def build_execution_read_only_surfaces_report(
                 f"- venue_{venue}_positions_unrealized_pnl_usd_total: {item.get('positions_unrealized_pnl_usd_total')}",
                 f"- venue_{venue}_positions_collateral_used_usd_total: {item.get('positions_collateral_used_usd_total')}",
                 f"- venue_{venue}_positions_max_withdrawable_usd_total: {item.get('positions_max_withdrawable_usd_total')}",
+                f"- venue_{venue}_positions_cumulative_rollover_usd_total: {item.get('positions_cumulative_rollover_usd_total')}",
                 f"- venue_{venue}_positions_average_leverage: {item.get('positions_average_leverage')}",
+                f"- venue_{venue}_positions_average_return_on_equity: {item.get('positions_average_return_on_equity')}",
+                f"- venue_{venue}_positions_max_leverage: {item.get('positions_max_leverage')}",
                 f"- venue_{venue}_positions_latest_open_timestamp_ms: {item.get('positions_latest_open_timestamp_ms')}",
                 f"- venue_{venue}_positions_total_quantity: {item.get('positions_total_quantity')}",
                 f"- venue_{venue}_positions_total_realized_pnl: {item.get('positions_total_realized_pnl')}",
                 f"- venue_{venue}_positions_latest_updated_at: {item.get('positions_latest_updated_at')}",
+                f"- venue_{venue}_positions_client_ts: {item.get('positions_client_ts')}",
                 f"- venue_{venue}_reconcile_matched: {item.get('reconcile_matched')}",
                 (
                     f"- venue_{venue}_reconcile_missing_in_adapter_count: "

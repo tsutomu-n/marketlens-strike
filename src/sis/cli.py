@@ -1219,11 +1219,15 @@ def _execution_read_only_surface_for_venue(
     positions_unrealized_pnl_usd_total = None
     positions_collateral_used_usd_total = None
     positions_max_withdrawable_usd_total = None
+    positions_cumulative_rollover_usd_total = None
     positions_average_leverage = None
+    positions_average_return_on_equity = None
+    positions_max_leverage = None
     positions_latest_open_timestamp_ms = None
     positions_total_quantity = None
     positions_total_realized_pnl = None
     positions_latest_updated_at = None
+    positions_client_ts = None
     if venue == "gtrade":
         positions_path = settings_data_dir / "paper/positions.parquet"
         if positions_path.exists():
@@ -1286,11 +1290,32 @@ def _execution_read_only_surface_for_venue(
                         for value in [_float_or_none(item.get("max_withdrawable_usd"))]
                         if value is not None
                     ]
+                    rollover_values = [
+                        value
+                        for item in positions_rows
+                        if isinstance(item, dict)
+                        for value in [_float_or_none(item.get("cumulative_rollover_usd"))]
+                        if value is not None
+                    ]
                     leverage_values = [
                         value
                         for item in positions_rows
                         if isinstance(item, dict)
                         for value in [_float_or_none(item.get("leverage"))]
+                        if value is not None
+                    ]
+                    return_on_equity_values = [
+                        value
+                        for item in positions_rows
+                        if isinstance(item, dict)
+                        for value in [_float_or_none(item.get("return_on_equity"))]
+                        if value is not None
+                    ]
+                    max_leverage_values = [
+                        value
+                        for item in positions_rows
+                        if isinstance(item, dict)
+                        for value in [_float_or_none(item.get("max_leverage"))]
                         if value is not None
                     ]
                     open_timestamps = [
@@ -1312,15 +1337,29 @@ def _execution_read_only_surface_for_venue(
                     positions_max_withdrawable_usd_total = (
                         sum(withdrawable_values) if withdrawable_values else None
                     )
+                    positions_cumulative_rollover_usd_total = (
+                        sum(rollover_values) if rollover_values else None
+                    )
                     positions_average_leverage = (
                         sum(leverage_values) / len(leverage_values)
                         if leverage_values
                         else None
                     )
+                    positions_average_return_on_equity = (
+                        sum(return_on_equity_values) / len(return_on_equity_values)
+                        if return_on_equity_values
+                        else None
+                    )
+                    positions_max_leverage = (
+                        max(max_leverage_values) if max_leverage_values else None
+                    )
                     positions_latest_open_timestamp_ms = (
                         max(open_timestamps) if open_timestamps else None
                     )
                 positions_server_time_ms = _int_or_none(payload.get("server_time_ms"))
+                positions_client_ts = (
+                    str(payload.get("ts_client")) if payload.get("ts_client") is not None else None
+                )
     return {
         "venue": venue,
         "balance_snapshot_exists": health.get("balance_snapshot_exists"),
@@ -1346,11 +1385,15 @@ def _execution_read_only_surface_for_venue(
         "positions_unrealized_pnl_usd_total": positions_unrealized_pnl_usd_total,
         "positions_collateral_used_usd_total": positions_collateral_used_usd_total,
         "positions_max_withdrawable_usd_total": positions_max_withdrawable_usd_total,
+        "positions_cumulative_rollover_usd_total": positions_cumulative_rollover_usd_total,
         "positions_average_leverage": positions_average_leverage,
+        "positions_average_return_on_equity": positions_average_return_on_equity,
+        "positions_max_leverage": positions_max_leverage,
         "positions_latest_open_timestamp_ms": positions_latest_open_timestamp_ms,
         "positions_total_quantity": positions_total_quantity,
         "positions_total_realized_pnl": positions_total_realized_pnl,
         "positions_latest_updated_at": positions_latest_updated_at,
+        "positions_client_ts": positions_client_ts,
         "reconcile_matched": reconciliation.matched,
         "reconcile_missing_in_adapter_count": len(reconciliation.missing_in_adapter),
         "reconcile_missing_in_internal_count": len(reconciliation.missing_in_internal),
