@@ -103,6 +103,7 @@ uv run sis build-evidence-card
 uv run sis execution-snapshot --venue gtrade --fills-limit 5 --order-limit 5
 uv run sis execution-venue-comparison
 uv run sis execution-venue-diagnostics
+uv run sis execution-read-only-surfaces
 uv run sis balance-status --venue gtrade
 uv run sis fill-status --venue gtrade --limit 20
 uv run sis order-status --venue gtrade --order-id ord-1

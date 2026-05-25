@@ -43,6 +43,7 @@ target 不要の read-only observation は refresh / daemon dry-run / paper cycl
 uv run sis execution-snapshot --venue gtrade --fills-limit 5 --order-limit 5
 uv run sis execution-venue-comparison
 uv run sis execution-venue-diagnostics
+uv run sis execution-read-only-surfaces
 uv run sis refresh-operations-artifacts
 ```
 
@@ -113,4 +114,3 @@ uv run sis remediation-evidence-ingest --action-key <key> --result pass --exit-c
 - generated artifact が欠けている場合、推測で判断せず `refresh-operations-artifacts` を再実行する。
 - live evidence が古い場合、Go/No-Go の改善を実装完了と扱わない。
 - read-only execution surface を live trading integration と混同しない。
-
