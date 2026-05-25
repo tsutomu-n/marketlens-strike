@@ -309,11 +309,17 @@ def build_execution_read_only_surfaces_report(
     with_positions_rollover_metrics_count = sum(
         item.get("positions_cumulative_rollover_usd_total") is not None for item in venues
     )
+    with_positions_protection_metrics_count = sum(
+        item.get("positions_with_liquidation_price_count") is not None for item in venues
+    )
     with_positions_leverage_metrics_count = sum(
         item.get("positions_average_leverage") is not None for item in venues
     )
     with_positions_return_metrics_count = sum(
         item.get("positions_average_return_on_equity") is not None for item in venues
+    )
+    with_positions_day_trade_metrics_count = sum(
+        item.get("positions_day_trade_count") is not None for item in venues
     )
     with_positions_limit_metrics_count = sum(
         item.get("positions_max_leverage") is not None for item in venues
@@ -345,6 +351,26 @@ def build_execution_read_only_surfaces_report(
         float(item.get("positions_cumulative_rollover_usd_total") or 0.0)
         for item in venues
         if item.get("positions_cumulative_rollover_usd_total") is not None
+    )
+    positions_with_liquidation_price_count = sum(
+        int(item.get("positions_with_liquidation_price_count") or 0)
+        for item in venues
+        if item.get("positions_with_liquidation_price_count") is not None
+    )
+    positions_with_take_profit_count = sum(
+        int(item.get("positions_with_take_profit_count") or 0)
+        for item in venues
+        if item.get("positions_with_take_profit_count") is not None
+    )
+    positions_with_stop_loss_count = sum(
+        int(item.get("positions_with_stop_loss_count") or 0)
+        for item in venues
+        if item.get("positions_with_stop_loss_count") is not None
+    )
+    positions_day_trade_count = sum(
+        int(item.get("positions_day_trade_count") or 0)
+        for item in venues
+        if item.get("positions_day_trade_count") is not None
     )
     latest_positions_server_time_ms = max(
         (
@@ -426,8 +452,10 @@ def build_execution_read_only_surfaces_report(
         "reconciled_venue_count": reconciled_venue_count,
         "with_positions_financial_totals_count": with_positions_financial_totals_count,
         "with_positions_rollover_metrics_count": with_positions_rollover_metrics_count,
+        "with_positions_protection_metrics_count": with_positions_protection_metrics_count,
         "with_positions_leverage_metrics_count": with_positions_leverage_metrics_count,
         "with_positions_return_metrics_count": with_positions_return_metrics_count,
+        "with_positions_day_trade_metrics_count": with_positions_day_trade_metrics_count,
         "with_positions_limit_metrics_count": with_positions_limit_metrics_count,
         "with_positions_quantity_metrics_count": with_positions_quantity_metrics_count,
         "positions_notional_usd_total": positions_notional_usd_total,
@@ -435,6 +463,10 @@ def build_execution_read_only_surfaces_report(
         "positions_collateral_used_usd_total": positions_collateral_used_usd_total,
         "positions_max_withdrawable_usd_total": positions_max_withdrawable_usd_total,
         "positions_cumulative_rollover_usd_total": positions_cumulative_rollover_usd_total,
+        "positions_with_liquidation_price_count": positions_with_liquidation_price_count,
+        "positions_with_take_profit_count": positions_with_take_profit_count,
+        "positions_with_stop_loss_count": positions_with_stop_loss_count,
+        "positions_day_trade_count": positions_day_trade_count,
         "positions_average_leverage": positions_average_leverage,
         "positions_average_return_on_equity": positions_average_return_on_equity,
         "positions_max_leverage": positions_max_leverage,
@@ -458,8 +490,10 @@ def build_execution_read_only_surfaces_report(
         f"- reconciled_venue_count: {reconciled_venue_count}",
         f"- with_positions_financial_totals_count: {with_positions_financial_totals_count}",
         f"- with_positions_rollover_metrics_count: {with_positions_rollover_metrics_count}",
+        f"- with_positions_protection_metrics_count: {with_positions_protection_metrics_count}",
         f"- with_positions_leverage_metrics_count: {with_positions_leverage_metrics_count}",
         f"- with_positions_return_metrics_count: {with_positions_return_metrics_count}",
+        f"- with_positions_day_trade_metrics_count: {with_positions_day_trade_metrics_count}",
         f"- with_positions_limit_metrics_count: {with_positions_limit_metrics_count}",
         f"- with_positions_quantity_metrics_count: {with_positions_quantity_metrics_count}",
         f"- positions_notional_usd_total: {positions_notional_usd_total}",
@@ -467,6 +501,10 @@ def build_execution_read_only_surfaces_report(
         f"- positions_collateral_used_usd_total: {positions_collateral_used_usd_total}",
         f"- positions_max_withdrawable_usd_total: {positions_max_withdrawable_usd_total}",
         f"- positions_cumulative_rollover_usd_total: {positions_cumulative_rollover_usd_total}",
+        f"- positions_with_liquidation_price_count: {positions_with_liquidation_price_count}",
+        f"- positions_with_take_profit_count: {positions_with_take_profit_count}",
+        f"- positions_with_stop_loss_count: {positions_with_stop_loss_count}",
+        f"- positions_day_trade_count: {positions_day_trade_count}",
         f"- positions_average_leverage: {positions_average_leverage}",
         f"- positions_average_return_on_equity: {positions_average_return_on_equity}",
         f"- positions_max_leverage: {positions_max_leverage}",
@@ -503,6 +541,10 @@ def build_execution_read_only_surfaces_report(
                 f"- venue_{venue}_positions_collateral_used_usd_total: {item.get('positions_collateral_used_usd_total')}",
                 f"- venue_{venue}_positions_max_withdrawable_usd_total: {item.get('positions_max_withdrawable_usd_total')}",
                 f"- venue_{venue}_positions_cumulative_rollover_usd_total: {item.get('positions_cumulative_rollover_usd_total')}",
+                f"- venue_{venue}_positions_with_liquidation_price_count: {item.get('positions_with_liquidation_price_count')}",
+                f"- venue_{venue}_positions_with_take_profit_count: {item.get('positions_with_take_profit_count')}",
+                f"- venue_{venue}_positions_with_stop_loss_count: {item.get('positions_with_stop_loss_count')}",
+                f"- venue_{venue}_positions_day_trade_count: {item.get('positions_day_trade_count')}",
                 f"- venue_{venue}_positions_average_leverage: {item.get('positions_average_leverage')}",
                 f"- venue_{venue}_positions_average_return_on_equity: {item.get('positions_average_return_on_equity')}",
                 f"- venue_{venue}_positions_max_leverage: {item.get('positions_max_leverage')}",

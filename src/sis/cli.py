@@ -1223,6 +1223,10 @@ def _execution_read_only_surface_for_venue(
     positions_average_leverage = None
     positions_average_return_on_equity = None
     positions_max_leverage = None
+    positions_with_liquidation_price_count = None
+    positions_with_take_profit_count = None
+    positions_with_stop_loss_count = None
+    positions_day_trade_count = None
     positions_latest_open_timestamp_ms = None
     positions_total_quantity = None
     positions_total_realized_pnl = None
@@ -1325,6 +1329,26 @@ def _execution_read_only_surface_for_venue(
                         for value in [_int_or_none(item.get("open_timestamp_ms"))]
                         if value is not None
                     ]
+                    positions_with_liquidation_price_count = sum(
+                        1
+                        for item in positions_rows
+                        if isinstance(item, dict) and item.get("liquidation_px") is not None
+                    )
+                    positions_with_take_profit_count = sum(
+                        1
+                        for item in positions_rows
+                        if isinstance(item, dict) and item.get("take_profit_px") is not None
+                    )
+                    positions_with_stop_loss_count = sum(
+                        1
+                        for item in positions_rows
+                        if isinstance(item, dict) and item.get("stop_loss_px") is not None
+                    )
+                    positions_day_trade_count = sum(
+                        1
+                        for item in positions_rows
+                        if isinstance(item, dict) and bool(item.get("is_day_trade"))
+                    )
                     positions_notional_usd_total = (
                         sum(notional_values) if notional_values else None
                     )
@@ -1389,6 +1413,10 @@ def _execution_read_only_surface_for_venue(
         "positions_average_leverage": positions_average_leverage,
         "positions_average_return_on_equity": positions_average_return_on_equity,
         "positions_max_leverage": positions_max_leverage,
+        "positions_with_liquidation_price_count": positions_with_liquidation_price_count,
+        "positions_with_take_profit_count": positions_with_take_profit_count,
+        "positions_with_stop_loss_count": positions_with_stop_loss_count,
+        "positions_day_trade_count": positions_day_trade_count,
         "positions_latest_open_timestamp_ms": positions_latest_open_timestamp_ms,
         "positions_total_quantity": positions_total_quantity,
         "positions_total_realized_pnl": positions_total_realized_pnl,

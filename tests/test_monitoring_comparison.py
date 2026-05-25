@@ -1220,8 +1220,10 @@ def test_build_current_state_index(tmp_path) -> None:
             "execution_read_only_surfaces_reconciled_venue_count": 2,
             "execution_read_only_surfaces_with_positions_financial_totals_count": 2,
             "execution_read_only_surfaces_with_positions_rollover_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_protection_metrics_count": 1,
             "execution_read_only_surfaces_with_positions_leverage_metrics_count": 1,
             "execution_read_only_surfaces_with_positions_return_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_day_trade_metrics_count": 1,
             "execution_read_only_surfaces_with_positions_limit_metrics_count": 1,
             "execution_read_only_surfaces_with_positions_quantity_metrics_count": 1,
             "execution_read_only_surfaces_positions_notional_usd_total": 24215145.037214246,
@@ -1229,6 +1231,10 @@ def test_build_current_state_index(tmp_path) -> None:
             "execution_read_only_surfaces_positions_collateral_used_usd_total": 2158493.9945829986,
             "execution_read_only_surfaces_positions_max_withdrawable_usd_total": 1752150.3245409152,
             "execution_read_only_surfaces_positions_cumulative_rollover_usd_total": 0.003096,
+            "execution_read_only_surfaces_positions_with_liquidation_price_count": 1,
+            "execution_read_only_surfaces_positions_with_take_profit_count": 1,
+            "execution_read_only_surfaces_positions_with_stop_loss_count": 0,
+            "execution_read_only_surfaces_positions_day_trade_count": 0,
             "execution_read_only_surfaces_positions_average_leverage": 26.8474,
             "execution_read_only_surfaces_positions_average_return_on_equity": 0.04076676348547718,
             "execution_read_only_surfaces_positions_max_leverage": 200.0,
@@ -1481,6 +1487,10 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "execution_read_only_surfaces_with_positions_snapshot_count: 2" in report
     assert "execution_read_only_surfaces_positions_notional_usd_total: 24215145.037214246" in report
     assert "execution_read_only_surfaces_positions_cumulative_rollover_usd_total: 0.003096" in report
+    assert "execution_read_only_surfaces_positions_with_liquidation_price_count: 1" in report
+    assert "execution_read_only_surfaces_positions_with_take_profit_count: 1" in report
+    assert "execution_read_only_surfaces_positions_with_stop_loss_count: 0" in report
+    assert "execution_read_only_surfaces_positions_day_trade_count: 0" in report
     assert "execution_read_only_surfaces_positions_average_leverage: 26.8474" in report
     assert "execution_read_only_surfaces_positions_average_return_on_equity: 0.04076676348547718" in report
     assert "execution_read_only_surfaces_positions_max_leverage: 200.0" in report
@@ -1869,8 +1879,10 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["execution_read_only_surfaces_with_positions_snapshot_count"] == 2
     assert summary["execution_read_only_surfaces_with_positions_financial_totals_count"] == 2
     assert summary["execution_read_only_surfaces_with_positions_rollover_metrics_count"] == 1
+    assert summary["execution_read_only_surfaces_with_positions_protection_metrics_count"] == 1
     assert summary["execution_read_only_surfaces_with_positions_leverage_metrics_count"] == 1
     assert summary["execution_read_only_surfaces_with_positions_return_metrics_count"] == 1
+    assert summary["execution_read_only_surfaces_with_positions_day_trade_metrics_count"] == 1
     assert summary["execution_read_only_surfaces_with_positions_limit_metrics_count"] == 1
     assert summary["execution_read_only_surfaces_with_positions_quantity_metrics_count"] == 1
     assert summary["execution_read_only_surfaces_positions_notional_usd_total"] == 24215145.037214246
@@ -1878,6 +1890,10 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["execution_read_only_surfaces_positions_collateral_used_usd_total"] == 2158493.9945829986
     assert summary["execution_read_only_surfaces_positions_max_withdrawable_usd_total"] == 1752150.3245409152
     assert summary["execution_read_only_surfaces_positions_cumulative_rollover_usd_total"] == 0.003096
+    assert summary["execution_read_only_surfaces_positions_with_liquidation_price_count"] == 1
+    assert summary["execution_read_only_surfaces_positions_with_take_profit_count"] == 1
+    assert summary["execution_read_only_surfaces_positions_with_stop_loss_count"] == 0
+    assert summary["execution_read_only_surfaces_positions_day_trade_count"] == 0
     assert summary["execution_read_only_surfaces_positions_average_leverage"] == 26.8474
     assert summary["execution_read_only_surfaces_positions_average_return_on_equity"] == 0.04076676348547718
     assert summary["execution_read_only_surfaces_positions_max_leverage"] == 200.0

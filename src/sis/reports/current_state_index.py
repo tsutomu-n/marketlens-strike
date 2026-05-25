@@ -223,8 +223,10 @@ def build_current_state_index(
             "execution_read_only_surfaces_reconciled_venue_count",
             "execution_read_only_surfaces_with_positions_financial_totals_count",
             "execution_read_only_surfaces_with_positions_rollover_metrics_count",
+            "execution_read_only_surfaces_with_positions_protection_metrics_count",
             "execution_read_only_surfaces_with_positions_leverage_metrics_count",
             "execution_read_only_surfaces_with_positions_return_metrics_count",
+            "execution_read_only_surfaces_with_positions_day_trade_metrics_count",
             "execution_read_only_surfaces_with_positions_limit_metrics_count",
             "execution_read_only_surfaces_with_positions_quantity_metrics_count",
             "execution_read_only_surfaces_positions_notional_usd_total",
@@ -232,6 +234,10 @@ def build_current_state_index(
             "execution_read_only_surfaces_positions_collateral_used_usd_total",
             "execution_read_only_surfaces_positions_max_withdrawable_usd_total",
             "execution_read_only_surfaces_positions_cumulative_rollover_usd_total",
+            "execution_read_only_surfaces_positions_with_liquidation_price_count",
+            "execution_read_only_surfaces_positions_with_take_profit_count",
+            "execution_read_only_surfaces_positions_with_stop_loss_count",
+            "execution_read_only_surfaces_positions_day_trade_count",
             "execution_read_only_surfaces_positions_average_leverage",
             "execution_read_only_surfaces_positions_average_return_on_equity",
             "execution_read_only_surfaces_positions_max_leverage",
@@ -681,12 +687,20 @@ def build_current_state_index(
                 f"{summary.get('execution_read_only_surfaces_with_positions_rollover_metrics_count')}"
             ),
             (
+                "- execution_read_only_surfaces_with_positions_protection_metrics_count: "
+                f"{summary.get('execution_read_only_surfaces_with_positions_protection_metrics_count')}"
+            ),
+            (
                 "- execution_read_only_surfaces_with_positions_leverage_metrics_count: "
                 f"{summary.get('execution_read_only_surfaces_with_positions_leverage_metrics_count')}"
             ),
             (
                 "- execution_read_only_surfaces_with_positions_return_metrics_count: "
                 f"{summary.get('execution_read_only_surfaces_with_positions_return_metrics_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_with_positions_day_trade_metrics_count: "
+                f"{summary.get('execution_read_only_surfaces_with_positions_day_trade_metrics_count')}"
             ),
             (
                 "- execution_read_only_surfaces_with_positions_limit_metrics_count: "
@@ -715,6 +729,22 @@ def build_current_state_index(
             (
                 "- execution_read_only_surfaces_positions_cumulative_rollover_usd_total: "
                 f"{summary.get('execution_read_only_surfaces_positions_cumulative_rollover_usd_total')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_with_liquidation_price_count: "
+                f"{summary.get('execution_read_only_surfaces_positions_with_liquidation_price_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_with_take_profit_count: "
+                f"{summary.get('execution_read_only_surfaces_positions_with_take_profit_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_with_stop_loss_count: "
+                f"{summary.get('execution_read_only_surfaces_positions_with_stop_loss_count')}"
+            ),
+            (
+                "- execution_read_only_surfaces_positions_day_trade_count: "
+                f"{summary.get('execution_read_only_surfaces_positions_day_trade_count')}"
             ),
             (
                 "- execution_read_only_surfaces_positions_average_leverage: "
