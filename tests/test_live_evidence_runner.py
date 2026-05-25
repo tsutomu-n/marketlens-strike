@@ -208,6 +208,11 @@ def test_write_manifest_summary_uses_run_id_and_phase_gate(tmp_path) -> None:
         '{"next_phase_candidate":"Stay Phase 1","execution_ready":false}',
         encoding="utf-8",
     )
+    (data_dir / "evidence").mkdir(parents=True, exist_ok=True)
+    (data_dir / "evidence/evidence_card_20260522_230800.json").write_text(
+        '{"timeline_latest_execution_summary":{"execution_overall_status":"ok","execution_venue_count":2},"timeline_latest_execution_comparison_summary":{"execution_comparison_all_registries_present":true},"bundle_history_latest_execution_summary":{"execution_overall_status":"warn","execution_venue_count":1},"bundle_history_latest_execution_comparison_summary":{"execution_comparison_all_registries_present":false},"cycle_history_latest_execution_summary":{"execution_overall_status":"ok","execution_venue_count":2},"cycle_history_latest_execution_comparison_summary":{"execution_comparison_all_registries_present":true}}',
+        encoding="utf-8",
+    )
     write_manifest(
         manifest_path,
         LiveEvidenceManifest(
@@ -218,6 +223,7 @@ def test_write_manifest_summary_uses_run_id_and_phase_gate(tmp_path) -> None:
             data_dir=str(data_dir),
             decision="GO",
             phase_gate_summary={"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW", "phase2_entry_allowed": False},
+            artifacts={"evidence_card": str(data_dir / "evidence/evidence_card_20260522_230800.json")},
         ),
     )
 
@@ -238,6 +244,12 @@ def test_write_manifest_summary_uses_run_id_and_phase_gate(tmp_path) -> None:
     assert '"execution_state_comparison_summary"' in summary_path.read_text(encoding="utf-8")
     assert '"execution_snapshot_drift_summary"' in summary_path.read_text(encoding="utf-8")
     assert '"execution_drift_overview_summary"' in summary_path.read_text(encoding="utf-8")
+    assert '"timeline_latest_execution_summary"' in summary_path.read_text(encoding="utf-8")
+    assert '"bundle_history_latest_execution_summary"' in summary_path.read_text(encoding="utf-8")
+    assert '"cycle_history_latest_execution_summary"' in summary_path.read_text(encoding="utf-8")
+    assert '"cycle_history_latest_execution_overall_status": "ok"' in summary_path.read_text(
+        encoding="utf-8"
+    )
     assert '"execution_gap_history_report_path": "data/reports/execution_gap_history.md"' in summary_path.read_text(
         encoding="utf-8"
     )
@@ -258,6 +270,13 @@ def test_write_manifest_summary_uses_run_id_and_phase_gate(tmp_path) -> None:
     )
     assert (
         '"execution_drift_overview_snapshot_drift_mismatching_snapshot_count": 1'
+        in summary_path.read_text(encoding="utf-8")
+    )
+    assert '"restart_pointers"' in summary_path.read_text(encoding="utf-8")
+    assert '"current_state_index_report": "' in summary_path.read_text(encoding="utf-8")
+    assert '"remediation_scoreboard_report": "' in summary_path.read_text(encoding="utf-8")
+    assert (
+        '"live_evidence_report": "docs/live_evidence_reports/live_evidence_report_20260522_2308.md"'
         in summary_path.read_text(encoding="utf-8")
     )
     assert default_manifest_summary_path("20260522_2308") == Path(

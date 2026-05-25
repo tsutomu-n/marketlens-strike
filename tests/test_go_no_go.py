@@ -110,9 +110,52 @@ def test_go_no_go_markdown_includes_venue_decisions(tmp_path) -> None:
             "fills_gap_detected": False,
             "report_path": "data/reports/execution_venue_diagnostics.md",
         },
+        execution_gap_history_summary={
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+            "report_path": "data/reports/execution_gap_history.md",
+        },
+        execution_state_comparison_summary={
+            "entry_count": 4,
+            "latest_status_match": False,
+            "mismatching_count": 1,
+            "report_path": "data/reports/execution_state_comparison_history.md",
+        },
+        execution_snapshot_drift_summary={
+            "entry_count": 3,
+            "latest_execution_state_comparison_status_match": True,
+            "mismatching_snapshot_count": 1,
+            "report_path": "data/reports/execution_snapshot_drift_history.md",
+        },
+        timeline_latest_execution_summary={
+            "overall_status": "ok",
+            "venue_count": 2,
+        },
+        timeline_latest_execution_comparison_summary={
+            "all_registries_present": True,
+        },
+        bundle_history_latest_execution_summary={
+            "overall_status": "warn",
+            "venue_count": 1,
+        },
+        bundle_history_latest_execution_comparison_summary={
+            "all_registries_present": False,
+        },
+        cycle_history_latest_execution_summary={
+            "overall_status": "ok",
+            "venue_count": 2,
+        },
+        cycle_history_latest_execution_comparison_summary={
+            "all_registries_present": True,
+        },
     )
 
     text = out.read_text(encoding="utf-8")
+    assert "## Quick Navigation" in text
+    assert f"- go_no_go_report: {out}" in text
+    assert "## Related Reports" in text
+    assert "- execution_snapshot_report: data/reports/execution_snapshot.md" in text
     assert "## Audit Summary" in text
     assert "overall_status: ok" in text
     assert "## Phase Gate Summary" in text
@@ -126,6 +169,15 @@ def test_go_no_go_markdown_includes_venue_decisions(tmp_path) -> None:
     assert "all_registries_present: True" in text
     assert "## Execution Venue Diagnostics" in text
     assert "balance_gap_detected: True" in text
+    assert "## Execution Gap History" in text
+    assert "entry_count: 4" in text
+    assert "## Execution State Comparison History" in text
+    assert "mismatching_count: 1" in text
+    assert "## Execution Snapshot Drift History" in text
+    assert "mismatching_snapshot_count: 1" in text
+    assert "## Audit Timeline Latest Execution" in text
+    assert "## Audit Bundle History Latest Execution" in text
+    assert "## Cycle History Latest Execution" in text
     assert "## Venue Decisions" in text
     assert "| gtrade | GO |  |" in text
     assert "| ostium | CONDITIONAL_GO_DATA_READY | Liquidation reference complete |" in text

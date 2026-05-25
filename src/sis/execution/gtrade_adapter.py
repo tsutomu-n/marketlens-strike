@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import polars as pl
+
 from sis.execution.base import (
     AdapterActionResult,
     AdapterFillSnapshot,
@@ -22,35 +24,42 @@ class GTradeExecutionAdapter:
         registry_path: Path,
         balance_snapshot: dict | None = None,
         balance_snapshot_path: Path | None = None,
+        positions_snapshot_path: Path | None = None,
         fills_snapshot_path: Path | None = None,
         order_status_path: Path | None = None,
     ) -> None:
         self._registry_path = registry_path
         self._balance_snapshot = balance_snapshot or {"currency": "USD", "equity": None}
         self._balance_snapshot_path = balance_snapshot_path
+        self._positions_snapshot_path = positions_snapshot_path
         self._fills_snapshot_path = fills_snapshot_path
         self._order_status_path = order_status_path
 
-    def _registry_rows(self) -> list[dict]:
-        payload = read_json(self._registry_path)
+    @staticmethod
+    def _json_list(payload: object) -> list[dict]:
         return payload if isinstance(payload, list) else []
 
-    def _order_status_rows(self) -> list[dict]:
-        if self._order_status_path is None or not self._order_status_path.exists():
-            return []
-        payload = read_json(self._order_status_path)
-        return payload if isinstance(payload, list) else []
-
-    def _fill_rows(self) -> list[dict]:
-        if self._fills_snapshot_path is None or not self._fills_snapshot_path.exists():
-            return []
-        payload = read_json(self._fills_snapshot_path)
+    @staticmethod
+    def _fills_from_payload(payload: object) -> list[dict]:
         if isinstance(payload, list):
             return payload
         if isinstance(payload, dict):
             fills = payload.get("fills", [])
             return fills if isinstance(fills, list) else []
         return []
+
+    def _registry_rows(self) -> list[dict]:
+        return self._json_list(read_json(self._registry_path))
+
+    def _order_status_rows(self) -> list[dict]:
+        if self._order_status_path is None or not self._order_status_path.exists():
+            return []
+        return self._json_list(read_json(self._order_status_path))
+
+    def _fill_rows(self) -> list[dict]:
+        if self._fills_snapshot_path is None or not self._fills_snapshot_path.exists():
+            return []
+        return self._fills_from_payload(read_json(self._fills_snapshot_path))
 
     def read_balance(self) -> dict:
         snapshot = self._balance_snapshot
@@ -68,7 +77,26 @@ class GTradeExecutionAdapter:
         }
 
     def read_positions(self) -> list[AdapterPositionSnapshot]:
-        return []
+        if self._positions_snapshot_path is None or not self._positions_snapshot_path.exists():
+            return []
+        frame = pl.read_parquet(self._positions_snapshot_path)
+        snapshots: list[AdapterPositionSnapshot] = []
+        for row in frame.to_dicts():
+            if str(row.get("venue", "")).lower() != self.adapter_name:
+                continue
+            quantity = row.get("quantity")
+            avg_entry_price = row.get("avg_entry_price")
+            snapshots.append(
+                AdapterPositionSnapshot(
+                    venue=self.adapter_name,
+                    canonical_symbol=str(row.get("canonical_symbol") or ""),
+                    side=str(row.get("side") or "").lower(),
+                    quantity=float(quantity) if quantity is not None else 0.0,
+                    entry_price=float(avg_entry_price) if avg_entry_price is not None else None,
+                    liquidation_price=None,
+                )
+            )
+        return snapshots
 
     def estimate_order(self, intent: OrderIntent) -> AdapterOrderEstimate:
         matched = next(
@@ -179,6 +207,9 @@ class GTradeExecutionAdapter:
             "adapter": self.adapter_name,
             "registry_exists": self._registry_path.exists(),
             "balance_snapshot_exists": bool(self._balance_snapshot_path and self._balance_snapshot_path.exists()),
+            "positions_snapshot_exists": bool(
+                self._positions_snapshot_path and self._positions_snapshot_path.exists()
+            ),
             "fills_snapshot_exists": bool(self._fills_snapshot_path and self._fills_snapshot_path.exists()),
             "order_status_snapshot_exists": bool(self._order_status_path and self._order_status_path.exists()),
             "mode": "read_only",

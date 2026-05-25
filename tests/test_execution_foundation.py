@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import polars as pl
+
 from sis.execution.base import OrderIntent
 from sis.execution.gtrade_adapter import GTradeExecutionAdapter
 from sis.execution.ostium_adapter import OstiumExecutionAdapter
@@ -74,6 +76,49 @@ def test_gtrade_execution_adapter_reads_fill_snapshot_file(tmp_path) -> None:
     assert fills[0].fill_id == "fill-1"
     assert fills[0].canonical_symbol == "QQQ"
     assert fills[0].price == 100.5
+
+
+def test_gtrade_execution_adapter_reads_positions_snapshot_file(tmp_path) -> None:
+    registry_path = tmp_path / "gtrade_registry.json"
+    positions_snapshot_path = tmp_path / "positions.parquet"
+    write_json(registry_path, [])
+    pl.DataFrame(
+        [
+            {
+                "venue": "gtrade",
+                "canonical_symbol": "QQQ",
+                "side": "long",
+                "quantity": 2.0,
+                "avg_entry_price": 101.5,
+                "opened_at": "2026-05-24T00:00:00+00:00",
+                "updated_at": "2026-05-24T01:00:00+00:00",
+                "realized_pnl": 0.0,
+            },
+            {
+                "venue": "ostium",
+                "canonical_symbol": "SPY",
+                "side": "long",
+                "quantity": 1.0,
+                "avg_entry_price": 500.0,
+                "opened_at": "2026-05-24T00:00:00+00:00",
+                "updated_at": "2026-05-24T01:00:00+00:00",
+                "realized_pnl": 0.0,
+            },
+        ]
+    ).write_parquet(positions_snapshot_path)
+    adapter = GTradeExecutionAdapter(
+        registry_path=registry_path,
+        positions_snapshot_path=positions_snapshot_path,
+    )
+
+    positions = adapter.read_positions()
+    health = adapter.healthcheck()
+
+    assert len(positions) == 1
+    assert positions[0].canonical_symbol == "QQQ"
+    assert positions[0].quantity == 2.0
+    assert positions[0].entry_price == 101.5
+    assert health["positions_snapshot_exists"] is True
 
 
 def test_gtrade_execution_adapter_order_status_and_cancel_close_are_read_only(tmp_path) -> None:

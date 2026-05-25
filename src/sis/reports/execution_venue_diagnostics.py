@@ -2,7 +2,40 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sis.storage.jsonl_store import read_json, write_json
+from sis.reports.loaders import safe_read_json_dict
+from sis.storage.jsonl_store import write_json
+
+
+def _quick_navigation(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "execution_venue_diagnostics_report": str(out_path),
+        "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
+        "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+        "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
+    }
+
+
+def _related_reports(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "execution_venue_diagnostics_report": str(out_path),
+        "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
+        "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
+        "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
+        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
+        "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
+        "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+    }
 
 
 def _numeric_values(rows: list[dict[str, object]], key: str) -> list[float]:
@@ -31,13 +64,7 @@ def build_execution_venue_diagnostics_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    payload = (
-        read_json(execution_venue_comparison_summary_path)
-        if execution_venue_comparison_summary_path.exists()
-        else {}
-    )
-    if not isinstance(payload, dict):
-        payload = {}
+    payload = safe_read_json_dict(execution_venue_comparison_summary_path)
     venues = payload.get("venues")
     if not isinstance(venues, list):
         venues = []
@@ -120,29 +147,40 @@ def build_execution_venue_diagnostics_report(
             "data/ops/current_state_index.json",
             "data/ops/readiness_snapshot.json",
         ],
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
     }
 
-    lines = [
-        "# Execution Venue Diagnostics",
-        "",
-        "## Overview",
-        "",
-        f"- overall_status: {summary['overall_status']}",
-        f"- venue_count: {summary['venue_count']}",
-        f"- registry_gap_detected: {summary['registry_gap_detected']}",
-        f"- balance_gap_detected: {summary['balance_gap_detected']}",
-        f"- fills_gap_detected: {summary['fills_gap_detected']}",
-        f"- order_status_gap_detected: {summary['order_status_gap_detected']}",
-        f"- currency_mismatch_detected: {summary['currency_mismatch_detected']}",
-        f"- shared_balance_currency: {summary['shared_balance_currency']}",
-        f"- equity_span: {summary['equity_span']}",
-        f"- positions_count_span: {summary['positions_count_span']}",
-        f"- fills_count_span: {summary['fills_count_span']}",
-        f"- order_status_count_span: {summary['order_status_count_span']}",
-        "",
-        "## Recommended Read Order",
-        "",
-    ]
+    lines = ["# Execution Venue Diagnostics", ""]
+    if summary["quick_navigation"]:
+        lines.extend(["## Quick Navigation", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.append("")
+    if summary["related_reports"]:
+        lines.extend(["## Related Reports", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.append("")
+    lines.extend(
+        [
+            "## Overview",
+            "",
+            f"- overall_status: {summary['overall_status']}",
+            f"- venue_count: {summary['venue_count']}",
+            f"- registry_gap_detected: {summary['registry_gap_detected']}",
+            f"- balance_gap_detected: {summary['balance_gap_detected']}",
+            f"- fills_gap_detected: {summary['fills_gap_detected']}",
+            f"- order_status_gap_detected: {summary['order_status_gap_detected']}",
+            f"- currency_mismatch_detected: {summary['currency_mismatch_detected']}",
+            f"- shared_balance_currency: {summary['shared_balance_currency']}",
+            f"- equity_span: {summary['equity_span']}",
+            f"- positions_count_span: {summary['positions_count_span']}",
+            f"- fills_count_span: {summary['fills_count_span']}",
+            f"- order_status_count_span: {summary['order_status_count_span']}",
+            "",
+            "## Recommended Read Order",
+            "",
+        ]
+    )
     lines.extend(f"- {item}" for item in summary["recommended_read_order"])
     lines.append("")
 

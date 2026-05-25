@@ -2,8 +2,43 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sis.reports.summary_normalizers import phase_gate_issue_note_previews
+from sis.reports.summary_normalizers import (
+    latest_execution_lineage_from_notes,
+    phase_gate_issue_note_previews,
+)
 from sis.storage.jsonl_store import read_jsonl, write_json
+
+
+def _quick_navigation(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "paper_cycle_history_report": str(out_path),
+        "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
+        "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
+    }
+
+
+def _related_reports(out_path: Path | None, latest_phase_gate_review_report_path: str | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    related = {
+        "paper_cycle_history_report": str(out_path),
+        "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
+        "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
+        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
+        "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
+        "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+        "phase_gate_review_report": latest_phase_gate_review_report_path or str(reports_dir / "phase_gate_review.md"),
+    }
+    return related
 
 
 def _note_value(notes: list[object], prefix: str) -> str | None:
@@ -142,6 +177,8 @@ def build_paper_cycle_history_report(
     )
     phase_gate_checked_files_values = _note_counts(cycles, "phase_gate_checked_files=")
 
+    latest_execution_lineage = latest_execution_lineage_from_notes(latest_notes)
+
     summary = {
         "cycle_count": len(cycles),
         "completed_count": completed_count,
@@ -150,6 +187,7 @@ def build_paper_cycle_history_report(
         "latest_created_at": latest.get("created_at"),
         "total_orders": total_orders,
         "total_fills": total_fills,
+        **latest_execution_lineage,
         "latest_execution_diagnostics_summary": {
             "execution_diagnostics_status": latest_execution_diagnostics_status,
         },
@@ -216,48 +254,66 @@ def build_paper_cycle_history_report(
         "phase_gate_strict_validation_passed_counts": phase_gate_strict_validation_passed_counts,
         "phase_gate_strict_validation_issue_count_values": phase_gate_strict_validation_issue_count_values,
         "phase_gate_checked_files_values": phase_gate_checked_files_values,
+        "paper_cycle_history_report_path": str(out_path) if out_path is not None else None,
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path, latest_phase_gate_review_report_path),
     }
 
-    lines = [
-        "# Paper Cycle History Report",
-        "",
-        "## Summary",
-        "",
-        f"- cycle_count: {summary['cycle_count']}",
-        f"- completed_count: {summary['completed_count']}",
-        f"- latest_status: {summary['latest_status']}",
-        f"- latest_run_id: {summary['latest_run_id']}",
-        f"- latest_created_at: {summary['latest_created_at']}",
-        f"- total_orders: {summary['total_orders']}",
-        f"- total_fills: {summary['total_fills']}",
-        f"- latest_execution_diagnostics_status: {summary['latest_execution_diagnostics_status']}",
-        f"- latest_execution_drift_overview_status: {summary['latest_execution_drift_overview_status']}",
-        (
-            "- latest_execution_drift_overview_diagnostics_alignment_match: "
-            f"{summary['latest_execution_drift_overview_diagnostics_alignment_match']}"
-        ),
-        (
-            "- latest_execution_drift_overview_state_comparison_mismatching_count: "
-            f"{summary['latest_execution_drift_overview_state_comparison_mismatching_count']}"
-        ),
-        (
-            "- latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count: "
-            f"{summary['latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count']}"
-        ),
-        f"- latest_readiness_next_phase: {summary['latest_readiness_next_phase']}",
-        f"- latest_readiness_execution_ready: {summary['latest_readiness_execution_ready']}",
-        f"- latest_phase_gate_decision: {summary['latest_phase_gate_decision']}",
-        f"- latest_phase2_entry_allowed: {summary['latest_phase2_entry_allowed']}",
-        f"- latest_phase_gate_reason: {summary['latest_phase_gate_reason']}",
-        f"- latest_phase_gate_strict_validation_passed: {summary['latest_phase_gate_strict_validation_passed']}",
-        (
-            "- latest_phase_gate_strict_validation_issue_count: "
-            f"{summary['latest_phase_gate_strict_validation_issue_count']}"
-        ),
-        f"- latest_phase_gate_checked_files: {summary['latest_phase_gate_checked_files']}",
-        f"- latest_phase_gate_review_report_path: {summary['latest_phase_gate_review_report_path']}",
-        "",
-    ]
+    lines = ["# Paper Cycle History Report", ""]
+    if summary["quick_navigation"]:
+        lines.extend(["## Quick Navigation", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.append("")
+    if summary["related_reports"]:
+        lines.extend(["## Related Reports", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.append("")
+    lines.extend(
+        [
+            "## Summary",
+            "",
+            f"- cycle_count: {summary['cycle_count']}",
+            f"- completed_count: {summary['completed_count']}",
+            f"- latest_status: {summary['latest_status']}",
+            f"- latest_run_id: {summary['latest_run_id']}",
+            f"- latest_created_at: {summary['latest_created_at']}",
+            f"- total_orders: {summary['total_orders']}",
+            f"- total_fills: {summary['total_fills']}",
+            f"- latest_execution_overall_status: {summary['latest_execution_overall_status']}",
+            f"- latest_execution_venue_count: {summary['latest_execution_venue_count']}",
+            (
+                "- latest_execution_comparison_all_registries_present: "
+                f"{summary['latest_execution_comparison_all_registries_present']}"
+            ),
+            f"- latest_execution_diagnostics_status: {summary['latest_execution_diagnostics_status']}",
+            f"- latest_execution_drift_overview_status: {summary['latest_execution_drift_overview_status']}",
+            (
+                "- latest_execution_drift_overview_diagnostics_alignment_match: "
+                f"{summary['latest_execution_drift_overview_diagnostics_alignment_match']}"
+            ),
+            (
+                "- latest_execution_drift_overview_state_comparison_mismatching_count: "
+                f"{summary['latest_execution_drift_overview_state_comparison_mismatching_count']}"
+            ),
+            (
+                "- latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count: "
+                f"{summary['latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count']}"
+            ),
+            f"- latest_readiness_next_phase: {summary['latest_readiness_next_phase']}",
+            f"- latest_readiness_execution_ready: {summary['latest_readiness_execution_ready']}",
+            f"- latest_phase_gate_decision: {summary['latest_phase_gate_decision']}",
+            f"- latest_phase2_entry_allowed: {summary['latest_phase2_entry_allowed']}",
+            f"- latest_phase_gate_reason: {summary['latest_phase_gate_reason']}",
+            f"- latest_phase_gate_strict_validation_passed: {summary['latest_phase_gate_strict_validation_passed']}",
+            (
+                "- latest_phase_gate_strict_validation_issue_count: "
+                f"{summary['latest_phase_gate_strict_validation_issue_count']}"
+            ),
+            f"- latest_phase_gate_checked_files: {summary['latest_phase_gate_checked_files']}",
+            f"- latest_phase_gate_review_report_path: {summary['latest_phase_gate_review_report_path']}",
+            "",
+        ]
+    )
     if summary["latest_phase_gate_issue_previews"]:
         lines.extend(["## Latest Phase Gate Issue Preview", ""])
         lines.extend(f"- {item}" for item in summary["latest_phase_gate_issue_previews"])

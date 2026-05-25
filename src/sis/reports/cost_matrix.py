@@ -5,7 +5,7 @@ from pathlib import Path
 
 import polars as pl
 
-from sis.storage.jsonl_store import read_json, read_jsonl
+from sis.storage.jsonl_store import read_json, read_jsonl, write_json
 
 
 BASE_ROWS = [
@@ -368,3 +368,94 @@ def build_cost_matrix_from_quotes(
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     matrix.write_csv(out_path)
+
+
+def _quick_navigation(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "venue_cost_matrix_report": str(out_path),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
+        "live_evidence_report": str(reports_dir.parent / "docs/live_evidence_reports/latest.md"),
+    }
+
+
+def _related_reports(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "venue_cost_matrix_report": str(out_path),
+        "quote_diagnostics_report": str(reports_dir / "quote_diagnostics.md"),
+        "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
+        "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
+        "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
+        "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
+        "go_no_go_report": str(reports_dir.parent / "research/go_no_go_report.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+    }
+
+
+def build_cost_matrix_report(
+    *,
+    cost_matrix_path: Path,
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    frame = pl.read_csv(cost_matrix_path) if cost_matrix_path.exists() else pl.DataFrame()
+    row_count = frame.height
+    venues = sorted(frame.get_column("venue").unique().to_list()) if "venue" in frame.columns else []
+    symbols = sorted(frame.get_column("symbol").unique().to_list()) if "symbol" in frame.columns else []
+    summary = {
+        "row_count": row_count,
+        "venues": venues,
+        "symbols": symbols,
+        "cost_matrix_path": str(cost_matrix_path),
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
+        "venue_cost_matrix_report_path": str(out_path) if out_path is not None else None,
+    }
+
+    lines = ["# Venue Cost Matrix Report", ""]
+    if summary["quick_navigation"]:
+        lines.extend(["## Quick Navigation", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.append("")
+    if summary["related_reports"]:
+        lines.extend(["## Related Reports", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.append("")
+    lines.extend(
+        [
+            "## Summary",
+            "",
+            f"- cost_matrix_path: {summary['cost_matrix_path']}",
+            f"- row_count: {summary['row_count']}",
+            f"- venues: {summary['venues']}",
+            f"- symbols: {summary['symbols']}",
+            "",
+            "## Rows",
+            "",
+        ]
+    )
+    if row_count:
+        for row in frame.to_dicts():
+            lines.append(
+                f"- venue={row.get('venue')} symbol={row.get('symbol')} "
+                f"spread_p50_bps={row.get('spread_p50_bps')} stale_rate={row.get('stale_rate')} "
+                f"tradable_rate={row.get('tradable_rate')}"
+            )
+    else:
+        lines.append("- rows: none")
+
+    text = "\n".join(lines).rstrip() + "\n"
+    if out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(text, encoding="utf-8")
+    if summary_path is not None:
+        write_json(summary_path, summary)
+    return text

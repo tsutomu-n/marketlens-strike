@@ -54,6 +54,21 @@ def _latest_file(paths: list[Path]) -> list[Path]:
     return paths[-1:] if paths else []
 
 
+def _read_json_list(path: Path) -> list[dict]:
+    payload = read_json(path)
+    return payload if isinstance(payload, list) else []
+
+
+def _is_json_list(path: Path) -> bool:
+    payload = read_json(path)
+    return isinstance(payload, list)
+
+
+def _is_json_dict(path: Path) -> bool:
+    payload = read_json(path)
+    return isinstance(payload, dict)
+
+
 def _validate_json(path: Path, schema: dict, issues: list[ValidationIssue]) -> None:
     try:
         payload = read_json(path)
@@ -100,8 +115,7 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
 
     backtest_metrics_path = data_dir / "research/backtest_metrics.json"
     if backtest_metrics_path.exists():
-        payload = read_json(backtest_metrics_path)
-        if not isinstance(payload, list):
+        if not _is_json_list(backtest_metrics_path):
             issues.append(
                 ValidationIssue(path=str(backtest_metrics_path), message="backtest_metrics.json must be an array")
             )
@@ -115,5 +129,26 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
     for path in _latest_file(evidence_files):
         _validate_json(path, EVIDENCE_CARD_SCHEMA, issues)
         checked_files += 1
+
+    execution_summary_files = [
+        data_dir / "ops/execution_snapshot_summary.json",
+        data_dir / "ops/execution_venue_comparison_summary.json",
+        data_dir / "ops/execution_venue_diagnostics_summary.json",
+        data_dir / "ops/execution_gap_history_summary.json",
+        data_dir / "ops/execution_state_comparison_history_summary.json",
+        data_dir / "ops/execution_snapshot_drift_history_summary.json",
+        data_dir / "ops/execution_drift_overview_summary.json",
+    ]
+    for path in execution_summary_files:
+        if path.exists():
+            if not _is_json_dict(path):
+                issues.append(
+                    ValidationIssue(path=str(path), message=f"{path.name} must be a JSON object")
+                )
+            checked_files += 1
+        elif strict:
+            issues.append(
+                ValidationIssue(path=str(path), message=f"Missing required execution summary artifact: {path.name}")
+            )
 
     return ValidationSummary(checked_files=checked_files, issues=issues)

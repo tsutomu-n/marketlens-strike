@@ -1,0 +1,215 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from sis.storage.jsonl_store import write_json
+
+
+def _recommended_read_order() -> list[str]:
+    return [
+        "docs/ACCEPTANCE_AUDIT.md",
+        "docs/IMPLEMENTATION_STATUS.md",
+        "data/ops/operations_dashboard_summary.json",
+        "data/ops/current_state_index.json",
+        "data/ops/readiness_snapshot.json",
+        "data/ops/phase_gate_review_summary.json",
+    ]
+
+
+def _quick_navigation(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "state_command_report": str(out_path),
+        "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
+    }
+
+
+def _related_reports(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
+        "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
+        "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
+    }
+
+
+def _write_report(
+    *,
+    title: str,
+    summary: dict[str, object],
+    detail_lines: list[str],
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    lines = [f"# {title}", ""]
+    if summary["quick_navigation"]:
+        lines.extend(["## Quick Navigation", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.append("")
+    if summary["related_reports"]:
+        lines.extend(["## Related Reports", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.append("")
+    lines.extend(["## Overview", "", *detail_lines, "", "## Recommended Read Order", ""])
+    lines.extend(f"- {item}" for item in _recommended_read_order())
+    lines.append("")
+    text = "\n".join(lines)
+    if out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(text, encoding="utf-8")
+    if summary_path is not None:
+        write_json(summary_path, summary)
+    return text
+
+
+def build_daemon_manifest_report(
+    *,
+    manifest: dict[str, object],
+    manifest_path: str,
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    summary = {
+        **manifest,
+        "daemon_manifest_path": manifest_path,
+        "daemon_manifest_report_path": str(out_path) if out_path is not None else None,
+        "recommended_read_order": _recommended_read_order(),
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
+    }
+    notes = summary.get("notes")
+    detail_notes = ",".join(notes) if isinstance(notes, list) else str(notes)
+    return _write_report(
+        title="Daemon Manifest",
+        summary=summary,
+        detail_lines=[
+            f"- run_id: {summary.get('run_id')}",
+            f"- created_at: {summary.get('created_at')}",
+            f"- mode: {summary.get('mode')}",
+            f"- command: {summary.get('command')}",
+            f"- state_store_path: {summary.get('state_store_path')}",
+            f"- notes: {detail_notes}",
+            f"- daemon_manifest_path: {summary.get('daemon_manifest_path')}",
+        ],
+        out_path=out_path,
+        summary_path=summary_path,
+    )
+
+
+def build_state_export_report(
+    *,
+    snapshot: dict[str, object],
+    snapshot_path: str,
+    state_store_path: str,
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    summary = {
+        "snapshot_path": snapshot_path,
+        "state_store_path": state_store_path,
+        "paper_positions_present": snapshot.get("paper_positions") is not None,
+        "paper_last_run_present": snapshot.get("paper_last_run") is not None,
+        "latest_reconciliation_present": snapshot.get("latest_reconciliation") is not None,
+        "audit_overall_status": snapshot.get("audit_overall_status"),
+        "audit_latest_operation": snapshot.get("audit_latest_operation"),
+        "phase_gate_decision": snapshot.get("phase_gate_decision"),
+        "phase2_entry_allowed": snapshot.get("phase2_entry_allowed"),
+        "phase2_entry_reason": snapshot.get("phase2_entry_reason"),
+        "phase_gate_reason": snapshot.get("phase_gate_reason"),
+        "phase_gate_strict_validation_passed": snapshot.get("phase_gate_strict_validation_passed"),
+        "phase_gate_checked_files": snapshot.get("phase_gate_checked_files"),
+        "readiness_next_phase_candidate": snapshot.get("readiness_next_phase_candidate"),
+        "readiness_execution_ready": snapshot.get("readiness_execution_ready"),
+        "execution_drift_overview_status": snapshot.get("execution_drift_overview_status"),
+        "state_export_report_path": str(out_path) if out_path is not None else None,
+        "recommended_read_order": _recommended_read_order(),
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
+    }
+    return _write_report(
+        title="State Export Snapshot",
+        summary=summary,
+        detail_lines=[
+            f"- snapshot_path: {summary.get('snapshot_path')}",
+            f"- state_store_path: {summary.get('state_store_path')}",
+            f"- paper_positions_present: {summary.get('paper_positions_present')}",
+            f"- paper_last_run_present: {summary.get('paper_last_run_present')}",
+            f"- latest_reconciliation_present: {summary.get('latest_reconciliation_present')}",
+            f"- audit_overall_status: {summary.get('audit_overall_status')}",
+            f"- audit_latest_operation: {summary.get('audit_latest_operation')}",
+            f"- phase_gate_decision: {summary.get('phase_gate_decision')}",
+            f"- phase_gate_reason: {summary.get('phase_gate_reason')}",
+            f"- phase_gate_strict_validation_passed: {summary.get('phase_gate_strict_validation_passed')}",
+            f"- readiness_next_phase_candidate: {summary.get('readiness_next_phase_candidate')}",
+            f"- readiness_execution_ready: {summary.get('readiness_execution_ready')}",
+            f"- execution_drift_overview_status: {summary.get('execution_drift_overview_status')}",
+        ],
+        out_path=out_path,
+        summary_path=summary_path,
+    )
+
+
+def build_state_restore_report(
+    *,
+    snapshot: dict[str, object],
+    snapshot_path: str,
+    state_store_path: str,
+    restored: bool,
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    summary = {
+        "restored": restored,
+        "snapshot_path": snapshot_path,
+        "state_store_path": state_store_path,
+        "paper_positions_present": snapshot.get("paper_positions") is not None,
+        "paper_last_run_present": snapshot.get("paper_last_run") is not None,
+        "latest_reconciliation_present": snapshot.get("latest_reconciliation") is not None,
+        "audit_overall_status": snapshot.get("audit_overall_status"),
+        "audit_latest_operation": snapshot.get("audit_latest_operation"),
+        "phase_gate_decision": snapshot.get("phase_gate_decision"),
+        "phase2_entry_allowed": snapshot.get("phase2_entry_allowed"),
+        "phase2_entry_reason": snapshot.get("phase2_entry_reason"),
+        "phase_gate_reason": snapshot.get("phase_gate_reason"),
+        "phase_gate_strict_validation_passed": snapshot.get("phase_gate_strict_validation_passed"),
+        "phase_gate_checked_files": snapshot.get("phase_gate_checked_files"),
+        "readiness_next_phase_candidate": snapshot.get("readiness_next_phase_candidate"),
+        "readiness_execution_ready": snapshot.get("readiness_execution_ready"),
+        "execution_drift_overview_status": snapshot.get("execution_drift_overview_status"),
+        "state_restore_report_path": str(out_path) if out_path is not None else None,
+        "recommended_read_order": _recommended_read_order(),
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
+    }
+    return _write_report(
+        title="State Restore Snapshot",
+        summary=summary,
+        detail_lines=[
+            f"- restored: {summary.get('restored')}",
+            f"- snapshot_path: {summary.get('snapshot_path')}",
+            f"- state_store_path: {summary.get('state_store_path')}",
+            f"- paper_positions_present: {summary.get('paper_positions_present')}",
+            f"- paper_last_run_present: {summary.get('paper_last_run_present')}",
+            f"- latest_reconciliation_present: {summary.get('latest_reconciliation_present')}",
+            f"- audit_overall_status: {summary.get('audit_overall_status')}",
+            f"- audit_latest_operation: {summary.get('audit_latest_operation')}",
+            f"- phase_gate_decision: {summary.get('phase_gate_decision')}",
+            f"- phase_gate_reason: {summary.get('phase_gate_reason')}",
+            f"- phase_gate_strict_validation_passed: {summary.get('phase_gate_strict_validation_passed')}",
+            f"- readiness_next_phase_candidate: {summary.get('readiness_next_phase_candidate')}",
+            f"- readiness_execution_ready: {summary.get('readiness_execution_ready')}",
+            f"- execution_drift_overview_status: {summary.get('execution_drift_overview_status')}",
+        ],
+        out_path=out_path,
+        summary_path=summary_path,
+    )

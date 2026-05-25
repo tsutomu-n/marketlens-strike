@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 import polars as pl
 import typer
@@ -37,11 +38,19 @@ from sis.research.providers import FredMacroProvider
 from sis.research.research_quality import build_research_quality_report
 from sis.research.signal_builder import build_signals
 from sis.reports.cost_matrix import build_cost_matrix_from_quotes
+from sis.reports.cost_matrix import build_cost_matrix_report
 from sis.reports.audit_bundle_history import build_audit_bundle_history_report
 from sis.reports.audit_bundle import build_audit_bundle_manifest
 from sis.reports.comparison import build_paper_live_comparison_report
 from sis.reports.current_state_index import build_current_state_index
 from sis.reports.execution_drift_overview import build_execution_drift_overview_report
+from sis.reports.execution_adapter_status import (
+    build_action_status_report,
+    build_balance_status_report,
+    build_fill_status_report,
+    build_order_status_report,
+    build_reconcile_positions_report,
+)
 from sis.reports.execution_gap_history import build_execution_gap_history_report
 from sis.reports.execution_snapshot_drift_history import build_execution_snapshot_drift_history_report
 from sis.reports.execution_state_comparison_history import build_execution_state_comparison_history_report
@@ -61,13 +70,35 @@ from sis.reports.operations_timeline import build_operations_timeline_report
 from sis.reports.paper_cycle_history import build_paper_cycle_history_report
 from sis.reports.phase_gate_review import build_phase_gate_review
 from sis.reports.readiness_snapshot import build_readiness_snapshot
+from sis.reports.remediation_execution_plan import build_remediation_execution_plan
+from sis.reports.remediation_planner import build_remediation_planner
+from sis.reports.remediation_session import build_remediation_session
+from sis.reports.remediation_session_checkpoint import build_remediation_session_checkpoint
+from sis.reports.remediation_scoreboard import build_remediation_scoreboard
+from sis.reports.remediation_evaluator import build_remediation_evaluator
+from sis.reports.remediation_evidence import build_remediation_evidence
+from sis.reports.remediation_command_results import build_remediation_command_results
+from sis.reports.state_command_status import (
+    build_daemon_manifest_report,
+    build_state_export_report,
+    build_state_restore_report,
+)
 from sis.reports.operations_dashboard import build_operations_dashboard
+from sis.reports.ops_command_status import (
+    build_alert_report,
+    build_healthcheck_report,
+    build_kill_switch_report,
+    build_schedule_run_report,
+)
 from sis.reports.paper_operations_runbook import build_paper_operations_runbook
 from sis.reports.quote_diagnostics import build_quote_diagnostics
+from sis.reports.quote_diagnostics import build_quote_diagnostics_report
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
+    execution_comparison_flat_fields,
     execution_diagnostics_flat_fields,
     execution_gap_history_flat_fields,
+    execution_snapshot_flat_fields,
     normalize_execution_gap_history_summary,
     normalize_execution_comparison_summary,
     normalize_execution_diagnostics_summary,
@@ -80,6 +111,8 @@ from sis.reports.summary_normalizers import (
     normalize_execution_state_comparison_summary,
     normalize_phase_gate_summary,
     normalize_readiness_summary,
+    defaulted_all_latest_execution_lineage_fields,
+    latest_execution_lineage_payload_from_summary,
     phase_gate_flat_fields,
     phase_gate_issue_note_lines,
     phase_gate_nested_fields,
@@ -210,6 +243,11 @@ def build_cost_matrix() -> None:
         gtrade_sidecar_root=settings.data_dir / "raw/sidecar/gtrade",
         ostium_registry_path=settings.data_dir / "registry/ostium_instrument_registry.json",
     )
+    build_cost_matrix_report(
+        cost_matrix_path=out,
+        out_path=settings.data_dir / "reports/venue_cost_matrix.md",
+        summary_path=settings.data_dir / "ops/venue_cost_matrix_summary.json",
+    )
     logger.info("written: {}", out)
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
         typer.echo(f"recommended_read_order_{index}={item}")
@@ -281,6 +319,7 @@ def _adapter_for_venue(settings_data_dir: Path, venue: str):
         return GTradeExecutionAdapter(
             registry_path=settings_data_dir / "registry/gtrade_instrument_registry.json",
             balance_snapshot_path=settings_data_dir / "execution/gtrade_balance.json",
+            positions_snapshot_path=settings_data_dir / "paper/positions.parquet",
             fills_snapshot_path=settings_data_dir / "execution/gtrade_fills.json",
             order_status_path=settings_data_dir / "execution/gtrade_order_status.json",
         )
@@ -383,6 +422,72 @@ def _write_weekly_review(settings_data_dir: Path) -> tuple[Path, str]:
     return out, text
 
 
+def _write_daemon_manifest_artifacts(settings_data_dir: Path) -> tuple[Path, Path, str] | None:
+    manifest_path = settings_data_dir / "ops/daemon_manifest.json"
+    if not manifest_path.exists():
+        return None
+    payload = read_json(manifest_path)
+    if not isinstance(payload, dict):
+        return None
+    out = settings_data_dir / "reports/daemon_manifest.md"
+    summary_out = settings_data_dir / "ops/daemon_manifest_summary.json"
+    text = build_daemon_manifest_report(
+        manifest=payload,
+        manifest_path=str(manifest_path),
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _write_state_export_artifacts(
+    settings_data_dir: Path,
+    *,
+    state_store_path: Path | None = None,
+) -> tuple[Path, Path, str] | None:
+    snapshot_path = settings_data_dir / "state/state_snapshot.json"
+    if not snapshot_path.exists():
+        return None
+    payload = read_json(snapshot_path)
+    if not isinstance(payload, dict):
+        return None
+    out = settings_data_dir / "reports/state_export.md"
+    summary_out = settings_data_dir / "ops/state_export_summary.json"
+    text = build_state_export_report(
+        snapshot=payload,
+        snapshot_path=str(snapshot_path),
+        state_store_path=str(state_store_path or (settings_data_dir / "state/marketlens.sqlite")),
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _write_state_restore_artifacts(
+    settings_data_dir: Path,
+    *,
+    snapshot_path: Path,
+    state_store_path: Path | None = None,
+    restored: bool,
+) -> tuple[Path, Path, str] | None:
+    if not snapshot_path.exists():
+        return None
+    payload = read_json(snapshot_path)
+    if not isinstance(payload, dict):
+        return None
+    out = settings_data_dir / "reports/state_restore.md"
+    summary_out = settings_data_dir / "ops/state_restore_summary.json"
+    text = build_state_restore_report(
+        snapshot=payload,
+        snapshot_path=str(snapshot_path),
+        state_store_path=str(state_store_path or (settings_data_dir / "state/marketlens.sqlite")),
+        restored=restored,
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
 def _paper_last_run_path(settings_data_dir: Path) -> Path | None:
     paper_last_run_path = settings_data_dir / "state/paper_last_run.json"
     if not paper_last_run_path.exists():
@@ -417,150 +522,181 @@ def _write_comparison_report(settings_data_dir: Path) -> tuple[Path, str]:
 
 
 def _paper_last_run_audit_summary(settings_data_dir: Path) -> dict:
-    paper_last_run_path = _paper_last_run_path(settings_data_dir)
-    if paper_last_run_path is not None:
-        payload = read_json(paper_last_run_path)
-        if isinstance(payload, dict):
-            audit = payload.get("audit")
-            if isinstance(audit, dict):
-                return audit
-    return _read_audit_schedule_summary(settings_data_dir)
+    return _paper_last_run_summary(
+        settings_data_dir,
+        "audit",
+        _read_audit_schedule_summary,
+    )
 
 
 def _paper_last_run_phase_gate_summary(settings_data_dir: Path) -> dict:
-    paper_last_run_path = _paper_last_run_path(settings_data_dir)
-    if paper_last_run_path is not None:
-        payload = read_json(paper_last_run_path)
-        if isinstance(payload, dict):
-            phase_gate = payload.get("phase_gate")
-            if isinstance(phase_gate, dict):
-                return phase_gate
-    return _read_phase_gate_schedule_summary(settings_data_dir)
+    return _paper_last_run_summary(
+        settings_data_dir,
+        "phase_gate",
+        _read_phase_gate_schedule_summary,
+    )
 
 
 def _paper_last_run_execution_drift_overview_summary(settings_data_dir: Path) -> dict:
-    paper_last_run_path = _paper_last_run_path(settings_data_dir)
-    if paper_last_run_path is not None:
-        payload = read_json(paper_last_run_path)
-        if isinstance(payload, dict):
-            execution_drift_overview = payload.get("execution_drift_overview_summary")
-            if isinstance(execution_drift_overview, dict):
-                return execution_drift_overview
-    return _read_execution_drift_overview_schedule_summary(settings_data_dir)
+    return _paper_last_run_summary(
+        settings_data_dir,
+        "execution_drift_overview_summary",
+        _read_execution_drift_overview_schedule_summary,
+    )
+
+
+def _paper_last_run_readiness_summary(settings_data_dir: Path) -> dict:
+    return _paper_last_run_summary(
+        settings_data_dir,
+        "readiness_summary",
+        _read_readiness_schedule_summary,
+    )
+
+
+def _paper_last_run_execution_gap_history_summary(settings_data_dir: Path) -> dict:
+    return _paper_last_run_summary(
+        settings_data_dir,
+        "execution_gap_history_summary",
+        _read_execution_gap_history_schedule_summary,
+    )
+
+
+def _paper_last_run_execution_state_comparison_summary(settings_data_dir: Path) -> dict:
+    return _paper_last_run_summary(
+        settings_data_dir,
+        "execution_state_comparison_summary",
+        _read_execution_state_comparison_schedule_summary,
+    )
+
+
+def _paper_last_run_execution_snapshot_drift_summary(settings_data_dir: Path) -> dict:
+    return _paper_last_run_summary(
+        settings_data_dir,
+        "execution_snapshot_drift_summary",
+        _read_execution_snapshot_drift_schedule_summary,
+    )
 
 
 def _read_execution_schedule_summary(settings_data_dir: Path) -> dict:
-    execution_path = settings_data_dir / "ops/execution_snapshot_summary.json"
-    if not execution_path.exists():
-        return {}
-    payload = read_json(execution_path)
-    if not isinstance(payload, dict):
-        return {}
-    return normalize_execution_snapshot_summary(
-        {
+    return _read_normalized_schedule_summary(
+        settings_data_dir,
+        path=settings_data_dir / "ops/execution_snapshot_summary.json",
+        normalizer=normalize_execution_snapshot_summary,
+        report_path="reports/execution_snapshot.md",
+    )
+
+
+def _paper_last_run_payload(settings_data_dir: Path) -> dict:
+    paper_last_run_path = _paper_last_run_path(settings_data_dir)
+    if paper_last_run_path is not None:
+        return _read_json_dict(paper_last_run_path)
+    return {}
+
+
+def _read_json_dict(path: Path) -> dict:
+    payload = read_json(path)
+    return payload if isinstance(payload, dict) else {}
+
+
+def _read_normalized_schedule_summary(
+    settings_data_dir: Path,
+    *,
+    path: Path,
+    normalizer: Callable[[dict], dict],
+    report_path: str | None = None,
+    default: dict | None = None,
+) -> dict:
+    if not path.exists():
+        return dict(default or {})
+    payload = _read_json_dict(path)
+    if not payload:
+        return dict(default or {})
+    if report_path is not None:
+        payload = {
             **payload,
-            "report_path": str(settings_data_dir / "reports/execution_snapshot.md"),
+            "report_path": str(settings_data_dir / report_path),
         }
+    return normalizer(payload)
+
+
+def _paper_last_run_summary(
+    settings_data_dir: Path,
+    key: str,
+    fallback_reader: Callable[[Path], dict],
+) -> dict:
+    payload = _paper_last_run_payload(settings_data_dir)
+    summary = payload.get(key) if isinstance(payload, dict) else None
+    if isinstance(summary, dict):
+        return summary
+    return fallback_reader(settings_data_dir)
+
+
+def _paper_last_run_latest_execution_payload(settings_data_dir: Path) -> dict:
+    return latest_execution_lineage_payload_from_summary(
+        _paper_last_run_payload(settings_data_dir)
     )
 
 
 def _read_execution_comparison_schedule_summary(settings_data_dir: Path) -> dict:
-    comparison_path = settings_data_dir / "ops/execution_venue_comparison_summary.json"
-    if not comparison_path.exists():
-        return {}
-    payload = read_json(comparison_path)
-    if not isinstance(payload, dict):
-        return {}
-    return normalize_execution_comparison_summary(
-        {
-            **payload,
-            "report_path": str(settings_data_dir / "reports/execution_venue_comparison.md"),
-        }
+    return _read_normalized_schedule_summary(
+        settings_data_dir,
+        path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
+        normalizer=normalize_execution_comparison_summary,
+        report_path="reports/execution_venue_comparison.md",
     )
 
 
 def _read_execution_diagnostics_schedule_summary(settings_data_dir: Path) -> dict:
-    diagnostics_path = settings_data_dir / "ops/execution_venue_diagnostics_summary.json"
-    if not diagnostics_path.exists():
-        return {}
-    payload = read_json(diagnostics_path)
-    if not isinstance(payload, dict):
-        return {}
-    return normalize_execution_diagnostics_summary(
-        {
-            **payload,
-            "report_path": str(settings_data_dir / "reports/execution_venue_diagnostics.md"),
-        }
+    return _read_normalized_schedule_summary(
+        settings_data_dir,
+        path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
+        normalizer=normalize_execution_diagnostics_summary,
+        report_path="reports/execution_venue_diagnostics.md",
     )
 
 
 def _read_execution_gap_history_schedule_summary(settings_data_dir: Path) -> dict:
-    gap_history_path = settings_data_dir / "ops/execution_gap_history_summary.json"
-    if not gap_history_path.exists():
-        return {"entry_count": 0, "latest_status": None, "latest_execution_diagnostics_status": None}
-    payload = read_json(gap_history_path)
-    if not isinstance(payload, dict):
-        return {"entry_count": 0, "latest_status": None, "latest_execution_diagnostics_status": None}
-    return normalize_execution_gap_history_summary(
-        {
-            **payload,
-            "report_path": str(settings_data_dir / "reports/execution_gap_history.md"),
-        }
+    return _read_normalized_schedule_summary(
+        settings_data_dir,
+        path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        normalizer=normalize_execution_gap_history_summary,
+        report_path="reports/execution_gap_history.md",
+        default={"entry_count": 0, "latest_status": None, "latest_execution_diagnostics_status": None},
     )
 
 
 def _read_execution_state_comparison_schedule_summary(settings_data_dir: Path) -> dict:
-    comparison_path = settings_data_dir / "ops/execution_state_comparison_history_summary.json"
-    if not comparison_path.exists():
-        return {"entry_count": 0, "latest_status_match": None, "mismatching_count": 0}
-    payload = read_json(comparison_path)
-    if not isinstance(payload, dict):
-        return {"entry_count": 0, "latest_status_match": None, "mismatching_count": 0}
-    return normalize_execution_state_comparison_summary(
-        {
-            **payload,
-            "report_path": str(settings_data_dir / "reports/execution_state_comparison_history.md"),
-        }
+    return _read_normalized_schedule_summary(
+        settings_data_dir,
+        path=settings_data_dir / "ops/execution_state_comparison_history_summary.json",
+        normalizer=normalize_execution_state_comparison_summary,
+        report_path="reports/execution_state_comparison_history.md",
+        default={"entry_count": 0, "latest_status_match": None, "mismatching_count": 0},
     )
 
 
 def _read_execution_snapshot_drift_schedule_summary(settings_data_dir: Path) -> dict:
-    drift_path = settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
-    if not drift_path.exists():
-        return {"entry_count": 0, "latest_status_match": None, "mismatching_snapshot_count": 0}
-    payload = read_json(drift_path)
-    if not isinstance(payload, dict):
-        return {"entry_count": 0, "latest_status_match": None, "mismatching_snapshot_count": 0}
-    return normalize_execution_snapshot_drift_summary(
-        {
-            **payload,
-            "report_path": str(settings_data_dir / "reports/execution_snapshot_drift_history.md"),
-        }
+    return _read_normalized_schedule_summary(
+        settings_data_dir,
+        path=settings_data_dir / "ops/execution_snapshot_drift_history_summary.json",
+        normalizer=normalize_execution_snapshot_drift_summary,
+        report_path="reports/execution_snapshot_drift_history.md",
+        default={"entry_count": 0, "latest_status_match": None, "mismatching_snapshot_count": 0},
     )
 
 
 def _read_execution_drift_overview_schedule_summary(settings_data_dir: Path) -> dict:
-    overview_path = settings_data_dir / "ops/execution_drift_overview_summary.json"
-    if not overview_path.exists():
-        return {
+    return _read_normalized_schedule_summary(
+        settings_data_dir,
+        path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        normalizer=normalize_execution_drift_overview_summary,
+        report_path="reports/execution_drift_overview.md",
+        default={
             "overall_status": None,
             "diagnostics_alignment_match": None,
             "state_comparison_mismatching_count": None,
             "snapshot_drift_mismatching_snapshot_count": None,
-        }
-    payload = read_json(overview_path)
-    if not isinstance(payload, dict):
-        return {
-            "overall_status": None,
-            "diagnostics_alignment_match": None,
-            "state_comparison_mismatching_count": None,
-            "snapshot_drift_mismatching_snapshot_count": None,
-        }
-    return normalize_execution_drift_overview_summary(
-        {
-            **payload,
-            "report_path": str(settings_data_dir / "reports/execution_drift_overview.md"),
-        }
+        },
     )
 
 
@@ -568,8 +704,8 @@ def _read_readiness_schedule_summary(settings_data_dir: Path) -> dict:
     readiness_path = settings_data_dir / "ops/readiness_snapshot.json"
     if not readiness_path.exists():
         return {}
-    payload = read_json(readiness_path)
-    if not isinstance(payload, dict):
+    payload = _read_json_dict(readiness_path)
+    if not payload:
         return {}
     return normalize_readiness_summary(
         {
@@ -592,6 +728,7 @@ def _write_monitoring_snapshot(settings_data_dir: Path, state_path: Path | None)
         decision_summary_path=settings_data_dir / "research/decision_summary.json",
         audit_dashboard_summary_path=settings_data_dir / "ops/audit_dashboard_summary.json",
         audit_bundle_summary_path=settings_data_dir / "ops/audit_bundle_manifest.json",
+        operations_bundle_manifest_path=settings_data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
@@ -614,6 +751,7 @@ def _write_monitoring_snapshot(settings_data_dir: Path, state_path: Path | None)
         ),
         audit_dashboard_summary_path=settings_data_dir / "ops/audit_dashboard_summary.json",
         audit_bundle_summary_path=settings_data_dir / "ops/audit_bundle_manifest.json",
+        operations_bundle_manifest_path=settings_data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
@@ -626,23 +764,17 @@ def _write_monitoring_snapshot(settings_data_dir: Path, state_path: Path | None)
 def _read_audit_schedule_summary(settings_data_dir: Path) -> dict:
     audit_dashboard_path = settings_data_dir / "ops/audit_dashboard_summary.json"
     audit_bundle_path = settings_data_dir / "ops/audit_bundle_manifest.json"
-    audit_dashboard = read_json(audit_dashboard_path) if audit_dashboard_path.exists() else {}
-    audit_bundle = read_json(audit_bundle_path) if audit_bundle_path.exists() else {}
-    if not isinstance(audit_dashboard, dict):
-        audit_dashboard = {}
-    if not isinstance(audit_bundle, dict):
-        audit_bundle = {}
+    audit_dashboard = _read_json_dict(audit_dashboard_path) if audit_dashboard_path.exists() else {}
+    audit_bundle = _read_json_dict(audit_bundle_path) if audit_bundle_path.exists() else {}
     return audit_summary_fields(audit_dashboard, audit_bundle)
 
 
 def _read_phase_gate_schedule_summary(settings_data_dir: Path) -> dict:
-    phase_gate_path = settings_data_dir / "ops/phase_gate_review_summary.json"
-    if not phase_gate_path.exists():
-        return {}
-    payload = read_json(phase_gate_path)
-    if not isinstance(payload, dict):
-        return {}
-    return normalize_phase_gate_summary(payload)
+    return _read_normalized_schedule_summary(
+        settings_data_dir,
+        path=settings_data_dir / "ops/phase_gate_review_summary.json",
+        normalizer=normalize_phase_gate_summary,
+    )
 
 
 def _phase_gate_note_lines(phase_gate: dict) -> list[str]:
@@ -724,6 +856,24 @@ def _execution_diagnostics_note_lines(execution_diagnostics: dict) -> list[str]:
     ]
 
 
+def _execution_summary_note_lines(execution_summary: dict) -> list[str]:
+    execution_fields = execution_snapshot_flat_fields(execution_summary)
+    return [
+        f"execution_overall_status={execution_fields.get('execution_overall_status')}",
+        f"execution_venue_count={execution_fields.get('execution_venue_count')}",
+    ]
+
+
+def _execution_comparison_note_lines(execution_comparison: dict) -> list[str]:
+    execution_comparison_fields = execution_comparison_flat_fields(execution_comparison)
+    return [
+        (
+            "execution_comparison_all_registries_present="
+            f"{execution_comparison_fields.get('execution_comparison_all_registries_present')}"
+        )
+    ]
+
+
 def _execution_state_comparison_note_lines(state_comparison: dict) -> list[str]:
     state_comparison_fields = execution_state_comparison_flat_fields(state_comparison)
     return [
@@ -801,6 +951,7 @@ def _write_ops_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
         audit_dashboard_summary_path=settings_data_dir / "ops/audit_dashboard_summary.json",
         audit_bundle_summary_path=settings_data_dir / "ops/audit_bundle_manifest.json",
+        operations_bundle_manifest_path=settings_data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
@@ -815,6 +966,7 @@ def _write_operations_dashboard(settings_data_dir: Path) -> tuple[Path, Path, st
     summary_out = settings_data_dir / "ops/operations_dashboard_summary.json"
     text = build_operations_dashboard(
         monitoring_snapshot_path=settings_data_dir / "ops/monitoring_status.json",
+        operations_timeline_summary_path=settings_data_dir / "ops/operations_timeline_summary.json",
         ops_review_summary_path=settings_data_dir / "ops/ops_review_summary.json",
         decision_summary_path=settings_data_dir / "research/decision_summary.json",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
@@ -828,8 +980,18 @@ def _write_operations_dashboard(settings_data_dir: Path) -> tuple[Path, Path, st
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
         execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_balance_status_summary_path=settings_data_dir / "ops/execution_balance_status_summary.json",
+        execution_fill_status_summary_path=settings_data_dir / "ops/execution_fill_status_summary.json",
+        execution_order_status_summary_path=settings_data_dir / "ops/execution_order_status_summary.json",
+        execution_cancel_order_summary_path=settings_data_dir / "ops/execution_cancel_order_summary.json",
+        execution_close_position_summary_path=settings_data_dir / "ops/execution_close_position_summary.json",
+        execution_reconcile_positions_summary_path=settings_data_dir / "ops/execution_reconcile_positions_summary.json",
+        daemon_manifest_summary_path=settings_data_dir / "ops/daemon_manifest_summary.json",
+        state_export_summary_path=settings_data_dir / "ops/state_export_summary.json",
+        state_restore_summary_path=settings_data_dir / "ops/state_restore_summary.json",
         audit_dashboard_summary_path=settings_data_dir / "ops/audit_dashboard_summary.json",
         audit_bundle_summary_path=settings_data_dir / "ops/audit_bundle_manifest.json",
+        operations_bundle_manifest_path=settings_data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         comparison_report_path=settings_data_dir / "reports/paper_vs_backtest_comparison.md",
         weekly_review_path=settings_data_dir / "reports/weekly_strategy_review.md",
@@ -861,6 +1023,8 @@ def _write_paper_operations_runbook(settings_data_dir: Path) -> tuple[Path, Path
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         ops_dashboard_summary_path=settings_data_dir / "ops/operations_dashboard_summary.json",
+        remediation_planner_summary_path=settings_data_dir / "ops/remediation_planner_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
@@ -945,6 +1109,127 @@ def _write_phase_gate_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
         execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        remediation_planner_summary_path=settings_data_dir / "ops/remediation_planner_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _write_remediation_planner(settings_data_dir: Path) -> tuple[Path, Path, str]:
+    out = settings_data_dir / "reports/remediation_planner.md"
+    summary_out = settings_data_dir / "ops/remediation_planner_summary.json"
+    text = build_remediation_planner(
+        phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
+        runbook_summary_path=settings_data_dir / "ops/paper_operations_runbook_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        remediation_command_results_summary_path=settings_data_dir / "ops/remediation_command_results_summary.json",
+        operation_chain_path=settings_data_dir / "ops/operation_manifests.jsonl",
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _write_remediation_execution_plan(settings_data_dir: Path) -> tuple[Path, Path, str]:
+    out = settings_data_dir / "reports/remediation_execution_plan.md"
+    summary_out = settings_data_dir / "ops/remediation_execution_plan_summary.json"
+    text = build_remediation_execution_plan(
+        remediation_planner_summary_path=settings_data_dir / "ops/remediation_planner_summary.json",
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _write_remediation_session(settings_data_dir: Path) -> tuple[Path, Path, str]:
+    out = settings_data_dir / "reports/remediation_session.md"
+    summary_out = settings_data_dir / "ops/remediation_session_summary.json"
+    text = build_remediation_session(
+        remediation_execution_plan_summary_path=settings_data_dir / "ops/remediation_execution_plan_summary.json",
+        remediation_command_results_summary_path=settings_data_dir / "ops/remediation_command_results_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _write_remediation_session_checkpoint(
+    settings_data_dir: Path,
+    *,
+    action_key: str | None = None,
+    result: str | None = None,
+    note: str | None = None,
+    evidence_path: str | None = None,
+    observed_signal: str | None = None,
+    stdout_summary: str | None = None,
+    stderr_summary: str | None = None,
+    exit_code: int | None = None,
+) -> tuple[Path, Path, str]:
+    out = settings_data_dir / "reports/remediation_session_checkpoint.md"
+    summary_out = settings_data_dir / "ops/remediation_session_checkpoint_summary.json"
+    text = build_remediation_session_checkpoint(
+        remediation_session_summary_path=settings_data_dir / "ops/remediation_session_summary.json",
+        checkpoint_summary_path=summary_out,
+        remediation_command_results_summary_path=settings_data_dir / "ops/remediation_command_results_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        out_path=out,
+        summary_path=summary_out,
+        action_key=action_key,
+        result=result,
+        note=note,
+        evidence_path=evidence_path,
+        observed_signal=observed_signal,
+        stdout_summary=stdout_summary,
+        stderr_summary=stderr_summary,
+        exit_code=exit_code,
+    )
+    return out, summary_out, text
+
+
+def _write_remediation_scoreboard(settings_data_dir: Path) -> tuple[Path, Path, str]:
+    out = settings_data_dir / "reports/remediation_scoreboard.md"
+    summary_out = settings_data_dir / "ops/remediation_scoreboard_summary.json"
+    text = build_remediation_scoreboard(
+        remediation_session_checkpoint_summary_path=settings_data_dir / "ops/remediation_session_checkpoint_summary.json",
+        remediation_command_results_summary_path=settings_data_dir / "ops/remediation_command_results_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _write_remediation_evaluator(settings_data_dir: Path) -> tuple[Path, Path, str]:
+    out = settings_data_dir / "reports/remediation_evaluator.md"
+    summary_out = settings_data_dir / "ops/remediation_evaluator_summary.json"
+    text = build_remediation_evaluator(
+        remediation_session_checkpoint_summary_path=settings_data_dir / "ops/remediation_session_checkpoint_summary.json",
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _write_remediation_evidence(settings_data_dir: Path) -> tuple[Path, Path, str]:
+    out = settings_data_dir / "reports/remediation_evidence.md"
+    summary_out = settings_data_dir / "ops/remediation_evidence_summary.json"
+    text = build_remediation_evidence(
+        remediation_session_checkpoint_summary_path=settings_data_dir / "ops/remediation_session_checkpoint_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        out_path=out,
+        summary_path=summary_out,
+    )
+    return out, summary_out, text
+
+
+def _write_remediation_command_results(settings_data_dir: Path) -> tuple[Path, Path, str]:
+    out = settings_data_dir / "reports/remediation_command_results.md"
+    summary_out = settings_data_dir / "ops/remediation_command_results_summary.json"
+    text = build_remediation_command_results(
+        remediation_session_checkpoint_summary_path=settings_data_dir / "ops/remediation_session_checkpoint_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
@@ -1179,6 +1464,8 @@ def _append_paper_operations_cycle_manifest(
 ) -> Path:
     chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
     parent = latest_operation_manifest(chain_path)
+    execution = _read_execution_schedule_summary(settings_data_dir)
+    execution_comparison = _read_execution_comparison_schedule_summary(settings_data_dir)
     execution_diagnostics = _read_execution_diagnostics_schedule_summary(settings_data_dir)
     gap_history = _read_execution_gap_history_schedule_summary(settings_data_dir)
     state_comparison = _read_execution_state_comparison_schedule_summary(settings_data_dir)
@@ -1198,6 +1485,8 @@ def _append_paper_operations_cycle_manifest(
             f"fills={fills_count}",
             f"open_positions={open_positions}",
             f"monitoring_status={monitoring_status}",
+            *_execution_summary_note_lines(execution),
+            *_execution_comparison_note_lines(execution_comparison),
             *_execution_diagnostics_note_lines(execution_diagnostics),
             *_execution_gap_history_note_lines(gap_history),
             *_execution_state_comparison_note_lines(state_comparison),
@@ -1219,6 +1508,8 @@ def _append_operations_snapshot_manifest(
 ) -> Path:
     chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
     parent = latest_operation_manifest(chain_path)
+    execution = _read_execution_schedule_summary(settings_data_dir)
+    execution_comparison = _read_execution_comparison_schedule_summary(settings_data_dir)
     execution_diagnostics = _read_execution_diagnostics_schedule_summary(settings_data_dir)
     gap_history = _read_execution_gap_history_schedule_summary(settings_data_dir)
     state_comparison = _read_execution_state_comparison_schedule_summary(settings_data_dir)
@@ -1236,6 +1527,8 @@ def _append_operations_snapshot_manifest(
         notes=[
             f"overall_status={overall_status}",
             f"cycle_count={cycle_count}",
+            *_execution_summary_note_lines(execution),
+            *_execution_comparison_note_lines(execution_comparison),
             *_execution_diagnostics_note_lines(execution_diagnostics),
             *_execution_gap_history_note_lines(gap_history),
             *_execution_state_comparison_note_lines(state_comparison),
@@ -1257,6 +1550,8 @@ def _append_operations_audit_snapshot_manifest(
 ) -> Path:
     chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
     parent = latest_operation_manifest(chain_path)
+    execution = _read_execution_schedule_summary(settings_data_dir)
+    execution_comparison = _read_execution_comparison_schedule_summary(settings_data_dir)
     execution_diagnostics = _read_execution_diagnostics_schedule_summary(settings_data_dir)
     gap_history = _read_execution_gap_history_schedule_summary(settings_data_dir)
     state_comparison = _read_execution_state_comparison_schedule_summary(settings_data_dir)
@@ -1274,6 +1569,8 @@ def _append_operations_audit_snapshot_manifest(
         notes=[
             f"overall_status={overall_status}",
             f"timeline_latest_operation={timeline_latest_operation}",
+            *_execution_summary_note_lines(execution),
+            *_execution_comparison_note_lines(execution_comparison),
             *_execution_diagnostics_note_lines(execution_diagnostics),
             *_execution_gap_history_note_lines(gap_history),
             *_execution_state_comparison_note_lines(state_comparison),
@@ -1295,6 +1592,8 @@ def _append_audit_bundle_snapshot_manifest(
 ) -> Path:
     chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
     parent = latest_operation_manifest(chain_path)
+    execution = _read_execution_schedule_summary(settings_data_dir)
+    execution_comparison = _read_execution_comparison_schedule_summary(settings_data_dir)
     execution_diagnostics = _read_execution_diagnostics_schedule_summary(settings_data_dir)
     gap_history = _read_execution_gap_history_schedule_summary(settings_data_dir)
     state_comparison = _read_execution_state_comparison_schedule_summary(settings_data_dir)
@@ -1312,11 +1611,301 @@ def _append_audit_bundle_snapshot_manifest(
         notes=[
             f"overall_status={overall_status}",
             f"timeline_latest_operation={timeline_latest_operation}",
+            *_execution_summary_note_lines(execution),
+            *_execution_comparison_note_lines(execution_comparison),
             *_execution_diagnostics_note_lines(execution_diagnostics),
             *_execution_gap_history_note_lines(gap_history),
             *_execution_state_comparison_note_lines(state_comparison),
             *_execution_snapshot_drift_note_lines(snapshot_drift),
             *_execution_drift_note_lines(drift_overview),
+            *_readiness_note_lines(readiness),
+            *_phase_gate_note_lines(phase_gate),
+        ],
+    )
+    return append_operation_manifest(chain_path, manifest)
+
+
+def _append_remediation_planner_manifest(
+    settings_data_dir: Path,
+    *,
+    summary_path: Path,
+    planner_status: str | None,
+    rerun_trend: str | None,
+    next_best_command: str | None,
+    next_feedback_priority_reason: str | None,
+    planned_step_count: int | None,
+) -> Path:
+    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
+    parent = latest_operation_manifest(chain_path)
+    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
+    readiness = _read_readiness_schedule_summary(settings_data_dir)
+    manifest = create_operation_manifest(
+        operation="remediation_planner_dry_run",
+        mode="ops",
+        command="uv run sis remediation-planner",
+        status=planner_status or "unknown",
+        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        artifacts=[str(summary_path)],
+        notes=[
+            f"planner_status={planner_status}",
+            f"rerun_trend={rerun_trend}",
+            f"planned_step_count={planned_step_count}",
+            f"next_best_command={next_best_command}",
+            f"next_feedback_priority_reason={next_feedback_priority_reason}",
+            *_readiness_note_lines(readiness),
+            *_phase_gate_note_lines(phase_gate),
+        ],
+    )
+    return append_operation_manifest(chain_path, manifest)
+
+
+def _append_remediation_execution_plan_manifest(
+    settings_data_dir: Path,
+    *,
+    summary_path: Path,
+    execution_plan_status: str | None,
+    next_action_command: str | None,
+    next_action_feedback_priority_reason: str | None,
+    planned_action_count: int | None,
+) -> Path:
+    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
+    parent = latest_operation_manifest(chain_path)
+    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
+    readiness = _read_readiness_schedule_summary(settings_data_dir)
+    manifest = create_operation_manifest(
+        operation="remediation_execution_plan_dry_run",
+        mode="ops",
+        command="uv run sis remediation-execution-plan",
+        status=execution_plan_status or "unknown",
+        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        artifacts=[str(summary_path)],
+        notes=[
+            f"execution_plan_status={execution_plan_status}",
+            f"planned_action_count={planned_action_count}",
+            f"next_action_command={next_action_command}",
+            f"next_action_feedback_priority_reason={next_action_feedback_priority_reason}",
+            *_readiness_note_lines(readiness),
+            *_phase_gate_note_lines(phase_gate),
+        ],
+    )
+    return append_operation_manifest(chain_path, manifest)
+
+
+def _append_remediation_session_manifest(
+    settings_data_dir: Path,
+    *,
+    summary_path: Path,
+    session_status: str | None,
+    next_pending_command: str | None,
+    next_pending_stage_signal_confidence: str | None,
+    next_pending_feedback_priority_reason: str | None,
+    pending_action_count: int | None,
+) -> Path:
+    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
+    parent = latest_operation_manifest(chain_path)
+    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
+    readiness = _read_readiness_schedule_summary(settings_data_dir)
+    manifest = create_operation_manifest(
+        operation="remediation_session_dry_run",
+        mode="ops",
+        command="uv run sis remediation-session",
+        status=session_status or "unknown",
+        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        artifacts=[str(summary_path)],
+        notes=[
+            f"session_status={session_status}",
+            f"pending_action_count={pending_action_count}",
+            f"next_pending_command={next_pending_command}",
+            f"next_pending_stage_signal_confidence={next_pending_stage_signal_confidence}",
+            f"next_pending_feedback_priority_reason={next_pending_feedback_priority_reason}",
+            *_readiness_note_lines(readiness),
+            *_phase_gate_note_lines(phase_gate),
+        ],
+    )
+    return append_operation_manifest(chain_path, manifest)
+
+
+def _append_remediation_session_checkpoint_manifest(
+    settings_data_dir: Path,
+    *,
+    summary_path: Path,
+    checkpoint_status: str | None,
+    next_action_command: str | None,
+    next_action_stage_signal_confidence: str | None,
+    next_action_feedback_priority_reason: str | None,
+    pending_action_count: int | None,
+) -> Path:
+    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
+    parent = latest_operation_manifest(chain_path)
+    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
+    readiness = _read_readiness_schedule_summary(settings_data_dir)
+    manifest = create_operation_manifest(
+        operation="remediation_session_checkpoint",
+        mode="ops",
+        command="uv run sis remediation-session-checkpoint",
+        status=checkpoint_status or "unknown",
+        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        artifacts=[str(summary_path)],
+        notes=[
+            f"checkpoint_status={checkpoint_status}",
+            f"pending_action_count={pending_action_count}",
+            f"next_action_command={next_action_command}",
+            f"next_action_stage_signal_confidence={next_action_stage_signal_confidence}",
+            f"next_action_feedback_priority_reason={next_action_feedback_priority_reason}",
+            *_readiness_note_lines(readiness),
+            *_phase_gate_note_lines(phase_gate),
+        ],
+    )
+    return append_operation_manifest(chain_path, manifest)
+
+
+def _append_remediation_scoreboard_manifest(
+    settings_data_dir: Path,
+    *,
+    summary_path: Path,
+    scoreboard_status: str | None,
+    next_action_command: str | None,
+    next_action_stage_signal_confidence: str | None,
+    next_action_feedback_priority_reason: str | None,
+    completion_rate: float | None,
+) -> Path:
+    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
+    parent = latest_operation_manifest(chain_path)
+    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
+    readiness = _read_readiness_schedule_summary(settings_data_dir)
+    manifest = create_operation_manifest(
+        operation="remediation_scoreboard",
+        mode="ops",
+        command="uv run sis remediation-scoreboard",
+        status=scoreboard_status or "unknown",
+        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        artifacts=[str(summary_path)],
+        notes=[
+            f"scoreboard_status={scoreboard_status}",
+            f"completion_rate={completion_rate}",
+            f"next_action_command={next_action_command}",
+            f"next_action_stage_signal_confidence={next_action_stage_signal_confidence}",
+            f"next_action_feedback_priority_reason={next_action_feedback_priority_reason}",
+            *_readiness_note_lines(readiness),
+            *_phase_gate_note_lines(phase_gate),
+        ],
+    )
+    return append_operation_manifest(chain_path, manifest)
+
+
+def _append_remediation_evaluator_manifest(
+    settings_data_dir: Path,
+    *,
+    summary_path: Path,
+    evaluator_status: str | None,
+    next_action_key: str | None,
+    auto_fail_count: int | None,
+) -> Path:
+    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
+    parent = latest_operation_manifest(chain_path)
+    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
+    readiness = _read_readiness_schedule_summary(settings_data_dir)
+    manifest = create_operation_manifest(
+        operation="remediation_evaluator",
+        mode="ops",
+        command="uv run sis remediation-evaluator",
+        status=evaluator_status or "unknown",
+        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        artifacts=[str(summary_path)],
+        notes=[
+            f"evaluator_status={evaluator_status}",
+            f"auto_fail_count={auto_fail_count}",
+            f"next_action_key={next_action_key}",
+            *_readiness_note_lines(readiness),
+            *_phase_gate_note_lines(phase_gate),
+        ],
+    )
+    return append_operation_manifest(chain_path, manifest)
+
+
+def _append_remediation_evidence_manifest(
+    settings_data_dir: Path,
+    *,
+    summary_path: Path,
+    evidence_status: str | None,
+    next_manual_review_action_key: str | None,
+    manual_review_action_count: int | None,
+) -> Path:
+    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
+    parent = latest_operation_manifest(chain_path)
+    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
+    readiness = _read_readiness_schedule_summary(settings_data_dir)
+    manifest = create_operation_manifest(
+        operation="remediation_evidence",
+        mode="ops",
+        command="uv run sis remediation-evidence",
+        status=evidence_status or "unknown",
+        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        artifacts=[str(summary_path)],
+        notes=[
+            f"evidence_status={evidence_status}",
+            f"manual_review_action_count={manual_review_action_count}",
+            f"next_manual_review_action_key={next_manual_review_action_key}",
+            *_readiness_note_lines(readiness),
+            *_phase_gate_note_lines(phase_gate),
+        ],
+    )
+    return append_operation_manifest(chain_path, manifest)
+
+
+def _append_remediation_command_results_manifest(
+    settings_data_dir: Path,
+    *,
+    summary_path: Path,
+    command_results_status: str | None,
+    next_unobserved_action_key: str | None,
+    missing_observation_count: int | None,
+) -> Path:
+    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
+    parent = latest_operation_manifest(chain_path)
+    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
+    readiness = _read_readiness_schedule_summary(settings_data_dir)
+    manifest = create_operation_manifest(
+        operation="remediation_command_results",
+        mode="ops",
+        command="uv run sis remediation-command-results",
+        status=command_results_status or "unknown",
+        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        artifacts=[str(summary_path)],
+        notes=[
+            f"command_results_status={command_results_status}",
+            f"missing_observation_count={missing_observation_count}",
+            f"next_unobserved_action_key={next_unobserved_action_key}",
+            *_readiness_note_lines(readiness),
+            *_phase_gate_note_lines(phase_gate),
+        ],
+    )
+    return append_operation_manifest(chain_path, manifest)
+
+
+def _append_remediation_evidence_ingest_manifest(
+    settings_data_dir: Path,
+    *,
+    checkpoint_summary_path: Path,
+    action_key: str | None,
+    checkpoint_status: str | None,
+    exit_code: int | None,
+) -> Path:
+    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
+    parent = latest_operation_manifest(chain_path)
+    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
+    readiness = _read_readiness_schedule_summary(settings_data_dir)
+    manifest = create_operation_manifest(
+        operation="remediation_evidence_ingest",
+        mode="ops",
+        command="uv run sis remediation-evidence-ingest",
+        status=checkpoint_status or "unknown",
+        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        artifacts=[str(checkpoint_summary_path)],
+        notes=[
+            f"action_key={action_key}",
+            f"checkpoint_status={checkpoint_status}",
+            f"exit_code={exit_code}",
             *_readiness_note_lines(readiness),
             *_phase_gate_note_lines(phase_gate),
         ],
@@ -1372,6 +1961,7 @@ def paper_report_cmd() -> None:
     audit_summary = paper_last_run.get("audit") if isinstance(paper_last_run, dict) else None
     if not isinstance(audit_summary, dict):
         audit_summary = _read_audit_schedule_summary(settings.data_dir)
+    latest_execution_payload = _paper_last_run_latest_execution_payload(settings.data_dir)
     out = settings.data_dir / "reports/daily_paper_report.md"
     text = build_daily_paper_report(
         fills=[PaperFill.model_validate(item) for item in fills],
@@ -1379,6 +1969,17 @@ def paper_report_cmd() -> None:
         out_path=out,
         audit_summary=audit_summary,
         phase_gate_summary=_paper_last_run_phase_gate_summary(settings.data_dir),
+        readiness_summary=_paper_last_run_readiness_summary(settings.data_dir),
+        **latest_execution_payload,
+        execution_gap_history_summary=_paper_last_run_execution_gap_history_summary(
+            settings.data_dir
+        ),
+        execution_state_comparison_summary=_paper_last_run_execution_state_comparison_summary(
+            settings.data_dir
+        ),
+        execution_snapshot_drift_summary=_paper_last_run_execution_snapshot_drift_summary(
+            settings.data_dir
+        ),
         execution_drift_overview_summary=_paper_last_run_execution_drift_overview_summary(settings.data_dir),
     )
     logger.info("written: {}", out)
@@ -1423,6 +2024,12 @@ def balance_status_cmd(
     settings = get_settings()
     adapter = _adapter_for_venue(settings.data_dir, venue)
     balance = adapter.read_balance()
+    build_balance_status_report(
+        venue=venue.strip().lower(),
+        balance=balance,
+        out_path=settings.data_dir / "reports/execution_balance_status.md",
+        summary_path=settings.data_dir / "ops/execution_balance_status_summary.json",
+    )
     for key in sorted(balance):
         typer.echo(f"{key}={balance[key]}")
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
@@ -1437,6 +2044,13 @@ def fill_status_cmd(
     settings = get_settings()
     adapter = _adapter_for_venue(settings.data_dir, venue)
     fills = adapter.read_fills(limit=limit)
+    build_fill_status_report(
+        venue=venue.strip().lower(),
+        fills=fills,
+        limit=limit,
+        out_path=settings.data_dir / "reports/execution_fill_status.md",
+        summary_path=settings.data_dir / "ops/execution_fill_status_summary.json",
+    )
     typer.echo(f"venue={venue.strip().lower()}")
     typer.echo(f"fills_count={len(fills)}")
     for index, fill in enumerate(fills, start=1):
@@ -1502,6 +2116,11 @@ def order_status_cmd(
     settings = get_settings()
     adapter = _adapter_for_venue(settings.data_dir, venue)
     status = adapter.read_order_status(order_id)
+    build_order_status_report(
+        status=status,
+        out_path=settings.data_dir / "reports/execution_order_status.md",
+        summary_path=settings.data_dir / "ops/execution_order_status_summary.json",
+    )
     typer.echo(f"venue={status.venue}")
     typer.echo(f"order_id={status.order_id}")
     typer.echo(f"status={status.status}")
@@ -1521,6 +2140,13 @@ def cancel_order_cmd(
     settings = get_settings()
     adapter = _adapter_for_venue(settings.data_dir, venue)
     result = adapter.cancel_order(order_id)
+    build_action_status_report(
+        title="Execution Cancel Order",
+        report_key="cancel_order_report_path",
+        result=result,
+        out_path=settings.data_dir / "reports/execution_cancel_order.md",
+        summary_path=settings.data_dir / "ops/execution_cancel_order_summary.json",
+    )
     typer.echo(f"venue={result.venue}")
     typer.echo(f"action={result.action}")
     typer.echo(f"target={result.target}")
@@ -1540,6 +2166,13 @@ def close_position_cmd(
     settings = get_settings()
     adapter = _adapter_for_venue(settings.data_dir, venue)
     result = adapter.close_position(symbol.upper(), side)
+    build_action_status_report(
+        title="Execution Close Position",
+        report_key="close_position_report_path",
+        result=result,
+        out_path=settings.data_dir / "reports/execution_close_position.md",
+        summary_path=settings.data_dir / "ops/execution_close_position_summary.json",
+    )
     typer.echo(f"venue={result.venue}")
     typer.echo(f"action={result.action}")
     typer.echo(f"target={result.target}")
@@ -1573,6 +2206,14 @@ def reconcile_positions_cmd(
     }
     run_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     store.record_reconciliation(run_id, datetime.now(timezone.utc).isoformat(), out)
+    build_reconcile_positions_report(
+        venue=venue.strip().lower(),
+        result=result,
+        run_id=run_id,
+        state_store_path=str(store.path),
+        out_path=settings.data_dir / "reports/execution_reconcile_positions.md",
+        summary_path=settings.data_dir / "ops/execution_reconcile_positions_summary.json",
+    )
     typer.echo(f"matched={result.matched}")
     typer.echo(f"missing_in_adapter={len(result.missing_in_adapter)}")
     typer.echo(f"missing_in_internal={len(result.missing_in_internal)}")
@@ -1602,10 +2243,24 @@ def healthcheck_cmd(
         decision_summary_path=settings.data_dir / "research/decision_summary.json",
         audit_dashboard_summary_path=settings.data_dir / "ops/audit_dashboard_summary.json",
         audit_bundle_summary_path=settings.data_dir / "ops/audit_bundle_manifest.json",
+        operations_bundle_manifest_path=settings.data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=settings.data_dir / "ops/phase_gate_review_summary.json",
+        execution_summary_path=settings.data_dir / "ops/execution_snapshot_summary.json",
+        execution_comparison_summary_path=settings.data_dir / "ops/execution_venue_comparison_summary.json",
+        execution_diagnostics_summary_path=settings.data_dir / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings.data_dir / "ops/execution_gap_history_summary.json",
+        execution_state_comparison_summary_path=settings.data_dir / "ops/execution_state_comparison_history_summary.json",
+        execution_snapshot_drift_summary_path=settings.data_dir / "ops/execution_snapshot_drift_history_summary.json",
         execution_drift_overview_summary_path=settings.data_dir / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings.data_dir / "ops/readiness_snapshot.json",
         reconciliation_store_present=store.latest_reconciliation() is not None,
+    )
+    build_healthcheck_report(
+        health=health,
+        daily_loss_status=loss_status,
+        exposure_status=exposure_status,
+        out_path=settings.data_dir / "reports/ops_healthcheck.md",
+        summary_path=settings.data_dir / "ops/ops_healthcheck_summary.json",
     )
     typer.echo(f"status={health['status']}")
     typer.echo(f"kill_switch_enabled={health['kill_switch_enabled']}")
@@ -1689,6 +2344,11 @@ def kill_switch_cmd(
     elif disable:
         switch.disable()
     status = switch.status()
+    build_kill_switch_report(
+        status=status,
+        out_path=settings.data_dir / "reports/ops_kill_switch.md",
+        summary_path=settings.data_dir / "ops/ops_kill_switch_summary.json",
+    )
     typer.echo(f"enabled={status['enabled']}")
     typer.echo(f"path={status['path']}")
     settings = get_settings()
@@ -1717,9 +2377,24 @@ def schedule_run_cmd(
         run,
         audit_summary=_read_audit_schedule_summary(settings.data_dir),
         phase_gate_summary=_read_phase_gate_schedule_summary(settings.data_dir),
+        execution_summary=_read_execution_schedule_summary(settings.data_dir),
+        execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
         execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
+        execution_gap_history_summary=_read_execution_gap_history_schedule_summary(settings.data_dir),
+        execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
+            settings.data_dir
+        ),
+        execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
+            settings.data_dir
+        ),
         execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
         readiness_summary=_read_readiness_schedule_summary(settings.data_dir),
+    )
+    build_schedule_run_report(
+        run=run,
+        scheduled_run_path=str(out),
+        out_path=settings.data_dir / "reports/ops_scheduled_run.md",
+        summary_path=settings.data_dir / "ops/ops_scheduled_run_summary.json",
     )
     logger.info("written: {}", out)
     typer.echo(f"run_type={run.run_type}")
@@ -1743,8 +2418,19 @@ def render_alert_cmd(
         body=body,
         source=source,
     )
+    rendered_text = out.read_text(encoding="utf-8")
+    build_alert_report(
+        level=level,
+        title=title,
+        body=body,
+        source=source,
+        alert_path=str(out),
+        rendered_text=rendered_text,
+        out_path=settings.data_dir / "reports/ops_alert.md",
+        summary_path=settings.data_dir / "ops/ops_alert_summary.json",
+    )
     logger.info("written: {}", out)
-    typer.echo(out.read_text(encoding="utf-8"))
+    typer.echo(rendered_text)
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
         typer.echo(f"recommended_read_order_{index}={item}")
 
@@ -1777,6 +2463,7 @@ def daemon_manifest_cmd(
         notes=["foundation_only", "non_daemon_runtime"],
     )
     out = write_daemon_manifest(settings.data_dir / "ops/daemon_manifest.json", manifest)
+    _write_daemon_manifest_artifacts(settings.data_dir)
     logger.info("written: {}", out)
     typer.echo(f"run_id={manifest.run_id}")
     typer.echo(f"mode={manifest.mode}")
@@ -1806,8 +2493,18 @@ def daemon_dry_run_cmd(
         decision_summary_path=settings.data_dir / "research/decision_summary.json",
         audit_dashboard_summary_path=settings.data_dir / "ops/audit_dashboard_summary.json",
         audit_bundle_summary_path=settings.data_dir / "ops/audit_bundle_manifest.json",
+        operations_bundle_manifest_path=settings.data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=settings.data_dir / "ops/phase_gate_review_summary.json",
+        execution_summary=_read_execution_schedule_summary(settings.data_dir),
+        execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
         execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
+        execution_gap_history_summary=_read_execution_gap_history_schedule_summary(settings.data_dir),
+        execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
+            settings.data_dir
+        ),
+        execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
+            settings.data_dir
+        ),
         execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
         readiness_summary=_read_readiness_schedule_summary(settings.data_dir),
     )
@@ -1838,6 +2535,7 @@ def export_state_cmd(
     typer.echo(str(out))
     payload = read_json(out)
     if isinstance(payload, dict):
+        _write_state_export_artifacts(settings.data_dir, state_store_path=store.path)
         audit = payload.get("audit_summary")
         if isinstance(audit, dict):
             _echo_audit_summary(audit)
@@ -1860,8 +2558,15 @@ def restore_state_cmd(
     settings = get_settings()
     store = _state_store(settings.data_dir, state_path)
     restore_state_snapshot(store, snapshot_path)
-    typer.echo("restored=true")
     payload = read_json(snapshot_path)
+    if isinstance(payload, dict):
+        _write_state_restore_artifacts(
+            settings.data_dir,
+            snapshot_path=snapshot_path,
+            state_store_path=store.path,
+            restored=True,
+        )
+    typer.echo("restored=true")
     if isinstance(payload, dict):
         audit = payload.get("audit_summary")
         if isinstance(audit, dict):
@@ -1987,6 +2692,316 @@ def phase_gate_review_cmd() -> None:
     out, summary_out, text = _write_phase_gate_review(settings.data_dir)
     logger.info("written: {}", out)
     logger.info("written: {}", summary_out)
+    typer.echo(text)
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("remediation-planner")
+def remediation_planner_cmd() -> None:
+    settings = get_settings()
+    out, summary_out, text = _write_remediation_planner(settings.data_dir)
+    payload = read_json(summary_out)
+    chain_out = _append_remediation_planner_manifest(
+        settings.data_dir,
+        summary_path=summary_out,
+        planner_status=payload.get("planner_status") if isinstance(payload, dict) else None,
+        rerun_trend=(
+            payload.get("planner_rerun_diff", {}).get("trend")
+            if isinstance(payload, dict) and isinstance(payload.get("planner_rerun_diff"), dict)
+            else None
+        ),
+        next_best_command=payload.get("next_best_command") if isinstance(payload, dict) else None,
+        next_feedback_priority_reason=(
+            payload.get("entries", [{}])[0].get("feedback_priority_reason")
+            if isinstance(payload, dict) and isinstance(payload.get("entries"), list) and payload.get("entries")
+            else None
+        ),
+        planned_step_count=payload.get("planned_step_count") if isinstance(payload, dict) else None,
+    )
+    logger.info("written: {}", out)
+    logger.info("written: {}", summary_out)
+    logger.info("appended: {}", chain_out)
+    typer.echo(text)
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("remediation-execution-plan")
+def remediation_execution_plan_cmd() -> None:
+    settings = get_settings()
+    out, summary_out, text = _write_remediation_execution_plan(settings.data_dir)
+    payload = read_json(summary_out)
+    chain_out = _append_remediation_execution_plan_manifest(
+        settings.data_dir,
+        summary_path=summary_out,
+        execution_plan_status=payload.get("execution_plan_status") if isinstance(payload, dict) else None,
+        next_action_command=payload.get("next_action_command") if isinstance(payload, dict) else None,
+        next_action_feedback_priority_reason=(
+            payload.get("actions", [{}])[0].get("feedback_priority_reason")
+            if isinstance(payload, dict) and isinstance(payload.get("actions"), list) and payload.get("actions")
+            else None
+        ),
+        planned_action_count=payload.get("planned_action_count") if isinstance(payload, dict) else None,
+    )
+    logger.info("written: {}", out)
+    logger.info("written: {}", summary_out)
+    logger.info("appended: {}", chain_out)
+    typer.echo(text)
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("remediation-session")
+def remediation_session_cmd() -> None:
+    settings = get_settings()
+    out, summary_out, text = _write_remediation_session(settings.data_dir)
+    payload = read_json(summary_out)
+    chain_out = _append_remediation_session_manifest(
+        settings.data_dir,
+        summary_path=summary_out,
+        session_status=payload.get("session_status") if isinstance(payload, dict) else None,
+        next_pending_command=payload.get("next_pending_command") if isinstance(payload, dict) else None,
+        next_pending_stage_signal_confidence=(
+            payload.get("next_pending_stage_signal_confidence")
+            if isinstance(payload, dict)
+            else None
+        ),
+        next_pending_feedback_priority_reason=(
+            payload.get("next_pending_feedback_priority_reason")
+            if isinstance(payload, dict)
+            else None
+        ),
+        pending_action_count=payload.get("pending_action_count") if isinstance(payload, dict) else None,
+    )
+    logger.info("written: {}", out)
+    logger.info("written: {}", summary_out)
+    logger.info("appended: {}", chain_out)
+    typer.echo(text)
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("remediation-session-checkpoint")
+def remediation_session_checkpoint_cmd(
+    action_key: str | None = typer.Option(None, "--action-key", help="Stable action key to update."),
+    result: str | None = typer.Option(None, "--result", help="One of: pending, pass, fail, retry."),
+    note: str | None = typer.Option(None, "--note", help="Optional operator note appended to the action."),
+    evidence_path: str | None = typer.Option(None, "--evidence-path", help="Optional evidence artifact path recorded on the action."),
+    observed_signal: str | None = typer.Option(None, "--observed-signal", help="Optional verification signal observed to have passed."),
+    stdout_summary: str | None = typer.Option(None, "--stdout-summary", help="Optional stdout summary recorded on the action."),
+    stderr_summary: str | None = typer.Option(None, "--stderr-summary", help="Optional stderr summary recorded on the action."),
+    exit_code: int | None = typer.Option(None, "--exit-code", help="Optional command exit code recorded on the action."),
+) -> None:
+    settings = get_settings()
+    out, summary_out, text = _write_remediation_session_checkpoint(
+        settings.data_dir,
+        action_key=action_key,
+        result=result,
+        note=note,
+        evidence_path=evidence_path,
+        observed_signal=observed_signal,
+        stdout_summary=stdout_summary,
+        stderr_summary=stderr_summary,
+        exit_code=exit_code,
+    )
+    payload = read_json(summary_out)
+    chain_out = _append_remediation_session_checkpoint_manifest(
+        settings.data_dir,
+        summary_path=summary_out,
+        checkpoint_status=payload.get("checkpoint_status") if isinstance(payload, dict) else None,
+        next_action_command=payload.get("next_action_command") if isinstance(payload, dict) else None,
+        next_action_stage_signal_confidence=(
+            payload.get("next_action_stage_signal_confidence")
+            if isinstance(payload, dict)
+            else None
+        ),
+        next_action_feedback_priority_reason=(
+            next(
+                (
+                    item.get("feedback_priority_reason")
+                    for item in payload.get("actions", [])
+                    if isinstance(item, dict)
+                    and item.get("command") == payload.get("next_action_command")
+                ),
+                None,
+            )
+            if isinstance(payload, dict)
+            else None
+        ),
+        pending_action_count=payload.get("pending_action_count") if isinstance(payload, dict) else None,
+    )
+    logger.info("written: {}", out)
+    logger.info("written: {}", summary_out)
+    logger.info("appended: {}", chain_out)
+    typer.echo(text)
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("remediation-evidence-ingest")
+def remediation_evidence_ingest_cmd(
+    action_key: str = typer.Option(..., "--action-key", help="Stable action key to update."),
+    result: str | None = typer.Option(None, "--result", help="One of: pending, pass, fail, retry."),
+    note: str | None = typer.Option(None, "--note", help="Optional operator note appended to the action."),
+    evidence_path: str | None = typer.Option(None, "--evidence-path", help="Optional evidence artifact path recorded on the action."),
+    observed_signal: str | None = typer.Option(None, "--observed-signal", help="Optional verification signal observed to have passed."),
+    stdout_summary: str | None = typer.Option(None, "--stdout-summary", help="Optional stdout summary recorded on the action."),
+    stderr_summary: str | None = typer.Option(None, "--stderr-summary", help="Optional stderr summary recorded on the action."),
+    exit_code: int | None = typer.Option(None, "--exit-code", help="Optional command exit code recorded on the action."),
+) -> None:
+    settings = get_settings()
+    checkpoint_out, checkpoint_summary_out, _checkpoint_text = _write_remediation_session_checkpoint(
+        settings.data_dir,
+        action_key=action_key,
+        result=result,
+        note=note,
+        evidence_path=evidence_path,
+        observed_signal=observed_signal,
+        stdout_summary=stdout_summary,
+        stderr_summary=stderr_summary,
+        exit_code=exit_code,
+    )
+    command_results_out, command_results_summary_out, command_results_text = _write_remediation_command_results(
+        settings.data_dir
+    )
+    checkpoint_payload = read_json(checkpoint_summary_out)
+    chain_out = _append_remediation_evidence_ingest_manifest(
+        settings.data_dir,
+        checkpoint_summary_path=checkpoint_summary_out,
+        action_key=action_key,
+        checkpoint_status=(
+            checkpoint_payload.get("checkpoint_status")
+            if isinstance(checkpoint_payload, dict)
+            else None
+        ),
+        exit_code=exit_code,
+    )
+    logger.info("written: {}", checkpoint_out)
+    logger.info("written: {}", checkpoint_summary_out)
+    logger.info("written: {}", command_results_out)
+    logger.info("written: {}", command_results_summary_out)
+    logger.info("appended: {}", chain_out)
+    typer.echo(command_results_text)
+    typer.echo(f"remediation_session_checkpoint_path={checkpoint_out}")
+    typer.echo(f"remediation_command_results_path={command_results_out}")
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("remediation-scoreboard")
+def remediation_scoreboard_cmd() -> None:
+    settings = get_settings()
+    out, summary_out, text = _write_remediation_scoreboard(settings.data_dir)
+    payload = read_json(summary_out)
+    chain_out = _append_remediation_scoreboard_manifest(
+        settings.data_dir,
+        summary_path=summary_out,
+        scoreboard_status=payload.get("scoreboard_status") if isinstance(payload, dict) else None,
+        next_action_command=payload.get("next_action_command") if isinstance(payload, dict) else None,
+        next_action_stage_signal_confidence=(
+            payload.get("next_action_stage_signal_confidence")
+            if isinstance(payload, dict)
+            else None
+        ),
+        next_action_feedback_priority_reason=(
+            next(
+                (
+                    item.get("feedback_priority_reason")
+                    for item in payload.get("actions", [])
+                    if isinstance(item, dict)
+                    and item.get("command") == payload.get("next_action_command")
+                ),
+                None,
+            )
+            if isinstance(payload, dict)
+            else None
+        ),
+        completion_rate=payload.get("completion_rate") if isinstance(payload, dict) else None,
+    )
+    logger.info("written: {}", out)
+    logger.info("written: {}", summary_out)
+    logger.info("appended: {}", chain_out)
+    typer.echo(text)
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("remediation-evaluator")
+def remediation_evaluator_cmd() -> None:
+    settings = get_settings()
+    out, summary_out, text = _write_remediation_evaluator(settings.data_dir)
+    payload = read_json(summary_out)
+    chain_out = _append_remediation_evaluator_manifest(
+        settings.data_dir,
+        summary_path=summary_out,
+        evaluator_status=payload.get("evaluator_status") if isinstance(payload, dict) else None,
+        next_action_key=payload.get("next_action_key") if isinstance(payload, dict) else None,
+        auto_fail_count=payload.get("auto_fail_count") if isinstance(payload, dict) else None,
+    )
+    logger.info("written: {}", out)
+    logger.info("written: {}", summary_out)
+    logger.info("appended: {}", chain_out)
+    typer.echo(text)
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("remediation-evidence")
+def remediation_evidence_cmd() -> None:
+    settings = get_settings()
+    out, summary_out, text = _write_remediation_evidence(settings.data_dir)
+    payload = read_json(summary_out)
+    chain_out = _append_remediation_evidence_manifest(
+        settings.data_dir,
+        summary_path=summary_out,
+        evidence_status=payload.get("evidence_status") if isinstance(payload, dict) else None,
+        next_manual_review_action_key=(
+            payload.get("next_manual_review_action_key")
+            if isinstance(payload, dict)
+            else None
+        ),
+        manual_review_action_count=(
+            payload.get("manual_review_action_count")
+            if isinstance(payload, dict)
+            else None
+        ),
+    )
+    logger.info("written: {}", out)
+    logger.info("written: {}", summary_out)
+    logger.info("appended: {}", chain_out)
+    typer.echo(text)
+    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+        typer.echo(f"recommended_read_order_{index}={item}")
+
+
+@app.command("remediation-command-results")
+def remediation_command_results_cmd() -> None:
+    settings = get_settings()
+    out, summary_out, text = _write_remediation_command_results(settings.data_dir)
+    payload = read_json(summary_out)
+    chain_out = _append_remediation_command_results_manifest(
+        settings.data_dir,
+        summary_path=summary_out,
+        command_results_status=(
+            payload.get("command_results_status")
+            if isinstance(payload, dict)
+            else None
+        ),
+        next_unobserved_action_key=(
+            payload.get("next_unobserved_action_key")
+            if isinstance(payload, dict)
+            else None
+        ),
+        missing_observation_count=(
+            payload.get("missing_observation_count")
+            if isinstance(payload, dict)
+            else None
+        ),
+    )
+    logger.info("written: {}", out)
+    logger.info("written: {}", summary_out)
+    logger.info("appended: {}", chain_out)
     typer.echo(text)
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
         typer.echo(f"recommended_read_order_{index}={item}")
@@ -2136,6 +3151,13 @@ def refresh_operations_artifacts_cmd(
     ),
 ) -> None:
     settings = get_settings()
+    daemon_manifest_artifacts = _write_daemon_manifest_artifacts(settings.data_dir)
+    state_export_artifacts = _write_state_export_artifacts(settings.data_dir)
+    state_restore_artifacts = _write_state_restore_artifacts(
+        settings.data_dir,
+        snapshot_path=settings.data_dir / "state/state_snapshot.json",
+        restored=False,
+    )
     execution_snapshot_out, execution_snapshot_summary_out, _execution_snapshot_text = _write_execution_snapshot(
         settings.data_dir
     )
@@ -2164,6 +3186,56 @@ def refresh_operations_artifacts_cmd(
         settings.data_dir
     )
     phase_gate_out, phase_gate_summary_out, _phase_gate_text = _write_phase_gate_review(settings.data_dir)
+    remediation_planner_out, remediation_planner_summary_out, _remediation_planner_text = _write_remediation_planner(
+        settings.data_dir
+    )
+    remediation_execution_plan_out, remediation_execution_plan_summary_out, _remediation_execution_plan_text = _write_remediation_execution_plan(
+        settings.data_dir
+    )
+    remediation_session_out, remediation_session_summary_out, _remediation_session_text = _write_remediation_session(
+        settings.data_dir
+    )
+    remediation_session_checkpoint_out, remediation_session_checkpoint_summary_out, _remediation_session_checkpoint_text = _write_remediation_session_checkpoint(
+        settings.data_dir
+    )
+    remediation_evaluator_out, remediation_evaluator_summary_out, _remediation_evaluator_text = _write_remediation_evaluator(
+        settings.data_dir
+    )
+    remediation_command_results_out, remediation_command_results_summary_out, _remediation_command_results_text = _write_remediation_command_results(
+        settings.data_dir
+    )
+    remediation_scoreboard_out, remediation_scoreboard_summary_out, _remediation_scoreboard_text = _write_remediation_scoreboard(
+        settings.data_dir
+    )
+    remediation_evidence_out, remediation_evidence_summary_out, _remediation_evidence_text = _write_remediation_evidence(
+        settings.data_dir
+    )
+    runbook_out, runbook_summary_out, _runbook_text = _write_paper_operations_runbook(settings.data_dir)
+    phase_gate_out, phase_gate_summary_out, _phase_gate_text = _write_phase_gate_review(settings.data_dir)
+    remediation_planner_out, remediation_planner_summary_out, _remediation_planner_text = _write_remediation_planner(
+        settings.data_dir
+    )
+    remediation_execution_plan_out, remediation_execution_plan_summary_out, _remediation_execution_plan_text = _write_remediation_execution_plan(
+        settings.data_dir
+    )
+    remediation_session_out, remediation_session_summary_out, _remediation_session_text = _write_remediation_session(
+        settings.data_dir
+    )
+    remediation_session_checkpoint_out, remediation_session_checkpoint_summary_out, _remediation_session_checkpoint_text = _write_remediation_session_checkpoint(
+        settings.data_dir
+    )
+    remediation_evaluator_out, remediation_evaluator_summary_out, _remediation_evaluator_text = _write_remediation_evaluator(
+        settings.data_dir
+    )
+    remediation_command_results_out, remediation_command_results_summary_out, _remediation_command_results_text = _write_remediation_command_results(
+        settings.data_dir
+    )
+    remediation_scoreboard_out, remediation_scoreboard_summary_out, _remediation_scoreboard_text = _write_remediation_scoreboard(
+        settings.data_dir
+    )
+    remediation_evidence_out, remediation_evidence_summary_out, _remediation_evidence_text = _write_remediation_evidence(
+        settings.data_dir
+    )
     bundle_out, bundle_manifest_out, _bundle_text = _write_operations_bundle(settings.data_dir)
     timeline_out, timeline_summary_out, _timeline_text = _write_operations_timeline(settings.data_dir)
     audit_out, audit_manifest_out, _audit_text = _write_operations_audit_pack(settings.data_dir)
@@ -2191,6 +3263,220 @@ def refresh_operations_artifacts_cmd(
         overall_status=audit_bundle_payload.get("overall_status") if isinstance(audit_bundle_payload, dict) else None,
         timeline_latest_operation=audit_bundle_payload.get("timeline_latest_operation") if isinstance(audit_bundle_payload, dict) else None,
     )
+    remediation_planner_payload = read_json(remediation_planner_summary_out)
+    remediation_planner_chain_out = _append_remediation_planner_manifest(
+        settings.data_dir,
+        summary_path=remediation_planner_summary_out,
+        planner_status=remediation_planner_payload.get("planner_status") if isinstance(remediation_planner_payload, dict) else None,
+        rerun_trend=(
+            remediation_planner_payload.get("planner_rerun_diff", {}).get("trend")
+            if isinstance(remediation_planner_payload, dict)
+            and isinstance(remediation_planner_payload.get("planner_rerun_diff"), dict)
+            else None
+        ),
+        next_best_command=remediation_planner_payload.get("next_best_command") if isinstance(remediation_planner_payload, dict) else None,
+        next_feedback_priority_reason=(
+            remediation_planner_payload.get("entries", [{}])[0].get("feedback_priority_reason")
+            if isinstance(remediation_planner_payload, dict)
+            and isinstance(remediation_planner_payload.get("entries"), list)
+            and remediation_planner_payload.get("entries")
+            else None
+        ),
+        planned_step_count=remediation_planner_payload.get("planned_step_count") if isinstance(remediation_planner_payload, dict) else None,
+    )
+    remediation_execution_plan_payload = read_json(remediation_execution_plan_summary_out)
+    remediation_execution_plan_chain_out = _append_remediation_execution_plan_manifest(
+        settings.data_dir,
+        summary_path=remediation_execution_plan_summary_out,
+        execution_plan_status=(
+            remediation_execution_plan_payload.get("execution_plan_status")
+            if isinstance(remediation_execution_plan_payload, dict)
+            else None
+        ),
+        next_action_command=(
+            remediation_execution_plan_payload.get("next_action_command")
+            if isinstance(remediation_execution_plan_payload, dict)
+            else None
+        ),
+        next_action_feedback_priority_reason=(
+            remediation_execution_plan_payload.get("actions", [{}])[0].get("feedback_priority_reason")
+            if isinstance(remediation_execution_plan_payload, dict)
+            and isinstance(remediation_execution_plan_payload.get("actions"), list)
+            and remediation_execution_plan_payload.get("actions")
+            else None
+        ),
+        planned_action_count=(
+            remediation_execution_plan_payload.get("planned_action_count")
+            if isinstance(remediation_execution_plan_payload, dict)
+            else None
+        ),
+    )
+    remediation_session_payload = read_json(remediation_session_summary_out)
+    remediation_session_chain_out = _append_remediation_session_manifest(
+        settings.data_dir,
+        summary_path=remediation_session_summary_out,
+        session_status=(
+            remediation_session_payload.get("session_status")
+            if isinstance(remediation_session_payload, dict)
+            else None
+        ),
+        next_pending_command=(
+            remediation_session_payload.get("next_pending_command")
+            if isinstance(remediation_session_payload, dict)
+            else None
+        ),
+        next_pending_stage_signal_confidence=(
+            remediation_session_payload.get("next_pending_stage_signal_confidence")
+            if isinstance(remediation_session_payload, dict)
+            else None
+        ),
+        next_pending_feedback_priority_reason=(
+            remediation_session_payload.get("next_pending_feedback_priority_reason")
+            if isinstance(remediation_session_payload, dict)
+            else None
+        ),
+        pending_action_count=(
+            remediation_session_payload.get("pending_action_count")
+            if isinstance(remediation_session_payload, dict)
+            else None
+        ),
+    )
+    remediation_session_checkpoint_payload = read_json(remediation_session_checkpoint_summary_out)
+    remediation_session_checkpoint_chain_out = _append_remediation_session_checkpoint_manifest(
+        settings.data_dir,
+        summary_path=remediation_session_checkpoint_summary_out,
+        checkpoint_status=(
+            remediation_session_checkpoint_payload.get("checkpoint_status")
+            if isinstance(remediation_session_checkpoint_payload, dict)
+            else None
+        ),
+        next_action_command=(
+            remediation_session_checkpoint_payload.get("next_action_command")
+            if isinstance(remediation_session_checkpoint_payload, dict)
+            else None
+        ),
+        next_action_stage_signal_confidence=(
+            remediation_session_checkpoint_payload.get("next_action_stage_signal_confidence")
+            if isinstance(remediation_session_checkpoint_payload, dict)
+            else None
+        ),
+        next_action_feedback_priority_reason=(
+            next(
+                (
+                    item.get("feedback_priority_reason")
+                    for item in remediation_session_checkpoint_payload.get("actions", [])
+                    if isinstance(item, dict)
+                    and item.get("command") == remediation_session_checkpoint_payload.get("next_action_command")
+                ),
+                None,
+            )
+            if isinstance(remediation_session_checkpoint_payload, dict)
+            else None
+        ),
+        pending_action_count=(
+            remediation_session_checkpoint_payload.get("pending_action_count")
+            if isinstance(remediation_session_checkpoint_payload, dict)
+            else None
+        ),
+    )
+    remediation_scoreboard_payload = read_json(remediation_scoreboard_summary_out)
+    remediation_scoreboard_chain_out = _append_remediation_scoreboard_manifest(
+        settings.data_dir,
+        summary_path=remediation_scoreboard_summary_out,
+        scoreboard_status=(
+            remediation_scoreboard_payload.get("scoreboard_status")
+            if isinstance(remediation_scoreboard_payload, dict)
+            else None
+        ),
+        next_action_command=(
+            remediation_scoreboard_payload.get("next_action_command")
+            if isinstance(remediation_scoreboard_payload, dict)
+            else None
+        ),
+        next_action_stage_signal_confidence=(
+            remediation_scoreboard_payload.get("next_action_stage_signal_confidence")
+            if isinstance(remediation_scoreboard_payload, dict)
+            else None
+        ),
+        next_action_feedback_priority_reason=(
+            next(
+                (
+                    item.get("feedback_priority_reason")
+                    for item in remediation_scoreboard_payload.get("actions", [])
+                    if isinstance(item, dict)
+                    and item.get("command") == remediation_scoreboard_payload.get("next_action_command")
+                ),
+                None,
+            )
+            if isinstance(remediation_scoreboard_payload, dict)
+            else None
+        ),
+        completion_rate=(
+            remediation_scoreboard_payload.get("completion_rate")
+            if isinstance(remediation_scoreboard_payload, dict)
+            else None
+        ),
+    )
+    remediation_evaluator_payload = read_json(remediation_evaluator_summary_out)
+    remediation_evaluator_chain_out = _append_remediation_evaluator_manifest(
+        settings.data_dir,
+        summary_path=remediation_evaluator_summary_out,
+        evaluator_status=(
+            remediation_evaluator_payload.get("evaluator_status")
+            if isinstance(remediation_evaluator_payload, dict)
+            else None
+        ),
+        next_action_key=(
+            remediation_evaluator_payload.get("next_action_key")
+            if isinstance(remediation_evaluator_payload, dict)
+            else None
+        ),
+        auto_fail_count=(
+            remediation_evaluator_payload.get("auto_fail_count")
+            if isinstance(remediation_evaluator_payload, dict)
+            else None
+        ),
+    )
+    remediation_evidence_payload = read_json(remediation_evidence_summary_out)
+    remediation_evidence_chain_out = _append_remediation_evidence_manifest(
+        settings.data_dir,
+        summary_path=remediation_evidence_summary_out,
+        evidence_status=(
+            remediation_evidence_payload.get("evidence_status")
+            if isinstance(remediation_evidence_payload, dict)
+            else None
+        ),
+        next_manual_review_action_key=(
+            remediation_evidence_payload.get("next_manual_review_action_key")
+            if isinstance(remediation_evidence_payload, dict)
+            else None
+        ),
+        manual_review_action_count=(
+            remediation_evidence_payload.get("manual_review_action_count")
+            if isinstance(remediation_evidence_payload, dict)
+            else None
+        ),
+    )
+    remediation_command_results_payload = read_json(remediation_command_results_summary_out)
+    remediation_command_results_chain_out = _append_remediation_command_results_manifest(
+        settings.data_dir,
+        summary_path=remediation_command_results_summary_out,
+        command_results_status=(
+            remediation_command_results_payload.get("command_results_status")
+            if isinstance(remediation_command_results_payload, dict)
+            else None
+        ),
+        next_unobserved_action_key=(
+            remediation_command_results_payload.get("next_unobserved_action_key")
+            if isinstance(remediation_command_results_payload, dict)
+            else None
+        ),
+        missing_observation_count=(
+            remediation_command_results_payload.get("missing_observation_count")
+            if isinstance(remediation_command_results_payload, dict)
+            else None
+        ),
+    )
     gap_history_out, gap_history_summary_out, _gap_history_text = _write_execution_gap_history(settings.data_dir)
     audit_timeline_out, audit_timeline_summary_out, _audit_timeline_text = _write_audit_timeline(settings.data_dir)
     audit_dashboard_out, audit_dashboard_summary_out, _refreshed_audit_dashboard_text = _write_audit_dashboard(settings.data_dir)
@@ -2207,6 +3493,15 @@ def refresh_operations_artifacts_cmd(
     logger.info("written: {}", weekly_out)
     logger.info("written: {}", comparison_out)
     logger.info("written: {}", lifecycle_out)
+    if daemon_manifest_artifacts is not None:
+        logger.info("written: {}", daemon_manifest_artifacts[0])
+        logger.info("written: {}", daemon_manifest_artifacts[1])
+    if state_export_artifacts is not None:
+        logger.info("written: {}", state_export_artifacts[0])
+        logger.info("written: {}", state_export_artifacts[1])
+    if state_restore_artifacts is not None:
+        logger.info("written: {}", state_restore_artifacts[0])
+        logger.info("written: {}", state_restore_artifacts[1])
     logger.info("written: {}", execution_snapshot_out)
     logger.info("written: {}", execution_snapshot_summary_out)
     logger.info("written: {}", execution_comparison_out)
@@ -2232,6 +3527,22 @@ def refresh_operations_artifacts_cmd(
     logger.info("written: {}", drift_overview_summary_out)
     logger.info("written: {}", phase_gate_out)
     logger.info("written: {}", phase_gate_summary_out)
+    logger.info("written: {}", remediation_planner_out)
+    logger.info("written: {}", remediation_planner_summary_out)
+    logger.info("written: {}", remediation_execution_plan_out)
+    logger.info("written: {}", remediation_execution_plan_summary_out)
+    logger.info("written: {}", remediation_session_out)
+    logger.info("written: {}", remediation_session_summary_out)
+    logger.info("written: {}", remediation_session_checkpoint_out)
+    logger.info("written: {}", remediation_session_checkpoint_summary_out)
+    logger.info("written: {}", remediation_scoreboard_out)
+    logger.info("written: {}", remediation_scoreboard_summary_out)
+    logger.info("written: {}", remediation_evaluator_out)
+    logger.info("written: {}", remediation_evaluator_summary_out)
+    logger.info("written: {}", remediation_evidence_out)
+    logger.info("written: {}", remediation_evidence_summary_out)
+    logger.info("written: {}", remediation_command_results_out)
+    logger.info("written: {}", remediation_command_results_summary_out)
     logger.info("written: {}", bundle_out)
     logger.info("written: {}", bundle_manifest_out)
     logger.info("written: {}", timeline_out)
@@ -2253,6 +3564,14 @@ def refresh_operations_artifacts_cmd(
     logger.info("appended: {}", bundle_chain_out)
     logger.info("appended: {}", audit_chain_out)
     logger.info("appended: {}", audit_bundle_chain_out)
+    logger.info("appended: {}", remediation_planner_chain_out)
+    logger.info("appended: {}", remediation_execution_plan_chain_out)
+    logger.info("appended: {}", remediation_session_chain_out)
+    logger.info("appended: {}", remediation_session_checkpoint_chain_out)
+    logger.info("appended: {}", remediation_scoreboard_chain_out)
+    logger.info("appended: {}", remediation_evaluator_chain_out)
+    logger.info("appended: {}", remediation_evidence_chain_out)
+    logger.info("appended: {}", remediation_command_results_chain_out)
     typer.echo(f"monitoring_status={monitoring['status']}")
     typer.echo(f"execution_snapshot_path={execution_snapshot_out}")
     typer.echo(f"execution_comparison_path={execution_comparison_out}")
@@ -2264,6 +3583,14 @@ def refresh_operations_artifacts_cmd(
     typer.echo(f"dashboard_path={dashboard_out}")
     typer.echo(f"runbook_path={runbook_out}")
     typer.echo(f"phase_gate_review_path={phase_gate_out}")
+    typer.echo(f"remediation_planner_path={remediation_planner_out}")
+    typer.echo(f"remediation_execution_plan_path={remediation_execution_plan_out}")
+    typer.echo(f"remediation_session_path={remediation_session_out}")
+    typer.echo(f"remediation_session_checkpoint_path={remediation_session_checkpoint_out}")
+    typer.echo(f"remediation_scoreboard_path={remediation_scoreboard_out}")
+    typer.echo(f"remediation_evaluator_path={remediation_evaluator_out}")
+    typer.echo(f"remediation_evidence_path={remediation_evidence_out}")
+    typer.echo(f"remediation_command_results_path={remediation_command_results_out}")
     typer.echo(f"current_state_index_path={current_state_index_out}")
     typer.echo(f"readiness_snapshot_path={readiness_snapshot_out}")
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
@@ -2310,9 +3637,35 @@ def paper_operations_cycle_cmd(
     cycle_summary_path = settings.data_dir / "ops/paper_operations_cycle_summary.json"
     audit_summary = _read_audit_schedule_summary(settings.data_dir)
     phase_gate_summary = _paper_last_run_phase_gate_summary(settings.data_dir)
+    execution_summary = _read_execution_schedule_summary(settings.data_dir)
+    execution_comparison_summary = _read_execution_comparison_schedule_summary(settings.data_dir)
+    execution_diagnostics_summary = _read_execution_diagnostics_schedule_summary(settings.data_dir)
+    execution_gap_history_summary = _read_execution_gap_history_schedule_summary(settings.data_dir)
+    execution_state_comparison_summary = _read_execution_state_comparison_schedule_summary(
+        settings.data_dir
+    )
+    execution_snapshot_drift_summary = _read_execution_snapshot_drift_schedule_summary(
+        settings.data_dir
+    )
     execution_drift_overview_summary = _paper_last_run_execution_drift_overview_summary(settings.data_dir)
     readiness_summary = _read_readiness_schedule_summary(settings.data_dir)
+    dashboard_summary_payload = read_json(dashboard_summary_out)
+    if not isinstance(dashboard_summary_payload, dict):
+        dashboard_summary_payload = {}
+    latest_execution_lineage = defaulted_all_latest_execution_lineage_fields(
+        dashboard_summary_payload
+    )
     phase_gate_fields = phase_gate_flat_fields(phase_gate_summary)
+    execution_fields = execution_snapshot_flat_fields(execution_summary)
+    execution_comparison_fields = execution_comparison_flat_fields(execution_comparison_summary)
+    execution_diagnostics_fields = execution_diagnostics_flat_fields(execution_diagnostics_summary)
+    execution_gap_history_fields = execution_gap_history_flat_fields(execution_gap_history_summary)
+    execution_state_comparison_fields = execution_state_comparison_flat_fields(
+        execution_state_comparison_summary
+    )
+    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(
+        execution_snapshot_drift_summary
+    )
     readiness_fields = readiness_flat_fields(readiness_summary)
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview_summary)
     write_json(
@@ -2326,10 +3679,23 @@ def paper_operations_cycle_cmd(
             "audit": audit_summary,
             "phase_gate": phase_gate_nested_fields(phase_gate_summary),
             **phase_gate_fields,
+            "execution_summary": execution_summary,
+            **execution_fields,
+            "execution_comparison_summary": execution_comparison_summary,
+            **execution_comparison_fields,
+            "execution_diagnostics_summary": execution_diagnostics_summary,
+            **execution_diagnostics_fields,
+            "execution_gap_history_summary": execution_gap_history_summary,
+            **execution_gap_history_fields,
+            "execution_state_comparison_summary": execution_state_comparison_summary,
+            **execution_state_comparison_fields,
+            "execution_snapshot_drift_summary": execution_snapshot_drift_summary,
+            **execution_snapshot_drift_fields,
             "execution_drift_overview_summary": execution_drift_overview_summary,
             **execution_drift_fields,
             "readiness_summary": readiness_summary,
             **readiness_fields,
+            **latest_execution_lineage,
             "artifacts": {
                 "weekly_review": str(weekly_out),
                 "comparison_report": str(comparison_out),
@@ -2518,6 +3884,7 @@ def build_backtest(
     )
 ) -> None:
     settings = get_settings()
+    latest_execution_payload = _paper_last_run_latest_execution_payload(settings.data_dir)
     default_signals_path = settings.data_dir / "research/signals.csv"
     selected_signals_path = signals_path or default_signals_path
     if signals_path is not None and not selected_signals_path.exists():
@@ -2536,7 +3903,18 @@ def build_backtest(
         audit_summary=_paper_last_run_audit_summary(settings.data_dir),
         phase_gate_summary=_paper_last_run_phase_gate_summary(settings.data_dir),
         readiness_summary=_read_readiness_schedule_summary(settings.data_dir),
+        execution_summary=_read_execution_schedule_summary(settings.data_dir),
+        execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
+        execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
+        execution_gap_history_summary=_read_execution_gap_history_schedule_summary(settings.data_dir),
+        execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
+            settings.data_dir
+        ),
+        execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
+            settings.data_dir
+        ),
         execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
+        **latest_execution_payload,
     )
     report_path = settings.data_dir / "research/backtest_report.md"
     metrics_path = settings.data_dir / "research/backtest_metrics.json"
@@ -2551,7 +3929,17 @@ def build_backtest(
         execution_summary=_read_execution_schedule_summary(settings.data_dir),
         execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
         execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
+        execution_gap_history_summary=_read_execution_gap_history_schedule_summary(
+            settings.data_dir
+        ),
+        execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
+            settings.data_dir
+        ),
+        execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
+            settings.data_dir
+        ),
         execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
+        **latest_execution_payload,
     )
     write_backtest_metrics_json(metrics, metrics_path)
     write_backtest_metrics_summary_json(
@@ -2563,7 +3951,15 @@ def build_backtest(
         execution_summary=_read_execution_schedule_summary(settings.data_dir),
         execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
         execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
+        execution_gap_history_summary=_read_execution_gap_history_schedule_summary(settings.data_dir),
+        execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
+            settings.data_dir
+        ),
+        execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
+            settings.data_dir
+        ),
         execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
+        **latest_execution_payload,
     )
     logger.info("written: {}", report_path)
     logger.info("written: {}", metrics_path)
@@ -2587,6 +3983,7 @@ def check_halt_policy() -> None:
 @app.command("check-go-no-go")
 def check_go_no_go() -> None:
     settings = get_settings()
+    latest_execution_payload = _paper_last_run_latest_execution_payload(settings.data_dir)
     report = build_go_no_go_report(settings.data_dir)
     out = settings.data_dir / "research/go_no_go_report.md"
     write_go_no_go_markdown(
@@ -2598,7 +3995,17 @@ def check_go_no_go() -> None:
         execution_summary=_read_execution_schedule_summary(settings.data_dir),
         execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
         execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
+        execution_gap_history_summary=_read_execution_gap_history_schedule_summary(
+            settings.data_dir
+        ),
+        execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
+            settings.data_dir
+        ),
+        execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
+            settings.data_dir
+        ),
         execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
+        **latest_execution_payload,
     )
     logger.info("written: {}", out)
     typer.echo(report.decision.value)
@@ -2609,15 +4016,24 @@ def check_go_no_go() -> None:
 @app.command("build-evidence-card")
 def build_evidence_card_cmd() -> None:
     settings = get_settings()
+    latest_execution_payload = _paper_last_run_latest_execution_payload(settings.data_dir)
     out = build_evidence_card(
         settings.data_dir,
         settings.data_dir / "evidence",
         audit_summary=_paper_last_run_audit_summary(settings.data_dir),
         phase_gate_summary=_paper_last_run_phase_gate_summary(settings.data_dir),
         readiness_summary=_read_readiness_schedule_summary(settings.data_dir),
+        **latest_execution_payload,
         execution_summary=_read_execution_schedule_summary(settings.data_dir),
         execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
         execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
+        execution_gap_history_summary=_read_execution_gap_history_schedule_summary(settings.data_dir),
+        execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
+            settings.data_dir
+        ),
+        execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
+            settings.data_dir
+        ),
         execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
     )
     logger.info("written: {}", out)
@@ -2749,6 +4165,14 @@ def diagnose_quotes(
         typer.echo(f"oracle_age_p90_ms={item.oracle_age_p90_ms}")
         typer.echo(f"spread_p50_bps={item.spread_p50_bps}")
         typer.echo(f"spread_p90_bps={item.spread_p90_bps}")
+    build_quote_diagnostics_report(
+        raw_quotes_root=settings.data_dir / "raw/quotes",
+        venue=venue,
+        symbol=symbol,
+        stale_thresholds_ms=stale_thresholds,
+        out_path=settings.data_dir / "reports/quote_diagnostics.md",
+        summary_path=settings.data_dir / "ops/quote_diagnostics_summary.json",
+    )
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
         typer.echo(f"recommended_read_order_{index}={item}")
 

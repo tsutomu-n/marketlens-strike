@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports.summary_normalizers import (
+    compare_signal_snapshots,
     execution_comparison_flat_fields,
     execution_diagnostics_flat_fields,
     execution_gap_history_flat_fields,
@@ -10,26 +12,55 @@ from sis.reports.summary_normalizers import (
     execution_snapshot_drift_flat_fields,
     execution_state_comparison_flat_fields,
     execution_drift_overview_flat_fields,
+    latest_execution_lineage_flat_lines,
     normalize_execution_drift_overview_summary,
+    latest_execution_lineage_fields_from_summary,
+    recommend_remediation_actions,
+    signal_observed_sources_by_reason,
+    signal_source_confidence,
 )
 from sis.reports.quote_diagnostics import build_quote_diagnostics
-from sis.storage.jsonl_store import read_json, write_json
+from sis.storage.jsonl_store import write_json
 from sis.validation.artifacts import validate_artifacts
 
 
 PHASE2_ALLOWED_DECISIONS = {"GO", "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST"}
 
 
+def _reports_dir(data_dir: Path) -> Path:
+    return data_dir / "reports"
+
+
+def _quick_navigation(summary: dict[str, object], data_dir: Path) -> dict[str, str]:
+    reports_dir = _reports_dir(data_dir)
+    items = (
+        ("phase_gate_review_report", summary.get("phase_gate_review_report_path")),
+        ("current_state_index_report", str(reports_dir / "current_state_index.md")),
+        ("readiness_snapshot_report", str(reports_dir / "readiness_snapshot.md")),
+        ("remediation_scoreboard_report", str(reports_dir / "remediation_scoreboard.md")),
+        ("paper_operations_runbook_report", str(reports_dir / "paper_operations_runbook.md")),
+    )
+    return {key: value for key, value in items if isinstance(value, str) and value}
+
+
+def _related_reports(summary: dict[str, object], data_dir: Path) -> dict[str, str]:
+    reports_dir = _reports_dir(data_dir)
+    items = (
+        ("phase_gate_review_report", summary.get("phase_gate_review_report_path")),
+        ("operations_dashboard_report", str(reports_dir / "operations_dashboard.md")),
+        ("current_state_index_report", str(reports_dir / "current_state_index.md")),
+        ("readiness_snapshot_report", str(reports_dir / "readiness_snapshot.md")),
+        ("paper_operations_runbook_report", str(reports_dir / "paper_operations_runbook.md")),
+        ("remediation_scoreboard_report", str(reports_dir / "remediation_scoreboard.md")),
+        ("go_no_go_report", str(data_dir / "research" / "go_no_go_report.md")),
+        ("paper_vs_backtest_comparison_report", str(reports_dir / "paper_vs_backtest_comparison.md")),
+    )
+    return {key: value for key, value in items if isinstance(value, str) and value}
+
+
 def _latest_path(pattern_root: Path, glob_pattern: str) -> Path | None:
     paths = sorted(pattern_root.glob(glob_pattern))
     return paths[-1] if paths else None
-
-
-def _safe_read_json(path: Path | None) -> dict:
-    if path is None or not path.exists():
-        return {}
-    payload = read_json(path)
-    return payload if isinstance(payload, dict) else {}
 
 
 def _load_stale_thresholds() -> dict[str, int]:
@@ -46,6 +77,281 @@ def _load_stale_thresholds() -> dict[str, int]:
     }
 
 
+def _required_artifact_paths(summary: dict[str, object]) -> dict[str, str | None]:
+    artifact_keys = (
+        "latest_manifest_path",
+        "latest_evidence_card_path",
+        "latest_execution_snapshot_summary_path",
+        "latest_execution_venue_comparison_summary_path",
+        "latest_execution_venue_diagnostics_summary_path",
+        "latest_execution_gap_history_summary_path",
+        "latest_execution_state_comparison_history_summary_path",
+        "latest_execution_snapshot_drift_history_summary_path",
+        "latest_execution_drift_overview_summary_path",
+    )
+    return {
+        key: summary.get(key) if isinstance(summary.get(key), str) else None
+        for key in artifact_keys
+    }
+
+
+def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str]]:
+    command_map = {
+        "latest_manifest_path": ["uv run sis phase-gate-review"],
+        "latest_evidence_card_path": ["uv run sis check-go-no-go", "uv run sis build-evidence-card"],
+        "latest_execution_snapshot_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "latest_execution_venue_comparison_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "latest_execution_venue_diagnostics_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "latest_execution_gap_history_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "latest_execution_state_comparison_history_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "latest_execution_snapshot_drift_history_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "latest_execution_drift_overview_summary_path": ["uv run sis refresh-operations-artifacts"],
+    }
+    return {
+        name: command_map.get(name, ["uv run sis refresh-operations-artifacts"])
+        for name in artifact_names
+    }
+
+
+def _remediation_order(
+    summary: dict[str, object],
+    missing_required_artifact_paths: list[str],
+    artifact_recovery_commands: dict[str, list[str]],
+) -> list[dict[str, object]]:
+    steps: list[dict[str, object]] = []
+    if missing_required_artifact_paths:
+        commands: list[str] = []
+        for name in missing_required_artifact_paths:
+            commands.extend(artifact_recovery_commands.get(name, []))
+        steps.append(
+            {
+                "priority": 1,
+                "reason": "missing_required_artifacts",
+                "commands": list(dict.fromkeys(commands)),
+            }
+        )
+    if int(summary.get("strict_validation_issue_count") or 0) > 0:
+        steps.append(
+            {
+                "priority": 2,
+                "reason": "strict_validation_failed",
+                "commands": ["uv run sis validate-artifacts --strict"],
+            }
+        )
+    if summary.get("diagnostics_all_available") is not True:
+        steps.append(
+            {
+                "priority": 3,
+                "reason": "diagnostics_unavailable",
+                "commands": ["uv run sis diagnose-quotes"],
+            }
+        )
+    if summary.get("execution_drift_overview_status") != "ok":
+        steps.append(
+            {
+                "priority": 4,
+                "reason": "execution_drift_unresolved",
+                "commands": ["uv run sis refresh-operations-artifacts"],
+            }
+        )
+    if summary.get("phase2_entry_allowed") is not True:
+        steps.append(
+            {
+                "priority": 5,
+                "reason": "phase_gate_not_cleared",
+                "commands": ["uv run sis check-go-no-go", "uv run sis build-evidence-card"],
+            }
+        )
+    return steps
+
+
+def _remediation_success_criteria(reason: str) -> list[str]:
+    criteria_map = {
+        "missing_required_artifacts": [
+            "missing_required_artifact_paths is empty",
+            "required artifact paths are non-null",
+        ],
+        "strict_validation_failed": [
+            "strict_validation_issue_count == 0",
+            "phase_gate_strict_validation_issue_count == 0",
+        ],
+        "diagnostics_unavailable": [
+            "diagnostics_all_available == True",
+        ],
+        "execution_drift_unresolved": [
+            "execution_drift_overview_status == ok",
+            "execution_drift_overview_diagnostics_alignment_match == True",
+        ],
+        "phase_gate_not_cleared": [
+            "phase2_entry_allowed == True",
+            "decision in {GO, CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST}",
+        ],
+    }
+    return criteria_map.get(reason, [])
+
+
+def _remediation_preflight_commands(reason: str) -> list[str]:
+    command_map = {
+        "missing_required_artifacts": ["uv run sis implementation-status"],
+        "strict_validation_failed": ["uv run sis validate-artifacts --strict"],
+        "diagnostics_unavailable": ["uv run sis diagnose-quotes"],
+        "execution_drift_unresolved": ["uv run sis refresh-operations-artifacts"],
+        "phase_gate_not_cleared": ["uv run sis check-go-no-go"],
+    }
+    return command_map.get(reason, [])
+
+
+def _remediation_postcheck_commands(reason: str) -> list[str]:
+    command_map = {
+        "missing_required_artifacts": ["uv run sis phase-gate-review"],
+        "strict_validation_failed": ["uv run sis phase-gate-review"],
+        "diagnostics_unavailable": ["uv run sis phase-gate-review"],
+        "execution_drift_unresolved": ["uv run sis phase-gate-review"],
+        "phase_gate_not_cleared": ["uv run sis build-evidence-card", "uv run sis phase-gate-review"],
+    }
+    return command_map.get(reason, [])
+
+
+def _remediation_preflight_expected_outputs(reason: str) -> list[str]:
+    output_map = {
+        "missing_required_artifacts": [
+            "implementation-status exits 0",
+            "docs/IMPLEMENTATION_STATUS.md is regenerated",
+        ],
+        "strict_validation_failed": [
+            "validate-artifacts --strict reports the current issue count",
+            "strict validation output includes checked_files",
+            "strict validation preview lists current issues",
+        ],
+        "diagnostics_unavailable": [
+            "diagnose-quotes prints per-symbol diagnostics rows",
+            "required symbols show quote diagnostics coverage",
+        ],
+        "execution_drift_unresolved": [
+            "refresh-operations-artifacts regenerates execution summaries",
+            "execution drift overview summary is rewritten",
+        ],
+        "phase_gate_not_cleared": [
+            "check-go-no-go prints the current decision and blockers",
+            "current gate decision is visible before regeneration",
+            "phase gate summary lists blockers",
+            "phase gate summary lists next actions",
+        ],
+    }
+    return output_map.get(reason, [])
+
+
+def _remediation_execute_expected_outputs(reason: str) -> list[str]:
+    output_map = {
+        "missing_required_artifacts": [
+            "mapped recovery commands exit 0",
+            "missing required artifact paths shrink or become empty",
+        ],
+        "strict_validation_failed": [
+            "strict validation output reports issues=0",
+            "strict validation output reports checked_files >= 1",
+        ],
+        "diagnostics_unavailable": [
+            "diagnostics report is regenerated",
+            "required quote diagnostics artifacts are available",
+        ],
+        "execution_drift_unresolved": [
+            "execution_drift_overview_summary.json is regenerated",
+            "drift status is re-evaluated from fresh artifacts",
+        ],
+        "phase_gate_not_cleared": [
+            "evidence card is regenerated",
+            "go/no-go decision artifacts are refreshed",
+        ],
+    }
+    return output_map.get(reason, [])
+
+
+def _remediation_postcheck_pass_signals(reason: str) -> list[str]:
+    signal_map = {
+        "missing_required_artifacts": [
+            "missing_required_artifact_paths is empty",
+            "required artifact paths are non-null",
+        ],
+        "strict_validation_failed": [
+            "strict_validation_issue_count == 0",
+            "phase_gate_strict_validation_issue_count == 0",
+        ],
+        "diagnostics_unavailable": [
+            "diagnostics_all_available == True",
+        ],
+        "execution_drift_unresolved": [
+            "execution_drift_overview_status == ok",
+            "execution_drift_overview_diagnostics_alignment_match == True",
+        ],
+        "phase_gate_not_cleared": [
+            "phase2_entry_allowed == True",
+            "decision in {GO, CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST}",
+        ],
+    }
+    return signal_map.get(reason, [])
+
+
+def _remediation_signal_snapshot_before(
+    reason: str, summary: dict[str, object]
+) -> dict[str, object]:
+    snapshot_map = {
+        "missing_required_artifacts": {
+            "missing_required_artifact_paths": summary.get("missing_required_artifact_paths"),
+            "latest_manifest_path": summary.get("latest_manifest_path"),
+            "latest_evidence_card_path": summary.get("latest_evidence_card_path"),
+        },
+        "strict_validation_failed": {
+            "strict_validation_issue_count": summary.get("strict_validation_issue_count"),
+            "phase_gate_strict_validation_issue_count": summary.get(
+                "phase_gate_strict_validation_issue_count"
+            ),
+        },
+        "diagnostics_unavailable": {
+            "diagnostics_all_available": summary.get("diagnostics_all_available"),
+            "diagnostics_symbols": summary.get("diagnostics_symbols"),
+        },
+        "execution_drift_unresolved": {
+            "execution_drift_overview_status": summary.get(
+                "execution_drift_overview_status"
+            ),
+            "execution_drift_overview_diagnostics_alignment_match": summary.get(
+                "execution_drift_overview_diagnostics_alignment_match"
+            ),
+        },
+        "phase_gate_not_cleared": {
+            "phase2_entry_allowed": summary.get("phase2_entry_allowed"),
+            "decision": summary.get("decision"),
+        },
+    }
+    return snapshot_map.get(reason, {})
+
+
+def _remediation_signal_snapshot_target(reason: str) -> dict[str, object]:
+    snapshot_map = {
+        "missing_required_artifacts": {
+            "missing_required_artifact_paths": [],
+            "required_artifact_paths_non_null": True,
+        },
+        "strict_validation_failed": {
+            "strict_validation_issue_count": 0,
+            "phase_gate_strict_validation_issue_count": 0,
+        },
+        "diagnostics_unavailable": {
+            "diagnostics_all_available": True,
+        },
+        "execution_drift_unresolved": {
+            "execution_drift_overview_status": "ok",
+            "execution_drift_overview_diagnostics_alignment_match": True,
+        },
+        "phase_gate_not_cleared": {
+            "phase2_entry_allowed": True,
+            "decision": ["GO", "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST"],
+        },
+    }
+    return snapshot_map.get(reason, {})
+
+
 def build_phase_gate_review(
     data_dir: Path,
     *,
@@ -58,11 +364,14 @@ def build_phase_gate_review(
     execution_state_comparison_history_summary_path: Path | None = None,
     execution_snapshot_drift_history_summary_path: Path | None = None,
     execution_drift_overview_summary_path: Path | None = None,
+    remediation_planner_summary_path: Path | None = None,
+    remediation_evaluator_summary_path: Path | None = None,
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
     validation = validate_artifacts(data_dir, schema_root, strict=True)
     stale_thresholds = _load_stale_thresholds()
+    prior_summary = safe_read_json_dict(summary_path)
 
     diagnostics: list[dict] = []
     for symbol in diagnostics_symbols:
@@ -81,17 +390,18 @@ def build_phase_gate_review(
         )
 
     manifest_path = _latest_path(Path("logs/live_evidence/manifests"), "live_evidence_*.json")
-    manifest_payload = _safe_read_json(manifest_path)
+    manifest_payload = safe_read_json_dict(manifest_path)
     evidence_card_path = _latest_path(data_dir / "evidence", "evidence_card_*.json")
-    evidence_payload = _safe_read_json(evidence_card_path)
-    execution_summary = _safe_read_json(execution_snapshot_summary_path)
-    execution_comparison = _safe_read_json(execution_venue_comparison_summary_path)
-    execution_diagnostics = _safe_read_json(execution_venue_diagnostics_summary_path)
-    execution_gap_history = _safe_read_json(execution_gap_history_summary_path)
-    execution_state_comparison = _safe_read_json(execution_state_comparison_history_summary_path)
-    execution_snapshot_drift = _safe_read_json(execution_snapshot_drift_history_summary_path)
-    execution_drift_overview = normalize_execution_drift_overview_summary(
-        _safe_read_json(execution_drift_overview_summary_path)
+    evidence_payload = safe_read_json_dict(evidence_card_path)
+    execution_summary = safe_read_json_dict(execution_snapshot_summary_path)
+    execution_comparison = safe_read_json_dict(execution_venue_comparison_summary_path)
+    execution_diagnostics = safe_read_json_dict(execution_venue_diagnostics_summary_path)
+    execution_gap_history = safe_read_json_dict(execution_gap_history_summary_path)
+    execution_state_comparison = safe_read_json_dict(execution_state_comparison_history_summary_path)
+    execution_snapshot_drift = safe_read_json_dict(execution_snapshot_drift_history_summary_path)
+    execution_drift_overview = normalized_summary(
+        execution_drift_overview_summary_path,
+        normalize_execution_drift_overview_summary,
     )
     execution_snapshot_fields = execution_snapshot_flat_fields(execution_summary)
     execution_comparison_fields = execution_comparison_flat_fields(execution_comparison)
@@ -104,6 +414,7 @@ def build_phase_gate_review(
         execution_snapshot_drift
     )
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
+    latest_execution_lineage = latest_execution_lineage_fields_from_summary(evidence_payload)
 
     decision = evidence_payload.get("decision") or manifest_payload.get("decision")
     venue_decisions = evidence_payload.get("venue_decisions")
@@ -182,6 +493,7 @@ def build_phase_gate_review(
         **execution_state_comparison_fields,
         **execution_snapshot_drift_fields,
         **execution_drift_fields,
+        **latest_execution_lineage,
         "diagnostics_symbols": list(diagnostics_symbols),
         "diagnostics_all_available": diagnostics_all_available,
         "diagnostics": diagnostics,
@@ -213,6 +525,135 @@ def build_phase_gate_review(
             "data/evidence/evidence_card_*.json",
         ],
     }
+    required_artifact_paths = _required_artifact_paths(summary)
+    missing_required_artifact_paths = [
+        key for key, value in required_artifact_paths.items() if not value
+    ]
+    artifact_recovery_commands = _artifact_recovery_commands(missing_required_artifact_paths)
+    remediation_order = _remediation_order(
+        summary,
+        missing_required_artifact_paths,
+        artifact_recovery_commands,
+    )
+    remediation_success_criteria = {
+        item["reason"]: _remediation_success_criteria(str(item["reason"]))
+        for item in remediation_order
+    }
+    remediation_preflight_commands = {
+        item["reason"]: _remediation_preflight_commands(str(item["reason"]))
+        for item in remediation_order
+    }
+    remediation_postcheck_commands = {
+        item["reason"]: _remediation_postcheck_commands(str(item["reason"]))
+        for item in remediation_order
+    }
+    remediation_preflight_expected_outputs = {
+        item["reason"]: _remediation_preflight_expected_outputs(str(item["reason"]))
+        for item in remediation_order
+    }
+    remediation_execute_expected_outputs = {
+        item["reason"]: _remediation_execute_expected_outputs(str(item["reason"]))
+        for item in remediation_order
+    }
+    remediation_postcheck_pass_signals = {
+        item["reason"]: _remediation_postcheck_pass_signals(str(item["reason"]))
+        for item in remediation_order
+    }
+    remediation_signal_snapshots_before = {
+        item["reason"]: _remediation_signal_snapshot_before(str(item["reason"]), summary)
+        for item in remediation_order
+    }
+    remediation_signal_snapshots_target = {
+        item["reason"]: _remediation_signal_snapshot_target(str(item["reason"]))
+        for item in remediation_order
+    }
+    previous_signal_snapshots = (
+        prior_summary.get("remediation_signal_snapshots_before")
+        if isinstance(prior_summary.get("remediation_signal_snapshots_before"), dict)
+        else {}
+    )
+    remediation_signal_snapshot_diffs = {
+        item["reason"]: compare_signal_snapshots(
+            previous_signal_snapshots.get(str(item["reason"])),
+            remediation_signal_snapshots_before.get(str(item["reason"])),
+            remediation_signal_snapshots_target.get(str(item["reason"])),
+        )
+        for item in remediation_order
+    }
+    previous_recommendations = (
+        prior_summary.get("remediation_recommendations")
+        if isinstance(prior_summary.get("remediation_recommendations"), dict)
+        else {}
+    )
+    current_planner_summary = safe_read_json_dict(remediation_planner_summary_path)
+    current_evaluator_summary = safe_read_json_dict(remediation_evaluator_summary_path)
+    current_provenance_hints = {
+        str(item.get("reason")): item
+        for item in current_planner_summary.get("entries", [])
+        if isinstance(item, dict) and item.get("source") == "phase_gate_review" and item.get("reason")
+    }
+    current_signal_provenance_hints = signal_observed_sources_by_reason(
+        current_evaluator_summary,
+        source="phase_gate_review",
+    )
+    remediation_recommendations = {
+        str(item["reason"]): recommend_remediation_actions(
+            remediation_signal_snapshot_diffs.get(str(item["reason"])),
+            preflight_commands=remediation_preflight_commands.get(str(item["reason"]), []),
+            execute_commands=item["commands"],
+            postcheck_commands=remediation_postcheck_commands.get(str(item["reason"]), []),
+            source_confidence=(
+                current_provenance_hints.get(str(item["reason"]), {}).get("source_confidence")
+                if isinstance(current_provenance_hints.get(str(item["reason"])), dict)
+                else (
+                    previous_recommendations.get(str(item["reason"]), {}).get("source_confidence")
+                    if isinstance(previous_recommendations.get(str(item["reason"])), dict)
+                    else None
+                )
+            ),
+            source_policy=(
+                current_provenance_hints.get(str(item["reason"]), {}).get("source_policy")
+                if isinstance(current_provenance_hints.get(str(item["reason"])), dict)
+                else (
+                    previous_recommendations.get(str(item["reason"]), {}).get("source_policy")
+                    if isinstance(previous_recommendations.get(str(item["reason"])), dict)
+                    else None
+                )
+            ),
+            execute_signal_confidence=signal_source_confidence(
+                current_signal_provenance_hints.get(str(item["reason"])),
+                remediation_execute_expected_outputs.get(str(item["reason"]), []),
+            ),
+            postcheck_signal_confidence=signal_source_confidence(
+                current_signal_provenance_hints.get(str(item["reason"])),
+                remediation_postcheck_pass_signals.get(str(item["reason"]), []),
+            ),
+        )
+        for item in remediation_order
+    }
+    summary["remediation_planner_summary_path"] = (
+        str(remediation_planner_summary_path) if remediation_planner_summary_path is not None else None
+    )
+    summary["remediation_evaluator_summary_path"] = (
+        str(remediation_evaluator_summary_path) if remediation_evaluator_summary_path is not None else None
+    )
+    summary["required_artifact_paths"] = required_artifact_paths
+    summary["missing_required_artifact_paths"] = missing_required_artifact_paths
+    summary["artifact_recovery_commands"] = artifact_recovery_commands
+    summary["remediation_order"] = remediation_order
+    summary["remediation_success_criteria"] = remediation_success_criteria
+    summary["remediation_preflight_commands"] = remediation_preflight_commands
+    summary["remediation_postcheck_commands"] = remediation_postcheck_commands
+    summary["remediation_preflight_expected_outputs"] = remediation_preflight_expected_outputs
+    summary["remediation_execute_expected_outputs"] = remediation_execute_expected_outputs
+    summary["remediation_postcheck_pass_signals"] = remediation_postcheck_pass_signals
+    summary["remediation_signal_snapshots_before"] = remediation_signal_snapshots_before
+    summary["remediation_signal_snapshots_target"] = remediation_signal_snapshots_target
+    summary["remediation_signal_snapshots_previous"] = previous_signal_snapshots
+    summary["remediation_signal_snapshot_diffs"] = remediation_signal_snapshot_diffs
+    summary["remediation_recommendations"] = remediation_recommendations
+    summary["quick_navigation"] = _quick_navigation(summary, data_dir)
+    summary["related_reports"] = _related_reports(summary, data_dir)
 
     lines = [
         "# Phase Gate Review",
@@ -266,7 +707,19 @@ def build_phase_gate_review(
             "- execution_drift_overview_snapshot_drift_mismatching_snapshot_count: "
             f"{summary['execution_drift_overview_snapshot_drift_mismatching_snapshot_count']}"
         ),
+        *latest_execution_lineage_flat_lines(summary),
         "",
+        "## Quick Navigation",
+        "",
+    ]
+    for key, value in summary["quick_navigation"].items():
+        lines.append(f"- {key}: {value}")
+    lines.extend(["", "## Related Reports", ""])
+    for key, value in summary["related_reports"].items():
+        lines.append(f"- {key}: {value}")
+    lines.extend(
+        [
+            "",
         "## Latest Artifacts",
         "",
         f"- latest_manifest_path: {summary['latest_manifest_path']}",
@@ -279,10 +732,118 @@ def build_phase_gate_review(
         f"- latest_execution_snapshot_drift_history_summary_path: {summary['latest_execution_snapshot_drift_history_summary_path']}",
         f"- latest_execution_drift_overview_summary_path: {summary['latest_execution_drift_overview_summary_path']}",
         "",
+        "## Required Artifacts",
+        "",
+        "",
         "## Strict Validation",
         "",
         f"- checked_files: {summary['checked_files']}",
-    ]
+        ]
+    )
+    lines.extend(
+        f"- {name}: {value}" for name, value in required_artifact_paths.items()
+    )
+    if missing_required_artifact_paths:
+        lines.append("- missing_required_artifact_paths:")
+        lines.extend(f"  - {name}" for name in missing_required_artifact_paths)
+    else:
+        lines.append("- missing_required_artifact_paths: none")
+    lines.extend(["", "## Recovery Commands", ""])
+    if artifact_recovery_commands:
+        for name, commands in artifact_recovery_commands.items():
+            lines.append(f"- {name}:")
+            lines.extend(f"  - `{command}`" for command in commands)
+    else:
+        lines.append("- recovery_commands: none")
+    lines.extend(["", "## Remediation Order", ""])
+    if remediation_order:
+        for item in remediation_order:
+            lines.append(f"- priority_{item['priority']}: {item['reason']}")
+            lines.extend(f"  - `{command}`" for command in item["commands"])
+    else:
+        lines.append("- remediation_order: none")
+    lines.extend(["", "## Remediation Success Criteria", ""])
+    if remediation_success_criteria:
+        for reason, criteria in remediation_success_criteria.items():
+            lines.append(f"- {reason}:")
+            lines.extend(f"  - {criterion}" for criterion in criteria)
+    else:
+        lines.append("- remediation_success_criteria: none")
+    lines.extend(["", "## Remediation Command Flow", ""])
+    if remediation_order:
+        for item in remediation_order:
+            reason = str(item["reason"])
+            lines.append(f"- {reason}:")
+            lines.append("  - preflight:")
+            for command in remediation_preflight_commands.get(reason, []):
+                lines.append(f"    - `{command}`")
+            lines.append("  - execute:")
+            for command in item["commands"]:
+                lines.append(f"    - `{command}`")
+            lines.append("  - post_check:")
+            for command in remediation_postcheck_commands.get(reason, []):
+                lines.append(f"    - `{command}`")
+    else:
+        lines.append("- remediation_command_flow: none")
+    lines.extend(["", "## Remediation Verification Signals", ""])
+    if remediation_order:
+        for item in remediation_order:
+            reason = str(item["reason"])
+            lines.append(f"- {reason}:")
+            lines.append("  - preflight_expected_output:")
+            for value in remediation_preflight_expected_outputs.get(reason, []):
+                lines.append(f"    - {value}")
+            lines.append("  - execute_expected_output:")
+            for value in remediation_execute_expected_outputs.get(reason, []):
+                lines.append(f"    - {value}")
+            lines.append("  - postcheck_pass_signal:")
+            for value in remediation_postcheck_pass_signals.get(reason, []):
+                lines.append(f"    - {value}")
+    else:
+        lines.append("- remediation_verification_signals: none")
+    lines.extend(["", "## Remediation Signal Snapshots", ""])
+    if remediation_order:
+        for item in remediation_order:
+            reason = str(item["reason"])
+            lines.append(f"- {reason}:")
+            lines.append("  - before:")
+            for key, value in remediation_signal_snapshots_before.get(reason, {}).items():
+                lines.append(f"    - {key}: {value}")
+            lines.append("  - target:")
+            for key, value in remediation_signal_snapshots_target.get(reason, {}).items():
+                lines.append(f"    - {key}: {value}")
+    else:
+        lines.append("- remediation_signal_snapshots: none")
+    lines.extend(["", "## Remediation Signal Diffs", ""])
+    if remediation_order:
+        for item in remediation_order:
+            reason = str(item["reason"])
+            lines.append(f"- {reason}:")
+            for key, diff in remediation_signal_snapshot_diffs.get(reason, {}).items():
+                lines.append(
+                    "  - {key}: previous={previous} current={current} target={target} trend={trend} target_matched={target_matched}".format(
+                        key=key,
+                        previous=diff.get("previous"),
+                        current=diff.get("current"),
+                        target=diff.get("target"),
+                        trend=diff.get("trend"),
+                        target_matched=diff.get("target_matched"),
+                    )
+                )
+    else:
+        lines.append("- remediation_signal_diffs: none")
+    lines.extend(["", "## Remediation Recommendations", ""])
+    if remediation_order:
+        for item in remediation_order:
+            reason = str(item["reason"])
+            recommendation = remediation_recommendations.get(reason, {})
+            lines.append(f"- {reason}:")
+            lines.append(f"  - status: {recommendation.get('status')}")
+            lines.append(f"  - why: {recommendation.get('why')}")
+            for command in recommendation.get("commands", []):
+                lines.append(f"  - next: `{command}`")
+    else:
+        lines.append("- remediation_recommendations: none")
     if validation.issues:
         lines.append("")
         lines.append("| path | message |")
@@ -383,6 +944,23 @@ def build_phase_gate_review(
                 "- rerun check-go-no-go and build-evidence-card",
             ]
         )
+    if remediation_order:
+        lines.extend(
+            [
+                "- execute the commands in `Remediation Order` from lower priority number to higher",
+            ]
+        )
+
+    lines.extend(["", "## Stop Conditions", ""])
+    lines.extend(
+        [
+            "- If `missing_required_artifact_paths` is not empty, stop and regenerate the missing manifest or execution artifacts before continuing.",
+            "- If `strict_validation_issue_count` is not `0`, stop and clear strict validation issues before considering Phase 2.",
+            "- If `diagnostics_all_available` is not `True`, stop and recollect quote diagnostics for QQQ / SPY / XAU.",
+            "- If `execution_comparison_all_registries_present` is not `True`, stop and inspect cross-venue registry coverage.",
+            "- If `execution_drift_overview_status` is not `ok`, stop and resolve execution drift mismatches before considering Phase 2.",
+        ]
+    )
 
     lines.extend(["", "## Recommended Read Order", ""])
     lines.extend(f"- {item}" for item in summary["recommended_read_order"])

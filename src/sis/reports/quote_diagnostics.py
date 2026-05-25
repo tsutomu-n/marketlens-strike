@@ -4,7 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from sis.storage.jsonl_store import read_jsonl
+from sis.storage.jsonl_store import read_jsonl, write_json
 
 
 @dataclass
@@ -145,3 +145,115 @@ def build_quote_diagnostics(
             )
         )
     return diagnostics
+
+
+def _quick_navigation(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "quote_diagnostics_report": str(out_path),
+        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+        "live_evidence_report": str(reports_dir.parent / "docs/live_evidence_reports/latest.md"),
+    }
+
+
+def _related_reports(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "quote_diagnostics_report": str(out_path),
+        "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
+        "go_no_go_report": str(reports_dir.parent / "research/go_no_go_report.md"),
+        "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
+        "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
+        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
+        "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+    }
+
+
+def build_quote_diagnostics_report(
+    *,
+    raw_quotes_root: Path,
+    venue: str | None = None,
+    symbol: str | None = None,
+    stale_thresholds_ms: dict[str, int] | None = None,
+    out_path: Path | None = None,
+    summary_path: Path | None = None,
+) -> str:
+    diagnostics = build_quote_diagnostics(
+        raw_quotes_root,
+        venue=venue,
+        symbol=symbol,
+        stale_thresholds_ms=stale_thresholds_ms,
+    )
+    row_count = sum(item.rows for item in diagnostics)
+    venues = sorted({item.venue for item in diagnostics})
+    symbols = sorted({item.symbol for item in diagnostics})
+    summary = {
+        "diagnostic_count": len(diagnostics),
+        "row_count": row_count,
+        "venues": venues,
+        "symbols": symbols,
+        "filters": {"venue": venue, "symbol": symbol},
+        "entries": [item.__dict__.copy() for item in diagnostics],
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
+        "quote_diagnostics_report_path": str(out_path) if out_path is not None else None,
+    }
+
+    lines = ["# Quote Diagnostics Report", ""]
+    if summary["quick_navigation"]:
+        lines.extend(["## Quick Navigation", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.append("")
+    if summary["related_reports"]:
+        lines.extend(["## Related Reports", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.append("")
+    lines.extend(
+        [
+            "## Summary",
+            "",
+            f"- diagnostic_count: {summary['diagnostic_count']}",
+            f"- row_count: {summary['row_count']}",
+            f"- venues: {summary['venues']}",
+            f"- symbols: {summary['symbols']}",
+            f"- filter_venue: {venue}",
+            f"- filter_symbol: {symbol}",
+            "",
+            "## Diagnostics",
+            "",
+        ]
+    )
+    if diagnostics:
+        for item in diagnostics:
+            lines.append(f"- venue={item.venue} symbol={item.symbol}")
+            lines.append(f"  - stale_threshold_ms: {item.stale_threshold_ms}")
+            lines.append(f"  - rows: {item.rows}")
+            lines.append(f"  - market_open_rows: {item.market_open_rows}")
+            lines.append(f"  - tradable_rate: {item.tradable_rate:.4f}")
+            lines.append(f"  - stale_rate: {item.stale_rate:.4f}")
+            lines.append(f"  - missing_mark_price_rate: {item.missing_mark_price_rate:.4f}")
+            lines.append(f"  - missing_index_price_rate: {item.missing_index_price_rate:.4f}")
+            lines.append(f"  - missing_spread_rate: {item.missing_spread_rate:.4f}")
+            lines.append(f"  - oracle_age_p50_ms: {item.oracle_age_p50_ms}")
+            lines.append(f"  - oracle_age_p90_ms: {item.oracle_age_p90_ms}")
+            lines.append(f"  - spread_p50_bps: {item.spread_p50_bps}")
+            lines.append(f"  - spread_p90_bps: {item.spread_p90_bps}")
+    else:
+        lines.append("- diagnostics: none")
+
+    text = "\n".join(lines).rstrip() + "\n"
+    if out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(text, encoding="utf-8")
+    if summary_path is not None:
+        write_json(summary_path, summary)
+    return text

@@ -79,6 +79,27 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
             "phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
             "phase2_entry_allowed": False,
         },
+        timeline_latest_execution_summary={
+            "execution_overall_status": "ok",
+            "execution_venue_count": 2,
+        },
+        timeline_latest_execution_comparison_summary={
+            "execution_comparison_all_registries_present": "True",
+        },
+        bundle_history_latest_execution_summary={
+            "execution_overall_status": "warn",
+            "execution_venue_count": 1,
+        },
+        bundle_history_latest_execution_comparison_summary={
+            "execution_comparison_all_registries_present": "False",
+        },
+        cycle_history_latest_execution_summary={
+            "execution_overall_status": "ok",
+            "execution_venue_count": 2,
+        },
+        cycle_history_latest_execution_comparison_summary={
+            "execution_comparison_all_registries_present": "True",
+        },
         execution_summary={
             "overall_status": "ok",
             "venue_count": 2,
@@ -93,6 +114,24 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
             "balance_gap_detected": True,
             "fills_gap_detected": False,
             "report_path": "data/reports/execution_venue_diagnostics.md",
+        },
+        execution_gap_history_summary={
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+            "report_path": "data/reports/execution_gap_history.md",
+        },
+        execution_state_comparison_summary={
+            "entry_count": 4,
+            "latest_status_match": False,
+            "mismatching_count": 1,
+            "report_path": "data/reports/execution_state_comparison_history.md",
+        },
+        execution_snapshot_drift_summary={
+            "entry_count": 3,
+            "latest_execution_state_comparison_status_match": True,
+            "mismatching_snapshot_count": 1,
+            "report_path": "data/reports/execution_snapshot_drift_history.md",
         },
         execution_drift_overview_summary={
             "execution_drift_overview_status": "degraded",
@@ -123,10 +162,31 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
     assert card["readiness_summary"]["readiness_execution_ready"] is False
     assert card["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert card["readiness_execution_ready"] is False
+    assert card["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert card["timeline_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert card["timeline_latest_execution_overall_status"] == "ok"
+    assert card["timeline_latest_execution_venue_count"] == 2
+    assert card["timeline_latest_execution_comparison_all_registries_present"] is True
+    assert card["bundle_history_latest_execution_summary"]["execution_overall_status"] == "warn"
+    assert card["bundle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is False
+    assert card["bundle_history_latest_execution_overall_status"] == "warn"
+    assert card["bundle_history_latest_execution_venue_count"] == 1
+    assert card["bundle_history_latest_execution_comparison_all_registries_present"] is False
+    assert card["cycle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert card["cycle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert card["cycle_history_latest_execution_overall_status"] == "ok"
+    assert card["cycle_history_latest_execution_venue_count"] == 2
+    assert card["cycle_history_latest_execution_comparison_all_registries_present"] is True
     assert card["execution_summary"]["overall_status"] == "ok"
     assert card["execution_summary"]["venue_count"] == 2
     assert card["execution_comparison_summary"]["all_registries_present"] is True
     assert card["execution_diagnostics_summary"]["balance_gap_detected"] is True
+    assert card["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
+    assert card["execution_gap_history_entry_count"] == 4
+    assert card["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == 1
+    assert card["execution_state_comparison_mismatching_count"] == 1
+    assert card["execution_snapshot_drift_summary"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert card["execution_snapshot_drift_mismatching_snapshot_count"] == 1
     assert card["execution_drift_overview_summary"]["overall_status"] == "degraded"
     assert card["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
     assert card["execution_drift_overview_summary"]["execution_drift_overview_diagnostics_alignment_match"] is False
@@ -134,6 +194,18 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
     assert card["execution_drift_overview_diagnostics_alignment_match"] is False
     assert card["execution_drift_overview_state_comparison_mismatching_count"] == 1
     assert card["execution_drift_overview_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert card["quick_navigation"]["evidence_card_report"] == str(card_path)
+    assert card["quick_navigation"]["phase_gate_review_report"] == str(
+        data_dir / "reports/phase_gate_review.md"
+    )
+    assert (
+        card["related_reports"]["execution_snapshot_report"]
+        == "data/reports/execution_snapshot.md"
+    )
+    assert (
+        card["related_reports"]["paper_vs_backtest_comparison_report"]
+        == str(data_dir / "reports/paper_vs_backtest_comparison.md")
+    )
     assert "Liquidation reference complete" in [
         item["criterion"] for item in card["criteria"]
     ]

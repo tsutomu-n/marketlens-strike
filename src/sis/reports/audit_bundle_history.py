@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.loaders import normalized_summary
 from sis.reports.summary_normalizers import (
-    normalize_execution_snapshot_summary,
+    latest_execution_lineage_from_notes,
     execution_snapshot_flat_fields,
     phase_gate_issue_note_previews,
+    normalize_execution_snapshot_summary,
 )
-from sis.storage.jsonl_store import read_json, read_jsonl, write_json
+from sis.storage.jsonl_store import read_jsonl, write_json
 
 
 def _note_value(notes: list[object], prefix: str) -> str | None:
@@ -27,6 +29,44 @@ def _note_values(notes: list[object], prefix: str) -> list[str]:
     return values
 
 
+def _reports_dir(operation_chain_path: Path | None) -> Path | None:
+    if operation_chain_path is None:
+        return None
+    base = (
+        operation_chain_path.parent.parent
+        if operation_chain_path.parent.name == "ops"
+        else operation_chain_path.parent
+    )
+    return base / "reports"
+
+
+def _quick_navigation(summary: dict[str, object]) -> dict[str, str]:
+    items = (
+        ("audit_bundle_history_report", summary.get("audit_bundle_history_report_path")),
+        ("audit_dashboard_report", summary.get("audit_dashboard_report_path")),
+        ("current_state_index_report", summary.get("current_state_index_report_path")),
+        ("readiness_snapshot_report", summary.get("readiness_snapshot_report_path")),
+        ("phase_gate_review_report", summary.get("latest_phase_gate_review_report_path")),
+        ("remediation_scoreboard_report", summary.get("remediation_scoreboard_report_path")),
+    )
+    return {key: value for key, value in items if isinstance(value, str) and value}
+
+
+def _related_reports(summary: dict[str, object]) -> dict[str, str]:
+    items = (
+        ("audit_bundle_history_report", summary.get("audit_bundle_history_report_path")),
+        ("audit_timeline_report", summary.get("audit_timeline_report_path")),
+        ("audit_dashboard_report", summary.get("audit_dashboard_report_path")),
+        ("audit_bundle_report", summary.get("audit_bundle_report_path")),
+        ("operations_audit_pack_report", summary.get("operations_audit_pack_report_path")),
+        ("current_state_index_report", summary.get("current_state_index_report_path")),
+        ("readiness_snapshot_report", summary.get("readiness_snapshot_report_path")),
+        ("phase_gate_review_report", summary.get("latest_phase_gate_review_report_path")),
+        ("remediation_scoreboard_report", summary.get("remediation_scoreboard_report_path")),
+    )
+    return {key: value for key, value in items if isinstance(value, str) and value}
+
+
 def build_audit_bundle_history_report(
     *,
     operation_chain_path: Path | None = None,
@@ -36,16 +76,86 @@ def build_audit_bundle_history_report(
 ) -> str:
     operations = list(read_jsonl(operation_chain_path)) if operation_chain_path and operation_chain_path.exists() else []
     snapshots = [item for item in operations if str(item.get("operation")) == "audit_bundle_snapshot"]
-    execution = normalize_execution_snapshot_summary(
-        read_json(execution_snapshot_summary_path)
-        if execution_snapshot_summary_path and execution_snapshot_summary_path.exists()
-        else {}
+    execution = normalized_summary(
+        execution_snapshot_summary_path,
+        normalize_execution_snapshot_summary,
     )
     execution_snapshot_fields = execution_snapshot_flat_fields(execution)
 
     ok_count = sum(1 for item in snapshots if str(item.get("status")) == "ok")
     latest = snapshots[-1] if snapshots else {}
     latest_notes = latest.get("notes", []) if isinstance(latest, dict) else []
+    latest_execution_lineage = latest_execution_lineage_from_notes(latest_notes)
+    latest_remediation_planner_status = (
+        _note_value(latest_notes, "planner_status=") if isinstance(latest_notes, list) else None
+    )
+    latest_remediation_planner_next_best_command = (
+        _note_value(latest_notes, "next_best_command=") if isinstance(latest_notes, list) else None
+    )
+    latest_remediation_planner_feedback_priority_reason = (
+        _note_value(latest_notes, "next_feedback_priority_reason=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_execution_plan_status = (
+        _note_value(latest_notes, "execution_plan_status=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_execution_plan_next_action_command = (
+        _note_value(latest_notes, "next_action_command=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_execution_plan_feedback_priority_reason = (
+        _note_value(latest_notes, "next_action_feedback_priority_reason=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_session_status = (
+        _note_value(latest_notes, "session_status=") if isinstance(latest_notes, list) else None
+    )
+    latest_remediation_session_next_pending_command = (
+        _note_value(latest_notes, "next_pending_command=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_session_feedback_priority_reason = (
+        _note_value(latest_notes, "next_pending_feedback_priority_reason=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_checkpoint_status = (
+        _note_value(latest_notes, "checkpoint_status=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_checkpoint_next_action_command = (
+        _note_value(latest_notes, "next_action_command=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_checkpoint_feedback_priority_reason = (
+        _note_value(latest_notes, "next_action_feedback_priority_reason=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_scoreboard_status = (
+        _note_value(latest_notes, "scoreboard_status=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_scoreboard_next_action_command = (
+        _note_value(latest_notes, "next_action_command=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    latest_remediation_scoreboard_feedback_priority_reason = (
+        _note_value(latest_notes, "next_action_feedback_priority_reason=")
+        if isinstance(latest_notes, list)
+        else None
+    )
+    reports_dir = _reports_dir(operation_chain_path)
 
     summary = {
         "snapshot_count": len(snapshots),
@@ -54,6 +164,7 @@ def build_audit_bundle_history_report(
         "latest_run_id": latest.get("run_id"),
         "latest_created_at": latest.get("created_at"),
         "execution_summary": execution,
+        **latest_execution_lineage,
         "latest_execution_drift_overview_summary": {
             "execution_drift_overview_status": (
                 _note_value(latest_notes, "execution_drift_overview_status=")
@@ -232,8 +343,53 @@ def build_audit_bundle_history_report(
         "latest_phase_gate_issue_previews": (
             phase_gate_issue_note_previews(latest_notes) if isinstance(latest_notes, list) else []
         ),
+        "latest_remediation_planner_status": latest_remediation_planner_status,
+        "latest_remediation_planner_next_best_command": latest_remediation_planner_next_best_command,
+        "latest_remediation_planner_feedback_priority_reason": (
+            latest_remediation_planner_feedback_priority_reason
+        ),
+        "latest_remediation_execution_plan_status": latest_remediation_execution_plan_status,
+        "latest_remediation_execution_plan_next_action_command": (
+            latest_remediation_execution_plan_next_action_command
+        ),
+        "latest_remediation_execution_plan_feedback_priority_reason": (
+            latest_remediation_execution_plan_feedback_priority_reason
+        ),
+        "latest_remediation_session_status": latest_remediation_session_status,
+        "latest_remediation_session_next_pending_command": latest_remediation_session_next_pending_command,
+        "latest_remediation_session_feedback_priority_reason": (
+            latest_remediation_session_feedback_priority_reason
+        ),
+        "latest_remediation_checkpoint_status": latest_remediation_checkpoint_status,
+        "latest_remediation_checkpoint_next_action_command": (
+            latest_remediation_checkpoint_next_action_command
+        ),
+        "latest_remediation_checkpoint_feedback_priority_reason": (
+            latest_remediation_checkpoint_feedback_priority_reason
+        ),
+        "latest_remediation_scoreboard_status": latest_remediation_scoreboard_status,
+        "latest_remediation_scoreboard_next_action_command": (
+            latest_remediation_scoreboard_next_action_command
+        ),
+        "latest_remediation_scoreboard_feedback_priority_reason": (
+            latest_remediation_scoreboard_feedback_priority_reason
+        ),
         **execution_snapshot_fields,
+        "audit_bundle_history_report_path": str(out_path) if out_path is not None else None,
+        "audit_timeline_report_path": str(reports_dir / "audit_timeline.md") if reports_dir else None,
+        "audit_dashboard_report_path": str(reports_dir / "audit_dashboard.md") if reports_dir else None,
+        "audit_bundle_report_path": str(reports_dir / "audit_bundle_manifest.md") if reports_dir else None,
+        "operations_audit_pack_report_path": (
+            str(reports_dir / "operations_audit_pack.md") if reports_dir else None
+        ),
+        "current_state_index_report_path": str(reports_dir / "current_state_index.md") if reports_dir else None,
+        "readiness_snapshot_report_path": str(reports_dir / "readiness_snapshot.md") if reports_dir else None,
+        "remediation_scoreboard_report_path": (
+            str(reports_dir / "remediation_scoreboard.md") if reports_dir else None
+        ),
     }
+    summary["quick_navigation"] = _quick_navigation(summary)
+    summary["related_reports"] = _related_reports(summary)
 
     lines = [
         "# Audit Bundle History Report",
@@ -245,6 +401,12 @@ def build_audit_bundle_history_report(
         f"- latest_status: {summary['latest_status']}",
         f"- latest_run_id: {summary['latest_run_id']}",
         f"- latest_created_at: {summary['latest_created_at']}",
+        f"- latest_execution_overall_status: {summary['latest_execution_overall_status']}",
+        f"- latest_execution_venue_count: {summary['latest_execution_venue_count']}",
+        (
+            "- latest_execution_comparison_all_registries_present: "
+            f"{summary['latest_execution_comparison_all_registries_present']}"
+        ),
         f"- latest_execution_gap_history_status: {summary['latest_execution_gap_history_status']}",
         f"- latest_execution_drift_overview_status: {summary['latest_execution_drift_overview_status']}",
         (
@@ -271,6 +433,30 @@ def build_audit_bundle_history_report(
             "- latest_execution_state_comparison_mismatching_count: "
             f"{summary['latest_execution_state_comparison_mismatching_count']}"
         ),
+        f"- latest_remediation_planner_status: {summary['latest_remediation_planner_status']}",
+        f"- latest_remediation_planner_next_best_command: {summary['latest_remediation_planner_next_best_command']}",
+        f"- latest_remediation_planner_feedback_priority_reason: {summary['latest_remediation_planner_feedback_priority_reason']}",
+        f"- latest_remediation_execution_plan_status: {summary['latest_remediation_execution_plan_status']}",
+        f"- latest_remediation_execution_plan_next_action_command: {summary['latest_remediation_execution_plan_next_action_command']}",
+        (
+            "- latest_remediation_execution_plan_feedback_priority_reason: "
+            f"{summary['latest_remediation_execution_plan_feedback_priority_reason']}"
+        ),
+        f"- latest_remediation_session_status: {summary['latest_remediation_session_status']}",
+        f"- latest_remediation_session_next_pending_command: {summary['latest_remediation_session_next_pending_command']}",
+        f"- latest_remediation_session_feedback_priority_reason: {summary['latest_remediation_session_feedback_priority_reason']}",
+        f"- latest_remediation_checkpoint_status: {summary['latest_remediation_checkpoint_status']}",
+        f"- latest_remediation_checkpoint_next_action_command: {summary['latest_remediation_checkpoint_next_action_command']}",
+        (
+            "- latest_remediation_checkpoint_feedback_priority_reason: "
+            f"{summary['latest_remediation_checkpoint_feedback_priority_reason']}"
+        ),
+        f"- latest_remediation_scoreboard_status: {summary['latest_remediation_scoreboard_status']}",
+        f"- latest_remediation_scoreboard_next_action_command: {summary['latest_remediation_scoreboard_next_action_command']}",
+        (
+            "- latest_remediation_scoreboard_feedback_priority_reason: "
+            f"{summary['latest_remediation_scoreboard_feedback_priority_reason']}"
+        ),
         f"- latest_readiness_next_phase: {summary['latest_readiness_next_phase']}",
         f"- latest_readiness_execution_ready: {summary['latest_readiness_execution_ready']}",
         f"- latest_phase_gate_decision: {summary['latest_phase_gate_decision']}",
@@ -287,6 +473,13 @@ def build_audit_bundle_history_report(
         f"- execution_venue_count: {summary['execution_venue_count']}",
         "",
     ]
+    lines.extend(["## Quick Navigation", ""])
+    for key, value in summary["quick_navigation"].items():
+        lines.append(f"- {key}: {value}")
+    lines.extend(["", "## Related Reports", ""])
+    for key, value in summary["related_reports"].items():
+        lines.append(f"- {key}: {value}")
+    lines.append("")
     if summary["latest_phase_gate_issue_previews"]:
         lines.extend(["## Latest Phase Gate Issue Preview", ""])
         lines.extend(f"- {item}" for item in summary["latest_phase_gate_issue_previews"])

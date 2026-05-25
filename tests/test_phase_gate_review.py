@@ -76,6 +76,10 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
         '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
         encoding="utf-8",
     )
+    (data_dir / "ops/execution_state_comparison_history_summary.json").write_text(
+        '{"entry_count":2,"latest_status_match":true,"mismatching_count":0}',
+        encoding="utf-8",
+    )
     (data_dir / "ops/execution_snapshot_drift_history_summary.json").write_text(
         '{"entry_count":3,"latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
         encoding="utf-8",
@@ -104,6 +108,27 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
                 "criteria": [],
                 "blockers": [],
                 "next_actions": ["proceed_to_phase2"],
+                "timeline_latest_execution_summary": {
+                    "execution_overall_status": "ok",
+                    "execution_venue_count": 2,
+                },
+                "timeline_latest_execution_comparison_summary": {
+                    "execution_comparison_all_registries_present": True,
+                },
+                "bundle_history_latest_execution_summary": {
+                    "execution_overall_status": "warn",
+                    "execution_venue_count": 1,
+                },
+                "bundle_history_latest_execution_comparison_summary": {
+                    "execution_comparison_all_registries_present": False,
+                },
+                "cycle_history_latest_execution_summary": {
+                    "execution_overall_status": "ok",
+                    "execution_venue_count": 2,
+                },
+                "cycle_history_latest_execution_comparison_summary": {
+                    "execution_comparison_all_registries_present": True,
+                },
             }
         ),
         encoding="utf-8",
@@ -125,6 +150,64 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
 
     out_path = data_dir / "reports/phase_gate_review.md"
     summary_path = data_dir / "ops/phase_gate_review_summary.json"
+    planner_summary_path = data_dir / "ops/remediation_planner_summary.json"
+    evaluator_summary_path = data_dir / "ops/remediation_evaluator_summary.json"
+    summary_path.write_text(
+        json.dumps(
+            {
+                "remediation_signal_snapshots_before": {
+                    "execution_drift_unresolved": {
+                        "execution_drift_overview_status": "blocked",
+                        "execution_drift_overview_diagnostics_alignment_match": False,
+                    }
+                },
+                "remediation_recommendations": {
+                    "execution_drift_unresolved": {
+                        "status": "stalled",
+                        "commands": ["uv run sis refresh-operations-artifacts"],
+                        "why": "signals did not move toward target",
+                        "source_confidence": "medium",
+                        "source_policy": "structured_summary_priority",
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    planner_summary_path.write_text(
+        json.dumps(
+            {
+                "entries": [
+                    {
+                        "source": "phase_gate_review",
+                        "reason": "execution_drift_unresolved",
+                        "source_confidence": "high",
+                        "source_policy": "direct_observation_priority",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    evaluator_summary_path.write_text(
+        json.dumps(
+            {
+                "actions": [
+                    {
+                        "source": "phase_gate_review",
+                        "reason": "execution_drift_unresolved",
+                        "signal_evaluations": [
+                            {
+                                "signal": "execution_drift_overview_summary.json is regenerated",
+                                "observed_source": "markdown_reports",
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
     text = build_phase_gate_review(
         data_dir,
         schema_root=Path("/home/tn/projects/marketlens-strike/schemas"),
@@ -132,8 +215,11 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
         execution_venue_comparison_summary_path=data_dir / "ops/execution_venue_comparison_summary.json",
         execution_venue_diagnostics_summary_path=data_dir / "ops/execution_venue_diagnostics_summary.json",
         execution_gap_history_summary_path=data_dir / "ops/execution_gap_history_summary.json",
+        execution_state_comparison_history_summary_path=data_dir / "ops/execution_state_comparison_history_summary.json",
         execution_snapshot_drift_history_summary_path=data_dir / "ops/execution_snapshot_drift_history_summary.json",
         execution_drift_overview_summary_path=data_dir / "ops/execution_drift_overview_summary.json",
+        remediation_planner_summary_path=planner_summary_path,
+        remediation_evaluator_summary_path=evaluator_summary_path,
         out_path=out_path,
         summary_path=summary_path,
     )
@@ -141,9 +227,17 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert out_path.exists()
     assert summary_path.exists()
     assert "Phase Gate Review" in text
+    assert "## Quick Navigation" in text
+    assert f"- phase_gate_review_report: {out_path}" in text
+    assert "## Related Reports" in text
+    assert f"- go_no_go_report: {data_dir / 'research/go_no_go_report.md'}" in text
     assert "phase2_entry_allowed: True" in text
 
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert payload["quick_navigation"]["phase_gate_review_report"] == str(out_path)
+    assert payload["related_reports"]["go_no_go_report"] == str(
+        data_dir / "research/go_no_go_report.md"
+    )
     assert payload["strict_validation_passed"] is True
     assert payload["strict_validation_issue_count"] == 0
     assert payload["checked_files"] >= 1
@@ -153,6 +247,66 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert payload["phase_gate_strict_validation_passed"] is True
     assert payload["phase_gate_strict_validation_issue_count"] == 0
     assert payload["phase_gate_checked_files"] >= 1
+    assert payload["required_artifact_paths"]["latest_execution_snapshot_summary_path"] == str(
+        data_dir / "ops/execution_snapshot_summary.json"
+    )
+    assert payload["missing_required_artifact_paths"] == []
+    assert payload["artifact_recovery_commands"] == {}
+    assert payload["remediation_order"][0]["priority"] == 4
+    assert payload["remediation_order"][0]["reason"] == "execution_drift_unresolved"
+    assert payload["remediation_success_criteria"]["execution_drift_unresolved"] == [
+        "execution_drift_overview_status == ok",
+        "execution_drift_overview_diagnostics_alignment_match == True",
+    ]
+    assert payload["remediation_preflight_commands"]["execution_drift_unresolved"] == [
+        "uv run sis refresh-operations-artifacts"
+    ]
+    assert payload["remediation_postcheck_commands"]["execution_drift_unresolved"] == [
+        "uv run sis phase-gate-review"
+    ]
+    assert payload["remediation_preflight_expected_outputs"]["execution_drift_unresolved"] == [
+        "refresh-operations-artifacts regenerates execution summaries",
+        "execution drift overview summary is rewritten",
+    ]
+    assert payload["remediation_execute_expected_outputs"]["execution_drift_unresolved"] == [
+        "execution_drift_overview_summary.json is regenerated",
+        "drift status is re-evaluated from fresh artifacts",
+    ]
+    assert payload["remediation_postcheck_pass_signals"]["execution_drift_unresolved"] == [
+        "execution_drift_overview_status == ok",
+        "execution_drift_overview_diagnostics_alignment_match == True",
+    ]
+    assert payload["remediation_signal_snapshots_before"]["execution_drift_unresolved"] == {
+        "execution_drift_overview_status": "degraded",
+        "execution_drift_overview_diagnostics_alignment_match": False,
+    }
+    assert payload["remediation_signal_snapshots_target"]["execution_drift_unresolved"] == {
+        "execution_drift_overview_status": "ok",
+        "execution_drift_overview_diagnostics_alignment_match": True,
+    }
+    assert payload["remediation_signal_snapshots_previous"]["execution_drift_unresolved"] == {
+        "execution_drift_overview_status": "blocked",
+        "execution_drift_overview_diagnostics_alignment_match": False,
+    }
+    assert payload["remediation_signal_snapshot_diffs"]["execution_drift_unresolved"][
+        "execution_drift_overview_status"
+    ] == {
+        "previous": "blocked",
+        "current": "degraded",
+        "target": "ok",
+        "trend": "changed",
+        "target_matched": False,
+    }
+    assert payload["remediation_recommendations"]["execution_drift_unresolved"] == {
+        "status": "improving",
+        "commands": ["uv run sis refresh-operations-artifacts"],
+        "why": "signals changed but low-confidence verification sources require revalidation before execute",
+        "source_confidence": "high",
+        "source_policy": "direct_observation_priority",
+        "execute_signal_confidence": "low",
+    }
+    assert payload["remediation_planner_summary_path"] == str(planner_summary_path)
+    assert payload["remediation_evaluator_summary_path"] == str(evaluator_summary_path)
     assert payload["phase_gate_review_report_path"] == str(out_path)
     assert payload["phase_gate_strict_validation_issues"] == []
     assert payload["latest_manifest_status"] == "completed"
@@ -171,6 +325,38 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert payload["execution_snapshot_drift_mismatching_snapshot_count"] == 1
     assert payload["execution_drift_overview_state_comparison_mismatching_count"] == 1
     assert payload["execution_drift_overview_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert payload["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert payload["timeline_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert payload["bundle_history_latest_execution_summary"]["execution_overall_status"] == "warn"
+    assert payload["bundle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is False
+    assert payload["cycle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert payload["cycle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert "timeline_latest_execution_overall_status: ok" in text
+    assert "bundle_history_latest_execution_overall_status: warn" in text
+    assert "cycle_history_latest_execution_overall_status: ok" in text
+    assert "## Required Artifacts" in text
+    assert "missing_required_artifact_paths: none" in text
+    assert "## Recovery Commands" in text
+    assert "recovery_commands: none" in text
+    assert "## Remediation Order" in text
+    assert "priority_4: execution_drift_unresolved" in text
+    assert "## Remediation Success Criteria" in text
+    assert "execution_drift_overview_status == ok" in text
+    assert "## Remediation Command Flow" in text
+    assert "`uv run sis refresh-operations-artifacts`" in text
+    assert "`uv run sis phase-gate-review`" in text
+    assert "## Remediation Verification Signals" in text
+    assert "preflight_expected_output:" in text
+    assert "execute_expected_output:" in text
+    assert "postcheck_pass_signal:" in text
+    assert "## Remediation Signal Snapshots" in text
+    assert "before:" in text
+    assert "target:" in text
+    assert "## Remediation Signal Diffs" in text
+    assert "trend=changed" in text
+    assert "## Remediation Recommendations" in text
+    assert "status: improving" in text
+    assert "## Stop Conditions" in text
 
 
 def test_phase_gate_normalizer_keeps_prefixed_validation_counts() -> None:

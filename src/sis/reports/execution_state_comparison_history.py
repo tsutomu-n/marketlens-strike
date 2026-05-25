@@ -2,7 +2,43 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.summary_normalizers import (
+    latest_execution_lineage_from_notes,
+    normalize_execution_diagnostics_summary,
+    normalize_execution_gap_history_summary,
+)
 from sis.storage.jsonl_store import read_jsonl, write_json
+
+
+def _quick_navigation(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "execution_state_comparison_report": str(out_path),
+        "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
+        "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+    }
+
+
+def _related_reports(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "execution_state_comparison_report": str(out_path),
+        "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
+        "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
+        "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
+        "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
+        "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
+        "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
+        "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+    }
 
 
 def _note_value(notes: list[object], prefix: str) -> str | None:
@@ -46,8 +82,13 @@ def build_execution_state_comparison_history_report(
         if not isinstance(notes, list):
             continue
         diagnostics_status = _note_value(notes, "execution_diagnostics_status=")
+        latest_execution_lineage = latest_execution_lineage_from_notes(notes, prefix="latest")
         gap_history_diagnostics_status = _note_value(notes, "execution_gap_history_latest_diagnostics_status=")
-        if diagnostics_status is None and gap_history_diagnostics_status is None:
+        if (
+            diagnostics_status is None
+            and not latest_execution_lineage
+            and gap_history_diagnostics_status is None
+        ):
             continue
         status_match = (
             diagnostics_status == gap_history_diagnostics_status
@@ -59,6 +100,15 @@ def build_execution_state_comparison_history_report(
                 "created_at": item.get("created_at"),
                 "operation": operation,
                 "status": item.get("status"),
+                "execution_overall_status": latest_execution_lineage.get(
+                    "latest_execution_overall_status"
+                ),
+                "execution_venue_count": latest_execution_lineage.get(
+                    "latest_execution_venue_count"
+                ),
+                "execution_comparison_all_registries_present": latest_execution_lineage.get(
+                    "latest_execution_comparison_all_registries_present"
+                ),
                 "execution_diagnostics_status": diagnostics_status,
                 "execution_gap_history_latest_diagnostics_status": gap_history_diagnostics_status,
                 "status_match": status_match,
@@ -96,6 +146,26 @@ def build_execution_state_comparison_history_report(
     )
     matching_count = sum(1 for item in entries if item.get("status_match") is True)
     mismatching_count = sum(1 for item in entries if item.get("status_match") is False)
+    latest_execution_diagnostics_summary = normalize_execution_diagnostics_summary(
+        {"overall_status": latest.get("execution_diagnostics_status")}
+    )
+    latest_execution_lineage = latest_execution_lineage_from_notes(
+        [
+            f"execution_overall_status={latest.get('execution_overall_status')}",
+            f"execution_venue_count={latest.get('execution_venue_count')}",
+            "execution_comparison_all_registries_present="
+            f"{latest.get('execution_comparison_all_registries_present')}",
+        ],
+        prefix="latest",
+    )
+    latest_execution_gap_history_summary = normalize_execution_gap_history_summary(
+        {
+            "latest_status": latest.get("status"),
+            "latest_execution_diagnostics_status": latest.get(
+                "execution_gap_history_latest_diagnostics_status"
+            ),
+        }
+    )
 
     summary = {
         "entry_count": len(entries),
@@ -109,6 +179,7 @@ def build_execution_state_comparison_history_report(
         "latest_status_match": latest.get("status_match"),
         "execution_state_comparison_entry_count": len(entries),
         "execution_state_comparison_latest_status": latest.get("status"),
+        **latest_execution_lineage,
         "execution_state_comparison_latest_diagnostics_status": latest.get(
             "execution_diagnostics_status"
         ),
@@ -120,29 +191,48 @@ def build_execution_state_comparison_history_report(
         "diagnostics_counts": diagnostics_counts,
         "gap_history_diagnostics_counts": gap_history_diagnostics_counts,
         "pair_counts": pair_counts,
+        "latest_execution_diagnostics_summary": latest_execution_diagnostics_summary,
+        "latest_execution_gap_history_summary": latest_execution_gap_history_summary,
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
     }
 
-    lines = [
-        "# Execution State Comparison History",
-        "",
-        "## Summary",
-        "",
-        f"- entry_count: {summary['entry_count']}",
-        f"- latest_operation: {summary['latest_operation']}",
-        f"- latest_status: {summary['latest_status']}",
-        f"- latest_created_at: {summary['latest_created_at']}",
-        f"- latest_execution_diagnostics_status: {summary['latest_execution_diagnostics_status']}",
-        (
-            "- latest_execution_gap_history_diagnostics_status: "
-            f"{summary['latest_execution_gap_history_diagnostics_status']}"
-        ),
-        f"- latest_status_match: {summary['latest_status_match']}",
-        f"- matching_count: {summary['matching_count']}",
-        f"- mismatching_count: {summary['mismatching_count']}",
-        "",
-        "## Diagnostics Counts",
-        "",
-    ]
+    lines = ["# Execution State Comparison History", ""]
+    if summary["quick_navigation"]:
+        lines.extend(["## Quick Navigation", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.append("")
+    if summary["related_reports"]:
+        lines.extend(["## Related Reports", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.append("")
+    lines.extend(
+        [
+            "## Summary",
+            "",
+            f"- entry_count: {summary['entry_count']}",
+            f"- latest_operation: {summary['latest_operation']}",
+            f"- latest_status: {summary['latest_status']}",
+            f"- latest_created_at: {summary['latest_created_at']}",
+            f"- latest_execution_overall_status: {summary['latest_execution_overall_status']}",
+            f"- latest_execution_venue_count: {summary['latest_execution_venue_count']}",
+            (
+                "- latest_execution_comparison_all_registries_present: "
+                f"{summary['latest_execution_comparison_all_registries_present']}"
+            ),
+            f"- latest_execution_diagnostics_status: {summary['latest_execution_diagnostics_status']}",
+            (
+                "- latest_execution_gap_history_diagnostics_status: "
+                f"{summary['latest_execution_gap_history_diagnostics_status']}"
+            ),
+            f"- latest_status_match: {summary['latest_status_match']}",
+            f"- matching_count: {summary['matching_count']}",
+            f"- mismatching_count: {summary['mismatching_count']}",
+            "",
+            "## Diagnostics Counts",
+            "",
+        ]
+    )
     if diagnostics_counts:
         for key in sorted(diagnostics_counts):
             lines.append(f"- {key}: {diagnostics_counts[key]}")
@@ -166,6 +256,8 @@ def build_execution_state_comparison_history_report(
             lines.append(
                 "- "
                 f"{item.get('created_at')} | op={item.get('operation')} | status={item.get('status')} | "
+                f"execution={item.get('execution_overall_status')} | venues={item.get('execution_venue_count')} | "
+                f"registries={item.get('execution_comparison_all_registries_present')} | "
                 f"diagnostics={item.get('execution_diagnostics_status')} | "
                 f"gap_history={item.get('execution_gap_history_latest_diagnostics_status')} | "
                 f"match={item.get('status_match')}"

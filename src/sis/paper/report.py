@@ -6,8 +6,15 @@ from sis.paper.fills import PaperFill
 from sis.paper.portfolio import PaperPosition
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
+    execution_gap_history_flat_fields,
     execution_drift_overview_flat_fields,
+    execution_snapshot_drift_flat_fields,
+    execution_state_comparison_flat_fields,
+    latest_execution_sections,
+    normalize_execution_gap_history_summary,
     normalize_execution_drift_overview_summary,
+    normalize_execution_snapshot_drift_summary,
+    normalize_execution_state_comparison_summary,
     normalize_phase_gate_summary,
     normalize_readiness_summary,
     phase_gate_flat_fields,
@@ -22,10 +29,28 @@ def build_daily_paper_report(
     audit_summary: dict | None = None,
     phase_gate_summary: dict | None = None,
     readiness_summary: dict | None = None,
+    timeline_latest_execution_summary: dict | None = None,
+    timeline_latest_execution_comparison_summary: dict | None = None,
+    bundle_history_latest_execution_summary: dict | None = None,
+    bundle_history_latest_execution_comparison_summary: dict | None = None,
+    cycle_history_latest_execution_summary: dict | None = None,
+    cycle_history_latest_execution_comparison_summary: dict | None = None,
+    execution_gap_history_summary: dict | None = None,
+    execution_state_comparison_summary: dict | None = None,
+    execution_snapshot_drift_summary: dict | None = None,
     execution_drift_overview_summary: dict | None = None,
 ) -> str:
     phase_gate_summary = normalize_phase_gate_summary(phase_gate_summary)
     readiness_summary = normalize_readiness_summary(readiness_summary)
+    execution_gap_history_summary = normalize_execution_gap_history_summary(
+        execution_gap_history_summary
+    )
+    execution_state_comparison_summary = normalize_execution_state_comparison_summary(
+        execution_state_comparison_summary
+    )
+    execution_snapshot_drift_summary = normalize_execution_snapshot_drift_summary(
+        execution_snapshot_drift_summary
+    )
     execution_drift_overview_summary = normalize_execution_drift_overview_summary(
         execution_drift_overview_summary
     )
@@ -85,6 +110,87 @@ def build_daily_paper_report(
                 f"- execution_ready: {readiness_flat.get('readiness_execution_ready')}",
                 f"- phase_gate_decision: {readiness_flat.get('phase_gate_decision') or ''}",
                 f"- phase2_entry_allowed: {readiness_flat.get('phase2_entry_allowed')}",
+            ]
+        )
+    latest_execution_lines = latest_execution_sections(
+        [
+            (
+                "## Audit Timeline Latest Execution",
+                timeline_latest_execution_summary,
+                timeline_latest_execution_comparison_summary,
+            ),
+            (
+                "## Audit Bundle History Latest Execution",
+                bundle_history_latest_execution_summary,
+                bundle_history_latest_execution_comparison_summary,
+            ),
+            (
+                "## Cycle History Latest Execution",
+                cycle_history_latest_execution_summary,
+                cycle_history_latest_execution_comparison_summary,
+            ),
+        ]
+    )
+    if latest_execution_lines:
+        lines.extend(["", *latest_execution_lines[:-1]])
+    if isinstance(execution_gap_history_summary, dict) and any(execution_gap_history_summary.values()):
+        execution_gap_history_flat = execution_gap_history_flat_fields(
+            execution_gap_history_summary
+        )
+        lines.extend(
+            [
+                "",
+                "## Execution Gap History",
+                "",
+                f"- entry_count: {execution_gap_history_flat.get('execution_gap_history_entry_count')}",
+                f"- latest_status: {execution_gap_history_flat.get('execution_gap_history_latest_status') or ''}",
+                (
+                    "- latest_execution_diagnostics_status: "
+                    f"{execution_gap_history_flat.get('execution_gap_history_latest_diagnostics_status') or ''}"
+                ),
+                f"- report_path: {execution_gap_history_flat.get('execution_gap_history_report_path') or ''}",
+            ]
+        )
+    if isinstance(execution_state_comparison_summary, dict) and any(execution_state_comparison_summary.values()):
+        execution_state_comparison_flat = execution_state_comparison_flat_fields(
+            execution_state_comparison_summary
+        )
+        lines.extend(
+            [
+                "",
+                "## Execution State Comparison History",
+                "",
+                f"- entry_count: {execution_state_comparison_flat.get('execution_state_comparison_entry_count')}",
+                (
+                    "- latest_status_match: "
+                    f"{execution_state_comparison_flat.get('execution_state_comparison_latest_status_match')}"
+                ),
+                (
+                    "- mismatching_count: "
+                    f"{execution_state_comparison_flat.get('execution_state_comparison_mismatching_count')}"
+                ),
+                f"- report_path: {execution_state_comparison_flat.get('execution_state_comparison_report_path') or ''}",
+            ]
+        )
+    if isinstance(execution_snapshot_drift_summary, dict) and any(execution_snapshot_drift_summary.values()):
+        execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
+            execution_snapshot_drift_summary
+        )
+        lines.extend(
+            [
+                "",
+                "## Execution Snapshot Drift History",
+                "",
+                f"- entry_count: {execution_snapshot_drift_flat.get('execution_snapshot_drift_entry_count')}",
+                (
+                    "- latest_status_match: "
+                    f"{execution_snapshot_drift_flat.get('execution_snapshot_drift_latest_status_match')}"
+                ),
+                (
+                    "- mismatching_snapshot_count: "
+                    f"{execution_snapshot_drift_flat.get('execution_snapshot_drift_mismatching_snapshot_count')}"
+                ),
+                f"- report_path: {execution_snapshot_drift_flat.get('execution_snapshot_drift_report_path') or ''}",
             ]
         )
     if isinstance(execution_drift_overview_summary, dict) and any(execution_drift_overview_summary.values()):

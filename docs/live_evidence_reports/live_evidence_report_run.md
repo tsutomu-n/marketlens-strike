@@ -6,8 +6,8 @@
 - started_at_utc: `None`
 - finished_at_utc: `None`
 - decision: `None`
-- log_path: `/tmp/pytest-of-tn/pytest-3189/test_write_reports_for_manifes0/logs/live_evidence/run.log`
-- manifest_path: `/tmp/pytest-of-tn/pytest-3189/test_write_reports_for_manifes0/manifests/live_evidence_20260522_2308.json`
+- log_path: `/tmp/pytest-of-tn/pytest-3679/test_write_reports_for_manifes0/logs/live_evidence/run.log`
+- manifest_path: `/tmp/pytest-of-tn/pytest-3679/test_write_reports_for_manifes0/manifests/live_evidence_20260522_2308.json`
 
 ## Audit Summary
 
@@ -24,6 +24,11 @@
 - phase_gate_strict_validation_issue_count: `2`
 - phase_gate_checked_files: `7`
 
+## Readiness Summary
+
+- next_phase_candidate: `Stay Phase 1`
+- execution_ready: `False`
+
 ## Execution Drift Overview
 
 - overall_status: `degraded`
@@ -36,10 +41,10 @@
 - sidecar_metadata_rows: `0`
 - sidecar_pricing_rows: `0`
 - raw_quote_rows: `0`
-- normalized_quotes: `/tmp/pytest-of-tn/pytest-3189/test_write_reports_for_manifes0/data/normalized/quotes.parquet`
-- cost_matrix: `/tmp/pytest-of-tn/pytest-3189/test_write_reports_for_manifes0/data/research/venue_cost_matrix.csv`
-- backtest_metrics: `/tmp/pytest-of-tn/pytest-3189/test_write_reports_for_manifes0/data/research/backtest_metrics.json`
-- go_no_go_report: `/tmp/pytest-of-tn/pytest-3189/test_write_reports_for_manifes0/data/research/go_no_go_report.md`
+- normalized_quotes: `/tmp/pytest-of-tn/pytest-3679/test_write_reports_for_manifes0/data/normalized/quotes.parquet`
+- cost_matrix: `/tmp/pytest-of-tn/pytest-3679/test_write_reports_for_manifes0/data/research/venue_cost_matrix.csv`
+- backtest_metrics: `/tmp/pytest-of-tn/pytest-3679/test_write_reports_for_manifes0/data/research/backtest_metrics.json`
+- go_no_go_report: `/tmp/pytest-of-tn/pytest-3679/test_write_reports_for_manifes0/data/research/go_no_go_report.md`
 - evidence_card: `None`
 
 ## Venue Decisions
@@ -64,7 +69,7 @@
 
 ## Validation
 
-- checked_files: `0`
+- checked_files: `1`
 - issue_count: `0`
 
 ## Blockers

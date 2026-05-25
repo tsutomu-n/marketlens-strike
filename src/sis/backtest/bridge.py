@@ -17,15 +17,26 @@ from sis.core.strategy import ResearchSignalStrategy
 from sis.risk.risk_gate import evaluate_risk_gate
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
+    execution_gap_history_flat_fields,
+    execution_snapshot_drift_flat_fields,
     execution_comparison_flat_fields,
     execution_diagnostics_flat_fields,
     execution_drift_overview_flat_fields,
     execution_snapshot_flat_fields,
+    execution_state_comparison_flat_fields,
+    normalize_execution_comparison_summary,
+    normalize_execution_diagnostics_summary,
     normalize_execution_drift_overview_summary,
+    normalize_execution_gap_history_summary,
+    normalize_execution_snapshot_summary,
+    normalize_execution_snapshot_drift_summary,
+    normalize_execution_state_comparison_summary,
     phase_gate_flat_fields,
     normalize_phase_gate_summary,
     readiness_flat_fields,
     normalize_readiness_summary,
+    latest_execution_lineage_fields_from_payload,
+    latest_execution_sections,
 )
 
 
@@ -381,7 +392,19 @@ def run_backtest_bridge_with_decisions(
     audit_summary: dict | None = None,
     phase_gate_summary: dict | None = None,
     readiness_summary: dict | None = None,
+    execution_summary: dict | None = None,
+    execution_comparison_summary: dict | None = None,
+    execution_diagnostics_summary: dict | None = None,
+    execution_gap_history_summary: dict | None = None,
+    execution_state_comparison_summary: dict | None = None,
+    execution_snapshot_drift_summary: dict | None = None,
     execution_drift_overview_summary: dict | None = None,
+    timeline_latest_execution_summary: dict | None = None,
+    timeline_latest_execution_comparison_summary: dict | None = None,
+    bundle_history_latest_execution_summary: dict | None = None,
+    bundle_history_latest_execution_comparison_summary: dict | None = None,
+    cycle_history_latest_execution_summary: dict | None = None,
+    cycle_history_latest_execution_comparison_summary: dict | None = None,
 ) -> tuple[list[BacktestMetrics], list[DecisionRecord], dict]:
     if not quotes_path.exists():
         raise FileNotFoundError(f"Normalized quote parquet not found: {quotes_path}")
@@ -397,11 +420,59 @@ def run_backtest_bridge_with_decisions(
     cost_profiles = load_cost_profiles(cost_matrix_path)
     normalized_phase_gate_summary = normalize_phase_gate_summary(phase_gate_summary)
     normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
+    normalized_execution_summary = normalize_execution_snapshot_summary(execution_summary)
+    normalized_execution_comparison_summary = normalize_execution_comparison_summary(
+        execution_comparison_summary
+    )
+    normalized_execution_diagnostics_summary = normalize_execution_diagnostics_summary(
+        execution_diagnostics_summary
+    )
+    normalized_execution_gap_history_summary = normalize_execution_gap_history_summary(
+        execution_gap_history_summary
+    )
+    normalized_execution_state_comparison_summary = normalize_execution_state_comparison_summary(
+        execution_state_comparison_summary
+    )
+    normalized_execution_snapshot_drift_summary = normalize_execution_snapshot_drift_summary(
+        execution_snapshot_drift_summary
+    )
     normalized_execution_drift_overview_summary = normalize_execution_drift_overview_summary(
         execution_drift_overview_summary
     )
+    latest_execution_lineage = latest_execution_lineage_fields_from_payload(
+        timeline_latest_execution_summary=timeline_latest_execution_summary,
+        timeline_latest_execution_comparison_summary=(
+            timeline_latest_execution_comparison_summary
+        ),
+        bundle_history_latest_execution_summary=(
+            bundle_history_latest_execution_summary
+        ),
+        bundle_history_latest_execution_comparison_summary=(
+            bundle_history_latest_execution_comparison_summary
+        ),
+        cycle_history_latest_execution_summary=cycle_history_latest_execution_summary,
+        cycle_history_latest_execution_comparison_summary=(
+            cycle_history_latest_execution_comparison_summary
+        ),
+    )
     phase_gate_flat = phase_gate_flat_fields(normalized_phase_gate_summary)
     readiness_flat = readiness_flat_fields(normalized_readiness_summary)
+    execution_flat = execution_snapshot_flat_fields(normalized_execution_summary)
+    execution_comparison_flat = execution_comparison_flat_fields(
+        normalized_execution_comparison_summary
+    )
+    execution_diagnostics_flat = execution_diagnostics_flat_fields(
+        normalized_execution_diagnostics_summary
+    )
+    execution_gap_history_flat = execution_gap_history_flat_fields(
+        normalized_execution_gap_history_summary
+    )
+    execution_state_comparison_flat = execution_state_comparison_flat_fields(
+        normalized_execution_state_comparison_summary
+    )
+    execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
+        normalized_execution_snapshot_drift_summary
+    )
     execution_drift_flat = execution_drift_overview_flat_fields(
         normalized_execution_drift_overview_summary
     )
@@ -417,11 +488,42 @@ def run_backtest_bridge_with_decisions(
             if normalized_readiness_summary and any(normalized_readiness_summary.values()):
                 summary["readiness_summary"] = normalized_readiness_summary
                 summary.update(readiness_flat)
+            if normalized_execution_summary and any(normalized_execution_summary.values()):
+                summary["execution_summary"] = normalized_execution_summary
+                summary.update(execution_flat)
+            if normalized_execution_comparison_summary and any(
+                normalized_execution_comparison_summary.values()
+            ):
+                summary["execution_comparison_summary"] = normalized_execution_comparison_summary
+                summary.update(execution_comparison_flat)
+            if normalized_execution_diagnostics_summary and any(
+                normalized_execution_diagnostics_summary.values()
+            ):
+                summary["execution_diagnostics_summary"] = normalized_execution_diagnostics_summary
+                summary.update(execution_diagnostics_flat)
+            if normalized_execution_gap_history_summary and any(
+                normalized_execution_gap_history_summary.values()
+            ):
+                summary["execution_gap_history_summary"] = normalized_execution_gap_history_summary
+                summary.update(execution_gap_history_flat)
+            if normalized_execution_state_comparison_summary and any(
+                normalized_execution_state_comparison_summary.values()
+            ):
+                summary["execution_state_comparison_summary"] = (
+                    normalized_execution_state_comparison_summary
+                )
+                summary.update(execution_state_comparison_flat)
+            if normalized_execution_snapshot_drift_summary and any(
+                normalized_execution_snapshot_drift_summary.values()
+            ):
+                summary["execution_snapshot_drift_summary"] = normalized_execution_snapshot_drift_summary
+                summary.update(execution_snapshot_drift_flat)
             if normalized_execution_drift_overview_summary and any(
                 normalized_execution_drift_overview_summary.values()
             ):
                 summary["execution_drift_overview_summary"] = normalized_execution_drift_overview_summary
                 summary.update(execution_drift_flat)
+            summary.update(latest_execution_lineage)
             if decision_log_path is not None:
                 _write_decision_records(records, decision_log_path)
             if decision_summary_path is not None:
@@ -448,9 +550,32 @@ def run_backtest_bridge_with_decisions(
     if normalized_readiness_summary and any(normalized_readiness_summary.values()):
         summary["readiness_summary"] = normalized_readiness_summary
         summary.update(readiness_flat)
+    if normalized_execution_summary and any(normalized_execution_summary.values()):
+        summary["execution_summary"] = normalized_execution_summary
+        summary.update(execution_flat)
+    if normalized_execution_comparison_summary and any(normalized_execution_comparison_summary.values()):
+        summary["execution_comparison_summary"] = normalized_execution_comparison_summary
+        summary.update(execution_comparison_flat)
+    if normalized_execution_diagnostics_summary and any(normalized_execution_diagnostics_summary.values()):
+        summary["execution_diagnostics_summary"] = normalized_execution_diagnostics_summary
+        summary.update(execution_diagnostics_flat)
+    if normalized_execution_gap_history_summary and any(normalized_execution_gap_history_summary.values()):
+        summary["execution_gap_history_summary"] = normalized_execution_gap_history_summary
+        summary.update(execution_gap_history_flat)
+    if normalized_execution_state_comparison_summary and any(
+        normalized_execution_state_comparison_summary.values()
+    ):
+        summary["execution_state_comparison_summary"] = normalized_execution_state_comparison_summary
+        summary.update(execution_state_comparison_flat)
+    if normalized_execution_snapshot_drift_summary and any(
+        normalized_execution_snapshot_drift_summary.values()
+    ):
+        summary["execution_snapshot_drift_summary"] = normalized_execution_snapshot_drift_summary
+        summary.update(execution_snapshot_drift_flat)
     if normalized_execution_drift_overview_summary and any(normalized_execution_drift_overview_summary.values()):
         summary["execution_drift_overview_summary"] = normalized_execution_drift_overview_summary
         summary.update(execution_drift_flat)
+    summary.update(latest_execution_lineage)
     if decision_summary_path is not None:
         _write_decision_summary(summary, decision_summary_path)
     if decision_log_path is not None:
@@ -481,7 +606,16 @@ def write_backtest_report(
     execution_summary: dict | None = None,
     execution_comparison_summary: dict | None = None,
     execution_diagnostics_summary: dict | None = None,
+    execution_gap_history_summary: dict | None = None,
+    execution_state_comparison_summary: dict | None = None,
+    execution_snapshot_drift_summary: dict | None = None,
     execution_drift_overview_summary: dict | None = None,
+    timeline_latest_execution_summary: dict | None = None,
+    timeline_latest_execution_comparison_summary: dict | None = None,
+    bundle_history_latest_execution_summary: dict | None = None,
+    bundle_history_latest_execution_comparison_summary: dict | None = None,
+    cycle_history_latest_execution_summary: dict | None = None,
+    cycle_history_latest_execution_comparison_summary: dict | None = None,
 ) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     phase_gate_summary = normalize_phase_gate_summary(phase_gate_summary)
@@ -603,6 +737,66 @@ def write_backtest_report(
                 "",
             ]
         )
+    if isinstance(execution_gap_history_summary, dict) and any(execution_gap_history_summary.values()):
+        execution_gap_history_flat = execution_gap_history_flat_fields(
+            execution_gap_history_summary
+        )
+        lines.extend(
+            [
+                "## Execution Gap History",
+                "",
+                f"- entry_count: {execution_gap_history_flat.get('execution_gap_history_entry_count')}",
+                f"- latest_status: {execution_gap_history_flat.get('execution_gap_history_latest_status') or ''}",
+                (
+                    "- latest_execution_diagnostics_status: "
+                    f"{execution_gap_history_flat.get('execution_gap_history_latest_diagnostics_status') or ''}"
+                ),
+                f"- report_path: {execution_gap_history_flat.get('execution_gap_history_report_path') or ''}",
+                "",
+            ]
+        )
+    if isinstance(execution_state_comparison_summary, dict) and any(execution_state_comparison_summary.values()):
+        execution_state_comparison_flat = execution_state_comparison_flat_fields(
+            execution_state_comparison_summary
+        )
+        lines.extend(
+            [
+                "## Execution State Comparison History",
+                "",
+                f"- entry_count: {execution_state_comparison_flat.get('execution_state_comparison_entry_count')}",
+                (
+                    "- latest_status_match: "
+                    f"{execution_state_comparison_flat.get('execution_state_comparison_latest_status_match')}"
+                ),
+                (
+                    "- mismatching_count: "
+                    f"{execution_state_comparison_flat.get('execution_state_comparison_mismatching_count')}"
+                ),
+                f"- report_path: {execution_state_comparison_flat.get('execution_state_comparison_report_path') or ''}",
+                "",
+            ]
+        )
+    if isinstance(execution_snapshot_drift_summary, dict) and any(execution_snapshot_drift_summary.values()):
+        execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
+            execution_snapshot_drift_summary
+        )
+        lines.extend(
+            [
+                "## Execution Snapshot Drift History",
+                "",
+                f"- entry_count: {execution_snapshot_drift_flat.get('execution_snapshot_drift_entry_count')}",
+                (
+                    "- latest_status_match: "
+                    f"{execution_snapshot_drift_flat.get('execution_snapshot_drift_latest_status_match')}"
+                ),
+                (
+                    "- mismatching_snapshot_count: "
+                    f"{execution_snapshot_drift_flat.get('execution_snapshot_drift_mismatching_snapshot_count')}"
+                ),
+                f"- report_path: {execution_snapshot_drift_flat.get('execution_snapshot_drift_report_path') or ''}",
+                "",
+            ]
+        )
     if isinstance(execution_drift_overview_summary, dict) and any(execution_drift_overview_summary.values()):
         execution_drift_flat = execution_drift_overview_flat_fields(
             execution_drift_overview_summary
@@ -628,6 +822,27 @@ def write_backtest_report(
                 "",
             ]
         )
+    lines.extend(
+        latest_execution_sections(
+            [
+                (
+                    "## Audit Timeline Latest Execution",
+                    timeline_latest_execution_summary,
+                    timeline_latest_execution_comparison_summary,
+                ),
+                (
+                    "## Audit Bundle History Latest Execution",
+                    bundle_history_latest_execution_summary,
+                    bundle_history_latest_execution_comparison_summary,
+                ),
+                (
+                    "## Cycle History Latest Execution",
+                    cycle_history_latest_execution_summary,
+                    cycle_history_latest_execution_comparison_summary,
+                ),
+            ]
+        )
+    )
     out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -649,18 +864,75 @@ def write_backtest_metrics_summary_json(
     execution_summary: dict | None = None,
     execution_comparison_summary: dict | None = None,
     execution_diagnostics_summary: dict | None = None,
+    execution_gap_history_summary: dict | None = None,
+    execution_state_comparison_summary: dict | None = None,
+    execution_snapshot_drift_summary: dict | None = None,
     execution_drift_overview_summary: dict | None = None,
+    timeline_latest_execution_summary: dict | None = None,
+    timeline_latest_execution_comparison_summary: dict | None = None,
+    bundle_history_latest_execution_summary: dict | None = None,
+    bundle_history_latest_execution_comparison_summary: dict | None = None,
+    cycle_history_latest_execution_summary: dict | None = None,
+    cycle_history_latest_execution_comparison_summary: dict | None = None,
 ) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     trade_counts = [item.trade_count for item in metrics]
     avg_trade_returns = [item.avg_trade_return for item in metrics if item.avg_trade_return is not None]
     normalized_phase_gate_summary = normalize_phase_gate_summary(phase_gate_summary)
     normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
+    normalized_execution_summary = normalize_execution_snapshot_summary(execution_summary)
+    normalized_execution_comparison_summary = normalize_execution_comparison_summary(
+        execution_comparison_summary
+    )
+    normalized_execution_diagnostics_summary = normalize_execution_diagnostics_summary(
+        execution_diagnostics_summary
+    )
+    normalized_execution_gap_history_summary = normalize_execution_gap_history_summary(
+        execution_gap_history_summary
+    )
+    normalized_execution_state_comparison_summary = normalize_execution_state_comparison_summary(
+        execution_state_comparison_summary
+    )
+    normalized_execution_snapshot_drift_summary = normalize_execution_snapshot_drift_summary(
+        execution_snapshot_drift_summary
+    )
     normalized_execution_drift_overview_summary = normalize_execution_drift_overview_summary(
         execution_drift_overview_summary
     )
+    latest_execution_lineage = latest_execution_lineage_fields_from_payload(
+        timeline_latest_execution_summary=timeline_latest_execution_summary,
+        timeline_latest_execution_comparison_summary=(
+            timeline_latest_execution_comparison_summary
+        ),
+        bundle_history_latest_execution_summary=(
+            bundle_history_latest_execution_summary
+        ),
+        bundle_history_latest_execution_comparison_summary=(
+            bundle_history_latest_execution_comparison_summary
+        ),
+        cycle_history_latest_execution_summary=cycle_history_latest_execution_summary,
+        cycle_history_latest_execution_comparison_summary=(
+            cycle_history_latest_execution_comparison_summary
+        ),
+    )
     phase_gate_flat = phase_gate_flat_fields(normalized_phase_gate_summary)
     readiness_flat = readiness_flat_fields(normalized_readiness_summary)
+    execution_flat = execution_snapshot_flat_fields(normalized_execution_summary)
+    execution_comparison_flat = execution_comparison_flat_fields(
+        normalized_execution_comparison_summary
+    )
+    execution_diagnostics_flat = execution_diagnostics_flat_fields(
+        normalized_execution_diagnostics_summary
+    )
+    execution_gap_history_flat = execution_gap_history_flat_fields(
+        normalized_execution_gap_history_summary
+    )
+    execution_state_comparison_flat = execution_state_comparison_flat_fields(
+        normalized_execution_state_comparison_summary
+    )
+    execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
+        normalized_execution_snapshot_drift_summary
+    )
     execution_drift_flat = execution_drift_overview_flat_fields(
         normalized_execution_drift_overview_summary
     )
@@ -680,14 +952,20 @@ def write_backtest_metrics_summary_json(
         **phase_gate_flat,
         "readiness_summary": normalized_readiness_summary,
         **readiness_flat,
-        "execution": execution_summary if isinstance(execution_summary, dict) else {},
-        "execution_comparison": (
-            execution_comparison_summary if isinstance(execution_comparison_summary, dict) else {}
-        ),
-        "execution_diagnostics": (
-            execution_diagnostics_summary if isinstance(execution_diagnostics_summary, dict) else {}
-        ),
+        "execution": normalized_execution_summary,
+        **execution_flat,
+        "execution_comparison": normalized_execution_comparison_summary,
+        **execution_comparison_flat,
+        "execution_diagnostics": normalized_execution_diagnostics_summary,
+        **execution_diagnostics_flat,
+        "execution_gap_history_summary": normalized_execution_gap_history_summary,
+        **execution_gap_history_flat,
+        "execution_state_comparison_summary": normalized_execution_state_comparison_summary,
+        **execution_state_comparison_flat,
+        "execution_snapshot_drift_summary": normalized_execution_snapshot_drift_summary,
+        **execution_snapshot_drift_flat,
         "execution_drift_overview_summary": normalized_execution_drift_overview_summary,
         **execution_drift_flat,
+        **latest_execution_lineage,
     }
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

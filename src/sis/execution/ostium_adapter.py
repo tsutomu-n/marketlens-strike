@@ -34,26 +34,31 @@ class OstiumExecutionAdapter:
         self._fills_snapshot_path = fills_snapshot_path
         self._order_status_path = order_status_path
 
-    def _registry_rows(self) -> list[dict]:
-        payload = read_json(self._registry_path)
+    @staticmethod
+    def _json_list(payload: object) -> list[dict]:
         return payload if isinstance(payload, list) else []
 
-    def _order_status_rows(self) -> list[dict]:
-        if self._order_status_path is None or not self._order_status_path.exists():
-            return []
-        payload = read_json(self._order_status_path)
-        return payload if isinstance(payload, list) else []
-
-    def _fill_rows(self) -> list[dict]:
-        if self._fills_snapshot_path is None or not self._fills_snapshot_path.exists():
-            return []
-        payload = read_json(self._fills_snapshot_path)
+    @staticmethod
+    def _fills_from_payload(payload: object) -> list[dict]:
         if isinstance(payload, list):
             return payload
         if isinstance(payload, dict):
             fills = payload.get("fills", [])
             return fills if isinstance(fills, list) else []
         return []
+
+    def _registry_rows(self) -> list[dict]:
+        return self._json_list(read_json(self._registry_path))
+
+    def _order_status_rows(self) -> list[dict]:
+        if self._order_status_path is None or not self._order_status_path.exists():
+            return []
+        return self._json_list(read_json(self._order_status_path))
+
+    def _fill_rows(self) -> list[dict]:
+        if self._fills_snapshot_path is None or not self._fills_snapshot_path.exists():
+            return []
+        return self._fills_from_payload(read_json(self._fills_snapshot_path))
 
     def read_balance(self) -> dict:
         snapshot = self._balance_snapshot

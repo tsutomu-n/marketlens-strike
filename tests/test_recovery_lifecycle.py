@@ -20,6 +20,36 @@ def test_state_snapshot_export_and_restore(tmp_path) -> None:
         {
             "orders_count": 1,
             "audit": {"overall_status": "ok", "latest_operation": "audit_bundle_snapshot"},
+            "timeline_latest_execution_summary": {
+                "execution_overall_status": "ok",
+                "execution_venue_count": 2,
+            },
+            "timeline_latest_execution_comparison_summary": {
+                "execution_comparison_all_registries_present": True,
+            },
+            "timeline_latest_execution_overall_status": "ok",
+            "timeline_latest_execution_venue_count": 2,
+            "timeline_latest_execution_comparison_all_registries_present": True,
+            "bundle_history_latest_execution_summary": {
+                "execution_overall_status": "ok",
+                "execution_venue_count": 2,
+            },
+            "bundle_history_latest_execution_comparison_summary": {
+                "execution_comparison_all_registries_present": True,
+            },
+            "bundle_history_latest_execution_overall_status": "ok",
+            "bundle_history_latest_execution_venue_count": 2,
+            "bundle_history_latest_execution_comparison_all_registries_present": True,
+            "cycle_history_latest_execution_summary": {
+                "execution_overall_status": "ok",
+                "execution_venue_count": 2,
+            },
+            "cycle_history_latest_execution_comparison_summary": {
+                "execution_comparison_all_registries_present": True,
+            },
+            "cycle_history_latest_execution_overall_status": "ok",
+            "cycle_history_latest_execution_venue_count": 2,
+            "cycle_history_latest_execution_comparison_all_registries_present": True,
             "phase_gate": {
                 "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
                 "phase2_entry_allowed": False,
@@ -85,6 +115,36 @@ def test_state_snapshot_export_and_restore(tmp_path) -> None:
     assert restored.get_json("paper_last_run") == {
         "orders_count": 1,
         "audit": {"overall_status": "ok", "latest_operation": "audit_bundle_snapshot"},
+        "timeline_latest_execution_summary": {
+            "execution_overall_status": "ok",
+            "execution_venue_count": 2,
+        },
+        "timeline_latest_execution_comparison_summary": {
+            "execution_comparison_all_registries_present": True,
+        },
+        "timeline_latest_execution_overall_status": "ok",
+        "timeline_latest_execution_venue_count": 2,
+        "timeline_latest_execution_comparison_all_registries_present": True,
+        "bundle_history_latest_execution_summary": {
+            "execution_overall_status": "ok",
+            "execution_venue_count": 2,
+        },
+        "bundle_history_latest_execution_comparison_summary": {
+            "execution_comparison_all_registries_present": True,
+        },
+        "bundle_history_latest_execution_overall_status": "ok",
+        "bundle_history_latest_execution_venue_count": 2,
+        "bundle_history_latest_execution_comparison_all_registries_present": True,
+        "cycle_history_latest_execution_summary": {
+            "execution_overall_status": "ok",
+            "execution_venue_count": 2,
+        },
+        "cycle_history_latest_execution_comparison_summary": {
+            "execution_comparison_all_registries_present": True,
+        },
+        "cycle_history_latest_execution_overall_status": "ok",
+        "cycle_history_latest_execution_venue_count": 2,
+        "cycle_history_latest_execution_comparison_all_registries_present": True,
         "phase_gate": {
             "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
             "phase2_entry_allowed": False,
@@ -145,6 +205,18 @@ def test_state_snapshot_export_and_restore(tmp_path) -> None:
         encoding="utf-8"
     )
     assert '"execution_overall_status": "ok"' in snapshot.read_text(encoding="utf-8")
+    assert '"timeline_latest_execution_summary"' in snapshot.read_text(encoding="utf-8")
+    assert '"bundle_history_latest_execution_summary"' in snapshot.read_text(encoding="utf-8")
+    assert '"cycle_history_latest_execution_summary"' in snapshot.read_text(encoding="utf-8")
+    assert '"timeline_latest_execution_overall_status": "ok"' in snapshot.read_text(
+        encoding="utf-8"
+    )
+    assert '"bundle_history_latest_execution_overall_status": "ok"' in snapshot.read_text(
+        encoding="utf-8"
+    )
+    assert '"cycle_history_latest_execution_overall_status": "ok"' in snapshot.read_text(
+        encoding="utf-8"
+    )
     assert '"execution_comparison_all_registries_present": true' in snapshot.read_text(
         encoding="utf-8"
     )
@@ -190,6 +262,15 @@ def test_daemon_manifest_and_lifecycle_report(tmp_path) -> None:
                 "phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears",
                 "strict_validation_passed": True,
             },
+            "timeline_latest_execution_overall_status": "ok",
+            "timeline_latest_execution_venue_count": 2,
+            "timeline_latest_execution_comparison_all_registries_present": True,
+            "bundle_history_latest_execution_overall_status": "ok",
+            "bundle_history_latest_execution_venue_count": 2,
+            "bundle_history_latest_execution_comparison_all_registries_present": True,
+            "cycle_history_latest_execution_overall_status": "ok",
+            "cycle_history_latest_execution_venue_count": 2,
+            "cycle_history_latest_execution_comparison_all_registries_present": True,
             "execution_drift_overview_summary": {
                 "overall_status": "degraded",
                 "diagnostics_alignment_match": False,
@@ -209,6 +290,10 @@ def test_daemon_manifest_and_lifecycle_report(tmp_path) -> None:
 
     assert manifest_path.exists()
     assert "Strategy Lifecycle Report" in report
+    assert "## Quick Navigation" in report
+    assert f"- strategy_lifecycle_report: {tmp_path / 'lifecycle.md'}" in report
+    assert "## Related Reports" in report
+    assert f"- weekly_review_report: {tmp_path / 'weekly_strategy_review.md'}" in report
     assert "signals_considered: 2" in report
     assert "Weekly Strategy Review" in report
     assert "Paper Last Run Audit" in report
@@ -216,17 +301,54 @@ def test_daemon_manifest_and_lifecycle_report(tmp_path) -> None:
     assert "decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
     assert "Paper Last Run Execution Drift Overview" in report
     assert "overall_status: degraded" in report
+    assert "Paper Last Run Audit Timeline Latest Execution" in report
+    assert "Paper Last Run Audit Bundle History Latest Execution" in report
+    assert "Paper Last Run Cycle History Latest Execution" in report
 
 
 def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
     data_dir = tmp_path / "data"
     write_json(
         data_dir / "ops/audit_dashboard_summary.json",
-        {"overall_status": "ok", "timeline_latest_operation": "audit_bundle_snapshot"},
+        {
+            "overall_status": "ok",
+            "timeline_latest_operation": "audit_bundle_snapshot",
+            "timeline_latest_execution_summary": {
+                "execution_overall_status": "ok",
+                "execution_venue_count": 2,
+            },
+            "timeline_latest_execution_comparison_summary": {
+                "execution_comparison_all_registries_present": True,
+            },
+        },
     )
     write_json(
         data_dir / "ops/audit_bundle_manifest.json",
-        {"bundle_history_snapshot_count": 3},
+        {
+            "bundle_history_snapshot_count": 3,
+            "bundle_history_latest_execution_summary": {
+                "execution_overall_status": "ok",
+                "execution_venue_count": 2,
+            },
+            "bundle_history_latest_execution_comparison_summary": {
+                "execution_comparison_all_registries_present": True,
+            },
+        },
+    )
+    write_json(
+        data_dir / "ops/operations_bundle_manifest.json",
+        {
+            "cycle_history_latest_execution_summary": {
+                "execution_overall_status": "ok",
+                "execution_venue_count": 2,
+            },
+            "cycle_history_latest_execution_comparison_summary": {
+                "execution_comparison_all_registries_present": True,
+            },
+            "cycle_history_latest_execution_overall_status": "ok",
+            "cycle_history_latest_execution_venue_count": 2,
+            "cycle_history_latest_execution_comparison_all_registries_present": True,
+        },
     )
     write_json(
         data_dir / "ops/phase_gate_review_summary.json",
@@ -249,11 +371,34 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
         decision_summary_path=None,
         audit_dashboard_summary_path=data_dir / "ops/audit_dashboard_summary.json",
         audit_bundle_summary_path=data_dir / "ops/audit_bundle_manifest.json",
+        operations_bundle_manifest_path=data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=data_dir / "ops/phase_gate_review_summary.json",
+        execution_summary={
+            "execution_overall_status": "ok",
+            "execution_venue_count": 2,
+        },
+        execution_comparison_summary={
+            "execution_comparison_all_registries_present": True,
+        },
         execution_diagnostics_summary={
             "overall_status": "degraded",
             "balance_gap_detected": True,
             "fills_gap_detected": False,
+        },
+        execution_gap_history_summary={
+            "execution_gap_history_entry_count": 4,
+            "execution_gap_history_latest_status": "ok",
+            "execution_gap_history_latest_execution_diagnostics_status": "degraded",
+        },
+        execution_state_comparison_summary={
+            "execution_state_comparison_entry_count": 4,
+            "execution_state_comparison_latest_status_match": False,
+            "execution_state_comparison_mismatching_count": 1,
+        },
+        execution_snapshot_drift_summary={
+            "execution_snapshot_drift_entry_count": 3,
+            "execution_snapshot_drift_latest_execution_state_comparison_status_match": True,
+            "execution_snapshot_drift_mismatching_snapshot_count": 1,
         },
         execution_drift_overview_summary={
             "execution_drift_overview_status": "degraded",
@@ -278,6 +423,33 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
     assert snapshot["audit"]["latest_operation"] == "audit_bundle_snapshot"
     assert snapshot["audit"]["bundle_history_snapshot_count"] == 3
     assert snapshot["audit_summary"]["overall_status"] == "ok"
+    assert snapshot["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert (
+        snapshot["timeline_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
+    assert (
+        snapshot["bundle_history_latest_execution_summary"]["execution_overall_status"]
+        == "ok"
+    )
+    assert (
+        snapshot["bundle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
+    assert snapshot["cycle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert (
+        snapshot["cycle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
+    assert snapshot["cycle_history_latest_execution_overall_status"] == "ok"
+    assert snapshot["cycle_history_latest_execution_venue_count"] == 2
+    assert snapshot["cycle_history_latest_execution_comparison_all_registries_present"] is True
     assert snapshot["phase_gate"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert snapshot["phase_gate"]["phase2_entry_allowed"] is False
     assert snapshot["phase_gate"]["phase2_entry_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
@@ -296,6 +468,16 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
     assert snapshot["phase_gate_checked_files"] == 7
     assert snapshot["execution_diagnostics"]["overall_status"] == "degraded"
     assert snapshot["execution_diagnostics_summary"]["overall_status"] == "degraded"
+    assert snapshot["execution"]["execution_overall_status"] == "ok"
+    assert snapshot["execution_summary"]["execution_overall_status"] == "ok"
+    assert snapshot["execution_comparison"]["execution_comparison_all_registries_present"] is True
+    assert snapshot["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert snapshot["execution_gap_history"]["execution_gap_history_entry_count"] == 4
+    assert snapshot["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
+    assert snapshot["execution_state_comparison"]["execution_state_comparison_mismatching_count"] == 1
+    assert snapshot["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == 1
+    assert snapshot["execution_snapshot_drift"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert snapshot["execution_snapshot_drift_summary"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
     assert snapshot["execution_drift_overview"]["overall_status"] == "degraded"
     assert snapshot["execution_drift_overview_summary"]["overall_status"] == "degraded"
     assert snapshot["execution_drift_overview_status"] == "degraded"
@@ -320,9 +502,15 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
     assert '"phase_gate_strict_validation_passed": true' in result.schedule_path.read_text(
         encoding="utf-8"
     )
+    assert '"execution_summary"' in result.schedule_path.read_text(encoding="utf-8")
+    assert '"execution_overall_status": "ok"' in result.schedule_path.read_text(encoding="utf-8")
+    assert '"execution_comparison_summary"' in result.schedule_path.read_text(encoding="utf-8")
     assert '"execution_diagnostics_status": "degraded"' in result.schedule_path.read_text(
         encoding="utf-8"
     )
+    assert '"execution_gap_history_summary"' in result.schedule_path.read_text(encoding="utf-8")
+    assert '"execution_state_comparison_summary"' in result.schedule_path.read_text(encoding="utf-8")
+    assert '"execution_snapshot_drift_summary"' in result.schedule_path.read_text(encoding="utf-8")
     assert '"execution_balance_gap_detected": true' in result.schedule_path.read_text(
         encoding="utf-8"
     )

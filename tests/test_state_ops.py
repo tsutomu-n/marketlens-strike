@@ -53,11 +53,25 @@ def test_kill_switch_and_healthcheck_work(tmp_path) -> None:
     phase_gate = tmp_path / "phase_gate.json"
     execution_drift_overview = tmp_path / "execution_drift_overview.json"
     readiness = tmp_path / "readiness.json"
+    execution = tmp_path / "execution.json"
+    execution_comparison = tmp_path / "execution_comparison.json"
+    execution_diagnostics = tmp_path / "execution_diagnostics.json"
+    execution_gap_history = tmp_path / "execution_gap_history.json"
+    execution_state_comparison = tmp_path / "execution_state_comparison.json"
+    execution_snapshot_drift = tmp_path / "execution_snapshot_drift.json"
+    operations_bundle = tmp_path / "operations_bundle.json"
     audit_dashboard.write_text(
-        '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot"}',
+        '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot","timeline_latest_execution_summary":{"execution_overall_status":"ok","execution_venue_count":2},"timeline_latest_execution_comparison_summary":{"execution_comparison_all_registries_present":"True"}}',
         encoding="utf-8",
     )
-    audit_bundle.write_text('{"bundle_history_snapshot_count":3}', encoding="utf-8")
+    audit_bundle.write_text(
+        '{"bundle_history_snapshot_count":3,"bundle_history_latest_execution_summary":{"execution_overall_status":"ok","execution_venue_count":2},"bundle_history_latest_execution_comparison_summary":{"execution_comparison_all_registries_present":"True"}}',
+        encoding="utf-8",
+    )
+    operations_bundle.write_text(
+        '{"cycle_history_latest_execution_summary":{"execution_overall_status":"ok","execution_venue_count":2},"cycle_history_latest_execution_comparison_summary":{"execution_comparison_all_registries_present":"True"},"cycle_history_latest_execution_overall_status":"ok","cycle_history_latest_execution_venue_count":2,"cycle_history_latest_execution_comparison_all_registries_present":"True"}',
+        encoding="utf-8",
+    )
     phase_gate.write_text(
         '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true}',
         encoding="utf-8",
@@ -70,6 +84,27 @@ def test_kill_switch_and_healthcheck_work(tmp_path) -> None:
         '{"readiness_next_phase_candidate":"Stay Phase 1","readiness_execution_ready":false}',
         encoding="utf-8",
     )
+    execution.write_text('{"execution_overall_status":"ok","execution_venue_count":2}', encoding="utf-8")
+    execution_comparison.write_text(
+        '{"execution_comparison_all_registries_present":true}',
+        encoding="utf-8",
+    )
+    execution_diagnostics.write_text(
+        '{"execution_diagnostics_status":"degraded","execution_balance_gap_detected":true,"execution_fills_gap_detected":false}',
+        encoding="utf-8",
+    )
+    execution_gap_history.write_text(
+        '{"execution_gap_history_entry_count":4,"execution_gap_history_latest_status":"ok","execution_gap_history_latest_execution_diagnostics_status":"degraded"}',
+        encoding="utf-8",
+    )
+    execution_state_comparison.write_text(
+        '{"execution_state_comparison_entry_count":4,"execution_state_comparison_latest_status_match":false,"execution_state_comparison_mismatching_count":1}',
+        encoding="utf-8",
+    )
+    execution_snapshot_drift.write_text(
+        '{"execution_snapshot_drift_entry_count":3,"execution_snapshot_drift_latest_execution_state_comparison_status_match":true,"execution_snapshot_drift_mismatching_snapshot_count":1}',
+        encoding="utf-8",
+    )
     assert kill_switch.is_enabled() is False
     kill_switch.enable("test")
     status = build_healthcheck(
@@ -77,7 +112,14 @@ def test_kill_switch_and_healthcheck_work(tmp_path) -> None:
         decision_summary_path=tmp_path / "decision_summary.json",
         audit_dashboard_summary_path=audit_dashboard,
         audit_bundle_summary_path=audit_bundle,
+        operations_bundle_manifest_path=operations_bundle,
         phase_gate_summary_path=phase_gate,
+        execution_summary_path=execution,
+        execution_comparison_summary_path=execution_comparison,
+        execution_diagnostics_summary_path=execution_diagnostics,
+        execution_gap_history_summary_path=execution_gap_history,
+        execution_state_comparison_summary_path=execution_state_comparison,
+        execution_snapshot_drift_summary_path=execution_snapshot_drift,
         execution_drift_overview_summary_path=execution_drift_overview,
         readiness_summary_path=readiness,
         reconciliation_store_present=True,
@@ -89,11 +131,41 @@ def test_kill_switch_and_healthcheck_work(tmp_path) -> None:
     assert status["audit_latest_operation"] == "audit_bundle_snapshot"
     assert status["audit_bundle_history_snapshot_count"] == 3
     assert status["audit_summary"]["audit_overall_status"] == "ok"
+    assert status["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert (
+        status["timeline_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
+    assert status["bundle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert (
+        status["bundle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
+    assert status["cycle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert (
+        status["cycle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
+    assert status["cycle_history_latest_execution_overall_status"] == "ok"
+    assert status["cycle_history_latest_execution_venue_count"] == 2
+    assert status["cycle_history_latest_execution_comparison_all_registries_present"] is True
     assert status["phase_gate_decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert status["phase2_entry_allowed"] is False
     assert status["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
     assert status["phase_gate_strict_validation_passed"] is True
     assert status["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert status["execution_summary"]["execution_overall_status"] == "ok"
+    assert status["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert status["execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
+    assert status["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
+    assert status["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == 1
+    assert status["execution_snapshot_drift_summary"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
     assert status["execution_drift_overview_status"] == "degraded"
     assert status["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
     assert status["readiness_next_phase_candidate"] == "Stay Phase 1"

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 import polars as pl
 
@@ -22,6 +23,7 @@ from sis.reports.summary_normalizers import (
     execution_snapshot_drift_flat_fields,
     execution_snapshot_flat_fields,
     execution_state_comparison_flat_fields,
+    merged_latest_execution_payload_and_fields,
     normalize_execution_comparison_summary,
     normalize_execution_diagnostics_summary,
     normalize_execution_drift_overview_summary,
@@ -51,6 +53,29 @@ class PaperRunSummary:
     report_path: Path
 
 
+def _read_json_dict(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    payload = read_json(path)
+    return payload if isinstance(payload, dict) else {}
+
+
+def _read_normalized_summary(
+    *,
+    data_dir: Path,
+    summary_path: Path,
+    report_path: str | None,
+    normalizer: Callable[[dict], dict],
+) -> dict:
+    payload = _read_json_dict(summary_path)
+    if report_path is not None:
+        payload = {
+            **payload,
+            "report_path": str(data_dir / report_path),
+        }
+    return normalizer(payload)
+
+
 def _load_portfolio(store: StateStore) -> PaperPortfolio:
     payload = store.get_json("paper_positions")
     if not isinstance(payload, list):
@@ -71,120 +96,114 @@ def _build_quote_lookup(quotes: pl.DataFrame) -> dict[tuple[str, str, str], dict
 def _read_audit_summary(data_dir: Path) -> dict:
     audit_dashboard_path = data_dir / "ops/audit_dashboard_summary.json"
     audit_bundle_path = data_dir / "ops/audit_bundle_manifest.json"
-    audit_dashboard = read_json(audit_dashboard_path) if audit_dashboard_path.exists() else {}
-    audit_bundle = read_json(audit_bundle_path) if audit_bundle_path.exists() else {}
-    if not isinstance(audit_dashboard, dict):
-        audit_dashboard = {}
-    if not isinstance(audit_bundle, dict):
-        audit_bundle = {}
+    audit_dashboard = _read_json_dict(audit_dashboard_path)
+    audit_bundle = _read_json_dict(audit_bundle_path)
     return audit_summary_fields(audit_dashboard, audit_bundle)
+
+
+def _read_audit_dashboard_summary(data_dir: Path) -> dict:
+    audit_dashboard_path = data_dir / "ops/audit_dashboard_summary.json"
+    return _read_json_dict(audit_dashboard_path)
+
+
+def _read_audit_bundle_summary(data_dir: Path) -> dict:
+    audit_bundle_path = data_dir / "ops/audit_bundle_manifest.json"
+    return _read_json_dict(audit_bundle_path)
+
+
+def _read_operations_bundle_manifest(data_dir: Path) -> dict:
+    bundle_path = data_dir / "ops/operations_bundle_manifest.json"
+    return _read_json_dict(bundle_path)
 
 
 def _read_phase_gate_summary(data_dir: Path) -> dict:
     phase_gate_path = data_dir / "ops/phase_gate_review_summary.json"
-    payload = read_json(phase_gate_path) if phase_gate_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return normalize_phase_gate_summary(payload)
+    return _read_normalized_summary(
+        data_dir=data_dir,
+        summary_path=phase_gate_path,
+        report_path=None,
+        normalizer=normalize_phase_gate_summary,
+    )
 
 
 def _read_execution_drift_overview_summary(data_dir: Path) -> dict:
     overview_path = data_dir / "ops/execution_drift_overview_summary.json"
-    payload = read_json(overview_path) if overview_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return normalize_execution_drift_overview_summary(
-        {
-            **payload,
-            "report_path": str(data_dir / "reports/execution_drift_overview.md"),
-        }
+    return _read_normalized_summary(
+        data_dir=data_dir,
+        summary_path=overview_path,
+        report_path="reports/execution_drift_overview.md",
+        normalizer=normalize_execution_drift_overview_summary,
     )
 
 
 def _read_execution_summary(data_dir: Path) -> dict:
     summary_path = data_dir / "ops/execution_snapshot_summary.json"
-    payload = read_json(summary_path) if summary_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return normalize_execution_snapshot_summary(
-        {
-            **payload,
-            "report_path": str(data_dir / "reports/execution_snapshot.md"),
-        }
+    return _read_normalized_summary(
+        data_dir=data_dir,
+        summary_path=summary_path,
+        report_path="reports/execution_snapshot.md",
+        normalizer=normalize_execution_snapshot_summary,
     )
 
 
 def _read_execution_comparison_summary(data_dir: Path) -> dict:
     summary_path = data_dir / "ops/execution_venue_comparison_summary.json"
-    payload = read_json(summary_path) if summary_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return normalize_execution_comparison_summary(
-        {
-            **payload,
-            "report_path": str(data_dir / "reports/execution_venue_comparison.md"),
-        }
+    return _read_normalized_summary(
+        data_dir=data_dir,
+        summary_path=summary_path,
+        report_path="reports/execution_venue_comparison.md",
+        normalizer=normalize_execution_comparison_summary,
     )
 
 
 def _read_execution_diagnostics_summary(data_dir: Path) -> dict:
     summary_path = data_dir / "ops/execution_venue_diagnostics_summary.json"
-    payload = read_json(summary_path) if summary_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return normalize_execution_diagnostics_summary(
-        {
-            **payload,
-            "report_path": str(data_dir / "reports/execution_venue_diagnostics.md"),
-        }
+    return _read_normalized_summary(
+        data_dir=data_dir,
+        summary_path=summary_path,
+        report_path="reports/execution_venue_diagnostics.md",
+        normalizer=normalize_execution_diagnostics_summary,
     )
 
 
 def _read_execution_gap_history_summary(data_dir: Path) -> dict:
     summary_path = data_dir / "ops/execution_gap_history_summary.json"
-    payload = read_json(summary_path) if summary_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return normalize_execution_gap_history_summary(
-        {
-            **payload,
-            "report_path": str(data_dir / "reports/execution_gap_history.md"),
-        }
+    return _read_normalized_summary(
+        data_dir=data_dir,
+        summary_path=summary_path,
+        report_path="reports/execution_gap_history.md",
+        normalizer=normalize_execution_gap_history_summary,
     )
 
 
 def _read_execution_state_comparison_summary(data_dir: Path) -> dict:
     summary_path = data_dir / "ops/execution_state_comparison_history_summary.json"
-    payload = read_json(summary_path) if summary_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return normalize_execution_state_comparison_summary(
-        {
-            **payload,
-            "report_path": str(data_dir / "reports/execution_state_comparison_history.md"),
-        }
+    return _read_normalized_summary(
+        data_dir=data_dir,
+        summary_path=summary_path,
+        report_path="reports/execution_state_comparison_history.md",
+        normalizer=normalize_execution_state_comparison_summary,
     )
 
 
 def _read_execution_snapshot_drift_summary(data_dir: Path) -> dict:
     summary_path = data_dir / "ops/execution_snapshot_drift_history_summary.json"
-    payload = read_json(summary_path) if summary_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return normalize_execution_snapshot_drift_summary(
-        {
-            **payload,
-            "report_path": str(data_dir / "reports/execution_snapshot_drift_history.md"),
-        }
+    return _read_normalized_summary(
+        data_dir=data_dir,
+        summary_path=summary_path,
+        report_path="reports/execution_snapshot_drift_history.md",
+        normalizer=normalize_execution_snapshot_drift_summary,
     )
 
 
 def _read_readiness_summary(data_dir: Path) -> dict:
     readiness_path = data_dir / "ops/readiness_snapshot.json"
-    payload = read_json(readiness_path) if readiness_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
-    return normalize_readiness_summary(payload)
+    return _read_normalized_summary(
+        data_dir=data_dir,
+        summary_path=readiness_path,
+        report_path=None,
+        normalizer=normalize_readiness_summary,
+    )
 
 
 def run_paper_step(
@@ -247,6 +266,9 @@ def run_paper_step(
 
     positions = portfolio.positions()
     store.set_json("paper_positions", [position.model_dump(mode="json") for position in positions])
+    audit_dashboard_summary = _read_audit_dashboard_summary(data_dir)
+    audit_bundle_summary = _read_audit_bundle_summary(data_dir)
+    operations_bundle_manifest = _read_operations_bundle_manifest(data_dir)
     audit_summary = _read_audit_summary(data_dir)
     phase_gate_summary = normalize_phase_gate_summary(_read_phase_gate_summary(data_dir))
     execution_drift_overview_summary = _read_execution_drift_overview_summary(data_dir)
@@ -270,6 +292,13 @@ def run_paper_step(
         execution_snapshot_drift_summary
     )
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview_summary)
+    latest_execution_payload, latest_execution_lineage = (
+        merged_latest_execution_payload_and_fields(
+            audit_dashboard_summary,
+            audit_bundle_summary,
+            operations_bundle_manifest,
+        )
+    )
     store.set_json(
         "paper_last_run",
         {
@@ -279,6 +308,7 @@ def run_paper_step(
             "realized_pnl": realized_pnl,
             "audit": audit_summary,
             "audit_summary": audit_summary,
+            **latest_execution_lineage,
             "phase_gate": phase_gate_summary,
             "phase_gate_summary": phase_gate_summary,
             **phase_gate_fields,
@@ -326,6 +356,10 @@ def run_paper_step(
         audit_summary=audit_summary,
         phase_gate_summary=phase_gate_summary,
         readiness_summary=readiness_summary,
+        **latest_execution_payload,
+        execution_gap_history_summary=execution_gap_history_summary,
+        execution_state_comparison_summary=execution_state_comparison_summary,
+        execution_snapshot_drift_summary=execution_snapshot_drift_summary,
         execution_drift_overview_summary=execution_drift_overview_summary,
     )
 

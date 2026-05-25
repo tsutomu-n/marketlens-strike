@@ -2,7 +2,40 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sis.storage.jsonl_store import read_json, write_json
+from sis.reports.loaders import safe_read_json_dict
+from sis.storage.jsonl_store import write_json
+
+
+def _quick_navigation(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "execution_venue_comparison_report": str(out_path),
+        "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
+        "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+        "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
+    }
+
+
+def _related_reports(out_path: Path | None) -> dict[str, str]:
+    if out_path is None:
+        return {}
+    reports_dir = out_path.parent
+    return {
+        "execution_venue_comparison_report": str(out_path),
+        "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
+        "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
+        "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
+        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
+        "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
+        "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
+        "current_state_index_report": str(reports_dir / "current_state_index.md"),
+        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
+    }
 
 
 def build_execution_venue_comparison_report(
@@ -11,9 +44,7 @@ def build_execution_venue_comparison_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    payload = read_json(execution_snapshot_summary_path) if execution_snapshot_summary_path.exists() else {}
-    if not isinstance(payload, dict):
-        payload = {}
+    payload = safe_read_json_dict(execution_snapshot_summary_path)
     venues = payload.get("venues")
     if not isinstance(venues, list):
         venues = []
@@ -60,25 +91,36 @@ def build_execution_venue_comparison_report(
             "data/ops/current_state_index.json",
             "data/ops/readiness_snapshot.json",
         ],
+        "quick_navigation": _quick_navigation(out_path),
+        "related_reports": _related_reports(out_path),
     }
 
-    lines = [
-        "# Execution Venue Comparison",
-        "",
-        "## Overview",
-        "",
-        f"- overall_status: {summary['overall_status']}",
-        f"- venue_count: {summary['venue_count']}",
-        f"- all_registries_present: {summary['all_registries_present']}",
-        f"- all_balance_snapshots_present: {summary['all_balance_snapshots_present']}",
-        f"- all_fill_snapshots_present: {summary['all_fill_snapshots_present']}",
-        f"- all_order_status_snapshots_present: {summary['all_order_status_snapshots_present']}",
-        "",
-        "## Venue Comparison",
-        "",
-        "| venue | registry_exists | balance_snapshot_exists | fills_snapshot_exists | order_status_snapshot_exists | positions_count | fills_count | order_status_count | balance_equity | balance_currency |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
+    lines = ["# Execution Venue Comparison", ""]
+    if summary["quick_navigation"]:
+        lines.extend(["## Quick Navigation", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["quick_navigation"].items())
+        lines.append("")
+    if summary["related_reports"]:
+        lines.extend(["## Related Reports", ""])
+        lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
+        lines.append("")
+    lines.extend(
+        [
+            "## Overview",
+            "",
+            f"- overall_status: {summary['overall_status']}",
+            f"- venue_count: {summary['venue_count']}",
+            f"- all_registries_present: {summary['all_registries_present']}",
+            f"- all_balance_snapshots_present: {summary['all_balance_snapshots_present']}",
+            f"- all_fill_snapshots_present: {summary['all_fill_snapshots_present']}",
+            f"- all_order_status_snapshots_present: {summary['all_order_status_snapshots_present']}",
+            "",
+            "## Venue Comparison",
+            "",
+            "| venue | registry_exists | balance_snapshot_exists | fills_snapshot_exists | order_status_snapshot_exists | positions_count | fills_count | order_status_count | balance_equity | balance_currency |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
     for row in comparison_rows:
         lines.append(
             "| {venue} | {registry_exists} | {balance_snapshot_exists} | {fills_snapshot_exists} | {order_status_snapshot_exists} | {positions_count} | {fills_count} | {order_status_count} | {balance_equity} | {balance_currency} |".format(

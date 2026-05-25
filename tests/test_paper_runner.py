@@ -64,11 +64,15 @@ def test_run_paper_step_writes_stateful_artifacts(tmp_path) -> None:
     _write_inputs(data_dir)
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
     (data_dir / "ops/audit_dashboard_summary.json").write_text(
-        '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot"}',
+        '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot","timeline_latest_execution_summary":{"execution_overall_status":"ok","execution_venue_count":2},"timeline_latest_execution_comparison_summary":{"execution_comparison_all_registries_present":"True"}}',
         encoding="utf-8",
     )
     (data_dir / "ops/audit_bundle_manifest.json").write_text(
-        '{"bundle_history_snapshot_count":3}',
+        '{"bundle_history_snapshot_count":3,"bundle_history_latest_execution_summary":{"execution_overall_status":"ok","execution_venue_count":2},"bundle_history_latest_execution_comparison_summary":{"execution_comparison_all_registries_present":"True"}}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/operations_bundle_manifest.json").write_text(
+        '{"cycle_history_latest_execution_summary":{"execution_overall_status":"ok","execution_venue_count":2},"cycle_history_latest_execution_comparison_summary":{"execution_comparison_all_registries_present":"True"}}',
         encoding="utf-8",
     )
     (data_dir / "ops/phase_gate_review_summary.json").write_text(
@@ -126,6 +130,15 @@ def test_run_paper_step_writes_stateful_artifacts(tmp_path) -> None:
     assert "decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report_text
     assert "Readiness Summary" in report_text
     assert "next_phase_candidate: Stay Phase 1" in report_text
+    assert "Audit Timeline Latest Execution" in report_text
+    assert "Audit Bundle History Latest Execution" in report_text
+    assert "Cycle History Latest Execution" in report_text
+    assert "Execution Gap History" in report_text
+    assert "entry_count: 4" in report_text
+    assert "Execution State Comparison History" in report_text
+    assert "mismatching_count: 1" in report_text
+    assert "Execution Snapshot Drift History" in report_text
+    assert "mismatching_snapshot_count: 1" in report_text
     assert "Execution Drift Overview" in report_text
     assert "overall_status: degraded" in report_text
 
@@ -135,6 +148,36 @@ def test_run_paper_step_writes_stateful_artifacts(tmp_path) -> None:
     assert payload["orders_count"] == 1
     assert payload["audit"]["overall_status"] == "ok"
     assert payload["audit_summary"]["overall_status"] == "ok"
+    assert payload["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert (
+        payload["timeline_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
+    assert payload["timeline_latest_execution_overall_status"] == "ok"
+    assert payload["timeline_latest_execution_venue_count"] == 2
+    assert payload["timeline_latest_execution_comparison_all_registries_present"] is True
+    assert payload["bundle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert (
+        payload["bundle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
+    assert payload["bundle_history_latest_execution_overall_status"] == "ok"
+    assert payload["bundle_history_latest_execution_venue_count"] == 2
+    assert payload["bundle_history_latest_execution_comparison_all_registries_present"] is True
+    assert payload["cycle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert (
+        payload["cycle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
+    assert payload["cycle_history_latest_execution_overall_status"] == "ok"
+    assert payload["cycle_history_latest_execution_venue_count"] == 2
+    assert payload["cycle_history_latest_execution_comparison_all_registries_present"] is True
     assert payload["phase_gate"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert payload["phase_gate_summary"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert payload["phase_gate"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"

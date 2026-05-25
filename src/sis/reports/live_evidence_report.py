@@ -2,29 +2,38 @@ from __future__ import annotations
 
 import csv
 import html
-import json
 import subprocess
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
+from sis.reports.loaders import safe_read_json_dict, safe_read_json_dict_list
 from sis.reports.quote_diagnostics import QuoteDiagnostic, build_quote_diagnostics
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
-    execution_gap_history_flat_fields,
-    execution_snapshot_drift_flat_fields,
     execution_comparison_flat_fields,
     execution_diagnostics_flat_fields,
     execution_drift_overview_flat_fields,
+    execution_gap_history_flat_fields,
     execution_snapshot_flat_fields,
+    execution_snapshot_drift_flat_fields,
     execution_state_comparison_flat_fields,
+    latest_execution_lineage_fields_from_payload,
+    latest_execution_payload_and_fields_from_summary,
+    normalize_execution_comparison_summary,
+    normalize_execution_diagnostics_summary,
+    normalize_execution_gap_history_summary,
     normalize_execution_drift_overview_summary,
+    normalize_execution_snapshot_drift_summary,
+    normalize_execution_snapshot_summary,
+    normalize_execution_state_comparison_summary,
     normalize_phase_gate_summary,
+    normalize_readiness_summary,
     phase_gate_flat_fields,
+    readiness_flat_fields,
 )
-from sis.storage.jsonl_store import read_json
 from sis.validation.artifacts import ValidationSummary, validate_artifacts
 
 RunStatus = str
@@ -56,6 +65,13 @@ class LiveEvidenceReportData:
     next_actions: list[str]
     audit_summary: dict[str, Any]
     phase_gate_summary: dict[str, Any]
+    readiness_summary: dict[str, Any]
+    timeline_latest_execution_summary: dict[str, Any]
+    timeline_latest_execution_comparison_summary: dict[str, Any]
+    bundle_history_latest_execution_summary: dict[str, Any]
+    bundle_history_latest_execution_comparison_summary: dict[str, Any]
+    cycle_history_latest_execution_summary: dict[str, Any]
+    cycle_history_latest_execution_comparison_summary: dict[str, Any]
     execution_summary: dict[str, Any]
     execution_comparison_summary: dict[str, Any]
     execution_diagnostics_summary: dict[str, Any]
@@ -72,6 +88,400 @@ class LiveEvidenceReportData:
     row_counts: dict[str, int]
 
 
+def _latest_execution_lineage_flat_values(
+    data: LiveEvidenceReportData,
+) -> dict[str, Any]:
+    return latest_execution_lineage_fields_from_payload(
+        timeline_latest_execution_summary=data.timeline_latest_execution_summary,
+        timeline_latest_execution_comparison_summary=(
+            data.timeline_latest_execution_comparison_summary
+        ),
+        bundle_history_latest_execution_summary=(
+            data.bundle_history_latest_execution_summary
+        ),
+        bundle_history_latest_execution_comparison_summary=(
+            data.bundle_history_latest_execution_comparison_summary
+        ),
+        cycle_history_latest_execution_summary=(
+            data.cycle_history_latest_execution_summary
+        ),
+        cycle_history_latest_execution_comparison_summary=(
+            data.cycle_history_latest_execution_comparison_summary
+        ),
+    )
+
+
+def _latest_execution_lineage_markdown_lines(
+    latest_execution_flat: Mapping[str, Any],
+) -> list[str]:
+    return [
+        (
+            "- timeline_latest_execution_overall_status: "
+            f"`{latest_execution_flat.get('timeline_latest_execution_overall_status')}`"
+        ),
+        (
+            "- timeline_latest_execution_venue_count: "
+            f"`{latest_execution_flat.get('timeline_latest_execution_venue_count')}`"
+        ),
+        (
+            "- timeline_latest_execution_comparison_all_registries_present: "
+            f"`{latest_execution_flat.get('timeline_latest_execution_comparison_all_registries_present')}`"
+        ),
+        (
+            "- bundle_history_latest_execution_overall_status: "
+            f"`{latest_execution_flat.get('bundle_history_latest_execution_overall_status')}`"
+        ),
+        (
+            "- bundle_history_latest_execution_venue_count: "
+            f"`{latest_execution_flat.get('bundle_history_latest_execution_venue_count')}`"
+        ),
+        (
+            "- bundle_history_latest_execution_comparison_all_registries_present: "
+            f"`{latest_execution_flat.get('bundle_history_latest_execution_comparison_all_registries_present')}`"
+        ),
+        (
+            "- cycle_history_latest_execution_overall_status: "
+            f"`{latest_execution_flat.get('cycle_history_latest_execution_overall_status')}`"
+        ),
+        (
+            "- cycle_history_latest_execution_venue_count: "
+            f"`{latest_execution_flat.get('cycle_history_latest_execution_venue_count')}`"
+        ),
+        (
+            "- cycle_history_latest_execution_comparison_all_registries_present: "
+            f"`{latest_execution_flat.get('cycle_history_latest_execution_comparison_all_registries_present')}`"
+        ),
+    ]
+
+
+def _latest_execution_lineage_html_metrics(
+    latest_execution_flat: Mapping[str, Any],
+) -> str:
+    metrics = [
+        (
+            "Timeline Overall Status",
+            latest_execution_flat.get("timeline_latest_execution_overall_status"),
+        ),
+        (
+            "Timeline Venue Count",
+            latest_execution_flat.get("timeline_latest_execution_venue_count"),
+        ),
+        (
+            "Timeline Comparison",
+            latest_execution_flat.get(
+                "timeline_latest_execution_comparison_all_registries_present"
+            ),
+        ),
+        (
+            "Bundle History Overall Status",
+            latest_execution_flat.get("bundle_history_latest_execution_overall_status"),
+        ),
+        (
+            "Bundle History Venue Count",
+            latest_execution_flat.get("bundle_history_latest_execution_venue_count"),
+        ),
+        (
+            "Bundle History Comparison",
+            latest_execution_flat.get(
+                "bundle_history_latest_execution_comparison_all_registries_present"
+            ),
+        ),
+        (
+            "Cycle History Overall Status",
+            latest_execution_flat.get("cycle_history_latest_execution_overall_status"),
+        ),
+        (
+            "Cycle History Venue Count",
+            latest_execution_flat.get("cycle_history_latest_execution_venue_count"),
+        ),
+        (
+            "Cycle History Comparison",
+            latest_execution_flat.get(
+                "cycle_history_latest_execution_comparison_all_registries_present"
+            ),
+        ),
+    ]
+    return "\n".join(
+        (
+            f'        <div class="metric"><div class="label">{label}</div>'
+            f'<div class="value">{html.escape(str(value))}</div></div>'
+        )
+        for label, value in metrics
+    )
+
+
+def _remediation_markdown_lines(readiness_summary: Mapping[str, Any]) -> list[str]:
+    return [
+        (
+            "- planner_status: "
+            f"`{readiness_summary.get('timeline_latest_remediation_planner_status')}`"
+        ),
+        (
+            "- planner_next_best_command: "
+            f"`{readiness_summary.get('timeline_latest_remediation_planner_next_best_command')}`"
+        ),
+        (
+            "- planner_feedback_priority_reason: "
+            f"`{readiness_summary.get('timeline_latest_remediation_planner_feedback_priority_reason')}`"
+        ),
+        (
+            "- execution_plan_status: "
+            f"`{readiness_summary.get('timeline_latest_remediation_execution_plan_status')}`"
+        ),
+        (
+            "- execution_plan_next_action_command: "
+            f"`{readiness_summary.get('timeline_latest_remediation_execution_plan_next_action_command')}`"
+        ),
+        (
+            "- execution_plan_feedback_priority_reason: "
+            f"`{readiness_summary.get('timeline_latest_remediation_execution_plan_feedback_priority_reason')}`"
+        ),
+        (
+            "- session_status: "
+            f"`{readiness_summary.get('timeline_latest_remediation_session_status')}`"
+        ),
+        (
+            "- session_next_pending_command: "
+            f"`{readiness_summary.get('timeline_latest_remediation_session_next_pending_command')}`"
+        ),
+        (
+            "- session_feedback_priority_reason: "
+            f"`{readiness_summary.get('timeline_latest_remediation_session_feedback_priority_reason')}`"
+        ),
+        (
+            "- checkpoint_status: "
+            f"`{readiness_summary.get('timeline_latest_remediation_checkpoint_status')}`"
+        ),
+        (
+            "- checkpoint_next_action_command: "
+            f"`{readiness_summary.get('timeline_latest_remediation_checkpoint_next_action_command')}`"
+        ),
+        (
+            "- checkpoint_feedback_priority_reason: "
+            f"`{readiness_summary.get('timeline_latest_remediation_checkpoint_feedback_priority_reason')}`"
+        ),
+        (
+            "- scoreboard_status: "
+            f"`{readiness_summary.get('timeline_latest_remediation_scoreboard_status')}`"
+        ),
+        (
+            "- scoreboard_next_action_command: "
+            f"`{readiness_summary.get('timeline_latest_remediation_scoreboard_next_action_command')}`"
+        ),
+        (
+            "- scoreboard_feedback_priority_reason: "
+            f"`{readiness_summary.get('timeline_latest_remediation_scoreboard_feedback_priority_reason')}`"
+        ),
+    ]
+
+
+def _remediation_html_metrics(readiness_summary: Mapping[str, Any]) -> str:
+    metrics = [
+        ("Planner Status", readiness_summary.get("timeline_latest_remediation_planner_status")),
+        (
+            "Planner Next Best Command",
+            readiness_summary.get("timeline_latest_remediation_planner_next_best_command"),
+        ),
+        (
+            "Planner Feedback Reason",
+            readiness_summary.get("timeline_latest_remediation_planner_feedback_priority_reason"),
+        ),
+        (
+            "Execution Plan Status",
+            readiness_summary.get("timeline_latest_remediation_execution_plan_status"),
+        ),
+        (
+            "Execution Plan Next Action",
+            readiness_summary.get("timeline_latest_remediation_execution_plan_next_action_command"),
+        ),
+        (
+            "Execution Plan Feedback Reason",
+            readiness_summary.get(
+                "timeline_latest_remediation_execution_plan_feedback_priority_reason"
+            ),
+        ),
+        ("Session Status", readiness_summary.get("timeline_latest_remediation_session_status")),
+        (
+            "Session Next Pending Command",
+            readiness_summary.get("timeline_latest_remediation_session_next_pending_command"),
+        ),
+        (
+            "Session Feedback Reason",
+            readiness_summary.get("timeline_latest_remediation_session_feedback_priority_reason"),
+        ),
+        (
+            "Checkpoint Status",
+            readiness_summary.get("timeline_latest_remediation_checkpoint_status"),
+        ),
+        (
+            "Checkpoint Next Action",
+            readiness_summary.get("timeline_latest_remediation_checkpoint_next_action_command"),
+        ),
+        (
+            "Checkpoint Feedback Reason",
+            readiness_summary.get("timeline_latest_remediation_checkpoint_feedback_priority_reason"),
+        ),
+        (
+            "Scoreboard Status",
+            readiness_summary.get("timeline_latest_remediation_scoreboard_status"),
+        ),
+        (
+            "Scoreboard Next Action",
+            readiness_summary.get("timeline_latest_remediation_scoreboard_next_action_command"),
+        ),
+        (
+            "Scoreboard Feedback Reason",
+            readiness_summary.get("timeline_latest_remediation_scoreboard_feedback_priority_reason"),
+        ),
+    ]
+    return "\n".join(
+        (
+            f'        <div class="metric"><div class="label">{label}</div>'
+            f'<div class="value">{html.escape(str(value))}</div></div>'
+        )
+        for label, value in metrics
+    )
+
+
+def _restart_pointer_lines(readiness_summary: Mapping[str, Any]) -> list[str]:
+    keys = (
+        "readiness_snapshot_report",
+        "current_state_index_report",
+        "remediation_scoreboard_report",
+        "remediation_session_checkpoint_report",
+        "remediation_session_report",
+        "remediation_execution_plan_report",
+        "remediation_planner_report",
+        "live_evidence_report",
+    )
+    return [
+        f"- {key}: `{readiness_summary.get(key)}`"
+        for key in keys
+        if readiness_summary.get(key) is not None
+    ]
+
+
+def _restart_pointer_html_metrics(readiness_summary: Mapping[str, Any]) -> str:
+    metrics = [
+        ("Readiness Snapshot Report", readiness_summary.get("readiness_snapshot_report")),
+        ("Current State Index Report", readiness_summary.get("current_state_index_report")),
+        ("Remediation Scoreboard Report", readiness_summary.get("remediation_scoreboard_report")),
+        (
+            "Remediation Session Checkpoint Report",
+            readiness_summary.get("remediation_session_checkpoint_report"),
+        ),
+        ("Remediation Session Report", readiness_summary.get("remediation_session_report")),
+        (
+            "Remediation Execution Plan Report",
+            readiness_summary.get("remediation_execution_plan_report"),
+        ),
+        ("Remediation Planner Report", readiness_summary.get("remediation_planner_report")),
+        ("Live Evidence Report", readiness_summary.get("live_evidence_report")),
+    ]
+    return "\n".join(
+        (
+            f'        <div class="metric"><div class="label">{label}</div>'
+            f'<div class="value">{html.escape(str(value))}</div></div>'
+        )
+        for label, value in metrics
+        if value is not None
+    )
+
+
+def _related_report_lines(
+    readiness_summary: Mapping[str, Any],
+    phase_gate_summary: Mapping[str, Any],
+) -> list[str]:
+    items = (
+        ("phase_gate_review_report", phase_gate_summary.get("phase_gate_review_report_path")),
+        ("readiness_snapshot_report", readiness_summary.get("readiness_snapshot_report")),
+        ("current_state_index_report", readiness_summary.get("current_state_index_report")),
+        ("remediation_scoreboard_report", readiness_summary.get("remediation_scoreboard_report")),
+        (
+            "remediation_session_checkpoint_report",
+            readiness_summary.get("remediation_session_checkpoint_report"),
+        ),
+        ("remediation_session_report", readiness_summary.get("remediation_session_report")),
+        (
+            "remediation_execution_plan_report",
+            readiness_summary.get("remediation_execution_plan_report"),
+        ),
+        ("remediation_planner_report", readiness_summary.get("remediation_planner_report")),
+        ("live_evidence_report", readiness_summary.get("live_evidence_report")),
+    )
+    return [
+        f"- {key}: `{value}`"
+        for key, value in items
+        if value is not None
+    ]
+
+
+def _related_report_html_metrics(
+    readiness_summary: Mapping[str, Any],
+    phase_gate_summary: Mapping[str, Any],
+) -> str:
+    metrics = [
+        ("Phase Gate Review Report", phase_gate_summary.get("phase_gate_review_report_path")),
+        ("Readiness Snapshot Report", readiness_summary.get("readiness_snapshot_report")),
+        ("Current State Index Report", readiness_summary.get("current_state_index_report")),
+        ("Remediation Scoreboard Report", readiness_summary.get("remediation_scoreboard_report")),
+        (
+            "Remediation Session Checkpoint Report",
+            readiness_summary.get("remediation_session_checkpoint_report"),
+        ),
+        ("Remediation Session Report", readiness_summary.get("remediation_session_report")),
+        (
+            "Remediation Execution Plan Report",
+            readiness_summary.get("remediation_execution_plan_report"),
+        ),
+        ("Remediation Planner Report", readiness_summary.get("remediation_planner_report")),
+        ("Live Evidence Report", readiness_summary.get("live_evidence_report")),
+    ]
+    return "\n".join(
+        (
+            f'        <div class="metric"><div class="label">{label}</div>'
+            f'<div class="value">{html.escape(str(value))}</div></div>'
+        )
+        for label, value in metrics
+        if value is not None
+    )
+
+
+def _quick_navigation_lines(
+    readiness_summary: Mapping[str, Any],
+    phase_gate_summary: Mapping[str, Any],
+) -> list[str]:
+    items = (
+        ("current_state_index_report", readiness_summary.get("current_state_index_report")),
+        ("readiness_snapshot_report", readiness_summary.get("readiness_snapshot_report")),
+        ("phase_gate_review_report", phase_gate_summary.get("phase_gate_review_report_path")),
+        ("remediation_scoreboard_report", readiness_summary.get("remediation_scoreboard_report")),
+        ("live_evidence_report", readiness_summary.get("live_evidence_report")),
+    )
+    return [f"- {key}: `{value}`" for key, value in items if value is not None]
+
+
+def _quick_navigation_html_metrics(
+    readiness_summary: Mapping[str, Any],
+    phase_gate_summary: Mapping[str, Any],
+) -> str:
+    metrics = [
+        ("Current State Index Report", readiness_summary.get("current_state_index_report")),
+        ("Readiness Snapshot Report", readiness_summary.get("readiness_snapshot_report")),
+        ("Phase Gate Review Report", phase_gate_summary.get("phase_gate_review_report_path")),
+        ("Remediation Scoreboard Report", readiness_summary.get("remediation_scoreboard_report")),
+        ("Live Evidence Report", readiness_summary.get("live_evidence_report")),
+    ]
+    return "\n".join(
+        (
+            f'        <div class="metric"><div class="label">{label}</div>'
+            f'<div class="value">{html.escape(str(value))}</div></div>'
+        )
+        for label, value in metrics
+        if value is not None
+    )
+
+
 def parse_run_status(log_path: Path) -> RunStatus:
     if not log_path.exists():
         return "running"
@@ -84,9 +494,7 @@ def parse_run_status(log_path: Path) -> RunStatus:
 
 
 def parse_manifest_status(manifest_path: Path | None) -> RunStatus | None:
-    if manifest_path is None or not manifest_path.exists():
-        return None
-    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    payload = safe_read_json_dict(manifest_path)
     status = payload.get("status")
     if isinstance(status, str):
         return status
@@ -94,12 +502,20 @@ def parse_manifest_status(manifest_path: Path | None) -> RunStatus | None:
 
 
 def load_manifest_payload(manifest_path: Path | None) -> dict[str, Any]:
-    if manifest_path is None or not manifest_path.exists():
-        return {}
-    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if isinstance(payload, dict):
-        return payload
-    return {}
+    return safe_read_json_dict(manifest_path)
+
+
+def _summary_from_payload(payload: dict[str, Any], key: str) -> dict[str, Any]:
+    summary = payload.get(key)
+    return summary if isinstance(summary, dict) else {}
+
+
+def _summary_from_manifest_or_evidence(
+    manifest: dict[str, Any],
+    evidence_payload: dict[str, Any],
+    key: str,
+) -> dict[str, Any]:
+    return _summary_from_payload(manifest, key) or _summary_from_payload(evidence_payload, key)
 
 
 def refresh_process_running() -> bool:
@@ -165,12 +581,7 @@ def _load_cost_rows(path: Path) -> list[dict[str, str]]:
 
 
 def _load_backtest_metrics(path: Path) -> list[dict]:
-    if not path.exists():
-        return []
-    payload = read_json(path)
-    if not isinstance(payload, list):
-        return []
-    return [item for item in payload if isinstance(item, dict)]
+    return safe_read_json_dict_list(path)
 
 
 def _started_finished(log_lines: list[str]) -> tuple[str | None, str | None]:
@@ -210,78 +621,47 @@ def build_live_evidence_report_data(
     )
     manifest_status = parse_manifest_status(manifest_path)
     resolved_status = status or manifest_status or (parse_run_status(log_path) if log_path is not None else "running")
-    evidence_payload = read_json(evidence_card) if evidence_card and evidence_card.exists() else {}
+    evidence_payload = load_manifest_payload(evidence_card)
     venue_decisions = evidence_payload.get("venue_decisions", []) if isinstance(evidence_payload, dict) else []
     blockers = manifest.get("blockers", []) if isinstance(manifest.get("blockers"), list) else []
     next_actions = manifest.get("next_actions", []) if isinstance(manifest.get("next_actions"), list) else []
-    phase_gate_summary = manifest.get("phase_gate_summary", {}) if isinstance(manifest.get("phase_gate_summary"), dict) else {}
-    execution_summary = manifest.get("execution_summary", {}) if isinstance(manifest.get("execution_summary"), dict) else {}
-    execution_comparison_summary = (
-        manifest.get("execution_comparison_summary", {})
-        if isinstance(manifest.get("execution_comparison_summary"), dict)
-        else {}
+    phase_gate_summary = _summary_from_manifest_or_evidence(manifest, evidence_payload, "phase_gate_summary")
+    execution_summary = _summary_from_manifest_or_evidence(manifest, evidence_payload, "execution_summary")
+    execution_comparison_summary = _summary_from_manifest_or_evidence(
+        manifest,
+        evidence_payload,
+        "execution_comparison_summary",
     )
-    execution_diagnostics_summary = (
-        manifest.get("execution_diagnostics_summary", {})
-        if isinstance(manifest.get("execution_diagnostics_summary"), dict)
-        else {}
+    execution_diagnostics_summary = _summary_from_manifest_or_evidence(
+        manifest,
+        evidence_payload,
+        "execution_diagnostics_summary",
     )
-    execution_gap_history_summary = (
-        manifest.get("execution_gap_history_summary", {})
-        if isinstance(manifest.get("execution_gap_history_summary"), dict)
-        else {}
+    execution_gap_history_summary = _summary_from_manifest_or_evidence(
+        manifest,
+        evidence_payload,
+        "execution_gap_history_summary",
     )
-    execution_state_comparison_summary = (
-        manifest.get("execution_state_comparison_summary", {})
-        if isinstance(manifest.get("execution_state_comparison_summary"), dict)
-        else {}
+    execution_state_comparison_summary = _summary_from_manifest_or_evidence(
+        manifest,
+        evidence_payload,
+        "execution_state_comparison_summary",
     )
-    execution_snapshot_drift_summary = (
-        manifest.get("execution_snapshot_drift_summary", {})
-        if isinstance(manifest.get("execution_snapshot_drift_summary"), dict)
-        else {}
+    execution_snapshot_drift_summary = _summary_from_manifest_or_evidence(
+        manifest,
+        evidence_payload,
+        "execution_snapshot_drift_summary",
     )
-    execution_drift_overview_summary = (
-        manifest.get("execution_drift_overview_summary", {})
-        if isinstance(manifest.get("execution_drift_overview_summary"), dict)
-        else {}
+    execution_drift_overview_summary = _summary_from_manifest_or_evidence(
+        manifest,
+        evidence_payload,
+        "execution_drift_overview_summary",
     )
+    readiness_summary = _summary_from_manifest_or_evidence(manifest, evidence_payload, "readiness_summary")
     if not blockers and isinstance(evidence_payload, dict):
         blockers = evidence_payload.get("blockers", [])
     if not next_actions and isinstance(evidence_payload, dict):
         next_actions = evidence_payload.get("next_actions", [])
-    if not phase_gate_summary and isinstance(evidence_payload, dict):
-        payload_phase_gate = evidence_payload.get("phase_gate_summary")
-        if isinstance(payload_phase_gate, dict):
-            phase_gate_summary = payload_phase_gate
-    if not execution_summary and isinstance(evidence_payload, dict):
-        payload_execution = evidence_payload.get("execution_summary")
-        if isinstance(payload_execution, dict):
-            execution_summary = payload_execution
-    if not execution_comparison_summary and isinstance(evidence_payload, dict):
-        payload_execution_comparison = evidence_payload.get("execution_comparison_summary")
-        if isinstance(payload_execution_comparison, dict):
-            execution_comparison_summary = payload_execution_comparison
-    if not execution_diagnostics_summary and isinstance(evidence_payload, dict):
-        payload_execution_diagnostics = evidence_payload.get("execution_diagnostics_summary")
-        if isinstance(payload_execution_diagnostics, dict):
-            execution_diagnostics_summary = payload_execution_diagnostics
-    if not execution_gap_history_summary and isinstance(evidence_payload, dict):
-        payload_execution_gap_history = evidence_payload.get("execution_gap_history_summary")
-        if isinstance(payload_execution_gap_history, dict):
-            execution_gap_history_summary = payload_execution_gap_history
-    if not execution_state_comparison_summary and isinstance(evidence_payload, dict):
-        payload_execution_state_comparison = evidence_payload.get("execution_state_comparison_summary")
-        if isinstance(payload_execution_state_comparison, dict):
-            execution_state_comparison_summary = payload_execution_state_comparison
-    if not execution_snapshot_drift_summary and isinstance(evidence_payload, dict):
-        payload_execution_snapshot_drift = evidence_payload.get("execution_snapshot_drift_summary")
-        if isinstance(payload_execution_snapshot_drift, dict):
-            execution_snapshot_drift_summary = payload_execution_snapshot_drift
-    if not execution_drift_overview_summary and isinstance(evidence_payload, dict):
-        payload_execution_drift_overview = evidence_payload.get("execution_drift_overview_summary")
-        if isinstance(payload_execution_drift_overview, dict):
-            execution_drift_overview_summary = payload_execution_drift_overview
     decision = manifest.get("decision") if isinstance(manifest.get("decision"), str) else None
     if decision is None and isinstance(evidence_payload, dict):
         decision = evidence_payload.get("decision")
@@ -312,6 +692,9 @@ def build_live_evidence_report_data(
         "sidecar_pricing": int(manifest_row_counts.get("sidecar_pricing", _count_jsonl_rows(artifacts.sidecar_pricing))),
         "raw_quotes": int(manifest_row_counts.get("raw_quotes", _count_jsonl_rows(artifacts.raw_quotes))),
     }
+    latest_execution_payload, latest_execution_lineage = (
+        latest_execution_payload_and_fields_from_summary(evidence_payload)
+    )
     return LiveEvidenceReportData(
         status=resolved_status,
         log_path=log_path or Path(""),
@@ -325,21 +708,23 @@ def build_live_evidence_report_data(
         next_actions=next_actions if isinstance(next_actions, list) else [],
         audit_summary=audit_summary if isinstance(audit_summary, dict) else {},
         phase_gate_summary=normalize_phase_gate_summary(phase_gate_summary),
-        execution_summary=execution_summary if isinstance(execution_summary, dict) else {},
-        execution_comparison_summary=(
-            execution_comparison_summary if isinstance(execution_comparison_summary, dict) else {}
+        readiness_summary=normalize_readiness_summary(readiness_summary),
+        **latest_execution_payload,
+        execution_summary=normalize_execution_snapshot_summary(execution_summary),
+        execution_comparison_summary=normalize_execution_comparison_summary(
+            execution_comparison_summary
         ),
-        execution_diagnostics_summary=(
-            execution_diagnostics_summary if isinstance(execution_diagnostics_summary, dict) else {}
+        execution_diagnostics_summary=normalize_execution_diagnostics_summary(
+            execution_diagnostics_summary
         ),
-        execution_gap_history_summary=(
-            execution_gap_history_summary if isinstance(execution_gap_history_summary, dict) else {}
+        execution_gap_history_summary=normalize_execution_gap_history_summary(
+            execution_gap_history_summary
         ),
-        execution_state_comparison_summary=(
-            execution_state_comparison_summary if isinstance(execution_state_comparison_summary, dict) else {}
+        execution_state_comparison_summary=normalize_execution_state_comparison_summary(
+            execution_state_comparison_summary
         ),
-        execution_snapshot_drift_summary=(
-            execution_snapshot_drift_summary if isinstance(execution_snapshot_drift_summary, dict) else {}
+        execution_snapshot_drift_summary=normalize_execution_snapshot_drift_summary(
+            execution_snapshot_drift_summary
         ),
         execution_drift_overview_summary=normalize_execution_drift_overview_summary(
             execution_drift_overview_summary
@@ -356,6 +741,8 @@ def build_live_evidence_report_data(
 
 def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
     phase_gate_flat = phase_gate_flat_fields(data.phase_gate_summary)
+    readiness_flat = readiness_flat_fields(data.readiness_summary)
+    latest_execution_flat = _latest_execution_lineage_flat_values(data)
     execution_summary_flat = execution_snapshot_flat_fields(data.execution_summary)
     execution_comparison_flat = execution_comparison_flat_fields(data.execution_comparison_summary)
     execution_diagnostics_flat = execution_diagnostics_flat_fields(data.execution_diagnostics_summary)
@@ -404,6 +791,56 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
         lines.append(
             f"- phase_gate_checked_files: `{phase_gate_flat.get('phase_gate_checked_files')}`"
         )
+        lines.append("")
+    if data.readiness_summary:
+        lines.append("## Readiness Summary")
+        lines.append("")
+        lines.append(
+            f"- next_phase_candidate: `{readiness_flat.get('readiness_next_phase_candidate')}`"
+        )
+        lines.append(
+            f"- execution_ready: `{readiness_flat.get('readiness_execution_ready')}`"
+        )
+        lines.append("")
+        if data.readiness_summary.get("timeline_latest_remediation_planner_status") is not None:
+            lines.append("## Current Remediation Queue")
+            lines.append("")
+            lines.extend(_remediation_markdown_lines(data.readiness_summary))
+            lines.append("")
+        restart_pointer_lines = _restart_pointer_lines(data.readiness_summary)
+        if restart_pointer_lines:
+            lines.append("## Restart Pointers")
+            lines.append("")
+            lines.extend(restart_pointer_lines)
+            lines.append("")
+        quick_navigation_lines = _quick_navigation_lines(
+            data.readiness_summary,
+            data.phase_gate_summary,
+        )
+        if quick_navigation_lines:
+            lines.append("## Quick Navigation")
+            lines.append("")
+            lines.extend(quick_navigation_lines)
+            lines.append("")
+        related_report_lines = _related_report_lines(
+            data.readiness_summary,
+            data.phase_gate_summary,
+        )
+        if related_report_lines:
+            lines.append("## Related Reports")
+            lines.append("")
+            lines.extend(related_report_lines)
+            lines.append("")
+    if any(
+        (
+            data.timeline_latest_execution_summary,
+            data.bundle_history_latest_execution_summary,
+            data.cycle_history_latest_execution_summary,
+        )
+    ):
+        lines.append("## Latest Execution Lineage")
+        lines.append("")
+        lines.extend(_latest_execution_lineage_markdown_lines(latest_execution_flat))
         lines.append("")
     if data.execution_summary:
         lines.append("## Execution Snapshot")
@@ -591,6 +1028,8 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
 
 def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
     phase_gate_flat = phase_gate_flat_fields(data.phase_gate_summary)
+    readiness_flat = readiness_flat_fields(data.readiness_summary)
+    latest_execution_flat = _latest_execution_lineage_flat_values(data)
     execution_summary_flat = execution_snapshot_flat_fields(data.execution_summary)
     execution_comparison_flat = execution_comparison_flat_fields(data.execution_comparison_summary)
     execution_diagnostics_flat = execution_diagnostics_flat_fields(data.execution_diagnostics_summary)
@@ -602,6 +1041,16 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
         data.execution_snapshot_drift_summary
     )
     execution_drift_flat = execution_drift_overview_flat_fields(data.execution_drift_overview_summary)
+    remediation_metrics = _remediation_html_metrics(data.readiness_summary)
+    restart_pointer_metrics = _restart_pointer_html_metrics(data.readiness_summary)
+    quick_navigation_metrics = _quick_navigation_html_metrics(
+        data.readiness_summary,
+        data.phase_gate_summary,
+    )
+    related_report_metrics = _related_report_html_metrics(
+        data.readiness_summary,
+        data.phase_gate_summary,
+    )
     def esc(value: object) -> str:
         return html.escape("" if value is None else str(value))
 
@@ -735,6 +1184,43 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
       </div>
     </section>
     <section>
+      <h2>Readiness Summary</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Next Phase Candidate</div><div class="value">{esc(readiness_flat.get('readiness_next_phase_candidate'))}</div></div>
+        <div class="metric"><div class="label">Execution Ready</div><div class="value">{esc(readiness_flat.get('readiness_execution_ready'))}</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Current Remediation Queue</h2>
+      <div class="meta">
+{remediation_metrics}
+      </div>
+    </section>
+    <section>
+      <h2>Restart Pointers</h2>
+      <div class="meta">
+{restart_pointer_metrics}
+      </div>
+    </section>
+    <section>
+      <h2>Quick Navigation</h2>
+      <div class="meta">
+{quick_navigation_metrics}
+      </div>
+    </section>
+    <section>
+      <h2>Related Reports</h2>
+      <div class="meta">
+{related_report_metrics}
+      </div>
+    </section>
+    <section>
+      <h2>Latest Execution Lineage</h2>
+      <div class="meta">
+{_latest_execution_lineage_html_metrics(latest_execution_flat)}
+      </div>
+    </section>
+    <section>
       <h2>Execution Snapshot</h2>
       <div class="meta">
         <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_summary_flat.get('execution_overall_status'))}</div></div>
@@ -857,6 +1343,8 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
 def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
     audit_summary_flat = audit_summary_fields(data.audit_summary, data.audit_summary)
     phase_gate_flat = phase_gate_flat_fields(data.phase_gate_summary)
+    readiness_flat = readiness_flat_fields(data.readiness_summary)
+    latest_execution_flat = _latest_execution_lineage_flat_values(data)
     execution_summary_flat = execution_snapshot_flat_fields(data.execution_summary)
     execution_comparison_flat = execution_comparison_flat_fields(data.execution_comparison_summary)
     execution_diagnostics_flat = execution_diagnostics_flat_fields(data.execution_diagnostics_summary)
@@ -869,6 +1357,27 @@ def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
     )
     execution_drift_flat = execution_drift_overview_flat_fields(data.execution_drift_overview_summary)
     path_source = data.log_path if str(data.log_path) not in {"", "."} else (data.manifest_path or data.log_path)
+    reports_dir = data.output_path.parent if data.output_path.parent != Path(".") else Path("data/reports")
+    quick_navigation = [
+        f"- live_evidence_followup_report: `{default_followup_output_path(path_source)}`",
+        f"- live_evidence_report: `{data.output_path}`",
+        f"- current_state_index_report: `{reports_dir / 'current_state_index.md'}`",
+        f"- readiness_snapshot_report: `{reports_dir / 'readiness_snapshot.md'}`",
+        f"- phase_gate_review_report: `{phase_gate_flat.get('phase_gate_review_report_path') or (reports_dir / 'phase_gate_review.md')}`",
+        f"- remediation_scoreboard_report: `{reports_dir / 'remediation_scoreboard.md'}`",
+    ]
+    related_reports = [
+        f"- live_evidence_followup_report: `{default_followup_output_path(path_source)}`",
+        f"- live_evidence_report: `{data.output_path}`",
+        f"- operations_dashboard_report: `{reports_dir / 'operations_dashboard.md'}`",
+        f"- ops_review_report: `{reports_dir / 'ops_review.md'}`",
+        f"- current_state_index_report: `{reports_dir / 'current_state_index.md'}`",
+        f"- readiness_snapshot_report: `{reports_dir / 'readiness_snapshot.md'}`",
+        f"- phase_gate_review_report: `{phase_gate_flat.get('phase_gate_review_report_path') or (reports_dir / 'phase_gate_review.md')}`",
+        f"- paper_operations_runbook_report: `{reports_dir / 'paper_operations_runbook.md'}`",
+        "- go_no_go_report: `data/research/go_no_go_report.md`",
+        f"- paper_vs_backtest_comparison_report: `{reports_dir / 'paper_vs_backtest_comparison.md'}`",
+    ]
     lines = [
         "# Live Evidence Follow-up",
         "",
@@ -879,6 +1388,14 @@ def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
         f"- markdown_report: `{data.output_path}`",
         f"- html_report: `{default_html_output_path(path_source)}`",
         f"- manifest_path: `{data.manifest_path}`",
+        "",
+        "## Quick Navigation",
+        "",
+        *quick_navigation,
+        "",
+        "## Related Reports",
+        "",
+        *related_reports,
         "",
         "## Audit Summary",
         "",
@@ -900,6 +1417,15 @@ def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
             f"`{phase_gate_flat.get('phase_gate_strict_validation_issue_count')}`"
         ),
         f"- phase_gate_checked_files: `{phase_gate_flat.get('phase_gate_checked_files')}`",
+        "",
+        "## Readiness Summary",
+        "",
+        f"- next_phase_candidate: `{readiness_flat.get('readiness_next_phase_candidate')}`",
+        f"- execution_ready: `{readiness_flat.get('readiness_execution_ready')}`",
+        "",
+        "## Latest Execution Lineage",
+        "",
+        *_latest_execution_lineage_markdown_lines(latest_execution_flat),
         "",
         "## Execution Snapshot",
         "",

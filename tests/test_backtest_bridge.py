@@ -180,6 +180,24 @@ def test_backtest_report_writes_metrics_table(tmp_path) -> None:
             "fills_gap_detected": False,
             "report_path": "data/reports/execution_venue_diagnostics.md",
         },
+        execution_gap_history_summary={
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+            "report_path": "data/reports/execution_gap_history.md",
+        },
+        execution_state_comparison_summary={
+            "entry_count": 4,
+            "latest_status_match": False,
+            "mismatching_count": 1,
+            "report_path": "data/reports/execution_state_comparison_history.md",
+        },
+        execution_snapshot_drift_summary={
+            "entry_count": 3,
+            "latest_execution_state_comparison_status_match": True,
+            "mismatching_snapshot_count": 1,
+            "report_path": "data/reports/execution_snapshot_drift_history.md",
+        },
     )
 
     text = report_path.read_text(encoding="utf-8")
@@ -194,6 +212,12 @@ def test_backtest_report_writes_metrics_table(tmp_path) -> None:
     assert "all_registries_present: True" in text
     assert "Execution Venue Diagnostics" in text
     assert "balance_gap_detected: True" in text
+    assert "Execution Gap History" in text
+    assert "entry_count: 4" in text
+    assert "Execution State Comparison History" in text
+    assert "mismatching_count: 1" in text
+    assert "Execution Snapshot Drift History" in text
+    assert "mismatching_snapshot_count: 1" in text
 
 
 def test_backtest_bridge_uses_research_signal_csv(tmp_path) -> None:
@@ -324,6 +348,49 @@ def test_backtest_bridge_writes_decision_artifacts_for_signal_mode(tmp_path) -> 
             "execution_drift_overview_state_comparison_mismatching_count": 1,
             "execution_drift_overview_snapshot_drift_mismatching_snapshot_count": 1,
         },
+        execution_summary={"execution_overall_status": "ok", "execution_venue_count": 2},
+        execution_comparison_summary={"execution_comparison_all_registries_present": True},
+        execution_diagnostics_summary={
+            "execution_diagnostics_status": "degraded",
+            "execution_balance_gap_detected": True,
+            "execution_fills_gap_detected": False,
+        },
+        execution_gap_history_summary={
+            "execution_gap_history_entry_count": 4,
+            "execution_gap_history_latest_status": "ok",
+            "execution_gap_history_latest_execution_diagnostics_status": "degraded",
+        },
+        execution_state_comparison_summary={
+            "execution_state_comparison_entry_count": 4,
+            "execution_state_comparison_latest_status_match": False,
+            "execution_state_comparison_mismatching_count": 1,
+        },
+        execution_snapshot_drift_summary={
+            "execution_snapshot_drift_entry_count": 3,
+            "execution_snapshot_drift_latest_execution_state_comparison_status_match": True,
+            "execution_snapshot_drift_mismatching_snapshot_count": 1,
+        },
+        timeline_latest_execution_summary={
+            "execution_overall_status": "ok",
+            "execution_venue_count": 2,
+        },
+        timeline_latest_execution_comparison_summary={
+            "execution_comparison_all_registries_present": True,
+        },
+        bundle_history_latest_execution_summary={
+            "execution_overall_status": "warn",
+            "execution_venue_count": 1,
+        },
+        bundle_history_latest_execution_comparison_summary={
+            "execution_comparison_all_registries_present": False,
+        },
+        cycle_history_latest_execution_summary={
+            "execution_overall_status": "ok",
+            "execution_venue_count": 2,
+        },
+        cycle_history_latest_execution_comparison_summary={
+            "execution_comparison_all_registries_present": True,
+        },
     )
 
     assert len(metrics) == 1
@@ -344,6 +411,21 @@ def test_backtest_bridge_writes_decision_artifacts_for_signal_mode(tmp_path) -> 
     assert '"execution_drift_overview_state_comparison_mismatching_count": 1' in decision_summary_path.read_text(
         encoding="utf-8"
     )
+    assert '"execution_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_overall_status": "ok"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_gap_history_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_gap_history_entry_count": 4' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_state_comparison_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_state_comparison_mismatching_count": 1' in decision_summary_path.read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_snapshot_drift_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_snapshot_drift_mismatching_snapshot_count": 1' in decision_summary_path.read_text(
+        encoding="utf-8"
+    )
+    assert '"timeline_latest_execution_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"bundle_history_latest_execution_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"cycle_history_latest_execution_summary"' in decision_summary_path.read_text(encoding="utf-8")
 
 
 def test_research_signal_loader_blocks_scalping_timeframes(tmp_path) -> None:
@@ -416,12 +498,51 @@ def test_write_backtest_metrics_summary_json_includes_current_state(tmp_path) ->
             "fills_gap_detected": False,
             "report_path": "data/reports/execution_venue_diagnostics.md",
         },
+        execution_gap_history_summary={
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+            "report_path": "data/reports/execution_gap_history.md",
+        },
+        execution_state_comparison_summary={
+            "entry_count": 4,
+            "latest_status_match": False,
+            "mismatching_count": 1,
+            "report_path": "data/reports/execution_state_comparison_history.md",
+        },
+        execution_snapshot_drift_summary={
+            "entry_count": 3,
+            "latest_execution_state_comparison_status_match": True,
+            "mismatching_snapshot_count": 1,
+            "report_path": "data/reports/execution_snapshot_drift_history.md",
+        },
         execution_drift_overview_summary={
             "overall_status": "degraded",
             "diagnostics_alignment_match": False,
             "state_comparison_mismatching_count": 1,
             "snapshot_drift_mismatching_snapshot_count": 1,
             "report_path": "data/reports/execution_drift_overview.md",
+        },
+        timeline_latest_execution_summary={
+            "overall_status": "ok",
+            "venue_count": 2,
+        },
+        timeline_latest_execution_comparison_summary={
+            "all_registries_present": True,
+        },
+        bundle_history_latest_execution_summary={
+            "overall_status": "warn",
+            "venue_count": 1,
+        },
+        bundle_history_latest_execution_comparison_summary={
+            "all_registries_present": False,
+        },
+        cycle_history_latest_execution_summary={
+            "overall_status": "ok",
+            "venue_count": 2,
+        },
+        cycle_history_latest_execution_comparison_summary={
+            "all_registries_present": True,
         },
     )
 
@@ -438,7 +559,16 @@ def test_write_backtest_metrics_summary_json_includes_current_state(tmp_path) ->
     assert '"execution"' in text
     assert '"execution_comparison"' in text
     assert '"execution_diagnostics"' in text
+    assert '"execution_gap_history_summary"' in text
+    assert '"execution_gap_history_entry_count": 4' in text
+    assert '"execution_state_comparison_summary"' in text
+    assert '"execution_state_comparison_mismatching_count": 1' in text
+    assert '"execution_snapshot_drift_summary"' in text
+    assert '"execution_snapshot_drift_mismatching_snapshot_count": 1' in text
     assert '"execution_drift_overview_summary"' in text
     assert '"execution_drift_overview_status": "degraded"' in text
     assert '"execution_drift_overview_state_comparison_mismatching_count": 1' in text
     assert '"execution_drift_overview_snapshot_drift_mismatching_snapshot_count": 1' in text
+    assert '"timeline_latest_execution_summary"' in text
+    assert '"bundle_history_latest_execution_summary"' in text
+    assert '"cycle_history_latest_execution_summary"' in text
