@@ -6,6 +6,8 @@
 # Local agent/workflow state
 .codex/SP_STATE.md
 .ai_memory/
+.serena/
+.codex/
 
 # Python
 .venv/
