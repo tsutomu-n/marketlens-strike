@@ -4232,8 +4232,8 @@ def test_paper_operations_cycle_cli(tmp_path) -> None:
     assert "execution_snapshot_drift_mismatching_snapshot_count=0" in notes
     assert "execution_drift_overview_status=degraded" in notes
     assert "execution_drift_overview_diagnostics_alignment_match=None" in notes
-    assert "execution_drift_overview_state_comparison_mismatching_count=None" in notes
-    assert "execution_drift_overview_snapshot_drift_mismatching_snapshot_count=None" in notes
+    assert "execution_drift_overview_state_comparison_mismatching_count=0" in notes
+    assert "execution_drift_overview_snapshot_drift_mismatching_snapshot_count=0" in notes
     assert "execution_gap_history_latest_diagnostics_status=None" in notes
     assert "execution_state_comparison_entry_count=0" in notes
     assert "execution_state_comparison_latest_status_match=None" in notes
