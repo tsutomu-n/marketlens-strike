@@ -135,6 +135,12 @@ from sis.storage.normalize import normalize_quotes
 from sis.validation.artifacts import validate_artifacts
 from sis.venues.gtrade.quotes import convert_sidecar_to_quote_logs, latest_pricing_file, latest_sidecar_file
 from sis.venues.gtrade.registry import GTRADE_TARGETS
+from sis.venues.ostium.constraints import (
+    DEFAULT_LATEST_PRICE_ENDPOINT,
+    DEFAULT_LATEST_PRICES_ENDPOINT,
+    DEFAULT_TRADING_HOURS_ENDPOINT,
+    write_ostium_constraint_artifact,
+)
 from sis.venues.ostium.probe import OSTIUM_PRICES_ENDPOINT, write_ostium_live_probe_outputs
 from sis.venues.ostium.positions import latest_positions_sidecar
 from sis.venues.ostium.registry import OSTIUM_TARGETS
@@ -183,6 +189,45 @@ def probe_ostium(
         typer.echo(f"Ostium registry and {len(quotes)} quote rows written from read-only probe.")
     else:
         typer.echo("Ostium registry written with requires_probe fields; pass --read-only-live to probe.")
+
+
+@app.command("ostium-constraint-artifact")
+def ostium_constraint_artifact(
+    run_id: str = typer.Option(
+        datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S"),
+        "--run-id",
+        help="Run id used in Ostium constraint artifact filenames.",
+    ),
+    assets: list[str] = typer.Option(
+        ["SPX", "NDX", "XAU"],
+        "--asset",
+        help="Ostium asset symbol to collect. Repeat for multiple assets.",
+    ),
+    latest_prices_endpoint: str = typer.Option(
+        DEFAULT_LATEST_PRICES_ENDPOINT,
+        "--latest-prices-endpoint",
+    ),
+    latest_price_endpoint: str = typer.Option(
+        DEFAULT_LATEST_PRICE_ENDPOINT,
+        "--latest-price-endpoint",
+    ),
+    trading_hours_endpoint: str = typer.Option(
+        DEFAULT_TRADING_HOURS_ENDPOINT,
+        "--trading-hours-endpoint",
+    ),
+) -> None:
+    settings = get_settings()
+    result = write_ostium_constraint_artifact(
+        data_dir=settings.data_dir,
+        run_id=run_id,
+        assets=tuple(assets),
+        latest_prices_endpoint=latest_prices_endpoint,
+        latest_price_endpoint=latest_price_endpoint,
+        trading_hours_endpoint=trading_hours_endpoint,
+    )
+    typer.echo(f"constraint_status={result['constraint_status']}")
+    typer.echo(f"artifact_path={result['artifact_path']}")
+    typer.echo(f"summary_path={result['summary_path']}")
 
 
 @app.command("log-quotes")
