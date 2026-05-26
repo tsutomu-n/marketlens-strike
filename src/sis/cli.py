@@ -31,15 +31,9 @@ from sis.paper.fills import PaperFill
 from sis.paper.portfolio import PaperPosition
 from sis.paper.report import build_daily_paper_report
 from sis.paper.runner import PaperRunSummary, run_paper_step
-from sis.research.event_calendar import build_event_calendar
-from sis.research.feature_panel import build_feature_panel
-from sis.research.macro_ingest import build_macro_panel
-from sis.research.price_ingest import build_market_panel
-from sis.research.providers import FredMacroProvider
-from sis.research.research_quality import build_research_quality_report
-from sis.research.signal_builder import build_signals
-from sis.reports.cost_matrix import build_cost_matrix_from_quotes
-from sis.reports.cost_matrix import build_cost_matrix_report
+from sis.commands.probe import register_probe_commands
+from sis.commands.quotes import register_quote_commands
+from sis.commands.research import register_research_commands
 from sis.reports.audit_bundle_history import build_audit_bundle_history_report
 from sis.reports.audit_bundle import build_audit_bundle_manifest
 from sis.reports.comparison import build_paper_live_comparison_report
@@ -131,10 +125,7 @@ from sis.state.reconciliation import reconcile_positions
 from sis.state.recovery import export_state_snapshot, restore_state_snapshot
 from sis.state.store import StateStore
 from sis.storage.jsonl_store import read_json, write_json
-from sis.storage.normalize import normalize_quotes
 from sis.validation.artifacts import validate_artifacts
-from sis.venues.archive.gtrade.quotes import convert_sidecar_to_quote_logs, latest_pricing_file, latest_sidecar_file
-from sis.venues.archive.gtrade.registry import GTRADE_TARGETS
 from sis.venues.archive.ostium.constraints import (
     DEFAULT_BUILDER_PRICES_ENDPOINT,
     DEFAULT_LATEST_PRICE_ENDPOINT,
@@ -142,109 +133,10 @@ from sis.venues.archive.ostium.constraints import (
     DEFAULT_TRADING_HOURS_ENDPOINT,
     write_ostium_constraint_artifact,
 )
-from sis.venues.archive.ostium.probe import OSTIUM_PRICES_ENDPOINT, write_ostium_live_probe_outputs
 from sis.venues.archive.ostium.positions import latest_positions_sidecar
-from sis.venues.archive.ostium.registry import OSTIUM_TARGETS
-from sis.venues.trade_xyz.report import (
-    build_trade_xyz_universe_report,
-    write_trade_xyz_universe_report,
-    write_trade_xyz_universe_summary,
-)
-from sis.venues.trade_xyz.registry import (
-    build_trade_xyz_registry,
-    write_trade_xyz_registry,
-)
-from sis.venues.trade_xyz.client import TradeXyzClient
 
 app = typer.Typer(no_args_is_help=True)
-probe_app = typer.Typer(no_args_is_help=True)
-app.add_typer(probe_app, name="probe")
-
-
-@probe_app.command("gtrade")
-def probe_gtrade() -> None:
-    settings = get_settings()
-    out = settings.data_dir / "registry/gtrade_instrument_registry.json"
-    write_json(out, [item.model_dump(mode="json") for item in GTRADE_TARGETS])
-    logger.info("written: {}", out)
-
-
-@probe_app.command("ostium")
-def probe_ostium(
-    read_only_live: bool = typer.Option(
-        False,
-        "--read-only-live",
-        help="Fetch Ostium Builder API prices with a GET-only probe before writing the registry.",
-    ),
-    endpoint: str = typer.Option(OSTIUM_PRICES_ENDPOINT, "--endpoint", help="Ostium prices endpoint."),
-    pairs_metadata_path: Path | None = typer.Option(
-        None,
-        "--pairs-metadata-path",
-        help="Optional Ostium SDK getPairs sidecar JSON path.",
-    ),
-) -> None:
-    settings = get_settings()
-    out = settings.data_dir / "registry/ostium_instrument_registry.json"
-    if read_only_live:
-        targets, quotes = write_ostium_live_probe_outputs(
-            data_dir=settings.data_dir,
-            endpoint=endpoint,
-            pairs_metadata_path=pairs_metadata_path,
-        )
-    else:
-        targets = OSTIUM_TARGETS
-        quotes = []
-    write_json(out, [item.model_dump(mode="json") for item in targets])
-    logger.info("written: {}", out)
-    if read_only_live:
-        typer.echo(f"Ostium registry and {len(quotes)} quote rows written from read-only probe.")
-    else:
-        typer.echo("Ostium registry written with requires_probe fields; pass --read-only-live to probe.")
-
-
-@probe_app.command("trade-xyz")
-def probe_trade_xyz(
-    seed_path: Path = typer.Option(
-        Path("configs/instrument_registry.seed.json"),
-        "--seed-path",
-        help="Seed file containing venues.trade_xyz rows.",
-    ),
-    all_mids_path: Path | None = typer.Option(
-        None,
-        "--all-mids-path",
-        help="Optional fixture path for allMids payload JSON.",
-    ),
-    meta_path: Path | None = typer.Option(
-        None,
-        "--meta-path",
-        help="Optional fixture path for meta payload JSON.",
-    ),
-) -> None:
-    settings = get_settings()
-    if all_mids_path and meta_path:
-        all_mids_payload = read_json(all_mids_path)
-        meta_payload = read_json(meta_path)
-        if not isinstance(all_mids_payload, dict) or not isinstance(meta_payload, dict):
-            raise typer.BadParameter("all-mids-path/meta-path must contain JSON objects")
-        build_result = build_trade_xyz_registry(
-            seed_path,
-            all_mids_payload={str(k): str(v) for k, v in all_mids_payload.items()},
-            meta_payload=meta_payload,
-        )
-    else:
-        with TradeXyzClient() as client:
-            build_result = build_trade_xyz_registry(seed_path, client=client)
-
-    registry_path = settings.data_dir / "registry/trade_xyz_instrument_registry.json"
-    report_path = settings.data_dir / "reports/trade_xyz_universe_report.md"
-    summary_path = settings.data_dir / "reports/trade_xyz_universe_summary.json"
-
-    write_trade_xyz_registry(registry_path, build_result)
-    write_trade_xyz_universe_report(report_path, build_trade_xyz_universe_report(build_result))
-    write_trade_xyz_universe_summary(summary_path, build_result)
-    typer.echo(f"registry_path={registry_path}")
-    typer.echo(f"report_path={report_path}")
-    typer.echo(f"summary_path={summary_path}")
+register_probe_commands(app)
 
 
 @app.command("ostium-constraint-artifact")
@@ -289,136 +181,6 @@ def ostium_constraint_artifact(
     typer.echo(f"constraint_status={result['constraint_status']}")
     typer.echo(f"artifact_path={result['artifact_path']}")
     typer.echo(f"summary_path={result['summary_path']}")
-
-
-@app.command("log-quotes")
-def log_quotes(
-    venue: str = typer.Option(..., "--venue"),
-    replace: bool = typer.Option(
-        False,
-        "--replace",
-        help="Replace the generated daily quote JSONL before replaying the sidecar.",
-    ),
-) -> None:
-    settings = get_settings()
-    normalized_venue = venue.strip().lower()
-    if normalized_venue != "gtrade":
-        typer.echo("Only gtrade sidecar ingestion is available in the initial scaffold.")
-        raise typer.Exit(code=2)
-
-    try:
-        sidecar = latest_sidecar_file(settings.data_dir / "raw/sidecar/gtrade")
-    except FileNotFoundError as exc:
-        typer.echo(str(exc))
-        raise typer.Exit(code=2) from exc
-    day = datetime.now(timezone.utc).date().isoformat()
-    out = settings.data_dir / f"raw/quotes/gtrade/{day}.jsonl"
-    if replace and out.exists():
-        out.unlink()
-    pricing = None
-    pricing_root = settings.data_dir / "raw/sidecar/gtrade-pricing"
-    if pricing_root.exists():
-        try:
-            pricing = latest_pricing_file(pricing_root)
-        except FileNotFoundError:
-            pricing = None
-    count = convert_sidecar_to_quote_logs(sidecar, out, pricing_path=pricing)
-    logger.info("written {} quote rows: {}", count, out)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("normalize-quotes")
-def normalize_quotes_cmd() -> None:
-    settings = get_settings()
-    try:
-        count = normalize_quotes(
-            settings.data_dir / "raw/quotes",
-            settings.data_dir / "normalized/quotes.parquet",
-            settings.data_dir / "normalized/sis.duckdb",
-        )
-    except FileNotFoundError as exc:
-        typer.echo(str(exc))
-        raise typer.Exit(code=2) from exc
-    logger.info("normalized {} quote rows", count)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("build-cost-matrix")
-def build_cost_matrix() -> None:
-    settings = get_settings()
-    out = settings.data_dir / "research/venue_cost_matrix.csv"
-    build_cost_matrix_from_quotes(
-        settings.data_dir / "normalized/quotes.parquet",
-        out,
-        gtrade_sidecar_root=settings.data_dir / "raw/sidecar/gtrade",
-        ostium_registry_path=settings.data_dir / "registry/ostium_instrument_registry.json",
-    )
-    build_cost_matrix_report(
-        cost_matrix_path=out,
-        out_path=settings.data_dir / "reports/venue_cost_matrix.md",
-        summary_path=settings.data_dir / "ops/venue_cost_matrix_summary.json",
-    )
-    logger.info("written: {}", out)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("ingest-research-data")
-def ingest_research_data() -> None:
-    settings = get_settings()
-    market_panel = build_market_panel(settings.data_dir)
-    macro_panel = build_macro_panel(
-        settings.data_dir,
-        provider=FredMacroProvider(api_key=settings.fred_api_key),
-    )
-    logger.info("written: {}", market_panel)
-    logger.info("written: {}", macro_panel)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("build-event-calendar")
-def build_event_calendar_cmd(
-    csv_path: Path | None = typer.Option(
-        None,
-        "--csv-path",
-        help="Optional event calendar CSV path. Defaults to data/research/event_calendar.csv.",
-    )
-) -> None:
-    settings = get_settings()
-    out = build_event_calendar(settings.data_dir, csv_path=csv_path)
-    logger.info("written: {}", out)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("build-feature-panel")
-def build_feature_panel_cmd() -> None:
-    settings = get_settings()
-    out = build_feature_panel(settings.data_dir)
-    logger.info("written: {}", out)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("build-signals")
-def build_signals_cmd() -> None:
-    settings = get_settings()
-    out = build_signals(settings.data_dir)
-    logger.info("written: {}", out)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("check-research-quality")
-def check_research_quality_cmd() -> None:
-    settings = get_settings()
-    out = build_research_quality_report(settings.data_dir)
-    logger.info("written: {}", out)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
 
 
 def _state_store(settings_data_dir: Path, state_path: Path | None) -> StateStore:
@@ -1052,6 +814,10 @@ def _recommended_read_order(settings_data_dir: Path) -> list[str]:
             "data/ops/audit_bundle_manifest.json",
         ]
     )
+
+
+register_research_commands(app, _recommended_read_order)
+register_quote_commands(app, _recommended_read_order)
 
 
 def _write_ops_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
