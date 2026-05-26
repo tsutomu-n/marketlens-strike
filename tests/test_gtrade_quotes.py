@@ -73,3 +73,32 @@ def test_convert_sidecar_to_quote_logs_merges_pricing_when_pair_and_time_match(t
     assert quote["index_price"] == 512.33
     assert quote["exec_buy_price"] == 512.34
     assert quote["source"] == "gtrade_sidecar_v1_pricing_v4"
+
+
+def test_convert_sidecar_to_quote_logs_attaches_read_only_evidence_refs(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    sidecar_path = data_dir / "raw/sidecar/gtrade/2026-05-22.jsonl"
+    out_path = data_dir / "raw/quotes/gtrade/2026-05-22.jsonl"
+    manifest_path = data_dir / "raw/sidecar/gtrade-backend/manifests/2026-05-22/r1.json"
+    constraint_path = data_dir / "raw/sidecar/ostium-constraints/2026-05-22/r1.json"
+    sidecar_path.parent.mkdir(parents=True)
+    manifest_path.parent.mkdir(parents=True)
+    constraint_path.parent.mkdir(parents=True)
+    manifest_path.write_text('{"status":"completed"}', encoding="utf-8")
+    constraint_path.write_text('{"constraint_status":"pass"}', encoding="utf-8")
+    sidecar_path.write_text(
+        '{"ts_client":"2026-05-22T00:00:00.000Z","venue":"gtrade",'
+        '"network":"arbitrum","backend":"https://backend-arbitrum.gains.trade",'
+        '"raw_payload_sha256":"abc123","raw":{"lastRefreshed":"2026-05-22T00:00:00.000Z"},'
+        '"market_status":{"isIndicesOpen":true},'
+        '"pairs":[{"canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"asset_class":"index","spread_bps":2}]}\n',
+        encoding="utf-8",
+    )
+
+    assert convert_sidecar_to_quote_logs(sidecar_path, out_path) == 1
+
+    [quote] = list(read_jsonl(out_path))
+    assert quote["raw_payload"]["evidence_refs"] == {
+        "gtrade_backend_manifest": str(manifest_path),
+        "ostium_constraint_artifact": str(constraint_path),
+    }

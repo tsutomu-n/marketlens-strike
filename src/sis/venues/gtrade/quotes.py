@@ -107,10 +107,39 @@ def _closest_pricing_row(
     return best[1] if best else None
 
 
+def _infer_data_dir_from_sidecar(sidecar_path: Path) -> Path | None:
+    parts = sidecar_path.parts
+    marker = ("raw", "sidecar", "gtrade")
+    for idx in range(len(parts) - len(marker)):
+        if tuple(parts[idx : idx + len(marker)]) == marker:
+            return Path(*parts[:idx]) if idx > 0 else Path(".")
+    return None
+
+
+def _latest_recursive(root: Path, pattern: str) -> Path | None:
+    paths = sorted(root.rglob(pattern)) if root.exists() else []
+    return paths[-1] if paths else None
+
+
+def _latest_evidence_refs(sidecar_path: Path) -> dict[str, str]:
+    data_dir = _infer_data_dir_from_sidecar(sidecar_path)
+    if data_dir is None:
+        return {}
+    refs: dict[str, str] = {}
+    gtrade_manifest = _latest_recursive(data_dir / "raw/sidecar/gtrade-backend/manifests", "*.json")
+    ostium_constraints = _latest_recursive(data_dir / "raw/sidecar/ostium-constraints", "*.json")
+    if gtrade_manifest is not None:
+        refs["gtrade_backend_manifest"] = str(gtrade_manifest)
+    if ostium_constraints is not None:
+        refs["ostium_constraint_artifact"] = str(ostium_constraints)
+    return refs
+
+
 def convert_sidecar_to_quote_logs(sidecar_path: Path, out_path: Path, pricing_path: Path | None = None) -> int:
     count = 0
     seen = {quote_identity(row) for row in read_jsonl(out_path)} if out_path.exists() else set()
     pricing_rows = _extract_pricing_rows(pricing_path) if pricing_path and pricing_path.exists() else None
+    evidence_refs = _latest_evidence_refs(sidecar_path)
     for snapshot in read_jsonl(sidecar_path):
         ts = datetime.fromisoformat(snapshot["ts_client"].replace("Z", "+00:00"))
         raw_hash = snapshot["raw_payload_sha256"]
@@ -194,6 +223,7 @@ def convert_sidecar_to_quote_logs(sidecar_path: Path, out_path: Path, pricing_pa
                     "network": snapshot.get("network"),
                     "backend": snapshot.get("backend"),
                     "pricing": pricing_row,
+                    "evidence_refs": evidence_refs,
                 },
             )
             key = quote_identity(quote.model_dump(mode="json"))

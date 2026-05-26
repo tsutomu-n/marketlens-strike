@@ -1,0 +1,100 @@
+# Live Evidence Read-Only Collectors
+
+この文書は、Ostium / gTrade の実データ取得を read-only で監査可能にするための運用メモである。
+
+## 結論
+
+本番発注、署名、allowance、private key は扱わない。
+
+Phase gate の材料として必要なのは、raw response、受信時刻、digest、schema digest、collector manifest、market close / deepReorg の扱いを残すことである。
+
+## gTrade
+
+既存の collector は `/trading-variables` REST snapshot と pricing WS を保存する。
+
+追加した collector は次を保存する。
+
+- `/trading-variables` REST snapshot
+- `/open-trades` REST snapshot
+- backend WS raw event stream
+- `deepReorg` 受信時の full REST refresh
+- REST / WS の read-only reconciliation manifest
+
+実行:
+
+```bash
+bun run gtrade:backend-collect -- --duration-minutes 30 --run-id manual_001
+```
+
+主な artifact:
+
+```text
+data/raw/sidecar/gtrade-backend/rest/YYYY-MM-DD/<run_id>_*.json
+data/raw/sidecar/gtrade-backend/backend-ws/YYYY-MM-DD/<run_id>.jsonl
+data/raw/sidecar/gtrade-backend/manifests/YYYY-MM-DD/<run_id>.json
+data/ops/gtrade_state_reconciliation_<run_id>.json
+```
+
+pricing WS は unknown pairId を通常 quotes に混ぜず、quarantine に分離する。
+
+```text
+data/raw/sidecar/gtrade-pricing-quarantine/YYYY-MM-DD.jsonl
+```
+
+## Ostium
+
+追加した constraint collector は次を保存する。
+
+- latest prices
+- asset 別 latest price
+- asset 別 trading-hours schedule
+- Python SDK read-only dependency status
+- market close を missing data と区別する constraint summary
+- 2026-02 以降の非成行 `openTrade` slippage constraint
+
+実行:
+
+```bash
+uv run sis ostium-constraint-artifact --run-id manual_001
+```
+
+主な artifact:
+
+```text
+data/raw/sidecar/ostium-constraints/YYYY-MM-DD/<run_id>.json
+data/ops/ostium_constraints_<run_id>.json
+```
+
+Python SDK が環境に無い場合、artifact は `constraint_status=failed` になる。これは意図的な fail-closed であり、Python SDK read-only を確認したとは扱わない。
+
+## Live Evidence Runner
+
+`scripts/run_live_evidence.py` 経由の runner は、gTrade price / metadata collection 後に read-only collector evidence step を実行する。
+
+```bash
+uv run python scripts/run_live_evidence.py \
+  --duration-minutes 120 \
+  --metadata-interval-seconds 60 \
+  --backend-event-duration-minutes 30
+```
+
+manifest の `row_counts` に次が追加される。
+
+- `gtrade_backend_event_rows`
+- `gtrade_backend_reconnect_count`
+- `gtrade_backend_deep_reorg_count`
+- `ostium_constraint_assets`
+- `ostium_constraint_failures`
+
+## Phase Gate
+
+`uv run sis phase-gate-review` は、次が欠ける場合に Phase 2 を許可しない。
+
+- latest gTrade backend collector manifest
+- latest Ostium constraint artifact
+- gTrade backend collector manifest が `completed`
+- Ostium constraint artifact が `constraint_status=pass`
+- `deepReorg` 検出時に full refresh path が記録されている
+
+market close は missing data ではない。Ostium constraint artifact で closed と分類されていれば、価格欠損とは別に扱う。
+

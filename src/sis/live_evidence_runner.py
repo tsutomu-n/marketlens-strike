@@ -763,6 +763,12 @@ def main(
     manifest_path: Path | None = typer.Option(None, "--manifest-path"),
     log_path: Path | None = typer.Option(None, "--log-path"),
     report_settle_seconds: int = typer.Option(180, "--report-settle-seconds", min=0),
+    backend_event_duration_minutes: int = typer.Option(
+        30,
+        "--backend-event-duration-minutes",
+        min=1,
+        help="Bounded gTrade backend WS event collection duration for read-only evidence.",
+    ),
 ) -> None:
     settings = get_settings()
     data_dir = settings.data_dir
@@ -807,6 +813,7 @@ def main(
         print(f"mode={'dry-run' if dry_run else 'execute'}")
         print(f"duration_minutes={duration_minutes}")
         print(f"metadata_interval_seconds={metadata_interval_seconds}")
+        print(f"backend_event_duration_minutes={backend_event_duration_minutes}")
         print(f"force={str(force).lower()}")
         print(f"run_id={effective_run_id}")
         print(f"manifest_path={effective_manifest_path}")
@@ -979,6 +986,72 @@ def main(
             write_manifest(effective_manifest_path, manifest)
             raise
         except PermanentStepError as exc:
+            manifest.status = RunOutcome.FAILED_COLLECTION
+            manifest.failure_summary = str(exc)
+            manifest.finished_at_utc = utc_now()
+            write_manifest(effective_manifest_path, manifest)
+            raise
+
+        def read_only_collector_evidence() -> None:
+            log_step("Collecting read-only gTrade/Ostium evidence artifacts")
+            run_subprocess(
+                [
+                    "bun",
+                    "run",
+                    "gtrade:backend-collect",
+                    "--",
+                    "--duration-minutes",
+                    str(backend_event_duration_minutes),
+                    "--run-id",
+                    effective_run_id,
+                ],
+                retryable=True,
+            )
+            run_subprocess(
+                ["uv", "run", "sis", "ostium-constraint-artifact", "--run-id", effective_run_id],
+                retryable=True,
+            )
+            gtrade_manifest = next(
+                reversed(
+                    sorted(
+                        (data_dir / "raw/sidecar/gtrade-backend/manifests").rglob(
+                            f"{effective_run_id}.json"
+                        )
+                    )
+                ),
+                None,
+            )
+            ostium_summary = data_dir / "ops" / f"ostium_constraints_{effective_run_id}.json"
+            if gtrade_manifest and gtrade_manifest.exists():
+                payload = safe_read_json_dict(gtrade_manifest)
+                manifest.row_counts["gtrade_backend_event_rows"] = int(payload.get("event_count") or 0)
+                manifest.row_counts["gtrade_backend_reconnect_count"] = int(payload.get("reconnect_count") or 0)
+                manifest.row_counts["gtrade_backend_deep_reorg_count"] = 1 if payload.get("deep_reorg_detected") else 0
+            if ostium_summary.exists():
+                payload = safe_read_json_dict(ostium_summary)
+                manifest.row_counts["ostium_constraint_failures"] = len(payload.get("failures", []))
+                manifest.row_counts["ostium_constraint_assets"] = len(payload.get("assets", []))
+            write_manifest(effective_manifest_path, manifest)
+
+        try:
+            run_with_manifest_step(
+                manifest,
+                effective_manifest_path,
+                "read_only_collector_evidence",
+                max_step_retries=max_step_retries,
+                command=[
+                    "bun",
+                    "run",
+                    "gtrade:backend-collect",
+                    "--",
+                    "--duration-minutes",
+                    str(backend_event_duration_minutes),
+                    "--run-id",
+                    effective_run_id,
+                ],
+                func=read_only_collector_evidence,
+            )
+        except (RetryableStepError, PermanentStepError) as exc:
             manifest.status = RunOutcome.FAILED_COLLECTION
             manifest.failure_summary = str(exc)
             manifest.finished_at_utc = utc_now()

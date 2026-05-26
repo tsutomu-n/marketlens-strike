@@ -1992,6 +1992,18 @@ def test_phase_gate_review_cli(tmp_path, monkeypatch) -> None:
         '{"run_id":"20260522_2308","status":"completed","decision":"GO","artifacts":{"evidence_card":"data/evidence/evidence_card_20260522_000000.json"}}',
         encoding="utf-8",
     )
+    gtrade_backend_manifest_path = (
+        data_dir / "raw/sidecar/gtrade-backend/manifests/2026-05-22/backend_r1.json"
+    )
+    gtrade_backend_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    gtrade_backend_manifest_path.write_text(
+        '{"status":"completed","backend_ws_path":"data/raw/sidecar/gtrade-backend/backend-ws/r1.jsonl","rest_snapshot_paths":["data/raw/sidecar/gtrade-backend/rest/r1_trading_variables.json","data/raw/sidecar/gtrade-backend/rest/r1_open_trades.json"],"event_count":10,"reconnect_count":0,"deep_reorg_detected":false}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/ostium_constraints_r1.json").write_text(
+        '{"constraint_status":"pass","failures":[],"python_sdk":{"available":true,"version":"3.2.1"}}',
+        encoding="utf-8",
+    )
 
     result = runner.invoke(app, ["phase-gate-review"], env=env)
 

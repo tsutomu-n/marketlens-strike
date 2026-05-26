@@ -149,6 +149,37 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
         ),
         encoding="utf-8",
     )
+    gtrade_backend_manifest_path = (
+        data_dir / "raw/sidecar/gtrade-backend/manifests/2026-05-22/backend_r1.json"
+    )
+    gtrade_backend_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    gtrade_backend_manifest_path.write_text(
+        json.dumps(
+            {
+                "status": "completed",
+                "backend_ws_path": str(data_dir / "raw/sidecar/gtrade-backend/backend-ws/r1.jsonl"),
+                "rest_snapshot_paths": [
+                    str(data_dir / "raw/sidecar/gtrade-backend/rest/r1_trading_variables.json"),
+                    str(data_dir / "raw/sidecar/gtrade-backend/rest/r1_open_trades.json"),
+                ],
+                "event_count": 10,
+                "reconnect_count": 0,
+                "deep_reorg_detected": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+    ostium_constraints_path = data_dir / "ops/ostium_constraints_r1.json"
+    ostium_constraints_path.write_text(
+        json.dumps(
+            {
+                "constraint_status": "pass",
+                "failures": [],
+                "python_sdk": {"available": True, "version": "3.2.1"},
+            }
+        ),
+        encoding="utf-8",
+    )
 
     out_path = data_dir / "reports/phase_gate_review.md"
     summary_path = data_dir / "ops/phase_gate_review_summary.json"
@@ -249,6 +280,9 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert payload["phase_gate_strict_validation_passed"] is True
     assert payload["phase_gate_strict_validation_issue_count"] == 0
     assert payload["phase_gate_checked_files"] >= 1
+    assert payload["read_only_collector_gate_passed"] is True
+    assert payload["latest_gtrade_backend_manifest_path"] == str(gtrade_backend_manifest_path)
+    assert payload["latest_ostium_constraint_path"] == str(ostium_constraints_path)
     assert payload["required_artifact_paths"]["latest_execution_snapshot_summary_path"] == str(
         data_dir / "ops/execution_snapshot_summary.json"
     )

@@ -71,6 +71,57 @@ def _latest_path(pattern_root: Path, glob_pattern: str) -> Path | None:
     return paths[-1] if paths else None
 
 
+def _latest_recursive_path(pattern_root: Path, glob_pattern: str) -> Path | None:
+    paths = sorted(pattern_root.rglob(glob_pattern)) if pattern_root.exists() else []
+    return paths[-1] if paths else None
+
+
+def _read_only_collector_gate(data_dir: Path) -> dict[str, object]:
+    gtrade_manifest_path = _latest_recursive_path(
+        data_dir / "raw/sidecar/gtrade-backend/manifests",
+        "*.json",
+    )
+    ostium_constraints_path = _latest_path(data_dir / "ops", "ostium_constraints_*.json")
+    gtrade_manifest = safe_read_json_dict(gtrade_manifest_path)
+    ostium_constraints = safe_read_json_dict(ostium_constraints_path)
+
+    blockers: list[str] = []
+    if not gtrade_manifest_path:
+        blockers.append("missing_gtrade_backend_ws_manifest")
+    elif gtrade_manifest.get("status") != "completed":
+        blockers.append("gtrade_backend_ws_manifest_not_completed")
+    if gtrade_manifest_path and not gtrade_manifest.get("backend_ws_path"):
+        blockers.append("missing_gtrade_backend_ws_path")
+    if gtrade_manifest_path and not gtrade_manifest.get("rest_snapshot_paths"):
+        blockers.append("missing_gtrade_rest_snapshot_paths")
+    if gtrade_manifest.get("deep_reorg_detected") is True and not gtrade_manifest.get(
+        "deep_reorg_refresh_paths"
+    ):
+        blockers.append("gtrade_deep_reorg_without_full_refresh")
+
+    if not ostium_constraints_path:
+        blockers.append("missing_ostium_constraint_artifact")
+    elif ostium_constraints.get("constraint_status") != "pass":
+        blockers.append("ostium_constraint_artifact_failed")
+
+    return {
+        "read_only_collector_gate_passed": not blockers,
+        "read_only_collector_blockers": blockers,
+        "latest_gtrade_backend_manifest_path": (
+            str(gtrade_manifest_path) if gtrade_manifest_path is not None else None
+        ),
+        "latest_gtrade_backend_status": gtrade_manifest.get("status"),
+        "latest_gtrade_backend_event_count": gtrade_manifest.get("event_count"),
+        "latest_gtrade_backend_reconnect_count": gtrade_manifest.get("reconnect_count"),
+        "latest_gtrade_backend_deep_reorg_detected": gtrade_manifest.get("deep_reorg_detected"),
+        "latest_ostium_constraint_path": (
+            str(ostium_constraints_path) if ostium_constraints_path is not None else None
+        ),
+        "latest_ostium_constraint_status": ostium_constraints.get("constraint_status"),
+        "latest_ostium_constraint_failures": ostium_constraints.get("failures", []),
+    }
+
+
 def _load_stale_thresholds() -> dict[str, int]:
     try:
         from sis.risk.halt_policy import load_halt_policy
@@ -96,6 +147,8 @@ def _required_artifact_paths(summary: dict[str, object]) -> dict[str, str | None
         "latest_execution_state_comparison_history_summary_path",
         "latest_execution_snapshot_drift_history_summary_path",
         "latest_execution_drift_overview_summary_path",
+        "latest_gtrade_backend_manifest_path",
+        "latest_ostium_constraint_path",
     )
     paths: dict[str, str | None] = {}
     for key in artifact_keys:
@@ -145,6 +198,8 @@ def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str
         "latest_execution_state_comparison_history_summary_path": ["uv run sis refresh-operations-artifacts"],
         "latest_execution_snapshot_drift_history_summary_path": ["uv run sis refresh-operations-artifacts"],
         "latest_execution_drift_overview_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "latest_gtrade_backend_manifest_path": ["bun run gtrade:backend-collect -- --duration-minutes 30"],
+        "latest_ostium_constraint_path": ["uv run sis ostium-constraint-artifact"],
     }
     return {
         name: command_map.get(name, ["uv run sis refresh-operations-artifacts"])
@@ -455,6 +510,7 @@ def build_phase_gate_review(
     )
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
     latest_execution_lineage = latest_execution_lineage_fields_from_summary(evidence_payload)
+    collector_gate = _read_only_collector_gate(data_dir)
 
     decision = evidence_payload.get("decision") or manifest_payload.get("decision")
     venue_decisions = evidence_payload.get("venue_decisions")
@@ -466,6 +522,7 @@ def build_phase_gate_review(
     phase2_entry_allowed = bool(
         strict_validation_passed
         and diagnostics_all_available
+        and collector_gate["read_only_collector_gate_passed"] is True
         and isinstance(decision, str)
         and decision in PHASE2_ALLOWED_DECISIONS
     )
@@ -534,6 +591,7 @@ def build_phase_gate_review(
         **execution_snapshot_drift_fields,
         **execution_drift_fields,
         **latest_execution_lineage,
+        **collector_gate,
         "diagnostics_symbols": list(diagnostics_symbols),
         "diagnostics_all_available": diagnostics_all_available,
         "diagnostics": diagnostics,
@@ -712,6 +770,10 @@ def build_phase_gate_review(
         f"- latest_manifest_status: {summary['latest_manifest_status']}",
         f"- phase2_entry_allowed: {summary['phase2_entry_allowed']}",
         f"- phase2_entry_reason: {summary['phase2_entry_reason']}",
+        f"- read_only_collector_gate_passed: {summary['read_only_collector_gate_passed']}",
+        f"- read_only_collector_blockers: {summary['read_only_collector_blockers'] or 'none'}",
+        f"- latest_gtrade_backend_manifest_path: {summary['latest_gtrade_backend_manifest_path']}",
+        f"- latest_ostium_constraint_path: {summary['latest_ostium_constraint_path']}",
         f"- execution_overall_status: {summary['execution_overall_status']}",
         f"- execution_venue_count: {summary['execution_venue_count']}",
         f"- execution_comparison_all_registries_present: {summary['execution_comparison_all_registries_present']}",
@@ -1004,6 +1066,7 @@ def build_phase_gate_review(
             "- If `diagnostics_all_available` is not `True`, stop and recollect quote diagnostics for QQQ / SPY / XAU.",
             "- If `execution_comparison_all_registries_present` is not `True`, stop and inspect cross-venue registry coverage.",
             "- If `execution_drift_overview_status` is not `ok`, stop and resolve execution drift mismatches before considering Phase 2.",
+            "- If `read_only_collector_gate_passed` is not `True`, stop and collect gTrade backend WS / Ostium constraint artifacts before considering Phase 2.",
         ]
     )
 
