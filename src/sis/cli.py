@@ -1360,36 +1360,6 @@ def _write_execution_read_only_surfaces(
     return out, summary_out, text
 
 
-register_ops_commands(
-    app,
-    state_store_fn=_state_store,
-    write_monitoring_snapshot_fn=_write_monitoring_snapshot,
-    write_schedule_run_with_audit_fn=_write_schedule_run_with_audit,
-    create_operation_manifest_fn=create_operation_manifest,
-    append_operation_manifest_fn=append_operation_manifest,
-    refresh_execution_lineage_artifacts_fn=_refresh_execution_lineage_artifacts,
-    write_execution_read_only_surfaces_fn=_write_execution_read_only_surfaces,
-    daemon_dry_run_context_fn=_daemon_dry_run_context,
-    write_daemon_manifest_artifacts_fn=_write_daemon_manifest_artifacts,
-    write_state_export_artifacts_fn=_write_state_export_artifacts,
-    write_state_restore_artifacts_fn=_write_state_restore_artifacts,
-    normalize_phase_gate_summary_fn=normalize_phase_gate_summary,
-    write_lifecycle_report_fn=_write_lifecycle_report,
-    write_comparison_report_fn=_write_comparison_report,
-    write_ops_review_fn=_write_ops_review,
-    write_operations_dashboard_fn=_write_operations_dashboard,
-    write_paper_operations_runbook_fn=_write_paper_operations_runbook,
-    write_paper_cycle_history_fn=_write_paper_cycle_history,
-    write_execution_gap_history_fn=_write_execution_gap_history,
-    write_execution_state_comparison_history_fn=_write_execution_state_comparison_history,
-    write_execution_snapshot_drift_history_fn=_write_execution_snapshot_drift_history,
-    write_execution_drift_overview_fn=_write_execution_drift_overview,
-    echo_audit_summary_fn=_echo_audit_summary,
-    echo_phase_gate_summary_fn=_echo_phase_gate_summary,
-    recommended_read_order_fn=_recommended_read_order,
-)
-
-
 register_execution_commands(
     app,
     adapter_for_venue_fn=_adapter_for_venue,
@@ -1425,6 +1395,8 @@ def _write_phase_gate_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
         summary_path=summary_out,
     )
     return out, summary_out, text
+
+
 
 
 def _write_remediation_planner(settings_data_dir: Path) -> tuple[Path, Path, str]:
@@ -2223,6 +2195,54 @@ def _append_remediation_evidence_ingest_manifest(
     return append_operation_manifest(chain_path, manifest)
 
 
+register_ops_commands(
+    app,
+    state_store_fn=_state_store,
+    write_monitoring_snapshot_fn=_write_monitoring_snapshot,
+    write_schedule_run_with_audit_fn=_write_schedule_run_with_audit,
+    create_operation_manifest_fn=create_operation_manifest,
+    append_operation_manifest_fn=append_operation_manifest,
+    refresh_execution_lineage_artifacts_fn=_refresh_execution_lineage_artifacts,
+    write_execution_read_only_surfaces_fn=_write_execution_read_only_surfaces,
+    daemon_dry_run_context_fn=_daemon_dry_run_context,
+    write_daemon_manifest_artifacts_fn=_write_daemon_manifest_artifacts,
+    write_state_export_artifacts_fn=_write_state_export_artifacts,
+    write_state_restore_artifacts_fn=_write_state_restore_artifacts,
+    normalize_phase_gate_summary_fn=normalize_phase_gate_summary,
+    write_lifecycle_report_fn=_write_lifecycle_report,
+    write_comparison_report_fn=_write_comparison_report,
+    write_ops_review_fn=_write_ops_review,
+    write_operations_dashboard_fn=_write_operations_dashboard,
+    write_paper_operations_runbook_fn=_write_paper_operations_runbook,
+    write_paper_cycle_history_fn=_write_paper_cycle_history,
+    write_execution_gap_history_fn=_write_execution_gap_history,
+    write_execution_state_comparison_history_fn=_write_execution_state_comparison_history,
+    write_execution_snapshot_drift_history_fn=_write_execution_snapshot_drift_history,
+    write_execution_drift_overview_fn=_write_execution_drift_overview,
+    write_phase_gate_review_fn=_write_phase_gate_review,
+    write_remediation_planner_fn=_write_remediation_planner,
+    write_remediation_execution_plan_fn=_write_remediation_execution_plan,
+    write_remediation_session_fn=_write_remediation_session,
+    write_remediation_session_checkpoint_fn=_write_remediation_session_checkpoint,
+    write_remediation_command_results_fn=_write_remediation_command_results,
+    write_remediation_scoreboard_fn=_write_remediation_scoreboard,
+    write_remediation_evaluator_fn=_write_remediation_evaluator,
+    write_remediation_evidence_fn=_write_remediation_evidence,
+    append_remediation_planner_manifest_fn=_append_remediation_planner_manifest,
+    append_remediation_execution_plan_manifest_fn=_append_remediation_execution_plan_manifest,
+    append_remediation_session_manifest_fn=_append_remediation_session_manifest,
+    append_remediation_session_checkpoint_manifest_fn=_append_remediation_session_checkpoint_manifest,
+    append_remediation_evidence_ingest_manifest_fn=_append_remediation_evidence_ingest_manifest,
+    append_remediation_scoreboard_manifest_fn=_append_remediation_scoreboard_manifest,
+    append_remediation_evaluator_manifest_fn=_append_remediation_evaluator_manifest,
+    append_remediation_evidence_manifest_fn=_append_remediation_evidence_manifest,
+    append_remediation_command_results_manifest_fn=_append_remediation_command_results_manifest,
+    echo_audit_summary_fn=_echo_audit_summary,
+    echo_phase_gate_summary_fn=_echo_phase_gate_summary,
+    recommended_read_order_fn=_recommended_read_order,
+)
+
+
 @app.command("paper-step")
 def paper_step_cmd(
     state_path: Path | None = typer.Option(
@@ -2303,327 +2323,6 @@ def weekly_review_cmd() -> None:
     settings = get_settings()
     out, text = _write_weekly_review(settings.data_dir)
     logger.info("written: {}", out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("phase-gate-review")
-def phase_gate_review_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_phase_gate_review(settings.data_dir)
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("remediation-planner")
-def remediation_planner_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_remediation_planner(settings.data_dir)
-    payload = read_json(summary_out)
-    chain_out = _append_remediation_planner_manifest(
-        settings.data_dir,
-        summary_path=summary_out,
-        planner_status=payload.get("planner_status") if isinstance(payload, dict) else None,
-        rerun_trend=(
-            payload.get("planner_rerun_diff", {}).get("trend")
-            if isinstance(payload, dict) and isinstance(payload.get("planner_rerun_diff"), dict)
-            else None
-        ),
-        next_best_command=payload.get("next_best_command") if isinstance(payload, dict) else None,
-        next_feedback_priority_reason=(
-            payload.get("entries", [{}])[0].get("feedback_priority_reason")
-            if isinstance(payload, dict) and isinstance(payload.get("entries"), list) and payload.get("entries")
-            else None
-        ),
-        planned_step_count=payload.get("planned_step_count") if isinstance(payload, dict) else None,
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    logger.info("appended: {}", chain_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("remediation-execution-plan")
-def remediation_execution_plan_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_remediation_execution_plan(settings.data_dir)
-    payload = read_json(summary_out)
-    chain_out = _append_remediation_execution_plan_manifest(
-        settings.data_dir,
-        summary_path=summary_out,
-        execution_plan_status=payload.get("execution_plan_status") if isinstance(payload, dict) else None,
-        next_action_command=payload.get("next_action_command") if isinstance(payload, dict) else None,
-        next_action_feedback_priority_reason=(
-            payload.get("actions", [{}])[0].get("feedback_priority_reason")
-            if isinstance(payload, dict) and isinstance(payload.get("actions"), list) and payload.get("actions")
-            else None
-        ),
-        planned_action_count=payload.get("planned_action_count") if isinstance(payload, dict) else None,
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    logger.info("appended: {}", chain_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("remediation-session")
-def remediation_session_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_remediation_session(settings.data_dir)
-    payload = read_json(summary_out)
-    chain_out = _append_remediation_session_manifest(
-        settings.data_dir,
-        summary_path=summary_out,
-        session_status=payload.get("session_status") if isinstance(payload, dict) else None,
-        next_pending_command=payload.get("next_pending_command") if isinstance(payload, dict) else None,
-        next_pending_stage_signal_confidence=(
-            payload.get("next_pending_stage_signal_confidence")
-            if isinstance(payload, dict)
-            else None
-        ),
-        next_pending_feedback_priority_reason=(
-            payload.get("next_pending_feedback_priority_reason")
-            if isinstance(payload, dict)
-            else None
-        ),
-        pending_action_count=payload.get("pending_action_count") if isinstance(payload, dict) else None,
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    logger.info("appended: {}", chain_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("remediation-session-checkpoint")
-def remediation_session_checkpoint_cmd(
-    action_key: str | None = typer.Option(None, "--action-key", help="Stable action key to update."),
-    result: str | None = typer.Option(None, "--result", help="One of: pending, pass, fail, retry."),
-    note: str | None = typer.Option(None, "--note", help="Optional operator note appended to the action."),
-    evidence_path: str | None = typer.Option(None, "--evidence-path", help="Optional evidence artifact path recorded on the action."),
-    observed_signal: str | None = typer.Option(None, "--observed-signal", help="Optional verification signal observed to have passed."),
-    stdout_summary: str | None = typer.Option(None, "--stdout-summary", help="Optional stdout summary recorded on the action."),
-    stderr_summary: str | None = typer.Option(None, "--stderr-summary", help="Optional stderr summary recorded on the action."),
-    exit_code: int | None = typer.Option(None, "--exit-code", help="Optional command exit code recorded on the action."),
-) -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_remediation_session_checkpoint(
-        settings.data_dir,
-        action_key=action_key,
-        result=result,
-        note=note,
-        evidence_path=evidence_path,
-        observed_signal=observed_signal,
-        stdout_summary=stdout_summary,
-        stderr_summary=stderr_summary,
-        exit_code=exit_code,
-    )
-    payload = read_json(summary_out)
-    chain_out = _append_remediation_session_checkpoint_manifest(
-        settings.data_dir,
-        summary_path=summary_out,
-        checkpoint_status=payload.get("checkpoint_status") if isinstance(payload, dict) else None,
-        next_action_command=payload.get("next_action_command") if isinstance(payload, dict) else None,
-        next_action_stage_signal_confidence=(
-            payload.get("next_action_stage_signal_confidence")
-            if isinstance(payload, dict)
-            else None
-        ),
-        next_action_feedback_priority_reason=(
-            next(
-                (
-                    item.get("feedback_priority_reason")
-                    for item in payload.get("actions", [])
-                    if isinstance(item, dict)
-                    and item.get("command") == payload.get("next_action_command")
-                ),
-                None,
-            )
-            if isinstance(payload, dict)
-            else None
-        ),
-        pending_action_count=payload.get("pending_action_count") if isinstance(payload, dict) else None,
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    logger.info("appended: {}", chain_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("remediation-evidence-ingest")
-def remediation_evidence_ingest_cmd(
-    action_key: str = typer.Option(..., "--action-key", help="Stable action key to update."),
-    result: str | None = typer.Option(None, "--result", help="One of: pending, pass, fail, retry."),
-    note: str | None = typer.Option(None, "--note", help="Optional operator note appended to the action."),
-    evidence_path: str | None = typer.Option(None, "--evidence-path", help="Optional evidence artifact path recorded on the action."),
-    observed_signal: str | None = typer.Option(None, "--observed-signal", help="Optional verification signal observed to have passed."),
-    stdout_summary: str | None = typer.Option(None, "--stdout-summary", help="Optional stdout summary recorded on the action."),
-    stderr_summary: str | None = typer.Option(None, "--stderr-summary", help="Optional stderr summary recorded on the action."),
-    exit_code: int | None = typer.Option(None, "--exit-code", help="Optional command exit code recorded on the action."),
-) -> None:
-    settings = get_settings()
-    checkpoint_out, checkpoint_summary_out, _checkpoint_text = _write_remediation_session_checkpoint(
-        settings.data_dir,
-        action_key=action_key,
-        result=result,
-        note=note,
-        evidence_path=evidence_path,
-        observed_signal=observed_signal,
-        stdout_summary=stdout_summary,
-        stderr_summary=stderr_summary,
-        exit_code=exit_code,
-    )
-    command_results_out, command_results_summary_out, command_results_text = _write_remediation_command_results(
-        settings.data_dir
-    )
-    checkpoint_payload = read_json(checkpoint_summary_out)
-    chain_out = _append_remediation_evidence_ingest_manifest(
-        settings.data_dir,
-        checkpoint_summary_path=checkpoint_summary_out,
-        action_key=action_key,
-        checkpoint_status=(
-            checkpoint_payload.get("checkpoint_status")
-            if isinstance(checkpoint_payload, dict)
-            else None
-        ),
-        exit_code=exit_code,
-    )
-    logger.info("written: {}", checkpoint_out)
-    logger.info("written: {}", checkpoint_summary_out)
-    logger.info("written: {}", command_results_out)
-    logger.info("written: {}", command_results_summary_out)
-    logger.info("appended: {}", chain_out)
-    typer.echo(command_results_text)
-    typer.echo(f"remediation_session_checkpoint_path={checkpoint_out}")
-    typer.echo(f"remediation_command_results_path={command_results_out}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("remediation-scoreboard")
-def remediation_scoreboard_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_remediation_scoreboard(settings.data_dir)
-    payload = read_json(summary_out)
-    chain_out = _append_remediation_scoreboard_manifest(
-        settings.data_dir,
-        summary_path=summary_out,
-        scoreboard_status=payload.get("scoreboard_status") if isinstance(payload, dict) else None,
-        next_action_command=payload.get("next_action_command") if isinstance(payload, dict) else None,
-        next_action_stage_signal_confidence=(
-            payload.get("next_action_stage_signal_confidence")
-            if isinstance(payload, dict)
-            else None
-        ),
-        next_action_feedback_priority_reason=(
-            next(
-                (
-                    item.get("feedback_priority_reason")
-                    for item in payload.get("actions", [])
-                    if isinstance(item, dict)
-                    and item.get("command") == payload.get("next_action_command")
-                ),
-                None,
-            )
-            if isinstance(payload, dict)
-            else None
-        ),
-        completion_rate=payload.get("completion_rate") if isinstance(payload, dict) else None,
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    logger.info("appended: {}", chain_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("remediation-evaluator")
-def remediation_evaluator_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_remediation_evaluator(settings.data_dir)
-    payload = read_json(summary_out)
-    chain_out = _append_remediation_evaluator_manifest(
-        settings.data_dir,
-        summary_path=summary_out,
-        evaluator_status=payload.get("evaluator_status") if isinstance(payload, dict) else None,
-        next_action_key=payload.get("next_action_key") if isinstance(payload, dict) else None,
-        auto_fail_count=payload.get("auto_fail_count") if isinstance(payload, dict) else None,
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    logger.info("appended: {}", chain_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("remediation-evidence")
-def remediation_evidence_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_remediation_evidence(settings.data_dir)
-    payload = read_json(summary_out)
-    chain_out = _append_remediation_evidence_manifest(
-        settings.data_dir,
-        summary_path=summary_out,
-        evidence_status=payload.get("evidence_status") if isinstance(payload, dict) else None,
-        next_manual_review_action_key=(
-            payload.get("next_manual_review_action_key")
-            if isinstance(payload, dict)
-            else None
-        ),
-        manual_review_action_count=(
-            payload.get("manual_review_action_count")
-            if isinstance(payload, dict)
-            else None
-        ),
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    logger.info("appended: {}", chain_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("remediation-command-results")
-def remediation_command_results_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_remediation_command_results(settings.data_dir)
-    payload = read_json(summary_out)
-    chain_out = _append_remediation_command_results_manifest(
-        settings.data_dir,
-        summary_path=summary_out,
-        command_results_status=(
-            payload.get("command_results_status")
-            if isinstance(payload, dict)
-            else None
-        ),
-        next_unobserved_action_key=(
-            payload.get("next_unobserved_action_key")
-            if isinstance(payload, dict)
-            else None
-        ),
-        missing_observation_count=(
-            payload.get("missing_observation_count")
-            if isinstance(payload, dict)
-            else None
-        ),
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    logger.info("appended: {}", chain_out)
     typer.echo(text)
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
         typer.echo(f"recommended_read_order_{index}={item}")
