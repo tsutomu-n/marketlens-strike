@@ -5,33 +5,13 @@ on:
   pull_request:
 
 jobs:
-  python:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+      - uses: oven-sh/setup-bun@v1
       - name: Set up Python
         run: uv python install 3.14
-      - name: Install Python dependencies
-        run: uv sync --dev --locked
-      - name: Lint
-        run: uv run ruff check .
-      - name: Typecheck
-        run: uv run pyrefly check
-      - name: Test
-        run: uv run pytest
-
-  sidecars:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        sidecar: [gtrade, ostium]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-      - name: Install sidecar dependencies
-        run: bun install --frozen-lockfile
-      - name: Typecheck sidecar
-        run: bun run ${{ matrix.sidecar }}:typecheck
-      - name: Test sidecar
-        run: bun run ${{ matrix.sidecar }}:test
+      - name: Check
+        run: ./scripts/check

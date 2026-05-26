@@ -1,13 +1,7 @@
 set shell := ["bash", "-cu"]
 
 check:
-    uv run ruff check .
-    uv run pyrefly check
-    uv run pytest
-    bun run gtrade:typecheck
-    bun run gtrade:test
-    bun run ostium:typecheck
-    bun run ostium:test
+    ./scripts/check
 
 probe-gtrade-vars:
     cd sidecars/gtrade && bun run probe

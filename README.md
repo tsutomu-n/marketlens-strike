@@ -50,6 +50,12 @@ bun run gtrade:typecheck
 bun run ostium:typecheck
 ```
 
+Run the full local verification gate:
+
+```bash
+./scripts/check
+```
+
 Some archived notes mention `rtk`. It is only a local wrapper. If it is not
 available, run the same command without it.
 

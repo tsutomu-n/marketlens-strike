@@ -56,6 +56,7 @@ uv run sis implementation-status --write
 
 2026-05-26 時点で確認済み:
 
+- `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pytest -q`: 256 passed
 - `uv run pyrefly check`: pass, 0 errors
