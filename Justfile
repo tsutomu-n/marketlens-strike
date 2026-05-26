@@ -2,9 +2,12 @@ set shell := ["bash", "-cu"]
 
 check:
     uv run ruff check .
+    uv run pyrefly check
     uv run pytest
-    cd sidecars/gtrade && bun run typecheck && bun test
-    cd sidecars/ostium && bun run typecheck && bun test
+    bun run gtrade:typecheck
+    bun run gtrade:test
+    bun run ostium:typecheck
+    bun run ostium:test
 
 probe-gtrade-vars:
     cd sidecars/gtrade && bun run probe

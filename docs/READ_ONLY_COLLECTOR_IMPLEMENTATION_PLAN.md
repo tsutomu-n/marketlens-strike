@@ -179,7 +179,8 @@ Acceptance:
 Verification:
 
 ```bash
-cd sidecars/gtrade && bun test && bun run typecheck
+bun run gtrade:test
+bun run gtrade:typecheck
 ```
 
 ### T5. Phase gate を read-only collector contract に合わせる
@@ -332,8 +333,10 @@ uv run pytest -q
 ```bash
 uv run pytest tests/test_ostium_constraints.py tests/test_ostium_probe.py tests/test_phase_gate_review.py tests/test_live_evidence_runner.py tests/test_cli_smoke.py -q
 uv run pytest -q
-uv run ruff check src tests
-cd sidecars/gtrade && bun test && bun run typecheck
+uv run ruff check .
+uv run pyrefly check
+bun run gtrade:test
+bun run gtrade:typecheck
 uv run sis ostium-constraint-artifact --help
 ```
 
@@ -342,6 +345,7 @@ uv run sis ostium-constraint-artifact --help
 - Python targeted tests: 89 passed
 - Full pytest: 256 passed
 - Ruff: pass
+- Pyrefly: pass, 0 errors
 - gTrade sidecar tests: 12 passed
 - gTrade typecheck: pass
 - CLI help: new `--builder-prices-endpoint` と metadata endpoint default を確認済み
