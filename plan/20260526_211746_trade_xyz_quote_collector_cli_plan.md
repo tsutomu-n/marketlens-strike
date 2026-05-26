@@ -26,10 +26,17 @@ uv run sis collect-trade-xyz-quotes
 
 - `src/sis/cli.py` は root Typer app registration と `main()` に寄せられている。
 - command 実装は `src/sis/commands/` 配下に分割済み。
+- commands 分割は `probe`, `quotes`, `research`, `execution`, `ops`, `operations_reports`, `operations_refresh`, `paper`, `paper_cycle`, `remediation`, `review`, `archive` まで進んでいる。
 - quote command の登録箇所:
   - `register_quote_commands(app, _recommended_read_order)` at `src/sis/cli.py`
 - したがって、`trade_xyz` quote collector の CLI 化は、`src/sis/cli.py` 本体に直書きするより、
   `src/sis/commands/quotes.py` 側へ寄せるのが自然。
+
+### 現時点の判断
+
+- `src/sis/cli.py` のリファクタリング完了待ちは不要。
+- CLI 化の判断対象は、もう `cli.py` の構造ではなく command contract だけでよい。
+- 実装先の第一候補は `src/sis/commands/quotes.py` で固定してよい。
 
 ### 既存の probe surface
 
@@ -136,7 +143,7 @@ uv run sis collect-trade-xyz-quotes
 
 代替:
 
-- リファクタ後に `src/sis/commands/trade_xyz.py` のような専用 module が導入されていれば、そちらでも可
+- 将来 `src/sis/commands/trade_xyz.py` のような専用 module を新設するなら、そちらでも可
 
 判断ルール:
 
@@ -176,7 +183,7 @@ uv run sis collect-trade-xyz-quotes
   - 現在の collector は `now` から UTC date を決めるため、
     replay-like な deterministic run に日付固定 option があると便利
 - 実装判断:
-  - リファクタ後に command 追加時、必要性が低ければ後回しでもよい
+  - 初回 CLI 化で必要性が低ければ後回しでもよい
   - 先に入れるなら UTC midnight 固定で `datetime(..., tzinfo=timezone.utc)` を生成する
 
 ### 追加しない option
@@ -384,13 +391,12 @@ CLI 化したら更新する:
 
 ## 実装順
 
-1. 現行の CLI module 配置を確認
-2. `src/sis/commands/quotes.py` に command を追加する
-3. registry load helper を追加
-4. command 実装
-5. CLI smoke test 追加
-6. docs 更新
-7. `./scripts/check`
+1. `src/sis/commands/quotes.py` を実装先として確定
+2. registry load helper を追加
+3. command 実装
+4. CLI smoke test 追加
+5. docs 更新
+6. `./scripts/check`
 
 ## 完了条件
 
