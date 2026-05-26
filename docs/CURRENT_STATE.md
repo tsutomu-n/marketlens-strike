@@ -54,13 +54,16 @@ uv run sis implementation-status --write
 
 ## Verification Status
 
-2026-05-25 時点で確認済み:
+2026-05-26 時点で確認済み:
 
-- `uv run ruff check src tests`: pass
-- `uv run pytest -q`: 252 passed
+- `uv run ruff check .`: pass
+- `uv run pytest -q`: 256 passed
+- `uv run pyrefly check`: pass, 0 errors
+- `bun run gtrade:typecheck`: pass
+- `bun run ostium:typecheck`: pass
+- `bun run gtrade:test`: 12 passed
+- `bun run ostium:test`: 5 passed
 - `uv run sis refresh-operations-artifacts`: pass
-
-`uv run pyrefly check` は設定 parse は通るが、既存の型エラーが残っており green ではない。現時点では受け入れ gate ではなく、型改善タスクとして分けて扱う。
 
 ## Recommended Read Order
 
