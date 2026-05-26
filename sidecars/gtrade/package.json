@@ -6,6 +6,7 @@
   "scripts": {
     "probe": "tsx src/emit_jsonl.ts",
     "pricing:collect": "tsx src/pricing_collector.ts",
+    "backend:collect": "tsx src/event_collector.ts",
     "collect:window": "tsx src/collect_window.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
