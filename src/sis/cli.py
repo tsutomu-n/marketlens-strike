@@ -27,8 +27,10 @@ from sis.paper.portfolio import PaperPosition
 from sis.paper.report import build_daily_paper_report
 from sis.paper.runner import PaperRunSummary, run_paper_step
 from sis.commands.ops import register_ops_commands
+from sis.commands.operations_reports import register_operations_report_commands
 from sis.commands.probe import register_probe_commands
 from sis.commands.quotes import register_quote_commands
+from sis.commands.remediation import register_remediation_commands
 from sis.commands.research import register_research_commands
 from sis.commands.execution import register_execution_commands
 from sis.reports.audit_bundle_history import build_audit_bundle_history_report
@@ -2209,6 +2211,14 @@ register_ops_commands(
     write_state_export_artifacts_fn=_write_state_export_artifacts,
     write_state_restore_artifacts_fn=_write_state_restore_artifacts,
     normalize_phase_gate_summary_fn=normalize_phase_gate_summary,
+    echo_audit_summary_fn=_echo_audit_summary,
+    echo_phase_gate_summary_fn=_echo_phase_gate_summary,
+    recommended_read_order_fn=_recommended_read_order,
+)
+
+
+register_operations_report_commands(
+    app,
     write_lifecycle_report_fn=_write_lifecycle_report,
     write_comparison_report_fn=_write_comparison_report,
     write_ops_review_fn=_write_ops_review,
@@ -2220,6 +2230,23 @@ register_ops_commands(
     write_execution_snapshot_drift_history_fn=_write_execution_snapshot_drift_history,
     write_execution_drift_overview_fn=_write_execution_drift_overview,
     write_phase_gate_review_fn=_write_phase_gate_review,
+    write_operations_bundle_fn=_write_operations_bundle,
+    write_operations_timeline_fn=_write_operations_timeline,
+    write_operations_audit_pack_fn=_write_operations_audit_pack,
+    write_audit_timeline_fn=_write_audit_timeline,
+    write_audit_dashboard_fn=_write_audit_dashboard,
+    write_audit_bundle_fn=_write_audit_bundle,
+    write_audit_bundle_history_fn=_write_audit_bundle_history,
+    write_current_state_index_fn=_write_current_state_index,
+    write_readiness_snapshot_fn=_write_readiness_snapshot,
+    append_operations_snapshot_manifest_fn=_append_operations_snapshot_manifest,
+    append_operations_audit_snapshot_manifest_fn=_append_operations_audit_snapshot_manifest,
+    append_audit_bundle_snapshot_manifest_fn=_append_audit_bundle_snapshot_manifest,
+    recommended_read_order_fn=_recommended_read_order,
+)
+
+register_remediation_commands(
+    app,
     write_remediation_planner_fn=_write_remediation_planner,
     write_remediation_execution_plan_fn=_write_remediation_execution_plan,
     write_remediation_session_fn=_write_remediation_session,
@@ -2237,20 +2264,6 @@ register_ops_commands(
     append_remediation_evaluator_manifest_fn=_append_remediation_evaluator_manifest,
     append_remediation_evidence_manifest_fn=_append_remediation_evidence_manifest,
     append_remediation_command_results_manifest_fn=_append_remediation_command_results_manifest,
-    write_operations_bundle_fn=_write_operations_bundle,
-    write_operations_timeline_fn=_write_operations_timeline,
-    write_operations_audit_pack_fn=_write_operations_audit_pack,
-    write_audit_timeline_fn=_write_audit_timeline,
-    write_audit_dashboard_fn=_write_audit_dashboard,
-    write_audit_bundle_fn=_write_audit_bundle,
-    write_audit_bundle_history_fn=_write_audit_bundle_history,
-    write_current_state_index_fn=_write_current_state_index,
-    write_readiness_snapshot_fn=_write_readiness_snapshot,
-    append_operations_snapshot_manifest_fn=_append_operations_snapshot_manifest,
-    append_operations_audit_snapshot_manifest_fn=_append_operations_audit_snapshot_manifest,
-    append_audit_bundle_snapshot_manifest_fn=_append_audit_bundle_snapshot_manifest,
-    echo_audit_summary_fn=_echo_audit_summary,
-    echo_phase_gate_summary_fn=_echo_phase_gate_summary,
     recommended_read_order_fn=_recommended_read_order,
 )
 
