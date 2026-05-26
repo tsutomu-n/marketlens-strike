@@ -61,9 +61,34 @@ def build_daily_paper_report(
         f"- open_positions: {len(positions)}",
         f"- symbols: {', '.join(sorted({fill.canonical_symbol for fill in fills})) if fills else ''}",
         "",
-        "| Venue | Symbol | Side | Quantity | Avg Entry | Realized PnL |",
-        "|---|---|---|---:|---:|---:|",
+        "## Fills",
+        "",
+        "| ts_fill | Venue | Symbol | Side | Action | Quantity | Price | source_confidence | venue_quality_score | block_reasons | fee_mode | estimated_round_trip_cost_bps | fill_price_source |",
+        "|---|---|---|---|---|---:|---:|---:|---:|---|---|---:|---|",
     ]
+    for fill in fills:
+        block_reasons = ",".join(fill.block_reasons)
+        source_confidence = f"{fill.source_confidence:.4f}" if fill.source_confidence is not None else ""
+        venue_quality_score = f"{fill.venue_quality_score:.4f}" if fill.venue_quality_score is not None else ""
+        estimated_round_trip_cost_bps = (
+            f"{fill.estimated_round_trip_cost_bps:.4f}"
+            if fill.estimated_round_trip_cost_bps is not None
+            else ""
+        )
+        lines.append(
+            f"| {fill.ts_fill.isoformat()} | {fill.venue} | {fill.canonical_symbol} | {fill.side} | {fill.action} | "
+            f"{fill.quantity:.4f} | {fill.price:.4f} | {source_confidence} | {venue_quality_score} | "
+            f"{block_reasons} | {fill.fee_mode or ''} | {estimated_round_trip_cost_bps} | {fill.fill_price_source or ''} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Open Positions",
+            "",
+            "| Venue | Symbol | Side | Quantity | Avg Entry | Realized PnL |",
+            "|---|---|---|---:|---:|---:|",
+        ]
+    )
     for position in positions:
         lines.append(
             f"| {position.venue} | {position.canonical_symbol} | {position.side} | {position.quantity:.4f} | "

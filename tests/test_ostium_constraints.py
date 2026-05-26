@@ -4,7 +4,7 @@ import json
 
 import httpx
 
-from sis.venues.ostium import constraints
+from sis.venues.archive.ostium import constraints
 
 
 def test_write_ostium_constraint_artifact_distinguishes_market_close(

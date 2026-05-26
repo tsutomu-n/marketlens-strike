@@ -1,117 +1,244 @@
 {
-  "generated_at": "2026-05-21",
+  "generated_at": "2026-05-26",
+  "notes": [
+    "Seed values are not final. asset_id/perp_dex_index/index_in_meta must be resolved from Hyperliquid meta/allMids at runtime."
+  ],
   "venues": {
-    "gtrade": [
+    "trade_xyz": [
       {
-        "venue": "gtrade",
-        "canonical_symbol": "SPY",
-        "venue_symbol": "SPY/USD",
-        "pair_index": 86,
+        "venue": "trade_xyz",
+        "canonical_symbol": "SP500",
+        "venue_symbol": "SP500",
         "asset_class": "index",
-        "chain": [
-          "arbitrum",
-          "base",
-          "solana"
-        ],
-        "collateral": "requires_live_probe",
+        "dex": "xyz",
+        "coin": "xyz:SP500",
+        "asset_id": null,
+        "real_market_symbol": "SPY",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 50,
+        "discovery_bound_bps": 200,
         "api_readable": true,
-        "api_orderable": true,
-        "execution_price_ref": "mark",
-        "liquidation_price_ref": "index",
+        "api_orderable": false,
         "active": true,
         "notes": [
-          "indices session",
-          "closed session open/close/edit unavailable"
+          "micro_live_candidate",
+          "resolve_asset_id_runtime"
         ]
       },
       {
-        "venue": "gtrade",
-        "canonical_symbol": "QQQ",
-        "venue_symbol": "QQQ/USD",
-        "pair_index": 87,
-        "asset_class": "index",
-        "chain": [
-          "arbitrum",
-          "base",
-          "solana"
-        ],
-        "collateral": "requires_live_probe",
+        "venue": "trade_xyz",
+        "canonical_symbol": "XYZ100",
+        "venue_symbol": "XYZ100",
+        "asset_class": "basket_index",
+        "dex": "xyz",
+        "coin": "xyz:XYZ100",
+        "asset_id": null,
+        "real_market_symbol": "QQQ",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 30,
+        "discovery_bound_bps": 350,
         "api_readable": true,
-        "api_orderable": true,
-        "execution_price_ref": "mark",
-        "liquidation_price_ref": "index",
+        "api_orderable": false,
         "active": true,
         "notes": [
-          "indices session",
-          "closed session open/close/edit unavailable"
+          "micro_live_candidate",
+          "resolve_asset_id_runtime"
         ]
       },
       {
-        "venue": "gtrade",
-        "canonical_symbol": "XAU",
-        "venue_symbol": "XAU/USD",
-        "pair_index": 90,
-        "asset_class": "commodity",
-        "chain": "requires_live_probe",
-        "collateral": "requires_live_probe",
+        "venue": "trade_xyz",
+        "canonical_symbol": "NVDA",
+        "venue_symbol": "NVDA",
+        "asset_class": "equity",
+        "dex": "xyz",
+        "coin": "xyz:NVDA",
+        "asset_id": null,
+        "real_market_symbol": "NVDA",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 20,
+        "discovery_bound_bps": 500,
         "api_readable": true,
-        "api_orderable": true,
-        "execution_price_ref": "mark",
-        "liquidation_price_ref": "index",
+        "api_orderable": false,
         "active": true,
         "notes": [
-          "commodity session",
-          "daily maintenance break"
-        ]
-      }
-    ],
-    "ostium": [
-      {
-        "venue": "ostium",
-        "canonical_symbol": "SPX_EQUIV",
-        "venue_symbol": "requires_probe",
-        "asset_class": "index",
-        "chain": "arbitrum",
-        "collateral": "USDC",
-        "api_readable": true,
-        "api_orderable": true,
-        "execution_price_ref": "bid_ask_or_price_after_impact",
-        "liquidation_price_ref": "requires_probe",
-        "active": false,
-        "notes": [
-          "resolve current symbol via SDK/REST"
+          "tracking_candidate",
+          "conditional_micro_live"
         ]
       },
       {
-        "venue": "ostium",
-        "canonical_symbol": "NDX_EQUIV",
-        "venue_symbol": "requires_probe",
-        "asset_class": "index",
-        "chain": "arbitrum",
-        "collateral": "USDC",
+        "venue": "trade_xyz",
+        "canonical_symbol": "AAPL",
+        "venue_symbol": "AAPL",
+        "asset_class": "equity",
+        "dex": "xyz",
+        "coin": "xyz:AAPL",
+        "asset_id": null,
+        "real_market_symbol": "AAPL",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 20,
+        "discovery_bound_bps": 500,
         "api_readable": true,
-        "api_orderable": true,
-        "execution_price_ref": "bid_ask_or_price_after_impact",
-        "liquidation_price_ref": "requires_probe",
-        "active": false,
+        "api_orderable": false,
+        "active": true,
         "notes": [
-          "resolve current symbol via SDK/REST"
+          "tracking_candidate",
+          "conditional_micro_live"
         ]
       },
       {
-        "venue": "ostium",
-        "canonical_symbol": "XAU",
-        "venue_symbol": "requires_probe",
-        "asset_class": "commodity",
-        "chain": "arbitrum",
-        "collateral": "USDC",
+        "venue": "trade_xyz",
+        "canonical_symbol": "MSFT",
+        "venue_symbol": "MSFT",
+        "asset_class": "equity",
+        "dex": "xyz",
+        "coin": "xyz:MSFT",
+        "asset_id": null,
+        "real_market_symbol": "MSFT",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 10,
+        "discovery_bound_bps": 1000,
         "api_readable": true,
-        "api_orderable": true,
-        "execution_price_ref": "bid_ask_or_price_after_impact",
-        "liquidation_price_ref": "requires_probe",
-        "active": false,
+        "api_orderable": false,
+        "active": true,
         "notes": [
-          "resolve current symbol via SDK/REST"
+          "tracking_candidate",
+          "conditional_micro_live"
+        ]
+      },
+      {
+        "venue": "trade_xyz",
+        "canonical_symbol": "AMZN",
+        "venue_symbol": "AMZN",
+        "asset_class": "equity",
+        "dex": "xyz",
+        "coin": "xyz:AMZN",
+        "asset_id": null,
+        "real_market_symbol": "AMZN",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 10,
+        "discovery_bound_bps": 1000,
+        "api_readable": true,
+        "api_orderable": false,
+        "active": true,
+        "notes": [
+          "tracking_candidate"
+        ]
+      },
+      {
+        "venue": "trade_xyz",
+        "canonical_symbol": "GOOGL",
+        "venue_symbol": "GOOGL",
+        "asset_class": "equity",
+        "dex": "xyz",
+        "coin": "xyz:GOOGL",
+        "asset_id": null,
+        "real_market_symbol": "GOOGL",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 10,
+        "discovery_bound_bps": 1000,
+        "api_readable": true,
+        "api_orderable": false,
+        "active": true,
+        "notes": [
+          "tracking_candidate"
+        ]
+      },
+      {
+        "venue": "trade_xyz",
+        "canonical_symbol": "META",
+        "venue_symbol": "META",
+        "asset_class": "equity",
+        "dex": "xyz",
+        "coin": "xyz:META",
+        "asset_id": null,
+        "real_market_symbol": "META",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 10,
+        "discovery_bound_bps": 1000,
+        "api_readable": true,
+        "api_orderable": false,
+        "active": true,
+        "notes": [
+          "tracking_candidate"
+        ]
+      },
+      {
+        "venue": "trade_xyz",
+        "canonical_symbol": "TSLA",
+        "venue_symbol": "TSLA",
+        "asset_class": "equity",
+        "dex": "xyz",
+        "coin": "xyz:TSLA",
+        "asset_id": null,
+        "real_market_symbol": "TSLA",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 10,
+        "discovery_bound_bps": 1000,
+        "api_readable": true,
+        "api_orderable": false,
+        "active": true,
+        "notes": [
+          "tracking_candidate"
+        ]
+      },
+      {
+        "venue": "trade_xyz",
+        "canonical_symbol": "AMD",
+        "venue_symbol": "AMD",
+        "asset_class": "equity",
+        "dex": "xyz",
+        "coin": "xyz:AMD",
+        "asset_id": null,
+        "real_market_symbol": "AMD",
+        "country": "US",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 10,
+        "discovery_bound_bps": 1000,
+        "api_readable": true,
+        "api_orderable": false,
+        "active": true,
+        "notes": [
+          "tracking_candidate"
+        ]
+      },
+      {
+        "venue": "trade_xyz",
+        "canonical_symbol": "EWJ",
+        "venue_symbol": "EWJ",
+        "asset_class": "etf",
+        "dex": "xyz",
+        "coin": "xyz:EWJ",
+        "asset_id": null,
+        "real_market_symbol": "EWJ",
+        "country": "JP",
+        "currency": "USD",
+        "fee_mode": "unknown",
+        "max_leverage": 20,
+        "discovery_bound_bps": 500,
+        "api_readable": true,
+        "api_orderable": false,
+        "active": true,
+        "notes": [
+          "watch_only_until_tracking_passes"
         ]
       }
     ]

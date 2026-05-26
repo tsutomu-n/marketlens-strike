@@ -1,0 +1,13 @@
+fee_model:
+  trade_xyz:
+    mode: observed
+    fallback:
+      growth:
+        taker_bps: 0.9
+        maker_bps: 0.3
+      standard:
+        taker_bps: 9.0
+        maker_bps: 3.0
+    notes:
+      - Do not hardcode the old 0.04% assumption for Trade[XYZ].
+      - Determine fee_mode per instrument before paper/live scoring.

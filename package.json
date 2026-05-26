@@ -4,19 +4,8 @@
   "private": true,
   "type": "module",
   "packageManager": "bun@1.3.14",
-  "workspaces": [
-    "sidecars/gtrade",
-    "sidecars/ostium"
-  ],
+  "workspaces": [],
   "scripts": {
-    "gtrade:probe": "bun run --cwd sidecars/gtrade probe",
-    "gtrade:backend-collect": "bun run --cwd sidecars/gtrade backend:collect",
-    "gtrade:collect-window": "bun run --cwd sidecars/gtrade collect:window",
-    "gtrade:test": "bun run --cwd sidecars/gtrade test",
-    "gtrade:typecheck": "bun run --cwd sidecars/gtrade typecheck",
-    "ostium:probe:pairs": "bun run --cwd sidecars/ostium probe:pairs",
-    "ostium:probe:positions": "bun run --cwd sidecars/ostium probe:positions",
-    "ostium:test": "bun run --cwd sidecars/ostium test",
-    "ostium:typecheck": "bun run --cwd sidecars/ostium typecheck"
+    "legacy:note": "echo legacy gtrade/ostium sidecars archived under archive/legacy_sidecars"
   }
 }

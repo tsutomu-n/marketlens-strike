@@ -6,7 +6,7 @@ from pathlib import Path
 
 import httpx
 
-from sis.venues.ostium.probe import (
+from sis.venues.archive.ostium.probe import (
     build_ostium_quote_logs,
     resolve_ostium_price_specs,
     probe_ostium_prices,

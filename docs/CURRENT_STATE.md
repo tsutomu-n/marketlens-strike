@@ -60,10 +60,10 @@ uv run sis implementation-status --write
 - `uv run ruff check .`: pass
 - `uv run pytest -q`: 256 passed
 - `uv run pyrefly check`: pass, 0 errors
-- `bun run gtrade:typecheck`: pass
-- `bun run ostium:typecheck`: pass
-- `bun run gtrade:test`: 12 passed
-- `bun run ostium:test`: 5 passed
+- `bun run --cwd archive/legacy_sidecars/gtrade typecheck`: pass
+- `bun run --cwd archive/legacy_sidecars/ostium typecheck`: pass
+- `bun run --cwd archive/legacy_sidecars/gtrade test`: 12 passed
+- `bun run --cwd archive/legacy_sidecars/ostium test`: 5 passed
 - `uv run sis refresh-operations-artifacts`: pass
 
 ## Recommended Read Order

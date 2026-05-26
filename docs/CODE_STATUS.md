@@ -4,11 +4,11 @@ This generated report lists implementation coverage from the current codebase. O
 
 | Area | Item | Status | Evidence |
 |---|---|---|---|
-| Epic 0 | Repository setup | DONE | pyproject.toml, README.md, sidecars/gtrade |
+| Epic 0 | Repository setup | DONE | pyproject.toml, README.md, archive/legacy_sidecars/gtrade |
 | Epic 1 | InstrumentSpec / QuoteLog / CostSnapshot / MarketSession | DONE | src/sis/models.py |
 | Epic 1 | Static JSON schemas from handoff | DONE | schemas/*.schema.json |
-| Epic 2 | gTrade /trading-variables sidecar | DONE | sidecars/gtrade/src/emit_jsonl.ts |
-| Epic 2 | gTrade SPY/QQQ/XAU extraction | DONE | sidecars/gtrade/src/emit_jsonl.test.ts |
+| Epic 2 | gTrade /trading-variables sidecar | DONE | archive/legacy_sidecars/gtrade/src/emit_jsonl.ts |
+| Epic 2 | gTrade SPY/QQQ/XAU extraction | DONE | archive/legacy_sidecars/gtrade/src/emit_jsonl.test.ts |
 | Epic 2 | Quote raw payload preservation | DONE | QuoteLog raw_payload plus raw_payload_ref/hash are stored in raw JSONL |
 | Epic 3 | JSONL to Parquet and DuckDB normalization | DONE | src/sis/storage/normalize.py |
 | Epic 4 | gTrade registry and initial cost matrix | DONE | sidecar fee/spread metadata plus gTrade/Ostium 4h/24h/72h holding costs are reflected |
@@ -99,7 +99,7 @@ This generated report lists implementation coverage from the current codebase. O
 Use the replay-safe refresh path:
 
 ```bash
-rtk bun run gtrade:probe
+rtk bun run --cwd archive/legacy_sidecars/gtrade probe
 rtk uv run sis log-quotes --venue gtrade --replace
 rtk uv run sis normalize-quotes
 rtk uv run sis build-cost-matrix

@@ -1,5 +1,5 @@
 from sis.storage.jsonl_store import read_jsonl
-from sis.venues.gtrade.quotes import convert_sidecar_to_quote_logs
+from sis.venues.archive.gtrade.quotes import convert_sidecar_to_quote_logs
 
 
 def test_convert_sidecar_to_quote_logs_embeds_pair_raw_payload(tmp_path) -> None:

@@ -2,11 +2,13 @@ import json
 from pathlib import Path
 
 from sis.storage.jsonl_store import read_jsonl
-from sis.venues.gtrade.quotes import convert_sidecar_to_quote_logs
+from sis.venues.archive.gtrade.quotes import convert_sidecar_to_quote_logs
 
 
 def test_gtrade_pricing_fixture_is_ingested_into_quote_log(tmp_path) -> None:
-    pricing_payload = json.loads(Path("tests/fixtures/gtrade_pricing_v4.sample.json").read_text(encoding="utf-8"))
+    pricing_payload = json.loads(
+        Path("tests/fixtures/archive/gtrade_pricing_v4.sample.json").read_text(encoding="utf-8")
+    )
 
     sidecar_path = tmp_path / "sidecar.jsonl"
     pricing_path = tmp_path / "pricing.jsonl"

@@ -1,0 +1,327 @@
+version: 1
+name: PR-00 to PR-08 migration task chain
+status: ready
+source:
+  repo: /home/tn/projects/marketlens-strike
+  handoff_zip: /home/tn/projects/marketlens-strike/.tmp/marketlens_strike_pr0_pr8_implementation_handoff_v3.zip
+  primary_plan: plan/PR-00_to_PR-08_implementation_plan.md
+
+global_rules:
+  - Execute PRs in numeric order.
+  - Do not start Trade[XYZ] implementation before PR-00, PR-01, and PR-02 are complete.
+  - Do not add live write paths before PR-08.
+  - Do not add secrets, API private keys, seed phrases, or wallet secrets.
+  - Keep historical generated artifacts immutable unless a PR explicitly says otherwise.
+
+tasks:
+  - id: PR-00
+    title: Python 3.13 migration
+    goal: Align runtime, CI, lockfile, check script, and active docs with Python 3.13.
+    target_files:
+      - pyproject.toml
+      - .python-version
+      - uv.lock
+      - .github/workflows/ci.yml
+      - scripts/check
+      - README.md
+      - docs/CURRENT_STATE.md
+      - docs/CODE_STATUS.md
+      - docs/OPERATIONS_RUNBOOK.md
+      - docs/python_313_migration_notes.md
+    out_of_scope:
+      - dependency removals unless required for Python 3.13 compatibility
+      - gTrade / Ostium archive
+      - schema v2 migration
+      - Trade[XYZ] implementation
+      - historical generated artifact rewrite
+    acceptance:
+      - .python-version is 3.13
+      - pyproject.toml requires-python is >=3.13,<3.14
+      - Ruff target-version is py313
+      - pyrefly python-version is 3.13
+      - uv.lock is regenerated for Python 3.13
+      - scripts/check includes uv run python -V after uv sync --dev --locked
+      - README setup uses uv sync --dev --locked
+      - ./scripts/check passes or unrelated sidecar-only failure is documented
+    verification:
+      - uv lock --python /usr/bin/python3.13
+      - uv sync --dev --locked
+      - uv run python -V
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+      - ./scripts/check
+    destructive_level: low
+
+  - id: PR-01
+    title: Archive legacy venues
+    goal: Move gTrade and Ostium out of active workspace/import paths while retaining archive reference material.
+    target_files:
+      - sidecars/gtrade
+      - sidecars/ostium
+      - archive/legacy_sidecars/gtrade
+      - archive/legacy_sidecars/ostium
+      - src/sis/venues/gtrade
+      - src/sis/venues/ostium
+      - src/sis/venues/archive/gtrade
+      - src/sis/venues/archive/ostium
+      - src/sis/execution/gtrade_adapter.py
+      - src/sis/execution/ostium_adapter.py
+      - src/sis/execution/archive/gtrade_adapter.py
+      - src/sis/execution/archive/ostium_adapter.py
+      - package.json
+      - pyproject.toml
+      - uv.lock
+      - scripts/check
+      - src/sis/venues/__init__.py
+      - src/sis/execution/__init__.py
+      - README.md
+      - docs/CURRENT_STATE.md
+      - docs/CODE_STATUS.md
+      - tests/test_legacy_archive.py
+    out_of_scope:
+      - Trade[XYZ] collector implementation
+      - schema v2 migration
+      - removing archive reference files
+    acceptance:
+      - active workspace no longer points to sidecars/gtrade or sidecars/ostium
+      - active Python imports no longer import sis.venues.gtrade or sis.venues.ostium
+      - legacy sidecars and adapters exist in archive paths
+      - ostium-python-sdk is removed after active imports are gone
+      - uv.lock is updated if ostium-python-sdk is removed from pyproject.toml
+      - scripts/check no longer runs gTrade or Ostium sidecar checks
+      - scripts/check no longer runs bun install --frozen-lockfile if no active Bun workspace remains
+      - package.json has no active gtrade or ostium scripts
+      - tests prove legacy sidecars are archived and not active
+    verification:
+      - rg -n "from sis\\.venues\\.gtrade|from sis\\.venues\\.ostium|sidecars/gtrade|sidecars/ostium" src tests package.json pyproject.toml
+      - uv lock --python /usr/bin/python3.13
+      - uv sync --dev --locked
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+      - ./scripts/check
+    destructive_level: medium
+
+  - id: PR-02
+    title: Generalize models and schemas
+    goal: Replace legacy venue-specific model/schema assumptions with v2 Trade[XYZ]-ready contracts.
+    target_files:
+      - src/sis/models.py
+      - schemas/instrument_registry.schema.json
+      - schemas/quote_log_v1.schema.json
+      - schemas/quote_log_v2.schema.json
+      - configs/instrument_registry.seed.json
+      - configs/halt_policy.yaml
+      - configs/fee_model.trade_xyz.yaml
+      - configs/real_market_provider_policy.yaml
+      - configs/micro_live_policy.yaml
+      - tests/test_models_schema.py
+      - tests/test_normalize.py
+      - tests/test_halt_policy.py
+    out_of_scope:
+      - live execution
+      - Trade[XYZ] network collector
+      - paper execution gate integration
+    acceptance:
+      - v2 Venue enum includes trade_xyz, lighter, bitmex_readonly, legacy_gtrade, legacy_ostium
+      - v2 AssetClass enum includes equity, etf, index, basket_index, crypto_beta_equity, unknown
+      - instrument registry schema accepts Trade[XYZ] seed
+      - quote_log_v2 schema accepts HIP-3 fields and requires raw_payload_sha256
+      - active seed excludes gtrade, ostium, and XAU
+    verification:
+      - uv sync --dev --locked
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+    destructive_level: medium
+
+  - id: PR-03
+    title: Build Trade[XYZ] universe mapping
+    goal: Add Trade[XYZ] HIP-3 registry builder, client read methods, mapping report, and tests.
+    target_files:
+      - src/sis/venues/trade_xyz/__init__.py
+      - src/sis/venues/trade_xyz/client.py
+      - src/sis/venues/trade_xyz/models.py
+      - src/sis/venues/trade_xyz/registry.py
+      - src/sis/venues/trade_xyz/report.py
+      - tests/test_trade_xyz_registry.py
+      - tests/fixtures/trade_xyz_all_mids.sample.json
+      - tests/fixtures/trade_xyz_meta.sample.json
+    out_of_scope:
+      - write/live order methods
+      - quote window collector
+      - real market provider layer
+    acceptance:
+      - data/registry/trade_xyz_instrument_registry.json can be generated
+      - active instruments use venue=trade_xyz, dex=xyz, coin=xyz:<symbol>
+      - unresolved asset mappings are not orderable
+      - excluded symbols remain excluded from active registry
+      - data/reports/trade_xyz_universe_report.md can be generated
+    verification:
+      - uv sync --dev --locked
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+    destructive_level: low
+
+  - id: PR-04
+    title: Add Trade[XYZ] read-only collector
+    goal: Fetch and normalize Trade[XYZ] market data without adding any order-writing surface.
+    target_files:
+      - src/sis/venues/trade_xyz/collector.py
+      - src/sis/venues/trade_xyz/normalizer.py
+      - src/sis/venues/trade_xyz/quality.py
+      - src/sis/storage/normalize.py
+      - tests/test_trade_xyz_collector.py
+      - tests/test_trade_xyz_normalizer.py
+      - tests/fixtures/trade_xyz_l2_book.sample.json
+    out_of_scope:
+      - live order methods
+      - real market feature layer
+      - paper execution changes
+    acceptance:
+      - fixture collector writes v2 JSONL with stable raw payload hash
+      - l2 book parser computes bid, ask, mid, spread, and depth fields
+      - missing book side stores raw payload but marks quote not tradable
+      - normalize_quotes writes Parquet and DuckDB for v2 quotes
+    verification:
+      - uv sync --dev --locked
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+    destructive_level: low
+
+  - id: PR-05
+    title: Add real market data layer
+    goal: Build 15-minute real-market bars and features with provider quality gating.
+    target_files:
+      - src/sis/real_market/__init__.py
+      - src/sis/real_market/models.py
+      - src/sis/real_market/symbols.py
+      - src/sis/real_market/calendar.py
+      - src/sis/real_market/quality.py
+      - src/sis/real_market/feature_builder.py
+      - src/sis/real_market/providers/__init__.py
+      - src/sis/real_market/providers/alpaca.py
+      - src/sis/real_market/providers/yfinance_provider.py
+      - src/sis/real_market/providers/stooq_provider.py
+      - src/sis/real_market/providers/sec_edgar.py
+      - src/sis/real_market/providers/fred_provider.py
+      - tests/test_real_market_models.py
+      - tests/test_real_market_quality.py
+      - tests/test_real_market_features.py
+    out_of_scope:
+      - treating yfinance as sole live source
+      - Trade[XYZ] order execution
+      - tracking report integration
+    acceptance:
+      - RealMarketBar and RealMarketFeature models exist
+      - feature builder computes returns, realized vol, volume z-score, session, and event flags
+      - source confidence blocks low-quality live/paper entry
+      - free real market data quality report can be generated
+    verification:
+      - uv sync --dev --locked
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+    destructive_level: low
+
+  - id: PR-06
+    title: Add real vs venue tracking
+    goal: Compare real market data against Trade[XYZ] venue data and produce trade_allowed decisions.
+    target_files:
+      - src/sis/tracking/__init__.py
+      - src/sis/tracking/models.py
+      - src/sis/tracking/real_vs_venue.py
+      - src/sis/tracking/lead_lag.py
+      - src/sis/tracking/reports.py
+      - tests/test_tracking_models.py
+      - tests/test_real_vs_venue_tracking.py
+      - tests/test_lead_lag.py
+    out_of_scope:
+      - paper fill changes
+      - live order execution
+      - changing provider policy thresholds without tests
+    acceptance:
+      - mark_real_diff_bps and oracle_real_diff_bps are computed
+      - closed or non-regular underlying session blocks trade_allowed
+      - low source confidence blocks trade_allowed
+      - tracking report contains symbol-level decisions and block rates
+    verification:
+      - uv sync --dev --locked
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+    destructive_level: low
+
+  - id: PR-07
+    title: Gate paper execution by venue quality
+    goal: Use v2 quotes and tracking decisions to make paper fills quality-gated and cost-aware.
+    target_files:
+      - src/sis/paper/broker.py
+      - src/sis/paper/runner.py
+      - src/sis/core/execution_plan.py
+      - src/sis/risk/halt_policy.py
+      - src/sis/reports/paper_cycle_history.py
+      - src/sis/reports/operations_dashboard.py
+      - tests/test_paper_trading.py
+      - tests/test_paper_runner.py
+      - tests/test_halt_policy.py
+    out_of_scope:
+      - live order execution
+      - API wallet configuration
+      - changing strategy logic unrelated to fill/gate input
+    acceptance:
+      - fill priority uses best_ask/best_bid before aliases and mark price
+      - fills reject when tracking disallows trade or venue/source quality is below policy
+      - fee_model.trade_xyz.yaml drives cost model
+      - paper reports include gate, quality, fee mode, round-trip cost, and fill price source
+    verification:
+      - uv sync --dev --locked
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+    destructive_level: medium
+
+  - id: PR-08
+    title: Add Trade[XYZ] micro live safety canary
+    goal: Add the minimum opt-in live safety surface for scheduleCancel, tiny limit order, cancelByCloid, and reduce-only close.
+    target_files:
+      - src/sis/execution/trade_xyz_adapter.py
+      - src/sis/execution/live_order_policy.py
+      - src/sis/execution/micro_live_canary.py
+      - tests/test_trade_xyz_live_order_policy.py
+      - tests/test_trade_xyz_adapter_safety.py
+      - tests/test_micro_live_canary.py
+    out_of_scope:
+      - market orders
+      - production live trading
+      - notional above 50 USD
+      - manual signing unless split into separate reviewed PR
+      - any live path without explicit confirm flag
+    acceptance:
+      - policy blocks disabled micro live, missing scheduleCancel, market order, excess notional, excess leverage, low source confidence, and low venue quality
+      - canary sequence calls scheduleCancel before order
+      - canary cancels by cloid when order is open
+      - filled position close uses reduce-only
+      - micro_live_safety_report.md can be generated
+      - standard PR verification uses mock adapter, fake exchange, and dry-run policy tests only
+    verification:
+      - uv sync --dev --locked
+      - uv run python -V
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+      - ./scripts/check
+    manual_live_canary:
+      conditions:
+        - opt-in only
+        - local only
+        - explicit confirm flag required
+        - scheduleCancel preflight required
+        - dedicated API wallet required
+        - max_notional_usd <= 50
+      verification:
+        - SIS_ENABLE_LIVE_TESTS=1 uv run pytest tests/test_micro_live_canary.py -q
+    destructive_level: high

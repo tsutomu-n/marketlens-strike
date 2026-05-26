@@ -3,8 +3,8 @@ from __future__ import annotations
 import polars as pl
 
 from sis.execution.base import OrderIntent
-from sis.execution.gtrade_adapter import GTradeExecutionAdapter
-from sis.execution.ostium_adapter import OstiumExecutionAdapter
+from sis.execution.archive.gtrade_adapter import GTradeExecutionAdapter
+from sis.execution.archive.ostium_adapter import OstiumExecutionAdapter
 from sis.storage.jsonl_store import write_json
 
 

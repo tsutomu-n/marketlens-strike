@@ -4,7 +4,7 @@
 
 ## Subsystems
 
-- `sidecars/gtrade`, `sidecars/ostium`: venue read-only collection and metadata sidecars
+- `archive/legacy_sidecars/gtrade`, `archive/legacy_sidecars/ostium`: venue read-only collection and metadata sidecars
 - `src/sis/storage`: quote normalization and JSON/Parquet persistence
 - `src/sis/reports`: generated reports, summaries, dashboards, remediation artifacts
 - `src/sis/research`: research market/macro/event/feature/signal artifacts

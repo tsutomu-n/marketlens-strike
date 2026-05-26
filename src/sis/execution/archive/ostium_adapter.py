@@ -11,7 +11,7 @@ from sis.execution.base import (
     OrderIntent,
 )
 from sis.storage.jsonl_store import read_json
-from sis.venues.ostium.positions import latest_positions_sidecar
+from sis.venues.archive.ostium.positions import latest_positions_sidecar
 
 
 class OstiumExecutionAdapter:

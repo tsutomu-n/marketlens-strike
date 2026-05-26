@@ -1,24 +1,48 @@
 halt_policy:
   stale_price:
-    gtrade_max_age_ms: 3000
-    ostium_max_age_ms: 5000
+    trade_xyz_max_age_ms: 10000
+    real_market_max_age_ms: 300000
   session:
     block_before_close_minutes: 30
     block_after_open_minutes: 15
+    allow_premarket: false
+    allow_afterhours: false
+    block_when_underlying_closed: true
   event_blackout:
-    major_usd_event:
+    earnings:
+      before_minutes: 120
+      after_minutes: 30
+    major_us_macro:
       before_minutes: 60
       after_minutes: 15
   spread:
-    max_spread_p90_bps:
-      SPY: 8
-      QQQ: 10
-      XAU: 12
-  weekend:
-    block_weekend_hold: true
+    max_spread_bps:
+      default_equity: 25
+      default_index: 12
+      SP500: 10
+      XYZ100: 12
+      NVDA: 25
+      AAPL: 20
+      MSFT: 20
+      TSLA: 35
+  tracking:
+    max_mark_real_diff_bps:
+      default_equity: 50
+      default_index: 25
+    max_oracle_real_diff_bps:
+      default_equity: 50
+      default_index: 25
+    min_source_confidence: 0.70
+    min_venue_quality_score: 0.70
+  funding:
+    max_abs_funding_rate_hourly_bps: 5
   leverage:
     initial_live_max: 2
-    research_max: 5
-    prohibited_above: 10
-  liquidation:
-    near_liquidation_bps: 100
+    research_max: 3
+    prohibited_above: 5
+  micro_live:
+    max_notional_usd: 50
+    max_daily_loss_usd: 10
+    max_open_positions: 1
+    require_schedule_cancel: true
+    require_kill_switch_clear: true

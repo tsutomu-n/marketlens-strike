@@ -1,0 +1,25 @@
+real_market_provider_policy:
+  primary_for_research:
+    - alpaca
+    - yfinance
+  fallback:
+    - stooq
+  event_sources:
+    - sec_edgar
+    - fred
+  live_signal_rules:
+    min_source_confidence: 0.70
+    prohibit_yfinance_only_live: true
+    allow_delayed_data_for_15m: true
+  symbols:
+    - SPY
+    - QQQ
+    - EWJ
+    - NVDA
+    - AAPL
+    - MSFT
+    - AMZN
+    - GOOGL
+    - META
+    - TSLA
+    - AMD

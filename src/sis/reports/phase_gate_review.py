@@ -215,7 +215,9 @@ def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str
         "latest_execution_state_comparison_history_summary_path": ["uv run sis refresh-operations-artifacts"],
         "latest_execution_snapshot_drift_history_summary_path": ["uv run sis refresh-operations-artifacts"],
         "latest_execution_drift_overview_summary_path": ["uv run sis refresh-operations-artifacts"],
-        "latest_gtrade_backend_manifest_path": ["bun run gtrade:backend-collect -- --duration-minutes 30"],
+        "latest_gtrade_backend_manifest_path": [
+            "bun run --cwd archive/legacy_sidecars/gtrade backend:collect -- --duration-minutes 30"
+        ],
         "latest_ostium_constraint_path": ["uv run sis ostium-constraint-artifact"],
     }
     return {

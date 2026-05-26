@@ -42,11 +42,15 @@ def summarize_halt_policy(policy: dict) -> list[str]:
     halt = policy.get("halt_policy", policy)
     stale = halt.get("stale_price", {})
     session = halt.get("session", {})
-    spread = halt.get("spread", {}).get("max_spread_p90_bps", {})
+    spread = halt.get("spread", {}).get("max_spread_bps", halt.get("spread", {}).get("max_spread_p90_bps", {}))
     liquidation = halt.get("liquidation", {})
+    stale_pairs = ", ".join(f"{k}={v}" for k, v in sorted(stale.items()) if isinstance(v, int | float))
+    gtrade_age = stale.get("gtrade_max_age_ms", stale.get("trade_xyz_max_age_ms"))
+    ostium_age = stale.get("ostium_max_age_ms", stale.get("real_market_max_age_ms"))
     return [
-        f"gtrade_max_age_ms={stale.get('gtrade_max_age_ms')}",
-        f"ostium_max_age_ms={stale.get('ostium_max_age_ms')}",
+        f"gtrade_max_age_ms={gtrade_age}",
+        f"ostium_max_age_ms={ostium_age}",
+        f"stale_price={stale_pairs}" if stale_pairs else "stale_price=unset",
         f"block_before_close_minutes={session.get('block_before_close_minutes')}",
         f"block_after_open_minutes={session.get('block_after_open_minutes')}",
         f"spread_limits={spread}",
@@ -74,8 +78,14 @@ def stale_reason(quote: QuoteLog, policy: dict) -> str | None:
 def spread_reason(quote: QuoteLog, policy: dict) -> str | None:
     if quote.spread_bps is None:
         return None
-    limits = _halt(policy).get("spread", {}).get("max_spread_p90_bps", {})
+    spread_cfg = _halt(policy).get("spread", {})
+    limits = spread_cfg.get("max_spread_bps", spread_cfg.get("max_spread_p90_bps", {}))
     limit = limits.get(quote.canonical_symbol)
+    if not isinstance(limit, int | float):
+        if quote.canonical_symbol in {"SP500", "XYZ100", "SPY", "QQQ", "SPX_EQUIV", "NDX_EQUIV"}:
+            limit = limits.get("default_index")
+        else:
+            limit = limits.get("default_equity")
     if isinstance(limit, int | float) and quote.spread_bps > limit:
         return "BLOCK_SPREAD_TOO_WIDE"
     return None
@@ -100,8 +110,10 @@ def _eastern_dt(value: datetime) -> datetime:
 
 
 def _asset_class_for_symbol(symbol: str) -> AssetClass:
-    if symbol in {"SPY", "QQQ", "SPX_EQUIV", "NDX_EQUIV"}:
+    if symbol in {"SPY", "QQQ", "SPX_EQUIV", "NDX_EQUIV", "SP500", "XYZ100"}:
         return AssetClass.INDEX
+    if symbol in {"NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AMD", "EWJ"}:
+        return AssetClass.EQUITY
     if symbol == "XAU":
         return AssetClass.COMMODITY
     return AssetClass.UNKNOWN
@@ -112,6 +124,10 @@ def _session_close_for_quote(quote: QuoteLog) -> datetime | None:
     asset_class = _asset_class_for_symbol(quote.canonical_symbol)
     weekday = local.weekday()
     if asset_class == AssetClass.INDEX:
+        if weekday >= 5:
+            return None
+        return local.replace(hour=16, minute=0, second=0, microsecond=0)
+    if asset_class in {AssetClass.EQUITY, AssetClass.ETF, AssetClass.BASKET_INDEX}:
         if weekday >= 5:
             return None
         return local.replace(hour=16, minute=0, second=0, microsecond=0)

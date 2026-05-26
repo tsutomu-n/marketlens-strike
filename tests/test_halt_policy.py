@@ -8,9 +8,9 @@ def _quote(**kwargs) -> QuoteLog:
     base = {
         # Fixed weekday timestamp to keep default halt-policy tests deterministic.
         "ts_client": datetime.fromisoformat("2026-05-22T14:00:00+00:00"),
-        "venue": Venue.GTRADE,
-        "canonical_symbol": "SPY",
-        "venue_symbol": "SPY/USD",
+        "venue": Venue.TRADE_XYZ,
+        "canonical_symbol": "SP500",
+        "venue_symbol": "SP500",
         "market_status": MarketStatus.OPEN,
         "is_tradable": True,
         "source": "test",
@@ -27,7 +27,7 @@ def test_halt_reasons_block_closed_market() -> None:
 
 def test_halt_reasons_block_wide_spread() -> None:
     quote = _quote(spread_bps=20)
-    policy = {"halt_policy": {"spread": {"max_spread_p90_bps": {"SPY": 8}}}}
+    policy = {"halt_policy": {"spread": {"max_spread_bps": {"SP500": 8}}}}
     assert "BLOCK_SPREAD_TOO_WIDE" in evaluate_halt_reasons(quote, policy)
 
 

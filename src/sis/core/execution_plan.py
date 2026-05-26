@@ -12,6 +12,12 @@ class ExecutionPlan(BaseModel):
     canonical_symbol: str
     timeframe: str
     price_reference: str | None = None
+    source_confidence: float | None = None
+    venue_quality_score: float | None = None
+    tracking_trade_allowed: bool | None = None
+    fee_mode: str | None = None
+    estimated_round_trip_cost_bps: float | None = None
+    fill_price_source: str | None = None
     notes: list[str] = Field(default_factory=list)
 
 

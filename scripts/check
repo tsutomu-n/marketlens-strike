@@ -4,12 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 uv sync --dev --locked
+uv run python -V
 uv run ruff check .
 uv run pyrefly check
 uv run pytest -q
-
-bun install --frozen-lockfile
-bun run gtrade:typecheck
-bun run gtrade:test
-bun run ostium:typecheck
-bun run ostium:test

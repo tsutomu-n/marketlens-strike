@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QuoteLogV2",
+  "type": "object",
+  "required": [
+    "ts_client",
+    "venue",
+    "canonical_symbol",
+    "venue_symbol",
+    "source",
+    "raw_payload_sha256"
+  ],
+  "properties": {
+    "ts_client": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "recv_ts_ms": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "source_ts_ms": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "venue": {
+      "type": "string",
+      "enum": [
+        "trade_xyz",
+        "lighter",
+        "bitmex_readonly",
+        "legacy_gtrade",
+        "legacy_ostium",
+        "gtrade",
+        "ostium"
+      ]
+    },
+    "canonical_symbol": {
+      "type": "string"
+    },
+    "venue_symbol": {
+      "type": "string"
+    },
+    "dex": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "coin": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "asset_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "real_market_symbol": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "mark_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "oracle_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "index_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "best_bid": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "best_ask": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "bid_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ask_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "mid_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "exec_buy_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "exec_sell_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "spread_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "depth_10bps_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "depth_25bps_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "funding_rate": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "funding_interval_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "open_interest_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "market_status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "unknown",
+        "close_only",
+        "paused"
+      ]
+    },
+    "session_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "regular",
+        "premarket",
+        "afterhours",
+        "internal",
+        "closed",
+        "unknown",
+        null
+      ]
+    },
+    "is_tradable": {
+      "type": "boolean"
+    },
+    "source": {
+      "type": "string"
+    },
+    "raw_payload_sha256": {
+      "type": "string"
+    },
+    "raw_payload_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "raw_payload": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

@@ -11,7 +11,7 @@ import httpx
 
 from sis.models import InstrumentSpec, MarketStatus, QuoteLog, Venue
 from sis.storage.jsonl_store import append_jsonl, write_json
-from sis.venues.ostium.registry import OSTIUM_TARGETS
+from sis.venues.archive.ostium.registry import OSTIUM_TARGETS
 
 OSTIUM_PRICES_ENDPOINT = "https://builder.ostium.io/v1/prices"
 

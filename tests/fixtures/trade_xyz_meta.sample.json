@@ -1,0 +1,18 @@
+{
+  "dex": "xyz",
+  "perpDexIndex": 3,
+  "universe": [
+    {"name": "SP500"},
+    {"name": "XYZ100"},
+    {"name": "NVDA"},
+    {"name": "AAPL"},
+    {"name": "MSFT"},
+    {"name": "AMZN"},
+    {"name": "GOOGL"},
+    {"name": "META"},
+    {"name": "TSLA"},
+    {"name": "AMD"},
+    {"name": "EWJ"},
+    {"name": "BTC"}
+  ]
+}

@@ -103,7 +103,7 @@ uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-int
 sidecar を replay して Go/No-Go まで更新する場合:
 
 ```bash
-bun run gtrade:probe
+bun run --cwd archive/legacy_sidecars/gtrade probe
 uv run sis log-quotes --venue gtrade --replace
 uv run sis normalize-quotes
 uv run sis build-cost-matrix

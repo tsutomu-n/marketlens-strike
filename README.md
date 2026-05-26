@@ -35,18 +35,21 @@ uv run sis phase-gate-review
 ## セットアップ
 
 ```bash
-uv python install 3.14
-uv sync --dev
+uv python install 3.13
+uv lock --python /usr/bin/python3.13
+uv sync --dev --locked
 uv run python -V
 uv run sis --help
 ```
+
+依存を変更した場合のみ `uv lock --python /usr/bin/python3.13` で `uv.lock` を更新し、通常のセットアップ・CI・merge前確認では `uv sync --dev --locked` を使ってください。
 
 JavaScript sidecar は `bun` を使います。
 
 ```bash
 bun install --frozen-lockfile
-bun run gtrade:typecheck
-bun run ostium:typecheck
+bun run --cwd archive/legacy_sidecars/gtrade typecheck
+bun run --cwd archive/legacy_sidecars/ostium typecheck
 ```
 
 ローカル検証を一通り流す場合:
@@ -87,7 +90,7 @@ uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-int
 既存の gTrade sidecar data を quote pipeline に replay する:
 
 ```bash
-bun run gtrade:probe
+bun run --cwd archive/legacy_sidecars/gtrade probe
 uv run sis log-quotes --venue gtrade --replace
 uv run sis normalize-quotes
 uv run sis build-cost-matrix

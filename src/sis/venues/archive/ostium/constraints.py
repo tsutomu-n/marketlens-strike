@@ -13,7 +13,7 @@ from typing import Any
 import httpx
 
 from sis.storage.jsonl_store import write_json
-from sis.venues.ostium.probe import OSTIUM_PRICES_ENDPOINT
+from sis.venues.archive.ostium.probe import OSTIUM_PRICES_ENDPOINT
 
 DEFAULT_LATEST_PRICES_ENDPOINT = "https://metadata-backend.ostium.io/PricePublish/latest-prices"
 DEFAULT_LATEST_PRICE_ENDPOINT = "https://metadata-backend.ostium.io/PricePublish/latest-price"

@@ -1,5 +1,5 @@
 from sis.storage.jsonl_store import write_json
-from sis.venues.ostium.positions import (
+from sis.venues.archive.ostium.positions import (
     latest_positions_sidecar,
     positions_have_liquidation_reference,
 )

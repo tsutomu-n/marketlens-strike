@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable
 
 import polars as pl
+import yaml
 
 from sis.backtest.bridge import run_backtest_bridge_with_decisions
 from sis.paper.broker import PaperBroker
@@ -14,6 +15,7 @@ from sis.paper.fills import PaperFill, write_fills_parquet
 from sis.paper.orders import PaperOrder, write_orders_parquet
 from sis.paper.portfolio import PaperPortfolio, PaperPosition, write_positions_parquet
 from sis.paper.report import build_daily_paper_report
+from sis.risk.halt_policy import load_halt_policy
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
     execution_comparison_flat_fields,
@@ -230,7 +232,14 @@ def run_paper_step(
 
     store = StateStore(state_path)
     portfolio = _load_portfolio(store)
-    broker = PaperBroker()
+    halt_policy = load_halt_policy(Path("configs/halt_policy.yaml"))
+    fee_model_path = Path("configs/fee_model.trade_xyz.yaml")
+    if fee_model_path.exists():
+        loaded_fee_model = yaml.safe_load(fee_model_path.read_text(encoding="utf-8"))
+        fee_model = loaded_fee_model if isinstance(loaded_fee_model, dict) else {}
+    else:
+        fee_model = {}
+    broker = PaperBroker(halt_policy=halt_policy, fee_model=fee_model)
 
     orders: list[PaperOrder] = []
     fills: list[PaperFill] = []

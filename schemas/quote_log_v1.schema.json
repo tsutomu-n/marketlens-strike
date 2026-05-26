@@ -18,6 +18,11 @@
     "venue": {
       "type": "string",
       "enum": [
+        "trade_xyz",
+        "lighter",
+        "bitmex_readonly",
+        "legacy_gtrade",
+        "legacy_ostium",
         "gtrade",
         "ostium"
       ]

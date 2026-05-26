@@ -2,11 +2,11 @@ from sis.storage.normalize import collect_quote_logs, normalize_quotes
 
 
 def test_collect_quote_logs_deduplicates_replayed_rows(tmp_path) -> None:
-    raw_path = tmp_path / "gtrade/2026-05-22.jsonl"
+    raw_path = tmp_path / "trade_xyz/2026-05-22.jsonl"
     raw_path.parent.mkdir(parents=True)
     line = (
-        '{"ts_client":"2026-05-22T00:00:00Z","venue":"gtrade",'
-        '"canonical_symbol":"SPY","venue_symbol":"SPY/USD",'
+        '{"ts_client":"2026-05-22T00:00:00Z","venue":"trade_xyz",'
+        '"canonical_symbol":"SP500","venue_symbol":"SP500",'
         '"source":"test","raw_payload_sha256":"abc123"}\n'
     )
     raw_path.write_text(line + line, encoding="utf-8")
@@ -17,14 +17,10 @@ def test_collect_quote_logs_deduplicates_replayed_rows(tmp_path) -> None:
 
 
 def test_normalize_quotes_handles_late_float_after_nulls(tmp_path) -> None:
-    raw_path = tmp_path / "raw/gtrade/2026-05-22.jsonl"
+    raw_path = tmp_path / "raw/trade_xyz/2026-05-22.jsonl"
     raw_path.parent.mkdir(parents=True)
     rows = []
-    base = (
-        '{{"ts_client":"2026-05-22T00:{minute:02d}:00Z","venue":"gtrade","canonical_symbol":"SPY",'
-        '"venue_symbol":"SPY/USD","pair_index":86,"source":"test","raw_payload_sha256":"{hash}",'
-        '"oracle_price":{oracle_price}}}\n'
-    )
+    base = '{{"ts_client":"2026-05-22T00:{minute:02d}:00Z","venue":"trade_xyz","canonical_symbol":"SP500","venue_symbol":"SP500","source":"test","raw_payload_sha256":"{hash}","oracle_price":{oracle_price}}}\n'
     for minute in range(150):
         rows.append(
             base.format(

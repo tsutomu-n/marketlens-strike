@@ -1,0 +1,25 @@
+micro_live_policy:
+  enabled: false
+  venue: trade_xyz
+  max_notional_usd: 50
+  max_daily_loss_usd: 10
+  max_open_positions: 1
+  max_leverage: 2
+  allowed_symbols:
+    - SP500
+    - XYZ100
+    - NVDA
+    - AAPL
+    - MSFT
+  prohibited_order_types:
+    - market
+  require:
+    - kill_switch_clear
+    - schedule_cancel_success
+    - active_real_market_session
+    - venue_quality_gate_passed
+    - source_confidence_gate_passed
+  schedule_cancel:
+    deadline_seconds_after_now: 300
+  close:
+    require_reduce_only: true

@@ -1,0 +1,110 @@
+version: 1
+name: PR-00 Python 3.13 migration
+status: ready
+source:
+  repo: /home/tn/projects/marketlens-strike
+  handoff_zip: /home/tn/projects/marketlens-strike/.tmp/marketlens_strike_pr0_pr8_implementation_handoff_v3.zip
+  primary_plan: plan/PR-00_python_313_migration_plan.md
+
+tasks:
+  - id: PR00-T1
+    title: Align active Python version settings
+    goal: Move active runtime and tooling declarations from Python 3.14 to Python 3.13.
+    target_files:
+      - .python-version
+      - pyproject.toml
+      - .github/workflows/ci.yml
+    out_of_scope:
+      - dependency removals
+      - sidecar workspace changes
+      - Trade[XYZ] implementation
+    acceptance:
+      - .python-version contains exactly 3.13
+      - pyproject.toml requires-python is >=3.13,<3.14
+      - Ruff target-version is py313
+      - pyrefly python-version is 3.13
+      - CI installs Python 3.13
+    verification:
+      - rg -n "3\\.14|py314" pyproject.toml .python-version .github/workflows/ci.yml returns no active matches
+    destructive_level: low
+
+  - id: PR00-T2
+    title: Regenerate and verify uv lockfile
+    goal: Make uv.lock consistent with the Python 3.13 runtime contract.
+    target_files:
+      - uv.lock
+    out_of_scope:
+      - broad dependency upgrades
+      - dependency deletion unless required for Python 3.13 compatibility
+      - bun.lock changes
+    acceptance:
+      - uv.lock requires-python / metadata is compatible with Python 3.13
+      - uv sync --dev --locked succeeds
+    verification:
+      - uv lock --python /usr/bin/python3.13
+      - uv sync --dev --locked
+      - uv run python -V
+    destructive_level: low
+
+  - id: PR00-T3
+    title: Make scripts/check expose runtime version
+    goal: Ensure CI logs show the actual Python runtime used by the check pipeline.
+    target_files:
+      - scripts/check
+    out_of_scope:
+      - removing bun sidecar checks
+      - changing gTrade or Ostium test commands
+    acceptance:
+      - uv run python -V appears immediately after uv sync --dev --locked
+      - ./scripts/check output includes Python 3.13.x
+    verification:
+      - ./scripts/check
+    destructive_level: low
+
+  - id: PR00-T4
+    title: Update active setup docs
+    goal: Align active documentation with Python 3.13 and locked uv workflow without rewriting venue migration docs.
+    target_files:
+      - README.md
+      - docs/CURRENT_STATE.md
+      - docs/CODE_STATUS.md
+      - docs/OPERATIONS_RUNBOOK.md
+    out_of_scope:
+      - docs/live_evidence_reports
+      - archive reports
+      - gTrade / Ostium migration wording unrelated to Python version
+      - PR-01 / PR-02 architecture updates
+    acceptance:
+      - README setup uses uv python install 3.13
+      - README setup uses uv sync --dev --locked
+      - README documents uv lock --python /usr/bin/python3.13 for dependency updates
+      - active docs do not present Python 3.14 as the current runtime
+    verification:
+      - rg -n "3\\.14|uv sync --dev$" README.md docs/CURRENT_STATE.md docs/CODE_STATUS.md docs/OPERATIONS_RUNBOOK.md
+    destructive_level: low
+
+  - id: PR00-T5
+    title: Run merge checks and capture failures if needed
+    goal: Prove PR-00 is mergeable, or record migration-specific blockers without expanding scope.
+    target_files:
+      - docs/python_313_migration_notes.md
+    out_of_scope:
+      - fixing unrelated existing sidecar design failures
+      - rewriting historical generated artifacts
+      - changing live execution behavior
+    acceptance:
+      - uv sync --dev --locked succeeds
+      - uv run python -V prints Python 3.13.x
+      - uv run ruff check . succeeds
+      - uv run pyrefly check succeeds
+      - uv run pytest -q succeeds
+      - ./scripts/check succeeds
+      - if a Python 3.13 migration failure remains, docs/python_313_migration_notes.md records environment, command, log, root cause, minimal fix, and out-of-scope items
+    verification:
+      - uv sync --dev --locked
+      - uv run python -V
+      - uv run ruff check .
+      - uv run pyrefly check
+      - uv run pytest -q
+      - ./scripts/check
+    destructive_level: low

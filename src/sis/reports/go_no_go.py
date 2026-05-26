@@ -21,7 +21,7 @@ from sis.reports.summary_normalizers import (
     readiness_flat_fields,
 )
 from sis.storage.jsonl_store import read_json
-from sis.venues.ostium.positions import (
+from sis.venues.archive.ostium.positions import (
     latest_positions_sidecar,
     positions_have_liquidation_reference,
 )

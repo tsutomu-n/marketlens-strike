@@ -12,6 +12,6 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - uses: oven-sh/setup-bun@v1
       - name: Set up Python
-        run: uv python install 3.14
+        run: uv python install 3.13
       - name: Check
         run: ./scripts/check

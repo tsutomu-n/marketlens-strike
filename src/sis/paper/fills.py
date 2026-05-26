@@ -18,6 +18,12 @@ class PaperFill(BaseModel):
     quantity: float
     price: float
     strategy_name: str | None = None
+    source_confidence: float | None = None
+    venue_quality_score: float | None = None
+    block_reasons: list[str] = Field(default_factory=list)
+    fee_mode: str | None = None
+    estimated_round_trip_cost_bps: float | None = None
+    fill_price_source: str | None = None
     notes: list[str] = Field(default_factory=list)
 
 
@@ -34,6 +40,12 @@ def fills_to_frame(fills: list[PaperFill]) -> pl.DataFrame:
                 "quantity": pl.Float64,
                 "price": pl.Float64,
                 "strategy_name": pl.Utf8,
+                "source_confidence": pl.Float64,
+                "venue_quality_score": pl.Float64,
+                "block_reasons": pl.List(pl.Utf8),
+                "fee_mode": pl.Utf8,
+                "estimated_round_trip_cost_bps": pl.Float64,
+                "fill_price_source": pl.Utf8,
             }
         )
     return pl.from_dicts(
