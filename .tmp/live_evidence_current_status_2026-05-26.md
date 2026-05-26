@@ -1,5 +1,7 @@
 # marketlens-strike live evidence 現状詳細
 
+Status: historical snapshot. この文書は 2026-05-26 08:07 JST 時点の live evidence 状況記録であり、current repo status の正本ではない。現行判断は `docs/CURRENT_STATE.md` と `docs/OPERATIONS_RUNBOOK.md` を先に読む。
+
 作成日時: 2026-05-26 08:07 JST
 対象 repo: `/home/tn/projects/marketlens-strike`
 対象作業: gTrade live evidence 実データ取得、2026-05-25 未取得原因の確定、2026-05-27 失敗防止策の登録

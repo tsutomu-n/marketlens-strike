@@ -14,10 +14,6 @@ class _SummaryReportWriter(Protocol):
     def __call__(self, settings_data_dir: Path) -> tuple[Path, Path, str]: ...
 
 
-class _ManifestAppenderWithKwargs(Protocol):
-    def __call__(self, settings_data_dir: Path, **kwargs: object) -> Path: ...
-
-
 def register_remediation_commands(
     app: typer.Typer,
     *,
@@ -29,15 +25,15 @@ def register_remediation_commands(
     write_remediation_scoreboard_fn: _SummaryReportWriter,
     write_remediation_evaluator_fn: _SummaryReportWriter,
     write_remediation_evidence_fn: _SummaryReportWriter,
-    append_remediation_planner_manifest_fn: _ManifestAppenderWithKwargs,
-    append_remediation_execution_plan_manifest_fn: _ManifestAppenderWithKwargs,
-    append_remediation_session_manifest_fn: _ManifestAppenderWithKwargs,
-    append_remediation_session_checkpoint_manifest_fn: _ManifestAppenderWithKwargs,
-    append_remediation_evidence_ingest_manifest_fn: _ManifestAppenderWithKwargs,
-    append_remediation_scoreboard_manifest_fn: _ManifestAppenderWithKwargs,
-    append_remediation_evaluator_manifest_fn: _ManifestAppenderWithKwargs,
-    append_remediation_evidence_manifest_fn: _ManifestAppenderWithKwargs,
-    append_remediation_command_results_manifest_fn: _ManifestAppenderWithKwargs,
+    append_remediation_planner_manifest_fn: Callable[..., Path],
+    append_remediation_execution_plan_manifest_fn: Callable[..., Path],
+    append_remediation_session_manifest_fn: Callable[..., Path],
+    append_remediation_session_checkpoint_manifest_fn: Callable[..., Path],
+    append_remediation_evidence_ingest_manifest_fn: Callable[..., Path],
+    append_remediation_scoreboard_manifest_fn: Callable[..., Path],
+    append_remediation_evaluator_manifest_fn: Callable[..., Path],
+    append_remediation_evidence_manifest_fn: Callable[..., Path],
+    append_remediation_command_results_manifest_fn: Callable[..., Path],
     recommended_read_order_fn: Callable[[Path], list[str]],
 ) -> None:
     @app.command("remediation-planner")

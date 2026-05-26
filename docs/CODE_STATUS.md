@@ -19,6 +19,7 @@
 ## Current Operational Interpretation
 
 - migration 実装は完了している。
+- `src/sis/cli.py` は root Typer app registration と `main()` に近い構成へ分割済み。
 - ただし operator-facing runtime artifact chain は一部 legacy collector surface をまだ利用する。
 - そのため "code complete" と "operationally cut over" は分けて扱う。
 
@@ -42,6 +43,7 @@ PR-08:
 
 - manual signing, wallet secrets, exchange write credentials
 - public CLI からの micro live 実行 surface
+- public CLI からの `collect-trade-xyz-quotes` surface
 - production live trading
 - `trade_xyz` を主軸にした operations chain への全面移行
 
@@ -52,12 +54,12 @@ PR-08:
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 297 passed
+- `uv run pytest -q`: 300 passed
 - `./scripts/check`: pass
 
 ## Reading Pointers
 
-- migration contract: `plan/PR-00_to_PR-08_implementation_plan.md`
+- historical migration contract: `plan/PR-00_to_PR-08_implementation_plan.md`
 - runtime status: `docs/CURRENT_STATE.md`
 - operator procedure: `docs/OPERATIONS_RUNBOOK.md`
 - architecture and boundaries: `docs/ARCHITECTURE_AND_PHASES.md`

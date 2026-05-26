@@ -1,5 +1,7 @@
 # PR-00 to PR-08 implementation plan
 
+Status: historical. 現行コードでは PR-00〜PR-08 の code/test surface は完了済みであり、この文書は migration contract と実装順序の記録として読む。current status は `docs/CURRENT_STATE.md` と `docs/CODE_STATUS.md` を正とする。
+
 ## 結論
 
 このmigrationのゴールは、現行の gTrade / Ostium / QQQ-SPY-XAU 評価基盤を、Trade[XYZ] / Hyperliquid HIP-3 を主venueにした米国株・ETF・株価指数perp向けの read-only collection、real-market tracking、venue-gated paper execution、micro live canary へ段階移行することです。

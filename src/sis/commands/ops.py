@@ -12,6 +12,8 @@ from sis.ops.daemon import create_daemon_manifest, run_daemon_dry_run, run_daemo
 from sis.ops.daily_loss_limit import evaluate_daily_loss_limit, evaluate_max_exposure
 from sis.ops.healthcheck import build_healthcheck
 from sis.ops.kill_switch import KillSwitch
+from sis.ops.manifest_chain import OperationManifest
+from sis.ops.scheduler import ScheduledRun
 from sis.reports.ops_command_status import (
     build_alert_report,
     build_healthcheck_report,
@@ -34,11 +36,6 @@ class _MonitoringSnapshotWriter(Protocol):
     def __call__(self, settings_data_dir: Path, state_path: Path | None) -> tuple[Path, dict]: ...
 
 
-class _ScheduleRunRecord(Protocol):
-    run_type: str
-    scheduled_for: object
-
-
 class _ScheduleRunWriter(Protocol):
     def __call__(
         self,
@@ -48,7 +45,7 @@ class _ScheduleRunWriter(Protocol):
         command: str,
         at: str | None,
         every_minutes: int | None,
-    ) -> tuple[_ScheduleRunRecord, Path]: ...
+    ) -> tuple[ScheduledRun, Path]: ...
 
 
 class _OperationManifestBuilder(Protocol):
@@ -59,17 +56,19 @@ class _OperationManifestBuilder(Protocol):
         mode: str,
         command: str,
         status: str,
-        artifacts: list[str],
-        notes: list[str],
-    ) -> dict: ...
+        scheduled_for: str | None = None,
+        parent_run_id: str | None = None,
+        artifacts: list[str] | None = None,
+        notes: list[str] | None = None,
+    ) -> OperationManifest: ...
 
 
 class _OperationManifestAppender(Protocol):
-    def __call__(self, chain_path: Path, manifest: dict) -> Path: ...
+    def __call__(self, path: Path, manifest: OperationManifest) -> Path: ...
 
 
 class _ExecutionLineageRefresher(Protocol):
-    def __call__(self, settings_data_dir: Path, *, only_if_sources_exist: bool = False) -> None: ...
+    def __call__(self, settings_data_dir: Path, *, only_if_sources_exist: bool = False) -> object: ...
 
 
 class _ExecutionReadOnlyWriter(Protocol):
@@ -100,7 +99,7 @@ class _StateRestoreArtifactsWriter(Protocol):
         *,
         snapshot_path: Path,
         state_store_path: Path | None = None,
-        restored: bool = True,
+        restored: bool,
     ) -> tuple[Path, Path, str] | None: ...
 
 

@@ -18,10 +18,6 @@ class _SummaryReportWriter(Protocol):
     def __call__(self, settings_data_dir: Path) -> tuple[Path, Path, str]: ...
 
 
-class _ManifestAppenderWithKwargs(Protocol):
-    def __call__(self, settings_data_dir: Path, **kwargs: object) -> Path: ...
-
-
 def register_operations_report_commands(
     app: typer.Typer,
     *,
@@ -45,9 +41,9 @@ def register_operations_report_commands(
     write_audit_bundle_history_fn: _SummaryReportWriter,
     write_current_state_index_fn: _SummaryReportWriter,
     write_readiness_snapshot_fn: _SummaryReportWriter,
-    append_operations_snapshot_manifest_fn: _ManifestAppenderWithKwargs,
-    append_operations_audit_snapshot_manifest_fn: _ManifestAppenderWithKwargs,
-    append_audit_bundle_snapshot_manifest_fn: _ManifestAppenderWithKwargs,
+    append_operations_snapshot_manifest_fn: Callable[..., Path],
+    append_operations_audit_snapshot_manifest_fn: Callable[..., Path],
+    append_audit_bundle_snapshot_manifest_fn: Callable[..., Path],
     recommended_read_order_fn: Callable[[Path], list[str]],
 ) -> None:
         @app.command("lifecycle-report")

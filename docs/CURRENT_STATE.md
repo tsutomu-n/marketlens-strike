@@ -13,10 +13,11 @@
 
 優先順位:
 
-1. `src/`, `tests/`, `configs/`, `schemas/`, `scripts/`, `plan/`
+1. `src/`, `tests/`, `configs/`, `schemas/`, `scripts/`
 2. generated runtime artifacts under `data/ops/` and `data/reports/`
 3. tracked docs under `docs/`
-4. `docs/archive/`
+4. `plan/` historical migration contracts
+5. `docs/archive/`
 
 `docs/archive/` は historical context です。現行判断の正本にはしません。
 
@@ -25,6 +26,7 @@
 現行コードで確認できる主要 surface:
 
 - Python 3.13 前提の runtime / lock / CI
+- root CLI split: `src/sis/cli.py` は command registration と `main()` が中心で、command 実装は `src/sis/commands/` に分割済み
 - legacy `gtrade` / `ostium` の archive 化
 - `Trade[XYZ]` registry builder, universe report, quote collector, quote normalizer
 - `real_market` feature builder と free-source quality gating
@@ -37,6 +39,7 @@
 
 - 新規実装の主 venue は `trade_xyz`。legacy venue は archive / read-only evidence として扱う。
 - `micro_live` はコードと tests では存在するが、標準の operator CLI にはまだ exposed していない。
+- `collect-trade-xyz-quotes` は現時点では public CLI command として exposed していない。
 - `data/` は git 管理外。再開時は artifact を再生成する。
 - `ostium-python-sdk` は active dependency から削除済み。archive collector 側の optional read-only evidence としてのみ言及が残る。
 
@@ -47,7 +50,7 @@
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 297 passed
+- `uv run pytest -q`: 300 passed
 
 PR-08 専用確認:
 
@@ -70,7 +73,7 @@ PR-08 専用確認:
 2. `docs/CODE_STATUS.md`
 3. `docs/OPERATIONS_RUNBOOK.md`
 4. `docs/ARCHITECTURE_AND_PHASES.md`
-5. `plan/PR-00_to_PR-08_implementation_plan.md`
+5. `plan/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
 
 その後、必要に応じて:
 

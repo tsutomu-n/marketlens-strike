@@ -4,10 +4,10 @@ Timestamp: 2026-05-26 21:17:46 JST
 
 ## 結論
 
-`trade_xyz` quote collector の public CLI 化は、`src/sis/cli.py` のリファクタリング後に行う。
-ただし、実装の方向性は先に固定してよい。
+`src/sis/cli.py` のリファクタリングは完了済み。
+この文書は、まだ未実装の `trade_xyz` quote collector public CLI を追加するための pending implementation memo として読む。
 
-現時点での第一候補は:
+現時点での command 名の第一候補は:
 
 ```bash
 uv run sis collect-trade-xyz-quotes
@@ -17,18 +17,17 @@ uv run sis collect-trade-xyz-quotes
 
 ## この文書の目的
 
-この文書は、`src/sis/cli.py` のリファクタリング後に読み直し、
-追加調査なしで CLI 化に着手できるようにするための implementation memo である。
+この文書は、CLI 化に着手する前に読む pending implementation memo である。
+`uv run sis collect-trade-xyz-quotes` は現行 public CLI にはまだ存在しない。
 
 ## 2026-05-26 時点の確認済み事実
 
 ### CLI 構造
 
-- `src/sis/cli.py` は完全な一枚岩ではなく、すでに一部 command を module registration に寄せている。
-- 現在の登録箇所:
-  - `register_probe_commands(app)` at `src/sis/cli.py`
+- `src/sis/cli.py` は root Typer app registration と `main()` に寄せられている。
+- command 実装は `src/sis/commands/` 配下に分割済み。
+- quote command の登録箇所:
   - `register_quote_commands(app, _recommended_read_order)` at `src/sis/cli.py`
-  - `register_research_commands(app, _recommended_read_order)` at `src/sis/cli.py`
 - したがって、`trade_xyz` quote collector の CLI 化は、`src/sis/cli.py` 本体に直書きするより、
   `src/sis/commands/quotes.py` 側へ寄せるのが自然。
 
@@ -385,8 +384,8 @@ CLI 化したら更新する:
 
 ## 実装順
 
-1. リファクタ後の CLI module 配置を確認
-2. `quotes.py` に command を追加するか、専用 module に切るか決める
+1. 現行の CLI module 配置を確認
+2. `src/sis/commands/quotes.py` に command を追加する
 3. registry load helper を追加
 4. command 実装
 5. CLI smoke test 追加
@@ -395,7 +394,7 @@ CLI 化したら更新する:
 
 ## 完了条件
 
-- `uv run sis collect-trade-xyz-quotes` が operator-facing public CLI として使える
+- 実装完了後に `uv run sis collect-trade-xyz-quotes` が operator-facing public CLI として使える
 - default で raw + normalized artifacts を作れる
 - docs に unsupported command が残らない
 - `trade_xyz` collector が code/test surface だけでなく CLI surface に昇格したと説明できる

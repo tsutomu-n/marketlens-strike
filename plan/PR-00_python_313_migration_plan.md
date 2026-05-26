@@ -1,5 +1,7 @@
 # PR-00 Python 3.13 migration plan
 
+Status: historical. 現行コードでは PR-00 は完了済みであり、この文書は当時の implementation contract と acceptance record として読む。
+
 ## 結論
 
 PR-00のゴールは、repoのactive runtime、CI、lockfile、developer setupを Python 3.13 前提へ揃え、`./scripts/check` が通る状態にすることです。
@@ -277,4 +279,3 @@ docs/python_313_migration_notes.md, if created
 ```
 
 Do not touch PR-01+ migration files during PR-00 backout.
-

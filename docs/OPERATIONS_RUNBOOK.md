@@ -30,6 +30,7 @@ uv run sis probe trade-xyz
 quote ingest:
 
 - `trade_xyz` quote collector は code surface と tests では存在するが、現時点では public CLI command を公開していない。
+- `collect-trade-xyz-quotes` はまだ public CLI command として使えない。
 - `uv run sis log-quotes` は legacy `gtrade` replay 専用。
 
 real market and tracking:

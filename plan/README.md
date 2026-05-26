@@ -2,11 +2,11 @@
 
 ## 結論
 
-この `plan/` は、PR-00〜PR-08 migration を実装するコーダー向けの作業入口です。
+この `plan/` は、PR-00〜PR-08 migration の historical planning record です。
 
-最初にPR全体のゴールと順序を確認し、その後PR-00の詳細計画へ入ります。PR-00では runtime / CI / lockfile / active docs を Python 3.13 前提へ揃えます。Trade[XYZ] 実装、gTrade / Ostium archive、schema v2 化は PR-01 以降で扱います。
+現行コードでは PR-00〜PR-08 の migration code/test surface は完了済みです。この directory は、当時の実装順序、判断、acceptance を確認するために残します。current status は `docs/CURRENT_STATE.md` と `docs/CODE_STATUS.md` を先に読んでください。
 
-## まず読む順番
+## Historical read order
 
 1. `plan/PR-00_to_PR-08_implementation_plan.md`
 2. `plan/PR-00_to_PR-08_TASK_CHAIN.yaml`
@@ -26,15 +26,15 @@
 - 展開先: `/home/tn/projects/marketlens-strike/.tmp/marketlens_strike_pr0_pr8_implementation_handoff_v3/marketlens_strike_pr0_pr8_implementation_handoff_v2`
 - 現行repo: `/home/tn/projects/marketlens-strike`
 
-## Current confirmed facts
+## Historical confirmed facts
 
 - `src/sis/cli.py` は現行repoに存在するため、PR-00で CLI entrypoint 復旧は不要。
 - `scripts/check` は `uv sync --dev --locked` を実行する。
-- `uv.lock` は現時点で Python 3.14 前提の metadata を持つため、PR-00の編集対象に含める。
+- PR-00開始時点では `uv.lock` に Python 3.14 前提の metadata が残っていたため、PR-00の編集対象に含めた。
 - この環境の `uv 0.10.6` は `uv lock --python <PYTHON>` に対応している。
 - `/usr/bin/python3.13` が利用可能。
 
-## Planning boundary
+## Historical planning boundary
 
 全体方針:
 

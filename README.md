@@ -8,7 +8,7 @@
 2. [docs/CODE_STATUS.md](/home/tn/projects/marketlens-strike/docs/CODE_STATUS.md)
 3. [docs/OPERATIONS_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/OPERATIONS_RUNBOOK.md)
 4. [docs/ARCHITECTURE_AND_PHASES.md](/home/tn/projects/marketlens-strike/docs/ARCHITECTURE_AND_PHASES.md)
-5. [plan/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/PR-00_to_PR-08_implementation_plan.md)
+5. [plan/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/PR-00_to_PR-08_implementation_plan.md) は historical migration contract として読む
 
 ## Setup
 
@@ -68,7 +68,9 @@ uv run sis build-evidence-card
 ## Current Boundaries
 
 - `trade_xyz` / `real_market` / `tracking` / `paper` / `micro_live` の code surface はある
+- `src/sis/cli.py` は root Typer app の組み立てと `main()` に寄せ、command 実装は `src/sis/commands/` に分割済み
 - micro live は code/test surface であり、現時点では public CLI command を公開していない
+- `collect-trade-xyz-quotes` はまだ public CLI command として公開していない
 - wallet secrets, signing, production live trading は未完了
 - `data/` は git 管理外
 
@@ -78,7 +80,7 @@ uv run sis build-evidence-card
 
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 297 passed
+- `uv run pytest -q`: 300 passed
 - `./scripts/check`: pass
 
 ## Legacy Notes

@@ -10,6 +10,7 @@
 - `src/sis/paper`: venue-gated paper fills, portfolio state, reports
 - `src/sis/execution`: archive read-only adapters plus `Trade[XYZ]` micro live safety code
 - `src/sis/reports`, `src/sis/ops`, `src/sis/state`: operations, dashboards, remediation, daemon, notifications
+- `src/sis/cli.py` and `src/sis/commands/`: root Typer app registration plus feature-specific command modules
 - `archive/legacy_sidecars/` and `src/sis/venues/archive/`: legacy read-only collectors retained for evidence and replay
 
 ## Phase Interpretation
@@ -65,6 +66,7 @@ micro live の current boundary:
 - signing
 - wallet / exchange secrets
 - public CLI operator surface
+- public `collect-trade-xyz-quotes` command
 - production live trading
 
 ## Ops Boundary
