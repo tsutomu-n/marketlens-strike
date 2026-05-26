@@ -27,12 +27,10 @@ registry / universe:
 uv run sis probe trade-xyz
 ```
 
-quote ingest and normalization:
+quote ingest:
 
-```bash
-uv run sis log-quotes --venue trade_xyz --replace
-uv run sis normalize-quotes
-```
+- `trade_xyz` quote collector は code surface と tests では存在するが、現時点では public CLI command を公開していない。
+- `uv run sis log-quotes` は legacy `gtrade` replay 専用。
 
 real market and tracking:
 

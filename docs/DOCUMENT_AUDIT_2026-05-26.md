@@ -49,12 +49,14 @@
 補足:
 
 - いずれも historical runtime output であり、current requirement や current status の正本には向かない。
+- この分類に基づき、現物は `docs/archive/2026-05-26-live-evidence-history/` へ移す。
 
 ## 修正内容
 
 1. `src/sis/reports/implementation_status.py` を PR-00〜PR-08 ベースの generated report へ更新
 2. `tests/test_implementation_status.py` を current output 基準へ更新
 3. legacy collector docs 3 本のタイトルを `Legacy` 明記へ変更
+4. `docs/live_evidence_reports/` は `README.md` のみ tracked にし、historical report は archive へ移す
 
 ## 残る注意点
 

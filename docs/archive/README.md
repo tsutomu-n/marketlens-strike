@@ -24,4 +24,10 @@ Archived on 2026-05-25:
 - `docs/sis_venue_probe_handoff/**` -> historical handoff material
 - `docs/marketlens_strike_engineering_handoff.zip` -> historical handoff package
 
+Archived on 2026-05-26:
+
+- `docs/live_evidence_reports/live_evidence_report_*.md` -> `docs/archive/2026-05-26-live-evidence-history/`
+- `docs/live_evidence_reports/live_evidence_report_*.html` -> `docs/archive/2026-05-26-live-evidence-history/`
+- `docs/live_evidence_reports/live_evidence_followup_*.md` -> `docs/archive/2026-05-26-live-evidence-history/`
+
 Do not treat archived documents as current requirements.

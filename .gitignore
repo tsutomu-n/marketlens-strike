@@ -58,3 +58,9 @@ temp/
 !.tmp/live_evidence_20260527_cron_cleanup.sh
 !.tmp/live_evidence_20260527_recovery_watchdog.sh
 !.tmp/live_evidence_current_status_2026-05-26.md
+
+# Generated tracked-doc outputs
+docs/live_evidence_reports/live_evidence_report_*.md
+docs/live_evidence_reports/live_evidence_report_*.html
+docs/live_evidence_reports/live_evidence_followup_*.md
+!docs/live_evidence_reports/README.md
