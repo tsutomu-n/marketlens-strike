@@ -4,7 +4,7 @@
 
 ## 結論
 
-- `plan/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
+- `plan/archive/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
 - repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
 - ただし運用系 artifact chain の一部は、archive 済み `gtrade` / `ostium` read-only collector をまだ参照する。migration 完了と operational cutover 完了は同義ではない。
 - 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。
@@ -73,7 +73,7 @@ PR-08 専用確認:
 2. `docs/CODE_STATUS.md`
 3. `docs/OPERATIONS_RUNBOOK.md`
 4. `docs/ARCHITECTURE_AND_PHASES.md`
-5. `plan/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+5. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
 
 その後、必要に応じて:
 

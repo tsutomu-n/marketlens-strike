@@ -85,8 +85,8 @@ Acceptance:
 
 Detailed plan:
 
-- `plan/PR-00_python_313_migration_plan.md`
-- `plan/PR-00_TASK_CHAIN.yaml`
+- `plan/archive/PR-00_python_313_migration_plan.md`
+- `plan/archive/PR-00_TASK_CHAIN.yaml`
 
 ## PR-01: Legacy venue archive
 

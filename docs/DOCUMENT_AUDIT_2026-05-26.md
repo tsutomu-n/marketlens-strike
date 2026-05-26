@@ -24,13 +24,13 @@
 - verification count は実測値だけを書く。
 - public CLI command は `uv run sis --help` で確認できるものだけを書く。
 - `micro_live` と `Trade[XYZ]` quote collector は code/test surface と public CLI surface を分けて書く。
-- `plan/PR-00_to_PR-08_implementation_plan.md` は current implementation plan ではなく historical migration contract と明記する。
+- `plan/archive/PR-00_to_PR-08_implementation_plan.md` は current implementation plan ではなく historical migration contract と明記する。
 
 ## 古い内容があるドキュメント
 
 - `plan/README.md`
-- `plan/PR-00_python_313_migration_plan.md`
-- `plan/PR-00_to_PR-08_implementation_plan.md`
+- `plan/archive/PR-00_python_313_migration_plan.md`
+- `plan/archive/PR-00_to_PR-08_implementation_plan.md`
 - `plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md`
 - `.tmp/live_evidence_current_status_2026-05-26.md`
 
@@ -53,8 +53,8 @@
 
 ## 削除・アーカイブしてもよいドキュメント
 
-- `plan/PR-00_python_313_migration_plan.md`
-- `plan/PR-00_to_PR-08_implementation_plan.md`
+- `plan/archive/PR-00_python_313_migration_plan.md`
+- `plan/archive/PR-00_to_PR-08_implementation_plan.md`
 - `.tmp/live_evidence_current_status_2026-05-26.md`
 
 判断:

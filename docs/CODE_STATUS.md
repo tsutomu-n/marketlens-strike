@@ -59,7 +59,7 @@ PR-08:
 
 ## Reading Pointers
 
-- historical migration contract: `plan/PR-00_to_PR-08_implementation_plan.md`
+- historical migration contract: `plan/archive/PR-00_to_PR-08_implementation_plan.md`
 - runtime status: `docs/CURRENT_STATE.md`
 - operator procedure: `docs/OPERATIONS_RUNBOOK.md`
 - architecture and boundaries: `docs/ARCHITECTURE_AND_PHASES.md`

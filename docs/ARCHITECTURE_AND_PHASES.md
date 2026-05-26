@@ -15,7 +15,7 @@
 
 ## Phase Interpretation
 
-`plan/PR-00_to_PR-08_implementation_plan.md` の phase ではなく、運用境界としての読み方:
+`plan/archive/PR-00_to_PR-08_implementation_plan.md` の phase ではなく、運用境界としての読み方:
 
 - Phase 1: quote / evidence / Go-No-Go inputs
 - Phase 2: real-market and tracking quality gates

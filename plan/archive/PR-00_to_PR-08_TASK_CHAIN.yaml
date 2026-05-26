@@ -4,7 +4,7 @@ status: ready
 source:
   repo: /home/tn/projects/marketlens-strike
   handoff_zip: /home/tn/projects/marketlens-strike/.tmp/marketlens_strike_pr0_pr8_implementation_handoff_v3.zip
-  primary_plan: plan/PR-00_to_PR-08_implementation_plan.md
+  primary_plan: plan/archive/PR-00_to_PR-08_implementation_plan.md
 
 global_rules:
   - Execute PRs in numeric order.

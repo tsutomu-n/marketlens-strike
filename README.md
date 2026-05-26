@@ -8,7 +8,7 @@
 2. [docs/CODE_STATUS.md](/home/tn/projects/marketlens-strike/docs/CODE_STATUS.md)
 3. [docs/OPERATIONS_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/OPERATIONS_RUNBOOK.md)
 4. [docs/ARCHITECTURE_AND_PHASES.md](/home/tn/projects/marketlens-strike/docs/ARCHITECTURE_AND_PHASES.md)
-5. [plan/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/PR-00_to_PR-08_implementation_plan.md) は historical migration contract として読む
+5. [plan/archive/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/archive/PR-00_to_PR-08_implementation_plan.md) は historical migration contract として読む
 
 ## Setup
 

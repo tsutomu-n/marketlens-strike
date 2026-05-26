@@ -8,10 +8,10 @@
 
 ## Historical read order
 
-1. `plan/PR-00_to_PR-08_implementation_plan.md`
-2. `plan/PR-00_to_PR-08_TASK_CHAIN.yaml`
-3. `plan/PR-00_python_313_migration_plan.md`
-4. `plan/PR-00_TASK_CHAIN.yaml`
+1. `plan/archive/PR-00_to_PR-08_implementation_plan.md`
+2. `plan/archive/PR-00_to_PR-08_TASK_CHAIN.yaml`
+3. `plan/archive/PR-00_python_313_migration_plan.md`
+4. `plan/archive/PR-00_TASK_CHAIN.yaml`
 5. ZIP handoff の `00_READ_ME_FIRST.md`
 6. ZIP handoff の `01_CURRENT_REPO_FACTS.md`
 7. ZIP handoff の `02_GLOBAL_TARGET_ARCHITECTURE.md`
@@ -60,4 +60,4 @@ PR-00で扱わず、PR-01以降で扱うもの:
 - live order / micro live canary
 - historical generated artifact rewrite
 
-上記のうち、PR-01以降で対象になるものは `plan/PR-00_to_PR-08_implementation_plan.md` にPR別に定義する。
+上記のうち、PR-01以降で対象になるものは `plan/archive/PR-00_to_PR-08_implementation_plan.md` にPR別に定義する。
