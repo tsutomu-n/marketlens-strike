@@ -1,28 +1,26 @@
 # marketlens-strike
 
-`marketlens-strike` is a local research, paper-ops, and read-only execution
-evidence workspace for QQQ / SPY / XAU venue evaluation.
+`marketlens-strike` は、QQQ / SPY / XAU の venue 評価のための、ローカル research・paper operations・read-only execution evidence 用 workspace です。
 
-The current code is the source of truth. Hand-written docs explain how to read
-the code-owned and generated artifacts; they do not override the implementation.
+現状の正本はコードです。手書きの docs は、コード起点の情報や生成 artifact の読み方を補足するものであり、実装そのものを上書きしません。
 
-## Start Here
+## まず読む
 
-Read these files first:
+最初に次を読んでください。
 
 1. [docs/CURRENT_STATE.md](/home/tn/projects/marketlens-strike/docs/CURRENT_STATE.md)
 2. [docs/CODE_STATUS.md](/home/tn/projects/marketlens-strike/docs/CODE_STATUS.md)
 3. [docs/OPERATIONS_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/OPERATIONS_RUNBOOK.md)
 4. [docs/ARCHITECTURE_AND_PHASES.md](/home/tn/projects/marketlens-strike/docs/ARCHITECTURE_AND_PHASES.md)
 
-Then refresh the generated runtime view:
+その後、生成 runtime artifact を更新します。
 
 ```bash
 uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
 ```
 
-The most useful generated reports after refresh are:
+更新後に最も重要なレポートは次です。
 
 - `data/reports/current_state_index.md`
 - `data/reports/readiness_snapshot.md`
@@ -30,10 +28,11 @@ The most useful generated reports after refresh are:
 - `data/reports/operations_dashboard.md`
 - `data/reports/remediation_scoreboard.md`
 
-`data/` is ignored by git. Treat generated files as current runtime evidence,
-not as tracked source documents.
+`data/` は git 管理外です。生成ファイルは tracked source document ではなく、その時点の runtime evidence として扱ってください。
 
-## Setup
+`docs/live_evidence_reports/` は live evidence runner が吐く markdown / HTML 出力の置き場です。既存ファイルは historical runtime output を含むため、現行判断はまず `data/reports/phase_gate_review.md` と `data/reports/readiness_snapshot.md` を優先してください。
+
+## セットアップ
 
 ```bash
 uv python install 3.14
@@ -42,7 +41,7 @@ uv run python -V
 uv run sis --help
 ```
 
-JavaScript sidecars use `bun`:
+JavaScript sidecar は `bun` を使います。
 
 ```bash
 bun install --frozen-lockfile
@@ -50,43 +49,42 @@ bun run gtrade:typecheck
 bun run ostium:typecheck
 ```
 
-Run the full local verification gate:
+ローカル検証を一通り流す場合:
 
 ```bash
 ./scripts/check
 ```
 
-Some archived notes mention `rtk`. It is only a local wrapper. If it is not
-available, run the same command without it.
+一部の archive 済み note には `rtk` が出てきますが、これは local wrapper にすぎません。利用できない場合は同じコマンドをそのまま実行してください。
 
-## Main Workflows
+## 主なワークフロー
 
-Refresh operations, audit, phase-gate, remediation, and restart artifacts:
+operations / audit / phase gate / remediation / restart artifact を更新する:
 
 ```bash
 uv run sis refresh-operations-artifacts
 ```
 
-Run one paper operations cycle and regenerate downstream artifacts:
+paper operations を 1 cycle 回し、下流 artifact まで再生成する:
 
 ```bash
 uv run sis paper-operations-cycle
 ```
 
-Rebuild the generated implementation status:
+implementation status を再構築する:
 
 ```bash
 uv run sis implementation-status --write
 ```
 
-Collect or replay live evidence when the venue window is valid:
+venue window が有効なときに live evidence を収集または再生する:
 
 ```bash
 uv run python scripts/run_live_evidence.py --dry-run
 uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-interval-seconds 60
 ```
 
-Replay existing gTrade sidecar data into the quote pipeline:
+既存の gTrade sidecar data を quote pipeline に replay する:
 
 ```bash
 bun run gtrade:probe
@@ -98,7 +96,7 @@ uv run sis check-go-no-go
 uv run sis build-evidence-card
 ```
 
-## Common Commands
+## よく使うコマンド
 
 ```bash
 uv run sis probe gtrade
@@ -127,24 +125,19 @@ uv run sis paper-operations-runbook
 uv run sis remediation-scoreboard
 ```
 
-Use `uv run sis --help` for the full CLI surface.
+CLI 全体は `uv run sis --help` を見てください。
 
-## Current Limits
+## 現在の制約
 
-The repository contains substantial implementation for research data, decision
-summaries, paper trading, read-only execution surfaces, operations reports, and
-remediation dry runs.
+この repository には、research data、decision summary、paper trading、read-only execution surface、operations report、remediation dry-run まで、かなりの実装が入っています。
 
-The remaining operational blockers are not documentation blockers:
+残っている運用上の blocker は docs 不足ではありません。2026-05-26 時点の `data/reports/phase_gate_review.md` では、判定は `CONDITIONAL_GO_NEEDS_LIVE_WINDOW`、`Phase 2` 進入は `False` です。
 
-- fresh live evidence still needs to be recollected and re-evaluated
-- Go/No-Go must be rechecked from current evidence
-- real live execution integration is still outside the current safe surface
-- external process supervision and provider delivery are not complete; `daemon-run`
-  provides the local command-loop runner and `notification-outbox` provides the local notification queue
+- fresh live evidence の再収集と再評価がまだ必要
+- 現在の evidence をもとに Go/No-Go を再確認する必要がある
+- 実 live execution integration はまだ現在の safe surface の外にある
+- external process supervision と provider delivery は未完了。`daemon-run` は local command-loop runner、`notification-outbox` は local notification queue を提供する
 
-## Historical Material
+## 過去資料
 
-Older handoff plans, stale phase docs, and previous audit notes are preserved
-under `docs/archive/`. They are historical context only. Current behavior comes
-from the code, tracked docs listed above, and generated runtime artifacts.
+古い handoff plan、stale な phase docs、過去の audit note は `docs/archive/` に残しています。これらは historical context 用です。現行の挙動判断は、コード、上で挙げた tracked docs、生成済み runtime artifact を基準にしてください。
