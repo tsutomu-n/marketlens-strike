@@ -84,8 +84,8 @@ def test_check_timeframe_cli_blocks_scalping() -> None:
 def test_implementation_status_reports_complete_scope() -> None:
     result = runner.invoke(app, ["implementation-status"])
     assert result.exit_code == 0
-    assert "Backtest bridge" in result.stdout
-    assert "Ostium liquidation reference" in result.stdout
+    assert "PR-03" in result.stdout
+    assert "PR-08" in result.stdout
     assert "PARTIAL" not in result.stdout
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 

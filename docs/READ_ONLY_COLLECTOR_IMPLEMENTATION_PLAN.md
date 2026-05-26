@@ -1,4 +1,4 @@
-# Read-Only Collector Implementation Plan
+# Legacy Read-Only Collector Implementation Plan
 
 この文書は legacy `gtrade` / `ostium` read-only collector の実装・検証・再開用メモである。repo 全体の migration plan 正本は `plan/PR-00_to_PR-08_implementation_plan.md` を使う。
 運用手順と artifact contract の正本は `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。

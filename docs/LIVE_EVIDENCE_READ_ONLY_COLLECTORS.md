@@ -1,4 +1,4 @@
-# Live Evidence Read-Only Collectors
+# Legacy Live Evidence Read-Only Collectors
 
 この文書は legacy `gtrade` / `ostium` read-only collector chain の運用メモです。`Trade[XYZ]` migration 全体の正本ではありません。
 実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
