@@ -39,6 +39,7 @@ class MicroLiveGateInput:
     tracking_trade_allowed: bool
     source_confidence: float
     venue_quality_score: float
+    open_positions_count: int = 0
     event_window_blocked: bool = False
 
 
@@ -88,6 +89,8 @@ def evaluate_micro_live_gates(
         reasons.append("BLOCK_NOTIONAL_TOO_HIGH")
     if gate_input.requested_leverage > policy.max_leverage:
         reasons.append("BLOCK_LEVERAGE_TOO_HIGH")
+    if gate_input.open_positions_count >= policy.max_open_positions:
+        reasons.append("BLOCK_MAX_OPEN_POSITIONS")
     if gate_input.daily_loss_remaining_usd < gate_input.requested_notional_usd:
         reasons.append("BLOCK_DAILY_LOSS_LIMIT")
     if policy.allowed_symbols and gate_input.canonical_symbol.upper() not in policy.allowed_symbols:
@@ -103,4 +106,3 @@ def evaluate_micro_live_gates(
     if gate_input.event_window_blocked:
         reasons.append("BLOCK_EVENT_WINDOW")
     return list(dict.fromkeys(reasons))
-

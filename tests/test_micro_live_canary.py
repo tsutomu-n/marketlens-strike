@@ -107,6 +107,7 @@ def test_micro_live_canary_calls_schedule_cancel_before_order_and_cancels_open(t
     adapter = TradeXyzSafetyAdapter(exchange)
     report_path = tmp_path / "data/reports/micro_live_safety_report.md"
     summary_path = tmp_path / "data/ops/micro_live_canary_summary.json"
+    audit_bundle_path = tmp_path / "data/ops/micro_live_audit_bundle.json"
 
     result = run_micro_live_canary(
         policy=_policy(),
@@ -115,6 +116,7 @@ def test_micro_live_canary_calls_schedule_cancel_before_order_and_cancels_open(t
         gate_input=_gate_input(),
         report_path=report_path,
         summary_path=summary_path,
+        audit_bundle_path=audit_bundle_path,
         now=datetime(2026, 5, 26, 0, 0, tzinfo=timezone.utc),
     )
 
@@ -134,6 +136,12 @@ def test_micro_live_canary_calls_schedule_cancel_before_order_and_cancels_open(t
     assert "schedule_cancel_status: scheduled" in report_text
     summary = read_json(summary_path)
     assert summary["status"] == "completed_canceled_open_order"
+    assert summary["audit_bundle_path"] == str(audit_bundle_path)
+    audit_bundle = read_json(audit_bundle_path)
+    assert audit_bundle["operation"] == "micro_live_canary"
+    assert audit_bundle["status"] == "completed_canceled_open_order"
+    assert audit_bundle["policy"]["max_notional_usd"] == 50.0
+    assert audit_bundle["request"]["cloid"] == "canary-cloid-1"
 
 
 def test_micro_live_canary_closes_filled_position_with_reduce_only() -> None:
@@ -171,3 +179,29 @@ def test_micro_live_canary_blocks_when_schedule_cancel_fails() -> None:
         "schedule_cancel",
     ]
 
+
+def test_micro_live_canary_uses_request_notional_for_policy_gate() -> None:
+    exchange = _FakeExchange(schedule_ok=True, order_status="open")
+    adapter = TradeXyzSafetyAdapter(exchange)
+    request = MicroLiveCanaryRequest(
+        canonical_symbol="SP500",
+        side="long",
+        quantity=1.0,
+        limit_price=100.0,
+        cloid="canary-cloid-2",
+        notional_usd=75.0,
+        leverage=1.5,
+        master_address="0xmaster",
+        subaccount_address="0xsub",
+    )
+
+    result = run_micro_live_canary(
+        policy=_policy(),
+        adapter=adapter,
+        request=request,
+        gate_input=_gate_input(),
+    )
+
+    assert result.status == "blocked_preflight"
+    assert "BLOCK_NOTIONAL_TOO_HIGH" in result.blocked_reasons
+    assert exchange.calls == ["read_account_state"]

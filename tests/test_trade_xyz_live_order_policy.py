@@ -4,6 +4,7 @@ from sis.execution.live_order_policy import (
     MicroLiveGateInput,
     MicroLivePolicy,
     evaluate_micro_live_gates,
+    load_micro_live_policy,
 )
 
 
@@ -51,6 +52,19 @@ def test_micro_live_policy_blocks_disabled_and_missing_confirm_flag() -> None:
     assert "BLOCK_CONFIRM_FLAG_REQUIRED" in reasons
 
 
+def test_load_micro_live_policy_reads_config_file() -> None:
+    policy = load_micro_live_policy()
+
+    assert policy.enabled is False
+    assert policy.venue == "trade_xyz"
+    assert policy.max_notional_usd == 50.0
+    assert policy.max_leverage == 2.0
+    assert "SP500" in policy.allowed_symbols
+    assert "market" in policy.prohibited_order_types
+    assert policy.schedule_cancel_deadline_seconds_after_now == 300
+    assert policy.close_require_reduce_only is True
+
+
 def test_micro_live_policy_blocks_market_notional_leverage_and_low_quality() -> None:
     reasons = evaluate_micro_live_gates(
         _policy(),
@@ -87,3 +101,11 @@ def test_micro_live_policy_blocks_non_regular_session_and_event_window() -> None
     )
     assert "BLOCK_UNDERLYING_NOT_REGULAR_SESSION" in reasons
     assert "BLOCK_EVENT_WINDOW" in reasons
+
+
+def test_micro_live_policy_blocks_max_open_positions() -> None:
+    reasons = evaluate_micro_live_gates(
+        _policy(),
+        _gate_input(open_positions_count=1),
+    )
+    assert "BLOCK_MAX_OPEN_POSITIONS" in reasons

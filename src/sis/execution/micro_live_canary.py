@@ -33,6 +33,7 @@ class MicroLiveCanaryResult:
     cancel_result: AdapterActionResult | None
     close_result: AdapterActionResult | None
     report_path: Path | None
+    audit_bundle_path: Path | None
 
 
 def _build_report_text(
@@ -98,13 +99,21 @@ def run_micro_live_canary(
     gate_input: MicroLiveGateInput,
     report_path: Path | None = None,
     summary_path: Path | None = None,
+    audit_bundle_path: Path | None = None,
     now: datetime | None = None,
 ) -> MicroLiveCanaryResult:
+    effective_gate_input = replace(
+        gate_input,
+        requested_notional_usd=request.notional_usd,
+        requested_leverage=request.leverage,
+        canonical_symbol=request.canonical_symbol,
+        order_type="limit",
+    )
     account_state = adapter.read_account_state(
         master_address=request.master_address,
         subaccount_address=request.subaccount_address,
     )
-    pre_schedule_input = replace(gate_input, schedule_cancel_success=True)
+    pre_schedule_input = replace(effective_gate_input, schedule_cancel_success=True)
     pre_schedule_reasons = evaluate_micro_live_gates(policy, pre_schedule_input)
     if pre_schedule_reasons:
         result = MicroLiveCanaryResult(
@@ -116,12 +125,13 @@ def run_micro_live_canary(
             cancel_result=None,
             close_result=None,
             report_path=report_path,
+            audit_bundle_path=audit_bundle_path,
         )
         text = _build_report_text(
             policy=policy,
             request=request,
             account_state=account_state,
-            gate_input=gate_input,
+            gate_input=effective_gate_input,
             result=result,
         )
         if report_path is not None:
@@ -134,8 +144,17 @@ def run_micro_live_canary(
                     "status": result.status,
                     "blocked_reasons": result.blocked_reasons,
                     "report_path": str(report_path) if report_path is not None else None,
+                    "audit_bundle_path": str(audit_bundle_path) if audit_bundle_path is not None else None,
                 },
             )
+        _write_audit_bundle(
+            audit_bundle_path=audit_bundle_path,
+            policy=policy,
+            request=request,
+            account_state=account_state,
+            gate_input=effective_gate_input,
+            result=result,
+        )
         return result
 
     ts_now = now or datetime.now(timezone.utc)
@@ -144,7 +163,7 @@ def run_micro_live_canary(
     )
     schedule_cancel = adapter.schedule_cancel(deadline_ts_ms=deadline_ts_ms)
     schedule_gate_input = replace(
-        gate_input,
+        effective_gate_input,
         schedule_cancel_success=schedule_cancel.success,
     )
     blocked_reasons = evaluate_micro_live_gates(policy, schedule_gate_input)
@@ -158,6 +177,7 @@ def run_micro_live_canary(
             cancel_result=None,
             close_result=None,
             report_path=report_path,
+            audit_bundle_path=audit_bundle_path,
         )
         text = _build_report_text(
             policy=policy,
@@ -176,8 +196,17 @@ def run_micro_live_canary(
                     "status": result.status,
                     "blocked_reasons": result.blocked_reasons,
                     "report_path": str(report_path) if report_path is not None else None,
+                    "audit_bundle_path": str(audit_bundle_path) if audit_bundle_path is not None else None,
                 },
             )
+        _write_audit_bundle(
+            audit_bundle_path=audit_bundle_path,
+            policy=policy,
+            request=request,
+            account_state=account_state,
+            gate_input=schedule_gate_input,
+            result=result,
+        )
         return result
 
     order_submit = adapter.place_limit_order(
@@ -204,6 +233,7 @@ def run_micro_live_canary(
             cancel_result=None,
             close_result=None,
             report_path=report_path,
+            audit_bundle_path=audit_bundle_path,
         )
     else:
         order_status = adapter.order_status_by_cloid(request.cloid)
@@ -232,6 +262,7 @@ def run_micro_live_canary(
             cancel_result=cancel_result,
             close_result=close_result,
             report_path=report_path,
+            audit_bundle_path=audit_bundle_path,
         )
 
     text = _build_report_text(
@@ -258,7 +289,93 @@ def run_micro_live_canary(
                 "cancel_status": result.cancel_result.status if result.cancel_result is not None else None,
                 "close_status": result.close_result.status if result.close_result is not None else None,
                 "report_path": str(report_path) if report_path is not None else None,
+                "audit_bundle_path": str(audit_bundle_path) if audit_bundle_path is not None else None,
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             },
         )
+    _write_audit_bundle(
+        audit_bundle_path=audit_bundle_path,
+        policy=policy,
+        request=request,
+        account_state=account_state,
+        gate_input=schedule_gate_input,
+        result=result,
+    )
     return result
+
+
+def _write_audit_bundle(
+    *,
+    audit_bundle_path: Path | None,
+    policy: MicroLivePolicy,
+    request: MicroLiveCanaryRequest,
+    account_state: dict,
+    gate_input: MicroLiveGateInput,
+    result: MicroLiveCanaryResult,
+) -> None:
+    if audit_bundle_path is None:
+        return
+    write_json(
+        audit_bundle_path,
+        {
+            "operation": "micro_live_canary",
+            "status": result.status,
+            "blocked_reasons": result.blocked_reasons,
+            "policy": {
+                "venue": policy.venue,
+                "enabled": policy.enabled,
+                "max_notional_usd": policy.max_notional_usd,
+                "max_leverage": policy.max_leverage,
+                "max_open_positions": policy.max_open_positions,
+                "min_source_confidence": policy.min_source_confidence,
+                "min_venue_quality_score": policy.min_venue_quality_score,
+                "schedule_cancel_deadline_seconds_after_now": (
+                    policy.schedule_cancel_deadline_seconds_after_now
+                ),
+                "close_require_reduce_only": policy.close_require_reduce_only,
+            },
+            "account": {
+                "master_address": request.master_address,
+                "subaccount_address": request.subaccount_address,
+                "equity": account_state.get("equity"),
+                "available_cash": account_state.get("available_cash"),
+            },
+            "request": {
+                "canonical_symbol": request.canonical_symbol,
+                "side": request.side,
+                "quantity": request.quantity,
+                "limit_price": request.limit_price,
+                "cloid": request.cloid,
+                "notional_usd": request.notional_usd,
+                "leverage": request.leverage,
+            },
+            "gate_input": {
+                "enable_live_flag": gate_input.enable_live_flag,
+                "kill_switch_clear": gate_input.kill_switch_clear,
+                "schedule_cancel_success": gate_input.schedule_cancel_success,
+                "daily_loss_remaining_usd": gate_input.daily_loss_remaining_usd,
+                "requested_notional_usd": gate_input.requested_notional_usd,
+                "requested_leverage": gate_input.requested_leverage,
+                "order_type": gate_input.order_type,
+                "canonical_symbol": gate_input.canonical_symbol,
+                "underlying_session_regular": gate_input.underlying_session_regular,
+                "tracking_trade_allowed": gate_input.tracking_trade_allowed,
+                "source_confidence": gate_input.source_confidence,
+                "venue_quality_score": gate_input.venue_quality_score,
+                "open_positions_count": gate_input.open_positions_count,
+                "event_window_blocked": gate_input.event_window_blocked,
+            },
+            "actions": {
+                "schedule_cancel_status": (
+                    result.schedule_cancel.status if result.schedule_cancel is not None else None
+                ),
+                "order_submit_status": result.order_submit.status if result.order_submit is not None else None,
+                "order_status": result.order_status.status if result.order_status is not None else None,
+                "cancel_status": result.cancel_result.status if result.cancel_result is not None else None,
+                "close_status": result.close_result.status if result.close_result is not None else None,
+            },
+            "report_path": str(result.report_path) if result.report_path is not None else None,
+            "audit_bundle_path": str(audit_bundle_path),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
