@@ -1,6 +1,6 @@
 # Live Evidence Read-Only Collectors
 
-この文書は、Ostium / gTrade の実データ取得を read-only で監査可能にするための運用メモである。
+この文書は legacy `gtrade` / `ostium` read-only collector chain の運用メモです。`Trade[XYZ]` migration 全体の正本ではありません。
 実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
 残リスクと hardening backlog は `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。
 
@@ -9,6 +9,11 @@
 本番発注、署名、allowance、private key は扱わない。
 
 Phase gate の材料として必要なのは、raw response、受信時刻、digest、schema digest、collector manifest、market close / deepReorg の扱いを残すことである。
+
+current repo context:
+
+- migration code の主軸は `trade_xyz`
+- それとは別に、current operations chain の一部はこの legacy collector evidence をまだ参照する
 
 ## gTrade
 
@@ -108,4 +113,3 @@ manifest の `row_counts` に次が追加される。
 market close は missing data ではない。Ostium constraint artifact で closed と分類されていれば、価格欠損とは別に扱う。
 
 現在の gate は summary field の存在検査が中心であり、artifact file existence / digest validation は future hardening として `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` に残している。
-

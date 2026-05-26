@@ -1,6 +1,6 @@
 # Operations Runbook
 
-この runbook は、現行コードから運用状態を再生成して読むための手順です。`data/` は git 管理外なので、再開時はまず artifact を作り直します。
+この runbook は current repo を再開・再検証・再生成するための最短手順です。`data/` は git 管理外なので、artifact は必要に応じて作り直します。
 
 ## Restart
 
@@ -18,89 +18,87 @@ uv run sis phase-gate-review
 4. `data/reports/readiness_snapshot.md`
 5. `data/reports/phase_gate_review.md`
 6. `data/reports/operations_dashboard.md`
-7. `data/reports/remediation_scoreboard.md`
+
+## Trade[XYZ] Migration Surfaces
+
+registry / universe:
+
+```bash
+uv run sis probe trade-xyz
+```
+
+quote ingest and normalization:
+
+```bash
+uv run sis log-quotes --venue trade_xyz --replace
+uv run sis normalize-quotes
+```
+
+real market and tracking:
+
+```bash
+uv run sis ingest-research-data
+uv run sis build-event-calendar
+uv run sis build-feature-panel
+uv run sis build-signals
+uv run sis check-research-quality
+```
 
 ## Paper Operations
 
-paper state を 1 cycle 進め、下流 artifact まで更新する。
+paper state を 1 cycle 進める:
 
 ```bash
 uv run sis paper-operations-cycle
 ```
 
-主要 artifact:
+関連 artifact:
 
+- `data/paper/orders.parquet`
+- `data/paper/fills.parquet`
+- `data/paper/positions.parquet`
+- `data/reports/daily_paper_report.md`
 - `data/reports/paper_operations_runbook.md`
-- `data/reports/paper_cycle_history.md`
-- `data/reports/operations_dashboard.md`
-- `data/reports/audit_dashboard.md`
 
-local daemon loop を bounded smoke として実行する場合:
+## Execution And Ops Artifacts
 
-```bash
-uv run sis daemon-run --mode paper --command "uv run sis paper-step" --max-cycles 1
-```
-
-常駐させる場合は、外部 supervisor なしであることを理解したうえで明示的に `--forever` を付けます。停止は kill switch または command failure です。
-
-主要 artifact:
-
-- `data/ops/daemon_loop.json`
-- `data/ops/daemon_loop_summary.json`
-- `data/ops/daemon_loop_events.jsonl`
-- `data/reports/daemon_loop.md`
-
-notification を provider 送信せず local queue に積む場合:
-
-```bash
-uv run sis notification-outbox --level warn --title "Stale" --body "recollect live evidence"
-```
-
-主要 artifact:
-
-- `data/notifications/outbox.jsonl`
-- `data/notifications/latest_notification.json`
-- `data/ops/notification_outbox_summary.json`
-- `data/reports/notification_outbox.md`
-
-## Read-Only Execution Surfaces
-
-target 不要の read-only observation は refresh / daemon dry-run / paper cycle で再集約されます。
+read-only execution surface:
 
 ```bash
 uv run sis execution-snapshot --venue gtrade --fills-limit 5 --order-limit 5
 uv run sis execution-venue-comparison
 uv run sis execution-venue-diagnostics
 uv run sis execution-read-only-surfaces
-uv run sis refresh-operations-artifacts
 ```
 
-single command surface:
+single-command surface:
 
 ```bash
 uv run sis balance-status --venue gtrade
 uv run sis fill-status --venue gtrade --limit 20
 uv run sis order-status --venue gtrade --order-id ord-1
 uv run sis reconcile-positions --venue ostium
+uv run sis healthcheck
+uv run sis notification-outbox --level warn --title "Stale" --body "recollect live evidence"
 ```
-
-`cancel-order` と `close-position` は target 依存です。自動 refresh の対象にしません。
 
 ## Live Evidence
 
-実行前に dry-run で推奨 window と preflight を確認する。
+現在の operational live evidence chain は legacy archive collector を含む。
+
+dry-run:
 
 ```bash
 uv run python scripts/run_live_evidence.py --dry-run
 ```
 
-取得する場合:
+run:
 
 ```bash
 uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-interval-seconds 60 --backend-event-duration-minutes 30
 ```
 
-sidecar を replay して Go/No-Go まで更新する場合:
+legacy replay path:
 
 ```bash
 bun run --cwd archive/legacy_sidecars/gtrade probe
@@ -113,36 +111,39 @@ uv run sis build-evidence-card
 uv run sis phase-gate-review
 ```
 
-live evidence report は `docs/live_evidence_reports/` に出ます。最新運用判断は `data/reports/phase_gate_review.md` と `data/reports/readiness_snapshot.md` で確認します。
+`docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` 以降の 3 文書は、この legacy read-only collector chain の補助資料です。`Trade[XYZ]` migration 完了そのものの説明ではありません。
 
-`XNYS` や `QQQ` / `SPY` / `XAU` の市場カレンダー差分は `docs/XNYS_MARKET_CALENDAR.md` を読む。
+## Daemon And Notifications
 
-read-only collector の raw artifact / manifest / phase gate 連携は `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。残リスクと hardening backlog は `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。Ostium は Builder API artifact、legacy metadata REST、Python SDK read-only probe が揃って初めて constraint pass と扱う。
-
-## Remediation
-
-remediation chain は dry-run の運用支援です。実 command の自動実行ではありません。
+bounded local loop:
 
 ```bash
-uv run sis remediation-planner
-uv run sis remediation-execution-plan
-uv run sis remediation-session
-uv run sis remediation-session-checkpoint
-uv run sis remediation-scoreboard
-uv run sis remediation-evaluator
-uv run sis remediation-evidence
-uv run sis remediation-command-results
+uv run sis daemon-run --mode paper --command "uv run sis paper-step" --max-cycles 1
 ```
 
-operator が実行結果を取り込む場合:
+dry-run:
 
 ```bash
-uv run sis remediation-evidence-ingest --action-key <key> --result pass --exit-code 0
+uv run sis daemon-dry-run --mode paper --command "uv run sis paper-step" --every-minutes 30
 ```
+
+`daemon-run` は local command-loop runner です。external supervisor や remote orchestration は未完了です。
+
+## Micro Live Boundary
+
+`Trade[XYZ]` micro live canary は code/test surface としては存在するが、現時点では public CLI command を公開していない。
+
+標準確認:
+
+```bash
+uv run pytest tests/test_trade_xyz_live_order_policy.py tests/test_trade_xyz_adapter_safety.py tests/test_micro_live_canary.py -q
+```
+
+manual live smoke は標準運用手順に含めない。wallet / signing / exchange write integration は別途レビュー前提。
 
 ## Stop Conditions
 
-- `phase_gate_review` が Phase 2 entry を許可しない場合、Phase 2 完了扱いにしない。
-- generated artifact が欠けている場合、推測で判断せず `refresh-operations-artifacts` を再実行する。
-- live evidence が古い場合、Go/No-Go の改善を実装完了と扱わない。
-- read-only execution surface を live trading integration と混同しない。
+- `phase-gate-review` が `phase2_entry_allowed=false` の間は、運用上の昇格完了と扱わない。
+- generated artifact が欠けている場合、推測で判断せず再生成する。
+- micro live code path があることをもって live trading ready と解釈しない。
+- migration docs と legacy live evidence docs を混同しない。

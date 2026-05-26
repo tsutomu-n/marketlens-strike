@@ -1,12 +1,12 @@
 # Read-Only Collector Implementation Plan
 
-この文書は、Ostium / gTrade の read-only 実データ取得を実装・検証・再開するための計画とタスク一覧である。
+この文書は legacy `gtrade` / `ostium` read-only collector の実装・検証・再開用メモである。repo 全体の migration plan 正本は `plan/PR-00_to_PR-08_implementation_plan.md` を使う。
 運用手順と artifact contract の正本は `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。
 残リスクと hardening backlog は `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。
 
 ## 結論
 
-本番発注システムではなく、監査可能な read-only collector を先に固める。
+本番発注システムではなく、監査可能な legacy read-only collector を先に固める。
 
 現在の実装は次を満たす。
 

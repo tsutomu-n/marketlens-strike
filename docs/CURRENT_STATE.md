@@ -1,56 +1,44 @@
 # Current State
 
-この文書は `marketlens-strike` の現在位置を読むための入口です。現状の正本はコードと生成 artifact です。古い handoff や phase 文書は archive に移しました。
+この文書は `marketlens-strike` の tracked docs 側の current truth を短く読むための入口です。最終的な正本はコード、設定、tests、生成 artifact です。
 
 ## 結論
 
-- この repo は初期の venue probe だけではなく、research data、decision summary、paper trading、read-only execution surface、operations/audit report、remediation dry-run まで実装を持つ。
-- 運用上はまだ Phase 1 gate が閉じていない。理由は fresh live evidence の再収集と Go/No-Go 再判定が未完了だから。
-- 実 live order execution と外部 provider 配信は未完了。`daemon-run` は local command-loop runner、`notification-outbox` は local notification queue を持つが、外部 supervisor / provider 連携とは分けて扱う。
-- 最新の運用状態は `data/ops/*.json` と `data/reports/*.md` を読む。これらは `uv run sis refresh-operations-artifacts` で再生成する。
+- `plan/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
+- repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
+- ただし運用系 artifact chain の一部は、archive 済み `gtrade` / `ostium` read-only collector をまだ参照する。migration 完了と operational cutover 完了は同義ではない。
+- 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。
 
 ## Source Of Truth
 
-優先順位は次の通りです。
+優先順位:
 
-1. `src/`, `schemas/`, `sidecars/`, `scripts/`, `tests/`
+1. `src/`, `tests/`, `configs/`, `schemas/`, `scripts/`, `plan/`
 2. generated runtime artifacts under `data/ops/` and `data/reports/`
-3. tracked docs: `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md`, `docs/ARCHITECTURE_AND_PHASES.md`
-4. archive under `docs/archive/`
+3. tracked docs under `docs/`
+4. `docs/archive/`
 
-archive は historical context です。現行判断の正本にはしません。
+`docs/archive/` は historical context です。現行判断の正本にはしません。
 
-## What Exists In Code
+## Implemented Surfaces
 
-現行コードは少なくとも次の surface を持ちます。
+現行コードで確認できる主要 surface:
 
-- venue quote collection and normalization for gTrade / Ostium
-- cost matrix, quote diagnostics, Go/No-Go report, EvidenceCard
-- research data ingest, event calendar, feature panel, signal builder, research quality report
-- backtest bridge and decision summary
-- local paper trading state, fills, positions, daily PnL, reports
-- read-only execution adapters, balance/fill/order/position/reconciliation artifacts
-- operations dashboard, timelines, audit bundle, current-state index, readiness snapshot
-- remediation planner, execution plan, session, checkpoint, scoreboard, evaluator, evidence, command-results
-- live evidence runner, scheduler, manifest summary, markdown/HTML reports
-- bounded or explicit persistent local daemon command loop with kill-switch blocking
-- local notification outbox with latest notification JSON, report, summary, and operation-chain entry
+- Python 3.13 前提の runtime / lock / CI
+- legacy `gtrade` / `ostium` の archive 化
+- `Trade[XYZ]` registry builder, universe report, quote collector, quote normalizer
+- `real_market` feature builder と free-source quality gating
+- `tracking` layer による real-market vs venue 判定
+- venue quality gate 付き paper fill / fee model / paper report
+- `Trade[XYZ]` micro live safety adapter / policy / canary code path
+- read-only execution surfaces, operations dashboard, remediation chain, daemon loop, notification outbox
 
-詳細な実装表は `docs/CODE_STATUS.md` を読む。再生成は次で行う。
+## Important Boundaries
 
-```bash
-uv run sis implementation-status --write
-```
-
-## What Is Still Not Proven
-
-次は未完了または再確認が必要です。
-
-- fresh live evidence window の再収集
-- `stale_rate` / `tradable_rate` を含む Go/No-Go 再判定
-- live execution API による発注・約定・残高の本統合
-- target 依存の cancel/close/order status の自動再観測
-- external supervisor / provider delivery 連携
+- 新規実装の主 venue は `trade_xyz`。legacy venue は archive / read-only evidence として扱う。
+- `micro_live` はコードと tests では存在するが、標準の operator CLI にはまだ exposed していない。
+- `data/` は git 管理外。再開時は artifact を再生成する。
+- `ostium-python-sdk` は active dependency から削除済み。archive collector 側の optional read-only evidence としてのみ言及が残る。
 
 ## Verification Status
 
@@ -58,34 +46,43 @@ uv run sis implementation-status --write
 
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
-- `uv run pytest -q`: 256 passed
 - `uv run pyrefly check`: pass, 0 errors
-- `bun run --cwd archive/legacy_sidecars/gtrade typecheck`: pass
-- `bun run --cwd archive/legacy_sidecars/ostium typecheck`: pass
-- `bun run --cwd archive/legacy_sidecars/gtrade test`: 12 passed
-- `bun run --cwd archive/legacy_sidecars/ostium test`: 5 passed
-- `uv run sis refresh-operations-artifacts`: pass
+- `uv run pytest -q`: 297 passed
+
+PR-08 専用確認:
+
+- `tests/test_trade_xyz_live_order_policy.py`
+- `tests/test_trade_xyz_adapter_safety.py`
+- `tests/test_micro_live_canary.py`
+
+上記は `./scripts/check` に含まれる。
+
+## What Is Still Not Proven
+
+- 実ネットワークを使う manual live smoke
+- signing / wallet / exchange write integration
+- `trade_xyz` を主軸にした operations artifact chain への全面 cutover
+- fresh live evidence を使った operational Go/No-Go 再判定
 
 ## Recommended Read Order
-
-まず tracked docs を読む。
 
 1. `docs/CURRENT_STATE.md`
 2. `docs/CODE_STATUS.md`
 3. `docs/OPERATIONS_RUNBOOK.md`
 4. `docs/ARCHITECTURE_AND_PHASES.md`
+5. `plan/PR-00_to_PR-08_implementation_plan.md`
 
-次に generated runtime artifact を読む。
+その後、必要に応じて:
 
 1. `data/reports/current_state_index.md`
 2. `data/reports/readiness_snapshot.md`
 3. `data/reports/phase_gate_review.md`
 4. `data/reports/operations_dashboard.md`
-5. `data/reports/remediation_scoreboard.md`
 
-artifact が古い場合は次を実行する。
+artifact が古い場合:
 
 ```bash
+uv run sis implementation-status --write
 uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
 ```
