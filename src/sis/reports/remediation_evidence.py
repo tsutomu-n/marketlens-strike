@@ -15,7 +15,9 @@ def _quick_navigation(out_path: Path | None) -> dict[str, str]:
         "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
         "remediation_command_results_report": str(reports_dir / "remediation_command_results.md"),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
     }
 
 
@@ -28,7 +30,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "remediation_planner_report": str(reports_dir / "remediation_planner.md"),
         "remediation_execution_plan_report": str(reports_dir / "remediation_execution_plan.md"),
         "remediation_session_report": str(reports_dir / "remediation_session.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
         "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
         "remediation_command_results_report": str(reports_dir / "remediation_command_results.md"),
@@ -92,7 +96,9 @@ def _planner_summary_from_checkpoint(checkpoint: dict) -> dict:
         Path(execution_plan_path) if isinstance(execution_plan_path, str) else None
     )
     planner_summary_path = execution_plan.get("remediation_planner_summary_path")
-    return safe_read_json_dict(Path(planner_summary_path) if isinstance(planner_summary_path, str) else None)
+    return safe_read_json_dict(
+        Path(planner_summary_path) if isinstance(planner_summary_path, str) else None
+    )
 
 
 def _derived_report_path(source: str, summary_path: Path | None) -> str | None:
@@ -158,8 +164,7 @@ def _needs_evidence(action: dict) -> bool:
     if not isinstance(evaluations, list):
         return False
     return any(
-        isinstance(item, dict) and str(item.get("status")) == "unsupported"
-        for item in evaluations
+        isinstance(item, dict) and str(item.get("status")) == "unsupported" for item in evaluations
     )
 
 
@@ -182,7 +187,9 @@ def build_remediation_evidence(
     evaluator = safe_read_json_dict(remediation_evaluator_summary_path)
     source_contexts = _source_contexts(checkpoint)
     actions = evaluator.get("actions") if isinstance(evaluator.get("actions"), list) else []
-    checkpoint_actions = checkpoint.get("actions") if isinstance(checkpoint.get("actions"), list) else []
+    checkpoint_actions = (
+        checkpoint.get("actions") if isinstance(checkpoint.get("actions"), list) else []
+    )
     checkpoint_actions_by_key = {
         str(item.get("action_key")): item
         for item in checkpoint_actions
@@ -202,7 +209,8 @@ def build_remediation_evidence(
             else []
         )
         unresolved_signals = [
-            item for item in signal_evaluations
+            item
+            for item in signal_evaluations
             if isinstance(item, dict) and str(item.get("status")) != "pass"
         ]
         unsupported_signal_count = sum(
@@ -236,13 +244,19 @@ def build_remediation_evidence(
                 "checkpoint_status": action.get("checkpoint_status"),
                 "evidence_status": action.get("evidence_status"),
                 "suggested_result": action.get("suggested_result"),
-                "operator_notes": action.get("operator_notes") if isinstance(action.get("operator_notes"), list) else [],
-                "verification": action.get("verification") if isinstance(action.get("verification"), list) else [],
+                "operator_notes": action.get("operator_notes")
+                if isinstance(action.get("operator_notes"), list)
+                else [],
+                "verification": action.get("verification")
+                if isinstance(action.get("verification"), list)
+                else [],
                 "observed_sources": observed_sources,
                 "signal_observed_sources": signal_observed_sources,
                 "source_summary_path": context.get("summary_path"),
                 "source_report_path": context.get("report_path"),
-                "missing_required_artifact_paths": context.get("missing_required_artifact_paths", []),
+                "missing_required_artifact_paths": context.get(
+                    "missing_required_artifact_paths", []
+                ),
                 "candidate_artifact_paths": context.get("candidate_artifact_paths", []),
                 "unresolved_signals": unresolved_signals,
                 "unsupported_signal_count": unsupported_signal_count,
@@ -255,7 +269,9 @@ def build_remediation_evidence(
     partial_action_count = sum(
         1 for item in evidence_entries if str(item.get("evaluation_result")) == "partial"
     )
-    unsupported_signal_count = sum(_as_int(item.get("unsupported_signal_count")) for item in evidence_entries)
+    unsupported_signal_count = sum(
+        _as_int(item.get("unsupported_signal_count")) for item in evidence_entries
+    )
     next_manual_review_action_key = next(
         (
             item.get("action_key")
@@ -298,20 +314,22 @@ def build_remediation_evidence(
         lines.extend(["## Related Reports", ""])
         lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
-    lines.extend([
-        "## Evidence Summary",
-        "",
-        f"- evidence_status: {summary['evidence_status']}",
-        f"- manual_review_action_count: {summary['manual_review_action_count']}",
-        f"- partial_action_count: {summary['partial_action_count']}",
-        f"- unsupported_signal_count: {summary['unsupported_signal_count']}",
-        f"- next_manual_review_action_key: {summary['next_manual_review_action_key']}",
-        f"- remediation_session_checkpoint_summary_path: {summary['remediation_session_checkpoint_summary_path']}",
-        f"- remediation_evaluator_summary_path: {summary['remediation_evaluator_summary_path']}",
-        "",
-        "## Observed Source Counts",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Evidence Summary",
+            "",
+            f"- evidence_status: {summary['evidence_status']}",
+            f"- manual_review_action_count: {summary['manual_review_action_count']}",
+            f"- partial_action_count: {summary['partial_action_count']}",
+            f"- unsupported_signal_count: {summary['unsupported_signal_count']}",
+            f"- next_manual_review_action_key: {summary['next_manual_review_action_key']}",
+            f"- remediation_session_checkpoint_summary_path: {summary['remediation_session_checkpoint_summary_path']}",
+            f"- remediation_evaluator_summary_path: {summary['remediation_evaluator_summary_path']}",
+            "",
+            "## Observed Source Counts",
+            "",
+        ]
+    )
     if summary["observed_source_counts"]:
         for key in sorted(summary["observed_source_counts"]):
             lines.append(f"- {key}: {summary['observed_source_counts'][key]}")
@@ -321,8 +339,8 @@ def build_remediation_evidence(
     lines.extend(
         [
             "",
-        "## Evidence Candidates",
-        "",
+            "## Evidence Candidates",
+            "",
         ]
     )
     if evidence_entries:
@@ -333,9 +351,15 @@ def build_remediation_evidence(
             lines.append(f"  - signal_observed_sources: {item['signal_observed_sources']}")
             lines.append(f"  - source_summary_path: {item['source_summary_path']}")
             lines.append(f"  - source_report_path: {item['source_report_path']}")
-            lines.append(f"  - missing_required_artifact_paths: {item['missing_required_artifact_paths']}")
+            lines.append(
+                f"  - missing_required_artifact_paths: {item['missing_required_artifact_paths']}"
+            )
             lines.append("  - unresolved_signals:")
-            unresolved_signals = item["unresolved_signals"] if isinstance(item.get("unresolved_signals"), list) else []
+            unresolved_signals = (
+                item["unresolved_signals"]
+                if isinstance(item.get("unresolved_signals"), list)
+                else []
+            )
             for signal in unresolved_signals:
                 if not isinstance(signal, dict):
                     continue

@@ -38,7 +38,9 @@ def test_normalize_quotes_handles_late_float_after_nulls(tmp_path) -> None:
     )
     raw_path.write_text("".join(rows), encoding="utf-8")
 
-    count = normalize_quotes(tmp_path / "raw", tmp_path / "normalized/quotes.parquet", tmp_path / "normalized/sis.duckdb")
+    count = normalize_quotes(
+        tmp_path / "raw", tmp_path / "normalized/quotes.parquet", tmp_path / "normalized/sis.duckdb"
+    )
 
     assert count == 151
     assert (tmp_path / "normalized/quotes.parquet").exists()

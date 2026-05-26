@@ -31,4 +31,3 @@ def read_jsonl(path: Path) -> Iterable[dict]:
         for line in f:
             if line.strip():
                 yield json.loads(line)
-

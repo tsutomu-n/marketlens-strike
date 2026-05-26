@@ -403,36 +403,53 @@ def test_backtest_bridge_writes_decision_artifacts_for_signal_mode(tmp_path) -> 
     assert '"audit"' in decision_summary_path.read_text(encoding="utf-8")
     assert '"phase_gate"' in decision_summary_path.read_text(encoding="utf-8")
     assert '"readiness_summary"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"next_phase_candidate": "Stay Phase 1"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"execution_drift_overview_summary"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"execution_drift_overview_status": "degraded"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"overall_status": "degraded"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"execution_drift_overview_state_comparison_mismatching_count": 1' in decision_summary_path.read_text(
+    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in decision_summary_path.read_text(
         encoding="utf-8"
+    )
+    assert '"next_phase_candidate": "Stay Phase 1"' in decision_summary_path.read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_drift_overview_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_drift_overview_status": "degraded"' in decision_summary_path.read_text(
+        encoding="utf-8"
+    )
+    assert '"overall_status": "degraded"' in decision_summary_path.read_text(encoding="utf-8")
+    assert (
+        '"execution_drift_overview_state_comparison_mismatching_count": 1'
+        in decision_summary_path.read_text(encoding="utf-8")
     )
     assert '"execution_summary"' in decision_summary_path.read_text(encoding="utf-8")
     assert '"execution_overall_status": "ok"' in decision_summary_path.read_text(encoding="utf-8")
     assert '"execution_gap_history_summary"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"execution_gap_history_entry_count": 4' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"execution_state_comparison_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"execution_gap_history_entry_count": 4' in decision_summary_path.read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_state_comparison_summary"' in decision_summary_path.read_text(
+        encoding="utf-8"
+    )
     assert '"execution_state_comparison_mismatching_count": 1' in decision_summary_path.read_text(
         encoding="utf-8"
     )
     assert '"execution_snapshot_drift_summary"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"execution_snapshot_drift_mismatching_snapshot_count": 1' in decision_summary_path.read_text(
+    assert (
+        '"execution_snapshot_drift_mismatching_snapshot_count": 1'
+        in decision_summary_path.read_text(encoding="utf-8")
+    )
+    assert '"timeline_latest_execution_summary"' in decision_summary_path.read_text(
         encoding="utf-8"
     )
-    assert '"timeline_latest_execution_summary"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"bundle_history_latest_execution_summary"' in decision_summary_path.read_text(encoding="utf-8")
-    assert '"cycle_history_latest_execution_summary"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"bundle_history_latest_execution_summary"' in decision_summary_path.read_text(
+        encoding="utf-8"
+    )
+    assert '"cycle_history_latest_execution_summary"' in decision_summary_path.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_research_signal_loader_blocks_scalping_timeframes(tmp_path) -> None:
     signals_path = tmp_path / "signals.csv"
     signals_path.write_text(
-        "ts_signal,canonical_symbol,side,timeframe\n"
-        "2026-05-22T00:00:00+00:00,SPY,long,5m\n",
+        "ts_signal,canonical_symbol,side,timeframe\n2026-05-22T00:00:00+00:00,SPY,long,5m\n",
         encoding="utf-8",
     )
 

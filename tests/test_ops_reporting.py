@@ -5,8 +5,17 @@ from datetime import datetime, timezone
 import polars as pl
 
 from sis.ops.alerts import queue_notification, render_alert_message, write_alert
-from sis.ops.manifest_chain import append_operation_manifest, create_operation_manifest, latest_operation_manifest
-from sis.ops.scheduler import next_interval_run, schedule_run, write_schedule, write_schedule_with_audit
+from sis.ops.manifest_chain import (
+    append_operation_manifest,
+    create_operation_manifest,
+    latest_operation_manifest,
+)
+from sis.ops.scheduler import (
+    next_interval_run,
+    schedule_run,
+    write_schedule,
+    write_schedule_with_audit,
+)
 from sis.reports.weekly_review import build_weekly_review_report
 
 
@@ -63,13 +72,17 @@ def test_write_schedule_with_audit(tmp_path) -> None:
     assert out.exists()
     assert '"overall_status": "ok"' in out.read_text(encoding="utf-8")
     assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in out.read_text(encoding="utf-8")
-    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in out.read_text(encoding="utf-8")
-    assert '"phase2_entry_allowed": false' in out.read_text(encoding="utf-8")
-    assert '"phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears"' in out.read_text(
+    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in out.read_text(
         encoding="utf-8"
     )
-    assert '"phase2_entry_reason": "remain_in_phase1_until_live_evidence_gate_clears"' in out.read_text(
-        encoding="utf-8"
+    assert '"phase2_entry_allowed": false' in out.read_text(encoding="utf-8")
+    assert (
+        '"phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears"'
+        in out.read_text(encoding="utf-8")
+    )
+    assert (
+        '"phase2_entry_reason": "remain_in_phase1_until_live_evidence_gate_clears"'
+        in out.read_text(encoding="utf-8")
     )
     assert '"phase_gate_strict_validation_passed": true' in out.read_text(encoding="utf-8")
     assert '"phase_gate_strict_validation_issue_count": 2' in out.read_text(encoding="utf-8")
@@ -92,8 +105,16 @@ def test_write_schedule_with_audit(tmp_path) -> None:
 
 
 def test_alert_render_and_write(tmp_path) -> None:
-    text = render_alert_message(level="warn", title="Stale data", body="recollect live evidence", source="healthcheck")
-    out = write_alert(tmp_path / "alert.txt", level="warn", title="Stale data", body="recollect live evidence", source="healthcheck")
+    text = render_alert_message(
+        level="warn", title="Stale data", body="recollect live evidence", source="healthcheck"
+    )
+    out = write_alert(
+        tmp_path / "alert.txt",
+        level="warn",
+        title="Stale data",
+        body="recollect live evidence",
+        source="healthcheck",
+    )
 
     assert "[WARN] Stale data" in text
     assert out.exists()
@@ -114,8 +135,12 @@ def test_queue_notification_writes_outbox_and_latest(tmp_path) -> None:
 
     assert record["status"] == "queued"
     assert record["notification_id"] == "20260525_000000_000000"
-    assert "recollect live evidence" in (tmp_path / "notifications/outbox.jsonl").read_text(encoding="utf-8")
-    assert "Stale data" in (tmp_path / "notifications/latest_notification.json").read_text(encoding="utf-8")
+    assert "recollect live evidence" in (tmp_path / "notifications/outbox.jsonl").read_text(
+        encoding="utf-8"
+    )
+    assert "Stale data" in (tmp_path / "notifications/latest_notification.json").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_operation_manifest_chain_append_and_read_latest(tmp_path) -> None:
@@ -141,9 +166,9 @@ def test_operation_manifest_chain_append_and_read_latest(tmp_path) -> None:
 def test_build_weekly_review_report_uses_backtest_and_paper_inputs(tmp_path) -> None:
     backtest_path = tmp_path / "backtest_metrics.json"
     daily_pnl_path = tmp_path / "daily_pnl.parquet"
-    pl.DataFrame(
-        [{"venue": "gtrade", "canonical_symbol": "QQQ", "trade_count": 3}]
-    ).write_json(backtest_path)
+    pl.DataFrame([{"venue": "gtrade", "canonical_symbol": "QQQ", "trade_count": 3}]).write_json(
+        backtest_path
+    )
     pl.DataFrame(
         [{"date": "2026-05-24", "realized_pnl": 12.5, "fills_count": 2, "open_positions": 1}]
     ).write_parquet(daily_pnl_path)

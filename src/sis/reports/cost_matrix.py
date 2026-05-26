@@ -126,7 +126,9 @@ def _as_bps_from_gtrade_fee(value: object) -> float | None:
     return raw / 1e8
 
 
-def _worst_abs_ostium_rollover_bps(long_rate: object, short_rate: object, hours: float) -> float | None:
+def _worst_abs_ostium_rollover_bps(
+    long_rate: object, short_rate: object, hours: float
+) -> float | None:
     rates: list[float] = []
     for value in (long_rate, short_rate):
         parsed = _as_float(value)
@@ -172,11 +174,7 @@ def _gtrade_holding_bps(pair: dict, snapshot: dict, hours: float) -> float | Non
     for collateral in snapshot.get("raw", {}).get("collaterals", []):
         if not isinstance(collateral, dict) or collateral.get("isActive") is not True:
             continue
-        borrowing_rate_raw = (
-            collateral.get("borrowingFees", {})
-            .get("v2", {})
-            .get("pairParams", [])
-        )
+        borrowing_rate_raw = collateral.get("borrowingFees", {}).get("v2", {}).get("pairParams", [])
         funding_data = collateral.get("fundingFees", {}).get("pairData", [])
         funding_params = collateral.get("fundingFees", {}).get("pairParams", [])
         index = int(pair_index)
@@ -413,8 +411,12 @@ def build_cost_matrix_report(
 ) -> str:
     frame = pl.read_csv(cost_matrix_path) if cost_matrix_path.exists() else pl.DataFrame()
     row_count = frame.height
-    venues = sorted(frame.get_column("venue").unique().to_list()) if "venue" in frame.columns else []
-    symbols = sorted(frame.get_column("symbol").unique().to_list()) if "symbol" in frame.columns else []
+    venues = (
+        sorted(frame.get_column("venue").unique().to_list()) if "venue" in frame.columns else []
+    )
+    symbols = (
+        sorted(frame.get_column("symbol").unique().to_list()) if "symbol" in frame.columns else []
+    )
     summary = {
         "row_count": row_count,
         "venues": venues,

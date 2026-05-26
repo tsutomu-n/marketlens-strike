@@ -36,7 +36,9 @@ def _normalize_price_frame(frame: pl.DataFrame, provider: str) -> pl.DataFrame:
         raise ValueError(f"Price provider output missing columns: {sorted(missing)}")
 
     available = set(frame.columns)
-    value_columns = [name for name in ("open", "high", "low", "close", "volume") if name in available]
+    value_columns = [
+        name for name in ("open", "high", "low", "close", "volume") if name in available
+    ]
     normalized = frame.with_columns(
         pl.col("ts").cast(pl.Datetime(time_unit="us", time_zone="UTC")),
         pl.col("symbol").cast(pl.Utf8).str.to_uppercase(),
@@ -48,9 +50,15 @@ def _normalize_price_frame(frame: pl.DataFrame, provider: str) -> pl.DataFrame:
         .alias("provider_symbol")
         if "provider_symbol" in available
         else pl.col("symbol").alias("provider_symbol"),
-        pl.lit("none").alias("adjustment") if "adjustment" not in available else pl.col("adjustment").cast(pl.Utf8),
-        pl.lit("").alias("interval") if "interval" not in available else pl.col("interval").cast(pl.Utf8),
-        pl.lit(None).cast(pl.Float64).alias("volume") if "volume" not in available else pl.col("volume").cast(pl.Float64),
+        pl.lit("none").alias("adjustment")
+        if "adjustment" not in available
+        else pl.col("adjustment").cast(pl.Utf8),
+        pl.lit("").alias("interval")
+        if "interval" not in available
+        else pl.col("interval").cast(pl.Utf8),
+        pl.lit(None).cast(pl.Float64).alias("volume")
+        if "volume" not in available
+        else pl.col("volume").cast(pl.Float64),
     )
     return normalized.select(
         "ts",
@@ -79,7 +87,9 @@ def _normalize_macro_frame(frame: pl.DataFrame, provider: str) -> pl.DataFrame:
         pl.col("series_id").cast(pl.Utf8),
         pl.col("value").cast(pl.Float64),
         pl.lit(provider).alias("provider"),
-        pl.lit("latest").alias("vintage_mode") if "vintage_mode" not in available else pl.col("vintage_mode").cast(pl.Utf8),
+        pl.lit("latest").alias("vintage_mode")
+        if "vintage_mode" not in available
+        else pl.col("vintage_mode").cast(pl.Utf8),
         pl.lit(None).cast(pl.Date).alias("realtime_start")
         if "realtime_start" not in available
         else pl.col("realtime_start").cast(pl.Date),
@@ -161,7 +171,9 @@ class YahooQueryPriceProvider(PriceProvider):
 
     def fetch_ohlcv(self, request: ResearchFetchRequest) -> pl.DataFrame:
         ticker = self._ticker_factory(request.symbols, asynchronous=False)
-        history = ticker.history(start=request.start.isoformat(), end=request.end.isoformat(), interval=request.interval)
+        history = ticker.history(
+            start=request.start.isoformat(), end=request.end.isoformat(), interval=request.interval
+        )
         if history is None or getattr(history, "empty", False):
             return pl.DataFrame(schema={"ts": pl.Datetime(time_zone="UTC"), "symbol": pl.Utf8})
         pandas_frame = history.reset_index().rename(
@@ -181,7 +193,9 @@ class YahooQueryPriceProvider(PriceProvider):
 class FredMacroProvider(MacroProvider):
     name = "fredapi"
 
-    def __init__(self, api_key: str | None = None, fred_factory: Callable[..., Any] | None = None) -> None:
+    def __init__(
+        self, api_key: str | None = None, fred_factory: Callable[..., Any] | None = None
+    ) -> None:
         if fred_factory is None:
             try:
                 from fredapi import Fred
@@ -217,7 +231,9 @@ class PandasDataReaderMacroProvider(MacroProvider):
             try:
                 from pandas_datareader import data as web
             except ImportError as exc:
-                raise RuntimeError("pandas-datareader is required for PandasDataReaderMacroProvider") from exc
+                raise RuntimeError(
+                    "pandas-datareader is required for PandasDataReaderMacroProvider"
+                ) from exc
             reader = web.DataReader
         self._reader = reader
 
@@ -227,7 +243,9 @@ class PandasDataReaderMacroProvider(MacroProvider):
             raw = self._reader(series_id, "fred", start, end)
             if raw is None or getattr(raw, "empty", False):
                 continue
-            pandas_frame = raw.reset_index().rename(columns={"DATE": "date", "Date": "date", series_id: "value"})
+            pandas_frame = raw.reset_index().rename(
+                columns={"DATE": "date", "Date": "date", series_id: "value"}
+            )
             frame = pl.from_pandas(pandas_frame).with_columns(
                 pl.lit(series_id).alias("series_id"),
                 pl.lit("latest").alias("vintage_mode"),

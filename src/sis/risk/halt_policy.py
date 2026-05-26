@@ -42,9 +42,13 @@ def summarize_halt_policy(policy: dict) -> list[str]:
     halt = policy.get("halt_policy", policy)
     stale = halt.get("stale_price", {})
     session = halt.get("session", {})
-    spread = halt.get("spread", {}).get("max_spread_bps", halt.get("spread", {}).get("max_spread_p90_bps", {}))
+    spread = halt.get("spread", {}).get(
+        "max_spread_bps", halt.get("spread", {}).get("max_spread_p90_bps", {})
+    )
     liquidation = halt.get("liquidation", {})
-    stale_pairs = ", ".join(f"{k}={v}" for k, v in sorted(stale.items()) if isinstance(v, int | float))
+    stale_pairs = ", ".join(
+        f"{k}={v}" for k, v in sorted(stale.items()) if isinstance(v, int | float)
+    )
     gtrade_age = stale.get("gtrade_max_age_ms", stale.get("trade_xyz_max_age_ms"))
     ostium_age = stale.get("ostium_max_age_ms", stale.get("real_market_max_age_ms"))
     return [

@@ -4,7 +4,12 @@ import json
 import subprocess
 from datetime import datetime, timezone
 
-from sis.ops.daemon import create_daemon_manifest, run_daemon_dry_run, run_daemon_loop, write_daemon_manifest
+from sis.ops.daemon import (
+    create_daemon_manifest,
+    run_daemon_dry_run,
+    run_daemon_loop,
+    write_daemon_manifest,
+)
 from sis.ops.kill_switch import KillSwitch
 from sis.ops.manifest_chain import latest_operation_manifest
 from sis.reports.lifecycle import build_strategy_lifecycle_report
@@ -230,7 +235,9 @@ def test_state_snapshot_export_and_restore(tmp_path) -> None:
         encoding="utf-8"
     )
     assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in snapshot.read_text(encoding="utf-8")
-    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in snapshot.read_text(encoding="utf-8")
+    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in snapshot.read_text(
+        encoding="utf-8"
+    )
     assert '"execution_drift_overview_status": "degraded"' in snapshot.read_text(encoding="utf-8")
 
 
@@ -431,10 +438,7 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
         ]
         is True
     )
-    assert (
-        snapshot["bundle_history_latest_execution_summary"]["execution_overall_status"]
-        == "ok"
-    )
+    assert snapshot["bundle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert (
         snapshot["bundle_history_latest_execution_comparison_summary"][
             "execution_comparison_all_registries_present"
@@ -453,14 +457,23 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
     assert snapshot["cycle_history_latest_execution_comparison_all_registries_present"] is True
     assert snapshot["phase_gate"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert snapshot["phase_gate"]["phase2_entry_allowed"] is False
-    assert snapshot["phase_gate"]["phase2_entry_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
-    assert snapshot["phase_gate"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        snapshot["phase_gate"]["phase2_entry_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
+    assert (
+        snapshot["phase_gate"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert snapshot["phase_gate"]["phase_gate_strict_validation_passed"] is True
     assert snapshot["phase_gate"]["phase_gate_strict_validation_issue_count"] == 2
     assert snapshot["phase_gate"]["phase_gate_checked_files"] == 7
     assert snapshot["phase_gate"]["strict_validation_issue_count"] == 2
     assert snapshot["phase_gate"]["checked_files"] == 7
-    assert snapshot["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        snapshot["phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert snapshot["phase_gate_decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert snapshot["phase2_entry_allowed"] is False
     assert snapshot["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
@@ -472,13 +485,31 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
     assert snapshot["execution"]["execution_overall_status"] == "ok"
     assert snapshot["execution_summary"]["execution_overall_status"] == "ok"
     assert snapshot["execution_comparison"]["execution_comparison_all_registries_present"] is True
-    assert snapshot["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        snapshot["execution_comparison_summary"]["execution_comparison_all_registries_present"]
+        is True
+    )
     assert snapshot["execution_gap_history"]["execution_gap_history_entry_count"] == 4
     assert snapshot["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
-    assert snapshot["execution_state_comparison"]["execution_state_comparison_mismatching_count"] == 1
-    assert snapshot["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == 1
-    assert snapshot["execution_snapshot_drift"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
-    assert snapshot["execution_snapshot_drift_summary"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert (
+        snapshot["execution_state_comparison"]["execution_state_comparison_mismatching_count"] == 1
+    )
+    assert (
+        snapshot["execution_state_comparison_summary"][
+            "execution_state_comparison_mismatching_count"
+        ]
+        == 1
+    )
+    assert (
+        snapshot["execution_snapshot_drift"]["execution_snapshot_drift_mismatching_snapshot_count"]
+        == 1
+    )
+    assert (
+        snapshot["execution_snapshot_drift_summary"][
+            "execution_snapshot_drift_mismatching_snapshot_count"
+        ]
+        == 1
+    )
     assert snapshot["execution_drift_overview"]["overall_status"] == "degraded"
     assert snapshot["execution_drift_overview_summary"]["overall_status"] == "degraded"
     assert snapshot["execution_drift_overview_status"] == "degraded"
@@ -489,16 +520,24 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
     assert snapshot["readiness"]["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert snapshot["readiness"]["readiness_execution_ready"] is False
     assert snapshot["execution_drift_overview"]["execution_drift_overview_status"] == "degraded"
-    assert snapshot["execution_drift_overview"]["execution_drift_overview_diagnostics_alignment_match"] is False
-    assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in result.schedule_path.read_text(encoding="utf-8")
-    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in result.schedule_path.read_text(
+    assert (
+        snapshot["execution_drift_overview"]["execution_drift_overview_diagnostics_alignment_match"]
+        is False
+    )
+    assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in result.schedule_path.read_text(
         encoding="utf-8"
     )
-    assert '"phase2_entry_reason": "remain_in_phase1_until_live_evidence_gate_clears"' in result.schedule_path.read_text(
-        encoding="utf-8"
+    assert (
+        '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"'
+        in result.schedule_path.read_text(encoding="utf-8")
     )
-    assert '"phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears"' in result.schedule_path.read_text(
-        encoding="utf-8"
+    assert (
+        '"phase2_entry_reason": "remain_in_phase1_until_live_evidence_gate_clears"'
+        in result.schedule_path.read_text(encoding="utf-8")
+    )
+    assert (
+        '"phase_gate_reason": "remain_in_phase1_until_live_evidence_gate_clears"'
+        in result.schedule_path.read_text(encoding="utf-8")
     )
     assert '"phase_gate_strict_validation_passed": true' in result.schedule_path.read_text(
         encoding="utf-8"
@@ -510,7 +549,9 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
         encoding="utf-8"
     )
     assert '"execution_gap_history_summary"' in result.schedule_path.read_text(encoding="utf-8")
-    assert '"execution_state_comparison_summary"' in result.schedule_path.read_text(encoding="utf-8")
+    assert '"execution_state_comparison_summary"' in result.schedule_path.read_text(
+        encoding="utf-8"
+    )
     assert '"execution_snapshot_drift_summary"' in result.schedule_path.read_text(encoding="utf-8")
     assert '"execution_balance_gap_detected": true' in result.schedule_path.read_text(
         encoding="utf-8"
@@ -519,10 +560,16 @@ def test_daemon_dry_run_writes_snapshot_and_operation_chain(tmp_path) -> None:
         encoding="utf-8"
     )
     assert '"balance_gap_detected": true' in result.schedule_path.read_text(encoding="utf-8")
-    assert '"execution_drift_overview_status": "degraded"' in result.schedule_path.read_text(encoding="utf-8")
-    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in result.schedule_path.read_text(encoding="utf-8")
+    assert '"execution_drift_overview_status": "degraded"' in result.schedule_path.read_text(
+        encoding="utf-8"
+    )
+    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in result.schedule_path.read_text(
+        encoding="utf-8"
+    )
     assert '"readiness_execution_ready": false' in result.schedule_path.read_text(encoding="utf-8")
-    assert '"next_phase_candidate": "Stay Phase 1"' in result.schedule_path.read_text(encoding="utf-8")
+    assert '"next_phase_candidate": "Stay Phase 1"' in result.schedule_path.read_text(
+        encoding="utf-8"
+    )
     assert snapshot["execution_diagnostics"]["execution_diagnostics_status"] == "degraded"
     assert snapshot["execution_diagnostics"]["execution_balance_gap_detected"] is True
     assert snapshot["execution_diagnostics"]["execution_fills_gap_detected"] is False

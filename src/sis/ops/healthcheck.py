@@ -50,7 +50,9 @@ def build_healthcheck(
     audit_bundle = safe_read_json_dict(audit_bundle_summary_path)
     operations_bundle = safe_read_json_dict(operations_bundle_manifest_path)
     phase_gate = normalized_summary(phase_gate_summary_path, normalize_phase_gate_summary)
-    execution_summary = normalized_summary(execution_summary_path, normalize_execution_snapshot_summary)
+    execution_summary = normalized_summary(
+        execution_summary_path, normalize_execution_snapshot_summary
+    )
     execution_comparison = normalized_summary(
         execution_comparison_summary_path,
         normalize_execution_comparison_summary,

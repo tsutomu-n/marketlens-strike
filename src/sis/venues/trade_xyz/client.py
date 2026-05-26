@@ -40,7 +40,9 @@ class TradeXyzClient:
     def post_info(self, payload: dict[str, Any]) -> Any:
         response = self._client.post("/info", json=payload)
         if response.status_code >= 400:
-            raise TradeXyzApiError(f"info endpoint failed: {response.status_code} {response.text[:500]}")
+            raise TradeXyzApiError(
+                f"info endpoint failed: {response.status_code} {response.text[:500]}"
+            )
         return response.json()
 
     def all_mids(self) -> dict[str, str]:
@@ -62,11 +64,18 @@ class TradeXyzClient:
             raise TradeXyzApiError(f"l2Book returned non-object: {type(data).__name__}")
         return data
 
-    def candle_snapshot(self, coin: str, interval: str, start_ms: int, end_ms: int) -> list[dict[str, Any]]:
+    def candle_snapshot(
+        self, coin: str, interval: str, start_ms: int, end_ms: int
+    ) -> list[dict[str, Any]]:
         data = self.post_info(
             {
                 "type": "candleSnapshot",
-                "req": {"coin": coin, "interval": interval, "startTime": start_ms, "endTime": end_ms},
+                "req": {
+                    "coin": coin,
+                    "interval": interval,
+                    "startTime": start_ms,
+                    "endTime": end_ms,
+                },
             }
         )
         if not isinstance(data, list):

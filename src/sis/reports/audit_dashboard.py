@@ -135,7 +135,9 @@ def build_audit_dashboard(
     audit_pack = safe_read_json_dict(audit_pack_path)
     audit_timeline = safe_read_json_dict(audit_timeline_summary_path)
     audit_bundle_history = safe_read_json_dict(audit_bundle_history_summary_path)
-    execution = normalized_summary(execution_snapshot_summary_path, normalize_execution_snapshot_summary)
+    execution = normalized_summary(
+        execution_snapshot_summary_path, normalize_execution_snapshot_summary
+    )
     execution_comparison = normalized_summary(
         execution_venue_comparison_summary_path,
         normalize_execution_comparison_summary,
@@ -169,9 +171,7 @@ def build_audit_dashboard(
     execution_state_comparison_fields = execution_state_comparison_flat_fields(
         execution_state_comparison
     )
-    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(
-        execution_snapshot_drift
-    )
+    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(execution_snapshot_drift)
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
     audit_timeline_fields = audit_timeline_flat_fields(audit_timeline)
     audit_bundle_history_fields = audit_bundle_history_flat_fields(audit_bundle_history)
@@ -187,7 +187,9 @@ def build_audit_dashboard(
         operation_counts = {}
 
     summary = {
-        "overall_status": audit_pack.get("overall_status") or bundle.get("overall_status") or audit_timeline.get("latest_status"),
+        "overall_status": audit_pack.get("overall_status")
+        or bundle.get("overall_status")
+        or audit_timeline.get("latest_status"),
         "bundle_status": bundle.get("overall_status"),
         "audit_pack_status": audit_pack.get("overall_status"),
         **latest_execution_lineage,
@@ -196,7 +198,8 @@ def build_audit_dashboard(
         "operations_audit_snapshot_count": operation_counts.get("operations_audit_snapshot"),
         "audit_bundle_snapshot_count": operation_counts.get("audit_bundle_snapshot"),
         "cycle_count": audit_pack.get("cycle_count") or bundle.get("cycle_count"),
-        "completed_cycle_count": audit_pack.get("completed_cycle_count") or bundle.get("completed_cycle_count"),
+        "completed_cycle_count": audit_pack.get("completed_cycle_count")
+        or bundle.get("completed_cycle_count"),
         "audit_summary": audit_summary,
         "phase_gate_summary": phase_gate,
         "readiness_summary": readiness,
@@ -217,14 +220,22 @@ def build_audit_dashboard(
         **execution_drift_fields,
         **readiness_fields,
         **phase_gate_fields,
-        "phase_gate_summary_path": str(phase_gate_summary_path) if phase_gate_summary_path else None,
+        "phase_gate_summary_path": str(phase_gate_summary_path)
+        if phase_gate_summary_path
+        else None,
         "audit_dashboard_report_path": str(out_path) if out_path is not None else None,
         "artifacts": {
             "bundle_manifest": str(bundle_manifest_path) if bundle_manifest_path else None,
             "audit_pack": str(audit_pack_path) if audit_pack_path else None,
-            "audit_timeline_summary": str(audit_timeline_summary_path) if audit_timeline_summary_path else None,
-            "audit_bundle_history_summary": str(audit_bundle_history_summary_path) if audit_bundle_history_summary_path else None,
-            "execution_snapshot_summary": str(execution_snapshot_summary_path) if execution_snapshot_summary_path else None,
+            "audit_timeline_summary": str(audit_timeline_summary_path)
+            if audit_timeline_summary_path
+            else None,
+            "audit_bundle_history_summary": str(audit_bundle_history_summary_path)
+            if audit_bundle_history_summary_path
+            else None,
+            "execution_snapshot_summary": str(execution_snapshot_summary_path)
+            if execution_snapshot_summary_path
+            else None,
             "execution_venue_comparison_summary": (
                 str(execution_venue_comparison_summary_path)
                 if execution_venue_comparison_summary_path
@@ -236,7 +247,9 @@ def build_audit_dashboard(
                 else None
             ),
             "execution_gap_history_summary": (
-                str(execution_gap_history_summary_path) if execution_gap_history_summary_path else None
+                str(execution_gap_history_summary_path)
+                if execution_gap_history_summary_path
+                else None
             ),
             "execution_state_comparison_history_summary": (
                 str(execution_state_comparison_history_summary_path)

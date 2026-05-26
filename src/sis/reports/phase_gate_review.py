@@ -61,7 +61,10 @@ def _related_reports(summary: dict[str, object], data_dir: Path) -> dict[str, st
         ("paper_operations_runbook_report", str(reports_dir / "paper_operations_runbook.md")),
         ("remediation_scoreboard_report", str(reports_dir / "remediation_scoreboard.md")),
         ("go_no_go_report", str(data_dir / "research" / "go_no_go_report.md")),
-        ("paper_vs_backtest_comparison_report", str(reports_dir / "paper_vs_backtest_comparison.md")),
+        (
+            "paper_vs_backtest_comparison_report",
+            str(reports_dir / "paper_vs_backtest_comparison.md"),
+        ),
     )
     return {key: value for key, value in items if isinstance(value, str) and value}
 
@@ -114,7 +117,9 @@ def _read_only_collector_gate(data_dir: Path) -> dict[str, object]:
         assets = ostium_constraints.get("assets")
         if not isinstance(assets, list) or not assets:
             blockers.append("missing_ostium_asset_constraints")
-        elif any(not isinstance(item, dict) or not item.get("trading_hours_artifact") for item in assets):
+        elif any(
+            not isinstance(item, dict) or not item.get("trading_hours_artifact") for item in assets
+        ):
             blockers.append("missing_ostium_trading_hours_artifact")
 
     return {
@@ -132,7 +137,9 @@ def _read_only_collector_gate(data_dir: Path) -> dict[str, object]:
         ),
         "latest_ostium_constraint_status": ostium_constraints.get("constraint_status"),
         "latest_ostium_constraint_failures": ostium_constraints.get("failures", []),
-        "latest_ostium_python_sdk_status": (ostium_constraints.get("python_sdk") or {}).get("status"),
+        "latest_ostium_python_sdk_status": (ostium_constraints.get("python_sdk") or {}).get(
+            "status"
+        ),
         "latest_ostium_builder_prices_artifact_path": (
             (ostium_constraints.get("builder_prices_artifact") or {}).get("path")
         ),
@@ -207,13 +214,24 @@ def _as_dict_list(value: object) -> list[dict[str, object]]:
 def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str]]:
     command_map = {
         "latest_manifest_path": ["uv run sis phase-gate-review"],
-        "latest_evidence_card_path": ["uv run sis check-go-no-go", "uv run sis build-evidence-card"],
+        "latest_evidence_card_path": [
+            "uv run sis check-go-no-go",
+            "uv run sis build-evidence-card",
+        ],
         "latest_execution_snapshot_summary_path": ["uv run sis refresh-operations-artifacts"],
-        "latest_execution_venue_comparison_summary_path": ["uv run sis refresh-operations-artifacts"],
-        "latest_execution_venue_diagnostics_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "latest_execution_venue_comparison_summary_path": [
+            "uv run sis refresh-operations-artifacts"
+        ],
+        "latest_execution_venue_diagnostics_summary_path": [
+            "uv run sis refresh-operations-artifacts"
+        ],
         "latest_execution_gap_history_summary_path": ["uv run sis refresh-operations-artifacts"],
-        "latest_execution_state_comparison_history_summary_path": ["uv run sis refresh-operations-artifacts"],
-        "latest_execution_snapshot_drift_history_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "latest_execution_state_comparison_history_summary_path": [
+            "uv run sis refresh-operations-artifacts"
+        ],
+        "latest_execution_snapshot_drift_history_summary_path": [
+            "uv run sis refresh-operations-artifacts"
+        ],
         "latest_execution_drift_overview_summary_path": ["uv run sis refresh-operations-artifacts"],
         "latest_gtrade_backend_manifest_path": [
             "bun run --cwd archive/legacy_sidecars/gtrade backend:collect -- --duration-minutes 30"
@@ -321,7 +339,10 @@ def _remediation_postcheck_commands(reason: str) -> list[str]:
         "strict_validation_failed": ["uv run sis phase-gate-review"],
         "diagnostics_unavailable": ["uv run sis phase-gate-review"],
         "execution_drift_unresolved": ["uv run sis phase-gate-review"],
-        "phase_gate_not_cleared": ["uv run sis build-evidence-card", "uv run sis phase-gate-review"],
+        "phase_gate_not_cleared": [
+            "uv run sis build-evidence-card",
+            "uv run sis phase-gate-review",
+        ],
     }
     return command_map.get(reason, [])
 
@@ -426,9 +447,7 @@ def _remediation_signal_snapshot_before(
             "diagnostics_symbols": summary.get("diagnostics_symbols"),
         },
         "execution_drift_unresolved": {
-            "execution_drift_overview_status": summary.get(
-                "execution_drift_overview_status"
-            ),
+            "execution_drift_overview_status": summary.get("execution_drift_overview_status"),
             "execution_drift_overview_diagnostics_alignment_match": summary.get(
                 "execution_drift_overview_diagnostics_alignment_match"
             ),
@@ -511,7 +530,9 @@ def build_phase_gate_review(
     execution_comparison = safe_read_json_dict(execution_venue_comparison_summary_path)
     execution_diagnostics = safe_read_json_dict(execution_venue_diagnostics_summary_path)
     execution_gap_history = safe_read_json_dict(execution_gap_history_summary_path)
-    execution_state_comparison = safe_read_json_dict(execution_state_comparison_history_summary_path)
+    execution_state_comparison = safe_read_json_dict(
+        execution_state_comparison_history_summary_path
+    )
     execution_snapshot_drift = safe_read_json_dict(execution_snapshot_drift_history_summary_path)
     execution_drift_overview = normalized_summary(
         execution_drift_overview_summary_path,
@@ -524,9 +545,7 @@ def build_phase_gate_review(
     execution_state_comparison_fields = execution_state_comparison_flat_fields(
         execution_state_comparison
     )
-    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(
-        execution_snapshot_drift
-    )
+    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(execution_snapshot_drift)
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
     latest_execution_lineage = latest_execution_lineage_fields_from_summary(evidence_payload)
     collector_gate = _read_only_collector_gate(data_dir)
@@ -563,7 +582,9 @@ def build_phase_gate_review(
         "latest_manifest_path": str(manifest_path) if manifest_path is not None else None,
         "latest_manifest_status": manifest_payload.get("status"),
         "latest_manifest_decision": manifest_payload.get("decision"),
-        "latest_evidence_card_path": str(evidence_card_path) if evidence_card_path is not None else None,
+        "latest_evidence_card_path": str(evidence_card_path)
+        if evidence_card_path is not None
+        else None,
         "latest_execution_snapshot_summary_path": (
             str(execution_snapshot_summary_path)
             if execution_snapshot_summary_path is not None
@@ -580,7 +601,9 @@ def build_phase_gate_review(
             else None
         ),
         "latest_execution_gap_history_summary_path": (
-            str(execution_gap_history_summary_path) if execution_gap_history_summary_path is not None else None
+            str(execution_gap_history_summary_path)
+            if execution_gap_history_summary_path is not None
+            else None
         ),
         "latest_execution_state_comparison_history_summary_path": (
             str(execution_state_comparison_history_summary_path)
@@ -628,17 +651,17 @@ def build_phase_gate_review(
         "phase_gate_strict_validation_passed": strict_validation_passed,
         "recommended_read_order": recommended_read_order(
             [
-            "data/ops/execution_snapshot_summary.json",
-            "data/ops/execution_venue_comparison_summary.json",
-            "data/ops/execution_venue_diagnostics_summary.json",
-            "data/ops/execution_gap_history_summary.json",
-            "data/ops/execution_state_comparison_history_summary.json",
-            "data/ops/execution_snapshot_drift_history_summary.json",
-            "data/ops/execution_drift_overview_summary.json",
-            "data/ops/phase_gate_review_summary.json",
-            "data/reports/phase_gate_review.md",
-            "data/research/go_no_go_report.md",
-            "data/evidence/evidence_card_*.json",
+                "data/ops/execution_snapshot_summary.json",
+                "data/ops/execution_venue_comparison_summary.json",
+                "data/ops/execution_venue_diagnostics_summary.json",
+                "data/ops/execution_gap_history_summary.json",
+                "data/ops/execution_state_comparison_history_summary.json",
+                "data/ops/execution_snapshot_drift_history_summary.json",
+                "data/ops/execution_drift_overview_summary.json",
+                "data/ops/phase_gate_review_summary.json",
+                "data/reports/phase_gate_review.md",
+                "data/research/go_no_go_report.md",
+                "data/evidence/evidence_card_*.json",
             ]
         ),
     }
@@ -707,7 +730,9 @@ def build_phase_gate_review(
     current_provenance_hints = {
         str(item.get("reason")): item
         for item in current_planner_summary.get("entries", [])
-        if isinstance(item, dict) and item.get("source") == "phase_gate_review" and item.get("reason")
+        if isinstance(item, dict)
+        and item.get("source") == "phase_gate_review"
+        and item.get("reason")
     }
     current_signal_provenance_hints = signal_observed_sources_by_reason(
         current_evaluator_summary,
@@ -749,10 +774,14 @@ def build_phase_gate_review(
         for item in remediation_order
     }
     summary["remediation_planner_summary_path"] = (
-        str(remediation_planner_summary_path) if remediation_planner_summary_path is not None else None
+        str(remediation_planner_summary_path)
+        if remediation_planner_summary_path is not None
+        else None
     )
     summary["remediation_evaluator_summary_path"] = (
-        str(remediation_evaluator_summary_path) if remediation_evaluator_summary_path is not None else None
+        str(remediation_evaluator_summary_path)
+        if remediation_evaluator_summary_path is not None
+        else None
     )
     summary["required_artifact_paths"] = required_artifact_paths
     summary["missing_required_artifact_paths"] = missing_required_artifact_paths
@@ -846,29 +875,27 @@ def build_phase_gate_review(
     lines.extend(
         [
             "",
-        "## Latest Artifacts",
-        "",
-        f"- latest_manifest_path: {summary['latest_manifest_path']}",
-        f"- latest_evidence_card_path: {summary['latest_evidence_card_path']}",
-        f"- latest_execution_snapshot_summary_path: {summary['latest_execution_snapshot_summary_path']}",
-        f"- latest_execution_venue_comparison_summary_path: {summary['latest_execution_venue_comparison_summary_path']}",
-        f"- latest_execution_venue_diagnostics_summary_path: {summary['latest_execution_venue_diagnostics_summary_path']}",
-        f"- latest_execution_gap_history_summary_path: {summary['latest_execution_gap_history_summary_path']}",
-        f"- latest_execution_state_comparison_history_summary_path: {summary['latest_execution_state_comparison_history_summary_path']}",
-        f"- latest_execution_snapshot_drift_history_summary_path: {summary['latest_execution_snapshot_drift_history_summary_path']}",
-        f"- latest_execution_drift_overview_summary_path: {summary['latest_execution_drift_overview_summary_path']}",
-        "",
-        "## Required Artifacts",
-        "",
-        "",
-        "## Strict Validation",
-        "",
-        f"- checked_files: {summary['checked_files']}",
+            "## Latest Artifacts",
+            "",
+            f"- latest_manifest_path: {summary['latest_manifest_path']}",
+            f"- latest_evidence_card_path: {summary['latest_evidence_card_path']}",
+            f"- latest_execution_snapshot_summary_path: {summary['latest_execution_snapshot_summary_path']}",
+            f"- latest_execution_venue_comparison_summary_path: {summary['latest_execution_venue_comparison_summary_path']}",
+            f"- latest_execution_venue_diagnostics_summary_path: {summary['latest_execution_venue_diagnostics_summary_path']}",
+            f"- latest_execution_gap_history_summary_path: {summary['latest_execution_gap_history_summary_path']}",
+            f"- latest_execution_state_comparison_history_summary_path: {summary['latest_execution_state_comparison_history_summary_path']}",
+            f"- latest_execution_snapshot_drift_history_summary_path: {summary['latest_execution_snapshot_drift_history_summary_path']}",
+            f"- latest_execution_drift_overview_summary_path: {summary['latest_execution_drift_overview_summary_path']}",
+            "",
+            "## Required Artifacts",
+            "",
+            "",
+            "## Strict Validation",
+            "",
+            f"- checked_files: {summary['checked_files']}",
         ]
     )
-    lines.extend(
-        f"- {name}: {value}" for name, value in required_artifact_paths.items()
-    )
+    lines.extend(f"- {name}: {value}" for name, value in required_artifact_paths.items())
     if missing_required_artifact_paths:
         lines.append("- missing_required_artifact_paths:")
         lines.extend(f"  - {name}" for name in missing_required_artifact_paths)
@@ -980,7 +1007,9 @@ def build_phase_gate_review(
         lines.extend(["", "- issues: none"])
 
     lines.extend(["", "## Diagnostics", ""])
-    lines.append("| symbol | available | rows | tradable_rate | stale_rate | missing_mark_price_rate | missing_index_price_rate | spread_p90_bps |")
+    lines.append(
+        "| symbol | available | rows | tradable_rate | stale_rate | missing_mark_price_rate | missing_index_price_rate | spread_p90_bps |"
+    )
     lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
     for item in diagnostics:
         diagnostic = item["items"][0] if item["items"] else {}
@@ -1011,23 +1040,33 @@ def build_phase_gate_review(
     lines.extend(["", "## Execution Snapshot", ""])
     lines.append(f"- execution_overall_status: {summary['execution_overall_status']}")
     lines.append(f"- execution_venue_count: {summary['execution_venue_count']}")
-    lines.append(f"- execution_comparison_all_registries_present: {summary['execution_comparison_all_registries_present']}")
+    lines.append(
+        f"- execution_comparison_all_registries_present: {summary['execution_comparison_all_registries_present']}"
+    )
     lines.append(f"- execution_diagnostics_status: {summary['execution_diagnostics_status']}")
     lines.append(f"- execution_balance_gap_detected: {summary['execution_balance_gap_detected']}")
     lines.append(f"- execution_fills_gap_detected: {summary['execution_fills_gap_detected']}")
-    lines.append(f"- execution_gap_history_entry_count: {summary['execution_gap_history_entry_count']}")
-    lines.append(f"- execution_gap_history_latest_status: {summary['execution_gap_history_latest_status']}")
+    lines.append(
+        f"- execution_gap_history_entry_count: {summary['execution_gap_history_entry_count']}"
+    )
+    lines.append(
+        f"- execution_gap_history_latest_status: {summary['execution_gap_history_latest_status']}"
+    )
     lines.append(
         f"- execution_gap_history_latest_diagnostics_status: {summary['execution_gap_history_latest_diagnostics_status']}"
     )
-    lines.append(f"- execution_state_comparison_entry_count: {summary['execution_state_comparison_entry_count']}")
+    lines.append(
+        f"- execution_state_comparison_entry_count: {summary['execution_state_comparison_entry_count']}"
+    )
     lines.append(
         f"- execution_state_comparison_latest_status_match: {summary['execution_state_comparison_latest_status_match']}"
     )
     lines.append(
         f"- execution_state_comparison_mismatching_count: {summary['execution_state_comparison_mismatching_count']}"
     )
-    lines.append(f"- execution_snapshot_drift_entry_count: {summary['execution_snapshot_drift_entry_count']}")
+    lines.append(
+        f"- execution_snapshot_drift_entry_count: {summary['execution_snapshot_drift_entry_count']}"
+    )
     lines.append(
         f"- execution_snapshot_drift_latest_status_match: {summary['execution_snapshot_drift_latest_status_match']}"
     )
@@ -1044,10 +1083,18 @@ def build_phase_gate_review(
     lines.append(
         f"- execution_drift_overview_snapshot_drift_mismatching_snapshot_count: {summary['execution_drift_overview_snapshot_drift_mismatching_snapshot_count']}"
     )
-    lines.append(f"- latest_execution_snapshot_summary_path: {summary['latest_execution_snapshot_summary_path']}")
-    lines.append(f"- latest_execution_venue_comparison_summary_path: {summary['latest_execution_venue_comparison_summary_path']}")
-    lines.append(f"- latest_execution_venue_diagnostics_summary_path: {summary['latest_execution_venue_diagnostics_summary_path']}")
-    lines.append(f"- latest_execution_gap_history_summary_path: {summary['latest_execution_gap_history_summary_path']}")
+    lines.append(
+        f"- latest_execution_snapshot_summary_path: {summary['latest_execution_snapshot_summary_path']}"
+    )
+    lines.append(
+        f"- latest_execution_venue_comparison_summary_path: {summary['latest_execution_venue_comparison_summary_path']}"
+    )
+    lines.append(
+        f"- latest_execution_venue_diagnostics_summary_path: {summary['latest_execution_venue_diagnostics_summary_path']}"
+    )
+    lines.append(
+        f"- latest_execution_gap_history_summary_path: {summary['latest_execution_gap_history_summary_path']}"
+    )
     lines.append(
         f"- latest_execution_state_comparison_history_summary_path: {summary['latest_execution_state_comparison_history_summary_path']}"
     )

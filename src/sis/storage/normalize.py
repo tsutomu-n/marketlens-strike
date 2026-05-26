@@ -48,5 +48,7 @@ def normalize_quotes(raw_root: Path, parquet_path: Path, duckdb_path: Path) -> i
 
     duckdb_path.parent.mkdir(parents=True, exist_ok=True)
     with duckdb.connect(str(duckdb_path)) as conn:
-        conn.execute("CREATE OR REPLACE TABLE quotes AS SELECT * FROM read_parquet(?)", [str(parquet_path)])
+        conn.execute(
+            "CREATE OR REPLACE TABLE quotes AS SELECT * FROM read_parquet(?)", [str(parquet_path)]
+        )
     return len(rows)

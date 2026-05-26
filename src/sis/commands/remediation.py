@@ -50,13 +50,19 @@ def register_remediation_commands(
                 if isinstance(payload, dict) and isinstance(payload.get("planner_rerun_diff"), dict)
                 else None
             ),
-            next_best_command=payload.get("next_best_command") if isinstance(payload, dict) else None,
+            next_best_command=payload.get("next_best_command")
+            if isinstance(payload, dict)
+            else None,
             next_feedback_priority_reason=(
                 payload.get("entries", [{}])[0].get("feedback_priority_reason")
-                if isinstance(payload, dict) and isinstance(payload.get("entries"), list) and payload.get("entries")
+                if isinstance(payload, dict)
+                and isinstance(payload.get("entries"), list)
+                and payload.get("entries")
                 else None
             ),
-            planned_step_count=payload.get("planned_step_count") if isinstance(payload, dict) else None,
+            planned_step_count=payload.get("planned_step_count")
+            if isinstance(payload, dict)
+            else None,
         )
         logger.info("written: {}", out)
         logger.info("written: {}", summary_out)
@@ -73,14 +79,22 @@ def register_remediation_commands(
         chain_out = append_remediation_execution_plan_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
-            execution_plan_status=payload.get("execution_plan_status") if isinstance(payload, dict) else None,
-            next_action_command=payload.get("next_action_command") if isinstance(payload, dict) else None,
+            execution_plan_status=payload.get("execution_plan_status")
+            if isinstance(payload, dict)
+            else None,
+            next_action_command=payload.get("next_action_command")
+            if isinstance(payload, dict)
+            else None,
             next_action_feedback_priority_reason=(
                 payload.get("actions", [{}])[0].get("feedback_priority_reason")
-                if isinstance(payload, dict) and isinstance(payload.get("actions"), list) and payload.get("actions")
+                if isinstance(payload, dict)
+                and isinstance(payload.get("actions"), list)
+                and payload.get("actions")
                 else None
             ),
-            planned_action_count=payload.get("planned_action_count") if isinstance(payload, dict) else None,
+            planned_action_count=payload.get("planned_action_count")
+            if isinstance(payload, dict)
+            else None,
         )
         logger.info("written: {}", out)
         logger.info("written: {}", summary_out)
@@ -98,7 +112,9 @@ def register_remediation_commands(
             settings.data_dir,
             summary_path=summary_out,
             session_status=payload.get("session_status") if isinstance(payload, dict) else None,
-            next_pending_command=payload.get("next_pending_command") if isinstance(payload, dict) else None,
+            next_pending_command=payload.get("next_pending_command")
+            if isinstance(payload, dict)
+            else None,
             next_pending_stage_signal_confidence=(
                 payload.get("next_pending_stage_signal_confidence")
                 if isinstance(payload, dict)
@@ -109,7 +125,9 @@ def register_remediation_commands(
                 if isinstance(payload, dict)
                 else None
             ),
-            pending_action_count=payload.get("pending_action_count") if isinstance(payload, dict) else None,
+            pending_action_count=payload.get("pending_action_count")
+            if isinstance(payload, dict)
+            else None,
         )
         logger.info("written: {}", out)
         logger.info("written: {}", summary_out)
@@ -120,9 +138,15 @@ def register_remediation_commands(
 
     @app.command("remediation-session-checkpoint")
     def remediation_session_checkpoint_cmd(
-        action_key: str | None = typer.Option(None, "--action-key", help="Stable action key to update."),
-        result: str | None = typer.Option(None, "--result", help="One of: pending, pass, fail, retry."),
-        note: str | None = typer.Option(None, "--note", help="Optional operator note appended to the action."),
+        action_key: str | None = typer.Option(
+            None, "--action-key", help="Stable action key to update."
+        ),
+        result: str | None = typer.Option(
+            None, "--result", help="One of: pending, pass, fail, retry."
+        ),
+        note: str | None = typer.Option(
+            None, "--note", help="Optional operator note appended to the action."
+        ),
         evidence_path: str | None = typer.Option(
             None,
             "--evidence-path",
@@ -165,8 +189,12 @@ def register_remediation_commands(
         chain_out = append_remediation_session_checkpoint_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
-            checkpoint_status=payload.get("checkpoint_status") if isinstance(payload, dict) else None,
-            next_action_command=payload.get("next_action_command") if isinstance(payload, dict) else None,
+            checkpoint_status=payload.get("checkpoint_status")
+            if isinstance(payload, dict)
+            else None,
+            next_action_command=payload.get("next_action_command")
+            if isinstance(payload, dict)
+            else None,
             next_action_stage_signal_confidence=(
                 payload.get("next_action_stage_signal_confidence")
                 if isinstance(payload, dict)
@@ -185,7 +213,9 @@ def register_remediation_commands(
                 if isinstance(payload, dict)
                 else None
             ),
-            pending_action_count=payload.get("pending_action_count") if isinstance(payload, dict) else None,
+            pending_action_count=payload.get("pending_action_count")
+            if isinstance(payload, dict)
+            else None,
         )
         logger.info("written: {}", out)
         logger.info("written: {}", summary_out)
@@ -197,8 +227,12 @@ def register_remediation_commands(
     @app.command("remediation-evidence-ingest")
     def remediation_evidence_ingest_cmd(
         action_key: str = typer.Option(..., "--action-key", help="Stable action key to update."),
-        result: str | None = typer.Option(None, "--result", help="One of: pending, pass, fail, retry."),
-        note: str | None = typer.Option(None, "--note", help="Optional operator note appended to the action."),
+        result: str | None = typer.Option(
+            None, "--result", help="One of: pending, pass, fail, retry."
+        ),
+        note: str | None = typer.Option(
+            None, "--note", help="Optional operator note appended to the action."
+        ),
         evidence_path: str | None = typer.Option(
             None,
             "--evidence-path",
@@ -226,19 +260,21 @@ def register_remediation_commands(
         ),
     ) -> None:
         settings = get_settings()
-        checkpoint_out, checkpoint_summary_out, _checkpoint_text = write_remediation_session_checkpoint_fn(
-            settings.data_dir,
-            action_key=action_key,
-            result=result,
-            note=note,
-            evidence_path=evidence_path,
-            observed_signal=observed_signal,
-            stdout_summary=stdout_summary,
-            stderr_summary=stderr_summary,
-            exit_code=exit_code,
+        checkpoint_out, checkpoint_summary_out, _checkpoint_text = (
+            write_remediation_session_checkpoint_fn(
+                settings.data_dir,
+                action_key=action_key,
+                result=result,
+                note=note,
+                evidence_path=evidence_path,
+                observed_signal=observed_signal,
+                stdout_summary=stdout_summary,
+                stderr_summary=stderr_summary,
+                exit_code=exit_code,
+            )
         )
-        command_results_out, command_results_summary_out, command_results_text = write_remediation_command_results_fn(
-            settings.data_dir
+        command_results_out, command_results_summary_out, command_results_text = (
+            write_remediation_command_results_fn(settings.data_dir)
         )
         checkpoint_payload = read_json(checkpoint_summary_out)
         chain_out = append_remediation_evidence_ingest_manifest_fn(
@@ -271,8 +307,12 @@ def register_remediation_commands(
         chain_out = append_remediation_scoreboard_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
-            scoreboard_status=payload.get("scoreboard_status") if isinstance(payload, dict) else None,
-            next_action_command=payload.get("next_action_command") if isinstance(payload, dict) else None,
+            scoreboard_status=payload.get("scoreboard_status")
+            if isinstance(payload, dict)
+            else None,
+            next_action_command=payload.get("next_action_command")
+            if isinstance(payload, dict)
+            else None,
             next_action_stage_signal_confidence=(
                 payload.get("next_action_stage_signal_confidence")
                 if isinstance(payload, dict)
@@ -329,14 +369,10 @@ def register_remediation_commands(
             summary_path=summary_out,
             evidence_status=payload.get("evidence_status") if isinstance(payload, dict) else None,
             next_manual_review_action_key=(
-                payload.get("next_manual_review_action_key")
-                if isinstance(payload, dict)
-                else None
+                payload.get("next_manual_review_action_key") if isinstance(payload, dict) else None
             ),
             manual_review_action_count=(
-                payload.get("manual_review_action_count")
-                if isinstance(payload, dict)
-                else None
+                payload.get("manual_review_action_count") if isinstance(payload, dict) else None
             ),
         )
         logger.info("written: {}", out)
@@ -355,19 +391,13 @@ def register_remediation_commands(
             settings.data_dir,
             summary_path=summary_out,
             command_results_status=(
-                payload.get("command_results_status")
-                if isinstance(payload, dict)
-                else None
+                payload.get("command_results_status") if isinstance(payload, dict) else None
             ),
             next_unobserved_action_key=(
-                payload.get("next_unobserved_action_key")
-                if isinstance(payload, dict)
-                else None
+                payload.get("next_unobserved_action_key") if isinstance(payload, dict) else None
             ),
             missing_observation_count=(
-                payload.get("missing_observation_count")
-                if isinstance(payload, dict)
-                else None
+                payload.get("missing_observation_count") if isinstance(payload, dict) else None
             ),
         )
         logger.info("written: {}", out)

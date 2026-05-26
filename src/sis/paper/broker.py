@@ -55,7 +55,9 @@ def _round_trip_cost_bps(
 ) -> tuple[str | None, float | None]:
     mode = quote_row.get("fee_mode")
     fee_mode = mode if isinstance(mode, str) else None
-    trade_cfg = fee_model.get("fee_model", {}).get("trade_xyz", {}) if isinstance(fee_model, dict) else {}
+    trade_cfg = (
+        fee_model.get("fee_model", {}).get("trade_xyz", {}) if isinstance(fee_model, dict) else {}
+    )
     fallback = trade_cfg.get("fallback", {}) if isinstance(trade_cfg, dict) else {}
     fallback_cfg = fallback.get(fee_mode or "standard", fallback.get("standard", {}))
     taker = _as_float(quote_row.get("taker_fee_bps"))
@@ -150,7 +152,9 @@ class PaperBroker:
         price, price_source = _price_for_action(execution_plan.action, quote_row)
         if price is None:
             return None
-        fee_mode, round_trip_cost_bps = _round_trip_cost_bps(quote_row=quote_row, fee_model=self.fee_model)
+        fee_mode, round_trip_cost_bps = _round_trip_cost_bps(
+            quote_row=quote_row, fee_model=self.fee_model
+        )
         return PaperFill(
             ts_fill=decision_record.context.quote_ts,
             venue=execution_plan.venue,

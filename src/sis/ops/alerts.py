@@ -42,7 +42,9 @@ def queue_notification(
     sink: str = "local_outbox",
     now: datetime | None = None,
 ) -> dict[str, object]:
-    current = now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+    current = (
+        now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+    )
     record: dict[str, object] = {
         "notification_id": current.strftime("%Y%m%d_%H%M%S_%f"),
         "created_at": current.isoformat(),

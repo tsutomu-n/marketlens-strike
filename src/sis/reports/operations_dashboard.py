@@ -71,11 +71,7 @@ def _quick_navigation(summary: dict[str, object]) -> dict[str, str]:
             _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md"),
         ),
     )
-    return {
-        key: value
-        for key, value in items
-        if isinstance(value, str) and value
-    }
+    return {key: value for key, value in items if isinstance(value, str) and value}
 
 
 def _related_reports(summary: dict[str, object]) -> dict[str, str]:
@@ -124,20 +120,15 @@ def _related_reports(summary: dict[str, object]) -> dict[str, str]:
             _report_path_for_summary(phase_gate_summary_path, "audit_bundle_manifest.md"),
         ),
     )
-    return {
-        key: value
-        for key, value in items
-        if isinstance(value, str) and value
-    }
+    return {key: value for key, value in items if isinstance(value, str) and value}
 
 
-def _execution_adapter_fields(source: dict[str, object], *, prefix: str, mapping: dict[str, str]) -> dict[str, object]:
+def _execution_adapter_fields(
+    source: dict[str, object], *, prefix: str, mapping: dict[str, str]
+) -> dict[str, object]:
     if not isinstance(source, dict):
         return {}
-    return {
-        f"{prefix}_{target}": source.get(source_key)
-        for target, source_key in mapping.items()
-    }
+    return {f"{prefix}_{target}": source.get(source_key) for target, source_key in mapping.items()}
 
 
 def build_operations_dashboard(
@@ -230,9 +221,7 @@ def build_operations_dashboard(
     execution_state_comparison_fields = execution_state_comparison_flat_fields(
         execution_state_comparison
     )
-    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(
-        execution_snapshot_drift
-    )
+    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(execution_snapshot_drift)
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
     execution_balance_fields = _execution_adapter_fields(
         execution_balance_status,
@@ -435,7 +424,9 @@ def build_operations_dashboard(
         "notification_outbox_source": notification_outbox.get("source"),
         "notification_outbox_path": notification_outbox.get("outbox_path"),
         "notification_outbox_latest_path": notification_outbox.get("latest_path"),
-        "notification_outbox_report_path": notification_outbox.get("notification_outbox_report_path"),
+        "notification_outbox_report_path": notification_outbox.get(
+            "notification_outbox_report_path"
+        ),
         "state_export_snapshot_path": state_export.get("snapshot_path"),
         "state_export_audit_overall_status": state_export.get("audit_overall_status"),
         "state_export_phase_gate_decision": state_export.get("phase_gate_decision"),
@@ -529,36 +520,38 @@ def build_operations_dashboard(
         **audit_bundle_history_fields,
         **phase_gate_fields,
         "phase_gate_phase2_entry_allowed": phase_gate_fields.get("phase2_entry_allowed"),
-        "phase_gate_summary_path": str(phase_gate_summary_path) if phase_gate_summary_path else None,
+        "phase_gate_summary_path": str(phase_gate_summary_path)
+        if phase_gate_summary_path
+        else None,
         "operations_dashboard_report_path": str(out_path) if out_path is not None else None,
         "comparison_report_exists": comparison_exists,
         "weekly_review_exists": weekly_exists,
         "lifecycle_report_exists": lifecycle_exists,
         "recommended_read_order": recommended_read_order(
             [
-            "data/ops/execution_snapshot_summary.json",
-            "data/ops/execution_venue_comparison_summary.json",
-            "data/ops/execution_venue_diagnostics_summary.json",
-            "data/ops/execution_gap_history_summary.json",
-            "data/ops/execution_state_comparison_history_summary.json",
-            "data/ops/execution_snapshot_drift_history_summary.json",
-            "data/ops/execution_drift_overview_summary.json",
-            "data/ops/execution_balance_status_summary.json",
-            "data/ops/execution_fill_status_summary.json",
-            "data/ops/execution_order_status_summary.json",
-            "data/ops/execution_cancel_order_summary.json",
-            "data/ops/execution_close_position_summary.json",
-            "data/ops/execution_reconcile_positions_summary.json",
-            "data/ops/execution_read_only_surfaces_summary.json",
-            "data/ops/daemon_manifest_summary.json",
-            "data/ops/daemon_loop_summary.json",
-            "data/ops/notification_outbox_summary.json",
-            "data/ops/state_export_summary.json",
-            "data/ops/state_restore_summary.json",
-            "data/ops/operations_dashboard_summary.json",
-            "data/ops/audit_dashboard_summary.json",
-            "data/ops/operations_bundle_manifest.json",
-            "data/ops/audit_bundle_manifest.json",
+                "data/ops/execution_snapshot_summary.json",
+                "data/ops/execution_venue_comparison_summary.json",
+                "data/ops/execution_venue_diagnostics_summary.json",
+                "data/ops/execution_gap_history_summary.json",
+                "data/ops/execution_state_comparison_history_summary.json",
+                "data/ops/execution_snapshot_drift_history_summary.json",
+                "data/ops/execution_drift_overview_summary.json",
+                "data/ops/execution_balance_status_summary.json",
+                "data/ops/execution_fill_status_summary.json",
+                "data/ops/execution_order_status_summary.json",
+                "data/ops/execution_cancel_order_summary.json",
+                "data/ops/execution_close_position_summary.json",
+                "data/ops/execution_reconcile_positions_summary.json",
+                "data/ops/execution_read_only_surfaces_summary.json",
+                "data/ops/daemon_manifest_summary.json",
+                "data/ops/daemon_loop_summary.json",
+                "data/ops/notification_outbox_summary.json",
+                "data/ops/state_export_summary.json",
+                "data/ops/state_restore_summary.json",
+                "data/ops/operations_dashboard_summary.json",
+                "data/ops/audit_dashboard_summary.json",
+                "data/ops/operations_bundle_manifest.json",
+                "data/ops/audit_bundle_manifest.json",
             ]
         ),
     }

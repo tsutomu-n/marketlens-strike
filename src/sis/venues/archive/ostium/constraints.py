@@ -142,13 +142,17 @@ def _write_raw_artifact(path: Path, *, endpoint: str, payload: Any, source: str)
     }
 
 
-def _fetch_json(client: httpx.Client, endpoint: str, *, params: dict[str, str] | None = None) -> Any:
+def _fetch_json(
+    client: httpx.Client, endpoint: str, *, params: dict[str, str] | None = None
+) -> Any:
     response = client.get(endpoint, params=params)
     response.raise_for_status()
     return response.json()
 
 
-def _fetch_json_or_error(client: httpx.Client, endpoint: str, *, params: dict[str, str] | None = None) -> Any:
+def _fetch_json_or_error(
+    client: httpx.Client, endpoint: str, *, params: dict[str, str] | None = None
+) -> Any:
     try:
         return _fetch_json(client, endpoint, params=params)
     except httpx.HTTPError as exc:
@@ -175,7 +179,9 @@ async def _run_sdk_read_only_probe() -> dict[str, Any]:
     module = importlib.import_module("ostium_python_sdk")
     sdk_cls = getattr(module, "OstiumSDK")
     network_config = getattr(module, "NetworkConfig")
-    config = network_config.mainnet() if hasattr(network_config, "mainnet") else network_config.testnet()
+    config = (
+        network_config.mainnet() if hasattr(network_config, "mainnet") else network_config.testnet()
+    )
     sdk = sdk_cls(config)
 
     if getattr(sdk, "price", None) is not None and hasattr(sdk.price, "get_latest_prices"):
@@ -298,8 +304,12 @@ def _asset_status(
         config["venue_pair"].replace("-", "").upper(),
         config["legacy_asset_param"].upper(),
     }
-    legacy_item = next((row for row in _price_items(latest_prices_payload) if _item_keys(row) & expected), {})
-    builder_item = next((row for row in _price_items(builder_prices_payload) if _item_keys(row) & expected), {})
+    legacy_item = next(
+        (row for row in _price_items(latest_prices_payload) if _item_keys(row) & expected), {}
+    )
+    builder_item = next(
+        (row for row in _price_items(builder_prices_payload) if _item_keys(row) & expected), {}
+    )
     item = legacy_item or builder_item
     is_market_open = item.get("isMarketOpen")
     is_day_trading_closed = item.get("isDayTradingClosed")
@@ -317,7 +327,8 @@ def _asset_status(
         "has_bid_ask": item.get("bid") is not None and item.get("ask") is not None,
         "latest_price_observed": bool(legacy_item),
         "builder_price_observed": bool(builder_item),
-        "trading_hours_observed": trading_hours_payload is not None and not _is_fetch_error(trading_hours_payload),
+        "trading_hours_observed": trading_hours_payload is not None
+        and not _is_fetch_error(trading_hours_payload),
         "is_market_open": is_market_open,
         "is_day_trading_closed": is_day_trading_closed,
     }
@@ -393,7 +404,9 @@ def write_ostium_constraint_artifact(
     sdk = _sdk_status(sdk_probe=sdk_probe)
     asset_statuses = [
         {
-            **_asset_status(asset, latest_prices, builder_prices, trading_hours_payloads.get(asset)),
+            **_asset_status(
+                asset, latest_prices, builder_prices, trading_hours_payloads.get(asset)
+            ),
             "latest_price_artifact": latest_price_refs.get(asset),
             "trading_hours_artifact": trading_hours_refs.get(asset),
         }

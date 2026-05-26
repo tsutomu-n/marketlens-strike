@@ -111,11 +111,13 @@ def _write_execution_venue_diagnostics(settings_data_dir: Path) -> tuple[Path, P
     out = settings_data_dir / "reports/execution_venue_diagnostics.md"
     summary_out = settings_data_dir / "ops/execution_venue_diagnostics_summary.json"
     text = build_execution_venue_diagnostics_report(
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
     return out, summary_out, text
+
 
 def _has_target_free_execution_observation_sources(settings_data_dir: Path) -> bool:
     source_paths = [
@@ -141,25 +143,47 @@ def _refresh_execution_lineage_artifacts(
     write_execution_snapshot_drift_history_fn: Callable[[Path], tuple[Path, Path, str]],
     write_execution_drift_overview_fn: Callable[[Path], tuple[Path, Path, str]],
 ) -> dict[str, tuple[Path, Path, str]]:
-    if only_if_sources_exist and not _has_target_free_execution_observation_sources(settings_data_dir):
+    if only_if_sources_exist and not _has_target_free_execution_observation_sources(
+        settings_data_dir
+    ):
         return {}
-    execution_snapshot_out, execution_snapshot_summary_out, execution_snapshot_text = _write_execution_snapshot(
+    execution_snapshot_out, execution_snapshot_summary_out, execution_snapshot_text = (
+        _write_execution_snapshot(settings_data_dir)
+    )
+    execution_comparison_out, execution_comparison_summary_out, execution_comparison_text = (
+        _write_execution_venue_comparison(settings_data_dir)
+    )
+    execution_diagnostics_out, execution_diagnostics_summary_out, execution_diagnostics_text = (
+        _write_execution_venue_diagnostics(settings_data_dir)
+    )
+    gap_history_out, gap_history_summary_out, gap_history_text = write_execution_gap_history_fn(
         settings_data_dir
     )
-    execution_comparison_out, execution_comparison_summary_out, execution_comparison_text = _write_execution_venue_comparison(
-        settings_data_dir
+    state_comparison_out, state_comparison_summary_out, state_comparison_text = (
+        write_execution_state_comparison_history_fn(settings_data_dir)
     )
-    execution_diagnostics_out, execution_diagnostics_summary_out, execution_diagnostics_text = _write_execution_venue_diagnostics(
-        settings_data_dir
+    snapshot_drift_out, snapshot_drift_summary_out, snapshot_drift_text = (
+        write_execution_snapshot_drift_history_fn(settings_data_dir)
     )
-    gap_history_out, gap_history_summary_out, gap_history_text = write_execution_gap_history_fn(settings_data_dir)
-    state_comparison_out, state_comparison_summary_out, state_comparison_text = write_execution_state_comparison_history_fn(settings_data_dir)
-    snapshot_drift_out, snapshot_drift_summary_out, snapshot_drift_text = write_execution_snapshot_drift_history_fn(settings_data_dir)
-    drift_overview_out, drift_overview_summary_out, drift_overview_text = write_execution_drift_overview_fn(settings_data_dir)
+    drift_overview_out, drift_overview_summary_out, drift_overview_text = (
+        write_execution_drift_overview_fn(settings_data_dir)
+    )
     return {
-        "execution_snapshot": (execution_snapshot_out, execution_snapshot_summary_out, execution_snapshot_text),
-        "execution_comparison": (execution_comparison_out, execution_comparison_summary_out, execution_comparison_text),
-        "execution_diagnostics": (execution_diagnostics_out, execution_diagnostics_summary_out, execution_diagnostics_text),
+        "execution_snapshot": (
+            execution_snapshot_out,
+            execution_snapshot_summary_out,
+            execution_snapshot_text,
+        ),
+        "execution_comparison": (
+            execution_comparison_out,
+            execution_comparison_summary_out,
+            execution_comparison_text,
+        ),
+        "execution_diagnostics": (
+            execution_diagnostics_out,
+            execution_diagnostics_summary_out,
+            execution_diagnostics_text,
+        ),
         "execution_gap_history": (gap_history_out, gap_history_summary_out, gap_history_text),
         "execution_state_comparison_history": (
             state_comparison_out,
@@ -171,7 +195,11 @@ def _refresh_execution_lineage_artifacts(
             snapshot_drift_summary_out,
             snapshot_drift_text,
         ),
-        "execution_drift_overview": (drift_overview_out, drift_overview_summary_out, drift_overview_text),
+        "execution_drift_overview": (
+            drift_overview_out,
+            drift_overview_summary_out,
+            drift_overview_text,
+        ),
     }
 
 
@@ -259,7 +287,9 @@ def _execution_read_only_surface_for_venue(
                 pl.col("venue").cast(pl.Utf8).str.to_lowercase() == venue
             )
             if frame.height:
-                positions_total_quantity = float(frame["quantity"].sum()) if "quantity" in frame.columns else None
+                positions_total_quantity = (
+                    float(frame["quantity"].sum()) if "quantity" in frame.columns else None
+                )
                 positions_total_realized_pnl = (
                     float(frame["realized_pnl"].sum()) if "realized_pnl" in frame.columns else None
                 )
@@ -369,9 +399,7 @@ def _execution_read_only_surface_for_venue(
                         for item in positions_rows
                         if isinstance(item, dict) and bool(item.get("is_day_trade"))
                     )
-                    positions_notional_usd_total = (
-                        sum(notional_values) if notional_values else None
-                    )
+                    positions_notional_usd_total = sum(notional_values) if notional_values else None
                     positions_unrealized_pnl_usd_total = (
                         sum(unrealized_values) if unrealized_values else None
                     )
@@ -385,9 +413,7 @@ def _execution_read_only_surface_for_venue(
                         sum(rollover_values) if rollover_values else None
                     )
                     positions_average_leverage = (
-                        sum(leverage_values) / len(leverage_values)
-                        if leverage_values
-                        else None
+                        sum(leverage_values) / len(leverage_values) if leverage_values else None
                     )
                     positions_average_return_on_equity = (
                         sum(return_on_equity_values) / len(return_on_equity_values)

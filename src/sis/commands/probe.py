@@ -37,7 +37,9 @@ def register_probe_commands(app: typer.Typer) -> None:
             "--read-only-live",
             help="Fetch Ostium Builder API prices with a GET-only probe before writing the registry.",
         ),
-        endpoint: str = typer.Option(OSTIUM_PRICES_ENDPOINT, "--endpoint", help="Ostium prices endpoint."),
+        endpoint: str = typer.Option(
+            OSTIUM_PRICES_ENDPOINT, "--endpoint", help="Ostium prices endpoint."
+        ),
         pairs_metadata_path: Path | None = typer.Option(
             None,
             "--pairs-metadata-path",
@@ -58,9 +60,13 @@ def register_probe_commands(app: typer.Typer) -> None:
         write_json(out, [item.model_dump(mode="json") for item in targets])
         logger.info("written: {}", out)
         if read_only_live:
-            typer.echo(f"Ostium registry and {len(quotes)} quote rows written from read-only probe.")
+            typer.echo(
+                f"Ostium registry and {len(quotes)} quote rows written from read-only probe."
+            )
         else:
-            typer.echo("Ostium registry written with requires_probe fields; pass --read-only-live to probe.")
+            typer.echo(
+                "Ostium registry written with requires_probe fields; pass --read-only-live to probe."
+            )
 
     @probe_app.command("trade-xyz")
     def probe_trade_xyz(

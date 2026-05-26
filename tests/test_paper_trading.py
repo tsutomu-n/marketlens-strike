@@ -33,7 +33,9 @@ def _decision_record(action: str = "enter_long") -> tuple[DecisionRecord, Execut
         reason="test",
         score=1.0,
     )
-    risk_decision = RiskDecision(allowed=action != "skip", blocked_reasons=[] if action != "skip" else ["BLOCK_TEST"])
+    risk_decision = RiskDecision(
+        allowed=action != "skip", blocked_reasons=[] if action != "skip" else ["BLOCK_TEST"]
+    )
     execution_plan = ExecutionPlan(
         action=action,
         venue="gtrade",
@@ -75,7 +77,9 @@ def _quote_row(**overrides: object) -> dict[str, object]:
 
 def test_paper_broker_creates_fill_for_enter_long() -> None:
     record, plan = _decision_record("enter_long")
-    fill = PaperBroker().create_fill(plan, record, _quote_row(best_ask=100.2, ask_price=100.3, mark_price=100.4))
+    fill = PaperBroker().create_fill(
+        plan, record, _quote_row(best_ask=100.2, ask_price=100.3, mark_price=100.4)
+    )
 
     assert fill is not None
     assert fill.action == "enter_long"
@@ -86,7 +90,9 @@ def test_paper_broker_creates_fill_for_enter_long() -> None:
 
 def test_paper_fill_uses_best_bid_for_long_exit() -> None:
     record, plan = _decision_record("exit_long")
-    fill = PaperBroker().create_fill(plan, record, _quote_row(best_bid=104.8, bid_price=104.7, mark_price=104.6))
+    fill = PaperBroker().create_fill(
+        plan, record, _quote_row(best_bid=104.8, bid_price=104.7, mark_price=104.6)
+    )
 
     assert fill is not None
     assert fill.action == "exit_long"
@@ -139,8 +145,12 @@ def test_paper_portfolio_tracks_entry_and_exit_and_writes_artifacts(tmp_path) ->
     broker = PaperBroker()
     entry_record, entry_plan = _decision_record("enter_long")
     exit_record, exit_plan = _decision_record("exit_long")
-    entry_fill = broker.create_fill(entry_plan, entry_record, _quote_row(best_ask=100.0, ask_price=100.1))
-    exit_fill = broker.create_fill(exit_plan, exit_record, _quote_row(best_bid=105.0, bid_price=104.9))
+    entry_fill = broker.create_fill(
+        entry_plan, entry_record, _quote_row(best_ask=100.0, ask_price=100.1)
+    )
+    exit_fill = broker.create_fill(
+        exit_plan, exit_record, _quote_row(best_bid=105.0, bid_price=104.9)
+    )
     assert entry_fill is not None
     assert exit_fill is not None
 

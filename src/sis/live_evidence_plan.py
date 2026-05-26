@@ -30,15 +30,10 @@ def build_live_evidence_plan(
     windows = [market_session_window(venue, symbol, now=now) for symbol in symbols]
     target_start_jst = max(window.recommended_start_jst for window in windows)
 
-    missed = [
-        window.symbol
-        for window in windows
-        if target_start_jst > window.recommended_end_jst
-    ]
+    missed = [window.symbol for window in windows if target_start_jst > window.recommended_end_jst]
     if missed:
         raise ValueError(
-            "No overlapping recommended live window for symbols: "
-            + ", ".join(sorted(missed))
+            "No overlapping recommended live window for symbols: " + ", ".join(sorted(missed))
         )
 
     return LiveEvidencePlan(

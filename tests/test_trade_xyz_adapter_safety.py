@@ -7,9 +7,15 @@ class _FakeExchange:
     def __init__(self) -> None:
         self.calls: list[str] = []
 
-    def read_account_state(self, master_address: str, subaccount_address: str | None = None) -> dict:
+    def read_account_state(
+        self, master_address: str, subaccount_address: str | None = None
+    ) -> dict:
         self.calls.append("read_account_state")
-        return {"master_address": master_address, "subaccount_address": subaccount_address, "equity": 1000.0}
+        return {
+            "master_address": master_address,
+            "subaccount_address": subaccount_address,
+            "equity": 1000.0,
+        }
 
     def schedule_cancel(self, deadline_ts_ms: int) -> dict:
         self.calls.append("schedule_cancel")
@@ -21,7 +27,13 @@ class _FakeExchange:
 
     def order_status_by_cloid(self, cloid: str) -> dict:
         self.calls.append("order_status_by_cloid")
-        return {"status": "open", "order_id": "ord-1", "symbol": "SP500", "side": "buy", "quantity": 1.0}
+        return {
+            "status": "open",
+            "order_id": "ord-1",
+            "symbol": "SP500",
+            "side": "buy",
+            "quantity": 1.0,
+        }
 
     def cancel_by_cloid(self, cloid: str) -> dict:
         self.calls.append("cancel_by_cloid")
@@ -108,4 +120,3 @@ def test_trade_xyz_adapter_close_requires_reduce_only() -> None:
     assert blocked.status == "blocked_non_reduce_only_close"
     assert allowed.success is True
     assert allowed.status == "close_submitted"
-

@@ -71,7 +71,9 @@ def test_halt_reasons_block_event_window() -> None:
         )
     ]
 
-    assert "BLOCK_EVENT_WINDOW" in evaluate_halt_reasons(quote, {"halt_policy": {}}, event_windows=windows)
+    assert "BLOCK_EVENT_WINDOW" in evaluate_halt_reasons(
+        quote, {"halt_policy": {}}, event_windows=windows
+    )
 
 
 def test_halt_reasons_block_cost_too_high() -> None:

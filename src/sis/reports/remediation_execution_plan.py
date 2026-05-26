@@ -28,7 +28,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "remediation_execution_plan_report": str(out_path),
         "remediation_planner_report": str(reports_dir / "remediation_planner.md"),
         "remediation_session_report": str(reports_dir / "remediation_session.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
         "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
         "remediation_evidence_report": str(reports_dir / "remediation_evidence.md"),
@@ -84,8 +86,7 @@ def _verification_confidence(signal_observed_sources: object, verification: list
     rank_map = {"high": 0, "medium": 1, "low": 2, "unknown": 3}
     reverse_rank_map = {0: "high", 1: "medium", 2: "low", 3: "unknown"}
     normalized = [
-        source_confidence_for_observed_sources([source]) or "unknown"
-        for source in values
+        source_confidence_for_observed_sources([source]) or "unknown" for source in values
     ]
     return reverse_rank_map[max(rank_map.get(value, 3) for value in normalized)]
 
@@ -119,7 +120,10 @@ def _stage_order(
         return ["post_check"]
     if feedback_value in {"evaluation_failed", "manual_review_pending", "partial_verification"}:
         return ["preflight", "execute", "post_check"]
-    if execute_signal_confidence in {"low", "unknown"} or postcheck_signal_confidence in {"low", "unknown"}:
+    if execute_signal_confidence in {"low", "unknown"} or postcheck_signal_confidence in {
+        "low",
+        "unknown",
+    }:
         return ["preflight", "execute", "post_check"]
     if confidence_value in {"low", "unknown"}:
         return ["preflight", "execute", "post_check"]
@@ -164,7 +168,9 @@ def build_remediation_execution_plan(
 ) -> str:
     planner_summary = safe_read_json_dict(remediation_planner_summary_path)
     source_summaries = _source_summaries(planner_summary)
-    planner_entries = planner_summary.get("entries") if isinstance(planner_summary.get("entries"), list) else []
+    planner_entries = (
+        planner_summary.get("entries") if isinstance(planner_summary.get("entries"), list) else []
+    )
     planner_entry_diffs = (
         planner_summary.get("planner_entry_diffs")
         if isinstance(planner_summary.get("planner_entry_diffs"), dict)
@@ -208,7 +214,9 @@ def build_remediation_execution_plan(
             else []
         )
         diff_key = f"{source}:{reason}"
-        entry_diff = planner_entry_diffs.get(diff_key, {}) if isinstance(planner_entry_diffs, dict) else {}
+        entry_diff = (
+            planner_entry_diffs.get(diff_key, {}) if isinstance(planner_entry_diffs, dict) else {}
+        )
         recommendation_status = item.get("status")
         entry_trend = entry_diff.get("trend")
         source_confidence = item.get("source_confidence")
@@ -271,7 +279,9 @@ def build_remediation_execution_plan(
                 "recommendation_why": item.get("why"),
                 "entry_trend": entry_trend,
                 "observed_sources": (
-                    item.get("observed_sources") if isinstance(item.get("observed_sources"), list) else []
+                    item.get("observed_sources")
+                    if isinstance(item.get("observed_sources"), list)
+                    else []
                 ),
                 "source_confidence": source_confidence,
                 "source_policy": item.get("source_policy"),
@@ -358,7 +368,9 @@ def build_remediation_execution_plan(
         "planned_action_count": len(planned_actions),
         "next_action_command": next_action_command,
         "recommended_execution_chain": recommended_execution_chain,
-        "remediation_planner_summary_path": str(remediation_planner_summary_path) if remediation_planner_summary_path is not None else None,
+        "remediation_planner_summary_path": str(remediation_planner_summary_path)
+        if remediation_planner_summary_path is not None
+        else None,
         "planner_status": planner_summary.get("planner_status"),
         "planner_rerun_trend": (
             planner_summary.get("planner_rerun_diff", {}).get("trend")
@@ -381,20 +393,22 @@ def build_remediation_execution_plan(
         lines.extend(["## Related Reports", ""])
         lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
         lines.append("")
-    lines.extend([
-        "## Execution Plan Summary",
-        "",
-        f"- execution_plan_status: {summary['execution_plan_status']}",
-        f"- planned_reason_count: {summary['planned_reason_count']}",
-        f"- planned_action_count: {summary['planned_action_count']}",
-        f"- next_action_command: {summary['next_action_command']}",
-        f"- planner_status: {summary['planner_status']}",
-        f"- planner_rerun_trend: {summary['planner_rerun_trend']}",
-        f"- remediation_planner_summary_path: {summary['remediation_planner_summary_path']}",
-        "",
-        "## Recommended Execution Chain",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Execution Plan Summary",
+            "",
+            f"- execution_plan_status: {summary['execution_plan_status']}",
+            f"- planned_reason_count: {summary['planned_reason_count']}",
+            f"- planned_action_count: {summary['planned_action_count']}",
+            f"- next_action_command: {summary['next_action_command']}",
+            f"- planner_status: {summary['planner_status']}",
+            f"- planner_rerun_trend: {summary['planner_rerun_trend']}",
+            f"- remediation_planner_summary_path: {summary['remediation_planner_summary_path']}",
+            "",
+            "## Recommended Execution Chain",
+            "",
+        ]
+    )
     if recommended_execution_chain:
         lines.extend(f"- `{command}`" for command in recommended_execution_chain)
     else:

@@ -3,7 +3,12 @@ from sis.venues.trade_xyz.collector import (
     collect_and_normalize_trade_xyz_quotes,
     collect_trade_xyz_quotes,
 )
-from sis.venues.trade_xyz.normalizer import BookMetrics, compute_book_metrics, payload_hash, quote_from_l2_book
+from sis.venues.trade_xyz.normalizer import (
+    BookMetrics,
+    compute_book_metrics,
+    payload_hash,
+    quote_from_l2_book,
+)
 from sis.venues.trade_xyz.quality import TradeXyzQualityPolicy, quality_blocks
 from sis.venues.trade_xyz.registry import (
     EXCLUDED_ACTIVE_SYMBOLS,

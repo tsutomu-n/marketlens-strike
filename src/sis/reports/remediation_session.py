@@ -12,7 +12,9 @@ def _quick_navigation(out_path: Path | None) -> dict[str, str]:
     reports_dir = out_path.parent
     return {
         "remediation_session_report": str(out_path),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
         "remediation_execution_plan_report": str(reports_dir / "remediation_execution_plan.md"),
         "remediation_planner_report": str(reports_dir / "remediation_planner.md"),
@@ -27,7 +29,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "remediation_session_report": str(out_path),
         "remediation_planner_report": str(reports_dir / "remediation_planner.md"),
         "remediation_execution_plan_report": str(reports_dir / "remediation_execution_plan.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
         "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
         "remediation_evidence_report": str(reports_dir / "remediation_evidence.md"),
@@ -76,7 +80,9 @@ def _action_sort_key(item: dict) -> tuple[int, int, int, int, int, int, str, str
     )
 
 
-def _feedback_maps(command_results_summary: dict, evaluator_summary: dict) -> tuple[dict[str, str], dict[str, str]]:
+def _feedback_maps(
+    command_results_summary: dict, evaluator_summary: dict
+) -> tuple[dict[str, str], dict[str, str]]:
     entries = (
         command_results_summary.get("entries")
         if isinstance(command_results_summary.get("entries"), list)
@@ -90,7 +96,11 @@ def _feedback_maps(command_results_summary: dict, evaluator_summary: dict) -> tu
         observation_status = item.get("observation_status")
         if isinstance(action_key, str) and isinstance(observation_status, str):
             observation_status_by_action[action_key] = observation_status
-    actions = evaluator_summary.get("actions") if isinstance(evaluator_summary.get("actions"), list) else []
+    actions = (
+        evaluator_summary.get("actions")
+        if isinstance(evaluator_summary.get("actions"), list)
+        else []
+    )
     evaluation_result_by_action: dict[str, str] = {}
     for item in actions:
         if not isinstance(item, dict):
@@ -150,14 +160,20 @@ def build_remediation_session(
         command_results_summary,
         evaluator_summary,
     )
-    actions = execution_plan.get("actions") if isinstance(execution_plan.get("actions"), list) else []
-    entries = execution_plan.get("entries") if isinstance(execution_plan.get("entries"), list) else []
+    actions = (
+        execution_plan.get("actions") if isinstance(execution_plan.get("actions"), list) else []
+    )
+    entries = (
+        execution_plan.get("entries") if isinstance(execution_plan.get("entries"), list) else []
+    )
 
     session_actions: list[dict] = []
     for item in actions:
         if not isinstance(item, dict):
             continue
-        verification = item.get("verification") if isinstance(item.get("verification"), list) else []
+        verification = (
+            item.get("verification") if isinstance(item.get("verification"), list) else []
+        )
         stage = str(item.get("stage") or "")
         recommendation_status = str(item.get("recommendation_status") or "")
         suggested_result = "pass"
@@ -185,7 +201,9 @@ def build_remediation_session(
                 "source_confidence": item.get("source_confidence"),
                 "source_policy": item.get("source_policy"),
                 "observed_sources": (
-                    item.get("observed_sources") if isinstance(item.get("observed_sources"), list) else []
+                    item.get("observed_sources")
+                    if isinstance(item.get("observed_sources"), list)
+                    else []
                 ),
                 "signal_observed_sources": (
                     item.get("signal_observed_sources")
@@ -212,7 +230,9 @@ def build_remediation_session(
         "planned_reason_count": len(entries),
         "planned_action_count": len(session_actions),
         "pending_action_count": len(session_actions),
-        "next_pending_command": next_pending_action["command"] if isinstance(next_pending_action, dict) else None,
+        "next_pending_command": next_pending_action["command"]
+        if isinstance(next_pending_action, dict)
+        else None,
         "next_pending_stage_signal_confidence": (
             next_pending_action.get("stage_signal_confidence")
             if isinstance(next_pending_action, dict)
@@ -251,37 +271,41 @@ def build_remediation_session(
     lines = ["# Remediation Session Dry Run", ""]
     if session_summary["quick_navigation"]:
         lines.extend(["## Quick Navigation", ""])
-        lines.extend(f"- {key}: {value}" for key, value in session_summary["quick_navigation"].items())
+        lines.extend(
+            f"- {key}: {value}" for key, value in session_summary["quick_navigation"].items()
+        )
         lines.append("")
     if session_summary["related_reports"]:
         lines.extend(["## Related Reports", ""])
-        lines.extend(f"- {key}: {value}" for key, value in session_summary["related_reports"].items())
+        lines.extend(
+            f"- {key}: {value}" for key, value in session_summary["related_reports"].items()
+        )
         lines.append("")
-    lines.extend([
-        "## Session Summary",
-        "",
-        f"- session_status: {session_summary['session_status']}",
-        f"- planned_reason_count: {session_summary['planned_reason_count']}",
-        f"- planned_action_count: {session_summary['planned_action_count']}",
-        f"- pending_action_count: {session_summary['pending_action_count']}",
-        f"- next_pending_command: {session_summary['next_pending_command']}",
-        f"- next_pending_stage_signal_confidence: {session_summary['next_pending_stage_signal_confidence']}",
-        f"- next_pending_feedback_priority_reason: {session_summary['next_pending_feedback_priority_reason']}",
-        f"- execution_plan_status: {session_summary['execution_plan_status']}",
-        f"- planner_status: {session_summary['planner_status']}",
-        f"- planner_rerun_trend: {session_summary['planner_rerun_trend']}",
-        f"- remediation_execution_plan_summary_path: {session_summary['remediation_execution_plan_summary_path']}",
-        f"- remediation_command_results_summary_path: {session_summary['remediation_command_results_summary_path']}",
-        f"- remediation_evaluator_summary_path: {session_summary['remediation_evaluator_summary_path']}",
-        "",
-        "## Pending Actions",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Session Summary",
+            "",
+            f"- session_status: {session_summary['session_status']}",
+            f"- planned_reason_count: {session_summary['planned_reason_count']}",
+            f"- planned_action_count: {session_summary['planned_action_count']}",
+            f"- pending_action_count: {session_summary['pending_action_count']}",
+            f"- next_pending_command: {session_summary['next_pending_command']}",
+            f"- next_pending_stage_signal_confidence: {session_summary['next_pending_stage_signal_confidence']}",
+            f"- next_pending_feedback_priority_reason: {session_summary['next_pending_feedback_priority_reason']}",
+            f"- execution_plan_status: {session_summary['execution_plan_status']}",
+            f"- planner_status: {session_summary['planner_status']}",
+            f"- planner_rerun_trend: {session_summary['planner_rerun_trend']}",
+            f"- remediation_execution_plan_summary_path: {session_summary['remediation_execution_plan_summary_path']}",
+            f"- remediation_command_results_summary_path: {session_summary['remediation_command_results_summary_path']}",
+            f"- remediation_evaluator_summary_path: {session_summary['remediation_evaluator_summary_path']}",
+            "",
+            "## Pending Actions",
+            "",
+        ]
+    )
     if session_actions:
         for action in session_actions:
-            lines.append(
-                f"- {action['action_key']}: `{action['command']}`"
-            )
+            lines.append(f"- {action['action_key']}: `{action['command']}`")
             lines.append(f"  - session_status: {action['session_status']}")
             lines.append(f"  - evidence_status: {action['evidence_status']}")
             lines.append(f"  - suggested_result: {action['suggested_result']}")
@@ -292,7 +316,9 @@ def build_remediation_session(
             lines.append(f"  - source_policy: {action['source_policy']}")
             lines.append(f"  - observed_sources: {action['observed_sources']}")
             lines.append(f"  - stage_signal_confidence: {action['stage_signal_confidence']}")
-            lines.append(f"  - feedback_observation_status: {action['feedback_observation_status']}")
+            lines.append(
+                f"  - feedback_observation_status: {action['feedback_observation_status']}"
+            )
             lines.append(f"  - feedback_evaluation_result: {action['feedback_evaluation_result']}")
             lines.append(f"  - feedback_priority_reason: {action['feedback_priority_reason']}")
             lines.append("  - verification:")

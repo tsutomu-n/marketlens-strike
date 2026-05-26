@@ -31,15 +31,35 @@ def _report_path_for_summary(path: Path | None, report_name: str) -> str | None:
     return str(base / "reports" / report_name)
 
 
-def _quick_navigation(phase_gate_summary_path: Path | None, out_path: Path | None) -> dict[str, str]:
+def _quick_navigation(
+    phase_gate_summary_path: Path | None, out_path: Path | None
+) -> dict[str, str]:
     items = (
         ("operations_audit_pack_report", str(out_path) if out_path is not None else None),
-        ("operations_dashboard_report", _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md")),
-        ("audit_dashboard_report", _report_path_for_summary(phase_gate_summary_path, "audit_dashboard.md")),
-        ("current_state_index_report", _report_path_for_summary(phase_gate_summary_path, "current_state_index.md")),
-        ("readiness_snapshot_report", _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md")),
-        ("phase_gate_review_report", _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md")),
-        ("remediation_scoreboard_report", _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md")),
+        (
+            "operations_dashboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md"),
+        ),
+        (
+            "audit_dashboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "audit_dashboard.md"),
+        ),
+        (
+            "current_state_index_report",
+            _report_path_for_summary(phase_gate_summary_path, "current_state_index.md"),
+        ),
+        (
+            "readiness_snapshot_report",
+            _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md"),
+        ),
+        (
+            "phase_gate_review_report",
+            _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md"),
+        ),
+        (
+            "remediation_scoreboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md"),
+        ),
     )
     return {key: value for key, value in items if isinstance(value, str) and value}
 
@@ -47,14 +67,38 @@ def _quick_navigation(phase_gate_summary_path: Path | None, out_path: Path | Non
 def _related_reports(phase_gate_summary_path: Path | None, out_path: Path | None) -> dict[str, str]:
     items = (
         ("operations_audit_pack_report", str(out_path) if out_path is not None else None),
-        ("operations_bundle_report", _report_path_for_summary(phase_gate_summary_path, "operations_bundle.md")),
-        ("audit_bundle_report", _report_path_for_summary(phase_gate_summary_path, "audit_bundle.md")),
-        ("operations_dashboard_report", _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md")),
-        ("audit_dashboard_report", _report_path_for_summary(phase_gate_summary_path, "audit_dashboard.md")),
-        ("current_state_index_report", _report_path_for_summary(phase_gate_summary_path, "current_state_index.md")),
-        ("readiness_snapshot_report", _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md")),
-        ("phase_gate_review_report", _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md")),
-        ("paper_operations_runbook_report", _report_path_for_summary(phase_gate_summary_path, "paper_operations_runbook.md")),
+        (
+            "operations_bundle_report",
+            _report_path_for_summary(phase_gate_summary_path, "operations_bundle.md"),
+        ),
+        (
+            "audit_bundle_report",
+            _report_path_for_summary(phase_gate_summary_path, "audit_bundle.md"),
+        ),
+        (
+            "operations_dashboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md"),
+        ),
+        (
+            "audit_dashboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "audit_dashboard.md"),
+        ),
+        (
+            "current_state_index_report",
+            _report_path_for_summary(phase_gate_summary_path, "current_state_index.md"),
+        ),
+        (
+            "readiness_snapshot_report",
+            _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md"),
+        ),
+        (
+            "phase_gate_review_report",
+            _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md"),
+        ),
+        (
+            "paper_operations_runbook_report",
+            _report_path_for_summary(phase_gate_summary_path, "paper_operations_runbook.md"),
+        ),
     )
     return {key: value for key, value in items if isinstance(value, str) and value}
 
@@ -85,7 +129,9 @@ def build_operations_audit_pack(
     execution_comparison = safe_read_json_dict(execution_venue_comparison_summary_path)
     execution_diagnostics = safe_read_json_dict(execution_venue_diagnostics_summary_path)
     execution_gap_history = safe_read_json_dict(execution_gap_history_summary_path)
-    execution_state_comparison = safe_read_json_dict(execution_state_comparison_history_summary_path)
+    execution_state_comparison = safe_read_json_dict(
+        execution_state_comparison_history_summary_path
+    )
     execution_snapshot_drift = safe_read_json_dict(execution_snapshot_drift_history_summary_path)
     execution_drift_overview = normalized_summary(
         execution_drift_overview_summary_path,
@@ -100,9 +146,7 @@ def build_operations_audit_pack(
     execution_state_comparison_fields = execution_state_comparison_flat_fields(
         execution_state_comparison
     )
-    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(
-        execution_snapshot_drift
-    )
+    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(execution_snapshot_drift)
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
     timeline_fields = audit_timeline_flat_fields(timeline)
     readiness_fields = readiness_flat_fields(readiness)
@@ -138,9 +182,13 @@ def build_operations_audit_pack(
         "artifacts": {
             "bundle_manifest": str(bundle_manifest_path) if bundle_manifest_path else None,
             "timeline_summary": str(timeline_summary_path) if timeline_summary_path else None,
-            "cycle_history_summary": str(cycle_history_summary_path) if cycle_history_summary_path else None,
+            "cycle_history_summary": str(cycle_history_summary_path)
+            if cycle_history_summary_path
+            else None,
             "runbook_summary": str(runbook_summary_path) if runbook_summary_path else None,
-            "execution_snapshot_summary": str(execution_snapshot_summary_path) if execution_snapshot_summary_path else None,
+            "execution_snapshot_summary": str(execution_snapshot_summary_path)
+            if execution_snapshot_summary_path
+            else None,
             "execution_venue_comparison_summary": (
                 str(execution_venue_comparison_summary_path)
                 if execution_venue_comparison_summary_path
@@ -152,7 +200,9 @@ def build_operations_audit_pack(
                 else None
             ),
             "execution_gap_history_summary": (
-                str(execution_gap_history_summary_path) if execution_gap_history_summary_path else None
+                str(execution_gap_history_summary_path)
+                if execution_gap_history_summary_path
+                else None
             ),
             "execution_state_comparison_history_summary": (
                 str(execution_state_comparison_history_summary_path)
@@ -296,8 +346,8 @@ def build_operations_audit_pack(
     lines.extend(
         [
             "",
-        "## Related Reports",
-        "",
+            "## Related Reports",
+            "",
         ]
     )
     for key, value in related_reports.items():
@@ -305,8 +355,8 @@ def build_operations_audit_pack(
     lines.extend(
         [
             "",
-        "## Strict Validation Preview",
-        "",
+            "## Strict Validation Preview",
+            "",
         ]
     )
     validation_issue_previews = phase_gate_issue_preview_lines(manifest)
@@ -317,8 +367,8 @@ def build_operations_audit_pack(
     lines.extend(
         [
             "",
-        "## Included Summaries",
-        "",
+            "## Included Summaries",
+            "",
         ]
     )
     for key, value in artifacts.items():

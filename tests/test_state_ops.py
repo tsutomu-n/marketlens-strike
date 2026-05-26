@@ -84,7 +84,9 @@ def test_kill_switch_and_healthcheck_work(tmp_path) -> None:
         '{"readiness_next_phase_candidate":"Stay Phase 1","readiness_execution_ready":false}',
         encoding="utf-8",
     )
-    execution.write_text('{"execution_overall_status":"ok","execution_venue_count":2}', encoding="utf-8")
+    execution.write_text(
+        '{"execution_overall_status":"ok","execution_venue_count":2}', encoding="utf-8"
+    )
     execution_comparison.write_text(
         '{"execution_comparison_all_registries_present":true}',
         encoding="utf-8",
@@ -159,15 +161,31 @@ def test_kill_switch_and_healthcheck_work(tmp_path) -> None:
     assert status["phase2_entry_allowed"] is False
     assert status["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
     assert status["phase_gate_strict_validation_passed"] is True
-    assert status["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        status["phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert status["execution_summary"]["execution_overall_status"] == "ok"
-    assert status["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        status["execution_comparison_summary"]["execution_comparison_all_registries_present"]
+        is True
+    )
     assert status["execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
     assert status["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
-    assert status["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == 1
-    assert status["execution_snapshot_drift_summary"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert (
+        status["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"]
+        == 1
+    )
+    assert (
+        status["execution_snapshot_drift_summary"][
+            "execution_snapshot_drift_mismatching_snapshot_count"
+        ]
+        == 1
+    )
     assert status["execution_drift_overview_status"] == "degraded"
-    assert status["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    assert (
+        status["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    )
     assert status["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert status["readiness_summary"]["readiness_next_phase_candidate"] == "Stay Phase 1"
 

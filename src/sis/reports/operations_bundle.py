@@ -38,15 +38,35 @@ def _report_path_for_summary(path: Path | None, report_name: str) -> str | None:
     return str(base / "reports" / report_name)
 
 
-def _quick_navigation(phase_gate_summary_path: Path | None, out_path: Path | None) -> dict[str, str]:
+def _quick_navigation(
+    phase_gate_summary_path: Path | None, out_path: Path | None
+) -> dict[str, str]:
     items = (
         ("operations_bundle_report", str(out_path) if out_path is not None else None),
-        ("operations_dashboard_report", _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md")),
-        ("current_state_index_report", _report_path_for_summary(phase_gate_summary_path, "current_state_index.md")),
-        ("readiness_snapshot_report", _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md")),
-        ("phase_gate_review_report", _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md")),
-        ("paper_operations_runbook_report", _report_path_for_summary(phase_gate_summary_path, "paper_operations_runbook.md")),
-        ("remediation_scoreboard_report", _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md")),
+        (
+            "operations_dashboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md"),
+        ),
+        (
+            "current_state_index_report",
+            _report_path_for_summary(phase_gate_summary_path, "current_state_index.md"),
+        ),
+        (
+            "readiness_snapshot_report",
+            _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md"),
+        ),
+        (
+            "phase_gate_review_report",
+            _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md"),
+        ),
+        (
+            "paper_operations_runbook_report",
+            _report_path_for_summary(phase_gate_summary_path, "paper_operations_runbook.md"),
+        ),
+        (
+            "remediation_scoreboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md"),
+        ),
     )
     return {key: value for key, value in items if isinstance(value, str) and value}
 
@@ -54,15 +74,42 @@ def _quick_navigation(phase_gate_summary_path: Path | None, out_path: Path | Non
 def _related_reports(phase_gate_summary_path: Path | None, out_path: Path | None) -> dict[str, str]:
     items = (
         ("operations_bundle_report", str(out_path) if out_path is not None else None),
-        ("operations_dashboard_report", _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md")),
-        ("audit_dashboard_report", _report_path_for_summary(phase_gate_summary_path, "audit_dashboard.md")),
-        ("operations_audit_pack_report", _report_path_for_summary(phase_gate_summary_path, "operations_audit_pack.md")),
-        ("ops_review_report", _report_path_for_summary(phase_gate_summary_path, "ops_review_report.md")),
-        ("current_state_index_report", _report_path_for_summary(phase_gate_summary_path, "current_state_index.md")),
-        ("readiness_snapshot_report", _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md")),
-        ("phase_gate_review_report", _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md")),
-        ("paper_operations_runbook_report", _report_path_for_summary(phase_gate_summary_path, "paper_operations_runbook.md")),
-        ("remediation_scoreboard_report", _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md")),
+        (
+            "operations_dashboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md"),
+        ),
+        (
+            "audit_dashboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "audit_dashboard.md"),
+        ),
+        (
+            "operations_audit_pack_report",
+            _report_path_for_summary(phase_gate_summary_path, "operations_audit_pack.md"),
+        ),
+        (
+            "ops_review_report",
+            _report_path_for_summary(phase_gate_summary_path, "ops_review_report.md"),
+        ),
+        (
+            "current_state_index_report",
+            _report_path_for_summary(phase_gate_summary_path, "current_state_index.md"),
+        ),
+        (
+            "readiness_snapshot_report",
+            _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md"),
+        ),
+        (
+            "phase_gate_review_report",
+            _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md"),
+        ),
+        (
+            "paper_operations_runbook_report",
+            _report_path_for_summary(phase_gate_summary_path, "paper_operations_runbook.md"),
+        ),
+        (
+            "remediation_scoreboard_report",
+            _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md"),
+        ),
     )
     return {key: value for key, value in items if isinstance(value, str) and value}
 
@@ -89,7 +136,9 @@ def build_operations_bundle_manifest(
     monitoring = safe_read_json_dict(monitoring_summary_path)
     ops_review = safe_read_json_dict(ops_review_summary_path)
     dashboard = safe_read_json_dict(dashboard_summary_path)
-    execution = normalized_summary(execution_snapshot_summary_path, normalize_execution_snapshot_summary)
+    execution = normalized_summary(
+        execution_snapshot_summary_path, normalize_execution_snapshot_summary
+    )
     execution_comparison = normalized_summary(
         execution_venue_comparison_summary_path,
         normalize_execution_comparison_summary,
@@ -125,9 +174,7 @@ def build_operations_bundle_manifest(
     execution_state_comparison_fields = execution_state_comparison_flat_fields(
         execution_state_comparison
     )
-    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(
-        execution_snapshot_drift
-    )
+    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(execution_snapshot_drift)
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
     ops_review_fields = ops_review_flat_fields(ops_review)
     readiness_fields = readiness_flat_fields(readiness)
@@ -175,7 +222,9 @@ def build_operations_bundle_manifest(
             "monitoring_summary": str(monitoring_summary_path) if monitoring_summary_path else None,
             "ops_review_summary": str(ops_review_summary_path) if ops_review_summary_path else None,
             "dashboard_summary": str(dashboard_summary_path) if dashboard_summary_path else None,
-            "execution_snapshot_summary": str(execution_snapshot_summary_path) if execution_snapshot_summary_path else None,
+            "execution_snapshot_summary": str(execution_snapshot_summary_path)
+            if execution_snapshot_summary_path
+            else None,
             "execution_venue_comparison_summary": (
                 str(execution_venue_comparison_summary_path)
                 if execution_venue_comparison_summary_path
@@ -187,7 +236,9 @@ def build_operations_bundle_manifest(
                 else None
             ),
             "execution_gap_history_summary": (
-                str(execution_gap_history_summary_path) if execution_gap_history_summary_path else None
+                str(execution_gap_history_summary_path)
+                if execution_gap_history_summary_path
+                else None
             ),
             "execution_state_comparison_history_summary": (
                 str(execution_state_comparison_history_summary_path)
@@ -200,31 +251,35 @@ def build_operations_bundle_manifest(
                 else None
             ),
             "execution_drift_overview_summary": (
-                str(execution_drift_overview_summary_path) if execution_drift_overview_summary_path else None
+                str(execution_drift_overview_summary_path)
+                if execution_drift_overview_summary_path
+                else None
             ),
             "readiness_summary": str(readiness_summary_path) if readiness_summary_path else None,
             "runbook_summary": str(runbook_summary_path) if runbook_summary_path else None,
-            "paper_cycle_history_summary": str(paper_cycle_history_summary_path) if paper_cycle_history_summary_path else None,
+            "paper_cycle_history_summary": str(paper_cycle_history_summary_path)
+            if paper_cycle_history_summary_path
+            else None,
             "phase_gate_summary": str(phase_gate_summary_path) if phase_gate_summary_path else None,
         },
         "recommended_read_order": recommended_read_order(
             [
-            "data/ops/execution_snapshot_summary.json",
-            "data/ops/execution_venue_comparison_summary.json",
-            "data/ops/execution_venue_diagnostics_summary.json",
-            "data/ops/execution_gap_history_summary.json",
-            "data/ops/execution_state_comparison_history_summary.json",
-            "data/ops/execution_snapshot_drift_history_summary.json",
-            "data/ops/execution_drift_overview_summary.json",
-            "data/ops/readiness_snapshot.json",
-            "data/ops/operations_dashboard_summary.json",
-            "data/ops/audit_dashboard_summary.json",
-            "data/ops/operations_bundle_manifest.json",
-            "data/ops/audit_bundle_manifest.json",
-            "data/reports/operations_dashboard.md",
-            "data/reports/audit_dashboard.md",
-            "data/reports/operations_audit_pack.md",
-            "data/reports/paper_operations_runbook.md",
+                "data/ops/execution_snapshot_summary.json",
+                "data/ops/execution_venue_comparison_summary.json",
+                "data/ops/execution_venue_diagnostics_summary.json",
+                "data/ops/execution_gap_history_summary.json",
+                "data/ops/execution_state_comparison_history_summary.json",
+                "data/ops/execution_snapshot_drift_history_summary.json",
+                "data/ops/execution_drift_overview_summary.json",
+                "data/ops/readiness_snapshot.json",
+                "data/ops/operations_dashboard_summary.json",
+                "data/ops/audit_dashboard_summary.json",
+                "data/ops/operations_bundle_manifest.json",
+                "data/ops/audit_bundle_manifest.json",
+                "data/reports/operations_dashboard.md",
+                "data/reports/audit_dashboard.md",
+                "data/reports/operations_audit_pack.md",
+                "data/reports/paper_operations_runbook.md",
             ]
         ),
     }
@@ -300,55 +355,55 @@ def build_operations_bundle_manifest(
     lines.extend(
         [
             "",
-        "## Cycle Coverage",
-        "",
-        f"- cycle_count: {manifest['cycle_count']}",
-        f"- completed_cycle_count: {manifest['completed_cycle_count']}",
-        *latest_execution_flat_lines(
-            overall_status=manifest.get("cycle_history_latest_execution_overall_status"),
-            venue_count=manifest.get("cycle_history_latest_execution_venue_count"),
-            all_registries_present=manifest.get(
-                "cycle_history_latest_execution_comparison_all_registries_present"
+            "## Cycle Coverage",
+            "",
+            f"- cycle_count: {manifest['cycle_count']}",
+            f"- completed_cycle_count: {manifest['completed_cycle_count']}",
+            *latest_execution_flat_lines(
+                overall_status=manifest.get("cycle_history_latest_execution_overall_status"),
+                venue_count=manifest.get("cycle_history_latest_execution_venue_count"),
+                all_registries_present=manifest.get(
+                    "cycle_history_latest_execution_comparison_all_registries_present"
+                ),
+                overall_status_label="cycle_history_latest_execution_overall_status",
+                venue_count_label="cycle_history_latest_execution_venue_count",
+                all_registries_present_label=(
+                    "cycle_history_latest_execution_comparison_all_registries_present"
+                ),
             ),
-            overall_status_label="cycle_history_latest_execution_overall_status",
-            venue_count_label="cycle_history_latest_execution_venue_count",
-            all_registries_present_label=(
-                "cycle_history_latest_execution_comparison_all_registries_present"
+            f"- timeline_latest_remediation_planner_status: {manifest.get('timeline_latest_remediation_planner_status')}",
+            f"- timeline_latest_remediation_planner_next_best_command: {manifest.get('timeline_latest_remediation_planner_next_best_command')}",
+            (
+                "- timeline_latest_remediation_planner_feedback_priority_reason: "
+                f"{manifest.get('timeline_latest_remediation_planner_feedback_priority_reason')}"
             ),
-        ),
-        f"- timeline_latest_remediation_planner_status: {manifest.get('timeline_latest_remediation_planner_status')}",
-        f"- timeline_latest_remediation_planner_next_best_command: {manifest.get('timeline_latest_remediation_planner_next_best_command')}",
-        (
-            "- timeline_latest_remediation_planner_feedback_priority_reason: "
-            f"{manifest.get('timeline_latest_remediation_planner_feedback_priority_reason')}"
-        ),
-        f"- timeline_latest_remediation_execution_plan_status: {manifest.get('timeline_latest_remediation_execution_plan_status')}",
-        f"- timeline_latest_remediation_execution_plan_next_action_command: {manifest.get('timeline_latest_remediation_execution_plan_next_action_command')}",
-        (
-            "- timeline_latest_remediation_execution_plan_feedback_priority_reason: "
-            f"{manifest.get('timeline_latest_remediation_execution_plan_feedback_priority_reason')}"
-        ),
-        f"- timeline_latest_remediation_session_status: {manifest.get('timeline_latest_remediation_session_status')}",
-        f"- timeline_latest_remediation_session_next_pending_command: {manifest.get('timeline_latest_remediation_session_next_pending_command')}",
-        (
-            "- timeline_latest_remediation_session_feedback_priority_reason: "
-            f"{manifest.get('timeline_latest_remediation_session_feedback_priority_reason')}"
-        ),
-        f"- timeline_latest_remediation_checkpoint_status: {manifest.get('timeline_latest_remediation_checkpoint_status')}",
-        f"- timeline_latest_remediation_checkpoint_next_action_command: {manifest.get('timeline_latest_remediation_checkpoint_next_action_command')}",
-        (
-            "- timeline_latest_remediation_checkpoint_feedback_priority_reason: "
-            f"{manifest.get('timeline_latest_remediation_checkpoint_feedback_priority_reason')}"
-        ),
-        f"- timeline_latest_remediation_scoreboard_status: {manifest.get('timeline_latest_remediation_scoreboard_status')}",
-        f"- timeline_latest_remediation_scoreboard_next_action_command: {manifest.get('timeline_latest_remediation_scoreboard_next_action_command')}",
-        (
-            "- timeline_latest_remediation_scoreboard_feedback_priority_reason: "
-            f"{manifest.get('timeline_latest_remediation_scoreboard_feedback_priority_reason')}"
-        ),
-        "",
-        "## Related Reports",
-        "",
+            f"- timeline_latest_remediation_execution_plan_status: {manifest.get('timeline_latest_remediation_execution_plan_status')}",
+            f"- timeline_latest_remediation_execution_plan_next_action_command: {manifest.get('timeline_latest_remediation_execution_plan_next_action_command')}",
+            (
+                "- timeline_latest_remediation_execution_plan_feedback_priority_reason: "
+                f"{manifest.get('timeline_latest_remediation_execution_plan_feedback_priority_reason')}"
+            ),
+            f"- timeline_latest_remediation_session_status: {manifest.get('timeline_latest_remediation_session_status')}",
+            f"- timeline_latest_remediation_session_next_pending_command: {manifest.get('timeline_latest_remediation_session_next_pending_command')}",
+            (
+                "- timeline_latest_remediation_session_feedback_priority_reason: "
+                f"{manifest.get('timeline_latest_remediation_session_feedback_priority_reason')}"
+            ),
+            f"- timeline_latest_remediation_checkpoint_status: {manifest.get('timeline_latest_remediation_checkpoint_status')}",
+            f"- timeline_latest_remediation_checkpoint_next_action_command: {manifest.get('timeline_latest_remediation_checkpoint_next_action_command')}",
+            (
+                "- timeline_latest_remediation_checkpoint_feedback_priority_reason: "
+                f"{manifest.get('timeline_latest_remediation_checkpoint_feedback_priority_reason')}"
+            ),
+            f"- timeline_latest_remediation_scoreboard_status: {manifest.get('timeline_latest_remediation_scoreboard_status')}",
+            f"- timeline_latest_remediation_scoreboard_next_action_command: {manifest.get('timeline_latest_remediation_scoreboard_next_action_command')}",
+            (
+                "- timeline_latest_remediation_scoreboard_feedback_priority_reason: "
+                f"{manifest.get('timeline_latest_remediation_scoreboard_feedback_priority_reason')}"
+            ),
+            "",
+            "## Related Reports",
+            "",
         ]
     )
     for key, value in manifest["related_reports"].items():
@@ -356,18 +411,18 @@ def build_operations_bundle_manifest(
     lines.extend(
         [
             "",
-        "## Phase Gate",
-        "",
-        f"- phase_gate_decision: {manifest['phase_gate_decision']}",
-        f"- phase2_entry_allowed: {manifest['phase2_entry_allowed']}",
-        f"- phase_gate_reason: {manifest['phase_gate_reason']}",
-        f"- phase_gate_strict_validation_passed: {manifest['phase_gate_strict_validation_passed']}",
-        f"- phase_gate_strict_validation_issue_count: {manifest['phase_gate_strict_validation_issue_count']}",
-        f"- phase_gate_checked_files: {manifest['phase_gate_checked_files']}",
-        f"- phase_gate_review_report_path: {manifest['phase_gate_review_report_path']}",
-        "",
-        "## Strict Validation Preview",
-        "",
+            "## Phase Gate",
+            "",
+            f"- phase_gate_decision: {manifest['phase_gate_decision']}",
+            f"- phase2_entry_allowed: {manifest['phase2_entry_allowed']}",
+            f"- phase_gate_reason: {manifest['phase_gate_reason']}",
+            f"- phase_gate_strict_validation_passed: {manifest['phase_gate_strict_validation_passed']}",
+            f"- phase_gate_strict_validation_issue_count: {manifest['phase_gate_strict_validation_issue_count']}",
+            f"- phase_gate_checked_files: {manifest['phase_gate_checked_files']}",
+            f"- phase_gate_review_report_path: {manifest['phase_gate_review_report_path']}",
+            "",
+            "## Strict Validation Preview",
+            "",
         ]
     )
     validation_issue_previews = phase_gate_issue_preview_lines(manifest)
@@ -378,8 +433,8 @@ def build_operations_bundle_manifest(
     lines.extend(
         [
             "",
-        "## Artifact Summaries",
-        "",
+            "## Artifact Summaries",
+            "",
         ]
     )
     for key, value in artifacts.items():

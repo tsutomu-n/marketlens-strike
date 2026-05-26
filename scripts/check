@@ -6,5 +6,6 @@ cd "$(dirname "$0")/.."
 uv sync --dev --locked
 uv run python -V
 uv run ruff check .
+uv run ruff format --check .
 uv run pyrefly check
 uv run pytest -q

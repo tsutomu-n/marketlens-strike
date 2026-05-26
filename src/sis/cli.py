@@ -110,9 +110,6 @@ register_probe_commands(app)
 register_archive_commands(app)
 
 
-
-
-
 register_research_commands(app, _recommended_read_order)
 register_quote_commands(app, _recommended_read_order)
 
@@ -140,8 +137,6 @@ register_execution_commands(
     write_execution_read_only_surfaces_fn=_write_execution_read_only_surfaces,
     recommended_read_order_fn=_recommended_read_order,
 )
-
-
 
 
 register_ops_commands(
@@ -323,8 +318,6 @@ register_paper_cycle_commands(
     _write_readiness_snapshot=_write_readiness_snapshot,
     _recommended_read_order=_recommended_read_order,
 )
-
-
 
 
 register_review_commands(

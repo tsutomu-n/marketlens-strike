@@ -7,7 +7,9 @@ from sis.venues.archive.gtrade.quotes import sidecar_market_status, sidecar_orac
 
 def test_gtrade_trading_variables_fixture_yields_market_status_and_timestamp() -> None:
     raw = json.loads(
-        Path("tests/fixtures/archive/gtrade_trading_variables.sample.json").read_text(encoding="utf-8")
+        Path("tests/fixtures/archive/gtrade_trading_variables.sample.json").read_text(
+            encoding="utf-8"
+        )
     )
     snapshot = {
         "market_status": {

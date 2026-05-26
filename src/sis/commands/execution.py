@@ -7,7 +7,12 @@ from typing import Callable, Protocol
 import typer
 from loguru import logger
 
-from sis.execution.base import AdapterActionResult, AdapterOrderStatus, ExecutionAdapter, OrderIntent
+from sis.execution.base import (
+    AdapterActionResult,
+    AdapterOrderStatus,
+    ExecutionAdapter,
+    OrderIntent,
+)
 from sis.paper.portfolio import PaperPosition
 from sis.reports.execution_adapter_status import (
     build_action_status_report,
@@ -279,7 +284,11 @@ def register_execution_commands(
         settings = get_settings()
         store = state_store_fn(settings.data_dir, state_path)
         payload = store.get_json("paper_positions")
-        internal_positions = [PaperPosition.model_validate(item) for item in payload] if isinstance(payload, list) else []
+        internal_positions = (
+            [PaperPosition.model_validate(item) for item in payload]
+            if isinstance(payload, list)
+            else []
+        )
         adapter = adapter_for_venue_fn(settings.data_dir, venue)
         result = reconcile_positions(internal_positions, adapter.read_positions())
         out = {

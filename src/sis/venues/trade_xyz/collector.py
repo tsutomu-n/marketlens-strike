@@ -49,7 +49,9 @@ def collect_trade_xyz_quotes(
                 now=ts,
             )
             if coin not in mids:
-                quote = quote.model_copy(update={"is_tradable": False, "block_reasons": ["BLOCK_API_ERROR"]})
+                quote = quote.model_copy(
+                    update={"is_tradable": False, "block_reasons": ["BLOCK_API_ERROR"]}
+                )
             append_jsonl(out_path, quote.model_dump(mode="json"))
             count += 1
         return count

@@ -196,7 +196,10 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
                         "venue_pair": "XAU-USD",
                         "legacy_asset_param": "XAUUSD",
                         "trading_hours_artifact": {
-                            "path": str(data_dir / "raw/sidecar/ostium-constraints/r1_trading_hours_XAUUSD.json")
+                            "path": str(
+                                data_dir
+                                / "raw/sidecar/ostium-constraints/r1_trading_hours_XAUUSD.json"
+                            )
                         },
                     }
                 ],
@@ -269,12 +272,17 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
         data_dir,
         schema_root=PROJECT_ROOT / "schemas",
         execution_snapshot_summary_path=data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=data_dir / "ops/execution_venue_diagnostics_summary.json",
+        execution_venue_comparison_summary_path=data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
         execution_gap_history_summary_path=data_dir / "ops/execution_gap_history_summary.json",
-        execution_state_comparison_history_summary_path=data_dir / "ops/execution_state_comparison_history_summary.json",
-        execution_snapshot_drift_history_summary_path=data_dir / "ops/execution_snapshot_drift_history_summary.json",
-        execution_drift_overview_summary_path=data_dir / "ops/execution_drift_overview_summary.json",
+        execution_state_comparison_history_summary_path=data_dir
+        / "ops/execution_state_comparison_history_summary.json",
+        execution_snapshot_drift_history_summary_path=data_dir
+        / "ops/execution_snapshot_drift_history_summary.json",
+        execution_drift_overview_summary_path=data_dir
+        / "ops/execution_drift_overview_summary.json",
         remediation_planner_summary_path=planner_summary_path,
         remediation_evaluator_summary_path=evaluator_summary_path,
         out_path=out_path,
@@ -388,11 +396,26 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert payload["execution_drift_overview_state_comparison_mismatching_count"] == 1
     assert payload["execution_drift_overview_snapshot_drift_mismatching_snapshot_count"] == 1
     assert payload["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
-    assert payload["timeline_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        payload["timeline_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
     assert payload["bundle_history_latest_execution_summary"]["execution_overall_status"] == "warn"
-    assert payload["bundle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is False
+    assert (
+        payload["bundle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is False
+    )
     assert payload["cycle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
-    assert payload["cycle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        payload["cycle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
     assert "timeline_latest_execution_overall_status: ok" in text
     assert "bundle_history_latest_execution_overall_status: warn" in text
     assert "cycle_history_latest_execution_overall_status: ok" in text

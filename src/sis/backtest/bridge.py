@@ -283,7 +283,11 @@ def _metrics_for_signals(
 
         for signal in symbol_signals:
             entry_index = next(
-                (index for index, quote_time in enumerate(quote_times) if quote_time >= signal.ts_signal),
+                (
+                    index
+                    for index, quote_time in enumerate(quote_times)
+                    if quote_time >= signal.ts_signal
+                ),
                 None,
             )
             if entry_index is None or entry_index + 1 >= len(rows):
@@ -380,7 +384,9 @@ def _write_decision_records(records: list[DecisionRecord], path: Path) -> None:
 
 def _write_decision_summary(summary: dict, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(summary, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    path.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
+    )
 
 
 def run_backtest_bridge_with_decisions(
@@ -441,12 +447,8 @@ def run_backtest_bridge_with_decisions(
     )
     latest_execution_lineage = latest_execution_lineage_fields_from_payload(
         timeline_latest_execution_summary=timeline_latest_execution_summary,
-        timeline_latest_execution_comparison_summary=(
-            timeline_latest_execution_comparison_summary
-        ),
-        bundle_history_latest_execution_summary=(
-            bundle_history_latest_execution_summary
-        ),
+        timeline_latest_execution_comparison_summary=(timeline_latest_execution_comparison_summary),
+        bundle_history_latest_execution_summary=(bundle_history_latest_execution_summary),
         bundle_history_latest_execution_comparison_summary=(
             bundle_history_latest_execution_comparison_summary
         ),
@@ -516,12 +518,16 @@ def run_backtest_bridge_with_decisions(
             if normalized_execution_snapshot_drift_summary and any(
                 normalized_execution_snapshot_drift_summary.values()
             ):
-                summary["execution_snapshot_drift_summary"] = normalized_execution_snapshot_drift_summary
+                summary["execution_snapshot_drift_summary"] = (
+                    normalized_execution_snapshot_drift_summary
+                )
                 summary.update(execution_snapshot_drift_flat)
             if normalized_execution_drift_overview_summary and any(
                 normalized_execution_drift_overview_summary.values()
             ):
-                summary["execution_drift_overview_summary"] = normalized_execution_drift_overview_summary
+                summary["execution_drift_overview_summary"] = (
+                    normalized_execution_drift_overview_summary
+                )
                 summary.update(execution_drift_flat)
             summary.update(latest_execution_lineage)
             if decision_log_path is not None:
@@ -553,26 +559,36 @@ def run_backtest_bridge_with_decisions(
     if normalized_execution_summary and any(normalized_execution_summary.values()):
         summary["execution_summary"] = normalized_execution_summary
         summary.update(execution_flat)
-    if normalized_execution_comparison_summary and any(normalized_execution_comparison_summary.values()):
+    if normalized_execution_comparison_summary and any(
+        normalized_execution_comparison_summary.values()
+    ):
         summary["execution_comparison_summary"] = normalized_execution_comparison_summary
         summary.update(execution_comparison_flat)
-    if normalized_execution_diagnostics_summary and any(normalized_execution_diagnostics_summary.values()):
+    if normalized_execution_diagnostics_summary and any(
+        normalized_execution_diagnostics_summary.values()
+    ):
         summary["execution_diagnostics_summary"] = normalized_execution_diagnostics_summary
         summary.update(execution_diagnostics_flat)
-    if normalized_execution_gap_history_summary and any(normalized_execution_gap_history_summary.values()):
+    if normalized_execution_gap_history_summary and any(
+        normalized_execution_gap_history_summary.values()
+    ):
         summary["execution_gap_history_summary"] = normalized_execution_gap_history_summary
         summary.update(execution_gap_history_flat)
     if normalized_execution_state_comparison_summary and any(
         normalized_execution_state_comparison_summary.values()
     ):
-        summary["execution_state_comparison_summary"] = normalized_execution_state_comparison_summary
+        summary["execution_state_comparison_summary"] = (
+            normalized_execution_state_comparison_summary
+        )
         summary.update(execution_state_comparison_flat)
     if normalized_execution_snapshot_drift_summary and any(
         normalized_execution_snapshot_drift_summary.values()
     ):
         summary["execution_snapshot_drift_summary"] = normalized_execution_snapshot_drift_summary
         summary.update(execution_snapshot_drift_flat)
-    if normalized_execution_drift_overview_summary and any(normalized_execution_drift_overview_summary.values()):
+    if normalized_execution_drift_overview_summary and any(
+        normalized_execution_drift_overview_summary.values()
+    ):
         summary["execution_drift_overview_summary"] = normalized_execution_drift_overview_summary
         summary.update(execution_drift_flat)
     summary.update(latest_execution_lineage)
@@ -708,7 +724,9 @@ def write_backtest_report(
                 "",
             ]
         )
-    if isinstance(execution_comparison_summary, dict) and any(execution_comparison_summary.values()):
+    if isinstance(execution_comparison_summary, dict) and any(
+        execution_comparison_summary.values()
+    ):
         execution_comparison_flat = execution_comparison_flat_fields(execution_comparison_summary)
         lines.extend(
             [
@@ -722,7 +740,9 @@ def write_backtest_report(
                 "",
             ]
         )
-    if isinstance(execution_diagnostics_summary, dict) and any(execution_diagnostics_summary.values()):
+    if isinstance(execution_diagnostics_summary, dict) and any(
+        execution_diagnostics_summary.values()
+    ):
         execution_diagnostics_flat = execution_diagnostics_flat_fields(
             execution_diagnostics_summary
         )
@@ -737,7 +757,9 @@ def write_backtest_report(
                 "",
             ]
         )
-    if isinstance(execution_gap_history_summary, dict) and any(execution_gap_history_summary.values()):
+    if isinstance(execution_gap_history_summary, dict) and any(
+        execution_gap_history_summary.values()
+    ):
         execution_gap_history_flat = execution_gap_history_flat_fields(
             execution_gap_history_summary
         )
@@ -755,7 +777,9 @@ def write_backtest_report(
                 "",
             ]
         )
-    if isinstance(execution_state_comparison_summary, dict) and any(execution_state_comparison_summary.values()):
+    if isinstance(execution_state_comparison_summary, dict) and any(
+        execution_state_comparison_summary.values()
+    ):
         execution_state_comparison_flat = execution_state_comparison_flat_fields(
             execution_state_comparison_summary
         )
@@ -776,7 +800,9 @@ def write_backtest_report(
                 "",
             ]
         )
-    if isinstance(execution_snapshot_drift_summary, dict) and any(execution_snapshot_drift_summary.values()):
+    if isinstance(execution_snapshot_drift_summary, dict) and any(
+        execution_snapshot_drift_summary.values()
+    ):
         execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
             execution_snapshot_drift_summary
         )
@@ -797,7 +823,9 @@ def write_backtest_report(
                 "",
             ]
         )
-    if isinstance(execution_drift_overview_summary, dict) and any(execution_drift_overview_summary.values()):
+    if isinstance(execution_drift_overview_summary, dict) and any(
+        execution_drift_overview_summary.values()
+    ):
         execution_drift_flat = execution_drift_overview_flat_fields(
             execution_drift_overview_summary
         )
@@ -877,7 +905,9 @@ def write_backtest_metrics_summary_json(
 ) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     trade_counts = [item.trade_count for item in metrics]
-    avg_trade_returns = [item.avg_trade_return for item in metrics if item.avg_trade_return is not None]
+    avg_trade_returns = [
+        item.avg_trade_return for item in metrics if item.avg_trade_return is not None
+    ]
     normalized_phase_gate_summary = normalize_phase_gate_summary(phase_gate_summary)
     normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
     normalized_execution_summary = normalize_execution_snapshot_summary(execution_summary)
@@ -901,12 +931,8 @@ def write_backtest_metrics_summary_json(
     )
     latest_execution_lineage = latest_execution_lineage_fields_from_payload(
         timeline_latest_execution_summary=timeline_latest_execution_summary,
-        timeline_latest_execution_comparison_summary=(
-            timeline_latest_execution_comparison_summary
-        ),
-        bundle_history_latest_execution_summary=(
-            bundle_history_latest_execution_summary
-        ),
+        timeline_latest_execution_comparison_summary=(timeline_latest_execution_comparison_summary),
+        bundle_history_latest_execution_summary=(bundle_history_latest_execution_summary),
         bundle_history_latest_execution_comparison_summary=(
             bundle_history_latest_execution_comparison_summary
         ),
@@ -942,7 +968,9 @@ def write_backtest_metrics_summary_json(
         "symbols": sorted({item.canonical_symbol for item in metrics}),
         "total_trade_count": sum(trade_counts),
         "max_trade_count": max(trade_counts, default=0),
-        "avg_trade_return_mean": (sum(avg_trade_returns) / len(avg_trade_returns)) if avg_trade_returns else None,
+        "avg_trade_return_mean": (sum(avg_trade_returns) / len(avg_trade_returns))
+        if avg_trade_returns
+        else None,
         "max_drawdown_worst": min((item.max_drawdown for item in metrics), default=None),
         "cost_drag_bps_total": sum(item.cost_drag_bps for item in metrics),
         "stale_rejected_total": sum(item.stale_rejected_count for item in metrics),

@@ -11,7 +11,9 @@ def _dataset_summary(frame: pl.DataFrame, time_column: str | None) -> dict:
     summary: dict[str, object] = {
         "rows": frame.height,
         "columns": frame.columns,
-        "missing_by_column": {name: int(frame.get_column(name).null_count()) for name in frame.columns},
+        "missing_by_column": {
+            name: int(frame.get_column(name).null_count()) for name in frame.columns
+        },
         "duplicate_rows": int(frame.is_duplicated().sum()) if frame.height else 0,
     }
     if time_column and time_column in frame.columns and frame.height:
@@ -33,25 +35,43 @@ def build_research_quality_report(data_dir: Path) -> Path:
 
     market = pl.read_parquet(paths["market_panel"])
     summaries["market_panel"] = _dataset_summary(market, "ts")
-    summaries["market_panel"]["symbol_coverage"] = sorted(set(market.get_column("symbol").to_list()))
+    summaries["market_panel"]["symbol_coverage"] = sorted(
+        set(market.get_column("symbol").to_list())
+    )
 
     macro = pl.read_parquet(paths["macro_panel"])
     summaries["macro_panel"] = _dataset_summary(macro, "date")
-    summaries["macro_panel"]["series_coverage"] = sorted(set(macro.get_column("series_id").to_list()))
+    summaries["macro_panel"]["series_coverage"] = sorted(
+        set(macro.get_column("series_id").to_list())
+    )
 
-    event_calendar = pl.read_parquet(paths["event_calendar"]) if paths["event_calendar"].exists() else pl.DataFrame()
-    summaries["event_calendar"] = _dataset_summary(event_calendar, "event_ts" if "event_ts" in event_calendar.columns else None)
+    event_calendar = (
+        pl.read_parquet(paths["event_calendar"])
+        if paths["event_calendar"].exists()
+        else pl.DataFrame()
+    )
+    summaries["event_calendar"] = _dataset_summary(
+        event_calendar, "event_ts" if "event_ts" in event_calendar.columns else None
+    )
 
     feature = pl.read_parquet(paths["feature_panel"])
     summaries["feature_panel"] = _dataset_summary(feature, "ts")
-    trade_allowed_mean = feature.get_column("trade_allowed").mean() if feature.height and "trade_allowed" in feature.columns else None
+    trade_allowed_mean = (
+        feature.get_column("trade_allowed").mean()
+        if feature.height and "trade_allowed" in feature.columns
+        else None
+    )
     summaries["feature_panel"]["trade_allowed_rate"] = (
         float(trade_allowed_mean) if isinstance(trade_allowed_mean, int | float) else None
     )
 
     signals = pl.read_csv(paths["signals"])
-    summaries["signals"] = _dataset_summary(signals, "ts_signal" if "ts_signal" in signals.columns else None)
-    summaries["signals"]["timeframes"] = sorted(set(signals.get_column("timeframe").to_list())) if signals.height else []
+    summaries["signals"] = _dataset_summary(
+        signals, "ts_signal" if "ts_signal" in signals.columns else None
+    )
+    summaries["signals"]["timeframes"] = (
+        sorted(set(signals.get_column("timeframe").to_list())) if signals.height else []
+    )
     summaries["signals"]["future_leak_check"] = "manual_review_required"
 
     out = data_dir / "research/research_quality_report.json"

@@ -9,8 +9,12 @@ from sis.reports.audit_timeline import build_audit_timeline_report
 from sis.reports.current_state_index import build_current_state_index
 from sis.reports.execution_drift_overview import build_execution_drift_overview_report
 from sis.reports.execution_gap_history import build_execution_gap_history_report
-from sis.reports.execution_snapshot_drift_history import build_execution_snapshot_drift_history_report
-from sis.reports.execution_state_comparison_history import build_execution_state_comparison_history_report
+from sis.reports.execution_snapshot_drift_history import (
+    build_execution_snapshot_drift_history_report,
+)
+from sis.reports.execution_state_comparison_history import (
+    build_execution_state_comparison_history_report,
+)
 from sis.reports.operations_audit_pack import build_operations_audit_pack
 from sis.reports.operations_bundle import build_operations_bundle_manifest
 from sis.reports.operations_dashboard import build_operations_dashboard
@@ -42,7 +46,8 @@ def _write_ops_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
         audit_bundle_summary_path=settings_data_dir / "ops/audit_bundle_manifest.json",
         operations_bundle_manifest_path=settings_data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
         out_path=out,
         summary_path=summary_out,
@@ -59,23 +64,34 @@ def _write_operations_dashboard(settings_data_dir: Path) -> tuple[Path, Path, st
         ops_review_summary_path=settings_data_dir / "ops/ops_review_summary.json",
         decision_summary_path=settings_data_dir / "research/decision_summary.json",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
-        execution_balance_status_summary_path=settings_data_dir / "ops/execution_balance_status_summary.json",
-        execution_fill_status_summary_path=settings_data_dir / "ops/execution_fill_status_summary.json",
-        execution_order_status_summary_path=settings_data_dir / "ops/execution_order_status_summary.json",
-        execution_cancel_order_summary_path=settings_data_dir / "ops/execution_cancel_order_summary.json",
-        execution_close_position_summary_path=settings_data_dir / "ops/execution_close_position_summary.json",
-        execution_reconcile_positions_summary_path=settings_data_dir / "ops/execution_reconcile_positions_summary.json",
-        execution_read_only_surfaces_summary_path=settings_data_dir / "ops/execution_read_only_surfaces_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
+        execution_balance_status_summary_path=settings_data_dir
+        / "ops/execution_balance_status_summary.json",
+        execution_fill_status_summary_path=settings_data_dir
+        / "ops/execution_fill_status_summary.json",
+        execution_order_status_summary_path=settings_data_dir
+        / "ops/execution_order_status_summary.json",
+        execution_cancel_order_summary_path=settings_data_dir
+        / "ops/execution_cancel_order_summary.json",
+        execution_close_position_summary_path=settings_data_dir
+        / "ops/execution_close_position_summary.json",
+        execution_reconcile_positions_summary_path=settings_data_dir
+        / "ops/execution_reconcile_positions_summary.json",
+        execution_read_only_surfaces_summary_path=settings_data_dir
+        / "ops/execution_read_only_surfaces_summary.json",
         daemon_manifest_summary_path=settings_data_dir / "ops/daemon_manifest_summary.json",
         daemon_loop_summary_path=settings_data_dir / "ops/daemon_loop_summary.json",
         notification_outbox_summary_path=settings_data_dir / "ops/notification_outbox_summary.json",
@@ -102,21 +118,26 @@ def _write_paper_operations_runbook(settings_data_dir: Path) -> tuple[Path, Path
         daemon_manifest_path=settings_data_dir / "ops/daemon_manifest.json",
         monitoring_snapshot_path=settings_data_dir / "ops/monitoring_status.json",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         ops_dashboard_summary_path=settings_data_dir / "ops/operations_dashboard_summary.json",
         remediation_planner_summary_path=settings_data_dir / "ops/remediation_planner_summary.json",
-        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir
+        / "ops/remediation_evaluator_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
@@ -171,7 +192,8 @@ def _write_execution_drift_overview(settings_data_dir: Path) -> tuple[Path, Path
     out = settings_data_dir / "reports/execution_drift_overview.md"
     summary_out = settings_data_dir / "ops/execution_drift_overview_summary.json"
     text = build_execution_drift_overview_report(
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
@@ -182,6 +204,7 @@ def _write_execution_drift_overview(settings_data_dir: Path) -> tuple[Path, Path
         summary_path=summary_out,
     )
     return out, summary_out, text
+
 
 def _write_phase_gate_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
     out = settings_data_dir / "reports/phase_gate_review.md"
@@ -190,24 +213,27 @@ def _write_phase_gate_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
         settings_data_dir,
         schema_root=Path(__file__).resolve().parents[3] / "schemas",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         remediation_planner_summary_path=settings_data_dir / "ops/remediation_planner_summary.json",
-        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir
+        / "ops/remediation_evaluator_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
     return out, summary_out, text
-
-
 
 
 def _write_remediation_planner(settings_data_dir: Path) -> tuple[Path, Path, str]:
@@ -216,8 +242,10 @@ def _write_remediation_planner(settings_data_dir: Path) -> tuple[Path, Path, str
     text = build_remediation_planner(
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         runbook_summary_path=settings_data_dir / "ops/paper_operations_runbook_summary.json",
-        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
-        remediation_command_results_summary_path=settings_data_dir / "ops/remediation_command_results_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir
+        / "ops/remediation_evaluator_summary.json",
+        remediation_command_results_summary_path=settings_data_dir
+        / "ops/remediation_command_results_summary.json",
         operation_chain_path=settings_data_dir / "ops/operation_manifests.jsonl",
         out_path=out,
         summary_path=summary_out,
@@ -240,9 +268,12 @@ def _write_remediation_session(settings_data_dir: Path) -> tuple[Path, Path, str
     out = settings_data_dir / "reports/remediation_session.md"
     summary_out = settings_data_dir / "ops/remediation_session_summary.json"
     text = build_remediation_session(
-        remediation_execution_plan_summary_path=settings_data_dir / "ops/remediation_execution_plan_summary.json",
-        remediation_command_results_summary_path=settings_data_dir / "ops/remediation_command_results_summary.json",
-        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        remediation_execution_plan_summary_path=settings_data_dir
+        / "ops/remediation_execution_plan_summary.json",
+        remediation_command_results_summary_path=settings_data_dir
+        / "ops/remediation_command_results_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir
+        / "ops/remediation_evaluator_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
@@ -266,8 +297,10 @@ def _write_remediation_session_checkpoint(
     text = build_remediation_session_checkpoint(
         remediation_session_summary_path=settings_data_dir / "ops/remediation_session_summary.json",
         checkpoint_summary_path=summary_out,
-        remediation_command_results_summary_path=settings_data_dir / "ops/remediation_command_results_summary.json",
-        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        remediation_command_results_summary_path=settings_data_dir
+        / "ops/remediation_command_results_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir
+        / "ops/remediation_evaluator_summary.json",
         out_path=out,
         summary_path=summary_out,
         action_key=action_key,
@@ -286,9 +319,12 @@ def _write_remediation_scoreboard(settings_data_dir: Path) -> tuple[Path, Path, 
     out = settings_data_dir / "reports/remediation_scoreboard.md"
     summary_out = settings_data_dir / "ops/remediation_scoreboard_summary.json"
     text = build_remediation_scoreboard(
-        remediation_session_checkpoint_summary_path=settings_data_dir / "ops/remediation_session_checkpoint_summary.json",
-        remediation_command_results_summary_path=settings_data_dir / "ops/remediation_command_results_summary.json",
-        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        remediation_session_checkpoint_summary_path=settings_data_dir
+        / "ops/remediation_session_checkpoint_summary.json",
+        remediation_command_results_summary_path=settings_data_dir
+        / "ops/remediation_command_results_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir
+        / "ops/remediation_evaluator_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
@@ -299,7 +335,8 @@ def _write_remediation_evaluator(settings_data_dir: Path) -> tuple[Path, Path, s
     out = settings_data_dir / "reports/remediation_evaluator.md"
     summary_out = settings_data_dir / "ops/remediation_evaluator_summary.json"
     text = build_remediation_evaluator(
-        remediation_session_checkpoint_summary_path=settings_data_dir / "ops/remediation_session_checkpoint_summary.json",
+        remediation_session_checkpoint_summary_path=settings_data_dir
+        / "ops/remediation_session_checkpoint_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
@@ -310,8 +347,10 @@ def _write_remediation_evidence(settings_data_dir: Path) -> tuple[Path, Path, st
     out = settings_data_dir / "reports/remediation_evidence.md"
     summary_out = settings_data_dir / "ops/remediation_evidence_summary.json"
     text = build_remediation_evidence(
-        remediation_session_checkpoint_summary_path=settings_data_dir / "ops/remediation_session_checkpoint_summary.json",
-        remediation_evaluator_summary_path=settings_data_dir / "ops/remediation_evaluator_summary.json",
+        remediation_session_checkpoint_summary_path=settings_data_dir
+        / "ops/remediation_session_checkpoint_summary.json",
+        remediation_evaluator_summary_path=settings_data_dir
+        / "ops/remediation_evaluator_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
@@ -322,7 +361,8 @@ def _write_remediation_command_results(settings_data_dir: Path) -> tuple[Path, P
     out = settings_data_dir / "reports/remediation_command_results.md"
     summary_out = settings_data_dir / "ops/remediation_command_results_summary.json"
     text = build_remediation_command_results(
-        remediation_session_checkpoint_summary_path=settings_data_dir / "ops/remediation_session_checkpoint_summary.json",
+        remediation_session_checkpoint_summary_path=settings_data_dir
+        / "ops/remediation_session_checkpoint_summary.json",
         out_path=out,
         summary_path=summary_out,
     )
@@ -337,16 +377,20 @@ def _write_operations_bundle(settings_data_dir: Path) -> tuple[Path, Path, str]:
         ops_review_summary_path=settings_data_dir / "ops/ops_review_summary.json",
         dashboard_summary_path=settings_data_dir / "ops/operations_dashboard_summary.json",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
         runbook_summary_path=settings_data_dir / "ops/paper_operations_runbook_summary.json",
         paper_cycle_history_summary_path=settings_data_dir / "ops/paper_cycle_history_summary.json",
@@ -377,16 +421,20 @@ def _write_operations_audit_pack(settings_data_dir: Path) -> tuple[Path, Path, s
         cycle_history_summary_path=settings_data_dir / "ops/paper_cycle_history_summary.json",
         runbook_summary_path=settings_data_dir / "ops/paper_operations_runbook_summary.json",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         out_path=out,
@@ -413,18 +461,23 @@ def _write_audit_dashboard(settings_data_dir: Path) -> tuple[Path, Path, str]:
         bundle_manifest_path=settings_data_dir / "ops/operations_bundle_manifest.json",
         audit_pack_path=settings_data_dir / "ops/operations_audit_pack.json",
         audit_timeline_summary_path=settings_data_dir / "ops/audit_timeline_summary.json",
-        audit_bundle_history_summary_path=settings_data_dir / "ops/audit_bundle_history_summary.json",
+        audit_bundle_history_summary_path=settings_data_dir
+        / "ops/audit_bundle_history_summary.json",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         out_path=out,
@@ -440,18 +493,23 @@ def _write_audit_bundle(settings_data_dir: Path) -> tuple[Path, Path, str]:
         audit_dashboard_summary_path=settings_data_dir / "ops/audit_dashboard_summary.json",
         audit_timeline_summary_path=settings_data_dir / "ops/audit_timeline_summary.json",
         audit_pack_path=settings_data_dir / "ops/operations_audit_pack.json",
-        audit_bundle_history_summary_path=settings_data_dir / "ops/audit_bundle_history_summary.json",
+        audit_bundle_history_summary_path=settings_data_dir
+        / "ops/audit_bundle_history_summary.json",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         out_path=out,
@@ -482,22 +540,27 @@ def _write_current_state_index(settings_data_dir: Path) -> tuple[Path, Path, str
     out = settings_data_dir / "reports/current_state_index.md"
     summary_out = settings_data_dir / "ops/current_state_index.json"
     text = build_current_state_index(
-        operations_dashboard_summary_path=settings_data_dir / "ops/operations_dashboard_summary.json",
+        operations_dashboard_summary_path=settings_data_dir
+        / "ops/operations_dashboard_summary.json",
         operations_bundle_manifest_path=settings_data_dir / "ops/operations_bundle_manifest.json",
         audit_dashboard_summary_path=settings_data_dir / "ops/audit_dashboard_summary.json",
         audit_bundle_manifest_path=settings_data_dir / "ops/audit_bundle_manifest.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         backtest_metrics_summary_path=settings_data_dir / "research/backtest_metrics_summary.json",
         live_evidence_summary_path=_latest_live_evidence_summary_path(),
         research_quality_report_path=settings_data_dir / "research/research_quality_report.md",
@@ -514,19 +577,24 @@ def _write_readiness_snapshot(settings_data_dir: Path) -> tuple[Path, Path, str]
         current_state_index_path=settings_data_dir / "ops/current_state_index.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
         execution_snapshot_drift_history_summary_path=(
             settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
         ),
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         backtest_metrics_summary_path=settings_data_dir / "research/backtest_metrics_summary.json",
         live_evidence_summary_path=_latest_live_evidence_summary_path(),
-        operations_dashboard_summary_path=settings_data_dir / "ops/operations_dashboard_summary.json",
+        operations_dashboard_summary_path=settings_data_dir
+        / "ops/operations_dashboard_summary.json",
         out_path=out,
         summary_path=summary_out,
     )

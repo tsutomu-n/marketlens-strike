@@ -85,11 +85,7 @@ def _related_reports(
         ),
         ("live_evidence_report", restart_pointers.get("live_evidence_report")),
     )
-    return {
-        key: value
-        for key, value in ordered_items
-        if isinstance(value, str) and value
-    }
+    return {key: value for key, value in ordered_items if isinstance(value, str) and value}
 
 
 def _quick_navigation(
@@ -103,11 +99,7 @@ def _quick_navigation(
         ("remediation_scoreboard_report", restart_pointers.get("remediation_scoreboard_report")),
         ("live_evidence_report", restart_pointers.get("live_evidence_report")),
     )
-    return {
-        key: value
-        for key, value in items
-        if isinstance(value, str) and value
-    }
+    return {key: value for key, value in items if isinstance(value, str) and value}
 
 
 def build_current_state_index(
@@ -320,7 +312,9 @@ def build_current_state_index(
             "remediation_planner.md",
         ),
         "remediation_execution_plan_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_execution_plan_summary.json")
+            str(
+                operations_dashboard_summary_path.parent / "remediation_execution_plan_summary.json"
+            )
             if operations_dashboard_summary_path is not None
             else None
         ),
@@ -447,12 +441,22 @@ def build_current_state_index(
         phase_gate_review_report_path,
     )
     artifacts = {
-        "operations_dashboard_summary": str(operations_dashboard_summary_path) if operations_dashboard_summary_path else None,
-        "operations_bundle_manifest": str(operations_bundle_manifest_path) if operations_bundle_manifest_path else None,
-        "audit_dashboard_summary": str(audit_dashboard_summary_path) if audit_dashboard_summary_path else None,
-        "audit_bundle_manifest": str(audit_bundle_manifest_path) if audit_bundle_manifest_path else None,
+        "operations_dashboard_summary": str(operations_dashboard_summary_path)
+        if operations_dashboard_summary_path
+        else None,
+        "operations_bundle_manifest": str(operations_bundle_manifest_path)
+        if operations_bundle_manifest_path
+        else None,
+        "audit_dashboard_summary": str(audit_dashboard_summary_path)
+        if audit_dashboard_summary_path
+        else None,
+        "audit_bundle_manifest": str(audit_bundle_manifest_path)
+        if audit_bundle_manifest_path
+        else None,
         "phase_gate_summary": str(phase_gate_summary_path) if phase_gate_summary_path else None,
-        "execution_snapshot_summary": str(execution_snapshot_summary_path) if execution_snapshot_summary_path else None,
+        "execution_snapshot_summary": str(execution_snapshot_summary_path)
+        if execution_snapshot_summary_path
+        else None,
         "execution_venue_comparison_summary": (
             str(execution_venue_comparison_summary_path)
             if execution_venue_comparison_summary_path
@@ -477,54 +481,63 @@ def build_current_state_index(
             else None
         ),
         "execution_drift_overview_summary": (
-            str(execution_drift_overview_summary_path) if execution_drift_overview_summary_path else None
+            str(execution_drift_overview_summary_path)
+            if execution_drift_overview_summary_path
+            else None
         ),
-        "backtest_metrics_summary": str(backtest_metrics_summary_path) if backtest_metrics_summary_path else None,
-        "live_evidence_summary": str(live_evidence_summary_path) if live_evidence_summary_path else None,
+        "backtest_metrics_summary": str(backtest_metrics_summary_path)
+        if backtest_metrics_summary_path
+        else None,
+        "live_evidence_summary": str(live_evidence_summary_path)
+        if live_evidence_summary_path
+        else None,
         "live_evidence_report": restart_pointers.get("live_evidence_report"),
-        "research_quality_report": str(research_quality_report_path) if research_quality_report_path else None,
+        "research_quality_report": str(research_quality_report_path)
+        if research_quality_report_path
+        else None,
         **restart_pointers,
     }
     recommended_read_order_items = recommended_read_order(
         [
-        "data/ops/current_state_index.json",
-        "data/reports/current_state_index.md",
-        "data/reports/readiness_snapshot.md",
-        "data/reports/remediation_scoreboard.md",
-        "data/reports/remediation_session_checkpoint.md",
-        "data/reports/remediation_session.md",
-        "data/reports/remediation_execution_plan.md",
-        "data/reports/remediation_planner.md",
-        "data/ops/phase_gate_review_summary.json",
-        "data/ops/execution_snapshot_summary.json",
-        "data/ops/execution_venue_comparison_summary.json",
-        "data/ops/execution_venue_diagnostics_summary.json",
-        "data/ops/execution_gap_history_summary.json",
-        "data/ops/execution_state_comparison_history_summary.json",
-        "data/ops/execution_snapshot_drift_history_summary.json",
-        "data/ops/execution_drift_overview_summary.json",
-        "data/reports/execution_balance_status.md",
-        "data/reports/execution_fill_status.md",
-        "data/reports/execution_order_status.md",
-        "data/reports/execution_cancel_order.md",
-        "data/reports/execution_close_position.md",
-        "data/reports/execution_reconcile_positions.md",
-        "data/reports/daemon_manifest.md",
-        "data/reports/daemon_loop.md",
-        "data/reports/notification_outbox.md",
-        "data/reports/state_export.md",
-        "data/reports/state_restore.md",
-        "data/ops/operations_dashboard_summary.json",
-        "data/ops/audit_dashboard_summary.json",
-        "data/ops/operations_bundle_manifest.json",
-        "data/ops/audit_bundle_manifest.json",
-        "docs/live_evidence_reports/live_evidence_report_<run_id>.md",
-        "data/research/backtest_metrics_summary.json",
+            "data/ops/current_state_index.json",
+            "data/reports/current_state_index.md",
+            "data/reports/readiness_snapshot.md",
+            "data/reports/remediation_scoreboard.md",
+            "data/reports/remediation_session_checkpoint.md",
+            "data/reports/remediation_session.md",
+            "data/reports/remediation_execution_plan.md",
+            "data/reports/remediation_planner.md",
+            "data/ops/phase_gate_review_summary.json",
+            "data/ops/execution_snapshot_summary.json",
+            "data/ops/execution_venue_comparison_summary.json",
+            "data/ops/execution_venue_diagnostics_summary.json",
+            "data/ops/execution_gap_history_summary.json",
+            "data/ops/execution_state_comparison_history_summary.json",
+            "data/ops/execution_snapshot_drift_history_summary.json",
+            "data/ops/execution_drift_overview_summary.json",
+            "data/reports/execution_balance_status.md",
+            "data/reports/execution_fill_status.md",
+            "data/reports/execution_order_status.md",
+            "data/reports/execution_cancel_order.md",
+            "data/reports/execution_close_position.md",
+            "data/reports/execution_reconcile_positions.md",
+            "data/reports/daemon_manifest.md",
+            "data/reports/daemon_loop.md",
+            "data/reports/notification_outbox.md",
+            "data/reports/state_export.md",
+            "data/reports/state_restore.md",
+            "data/ops/operations_dashboard_summary.json",
+            "data/ops/audit_dashboard_summary.json",
+            "data/ops/operations_bundle_manifest.json",
+            "data/ops/audit_bundle_manifest.json",
+            "docs/live_evidence_reports/live_evidence_report_<run_id>.md",
+            "data/research/backtest_metrics_summary.json",
         ]
     )
 
     summary = {
-        "overall_status": operations_dashboard.get("overall_status") or operations_bundle.get("overall_status"),
+        "overall_status": operations_dashboard.get("overall_status")
+        or operations_bundle.get("overall_status"),
         "phase_gate_summary": phase_gate,
         "audit_summary": audit_summary,
         **latest_execution_lineage,
@@ -558,7 +571,9 @@ def build_current_state_index(
         "live_evidence_decision": live_evidence_summary.get("decision"),
         "live_evidence_run_id": live_evidence_summary.get("run_id"),
         "live_evidence_report_path": restart_pointers.get("live_evidence_report"),
-        "research_quality_report_exists": bool(research_quality_report_path and research_quality_report_path.exists()),
+        "research_quality_report_exists": bool(
+            research_quality_report_path and research_quality_report_path.exists()
+        ),
         "quick_navigation": quick_navigation,
         "restart_pointers": restart_pointers,
         "related_reports": related_reports,

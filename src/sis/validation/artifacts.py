@@ -12,7 +12,16 @@ from sis.storage.jsonl_store import read_json, read_jsonl
 
 EVIDENCE_CARD_SCHEMA = {
     "type": "object",
-    "required": ["run_id", "created_at", "scope", "data", "decision", "criteria", "blockers", "next_actions"],
+    "required": [
+        "run_id",
+        "created_at",
+        "scope",
+        "data",
+        "decision",
+        "criteria",
+        "blockers",
+        "next_actions",
+    ],
     "properties": {
         "run_id": {"type": "string"},
         "created_at": {"type": "string"},
@@ -86,7 +95,9 @@ def _validate_jsonl(path: Path, schema: dict, issues: list[ValidationIssue]) -> 
         issues.append(ValidationIssue(path=f"{path}#row={idx}", message=str(exc)))
 
 
-def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) -> ValidationSummary:
+def validate_artifacts(
+    data_dir: Path, schema_root: Path, strict: bool = False
+) -> ValidationSummary:
     issues: list[ValidationIssue] = []
     checked_files = 0
 
@@ -102,13 +113,19 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
             _validate_json(path, {"type": "array", "items": instrument_schema}, issues)
             checked_files += 1
         elif strict:
-            issues.append(ValidationIssue(path=str(path), message="Missing required registry artifact"))
+            issues.append(
+                ValidationIssue(path=str(path), message="Missing required registry artifact")
+            )
 
     quote_files = _iter_files(str(data_dir / "raw/quotes/gtrade/*.jsonl")) + _iter_files(
         str(data_dir / "raw/quotes/ostium/*.jsonl")
     )
     if not quote_files and strict:
-        issues.append(ValidationIssue(path=str(data_dir / "raw/quotes"), message="No quote JSONL artifacts found"))
+        issues.append(
+            ValidationIssue(
+                path=str(data_dir / "raw/quotes"), message="No quote JSONL artifacts found"
+            )
+        )
     for path in quote_files:
         _validate_jsonl(path, quote_schema, issues)
         checked_files += 1
@@ -117,15 +134,26 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
     if backtest_metrics_path.exists():
         if not _is_json_list(backtest_metrics_path):
             issues.append(
-                ValidationIssue(path=str(backtest_metrics_path), message="backtest_metrics.json must be an array")
+                ValidationIssue(
+                    path=str(backtest_metrics_path),
+                    message="backtest_metrics.json must be an array",
+                )
             )
         checked_files += 1
     elif strict:
-        issues.append(ValidationIssue(path=str(backtest_metrics_path), message="Missing backtest_metrics.json"))
+        issues.append(
+            ValidationIssue(
+                path=str(backtest_metrics_path), message="Missing backtest_metrics.json"
+            )
+        )
 
     evidence_files = _iter_files(str(data_dir / "evidence/evidence_card_*.json"))
     if not evidence_files and strict:
-        issues.append(ValidationIssue(path=str(data_dir / "evidence"), message="No evidence card artifacts found"))
+        issues.append(
+            ValidationIssue(
+                path=str(data_dir / "evidence"), message="No evidence card artifacts found"
+            )
+        )
     for path in _latest_file(evidence_files):
         _validate_json(path, EVIDENCE_CARD_SCHEMA, issues)
         checked_files += 1
@@ -148,7 +176,10 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
             checked_files += 1
         elif strict:
             issues.append(
-                ValidationIssue(path=str(path), message=f"Missing required execution summary artifact: {path.name}")
+                ValidationIssue(
+                    path=str(path),
+                    message=f"Missing required execution summary artifact: {path.name}",
+                )
             )
 
     return ValidationSummary(checked_files=checked_files, issues=issues)

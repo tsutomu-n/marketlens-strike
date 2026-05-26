@@ -13,7 +13,9 @@ def _quick_navigation(out_path: Path | None) -> dict[str, str]:
     return {
         "remediation_command_results_report": str(out_path),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
         "remediation_evidence_report": str(reports_dir / "remediation_evidence.md"),
     }
@@ -28,7 +30,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "remediation_planner_report": str(reports_dir / "remediation_planner.md"),
         "remediation_execution_plan_report": str(reports_dir / "remediation_execution_plan.md"),
         "remediation_session_report": str(reports_dir / "remediation_session.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
         "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
         "remediation_evidence_report": str(reports_dir / "remediation_evidence.md"),
@@ -80,9 +84,13 @@ def build_remediation_command_results(
     for action in actions:
         if not isinstance(action, dict):
             continue
-        evidence_paths = action.get("evidence_paths") if isinstance(action.get("evidence_paths"), list) else []
+        evidence_paths = (
+            action.get("evidence_paths") if isinstance(action.get("evidence_paths"), list) else []
+        )
         observed_signals = (
-            action.get("observed_signals") if isinstance(action.get("observed_signals"), list) else []
+            action.get("observed_signals")
+            if isinstance(action.get("observed_signals"), list)
+            else []
         )
         unique_evidence_paths = list(
             dict.fromkeys(str(value) for value in evidence_paths if isinstance(value, str))
@@ -90,7 +98,9 @@ def build_remediation_command_results(
         unique_observed_signals = list(
             dict.fromkeys(str(value) for value in observed_signals if isinstance(value, str))
         )
-        observation_status = "observed" if unique_evidence_paths or unique_observed_signals else "missing"
+        observation_status = (
+            "observed" if unique_evidence_paths or unique_observed_signals else "missing"
+        )
         entries.append(
             {
                 "action_key": action.get("action_key"),
@@ -126,7 +136,11 @@ def build_remediation_command_results(
         1 for item in entries if str(item.get("observation_status")) != "observed"
     )
     next_unobserved_action_key = next(
-        (item.get("action_key") for item in entries if str(item.get("observation_status")) != "observed"),
+        (
+            item.get("action_key")
+            for item in entries
+            if str(item.get("observation_status")) != "observed"
+        ),
         None,
     )
     summary = {
@@ -156,19 +170,21 @@ def build_remediation_command_results(
         lines.extend(["## Related Reports", ""])
         lines.extend(f"- {key}: {value}" for key, value in summary["related_reports"].items())
         lines.append("")
-    lines.extend([
-        "## Command Results Summary",
-        "",
-        f"- command_results_status: {summary['command_results_status']}",
-        f"- planned_action_count: {summary['planned_action_count']}",
-        f"- observed_action_count: {summary['observed_action_count']}",
-        f"- missing_observation_count: {summary['missing_observation_count']}",
-        f"- next_unobserved_action_key: {summary['next_unobserved_action_key']}",
-        f"- remediation_session_checkpoint_summary_path: {summary['remediation_session_checkpoint_summary_path']}",
-        "",
-        "## Observed Source Counts",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Command Results Summary",
+            "",
+            f"- command_results_status: {summary['command_results_status']}",
+            f"- planned_action_count: {summary['planned_action_count']}",
+            f"- observed_action_count: {summary['observed_action_count']}",
+            f"- missing_observation_count: {summary['missing_observation_count']}",
+            f"- next_unobserved_action_key: {summary['next_unobserved_action_key']}",
+            f"- remediation_session_checkpoint_summary_path: {summary['remediation_session_checkpoint_summary_path']}",
+            "",
+            "## Observed Source Counts",
+            "",
+        ]
+    )
     if summary["observed_source_counts"]:
         for key in sorted(summary["observed_source_counts"]):
             lines.append(f"- {key}: {summary['observed_source_counts'][key]}")
@@ -178,8 +194,8 @@ def build_remediation_command_results(
     lines.extend(
         [
             "",
-        "## Action Command Results",
-        "",
+            "## Action Command Results",
+            "",
         ]
     )
     if entries:

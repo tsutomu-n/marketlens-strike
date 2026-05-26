@@ -14,7 +14,9 @@ def estimate_source_confidence(
     market_session_resolved: bool = True,
 ) -> float:
     now = now or datetime.now(timezone.utc)
-    ts_end = bar.ts_end if bar.ts_end.tzinfo is not None else bar.ts_end.replace(tzinfo=timezone.utc)
+    ts_end = (
+        bar.ts_end if bar.ts_end.tzinfo is not None else bar.ts_end.replace(tzinfo=timezone.utc)
+    )
     delay = max((now - ts_end).total_seconds(), 0.0)
 
     score = 0.0

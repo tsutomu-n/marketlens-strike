@@ -21,7 +21,9 @@ def build_tracking_report(records: list[TrackingRecord]) -> str:
         blocked = sum(1 for row in rows if not row.trade_allowed)
         block_rate = blocked / total if total else 0.0
         spreads = [row.venue_spread_bps for row in rows if row.venue_spread_bps is not None]
-        depths = [row.venue_depth_10bps_usd for row in rows if row.venue_depth_10bps_usd is not None]
+        depths = [
+            row.venue_depth_10bps_usd for row in rows if row.venue_depth_10bps_usd is not None
+        ]
         diffs = [row.mark_real_diff_bps for row in rows if row.mark_real_diff_bps is not None]
         decision = "keep" if block_rate < 0.5 else "watch-only"
         if symbol in {"SP500", "XYZ100"} and block_rate < 0.5:
@@ -31,9 +33,9 @@ def build_tracking_report(records: list[TrackingRecord]) -> str:
         lines.extend(
             [
                 f"- {symbol}: decision={decision}, block_rate={block_rate:.2%}, samples={total}",
-                f"  spread_bps_avg={(sum(spreads)/len(spreads)) if spreads else 'n/a'}",
-                f"  depth_10bps_usd_avg={(sum(depths)/len(depths)) if depths else 'n/a'}",
-                f"  mark_real_diff_bps_avg={(sum(diffs)/len(diffs)) if diffs else 'n/a'}",
+                f"  spread_bps_avg={(sum(spreads) / len(spreads)) if spreads else 'n/a'}",
+                f"  depth_10bps_usd_avg={(sum(depths) / len(depths)) if depths else 'n/a'}",
+                f"  mark_real_diff_bps_avg={(sum(diffs) / len(diffs)) if diffs else 'n/a'}",
             ]
         )
 

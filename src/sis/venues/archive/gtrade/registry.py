@@ -50,4 +50,3 @@ GTRADE_TARGETS: list[InstrumentSpec] = [
         notes=["commodity session", "daily maintenance break"],
     ),
 ]
-

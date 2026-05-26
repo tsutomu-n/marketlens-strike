@@ -68,8 +68,12 @@ def build_daily_paper_report(
     ]
     for fill in fills:
         block_reasons = ",".join(fill.block_reasons)
-        source_confidence = f"{fill.source_confidence:.4f}" if fill.source_confidence is not None else ""
-        venue_quality_score = f"{fill.venue_quality_score:.4f}" if fill.venue_quality_score is not None else ""
+        source_confidence = (
+            f"{fill.source_confidence:.4f}" if fill.source_confidence is not None else ""
+        )
+        venue_quality_score = (
+            f"{fill.venue_quality_score:.4f}" if fill.venue_quality_score is not None else ""
+        )
         estimated_round_trip_cost_bps = (
             f"{fill.estimated_round_trip_cost_bps:.4f}"
             if fill.estimated_round_trip_cost_bps is not None
@@ -158,7 +162,9 @@ def build_daily_paper_report(
     )
     if latest_execution_lines:
         lines.extend(["", *latest_execution_lines[:-1]])
-    if isinstance(execution_gap_history_summary, dict) and any(execution_gap_history_summary.values()):
+    if isinstance(execution_gap_history_summary, dict) and any(
+        execution_gap_history_summary.values()
+    ):
         execution_gap_history_flat = execution_gap_history_flat_fields(
             execution_gap_history_summary
         )
@@ -176,7 +182,9 @@ def build_daily_paper_report(
                 f"- report_path: {execution_gap_history_flat.get('execution_gap_history_report_path') or ''}",
             ]
         )
-    if isinstance(execution_state_comparison_summary, dict) and any(execution_state_comparison_summary.values()):
+    if isinstance(execution_state_comparison_summary, dict) and any(
+        execution_state_comparison_summary.values()
+    ):
         execution_state_comparison_flat = execution_state_comparison_flat_fields(
             execution_state_comparison_summary
         )
@@ -197,7 +205,9 @@ def build_daily_paper_report(
                 f"- report_path: {execution_state_comparison_flat.get('execution_state_comparison_report_path') or ''}",
             ]
         )
-    if isinstance(execution_snapshot_drift_summary, dict) and any(execution_snapshot_drift_summary.values()):
+    if isinstance(execution_snapshot_drift_summary, dict) and any(
+        execution_snapshot_drift_summary.values()
+    ):
         execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
             execution_snapshot_drift_summary
         )
@@ -218,7 +228,9 @@ def build_daily_paper_report(
                 f"- report_path: {execution_snapshot_drift_flat.get('execution_snapshot_drift_report_path') or ''}",
             ]
         )
-    if isinstance(execution_drift_overview_summary, dict) and any(execution_drift_overview_summary.values()):
+    if isinstance(execution_drift_overview_summary, dict) and any(
+        execution_drift_overview_summary.values()
+    ):
         execution_drift_flat = execution_drift_overview_flat_fields(
             execution_drift_overview_summary
         )

@@ -11,7 +11,9 @@ def _diff_bps(a: float | None, b: float | None) -> float | None:
     return abs(a - b) / b * 10_000
 
 
-def build_tracking_record(feature: RealMarketFeature, quote: QuoteLog, policy: dict) -> TrackingRecord:
+def build_tracking_record(
+    feature: RealMarketFeature, quote: QuoteLog, policy: dict
+) -> TrackingRecord:
     mark_diff = _diff_bps(quote.mark_price or quote.mid_price, feature.close)
     oracle_diff = _diff_bps(quote.oracle_price, feature.close)
     reasons: list[str] = []
@@ -20,7 +22,9 @@ def build_tracking_record(feature: RealMarketFeature, quote: QuoteLog, policy: d
     spread_policy = policy.get("halt_policy", policy).get("spread", {}).get("max_spread_bps", {})
     min_source_conf = float(tracking_policy.get("min_source_confidence", 0.70))
     min_venue_quality = float(tracking_policy.get("min_venue_quality_score", 0.70))
-    max_mark_real = float(tracking_policy.get("max_mark_real_diff_bps", {}).get("default_equity", 50))
+    max_mark_real = float(
+        tracking_policy.get("max_mark_real_diff_bps", {}).get("default_equity", 50)
+    )
 
     if feature.market_session != "regular":
         reasons.append("BLOCK_UNDERLYING_NOT_REGULAR_SESSION")
@@ -29,7 +33,9 @@ def build_tracking_record(feature: RealMarketFeature, quote: QuoteLog, policy: d
     if not quote.is_tradable:
         reasons.extend(quote.block_reasons or ["BLOCK_VENUE_NOT_TRADABLE"])
 
-    default_spread = float(spread_policy.get("default_equity", 25)) if isinstance(spread_policy, dict) else 25.0
+    default_spread = (
+        float(spread_policy.get("default_equity", 25)) if isinstance(spread_policy, dict) else 25.0
+    )
     symbol_spread = (
         float(spread_policy.get(quote.canonical_symbol, default_spread))
         if isinstance(spread_policy, dict)

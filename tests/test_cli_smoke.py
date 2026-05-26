@@ -113,7 +113,9 @@ def test_diagnose_quotes_cli_writes_report_and_summary(tmp_path) -> None:
         encoding="utf-8",
     )
 
-    result = runner.invoke(app, ["diagnose-quotes", "--venue", "gtrade", "--symbol", "SPY"], env=env)
+    result = runner.invoke(
+        app, ["diagnose-quotes", "--venue", "gtrade", "--symbol", "SPY"], env=env
+    )
 
     assert result.exit_code == 0
     assert "venue=gtrade symbol=SPY" in result.stdout
@@ -588,7 +590,9 @@ def test_kill_switch_and_healthcheck_cli(tmp_path) -> None:
     assert (data_dir / "reports/ops_kill_switch.md").exists()
     assert read_json(data_dir / "ops/ops_kill_switch_summary.json")["enabled"] is True
 
-    health = runner.invoke(app, ["healthcheck", "--current-pnl", "-150", "--daily-loss-limit", "100"], env=env)
+    health = runner.invoke(
+        app, ["healthcheck", "--current-pnl", "-150", "--daily-loss-limit", "100"], env=env
+    )
     assert health.exit_code == 0
     assert "kill_switch_enabled=True" in health.stdout
     assert "audit_overall_status=ok" in health.stdout
@@ -600,7 +604,10 @@ def test_kill_switch_and_healthcheck_cli(tmp_path) -> None:
     assert "phase_gate_strict_validation_issue_count=2" in health.stdout
     assert "phase_gate_checked_files=7" in health.stdout
     assert "phase_gate_review_report_path=data/reports/phase_gate_review.md" in health.stdout
-    assert "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field" in health.stdout
+    assert (
+        "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field"
+        in health.stdout
+    )
     assert "execution_drift_overview_status=degraded" in health.stdout
     assert "readiness_next_phase_candidate=Stay Phase 1" in health.stdout
     assert "daily_loss_allowed=False" in health.stdout
@@ -624,9 +631,15 @@ def test_order_status_cancel_and_close_cli(tmp_path) -> None:
     )
     env = {"SIS_DATA_DIR": str(data_dir)}
 
-    status = runner.invoke(app, ["order-status", "--venue", "gtrade", "--order-id", "ord-1"], env=env)
-    cancel = runner.invoke(app, ["cancel-order", "--venue", "gtrade", "--order-id", "ord-1"], env=env)
-    close = runner.invoke(app, ["close-position", "--venue", "gtrade", "--symbol", "QQQ", "--side", "long"], env=env)
+    status = runner.invoke(
+        app, ["order-status", "--venue", "gtrade", "--order-id", "ord-1"], env=env
+    )
+    cancel = runner.invoke(
+        app, ["cancel-order", "--venue", "gtrade", "--order-id", "ord-1"], env=env
+    )
+    close = runner.invoke(
+        app, ["close-position", "--venue", "gtrade", "--symbol", "QQQ", "--side", "long"], env=env
+    )
 
     assert status.exit_code == 0
     assert "status=working" in status.stdout
@@ -641,12 +654,17 @@ def test_order_status_cancel_and_close_cli(tmp_path) -> None:
     assert "status=blocked_read_only" in cancel.stdout
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in cancel.stdout
     assert (data_dir / "reports/execution_cancel_order.md").exists()
-    assert read_json(data_dir / "ops/execution_cancel_order_summary.json")["action"] == "cancel_order"
+    assert (
+        read_json(data_dir / "ops/execution_cancel_order_summary.json")["action"] == "cancel_order"
+    )
     assert close.exit_code == 0
     assert "status=blocked_read_only" in close.stdout
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in close.stdout
     assert (data_dir / "reports/execution_close_position.md").exists()
-    assert read_json(data_dir / "ops/execution_close_position_summary.json")["action"] == "close_position"
+    assert (
+        read_json(data_dir / "ops/execution_close_position_summary.json")["action"]
+        == "close_position"
+    )
 
 
 def test_paper_report_cli_includes_audit_summary(tmp_path) -> None:
@@ -781,6 +799,7 @@ def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
     data_dir = tmp_path / "data"
     env = {"SIS_DATA_DIR": str(data_dir)}
     from sis.state.store import StateStore
+
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
     (data_dir / "ops/audit_dashboard_summary.json").write_text(
         '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot"}',
@@ -828,7 +847,15 @@ def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
     )
     schedule = runner.invoke(
         app,
-        ["schedule-run", "--run-type", "paper", "--command", "uv run sis paper-step", "--every-minutes", "30"],
+        [
+            "schedule-run",
+            "--run-type",
+            "paper",
+            "--command",
+            "uv run sis paper-step",
+            "--every-minutes",
+            "30",
+        ],
         env=env,
     )
     alert = runner.invoke(
@@ -844,12 +871,13 @@ def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
     (data_dir / "research").mkdir(parents=True, exist_ok=True)
     (data_dir / "paper").mkdir(parents=True, exist_ok=True)
     import polars as pl
+
     pl.DataFrame([{"venue": "gtrade", "canonical_symbol": "QQQ", "trade_count": 1}]).write_json(
         data_dir / "research/backtest_metrics.json"
     )
-    pl.DataFrame([{"date": "2026-05-24", "realized_pnl": 1.0, "fills_count": 1, "open_positions": 1}]).write_parquet(
-        data_dir / "paper/daily_pnl.parquet"
-    )
+    pl.DataFrame(
+        [{"date": "2026-05-24", "realized_pnl": 1.0, "fills_count": 1, "open_positions": 1}]
+    ).write_parquet(data_dir / "paper/daily_pnl.parquet")
     StateStore(data_dir / "state/marketlens.sqlite").set_json(
         "paper_last_run",
         {
@@ -879,23 +907,39 @@ def test_schedule_alert_and_weekly_review_cli(tmp_path) -> None:
     assert schedule.exit_code == 0
     assert "run_type=paper" in schedule.stdout
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in schedule.stdout
-    assert '"overall_status": "ok"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
+    assert '"overall_status": "ok"' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
     assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
         data_dir / "ops/scheduled_run.json"
     ).read_text(encoding="utf-8")
     assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
         data_dir / "ops/scheduled_run.json"
     ).read_text(encoding="utf-8")
-    assert '"phase2_entry_allowed": false' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"balance_gap_detected": true' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"execution_drift_overview_status": "degraded"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
+    assert '"phase2_entry_allowed": false' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"balance_gap_detected": true' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_drift_overview_status": "degraded"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
     assert '"readiness_next_phase_candidate": "Stay Phase 1"' in (
         data_dir / "ops/scheduled_run.json"
     ).read_text(encoding="utf-8")
-    assert '"readiness_execution_ready": false' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"next_phase_candidate": "Stay Phase 1"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"balance_gap_detected": true' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"next_phase_candidate": "Stay Phase 1"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
+    assert '"readiness_execution_ready": false' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"next_phase_candidate": "Stay Phase 1"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"balance_gap_detected": true' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"next_phase_candidate": "Stay Phase 1"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
     assert (data_dir / "reports/ops_scheduled_run.md").exists()
     schedule_summary = read_json(data_dir / "ops/ops_scheduled_run_summary.json")
     assert schedule_summary["run_type"] == "paper"
@@ -973,7 +1017,9 @@ def test_daemon_manifest_state_export_restore_and_lifecycle_cli(tmp_path) -> Non
         '{"mode":"signal_driven","signals_considered":2,"executed_count":1,"blocked_count":1}',
         encoding="utf-8",
     )
-    (data_dir / "reports/weekly_strategy_review.md").write_text("# Weekly Strategy Review\n\n- sample\n", encoding="utf-8")
+    (data_dir / "reports/weekly_strategy_review.md").write_text(
+        "# Weekly Strategy Review\n\n- sample\n", encoding="utf-8"
+    )
     lifecycle = runner.invoke(app, ["lifecycle-report"], env=env)
 
     assert daemon.exit_code == 0
@@ -1101,7 +1147,15 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
 
     result = runner.invoke(
         app,
-        ["daemon-dry-run", "--mode", "paper", "--command", "uv run sis paper-step", "--every-minutes", "30"],
+        [
+            "daemon-dry-run",
+            "--mode",
+            "paper",
+            "--command",
+            "uv run sis paper-step",
+            "--every-minutes",
+            "30",
+        ],
         env=env,
     )
 
@@ -1110,58 +1164,108 @@ def test_daemon_dry_run_cli(tmp_path) -> None:
     assert "operation_chain=" in result.stdout
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "ops/operation_manifests.jsonl").exists()
-    assert '"overall_status": "ok"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
-        data_dir / "ops/daemon_dry_run.json"
-    ).read_text(encoding="utf-8")
-    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
-        data_dir / "ops/daemon_dry_run.json"
-    ).read_text(encoding="utf-8")
-    assert '"phase2_entry_allowed": false' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
-        data_dir / "ops/scheduled_run.json"
-    ).read_text(encoding="utf-8")
-    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
-        data_dir / "ops/scheduled_run.json"
-    ).read_text(encoding="utf-8")
-    assert '"execution_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"execution_overall_status": "ok"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"execution_comparison_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"timeline_latest_execution_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"bundle_history_latest_execution_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"cycle_history_latest_execution_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"balance_gap_detected": true' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"execution_gap_history_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"execution_state_comparison_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"execution_snapshot_drift_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"execution_drift_overview_status": "degraded"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"execution_drift_overview_status": "degraded"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in (
-        data_dir / "ops/daemon_dry_run.json"
-    ).read_text(encoding="utf-8")
-    assert '"readiness_execution_ready": false' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in (
-        data_dir / "ops/scheduled_run.json"
-    ).read_text(encoding="utf-8")
-    assert '"execution_summary"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"timeline_latest_execution_summary"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"bundle_history_latest_execution_summary"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"cycle_history_latest_execution_summary"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"execution_gap_history_summary"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"execution_state_comparison_summary"' in (data_dir / "ops/scheduled_run.json").read_text(
+    assert '"overall_status": "ok"' in (data_dir / "ops/daemon_dry_run.json").read_text(
         encoding="utf-8"
     )
+    assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
+        data_dir / "ops/daemon_dry_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
+        data_dir / "ops/daemon_dry_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"phase2_entry_allowed": false' in (data_dir / "ops/daemon_dry_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_overall_status": "ok"' in (data_dir / "ops/daemon_dry_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_comparison_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"timeline_latest_execution_summary"' in (
+        data_dir / "ops/daemon_dry_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"bundle_history_latest_execution_summary"' in (
+        data_dir / "ops/daemon_dry_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"cycle_history_latest_execution_summary"' in (
+        data_dir / "ops/daemon_dry_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"balance_gap_detected": true' in (data_dir / "ops/daemon_dry_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_gap_history_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_state_comparison_summary"' in (
+        data_dir / "ops/daemon_dry_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_snapshot_drift_summary"' in (data_dir / "ops/daemon_dry_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_drift_overview_status": "degraded"' in (
+        data_dir / "ops/daemon_dry_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_drift_overview_status": "degraded"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in (
+        data_dir / "ops/daemon_dry_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"readiness_execution_ready": false' in (data_dir / "ops/daemon_dry_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_summary"' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"timeline_latest_execution_summary"' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"bundle_history_latest_execution_summary"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"cycle_history_latest_execution_summary"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_gap_history_summary"' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_state_comparison_summary"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
     assert '"execution_snapshot_drift_summary"' in (data_dir / "ops/scheduled_run.json").read_text(
         encoding="utf-8"
     )
-    assert '"readiness_execution_ready": false' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"next_phase_candidate": "Stay Phase 1"' in (data_dir / "ops/daemon_dry_run.json").read_text(encoding="utf-8")
-    assert '"balance_gap_detected": true' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
-    assert '"next_phase_candidate": "Stay Phase 1"' in (data_dir / "ops/scheduled_run.json").read_text(encoding="utf-8")
+    assert '"readiness_execution_ready": false' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"next_phase_candidate": "Stay Phase 1"' in (
+        data_dir / "ops/daemon_dry_run.json"
+    ).read_text(encoding="utf-8")
+    assert '"balance_gap_detected": true' in (data_dir / "ops/scheduled_run.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"next_phase_candidate": "Stay Phase 1"' in (
+        data_dir / "ops/scheduled_run.json"
+    ).read_text(encoding="utf-8")
     execution_snapshot_summary = read_json(data_dir / "ops/execution_snapshot_summary.json")
     assert execution_snapshot_summary["venues"][0]["positions_snapshot_exists"] is True
     assert execution_snapshot_summary["venues"][1]["positions_snapshot_exists"] is True
-    execution_comparison_summary = read_json(data_dir / "ops/execution_venue_comparison_summary.json")
+    execution_comparison_summary = read_json(
+        data_dir / "ops/execution_venue_comparison_summary.json"
+    )
     assert execution_comparison_summary["all_positions_snapshots_present"] is True
     assert (data_dir / "reports/execution_read_only_surfaces.md").exists()
     read_only_summary = read_json(data_dir / "ops/execution_read_only_surfaces_summary.json")
@@ -1244,12 +1348,17 @@ def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:
     data_dir = tmp_path / "data"
     env = {"SIS_DATA_DIR": str(data_dir)}
     from sis.state.store import StateStore
+
     (data_dir / "research").mkdir(parents=True, exist_ok=True)
     (data_dir / "paper").mkdir(parents=True, exist_ok=True)
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
     (data_dir / "reports").mkdir(parents=True, exist_ok=True)
-    (data_dir / "research/decision_summary.json").write_text('{"mode":"signal_driven","executed_count":1}', encoding="utf-8")
-    (data_dir / "reports/weekly_strategy_review.md").write_text("# Weekly Strategy Review\n", encoding="utf-8")
+    (data_dir / "research/decision_summary.json").write_text(
+        '{"mode":"signal_driven","executed_count":1}', encoding="utf-8"
+    )
+    (data_dir / "reports/weekly_strategy_review.md").write_text(
+        "# Weekly Strategy Review\n", encoding="utf-8"
+    )
     (data_dir / "ops/audit_dashboard_summary.json").write_text(
         '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot","audit_entry_count":4,"audit_bundle_snapshot_count":1}',
         encoding="utf-8",
@@ -1271,6 +1380,7 @@ def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:
         encoding="utf-8",
     )
     import polars as pl
+
     StateStore(data_dir / "state/marketlens.sqlite").set_json(
         "paper_last_run",
         {
@@ -1295,7 +1405,9 @@ def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:
             },
         },
     )
-    pl.DataFrame([{"date": "2026-05-24", "realized_pnl": 2.0}]).write_parquet(data_dir / "paper/daily_pnl.parquet")
+    pl.DataFrame([{"date": "2026-05-24", "realized_pnl": 2.0}]).write_parquet(
+        data_dir / "paper/daily_pnl.parquet"
+    )
     pl.DataFrame([{"canonical_symbol": "QQQ", "avg_trade_return": 0.05}]).write_json(
         data_dir / "research/backtest_metrics.json"
     )
@@ -1314,7 +1426,10 @@ def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:
     assert "phase_gate_strict_validation_issue_count=2" in monitoring.stdout
     assert "phase_gate_checked_files=7" in monitoring.stdout
     assert "phase_gate_review_report_path=data/reports/phase_gate_review.md" in monitoring.stdout
-    assert "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field" in monitoring.stdout
+    assert (
+        "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field"
+        in monitoring.stdout
+    )
     assert "execution_drift_overview_status=degraded" in monitoring.stdout
     assert "readiness_next_phase_candidate=Stay Phase 1" in monitoring.stdout
     assert "operation_chain_exists=False" in monitoring.stdout
@@ -1462,17 +1577,33 @@ def test_build_backtest_cli_includes_audit_summary(tmp_path) -> None:
     assert result.exit_code == 0
     assert "Audit Summary" in (data_dir / "research/backtest_report.md").read_text(encoding="utf-8")
     assert '"audit"' in (data_dir / "research/decision_summary.json").read_text(encoding="utf-8")
-    assert "Phase Gate Summary" in (data_dir / "research/backtest_report.md").read_text(encoding="utf-8")
-    assert "Execution Venue Comparison" in (data_dir / "research/backtest_report.md").read_text(encoding="utf-8")
-    assert "Execution Venue Diagnostics" in (data_dir / "research/backtest_report.md").read_text(encoding="utf-8")
-    assert "Execution Gap History" in (data_dir / "research/backtest_report.md").read_text(encoding="utf-8")
-    assert "Execution State Comparison History" in (data_dir / "research/backtest_report.md").read_text(encoding="utf-8")
-    assert "Execution Snapshot Drift History" in (data_dir / "research/backtest_report.md").read_text(encoding="utf-8")
-    assert '"phase_gate"' in (data_dir / "research/decision_summary.json").read_text(encoding="utf-8")
-    assert '"execution_summary"' in (data_dir / "research/decision_summary.json").read_text(encoding="utf-8")
-    assert '"execution_gap_history_summary"' in (data_dir / "research/decision_summary.json").read_text(
+    assert "Phase Gate Summary" in (data_dir / "research/backtest_report.md").read_text(
         encoding="utf-8"
     )
+    assert "Execution Venue Comparison" in (data_dir / "research/backtest_report.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Execution Venue Diagnostics" in (data_dir / "research/backtest_report.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Execution Gap History" in (data_dir / "research/backtest_report.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Execution State Comparison History" in (
+        data_dir / "research/backtest_report.md"
+    ).read_text(encoding="utf-8")
+    assert "Execution Snapshot Drift History" in (
+        data_dir / "research/backtest_report.md"
+    ).read_text(encoding="utf-8")
+    assert '"phase_gate"' in (data_dir / "research/decision_summary.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_summary"' in (data_dir / "research/decision_summary.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_gap_history_summary"' in (
+        data_dir / "research/decision_summary.json"
+    ).read_text(encoding="utf-8")
     assert '"execution_state_comparison_summary"' in (
         data_dir / "research/decision_summary.json"
     ).read_text(encoding="utf-8")
@@ -1489,10 +1620,18 @@ def test_build_backtest_cli_includes_audit_summary(tmp_path) -> None:
         data_dir / "research/decision_summary.json"
     ).read_text(encoding="utf-8")
     assert (data_dir / "research/backtest_metrics_summary.json").exists()
-    assert '"phase_gate"' in (data_dir / "research/backtest_metrics_summary.json").read_text(encoding="utf-8")
-    assert '"execution"' in (data_dir / "research/backtest_metrics_summary.json").read_text(encoding="utf-8")
-    assert '"execution_comparison"' in (data_dir / "research/backtest_metrics_summary.json").read_text(encoding="utf-8")
-    assert '"execution_diagnostics"' in (data_dir / "research/backtest_metrics_summary.json").read_text(encoding="utf-8")
+    assert '"phase_gate"' in (data_dir / "research/backtest_metrics_summary.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution"' in (data_dir / "research/backtest_metrics_summary.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"execution_comparison"' in (
+        data_dir / "research/backtest_metrics_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_diagnostics"' in (
+        data_dir / "research/backtest_metrics_summary.json"
+    ).read_text(encoding="utf-8")
     assert '"execution_gap_history_summary"' in (
         data_dir / "research/backtest_metrics_summary.json"
     ).read_text(encoding="utf-8")
@@ -1650,7 +1789,9 @@ def test_build_evidence_card_cli_includes_audit_summary(tmp_path) -> None:
     (data_dir / "raw/sidecar/ostium").mkdir(parents=True, exist_ok=True)
     (data_dir / "normalized").mkdir(parents=True, exist_ok=True)
     (data_dir / "research").mkdir(parents=True, exist_ok=True)
-    (data_dir / "registry/gtrade_instrument_registry.json").write_text('[{"venue":"gtrade","canonical_symbol":"SPY"}]', encoding="utf-8")
+    (data_dir / "registry/gtrade_instrument_registry.json").write_text(
+        '[{"venue":"gtrade","canonical_symbol":"SPY"}]', encoding="utf-8"
+    )
     (data_dir / "registry/ostium_instrument_registry.json").write_text(
         '[{"venue":"ostium","canonical_symbol":"SPX_EQUIV","venue_symbol":"US500-USD","active":true,"opening_fee_bps":3,"max_open_interest":"1000000","rollover_fee_per_block":"1e-10","max_leverage":50}]',
         encoding="utf-8",
@@ -1659,14 +1800,18 @@ def test_build_evidence_card_cli_includes_audit_summary(tmp_path) -> None:
         '{"positions":[{"venue_symbol":"US500-USD","side":"long","entry_px":"100","liquidation_px":"80"}]}',
         encoding="utf-8",
     )
-    (data_dir / "raw/quotes/gtrade/2026-05-22.jsonl").write_text('{"venue":"gtrade"}\n', encoding="utf-8")
+    (data_dir / "raw/quotes/gtrade/2026-05-22.jsonl").write_text(
+        '{"venue":"gtrade"}\n', encoding="utf-8"
+    )
     (data_dir / "normalized/quotes.parquet").write_bytes(b"placeholder")
     (data_dir / "research/venue_cost_matrix.csv").write_text(
         "venue,symbol,stale_rate,tradable_rate,spread_p90_bps,holding_cost_4h_bps,holding_cost_24h_bps,holding_cost_72h_bps\n"
         "gtrade,SPY,0,0,2,0,0,0\n",
         encoding="utf-8",
     )
-    (data_dir / "research/backtest_metrics.json").write_text('[{"trade_count":1,"avg_trade_return":0.1}]', encoding="utf-8")
+    (data_dir / "research/backtest_metrics.json").write_text(
+        '[{"trade_count":1,"avg_trade_return":0.1}]', encoding="utf-8"
+    )
     (data_dir / "research/backtest_report.md").write_text("# Backtest\n", encoding="utf-8")
     (data_dir / "research/go_no_go_report.md").write_text("# Go/No-Go\n", encoding="utf-8")
     StateStore(data_dir / "state/marketlens.sqlite").set_json(
@@ -1742,11 +1887,26 @@ def test_build_evidence_card_cli_includes_audit_summary(tmp_path) -> None:
     assert payload["audit_summary"]["overall_status"] == "ok"
     assert payload["phase_gate_summary"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert payload["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
-    assert payload["timeline_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        payload["timeline_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
     assert payload["bundle_history_latest_execution_summary"]["execution_overall_status"] == "warn"
-    assert payload["bundle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is False
+    assert (
+        payload["bundle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is False
+    )
     assert payload["cycle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
-    assert payload["cycle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        payload["cycle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
     assert payload["cycle_history_latest_execution_overall_status"] == "ok"
     assert payload["cycle_history_latest_execution_venue_count"] == 2
     assert payload["cycle_history_latest_execution_comparison_all_registries_present"] is True
@@ -1755,8 +1915,18 @@ def test_build_evidence_card_cli_includes_audit_summary(tmp_path) -> None:
     assert payload["execution_comparison_summary"]["all_registries_present"] is True
     assert payload["execution_diagnostics_summary"]["balance_gap_detected"] is True
     assert payload["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
-    assert payload["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == 1
-    assert payload["execution_snapshot_drift_summary"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert (
+        payload["execution_state_comparison_summary"][
+            "execution_state_comparison_mismatching_count"
+        ]
+        == 1
+    )
+    assert (
+        payload["execution_snapshot_drift_summary"][
+            "execution_snapshot_drift_mismatching_snapshot_count"
+        ]
+        == 1
+    )
     assert payload["quick_navigation"]["evidence_card_report"].endswith(".json")
     assert payload["quick_navigation"]["phase_gate_review_report"] == str(
         data_dir / "reports/phase_gate_review.md"
@@ -1764,9 +1934,8 @@ def test_build_evidence_card_cli_includes_audit_summary(tmp_path) -> None:
     assert payload["related_reports"]["execution_snapshot_report"] == str(
         data_dir / "reports/execution_snapshot.md"
     )
-    assert (
-        payload["related_reports"]["paper_vs_backtest_comparison_report"]
-        == str(data_dir / "reports/paper_vs_backtest_comparison.md")
+    assert payload["related_reports"]["paper_vs_backtest_comparison_report"] == str(
+        data_dir / "reports/paper_vs_backtest_comparison.md"
     )
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
@@ -2141,9 +2310,13 @@ def test_operations_dashboard_cli(tmp_path) -> None:
         '{"mode":"signal_driven","executed_count":1,"blocked_count":0}',
         encoding="utf-8",
     )
-    (data_dir / "reports/paper_vs_backtest_comparison.md").write_text("# comparison\n", encoding="utf-8")
+    (data_dir / "reports/paper_vs_backtest_comparison.md").write_text(
+        "# comparison\n", encoding="utf-8"
+    )
     (data_dir / "reports/weekly_strategy_review.md").write_text("# weekly\n", encoding="utf-8")
-    (data_dir / "reports/strategy_lifecycle_report.md").write_text("# lifecycle\n", encoding="utf-8")
+    (data_dir / "reports/strategy_lifecycle_report.md").write_text(
+        "# lifecycle\n", encoding="utf-8"
+    )
 
     result = runner.invoke(app, ["operations-dashboard"], env=env)
 
@@ -2167,7 +2340,9 @@ def test_operations_dashboard_cli(tmp_path) -> None:
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/operations_dashboard.md").exists()
     assert (data_dir / "ops/operations_dashboard_summary.json").exists()
-    assert '"recommended_read_order"' in (data_dir / "ops/operations_dashboard_summary.json").read_text(encoding="utf-8")
+    assert '"recommended_read_order"' in (
+        data_dir / "ops/operations_dashboard_summary.json"
+    ).read_text(encoding="utf-8")
 
 
 def test_paper_operations_runbook_cli(tmp_path) -> None:
@@ -2259,8 +2434,14 @@ def test_paper_operations_runbook_cli(tmp_path) -> None:
     assert "bundle_history_latest_execution_overall_status: ok" in result.stdout
     assert "cycle_history_latest_execution_overall_status: ok" in result.stdout
     assert "timeline_latest_remediation_planner_status: stalled" in result.stdout
-    assert "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status" in result.stdout
-    assert "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in result.stdout
+    assert (
+        "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status"
+        in result.stdout
+    )
+    assert (
+        "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed"
+        in result.stdout
+    )
     assert "## Quick Navigation" in result.stdout
     assert "paper_operations_runbook_report:" in result.stdout
     assert "## Related Reports" in result.stdout
@@ -2270,9 +2451,9 @@ def test_paper_operations_runbook_cli(tmp_path) -> None:
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/paper_operations_runbook.md").exists()
     assert (data_dir / "ops/paper_operations_runbook_summary.json").exists()
-    assert '"execution_summary"' in (data_dir / "ops/paper_operations_runbook_summary.json").read_text(
-        encoding="utf-8"
-    )
+    assert '"execution_summary"' in (
+        data_dir / "ops/paper_operations_runbook_summary.json"
+    ).read_text(encoding="utf-8")
     assert '"execution_gap_history_summary"' in (
         data_dir / "ops/paper_operations_runbook_summary.json"
     ).read_text(encoding="utf-8")
@@ -2349,9 +2530,9 @@ def test_remediation_execution_plan_cli(tmp_path) -> None:
     )
     (data_dir / "ops/remediation_planner_summary.json").write_text(
         '{"planner_status":"stalled","planner_rerun_diff":{"trend":"improved"},"phase_gate_summary_path":"'
-        + str(data_dir / 'ops/phase_gate_review_summary.json').replace("\\", "\\\\")
+        + str(data_dir / "ops/phase_gate_review_summary.json").replace("\\", "\\\\")
         + '","runbook_summary_path":"'
-        + str(data_dir / 'ops/paper_operations_runbook_summary.json').replace("\\", "\\\\")
+        + str(data_dir / "ops/paper_operations_runbook_summary.json").replace("\\", "\\\\")
         + '","entries":[{"source":"paper_operations_runbook","priority":2,"effective_priority":1,"reason":"strict_validation_failed","status":"stalled","why":"signals did not move toward target","commands":["uv run sis validate-artifacts --strict"],"observed_sources":["stdout_stderr"],"source_confidence":"high","source_policy":"direct_observation_priority","feedback_priority_reason":"verification_passed","signal_observed_sources":{"validate-artifacts --strict reports the current issue count":"stdout_stderr"}},{"source":"phase_gate_review","priority":4,"effective_priority":5,"reason":"execution_drift_unresolved","status":"improving","why":"signals changed but target is not fully matched yet","commands":["uv run sis refresh-operations-artifacts"],"observed_sources":["markdown_reports"],"source_confidence":"low","source_policy":"verify_before_execute","feedback_priority_reason":"evaluation_failed","signal_observed_sources":{"execution_drift_overview_status == ok":"markdown_reports","execution_drift_overview_summary.json is regenerated":"stdout_stderr"}}],"planner_entry_diffs":{"paper_operations_runbook:strict_validation_failed":{"trend":"regressed"},"phase_gate_review:execution_drift_unresolved":{"trend":"improved"}}}',
         encoding="utf-8",
     )
@@ -2637,9 +2818,7 @@ def test_remediation_evaluator_cli(tmp_path) -> None:
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -2694,9 +2873,7 @@ def test_remediation_evaluator_cli_uses_stdout_summary_signals(tmp_path) -> None
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -2740,9 +2917,7 @@ def test_remediation_evaluator_cli_uses_monitoring_stdout_signals(tmp_path) -> N
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -2762,11 +2937,15 @@ def test_remediation_evaluator_cli_uses_monitoring_stdout_signals(tmp_path) -> N
 
     assert result.exit_code == 0
     assert "evaluator_status: auto_passed" in result.stdout
-    assert "signal=monitoring-status prints execution_diagnostics_status status=pass" in result.stdout
+    assert (
+        "signal=monitoring-status prints execution_diagnostics_status status=pass" in result.stdout
+    )
     assert "signal=phase gate output shows current readiness blockers status=pass" in result.stdout
 
 
-def test_remediation_evaluator_cli_uses_quote_diagnostics_and_go_no_go_stdout_signals(tmp_path) -> None:
+def test_remediation_evaluator_cli_uses_quote_diagnostics_and_go_no_go_stdout_signals(
+    tmp_path,
+) -> None:
     data_dir = tmp_path / "data"
     env = {"SIS_DATA_DIR": str(data_dir)}
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
@@ -2787,9 +2966,7 @@ def test_remediation_evaluator_cli_uses_quote_diagnostics_and_go_no_go_stdout_si
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -2810,7 +2987,10 @@ def test_remediation_evaluator_cli_uses_quote_diagnostics_and_go_no_go_stdout_si
     assert result.exit_code == 0
     assert "evaluator_status: auto_passed" in result.stdout
     assert "signal=diagnose-quotes prints per-symbol diagnostics rows status=pass" in result.stdout
-    assert "signal=check-go-no-go prints the current decision and blockers status=pass" in result.stdout
+    assert (
+        "signal=check-go-no-go prints the current decision and blockers status=pass"
+        in result.stdout
+    )
 
 
 def test_remediation_evaluator_cli_uses_operation_manifest_notes(tmp_path) -> None:
@@ -2846,9 +3026,7 @@ def test_remediation_evaluator_cli_uses_operation_manifest_notes(tmp_path) -> No
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -2899,9 +3077,7 @@ def test_remediation_evaluator_cli_uses_timeline_summary_fallback(tmp_path) -> N
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -2955,9 +3131,7 @@ def test_remediation_evaluator_cli_uses_dashboard_bundle_summary_fallback(tmp_pa
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -2979,7 +3153,10 @@ def test_remediation_evaluator_cli_uses_dashboard_bundle_summary_fallback(tmp_pa
     assert "evaluator_status: auto_passed" in result.stdout
     assert "operations_dashboard_summary_path:" in result.stdout
     assert "operations_bundle_manifest_path:" in result.stdout
-    assert "signal=monitoring output shows current balance/fills gap flags status=pass" in result.stdout
+    assert (
+        "signal=monitoring output shows current balance/fills gap flags status=pass"
+        in result.stdout
+    )
     assert "expected=present observed=7" in result.stdout
 
 
@@ -3010,9 +3187,7 @@ def test_remediation_evaluator_cli_uses_issue_previews_and_blocker_lists(tmp_pat
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -3049,9 +3224,7 @@ def test_remediation_evaluator_cli_uses_markdown_report_fallback(tmp_path) -> No
     checkpoint_summary = data_dir / "ops/remediation_session_checkpoint_summary.json"
     phase_gate_report = data_dir / "reports/phase_gate_review.md"
     phase_gate_summary.write_text(
-        '{"phase_gate_review_report_path":"'
-        + str(phase_gate_report).replace("\\", "\\\\")
-        + '"}',
+        '{"phase_gate_review_report_path":"' + str(phase_gate_report).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     runbook_summary.write_text("{}", encoding="utf-8")
@@ -3089,9 +3262,7 @@ def test_remediation_evaluator_cli_uses_markdown_report_fallback(tmp_path) -> No
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -3157,9 +3328,7 @@ def test_remediation_evaluator_cli_uses_ops_review_fallback(tmp_path) -> None:
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -3182,7 +3351,10 @@ def test_remediation_evaluator_cli_uses_ops_review_fallback(tmp_path) -> None:
     assert "ops_review_summary_path:" in result.stdout
     assert "ops_review_report_path:" in result.stdout
     assert "signal=strict validation preview lists current issues status=pass" in result.stdout
-    assert "signal=monitoring output shows current balance/fills gap flags status=pass" in result.stdout
+    assert (
+        "signal=monitoring output shows current balance/fills gap flags status=pass"
+        in result.stdout
+    )
     assert "signal=phase gate output shows current readiness blockers status=pass" in result.stdout
 
 
@@ -3227,9 +3399,7 @@ def test_remediation_evaluator_cli_uses_current_state_index_fallback(tmp_path) -
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -3322,9 +3492,7 @@ def test_remediation_evaluator_cli_uses_live_evidence_fallback(tmp_path) -> None
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -3371,9 +3539,7 @@ def test_remediation_evaluator_cli_reports_observed_sources(tmp_path) -> None:
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -3425,9 +3591,7 @@ def test_remediation_evidence_cli(tmp_path) -> None:
         encoding="utf-8",
     )
     execution_plan_summary.write_text(
-        '{"remediation_planner_summary_path":"'
-        + str(planner_summary).replace("\\", "\\\\")
-        + '"}',
+        '{"remediation_planner_summary_path":"' + str(planner_summary).replace("\\", "\\\\") + '"}',
         encoding="utf-8",
     )
     session_summary.write_text(
@@ -3491,7 +3655,9 @@ def test_paper_cycle_history_cli(tmp_path) -> None:
     assert "execution_drift_overview_report:" in result.stdout
     assert "latest_execution_diagnostics_status: degraded" in result.stdout
     assert "latest_readiness_next_phase: Phase 1" in result.stdout
-    assert "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
+    assert (
+        "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
+    )
     assert "- data/research/backtest_metrics_summary.json: missing field" in result.stdout
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/paper_cycle_history_report.md").exists()
@@ -3633,14 +3799,20 @@ def test_operations_bundle_cli(tmp_path) -> None:
         data_dir / "ops/operations_dashboard_summary.json": '{"overall_status":"ok"}',
         data_dir / "ops/execution_snapshot_summary.json": '{"overall_status":"ok","venue_count":2}',
         data_dir / "ops/execution_venue_comparison_summary.json": '{"all_registries_present":true}',
-        data_dir / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
-        data_dir / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
-        data_dir / "ops/execution_state_comparison_history_summary.json": '{"entry_count":4,"latest_status_match":false,"mismatching_count":1}',
-        data_dir / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
-        data_dir / "ops/readiness_snapshot.json": '{"next_phase_candidate":"Stay Phase 1","execution_ready":false}',
+        data_dir
+        / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
+        data_dir
+        / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
+        data_dir
+        / "ops/execution_state_comparison_history_summary.json": '{"entry_count":4,"latest_status_match":false,"mismatching_count":1}',
+        data_dir
+        / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
+        data_dir
+        / "ops/readiness_snapshot.json": '{"next_phase_candidate":"Stay Phase 1","execution_ready":false}',
         data_dir / "ops/paper_operations_runbook_summary.json": '{"monitoring_status":"ok"}',
         data_dir / "ops/paper_cycle_history_summary.json": '{"cycle_count":2,"completed_count":2}',
-        data_dir / "ops/phase_gate_review_summary.json": '{"decision":"GO","phase2_entry_allowed":true,"phase2_entry_reason":"decision_cleared_and_phase1_gate_complete","strict_validation_passed":true,"strict_validation_issue_count":0,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[]}',
+        data_dir
+        / "ops/phase_gate_review_summary.json": '{"decision":"GO","phase2_entry_allowed":true,"phase2_entry_reason":"decision_cleared_and_phase1_gate_complete","strict_validation_passed":true,"strict_validation_issue_count":0,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[]}',
     }
     for path, text in write_paths.items():
         path.write_text(text, encoding="utf-8")
@@ -3674,7 +3846,9 @@ def test_operations_bundle_cli(tmp_path) -> None:
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/operations_bundle_manifest.md").exists()
     assert (data_dir / "ops/operations_bundle_manifest.json").exists()
-    assert '"recommended_read_order"' in (data_dir / "ops/operations_bundle_manifest.json").read_text(encoding="utf-8")
+    assert '"recommended_read_order"' in (
+        data_dir / "ops/operations_bundle_manifest.json"
+    ).read_text(encoding="utf-8")
     assert '"phase_gate_strict_validation_passed": true' in (
         data_dir / "ops/operations_bundle_manifest.json"
     ).read_text(encoding="utf-8")
@@ -3694,16 +3868,23 @@ def test_current_state_index_cli(tmp_path) -> None:
     payloads = {
         data_dir / "ops/operations_dashboard_summary.json": '{"overall_status":"ok"}',
         data_dir / "ops/operations_bundle_manifest.json": '{"overall_status":"ok","cycle_count":2}',
-        data_dir / "ops/audit_dashboard_summary.json": '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot"}',
+        data_dir
+        / "ops/audit_dashboard_summary.json": '{"overall_status":"ok","timeline_latest_operation":"audit_bundle_snapshot"}',
         data_dir / "ops/audit_bundle_manifest.json": '{"bundle_history_snapshot_count":3}',
-        data_dir / "ops/phase_gate_review_summary.json": '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true,"strict_validation_issue_count":2,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[{"path":"data/research/backtest_metrics_summary.json","message":"missing field"}]}',
+        data_dir
+        / "ops/phase_gate_review_summary.json": '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true,"strict_validation_issue_count":2,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[{"path":"data/research/backtest_metrics_summary.json","message":"missing field"}]}',
         data_dir / "ops/execution_snapshot_summary.json": '{"overall_status":"ok","venue_count":2}',
         data_dir / "ops/execution_venue_comparison_summary.json": '{"all_registries_present":true}',
-        data_dir / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
-        data_dir / "ops/execution_state_comparison_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_gap_history_diagnostics_status":"degraded","latest_status_match":true,"mismatching_count":0}',
-        data_dir / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":0}',
-        data_dir / "research/backtest_metrics_summary.json": '{"total_trade_count":5,"symbols":["QQQ","SPY"]}',
-        data_dir / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
+        data_dir
+        / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
+        data_dir
+        / "ops/execution_state_comparison_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_gap_history_diagnostics_status":"degraded","latest_status_match":true,"mismatching_count":0}',
+        data_dir
+        / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":0}',
+        data_dir
+        / "research/backtest_metrics_summary.json": '{"total_trade_count":5,"symbols":["QQQ","SPY"]}',
+        data_dir
+        / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
     }
     for path, text in payloads.items():
         path.write_text(text, encoding="utf-8")
@@ -3742,14 +3923,20 @@ def test_readiness_snapshot_cli(tmp_path) -> None:
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
     (data_dir / "research").mkdir(parents=True, exist_ok=True)
     payloads = {
-        data_dir / "ops/current_state_index.json": '{"overall_status":"ok","research_quality_report_exists":true,"timeline_latest_remediation_planner_status":"stalled","timeline_latest_remediation_planner_next_best_command":"uv run sis validate-artifacts --strict","timeline_latest_remediation_planner_feedback_priority_reason":"evaluation_failed","timeline_latest_remediation_execution_plan_status":"stalled","timeline_latest_remediation_execution_plan_next_action_command":"uv run sis diagnose-quotes","timeline_latest_remediation_execution_plan_feedback_priority_reason":"evaluation_failed","timeline_latest_remediation_session_status":"ready_for_dry_run","timeline_latest_remediation_session_next_pending_command":"uv run sis monitoring-status","timeline_latest_remediation_session_feedback_priority_reason":"evaluation_failed","timeline_latest_remediation_checkpoint_status":"retry_pending","timeline_latest_remediation_checkpoint_next_action_command":"uv run sis phase-gate-review","timeline_latest_remediation_checkpoint_feedback_priority_reason":"evaluation_failed","timeline_latest_remediation_scoreboard_status":"retrying","timeline_latest_remediation_scoreboard_next_action_command":"uv run sis phase-gate-review","timeline_latest_remediation_scoreboard_feedback_priority_reason":"evaluation_failed"}',
-        data_dir / "ops/phase_gate_review_summary.json": '{"decision":"GO","phase2_entry_allowed":true,"phase2_entry_reason":"decision_cleared_and_phase1_gate_complete","strict_validation_passed":true,"strict_validation_issue_count":0,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[]}',
+        data_dir
+        / "ops/current_state_index.json": '{"overall_status":"ok","research_quality_report_exists":true,"timeline_latest_remediation_planner_status":"stalled","timeline_latest_remediation_planner_next_best_command":"uv run sis validate-artifacts --strict","timeline_latest_remediation_planner_feedback_priority_reason":"evaluation_failed","timeline_latest_remediation_execution_plan_status":"stalled","timeline_latest_remediation_execution_plan_next_action_command":"uv run sis diagnose-quotes","timeline_latest_remediation_execution_plan_feedback_priority_reason":"evaluation_failed","timeline_latest_remediation_session_status":"ready_for_dry_run","timeline_latest_remediation_session_next_pending_command":"uv run sis monitoring-status","timeline_latest_remediation_session_feedback_priority_reason":"evaluation_failed","timeline_latest_remediation_checkpoint_status":"retry_pending","timeline_latest_remediation_checkpoint_next_action_command":"uv run sis phase-gate-review","timeline_latest_remediation_checkpoint_feedback_priority_reason":"evaluation_failed","timeline_latest_remediation_scoreboard_status":"retrying","timeline_latest_remediation_scoreboard_next_action_command":"uv run sis phase-gate-review","timeline_latest_remediation_scoreboard_feedback_priority_reason":"evaluation_failed"}',
+        data_dir
+        / "ops/phase_gate_review_summary.json": '{"decision":"GO","phase2_entry_allowed":true,"phase2_entry_reason":"decision_cleared_and_phase1_gate_complete","strict_validation_passed":true,"strict_validation_issue_count":0,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[]}',
         data_dir / "ops/execution_snapshot_summary.json": '{"overall_status":"ok","venue_count":2}',
         data_dir / "ops/execution_venue_comparison_summary.json": '{"all_registries_present":true}',
-        data_dir / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
-        data_dir / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
-        data_dir / "ops/execution_state_comparison_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_gap_history_diagnostics_status":"degraded","latest_status_match":true,"mismatching_count":0}',
-        data_dir / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
+        data_dir
+        / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
+        data_dir
+        / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
+        data_dir
+        / "ops/execution_state_comparison_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_gap_history_diagnostics_status":"degraded","latest_status_match":true,"mismatching_count":0}',
+        data_dir
+        / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_status":"ok","latest_execution_diagnostics_status":"degraded","latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
         data_dir / "ops/operations_dashboard_summary.json": '{"overall_status":"ok"}',
         data_dir / "research/backtest_metrics_summary.json": '{"total_trade_count":5}',
     }
@@ -3779,8 +3966,14 @@ def test_readiness_snapshot_cli(tmp_path) -> None:
     assert "execution_snapshot_drift_entry_count: 3" in result.stdout
     assert "execution_snapshot_drift_latest_status_match: True" in result.stdout
     assert "timeline_latest_remediation_planner_status: stalled" in result.stdout
-    assert "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status" in result.stdout
-    assert "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in result.stdout
+    assert (
+        "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status"
+        in result.stdout
+    )
+    assert (
+        "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed"
+        in result.stdout
+    )
     assert "## Quick Navigation" in result.stdout
     assert "phase_gate_review_report: data/reports/phase_gate_review.md" in result.stdout
     assert "## Related Reports" in result.stdout
@@ -3822,11 +4015,16 @@ def test_operations_timeline_cli(tmp_path) -> None:
     assert "latest_readiness_next_phase: Phase 1" in result.stdout
     assert "latest_phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in result.stdout
     assert "latest_phase2_entry_allowed: False" in result.stdout
-    assert "latest_phase_gate_reason: remain_in_phase1_until_live_evidence_gate_clears" in result.stdout
+    assert (
+        "latest_phase_gate_reason: remain_in_phase1_until_live_evidence_gate_clears"
+        in result.stdout
+    )
     assert "latest_phase_gate_strict_validation_passed: False" in result.stdout
     assert "latest_phase_gate_strict_validation_issue_count: 2" in result.stdout
     assert "latest_phase_gate_checked_files: 7" in result.stdout
-    assert "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
+    assert (
+        "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
+    )
     assert "- data/research/backtest_metrics_summary.json: missing field" in result.stdout
     assert "## Quick Navigation" in result.stdout
     assert "operations_timeline_report:" in result.stdout
@@ -3843,17 +4041,24 @@ def test_operations_audit_pack_cli(tmp_path) -> None:
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
     payloads = {
         data_dir / "ops/operations_bundle_manifest.json": '{"overall_status":"ok"}',
-        data_dir / "ops/operations_timeline_summary.json": '{"latest_operation":"operations_snapshot","latest_status":"ok","latest_execution_gap_history_status":"ok","latest_execution_gap_history_diagnostics_status":"degraded","latest_readiness_execution_ready":false}',
+        data_dir
+        / "ops/operations_timeline_summary.json": '{"latest_operation":"operations_snapshot","latest_status":"ok","latest_execution_gap_history_status":"ok","latest_execution_gap_history_diagnostics_status":"degraded","latest_readiness_execution_ready":false}',
         data_dir / "ops/paper_cycle_history_summary.json": '{"cycle_count":2,"completed_count":2}',
         data_dir / "ops/paper_operations_runbook_summary.json": '{"monitoring_status":"ok"}',
         data_dir / "ops/execution_snapshot_summary.json": '{"overall_status":"ok","venue_count":2}',
         data_dir / "ops/execution_venue_comparison_summary.json": '{"all_registries_present":true}',
-        data_dir / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
-        data_dir / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
-        data_dir / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
-        data_dir / "ops/execution_drift_overview_summary.json": '{"overall_status":"degraded","diagnostics_alignment_match":false,"state_comparison_mismatching_count":1,"snapshot_drift_mismatching_snapshot_count":1}',
-        data_dir / "ops/readiness_snapshot.json": '{"next_phase_candidate":"Stay Phase 1","execution_ready":false}',
-        data_dir / "ops/phase_gate_review_summary.json": '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true,"strict_validation_issue_count":2,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[{"path":"data/research/backtest_metrics_summary.json","message":"missing field"}]}',
+        data_dir
+        / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
+        data_dir
+        / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
+        data_dir
+        / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
+        data_dir
+        / "ops/execution_drift_overview_summary.json": '{"overall_status":"degraded","diagnostics_alignment_match":false,"state_comparison_mismatching_count":1,"snapshot_drift_mismatching_snapshot_count":1}',
+        data_dir
+        / "ops/readiness_snapshot.json": '{"next_phase_candidate":"Stay Phase 1","execution_ready":false}',
+        data_dir
+        / "ops/phase_gate_review_summary.json": '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true,"strict_validation_issue_count":2,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[{"path":"data/research/backtest_metrics_summary.json","message":"missing field"}]}',
     }
     for path, text in payloads.items():
         path.write_text(text, encoding="utf-8")
@@ -3933,12 +4138,20 @@ def test_audit_timeline_cli(tmp_path) -> None:
     assert "latest_readiness_execution_ready: False" in result.stdout
     assert "latest_phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in result.stdout
     assert "latest_phase2_entry_allowed: False" in result.stdout
-    assert "latest_phase_gate_reason: remain_in_phase1_until_live_evidence_gate_clears" in result.stdout
+    assert (
+        "latest_phase_gate_reason: remain_in_phase1_until_live_evidence_gate_clears"
+        in result.stdout
+    )
     assert "latest_phase_gate_strict_validation_passed: False" in result.stdout
     assert "latest_phase_gate_strict_validation_issue_count: 2" in result.stdout
     assert "latest_phase_gate_checked_files: 7" in result.stdout
-    assert "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
-    assert "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field" in result.stdout
+    assert (
+        "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
+    )
+    assert (
+        "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field"
+        in result.stdout
+    )
     assert "## Quick Navigation" in result.stdout
     assert "audit_timeline_report:" in result.stdout
     assert "## Related Reports" in result.stdout
@@ -3953,19 +4166,29 @@ def test_audit_dashboard_cli(tmp_path) -> None:
     env = {"SIS_DATA_DIR": str(data_dir)}
     (data_dir / "ops").mkdir(parents=True, exist_ok=True)
     payloads = {
-        data_dir / "ops/operations_bundle_manifest.json": '{"overall_status":"ok","cycle_count":2,"completed_cycle_count":2}',
-        data_dir / "ops/operations_audit_pack.json": '{"overall_status":"ok","cycle_count":2,"completed_cycle_count":2}',
-        data_dir / "ops/audit_timeline_summary.json": '{"audit_entry_count":4,"latest_operation":"operations_audit_snapshot","latest_status":"ok","operation_counts":{"operations_snapshot":2,"operations_audit_snapshot":2}}',
+        data_dir
+        / "ops/operations_bundle_manifest.json": '{"overall_status":"ok","cycle_count":2,"completed_cycle_count":2}',
+        data_dir
+        / "ops/operations_audit_pack.json": '{"overall_status":"ok","cycle_count":2,"completed_cycle_count":2}',
+        data_dir
+        / "ops/audit_timeline_summary.json": '{"audit_entry_count":4,"latest_operation":"operations_audit_snapshot","latest_status":"ok","operation_counts":{"operations_snapshot":2,"operations_audit_snapshot":2}}',
         data_dir / "ops/audit_bundle_history_summary.json": '{"snapshot_count":3,"ok_count":3}',
         data_dir / "ops/execution_snapshot_summary.json": '{"overall_status":"ok","venue_count":2}',
         data_dir / "ops/execution_venue_comparison_summary.json": '{"all_registries_present":true}',
-        data_dir / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
-        data_dir / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
-        data_dir / "ops/execution_state_comparison_history_summary.json": '{"entry_count":4,"latest_status_match":false,"mismatching_count":1}',
-        data_dir / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
-        data_dir / "ops/execution_drift_overview_summary.json": '{"overall_status":"degraded","diagnostics_alignment_match":false,"state_comparison_mismatching_count":1,"snapshot_drift_mismatching_snapshot_count":1}',
-        data_dir / "ops/readiness_snapshot.json": '{"next_phase_candidate":"Stay Phase 1","execution_ready":false}',
-        data_dir / "ops/phase_gate_review_summary.json": '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true,"strict_validation_issue_count":2,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[{"path":"data/research/backtest_metrics_summary.json","message":"missing field"}]}',
+        data_dir
+        / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
+        data_dir
+        / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
+        data_dir
+        / "ops/execution_state_comparison_history_summary.json": '{"entry_count":4,"latest_status_match":false,"mismatching_count":1}',
+        data_dir
+        / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
+        data_dir
+        / "ops/execution_drift_overview_summary.json": '{"overall_status":"degraded","diagnostics_alignment_match":false,"state_comparison_mismatching_count":1,"snapshot_drift_mismatching_snapshot_count":1}',
+        data_dir
+        / "ops/readiness_snapshot.json": '{"next_phase_candidate":"Stay Phase 1","execution_ready":false}',
+        data_dir
+        / "ops/phase_gate_review_summary.json": '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true,"strict_validation_issue_count":2,"checked_files":7,"phase_gate_review_report_path":"data/reports/phase_gate_review.md","phase_gate_strict_validation_issues":[{"path":"data/research/backtest_metrics_summary.json","message":"missing field"}]}',
     }
     for path, text in payloads.items():
         path.write_text(text, encoding="utf-8")
@@ -4014,18 +4237,28 @@ def test_audit_bundle_cli(tmp_path) -> None:
         encoding="utf-8",
     )
     payloads = {
-        data_dir / "ops/audit_dashboard_summary.json": '{"overall_status":"ok","cycle_count":2,"completed_cycle_count":2}',
-        data_dir / "ops/audit_timeline_summary.json": '{"audit_entry_count":5,"latest_operation":"audit_bundle_snapshot","latest_status":"ok","latest_execution_gap_history_status":"ok","latest_execution_gap_history_diagnostics_status":"degraded","latest_readiness_execution_ready":false}',
-        data_dir / "ops/operations_audit_pack.json": '{"overall_status":"ok","cycle_count":2,"completed_cycle_count":2}',
-        data_dir / "ops/audit_bundle_history_summary.json": '{"snapshot_count":3,"ok_count":3,"latest_execution_gap_history_status":"ok","latest_execution_gap_history_diagnostics_status":"degraded","latest_readiness_execution_ready":false}',
+        data_dir
+        / "ops/audit_dashboard_summary.json": '{"overall_status":"ok","cycle_count":2,"completed_cycle_count":2}',
+        data_dir
+        / "ops/audit_timeline_summary.json": '{"audit_entry_count":5,"latest_operation":"audit_bundle_snapshot","latest_status":"ok","latest_execution_gap_history_status":"ok","latest_execution_gap_history_diagnostics_status":"degraded","latest_readiness_execution_ready":false}',
+        data_dir
+        / "ops/operations_audit_pack.json": '{"overall_status":"ok","cycle_count":2,"completed_cycle_count":2}',
+        data_dir
+        / "ops/audit_bundle_history_summary.json": '{"snapshot_count":3,"ok_count":3,"latest_execution_gap_history_status":"ok","latest_execution_gap_history_diagnostics_status":"degraded","latest_readiness_execution_ready":false}',
         data_dir / "ops/execution_snapshot_summary.json": '{"overall_status":"ok","venue_count":2}',
         data_dir / "ops/execution_venue_comparison_summary.json": '{"all_registries_present":true}',
-        data_dir / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
-        data_dir / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
-        data_dir / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
-        data_dir / "ops/execution_drift_overview_summary.json": '{"overall_status":"degraded","diagnostics_alignment_match":false,"state_comparison_mismatching_count":1,"snapshot_drift_mismatching_snapshot_count":1}',
-        data_dir / "ops/readiness_snapshot.json": '{"next_phase_candidate":"Stay Phase 1","execution_ready":false}',
-        data_dir / "ops/phase_gate_review_summary.json": '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true}',
+        data_dir
+        / "ops/execution_venue_diagnostics_summary.json": '{"overall_status":"degraded","balance_gap_detected":true,"fills_gap_detected":false}',
+        data_dir
+        / "ops/execution_gap_history_summary.json": '{"entry_count":4,"latest_status":"ok","latest_execution_diagnostics_status":"degraded"}',
+        data_dir
+        / "ops/execution_snapshot_drift_history_summary.json": '{"entry_count":3,"latest_execution_state_comparison_status_match":true,"mismatching_snapshot_count":1}',
+        data_dir
+        / "ops/execution_drift_overview_summary.json": '{"overall_status":"degraded","diagnostics_alignment_match":false,"state_comparison_mismatching_count":1,"snapshot_drift_mismatching_snapshot_count":1}',
+        data_dir
+        / "ops/readiness_snapshot.json": '{"next_phase_candidate":"Stay Phase 1","execution_ready":false}',
+        data_dir
+        / "ops/phase_gate_review_summary.json": '{"decision":"CONDITIONAL_GO_NEEDS_LIVE_WINDOW","phase2_entry_allowed":false,"phase2_entry_reason":"remain_in_phase1_until_live_evidence_gate_clears","strict_validation_passed":true}',
     }
     for path, text in payloads.items():
         path.write_text(text, encoding="utf-8")
@@ -4046,7 +4279,9 @@ def test_audit_bundle_cli(tmp_path) -> None:
     assert "phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in result.stdout
     assert "phase2_entry_allowed: False" in result.stdout
     assert "bundle_history_latest_execution_gap_history_status: ok" in result.stdout
-    assert "bundle_history_latest_execution_gap_history_diagnostics_status: degraded" in result.stdout
+    assert (
+        "bundle_history_latest_execution_gap_history_diagnostics_status: degraded" in result.stdout
+    )
     assert "## Quick Navigation" in result.stdout
     assert "audit_bundle_report:" in result.stdout
     assert "## Related Reports" in result.stdout
@@ -4095,7 +4330,10 @@ def test_audit_bundle_history_cli(tmp_path) -> None:
     assert "latest_execution_drift_overview_status: degraded" in result.stdout
     assert "latest_execution_drift_overview_diagnostics_alignment_match: False" in result.stdout
     assert "latest_execution_drift_overview_state_comparison_mismatching_count: 1" in result.stdout
-    assert "latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count: 1" in result.stdout
+    assert (
+        "latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count: 1"
+        in result.stdout
+    )
     assert "latest_execution_gap_history_diagnostics_status: degraded" in result.stdout
     assert "latest_execution_state_comparison_status_match: False" in result.stdout
     assert "latest_execution_state_comparison_mismatching_count: 1" in result.stdout
@@ -4103,12 +4341,20 @@ def test_audit_bundle_history_cli(tmp_path) -> None:
     assert "latest_readiness_execution_ready: False" in result.stdout
     assert "latest_phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in result.stdout
     assert "latest_phase2_entry_allowed: False" in result.stdout
-    assert "latest_phase_gate_reason: remain_in_phase1_until_live_evidence_gate_clears" in result.stdout
+    assert (
+        "latest_phase_gate_reason: remain_in_phase1_until_live_evidence_gate_clears"
+        in result.stdout
+    )
     assert "latest_phase_gate_strict_validation_passed: False" in result.stdout
     assert "latest_phase_gate_strict_validation_issue_count: 2" in result.stdout
     assert "latest_phase_gate_checked_files: 7" in result.stdout
-    assert "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
-    assert "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field" in result.stdout
+    assert (
+        "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in result.stdout
+    )
+    assert (
+        "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field"
+        in result.stdout
+    )
     assert "## Quick Navigation" in result.stdout
     assert "audit_bundle_history_report:" in result.stdout
     assert "## Related Reports" in result.stdout
@@ -4173,9 +4419,9 @@ def test_refresh_operations_artifacts_cli(tmp_path) -> None:
             }
         ]
     ).write_parquet(data_dir / "paper/positions.parquet")
-    pl.DataFrame([{"date": "2026-05-24", "realized_pnl": 2.0, "fills_count": 1, "open_positions": 1}]).write_parquet(
-        data_dir / "paper/daily_pnl.parquet"
-    )
+    pl.DataFrame(
+        [{"date": "2026-05-24", "realized_pnl": 2.0, "fills_count": 1, "open_positions": 1}]
+    ).write_parquet(data_dir / "paper/daily_pnl.parquet")
 
     result = runner.invoke(app, ["refresh-operations-artifacts"], env=env)
 
@@ -4308,6 +4554,7 @@ def test_paper_operations_cycle_cli(tmp_path) -> None:
         encoding="utf-8",
     )
     import polars as pl
+
     pl.DataFrame(
         [
             {
@@ -4341,7 +4588,7 @@ def test_paper_operations_cycle_cli(tmp_path) -> None:
                 "oracle_ts_ms": 1779429879000,
                 "market_status": "open",
                 "is_tradable": True,
-            }
+            },
         ]
     ).write_parquet(data_dir / "normalized/quotes.parquet")
     (data_dir / "research/venue_cost_matrix.csv").write_text(
@@ -4403,12 +4650,24 @@ def test_paper_operations_cycle_cli(tmp_path) -> None:
     assert (data_dir / "reports/audit_dashboard.md").exists()
     assert (data_dir / "reports/audit_bundle_manifest.md").exists()
     assert (data_dir / "reports/audit_bundle_history_report.md").exists()
-    assert '"overall_status": "ok"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"phase_gate_decision": null' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"phase_gate_strict_validation_passed": null' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"execution_drift_overview_summary"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"readiness_summary"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"execution_summary"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
+    assert '"overall_status": "ok"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"phase_gate_decision": null' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"phase_gate_strict_validation_passed": null' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_drift_overview_summary"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"readiness_summary"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_summary"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
     assert '"execution_comparison_summary"' in (
         data_dir / "ops/paper_operations_cycle_summary.json"
     ).read_text(encoding="utf-8")
@@ -4433,17 +4692,37 @@ def test_paper_operations_cycle_cli(tmp_path) -> None:
     assert '"cycle_history_latest_execution_summary"' in (
         data_dir / "ops/paper_operations_cycle_summary.json"
     ).read_text(encoding="utf-8")
-    assert '"phase_gate_review"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"readiness_snapshot"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"execution_venue_comparison"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"execution_venue_diagnostics"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"execution_state_comparison_history_summary"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"execution_snapshot_drift_history_summary"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"execution_drift_overview_summary"' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"phase_gate": {' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
-    assert '"phase2_entry_reason": null' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(encoding="utf-8")
+    assert '"phase_gate_review"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"readiness_snapshot"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_venue_comparison"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_venue_diagnostics"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_state_comparison_history_summary"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_snapshot_drift_history_summary"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"execution_drift_overview_summary"' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
+    assert '"phase_gate": {' in (data_dir / "ops/paper_operations_cycle_summary.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"phase2_entry_reason": null' in (
+        data_dir / "ops/paper_operations_cycle_summary.json"
+    ).read_text(encoding="utf-8")
     entries = list(read_jsonl(data_dir / "ops/operation_manifests.jsonl"))
-    cycle_entry = next(item for item in reversed(entries) if item.get("operation") == "paper_operations_cycle")
+    cycle_entry = next(
+        item for item in reversed(entries) if item.get("operation") == "paper_operations_cycle"
+    )
     notes = cycle_entry.get("notes", [])
     assert "execution_overall_status=ok" in notes
     assert "execution_venue_count=2" in notes
@@ -4475,7 +4754,10 @@ def test_reconcile_positions_cli_records_result(tmp_path) -> None:
     env = {"SIS_DATA_DIR": str(data_dir)}
     registry = data_dir / "registry/ostium_instrument_registry.json"
     registry.parent.mkdir(parents=True, exist_ok=True)
-    registry.write_text('[{"canonical_symbol":"SPY","venue_symbol":"US500-USD","opening_fee_bps":3}]', encoding="utf-8")
+    registry.write_text(
+        '[{"canonical_symbol":"SPY","venue_symbol":"US500-USD","opening_fee_bps":3}]',
+        encoding="utf-8",
+    )
     positions_root = data_dir / "raw/sidecar/ostium"
     positions_root.mkdir(parents=True, exist_ok=True)
     (positions_root / "positions_2026-05-24.json").write_text(

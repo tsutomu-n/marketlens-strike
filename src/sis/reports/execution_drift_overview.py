@@ -22,7 +22,9 @@ def _quick_navigation(out_path: Path | None) -> dict[str, str]:
     return {
         "execution_drift_overview_report": str(out_path),
         "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
-        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_state_comparison_report": str(
+            reports_dir / "execution_state_comparison_history.md"
+        ),
         "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
         "current_state_index_report": str(reports_dir / "current_state_index.md"),
         "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
@@ -39,7 +41,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
         "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
         "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
-        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_state_comparison_report": str(
+            reports_dir / "execution_state_comparison_history.md"
+        ),
         "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
         "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
         "current_state_index_report": str(reports_dir / "current_state_index.md"),
@@ -97,19 +101,26 @@ def build_execution_drift_overview_report(
     diagnostics_alignment_match = (
         state_comparison_fields.get("execution_state_comparison_latest_diagnostics_status")
         == gap_history_fields.get("execution_gap_history_latest_diagnostics_status")
-        if state_comparison_fields.get("execution_state_comparison_latest_diagnostics_status") is not None
+        if state_comparison_fields.get("execution_state_comparison_latest_diagnostics_status")
+        is not None
         and gap_history_fields.get("execution_gap_history_latest_diagnostics_status") is not None
         else None
     )
-    state_comparison_match = state_comparison_fields.get("execution_state_comparison_latest_status_match")
+    state_comparison_match = state_comparison_fields.get(
+        "execution_state_comparison_latest_status_match"
+    )
     snapshot_drift_match = snapshot_drift_fields.get("execution_snapshot_drift_latest_status_match")
     overall_status = (
         "ok"
         if int(gap_history_fields.get("execution_gap_history_entry_count") or 0) > 0
         and state_comparison_match is True
-        and int(state_comparison_fields.get("execution_state_comparison_mismatching_count") or 0) == 0
+        and int(state_comparison_fields.get("execution_state_comparison_mismatching_count") or 0)
+        == 0
         and snapshot_drift_match is True
-        and int(snapshot_drift_fields.get("execution_snapshot_drift_mismatching_snapshot_count") or 0) == 0
+        and int(
+            snapshot_drift_fields.get("execution_snapshot_drift_mismatching_snapshot_count") or 0
+        )
+        == 0
         and diagnostics_alignment_match is True
         else "degraded"
     )

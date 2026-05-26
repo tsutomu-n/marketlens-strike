@@ -71,7 +71,9 @@ class DaemonLoopResult:
     operation_chain_path: Path
 
 
-def create_daemon_manifest(*, mode: str, command: str, state_store_path: Path, notes: list[str] | None = None) -> DaemonRunManifest:
+def create_daemon_manifest(
+    *, mode: str, command: str, state_store_path: Path, notes: list[str] | None = None
+) -> DaemonRunManifest:
     now = datetime.now(timezone.utc)
     run_id = now.strftime("%Y%m%d_%H%M%S")
     return DaemonRunManifest(
@@ -118,7 +120,9 @@ def run_daemon_loop(
     if not command_args:
         raise ValueError("command must not be empty")
 
-    current = now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+    current = (
+        now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+    )
     manifest = create_daemon_manifest(
         mode=mode,
         command=command,
@@ -224,7 +228,9 @@ def run_daemon_loop(
         ],
         now=current,
     )
-    operation_chain_path = append_operation_manifest(data_dir / "ops/operation_manifests.jsonl", operation_manifest)
+    operation_chain_path = append_operation_manifest(
+        data_dir / "ops/operation_manifests.jsonl", operation_manifest
+    )
     return DaemonLoopResult(
         run_id=manifest.run_id,
         status=status,
@@ -280,8 +286,12 @@ def run_daemon_dry_run(
         execution_drift_overview_summary
     )
     normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
-    current = now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
-    scheduled = next_interval_run(run_type=mode, every_minutes=every_minutes, command=command, now=current)
+    current = (
+        now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+    )
+    scheduled = next_interval_run(
+        run_type=mode, every_minutes=every_minutes, command=command, now=current
+    )
     manifest = create_daemon_manifest(
         mode=mode,
         command=command,
@@ -298,10 +308,13 @@ def run_daemon_dry_run(
         phase_gate_summary_path=phase_gate_summary_path,
         execution_summary_path=data_dir / "ops/execution_snapshot_summary.json",
         execution_comparison_summary_path=data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_diagnostics_summary_path=data_dir / "ops/execution_venue_diagnostics_summary.json",
+        execution_diagnostics_summary_path=data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
         execution_gap_history_summary_path=data_dir / "ops/execution_gap_history_summary.json",
-        execution_state_comparison_summary_path=data_dir / "ops/execution_state_comparison_history_summary.json",
-        execution_snapshot_drift_summary_path=data_dir / "ops/execution_snapshot_drift_history_summary.json",
+        execution_state_comparison_summary_path=data_dir
+        / "ops/execution_state_comparison_history_summary.json",
+        execution_snapshot_drift_summary_path=data_dir
+        / "ops/execution_snapshot_drift_history_summary.json",
         reconciliation_store_present=False,
     )
     phase_gate_payload = phase_gate_nested_fields(health)
@@ -410,7 +423,9 @@ def run_daemon_dry_run(
         ],
         now=current,
     )
-    operation_chain_path = append_operation_manifest(data_dir / "ops/operation_manifests.jsonl", operation_manifest)
+    operation_chain_path = append_operation_manifest(
+        data_dir / "ops/operation_manifests.jsonl", operation_manifest
+    )
     return DaemonDryRunResult(
         run_id=manifest.run_id,
         status=operation_manifest.status,

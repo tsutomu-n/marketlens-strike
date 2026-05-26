@@ -8,7 +8,12 @@ import typer
 from loguru import logger
 
 from sis.ops.alerts import queue_notification, write_alert
-from sis.ops.daemon import create_daemon_manifest, run_daemon_dry_run, run_daemon_loop, write_daemon_manifest
+from sis.ops.daemon import (
+    create_daemon_manifest,
+    run_daemon_dry_run,
+    run_daemon_loop,
+    write_daemon_manifest,
+)
 from sis.ops.daily_loss_limit import evaluate_daily_loss_limit, evaluate_max_exposure
 from sis.ops.healthcheck import build_healthcheck
 from sis.ops.kill_switch import KillSwitch
@@ -68,7 +73,9 @@ class _OperationManifestAppender(Protocol):
 
 
 class _ExecutionLineageRefresher(Protocol):
-    def __call__(self, settings_data_dir: Path, *, only_if_sources_exist: bool = False) -> object: ...
+    def __call__(
+        self, settings_data_dir: Path, *, only_if_sources_exist: bool = False
+    ) -> object: ...
 
 
 class _ExecutionReadOnlyWriter(Protocol):
@@ -89,7 +96,9 @@ class _DaemonManifestArtifactsWriter(Protocol):
 
 
 class _StateArtifactsWriter(Protocol):
-    def __call__(self, settings_data_dir: Path, *, state_store_path: Path | None = None) -> tuple[Path, Path, str] | None: ...
+    def __call__(
+        self, settings_data_dir: Path, *, state_store_path: Path | None = None
+    ) -> tuple[Path, Path, str] | None: ...
 
 
 class _StateRestoreArtifactsWriter(Protocol):
@@ -144,15 +153,22 @@ def register_ops_commands(
             decision_summary_path=settings.data_dir / "research/decision_summary.json",
             audit_dashboard_summary_path=settings.data_dir / "ops/audit_dashboard_summary.json",
             audit_bundle_summary_path=settings.data_dir / "ops/audit_bundle_manifest.json",
-            operations_bundle_manifest_path=settings.data_dir / "ops/operations_bundle_manifest.json",
+            operations_bundle_manifest_path=settings.data_dir
+            / "ops/operations_bundle_manifest.json",
             phase_gate_summary_path=settings.data_dir / "ops/phase_gate_review_summary.json",
             execution_summary_path=settings.data_dir / "ops/execution_snapshot_summary.json",
-            execution_comparison_summary_path=settings.data_dir / "ops/execution_venue_comparison_summary.json",
-            execution_diagnostics_summary_path=settings.data_dir / "ops/execution_venue_diagnostics_summary.json",
-            execution_gap_history_summary_path=settings.data_dir / "ops/execution_gap_history_summary.json",
-            execution_state_comparison_summary_path=settings.data_dir / "ops/execution_state_comparison_history_summary.json",
-            execution_snapshot_drift_summary_path=settings.data_dir / "ops/execution_snapshot_drift_history_summary.json",
-            execution_drift_overview_summary_path=settings.data_dir / "ops/execution_drift_overview_summary.json",
+            execution_comparison_summary_path=settings.data_dir
+            / "ops/execution_venue_comparison_summary.json",
+            execution_diagnostics_summary_path=settings.data_dir
+            / "ops/execution_venue_diagnostics_summary.json",
+            execution_gap_history_summary_path=settings.data_dir
+            / "ops/execution_gap_history_summary.json",
+            execution_state_comparison_summary_path=settings.data_dir
+            / "ops/execution_state_comparison_history_summary.json",
+            execution_snapshot_drift_summary_path=settings.data_dir
+            / "ops/execution_snapshot_drift_history_summary.json",
+            execution_drift_overview_summary_path=settings.data_dir
+            / "ops/execution_drift_overview_summary.json",
             readiness_summary_path=settings.data_dir / "ops/readiness_snapshot.json",
             reconciliation_store_present=store.latest_reconciliation() is not None,
         )
@@ -168,7 +184,9 @@ def register_ops_commands(
         typer.echo(f"decision_summary_exists={health['decision_summary_exists']}")
         echo_audit_summary_fn(health)
         echo_phase_gate_summary_fn(health)
-        typer.echo(f"execution_drift_overview_status={health.get('execution_drift_overview_status')}")
+        typer.echo(
+            f"execution_drift_overview_status={health.get('execution_drift_overview_status')}"
+        )
         typer.echo(
             "execution_drift_overview_diagnostics_alignment_match="
             f"{health.get('execution_drift_overview_diagnostics_alignment_match')}"
@@ -241,7 +259,8 @@ def register_ops_commands(
             decision_summary_path=settings.data_dir / "research/decision_summary.json",
             audit_dashboard_summary_path=settings.data_dir / "ops/audit_dashboard_summary.json",
             audit_bundle_summary_path=settings.data_dir / "ops/audit_bundle_manifest.json",
-            operations_bundle_manifest_path=settings.data_dir / "ops/operations_bundle_manifest.json",
+            operations_bundle_manifest_path=settings.data_dir
+            / "ops/operations_bundle_manifest.json",
             phase_gate_summary_path=settings.data_dir / "ops/phase_gate_review_summary.json",
             execution_summary=context["execution_summary"],
             execution_comparison_summary=context["execution_comparison_summary"],
@@ -269,7 +288,9 @@ def register_ops_commands(
         command: str = typer.Option("uv run sis paper-step", "--command"),
         every_minutes: int = typer.Option(30, "--every-minutes"),
         max_cycles: int = typer.Option(1, "--max-cycles", min=1),
-        forever: bool = typer.Option(False, "--forever", help="Run until kill-switch or command failure."),
+        forever: bool = typer.Option(
+            False, "--forever", help="Run until kill-switch or command failure."
+        ),
         sleep_seconds: float | None = typer.Option(
             None,
             "--sleep-seconds",
@@ -396,7 +417,9 @@ def register_ops_commands(
         typer.echo(f"operation_chain_exists={snapshot['operation_chain_exists']}")
         echo_audit_summary_fn(snapshot)
         echo_phase_gate_summary_fn(snapshot)
-        typer.echo(f"execution_drift_overview_status={snapshot.get('execution_drift_overview_status')}")
+        typer.echo(
+            f"execution_drift_overview_status={snapshot.get('execution_drift_overview_status')}"
+        )
         typer.echo(
             "execution_drift_overview_diagnostics_alignment_match="
             f"{snapshot.get('execution_drift_overview_diagnostics_alignment_match')}"
@@ -409,7 +432,9 @@ def register_ops_commands(
             "execution_drift_overview_snapshot_drift_mismatching_snapshot_count="
             f"{snapshot.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count')}"
         )
-        typer.echo(f"readiness_next_phase_candidate={snapshot.get('readiness_next_phase_candidate')}")
+        typer.echo(
+            f"readiness_next_phase_candidate={snapshot.get('readiness_next_phase_candidate')}"
+        )
         typer.echo(f"readiness_execution_ready={snapshot.get('readiness_execution_ready')}")
         for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
@@ -445,7 +470,9 @@ def register_ops_commands(
         run_type: str = typer.Option(..., "--run-type"),
         command: str = typer.Option(..., "--command"),
         at: str | None = typer.Option(None, "--at", help="ISO datetime for the scheduled run."),
-        every_minutes: int | None = typer.Option(None, "--every-minutes", help="Interval schedule in minutes."),
+        every_minutes: int | None = typer.Option(
+            None, "--every-minutes", help="Interval schedule in minutes."
+        ),
     ) -> None:
         if bool(at) == bool(every_minutes):
             typer.echo("Choose exactly one of --at or --every-minutes.")
@@ -550,7 +577,9 @@ def register_ops_commands(
                 f"level={level}",
             ],
         )
-        operation_chain_path = append_operation_manifest_fn(settings.data_dir / "ops/operation_manifests.jsonl", operation)
+        operation_chain_path = append_operation_manifest_fn(
+            settings.data_dir / "ops/operation_manifests.jsonl", operation
+        )
         report_path = settings.data_dir / "reports/notification_outbox.md"
         summary_path = settings.data_dir / "ops/notification_outbox_summary.json"
         build_notification_outbox_report(

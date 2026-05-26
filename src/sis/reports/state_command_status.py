@@ -117,7 +117,9 @@ def build_daemon_loop_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    latest_event = snapshot.get("latest_event") if isinstance(snapshot.get("latest_event"), dict) else {}
+    latest_event = (
+        snapshot.get("latest_event") if isinstance(snapshot.get("latest_event"), dict) else {}
+    )
     summary: dict[str, object] = {
         "run_id": snapshot.get("run_id"),
         "created_at": snapshot.get("created_at"),

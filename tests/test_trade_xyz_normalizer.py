@@ -6,7 +6,9 @@ from sis.venues.trade_xyz.normalizer import compute_book_metrics, payload_hash, 
 
 
 def _fixture_payload() -> dict:
-    return json.loads(Path("tests/fixtures/trade_xyz_l2_book.sample.json").read_text(encoding="utf-8"))
+    return json.loads(
+        Path("tests/fixtures/trade_xyz_l2_book.sample.json").read_text(encoding="utf-8")
+    )
 
 
 def test_l2_book_to_quote_log_computes_spread_and_depth() -> None:

@@ -18,12 +18,10 @@ def reconcile_positions(
     adapter_positions: list[AdapterPositionSnapshot],
 ) -> ReconciliationResult:
     internal_map = {
-        (item.venue, item.canonical_symbol, item.side): item
-        for item in internal_positions
+        (item.venue, item.canonical_symbol, item.side): item for item in internal_positions
     }
     adapter_map = {
-        (item.venue, item.canonical_symbol, item.side): item
-        for item in adapter_positions
+        (item.venue, item.canonical_symbol, item.side): item for item in adapter_positions
     }
 
     matched = 0
@@ -49,7 +47,9 @@ def reconcile_positions(
 
     for key in adapter_map:
         if key not in internal_map:
-            missing_in_internal.append({"venue": key[0], "canonical_symbol": key[1], "side": key[2]})
+            missing_in_internal.append(
+                {"venue": key[0], "canonical_symbol": key[1], "side": key[2]}
+            )
 
     return ReconciliationResult(
         matched=matched,

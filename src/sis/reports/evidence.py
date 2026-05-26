@@ -92,7 +92,10 @@ def _related_reports(
         ("current_state_index_report", str(reports_dir / "current_state_index.md")),
         ("readiness_snapshot_report", str(reports_dir / "readiness_snapshot.md")),
         ("paper_operations_runbook_report", str(reports_dir / "paper_operations_runbook.md")),
-        ("paper_vs_backtest_comparison_report", str(reports_dir / "paper_vs_backtest_comparison.md")),
+        (
+            "paper_vs_backtest_comparison_report",
+            str(reports_dir / "paper_vs_backtest_comparison.md"),
+        ),
         ("remediation_scoreboard_report", str(reports_dir / "remediation_scoreboard.md")),
         (
             "live_evidence_report",
@@ -202,12 +205,8 @@ def build_evidence_card(
     normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
     latest_execution_lineage = latest_execution_lineage_fields_from_payload(
         timeline_latest_execution_summary=timeline_latest_execution_summary,
-        timeline_latest_execution_comparison_summary=(
-            timeline_latest_execution_comparison_summary
-        ),
-        bundle_history_latest_execution_summary=(
-            bundle_history_latest_execution_summary
-        ),
+        timeline_latest_execution_comparison_summary=(timeline_latest_execution_comparison_summary),
+        bundle_history_latest_execution_summary=(bundle_history_latest_execution_summary),
         bundle_history_latest_execution_comparison_summary=(
             bundle_history_latest_execution_comparison_summary
         ),
@@ -267,8 +266,12 @@ def build_evidence_card(
         },
         "data": {
             "raw_quote_digest": sha256_tree(data_dir / "raw/quotes"),
-            "gtrade_registry_digest": sha256_file(data_dir / "registry/gtrade_instrument_registry.json"),
-            "ostium_registry_digest": sha256_file(data_dir / "registry/ostium_instrument_registry.json"),
+            "gtrade_registry_digest": sha256_file(
+                data_dir / "registry/gtrade_instrument_registry.json"
+            ),
+            "ostium_registry_digest": sha256_file(
+                data_dir / "registry/ostium_instrument_registry.json"
+            ),
             "ostium_positions_digest": sha256_file(ostium_positions) if ostium_positions else None,
             "normalized_quote_digest": sha256_file(data_dir / "normalized/quotes.parquet"),
             "cost_matrix_digest": sha256_file(data_dir / "research/venue_cost_matrix.csv"),

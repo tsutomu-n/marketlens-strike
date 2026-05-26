@@ -12,7 +12,9 @@ def build_trade_xyz_universe_report(build_result: TradeXyzRegistryBuildResult) -
     active = [row for row in build_result.instruments if row.active]
     paper_only = [row for row in build_result.instruments if row.active and not row.api_orderable]
     excluded = [row for row in build_result.resolutions if row.excluded]
-    unresolved_fields = [row for row in build_result.resolutions if row.index_in_meta is None or row.asset_id is None]
+    unresolved_fields = [
+        row for row in build_result.resolutions if row.index_in_meta is None or row.asset_id is None
+    ]
 
     lines = [
         "# Trade[XYZ] Universe Report",
@@ -26,7 +28,10 @@ def build_trade_xyz_universe_report(build_result: TradeXyzRegistryBuildResult) -
     ]
     if resolved:
         lines.extend(
-            [f"- {row.symbol}: asset_id={row.asset_id} (perp_dex_index={row.perp_dex_index}, index_in_meta={row.index_in_meta})" for row in resolved]
+            [
+                f"- {row.symbol}: asset_id={row.asset_id} (perp_dex_index={row.perp_dex_index}, index_in_meta={row.index_in_meta})"
+                for row in resolved
+            ]
         )
     else:
         lines.append("- none")
@@ -77,10 +82,14 @@ def write_trade_xyz_universe_report(path: Path, content: str) -> None:
 
 def write_trade_xyz_universe_summary(path: Path, build_result: TradeXyzRegistryBuildResult) -> None:
     payload = {
-        "resolved_count": len([row for row in build_result.resolutions if row.asset_id is not None]),
+        "resolved_count": len(
+            [row for row in build_result.resolutions if row.asset_id is not None]
+        ),
         "unresolved_count": len([row for row in build_result.resolutions if row.asset_id is None]),
         "active_count": len([row for row in build_result.instruments if row.active]),
-        "paper_only_count": len([row for row in build_result.instruments if row.active and not row.api_orderable]),
+        "paper_only_count": len(
+            [row for row in build_result.instruments if row.active and not row.api_orderable]
+        ),
         "excluded_symbols": [row.symbol for row in build_result.resolutions if row.excluded],
     }
     write_json(path, payload)

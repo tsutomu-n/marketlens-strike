@@ -59,7 +59,7 @@ def register_research_commands(
             None,
             "--csv-path",
             help="Optional event calendar CSV path. Defaults to data/research/event_calendar.csv.",
-        )
+        ),
     ) -> None:
         settings = get_settings()
         out = build_event_calendar(settings.data_dir, csv_path=csv_path)

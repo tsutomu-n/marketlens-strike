@@ -105,11 +105,7 @@ def _related_reports(
         ("remediation_planner_report", restart_pointers.get("remediation_planner_report")),
         ("live_evidence_report", restart_pointers.get("live_evidence_report")),
     )
-    return {
-        key: value
-        for key, value in ordered_items
-        if isinstance(value, str) and value
-    }
+    return {key: value for key, value in ordered_items if isinstance(value, str) and value}
 
 
 def _quick_navigation(
@@ -123,11 +119,7 @@ def _quick_navigation(
         ("remediation_scoreboard_report", restart_pointers.get("remediation_scoreboard_report")),
         ("live_evidence_report", restart_pointers.get("live_evidence_report")),
     )
-    return {
-        key: value
-        for key, value in items
-        if isinstance(value, str) and value
-    }
+    return {key: value for key, value in items if isinstance(value, str) and value}
 
 
 def build_readiness_snapshot(
@@ -316,7 +308,9 @@ def build_readiness_snapshot(
             "remediation_planner.md",
         ),
         "remediation_execution_plan_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_execution_plan_summary.json")
+            str(
+                operations_dashboard_summary_path.parent / "remediation_execution_plan_summary.json"
+            )
             if operations_dashboard_summary_path is not None
             else None
         ),
@@ -415,7 +409,9 @@ def build_readiness_snapshot(
     artifacts = {
         "current_state_index": str(current_state_index_path) if current_state_index_path else None,
         "phase_gate_summary": str(phase_gate_summary_path) if phase_gate_summary_path else None,
-        "execution_snapshot_summary": str(execution_snapshot_summary_path) if execution_snapshot_summary_path else None,
+        "execution_snapshot_summary": str(execution_snapshot_summary_path)
+        if execution_snapshot_summary_path
+        else None,
         "execution_venue_comparison_summary": (
             str(execution_venue_comparison_summary_path)
             if execution_venue_comparison_summary_path
@@ -440,46 +436,54 @@ def build_readiness_snapshot(
             else None
         ),
         "execution_drift_overview_summary": (
-            str(execution_drift_overview_summary_path) if execution_drift_overview_summary_path else None
+            str(execution_drift_overview_summary_path)
+            if execution_drift_overview_summary_path
+            else None
         ),
-        "backtest_metrics_summary": str(backtest_metrics_summary_path) if backtest_metrics_summary_path else None,
-        "live_evidence_summary": str(live_evidence_summary_path) if live_evidence_summary_path else None,
-        "operations_dashboard_summary": str(operations_dashboard_summary_path) if operations_dashboard_summary_path else None,
+        "backtest_metrics_summary": str(backtest_metrics_summary_path)
+        if backtest_metrics_summary_path
+        else None,
+        "live_evidence_summary": str(live_evidence_summary_path)
+        if live_evidence_summary_path
+        else None,
+        "operations_dashboard_summary": str(operations_dashboard_summary_path)
+        if operations_dashboard_summary_path
+        else None,
         "live_evidence_report": restart_pointers.get("live_evidence_report"),
         **restart_pointers,
     }
     recommended_read_order_items = recommended_read_order(
         [
-        "data/ops/readiness_snapshot.json",
-        "data/reports/readiness_snapshot.md",
-        "data/ops/current_state_index.json",
-        "data/reports/current_state_index.md",
-        "data/reports/remediation_scoreboard.md",
-        "data/reports/remediation_session_checkpoint.md",
-        "data/reports/remediation_session.md",
-        "data/reports/remediation_execution_plan.md",
-        "data/reports/remediation_planner.md",
-        "data/ops/phase_gate_review_summary.json",
-        "data/ops/execution_snapshot_summary.json",
-        "data/ops/execution_venue_comparison_summary.json",
-        "data/ops/execution_venue_diagnostics_summary.json",
-        "data/ops/execution_gap_history_summary.json",
-        "data/ops/execution_state_comparison_history_summary.json",
-        "data/ops/execution_snapshot_drift_history_summary.json",
-        "data/ops/execution_drift_overview_summary.json",
-        "data/reports/execution_balance_status.md",
-        "data/reports/execution_fill_status.md",
-        "data/reports/execution_order_status.md",
-        "data/reports/execution_cancel_order.md",
-        "data/reports/execution_close_position.md",
-        "data/reports/execution_reconcile_positions.md",
-        "data/reports/daemon_manifest.md",
-        "data/reports/daemon_loop.md",
-        "data/reports/notification_outbox.md",
-        "data/reports/state_export.md",
-        "data/reports/state_restore.md",
-        "docs/live_evidence_reports/live_evidence_report_<run_id>.md",
-        "data/research/backtest_metrics_summary.json",
+            "data/ops/readiness_snapshot.json",
+            "data/reports/readiness_snapshot.md",
+            "data/ops/current_state_index.json",
+            "data/reports/current_state_index.md",
+            "data/reports/remediation_scoreboard.md",
+            "data/reports/remediation_session_checkpoint.md",
+            "data/reports/remediation_session.md",
+            "data/reports/remediation_execution_plan.md",
+            "data/reports/remediation_planner.md",
+            "data/ops/phase_gate_review_summary.json",
+            "data/ops/execution_snapshot_summary.json",
+            "data/ops/execution_venue_comparison_summary.json",
+            "data/ops/execution_venue_diagnostics_summary.json",
+            "data/ops/execution_gap_history_summary.json",
+            "data/ops/execution_state_comparison_history_summary.json",
+            "data/ops/execution_snapshot_drift_history_summary.json",
+            "data/ops/execution_drift_overview_summary.json",
+            "data/reports/execution_balance_status.md",
+            "data/reports/execution_fill_status.md",
+            "data/reports/execution_order_status.md",
+            "data/reports/execution_cancel_order.md",
+            "data/reports/execution_close_position.md",
+            "data/reports/execution_reconcile_positions.md",
+            "data/reports/daemon_manifest.md",
+            "data/reports/daemon_loop.md",
+            "data/reports/notification_outbox.md",
+            "data/reports/state_export.md",
+            "data/reports/state_restore.md",
+            "docs/live_evidence_reports/live_evidence_report_<run_id>.md",
+            "data/research/backtest_metrics_summary.json",
         ]
     )
 
@@ -491,7 +495,8 @@ def build_readiness_snapshot(
         and execution_diagnostics_fields.get("execution_diagnostics_status") == "ok"
         and int(execution_gap_history_fields.get("execution_gap_history_entry_count") or 0) > 0
         and int(
-            execution_state_comparison_fields.get("execution_state_comparison_mismatching_count") or 0
+            execution_state_comparison_fields.get("execution_state_comparison_mismatching_count")
+            or 0
         )
         == 0
         and int(
@@ -504,7 +509,10 @@ def build_readiness_snapshot(
         and execution_drift_fields.get("execution_drift_overview_status") == "ok"
     )
     backtest_ready = int(backtest.get("total_trade_count") or 0) > 0
-    live_evidence_ready = live_evidence.get("decision") in {"GO", "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST"}
+    live_evidence_ready = live_evidence.get("decision") in {
+        "GO",
+        "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST",
+    }
     operations_ready = operations.get("overall_status") == "ok"
 
     summary = {
@@ -513,7 +521,9 @@ def build_readiness_snapshot(
         "phase2_entry_allowed": phase2_entry_allowed,
         "phase2_entry_reason": phase_gate_fields.get("phase2_entry_reason"),
         "phase_gate_reason": phase_gate_fields.get("phase_gate_reason"),
-        "phase_gate_strict_validation_passed": phase_gate_fields.get("phase_gate_strict_validation_passed"),
+        "phase_gate_strict_validation_passed": phase_gate_fields.get(
+            "phase_gate_strict_validation_passed"
+        ),
         "phase_gate_strict_validation_issue_count": phase_gate_fields.get(
             "phase_gate_strict_validation_issue_count"
         ),

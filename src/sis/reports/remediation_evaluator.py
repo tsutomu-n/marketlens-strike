@@ -32,7 +32,9 @@ def _quick_navigation(out_path: Path | None) -> dict[str, str]:
         "remediation_evaluator_report": str(out_path),
         "remediation_evidence_report": str(reports_dir / "remediation_evidence.md"),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "current_state_index_report": str(reports_dir / "current_state_index.md"),
     }
 
@@ -46,7 +48,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "remediation_planner_report": str(reports_dir / "remediation_planner.md"),
         "remediation_execution_plan_report": str(reports_dir / "remediation_execution_plan.md"),
         "remediation_session_report": str(reports_dir / "remediation_session.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
         "remediation_evidence_report": str(reports_dir / "remediation_evidence.md"),
         "remediation_command_results_report": str(reports_dir / "remediation_command_results.md"),
@@ -81,7 +85,9 @@ def _planner_summary_from_checkpoint(checkpoint: dict) -> dict:
         Path(execution_plan_path) if isinstance(execution_plan_path, str) else None
     )
     planner_summary_path = execution_plan.get("remediation_planner_summary_path")
-    return safe_read_json_dict(Path(planner_summary_path) if isinstance(planner_summary_path, str) else None)
+    return safe_read_json_dict(
+        Path(planner_summary_path) if isinstance(planner_summary_path, str) else None
+    )
 
 
 def _issue_preview_values(value: object) -> list[str]:
@@ -106,7 +112,9 @@ def _source_summaries(planner: dict) -> dict[str, dict]:
     phase_gate_path = planner.get("phase_gate_summary_path")
     runbook_path = planner.get("runbook_summary_path")
     return {
-        "phase_gate_review": safe_read_json_dict(Path(phase_gate_path) if isinstance(phase_gate_path, str) else None),
+        "phase_gate_review": safe_read_json_dict(
+            Path(phase_gate_path) if isinstance(phase_gate_path, str) else None
+        ),
         "paper_operations_runbook": safe_read_json_dict(
             Path(runbook_path) if isinstance(runbook_path, str) else None
         ),
@@ -153,14 +161,12 @@ def _report_paths(planner: dict, source_summaries: dict[str, dict]) -> dict[str,
 def _timeline_summary_paths(planner: dict) -> dict[str, Path | None]:
     phase_gate_path = planner.get("phase_gate_summary_path")
     runbook_path = planner.get("runbook_summary_path")
-    bases = [
-        Path(raw).parent
-        for raw in (phase_gate_path, runbook_path)
-        if isinstance(raw, str)
-    ]
+    bases = [Path(raw).parent for raw in (phase_gate_path, runbook_path) if isinstance(raw, str)]
     base_dir = bases[0] if bases else None
     return {
-        "operations_timeline": (base_dir / "operations_timeline_summary.json") if base_dir else None,
+        "operations_timeline": (base_dir / "operations_timeline_summary.json")
+        if base_dir
+        else None,
         "audit_timeline": (base_dir / "audit_timeline_summary.json") if base_dir else None,
     }
 
@@ -168,14 +174,12 @@ def _timeline_summary_paths(planner: dict) -> dict[str, Path | None]:
 def _dashboard_bundle_summary_paths(planner: dict) -> dict[str, Path | None]:
     phase_gate_path = planner.get("phase_gate_summary_path")
     runbook_path = planner.get("runbook_summary_path")
-    bases = [
-        Path(raw).parent
-        for raw in (phase_gate_path, runbook_path)
-        if isinstance(raw, str)
-    ]
+    bases = [Path(raw).parent for raw in (phase_gate_path, runbook_path) if isinstance(raw, str)]
     base_dir = bases[0] if bases else None
     return {
-        "operations_dashboard": (base_dir / "operations_dashboard_summary.json") if base_dir else None,
+        "operations_dashboard": (base_dir / "operations_dashboard_summary.json")
+        if base_dir
+        else None,
         "audit_dashboard": (base_dir / "audit_dashboard_summary.json") if base_dir else None,
         "operations_bundle": (base_dir / "operations_bundle_manifest.json") if base_dir else None,
         "operations_audit_pack": (base_dir / "operations_audit_pack.json") if base_dir else None,
@@ -186,11 +190,7 @@ def _dashboard_bundle_summary_paths(planner: dict) -> dict[str, Path | None]:
 def _ops_review_paths(planner: dict) -> dict[str, Path | None]:
     phase_gate_path = planner.get("phase_gate_summary_path")
     runbook_path = planner.get("runbook_summary_path")
-    bases = [
-        Path(raw).parent
-        for raw in (phase_gate_path, runbook_path)
-        if isinstance(raw, str)
-    ]
+    bases = [Path(raw).parent for raw in (phase_gate_path, runbook_path) if isinstance(raw, str)]
     base_dir = bases[0] if bases else None
     summary_path = (base_dir / "ops_review_summary.json") if base_dir else None
     return {
@@ -202,11 +202,7 @@ def _ops_review_paths(planner: dict) -> dict[str, Path | None]:
 def _current_state_index_paths(planner: dict) -> dict[str, Path | None]:
     phase_gate_path = planner.get("phase_gate_summary_path")
     runbook_path = planner.get("runbook_summary_path")
-    bases = [
-        Path(raw).parent
-        for raw in (phase_gate_path, runbook_path)
-        if isinstance(raw, str)
-    ]
+    bases = [Path(raw).parent for raw in (phase_gate_path, runbook_path) if isinstance(raw, str)]
     base_dir = bases[0] if bases else None
     summary_path = (base_dir / "current_state_index.json") if base_dir else None
     report_path = None
@@ -236,9 +232,14 @@ def _live_evidence_paths(planner: dict) -> dict[str, Path | None]:
             "live_evidence_summary_",
             "",
         )
-        if live_evidence_summary_path.is_absolute() and len(live_evidence_summary_path.parents) >= 4:
+        if (
+            live_evidence_summary_path.is_absolute()
+            and len(live_evidence_summary_path.parents) >= 4
+        ):
             report_root = live_evidence_summary_path.parents[3]
-            report_path = report_root / "docs/live_evidence_reports" / f"live_evidence_report_{stem}.md"
+            report_path = (
+                report_root / "docs/live_evidence_reports" / f"live_evidence_report_{stem}.md"
+            )
         else:
             report_path = Path("docs/live_evidence_reports") / f"live_evidence_report_{stem}.md"
     return {
@@ -265,7 +266,7 @@ def _apply_aliases(
 
 
 def _merge_observation_sources(
-    sources: list[tuple[str, dict[str, object], dict[str, int]]]
+    sources: list[tuple[str, dict[str, object], dict[str, int]]],
 ) -> tuple[dict[str, object], dict[str, int], dict[str, str], dict[str, str]]:
     merged_fields: dict[str, object] = {}
     merged_counts: dict[str, int] = {}
@@ -285,7 +286,9 @@ def _merge_observation_sources(
     return merged_fields, merged_counts, field_sources, count_sources
 
 
-def _dashboard_bundle_summary_observations(planner: dict) -> tuple[dict[str, object], dict[str, int]]:
+def _dashboard_bundle_summary_observations(
+    planner: dict,
+) -> tuple[dict[str, object], dict[str, int]]:
     observed_fields: dict[str, object] = {}
     observed_counts: dict[str, int] = {}
     field_map = {
@@ -320,9 +323,7 @@ def _dashboard_bundle_summary_observations(planner: dict) -> tuple[dict[str, obj
         "phase_gate_decision": "phase_gate_decision",
         "phase_gate_checked_files": "phase_gate_checked_files",
         "phase_gate_strict_validation_passed": "phase_gate_strict_validation_passed",
-        "phase_gate_strict_validation_issue_count": (
-            "phase_gate_strict_validation_issue_count"
-        ),
+        "phase_gate_strict_validation_issue_count": ("phase_gate_strict_validation_issue_count"),
         "phase_gate_review_report_path": "phase_gate_review_report_path",
         "phase_gate_strict_validation_issues": "phase_gate_strict_validation_issues",
     }
@@ -398,7 +399,9 @@ def _ops_review_observations(planner: dict) -> tuple[dict[str, object], dict[str
 def _current_state_index_observations(planner: dict) -> tuple[dict[str, object], dict[str, int]]:
     observed_fields: dict[str, object] = {}
     observed_counts: dict[str, int] = {}
-    summary = safe_read_json_dict(_current_state_index_paths(planner)["current_state_index_summary"])
+    summary = safe_read_json_dict(
+        _current_state_index_paths(planner)["current_state_index_summary"]
+    )
     field_map = {
         "overall_status": "overall_status",
         "phase_gate_decision": "phase_gate_decision",
@@ -657,7 +660,11 @@ def _markdown_report_observations(
             if line.startswith("## "):
                 current_section = line[3:]
                 continue
-            if current_section == "Strict Validation" and line.startswith("| ") and not line.startswith("| ---"):
+            if (
+                current_section == "Strict Validation"
+                and line.startswith("| ")
+                and not line.startswith("| ---")
+            ):
                 cells = [cell.strip() for cell in line.strip("|").split("|")]
                 if len(cells) == 2 and cells[0] != "path":
                     issue_previews.append(f"{cells[0]}: {cells[1]}")
@@ -668,15 +675,17 @@ def _markdown_report_observations(
             if current_section in {"Strict Validation", "Strict Validation Preview"}:
                 if bullet == "issues: none":
                     issue_previews = []
-                elif not bullet.startswith("missing_required_artifact_paths") and not bullet.startswith(
-                    "checked_files: "
-                ):
+                elif not bullet.startswith(
+                    "missing_required_artifact_paths"
+                ) and not bullet.startswith("checked_files: "):
                     issue_previews.append(bullet)
             if current_section == "Next Actions":
                 next_actions.append(bullet)
             if current_section == "Blockers":
                 blockers.append(bullet)
-            if current_section == "Executive Summary" and bullet.startswith("phase2_entry_reason: "):
+            if current_section == "Executive Summary" and bullet.startswith(
+                "phase2_entry_reason: "
+            ):
                 reason = bullet.split(": ", 1)[1].strip()
                 if reason and reason != "None":
                     blockers.append(reason)
@@ -738,7 +747,11 @@ def _evaluate_signal(signal: str, summary: dict) -> dict[str, object]:
     if match:
         field = match.group("field").replace(" ", "_")
         observed = summary.get(field)
-        status = "pass" if isinstance(observed, dict) and all(value is not None for value in observed.values()) else "unsupported"
+        status = (
+            "pass"
+            if isinstance(observed, dict) and all(value is not None for value in observed.values())
+            else "unsupported"
+        )
         return {
             "signal": signal,
             "status": status,
@@ -775,7 +788,9 @@ def _observed_fields(stdout_summary: str | None, stderr_summary: str | None) -> 
     return fields
 
 
-def _diagnostics_row_presence(stdout_summary: str | None, stderr_summary: str | None) -> dict[str, object]:
+def _diagnostics_row_presence(
+    stdout_summary: str | None, stderr_summary: str | None
+) -> dict[str, object]:
     combined = " ".join(
         value for value in (stdout_summary, stderr_summary) if isinstance(value, str) and value
     )
@@ -825,7 +840,11 @@ def _evaluate_signal_with_observations(
     if match:
         expected_issues = int(match.group("issues"))
         observed_issues = observed_counts.get("issues")
-        observed_source = "stdout_stderr" if "issues" in _observed_counts(stdout_summary, stderr_summary) else fallback_count_sources.get("issues")
+        observed_source = (
+            "stdout_stderr"
+            if "issues" in _observed_counts(stdout_summary, stderr_summary)
+            else fallback_count_sources.get("issues")
+        )
         return {
             "signal": signal,
             "status": "pass" if observed_issues == expected_issues else "fail",
@@ -836,7 +855,11 @@ def _evaluate_signal_with_observations(
         }
     if _REPORTS_CURRENT_ISSUE_COUNT_RE.match(signal.strip()):
         observed_issues = observed_counts.get("issues")
-        observed_source = "stdout_stderr" if "issues" in _observed_counts(stdout_summary, stderr_summary) else fallback_count_sources.get("issues")
+        observed_source = (
+            "stdout_stderr"
+            if "issues" in _observed_counts(stdout_summary, stderr_summary)
+            else fallback_count_sources.get("issues")
+        )
         return {
             "signal": signal,
             "status": "pass" if observed_issues is not None else "fail",
@@ -978,7 +1001,10 @@ def _evaluate_signal_with_observations(
         fills = observed_fields.get("execution_fills_gap_detected")
         return {
             "signal": signal,
-            "status": "pass" if "execution_balance_gap_detected" in observed_fields and "execution_fills_gap_detected" in observed_fields else "fail",
+            "status": "pass"
+            if "execution_balance_gap_detected" in observed_fields
+            and "execution_fills_gap_detected" in observed_fields
+            else "fail",
             "field": "execution_balance_gap_detected,execution_fills_gap_detected",
             "expected": "present",
             "observed": {
@@ -995,14 +1021,19 @@ def _evaluate_signal_with_observations(
             },
         }
     if normalized_signal == "monitoring output shows current mismatch counts":
-        state_count = observed_fields.get("execution_drift_overview_state_comparison_mismatching_count")
-        snapshot_count = observed_fields.get("execution_drift_overview_snapshot_drift_mismatching_snapshot_count")
+        state_count = observed_fields.get(
+            "execution_drift_overview_state_comparison_mismatching_count"
+        )
+        snapshot_count = observed_fields.get(
+            "execution_drift_overview_snapshot_drift_mismatching_snapshot_count"
+        )
         return {
             "signal": signal,
             "status": (
                 "pass"
                 if "execution_drift_overview_state_comparison_mismatching_count" in observed_fields
-                and "execution_drift_overview_snapshot_drift_mismatching_snapshot_count" in observed_fields
+                and "execution_drift_overview_snapshot_drift_mismatching_snapshot_count"
+                in observed_fields
                 else "fail"
             ),
             "field": (
@@ -1028,7 +1059,9 @@ def _evaluate_signal_with_observations(
         decision = observed_fields.get("phase_gate_decision")
         return {
             "signal": signal,
-            "status": "pass" if "phase_gate_reason" in observed_fields or "phase_gate_decision" in observed_fields else "fail",
+            "status": "pass"
+            if "phase_gate_reason" in observed_fields or "phase_gate_decision" in observed_fields
+            else "fail",
             "field": "phase_gate_reason,phase_gate_decision",
             "expected": "present",
             "observed": {
@@ -1042,11 +1075,15 @@ def _evaluate_signal_with_observations(
         }
     if normalized_signal == "check-go-no-go prints the current decision and blockers":
         decision = observed_fields.get("phase_gate_decision") or observed_fields.get("decision")
-        reason = observed_fields.get("phase_gate_reason") or observed_fields.get("phase2_entry_reason")
+        reason = observed_fields.get("phase_gate_reason") or observed_fields.get(
+            "phase2_entry_reason"
+        )
         blockers = observed_fields.get("blockers") or observed_fields.get("blocker_count")
         return {
             "signal": signal,
-            "status": "pass" if decision is not None and (reason is not None or blockers is not None) else "fail",
+            "status": "pass"
+            if decision is not None and (reason is not None or blockers is not None)
+            else "fail",
             "field": "decision,reason,blockers",
             "expected": "present",
             "observed": {"decision": decision, "reason": reason, "blockers": blockers},
@@ -1073,7 +1110,9 @@ def _evaluate_signal_with_observations(
     result = _evaluate_signal(signal, summary)
     field = result.get("field")
     if isinstance(field, str):
-        result["observed_source"] = fallback_field_sources.get(field) or fallback_count_sources.get(field)
+        result["observed_source"] = fallback_field_sources.get(field) or fallback_count_sources.get(
+            field
+        )
     return result
 
 
@@ -1149,11 +1188,15 @@ def build_remediation_evaluator(
             continue
         source = str(item.get("source") or "")
         summary = source_summaries.get(source, {})
-        verification = item.get("verification") if isinstance(item.get("verification"), list) else []
+        verification = (
+            item.get("verification") if isinstance(item.get("verification"), list) else []
+        )
         observed_signals = (
             item.get("observed_signals") if isinstance(item.get("observed_signals"), list) else []
         )
-        normalized_observed_signals = [value for value in observed_signals if isinstance(value, str)]
+        normalized_observed_signals = [
+            value for value in observed_signals if isinstance(value, str)
+        ]
         latest_exit_code = item.get("latest_exit_code")
         normalized_exit_code = latest_exit_code if isinstance(latest_exit_code, int) else None
         stdout_summary = item.get("latest_stdout_summary")
@@ -1178,12 +1221,22 @@ def build_remediation_evaluator(
         ]
         result = _action_result(evaluations)
         action_results.append(result)
-        evaluated_actions.append({**item, "evaluation_result": result, "signal_evaluations": evaluations})
+        evaluated_actions.append(
+            {**item, "evaluation_result": result, "signal_evaluations": evaluations}
+        )
 
-    auto_pass_count = sum(1 for item in evaluated_actions if item.get("evaluation_result") == "pass")
-    auto_fail_count = sum(1 for item in evaluated_actions if item.get("evaluation_result") == "fail")
-    manual_review_count = sum(1 for item in evaluated_actions if item.get("evaluation_result") == "manual_review")
-    partial_count = sum(1 for item in evaluated_actions if item.get("evaluation_result") == "partial")
+    auto_pass_count = sum(
+        1 for item in evaluated_actions if item.get("evaluation_result") == "pass"
+    )
+    auto_fail_count = sum(
+        1 for item in evaluated_actions if item.get("evaluation_result") == "fail"
+    )
+    manual_review_count = sum(
+        1 for item in evaluated_actions if item.get("evaluation_result") == "manual_review"
+    )
+    partial_count = sum(
+        1 for item in evaluated_actions if item.get("evaluation_result") == "partial"
+    )
     evaluator_status = _evaluator_status(action_results)
     next_action_key = next(
         (
@@ -1213,10 +1266,14 @@ def build_remediation_evaluator(
         "live_evidence_report_path": str(live_evidence_paths["live_evidence_report"])
         if live_evidence_paths["live_evidence_report"] is not None
         else None,
-        "current_state_index_summary_path": str(current_state_index_paths["current_state_index_summary"])
+        "current_state_index_summary_path": str(
+            current_state_index_paths["current_state_index_summary"]
+        )
         if current_state_index_paths["current_state_index_summary"] is not None
         else None,
-        "current_state_index_report_path": str(current_state_index_paths["current_state_index_report"])
+        "current_state_index_report_path": str(
+            current_state_index_paths["current_state_index_report"]
+        )
         if current_state_index_paths["current_state_index_report"] is not None
         else None,
         "ops_review_summary_path": str(ops_review_paths["ops_review_summary"])
@@ -1271,39 +1328,41 @@ def build_remediation_evaluator(
         lines.extend(["## Related Reports", ""])
         lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
-    lines.extend([
-        "## Evaluator Summary",
-        "",
-        f"- evaluator_status: {summary['evaluator_status']}",
-        f"- planned_action_count: {summary['planned_action_count']}",
-        f"- auto_pass_count: {summary['auto_pass_count']}",
-        f"- auto_fail_count: {summary['auto_fail_count']}",
-        f"- manual_review_count: {summary['manual_review_count']}",
-        f"- partial_count: {summary['partial_count']}",
-        f"- next_action_key: {summary['next_action_key']}",
-        f"- fallback_field_source_count: {len(fallback_field_sources)}",
-        f"- fallback_count_source_count: {len(fallback_count_sources)}",
-        f"- operation_chain_path: {summary['operation_chain_path']}",
-        f"- operations_dashboard_summary_path: {summary['operations_dashboard_summary_path']}",
-        f"- live_evidence_summary_path: {summary['live_evidence_summary_path']}",
-        f"- live_evidence_report_path: {summary['live_evidence_report_path']}",
-        f"- current_state_index_summary_path: {summary['current_state_index_summary_path']}",
-        f"- current_state_index_report_path: {summary['current_state_index_report_path']}",
-        f"- ops_review_summary_path: {summary['ops_review_summary_path']}",
-        f"- ops_review_report_path: {summary['ops_review_report_path']}",
-        f"- audit_dashboard_summary_path: {summary['audit_dashboard_summary_path']}",
-        f"- operations_bundle_manifest_path: {summary['operations_bundle_manifest_path']}",
-        f"- operations_audit_pack_path: {summary['operations_audit_pack_path']}",
-        f"- audit_bundle_manifest_path: {summary['audit_bundle_manifest_path']}",
-        f"- operations_timeline_summary_path: {summary['operations_timeline_summary_path']}",
-        f"- audit_timeline_summary_path: {summary['audit_timeline_summary_path']}",
-        f"- phase_gate_review_report_path: {summary['phase_gate_review_report_path']}",
-        f"- paper_operations_runbook_report_path: {summary['paper_operations_runbook_report_path']}",
-        f"- remediation_session_checkpoint_summary_path: {summary['remediation_session_checkpoint_summary_path']}",
-        "",
-        "## Fallback Field Sources",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Evaluator Summary",
+            "",
+            f"- evaluator_status: {summary['evaluator_status']}",
+            f"- planned_action_count: {summary['planned_action_count']}",
+            f"- auto_pass_count: {summary['auto_pass_count']}",
+            f"- auto_fail_count: {summary['auto_fail_count']}",
+            f"- manual_review_count: {summary['manual_review_count']}",
+            f"- partial_count: {summary['partial_count']}",
+            f"- next_action_key: {summary['next_action_key']}",
+            f"- fallback_field_source_count: {len(fallback_field_sources)}",
+            f"- fallback_count_source_count: {len(fallback_count_sources)}",
+            f"- operation_chain_path: {summary['operation_chain_path']}",
+            f"- operations_dashboard_summary_path: {summary['operations_dashboard_summary_path']}",
+            f"- live_evidence_summary_path: {summary['live_evidence_summary_path']}",
+            f"- live_evidence_report_path: {summary['live_evidence_report_path']}",
+            f"- current_state_index_summary_path: {summary['current_state_index_summary_path']}",
+            f"- current_state_index_report_path: {summary['current_state_index_report_path']}",
+            f"- ops_review_summary_path: {summary['ops_review_summary_path']}",
+            f"- ops_review_report_path: {summary['ops_review_report_path']}",
+            f"- audit_dashboard_summary_path: {summary['audit_dashboard_summary_path']}",
+            f"- operations_bundle_manifest_path: {summary['operations_bundle_manifest_path']}",
+            f"- operations_audit_pack_path: {summary['operations_audit_pack_path']}",
+            f"- audit_bundle_manifest_path: {summary['audit_bundle_manifest_path']}",
+            f"- operations_timeline_summary_path: {summary['operations_timeline_summary_path']}",
+            f"- audit_timeline_summary_path: {summary['audit_timeline_summary_path']}",
+            f"- phase_gate_review_report_path: {summary['phase_gate_review_report_path']}",
+            f"- paper_operations_runbook_report_path: {summary['paper_operations_runbook_report_path']}",
+            f"- remediation_session_checkpoint_summary_path: {summary['remediation_session_checkpoint_summary_path']}",
+            "",
+            "## Fallback Field Sources",
+            "",
+        ]
+    )
     if fallback_field_sources:
         for key in sorted(fallback_field_sources):
             lines.append(f"- {key}: {fallback_field_sources[key]}")
@@ -1324,8 +1383,8 @@ def build_remediation_evaluator(
     lines.extend(
         [
             "",
-        "## Action Evaluations",
-        "",
+            "## Action Evaluations",
+            "",
         ]
     )
     if evaluated_actions:
@@ -1334,7 +1393,9 @@ def build_remediation_evaluator(
             lines.append(f"  - evaluation_result: {item['evaluation_result']}")
             lines.append("  - signal_evaluations:")
             signal_evaluations = (
-                item["signal_evaluations"] if isinstance(item.get("signal_evaluations"), list) else []
+                item["signal_evaluations"]
+                if isinstance(item.get("signal_evaluations"), list)
+                else []
             )
             for signal in signal_evaluations:
                 lines.append(

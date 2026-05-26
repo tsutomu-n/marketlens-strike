@@ -18,7 +18,9 @@ def _quick_navigation(out_path: Path | None) -> dict[str, str]:
     reports_dir = out_path.parent
     return {
         "execution_snapshot_drift_report": str(out_path),
-        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_state_comparison_report": str(
+            reports_dir / "execution_state_comparison_history.md"
+        ),
         "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
         "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
         "current_state_index_report": str(reports_dir / "current_state_index.md"),
@@ -35,7 +37,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
         "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
         "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
-        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_state_comparison_report": str(
+            reports_dir / "execution_state_comparison_history.md"
+        ),
         "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
         "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
         "current_state_index_report": str(reports_dir / "current_state_index.md"),
@@ -67,7 +71,11 @@ def build_execution_snapshot_drift_history_report(
     summary_path: Path | None = None,
     limit: int = 12,
 ) -> str:
-    operations = list(read_jsonl(operation_chain_path)) if operation_chain_path and operation_chain_path.exists() else []
+    operations = (
+        list(read_jsonl(operation_chain_path))
+        if operation_chain_path and operation_chain_path.exists()
+        else []
+    )
     relevant_ops = {"operations_snapshot", "operations_audit_snapshot", "audit_bundle_snapshot"}
     entries: list[dict[str, object]] = []
     for item in operations:
@@ -79,9 +87,15 @@ def build_execution_snapshot_drift_history_report(
             continue
         diagnostics_status = _note_value(notes, "execution_diagnostics_status=")
         latest_execution_lineage = latest_execution_lineage_from_notes(notes, prefix="latest")
-        gap_history_diagnostics_status = _note_value(notes, "execution_gap_history_latest_diagnostics_status=")
-        state_comparison_status_match = _note_value(notes, "execution_state_comparison_latest_status_match=")
-        state_comparison_mismatching_count = _note_value(notes, "execution_state_comparison_mismatching_count=")
+        gap_history_diagnostics_status = _note_value(
+            notes, "execution_gap_history_latest_diagnostics_status="
+        )
+        state_comparison_status_match = _note_value(
+            notes, "execution_state_comparison_latest_status_match="
+        )
+        state_comparison_mismatching_count = _note_value(
+            notes, "execution_state_comparison_mismatching_count="
+        )
         readiness_next_phase = _note_value(notes, "readiness_next_phase=")
         readiness_execution_ready = _note_value(notes, "readiness_execution_ready=")
         if (
@@ -145,7 +159,9 @@ def build_execution_snapshot_drift_history_report(
     )
     readiness_next_phase_counts = _count_values(
         [
-            str(item.get("readiness_next_phase")) if item.get("readiness_next_phase") is not None else None
+            str(item.get("readiness_next_phase"))
+            if item.get("readiness_next_phase") is not None
+            else None
             for item in entries
         ]
     )
@@ -158,10 +174,14 @@ def build_execution_snapshot_drift_history_report(
         ]
     )
     matching_snapshot_count = sum(
-        1 for item in entries if str(item.get("execution_state_comparison_latest_status_match")) == "True"
+        1
+        for item in entries
+        if str(item.get("execution_state_comparison_latest_status_match")) == "True"
     )
     mismatching_snapshot_count = sum(
-        1 for item in entries if str(item.get("execution_state_comparison_latest_status_match")) == "False"
+        1
+        for item in entries
+        if str(item.get("execution_state_comparison_latest_status_match")) == "False"
     )
     latest_execution_diagnostics_summary = normalize_execution_diagnostics_summary(
         {"overall_status": latest.get("execution_diagnostics_status")}

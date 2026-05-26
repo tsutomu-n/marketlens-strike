@@ -70,7 +70,9 @@ def build_quote_diagnostics(
             continue
         if symbol and row_symbol != symbol:
             continue
-        threshold_ms = (stale_thresholds_ms or {}).get(row_venue, 3000 if row_venue == "gtrade" else 5000)
+        threshold_ms = (stale_thresholds_ms or {}).get(
+            row_venue, 3000 if row_venue == "gtrade" else 5000
+        )
 
         market_open_rows = sum(1 for row in rows if row.get("market_status") == "open")
         tradable_rows = sum(1 for row in rows if row.get("is_tradable") is True)
@@ -99,7 +101,9 @@ def build_quote_diagnostics(
                 try:
                     from datetime import datetime
 
-                    ts_ms = int(datetime.fromisoformat(ts_client.replace("Z", "+00:00")).timestamp() * 1000)
+                    ts_ms = int(
+                        datetime.fromisoformat(ts_client.replace("Z", "+00:00")).timestamp() * 1000
+                    )
                     age = max(0, ts_ms - oracle_ts_ms)
                     oracle_ages.append(age)
                     if age > threshold_ms:
@@ -170,7 +174,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "go_no_go_report": str(reports_dir.parent / "research/go_no_go_report.md"),
         "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
         "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
-        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_state_comparison_report": str(
+            reports_dir / "execution_state_comparison_history.md"
+        ),
         "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
         "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
         "current_state_index_report": str(reports_dir / "current_state_index.md"),

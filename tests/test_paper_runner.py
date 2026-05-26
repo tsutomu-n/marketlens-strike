@@ -200,8 +200,14 @@ def test_run_paper_step_writes_stateful_artifacts(tmp_path) -> None:
     assert payload["cycle_history_latest_execution_comparison_all_registries_present"] is True
     assert payload["phase_gate"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert payload["phase_gate_summary"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
-    assert payload["phase_gate"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
-    assert payload["phase_gate"]["phase2_entry_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        payload["phase_gate"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
+    assert (
+        payload["phase_gate"]["phase2_entry_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert payload["phase_gate"]["phase_gate_strict_validation_passed"] is True
     assert payload["phase_gate"]["phase_gate_strict_validation_issue_count"] == 2
     assert payload["phase_gate"]["phase_gate_checked_files"] == 7
@@ -221,14 +227,18 @@ def test_run_paper_step_writes_stateful_artifacts(tmp_path) -> None:
     assert payload["readiness_execution_ready"] is False
     assert payload["execution_summary"]["execution_overall_status"] == "ok"
     assert payload["execution_summary"]["execution_venue_count"] == 2
-    assert payload["execution_summary"]["report_path"] == str(data_dir / "reports/execution_snapshot.md")
+    assert payload["execution_summary"]["report_path"] == str(
+        data_dir / "reports/execution_snapshot.md"
+    )
     assert payload["execution_overall_status"] == "ok"
     assert payload["execution_venue_count"] == 2
     assert payload["execution_report_path"] == str(data_dir / "reports/execution_snapshot.md")
-    assert payload["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
     assert (
-        payload["execution_comparison_summary"]["report_path"]
-        == str(data_dir / "reports/execution_venue_comparison.md")
+        payload["execution_comparison_summary"]["execution_comparison_all_registries_present"]
+        is True
+    )
+    assert payload["execution_comparison_summary"]["report_path"] == str(
+        data_dir / "reports/execution_venue_comparison.md"
     )
     assert payload["execution_comparison_all_registries_present"] is True
     assert payload["execution_comparison_report_path"] == str(
@@ -237,9 +247,8 @@ def test_run_paper_step_writes_stateful_artifacts(tmp_path) -> None:
     assert payload["execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
     assert payload["execution_diagnostics_summary"]["execution_balance_gap_detected"] is True
     assert payload["execution_diagnostics_summary"]["execution_fills_gap_detected"] is False
-    assert (
-        payload["execution_diagnostics_summary"]["report_path"]
-        == str(data_dir / "reports/execution_venue_diagnostics.md")
+    assert payload["execution_diagnostics_summary"]["report_path"] == str(
+        data_dir / "reports/execution_venue_diagnostics.md"
     )
     assert payload["execution_diagnostics_status"] == "degraded"
     assert payload["execution_balance_gap_detected"] is True
@@ -257,24 +266,34 @@ def test_run_paper_step_writes_stateful_artifacts(tmp_path) -> None:
         data_dir / "reports/execution_gap_history.md"
     )
     assert (
-        payload["execution_state_comparison_summary"]["execution_state_comparison_latest_status_match"]
+        payload["execution_state_comparison_summary"][
+            "execution_state_comparison_latest_status_match"
+        ]
         is False
     )
     assert payload["execution_state_comparison_mismatching_count"] == 1
-    assert (
-        payload["execution_state_comparison_report_path"]
-        == str(data_dir / "reports/execution_state_comparison_history.md")
+    assert payload["execution_state_comparison_report_path"] == str(
+        data_dir / "reports/execution_state_comparison_history.md"
     )
     assert payload["execution_snapshot_drift_summary"]["execution_snapshot_drift_entry_count"] == 3
-    assert payload["execution_snapshot_drift_summary"]["execution_snapshot_drift_latest_status_match"] is True
-    assert payload["execution_snapshot_drift_mismatching_snapshot_count"] == 1
     assert (
-        payload["execution_snapshot_drift_report_path"]
-        == str(data_dir / "reports/execution_snapshot_drift_history.md")
+        payload["execution_snapshot_drift_summary"]["execution_snapshot_drift_latest_status_match"]
+        is True
+    )
+    assert payload["execution_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert payload["execution_snapshot_drift_report_path"] == str(
+        data_dir / "reports/execution_snapshot_drift_history.md"
     )
     assert payload["execution_drift_overview_summary"]["overall_status"] == "degraded"
-    assert payload["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
-    assert payload["execution_drift_overview_summary"]["execution_drift_overview_diagnostics_alignment_match"] is False
+    assert (
+        payload["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    )
+    assert (
+        payload["execution_drift_overview_summary"][
+            "execution_drift_overview_diagnostics_alignment_match"
+        ]
+        is False
+    )
     assert payload["execution_drift_overview_status"] == "degraded"
     assert payload["execution_drift_overview_diagnostics_alignment_match"] is False
     assert payload["execution_drift_overview_state_comparison_mismatching_count"] == 1

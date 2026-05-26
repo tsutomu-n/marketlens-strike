@@ -75,7 +75,11 @@ def build_ops_review_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    operations = list(read_jsonl(operation_chain_path)) if operation_chain_path and operation_chain_path.exists() else []
+    operations = (
+        list(read_jsonl(operation_chain_path))
+        if operation_chain_path and operation_chain_path.exists()
+        else []
+    )
     monitoring = safe_read_json_dict(monitoring_snapshot_path)
     daemon_dry_run = safe_read_json_dict(daemon_dry_run_path)
     execution_snapshot = normalized_summary(
@@ -270,8 +274,8 @@ def build_ops_review_report(
     lines.extend(
         [
             "",
-        "## Strict Validation Preview",
-        "",
+            "## Strict Validation Preview",
+            "",
         ]
     )
     validation_issue_previews = phase_gate_issue_preview_lines(summary)

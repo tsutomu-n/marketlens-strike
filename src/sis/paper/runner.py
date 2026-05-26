@@ -217,7 +217,11 @@ def run_paper_step(
 ) -> PaperRunSummary:
     normalized_quotes_path = quotes_path or (data_dir / "normalized/quotes.parquet")
     selected_signals_path = signals_path or (data_dir / "research/signals.csv")
-    decision_log_path = data_dir / "evidence/decision_logs" / f"paper_decisions_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.jsonl"
+    decision_log_path = (
+        data_dir
+        / "evidence/decision_logs"
+        / f"paper_decisions_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.jsonl"
+    )
     decision_summary_path = data_dir / "research/decision_summary.json"
 
     _metrics, records, _summary = run_backtest_bridge_with_decisions(
@@ -267,7 +271,9 @@ def run_paper_step(
         )
         if quote is None:
             continue
-        fill = broker.create_fill(ExecutionPlan.model_validate(execution_plan), record, quote, quantity=1.0)
+        fill = broker.create_fill(
+            ExecutionPlan.model_validate(execution_plan), record, quote, quantity=1.0
+        )
         if fill is None:
             continue
         fills.append(fill)
@@ -301,12 +307,10 @@ def run_paper_step(
         execution_snapshot_drift_summary
     )
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview_summary)
-    latest_execution_payload, latest_execution_lineage = (
-        merged_latest_execution_payload_and_fields(
-            audit_dashboard_summary,
-            audit_bundle_summary,
-            operations_bundle_manifest,
-        )
+    latest_execution_payload, latest_execution_lineage = merged_latest_execution_payload_and_fields(
+        audit_dashboard_summary,
+        audit_bundle_summary,
+        operations_bundle_manifest,
     )
     store.set_json(
         "paper_last_run",

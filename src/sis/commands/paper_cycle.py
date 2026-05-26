@@ -24,7 +24,6 @@ from sis.reports.summary_normalizers import (
 from sis.storage.jsonl_store import write_json
 
 
-
 def register_paper_cycle_commands(
     app: typer.Typer,
     *,
@@ -89,35 +88,63 @@ def register_paper_cycle_commands(
             signals_path=signals_path,
         )
         execution_lineage = _refresh_execution_lineage_artifacts(settings.data_dir)
-        execution_read_only_surfaces_out, execution_read_only_surfaces_summary_out, _execution_read_only_surfaces_text = _write_execution_read_only_surfaces(
+        (
+            execution_read_only_surfaces_out,
+            execution_read_only_surfaces_summary_out,
+            _execution_read_only_surfaces_text,
+        ) = _write_execution_read_only_surfaces(
             settings.data_dir,
             state_path=state_path,
         )
-        execution_snapshot_out, execution_snapshot_summary_out, _execution_snapshot_text = execution_lineage["execution_snapshot"]
-        execution_comparison_out, execution_comparison_summary_out, _execution_comparison_text = execution_lineage["execution_comparison"]
-        execution_diagnostics_out, execution_diagnostics_summary_out, _execution_diagnostics_text = execution_lineage["execution_diagnostics"]
+        execution_snapshot_out, execution_snapshot_summary_out, _execution_snapshot_text = (
+            execution_lineage["execution_snapshot"]
+        )
+        execution_comparison_out, execution_comparison_summary_out, _execution_comparison_text = (
+            execution_lineage["execution_comparison"]
+        )
+        (
+            execution_diagnostics_out,
+            execution_diagnostics_summary_out,
+            _execution_diagnostics_text,
+        ) = execution_lineage["execution_diagnostics"]
         weekly_out, _weekly_text = _write_weekly_review(settings.data_dir)
         comparison_out, _comparison_text = _write_comparison_report(settings.data_dir)
         lifecycle_out, _lifecycle_text = _write_lifecycle_report(settings.data_dir)
         monitoring_out, monitoring = _write_monitoring_snapshot(settings.data_dir, state_path)
-        ops_review_out, ops_review_summary_out, _ops_review_text = _write_ops_review(settings.data_dir)
-        dashboard_out, dashboard_summary_out, dashboard_text = _write_operations_dashboard(settings.data_dir)
-        runbook_out, runbook_summary_out, _runbook_text = _write_paper_operations_runbook(settings.data_dir)
-        phase_gate_out, phase_gate_summary_out, _phase_gate_text = _write_phase_gate_review(settings.data_dir)
+        ops_review_out, ops_review_summary_out, _ops_review_text = _write_ops_review(
+            settings.data_dir
+        )
+        dashboard_out, dashboard_summary_out, dashboard_text = _write_operations_dashboard(
+            settings.data_dir
+        )
+        runbook_out, runbook_summary_out, _runbook_text = _write_paper_operations_runbook(
+            settings.data_dir
+        )
+        phase_gate_out, phase_gate_summary_out, _phase_gate_text = _write_phase_gate_review(
+            settings.data_dir
+        )
         cycle_summary_path = settings.data_dir / "ops/paper_operations_cycle_summary.json"
         audit_summary = _read_audit_schedule_summary(settings.data_dir)
         phase_gate_summary = _paper_last_run_phase_gate_summary(settings.data_dir)
         execution_summary = _read_execution_schedule_summary(settings.data_dir)
-        execution_comparison_summary = _read_execution_comparison_schedule_summary(settings.data_dir)
-        execution_diagnostics_summary = _read_execution_diagnostics_schedule_summary(settings.data_dir)
-        execution_gap_history_summary = _read_execution_gap_history_schedule_summary(settings.data_dir)
+        execution_comparison_summary = _read_execution_comparison_schedule_summary(
+            settings.data_dir
+        )
+        execution_diagnostics_summary = _read_execution_diagnostics_schedule_summary(
+            settings.data_dir
+        )
+        execution_gap_history_summary = _read_execution_gap_history_schedule_summary(
+            settings.data_dir
+        )
         execution_state_comparison_summary = _read_execution_state_comparison_schedule_summary(
             settings.data_dir
         )
         execution_snapshot_drift_summary = _read_execution_snapshot_drift_schedule_summary(
             settings.data_dir
         )
-        execution_drift_overview_summary = _paper_last_run_execution_drift_overview_summary(settings.data_dir)
+        execution_drift_overview_summary = _paper_last_run_execution_drift_overview_summary(
+            settings.data_dir
+        )
         readiness_summary = _read_readiness_schedule_summary(settings.data_dir)
         dashboard_summary_payload = read_json(dashboard_summary_out)
         if not isinstance(dashboard_summary_payload, dict):
@@ -128,8 +155,12 @@ def register_paper_cycle_commands(
         phase_gate_fields = phase_gate_flat_fields(phase_gate_summary)
         execution_fields = execution_snapshot_flat_fields(execution_summary)
         execution_comparison_fields = execution_comparison_flat_fields(execution_comparison_summary)
-        execution_diagnostics_fields = execution_diagnostics_flat_fields(execution_diagnostics_summary)
-        execution_gap_history_fields = execution_gap_history_flat_fields(execution_gap_history_summary)
+        execution_diagnostics_fields = execution_diagnostics_flat_fields(
+            execution_diagnostics_summary
+        )
+        execution_gap_history_fields = execution_gap_history_flat_fields(
+            execution_gap_history_summary
+        )
         execution_state_comparison_fields = execution_state_comparison_flat_fields(
             execution_state_comparison_summary
         )
@@ -137,7 +168,9 @@ def register_paper_cycle_commands(
             execution_snapshot_drift_summary
         )
         readiness_fields = readiness_flat_fields(readiness_summary)
-        execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview_summary)
+        execution_drift_fields = execution_drift_overview_flat_fields(
+            execution_drift_overview_summary
+        )
         write_json(
             cycle_summary_path,
             {
@@ -176,8 +209,12 @@ def register_paper_cycle_commands(
                     "execution_venue_comparison_summary": str(execution_comparison_summary_out),
                     "execution_venue_diagnostics": str(execution_diagnostics_out),
                     "execution_venue_diagnostics_summary": str(execution_diagnostics_summary_out),
-                    "execution_gap_history": str(settings.data_dir / "reports/execution_gap_history.md"),
-                    "execution_gap_history_summary": str(settings.data_dir / "ops/execution_gap_history_summary.json"),
+                    "execution_gap_history": str(
+                        settings.data_dir / "reports/execution_gap_history.md"
+                    ),
+                    "execution_gap_history_summary": str(
+                        settings.data_dir / "ops/execution_gap_history_summary.json"
+                    ),
                     "execution_state_comparison_history": str(
                         settings.data_dir / "reports/execution_state_comparison_history.md"
                     ),
@@ -190,7 +227,9 @@ def register_paper_cycle_commands(
                     "execution_snapshot_drift_history_summary": str(
                         settings.data_dir / "ops/execution_snapshot_drift_history_summary.json"
                     ),
-                    "execution_drift_overview": str(settings.data_dir / "reports/execution_drift_overview.md"),
+                    "execution_drift_overview": str(
+                        settings.data_dir / "reports/execution_drift_overview.md"
+                    ),
                     "execution_drift_overview_summary": str(
                         settings.data_dir / "ops/execution_drift_overview_summary.json"
                     ),
@@ -204,7 +243,9 @@ def register_paper_cycle_commands(
                     "phase_gate_review": str(phase_gate_out),
                     "phase_gate_review_summary": str(phase_gate_summary_out),
                     "readiness_snapshot": str(settings.data_dir / "reports/readiness_snapshot.md"),
-                    "readiness_snapshot_summary": str(settings.data_dir / "ops/readiness_snapshot.json"),
+                    "readiness_snapshot_summary": str(
+                        settings.data_dir / "ops/readiness_snapshot.json"
+                    ),
                 },
             },
         )
@@ -216,56 +257,88 @@ def register_paper_cycle_commands(
             fills_count=summary.fills_count,
             open_positions=summary.open_positions,
         )
-        cycle_history_out, cycle_history_summary_out, _cycle_history_text = _write_paper_cycle_history(settings.data_dir)
-        gap_history_out, gap_history_summary_out, _gap_history_text = _write_execution_gap_history(settings.data_dir)
-        state_comparison_out, state_comparison_summary_out, _state_comparison_text = _write_execution_state_comparison_history(
+        cycle_history_out, cycle_history_summary_out, _cycle_history_text = (
+            _write_paper_cycle_history(settings.data_dir)
+        )
+        gap_history_out, gap_history_summary_out, _gap_history_text = _write_execution_gap_history(
             settings.data_dir
         )
-        snapshot_drift_out, snapshot_drift_summary_out, _snapshot_drift_text = _write_execution_snapshot_drift_history(
-            settings.data_dir
+        state_comparison_out, state_comparison_summary_out, _state_comparison_text = (
+            _write_execution_state_comparison_history(settings.data_dir)
         )
-        drift_overview_out, drift_overview_summary_out, _drift_overview_text = _write_execution_drift_overview(
-            settings.data_dir
+        snapshot_drift_out, snapshot_drift_summary_out, _snapshot_drift_text = (
+            _write_execution_snapshot_drift_history(settings.data_dir)
+        )
+        drift_overview_out, drift_overview_summary_out, _drift_overview_text = (
+            _write_execution_drift_overview(settings.data_dir)
         )
         bundle_out, bundle_manifest_out, _bundle_text = _write_operations_bundle(settings.data_dir)
-        timeline_out, timeline_summary_out, _timeline_text = _write_operations_timeline(settings.data_dir)
+        timeline_out, timeline_summary_out, _timeline_text = _write_operations_timeline(
+            settings.data_dir
+        )
         audit_out, audit_manifest_out, _audit_text = _write_operations_audit_pack(settings.data_dir)
-        audit_timeline_out, audit_timeline_summary_out, _audit_timeline_text = _write_audit_timeline(settings.data_dir)
-        audit_dashboard_out, audit_dashboard_summary_out, _audit_dashboard_text = _write_audit_dashboard(settings.data_dir)
-        audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(settings.data_dir)
+        audit_timeline_out, audit_timeline_summary_out, _audit_timeline_text = (
+            _write_audit_timeline(settings.data_dir)
+        )
+        audit_dashboard_out, audit_dashboard_summary_out, _audit_dashboard_text = (
+            _write_audit_dashboard(settings.data_dir)
+        )
+        audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(
+            settings.data_dir
+        )
         bundle_payload = read_json(bundle_manifest_out)
         bundle_chain_out = _append_operations_snapshot_manifest(
             settings.data_dir,
             manifest_path=bundle_manifest_out,
-            overall_status=bundle_payload.get("overall_status") if isinstance(bundle_payload, dict) else None,
-            cycle_count=bundle_payload.get("cycle_count") if isinstance(bundle_payload, dict) else None,
+            overall_status=bundle_payload.get("overall_status")
+            if isinstance(bundle_payload, dict)
+            else None,
+            cycle_count=bundle_payload.get("cycle_count")
+            if isinstance(bundle_payload, dict)
+            else None,
         )
         audit_payload = read_json(audit_manifest_out)
         audit_chain_out = _append_operations_audit_snapshot_manifest(
             settings.data_dir,
             manifest_path=audit_manifest_out,
-            overall_status=audit_payload.get("overall_status") if isinstance(audit_payload, dict) else None,
-            timeline_latest_operation=audit_payload.get("timeline_latest_operation") if isinstance(audit_payload, dict) else None,
+            overall_status=audit_payload.get("overall_status")
+            if isinstance(audit_payload, dict)
+            else None,
+            timeline_latest_operation=audit_payload.get("timeline_latest_operation")
+            if isinstance(audit_payload, dict)
+            else None,
         )
         audit_bundle_payload = read_json(audit_bundle_manifest_out)
         audit_bundle_chain_out = _append_audit_bundle_snapshot_manifest(
             settings.data_dir,
             manifest_path=audit_bundle_manifest_out,
-            overall_status=audit_bundle_payload.get("overall_status") if isinstance(audit_bundle_payload, dict) else None,
-            timeline_latest_operation=audit_bundle_payload.get("timeline_latest_operation") if isinstance(audit_bundle_payload, dict) else None,
+            overall_status=audit_bundle_payload.get("overall_status")
+            if isinstance(audit_bundle_payload, dict)
+            else None,
+            timeline_latest_operation=audit_bundle_payload.get("timeline_latest_operation")
+            if isinstance(audit_bundle_payload, dict)
+            else None,
         )
-        gap_history_out, gap_history_summary_out, _gap_history_text = _write_execution_gap_history(settings.data_dir)
-        audit_timeline_out, audit_timeline_summary_out, _audit_timeline_text = _write_audit_timeline(settings.data_dir)
-        audit_dashboard_out, audit_dashboard_summary_out, _refreshed_audit_dashboard_text = _write_audit_dashboard(settings.data_dir)
-        audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(settings.data_dir)
-        audit_bundle_history_out, audit_bundle_history_summary_out, _audit_bundle_history_text = _write_audit_bundle_history(
+        gap_history_out, gap_history_summary_out, _gap_history_text = _write_execution_gap_history(
             settings.data_dir
         )
-        current_state_index_out, current_state_index_summary_out, _current_state_index_text = _write_current_state_index(
+        audit_timeline_out, audit_timeline_summary_out, _audit_timeline_text = (
+            _write_audit_timeline(settings.data_dir)
+        )
+        audit_dashboard_out, audit_dashboard_summary_out, _refreshed_audit_dashboard_text = (
+            _write_audit_dashboard(settings.data_dir)
+        )
+        audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(
             settings.data_dir
         )
-        readiness_snapshot_out, readiness_snapshot_summary_out, _readiness_snapshot_text = _write_readiness_snapshot(
-            settings.data_dir
+        audit_bundle_history_out, audit_bundle_history_summary_out, _audit_bundle_history_text = (
+            _write_audit_bundle_history(settings.data_dir)
+        )
+        current_state_index_out, current_state_index_summary_out, _current_state_index_text = (
+            _write_current_state_index(settings.data_dir)
+        )
+        readiness_snapshot_out, readiness_snapshot_summary_out, _readiness_snapshot_text = (
+            _write_readiness_snapshot(settings.data_dir)
         )
         logger.info("written: {}", summary.orders_path)
         logger.info("written: {}", summary.fills_path)

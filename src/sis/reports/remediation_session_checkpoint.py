@@ -71,7 +71,9 @@ def _action_priority_key(item: dict) -> tuple[int, int, int, int, int, str, str]
     priority = _as_int(item.get("priority"))
     sequence = _as_int(item.get("sequence")) or 0
     return (
-        effective_priority if effective_priority is not None else (priority if priority is not None else 999),
+        effective_priority
+        if effective_priority is not None
+        else (priority if priority is not None else 999),
         priority if priority is not None else 999,
         _stage_rank(item.get("stage")),
         _confidence_rank(item.get("stage_signal_confidence")),
@@ -116,7 +118,9 @@ def _feedback_summary_maps(
     command_results = safe_read_json_dict(remediation_command_results_summary_path)
     evaluator = safe_read_json_dict(remediation_evaluator_summary_path)
     observation_status_by_action: dict[str, str] = {}
-    entries = command_results.get("entries") if isinstance(command_results.get("entries"), list) else []
+    entries = (
+        command_results.get("entries") if isinstance(command_results.get("entries"), list) else []
+    )
     for item in entries:
         if not isinstance(item, dict):
             continue
@@ -238,15 +242,27 @@ def _merge_actions(
         checkpoint_status = previous_item.get("checkpoint_status") or "pending"
         if key == action_key and result in VALID_RESULTS:
             checkpoint_status = result
-        evidence_status = previous_item.get("evidence_status") or item.get("evidence_status") or "evidence_missing"
+        evidence_status = (
+            previous_item.get("evidence_status")
+            or item.get("evidence_status")
+            or "evidence_missing"
+        )
         if checkpoint_status == "pass":
             evidence_status = "evidence_recorded"
         elif checkpoint_status in {"fail", "retry"}:
             evidence_status = "needs_review"
-        operator_notes = previous_item.get("operator_notes") if isinstance(previous_item.get("operator_notes"), list) else []
+        operator_notes = (
+            previous_item.get("operator_notes")
+            if isinstance(previous_item.get("operator_notes"), list)
+            else []
+        )
         if key == action_key and note:
             operator_notes = [*operator_notes, note]
-        evidence_paths = previous_item.get("evidence_paths") if isinstance(previous_item.get("evidence_paths"), list) else []
+        evidence_paths = (
+            previous_item.get("evidence_paths")
+            if isinstance(previous_item.get("evidence_paths"), list)
+            else []
+        )
         if key == action_key and evidence_path:
             evidence_paths = [*evidence_paths, evidence_path]
         observed_signals = (
@@ -294,8 +310,14 @@ def _merge_actions(
                 "checkpoint_status": checkpoint_status,
                 "evidence_status": evidence_status,
                 "operator_notes": operator_notes,
-                "evidence_paths": list(dict.fromkeys(str(value) for value in evidence_paths if isinstance(value, str))),
-                "observed_signals": list(dict.fromkeys(str(value) for value in observed_signals if isinstance(value, str))),
+                "evidence_paths": list(
+                    dict.fromkeys(str(value) for value in evidence_paths if isinstance(value, str))
+                ),
+                "observed_signals": list(
+                    dict.fromkeys(
+                        str(value) for value in observed_signals if isinstance(value, str)
+                    )
+                ),
                 "latest_exit_code": latest_exit_code,
                 "latest_stdout_summary": latest_stdout_summary,
                 "latest_stderr_summary": latest_stderr_summary,
@@ -365,11 +387,11 @@ def build_remediation_session_checkpoint(
     checkpoint_status = _checkpoint_summary_status(merged_actions)
     next_action = _next_action(merged_actions)
     next_action_command = next_action.get("command") if isinstance(next_action, dict) else None
-    next_action_observed_sources = _action_observed_sources(next_action) if isinstance(next_action, dict) else []
+    next_action_observed_sources = (
+        _action_observed_sources(next_action) if isinstance(next_action, dict) else []
+    )
     next_action_stage_signal_confidence = (
-        next_action.get("stage_signal_confidence")
-        if isinstance(next_action, dict)
-        else None
+        next_action.get("stage_signal_confidence") if isinstance(next_action, dict) else None
     )
     quick_navigation = _quick_navigation(out_path)
     related_reports = _related_reports(out_path)
@@ -410,7 +432,9 @@ def build_remediation_session_checkpoint(
         "actions": merged_actions,
         "quick_navigation": quick_navigation,
         "related_reports": related_reports,
-        "remediation_session_checkpoint_report_path": str(out_path) if out_path is not None else None,
+        "remediation_session_checkpoint_report_path": str(out_path)
+        if out_path is not None
+        else None,
     }
     lines = ["# Remediation Session Checkpoint", ""]
     if quick_navigation:
@@ -421,32 +445,34 @@ def build_remediation_session_checkpoint(
         lines.extend(["## Related Reports", ""])
         lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
-    lines.extend([
-        "## Checkpoint Summary",
-        "",
-        f"- checkpoint_status: {summary['checkpoint_status']}",
-        f"- planned_action_count: {summary['planned_action_count']}",
-        f"- pending_action_count: {summary['pending_action_count']}",
-        f"- pass_action_count: {summary['pass_action_count']}",
-        f"- fail_action_count: {summary['fail_action_count']}",
-        f"- retry_action_count: {summary['retry_action_count']}",
-        f"- next_action_command: {summary['next_action_command']}",
-        f"- next_action_observed_sources: {summary['next_action_observed_sources']}",
-        f"- next_action_stage_signal_confidence: {summary['next_action_stage_signal_confidence']}",
-        f"- updated_action_key: {summary['updated_action_key']}",
-        f"- updated_result: {summary['updated_result']}",
-        f"- updated_evidence_path: {summary['updated_evidence_path']}",
-        f"- updated_observed_signal: {summary['updated_observed_signal']}",
-        f"- updated_stdout_summary: {summary['updated_stdout_summary']}",
-        f"- updated_stderr_summary: {summary['updated_stderr_summary']}",
-        f"- updated_exit_code: {summary['updated_exit_code']}",
-        f"- remediation_command_results_summary_path: {summary['remediation_command_results_summary_path']}",
-        f"- remediation_evaluator_summary_path: {summary['remediation_evaluator_summary_path']}",
-        f"- remediation_session_summary_path: {summary['remediation_session_summary_path']}",
-        "",
-        "## Observed Source Counts",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Checkpoint Summary",
+            "",
+            f"- checkpoint_status: {summary['checkpoint_status']}",
+            f"- planned_action_count: {summary['planned_action_count']}",
+            f"- pending_action_count: {summary['pending_action_count']}",
+            f"- pass_action_count: {summary['pass_action_count']}",
+            f"- fail_action_count: {summary['fail_action_count']}",
+            f"- retry_action_count: {summary['retry_action_count']}",
+            f"- next_action_command: {summary['next_action_command']}",
+            f"- next_action_observed_sources: {summary['next_action_observed_sources']}",
+            f"- next_action_stage_signal_confidence: {summary['next_action_stage_signal_confidence']}",
+            f"- updated_action_key: {summary['updated_action_key']}",
+            f"- updated_result: {summary['updated_result']}",
+            f"- updated_evidence_path: {summary['updated_evidence_path']}",
+            f"- updated_observed_signal: {summary['updated_observed_signal']}",
+            f"- updated_stdout_summary: {summary['updated_stdout_summary']}",
+            f"- updated_stderr_summary: {summary['updated_stderr_summary']}",
+            f"- updated_exit_code: {summary['updated_exit_code']}",
+            f"- remediation_command_results_summary_path: {summary['remediation_command_results_summary_path']}",
+            f"- remediation_evaluator_summary_path: {summary['remediation_evaluator_summary_path']}",
+            f"- remediation_session_summary_path: {summary['remediation_session_summary_path']}",
+            "",
+            "## Observed Source Counts",
+            "",
+        ]
+    )
     if observed_source_counts:
         for key in sorted(observed_source_counts):
             lines.append(f"- {key}: {observed_source_counts[key]}")
@@ -456,8 +482,8 @@ def build_remediation_session_checkpoint(
     lines.extend(
         [
             "",
-        "## Action Checkpoints",
-        "",
+            "## Action Checkpoints",
+            "",
         ]
     )
     if merged_actions:
@@ -469,8 +495,12 @@ def build_remediation_session_checkpoint(
             lines.append(f"  - observed_sources: {item.get('observed_sources')}")
             lines.append(f"  - signal_observed_sources: {item.get('signal_observed_sources')}")
             lines.append(f"  - stage_signal_confidence: {item.get('stage_signal_confidence')}")
-            lines.append(f"  - feedback_observation_status: {item.get('feedback_observation_status')}")
-            lines.append(f"  - feedback_evaluation_result: {item.get('feedback_evaluation_result')}")
+            lines.append(
+                f"  - feedback_observation_status: {item.get('feedback_observation_status')}"
+            )
+            lines.append(
+                f"  - feedback_evaluation_result: {item.get('feedback_evaluation_result')}"
+            )
             lines.append(f"  - feedback_priority_reason: {item.get('feedback_priority_reason')}")
             lines.append(f"  - operator_notes: {item['operator_notes']}")
             lines.append(f"  - evidence_paths: {item['evidence_paths']}")

@@ -54,7 +54,9 @@ def test_write_ostium_constraint_artifact_distinguishes_market_close(
             return httpx.Response(200, json={"from": "XAU", "to": "USD", "mid": 2400.0})
         if request.url.path.endswith("/asset-schedule"):
             assert request.url.params["asset"] == "XAUUSD"
-            return httpx.Response(200, json={"asset": request.url.params["asset"], "marketOpen": False})
+            return httpx.Response(
+                200, json={"asset": request.url.params["asset"], "marketOpen": False}
+            )
         raise AssertionError(str(request.url))
 
     client = httpx.Client(transport=httpx.MockTransport(handler), base_url="https://example.test")
@@ -117,7 +119,12 @@ def test_write_ostium_constraint_artifact_fails_closed_without_python_sdk(
                 },
             )
         if request.url.path.endswith("/v1/prices"):
-            return httpx.Response(200, json={"prices": [{"pair": "XAU-USD", "from": "XAU", "to": "USD", "bid": 1, "ask": 2}]})
+            return httpx.Response(
+                200,
+                json={
+                    "prices": [{"pair": "XAU-USD", "from": "XAU", "to": "USD", "bid": 1, "ask": 2}]
+                },
+            )
         return httpx.Response(200, json={"asset": request.url.params.get("asset", "XAUUSD")})
 
     client = httpx.Client(transport=httpx.MockTransport(handler), base_url="https://example.test")
@@ -135,4 +142,3 @@ def test_write_ostium_constraint_artifact_fails_closed_without_python_sdk(
 
     assert result["constraint_status"] == "failed"
     assert "python_sdk_read_only_probe_failed" in result["failures"]
-

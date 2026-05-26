@@ -100,10 +100,18 @@ class GTradeExecutionAdapter:
 
     def estimate_order(self, intent: OrderIntent) -> AdapterOrderEstimate:
         matched = next(
-            (row for row in self._registry_rows() if str(row.get("canonical_symbol")).upper() == intent.canonical_symbol.upper()),
+            (
+                row
+                for row in self._registry_rows()
+                if str(row.get("canonical_symbol")).upper() == intent.canonical_symbol.upper()
+            ),
             None,
         )
-        open_fee_bps = float(matched.get("opening_fee_bps")) if matched and matched.get("opening_fee_bps") is not None else None
+        open_fee_bps = (
+            float(matched.get("opening_fee_bps"))
+            if matched and matched.get("opening_fee_bps") is not None
+            else None
+        )
         return AdapterOrderEstimate(
             venue=self.adapter_name,
             canonical_symbol=intent.canonical_symbol,
@@ -115,7 +123,9 @@ class GTradeExecutionAdapter:
         )
 
     def read_order_status(self, order_id: str) -> AdapterOrderStatus:
-        matched = next((row for row in self._order_status_rows() if str(row.get("order_id")) == order_id), None)
+        matched = next(
+            (row for row in self._order_status_rows() if str(row.get("order_id")) == order_id), None
+        )
         if matched is None:
             return AdapterOrderStatus(
                 venue=self.adapter_name,
@@ -206,11 +216,17 @@ class GTradeExecutionAdapter:
         return {
             "adapter": self.adapter_name,
             "registry_exists": self._registry_path.exists(),
-            "balance_snapshot_exists": bool(self._balance_snapshot_path and self._balance_snapshot_path.exists()),
+            "balance_snapshot_exists": bool(
+                self._balance_snapshot_path and self._balance_snapshot_path.exists()
+            ),
             "positions_snapshot_exists": bool(
                 self._positions_snapshot_path and self._positions_snapshot_path.exists()
             ),
-            "fills_snapshot_exists": bool(self._fills_snapshot_path and self._fills_snapshot_path.exists()),
-            "order_status_snapshot_exists": bool(self._order_status_path and self._order_status_path.exists()),
+            "fills_snapshot_exists": bool(
+                self._fills_snapshot_path and self._fills_snapshot_path.exists()
+            ),
+            "order_status_snapshot_exists": bool(
+                self._order_status_path and self._order_status_path.exists()
+            ),
             "mode": "read_only",
         }

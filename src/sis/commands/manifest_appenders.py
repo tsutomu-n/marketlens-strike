@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sis.ops.manifest_chain import append_operation_manifest, create_operation_manifest, latest_operation_manifest
+from sis.ops.manifest_chain import (
+    append_operation_manifest,
+    create_operation_manifest,
+    latest_operation_manifest,
+)
 from sis.paper.runner import PaperRunSummary, run_paper_step
 from sis.commands.runtime_context import (
     _execution_comparison_note_lines,
@@ -64,7 +68,9 @@ def _append_paper_operations_cycle_manifest(
         mode="paper",
         command="uv run sis paper-operations-cycle",
         status="completed" if monitoring_status == "ok" else monitoring_status,
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"orders={orders_count}",
@@ -108,7 +114,9 @@ def _append_operations_snapshot_manifest(
         mode="ops",
         command="uv run sis operations-bundle",
         status=overall_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(manifest_path)],
         notes=[
             f"overall_status={overall_status}",
@@ -150,7 +158,9 @@ def _append_operations_audit_snapshot_manifest(
         mode="ops",
         command="uv run sis operations-audit-pack",
         status=overall_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(manifest_path)],
         notes=[
             f"overall_status={overall_status}",
@@ -192,7 +202,9 @@ def _append_audit_bundle_snapshot_manifest(
         mode="ops",
         command="uv run sis audit-bundle",
         status=overall_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(manifest_path)],
         notes=[
             f"overall_status={overall_status}",
@@ -230,7 +242,9 @@ def _append_remediation_planner_manifest(
         mode="ops",
         command="uv run sis remediation-planner",
         status=planner_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"planner_status={planner_status}",
@@ -263,7 +277,9 @@ def _append_remediation_execution_plan_manifest(
         mode="ops",
         command="uv run sis remediation-execution-plan",
         status=execution_plan_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"execution_plan_status={execution_plan_status}",
@@ -296,7 +312,9 @@ def _append_remediation_session_manifest(
         mode="ops",
         command="uv run sis remediation-session",
         status=session_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"session_status={session_status}",
@@ -330,7 +348,9 @@ def _append_remediation_session_checkpoint_manifest(
         mode="ops",
         command="uv run sis remediation-session-checkpoint",
         status=checkpoint_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"checkpoint_status={checkpoint_status}",
@@ -364,7 +384,9 @@ def _append_remediation_scoreboard_manifest(
         mode="ops",
         command="uv run sis remediation-scoreboard",
         status=scoreboard_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"scoreboard_status={scoreboard_status}",
@@ -396,7 +418,9 @@ def _append_remediation_evaluator_manifest(
         mode="ops",
         command="uv run sis remediation-evaluator",
         status=evaluator_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"evaluator_status={evaluator_status}",
@@ -426,7 +450,9 @@ def _append_remediation_evidence_manifest(
         mode="ops",
         command="uv run sis remediation-evidence",
         status=evidence_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"evidence_status={evidence_status}",
@@ -456,7 +482,9 @@ def _append_remediation_command_results_manifest(
         mode="ops",
         command="uv run sis remediation-command-results",
         status=command_results_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"command_results_status={command_results_status}",
@@ -486,7 +514,9 @@ def _append_remediation_evidence_ingest_manifest(
         mode="ops",
         command="uv run sis remediation-evidence-ingest",
         status=checkpoint_status or "unknown",
-        parent_run_id=str(parent.get("run_id")) if isinstance(parent, dict) and parent.get("run_id") else None,
+        parent_run_id=str(parent.get("run_id"))
+        if isinstance(parent, dict) and parent.get("run_id")
+        else None,
         artifacts=[str(checkpoint_summary_path)],
         notes=[
             f"action_key={action_key}",

@@ -17,10 +17,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Plan the next shared live evidence collection window for gTrade symbols."
     )
-    parser.add_argument("--symbol", dest="symbols", action="append", help="Symbol to include. Repeatable.")
+    parser.add_argument(
+        "--symbol", dest="symbols", action="append", help="Symbol to include. Repeatable."
+    )
     parser.add_argument("--duration-minutes", type=int, default=120)
     parser.add_argument("--metadata-interval-seconds", type=int, default=120)
-    parser.add_argument("--schedule", action="store_true", help="Schedule the computed run immediately.")
+    parser.add_argument(
+        "--schedule", action="store_true", help="Schedule the computed run immediately."
+    )
     parser.add_argument("--launcher-out", default="logs/live_evidence/next_schedule_launcher.out")
     return parser.parse_args()
 

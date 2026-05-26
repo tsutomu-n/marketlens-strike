@@ -103,11 +103,7 @@ def _related_reports(summary: dict[str, object]) -> dict[str, str]:
         ),
         ("live_evidence_report", summary.get("live_evidence_report_path")),
     )
-    return {
-        key: value
-        for key, value in ordered_items
-        if isinstance(value, str) and value
-    }
+    return {key: value for key, value in ordered_items if isinstance(value, str) and value}
 
 
 def _quick_navigation(summary: dict[str, object]) -> dict[str, str]:
@@ -128,11 +124,7 @@ def _quick_navigation(summary: dict[str, object]) -> dict[str, str]:
         ),
         ("live_evidence_report", summary.get("live_evidence_report_path")),
     )
-    return {
-        key: value
-        for key, value in items
-        if isinstance(value, str) and value
-    }
+    return {key: value for key, value in items if isinstance(value, str) and value}
 
 
 def _required_artifact_paths(summary: dict[str, object]) -> dict[str, str | None]:
@@ -191,8 +183,12 @@ def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str
         "execution_venue_comparison_summary_path": ["uv run sis refresh-operations-artifacts"],
         "execution_venue_diagnostics_summary_path": ["uv run sis refresh-operations-artifacts"],
         "execution_gap_history_summary_path": ["uv run sis refresh-operations-artifacts"],
-        "execution_state_comparison_history_summary_path": ["uv run sis refresh-operations-artifacts"],
-        "execution_snapshot_drift_history_summary_path": ["uv run sis refresh-operations-artifacts"],
+        "execution_state_comparison_history_summary_path": [
+            "uv run sis refresh-operations-artifacts"
+        ],
+        "execution_snapshot_drift_history_summary_path": [
+            "uv run sis refresh-operations-artifacts"
+        ],
         "execution_drift_overview_summary_path": ["uv run sis refresh-operations-artifacts"],
         "readiness_summary_path": ["uv run sis refresh-operations-artifacts"],
         "phase_gate_summary_path": ["uv run sis phase-gate-review"],
@@ -253,7 +249,10 @@ def _remediation_order(
             {
                 "priority": 5,
                 "reason": "readiness_not_cleared",
-                "commands": ["uv run sis refresh-operations-artifacts", "uv run sis phase-gate-review"],
+                "commands": [
+                    "uv run sis refresh-operations-artifacts",
+                    "uv run sis phase-gate-review",
+                ],
             }
         )
     return steps
@@ -300,10 +299,16 @@ def _remediation_preflight_commands(reason: str) -> list[str]:
 def _remediation_postcheck_commands(reason: str) -> list[str]:
     command_map = {
         "missing_required_artifacts": ["uv run sis paper-operations-runbook"],
-        "strict_validation_failed": ["uv run sis phase-gate-review", "uv run sis paper-operations-runbook"],
+        "strict_validation_failed": [
+            "uv run sis phase-gate-review",
+            "uv run sis paper-operations-runbook",
+        ],
         "execution_diagnostics_degraded": ["uv run sis paper-operations-runbook"],
         "execution_drift_unresolved": ["uv run sis paper-operations-runbook"],
-        "readiness_not_cleared": ["uv run sis phase-gate-review", "uv run sis paper-operations-runbook"],
+        "readiness_not_cleared": [
+            "uv run sis phase-gate-review",
+            "uv run sis paper-operations-runbook",
+        ],
     }
     return command_map.get(reason, [])
 
@@ -409,9 +414,7 @@ def _remediation_signal_snapshot_before(
             "execution_fills_gap_detected": summary.get("execution_fills_gap_detected"),
         },
         "execution_drift_unresolved": {
-            "execution_drift_overview_status": summary.get(
-                "execution_drift_overview_status"
-            ),
+            "execution_drift_overview_status": summary.get("execution_drift_overview_status"),
             "execution_state_comparison_mismatching_count": summary.get(
                 "execution_state_comparison_mismatching_count"
             ),
@@ -517,9 +520,7 @@ def build_paper_operations_runbook(
     execution_state_comparison_fields = execution_state_comparison_flat_fields(
         execution_state_comparison
     )
-    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(
-        execution_snapshot_drift
-    )
+    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(execution_snapshot_drift)
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
     readiness_fields = readiness_flat_fields(readiness)
     phase_gate_fields = phase_gate_flat_fields(phase_gate)
@@ -529,10 +530,16 @@ def build_paper_operations_runbook(
         "scheduled_for": scheduled_run.get("scheduled_for"),
         "scheduled_command": scheduled_run.get("command"),
         "scheduled_run_path": str(scheduled_run_path) if scheduled_run_path is not None else None,
-        "daemon_manifest_path": str(daemon_manifest_path) if daemon_manifest_path is not None else None,
-        "monitoring_snapshot_path": str(monitoring_snapshot_path) if monitoring_snapshot_path is not None else None,
+        "daemon_manifest_path": str(daemon_manifest_path)
+        if daemon_manifest_path is not None
+        else None,
+        "monitoring_snapshot_path": str(monitoring_snapshot_path)
+        if monitoring_snapshot_path is not None
+        else None,
         "execution_snapshot_summary_path": (
-            str(execution_snapshot_summary_path) if execution_snapshot_summary_path is not None else None
+            str(execution_snapshot_summary_path)
+            if execution_snapshot_summary_path is not None
+            else None
         ),
         "execution_venue_comparison_summary_path": (
             str(execution_venue_comparison_summary_path)
@@ -545,7 +552,9 @@ def build_paper_operations_runbook(
             else None
         ),
         "execution_gap_history_summary_path": (
-            str(execution_gap_history_summary_path) if execution_gap_history_summary_path is not None else None
+            str(execution_gap_history_summary_path)
+            if execution_gap_history_summary_path is not None
+            else None
         ),
         "execution_state_comparison_history_summary_path": (
             str(execution_state_comparison_history_summary_path)
@@ -562,9 +571,15 @@ def build_paper_operations_runbook(
             if execution_drift_overview_summary_path is not None
             else None
         ),
-        "readiness_summary_path": str(readiness_summary_path) if readiness_summary_path is not None else None,
-        "phase_gate_summary_path": str(phase_gate_summary_path) if phase_gate_summary_path is not None else None,
-        "ops_dashboard_summary_path": str(ops_dashboard_summary_path) if ops_dashboard_summary_path is not None else None,
+        "readiness_summary_path": str(readiness_summary_path)
+        if readiness_summary_path is not None
+        else None,
+        "phase_gate_summary_path": str(phase_gate_summary_path)
+        if phase_gate_summary_path is not None
+        else None,
+        "ops_dashboard_summary_path": str(ops_dashboard_summary_path)
+        if ops_dashboard_summary_path is not None
+        else None,
         "daemon_mode": daemon_manifest.get("mode"),
         "monitoring_status": monitoring.get("status"),
         "phase_gate_summary": phase_gate,
@@ -702,10 +717,14 @@ def build_paper_operations_runbook(
         for item in remediation_order
     }
     summary["remediation_planner_summary_path"] = (
-        str(remediation_planner_summary_path) if remediation_planner_summary_path is not None else None
+        str(remediation_planner_summary_path)
+        if remediation_planner_summary_path is not None
+        else None
     )
     summary["remediation_evaluator_summary_path"] = (
-        str(remediation_evaluator_summary_path) if remediation_evaluator_summary_path is not None else None
+        str(remediation_evaluator_summary_path)
+        if remediation_evaluator_summary_path is not None
+        else None
     )
     summary["required_artifact_paths"] = required_artifact_paths
     summary["missing_required_artifact_paths"] = missing_required_artifact_paths
@@ -722,7 +741,9 @@ def build_paper_operations_runbook(
     summary["remediation_signal_snapshots_previous"] = previous_signal_snapshots
     summary["remediation_signal_snapshot_diffs"] = remediation_signal_snapshot_diffs
     summary["remediation_recommendations"] = remediation_recommendations
-    summary["paper_operations_runbook_report_path"] = str(out_path) if out_path is not None else None
+    summary["paper_operations_runbook_report_path"] = (
+        str(out_path) if out_path is not None else None
+    )
     summary["live_evidence_report_path"] = readiness.get("live_evidence_report_path")
     related_reports = _related_reports(summary)
     quick_navigation = _quick_navigation({**summary, "related_reports": related_reports})
@@ -840,17 +861,17 @@ def build_paper_operations_runbook(
     lines.extend(
         [
             "",
-        "## Related Reports",
-        "",
-    ]
+            "## Related Reports",
+            "",
+        ]
     )
     for key, value in related_reports.items():
         lines.append(f"- {key}: {value}")
     lines.extend(
         [
             "",
-        "## Strict Validation Preview",
-        "",
+            "## Strict Validation Preview",
+            "",
         ]
     )
     validation_issue_previews = phase_gate_issue_preview_lines(summary)
@@ -979,39 +1000,39 @@ def build_paper_operations_runbook(
             "",
             "## Recommended Sequence",
             "",
-        "1. Run `uv run sis refresh-operations-artifacts`.",
-        "2. Review `data/reports/execution_venue_comparison.md` for cross-venue execution state.",
-        "3. Review `data/reports/execution_venue_diagnostics.md` for cross-venue gaps and deltas.",
-        "4. Review `data/reports/execution_gap_history.md` for gap/reaction history.",
-        "5. Review `data/reports/execution_state_comparison_history.md` for diagnostics-vs-history mismatches.",
-        "6. Review `data/reports/execution_snapshot_drift_history.md` for snapshot-only drift.",
-        "7. Review `data/reports/execution_drift_overview.md` for the combined drift judgement.",
-        "8. Review `data/reports/readiness_snapshot.md` for current phase readiness.",
-        "9. Review `data/reports/remediation_scoreboard.md` for the current retry queue and blocker status.",
-        "10. Review `data/reports/remediation_session_checkpoint.md` for the next action checkpoint.",
-        "11. Review `data/reports/remediation_session.md` for the pending command queue.",
-        "12. Review `data/reports/remediation_execution_plan.md` for staged command ordering.",
-        "13. Review `data/reports/remediation_planner.md` for the current next-best command.",
-        "14. Review `data/reports/operations_dashboard.md` for overall status.",
-        "15. Review `data/reports/ops_review_report.md` for latest operation chain details.",
-        "16. If status is acceptable, run `uv run sis paper-step` or the scheduled paper command.",
-        "17. Re-run `uv run sis refresh-operations-artifacts` after the paper step.",
-        "",
-        "## Stop Conditions",
-        "",
-        "- If `monitoring_status` is `degraded`, inspect missing artifacts before continuing.",
-        "- If `dashboard_status` is `blocked`, do not proceed until the latest blocked cause is understood.",
-        "- If `execution_diagnostics_status` is not `ok`, inspect execution venue gaps before continuing.",
-        "- If `execution_state_comparison_latest_status_match` is not `True`, inspect diagnostics/history drift before continuing.",
-        "- If `execution_snapshot_drift_mismatching_snapshot_count` is not `0`, inspect snapshot-only drift before continuing.",
-        "- If `execution_drift_overview_status` is not `ok`, resolve the combined drift judgement before continuing.",
-        "- If `readiness_execution_ready` is not `True`, stay in the current phase and inspect readiness blockers before continuing.",
-        "- If `missing_required_artifact_paths` is not empty, regenerate the missing artifacts before continuing.",
-        "- If `missing_required_artifact_paths` is not empty, run the mapped commands in `Recovery Commands` before continuing.",
-        "- Execute the commands in `Remediation Order` from lower priority number to higher before retrying paper operations.",
-        "- If `phase_gate_strict_validation_issue_count` is not `0`, run strict artifact validation and clear the reported issues before continuing.",
-        "- If the kill switch is enabled, do not run paper or live-adjacent commands.",
-        "",
+            "1. Run `uv run sis refresh-operations-artifacts`.",
+            "2. Review `data/reports/execution_venue_comparison.md` for cross-venue execution state.",
+            "3. Review `data/reports/execution_venue_diagnostics.md` for cross-venue gaps and deltas.",
+            "4. Review `data/reports/execution_gap_history.md` for gap/reaction history.",
+            "5. Review `data/reports/execution_state_comparison_history.md` for diagnostics-vs-history mismatches.",
+            "6. Review `data/reports/execution_snapshot_drift_history.md` for snapshot-only drift.",
+            "7. Review `data/reports/execution_drift_overview.md` for the combined drift judgement.",
+            "8. Review `data/reports/readiness_snapshot.md` for current phase readiness.",
+            "9. Review `data/reports/remediation_scoreboard.md` for the current retry queue and blocker status.",
+            "10. Review `data/reports/remediation_session_checkpoint.md` for the next action checkpoint.",
+            "11. Review `data/reports/remediation_session.md` for the pending command queue.",
+            "12. Review `data/reports/remediation_execution_plan.md` for staged command ordering.",
+            "13. Review `data/reports/remediation_planner.md` for the current next-best command.",
+            "14. Review `data/reports/operations_dashboard.md` for overall status.",
+            "15. Review `data/reports/ops_review_report.md` for latest operation chain details.",
+            "16. If status is acceptable, run `uv run sis paper-step` or the scheduled paper command.",
+            "17. Re-run `uv run sis refresh-operations-artifacts` after the paper step.",
+            "",
+            "## Stop Conditions",
+            "",
+            "- If `monitoring_status` is `degraded`, inspect missing artifacts before continuing.",
+            "- If `dashboard_status` is `blocked`, do not proceed until the latest blocked cause is understood.",
+            "- If `execution_diagnostics_status` is not `ok`, inspect execution venue gaps before continuing.",
+            "- If `execution_state_comparison_latest_status_match` is not `True`, inspect diagnostics/history drift before continuing.",
+            "- If `execution_snapshot_drift_mismatching_snapshot_count` is not `0`, inspect snapshot-only drift before continuing.",
+            "- If `execution_drift_overview_status` is not `ok`, resolve the combined drift judgement before continuing.",
+            "- If `readiness_execution_ready` is not `True`, stay in the current phase and inspect readiness blockers before continuing.",
+            "- If `missing_required_artifact_paths` is not empty, regenerate the missing artifacts before continuing.",
+            "- If `missing_required_artifact_paths` is not empty, run the mapped commands in `Recovery Commands` before continuing.",
+            "- Execute the commands in `Remediation Order` from lower priority number to higher before retrying paper operations.",
+            "- If `phase_gate_strict_validation_issue_count` is not `0`, run strict artifact validation and clear the reported issues before continuing.",
+            "- If the kill switch is enabled, do not run paper or live-adjacent commands.",
+            "",
         ]
     )
 

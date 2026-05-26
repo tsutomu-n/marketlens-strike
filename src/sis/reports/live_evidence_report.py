@@ -96,15 +96,11 @@ def _latest_execution_lineage_flat_values(
         timeline_latest_execution_comparison_summary=(
             data.timeline_latest_execution_comparison_summary
         ),
-        bundle_history_latest_execution_summary=(
-            data.bundle_history_latest_execution_summary
-        ),
+        bundle_history_latest_execution_summary=(data.bundle_history_latest_execution_summary),
         bundle_history_latest_execution_comparison_summary=(
             data.bundle_history_latest_execution_comparison_summary
         ),
-        cycle_history_latest_execution_summary=(
-            data.cycle_history_latest_execution_summary
-        ),
+        cycle_history_latest_execution_summary=(data.cycle_history_latest_execution_summary),
         cycle_history_latest_execution_comparison_summary=(
             data.cycle_history_latest_execution_comparison_summary
         ),
@@ -319,7 +315,9 @@ def _remediation_html_metrics(readiness_summary: Mapping[str, Any]) -> str:
         ),
         (
             "Checkpoint Feedback Reason",
-            readiness_summary.get("timeline_latest_remediation_checkpoint_feedback_priority_reason"),
+            readiness_summary.get(
+                "timeline_latest_remediation_checkpoint_feedback_priority_reason"
+            ),
         ),
         (
             "Scoreboard Status",
@@ -331,7 +329,9 @@ def _remediation_html_metrics(readiness_summary: Mapping[str, Any]) -> str:
         ),
         (
             "Scoreboard Feedback Reason",
-            readiness_summary.get("timeline_latest_remediation_scoreboard_feedback_priority_reason"),
+            readiness_summary.get(
+                "timeline_latest_remediation_scoreboard_feedback_priority_reason"
+            ),
         ),
     ]
     return "\n".join(
@@ -409,11 +409,7 @@ def _related_report_lines(
         ("remediation_planner_report", readiness_summary.get("remediation_planner_report")),
         ("live_evidence_report", readiness_summary.get("live_evidence_report")),
     )
-    return [
-        f"- {key}: `{value}`"
-        for key, value in items
-        if value is not None
-    ]
+    return [f"- {key}: `{value}`" for key, value in items if value is not None]
 
 
 def _related_report_html_metrics(
@@ -605,28 +601,64 @@ def build_live_evidence_report_data(
     audit_summary: dict[str, Any] | None = None,
 ) -> LiveEvidenceReportData:
     manifest = load_manifest_payload(manifest_path)
-    artifact_paths = manifest.get("artifacts", {}) if isinstance(manifest.get("artifacts"), dict) else {}
+    artifact_paths = (
+        manifest.get("artifacts", {}) if isinstance(manifest.get("artifacts"), dict) else {}
+    )
     today_utc = datetime.now(timezone.utc).date().isoformat()
     evidence_card_path = artifact_paths.get("evidence_card")
-    evidence_card = Path(evidence_card_path) if isinstance(evidence_card_path, str) and evidence_card_path else _latest_evidence_card(data_dir)
+    evidence_card = (
+        Path(evidence_card_path)
+        if isinstance(evidence_card_path, str) and evidence_card_path
+        else _latest_evidence_card(data_dir)
+    )
     artifacts = LiveEvidenceArtifacts(
-        sidecar_metadata=Path(artifact_paths.get("sidecar_metadata", data_dir / f"raw/sidecar/gtrade/{today_utc}.jsonl")),
-        sidecar_pricing=Path(artifact_paths.get("sidecar_pricing", data_dir / f"raw/sidecar/gtrade-pricing/{today_utc}.jsonl")),
-        raw_quotes=Path(artifact_paths.get("raw_quotes", data_dir / f"raw/quotes/gtrade/{today_utc}.jsonl")),
-        normalized_quotes=Path(artifact_paths.get("normalized_quotes", data_dir / "normalized/quotes.parquet")),
-        cost_matrix=Path(artifact_paths.get("cost_matrix", data_dir / "research/venue_cost_matrix.csv")),
-        backtest_metrics=Path(artifact_paths.get("backtest_metrics", data_dir / "research/backtest_metrics.json")),
-        go_no_go_report=Path(artifact_paths.get("go_no_go_report", data_dir / "research/go_no_go_report.md")),
+        sidecar_metadata=Path(
+            artifact_paths.get(
+                "sidecar_metadata", data_dir / f"raw/sidecar/gtrade/{today_utc}.jsonl"
+            )
+        ),
+        sidecar_pricing=Path(
+            artifact_paths.get(
+                "sidecar_pricing", data_dir / f"raw/sidecar/gtrade-pricing/{today_utc}.jsonl"
+            )
+        ),
+        raw_quotes=Path(
+            artifact_paths.get("raw_quotes", data_dir / f"raw/quotes/gtrade/{today_utc}.jsonl")
+        ),
+        normalized_quotes=Path(
+            artifact_paths.get("normalized_quotes", data_dir / "normalized/quotes.parquet")
+        ),
+        cost_matrix=Path(
+            artifact_paths.get("cost_matrix", data_dir / "research/venue_cost_matrix.csv")
+        ),
+        backtest_metrics=Path(
+            artifact_paths.get("backtest_metrics", data_dir / "research/backtest_metrics.json")
+        ),
+        go_no_go_report=Path(
+            artifact_paths.get("go_no_go_report", data_dir / "research/go_no_go_report.md")
+        ),
         evidence_card=evidence_card,
     )
     manifest_status = parse_manifest_status(manifest_path)
-    resolved_status = status or manifest_status or (parse_run_status(log_path) if log_path is not None else "running")
+    resolved_status = (
+        status
+        or manifest_status
+        or (parse_run_status(log_path) if log_path is not None else "running")
+    )
     evidence_payload = load_manifest_payload(evidence_card)
-    venue_decisions = evidence_payload.get("venue_decisions", []) if isinstance(evidence_payload, dict) else []
+    venue_decisions = (
+        evidence_payload.get("venue_decisions", []) if isinstance(evidence_payload, dict) else []
+    )
     blockers = manifest.get("blockers", []) if isinstance(manifest.get("blockers"), list) else []
-    next_actions = manifest.get("next_actions", []) if isinstance(manifest.get("next_actions"), list) else []
-    phase_gate_summary = _summary_from_manifest_or_evidence(manifest, evidence_payload, "phase_gate_summary")
-    execution_summary = _summary_from_manifest_or_evidence(manifest, evidence_payload, "execution_summary")
+    next_actions = (
+        manifest.get("next_actions", []) if isinstance(manifest.get("next_actions"), list) else []
+    )
+    phase_gate_summary = _summary_from_manifest_or_evidence(
+        manifest, evidence_payload, "phase_gate_summary"
+    )
+    execution_summary = _summary_from_manifest_or_evidence(
+        manifest, evidence_payload, "execution_summary"
+    )
     execution_comparison_summary = _summary_from_manifest_or_evidence(
         manifest,
         evidence_payload,
@@ -657,7 +689,9 @@ def build_live_evidence_report_data(
         evidence_payload,
         "execution_drift_overview_summary",
     )
-    readiness_summary = _summary_from_manifest_or_evidence(manifest, evidence_payload, "readiness_summary")
+    readiness_summary = _summary_from_manifest_or_evidence(
+        manifest, evidence_payload, "readiness_summary"
+    )
     if not blockers and isinstance(evidence_payload, dict):
         blockers = evidence_payload.get("blockers", [])
     if not next_actions and isinstance(evidence_payload, dict):
@@ -682,15 +716,29 @@ def build_live_evidence_report_data(
     cost_rows = _load_cost_rows(artifacts.cost_matrix)
     backtest_metrics = _load_backtest_metrics(artifacts.backtest_metrics)
     validation = validate_artifacts(data_dir, Path("schemas"), strict=False)
-    log_lines = log_path.read_text(encoding="utf-8").splitlines() if log_path is not None and log_path.exists() else []
+    log_lines = (
+        log_path.read_text(encoding="utf-8").splitlines()
+        if log_path is not None and log_path.exists()
+        else []
+    )
     started_at_utc, finished_at_utc = _started_finished(log_lines)
     started_at_utc = manifest.get("started_at_utc") or started_at_utc
     finished_at_utc = manifest.get("finished_at_utc") or finished_at_utc
-    manifest_row_counts = manifest.get("row_counts", {}) if isinstance(manifest.get("row_counts"), dict) else {}
+    manifest_row_counts = (
+        manifest.get("row_counts", {}) if isinstance(manifest.get("row_counts"), dict) else {}
+    )
     row_counts = {
-        "sidecar_metadata": int(manifest_row_counts.get("sidecar_metadata", _count_jsonl_rows(artifacts.sidecar_metadata))),
-        "sidecar_pricing": int(manifest_row_counts.get("sidecar_pricing", _count_jsonl_rows(artifacts.sidecar_pricing))),
-        "raw_quotes": int(manifest_row_counts.get("raw_quotes", _count_jsonl_rows(artifacts.raw_quotes))),
+        "sidecar_metadata": int(
+            manifest_row_counts.get(
+                "sidecar_metadata", _count_jsonl_rows(artifacts.sidecar_metadata)
+            )
+        ),
+        "sidecar_pricing": int(
+            manifest_row_counts.get("sidecar_pricing", _count_jsonl_rows(artifacts.sidecar_pricing))
+        ),
+        "raw_quotes": int(
+            manifest_row_counts.get("raw_quotes", _count_jsonl_rows(artifacts.raw_quotes))
+        ),
     }
     latest_execution_payload, latest_execution_lineage = (
         latest_execution_payload_and_fields_from_summary(evidence_payload)
@@ -745,15 +793,21 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
     latest_execution_flat = _latest_execution_lineage_flat_values(data)
     execution_summary_flat = execution_snapshot_flat_fields(data.execution_summary)
     execution_comparison_flat = execution_comparison_flat_fields(data.execution_comparison_summary)
-    execution_diagnostics_flat = execution_diagnostics_flat_fields(data.execution_diagnostics_summary)
-    execution_gap_history_flat = execution_gap_history_flat_fields(data.execution_gap_history_summary)
+    execution_diagnostics_flat = execution_diagnostics_flat_fields(
+        data.execution_diagnostics_summary
+    )
+    execution_gap_history_flat = execution_gap_history_flat_fields(
+        data.execution_gap_history_summary
+    )
     execution_state_comparison_flat = execution_state_comparison_flat_fields(
         data.execution_state_comparison_summary
     )
     execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
         data.execution_snapshot_drift_summary
     )
-    execution_drift_flat = execution_drift_overview_flat_fields(data.execution_drift_overview_summary)
+    execution_drift_flat = execution_drift_overview_flat_fields(
+        data.execution_drift_overview_summary
+    )
     audit_summary_flat = audit_summary_fields(data.audit_summary, data.audit_summary)
     lines: list[str] = []
     lines.append("# Live Evidence Detailed Report")
@@ -783,7 +837,9 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
         lines.append(f"- decision: `{phase_gate_flat.get('phase_gate_decision')}`")
         lines.append(f"- phase2_entry_allowed: `{phase_gate_flat.get('phase2_entry_allowed')}`")
         lines.append(f"- phase_gate_reason: `{phase_gate_flat.get('phase_gate_reason')}`")
-        lines.append(f"- strict_validation_passed: `{phase_gate_flat.get('strict_validation_passed')}`")
+        lines.append(
+            f"- strict_validation_passed: `{phase_gate_flat.get('strict_validation_passed')}`"
+        )
         lines.append(
             "- phase_gate_strict_validation_issue_count: "
             f"`{phase_gate_flat.get('phase_gate_strict_validation_issue_count')}`"
@@ -798,9 +854,7 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
         lines.append(
             f"- next_phase_candidate: `{readiness_flat.get('readiness_next_phase_candidate')}`"
         )
-        lines.append(
-            f"- execution_ready: `{readiness_flat.get('readiness_execution_ready')}`"
-        )
+        lines.append(f"- execution_ready: `{readiness_flat.get('readiness_execution_ready')}`")
         lines.append("")
         if data.readiness_summary.get("timeline_latest_remediation_planner_status") is not None:
             lines.append("## Current Remediation Queue")
@@ -845,7 +899,9 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
     if data.execution_summary:
         lines.append("## Execution Snapshot")
         lines.append("")
-        lines.append(f"- overall_status: `{execution_summary_flat.get('execution_overall_status')}`")
+        lines.append(
+            f"- overall_status: `{execution_summary_flat.get('execution_overall_status')}`"
+        )
         lines.append(f"- venue_count: `{execution_summary_flat.get('execution_venue_count')}`")
         lines.append(f"- report_path: `{execution_summary_flat.get('execution_report_path')}`")
         lines.append("")
@@ -863,7 +919,9 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
     if data.execution_diagnostics_summary:
         lines.append("## Execution Venue Diagnostics")
         lines.append("")
-        lines.append(f"- overall_status: `{execution_diagnostics_flat.get('execution_diagnostics_status')}`")
+        lines.append(
+            f"- overall_status: `{execution_diagnostics_flat.get('execution_diagnostics_status')}`"
+        )
         lines.append(
             f"- balance_gap_detected: `{execution_diagnostics_flat.get('execution_balance_gap_detected')}`"
         )
@@ -930,7 +988,9 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
     if data.execution_drift_overview_summary:
         lines.append("## Execution Drift Overview")
         lines.append("")
-        lines.append(f"- overall_status: `{execution_drift_flat.get('execution_drift_overview_status')}`")
+        lines.append(
+            f"- overall_status: `{execution_drift_flat.get('execution_drift_overview_status')}`"
+        )
         lines.append(
             f"- diagnostics_alignment_match: `{execution_drift_flat.get('execution_drift_overview_diagnostics_alignment_match')}`"
         )
@@ -977,7 +1037,9 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
     lines.append("")
     lines.append("## Cost Matrix Snapshot")
     lines.append("")
-    lines.append("| Venue | Symbol | Stale Rate | Tradable Rate | Spread p90 bps | Holding 4h bps | Notes |")
+    lines.append(
+        "| Venue | Symbol | Stale Rate | Tradable Rate | Spread p90 bps | Holding 4h bps | Notes |"
+    )
     lines.append("|---|---|---|---|---|---|---|")
     for row in data.cost_rows:
         lines.append(
@@ -987,7 +1049,9 @@ def render_live_evidence_report(data: LiveEvidenceReportData) -> str:
     lines.append("")
     lines.append("## Backtest Snapshot")
     lines.append("")
-    lines.append("| Venue | Symbol | Trade Count | Avg Trade Return | Cost Drag bps | Stale Rejected | Halt Rejected |")
+    lines.append(
+        "| Venue | Symbol | Trade Count | Avg Trade Return | Cost Drag bps | Stale Rejected | Halt Rejected |"
+    )
     lines.append("|---|---|---|---|---|---|---|")
     for row in data.backtest_metrics:
         lines.append(
@@ -1032,15 +1096,21 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
     latest_execution_flat = _latest_execution_lineage_flat_values(data)
     execution_summary_flat = execution_snapshot_flat_fields(data.execution_summary)
     execution_comparison_flat = execution_comparison_flat_fields(data.execution_comparison_summary)
-    execution_diagnostics_flat = execution_diagnostics_flat_fields(data.execution_diagnostics_summary)
-    execution_gap_history_flat = execution_gap_history_flat_fields(data.execution_gap_history_summary)
+    execution_diagnostics_flat = execution_diagnostics_flat_fields(
+        data.execution_diagnostics_summary
+    )
+    execution_gap_history_flat = execution_gap_history_flat_fields(
+        data.execution_gap_history_summary
+    )
     execution_state_comparison_flat = execution_state_comparison_flat_fields(
         data.execution_state_comparison_summary
     )
     execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
         data.execution_snapshot_drift_summary
     )
-    execution_drift_flat = execution_drift_overview_flat_fields(data.execution_drift_overview_summary)
+    execution_drift_flat = execution_drift_overview_flat_fields(
+        data.execution_drift_overview_summary
+    )
     remediation_metrics = _remediation_html_metrics(data.readiness_summary)
     restart_pointer_metrics = _restart_pointer_html_metrics(data.readiness_summary)
     quick_navigation_metrics = _quick_navigation_html_metrics(
@@ -1051,6 +1121,7 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
         data.readiness_summary,
         data.phase_gate_summary,
     )
+
     def esc(value: object) -> str:
         return html.escape("" if value is None else str(value))
 
@@ -1110,10 +1181,15 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
         for row in data.backtest_metrics
     )
     blocker_items = "".join(f"<li>{esc(item)}</li>" for item in data.blockers) or "<li>none</li>"
-    next_action_items = "".join(f"<li>{esc(item)}</li>" for item in data.next_actions) or "<li>none</li>"
-    validation_items = "".join(
-        f"<li>{esc(issue.path)}: {esc(issue.message)}</li>" for issue in data.validation.issues
-    ) or "<li>none</li>"
+    next_action_items = (
+        "".join(f"<li>{esc(item)}</li>" for item in data.next_actions) or "<li>none</li>"
+    )
+    validation_items = (
+        "".join(
+            f"<li>{esc(issue.path)}: {esc(issue.message)}</li>" for issue in data.validation.issues
+        )
+        or "<li>none</li>"
+    )
     log_tail = html.escape("\n".join(data.log_tail))
     audit_summary_flat = audit_summary_fields(data.audit_summary, data.audit_summary)
 
@@ -1167,27 +1243,27 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
     <section>
       <h2>Audit Summary</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(audit_summary_flat.get('overall_status'))}</div></div>
-        <div class="metric"><div class="label">Latest Operation</div><div class="value">{esc(audit_summary_flat.get('latest_operation'))}</div></div>
-        <div class="metric"><div class="label">Bundle History Snapshot Count</div><div class="value">{esc(audit_summary_flat.get('bundle_history_snapshot_count'))}</div></div>
+        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(audit_summary_flat.get("overall_status"))}</div></div>
+        <div class="metric"><div class="label">Latest Operation</div><div class="value">{esc(audit_summary_flat.get("latest_operation"))}</div></div>
+        <div class="metric"><div class="label">Bundle History Snapshot Count</div><div class="value">{esc(audit_summary_flat.get("bundle_history_snapshot_count"))}</div></div>
       </div>
     </section>
     <section>
       <h2>Phase Gate Summary</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Decision</div><div class="value">{esc(phase_gate_flat.get('phase_gate_decision'))}</div></div>
-        <div class="metric"><div class="label">Phase 2 Entry Allowed</div><div class="value">{esc(phase_gate_flat.get('phase2_entry_allowed'))}</div></div>
-        <div class="metric"><div class="label">Reason</div><div class="value">{esc(phase_gate_flat.get('phase_gate_reason'))}</div></div>
-        <div class="metric"><div class="label">Strict Validation</div><div class="value">{esc(phase_gate_flat.get('strict_validation_passed'))}</div></div>
-        <div class="metric"><div class="label">Strict Validation Issues</div><div class="value">{esc(phase_gate_flat.get('phase_gate_strict_validation_issue_count'))}</div></div>
-        <div class="metric"><div class="label">Checked Files</div><div class="value">{esc(phase_gate_flat.get('phase_gate_checked_files'))}</div></div>
+        <div class="metric"><div class="label">Decision</div><div class="value">{esc(phase_gate_flat.get("phase_gate_decision"))}</div></div>
+        <div class="metric"><div class="label">Phase 2 Entry Allowed</div><div class="value">{esc(phase_gate_flat.get("phase2_entry_allowed"))}</div></div>
+        <div class="metric"><div class="label">Reason</div><div class="value">{esc(phase_gate_flat.get("phase_gate_reason"))}</div></div>
+        <div class="metric"><div class="label">Strict Validation</div><div class="value">{esc(phase_gate_flat.get("strict_validation_passed"))}</div></div>
+        <div class="metric"><div class="label">Strict Validation Issues</div><div class="value">{esc(phase_gate_flat.get("phase_gate_strict_validation_issue_count"))}</div></div>
+        <div class="metric"><div class="label">Checked Files</div><div class="value">{esc(phase_gate_flat.get("phase_gate_checked_files"))}</div></div>
       </div>
     </section>
     <section>
       <h2>Readiness Summary</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Next Phase Candidate</div><div class="value">{esc(readiness_flat.get('readiness_next_phase_candidate'))}</div></div>
-        <div class="metric"><div class="label">Execution Ready</div><div class="value">{esc(readiness_flat.get('readiness_execution_ready'))}</div></div>
+        <div class="metric"><div class="label">Next Phase Candidate</div><div class="value">{esc(readiness_flat.get("readiness_next_phase_candidate"))}</div></div>
+        <div class="metric"><div class="label">Execution Ready</div><div class="value">{esc(readiness_flat.get("readiness_execution_ready"))}</div></div>
       </div>
     </section>
     <section>
@@ -1223,69 +1299,69 @@ def render_live_evidence_html(data: LiveEvidenceReportData) -> str:
     <section>
       <h2>Execution Snapshot</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_summary_flat.get('execution_overall_status'))}</div></div>
-        <div class="metric"><div class="label">Venue Count</div><div class="value">{esc(execution_summary_flat.get('execution_venue_count'))}</div></div>
-        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_summary_flat.get('execution_report_path'))}</div></div>
+        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_summary_flat.get("execution_overall_status"))}</div></div>
+        <div class="metric"><div class="label">Venue Count</div><div class="value">{esc(execution_summary_flat.get("execution_venue_count"))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_summary_flat.get("execution_report_path"))}</div></div>
       </div>
     </section>
     <section>
       <h2>Execution Venue Comparison</h2>
       <div class="meta">
-        <div class="metric"><div class="label">All Registries Present</div><div class="value">{esc(execution_comparison_flat.get('execution_comparison_all_registries_present'))}</div></div>
-        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_comparison_flat.get('execution_comparison_report_path'))}</div></div>
+        <div class="metric"><div class="label">All Registries Present</div><div class="value">{esc(execution_comparison_flat.get("execution_comparison_all_registries_present"))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_comparison_flat.get("execution_comparison_report_path"))}</div></div>
       </div>
     </section>
     <section>
       <h2>Execution Venue Diagnostics</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_diagnostics_flat.get('execution_diagnostics_status'))}</div></div>
-        <div class="metric"><div class="label">Balance Gap</div><div class="value">{esc(execution_diagnostics_flat.get('execution_balance_gap_detected'))}</div></div>
-        <div class="metric"><div class="label">Fills Gap</div><div class="value">{esc(execution_diagnostics_flat.get('execution_fills_gap_detected'))}</div></div>
-        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_diagnostics_flat.get('execution_diagnostics_report_path'))}</div></div>
+        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_diagnostics_flat.get("execution_diagnostics_status"))}</div></div>
+        <div class="metric"><div class="label">Balance Gap</div><div class="value">{esc(execution_diagnostics_flat.get("execution_balance_gap_detected"))}</div></div>
+        <div class="metric"><div class="label">Fills Gap</div><div class="value">{esc(execution_diagnostics_flat.get("execution_fills_gap_detected"))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_diagnostics_flat.get("execution_diagnostics_report_path"))}</div></div>
       </div>
     </section>
     <section>
       <h2>Execution Gap History</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Entry Count</div><div class="value">{esc(execution_gap_history_flat.get('execution_gap_history_entry_count'))}</div></div>
-        <div class="metric"><div class="label">Latest Status</div><div class="value">{esc(execution_gap_history_flat.get('execution_gap_history_latest_status'))}</div></div>
-        <div class="metric"><div class="label">Latest Diagnostics Status</div><div class="value">{esc(execution_gap_history_flat.get('execution_gap_history_latest_diagnostics_status'))}</div></div>
-        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_gap_history_flat.get('execution_gap_history_report_path'))}</div></div>
+        <div class="metric"><div class="label">Entry Count</div><div class="value">{esc(execution_gap_history_flat.get("execution_gap_history_entry_count"))}</div></div>
+        <div class="metric"><div class="label">Latest Status</div><div class="value">{esc(execution_gap_history_flat.get("execution_gap_history_latest_status"))}</div></div>
+        <div class="metric"><div class="label">Latest Diagnostics Status</div><div class="value">{esc(execution_gap_history_flat.get("execution_gap_history_latest_diagnostics_status"))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_gap_history_flat.get("execution_gap_history_report_path"))}</div></div>
       </div>
     </section>
     <section>
       <h2>Execution State Comparison History</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Entry Count</div><div class="value">{esc(execution_state_comparison_flat.get('execution_state_comparison_entry_count'))}</div></div>
-        <div class="metric"><div class="label">Latest Status Match</div><div class="value">{esc(execution_state_comparison_flat.get('execution_state_comparison_latest_status_match'))}</div></div>
-        <div class="metric"><div class="label">Mismatching Count</div><div class="value">{esc(execution_state_comparison_flat.get('execution_state_comparison_mismatching_count'))}</div></div>
-        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_state_comparison_flat.get('execution_state_comparison_report_path'))}</div></div>
+        <div class="metric"><div class="label">Entry Count</div><div class="value">{esc(execution_state_comparison_flat.get("execution_state_comparison_entry_count"))}</div></div>
+        <div class="metric"><div class="label">Latest Status Match</div><div class="value">{esc(execution_state_comparison_flat.get("execution_state_comparison_latest_status_match"))}</div></div>
+        <div class="metric"><div class="label">Mismatching Count</div><div class="value">{esc(execution_state_comparison_flat.get("execution_state_comparison_mismatching_count"))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_state_comparison_flat.get("execution_state_comparison_report_path"))}</div></div>
       </div>
     </section>
     <section>
       <h2>Execution Snapshot Drift History</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Entry Count</div><div class="value">{esc(execution_snapshot_drift_flat.get('execution_snapshot_drift_entry_count'))}</div></div>
-        <div class="metric"><div class="label">Latest State Match</div><div class="value">{esc(execution_snapshot_drift_flat.get('execution_snapshot_drift_latest_status_match'))}</div></div>
-        <div class="metric"><div class="label">Mismatching Snapshot Count</div><div class="value">{esc(execution_snapshot_drift_flat.get('execution_snapshot_drift_mismatching_snapshot_count'))}</div></div>
-        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_snapshot_drift_flat.get('execution_snapshot_drift_report_path'))}</div></div>
+        <div class="metric"><div class="label">Entry Count</div><div class="value">{esc(execution_snapshot_drift_flat.get("execution_snapshot_drift_entry_count"))}</div></div>
+        <div class="metric"><div class="label">Latest State Match</div><div class="value">{esc(execution_snapshot_drift_flat.get("execution_snapshot_drift_latest_status_match"))}</div></div>
+        <div class="metric"><div class="label">Mismatching Snapshot Count</div><div class="value">{esc(execution_snapshot_drift_flat.get("execution_snapshot_drift_mismatching_snapshot_count"))}</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">{esc(execution_snapshot_drift_flat.get("execution_snapshot_drift_report_path"))}</div></div>
       </div>
     </section>
     <section>
       <h2>Execution Drift Overview</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_drift_flat.get('execution_drift_overview_status'))}</div></div>
-        <div class="metric"><div class="label">Diagnostics Alignment</div><div class="value">{esc(execution_drift_flat.get('execution_drift_overview_diagnostics_alignment_match'))}</div></div>
-        <div class="metric"><div class="label">State Comparison Mismatch Count</div><div class="value">{esc(execution_drift_flat.get('execution_drift_overview_state_comparison_mismatching_count'))}</div></div>
-        <div class="metric"><div class="label">Snapshot Drift Mismatch Count</div><div class="value">{esc(execution_drift_flat.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count'))}</div></div>
+        <div class="metric"><div class="label">Overall Status</div><div class="value">{esc(execution_drift_flat.get("execution_drift_overview_status"))}</div></div>
+        <div class="metric"><div class="label">Diagnostics Alignment</div><div class="value">{esc(execution_drift_flat.get("execution_drift_overview_diagnostics_alignment_match"))}</div></div>
+        <div class="metric"><div class="label">State Comparison Mismatch Count</div><div class="value">{esc(execution_drift_flat.get("execution_drift_overview_state_comparison_mismatching_count"))}</div></div>
+        <div class="metric"><div class="label">Snapshot Drift Mismatch Count</div><div class="value">{esc(execution_drift_flat.get("execution_drift_overview_snapshot_drift_mismatching_snapshot_count"))}</div></div>
       </div>
     </section>
     <section>
       <h2>Artifacts</h2>
       <div class="meta">
-        <div class="metric"><div class="label">Sidecar Metadata Rows</div><div class="value">{data.row_counts['sidecar_metadata']}</div></div>
-        <div class="metric"><div class="label">Sidecar Pricing Rows</div><div class="value">{data.row_counts['sidecar_pricing']}</div></div>
-        <div class="metric"><div class="label">Raw Quote Rows</div><div class="value">{data.row_counts['raw_quotes']}</div></div>
+        <div class="metric"><div class="label">Sidecar Metadata Rows</div><div class="value">{data.row_counts["sidecar_metadata"]}</div></div>
+        <div class="metric"><div class="label">Sidecar Pricing Rows</div><div class="value">{data.row_counts["sidecar_pricing"]}</div></div>
+        <div class="metric"><div class="label">Raw Quote Rows</div><div class="value">{data.row_counts["raw_quotes"]}</div></div>
         <div class="metric"><div class="label">Evidence Card</div><div class="value">{esc(data.artifacts.evidence_card)}</div></div>
       </div>
     </section>
@@ -1347,17 +1423,29 @@ def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
     latest_execution_flat = _latest_execution_lineage_flat_values(data)
     execution_summary_flat = execution_snapshot_flat_fields(data.execution_summary)
     execution_comparison_flat = execution_comparison_flat_fields(data.execution_comparison_summary)
-    execution_diagnostics_flat = execution_diagnostics_flat_fields(data.execution_diagnostics_summary)
-    execution_gap_history_flat = execution_gap_history_flat_fields(data.execution_gap_history_summary)
+    execution_diagnostics_flat = execution_diagnostics_flat_fields(
+        data.execution_diagnostics_summary
+    )
+    execution_gap_history_flat = execution_gap_history_flat_fields(
+        data.execution_gap_history_summary
+    )
     execution_state_comparison_flat = execution_state_comparison_flat_fields(
         data.execution_state_comparison_summary
     )
     execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
         data.execution_snapshot_drift_summary
     )
-    execution_drift_flat = execution_drift_overview_flat_fields(data.execution_drift_overview_summary)
-    path_source = data.log_path if str(data.log_path) not in {"", "."} else (data.manifest_path or data.log_path)
-    reports_dir = data.output_path.parent if data.output_path.parent != Path(".") else Path("data/reports")
+    execution_drift_flat = execution_drift_overview_flat_fields(
+        data.execution_drift_overview_summary
+    )
+    path_source = (
+        data.log_path
+        if str(data.log_path) not in {"", "."}
+        else (data.manifest_path or data.log_path)
+    )
+    reports_dir = (
+        data.output_path.parent if data.output_path.parent != Path(".") else Path("data/reports")
+    )
     quick_navigation = [
         f"- live_evidence_followup_report: `{default_followup_output_path(path_source)}`",
         f"- live_evidence_report: `{data.output_path}`",
@@ -1477,13 +1565,21 @@ def render_live_evidence_followup(data: LiveEvidenceReportData) -> str:
         "",
     ]
     if data.status == "running":
-        lines.append("- collection is still running; wait for terminal status before touching downstream artifacts")
+        lines.append(
+            "- collection is still running; wait for terminal status before touching downstream artifacts"
+        )
     elif data.status in {"failed", "failed_preflight", "failed_collection"}:
-        lines.append("- inspect the failure point in the log tail and fix the first blocking error before rerunning")
+        lines.append(
+            "- inspect the failure point in the log tail and fix the first blocking error before rerunning"
+        )
     elif data.status == "partial_failed":
-        lines.append("- inspect the failed step and rerun after fixing the recorded blocker; raw data and diagnostics are already available")
+        lines.append(
+            "- inspect the failed step and rerun after fixing the recorded blocker; raw data and diagnostics are already available"
+        )
     elif data.status == "completed_with_retries":
-        lines.append("- review the retried steps and remove the underlying instability before the next live run")
+        lines.append(
+            "- review the retried steps and remove the underlying instability before the next live run"
+        )
     elif data.next_actions:
         lines.extend(f"- {item}" for item in data.next_actions)
     else:

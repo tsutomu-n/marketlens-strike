@@ -82,7 +82,9 @@ def test_backtest_bridge_uses_signal_timeframe_holding_cost_from_matrix(tmp_path
         encoding="utf-8",
     )
 
-    metrics = run_backtest_bridge(quotes_path, signals_path=signals_path, cost_matrix_path=cost_matrix_path)
+    metrics = run_backtest_bridge(
+        quotes_path, signals_path=signals_path, cost_matrix_path=cost_matrix_path
+    )
 
     assert len(metrics) == 1
     assert metrics[0].trade_count == 1

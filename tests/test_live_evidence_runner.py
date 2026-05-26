@@ -140,7 +140,9 @@ def test_manifest_round_trip(tmp_path) -> None:
         is True
     )
     assert (
-        loaded.execution_snapshot_drift_summary["execution_snapshot_drift_mismatching_snapshot_count"]
+        loaded.execution_snapshot_drift_summary[
+            "execution_snapshot_drift_mismatching_snapshot_count"
+        ]
         == 2
     )
     assert (
@@ -151,7 +153,9 @@ def test_manifest_round_trip(tmp_path) -> None:
     assert loaded.execution_drift_overview_diagnostics_alignment_match is False
     assert loaded.execution_drift_overview_summary["execution_drift_overview_status"] == "degraded"
     assert (
-        loaded.execution_drift_overview_summary["execution_drift_overview_diagnostics_alignment_match"]
+        loaded.execution_drift_overview_summary[
+            "execution_drift_overview_diagnostics_alignment_match"
+        ]
         is False
     )
     assert loaded.execution_drift_overview_state_comparison_mismatching_count == 1
@@ -223,8 +227,13 @@ def test_write_manifest_summary_uses_run_id_and_phase_gate(tmp_path) -> None:
             metadata_interval_seconds=60,
             data_dir=str(data_dir),
             decision="GO",
-            phase_gate_summary={"decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW", "phase2_entry_allowed": False},
-            artifacts={"evidence_card": str(data_dir / "evidence/evidence_card_20260522_230800.json")},
+            phase_gate_summary={
+                "decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW",
+                "phase2_entry_allowed": False,
+            },
+            artifacts={
+                "evidence_card": str(data_dir / "evidence/evidence_card_20260522_230800.json")
+            },
         ),
     )
 
@@ -232,11 +241,15 @@ def test_write_manifest_summary_uses_run_id_and_phase_gate(tmp_path) -> None:
 
     assert summary_path == tmp_path / "summaries/live_evidence_summary_20260522_2308.json"
     assert '"phase_gate_summary"' in summary_path.read_text(encoding="utf-8")
-    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in summary_path.read_text(encoding="utf-8")
+    assert '"phase_gate_decision": "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"' in summary_path.read_text(
+        encoding="utf-8"
+    )
     assert '"phase2_entry_allowed": false' in summary_path.read_text(encoding="utf-8")
     assert '"phase2_entry_reason": null' in summary_path.read_text(encoding="utf-8")
     assert '"readiness_summary"' in summary_path.read_text(encoding="utf-8")
-    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in summary_path.read_text(encoding="utf-8")
+    assert '"readiness_next_phase_candidate": "Stay Phase 1"' in summary_path.read_text(
+        encoding="utf-8"
+    )
     assert '"readiness_execution_ready": false' in summary_path.read_text(encoding="utf-8")
     assert '"execution_summary"' in summary_path.read_text(encoding="utf-8")
     assert '"execution_comparison_summary"' in summary_path.read_text(encoding="utf-8")
@@ -251,8 +264,9 @@ def test_write_manifest_summary_uses_run_id_and_phase_gate(tmp_path) -> None:
     assert '"cycle_history_latest_execution_overall_status": "ok"' in summary_path.read_text(
         encoding="utf-8"
     )
-    assert '"execution_gap_history_report_path": "data/reports/execution_gap_history.md"' in summary_path.read_text(
-        encoding="utf-8"
+    assert (
+        '"execution_gap_history_report_path": "data/reports/execution_gap_history.md"'
+        in summary_path.read_text(encoding="utf-8")
     )
     assert (
         '"execution_state_comparison_report_path": "data/reports/execution_state_comparison_history.md"'
@@ -262,12 +276,16 @@ def test_write_manifest_summary_uses_run_id_and_phase_gate(tmp_path) -> None:
         '"execution_snapshot_drift_report_path": "data/reports/execution_snapshot_drift_history.md"'
         in summary_path.read_text(encoding="utf-8")
     )
-    assert '"execution_drift_overview_status": "degraded"' in summary_path.read_text(encoding="utf-8")
-    assert '"execution_drift_overview_diagnostics_alignment_match": false' in summary_path.read_text(
+    assert '"execution_drift_overview_status": "degraded"' in summary_path.read_text(
         encoding="utf-8"
     )
-    assert '"execution_drift_overview_state_comparison_mismatching_count": 1' in summary_path.read_text(
-        encoding="utf-8"
+    assert (
+        '"execution_drift_overview_diagnostics_alignment_match": false'
+        in summary_path.read_text(encoding="utf-8")
+    )
+    assert (
+        '"execution_drift_overview_state_comparison_mismatching_count": 1'
+        in summary_path.read_text(encoding="utf-8")
     )
     assert (
         '"execution_drift_overview_snapshot_drift_mismatching_snapshot_count": 1'

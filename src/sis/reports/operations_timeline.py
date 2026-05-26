@@ -86,7 +86,9 @@ def _latest_operation_entry(items: list[dict[str, object]], operation: str) -> d
     return {}
 
 
-def _latest_note_from_operation(items: list[dict[str, object]], operation: str, prefix: str) -> str | None:
+def _latest_note_from_operation(
+    items: list[dict[str, object]], operation: str, prefix: str
+) -> str | None:
     latest = _latest_operation_entry(items, operation)
     notes = latest.get("notes", []) if isinstance(latest, dict) else []
     return _note_value(notes, prefix) if isinstance(notes, list) else None
@@ -109,7 +111,11 @@ def build_operations_timeline_report(
     summary_path: Path | None = None,
     limit: int = 20,
 ) -> str:
-    operations = list(read_jsonl(operation_chain_path)) if operation_chain_path and operation_chain_path.exists() else []
+    operations = (
+        list(read_jsonl(operation_chain_path))
+        if operation_chain_path and operation_chain_path.exists()
+        else []
+    )
     recent = operations[-limit:]
 
     counts: dict[str, int] = {}
@@ -140,9 +146,7 @@ def build_operations_timeline_report(
     )
     readiness_next_phase_counts = _note_counts(operations, "readiness_next_phase=")
     latest = recent[-1] if recent else {}
-    latest_execution_notes = _latest_notes_with_prefix(
-        operations, "execution_diagnostics_status="
-    )
+    latest_execution_notes = _latest_notes_with_prefix(operations, "execution_diagnostics_status=")
     latest_readiness_notes = _latest_notes_with_prefix(operations, "readiness_next_phase=")
     latest_phase_gate_notes = _latest_notes_with_prefix(operations, "phase_gate_decision=")
     latest_phase_gate_issue_previews = (
@@ -275,9 +279,7 @@ def build_operations_timeline_report(
                 else None
             ),
             "execution_state_comparison_mismatching_count": (
-                _note_value(
-                    latest_execution_notes, "execution_state_comparison_mismatching_count="
-                )
+                _note_value(latest_execution_notes, "execution_state_comparison_mismatching_count=")
                 if isinstance(latest_execution_notes, list)
                 else None
             ),
@@ -316,9 +318,7 @@ def build_operations_timeline_report(
                 else None
             ),
             "phase_gate_strict_validation_issue_count": (
-                _note_value(
-                    latest_phase_gate_notes, "phase_gate_strict_validation_issue_count="
-                )
+                _note_value(latest_phase_gate_notes, "phase_gate_strict_validation_issue_count=")
                 if isinstance(latest_phase_gate_notes, list)
                 else None
             ),
@@ -378,23 +378,17 @@ def build_operations_timeline_report(
             else None
         ),
         "latest_execution_gap_history_diagnostics_status": (
-            _note_value(
-                latest_execution_notes, "execution_gap_history_latest_diagnostics_status="
-            )
+            _note_value(latest_execution_notes, "execution_gap_history_latest_diagnostics_status=")
             if isinstance(latest_execution_notes, list)
             else None
         ),
         "latest_execution_state_comparison_status_match": (
-            _note_value(
-                latest_execution_notes, "execution_state_comparison_latest_status_match="
-            )
+            _note_value(latest_execution_notes, "execution_state_comparison_latest_status_match=")
             if isinstance(latest_execution_notes, list)
             else None
         ),
         "latest_execution_state_comparison_mismatching_count": (
-            _note_value(
-                latest_execution_notes, "execution_state_comparison_mismatching_count="
-            )
+            _note_value(latest_execution_notes, "execution_state_comparison_mismatching_count=")
             if isinstance(latest_execution_notes, list)
             else None
         ),
@@ -429,9 +423,7 @@ def build_operations_timeline_report(
             else None
         ),
         "latest_phase_gate_strict_validation_issue_count": (
-            _note_value(
-                latest_phase_gate_notes, "phase_gate_strict_validation_issue_count="
-            )
+            _note_value(latest_phase_gate_notes, "phase_gate_strict_validation_issue_count=")
             if isinstance(latest_phase_gate_notes, list)
             else None
         ),
@@ -445,9 +437,7 @@ def build_operations_timeline_report(
             if isinstance(latest_phase_gate_notes, list)
             else None
         ),
-        "latest_phase_gate_issue_previews": (
-            latest_phase_gate_issue_previews
-        ),
+        "latest_phase_gate_issue_previews": (latest_phase_gate_issue_previews),
         "latest_remediation_planner_status": latest_remediation_planner_status,
         "latest_remediation_planner_next_best_command": latest_remediation_planner_next_best_command,
         "latest_remediation_planner_feedback_priority_reason": (
@@ -503,16 +493,24 @@ def build_operations_timeline_report(
         "operations_dashboard_report_path": (
             str(reports_dir / "operations_dashboard.md") if reports_dir else None
         ),
-        "ops_review_report_path": str(reports_dir / "ops_review_report.md") if reports_dir else None,
+        "ops_review_report_path": str(reports_dir / "ops_review_report.md")
+        if reports_dir
+        else None,
         "operations_bundle_report_path": (
             str(reports_dir / "operations_bundle_manifest.md") if reports_dir else None
         ),
-        "audit_dashboard_report_path": str(reports_dir / "audit_dashboard.md") if reports_dir else None,
+        "audit_dashboard_report_path": str(reports_dir / "audit_dashboard.md")
+        if reports_dir
+        else None,
         "audit_bundle_report_path": (
             str(reports_dir / "audit_bundle_manifest.md") if reports_dir else None
         ),
-        "current_state_index_report_path": str(reports_dir / "current_state_index.md") if reports_dir else None,
-        "readiness_snapshot_report_path": str(reports_dir / "readiness_snapshot.md") if reports_dir else None,
+        "current_state_index_report_path": str(reports_dir / "current_state_index.md")
+        if reports_dir
+        else None,
+        "readiness_snapshot_report_path": str(reports_dir / "readiness_snapshot.md")
+        if reports_dir
+        else None,
         "paper_operations_runbook_report_path": (
             str(reports_dir / "paper_operations_runbook.md") if reports_dir else None
         ),
@@ -597,26 +595,26 @@ def build_operations_timeline_report(
     lines.extend(
         [
             "",
-        "## Remediation State",
-        "",
-        f"- latest_remediation_planner_status: {summary['latest_remediation_planner_status']}",
-        f"- latest_remediation_planner_next_best_command: {summary['latest_remediation_planner_next_best_command']}",
-        f"- latest_remediation_planner_feedback_priority_reason: {summary['latest_remediation_planner_feedback_priority_reason']}",
-        f"- latest_remediation_execution_plan_status: {summary['latest_remediation_execution_plan_status']}",
-        f"- latest_remediation_execution_plan_next_action_command: {summary['latest_remediation_execution_plan_next_action_command']}",
-        f"- latest_remediation_execution_plan_feedback_priority_reason: {summary['latest_remediation_execution_plan_feedback_priority_reason']}",
-        f"- latest_remediation_session_status: {summary['latest_remediation_session_status']}",
-        f"- latest_remediation_session_next_pending_command: {summary['latest_remediation_session_next_pending_command']}",
-        f"- latest_remediation_session_feedback_priority_reason: {summary['latest_remediation_session_feedback_priority_reason']}",
-        f"- latest_remediation_checkpoint_status: {summary['latest_remediation_checkpoint_status']}",
-        f"- latest_remediation_checkpoint_next_action_command: {summary['latest_remediation_checkpoint_next_action_command']}",
-        f"- latest_remediation_checkpoint_feedback_priority_reason: {summary['latest_remediation_checkpoint_feedback_priority_reason']}",
-        f"- latest_remediation_scoreboard_status: {summary['latest_remediation_scoreboard_status']}",
-        f"- latest_remediation_scoreboard_next_action_command: {summary['latest_remediation_scoreboard_next_action_command']}",
-        f"- latest_remediation_scoreboard_feedback_priority_reason: {summary['latest_remediation_scoreboard_feedback_priority_reason']}",
-        "",
-        "## Operation Counts",
-        "",
+            "## Remediation State",
+            "",
+            f"- latest_remediation_planner_status: {summary['latest_remediation_planner_status']}",
+            f"- latest_remediation_planner_next_best_command: {summary['latest_remediation_planner_next_best_command']}",
+            f"- latest_remediation_planner_feedback_priority_reason: {summary['latest_remediation_planner_feedback_priority_reason']}",
+            f"- latest_remediation_execution_plan_status: {summary['latest_remediation_execution_plan_status']}",
+            f"- latest_remediation_execution_plan_next_action_command: {summary['latest_remediation_execution_plan_next_action_command']}",
+            f"- latest_remediation_execution_plan_feedback_priority_reason: {summary['latest_remediation_execution_plan_feedback_priority_reason']}",
+            f"- latest_remediation_session_status: {summary['latest_remediation_session_status']}",
+            f"- latest_remediation_session_next_pending_command: {summary['latest_remediation_session_next_pending_command']}",
+            f"- latest_remediation_session_feedback_priority_reason: {summary['latest_remediation_session_feedback_priority_reason']}",
+            f"- latest_remediation_checkpoint_status: {summary['latest_remediation_checkpoint_status']}",
+            f"- latest_remediation_checkpoint_next_action_command: {summary['latest_remediation_checkpoint_next_action_command']}",
+            f"- latest_remediation_checkpoint_feedback_priority_reason: {summary['latest_remediation_checkpoint_feedback_priority_reason']}",
+            f"- latest_remediation_scoreboard_status: {summary['latest_remediation_scoreboard_status']}",
+            f"- latest_remediation_scoreboard_next_action_command: {summary['latest_remediation_scoreboard_next_action_command']}",
+            f"- latest_remediation_scoreboard_feedback_priority_reason: {summary['latest_remediation_scoreboard_feedback_priority_reason']}",
+            "",
+            "## Operation Counts",
+            "",
         ]
     )
     if latest_phase_gate_issue_previews:
@@ -657,7 +655,9 @@ def build_operations_timeline_report(
     lines.extend(["## Drift Overview State Comparison Mismatching Count Values", ""])
     if drift_overview_state_comparison_mismatching_count_values:
         for key in sorted(drift_overview_state_comparison_mismatching_count_values):
-            lines.append(f"- {key}: {drift_overview_state_comparison_mismatching_count_values[key]}")
+            lines.append(
+                f"- {key}: {drift_overview_state_comparison_mismatching_count_values[key]}"
+            )
     else:
         lines.append("- no execution drift overview state comparison mismatch notes were available")
     lines.append("")
@@ -665,7 +665,9 @@ def build_operations_timeline_report(
     lines.extend(["## Drift Overview Snapshot Drift Mismatching Count Values", ""])
     if drift_overview_snapshot_drift_mismatching_snapshot_count_values:
         for key in sorted(drift_overview_snapshot_drift_mismatching_snapshot_count_values):
-            lines.append(f"- {key}: {drift_overview_snapshot_drift_mismatching_snapshot_count_values[key]}")
+            lines.append(
+                f"- {key}: {drift_overview_snapshot_drift_mismatching_snapshot_count_values[key]}"
+            )
     else:
         lines.append("- no execution drift overview snapshot drift mismatch notes were available")
     lines.append("")

@@ -24,16 +24,37 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Wait for a live evidence run to finish, settle, and write markdown + HTML reports."
     )
-    parser.add_argument("--log-path", type=Path, help="Path to logs/live_evidence/live_evidence_*.log")
-    parser.add_argument("--manifest-path", type=Path, help="Path to logs/live_evidence/manifests/live_evidence_*.json")
+    parser.add_argument(
+        "--log-path", type=Path, help="Path to logs/live_evidence/live_evidence_*.log"
+    )
+    parser.add_argument(
+        "--manifest-path",
+        type=Path,
+        help="Path to logs/live_evidence/manifests/live_evidence_*.json",
+    )
     parser.add_argument("--markdown-output-path", type=Path, help="AI-facing markdown output path.")
     parser.add_argument("--html-output-path", type=Path, help="Human-facing HTML output path.")
-    parser.add_argument("--followup-output-path", type=Path, help="Auto-generated next-work markdown path.")
-    parser.add_argument("--data-dir", type=Path, default=Path("data"), help="Artifact root. Defaults to data/.")
-    parser.add_argument("--wait", action="store_true", help="Wait until the live evidence run completes or fails.")
-    parser.add_argument("--poll-seconds", type=int, default=15, help="Polling interval when --wait is set.")
-    parser.add_argument("--timeout-seconds", type=int, default=3 * 60 * 60, help="Max wait time when --wait is set.")
-    parser.add_argument("--settle-seconds", type=int, default=180, help="Extra wait after terminal status before reading artifacts.")
+    parser.add_argument(
+        "--followup-output-path", type=Path, help="Auto-generated next-work markdown path."
+    )
+    parser.add_argument(
+        "--data-dir", type=Path, default=Path("data"), help="Artifact root. Defaults to data/."
+    )
+    parser.add_argument(
+        "--wait", action="store_true", help="Wait until the live evidence run completes or fails."
+    )
+    parser.add_argument(
+        "--poll-seconds", type=int, default=15, help="Polling interval when --wait is set."
+    )
+    parser.add_argument(
+        "--timeout-seconds", type=int, default=3 * 60 * 60, help="Max wait time when --wait is set."
+    )
+    parser.add_argument(
+        "--settle-seconds",
+        type=int,
+        default=180,
+        help="Extra wait after terminal status before reading artifacts.",
+    )
     return parser.parse_args()
 
 

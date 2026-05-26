@@ -22,7 +22,9 @@ def _quick_navigation(out_path: Path | None) -> dict[str, str]:
     }
 
 
-def _related_reports(out_path: Path | None, latest_phase_gate_review_report_path: str | None) -> dict[str, str]:
+def _related_reports(
+    out_path: Path | None, latest_phase_gate_review_report_path: str | None
+) -> dict[str, str]:
     if out_path is None:
         return {}
     reports_dir = out_path.parent
@@ -30,13 +32,16 @@ def _related_reports(out_path: Path | None, latest_phase_gate_review_report_path
         "paper_cycle_history_report": str(out_path),
         "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
         "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
-        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_state_comparison_report": str(
+            reports_dir / "execution_state_comparison_history.md"
+        ),
         "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
         "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
         "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
         "current_state_index_report": str(reports_dir / "current_state_index.md"),
         "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
-        "phase_gate_review_report": latest_phase_gate_review_report_path or str(reports_dir / "phase_gate_review.md"),
+        "phase_gate_review_report": latest_phase_gate_review_report_path
+        or str(reports_dir / "phase_gate_review.md"),
     }
     return related
 
@@ -77,17 +82,25 @@ def build_paper_cycle_history_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    operations = list(read_jsonl(operation_chain_path)) if operation_chain_path and operation_chain_path.exists() else []
+    operations = (
+        list(read_jsonl(operation_chain_path))
+        if operation_chain_path and operation_chain_path.exists()
+        else []
+    )
     cycles = [item for item in operations if str(item.get("operation")) == "paper_operations_cycle"]
 
     completed_count = sum(1 for item in cycles if str(item.get("status")) == "completed")
     latest = cycles[-1] if cycles else {}
     latest_notes = latest.get("notes", []) if isinstance(latest, dict) else []
     latest_execution_diagnostics_status = (
-        _note_value(latest_notes, "execution_diagnostics_status=") if isinstance(latest_notes, list) else None
+        _note_value(latest_notes, "execution_diagnostics_status=")
+        if isinstance(latest_notes, list)
+        else None
     )
     latest_execution_drift_overview_status = (
-        _note_value(latest_notes, "execution_drift_overview_status=") if isinstance(latest_notes, list) else None
+        _note_value(latest_notes, "execution_drift_overview_status=")
+        if isinstance(latest_notes, list)
+        else None
     )
     latest_execution_drift_overview_diagnostics_alignment_match = (
         _note_value(latest_notes, "execution_drift_overview_diagnostics_alignment_match=")
@@ -108,16 +121,24 @@ def build_paper_cycle_history_report(
         else None
     )
     latest_readiness_next_phase = (
-        _note_value(latest_notes, "readiness_next_phase=") if isinstance(latest_notes, list) else None
+        _note_value(latest_notes, "readiness_next_phase=")
+        if isinstance(latest_notes, list)
+        else None
     )
     latest_readiness_execution_ready = (
-        _note_value(latest_notes, "readiness_execution_ready=") if isinstance(latest_notes, list) else None
+        _note_value(latest_notes, "readiness_execution_ready=")
+        if isinstance(latest_notes, list)
+        else None
     )
     latest_phase_gate_decision = (
-        _note_value(latest_notes, "phase_gate_decision=") if isinstance(latest_notes, list) else None
+        _note_value(latest_notes, "phase_gate_decision=")
+        if isinstance(latest_notes, list)
+        else None
     )
     latest_phase2_entry_allowed = (
-        _note_value(latest_notes, "phase2_entry_allowed=") if isinstance(latest_notes, list) else None
+        _note_value(latest_notes, "phase2_entry_allowed=")
+        if isinstance(latest_notes, list)
+        else None
     )
     latest_phase_gate_reason = (
         _note_value(latest_notes, "phase_gate_reason=") if isinstance(latest_notes, list) else None
@@ -133,7 +154,9 @@ def build_paper_cycle_history_report(
         else None
     )
     latest_phase_gate_checked_files = (
-        _note_value(latest_notes, "phase_gate_checked_files=") if isinstance(latest_notes, list) else None
+        _note_value(latest_notes, "phase_gate_checked_files=")
+        if isinstance(latest_notes, list)
+        else None
     )
     latest_phase_gate_review_report_path = (
         _note_value(latest_notes, "phase_gate_review_report_path=")
@@ -355,7 +378,9 @@ def build_paper_cycle_history_report(
     lines.extend(["## Drift Overview State Comparison Mismatching Count Values", ""])
     if drift_overview_state_comparison_mismatching_count_values:
         for key in sorted(drift_overview_state_comparison_mismatching_count_values):
-            lines.append(f"- {key}: {drift_overview_state_comparison_mismatching_count_values[key]}")
+            lines.append(
+                f"- {key}: {drift_overview_state_comparison_mismatching_count_values[key]}"
+            )
     else:
         lines.append("- no execution drift overview state comparison mismatch notes were available")
     lines.append("")
@@ -363,7 +388,9 @@ def build_paper_cycle_history_report(
     lines.extend(["## Drift Overview Snapshot Drift Mismatching Count Values", ""])
     if drift_overview_snapshot_drift_mismatching_snapshot_count_values:
         for key in sorted(drift_overview_snapshot_drift_mismatching_snapshot_count_values):
-            lines.append(f"- {key}: {drift_overview_snapshot_drift_mismatching_snapshot_count_values[key]}")
+            lines.append(
+                f"- {key}: {drift_overview_snapshot_drift_mismatching_snapshot_count_values[key]}"
+            )
     else:
         lines.append("- no execution drift overview snapshot drift mismatch notes were available")
     lines.append("")

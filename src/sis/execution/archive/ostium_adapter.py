@@ -94,18 +94,10 @@ class OstiumExecutionAdapter:
                     **snapshot,
                     "currency": str(snapshot.get("currency") or "USD"),
                     "equity": self._float_or_none(margin_summary.get("accountValue")),
-                    "available_cash": self._float_or_none(
-                        margin_summary.get("totalWithdrawable")
-                    ),
-                    "margin_used": self._float_or_none(
-                        margin_summary.get("totalCollateralUsed")
-                    ),
-                    "notional_usd": self._float_or_none(
-                        margin_summary.get("totalNtlPos")
-                    ),
-                    "unrealized_pnl": self._float_or_none(
-                        margin_summary.get("totalRawPnlUsd")
-                    ),
+                    "available_cash": self._float_or_none(margin_summary.get("totalWithdrawable")),
+                    "margin_used": self._float_or_none(margin_summary.get("totalCollateralUsed")),
+                    "notional_usd": self._float_or_none(margin_summary.get("totalNtlPos")),
+                    "unrealized_pnl": self._float_or_none(margin_summary.get("totalRawPnlUsd")),
                     "cumulative_rollover_usd": self._float_or_none(
                         margin_summary.get("totalCumRollover")
                     ),
@@ -123,25 +115,40 @@ class OstiumExecutionAdapter:
         snapshots: list[AdapterPositionSnapshot] = []
         for item in positions:
             venue_symbol = str(item.get("venue_symbol", ""))
-            matched = next((row for row in self._registry_rows() if row.get("venue_symbol") == venue_symbol), None)
+            matched = next(
+                (row for row in self._registry_rows() if row.get("venue_symbol") == venue_symbol),
+                None,
+            )
             snapshots.append(
                 AdapterPositionSnapshot(
                     venue=self.adapter_name,
                     canonical_symbol=str((matched or {}).get("canonical_symbol") or venue_symbol),
                     side=str(item.get("side", "long")).lower(),
                     quantity=float(item.get("size", 1.0) or 1.0),
-                    entry_price=float(item["entry_px"]) if item.get("entry_px") is not None else None,
-                    liquidation_price=float(item["liquidation_px"]) if item.get("liquidation_px") is not None else None,
+                    entry_price=float(item["entry_px"])
+                    if item.get("entry_px") is not None
+                    else None,
+                    liquidation_price=float(item["liquidation_px"])
+                    if item.get("liquidation_px") is not None
+                    else None,
                 )
             )
         return snapshots
 
     def estimate_order(self, intent: OrderIntent) -> AdapterOrderEstimate:
         matched = next(
-            (row for row in self._registry_rows() if str(row.get("canonical_symbol")).upper() == intent.canonical_symbol.upper()),
+            (
+                row
+                for row in self._registry_rows()
+                if str(row.get("canonical_symbol")).upper() == intent.canonical_symbol.upper()
+            ),
             None,
         )
-        open_fee_bps = float(matched.get("opening_fee_bps")) if matched and matched.get("opening_fee_bps") is not None else None
+        open_fee_bps = (
+            float(matched.get("opening_fee_bps"))
+            if matched and matched.get("opening_fee_bps") is not None
+            else None
+        )
         return AdapterOrderEstimate(
             venue=self.adapter_name,
             canonical_symbol=intent.canonical_symbol,
@@ -153,7 +160,9 @@ class OstiumExecutionAdapter:
         )
 
     def read_order_status(self, order_id: str) -> AdapterOrderStatus:
-        matched = next((row for row in self._order_status_rows() if str(row.get("order_id")) == order_id), None)
+        matched = next(
+            (row for row in self._order_status_rows() if str(row.get("order_id")) == order_id), None
+        )
         if matched is None:
             return AdapterOrderStatus(
                 venue=self.adapter_name,
@@ -247,8 +256,14 @@ class OstiumExecutionAdapter:
             "registry_exists": self._registry_path.exists(),
             "positions_root_exists": self._positions_root.exists(),
             "positions_snapshot_exists": latest_positions_path is not None,
-            "balance_snapshot_exists": bool(self._balance_snapshot_path and self._balance_snapshot_path.exists()),
-            "fills_snapshot_exists": bool(self._fills_snapshot_path and self._fills_snapshot_path.exists()),
-            "order_status_snapshot_exists": bool(self._order_status_path and self._order_status_path.exists()),
+            "balance_snapshot_exists": bool(
+                self._balance_snapshot_path and self._balance_snapshot_path.exists()
+            ),
+            "fills_snapshot_exists": bool(
+                self._fills_snapshot_path and self._fills_snapshot_path.exists()
+            ),
+            "order_status_snapshot_exists": bool(
+                self._order_status_path and self._order_status_path.exists()
+            ),
             "mode": "read_only",
         }

@@ -17,4 +17,3 @@ def test_unknown_timeframe_is_flagged() -> None:
     decision = check_timeframe("2h")
     assert not decision.allowed
     assert decision.reason == "BLOCK_UNKNOWN_TIMEFRAME"
-

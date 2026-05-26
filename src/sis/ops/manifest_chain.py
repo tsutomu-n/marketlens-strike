@@ -33,7 +33,9 @@ def create_operation_manifest(
     notes: list[str] | None = None,
     now: datetime | None = None,
 ) -> OperationManifest:
-    current = now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+    current = (
+        now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+    )
     return OperationManifest(
         run_id=current.strftime("%Y%m%d_%H%M%S"),
         created_at=current.isoformat(),

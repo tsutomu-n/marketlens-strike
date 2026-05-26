@@ -43,7 +43,11 @@ def schedule_run(
     command: str,
     notes: list[str] | None = None,
 ) -> ScheduledRun:
-    normalized = scheduled_for.astimezone(timezone.utc) if scheduled_for.tzinfo else scheduled_for.replace(tzinfo=timezone.utc)
+    normalized = (
+        scheduled_for.astimezone(timezone.utc)
+        if scheduled_for.tzinfo
+        else scheduled_for.replace(tzinfo=timezone.utc)
+    )
     return ScheduledRun(
         run_type=run_type,
         scheduled_for=normalized,
@@ -52,8 +56,12 @@ def schedule_run(
     )
 
 
-def next_interval_run(*, run_type: str, every_minutes: int, command: str, now: datetime | None = None) -> ScheduledRun:
-    current = now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+def next_interval_run(
+    *, run_type: str, every_minutes: int, command: str, now: datetime | None = None
+) -> ScheduledRun:
+    current = (
+        now.astimezone(timezone.utc) if now and now.tzinfo else (now or datetime.now(timezone.utc))
+    )
     delta = timedelta(minutes=every_minutes)
     return schedule_run(
         run_type=run_type,

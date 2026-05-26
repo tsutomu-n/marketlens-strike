@@ -26,38 +26,50 @@ def test_threshold_result_blocks_values_outside_threshold() -> None:
 
 
 def test_decision_for_state_names_live_window_condition() -> None:
-    assert _decision_for_state(
-        core_ready=True,
-        blockers=[
-            "stale_rate at or below threshold",
-            "tradable_rate at or above threshold",
-        ],
-        signals_exists=False,
-    ) == Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW
+    assert (
+        _decision_for_state(
+            core_ready=True,
+            blockers=[
+                "stale_rate at or below threshold",
+                "tradable_rate at or above threshold",
+            ],
+            signals_exists=False,
+        )
+        == Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW
+    )
 
 
 def test_decision_for_state_names_cost_failure() -> None:
-    assert _decision_for_state(
-        core_ready=True,
-        blockers=["Holding/rollover cost reproduced for target horizons"],
-        signals_exists=True,
-    ) == Decision.NO_GO_COST
+    assert (
+        _decision_for_state(
+            core_ready=True,
+            blockers=["Holding/rollover cost reproduced for target horizons"],
+            signals_exists=True,
+        )
+        == Decision.NO_GO_COST
+    )
 
 
 def test_decision_for_state_names_missing_signal_backtest_when_otherwise_ready() -> None:
-    assert _decision_for_state(
-        core_ready=True,
-        blockers=[],
-        signals_exists=False,
-    ) == Decision.CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST
+    assert (
+        _decision_for_state(
+            core_ready=True,
+            blockers=[],
+            signals_exists=False,
+        )
+        == Decision.CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST
+    )
 
 
 def test_decision_for_state_go_when_ready_and_signal_backtest_present() -> None:
-    assert _decision_for_state(
-        core_ready=True,
-        blockers=[],
-        signals_exists=True,
-    ) == Decision.GO
+    assert (
+        _decision_for_state(
+            core_ready=True,
+            blockers=[],
+            signals_exists=True,
+        )
+        == Decision.GO
+    )
 
 
 def test_go_no_go_markdown_includes_venue_decisions(tmp_path) -> None:

@@ -74,7 +74,9 @@ def normalize_readiness_summary(summary: Mapping[str, Any] | None) -> dict[str, 
     payload = dict(summary) if isinstance(summary, Mapping) else {}
     if not payload:
         return {}
-    next_phase_candidate = payload.get("next_phase_candidate") or payload.get("readiness_next_phase_candidate")
+    next_phase_candidate = payload.get("next_phase_candidate") or payload.get(
+        "readiness_next_phase_candidate"
+    )
     execution_ready = (
         payload.get("execution_ready")
         if payload.get("execution_ready") is not None
@@ -192,9 +194,7 @@ def audit_summary_fields(
     audit_bundle_fields = audit_bundle_flat_fields(audit_bundle_summary)
     overall_status = audit_dashboard_fields.get("audit_overall_status")
     latest_operation = audit_dashboard_fields.get("audit_latest_operation")
-    bundle_history_snapshot_count = audit_bundle_fields.get(
-        "audit_bundle_history_snapshot_count"
-    )
+    bundle_history_snapshot_count = audit_bundle_fields.get("audit_bundle_history_snapshot_count")
     return {
         "overall_status": overall_status,
         "latest_operation": latest_operation,
@@ -350,7 +350,9 @@ def phase_gate_nested_fields(summary: Mapping[str, Any] | None) -> dict[str, Any
         "phase2_entry_reason": payload.get("phase2_entry_reason"),
         "phase_gate_reason": payload.get("phase_gate_reason"),
         "phase_gate_strict_validation_passed": payload.get("phase_gate_strict_validation_passed"),
-        "phase_gate_strict_validation_issue_count": payload.get("phase_gate_strict_validation_issue_count"),
+        "phase_gate_strict_validation_issue_count": payload.get(
+            "phase_gate_strict_validation_issue_count"
+        ),
         "phase_gate_checked_files": payload.get("phase_gate_checked_files"),
         "phase_gate_strict_validation_issues": payload.get("phase_gate_strict_validation_issues"),
         "phase_gate_review_report_path": payload.get("phase_gate_review_report_path"),
@@ -396,8 +398,7 @@ def phase_gate_issue_note_lines(summary: Mapping[str, Any] | None) -> list[str]:
     if not previews:
         return ["phase_gate_issues=none"]
     return [
-        f"phase_gate_issue_{index}={preview}"
-        for index, preview in enumerate(previews, start=1)
+        f"phase_gate_issue_{index}={preview}" for index, preview in enumerate(previews, start=1)
     ]
 
 
@@ -509,20 +510,14 @@ def latest_execution_lineage_fields(
         payload.get(f"{prefix}_execution_comparison_summary")
     )
     execution_fields = execution_snapshot_flat_fields(execution_summary)
-    execution_comparison_fields = execution_comparison_flat_fields(
-        execution_comparison_summary
-    )
+    execution_comparison_fields = execution_comparison_flat_fields(execution_comparison_summary)
     return {
         f"{prefix}_execution_summary": execution_summary,
         f"{prefix}_execution_comparison_summary": execution_comparison_summary,
-        f"{prefix}_execution_overall_status": execution_fields.get(
-            "execution_overall_status"
-        ),
+        f"{prefix}_execution_overall_status": execution_fields.get("execution_overall_status"),
         f"{prefix}_execution_venue_count": execution_fields.get("execution_venue_count"),
         f"{prefix}_execution_comparison_all_registries_present": (
-            execution_comparison_fields.get(
-                "execution_comparison_all_registries_present"
-            )
+            execution_comparison_fields.get("execution_comparison_all_registries_present")
         ),
     }
 
@@ -532,9 +527,7 @@ def latest_execution_section_lines(
     execution_summary: Mapping[str, Any] | None,
     execution_comparison_summary: Mapping[str, Any] | None,
 ) -> list[str]:
-    normalized_execution_summary = normalize_execution_snapshot_summary(
-        execution_summary
-    )
+    normalized_execution_summary = normalize_execution_snapshot_summary(execution_summary)
     if not normalized_execution_summary or not any(normalized_execution_summary.values()):
         return []
     normalized_execution_comparison_summary = normalize_execution_comparison_summary(
@@ -714,9 +707,7 @@ def latest_execution_lineage_from_notes(
         prefix=prefix,
         overall_status=_note_value("execution_overall_status="),
         venue_count=_note_value("execution_venue_count="),
-        all_registries_present=_note_value(
-            "execution_comparison_all_registries_present="
-        ),
+        all_registries_present=_note_value("execution_comparison_all_registries_present="),
     )
 
 
@@ -734,9 +725,7 @@ def latest_execution_lineage_payload(
         "timeline_latest_execution_comparison_summary": (
             timeline_latest_execution_comparison_summary
         ),
-        "bundle_history_latest_execution_summary": (
-            bundle_history_latest_execution_summary
-        ),
+        "bundle_history_latest_execution_summary": (bundle_history_latest_execution_summary),
         "bundle_history_latest_execution_comparison_summary": (
             bundle_history_latest_execution_comparison_summary
         ),
@@ -752,9 +741,7 @@ def latest_execution_lineage_payload_from_summary(
 ) -> dict[str, Any]:
     payload = dict(summary) if isinstance(summary, Mapping) else {}
     return latest_execution_lineage_payload(
-        timeline_latest_execution_summary=payload.get(
-            "timeline_latest_execution_summary"
-        ),
+        timeline_latest_execution_summary=payload.get("timeline_latest_execution_summary"),
         timeline_latest_execution_comparison_summary=payload.get(
             "timeline_latest_execution_comparison_summary"
         ),
@@ -788,9 +775,7 @@ def latest_execution_lineage_fields_from_payload(
             timeline_latest_execution_comparison_summary=(
                 timeline_latest_execution_comparison_summary
             ),
-            bundle_history_latest_execution_summary=(
-                bundle_history_latest_execution_summary
-            ),
+            bundle_history_latest_execution_summary=(bundle_history_latest_execution_summary),
             bundle_history_latest_execution_comparison_summary=(
                 bundle_history_latest_execution_comparison_summary
             ),
@@ -831,8 +816,7 @@ def all_latest_execution_lineage_fields(summary: Mapping[str, Any] | None) -> di
             or payload.get(f"{prefix}_execution_comparison_summary") not in (None, {})
             or payload.get(f"{prefix}_execution_overall_status") is not None
             or payload.get(f"{prefix}_execution_venue_count") is not None
-            or payload.get(f"{prefix}_execution_comparison_all_registries_present")
-            is not None
+            or payload.get(f"{prefix}_execution_comparison_all_registries_present") is not None
         )
         if has_source:
             lineages.update(latest_execution_lineage_fields(payload, prefix=prefix))
@@ -892,9 +876,7 @@ def merged_remapped_latest_execution_lineage_fields(
 ) -> dict[str, Any]:
     merged: dict[str, Any] = {}
     for summary, target_prefix in items:
-        merged.update(
-            remap_latest_execution_lineage_fields(summary, target_prefix=target_prefix)
-        )
+        merged.update(remap_latest_execution_lineage_fields(summary, target_prefix=target_prefix))
     return merged
 
 
@@ -1010,10 +992,12 @@ def normalize_execution_gap_history_summary(summary: Mapping[str, Any] | None) -
         if payload.get("entry_count") is not None
         else payload.get("execution_gap_history_entry_count")
     )
-    latest_status = payload.get("latest_status") or payload.get("execution_gap_history_latest_status")
-    latest_execution_diagnostics_status = payload.get("latest_execution_diagnostics_status") or payload.get(
-        "execution_gap_history_latest_diagnostics_status"
+    latest_status = payload.get("latest_status") or payload.get(
+        "execution_gap_history_latest_status"
     )
+    latest_execution_diagnostics_status = payload.get(
+        "latest_execution_diagnostics_status"
+    ) or payload.get("execution_gap_history_latest_diagnostics_status")
     report_path = payload.get("report_path") or payload.get("execution_gap_history_report_path")
     return {
         **payload,
@@ -1028,7 +1012,9 @@ def normalize_execution_gap_history_summary(summary: Mapping[str, Any] | None) -
     }
 
 
-def normalize_execution_state_comparison_summary(summary: Mapping[str, Any] | None) -> dict[str, Any]:
+def normalize_execution_state_comparison_summary(
+    summary: Mapping[str, Any] | None,
+) -> dict[str, Any]:
     payload = dict(summary) if isinstance(summary, Mapping) else {}
     if not payload:
         return {}
@@ -1037,10 +1023,12 @@ def normalize_execution_state_comparison_summary(summary: Mapping[str, Any] | No
         if payload.get("entry_count") is not None
         else payload.get("execution_state_comparison_entry_count")
     )
-    latest_status = payload.get("latest_status") or payload.get("execution_state_comparison_latest_status")
-    latest_execution_diagnostics_status = payload.get("latest_execution_diagnostics_status") or payload.get(
-        "execution_state_comparison_latest_diagnostics_status"
+    latest_status = payload.get("latest_status") or payload.get(
+        "execution_state_comparison_latest_status"
     )
+    latest_execution_diagnostics_status = payload.get(
+        "latest_execution_diagnostics_status"
+    ) or payload.get("execution_state_comparison_latest_diagnostics_status")
     latest_status_match = (
         payload.get("latest_status_match")
         if payload.get("latest_status_match") is not None
@@ -1051,7 +1039,9 @@ def normalize_execution_state_comparison_summary(summary: Mapping[str, Any] | No
         if payload.get("mismatching_count") is not None
         else payload.get("execution_state_comparison_mismatching_count")
     )
-    report_path = payload.get("report_path") or payload.get("execution_state_comparison_report_path")
+    report_path = payload.get("report_path") or payload.get(
+        "execution_state_comparison_report_path"
+    )
     return {
         **payload,
         "entry_count": entry_count,
@@ -1078,10 +1068,12 @@ def normalize_execution_snapshot_drift_summary(summary: Mapping[str, Any] | None
         if payload.get("entry_count") is not None
         else payload.get("execution_snapshot_drift_entry_count")
     )
-    latest_status = payload.get("latest_status") or payload.get("execution_snapshot_drift_latest_status")
-    latest_execution_diagnostics_status = payload.get("latest_execution_diagnostics_status") or payload.get(
-        "execution_snapshot_drift_latest_diagnostics_status"
+    latest_status = payload.get("latest_status") or payload.get(
+        "execution_snapshot_drift_latest_status"
     )
+    latest_execution_diagnostics_status = payload.get(
+        "latest_execution_diagnostics_status"
+    ) or payload.get("execution_snapshot_drift_latest_diagnostics_status")
     latest_status_match = (
         payload.get("latest_execution_state_comparison_status_match")
         if payload.get("latest_execution_state_comparison_status_match") is not None
@@ -1251,7 +1243,11 @@ def recommend_remediation_actions(
     execute_confidence = str(execute_signal_confidence or "").strip() or None
     postcheck_confidence = str(postcheck_signal_confidence or "").strip() or None
     if not items:
-        response = {"status": "no_signals", "commands": [], "why": "no remediation signals available"}
+        response = {
+            "status": "no_signals",
+            "commands": [],
+            "why": "no remediation signals available",
+        }
         if confidence:
             response["source_confidence"] = confidence
         if policy:

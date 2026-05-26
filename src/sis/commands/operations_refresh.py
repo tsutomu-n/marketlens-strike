@@ -10,7 +10,6 @@ from sis.settings import get_settings
 from sis.storage.jsonl_store import read_json
 
 
-
 def register_operations_refresh_commands(
     app: typer.Typer,
     *,
@@ -76,115 +75,193 @@ def register_operations_refresh_commands(
             restored=False,
         )
         execution_lineage = _refresh_execution_lineage_artifacts(settings.data_dir)
-        execution_read_only_surfaces_out, execution_read_only_surfaces_summary_out, _execution_read_only_surfaces_text = _write_execution_read_only_surfaces(
+        (
+            execution_read_only_surfaces_out,
+            execution_read_only_surfaces_summary_out,
+            _execution_read_only_surfaces_text,
+        ) = _write_execution_read_only_surfaces(
             settings.data_dir,
             state_path=state_path,
         )
-        execution_snapshot_out, execution_snapshot_summary_out, _execution_snapshot_text = execution_lineage["execution_snapshot"]
-        execution_comparison_out, execution_comparison_summary_out, _execution_comparison_text = execution_lineage["execution_comparison"]
-        execution_diagnostics_out, execution_diagnostics_summary_out, _execution_diagnostics_text = execution_lineage["execution_diagnostics"]
+        execution_snapshot_out, execution_snapshot_summary_out, _execution_snapshot_text = (
+            execution_lineage["execution_snapshot"]
+        )
+        execution_comparison_out, execution_comparison_summary_out, _execution_comparison_text = (
+            execution_lineage["execution_comparison"]
+        )
+        (
+            execution_diagnostics_out,
+            execution_diagnostics_summary_out,
+            _execution_diagnostics_text,
+        ) = execution_lineage["execution_diagnostics"]
         weekly_out, _weekly_text = _write_weekly_review(settings.data_dir)
         comparison_out, _comparison_text = _write_comparison_report(settings.data_dir)
         lifecycle_out, _lifecycle_text = _write_lifecycle_report(settings.data_dir)
         monitoring_out, monitoring = _write_monitoring_snapshot(settings.data_dir, state_path)
-        ops_review_out, ops_review_summary_out, _ops_review_text = _write_ops_review(settings.data_dir)
-        dashboard_out, dashboard_summary_out, dashboard_text = _write_operations_dashboard(settings.data_dir)
-        runbook_out, runbook_summary_out, _runbook_text = _write_paper_operations_runbook(settings.data_dir)
-        cycle_history_out, cycle_history_summary_out, _cycle_history_text = _write_paper_cycle_history(settings.data_dir)
-        gap_history_out, gap_history_summary_out, _gap_history_text = execution_lineage["execution_gap_history"]
-        state_comparison_out, state_comparison_summary_out, _state_comparison_text = execution_lineage["execution_state_comparison_history"]
-        snapshot_drift_out, snapshot_drift_summary_out, _snapshot_drift_text = execution_lineage["execution_snapshot_drift_history"]
-        drift_overview_out, drift_overview_summary_out, _drift_overview_text = execution_lineage["execution_drift_overview"]
-        phase_gate_out, phase_gate_summary_out, _phase_gate_text = _write_phase_gate_review(settings.data_dir)
-        remediation_planner_out, remediation_planner_summary_out, _remediation_planner_text = _write_remediation_planner(
+        ops_review_out, ops_review_summary_out, _ops_review_text = _write_ops_review(
             settings.data_dir
         )
-        remediation_execution_plan_out, remediation_execution_plan_summary_out, _remediation_execution_plan_text = _write_remediation_execution_plan(
+        dashboard_out, dashboard_summary_out, dashboard_text = _write_operations_dashboard(
             settings.data_dir
         )
-        remediation_session_out, remediation_session_summary_out, _remediation_session_text = _write_remediation_session(
+        runbook_out, runbook_summary_out, _runbook_text = _write_paper_operations_runbook(
             settings.data_dir
         )
-        remediation_session_checkpoint_out, remediation_session_checkpoint_summary_out, _remediation_session_checkpoint_text = _write_remediation_session_checkpoint(
+        cycle_history_out, cycle_history_summary_out, _cycle_history_text = (
+            _write_paper_cycle_history(settings.data_dir)
+        )
+        gap_history_out, gap_history_summary_out, _gap_history_text = execution_lineage[
+            "execution_gap_history"
+        ]
+        state_comparison_out, state_comparison_summary_out, _state_comparison_text = (
+            execution_lineage["execution_state_comparison_history"]
+        )
+        snapshot_drift_out, snapshot_drift_summary_out, _snapshot_drift_text = execution_lineage[
+            "execution_snapshot_drift_history"
+        ]
+        drift_overview_out, drift_overview_summary_out, _drift_overview_text = execution_lineage[
+            "execution_drift_overview"
+        ]
+        phase_gate_out, phase_gate_summary_out, _phase_gate_text = _write_phase_gate_review(
             settings.data_dir
         )
-        remediation_evaluator_out, remediation_evaluator_summary_out, _remediation_evaluator_text = _write_remediation_evaluator(
+        remediation_planner_out, remediation_planner_summary_out, _remediation_planner_text = (
+            _write_remediation_planner(settings.data_dir)
+        )
+        (
+            remediation_execution_plan_out,
+            remediation_execution_plan_summary_out,
+            _remediation_execution_plan_text,
+        ) = _write_remediation_execution_plan(settings.data_dir)
+        remediation_session_out, remediation_session_summary_out, _remediation_session_text = (
+            _write_remediation_session(settings.data_dir)
+        )
+        (
+            remediation_session_checkpoint_out,
+            remediation_session_checkpoint_summary_out,
+            _remediation_session_checkpoint_text,
+        ) = _write_remediation_session_checkpoint(settings.data_dir)
+        (
+            remediation_evaluator_out,
+            remediation_evaluator_summary_out,
+            _remediation_evaluator_text,
+        ) = _write_remediation_evaluator(settings.data_dir)
+        (
+            remediation_command_results_out,
+            remediation_command_results_summary_out,
+            _remediation_command_results_text,
+        ) = _write_remediation_command_results(settings.data_dir)
+        (
+            remediation_scoreboard_out,
+            remediation_scoreboard_summary_out,
+            _remediation_scoreboard_text,
+        ) = _write_remediation_scoreboard(settings.data_dir)
+        remediation_evidence_out, remediation_evidence_summary_out, _remediation_evidence_text = (
+            _write_remediation_evidence(settings.data_dir)
+        )
+        runbook_out, runbook_summary_out, _runbook_text = _write_paper_operations_runbook(
             settings.data_dir
         )
-        remediation_command_results_out, remediation_command_results_summary_out, _remediation_command_results_text = _write_remediation_command_results(
+        phase_gate_out, phase_gate_summary_out, _phase_gate_text = _write_phase_gate_review(
             settings.data_dir
         )
-        remediation_scoreboard_out, remediation_scoreboard_summary_out, _remediation_scoreboard_text = _write_remediation_scoreboard(
-            settings.data_dir
+        remediation_planner_out, remediation_planner_summary_out, _remediation_planner_text = (
+            _write_remediation_planner(settings.data_dir)
         )
-        remediation_evidence_out, remediation_evidence_summary_out, _remediation_evidence_text = _write_remediation_evidence(
-            settings.data_dir
+        (
+            remediation_execution_plan_out,
+            remediation_execution_plan_summary_out,
+            _remediation_execution_plan_text,
+        ) = _write_remediation_execution_plan(settings.data_dir)
+        remediation_session_out, remediation_session_summary_out, _remediation_session_text = (
+            _write_remediation_session(settings.data_dir)
         )
-        runbook_out, runbook_summary_out, _runbook_text = _write_paper_operations_runbook(settings.data_dir)
-        phase_gate_out, phase_gate_summary_out, _phase_gate_text = _write_phase_gate_review(settings.data_dir)
-        remediation_planner_out, remediation_planner_summary_out, _remediation_planner_text = _write_remediation_planner(
-            settings.data_dir
-        )
-        remediation_execution_plan_out, remediation_execution_plan_summary_out, _remediation_execution_plan_text = _write_remediation_execution_plan(
-            settings.data_dir
-        )
-        remediation_session_out, remediation_session_summary_out, _remediation_session_text = _write_remediation_session(
-            settings.data_dir
-        )
-        remediation_session_checkpoint_out, remediation_session_checkpoint_summary_out, _remediation_session_checkpoint_text = _write_remediation_session_checkpoint(
-            settings.data_dir
-        )
-        remediation_evaluator_out, remediation_evaluator_summary_out, _remediation_evaluator_text = _write_remediation_evaluator(
-            settings.data_dir
-        )
-        remediation_command_results_out, remediation_command_results_summary_out, _remediation_command_results_text = _write_remediation_command_results(
-            settings.data_dir
-        )
-        remediation_scoreboard_out, remediation_scoreboard_summary_out, _remediation_scoreboard_text = _write_remediation_scoreboard(
-            settings.data_dir
-        )
-        remediation_evidence_out, remediation_evidence_summary_out, _remediation_evidence_text = _write_remediation_evidence(
-            settings.data_dir
+        (
+            remediation_session_checkpoint_out,
+            remediation_session_checkpoint_summary_out,
+            _remediation_session_checkpoint_text,
+        ) = _write_remediation_session_checkpoint(settings.data_dir)
+        (
+            remediation_evaluator_out,
+            remediation_evaluator_summary_out,
+            _remediation_evaluator_text,
+        ) = _write_remediation_evaluator(settings.data_dir)
+        (
+            remediation_command_results_out,
+            remediation_command_results_summary_out,
+            _remediation_command_results_text,
+        ) = _write_remediation_command_results(settings.data_dir)
+        (
+            remediation_scoreboard_out,
+            remediation_scoreboard_summary_out,
+            _remediation_scoreboard_text,
+        ) = _write_remediation_scoreboard(settings.data_dir)
+        remediation_evidence_out, remediation_evidence_summary_out, _remediation_evidence_text = (
+            _write_remediation_evidence(settings.data_dir)
         )
         bundle_out, bundle_manifest_out, _bundle_text = _write_operations_bundle(settings.data_dir)
-        timeline_out, timeline_summary_out, _timeline_text = _write_operations_timeline(settings.data_dir)
+        timeline_out, timeline_summary_out, _timeline_text = _write_operations_timeline(
+            settings.data_dir
+        )
         audit_out, audit_manifest_out, _audit_text = _write_operations_audit_pack(settings.data_dir)
-        audit_timeline_out, audit_timeline_summary_out, _audit_timeline_text = _write_audit_timeline(settings.data_dir)
-        audit_dashboard_out, audit_dashboard_summary_out, _audit_dashboard_text = _write_audit_dashboard(settings.data_dir)
-        audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(settings.data_dir)
+        audit_timeline_out, audit_timeline_summary_out, _audit_timeline_text = (
+            _write_audit_timeline(settings.data_dir)
+        )
+        audit_dashboard_out, audit_dashboard_summary_out, _audit_dashboard_text = (
+            _write_audit_dashboard(settings.data_dir)
+        )
+        audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(
+            settings.data_dir
+        )
         bundle_payload = read_json(bundle_manifest_out)
         bundle_chain_out = _append_operations_snapshot_manifest(
             settings.data_dir,
             manifest_path=bundle_manifest_out,
-            overall_status=bundle_payload.get("overall_status") if isinstance(bundle_payload, dict) else None,
-            cycle_count=bundle_payload.get("cycle_count") if isinstance(bundle_payload, dict) else None,
+            overall_status=bundle_payload.get("overall_status")
+            if isinstance(bundle_payload, dict)
+            else None,
+            cycle_count=bundle_payload.get("cycle_count")
+            if isinstance(bundle_payload, dict)
+            else None,
         )
         audit_payload = read_json(audit_manifest_out)
         audit_chain_out = _append_operations_audit_snapshot_manifest(
             settings.data_dir,
             manifest_path=audit_manifest_out,
-            overall_status=audit_payload.get("overall_status") if isinstance(audit_payload, dict) else None,
-            timeline_latest_operation=audit_payload.get("timeline_latest_operation") if isinstance(audit_payload, dict) else None,
+            overall_status=audit_payload.get("overall_status")
+            if isinstance(audit_payload, dict)
+            else None,
+            timeline_latest_operation=audit_payload.get("timeline_latest_operation")
+            if isinstance(audit_payload, dict)
+            else None,
         )
         audit_bundle_payload = read_json(audit_bundle_manifest_out)
         audit_bundle_chain_out = _append_audit_bundle_snapshot_manifest(
             settings.data_dir,
             manifest_path=audit_bundle_manifest_out,
-            overall_status=audit_bundle_payload.get("overall_status") if isinstance(audit_bundle_payload, dict) else None,
-            timeline_latest_operation=audit_bundle_payload.get("timeline_latest_operation") if isinstance(audit_bundle_payload, dict) else None,
+            overall_status=audit_bundle_payload.get("overall_status")
+            if isinstance(audit_bundle_payload, dict)
+            else None,
+            timeline_latest_operation=audit_bundle_payload.get("timeline_latest_operation")
+            if isinstance(audit_bundle_payload, dict)
+            else None,
         )
         remediation_planner_payload = read_json(remediation_planner_summary_out)
         remediation_planner_chain_out = _append_remediation_planner_manifest(
             settings.data_dir,
             summary_path=remediation_planner_summary_out,
-            planner_status=remediation_planner_payload.get("planner_status") if isinstance(remediation_planner_payload, dict) else None,
+            planner_status=remediation_planner_payload.get("planner_status")
+            if isinstance(remediation_planner_payload, dict)
+            else None,
             rerun_trend=(
                 remediation_planner_payload.get("planner_rerun_diff", {}).get("trend")
                 if isinstance(remediation_planner_payload, dict)
                 and isinstance(remediation_planner_payload.get("planner_rerun_diff"), dict)
                 else None
             ),
-            next_best_command=remediation_planner_payload.get("next_best_command") if isinstance(remediation_planner_payload, dict) else None,
+            next_best_command=remediation_planner_payload.get("next_best_command")
+            if isinstance(remediation_planner_payload, dict)
+            else None,
             next_feedback_priority_reason=(
                 remediation_planner_payload.get("entries", [{}])[0].get("feedback_priority_reason")
                 if isinstance(remediation_planner_payload, dict)
@@ -192,7 +269,9 @@ def register_operations_refresh_commands(
                 and remediation_planner_payload.get("entries")
                 else None
             ),
-            planned_step_count=remediation_planner_payload.get("planned_step_count") if isinstance(remediation_planner_payload, dict) else None,
+            planned_step_count=remediation_planner_payload.get("planned_step_count")
+            if isinstance(remediation_planner_payload, dict)
+            else None,
         )
         remediation_execution_plan_payload = read_json(remediation_execution_plan_summary_out)
         remediation_execution_plan_chain_out = _append_remediation_execution_plan_manifest(
@@ -209,7 +288,9 @@ def register_operations_refresh_commands(
                 else None
             ),
             next_action_feedback_priority_reason=(
-                remediation_execution_plan_payload.get("actions", [{}])[0].get("feedback_priority_reason")
+                remediation_execution_plan_payload.get("actions", [{}])[0].get(
+                    "feedback_priority_reason"
+                )
                 if isinstance(remediation_execution_plan_payload, dict)
                 and isinstance(remediation_execution_plan_payload.get("actions"), list)
                 and remediation_execution_plan_payload.get("actions")
@@ -251,7 +332,9 @@ def register_operations_refresh_commands(
                 else None
             ),
         )
-        remediation_session_checkpoint_payload = read_json(remediation_session_checkpoint_summary_out)
+        remediation_session_checkpoint_payload = read_json(
+            remediation_session_checkpoint_summary_out
+        )
         remediation_session_checkpoint_chain_out = _append_remediation_session_checkpoint_manifest(
             settings.data_dir,
             summary_path=remediation_session_checkpoint_summary_out,
@@ -276,7 +359,8 @@ def register_operations_refresh_commands(
                         item.get("feedback_priority_reason")
                         for item in remediation_session_checkpoint_payload.get("actions", [])
                         if isinstance(item, dict)
-                        and item.get("command") == remediation_session_checkpoint_payload.get("next_action_command")
+                        and item.get("command")
+                        == remediation_session_checkpoint_payload.get("next_action_command")
                     ),
                     None,
                 )
@@ -314,7 +398,8 @@ def register_operations_refresh_commands(
                         item.get("feedback_priority_reason")
                         for item in remediation_scoreboard_payload.get("actions", [])
                         if isinstance(item, dict)
-                        and item.get("command") == remediation_scoreboard_payload.get("next_action_command")
+                        and item.get("command")
+                        == remediation_scoreboard_payload.get("next_action_command")
                     ),
                     None,
                 )
@@ -387,18 +472,26 @@ def register_operations_refresh_commands(
                 else None
             ),
         )
-        gap_history_out, gap_history_summary_out, _gap_history_text = _write_execution_gap_history(settings.data_dir)
-        audit_timeline_out, audit_timeline_summary_out, _audit_timeline_text = _write_audit_timeline(settings.data_dir)
-        audit_dashboard_out, audit_dashboard_summary_out, _refreshed_audit_dashboard_text = _write_audit_dashboard(settings.data_dir)
-        audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(settings.data_dir)
-        audit_bundle_history_out, audit_bundle_history_summary_out, _audit_bundle_history_text = _write_audit_bundle_history(
+        gap_history_out, gap_history_summary_out, _gap_history_text = _write_execution_gap_history(
             settings.data_dir
         )
-        current_state_index_out, current_state_index_summary_out, _current_state_index_text = _write_current_state_index(
+        audit_timeline_out, audit_timeline_summary_out, _audit_timeline_text = (
+            _write_audit_timeline(settings.data_dir)
+        )
+        audit_dashboard_out, audit_dashboard_summary_out, _refreshed_audit_dashboard_text = (
+            _write_audit_dashboard(settings.data_dir)
+        )
+        audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(
             settings.data_dir
         )
-        readiness_snapshot_out, readiness_snapshot_summary_out, _readiness_snapshot_text = _write_readiness_snapshot(
-            settings.data_dir
+        audit_bundle_history_out, audit_bundle_history_summary_out, _audit_bundle_history_text = (
+            _write_audit_bundle_history(settings.data_dir)
+        )
+        current_state_index_out, current_state_index_summary_out, _current_state_index_text = (
+            _write_current_state_index(settings.data_dir)
+        )
+        readiness_snapshot_out, readiness_snapshot_summary_out, _readiness_snapshot_text = (
+            _write_readiness_snapshot(settings.data_dir)
         )
         logger.info("written: {}", weekly_out)
         logger.info("written: {}", comparison_out)

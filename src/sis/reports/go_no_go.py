@@ -74,9 +74,7 @@ def _related_reports(
     phase_gate_flat = phase_gate_flat_fields(phase_gate_summary or {})
     readiness_flat = readiness_flat_fields(readiness_summary or {})
     execution_summary_flat = execution_snapshot_flat_fields(execution_summary or {})
-    execution_comparison_flat = execution_comparison_flat_fields(
-        execution_comparison_summary or {}
-    )
+    execution_comparison_flat = execution_comparison_flat_fields(execution_comparison_summary or {})
     execution_diagnostics_flat = execution_diagnostics_flat_fields(
         execution_diagnostics_summary or {}
     )
@@ -212,10 +210,7 @@ def _holding_cost_result(rows: list[dict[str, str | None]]) -> str:
     if not rows:
         return "MISSING"
     required = ("holding_cost_4h_bps", "holding_cost_24h_bps", "holding_cost_72h_bps")
-    completed = [
-        all(row.get(column) not in {None, ""} for column in required)
-        for row in rows
-    ]
+    completed = [all(row.get(column) not in {None, ""} for column in required) for row in rows]
     if all(completed):
         return "PASS"
     if any(completed):
@@ -251,9 +246,13 @@ def _venue_decision_from_checks(venue: str, checks: list[GoNoGoCriterion]) -> Ve
         "Holding/rollover cost reproduced for target horizons",
     }
     if venue == "ostium" and blocking_names and blocking_names.issubset(data_readiness_blockers):
-        return VenueDecision(venue=venue, decision=Decision.CONDITIONAL_GO_DATA_READY, main_blocker=blocker)
+        return VenueDecision(
+            venue=venue, decision=Decision.CONDITIONAL_GO_DATA_READY, main_blocker=blocker
+        )
     if blocker in {"stale_rate at or below threshold", "tradable_rate at or above threshold"}:
-        return VenueDecision(venue=venue, decision=Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW, main_blocker=blocker)
+        return VenueDecision(
+            venue=venue, decision=Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW, main_blocker=blocker
+        )
     if blocker == "spread_p90 at or below threshold":
         return VenueDecision(venue=venue, decision=Decision.NO_GO_COST, main_blocker=blocker)
     return VenueDecision(venue=venue, decision=Decision.NO_GO, main_blocker=blocker)
@@ -268,7 +267,9 @@ def _next_actions(blockers: list[str], signals_exists: bool) -> list[str]:
     if "tradable_rate at or above threshold" in blockers:
         actions.append("Collect a sufficient gTrade/Ostium quote window during tradable sessions")
     if not signals_exists:
-        actions.append("Provide data/research/signals.csv to run signal-driven backtests instead of quote-only fallback")
+        actions.append(
+            "Provide data/research/signals.csv to run signal-driven backtests instead of quote-only fallback"
+        )
     return actions
 
 
@@ -291,7 +292,10 @@ def _decision_for_state(
     }
     if blocker_set.issubset(live_window_blockers):
         return Decision.CONDITIONAL_GO_NEEDS_LIVE_WINDOW
-    if "4h-3d after-cost backtest" in blocker_set or "Holding/rollover cost reproduced for target horizons" in blocker_set:
+    if (
+        "4h-3d after-cost backtest" in blocker_set
+        or "Holding/rollover cost reproduced for target horizons" in blocker_set
+    ):
         return Decision.NO_GO_COST
     if "stale_rate at or below threshold" in blocker_set:
         return Decision.NO_GO_STALE
@@ -323,7 +327,9 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         ),
         GoNoGoCriterion(
             criterion="Ostium symbol resolved",
-            result="PASS" if ostium_resolved else ("REQUIRES_PROBE" if ostium_registry.exists() else "MISSING"),
+            result="PASS"
+            if ostium_resolved
+            else ("REQUIRES_PROBE" if ostium_registry.exists() else "MISSING"),
             evidence=str(ostium_registry),
         ),
         GoNoGoCriterion(
@@ -390,7 +396,9 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         for item in criteria
         if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "NO_GO", "PARTIAL"}
     ]
-    core_ready = quotes.exists() and cost_matrix.exists() and backtest_report.exists() and ostium_resolved
+    core_ready = (
+        quotes.exists() and cost_matrix.exists() and backtest_report.exists() and ostium_resolved
+    )
     decision = _decision_for_state(
         core_ready=core_ready,
         blockers=blockers,
@@ -413,7 +421,9 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         ),
         GoNoGoCriterion(
             criterion="spread_p90 at or below threshold",
-            result=_threshold_result(gtrade_cost_rows, "spread_p90_bps", maximum=MAX_SPREAD_P90_BPS),
+            result=_threshold_result(
+                gtrade_cost_rows, "spread_p90_bps", maximum=MAX_SPREAD_P90_BPS
+            ),
             evidence=f"{cost_matrix}; venue=gtrade; threshold<={MAX_SPREAD_P90_BPS}bps",
         ),
         GoNoGoCriterion(
@@ -440,7 +450,9 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
         ),
         GoNoGoCriterion(
             criterion="spread_p90 at or below threshold",
-            result=_threshold_result(ostium_cost_rows, "spread_p90_bps", maximum=MAX_SPREAD_P90_BPS),
+            result=_threshold_result(
+                ostium_cost_rows, "spread_p90_bps", maximum=MAX_SPREAD_P90_BPS
+            ),
             evidence=f"{cost_matrix}; venue=ostium; threshold<={MAX_SPREAD_P90_BPS}bps",
         ),
         GoNoGoCriterion(
@@ -490,15 +502,17 @@ def write_go_no_go_markdown(
         execution_drift_overview_summary
     )
     rows = "\n".join(
-        f"| {item.criterion} | {item.result} | {item.evidence or ''} |"
-        for item in report.criteria
+        f"| {item.criterion} | {item.result} | {item.evidence or ''} |" for item in report.criteria
     )
     blockers = "\n".join(f"- {item}" for item in report.blockers) or "- none"
     next_actions = "\n".join(f"- {item}" for item in report.next_actions) or "- none"
-    venue_decision_rows = "\n".join(
-        f"| {item.venue} | {item.decision.value} | {item.main_blocker or ''} |"
-        for item in report.venue_decisions
-    ) or "| none |  |  |"
+    venue_decision_rows = (
+        "\n".join(
+            f"| {item.venue} | {item.decision.value} | {item.main_blocker or ''} |"
+            for item in report.venue_decisions
+        )
+        or "| none |  |  |"
+    )
     quick_navigation = _quick_navigation(out_path, phase_gate_summary, readiness_summary)
     related_reports = _related_reports(
         out_path,
@@ -587,7 +601,9 @@ def write_go_no_go_markdown(
                 "",
             ]
         )
-    if isinstance(execution_comparison_summary, dict) and any(execution_comparison_summary.values()):
+    if isinstance(execution_comparison_summary, dict) and any(
+        execution_comparison_summary.values()
+    ):
         execution_comparison_flat = execution_comparison_flat_fields(execution_comparison_summary)
         lines.extend(
             [
@@ -601,7 +617,9 @@ def write_go_no_go_markdown(
                 "",
             ]
         )
-    if isinstance(execution_diagnostics_summary, dict) and any(execution_diagnostics_summary.values()):
+    if isinstance(execution_diagnostics_summary, dict) and any(
+        execution_diagnostics_summary.values()
+    ):
         execution_diagnostics_flat = execution_diagnostics_flat_fields(
             execution_diagnostics_summary
         )
@@ -616,7 +634,9 @@ def write_go_no_go_markdown(
                 "",
             ]
         )
-    if isinstance(execution_gap_history_summary, dict) and any(execution_gap_history_summary.values()):
+    if isinstance(execution_gap_history_summary, dict) and any(
+        execution_gap_history_summary.values()
+    ):
         execution_gap_history_flat = execution_gap_history_flat_fields(
             execution_gap_history_summary
         )
@@ -634,7 +654,9 @@ def write_go_no_go_markdown(
                 "",
             ]
         )
-    if isinstance(execution_state_comparison_summary, dict) and any(execution_state_comparison_summary.values()):
+    if isinstance(execution_state_comparison_summary, dict) and any(
+        execution_state_comparison_summary.values()
+    ):
         execution_state_comparison_flat = execution_state_comparison_flat_fields(
             execution_state_comparison_summary
         )
@@ -655,7 +677,9 @@ def write_go_no_go_markdown(
                 "",
             ]
         )
-    if isinstance(execution_snapshot_drift_summary, dict) and any(execution_snapshot_drift_summary.values()):
+    if isinstance(execution_snapshot_drift_summary, dict) and any(
+        execution_snapshot_drift_summary.values()
+    ):
         execution_snapshot_drift_flat = execution_snapshot_drift_flat_fields(
             execution_snapshot_drift_summary
         )
@@ -676,7 +700,9 @@ def write_go_no_go_markdown(
                 "",
             ]
         )
-    if isinstance(execution_drift_overview_summary, dict) and any(execution_drift_overview_summary.values()):
+    if isinstance(execution_drift_overview_summary, dict) and any(
+        execution_drift_overview_summary.values()
+    ):
         execution_drift_flat = execution_drift_overview_flat_fields(
             execution_drift_overview_summary
         )

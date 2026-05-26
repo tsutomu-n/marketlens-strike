@@ -74,8 +74,14 @@ def build_audit_bundle_history_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    operations = list(read_jsonl(operation_chain_path)) if operation_chain_path and operation_chain_path.exists() else []
-    snapshots = [item for item in operations if str(item.get("operation")) == "audit_bundle_snapshot"]
+    operations = (
+        list(read_jsonl(operation_chain_path))
+        if operation_chain_path and operation_chain_path.exists()
+        else []
+    )
+    snapshots = [
+        item for item in operations if str(item.get("operation")) == "audit_bundle_snapshot"
+    ]
     execution = normalized_summary(
         execution_snapshot_summary_path,
         normalize_execution_snapshot_summary,
@@ -126,9 +132,7 @@ def build_audit_bundle_history_report(
         else None
     )
     latest_remediation_checkpoint_status = (
-        _note_value(latest_notes, "checkpoint_status=")
-        if isinstance(latest_notes, list)
-        else None
+        _note_value(latest_notes, "checkpoint_status=") if isinstance(latest_notes, list) else None
     )
     latest_remediation_checkpoint_next_action_command = (
         _note_value(latest_notes, "next_action_command=")
@@ -141,9 +145,7 @@ def build_audit_bundle_history_report(
         else None
     )
     latest_remediation_scoreboard_status = (
-        _note_value(latest_notes, "scoreboard_status=")
-        if isinstance(latest_notes, list)
-        else None
+        _note_value(latest_notes, "scoreboard_status=") if isinstance(latest_notes, list) else None
     )
     latest_remediation_scoreboard_next_action_command = (
         _note_value(latest_notes, "next_action_command=")
@@ -177,7 +179,9 @@ def build_audit_bundle_history_report(
                 else None
             ),
             "execution_drift_overview_state_comparison_mismatching_count": (
-                _note_value(latest_notes, "execution_drift_overview_state_comparison_mismatching_count=")
+                _note_value(
+                    latest_notes, "execution_drift_overview_state_comparison_mismatching_count="
+                )
                 if isinstance(latest_notes, list)
                 else None
             ),
@@ -263,11 +267,15 @@ def build_audit_bundle_history_report(
                 else None
             ),
             "phase_gate_strict_validation_issues": (
-                phase_gate_issue_note_previews(latest_notes) if isinstance(latest_notes, list) else []
+                phase_gate_issue_note_previews(latest_notes)
+                if isinstance(latest_notes, list)
+                else []
             ),
         },
         "latest_execution_gap_history_status": (
-            _note_value(latest_notes, "execution_gap_history_latest_status=") if isinstance(latest_notes, list) else None
+            _note_value(latest_notes, "execution_gap_history_latest_status=")
+            if isinstance(latest_notes, list)
+            else None
         ),
         "latest_execution_drift_overview_status": (
             _note_value(latest_notes, "execution_drift_overview_status=")
@@ -280,7 +288,9 @@ def build_audit_bundle_history_report(
             else None
         ),
         "latest_execution_drift_overview_state_comparison_mismatching_count": (
-            _note_value(latest_notes, "execution_drift_overview_state_comparison_mismatching_count=")
+            _note_value(
+                latest_notes, "execution_drift_overview_state_comparison_mismatching_count="
+            )
             if isinstance(latest_notes, list)
             else None
         ),
@@ -308,19 +318,29 @@ def build_audit_bundle_history_report(
             else None
         ),
         "latest_readiness_next_phase": (
-            _note_value(latest_notes, "readiness_next_phase=") if isinstance(latest_notes, list) else None
+            _note_value(latest_notes, "readiness_next_phase=")
+            if isinstance(latest_notes, list)
+            else None
         ),
         "latest_readiness_execution_ready": (
-            _note_value(latest_notes, "readiness_execution_ready=") if isinstance(latest_notes, list) else None
+            _note_value(latest_notes, "readiness_execution_ready=")
+            if isinstance(latest_notes, list)
+            else None
         ),
         "latest_phase_gate_decision": (
-            _note_value(latest_notes, "phase_gate_decision=") if isinstance(latest_notes, list) else None
+            _note_value(latest_notes, "phase_gate_decision=")
+            if isinstance(latest_notes, list)
+            else None
         ),
         "latest_phase2_entry_allowed": (
-            _note_value(latest_notes, "phase2_entry_allowed=") if isinstance(latest_notes, list) else None
+            _note_value(latest_notes, "phase2_entry_allowed=")
+            if isinstance(latest_notes, list)
+            else None
         ),
         "latest_phase_gate_reason": (
-            _note_value(latest_notes, "phase_gate_reason=") if isinstance(latest_notes, list) else None
+            _note_value(latest_notes, "phase_gate_reason=")
+            if isinstance(latest_notes, list)
+            else None
         ),
         "latest_phase_gate_strict_validation_passed": (
             _note_value(latest_notes, "phase_gate_strict_validation_passed=")
@@ -333,7 +353,9 @@ def build_audit_bundle_history_report(
             else None
         ),
         "latest_phase_gate_checked_files": (
-            _note_value(latest_notes, "phase_gate_checked_files=") if isinstance(latest_notes, list) else None
+            _note_value(latest_notes, "phase_gate_checked_files=")
+            if isinstance(latest_notes, list)
+            else None
         ),
         "latest_phase_gate_review_report_path": (
             _note_value(latest_notes, "phase_gate_review_report_path=")
@@ -376,14 +398,24 @@ def build_audit_bundle_history_report(
         ),
         **execution_snapshot_fields,
         "audit_bundle_history_report_path": str(out_path) if out_path is not None else None,
-        "audit_timeline_report_path": str(reports_dir / "audit_timeline.md") if reports_dir else None,
-        "audit_dashboard_report_path": str(reports_dir / "audit_dashboard.md") if reports_dir else None,
-        "audit_bundle_report_path": str(reports_dir / "audit_bundle_manifest.md") if reports_dir else None,
+        "audit_timeline_report_path": str(reports_dir / "audit_timeline.md")
+        if reports_dir
+        else None,
+        "audit_dashboard_report_path": str(reports_dir / "audit_dashboard.md")
+        if reports_dir
+        else None,
+        "audit_bundle_report_path": str(reports_dir / "audit_bundle_manifest.md")
+        if reports_dir
+        else None,
         "operations_audit_pack_report_path": (
             str(reports_dir / "operations_audit_pack.md") if reports_dir else None
         ),
-        "current_state_index_report_path": str(reports_dir / "current_state_index.md") if reports_dir else None,
-        "readiness_snapshot_report_path": str(reports_dir / "readiness_snapshot.md") if reports_dir else None,
+        "current_state_index_report_path": str(reports_dir / "current_state_index.md")
+        if reports_dir
+        else None,
+        "readiness_snapshot_report_path": str(reports_dir / "readiness_snapshot.md")
+        if reports_dir
+        else None,
         "remediation_scoreboard_report_path": (
             str(reports_dir / "remediation_scoreboard.md") if reports_dir else None
         ),

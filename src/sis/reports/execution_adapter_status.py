@@ -353,9 +353,13 @@ def build_execution_read_only_surfaces_report(
     venues = [dict(item) for item in venue_surfaces]
     venue_count = len(venues)
     with_balance_snapshot_count = sum(bool(item.get("balance_snapshot_exists")) for item in venues)
-    with_positions_snapshot_count = sum(bool(item.get("positions_snapshot_exists")) for item in venues)
+    with_positions_snapshot_count = sum(
+        bool(item.get("positions_snapshot_exists")) for item in venues
+    )
     with_fills_snapshot_count = sum(bool(item.get("fills_snapshot_exists")) for item in venues)
-    with_order_status_snapshot_count = sum(bool(item.get("order_status_snapshot_exists")) for item in venues)
+    with_order_status_snapshot_count = sum(
+        bool(item.get("order_status_snapshot_exists")) for item in venues
+    )
     reconciled_venue_count = sum(item.get("reconcile_matched") is not None for item in venues)
     with_positions_financial_totals_count = sum(
         item.get("positions_notional_usd_total") is not None for item in venues
@@ -382,7 +386,9 @@ def build_execution_read_only_surfaces_report(
         item.get("positions_total_quantity") is not None for item in venues
     )
     positions_notional_usd_total = sum(
-        value for item in venues if (value := _as_float(item.get("positions_notional_usd_total"))) is not None
+        value
+        for item in venues
+        if (value := _as_float(item.get("positions_notional_usd_total"))) is not None
     )
     positions_unrealized_pnl_usd_total = sum(
         value
@@ -415,10 +421,14 @@ def build_execution_read_only_surfaces_report(
         if (value := _as_int(item.get("positions_with_take_profit_count"))) is not None
     )
     positions_with_stop_loss_count = sum(
-        value for item in venues if (value := _as_int(item.get("positions_with_stop_loss_count"))) is not None
+        value
+        for item in venues
+        if (value := _as_int(item.get("positions_with_stop_loss_count"))) is not None
     )
     positions_day_trade_count = sum(
-        value for item in venues if (value := _as_int(item.get("positions_day_trade_count"))) is not None
+        value
+        for item in venues
+        if (value := _as_int(item.get("positions_day_trade_count"))) is not None
     )
     latest_positions_server_time_ms = max(
         (
@@ -457,7 +467,9 @@ def build_execution_read_only_surfaces_report(
         default=None,
     )
     positions_total_quantity = sum(
-        value for item in venues if (value := _as_float(item.get("positions_total_quantity"))) is not None
+        value
+        for item in venues
+        if (value := _as_float(item.get("positions_total_quantity"))) is not None
     )
     positions_total_realized_pnl = sum(
         value

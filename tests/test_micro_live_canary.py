@@ -17,7 +17,9 @@ class _FakeExchange:
         self.order_status = order_status
         self.calls: list[str] = []
 
-    def read_account_state(self, master_address: str, subaccount_address: str | None = None) -> dict:
+    def read_account_state(
+        self, master_address: str, subaccount_address: str | None = None
+    ) -> dict:
         self.calls.append("read_account_state")
         return {
             "master_address": master_address,

@@ -271,9 +271,7 @@ def _paper_last_run_summary(
 
 
 def _paper_last_run_latest_execution_payload(settings_data_dir: Path) -> dict:
-    return latest_execution_lineage_payload_from_summary(
-        _paper_last_run_payload(settings_data_dir)
-    )
+    return latest_execution_lineage_payload_from_summary(_paper_last_run_payload(settings_data_dir))
 
 
 def _read_execution_comparison_schedule_summary(settings_data_dir: Path) -> dict:
@@ -300,7 +298,11 @@ def _read_execution_gap_history_schedule_summary(settings_data_dir: Path) -> dic
         path=settings_data_dir / "ops/execution_gap_history_summary.json",
         normalizer=normalize_execution_gap_history_summary,
         report_path="reports/execution_gap_history.md",
-        default={"entry_count": 0, "latest_status": None, "latest_execution_diagnostics_status": None},
+        default={
+            "entry_count": 0,
+            "latest_status": None,
+            "latest_execution_diagnostics_status": None,
+        },
     )
 
 
@@ -371,7 +373,9 @@ def _write_schedule_run_with_audit(
         scheduled_for = datetime.fromisoformat(at.replace("Z", "+00:00"))
         run = schedule_run(run_type=run_type, scheduled_for=scheduled_for, command=command)
     else:
-        run = next_interval_run(run_type=run_type, every_minutes=every_minutes or 0, command=command)
+        run = next_interval_run(
+            run_type=run_type, every_minutes=every_minutes or 0, command=command
+        )
     out = write_schedule_with_audit(
         settings_data_dir / "ops/scheduled_run.json",
         run,
@@ -379,15 +383,21 @@ def _write_schedule_run_with_audit(
         phase_gate_summary=_read_phase_gate_schedule_summary(settings_data_dir),
         execution_summary=_read_execution_schedule_summary(settings_data_dir),
         execution_comparison_summary=_read_execution_comparison_schedule_summary(settings_data_dir),
-        execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings_data_dir),
-        execution_gap_history_summary=_read_execution_gap_history_schedule_summary(settings_data_dir),
+        execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(
+            settings_data_dir
+        ),
+        execution_gap_history_summary=_read_execution_gap_history_schedule_summary(
+            settings_data_dir
+        ),
         execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
             settings_data_dir
         ),
         execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
             settings_data_dir
         ),
-        execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings_data_dir),
+        execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(
+            settings_data_dir
+        ),
         readiness_summary=_read_readiness_schedule_summary(settings_data_dir),
     )
     return run, out
@@ -396,17 +406,31 @@ def _write_schedule_run_with_audit(
 def _daemon_dry_run_context(settings_data_dir: Path) -> dict:
     return {
         "execution_summary": _read_execution_schedule_summary(settings_data_dir),
-        "execution_comparison_summary": _read_execution_comparison_schedule_summary(settings_data_dir),
-        "execution_diagnostics_summary": _read_execution_diagnostics_schedule_summary(settings_data_dir),
-        "execution_gap_history_summary": _read_execution_gap_history_schedule_summary(settings_data_dir),
-        "execution_state_comparison_summary": _read_execution_state_comparison_schedule_summary(settings_data_dir),
-        "execution_snapshot_drift_summary": _read_execution_snapshot_drift_schedule_summary(settings_data_dir),
-        "execution_drift_overview_summary": _read_execution_drift_overview_schedule_summary(settings_data_dir),
+        "execution_comparison_summary": _read_execution_comparison_schedule_summary(
+            settings_data_dir
+        ),
+        "execution_diagnostics_summary": _read_execution_diagnostics_schedule_summary(
+            settings_data_dir
+        ),
+        "execution_gap_history_summary": _read_execution_gap_history_schedule_summary(
+            settings_data_dir
+        ),
+        "execution_state_comparison_summary": _read_execution_state_comparison_schedule_summary(
+            settings_data_dir
+        ),
+        "execution_snapshot_drift_summary": _read_execution_snapshot_drift_schedule_summary(
+            settings_data_dir
+        ),
+        "execution_drift_overview_summary": _read_execution_drift_overview_schedule_summary(
+            settings_data_dir
+        ),
         "readiness_summary": _read_readiness_schedule_summary(settings_data_dir),
     }
 
 
-def _write_monitoring_snapshot(settings_data_dir: Path, state_path: Path | None) -> tuple[Path, dict]:
+def _write_monitoring_snapshot(
+    settings_data_dir: Path, state_path: Path | None
+) -> tuple[Path, dict]:
     store = _state_store(settings_data_dir, state_path)
     kill_switch = KillSwitch(settings_data_dir / "state/kill_switch.flag")
     health = build_healthcheck(
@@ -416,7 +440,8 @@ def _write_monitoring_snapshot(settings_data_dir: Path, state_path: Path | None)
         audit_bundle_summary_path=settings_data_dir / "ops/audit_bundle_manifest.json",
         operations_bundle_manifest_path=settings_data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
         reconciliation_store_present=store.latest_reconciliation() is not None,
     )
@@ -426,9 +451,12 @@ def _write_monitoring_snapshot(settings_data_dir: Path, state_path: Path | None)
         daily_pnl_path=settings_data_dir / "paper/daily_pnl.parquet",
         operation_chain_path=settings_data_dir / "ops/operation_manifests.jsonl",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
-        execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings_data_dir / "ops/execution_gap_history_summary.json",
+        execution_venue_comparison_summary_path=settings_data_dir
+        / "ops/execution_venue_comparison_summary.json",
+        execution_venue_diagnostics_summary_path=settings_data_dir
+        / "ops/execution_venue_diagnostics_summary.json",
+        execution_gap_history_summary_path=settings_data_dir
+        / "ops/execution_gap_history_summary.json",
         execution_state_comparison_history_summary_path=(
             settings_data_dir / "ops/execution_state_comparison_history_summary.json"
         ),
@@ -439,7 +467,8 @@ def _write_monitoring_snapshot(settings_data_dir: Path, state_path: Path | None)
         audit_bundle_summary_path=settings_data_dir / "ops/audit_bundle_manifest.json",
         operations_bundle_manifest_path=settings_data_dir / "ops/operations_bundle_manifest.json",
         phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
-        execution_drift_overview_summary_path=settings_data_dir / "ops/execution_drift_overview_summary.json",
+        execution_drift_overview_summary_path=settings_data_dir
+        / "ops/execution_drift_overview_summary.json",
         readiness_summary_path=settings_data_dir / "ops/readiness_snapshot.json",
         last_healthcheck=health,
     )
@@ -488,8 +517,7 @@ def _echo_audit_summary(summary: dict) -> None:
     typer.echo(f"audit_overall_status={audit_summary.get('overall_status')}")
     typer.echo(f"audit_latest_operation={audit_summary.get('latest_operation')}")
     typer.echo(
-        "audit_bundle_history_snapshot_count="
-        f"{audit_summary.get('bundle_history_snapshot_count')}"
+        f"audit_bundle_history_snapshot_count={audit_summary.get('bundle_history_snapshot_count')}"
     )
 
 

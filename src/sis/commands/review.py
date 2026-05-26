@@ -17,7 +17,10 @@ from sis.market_calendar import market_session_window
 from sis.reports.doc_paths import CODE_STATUS_DOC
 from sis.reports.evidence import build_evidence_card
 from sis.reports.go_no_go import build_go_no_go_report, write_go_no_go_markdown
-from sis.reports.implementation_status import implementation_status_items, write_implementation_status
+from sis.reports.implementation_status import (
+    implementation_status_items,
+    write_implementation_status,
+)
 from sis.reports.quote_diagnostics import build_quote_diagnostics, build_quote_diagnostics_report
 from sis.risk.halt_policy import load_halt_policy, summarize_halt_policy
 from sis.risk.scalping_policy import check_timeframe
@@ -47,7 +50,7 @@ def register_review_commands(
             None,
             "--signals-path",
             help="Optional research signal CSV. Defaults to data/research/signals.csv when present.",
-        )
+        ),
     ) -> None:
         settings = get_settings()
         latest_execution_payload = _paper_last_run_latest_execution_payload(settings.data_dir)
@@ -57,7 +60,9 @@ def register_review_commands(
             typer.echo(f"Research signal CSV not found: {selected_signals_path}")
             raise typer.Exit(code=2)
         decision_log_path = (
-            settings.data_dir / "evidence/decision_logs" / f"backtest_decisions_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.jsonl"
+            settings.data_dir
+            / "evidence/decision_logs"
+            / f"backtest_decisions_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.jsonl"
         )
         decision_summary_path = settings.data_dir / "research/decision_summary.json"
         metrics, _records, _summary = run_backtest_bridge_with_decisions(
@@ -70,16 +75,24 @@ def register_review_commands(
             phase_gate_summary=_paper_last_run_phase_gate_summary(settings.data_dir),
             readiness_summary=_read_readiness_schedule_summary(settings.data_dir),
             execution_summary=_read_execution_schedule_summary(settings.data_dir),
-            execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
-            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
-            execution_gap_history_summary=_read_execution_gap_history_schedule_summary(settings.data_dir),
+            execution_comparison_summary=_read_execution_comparison_schedule_summary(
+                settings.data_dir
+            ),
+            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(
+                settings.data_dir
+            ),
+            execution_gap_history_summary=_read_execution_gap_history_schedule_summary(
+                settings.data_dir
+            ),
             execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
                 settings.data_dir
             ),
             execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
                 settings.data_dir
             ),
-            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
+            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(
+                settings.data_dir
+            ),
             **latest_execution_payload,
         )
         report_path = settings.data_dir / "research/backtest_report.md"
@@ -93,8 +106,12 @@ def register_review_commands(
             phase_gate_summary=_paper_last_run_phase_gate_summary(settings.data_dir),
             readiness_summary=_read_readiness_schedule_summary(settings.data_dir),
             execution_summary=_read_execution_schedule_summary(settings.data_dir),
-            execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
-            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
+            execution_comparison_summary=_read_execution_comparison_schedule_summary(
+                settings.data_dir
+            ),
+            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(
+                settings.data_dir
+            ),
             execution_gap_history_summary=_read_execution_gap_history_schedule_summary(
                 settings.data_dir
             ),
@@ -104,7 +121,9 @@ def register_review_commands(
             execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
                 settings.data_dir
             ),
-            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
+            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(
+                settings.data_dir
+            ),
             **latest_execution_payload,
         )
         write_backtest_metrics_json(metrics, metrics_path)
@@ -115,16 +134,24 @@ def register_review_commands(
             phase_gate_summary=_paper_last_run_phase_gate_summary(settings.data_dir),
             readiness_summary=_read_readiness_schedule_summary(settings.data_dir),
             execution_summary=_read_execution_schedule_summary(settings.data_dir),
-            execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
-            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
-            execution_gap_history_summary=_read_execution_gap_history_schedule_summary(settings.data_dir),
+            execution_comparison_summary=_read_execution_comparison_schedule_summary(
+                settings.data_dir
+            ),
+            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(
+                settings.data_dir
+            ),
+            execution_gap_history_summary=_read_execution_gap_history_schedule_summary(
+                settings.data_dir
+            ),
             execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
                 settings.data_dir
             ),
             execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
                 settings.data_dir
             ),
-            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
+            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(
+                settings.data_dir
+            ),
             **latest_execution_payload,
         )
         logger.info("written: {}", report_path)
@@ -135,7 +162,6 @@ def register_review_commands(
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
 
-
     @app.command("check-halt-policy")
     def check_halt_policy() -> None:
         settings = get_settings()
@@ -144,7 +170,6 @@ def register_review_commands(
             typer.echo(line)
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
-
 
     @app.command("check-go-no-go")
     def check_go_no_go() -> None:
@@ -159,8 +184,12 @@ def register_review_commands(
             phase_gate_summary=_paper_last_run_phase_gate_summary(settings.data_dir),
             readiness_summary=_read_readiness_schedule_summary(settings.data_dir),
             execution_summary=_read_execution_schedule_summary(settings.data_dir),
-            execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
-            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
+            execution_comparison_summary=_read_execution_comparison_schedule_summary(
+                settings.data_dir
+            ),
+            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(
+                settings.data_dir
+            ),
             execution_gap_history_summary=_read_execution_gap_history_schedule_summary(
                 settings.data_dir
             ),
@@ -170,14 +199,15 @@ def register_review_commands(
             execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
                 settings.data_dir
             ),
-            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
+            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(
+                settings.data_dir
+            ),
             **latest_execution_payload,
         )
         logger.info("written: {}", out)
         typer.echo(report.decision.value)
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
-
 
     @app.command("build-evidence-card")
     def build_evidence_card_cmd() -> None:
@@ -191,21 +221,28 @@ def register_review_commands(
             readiness_summary=_read_readiness_schedule_summary(settings.data_dir),
             **latest_execution_payload,
             execution_summary=_read_execution_schedule_summary(settings.data_dir),
-            execution_comparison_summary=_read_execution_comparison_schedule_summary(settings.data_dir),
-            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(settings.data_dir),
-            execution_gap_history_summary=_read_execution_gap_history_schedule_summary(settings.data_dir),
+            execution_comparison_summary=_read_execution_comparison_schedule_summary(
+                settings.data_dir
+            ),
+            execution_diagnostics_summary=_read_execution_diagnostics_schedule_summary(
+                settings.data_dir
+            ),
+            execution_gap_history_summary=_read_execution_gap_history_schedule_summary(
+                settings.data_dir
+            ),
             execution_state_comparison_summary=_read_execution_state_comparison_schedule_summary(
                 settings.data_dir
             ),
             execution_snapshot_drift_summary=_read_execution_snapshot_drift_schedule_summary(
                 settings.data_dir
             ),
-            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(settings.data_dir),
+            execution_drift_overview_summary=_read_execution_drift_overview_schedule_summary(
+                settings.data_dir
+            ),
         )
         logger.info("written: {}", out)
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
-
 
     @app.command("implementation-status")
     def implementation_status(write: bool = typer.Option(False, "--write")) -> None:
@@ -218,7 +255,6 @@ def register_review_commands(
             typer.echo(f"{item.status}\t{item.area}\t{item.item}")
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
-
 
     @app.command("check-timeframe")
     def check_timeframe_cmd(timeframe: str) -> None:
@@ -234,9 +270,10 @@ def register_review_commands(
             typer.echo(f"recommended_read_order_{index}={item}")
         raise typer.Exit(code=2)
 
-
     @app.command("market-session")
-    def market_session(venue: str = typer.Option(..., "--venue"), symbol: str = typer.Option(..., "--symbol")) -> None:
+    def market_session(
+        venue: str = typer.Option(..., "--venue"), symbol: str = typer.Option(..., "--symbol")
+    ) -> None:
         settings = get_settings()
         try:
             window = market_session_window(venue, symbol)
@@ -253,9 +290,10 @@ def register_review_commands(
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
 
-
     @app.command("next-live-window")
-    def next_live_window(venue: str = typer.Option(..., "--venue"), symbol: str = typer.Option(..., "--symbol")) -> None:
+    def next_live_window(
+        venue: str = typer.Option(..., "--venue"), symbol: str = typer.Option(..., "--symbol")
+    ) -> None:
         settings = get_settings()
         try:
             window = market_session_window(venue, symbol)
@@ -274,7 +312,6 @@ def register_review_commands(
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
 
-
     @app.command("validate-artifacts")
     def validate_artifacts_cmd(strict: bool = typer.Option(False, "--strict")) -> None:
         settings = get_settings()
@@ -287,7 +324,6 @@ def register_review_commands(
             typer.echo(f"recommended_read_order_{index}={item}")
         if summary.issues:
             raise typer.Exit(code=2)
-
 
     @app.command("diagnose-quotes")
     def diagnose_quotes(

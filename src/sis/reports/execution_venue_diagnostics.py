@@ -30,7 +30,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
         "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
         "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
-        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_state_comparison_report": str(
+            reports_dir / "execution_state_comparison_history.md"
+        ),
         "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
         "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
         "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
@@ -83,12 +85,18 @@ def build_execution_venue_diagnostics_report(
     fills_counts = _int_values(rows, "fills_count")
     order_status_counts = _int_values(rows, "order_status_count")
 
-    registry_gap_detected = any(row.get("registry_exists") is not True for row in rows) if rows else True
-    balance_gap_detected = any(row.get("balance_snapshot_exists") is not True for row in rows) if rows else True
+    registry_gap_detected = (
+        any(row.get("registry_exists") is not True for row in rows) if rows else True
+    )
+    balance_gap_detected = (
+        any(row.get("balance_snapshot_exists") is not True for row in rows) if rows else True
+    )
     positions_snapshot_gap_detected = (
         any(row.get("positions_snapshot_exists") is not True for row in rows) if rows else True
     )
-    fills_gap_detected = any(row.get("fills_snapshot_exists") is not True for row in rows) if rows else True
+    fills_gap_detected = (
+        any(row.get("fills_snapshot_exists") is not True for row in rows) if rows else True
+    )
     order_status_gap_detected = (
         any(row.get("order_status_snapshot_exists") is not True for row in rows) if rows else True
     )

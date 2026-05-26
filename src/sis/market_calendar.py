@@ -53,7 +53,11 @@ def _next_xnys_window(now_utc: datetime) -> tuple[datetime, datetime, str]:
 
         if offset == 0:
             if now_et < open_et:
-                return open_et.astimezone(timezone.utc), close_et.astimezone(timezone.utc), "PRE_OPEN"
+                return (
+                    open_et.astimezone(timezone.utc),
+                    close_et.astimezone(timezone.utc),
+                    "PRE_OPEN",
+                )
             if open_et <= now_et < close_et:
                 return open_et.astimezone(timezone.utc), close_et.astimezone(timezone.utc), "OPEN"
         else:

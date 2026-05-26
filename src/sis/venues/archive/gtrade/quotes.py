@@ -135,10 +135,14 @@ def _latest_evidence_refs(sidecar_path: Path) -> dict[str, str]:
     return refs
 
 
-def convert_sidecar_to_quote_logs(sidecar_path: Path, out_path: Path, pricing_path: Path | None = None) -> int:
+def convert_sidecar_to_quote_logs(
+    sidecar_path: Path, out_path: Path, pricing_path: Path | None = None
+) -> int:
     count = 0
     seen = {quote_identity(row) for row in read_jsonl(out_path)} if out_path.exists() else set()
-    pricing_rows = _extract_pricing_rows(pricing_path) if pricing_path and pricing_path.exists() else None
+    pricing_rows = (
+        _extract_pricing_rows(pricing_path) if pricing_path and pricing_path.exists() else None
+    )
     evidence_refs = _latest_evidence_refs(sidecar_path)
     for snapshot in read_jsonl(sidecar_path):
         ts = datetime.fromisoformat(snapshot["ts_client"].replace("Z", "+00:00"))
@@ -197,7 +201,9 @@ def convert_sidecar_to_quote_logs(sidecar_path: Path, out_path: Path, pricing_pa
             mark_price = pricing_row.get("mark_price") if pricing_row else None
             index_price = pricing_row.get("index_price") if pricing_row else None
             quote_oracle_ts_ms = (
-                pricing_row.get("oracle_ts_ms") if pricing_row and pricing_row.get("oracle_ts_ms") is not None else oracle_ts_ms
+                pricing_row.get("oracle_ts_ms")
+                if pricing_row and pricing_row.get("oracle_ts_ms") is not None
+                else oracle_ts_ms
             )
             quote = QuoteLog(
                 ts_client=ts,

@@ -60,7 +60,6 @@ def register_paper_commands(
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
 
-
     @app.command("paper-report")
     def paper_report_cmd() -> None:
         settings = get_settings()
@@ -70,10 +69,14 @@ def register_paper_commands(
             typer.echo(f"Paper fills parquet not found: {fills_path}")
             raise typer.Exit(code=2)
         fills_frame = pl.read_parquet(fills_path)
-        positions_frame = pl.read_parquet(positions_path) if positions_path.exists() else pl.DataFrame()
+        positions_frame = (
+            pl.read_parquet(positions_path) if positions_path.exists() else pl.DataFrame()
+        )
         fills = fills_frame.to_dicts()
         positions = positions_frame.to_dicts()
-        paper_last_run = StateStore(settings.data_dir / "state/marketlens.sqlite").get_json("paper_last_run")
+        paper_last_run = StateStore(settings.data_dir / "state/marketlens.sqlite").get_json(
+            "paper_last_run"
+        )
         audit_summary = paper_last_run.get("audit") if isinstance(paper_last_run, dict) else None
         if not isinstance(audit_summary, dict):
             audit_summary = _read_audit_schedule_summary(settings.data_dir)
@@ -96,13 +99,14 @@ def register_paper_commands(
             execution_snapshot_drift_summary=_paper_last_run_execution_snapshot_drift_summary(
                 settings.data_dir
             ),
-            execution_drift_overview_summary=_paper_last_run_execution_drift_overview_summary(settings.data_dir),
+            execution_drift_overview_summary=_paper_last_run_execution_drift_overview_summary(
+                settings.data_dir
+            ),
         )
         logger.info("written: {}", out)
         typer.echo(text)
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
-
 
     @app.command("weekly-review")
     def weekly_review_cmd() -> None:

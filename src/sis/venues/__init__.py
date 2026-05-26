@@ -1,2 +1,1 @@
 """Venue adapters."""
-

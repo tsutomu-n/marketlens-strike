@@ -120,13 +120,17 @@ def build_monitoring_snapshot(
     audit_dashboard = safe_read_json_dict(audit_dashboard_summary_path)
     if audit_dashboard:
         snapshot["audit_dashboard"] = audit_dashboard
-        audit_summary = audit_summary_fields(audit_dashboard, _as_mapping(snapshot.get("audit_bundle")))
+        audit_summary = audit_summary_fields(
+            audit_dashboard, _as_mapping(snapshot.get("audit_bundle"))
+        )
         snapshot["audit_summary"] = audit_summary
         snapshot.update(audit_summary)
     audit_bundle = safe_read_json_dict(audit_bundle_summary_path)
     if audit_bundle:
         snapshot["audit_bundle"] = audit_bundle
-        audit_summary = audit_summary_fields(_as_mapping(snapshot.get("audit_dashboard")), audit_bundle)
+        audit_summary = audit_summary_fields(
+            _as_mapping(snapshot.get("audit_dashboard")), audit_bundle
+        )
         snapshot["audit_summary"] = audit_summary
         snapshot.update(audit_summary)
     operations_bundle = safe_read_json_dict(operations_bundle_manifest_path)

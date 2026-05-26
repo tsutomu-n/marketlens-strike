@@ -65,7 +65,11 @@ def build_execution_state_comparison_history_report(
     summary_path: Path | None = None,
     limit: int = 12,
 ) -> str:
-    operations = list(read_jsonl(operation_chain_path)) if operation_chain_path and operation_chain_path.exists() else []
+    operations = (
+        list(read_jsonl(operation_chain_path))
+        if operation_chain_path and operation_chain_path.exists()
+        else []
+    )
     relevant_ops = {
         "paper_operations_cycle",
         "operations_snapshot",
@@ -83,7 +87,9 @@ def build_execution_state_comparison_history_report(
             continue
         diagnostics_status = _note_value(notes, "execution_diagnostics_status=")
         latest_execution_lineage = latest_execution_lineage_from_notes(notes, prefix="latest")
-        gap_history_diagnostics_status = _note_value(notes, "execution_gap_history_latest_diagnostics_status=")
+        gap_history_diagnostics_status = _note_value(
+            notes, "execution_gap_history_latest_diagnostics_status="
+        )
         if (
             diagnostics_status is None
             and not latest_execution_lineage

@@ -30,7 +30,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
         "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
         "execution_gap_history_report": str(reports_dir / "execution_gap_history.md"),
-        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_state_comparison_report": str(
+            reports_dir / "execution_state_comparison_history.md"
+        ),
         "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
         "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
         "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
@@ -77,17 +79,35 @@ def build_execution_venue_comparison_report(
         "overall_status": payload.get("overall_status"),
         "venue_count": len(comparison_rows),
         "venues": comparison_rows,
-        "all_registries_present": all(bool(row.get("registry_exists")) for row in comparison_rows) if comparison_rows else False,
+        "all_registries_present": all(bool(row.get("registry_exists")) for row in comparison_rows)
+        if comparison_rows
+        else False,
         "execution_comparison_all_registries_present": (
-            all(bool(row.get("registry_exists")) for row in comparison_rows) if comparison_rows else False
+            all(bool(row.get("registry_exists")) for row in comparison_rows)
+            if comparison_rows
+            else False
         ),
         "execution_comparison_report_path": str(out_path) if out_path is not None else None,
-        "all_balance_snapshots_present": all(bool(row.get("balance_snapshot_exists")) for row in comparison_rows) if comparison_rows else False,
+        "all_balance_snapshots_present": all(
+            bool(row.get("balance_snapshot_exists")) for row in comparison_rows
+        )
+        if comparison_rows
+        else False,
         "all_positions_snapshots_present": (
-            all(bool(row.get("positions_snapshot_exists")) for row in comparison_rows) if comparison_rows else False
+            all(bool(row.get("positions_snapshot_exists")) for row in comparison_rows)
+            if comparison_rows
+            else False
         ),
-        "all_fill_snapshots_present": all(bool(row.get("fills_snapshot_exists")) for row in comparison_rows) if comparison_rows else False,
-        "all_order_status_snapshots_present": all(bool(row.get("order_status_snapshot_exists")) for row in comparison_rows) if comparison_rows else False,
+        "all_fill_snapshots_present": all(
+            bool(row.get("fills_snapshot_exists")) for row in comparison_rows
+        )
+        if comparison_rows
+        else False,
+        "all_order_status_snapshots_present": all(
+            bool(row.get("order_status_snapshot_exists")) for row in comparison_rows
+        )
+        if comparison_rows
+        else False,
         "recommended_read_order": recommended_read_order(
             [
                 "data/ops/execution_venue_comparison_summary.json",

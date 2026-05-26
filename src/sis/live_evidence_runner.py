@@ -127,12 +127,16 @@ class LiveEvidenceManifest(BaseModel):
     timeline_latest_execution_venue_count: int | None = None
     timeline_latest_execution_comparison_all_registries_present: bool | None = None
     bundle_history_latest_execution_summary: dict[str, object] = Field(default_factory=dict)
-    bundle_history_latest_execution_comparison_summary: dict[str, object] = Field(default_factory=dict)
+    bundle_history_latest_execution_comparison_summary: dict[str, object] = Field(
+        default_factory=dict
+    )
     bundle_history_latest_execution_overall_status: str | None = None
     bundle_history_latest_execution_venue_count: int | None = None
     bundle_history_latest_execution_comparison_all_registries_present: bool | None = None
     cycle_history_latest_execution_summary: dict[str, object] = Field(default_factory=dict)
-    cycle_history_latest_execution_comparison_summary: dict[str, object] = Field(default_factory=dict)
+    cycle_history_latest_execution_comparison_summary: dict[str, object] = Field(
+        default_factory=dict
+    )
     cycle_history_latest_execution_overall_status: str | None = None
     cycle_history_latest_execution_venue_count: int | None = None
     cycle_history_latest_execution_comparison_all_registries_present: bool | None = None
@@ -182,9 +186,7 @@ def _apply_latest_execution_lineage(
         setattr(
             manifest,
             f"{prefix}_execution_comparison_all_registries_present",
-            latest_execution_lineage.get(
-                f"{prefix}_execution_comparison_all_registries_present"
-            ),
+            latest_execution_lineage.get(f"{prefix}_execution_comparison_all_registries_present"),
         )
 
 
@@ -292,9 +294,7 @@ def write_manifest(path: Path, manifest: LiveEvidenceManifest) -> None:
         manifest.phase_gate_strict_validation_issue_count = phase_gate_fields.get(
             "phase_gate_strict_validation_issue_count"
         )  # type: ignore[assignment]
-        manifest.phase_gate_checked_files = phase_gate_fields.get(
-            "phase_gate_checked_files"
-        )  # type: ignore[assignment]
+        manifest.phase_gate_checked_files = phase_gate_fields.get("phase_gate_checked_files")  # type: ignore[assignment]
         manifest.strict_validation_passed = manifest.phase_gate_strict_validation_passed  # type: ignore[assignment]
     if isinstance(manifest.readiness_summary, dict):
         manifest.readiness_summary = normalize_readiness_summary(manifest.readiness_summary)
@@ -302,17 +302,13 @@ def write_manifest(path: Path, manifest: LiveEvidenceManifest) -> None:
         manifest.readiness_next_phase_candidate = readiness_fields.get(
             "readiness_next_phase_candidate"
         )  # type: ignore[assignment]
-        manifest.readiness_execution_ready = readiness_fields.get(
-            "readiness_execution_ready"
-        )  # type: ignore[assignment]
+        manifest.readiness_execution_ready = readiness_fields.get("readiness_execution_ready")  # type: ignore[assignment]
     latest_execution_lineage = latest_execution_lineage_fields_from_payload(
         timeline_latest_execution_summary=manifest.timeline_latest_execution_summary,
         timeline_latest_execution_comparison_summary=(
             manifest.timeline_latest_execution_comparison_summary
         ),
-        bundle_history_latest_execution_summary=(
-            manifest.bundle_history_latest_execution_summary
-        ),
+        bundle_history_latest_execution_summary=(manifest.bundle_history_latest_execution_summary),
         bundle_history_latest_execution_comparison_summary=(
             manifest.bundle_history_latest_execution_comparison_summary
         ),
@@ -323,7 +319,9 @@ def write_manifest(path: Path, manifest: LiveEvidenceManifest) -> None:
     )
     _apply_latest_execution_lineage(manifest, latest_execution_lineage)
     if isinstance(manifest.execution_summary, dict):
-        manifest.execution_summary = normalize_execution_snapshot_summary(manifest.execution_summary)
+        manifest.execution_summary = normalize_execution_snapshot_summary(
+            manifest.execution_summary
+        )
     if isinstance(manifest.execution_comparison_summary, dict):
         manifest.execution_comparison_summary = normalize_execution_comparison_summary(
             manifest.execution_comparison_summary
@@ -354,8 +352,8 @@ def write_manifest(path: Path, manifest: LiveEvidenceManifest) -> None:
         manifest.execution_drift_overview_status = execution_drift_fields.get(
             "execution_drift_overview_status"
         )  # type: ignore[assignment]
-        manifest.execution_drift_overview_diagnostics_alignment_match = (
-            execution_drift_fields.get("execution_drift_overview_diagnostics_alignment_match")
+        manifest.execution_drift_overview_diagnostics_alignment_match = execution_drift_fields.get(
+            "execution_drift_overview_diagnostics_alignment_match"
         )  # type: ignore[assignment]
         manifest.execution_drift_overview_state_comparison_mismatching_count = (
             execution_drift_fields.get(
@@ -367,7 +365,9 @@ def write_manifest(path: Path, manifest: LiveEvidenceManifest) -> None:
                 "execution_drift_overview_snapshot_drift_mismatching_snapshot_count"
             )
         )  # type: ignore[assignment]
-    tmp_path.write_text(json.dumps(manifest.model_dump(mode="json"), ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp_path.write_text(
+        json.dumps(manifest.model_dump(mode="json"), ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     tmp_path.replace(path)
 
 
@@ -459,7 +459,9 @@ def run_with_manifest_step(
                 step.attempt_count = attempt.retry_state.attempt_number
                 write_manifest(manifest_path, manifest)
                 func()
-        step.status = StepOutcome.COMPLETED_WITH_RETRIES if step.attempt_count > 1 else StepOutcome.COMPLETED
+        step.status = (
+            StepOutcome.COMPLETED_WITH_RETRIES if step.attempt_count > 1 else StepOutcome.COMPLETED
+        )
         step.error_summary = None
     except RetryableStepError as exc:
         step.status = StepOutcome.FAILED
@@ -507,7 +509,9 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
     if summary_path is None:
         manifests_dir = manifest_path.parent
         if manifests_dir.name == "manifests":
-            out_path = manifests_dir.parent / "summaries" / f"live_evidence_summary_{manifest.run_id}.json"
+            out_path = (
+                manifests_dir.parent / "summaries" / f"live_evidence_summary_{manifest.run_id}.json"
+            )
         else:
             out_path = default_manifest_summary_path(manifest.run_id)
     else:
@@ -517,17 +521,23 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
         execution_summary_path,
         normalize_execution_snapshot_summary,
     )
-    execution_comparison_summary_path = Path(manifest.data_dir) / "ops/execution_venue_comparison_summary.json"
+    execution_comparison_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_venue_comparison_summary.json"
+    )
     execution_comparison_summary = normalized_summary(
         execution_comparison_summary_path,
         normalize_execution_comparison_summary,
     )
-    execution_diagnostics_summary_path = Path(manifest.data_dir) / "ops/execution_venue_diagnostics_summary.json"
+    execution_diagnostics_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_venue_diagnostics_summary.json"
+    )
     execution_diagnostics_summary = normalized_summary(
         execution_diagnostics_summary_path,
         normalize_execution_diagnostics_summary,
     )
-    execution_gap_history_summary_path = Path(manifest.data_dir) / "ops/execution_gap_history_summary.json"
+    execution_gap_history_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_gap_history_summary.json"
+    )
     execution_gap_history_summary = normalized_summary(
         execution_gap_history_summary_path,
         normalize_execution_gap_history_summary,
@@ -546,7 +556,9 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
         execution_snapshot_drift_summary_path,
         normalize_execution_snapshot_drift_summary,
     )
-    execution_drift_overview_summary_path = Path(manifest.data_dir) / "ops/execution_drift_overview_summary.json"
+    execution_drift_overview_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_drift_overview_summary.json"
+    )
     execution_drift_overview_summary = normalized_summary(
         execution_drift_overview_summary_path,
         normalize_execution_drift_overview_summary,
@@ -554,9 +566,7 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
     readiness_summary_path = Path(manifest.data_dir) / "ops/readiness_snapshot.json"
     readiness_summary = safe_read_json_dict(readiness_summary_path)
     evidence_card_summary = _read_evidence_card_summary(manifest)
-    latest_execution_lineage = latest_execution_lineage_fields_from_summary(
-        evidence_card_summary
-    )
+    latest_execution_lineage = latest_execution_lineage_fields_from_summary(evidence_card_summary)
     normalized_phase_gate_summary = normalize_phase_gate_summary(manifest.phase_gate_summary)
     normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
     normalized_execution_drift_overview_summary = execution_drift_overview_summary
@@ -573,7 +583,9 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
         "readiness_snapshot_report": str(remediation_report_root / "readiness_snapshot.md"),
         "current_state_index_summary": str(remediation_summary_root / "current_state_index.json"),
         "current_state_index_report": str(remediation_report_root / "current_state_index.md"),
-        "remediation_planner_summary": str(remediation_summary_root / "remediation_planner_summary.json"),
+        "remediation_planner_summary": str(
+            remediation_summary_root / "remediation_planner_summary.json"
+        ),
         "remediation_planner_report": str(remediation_report_root / "remediation_planner.md"),
         "remediation_execution_plan_summary": str(
             remediation_summary_root / "remediation_execution_plan_summary.json"
@@ -581,7 +593,9 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
         "remediation_execution_plan_report": str(
             remediation_report_root / "remediation_execution_plan.md"
         ),
-        "remediation_session_summary": str(remediation_summary_root / "remediation_session_summary.json"),
+        "remediation_session_summary": str(
+            remediation_summary_root / "remediation_session_summary.json"
+        ),
         "remediation_session_report": str(remediation_report_root / "remediation_session.md"),
         "remediation_session_checkpoint_summary": str(
             remediation_summary_root / "remediation_session_checkpoint_summary.json"
@@ -593,9 +607,13 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
             remediation_summary_root / "remediation_scoreboard_summary.json"
         ),
         "remediation_scoreboard_report": str(remediation_report_root / "remediation_scoreboard.md"),
-        "remediation_evaluator_summary": str(remediation_summary_root / "remediation_evaluator_summary.json"),
+        "remediation_evaluator_summary": str(
+            remediation_summary_root / "remediation_evaluator_summary.json"
+        ),
         "remediation_evaluator_report": str(remediation_report_root / "remediation_evaluator.md"),
-        "remediation_evidence_summary": str(remediation_summary_root / "remediation_evidence_summary.json"),
+        "remediation_evidence_summary": str(
+            remediation_summary_root / "remediation_evidence_summary.json"
+        ),
         "remediation_evidence_report": str(remediation_report_root / "remediation_evidence.md"),
         "remediation_command_results_summary": str(
             remediation_summary_root / "remediation_command_results_summary.json"
@@ -603,7 +621,9 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
         "remediation_command_results_report": str(
             remediation_report_root / "remediation_command_results.md"
         ),
-        "live_evidence_report": str(live_report_root / f"live_evidence_report_{manifest.run_id}.md"),
+        "live_evidence_report": str(
+            live_report_root / f"live_evidence_report_{manifest.run_id}.md"
+        ),
         "live_evidence_report_html": str(
             live_report_root / f"live_evidence_report_{manifest.run_id}.html"
         ),
@@ -662,6 +682,7 @@ def write_reports_for_manifest(
     followup_output_path = default_followup_output_path(stem_source)
 
     from sis.reports.live_evidence_report import build_live_evidence_report_data
+
     audit_dashboard_path = Path(manifest.data_dir) / "ops/audit_dashboard_summary.json"
     audit_bundle_path = Path(manifest.data_dir) / "ops/audit_bundle_manifest.json"
     audit_dashboard = safe_read_json_dict(audit_dashboard_path)
@@ -673,17 +694,23 @@ def write_reports_for_manifest(
         execution_summary_path,
         normalize_execution_snapshot_summary,
     )
-    execution_comparison_summary_path = Path(manifest.data_dir) / "ops/execution_venue_comparison_summary.json"
+    execution_comparison_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_venue_comparison_summary.json"
+    )
     execution_comparison_summary = normalized_summary(
         execution_comparison_summary_path,
         normalize_execution_comparison_summary,
     )
-    execution_diagnostics_summary_path = Path(manifest.data_dir) / "ops/execution_venue_diagnostics_summary.json"
+    execution_diagnostics_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_venue_diagnostics_summary.json"
+    )
     execution_diagnostics_summary = normalized_summary(
         execution_diagnostics_summary_path,
         normalize_execution_diagnostics_summary,
     )
-    execution_gap_history_summary_path = Path(manifest.data_dir) / "ops/execution_gap_history_summary.json"
+    execution_gap_history_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_gap_history_summary.json"
+    )
     execution_gap_history_summary = normalized_summary(
         execution_gap_history_summary_path,
         normalize_execution_gap_history_summary,
@@ -702,7 +729,9 @@ def write_reports_for_manifest(
         execution_snapshot_drift_summary_path,
         normalize_execution_snapshot_drift_summary,
     )
-    execution_drift_overview_summary_path = Path(manifest.data_dir) / "ops/execution_drift_overview_summary.json"
+    execution_drift_overview_summary_path = (
+        Path(manifest.data_dir) / "ops/execution_drift_overview_summary.json"
+    )
     execution_drift_overview_summary = normalized_summary(
         execution_drift_overview_summary_path,
         normalize_execution_drift_overview_summary,
@@ -710,9 +739,7 @@ def write_reports_for_manifest(
     readiness_summary_path = Path(manifest.data_dir) / "ops/readiness_snapshot.json"
     readiness_summary = safe_read_json_dict(readiness_summary_path)
     evidence_card_summary = _read_evidence_card_summary(manifest)
-    latest_execution_lineage = latest_execution_lineage_fields_from_summary(
-        evidence_card_summary
-    )
+    latest_execution_lineage = latest_execution_lineage_fields_from_summary(evidence_card_summary)
     audit_summary = audit_summary_fields(
         audit_dashboard if isinstance(audit_dashboard, dict) else {},
         audit_bundle if isinstance(audit_bundle, dict) else {},
@@ -757,7 +784,9 @@ def main(
     dry_run: bool = typer.Option(False, "--dry-run"),
     force: bool = typer.Option(False, "--force"),
     max_step_retries: int = typer.Option(2, "--max-step-retries", min=0),
-    retry_collect_extension_minutes: int = typer.Option(10, "--retry-collect-extension-minutes", min=1),
+    retry_collect_extension_minutes: int = typer.Option(
+        10, "--retry-collect-extension-minutes", min=1
+    ),
     run_id: str | None = typer.Option(None, "--run-id"),
     requested_schedule_jst: str | None = typer.Option(None, "--requested-schedule-jst"),
     manifest_path: Path | None = typer.Option(None, "--manifest-path"),
@@ -833,7 +862,10 @@ def main(
                 print(f"now_jst={window.now_jst.isoformat()}")
                 print(f"recommended_start_jst={window.recommended_start_jst.isoformat()}")
                 print(f"recommended_end_jst={window.recommended_end_jst.isoformat()}")
-                if window.now_jst < window.recommended_start_jst or window.now_jst > window.recommended_end_jst:
+                if (
+                    window.now_jst < window.recommended_start_jst
+                    or window.now_jst > window.recommended_end_jst
+                ):
                     outside_symbols.append(symbol)
             if outside_symbols and not force and not dry_run:
                 raise PreflightError(
@@ -1024,9 +1056,15 @@ def main(
             ostium_summary = data_dir / "ops" / f"ostium_constraints_{effective_run_id}.json"
             if gtrade_manifest and gtrade_manifest.exists():
                 payload = safe_read_json_dict(gtrade_manifest)
-                manifest.row_counts["gtrade_backend_event_rows"] = int(payload.get("event_count") or 0)
-                manifest.row_counts["gtrade_backend_reconnect_count"] = int(payload.get("reconnect_count") or 0)
-                manifest.row_counts["gtrade_backend_deep_reorg_count"] = 1 if payload.get("deep_reorg_detected") else 0
+                manifest.row_counts["gtrade_backend_event_rows"] = int(
+                    payload.get("event_count") or 0
+                )
+                manifest.row_counts["gtrade_backend_reconnect_count"] = int(
+                    payload.get("reconnect_count") or 0
+                )
+                manifest.row_counts["gtrade_backend_deep_reorg_count"] = (
+                    1 if payload.get("deep_reorg_detected") else 0
+                )
             if ostium_summary.exists():
                 payload = safe_read_json_dict(ostium_summary)
                 manifest.row_counts["ostium_constraint_failures"] = len(payload.get("failures", []))
@@ -1036,8 +1074,7 @@ def main(
                 )
                 manifest.row_counts["ostium_sdk_read_only_probe_passed"] = (
                     1
-                    if (payload.get("python_sdk") or {}).get("status")
-                    == "read_only_probe_passed"
+                    if (payload.get("python_sdk") or {}).get("status") == "read_only_probe_passed"
                     else 0
                 )
             write_manifest(effective_manifest_path, manifest)
@@ -1069,17 +1106,25 @@ def main(
 
         def quote_regen() -> None:
             log_step("Rebuilding quote evidence")
-            run_subprocess(["uv", "run", "sis", "log-quotes", "--venue", "gtrade", "--replace"], retryable=True)
+            run_subprocess(
+                ["uv", "run", "sis", "log-quotes", "--venue", "gtrade", "--replace"], retryable=True
+            )
             quote_rows = row_count(quote_path)
             manifest.row_counts["raw_quotes"] = quote_rows
             write_manifest(effective_manifest_path, manifest)
             print(f"quote_path={quote_path}")
             print(f"quote_rows={quote_rows}")
             if quote_rows <= 0:
-                raise PermanentStepError(f"Insufficient gTrade quote rows. Expected > 0 rows, got {quote_rows}.")
+                raise PermanentStepError(
+                    f"Insufficient gTrade quote rows. Expected > 0 rows, got {quote_rows}."
+                )
 
         downstream_commands: list[tuple[str, list[str], bool]] = [
-            ("quote_regen", ["uv", "run", "sis", "log-quotes", "--venue", "gtrade", "--replace"], True),
+            (
+                "quote_regen",
+                ["uv", "run", "sis", "log-quotes", "--venue", "gtrade", "--replace"],
+                True,
+            ),
             ("normalize", ["uv", "run", "sis", "normalize-quotes"], True),
             ("build_cost_matrix", ["uv", "run", "sis", "build-cost-matrix"], True),
             ("build_backtest", ["uv", "run", "sis", "build-backtest"], True),
@@ -1108,7 +1153,9 @@ def main(
                     step_name,
                     max_step_retries=max_step_retries,
                     command=command,
-                    func=lambda command=command, retryable=retryable: run_subprocess(command, retryable=retryable),
+                    func=lambda command=command, retryable=retryable: run_subprocess(
+                        command, retryable=retryable
+                    ),
                 )
 
             def diagnostics_step() -> None:
@@ -1116,7 +1163,16 @@ def main(
                 for symbol in ("QQQ", "SPY", "XAU"):
                     log_step(f"Diagnostics: {symbol}")
                     output = command_output(
-                        ["uv", "run", "sis", "diagnose-quotes", "--venue", "gtrade", "--symbol", symbol]
+                        [
+                            "uv",
+                            "run",
+                            "sis",
+                            "diagnose-quotes",
+                            "--venue",
+                            "gtrade",
+                            "--symbol",
+                            symbol,
+                        ]
                     )
                     values = parse_key_values(output)
                     values["symbol"] = symbol
@@ -1133,6 +1189,7 @@ def main(
             )
 
             for step_name, command, retryable in downstream_commands[3:]:
+
                 def do_run(command=command, retryable=retryable, step_name=step_name) -> None:
                     if step_name == "check_go_no_go":
                         output = command_output(command)
@@ -1173,8 +1230,12 @@ def main(
 
         manifest.row_counts.update(
             {
-                "sidecar_metadata": row_count(_require_artifact_path(manifest.artifacts, "sidecar_metadata")),
-                "sidecar_pricing": row_count(_require_artifact_path(manifest.artifacts, "sidecar_pricing")),
+                "sidecar_metadata": row_count(
+                    _require_artifact_path(manifest.artifacts, "sidecar_metadata")
+                ),
+                "sidecar_pricing": row_count(
+                    _require_artifact_path(manifest.artifacts, "sidecar_pricing")
+                ),
                 "raw_quotes": row_count(_require_artifact_path(manifest.artifacts, "raw_quotes")),
             }
         )
@@ -1193,13 +1254,22 @@ def main(
                 if failed_step_name and not manifest.next_actions:
                     manifest.next_actions = [f"Fix failed step and rerun: {failed_step_name}"]
             else:
-                manifest.status = RunOutcome.COMPLETED_WITH_RETRIES if used_retries else RunOutcome.COMPLETED
+                manifest.status = (
+                    RunOutcome.COMPLETED_WITH_RETRIES if used_retries else RunOutcome.COMPLETED
+                )
 
         manifest.finished_at_utc = utc_now()
         write_manifest(effective_manifest_path, manifest)
 
         log_step("Live Evidence Refresh Summary")
-        for key in ("raw_quotes", "normalized_quotes", "cost_matrix", "backtest_metrics", "go_no_go_report", "evidence_card"):
+        for key in (
+            "raw_quotes",
+            "normalized_quotes",
+            "cost_matrix",
+            "backtest_metrics",
+            "go_no_go_report",
+            "evidence_card",
+        ):
             print(f"{key}={manifest.artifacts.get(key)}")
         print(f"decision={manifest.decision}")
         print(f"status={manifest.status.value}")
@@ -1219,9 +1289,15 @@ def main(
                 and effective_manifest_path.exists()
                 and terminal_outcome(load_manifest(effective_manifest_path).status)
             ):
-                write_reports_for_manifest(effective_manifest_path, settle_seconds=report_settle_seconds)
+                write_reports_for_manifest(
+                    effective_manifest_path, settle_seconds=report_settle_seconds
+                )
         finally:
             lock.release()
 
-    if manifest.status in {RunOutcome.FAILED_PREFLIGHT, RunOutcome.FAILED_COLLECTION, RunOutcome.PARTIAL_FAILED}:
+    if manifest.status in {
+        RunOutcome.FAILED_PREFLIGHT,
+        RunOutcome.FAILED_COLLECTION,
+        RunOutcome.PARTIAL_FAILED,
+    }:
         raise typer.Exit(code=2)

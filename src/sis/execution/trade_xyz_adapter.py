@@ -7,7 +7,9 @@ from sis.execution.base import AdapterActionResult, AdapterOrderStatus
 
 
 class TradeXyzExchange(Protocol):
-    def read_account_state(self, master_address: str, subaccount_address: str | None = None) -> dict[str, Any]: ...
+    def read_account_state(
+        self, master_address: str, subaccount_address: str | None = None
+    ) -> dict[str, Any]: ...
 
     def schedule_cancel(self, deadline_ts_ms: int) -> dict[str, Any]: ...
 
@@ -36,7 +38,16 @@ class TradeXyzOrderIntent:
 
 def _success(payload: dict[str, Any]) -> bool:
     status = str(payload.get("status", "")).lower()
-    if status in {"ok", "success", "scheduled", "accepted", "filled", "open", "working", "canceled"}:
+    if status in {
+        "ok",
+        "success",
+        "scheduled",
+        "accepted",
+        "filled",
+        "open",
+        "working",
+        "canceled",
+    }:
         return True
     return bool(payload.get("ok", False))
 
@@ -65,7 +76,9 @@ class TradeXyzSafetyAdapter:
             target=str(deadline_ts_ms),
             success=success,
             status="scheduled" if success else "schedule_cancel_failed",
-            notes=["micro_live", f"payload={payload!r}"] if isinstance(payload, dict) else ["micro_live"],
+            notes=["micro_live", f"payload={payload!r}"]
+            if isinstance(payload, dict)
+            else ["micro_live"],
         )
 
     def place_limit_order(self, intent: TradeXyzOrderIntent) -> AdapterActionResult:
@@ -99,7 +112,9 @@ class TradeXyzSafetyAdapter:
             target=intent.cloid,
             success=success,
             status="accepted" if success else "order_rejected",
-            notes=["micro_live", f"payload={payload!r}"] if isinstance(payload, dict) else ["micro_live"],
+            notes=["micro_live", f"payload={payload!r}"]
+            if isinstance(payload, dict)
+            else ["micro_live"],
         )
 
     def order_status_by_cloid(self, cloid: str) -> AdapterOrderStatus:
@@ -110,7 +125,9 @@ class TradeXyzSafetyAdapter:
         return AdapterOrderStatus(
             venue=self.adapter_name,
             order_id=str(payload.get("order_id") or cloid),
-            canonical_symbol=(str(payload["symbol"]) if payload.get("symbol") is not None else None),
+            canonical_symbol=(
+                str(payload["symbol"]) if payload.get("symbol") is not None else None
+            ),
             side=(str(payload["side"]) if payload.get("side") is not None else None),
             quantity=float(quantity) if isinstance(quantity, int | float) else None,
             status=str(payload.get("status", "unknown")),
@@ -126,7 +143,9 @@ class TradeXyzSafetyAdapter:
             target=cloid,
             success=success,
             status="canceled" if success else "cancel_failed",
-            notes=["micro_live", f"payload={payload!r}"] if isinstance(payload, dict) else ["micro_live"],
+            notes=["micro_live", f"payload={payload!r}"]
+            if isinstance(payload, dict)
+            else ["micro_live"],
         )
 
     def close_position_reduce_only(
@@ -167,6 +186,7 @@ class TradeXyzSafetyAdapter:
             target=cloid,
             success=success,
             status="close_submitted" if success else "close_failed",
-            notes=["micro_live", f"payload={payload!r}"] if isinstance(payload, dict) else ["micro_live"],
+            notes=["micro_live", f"payload={payload!r}"]
+            if isinstance(payload, dict)
+            else ["micro_live"],
         )
-

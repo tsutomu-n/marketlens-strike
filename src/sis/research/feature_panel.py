@@ -60,27 +60,40 @@ def build_feature_panel(data_dir: Path) -> Path:
         pl.col("close").alias("research_close"),
         pl.col("ts").dt.date().alias("date"),
         pl.col("close").pct_change().over("symbol").alias("research_return_1d"),
-        (pl.col("close") / pl.col("close").shift(3).over("symbol") - 1.0).alias("research_return_4h"),
-        (pl.col("close") / pl.col("close").shift(5).over("symbol") - 1.0).alias("research_return_3d"),
+        (pl.col("close") / pl.col("close").shift(3).over("symbol") - 1.0).alias(
+            "research_return_4h"
+        ),
+        (pl.col("close") / pl.col("close").shift(5).over("symbol") - 1.0).alias(
+            "research_return_3d"
+        ),
         pl.col("close").rolling_mean(window_size=20, min_samples=5).over("symbol").alias("sma_20"),
         pl.col("close").rolling_mean(window_size=50, min_samples=10).over("symbol").alias("sma_50"),
-        pl.col("close").rolling_std(window_size=20, min_samples=5).over("symbol").alias("realized_vol_20"),
+        pl.col("close")
+        .rolling_std(window_size=20, min_samples=5)
+        .over("symbol")
+        .alias("realized_vol_20"),
     ).join(macro, on="date", how="left")
 
     symbols = set(market.get_column("symbol").to_list())
     if "^VIX" in symbols:
-        vix_proxy = market.filter(pl.col("symbol") == "^VIX").select(["ts", pl.col("close").alias("vix_level")])
+        vix_proxy = market.filter(pl.col("symbol") == "^VIX").select(
+            ["ts", pl.col("close").alias("vix_level")]
+        )
         feature = feature.join(vix_proxy, on="ts", how="left")
     else:
         feature = feature.with_columns(pl.lit(None).cast(pl.Float64).alias("vix_level"))
 
     if "UUP" in symbols:
-        dxy_proxy = market.filter(pl.col("symbol") == "UUP").select(["ts", pl.col("close").alias("dxy_proxy")])
+        dxy_proxy = market.filter(pl.col("symbol") == "UUP").select(
+            ["ts", pl.col("close").alias("dxy_proxy")]
+        )
         feature = feature.join(dxy_proxy, on="ts", how="left")
     else:
         feature = feature.with_columns(pl.lit(None).cast(pl.Float64).alias("dxy_proxy"))
 
-    feature = feature.with_columns((pl.col("research_close") > pl.col("sma_20")).alias("close_above_sma20"))
+    feature = feature.with_columns(
+        (pl.col("research_close") > pl.col("sma_20")).alias("close_above_sma20")
+    )
 
     if event_windows:
         is_blackout: list[bool] = []
@@ -119,7 +132,10 @@ def build_feature_panel(data_dir: Path) -> Path:
         pl.lit(None).cast(pl.Float64).alias("venue_stale_rate"),
         pl.lit(None).cast(pl.Float64).alias("venue_tradable_rate"),
         (~pl.col("is_event_blackout")).alias("trade_allowed"),
-        pl.when(pl.col("is_event_blackout")).then(pl.lit("EVENT_BLACKOUT")).otherwise(pl.lit(None)).alias("blocked_reason"),
+        pl.when(pl.col("is_event_blackout"))
+        .then(pl.lit("EVENT_BLACKOUT"))
+        .otherwise(pl.lit(None))
+        .alias("blocked_reason"),
     )
 
     for column in ("dgs10", "dgs2", "t10y2y", "fedfunds", "vix_level", "dxy_proxy"):

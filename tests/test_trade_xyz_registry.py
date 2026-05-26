@@ -28,7 +28,19 @@ def test_trade_xyz_seed_symbols_are_expected() -> None:
         meta_payload=_fixture("tests/fixtures/trade_xyz_meta.sample.json"),
     )
     symbols = {item.canonical_symbol for item in result.instruments if item.active}
-    assert symbols == {"SP500", "XYZ100", "NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AMD", "EWJ"}
+    assert symbols == {
+        "SP500",
+        "XYZ100",
+        "NVDA",
+        "AAPL",
+        "MSFT",
+        "AMZN",
+        "GOOGL",
+        "META",
+        "TSLA",
+        "AMD",
+        "EWJ",
+    }
 
 
 def test_trade_xyz_registry_marks_unresolved_asset_as_not_orderable() -> None:

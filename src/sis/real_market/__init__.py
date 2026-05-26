@@ -1,5 +1,8 @@
 from sis.real_market.calendar import is_regular_session, market_session
-from sis.real_market.feature_builder import build_feature_from_bars, write_real_market_quality_report
+from sis.real_market.feature_builder import (
+    build_feature_from_bars,
+    write_real_market_quality_report,
+)
 from sis.real_market.models import RealMarketBar, RealMarketFeature
 from sis.real_market.quality import (
     estimate_source_confidence,

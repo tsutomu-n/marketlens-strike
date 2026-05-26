@@ -26,7 +26,9 @@ def _write_json_pretty(path: Path, payload: object) -> None:
 
 def test_parse_run_status_completed_and_failed(tmp_path) -> None:
     completed = tmp_path / "completed.log"
-    completed.write_text("[2026-05-22T14:08:00Z] Live evidence refresh completed\n", encoding="utf-8")
+    completed.write_text(
+        "[2026-05-22T14:08:00Z] Live evidence refresh completed\n", encoding="utf-8"
+    )
     assert parse_run_status(completed) == "completed"
 
     failed = tmp_path / "failed.log"
@@ -76,8 +78,12 @@ def test_build_and_render_live_evidence_report(tmp_path) -> None:
     )
     (data_dir / f"raw/sidecar/gtrade/{today}.jsonl").parent.mkdir(parents=True, exist_ok=True)
     (data_dir / f"raw/sidecar/gtrade/{today}.jsonl").write_text('{"ok":true}\n', encoding="utf-8")
-    (data_dir / f"raw/sidecar/gtrade-pricing/{today}.jsonl").parent.mkdir(parents=True, exist_ok=True)
-    (data_dir / f"raw/sidecar/gtrade-pricing/{today}.jsonl").write_text('{"ok":true}\n', encoding="utf-8")
+    (data_dir / f"raw/sidecar/gtrade-pricing/{today}.jsonl").parent.mkdir(
+        parents=True, exist_ok=True
+    )
+    (data_dir / f"raw/sidecar/gtrade-pricing/{today}.jsonl").write_text(
+        '{"ok":true}\n', encoding="utf-8"
+    )
     (data_dir / "normalized").mkdir(parents=True, exist_ok=True)
     (data_dir / "normalized/quotes.parquet").write_bytes(b"PAR1")
     _write_json(
@@ -121,7 +127,10 @@ def test_build_and_render_live_evidence_report(tmp_path) -> None:
         "gtrade,SPY,index,5,5,2,2,2,0,0,0,0.01,1.0,test note\n",
         encoding="utf-8",
     )
-    _write_json(data_dir / "research/backtest_metrics.json", [{"venue": "gtrade", "canonical_symbol": "SPY", "trade_count": 1}])
+    _write_json(
+        data_dir / "research/backtest_metrics.json",
+        [{"venue": "gtrade", "canonical_symbol": "SPY", "trade_count": 1}],
+    )
     (data_dir / "research/go_no_go_report.md").write_text("# Go/No-Go Report\n", encoding="utf-8")
     _write_json_pretty(
         data_dir / "evidence/evidence_card_20260522_230800.json",
@@ -425,18 +434,32 @@ def test_manifest_status_overrides_failed_log(tmp_path) -> None:
 
 
 def test_default_output_paths_use_log_stamp() -> None:
-    md_path = default_markdown_output_path(Path("logs/live_evidence/live_evidence_20260522_2308.log"))
+    md_path = default_markdown_output_path(
+        Path("logs/live_evidence/live_evidence_20260522_2308.log")
+    )
     html_path = default_html_output_path(Path("logs/live_evidence/live_evidence_20260522_2308.log"))
-    followup_path = default_followup_output_path(Path("logs/live_evidence/live_evidence_20260522_2308.log"))
+    followup_path = default_followup_output_path(
+        Path("logs/live_evidence/live_evidence_20260522_2308.log")
+    )
     assert md_path == Path("docs/live_evidence_reports/live_evidence_report_20260522_2308.md")
     assert html_path == Path("docs/live_evidence_reports/live_evidence_report_20260522_2308.html")
-    assert followup_path == Path("docs/live_evidence_reports/live_evidence_followup_20260522_2308.md")
+    assert followup_path == Path(
+        "docs/live_evidence_reports/live_evidence_followup_20260522_2308.md"
+    )
 
 
 def test_default_output_paths_use_manifest_stamp() -> None:
-    md_path = default_markdown_output_path(Path("logs/live_evidence/manifests/live_evidence_20260522_2308.json"))
-    html_path = default_html_output_path(Path("logs/live_evidence/manifests/live_evidence_20260522_2308.json"))
-    followup_path = default_followup_output_path(Path("logs/live_evidence/manifests/live_evidence_20260522_2308.json"))
+    md_path = default_markdown_output_path(
+        Path("logs/live_evidence/manifests/live_evidence_20260522_2308.json")
+    )
+    html_path = default_html_output_path(
+        Path("logs/live_evidence/manifests/live_evidence_20260522_2308.json")
+    )
+    followup_path = default_followup_output_path(
+        Path("logs/live_evidence/manifests/live_evidence_20260522_2308.json")
+    )
     assert md_path == Path("docs/live_evidence_reports/live_evidence_report_20260522_2308.md")
     assert html_path == Path("docs/live_evidence_reports/live_evidence_report_20260522_2308.html")
-    assert followup_path == Path("docs/live_evidence_reports/live_evidence_followup_20260522_2308.md")
+    assert followup_path == Path(
+        "docs/live_evidence_reports/live_evidence_followup_20260522_2308.md"
+    )

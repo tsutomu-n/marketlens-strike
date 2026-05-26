@@ -149,8 +149,14 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
     assert card["blockers"] == ["tradable_rate at or above threshold"]
     assert card["audit_summary"]["overall_status"] == "ok"
     assert card["phase_gate_summary"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
-    assert card["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
-    assert card["phase_gate_summary"]["phase2_entry_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        card["phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
+    assert (
+        card["phase_gate_summary"]["phase2_entry_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert card["phase_gate_summary"]["phase_gate_strict_validation_passed"] is True
     assert card["phase_gate_decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert card["phase2_entry_allowed"] is False
@@ -163,17 +169,32 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
     assert card["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert card["readiness_execution_ready"] is False
     assert card["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
-    assert card["timeline_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        card["timeline_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
     assert card["timeline_latest_execution_overall_status"] == "ok"
     assert card["timeline_latest_execution_venue_count"] == 2
     assert card["timeline_latest_execution_comparison_all_registries_present"] is True
     assert card["bundle_history_latest_execution_summary"]["execution_overall_status"] == "warn"
-    assert card["bundle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is False
+    assert (
+        card["bundle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is False
+    )
     assert card["bundle_history_latest_execution_overall_status"] == "warn"
     assert card["bundle_history_latest_execution_venue_count"] == 1
     assert card["bundle_history_latest_execution_comparison_all_registries_present"] is False
     assert card["cycle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
-    assert card["cycle_history_latest_execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        card["cycle_history_latest_execution_comparison_summary"][
+            "execution_comparison_all_registries_present"
+        ]
+        is True
+    )
     assert card["cycle_history_latest_execution_overall_status"] == "ok"
     assert card["cycle_history_latest_execution_venue_count"] == 2
     assert card["cycle_history_latest_execution_comparison_all_registries_present"] is True
@@ -183,13 +204,26 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
     assert card["execution_diagnostics_summary"]["balance_gap_detected"] is True
     assert card["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
     assert card["execution_gap_history_entry_count"] == 4
-    assert card["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == 1
+    assert (
+        card["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"]
+        == 1
+    )
     assert card["execution_state_comparison_mismatching_count"] == 1
-    assert card["execution_snapshot_drift_summary"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert (
+        card["execution_snapshot_drift_summary"][
+            "execution_snapshot_drift_mismatching_snapshot_count"
+        ]
+        == 1
+    )
     assert card["execution_snapshot_drift_mismatching_snapshot_count"] == 1
     assert card["execution_drift_overview_summary"]["overall_status"] == "degraded"
     assert card["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
-    assert card["execution_drift_overview_summary"]["execution_drift_overview_diagnostics_alignment_match"] is False
+    assert (
+        card["execution_drift_overview_summary"][
+            "execution_drift_overview_diagnostics_alignment_match"
+        ]
+        is False
+    )
     assert card["execution_drift_overview_status"] == "degraded"
     assert card["execution_drift_overview_diagnostics_alignment_match"] is False
     assert card["execution_drift_overview_state_comparison_mismatching_count"] == 1
@@ -199,19 +233,18 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
         data_dir / "reports/phase_gate_review.md"
     )
     assert (
-        card["related_reports"]["execution_snapshot_report"]
-        == "data/reports/execution_snapshot.md"
+        card["related_reports"]["execution_snapshot_report"] == "data/reports/execution_snapshot.md"
     )
+    assert card["related_reports"]["paper_vs_backtest_comparison_report"] == str(
+        data_dir / "reports/paper_vs_backtest_comparison.md"
+    )
+    assert "Liquidation reference complete" in [item["criterion"] for item in card["criteria"]]
     assert (
-        card["related_reports"]["paper_vs_backtest_comparison_report"]
-        == str(data_dir / "reports/paper_vs_backtest_comparison.md")
+        next(
+            item["result"]
+            for item in card["criteria"]
+            if item["criterion"] == "Liquidation reference complete"
+        )
+        == "PASS"
     )
-    assert "Liquidation reference complete" in [
-        item["criterion"] for item in card["criteria"]
-    ]
-    assert next(
-        item["result"]
-        for item in card["criteria"]
-        if item["criterion"] == "Liquidation reference complete"
-    ) == "PASS"
     assert "Ostium liquidation reference requires real open position data" not in json.dumps(card)

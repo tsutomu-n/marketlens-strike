@@ -32,7 +32,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
         "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
         "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
-        "execution_state_comparison_report": str(reports_dir / "execution_state_comparison_history.md"),
+        "execution_state_comparison_report": str(
+            reports_dir / "execution_state_comparison_history.md"
+        ),
         "execution_snapshot_drift_report": str(reports_dir / "execution_snapshot_drift_history.md"),
         "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
         "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
@@ -65,7 +67,11 @@ def build_execution_gap_history_report(
     summary_path: Path | None = None,
     limit: int = 10,
 ) -> str:
-    operations = list(read_jsonl(operation_chain_path)) if operation_chain_path and operation_chain_path.exists() else []
+    operations = (
+        list(read_jsonl(operation_chain_path))
+        if operation_chain_path and operation_chain_path.exists()
+        else []
+    )
     relevant_ops = {
         "paper_operations_cycle",
         "operations_snapshot",
@@ -114,14 +120,26 @@ def build_execution_gap_history_report(
 
     latest = entries[-1] if entries else {}
     diagnostics_status_counts = _count_values(
-        [str(item.get("diagnostics_status")) if item.get("diagnostics_status") is not None else None for item in entries]
+        [
+            str(item.get("diagnostics_status"))
+            if item.get("diagnostics_status") is not None
+            else None
+            for item in entries
+        ]
     )
     readiness_next_phase_counts = _count_values(
-        [str(item.get("readiness_next_phase")) if item.get("readiness_next_phase") is not None else None for item in entries]
+        [
+            str(item.get("readiness_next_phase"))
+            if item.get("readiness_next_phase") is not None
+            else None
+            for item in entries
+        ]
     )
     readiness_execution_ready_counts = _count_values(
         [
-            str(item.get("readiness_execution_ready")) if item.get("readiness_execution_ready") is not None else None
+            str(item.get("readiness_execution_ready"))
+            if item.get("readiness_execution_ready") is not None
+            else None
             for item in entries
         ]
     )

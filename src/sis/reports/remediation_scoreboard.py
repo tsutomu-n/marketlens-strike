@@ -12,7 +12,9 @@ def _quick_navigation(out_path: Path | None) -> dict[str, str]:
     reports_dir = out_path.parent
     return {
         "remediation_scoreboard_report": str(out_path),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_session_report": str(reports_dir / "remediation_session.md"),
         "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
         "remediation_command_results_report": str(reports_dir / "remediation_command_results.md"),
@@ -28,7 +30,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "remediation_planner_report": str(reports_dir / "remediation_planner.md"),
         "remediation_execution_plan_report": str(reports_dir / "remediation_execution_plan.md"),
         "remediation_session_report": str(reports_dir / "remediation_session.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
         "remediation_evidence_report": str(reports_dir / "remediation_evidence.md"),
         "remediation_command_results_report": str(reports_dir / "remediation_command_results.md"),
@@ -68,7 +72,9 @@ def _action_priority_key(item: dict) -> tuple[int, int, int, int, int, str]:
     priority = _as_int(item.get("priority"))
     sequence = _as_int(item.get("sequence")) or 0
     return (
-        effective_priority if effective_priority is not None else (priority if priority is not None else 999),
+        effective_priority
+        if effective_priority is not None
+        else (priority if priority is not None else 999),
         priority if priority is not None else 999,
         _stage_rank(item.get("stage")),
         _confidence_rank(item.get("stage_signal_confidence")),
@@ -112,7 +118,9 @@ def _feedback_summary_maps(
     command_results = safe_read_json_dict(remediation_command_results_summary_path)
     evaluator = safe_read_json_dict(remediation_evaluator_summary_path)
     observation_status_by_action: dict[str, str] = {}
-    entries = command_results.get("entries") if isinstance(command_results.get("entries"), list) else []
+    entries = (
+        command_results.get("entries") if isinstance(command_results.get("entries"), list) else []
+    )
     for item in entries:
         if not isinstance(item, dict):
             continue
@@ -257,12 +265,10 @@ def build_remediation_scoreboard(
     )
     blocking_actions = [item["action_key"] for item in blocking_action_items]
     blocking_action_observed_sources = {
-        item["action_key"]: _action_observed_sources(item)
-        for item in blocking_action_items
+        item["action_key"]: _action_observed_sources(item) for item in blocking_action_items
     }
     blocking_action_stage_signal_confidence = {
-        item["action_key"]: item.get("stage_signal_confidence")
-        for item in blocking_action_items
+        item["action_key"]: item.get("stage_signal_confidence") for item in blocking_action_items
     }
     next_action = _next_action(actions)
     scoreboard_status = _scoreboard_status(checkpoint, actions)
@@ -277,12 +283,14 @@ def build_remediation_scoreboard(
         "retry_action_count": retry_count,
         "pending_action_count": pending_count,
         "completion_rate": completion_rate,
-        "next_action_command": next_action.get("command") if isinstance(next_action, dict) else checkpoint.get("next_action_command"),
-        "next_action_observed_sources": _action_observed_sources(next_action) if isinstance(next_action, dict) else [],
+        "next_action_command": next_action.get("command")
+        if isinstance(next_action, dict)
+        else checkpoint.get("next_action_command"),
+        "next_action_observed_sources": _action_observed_sources(next_action)
+        if isinstance(next_action, dict)
+        else [],
         "next_action_stage_signal_confidence": (
-            next_action.get("stage_signal_confidence")
-            if isinstance(next_action, dict)
-            else None
+            next_action.get("stage_signal_confidence") if isinstance(next_action, dict) else None
         ),
         "blocking_action_keys": blocking_actions,
         "blocking_action_observed_sources": blocking_action_observed_sources,
@@ -319,28 +327,30 @@ def build_remediation_scoreboard(
         lines.extend(["## Related Reports", ""])
         lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
-    lines.extend([
-        "## Scoreboard Summary",
-        "",
-        f"- scoreboard_status: {summary['scoreboard_status']}",
-        f"- planned_action_count: {summary['planned_action_count']}",
-        f"- pass_action_count: {summary['pass_action_count']}",
-        f"- fail_action_count: {summary['fail_action_count']}",
-        f"- retry_action_count: {summary['retry_action_count']}",
-        f"- pending_action_count: {summary['pending_action_count']}",
-        f"- completion_rate: {summary['completion_rate']}",
-        f"- next_action_command: {summary['next_action_command']}",
-        f"- next_action_observed_sources: {summary['next_action_observed_sources']}",
-        f"- next_action_stage_signal_confidence: {summary['next_action_stage_signal_confidence']}",
-        f"- checkpoint_status: {summary['checkpoint_status']}",
-        f"- blocking_action_keys: {summary['blocking_action_keys']}",
-        f"- remediation_command_results_summary_path: {summary['remediation_command_results_summary_path']}",
-        f"- remediation_evaluator_summary_path: {summary['remediation_evaluator_summary_path']}",
-        f"- remediation_session_checkpoint_summary_path: {summary['remediation_session_checkpoint_summary_path']}",
-        "",
-        "## Observed Source Counts",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Scoreboard Summary",
+            "",
+            f"- scoreboard_status: {summary['scoreboard_status']}",
+            f"- planned_action_count: {summary['planned_action_count']}",
+            f"- pass_action_count: {summary['pass_action_count']}",
+            f"- fail_action_count: {summary['fail_action_count']}",
+            f"- retry_action_count: {summary['retry_action_count']}",
+            f"- pending_action_count: {summary['pending_action_count']}",
+            f"- completion_rate: {summary['completion_rate']}",
+            f"- next_action_command: {summary['next_action_command']}",
+            f"- next_action_observed_sources: {summary['next_action_observed_sources']}",
+            f"- next_action_stage_signal_confidence: {summary['next_action_stage_signal_confidence']}",
+            f"- checkpoint_status: {summary['checkpoint_status']}",
+            f"- blocking_action_keys: {summary['blocking_action_keys']}",
+            f"- remediation_command_results_summary_path: {summary['remediation_command_results_summary_path']}",
+            f"- remediation_evaluator_summary_path: {summary['remediation_evaluator_summary_path']}",
+            f"- remediation_session_checkpoint_summary_path: {summary['remediation_session_checkpoint_summary_path']}",
+            "",
+            "## Observed Source Counts",
+            "",
+        ]
+    )
     if observed_source_counts:
         for key in sorted(observed_source_counts):
             lines.append(f"- {key}: {observed_source_counts[key]}")
@@ -366,8 +376,8 @@ def build_remediation_scoreboard(
     lines.extend(
         [
             "",
-        "## Action Statuses",
-        "",
+            "## Action Statuses",
+            "",
         ]
     )
     if actions:
@@ -379,8 +389,12 @@ def build_remediation_scoreboard(
             lines.append(f"  - evidence_status: {item.get('evidence_status')}")
             lines.append(f"  - observed_sources: {item.get('observed_sources')}")
             lines.append(f"  - stage_signal_confidence: {item.get('stage_signal_confidence')}")
-            lines.append(f"  - feedback_observation_status: {item.get('feedback_observation_status')}")
-            lines.append(f"  - feedback_evaluation_result: {item.get('feedback_evaluation_result')}")
+            lines.append(
+                f"  - feedback_observation_status: {item.get('feedback_observation_status')}"
+            )
+            lines.append(
+                f"  - feedback_evaluation_result: {item.get('feedback_evaluation_result')}"
+            )
             lines.append(f"  - feedback_priority_reason: {item.get('feedback_priority_reason')}")
             lines.append(f"  - operator_notes: {item.get('operator_notes')}")
     else:

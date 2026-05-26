@@ -59,9 +59,13 @@ def load_micro_live_policy(
         max_daily_loss_usd=float(root.get("max_daily_loss_usd", 10.0)),
         max_open_positions=int(root.get("max_open_positions", 1)),
         max_leverage=float(root.get("max_leverage", 2.0)),
-        allowed_symbols=tuple(str(symbol).upper() for symbol in allowed_symbols if str(symbol).strip()),
+        allowed_symbols=tuple(
+            str(symbol).upper() for symbol in allowed_symbols if str(symbol).strip()
+        ),
         prohibited_order_types=tuple(
-            str(order_type).lower() for order_type in prohibited_order_types if str(order_type).strip()
+            str(order_type).lower()
+            for order_type in prohibited_order_types
+            if str(order_type).strip()
         ),
         schedule_cancel_deadline_seconds_after_now=int(
             schedule_cancel.get("deadline_seconds_after_now", 300)

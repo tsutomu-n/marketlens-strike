@@ -34,7 +34,9 @@ def _write_quote(path) -> None:
 
 def _write_backtest_metrics(path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text('[{"timeframe":"4h","trade_count":10,"avg_trade_return":0.1}]', encoding="utf-8")
+    path.write_text(
+        '[{"timeframe":"4h","trade_count":10,"avg_trade_return":0.1}]', encoding="utf-8"
+    )
 
 
 def _write_evidence_card(path) -> None:
@@ -95,7 +97,9 @@ def test_validate_artifacts_strict_flags_missing_artifacts(tmp_path) -> None:
 
     assert summary.issues
     assert any("Missing required registry artifact" in issue.message for issue in summary.issues)
-    assert any("Missing required execution summary artifact" in issue.message for issue in summary.issues)
+    assert any(
+        "Missing required execution summary artifact" in issue.message for issue in summary.issues
+    )
 
 
 def test_validate_artifacts_checks_latest_evidence_card_only(tmp_path) -> None:

@@ -5,7 +5,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sis.execution.base import AdapterActionResult, AdapterOrderStatus
-from sis.execution.live_order_policy import MicroLiveGateInput, MicroLivePolicy, evaluate_micro_live_gates
+from sis.execution.live_order_policy import (
+    MicroLiveGateInput,
+    MicroLivePolicy,
+    evaluate_micro_live_gates,
+)
 from sis.execution.trade_xyz_adapter import TradeXyzOrderIntent, TradeXyzSafetyAdapter
 from sis.storage.jsonl_store import write_json
 
@@ -144,7 +148,9 @@ def run_micro_live_canary(
                     "status": result.status,
                     "blocked_reasons": result.blocked_reasons,
                     "report_path": str(report_path) if report_path is not None else None,
-                    "audit_bundle_path": str(audit_bundle_path) if audit_bundle_path is not None else None,
+                    "audit_bundle_path": str(audit_bundle_path)
+                    if audit_bundle_path is not None
+                    else None,
                 },
             )
         _write_audit_bundle(
@@ -196,7 +202,9 @@ def run_micro_live_canary(
                     "status": result.status,
                     "blocked_reasons": result.blocked_reasons,
                     "report_path": str(report_path) if report_path is not None else None,
-                    "audit_bundle_path": str(audit_bundle_path) if audit_bundle_path is not None else None,
+                    "audit_bundle_path": str(audit_bundle_path)
+                    if audit_bundle_path is not None
+                    else None,
                 },
             )
         _write_audit_bundle(
@@ -284,12 +292,22 @@ def run_micro_live_canary(
                 "schedule_cancel_status": (
                     result.schedule_cancel.status if result.schedule_cancel is not None else None
                 ),
-                "order_submit_status": result.order_submit.status if result.order_submit is not None else None,
-                "order_status": result.order_status.status if result.order_status is not None else None,
-                "cancel_status": result.cancel_result.status if result.cancel_result is not None else None,
-                "close_status": result.close_result.status if result.close_result is not None else None,
+                "order_submit_status": result.order_submit.status
+                if result.order_submit is not None
+                else None,
+                "order_status": result.order_status.status
+                if result.order_status is not None
+                else None,
+                "cancel_status": result.cancel_result.status
+                if result.cancel_result is not None
+                else None,
+                "close_status": result.close_result.status
+                if result.close_result is not None
+                else None,
                 "report_path": str(report_path) if report_path is not None else None,
-                "audit_bundle_path": str(audit_bundle_path) if audit_bundle_path is not None else None,
+                "audit_bundle_path": str(audit_bundle_path)
+                if audit_bundle_path is not None
+                else None,
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             },
         )
@@ -369,10 +387,18 @@ def _write_audit_bundle(
                 "schedule_cancel_status": (
                     result.schedule_cancel.status if result.schedule_cancel is not None else None
                 ),
-                "order_submit_status": result.order_submit.status if result.order_submit is not None else None,
-                "order_status": result.order_status.status if result.order_status is not None else None,
-                "cancel_status": result.cancel_result.status if result.cancel_result is not None else None,
-                "close_status": result.close_result.status if result.close_result is not None else None,
+                "order_submit_status": result.order_submit.status
+                if result.order_submit is not None
+                else None,
+                "order_status": result.order_status.status
+                if result.order_status is not None
+                else None,
+                "cancel_status": result.cancel_result.status
+                if result.cancel_result is not None
+                else None,
+                "close_status": result.close_result.status
+                if result.close_result is not None
+                else None,
             },
             "report_path": str(result.report_path) if result.report_path is not None else None,
             "audit_bundle_path": str(audit_bundle_path),

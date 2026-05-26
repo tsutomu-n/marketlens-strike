@@ -28,7 +28,9 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
         "remediation_planner_report": str(out_path),
         "remediation_execution_plan_report": str(reports_dir / "remediation_execution_plan.md"),
         "remediation_session_report": str(reports_dir / "remediation_session.md"),
-        "remediation_session_checkpoint_report": str(reports_dir / "remediation_session_checkpoint.md"),
+        "remediation_session_checkpoint_report": str(
+            reports_dir / "remediation_session_checkpoint.md"
+        ),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
         "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
         "remediation_evidence_report": str(reports_dir / "remediation_evidence.md"),
@@ -372,7 +374,9 @@ def _planner_entries(
     return entries
 
 
-def _planner_entry_diffs(previous_entries: object, current_entries: list[dict]) -> dict[str, dict[str, object]]:
+def _planner_entry_diffs(
+    previous_entries: object, current_entries: list[dict]
+) -> dict[str, dict[str, object]]:
     previous_list = previous_entries if isinstance(previous_entries, list) else []
     previous = {
         _entry_key(item): item
@@ -390,8 +394,14 @@ def _planner_entry_diffs(previous_entries: object, current_entries: list[dict]) 
         current_entry = current.get(key, {})
         previous_status = previous_entry.get("status")
         current_status = current_entry.get("status")
-        previous_commands = previous_entry.get("commands") if isinstance(previous_entry.get("commands"), list) else []
-        current_commands = current_entry.get("commands") if isinstance(current_entry.get("commands"), list) else []
+        previous_commands = (
+            previous_entry.get("commands")
+            if isinstance(previous_entry.get("commands"), list)
+            else []
+        )
+        current_commands = (
+            current_entry.get("commands") if isinstance(current_entry.get("commands"), list) else []
+        )
         if not previous_entry:
             trend = "new"
         elif not current_entry:
@@ -418,7 +428,11 @@ def _planner_entry_diffs(previous_entries: object, current_entries: list[dict]) 
 
 
 def _command_chain_diff(previous_chain: object, current_chain: list[str]) -> dict[str, object]:
-    previous = [item for item in previous_chain if isinstance(item, str)] if isinstance(previous_chain, list) else []
+    previous = (
+        [item for item in previous_chain if isinstance(item, str)]
+        if isinstance(previous_chain, list)
+        else []
+    )
     added = [item for item in current_chain if item not in previous]
     removed = [item for item in previous if item not in current_chain]
     unchanged = [item for item in current_chain if item in previous]
@@ -453,14 +467,12 @@ def _planner_rerun_diff(
 ) -> dict[str, object]:
     previous_notes = _note_map(previous_manifest.get("notes"))
     previous_status = previous_summary.get("planner_status") or previous_manifest.get("status")
-    previous_next_best_command = (
-        previous_summary.get("next_best_command")
-        or previous_notes.get("next_best_command")
+    previous_next_best_command = previous_summary.get("next_best_command") or previous_notes.get(
+        "next_best_command"
     )
-    previous_planned_step_count_raw = (
-        previous_summary.get("planned_step_count")
-        or previous_notes.get("planned_step_count")
-    )
+    previous_planned_step_count_raw = previous_summary.get(
+        "planned_step_count"
+    ) or previous_notes.get("planned_step_count")
     previous_planned_step_count = _as_int(previous_planned_step_count_raw)
     if not previous_summary and not previous_manifest:
         trend = "first_run"
@@ -474,9 +486,13 @@ def _planner_rerun_diff(
         trend = "improved"
     elif _planner_status_rank(planner_status) > _planner_status_rank(previous_status):
         trend = "regressed"
-    elif previous_planned_step_count is not None and planned_step_count < previous_planned_step_count:
+    elif (
+        previous_planned_step_count is not None and planned_step_count < previous_planned_step_count
+    ):
         trend = "improved"
-    elif previous_planned_step_count is not None and planned_step_count > previous_planned_step_count:
+    elif (
+        previous_planned_step_count is not None and planned_step_count > previous_planned_step_count
+    ):
         trend = "regressed"
     else:
         trend = "changed"
@@ -593,8 +609,12 @@ def build_remediation_planner(
             for item in entries
         },
         "recommended_command_chain": recommended_command_chain,
-        "phase_gate_summary_path": str(phase_gate_summary_path) if phase_gate_summary_path is not None else None,
-        "runbook_summary_path": str(runbook_summary_path) if runbook_summary_path is not None else None,
+        "phase_gate_summary_path": str(phase_gate_summary_path)
+        if phase_gate_summary_path is not None
+        else None,
+        "runbook_summary_path": str(runbook_summary_path)
+        if runbook_summary_path is not None
+        else None,
         "remediation_evaluator_summary_path": (
             str(remediation_evaluator_summary_path)
             if remediation_evaluator_summary_path is not None
@@ -605,8 +625,11 @@ def build_remediation_planner(
             if remediation_command_results_summary_path is not None
             else None
         ),
-        "operation_chain_path": str(operation_chain_path) if operation_chain_path is not None else None,
-        "previous_planner_status": previous_summary.get("planner_status") or previous_manifest.get("status"),
+        "operation_chain_path": str(operation_chain_path)
+        if operation_chain_path is not None
+        else None,
+        "previous_planner_status": previous_summary.get("planner_status")
+        or previous_manifest.get("status"),
         "previous_planner_manifest_run_id": previous_manifest.get("run_id"),
         "planner_rerun_diff": planner_rerun_diff,
         "planner_entry_diffs": planner_entry_diffs,
@@ -634,21 +657,23 @@ def build_remediation_planner(
         lines.extend(["## Related Reports", ""])
         lines.extend(f"- {key}: {value}" for key, value in related_reports.items())
         lines.append("")
-    lines.extend([
-        "## Planner Summary",
-        "",
-        f"- planner_status: {summary['planner_status']}",
-        f"- planned_step_count: {summary['planned_step_count']}",
-        f"- next_best_command: {summary['next_best_command']}",
-        f"- phase_gate_summary_path: {summary['phase_gate_summary_path']}",
-        f"- runbook_summary_path: {summary['runbook_summary_path']}",
-        f"- remediation_evaluator_summary_path: {summary['remediation_evaluator_summary_path']}",
-        f"- remediation_command_results_summary_path: {summary['remediation_command_results_summary_path']}",
-        f"- operation_chain_path: {summary['operation_chain_path']}",
-        "",
-        "## Recommended Command Chain",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Planner Summary",
+            "",
+            f"- planner_status: {summary['planner_status']}",
+            f"- planned_step_count: {summary['planned_step_count']}",
+            f"- next_best_command: {summary['next_best_command']}",
+            f"- phase_gate_summary_path: {summary['phase_gate_summary_path']}",
+            f"- runbook_summary_path: {summary['runbook_summary_path']}",
+            f"- remediation_evaluator_summary_path: {summary['remediation_evaluator_summary_path']}",
+            f"- remediation_command_results_summary_path: {summary['remediation_command_results_summary_path']}",
+            f"- operation_chain_path: {summary['operation_chain_path']}",
+            "",
+            "## Recommended Command Chain",
+            "",
+        ]
+    )
     if recommended_command_chain:
         lines.extend(f"- `{command}`" for command in recommended_command_chain)
     else:
@@ -694,9 +719,7 @@ def build_remediation_planner(
     lines.extend(["", "## Planned Steps", ""])
     if entries:
         for entry in entries:
-            lines.append(
-                f"- priority_{entry['priority']}_{entry['source']}: {entry['reason']}"
-            )
+            lines.append(f"- priority_{entry['priority']}_{entry['source']}: {entry['reason']}")
             lines.append(f"  - status: {entry['status']}")
             lines.append(f"  - why: {entry['why']}")
             lines.append(f"  - effective_priority: {entry['effective_priority']}")

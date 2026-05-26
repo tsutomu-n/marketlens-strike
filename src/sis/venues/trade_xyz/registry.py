@@ -90,7 +90,9 @@ def build_trade_xyz_registry(
     meta_payload: dict[str, Any] | None = None,
 ) -> TradeXyzRegistryBuildResult:
     seed_specs = load_trade_xyz_seed(seed_path)
-    mids = all_mids_payload if all_mids_payload is not None else (client.all_mids() if client else {})
+    mids = (
+        all_mids_payload if all_mids_payload is not None else (client.all_mids() if client else {})
+    )
     meta = meta_payload if meta_payload is not None else (client.meta() if client else {})
 
     perp_dex_index = _extract_perp_dex_index(meta)

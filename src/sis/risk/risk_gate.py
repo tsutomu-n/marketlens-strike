@@ -62,8 +62,12 @@ def evaluate_risk_gate(
         halt_reasons = [reason for reason in halt_reasons if reason != "BLOCK_PRICE_STALE"]
     reasons.extend(halt_reasons)
     deduped = list(dict.fromkeys(reasons))
-    stale_rejected = any(reason in {"BLOCK_PRICE_STALE", "BLOCK_ORACLE_TIMESTAMP_MISSING"} for reason in deduped)
-    halt_rejected = any(reason not in {"BLOCK_PRICE_STALE", "BLOCK_ORACLE_TIMESTAMP_MISSING"} for reason in deduped)
+    stale_rejected = any(
+        reason in {"BLOCK_PRICE_STALE", "BLOCK_ORACLE_TIMESTAMP_MISSING"} for reason in deduped
+    )
+    halt_rejected = any(
+        reason not in {"BLOCK_PRICE_STALE", "BLOCK_ORACLE_TIMESTAMP_MISSING"} for reason in deduped
+    )
     return RiskDecision(
         allowed=not deduped,
         blocked_reasons=deduped,

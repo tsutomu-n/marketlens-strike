@@ -21,4 +21,3 @@ def check_timeframe(timeframe: str) -> ScalpingDecision:
     if normalized in PREFERRED_TIMEFRAMES or normalized == MINIMUM_ALLOWED_TIMEFRAME:
         return ScalpingDecision(True, "ALLOW_TIMEFRAME")
     return ScalpingDecision(False, "BLOCK_UNKNOWN_TIMEFRAME")
-

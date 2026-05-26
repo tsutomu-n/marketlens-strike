@@ -20,8 +20,12 @@ from sis.reports.execution_adapter_status import (
 )
 from sis.reports.execution_drift_overview import build_execution_drift_overview_report
 from sis.reports.execution_gap_history import build_execution_gap_history_report
-from sis.reports.execution_snapshot_drift_history import build_execution_snapshot_drift_history_report
-from sis.reports.execution_state_comparison_history import build_execution_state_comparison_history_report
+from sis.reports.execution_snapshot_drift_history import (
+    build_execution_snapshot_drift_history_report,
+)
+from sis.reports.execution_state_comparison_history import (
+    build_execution_state_comparison_history_report,
+)
 from sis.reports.live_evidence_report import (
     LiveEvidenceArtifacts,
     LiveEvidenceReportData,
@@ -84,7 +88,10 @@ def test_build_monitoring_snapshot_and_write(tmp_path) -> None:
     write_json(execution_snapshot, {"overall_status": "ok", "venue_count": 2})
     write_json(
         execution_comparison,
-        {"all_registries_present": True, "report_path": "data/reports/execution_venue_comparison.md"},
+        {
+            "all_registries_present": True,
+            "report_path": "data/reports/execution_venue_comparison.md",
+        },
     )
     write_json(
         execution_diagnostics,
@@ -245,10 +252,7 @@ def test_build_monitoring_snapshot_and_write(tmp_path) -> None:
         ]
         is True
     )
-    assert (
-        snapshot["bundle_history_latest_execution_summary"]["execution_overall_status"]
-        == "ok"
-    )
+    assert snapshot["bundle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert (
         snapshot["bundle_history_latest_execution_comparison_summary"][
             "execution_comparison_all_registries_present"
@@ -267,20 +271,31 @@ def test_build_monitoring_snapshot_and_write(tmp_path) -> None:
     assert snapshot["cycle_history_latest_execution_comparison_all_registries_present"] is True
     assert snapshot["phase_gate_decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert snapshot["phase2_entry_allowed"] is False
-    assert snapshot["phase_gate"]["phase2_entry_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
-    assert snapshot["phase_gate"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        snapshot["phase_gate"]["phase2_entry_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
+    assert (
+        snapshot["phase_gate"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert snapshot["phase_gate"]["phase_gate_strict_validation_passed"] is True
-    assert snapshot["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        snapshot["phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert snapshot["execution_drift_overview_status"] == "degraded"
-    assert snapshot["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    assert (
+        snapshot["execution_drift_overview_summary"]["execution_drift_overview_status"]
+        == "degraded"
+    )
     assert snapshot["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert snapshot["readiness_summary"]["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert snapshot["execution_comparison"]["execution_comparison_all_registries_present"] is True
     assert snapshot["execution_diagnostics"]["execution_diagnostics_status"] == "degraded"
     assert snapshot["execution_gap_history"]["execution_gap_history_entry_count"] == 4
     assert (
-        snapshot["execution_state_comparison"]["execution_state_comparison_mismatching_count"]
-        == 1
+        snapshot["execution_state_comparison"]["execution_state_comparison_mismatching_count"] == 1
     )
     assert (
         snapshot["execution_snapshot_drift"]["execution_snapshot_drift_mismatching_snapshot_count"]
@@ -295,7 +310,10 @@ def test_build_paper_live_comparison_report(tmp_path) -> None:
     paper_last_run = tmp_path / "paper_last_run.json"
     pl.DataFrame([{"date": "2026-05-24", "realized_pnl": 5.0}]).write_parquet(paper_pnl)
     pl.DataFrame(
-        [{"canonical_symbol": "QQQ", "avg_trade_return": 0.05}, {"canonical_symbol": "SPY", "avg_trade_return": 0.01}]
+        [
+            {"canonical_symbol": "QQQ", "avg_trade_return": 0.05},
+            {"canonical_symbol": "SPY", "avg_trade_return": 0.01},
+        ]
     ).write_json(backtest_metrics)
     write_json(
         paper_last_run,
@@ -667,12 +685,29 @@ def test_build_ops_review_report(tmp_path) -> None:
     assert "cycle_history_latest_execution_venue_count: 2" in report
     assert "cycle_history_latest_execution_comparison_all_registries_present: True" in report
     assert "timeline_latest_remediation_planner_status: stalled" in report
-    assert "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict" in report
-    assert "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
-    assert "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes" in report
-    assert "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
-    assert "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review" in report
-    assert "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in report
+    assert (
+        "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
+    )
+    assert (
+        "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed"
+        in report
+    )
     assert "audit_latest_operation: audit_bundle_snapshot" in report
     assert "phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
     assert "phase_gate_reason: remain_in_phase1_until_live_evidence_gate_clears" in report
@@ -682,13 +717,14 @@ def test_build_ops_review_report(tmp_path) -> None:
     assert "## Quick Navigation" in report
     assert f"- ops_review_report: {tmp_path / 'ops_review.md'}" in report
     assert "## Related Reports" in report
-    assert f"- operations_dashboard_report: {tmp_path / 'reports/operations_dashboard.md'}" in report
+    assert (
+        f"- operations_dashboard_report: {tmp_path / 'reports/operations_dashboard.md'}" in report
+    )
     summary = read_json(tmp_path / "ops_review_summary.json")
     assert isinstance(summary, dict)
     assert summary["quick_navigation"]["ops_review_report"] == str(tmp_path / "ops_review.md")
-    assert (
-        summary["related_reports"]["operations_dashboard_report"]
-        == str(tmp_path / "reports/operations_dashboard.md")
+    assert summary["related_reports"]["operations_dashboard_report"] == str(
+        tmp_path / "reports/operations_dashboard.md"
     )
     assert summary["audit_summary"]["audit_overall_status"] == "ok"
     assert summary["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
@@ -713,9 +749,18 @@ def test_build_ops_review_report(tmp_path) -> None:
         is True
     )
     assert summary["timeline_latest_remediation_planner_status"] == "stalled"
-    assert summary["timeline_latest_remediation_execution_plan_next_action_command"] == "uv run sis diagnose-quotes"
-    assert summary["timeline_latest_remediation_scoreboard_feedback_priority_reason"] == "evaluation_failed"
-    assert summary["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        summary["timeline_latest_remediation_execution_plan_next_action_command"]
+        == "uv run sis diagnose-quotes"
+    )
+    assert (
+        summary["timeline_latest_remediation_scoreboard_feedback_priority_reason"]
+        == "evaluation_failed"
+    )
+    assert (
+        summary["phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert summary["execution_summary"]["execution_overall_status"] == "ok"
 
 
@@ -796,7 +841,14 @@ def test_build_operations_dashboard(tmp_path) -> None:
         execution_diagnostics,
         {"overall_status": "degraded", "balance_gap_detected": True, "fills_gap_detected": False},
     )
-    write_json(execution_gap_history, {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "degraded"})
+    write_json(
+        execution_gap_history,
+        {
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+        },
+    )
     write_json(
         execution_drift_overview,
         {
@@ -1155,10 +1207,11 @@ def test_build_operations_dashboard(tmp_path) -> None:
     summary = read_json(tmp_path / "dashboard_summary.json")
     assert isinstance(summary, dict)
     assert summary["phase2_entry_allowed"] is False
-    assert summary["quick_navigation"]["operations_dashboard_report"] == str(tmp_path / "dashboard.md")
-    assert (
-        summary["related_reports"]["current_state_index_report"]
-        == str(tmp_path / "reports/current_state_index.md")
+    assert summary["quick_navigation"]["operations_dashboard_report"] == str(
+        tmp_path / "dashboard.md"
+    )
+    assert summary["related_reports"]["current_state_index_report"] == str(
+        tmp_path / "reports/current_state_index.md"
     )
     assert summary["audit_summary"]["audit_overall_status"] == "ok"
     assert summary["timeline_latest_execution_overall_status"] == "ok"
@@ -1169,7 +1222,10 @@ def test_build_operations_dashboard(tmp_path) -> None:
         summary["timeline_latest_remediation_execution_plan_next_action_command"]
         == "uv run sis diagnose-quotes"
     )
-    assert summary["timeline_latest_remediation_session_next_pending_command"] == "uv run sis monitoring-status"
+    assert (
+        summary["timeline_latest_remediation_session_next_pending_command"]
+        == "uv run sis monitoring-status"
+    )
     assert (
         summary["timeline_latest_remediation_scoreboard_next_action_command"]
         == "uv run sis phase-gate-review"
@@ -1198,9 +1254,15 @@ def test_build_operations_dashboard(tmp_path) -> None:
         ]
         is True
     )
-    assert summary["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        summary["phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert summary["execution_summary"]["execution_overall_status"] == "ok"
-    assert summary["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        summary["execution_comparison_summary"]["execution_comparison_all_registries_present"]
+        is True
+    )
     assert summary["execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
     assert summary["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
     assert summary["execution_balance_status_equity"] == 1500.0
@@ -1237,7 +1299,9 @@ def test_build_operations_dashboard(tmp_path) -> None:
         ]
         == 1
     )
-    assert summary["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    assert (
+        summary["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    )
 
 
 def test_build_current_state_index(tmp_path) -> None:
@@ -1464,7 +1528,10 @@ def test_build_current_state_index(tmp_path) -> None:
     write_json(execution_snapshot, {"overall_status": "ok", "venue_count": 2})
     write_json(execution_comparison, {"all_registries_present": True})
     write_json(execution_diagnostics, {"overall_status": "ok"})
-    write_json(execution_gap_history, {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "ok"})
+    write_json(
+        execution_gap_history,
+        {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "ok"},
+    )
     write_json(
         execution_state_comparison,
         {
@@ -1565,12 +1632,29 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "cycle_history_latest_execution_venue_count: 2" in report
     assert "cycle_history_latest_execution_comparison_all_registries_present: True" in report
     assert "timeline_latest_remediation_planner_status: stalled" in report
-    assert "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict" in report
-    assert "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
-    assert "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes" in report
-    assert "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
-    assert "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review" in report
-    assert "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in report
+    assert (
+        "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
+    )
+    assert (
+        "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed"
+        in report
+    )
     assert "## Execution Adapter Surfaces" in report
     assert "execution_balance_status_equity: 1500.0" in report
     assert "execution_fill_status_latest_fill_id: fill-1" in report
@@ -1588,7 +1672,9 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "execution_read_only_surfaces_venue_count: 2" in report
     assert "execution_read_only_surfaces_with_positions_snapshot_count: 2" in report
     assert "execution_read_only_surfaces_positions_notional_usd_total: 24215145.037214246" in report
-    assert "execution_read_only_surfaces_positions_cumulative_rollover_usd_total: 0.003096" in report
+    assert (
+        "execution_read_only_surfaces_positions_cumulative_rollover_usd_total: 0.003096" in report
+    )
     assert "execution_read_only_surfaces_positions_with_liquidation_price_count: 1" in report
     assert "execution_read_only_surfaces_positions_with_take_profit_count: 1" in report
     assert "execution_read_only_surfaces_positions_with_stop_loss_count: 0" in report
@@ -1596,14 +1682,25 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "execution_read_only_surfaces_with_positions_protection_metrics_count: 1" in report
     assert "execution_read_only_surfaces_with_positions_day_trade_metrics_count: 1" in report
     assert "execution_read_only_surfaces_positions_average_leverage: 26.8474" in report
-    assert "execution_read_only_surfaces_positions_average_return_on_equity: 0.04076676348547718" in report
+    assert (
+        "execution_read_only_surfaces_positions_average_return_on_equity: 0.04076676348547718"
+        in report
+    )
     assert "execution_read_only_surfaces_positions_max_leverage: 200.0" in report
     assert "execution_read_only_surfaces_positions_total_quantity: 2.0" in report
     assert "execution_read_only_surfaces_positions_total_realized_pnl: 0.0" in report
     assert "execution_read_only_surfaces_latest_positions_server_time_ms: 1716336000000" in report
-    assert "execution_read_only_surfaces_latest_positions_open_timestamp_ms: 1779580800000" in report
-    assert "execution_read_only_surfaces_latest_positions_updated_at: 2026-05-24T01:00:00+00:00" in report
-    assert "execution_read_only_surfaces_latest_positions_client_ts: 2026-05-22T07:56:39.516Z" in report
+    assert (
+        "execution_read_only_surfaces_latest_positions_open_timestamp_ms: 1779580800000" in report
+    )
+    assert (
+        "execution_read_only_surfaces_latest_positions_updated_at: 2026-05-24T01:00:00+00:00"
+        in report
+    )
+    assert (
+        "execution_read_only_surfaces_latest_positions_client_ts: 2026-05-22T07:56:39.516Z"
+        in report
+    )
     assert "## State And Daemon Surfaces" in report
     assert "daemon_manifest_mode: paper" in report
     assert "daemon_loop_status: completed" in report
@@ -1628,17 +1725,26 @@ def test_build_current_state_index(tmp_path) -> None:
     assert "execution_drift_overview_snapshot_drift_mismatching_snapshot_count: 0" in report
     assert "backtest_total_trade_count: 5" in report
     assert "live_evidence_run_id: 20260522_2308" in report
-    assert "live_evidence_report_path: docs/live_evidence_reports/live_evidence_report_20260522_2308.md" in report
+    assert (
+        "live_evidence_report_path: docs/live_evidence_reports/live_evidence_report_20260522_2308.md"
+        in report
+    )
     assert "research_quality_report_exists: True" in report
     assert "## Quick Navigation" in report
     assert "- phase_gate_review_report: data/reports/phase_gate_review.md" in report
     assert "## Related Reports" in report
     assert "- phase_gate_review_report: data/reports/phase_gate_review.md" in report
-    assert "- live_evidence_report: docs/live_evidence_reports/live_evidence_report_20260522_2308.md" in report
+    assert (
+        "- live_evidence_report: docs/live_evidence_reports/live_evidence_report_20260522_2308.md"
+        in report
+    )
     assert "## Restart Pointers" in report
     assert f"- current_state_index_report: {tmp_path / 'current_state_index.md'}" in report
     assert f"- readiness_snapshot_report: {tmp_path / 'reports/readiness_snapshot.md'}" in report
-    assert f"- remediation_scoreboard_report: {tmp_path / 'reports/remediation_scoreboard.md'}" in report
+    assert (
+        f"- remediation_scoreboard_report: {tmp_path / 'reports/remediation_scoreboard.md'}"
+        in report
+    )
     assert "## Recommended Read Order" in report
     summary = read_json(tmp_path / "current_state_index.json")
     assert isinstance(summary, dict)
@@ -1646,20 +1752,37 @@ def test_build_current_state_index(tmp_path) -> None:
     assert summary["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
     assert summary["phase_gate_strict_validation_passed"] is True
     assert summary["phase_gate_review_report_path"] == "data/reports/phase_gate_review.md"
-    assert summary["phase_gate_strict_validation_issues"][0]["path"] == "data/research/backtest_metrics_summary.json"
+    assert (
+        summary["phase_gate_strict_validation_issues"][0]["path"]
+        == "data/research/backtest_metrics_summary.json"
+    )
     assert summary["timeline_latest_execution_overall_status"] == "ok"
     assert summary["timeline_latest_remediation_planner_status"] == "stalled"
-    assert summary["timeline_latest_remediation_execution_plan_next_action_command"] == "uv run sis diagnose-quotes"
-    assert summary["timeline_latest_remediation_scoreboard_feedback_priority_reason"] == "evaluation_failed"
-    assert summary["live_evidence_report_path"] == "docs/live_evidence_reports/live_evidence_report_20260522_2308.md"
-    assert summary["quick_navigation"]["phase_gate_review_report"] == "data/reports/phase_gate_review.md"
-    assert summary["related_reports"]["phase_gate_review_report"] == "data/reports/phase_gate_review.md"
+    assert (
+        summary["timeline_latest_remediation_execution_plan_next_action_command"]
+        == "uv run sis diagnose-quotes"
+    )
+    assert (
+        summary["timeline_latest_remediation_scoreboard_feedback_priority_reason"]
+        == "evaluation_failed"
+    )
+    assert (
+        summary["live_evidence_report_path"]
+        == "docs/live_evidence_reports/live_evidence_report_20260522_2308.md"
+    )
+    assert (
+        summary["quick_navigation"]["phase_gate_review_report"]
+        == "data/reports/phase_gate_review.md"
+    )
+    assert (
+        summary["related_reports"]["phase_gate_review_report"]
+        == "data/reports/phase_gate_review.md"
+    )
     assert summary["restart_pointers"]["daemon_loop_report"] == str(
         tmp_path / "reports/daemon_loop.md"
     )
-    assert (
-        summary["restart_pointers"]["notification_outbox_report"]
-        == str(tmp_path / "reports/notification_outbox.md")
+    assert summary["restart_pointers"]["notification_outbox_report"] == str(
+        tmp_path / "reports/notification_outbox.md"
     )
     assert summary["restart_pointers"]["current_state_index_report"] == str(
         tmp_path / "current_state_index.md"
@@ -1690,16 +1813,24 @@ def test_build_current_state_index(tmp_path) -> None:
         is True
     )
     assert summary["audit_summary"]["audit_overall_status"] == "ok"
-    assert summary["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        summary["phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert summary["execution_summary"]["execution_overall_status"] == "ok"
-    assert summary["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        summary["execution_comparison_summary"]["execution_comparison_all_registries_present"]
+        is True
+    )
     assert summary["execution_diagnostics_summary"]["execution_diagnostics_status"] == "ok"
     assert summary["daemon_loop_status"] == "completed"
     assert summary["daemon_loop_cycles_completed"] == 1
     assert summary["notification_outbox_status"] == "queued"
     assert summary["notification_outbox_sink"] == "local_outbox"
     assert summary["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
-    assert summary["execution_state_comparison_summary"]["execution_state_comparison_entry_count"] == 4
+    assert (
+        summary["execution_state_comparison_summary"]["execution_state_comparison_entry_count"] == 4
+    )
     assert summary["execution_snapshot_drift_summary"]["execution_snapshot_drift_entry_count"] == 3
     assert summary["execution_drift_overview_summary"]["execution_drift_overview_status"] == "ok"
 
@@ -1777,7 +1908,10 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     write_json(execution, {"overall_status": "ok", "venue_count": 2})
     write_json(execution_comparison, {"all_registries_present": True})
     write_json(execution_diagnostics, {"overall_status": "ok"})
-    write_json(execution_gap_history, {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "ok"})
+    write_json(
+        execution_gap_history,
+        {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "ok"},
+    )
     write_json(
         execution_state_comparison,
         {
@@ -1848,29 +1982,29 @@ def test_build_readiness_snapshot(tmp_path) -> None:
             "execution_read_only_surfaces_with_balance_snapshot_count": 1,
             "execution_read_only_surfaces_with_positions_snapshot_count": 2,
             "execution_read_only_surfaces_with_fills_snapshot_count": 1,
-                "execution_read_only_surfaces_with_order_status_snapshot_count": 1,
-                "execution_read_only_surfaces_reconciled_venue_count": 2,
-                "execution_read_only_surfaces_with_positions_financial_totals_count": 2,
-                "execution_read_only_surfaces_with_positions_rollover_metrics_count": 1,
-                "execution_read_only_surfaces_with_positions_protection_metrics_count": 1,
-                "execution_read_only_surfaces_with_positions_leverage_metrics_count": 1,
-                "execution_read_only_surfaces_with_positions_return_metrics_count": 1,
-                "execution_read_only_surfaces_with_positions_day_trade_metrics_count": 1,
-                "execution_read_only_surfaces_with_positions_limit_metrics_count": 1,
-                "execution_read_only_surfaces_with_positions_quantity_metrics_count": 1,
-                "execution_read_only_surfaces_positions_notional_usd_total": 24215145.037214246,
-                "execution_read_only_surfaces_positions_unrealized_pnl_usd_total": 25683.762970999986,
-                "execution_read_only_surfaces_positions_collateral_used_usd_total": 2158493.9945829986,
-                "execution_read_only_surfaces_positions_max_withdrawable_usd_total": 1752150.3245409152,
-                "execution_read_only_surfaces_positions_cumulative_rollover_usd_total": 0.003096,
-                "execution_read_only_surfaces_positions_with_liquidation_price_count": 1,
-                "execution_read_only_surfaces_positions_with_take_profit_count": 1,
-                "execution_read_only_surfaces_positions_with_stop_loss_count": 0,
-                "execution_read_only_surfaces_positions_day_trade_count": 0,
-                "execution_read_only_surfaces_positions_average_leverage": 26.8474,
-                "execution_read_only_surfaces_positions_average_return_on_equity": 0.04076676348547718,
-                "execution_read_only_surfaces_positions_max_leverage": 200.0,
-                "execution_read_only_surfaces_positions_total_quantity": 2.0,
+            "execution_read_only_surfaces_with_order_status_snapshot_count": 1,
+            "execution_read_only_surfaces_reconciled_venue_count": 2,
+            "execution_read_only_surfaces_with_positions_financial_totals_count": 2,
+            "execution_read_only_surfaces_with_positions_rollover_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_protection_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_leverage_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_return_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_day_trade_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_limit_metrics_count": 1,
+            "execution_read_only_surfaces_with_positions_quantity_metrics_count": 1,
+            "execution_read_only_surfaces_positions_notional_usd_total": 24215145.037214246,
+            "execution_read_only_surfaces_positions_unrealized_pnl_usd_total": 25683.762970999986,
+            "execution_read_only_surfaces_positions_collateral_used_usd_total": 2158493.9945829986,
+            "execution_read_only_surfaces_positions_max_withdrawable_usd_total": 1752150.3245409152,
+            "execution_read_only_surfaces_positions_cumulative_rollover_usd_total": 0.003096,
+            "execution_read_only_surfaces_positions_with_liquidation_price_count": 1,
+            "execution_read_only_surfaces_positions_with_take_profit_count": 1,
+            "execution_read_only_surfaces_positions_with_stop_loss_count": 0,
+            "execution_read_only_surfaces_positions_day_trade_count": 0,
+            "execution_read_only_surfaces_positions_average_leverage": 26.8474,
+            "execution_read_only_surfaces_positions_average_return_on_equity": 0.04076676348547718,
+            "execution_read_only_surfaces_positions_max_leverage": 200.0,
+            "execution_read_only_surfaces_positions_total_quantity": 2.0,
             "execution_read_only_surfaces_positions_total_realized_pnl": 0.0,
             "execution_read_only_surfaces_latest_positions_client_ts": "2026-05-22T07:56:39.516Z",
             "execution_read_only_surfaces_latest_positions_server_time_ms": 1716336000000,
@@ -1976,8 +2110,14 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert "cycle_history_latest_execution_venue_count: 2" in report
     assert "cycle_history_latest_execution_comparison_all_registries_present: True" in report
     assert "timeline_latest_remediation_planner_status: stalled" in report
-    assert "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
-    assert "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in report
+    assert (
+        "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed"
+        in report
+    )
     assert "## Quick Navigation" in report
     assert "- phase_gate_review_report: data/reports/phase_gate_review.md" in report
     assert "## Related Reports" in report
@@ -1985,7 +2125,10 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert "## Restart Pointers" in report
     assert f"- readiness_snapshot_report: {tmp_path / 'readiness_snapshot.md'}" in report
     assert f"- current_state_index_report: {tmp_path / 'reports/current_state_index.md'}" in report
-    assert f"- remediation_scoreboard_report: {tmp_path / 'reports/remediation_scoreboard.md'}" in report
+    assert (
+        f"- remediation_scoreboard_report: {tmp_path / 'reports/remediation_scoreboard.md'}"
+        in report
+    )
     assert "live_evidence_report_path: None" in report
     summary = read_json(tmp_path / "readiness_snapshot.json")
     assert isinstance(summary, dict)
@@ -1996,7 +2139,10 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["phase_gate_reason"] == "decision_cleared_and_phase1_gate_complete"
     assert summary["phase_gate_strict_validation_passed"] is True
     assert summary["phase_gate_review_report_path"] == "data/reports/phase_gate_review.md"
-    assert summary["phase_gate_summary"]["phase_gate_reason"] == "decision_cleared_and_phase1_gate_complete"
+    assert (
+        summary["phase_gate_summary"]["phase_gate_reason"]
+        == "decision_cleared_and_phase1_gate_complete"
+    )
     assert summary["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert (
         summary["timeline_latest_execution_comparison_summary"][
@@ -2019,15 +2165,26 @@ def test_build_readiness_snapshot(tmp_path) -> None:
         is True
     )
     assert summary["execution_summary"]["execution_overall_status"] == "ok"
-    assert summary["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        summary["execution_comparison_summary"]["execution_comparison_all_registries_present"]
+        is True
+    )
     assert summary["execution_diagnostics_summary"]["execution_diagnostics_status"] == "ok"
     assert summary["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
-    assert summary["execution_state_comparison_summary"]["execution_state_comparison_entry_count"] == 4
+    assert (
+        summary["execution_state_comparison_summary"]["execution_state_comparison_entry_count"] == 4
+    )
     assert summary["execution_snapshot_drift_summary"]["execution_snapshot_drift_entry_count"] == 3
     assert summary["execution_drift_overview_summary"]["execution_drift_overview_status"] == "ok"
     assert summary["timeline_latest_remediation_planner_status"] == "stalled"
-    assert summary["timeline_latest_remediation_execution_plan_next_action_command"] == "uv run sis diagnose-quotes"
-    assert summary["timeline_latest_remediation_scoreboard_feedback_priority_reason"] == "evaluation_failed"
+    assert (
+        summary["timeline_latest_remediation_execution_plan_next_action_command"]
+        == "uv run sis diagnose-quotes"
+    )
+    assert (
+        summary["timeline_latest_remediation_scoreboard_feedback_priority_reason"]
+        == "evaluation_failed"
+    )
     assert summary["execution_balance_status_equity"] == 1500.0
     assert summary["execution_balance_status_margin_used"] == 300.0
     assert summary["execution_balance_status_notional_usd"] == 5000.0
@@ -2055,24 +2212,48 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["execution_read_only_surfaces_with_positions_day_trade_metrics_count"] == 1
     assert summary["execution_read_only_surfaces_with_positions_limit_metrics_count"] == 1
     assert summary["execution_read_only_surfaces_with_positions_quantity_metrics_count"] == 1
-    assert summary["execution_read_only_surfaces_positions_notional_usd_total"] == 24215145.037214246
-    assert summary["execution_read_only_surfaces_positions_unrealized_pnl_usd_total"] == 25683.762970999986
-    assert summary["execution_read_only_surfaces_positions_collateral_used_usd_total"] == 2158493.9945829986
-    assert summary["execution_read_only_surfaces_positions_max_withdrawable_usd_total"] == 1752150.3245409152
-    assert summary["execution_read_only_surfaces_positions_cumulative_rollover_usd_total"] == 0.003096
+    assert (
+        summary["execution_read_only_surfaces_positions_notional_usd_total"] == 24215145.037214246
+    )
+    assert (
+        summary["execution_read_only_surfaces_positions_unrealized_pnl_usd_total"]
+        == 25683.762970999986
+    )
+    assert (
+        summary["execution_read_only_surfaces_positions_collateral_used_usd_total"]
+        == 2158493.9945829986
+    )
+    assert (
+        summary["execution_read_only_surfaces_positions_max_withdrawable_usd_total"]
+        == 1752150.3245409152
+    )
+    assert (
+        summary["execution_read_only_surfaces_positions_cumulative_rollover_usd_total"] == 0.003096
+    )
     assert summary["execution_read_only_surfaces_positions_with_liquidation_price_count"] == 1
     assert summary["execution_read_only_surfaces_positions_with_take_profit_count"] == 1
     assert summary["execution_read_only_surfaces_positions_with_stop_loss_count"] == 0
     assert summary["execution_read_only_surfaces_positions_day_trade_count"] == 0
     assert summary["execution_read_only_surfaces_positions_average_leverage"] == 26.8474
-    assert summary["execution_read_only_surfaces_positions_average_return_on_equity"] == 0.04076676348547718
+    assert (
+        summary["execution_read_only_surfaces_positions_average_return_on_equity"]
+        == 0.04076676348547718
+    )
     assert summary["execution_read_only_surfaces_positions_max_leverage"] == 200.0
     assert summary["execution_read_only_surfaces_positions_total_quantity"] == 2.0
     assert summary["execution_read_only_surfaces_positions_total_realized_pnl"] == 0.0
     assert summary["execution_read_only_surfaces_latest_positions_server_time_ms"] == 1716336000000
-    assert summary["execution_read_only_surfaces_latest_positions_open_timestamp_ms"] == 1779580800000
-    assert summary["execution_read_only_surfaces_latest_positions_updated_at"] == "2026-05-24T01:00:00+00:00"
-    assert summary["execution_read_only_surfaces_latest_positions_client_ts"] == "2026-05-22T07:56:39.516Z"
+    assert (
+        summary["execution_read_only_surfaces_latest_positions_open_timestamp_ms"] == 1779580800000
+    )
+    assert (
+        summary["execution_read_only_surfaces_latest_positions_updated_at"]
+        == "2026-05-24T01:00:00+00:00"
+    )
+    assert (
+        summary["execution_read_only_surfaces_latest_positions_client_ts"]
+        == "2026-05-22T07:56:39.516Z"
+    )
     assert summary["daemon_manifest_mode"] == "paper"
     assert summary["daemon_loop_status"] == "completed"
     assert summary["daemon_loop_cycles_completed"] == 1
@@ -2081,14 +2262,19 @@ def test_build_readiness_snapshot(tmp_path) -> None:
     assert summary["state_export_phase_gate_decision"] == "GO"
     assert summary["state_restore_restored"] is True
     assert summary["live_evidence_report_path"] is None
-    assert summary["quick_navigation"]["phase_gate_review_report"] == "data/reports/phase_gate_review.md"
-    assert summary["related_reports"]["phase_gate_review_report"] == "data/reports/phase_gate_review.md"
+    assert (
+        summary["quick_navigation"]["phase_gate_review_report"]
+        == "data/reports/phase_gate_review.md"
+    )
+    assert (
+        summary["related_reports"]["phase_gate_review_report"]
+        == "data/reports/phase_gate_review.md"
+    )
     assert summary["restart_pointers"]["daemon_loop_report"] == str(
         tmp_path / "reports/daemon_loop.md"
     )
-    assert (
-        summary["restart_pointers"]["notification_outbox_report"]
-        == str(tmp_path / "reports/notification_outbox.md")
+    assert summary["restart_pointers"]["notification_outbox_report"] == str(
+        tmp_path / "reports/notification_outbox.md"
     )
     assert summary["restart_pointers"]["remediation_scoreboard_report"] == str(
         tmp_path / "reports/remediation_scoreboard.md"
@@ -2119,7 +2305,10 @@ def test_build_execution_gap_history_report(tmp_path) -> None:
     assert "## Quick Navigation" in report
     assert f"- execution_gap_history_report: {tmp_path / 'execution_gap_history.md'}" in report
     assert "## Related Reports" in report
-    assert f"- execution_state_comparison_report: {tmp_path / 'execution_state_comparison_history.md'}" in report
+    assert (
+        f"- execution_state_comparison_report: {tmp_path / 'execution_state_comparison_history.md'}"
+        in report
+    )
     assert "entry_count: 3" in report
     assert "latest_execution_overall_status: ok" in report
     assert "latest_execution_venue_count: 2" in report
@@ -2133,7 +2322,9 @@ def test_build_execution_gap_history_report(tmp_path) -> None:
     assert summary["execution_gap_history_entry_count"] == 3
     assert summary["execution_gap_history_latest_status"] == "ok"
     assert summary["execution_gap_history_latest_diagnostics_status"] == "degraded"
-    assert summary["execution_gap_history_report_path"] == str(tmp_path / "execution_gap_history.md")
+    assert summary["execution_gap_history_report_path"] == str(
+        tmp_path / "execution_gap_history.md"
+    )
     assert summary["quick_navigation"]["execution_gap_history_report"] == str(
         tmp_path / "execution_gap_history.md"
     )
@@ -2147,7 +2338,10 @@ def test_build_execution_gap_history_report(tmp_path) -> None:
         ]
         is True
     )
-    assert summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
+    assert (
+        summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"]
+        == "degraded"
+    )
     assert summary["latest_readiness_summary"]["readiness_next_phase_candidate"] == "Phase 1"
     assert summary["latest_readiness_summary"]["readiness_execution_ready"] == "False"
 
@@ -2179,7 +2373,10 @@ def test_build_execution_state_comparison_history_report(tmp_path) -> None:
         in report
     )
     assert "## Related Reports" in report
-    assert f"- execution_snapshot_drift_report: {tmp_path / 'execution_snapshot_drift_history.md'}" in report
+    assert (
+        f"- execution_snapshot_drift_report: {tmp_path / 'execution_snapshot_drift_history.md'}"
+        in report
+    )
     assert "entry_count: 3" in report
     assert "latest_execution_overall_status: ok" in report
     assert "latest_execution_venue_count: 2" in report
@@ -2211,9 +2408,14 @@ def test_build_execution_state_comparison_history_report(tmp_path) -> None:
         ]
         is True
     )
-    assert summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
     assert (
-        summary["latest_execution_gap_history_summary"]["execution_gap_history_latest_diagnostics_status"]
+        summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"]
+        == "degraded"
+    )
+    assert (
+        summary["latest_execution_gap_history_summary"][
+            "execution_gap_history_latest_diagnostics_status"
+        ]
         == "ok"
     )
 
@@ -2245,7 +2447,9 @@ def test_build_execution_snapshot_drift_history_report(tmp_path) -> None:
         in report
     )
     assert "## Related Reports" in report
-    assert f"- execution_drift_overview_report: {tmp_path / 'execution_drift_overview.md'}" in report
+    assert (
+        f"- execution_drift_overview_report: {tmp_path / 'execution_drift_overview.md'}" in report
+    )
     assert "entry_count: 3" in report
     assert "latest_execution_overall_status: ok" in report
     assert "latest_execution_venue_count: 2" in report
@@ -2279,13 +2483,20 @@ def test_build_execution_snapshot_drift_history_report(tmp_path) -> None:
         ]
         is True
     )
-    assert summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
     assert (
-        summary["latest_execution_gap_history_summary"]["execution_gap_history_latest_diagnostics_status"]
+        summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"]
+        == "degraded"
+    )
+    assert (
+        summary["latest_execution_gap_history_summary"][
+            "execution_gap_history_latest_diagnostics_status"
+        ]
         == "ok"
     )
     assert (
-        summary["latest_execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"]
+        summary["latest_execution_state_comparison_summary"][
+            "execution_state_comparison_mismatching_count"
+        ]
         == "1"
     )
     assert summary["latest_readiness_summary"]["readiness_next_phase_candidate"] == "Phase 1"
@@ -2337,7 +2548,9 @@ def test_build_execution_drift_overview_report(tmp_path) -> None:
 
     assert "Execution Drift Overview" in report
     assert "## Quick Navigation" in report
-    assert f"- execution_drift_overview_report: {tmp_path / 'execution_drift_overview.md'}" in report
+    assert (
+        f"- execution_drift_overview_report: {tmp_path / 'execution_drift_overview.md'}" in report
+    )
     assert "## Related Reports" in report
     assert f"- execution_snapshot_report: {tmp_path / 'execution_snapshot.md'}" in report
     assert "overall_status: ok" in report
@@ -2366,13 +2579,20 @@ def test_build_execution_drift_overview_report(tmp_path) -> None:
     assert summary["related_reports"]["execution_snapshot_report"] == str(
         tmp_path / "execution_snapshot.md"
     )
-    assert summary["execution_gap_history_summary"]["execution_gap_history_latest_diagnostics_status"] == "degraded"
     assert (
-        summary["execution_state_comparison_summary"]["execution_state_comparison_latest_status_match"]
+        summary["execution_gap_history_summary"]["execution_gap_history_latest_diagnostics_status"]
+        == "degraded"
+    )
+    assert (
+        summary["execution_state_comparison_summary"][
+            "execution_state_comparison_latest_status_match"
+        ]
         is True
     )
     assert (
-        summary["execution_snapshot_drift_summary"]["execution_snapshot_drift_mismatching_snapshot_count"]
+        summary["execution_snapshot_drift_summary"][
+            "execution_snapshot_drift_mismatching_snapshot_count"
+        ]
         == 0
     )
 
@@ -2664,7 +2884,9 @@ def test_build_daemon_manifest_report(tmp_path) -> None:
     summary = read_json(tmp_path / "daemon_manifest_summary.json")
     assert summary["mode"] == "paper"
     assert summary["daemon_manifest_path"] == "data/ops/daemon_manifest.json"
-    assert summary["quick_navigation"]["state_command_report"] == str(tmp_path / "daemon_manifest.md")
+    assert summary["quick_navigation"]["state_command_report"] == str(
+        tmp_path / "daemon_manifest.md"
+    )
 
 
 def test_build_daemon_loop_report(tmp_path) -> None:
@@ -2737,7 +2959,9 @@ def test_build_state_export_and_restore_report(tmp_path) -> None:
     assert export_summary["audit_overall_status"] == "ok"
     assert export_summary["paper_positions_present"] is True
     assert restore_summary["restored"] is True
-    assert restore_summary["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        restore_summary["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
 
 
 def test_build_paper_operations_runbook(tmp_path) -> None:
@@ -2777,8 +3001,18 @@ def test_build_paper_operations_runbook(tmp_path) -> None:
         execution_diagnostics,
         {"overall_status": "degraded", "balance_gap_detected": True, "fills_gap_detected": False},
     )
-    write_json(execution_gap_history, {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "degraded"})
-    write_json(execution_state_comparison, {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1})
+    write_json(
+        execution_gap_history,
+        {
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+        },
+    )
+    write_json(
+        execution_state_comparison,
+        {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1},
+    )
     write_json(
         execution_drift_overview,
         {
@@ -2955,7 +3189,9 @@ def test_build_paper_operations_runbook(tmp_path) -> None:
     assert "## Quick Navigation" in report
     assert f"- paper_operations_runbook_report: {tmp_path / 'runbook.md'}" in report
     assert "## Related Reports" in report
-    assert f"- operations_dashboard_report: {tmp_path / 'reports/operations_dashboard.md'}" in report
+    assert (
+        f"- operations_dashboard_report: {tmp_path / 'reports/operations_dashboard.md'}" in report
+    )
     assert "phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
     assert "phase2_entry_allowed: False" in report
     assert "phase_gate_reason: remain_in_phase1_until_live_evidence_gate_clears" in report
@@ -2998,8 +3234,14 @@ def test_build_paper_operations_runbook(tmp_path) -> None:
     assert "bundle_history_latest_execution_overall_status: ok" in report
     assert "cycle_history_latest_execution_overall_status: ok" in report
     assert "timeline_latest_remediation_planner_status: stalled" in report
-    assert "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
-    assert "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in report
+    assert (
+        "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed"
+        in report
+    )
     assert "## Quick Navigation" in report
     assert "- paper_operations_runbook_report:" in report
     assert "## Related Reports" in report
@@ -3009,13 +3251,24 @@ def test_build_paper_operations_runbook(tmp_path) -> None:
     assert "dashboard_status: ok" in report
     summary = read_json(tmp_path / "runbook_summary.json")
     assert isinstance(summary, dict)
-    assert summary["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        summary["phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert summary["readiness_summary"]["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert summary["execution_summary"]["execution_overall_status"] == "ok"
-    assert summary["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        summary["execution_comparison_summary"]["execution_comparison_all_registries_present"]
+        is True
+    )
     assert summary["execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
     assert summary["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
-    assert summary["execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == 1
+    assert (
+        summary["execution_state_comparison_summary"][
+            "execution_state_comparison_mismatching_count"
+        ]
+        == 1
+    )
     assert summary["required_artifact_paths"]["execution_snapshot_summary_path"] == str(execution)
     assert summary["missing_required_artifact_paths"] == []
     assert summary["artifact_recovery_commands"] == {}
@@ -3079,21 +3332,37 @@ def test_build_paper_operations_runbook(tmp_path) -> None:
     }
     assert summary["remediation_planner_summary_path"] == str(planner_summary_path)
     assert summary["remediation_evaluator_summary_path"] == str(evaluator_summary_path)
-    assert summary["execution_snapshot_drift_summary"]["execution_snapshot_drift_mismatching_snapshot_count"] == 1
-    assert summary["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    assert (
+        summary["execution_snapshot_drift_summary"][
+            "execution_snapshot_drift_mismatching_snapshot_count"
+        ]
+        == 1
+    )
+    assert (
+        summary["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    )
     assert summary["phase_gate_decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert summary["phase_gate_strict_validation_issue_count"] == 2
     assert summary["phase_gate_checked_files"] == 7
     assert summary["phase2_entry_allowed"] is False
     assert summary["phase_gate_review_report_path"] == "data/reports/phase_gate_review.md"
-    assert summary["related_reports"]["phase_gate_review_report"] == "data/reports/phase_gate_review.md"
+    assert (
+        summary["related_reports"]["phase_gate_review_report"]
+        == "data/reports/phase_gate_review.md"
+    )
     assert summary["phase_gate_strict_validation_issues"][0]["message"] == "missing field"
     assert summary["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert summary["bundle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert summary["cycle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert summary["timeline_latest_remediation_planner_status"] == "stalled"
-    assert summary["timeline_latest_remediation_execution_plan_next_action_command"] == "uv run sis diagnose-quotes"
-    assert summary["timeline_latest_remediation_scoreboard_feedback_priority_reason"] == "evaluation_failed"
+    assert (
+        summary["timeline_latest_remediation_execution_plan_next_action_command"]
+        == "uv run sis diagnose-quotes"
+    )
+    assert (
+        summary["timeline_latest_remediation_scoreboard_feedback_priority_reason"]
+        == "evaluation_failed"
+    )
 
 
 def test_build_remediation_planner(tmp_path) -> None:
@@ -3132,7 +3401,11 @@ def test_build_remediation_planner(tmp_path) -> None:
         phase_gate,
         {
             "remediation_order": [
-                {"priority": 4, "reason": "execution_drift_unresolved", "commands": ["uv run sis refresh-operations-artifacts"]}
+                {
+                    "priority": 4,
+                    "reason": "execution_drift_unresolved",
+                    "commands": ["uv run sis refresh-operations-artifacts"],
+                }
             ],
             "remediation_recommendations": {
                 "execution_drift_unresolved": {
@@ -3147,7 +3420,11 @@ def test_build_remediation_planner(tmp_path) -> None:
         runbook,
         {
             "remediation_order": [
-                {"priority": 2, "reason": "strict_validation_failed", "commands": ["uv run sis validate-artifacts --strict"]}
+                {
+                    "priority": 2,
+                    "reason": "strict_validation_failed",
+                    "commands": ["uv run sis validate-artifacts --strict"],
+                }
             ],
             "remediation_recommendations": {
                 "strict_validation_failed": {
@@ -3202,7 +3479,10 @@ def test_build_remediation_planner(tmp_path) -> None:
     assert "## Quick Navigation" in report
     assert f"- remediation_planner_report: {tmp_path / 'remediation_planner.md'}" in report
     assert "## Related Reports" in report
-    assert f"- remediation_execution_plan_report: {tmp_path / 'remediation_execution_plan.md'}" in report
+    assert (
+        f"- remediation_execution_plan_report: {tmp_path / 'remediation_execution_plan.md'}"
+        in report
+    )
     assert "planner_status: stalled" in report
     assert "## Planner Rerun Diff" in report
     assert "- trend: improved" in report
@@ -3230,7 +3510,10 @@ def test_build_remediation_planner(tmp_path) -> None:
     assert summary["remediation_evaluator_summary_path"] == str(evaluator)
     assert summary["planner_rerun_diff"]["trend"] == "improved"
     assert summary["planner_rerun_diff"]["previous_manifest_status"] == "regressed"
-    assert summary["planner_entry_diffs"]["paper_operations_runbook:strict_validation_failed"]["trend"] == "improved"
+    assert (
+        summary["planner_entry_diffs"]["paper_operations_runbook:strict_validation_failed"]["trend"]
+        == "improved"
+    )
     assert summary["entries"][0]["observed_sources"] == ["stdout_stderr"]
     assert summary["entries"][0]["source_confidence"] == "high"
     assert summary["entries"][0]["feedback_priority_reason"] == "evaluation_failed"
@@ -3347,7 +3630,9 @@ def test_build_remediation_execution_plan(tmp_path) -> None:
                 "execution_drift_unresolved": ["uv run sis phase-gate-review"],
             },
             "remediation_preflight_expected_outputs": {
-                "execution_drift_unresolved": ["diagnose-quotes prints per-symbol diagnostics rows"],
+                "execution_drift_unresolved": [
+                    "diagnose-quotes prints per-symbol diagnostics rows"
+                ],
             },
             "remediation_execute_expected_outputs": {
                 "execution_drift_unresolved": [
@@ -3370,7 +3655,9 @@ def test_build_remediation_execution_plan(tmp_path) -> None:
                 "strict_validation_failed": ["uv run sis paper-operations-runbook"],
             },
             "remediation_preflight_expected_outputs": {
-                "strict_validation_failed": ["validate-artifacts --strict reports the current issue count"],
+                "strict_validation_failed": [
+                    "validate-artifacts --strict reports the current issue count"
+                ],
             },
             "remediation_execute_expected_outputs": {
                 "strict_validation_failed": ["strict validation output reports issues=0"],
@@ -3706,9 +3993,13 @@ def test_build_remediation_session_checkpoint(tmp_path) -> None:
     assert summary["next_action_stage_signal_confidence"] == "low"
     assert summary["observed_source_counts"] == {"phase_gate_review": 1, "stdout_stderr": 1}
     assert summary["actions"][0]["checkpoint_status"] == "retry"
-    assert summary["actions"][0]["operator_notes"] == ["strict validation still failing on first retry"]
+    assert summary["actions"][0]["operator_notes"] == [
+        "strict validation still failing on first retry"
+    ]
     assert summary["actions"][0]["evidence_paths"] == ["data/ops/validate_artifacts_strict.log"]
-    assert summary["actions"][0]["observed_signals"] == ["validate-artifacts --strict reports the current issue count"]
+    assert summary["actions"][0]["observed_signals"] == [
+        "validate-artifacts --strict reports the current issue count"
+    ]
     assert summary["actions"][0]["latest_exit_code"] == 1
     assert summary["actions"][0]["latest_stdout_summary"] == "issues=2 checked_files=7"
     assert summary["actions"][0]["stage_signal_confidence"] == "low"
@@ -3787,7 +4078,9 @@ def test_build_remediation_scoreboard(tmp_path) -> None:
     assert summary["next_action_observed_sources"] == ["stdout_stderr"]
     assert summary["next_action_stage_signal_confidence"] == "low"
     assert summary["blocking_action_observed_sources"] == {
-        "priority_2_paper_operations_runbook_strict_validation_failed_preflight_1": ["stdout_stderr"]
+        "priority_2_paper_operations_runbook_strict_validation_failed_preflight_1": [
+            "stdout_stderr"
+        ]
     }
     assert summary["blocking_action_stage_signal_confidence"] == {
         "priority_2_paper_operations_runbook_strict_validation_failed_preflight_1": "low"
@@ -3831,7 +4124,9 @@ def test_build_remediation_session_checkpoint_uses_feedback_loop(tmp_path) -> No
                     "suggested_result": "pass",
                     "evidence_status": "evidence_missing",
                     "observed_sources": ["markdown_reports"],
-                    "signal_observed_sources": {"execution_drift_overview_status == ok": "markdown_reports"},
+                    "signal_observed_sources": {
+                        "execution_drift_overview_status == ok": "markdown_reports"
+                    },
                     "stage_signal_confidence": "low",
                     "verification": ["execution_drift_overview_status == ok"],
                     "operator_notes": [],
@@ -4233,7 +4528,9 @@ def test_build_remediation_evaluator_uses_stdout_summary_signals(tmp_path) -> No
     assert evaluations[3]["status"] == "pass"
 
 
-def test_build_remediation_evaluator_uses_monitoring_and_phase_gate_stdout_signals(tmp_path) -> None:
+def test_build_remediation_evaluator_uses_monitoring_and_phase_gate_stdout_signals(
+    tmp_path,
+) -> None:
     phase_gate = tmp_path / "phase_gate.json"
     runbook = tmp_path / "runbook.json"
     planner = tmp_path / "remediation_planner.json"
@@ -4312,7 +4609,9 @@ def test_build_remediation_evaluator_uses_monitoring_and_phase_gate_stdout_signa
     assert evaluations[6]["observed"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
 
 
-def test_build_remediation_evaluator_uses_quote_diagnostics_and_go_no_go_stdout_signals(tmp_path) -> None:
+def test_build_remediation_evaluator_uses_quote_diagnostics_and_go_no_go_stdout_signals(
+    tmp_path,
+) -> None:
     phase_gate = tmp_path / "phase_gate.json"
     runbook = tmp_path / "runbook.json"
     planner = tmp_path / "remediation_planner.json"
@@ -4551,7 +4850,10 @@ def test_build_remediation_evaluator_uses_timeline_summary_fallback(tmp_path) ->
     assert evaluations[0]["observed"] == "degraded"
     assert evaluations[2]["status"] == "pass"
     assert evaluations[3]["observed"] is False
-    assert evaluations[4]["observed"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        evaluations[4]["observed"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert evaluations[5]["observed"] == 7
 
 
@@ -4935,8 +5237,14 @@ def test_build_remediation_evaluator_uses_ops_review_fallback(tmp_path) -> None:
     readiness_eval = summary["actions"][1]["signal_evaluations"][2]
     assert issue_eval["observed"] == ["data/research/backtest_metrics_summary.json: missing field"]
     assert monitoring_eval["status"] == "pass"
-    assert mismatch_eval["observed"]["execution_drift_overview_state_comparison_mismatching_count"] == 1
-    assert readiness_eval["observed"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        mismatch_eval["observed"]["execution_drift_overview_state_comparison_mismatching_count"]
+        == 1
+    )
+    assert (
+        readiness_eval["observed"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
 
 
 def test_build_remediation_evaluator_uses_current_state_index_fallback(tmp_path) -> None:
@@ -5248,7 +5556,9 @@ def test_build_remediation_command_results(tmp_path) -> None:
                         "validate-artifacts --strict reports the current issue count": "stdout_stderr"
                     },
                     "evidence_paths": ["data/ops/validate_artifacts_strict.log"],
-                    "observed_signals": ["validate-artifacts --strict reports the current issue count"],
+                    "observed_signals": [
+                        "validate-artifacts --strict reports the current issue count"
+                    ],
                     "latest_exit_code": 1,
                     "latest_stdout_summary": "issues=2 checked_files=7",
                     "latest_stderr_summary": "",
@@ -5415,7 +5725,9 @@ def test_build_remediation_evidence(tmp_path) -> None:
     )
     assert summary["observed_source_counts"] == {"current_state_index": 1, "stdout_stderr": 1}
     assert summary["entries"][0]["source_summary_path"] == str(phase_gate)
-    assert str(tmp_path / "decision_summary.json") in summary["entries"][0]["candidate_artifact_paths"]
+    assert (
+        str(tmp_path / "decision_summary.json") in summary["entries"][0]["candidate_artifact_paths"]
+    )
     assert summary["entries"][0]["observed_sources"] == ["current_state_index", "stdout_stderr"]
 
 
@@ -5443,7 +5755,9 @@ def test_build_paper_cycle_history_report(tmp_path) -> None:
     assert "## Quick Navigation" in report
     assert f"- paper_cycle_history_report: {tmp_path / 'paper_cycle_history.md'}" in report
     assert "## Related Reports" in report
-    assert f"- execution_drift_overview_report: {tmp_path / 'execution_drift_overview.md'}" in report
+    assert (
+        f"- execution_drift_overview_report: {tmp_path / 'execution_drift_overview.md'}" in report
+    )
     assert "cycle_count: 2" in report
     assert "completed_count: 2" in report
     assert "total_orders: 3" in report
@@ -5491,10 +5805,19 @@ def test_build_paper_cycle_history_report(tmp_path) -> None:
         ]
         is True
     )
-    assert summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
-    assert summary["latest_execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    assert (
+        summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"]
+        == "degraded"
+    )
+    assert (
+        summary["latest_execution_drift_overview_summary"]["execution_drift_overview_status"]
+        == "degraded"
+    )
     assert summary["latest_readiness_summary"]["readiness_next_phase_candidate"] == "Phase 1"
-    assert summary["latest_phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        summary["latest_phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
 
 
 def test_build_operations_bundle_manifest(tmp_path) -> None:
@@ -5541,8 +5864,18 @@ def test_build_operations_bundle_manifest(tmp_path) -> None:
         execution_diagnostics,
         {"overall_status": "degraded", "balance_gap_detected": True, "fills_gap_detected": False},
     )
-    write_json(execution_gap_history, {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "degraded"})
-    write_json(execution_state_comparison, {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1})
+    write_json(
+        execution_gap_history,
+        {
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+        },
+    )
+    write_json(
+        execution_state_comparison,
+        {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1},
+    )
     write_json(
         execution_drift_overview,
         {
@@ -5639,12 +5972,29 @@ def test_build_operations_bundle_manifest(tmp_path) -> None:
     assert "cycle_history_latest_execution_venue_count: 2" in report
     assert "cycle_history_latest_execution_comparison_all_registries_present: True" in report
     assert "timeline_latest_remediation_planner_status: stalled" in report
-    assert "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict" in report
-    assert "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
-    assert "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes" in report
-    assert "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
-    assert "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review" in report
-    assert "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in report
+    assert (
+        "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
+    )
+    assert (
+        "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed"
+        in report
+    )
     assert "phase_gate_decision: GO" in report
     assert "phase2_entry_allowed: True" in report
     assert "phase_gate_reason: decision_cleared_and_phase1_gate_complete" in report
@@ -5665,17 +6015,22 @@ def test_build_operations_bundle_manifest(tmp_path) -> None:
         manifest["timeline_latest_remediation_execution_plan_next_action_command"]
         == "uv run sis diagnose-quotes"
     )
-    assert manifest["timeline_latest_remediation_scoreboard_feedback_priority_reason"] == "evaluation_failed"
+    assert (
+        manifest["timeline_latest_remediation_scoreboard_feedback_priority_reason"]
+        == "evaluation_failed"
+    )
     assert manifest["phase_gate_reason"] == "decision_cleared_and_phase1_gate_complete"
     assert manifest["phase_gate_strict_validation_passed"] is True
     assert manifest["phase_gate_review_report_path"] == "data/reports/phase_gate_review.md"
     assert manifest["quick_navigation"]["operations_bundle_report"] == str(tmp_path / "bundle.md")
-    assert (
-        manifest["related_reports"]["phase_gate_review_report"]
-        == str(tmp_path / "reports/phase_gate_review.md")
+    assert manifest["related_reports"]["phase_gate_review_report"] == str(
+        tmp_path / "reports/phase_gate_review.md"
     )
     assert manifest["recommended_read_order"][0] == "docs/CURRENT_STATE.md"
-    assert manifest["phase_gate_summary"]["phase_gate_reason"] == "decision_cleared_and_phase1_gate_complete"
+    assert (
+        manifest["phase_gate_summary"]["phase_gate_reason"]
+        == "decision_cleared_and_phase1_gate_complete"
+    )
     assert manifest["readiness_summary"]["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert manifest["cycle_history_latest_execution_overall_status"] == "ok"
     assert manifest["cycle_history_latest_execution_venue_count"] == 2
@@ -5688,12 +6043,21 @@ def test_build_operations_bundle_manifest(tmp_path) -> None:
         is True
     )
     assert manifest["execution_summary"]["execution_overall_status"] == "ok"
-    assert manifest["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        manifest["execution_comparison_summary"]["execution_comparison_all_registries_present"]
+        is True
+    )
     assert manifest["execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
     assert manifest["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
-    assert manifest["execution_state_comparison_summary"]["execution_state_comparison_entry_count"] == 4
+    assert (
+        manifest["execution_state_comparison_summary"]["execution_state_comparison_entry_count"]
+        == 4
+    )
     assert manifest["execution_snapshot_drift_summary"]["execution_snapshot_drift_entry_count"] == 3
-    assert manifest["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    assert (
+        manifest["execution_drift_overview_summary"]["execution_drift_overview_status"]
+        == "degraded"
+    )
 
 
 def test_build_operations_timeline_report(tmp_path) -> None:
@@ -5748,19 +6112,29 @@ def test_build_operations_timeline_report(tmp_path) -> None:
     assert "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in report
     assert "- data/research/backtest_metrics_summary.json: missing field" in report
     assert "latest_remediation_planner_status: stalled" in report
-    assert "latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict" in report
+    assert (
+        "latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict"
+        in report
+    )
     assert "latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
     assert "latest_remediation_execution_plan_status: stalled" in report
-    assert "latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes" in report
+    assert (
+        "latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes"
+        in report
+    )
     assert "latest_remediation_execution_plan_feedback_priority_reason: evaluation_failed" in report
     assert "latest_remediation_session_status: ready_for_dry_run" in report
     assert "latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
     assert "latest_remediation_session_feedback_priority_reason: evaluation_failed" in report
     assert "latest_remediation_checkpoint_status: retry_pending" in report
-    assert "latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review" in report
+    assert (
+        "latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review" in report
+    )
     assert "latest_remediation_checkpoint_feedback_priority_reason: evaluation_failed" in report
     assert "latest_remediation_scoreboard_status: retrying" in report
-    assert "latest_remediation_scoreboard_next_action_command: uv run sis phase-gate-review" in report
+    assert (
+        "latest_remediation_scoreboard_next_action_command: uv run sis phase-gate-review" in report
+    )
     assert "latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in report
     assert "latest_phase_gate_decision: CONDITIONAL_GO_NEEDS_LIVE_WINDOW" in report
     assert "latest_phase2_entry_allowed: False" in report
@@ -5777,13 +6151,16 @@ def test_build_operations_timeline_report(tmp_path) -> None:
     assert "## Quick Navigation" in report
     assert f"- operations_timeline_report: {tmp_path / 'timeline.md'}" in report
     assert "## Related Reports" in report
-    assert f"- operations_dashboard_report: {tmp_path / 'reports/operations_dashboard.md'}" in report
+    assert (
+        f"- operations_dashboard_report: {tmp_path / 'reports/operations_dashboard.md'}" in report
+    )
     summary = read_json(tmp_path / "timeline_summary.json")
     assert isinstance(summary, dict)
-    assert summary["quick_navigation"]["operations_timeline_report"] == str(tmp_path / "timeline.md")
-    assert (
-        summary["related_reports"]["operations_dashboard_report"]
-        == str(tmp_path / "reports/operations_dashboard.md")
+    assert summary["quick_navigation"]["operations_timeline_report"] == str(
+        tmp_path / "timeline.md"
+    )
+    assert summary["related_reports"]["operations_dashboard_report"] == str(
+        tmp_path / "reports/operations_dashboard.md"
     )
     assert summary["latest_execution_summary"]["execution_overall_status"] == "ok"
     assert (
@@ -5792,13 +6169,29 @@ def test_build_operations_timeline_report(tmp_path) -> None:
         ]
         is True
     )
-    assert summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
-    assert summary["latest_execution_gap_history_summary"]["execution_gap_history_latest_status"] == "ok"
-    assert summary["latest_execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == "1"
+    assert (
+        summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"]
+        == "degraded"
+    )
+    assert (
+        summary["latest_execution_gap_history_summary"]["execution_gap_history_latest_status"]
+        == "ok"
+    )
+    assert (
+        summary["latest_execution_state_comparison_summary"][
+            "execution_state_comparison_mismatching_count"
+        ]
+        == "1"
+    )
     assert summary["latest_readiness_summary"]["readiness_next_phase_candidate"] == "Phase 1"
-    assert summary["latest_phase_gate_summary"]["phase_gate_review_report_path"] == "data/reports/phase_gate_review.md"
+    assert (
+        summary["latest_phase_gate_summary"]["phase_gate_review_report_path"]
+        == "data/reports/phase_gate_review.md"
+    )
     assert summary["latest_remediation_planner_status"] == "stalled"
-    assert summary["latest_remediation_session_next_pending_command"] == "uv run sis monitoring-status"
+    assert (
+        summary["latest_remediation_session_next_pending_command"] == "uv run sis monitoring-status"
+    )
     assert summary["latest_remediation_scoreboard_feedback_priority_reason"] == "evaluation_failed"
 
 
@@ -5859,8 +6252,18 @@ def test_build_operations_audit_pack(tmp_path) -> None:
         execution_diagnostics,
         {"overall_status": "degraded", "balance_gap_detected": True, "fills_gap_detected": False},
     )
-    write_json(execution_gap_history, {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "degraded"})
-    write_json(execution_state_comparison, {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1})
+    write_json(
+        execution_gap_history,
+        {
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+        },
+    )
+    write_json(
+        execution_state_comparison,
+        {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1},
+    )
     write_json(
         execution_drift_overview,
         {
@@ -5939,12 +6342,29 @@ def test_build_operations_audit_pack(tmp_path) -> None:
     assert "timeline_latest_execution_gap_history_diagnostics_status: degraded" in report
     assert "timeline_latest_readiness_execution_ready: False" in report
     assert "timeline_latest_remediation_planner_status: stalled" in report
-    assert "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict" in report
-    assert "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
-    assert "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes" in report
-    assert "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
-    assert "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review" in report
-    assert "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in report
+    assert (
+        "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
+    )
+    assert (
+        "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed"
+        in report
+    )
     assert "phase_gate_review_report_path: data/reports/phase_gate_review.md" in report
     assert "- data/research/backtest_metrics_summary.json: missing field" in report
     assert "## Quick Navigation" in report
@@ -5954,13 +6374,20 @@ def test_build_operations_audit_pack(tmp_path) -> None:
     manifest = read_json(tmp_path / "audit.json")
     assert isinstance(manifest, dict)
     assert manifest["timeline_latest_remediation_planner_status"] == "stalled"
-    assert manifest["timeline_latest_remediation_execution_plan_next_action_command"] == "uv run sis diagnose-quotes"
-    assert manifest["timeline_latest_remediation_scoreboard_feedback_priority_reason"] == "evaluation_failed"
-    assert manifest["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
-    assert manifest["quick_navigation"]["operations_audit_pack_report"] == str(tmp_path / "audit.md")
     assert (
-        manifest["related_reports"]["phase_gate_review_report"]
-        == str(tmp_path / "reports/phase_gate_review.md")
+        manifest["timeline_latest_remediation_execution_plan_next_action_command"]
+        == "uv run sis diagnose-quotes"
+    )
+    assert (
+        manifest["timeline_latest_remediation_scoreboard_feedback_priority_reason"]
+        == "evaluation_failed"
+    )
+    assert manifest["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
+    assert manifest["quick_navigation"]["operations_audit_pack_report"] == str(
+        tmp_path / "audit.md"
+    )
+    assert manifest["related_reports"]["phase_gate_review_report"] == str(
+        tmp_path / "reports/phase_gate_review.md"
     )
     assert (
         manifest["timeline_latest_execution_comparison_summary"][
@@ -6018,15 +6445,25 @@ def test_build_audit_timeline_report(tmp_path) -> None:
     assert "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in report
     assert "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field" in report
     assert "latest_remediation_planner_status: stalled" in report
-    assert "latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict" in report
+    assert (
+        "latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict"
+        in report
+    )
     assert "latest_remediation_execution_plan_status: stalled" in report
-    assert "latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes" in report
+    assert (
+        "latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes"
+        in report
+    )
     assert "latest_remediation_session_status: ready_for_dry_run" in report
     assert "latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
     assert "latest_remediation_checkpoint_status: retry_pending" in report
-    assert "latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review" in report
+    assert (
+        "latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review" in report
+    )
     assert "latest_remediation_scoreboard_status: retrying" in report
-    assert "latest_remediation_scoreboard_next_action_command: uv run sis phase-gate-review" in report
+    assert (
+        "latest_remediation_scoreboard_next_action_command: uv run sis phase-gate-review" in report
+    )
     assert "degraded: 2" in report
     assert "ok: 1" in report
     assert "True: 1" in report
@@ -6041,10 +6478,11 @@ def test_build_audit_timeline_report(tmp_path) -> None:
     assert f"- audit_dashboard_report: {tmp_path / 'reports/audit_dashboard.md'}" in report
     summary = read_json(tmp_path / "audit_timeline_summary.json")
     assert isinstance(summary, dict)
-    assert summary["quick_navigation"]["audit_timeline_report"] == str(tmp_path / "audit_timeline.md")
-    assert (
-        summary["related_reports"]["audit_dashboard_report"]
-        == str(tmp_path / "reports/audit_dashboard.md")
+    assert summary["quick_navigation"]["audit_timeline_report"] == str(
+        tmp_path / "audit_timeline.md"
+    )
+    assert summary["related_reports"]["audit_dashboard_report"] == str(
+        tmp_path / "reports/audit_dashboard.md"
     )
     assert summary["latest_execution_summary"]["execution_overall_status"] == "ok"
     assert (
@@ -6053,14 +6491,34 @@ def test_build_audit_timeline_report(tmp_path) -> None:
         ]
         is True
     )
-    assert summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
-    assert summary["latest_execution_gap_history_summary"]["execution_gap_history_latest_status"] == "ok"
-    assert summary["latest_execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == "1"
+    assert (
+        summary["latest_execution_diagnostics_summary"]["execution_diagnostics_status"]
+        == "degraded"
+    )
+    assert (
+        summary["latest_execution_gap_history_summary"]["execution_gap_history_latest_status"]
+        == "ok"
+    )
+    assert (
+        summary["latest_execution_state_comparison_summary"][
+            "execution_state_comparison_mismatching_count"
+        ]
+        == "1"
+    )
     assert summary["latest_readiness_summary"]["readiness_next_phase_candidate"] == "Phase 1"
-    assert summary["latest_phase_gate_summary"]["phase_gate_review_report_path"] == "data/reports/phase_gate_review.md"
+    assert (
+        summary["latest_phase_gate_summary"]["phase_gate_review_report_path"]
+        == "data/reports/phase_gate_review.md"
+    )
     assert summary["latest_remediation_planner_status"] == "stalled"
-    assert summary["latest_remediation_execution_plan_next_action_command"] == "uv run sis diagnose-quotes"
-    assert summary["latest_remediation_scoreboard_next_action_command"] == "uv run sis phase-gate-review"
+    assert (
+        summary["latest_remediation_execution_plan_next_action_command"]
+        == "uv run sis diagnose-quotes"
+    )
+    assert (
+        summary["latest_remediation_scoreboard_next_action_command"]
+        == "uv run sis phase-gate-review"
+    )
 
 
 def test_build_audit_dashboard(tmp_path) -> None:
@@ -6140,8 +6598,18 @@ def test_build_audit_dashboard(tmp_path) -> None:
         execution_diagnostics,
         {"overall_status": "degraded", "balance_gap_detected": True, "fills_gap_detected": False},
     )
-    write_json(execution_gap_history, {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "degraded"})
-    write_json(execution_state_comparison, {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1})
+    write_json(
+        execution_gap_history,
+        {
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+        },
+    )
+    write_json(
+        execution_state_comparison,
+        {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1},
+    )
     write_json(
         execution_snapshot_drift,
         {
@@ -6260,13 +6728,23 @@ def test_build_audit_dashboard(tmp_path) -> None:
     assert summary["timeline_latest_execution_venue_count"] == 2
     assert summary["timeline_latest_execution_comparison_all_registries_present"] is True
     assert summary["timeline_latest_remediation_planner_status"] == "stalled"
-    assert summary["timeline_latest_remediation_execution_plan_next_action_command"] == "uv run sis diagnose-quotes"
-    assert summary["timeline_latest_remediation_session_next_pending_command"] == "uv run sis monitoring-status"
-    assert summary["timeline_latest_remediation_scoreboard_next_action_command"] == "uv run sis phase-gate-review"
-    assert summary["quick_navigation"]["audit_dashboard_report"] == str(tmp_path / "audit_dashboard.md")
     assert (
-        summary["related_reports"]["operations_dashboard_report"]
-        == str(tmp_path / "reports/operations_dashboard.md")
+        summary["timeline_latest_remediation_execution_plan_next_action_command"]
+        == "uv run sis diagnose-quotes"
+    )
+    assert (
+        summary["timeline_latest_remediation_session_next_pending_command"]
+        == "uv run sis monitoring-status"
+    )
+    assert (
+        summary["timeline_latest_remediation_scoreboard_next_action_command"]
+        == "uv run sis phase-gate-review"
+    )
+    assert summary["quick_navigation"]["audit_dashboard_report"] == str(
+        tmp_path / "audit_dashboard.md"
+    )
+    assert summary["related_reports"]["operations_dashboard_report"] == str(
+        tmp_path / "reports/operations_dashboard.md"
     )
     assert summary["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert (
@@ -6285,15 +6763,25 @@ def test_build_audit_dashboard(tmp_path) -> None:
         ]
         is True
     )
-    assert summary["phase_gate_summary"]["phase_gate_reason"] == "remain_in_phase1_until_live_evidence_gate_clears"
+    assert (
+        summary["phase_gate_summary"]["phase_gate_reason"]
+        == "remain_in_phase1_until_live_evidence_gate_clears"
+    )
     assert summary["readiness_summary"]["readiness_next_phase_candidate"] == "Stay Phase 1"
     assert summary["execution_summary"]["execution_overall_status"] == "ok"
-    assert summary["execution_comparison_summary"]["execution_comparison_all_registries_present"] is True
+    assert (
+        summary["execution_comparison_summary"]["execution_comparison_all_registries_present"]
+        is True
+    )
     assert summary["execution_diagnostics_summary"]["execution_diagnostics_status"] == "degraded"
     assert summary["execution_gap_history_summary"]["execution_gap_history_entry_count"] == 4
-    assert summary["execution_state_comparison_summary"]["execution_state_comparison_entry_count"] == 4
+    assert (
+        summary["execution_state_comparison_summary"]["execution_state_comparison_entry_count"] == 4
+    )
     assert summary["execution_snapshot_drift_summary"]["execution_snapshot_drift_entry_count"] == 3
-    assert summary["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    assert (
+        summary["execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
+    )
 
 
 def test_build_audit_bundle_manifest(tmp_path) -> None:
@@ -6310,7 +6798,9 @@ def test_build_audit_bundle_manifest(tmp_path) -> None:
     execution_drift_overview = tmp_path / "execution_drift_overview.json"
     readiness = tmp_path / "readiness.json"
     phase_gate = tmp_path / "phase_gate.json"
-    write_json(audit_dashboard, {"overall_status": "ok", "cycle_count": 2, "completed_cycle_count": 2})
+    write_json(
+        audit_dashboard, {"overall_status": "ok", "cycle_count": 2, "completed_cycle_count": 2}
+    )
     write_json(
         audit_timeline,
         {
@@ -6383,9 +6873,16 @@ def test_build_audit_bundle_manifest(tmp_path) -> None:
     )
     write_json(
         execution_gap_history,
-        {"entry_count": 4, "latest_status": "ok", "latest_execution_diagnostics_status": "degraded"},
+        {
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+        },
     )
-    write_json(execution_state_comparison, {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1})
+    write_json(
+        execution_state_comparison,
+        {"entry_count": 4, "latest_status_match": False, "mismatching_count": 1},
+    )
     write_json(
         execution_snapshot_drift,
         {
@@ -6443,12 +6940,29 @@ def test_build_audit_bundle_manifest(tmp_path) -> None:
     assert "timeline_latest_execution_gap_history_diagnostics_status: degraded" in report
     assert "timeline_latest_readiness_execution_ready: False" in report
     assert "timeline_latest_remediation_planner_status: stalled" in report
-    assert "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict" in report
-    assert "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
-    assert "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes" in report
-    assert "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
-    assert "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review" in report
-    assert "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed" in report
+    assert (
+        "timeline_latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
+    )
+    assert (
+        "timeline_latest_remediation_execution_plan_next_action_command: uv run sis diagnose-quotes"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_session_next_pending_command: uv run sis monitoring-status"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_checkpoint_next_action_command: uv run sis phase-gate-review"
+        in report
+    )
+    assert (
+        "timeline_latest_remediation_scoreboard_feedback_priority_reason: evaluation_failed"
+        in report
+    )
     assert "bundle_history_snapshot_count: 3" in report
     assert "execution_overall_status: ok" in report
     assert "execution_venue_count: 2" in report
@@ -6483,8 +6997,14 @@ def test_build_audit_bundle_manifest(tmp_path) -> None:
     manifest = read_json(tmp_path / "audit_bundle.json")
     assert isinstance(manifest, dict)
     assert manifest["timeline_latest_remediation_planner_status"] == "stalled"
-    assert manifest["timeline_latest_remediation_execution_plan_next_action_command"] == "uv run sis diagnose-quotes"
-    assert manifest["timeline_latest_remediation_scoreboard_feedback_priority_reason"] == "evaluation_failed"
+    assert (
+        manifest["timeline_latest_remediation_execution_plan_next_action_command"]
+        == "uv run sis diagnose-quotes"
+    )
+    assert (
+        manifest["timeline_latest_remediation_scoreboard_feedback_priority_reason"]
+        == "evaluation_failed"
+    )
     assert manifest["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert (
         manifest["timeline_latest_execution_comparison_summary"][
@@ -6492,10 +7012,7 @@ def test_build_audit_bundle_manifest(tmp_path) -> None:
         ]
         is True
     )
-    assert (
-        manifest["bundle_history_latest_execution_summary"]["execution_overall_status"]
-        == "ok"
-    )
+    assert manifest["bundle_history_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert (
         manifest["bundle_history_latest_execution_comparison_summary"][
             "execution_comparison_all_registries_present"
@@ -6554,10 +7071,16 @@ def test_build_audit_bundle_history_report(tmp_path) -> None:
     assert "latest_phase_gate_review_report_path: data/reports/phase_gate_review.md" in report
     assert "phase_gate_issue_1=data/research/backtest_metrics_summary.json: missing field" in report
     assert "latest_remediation_planner_status: stalled" in report
-    assert "latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict" in report
+    assert (
+        "latest_remediation_planner_next_best_command: uv run sis validate-artifacts --strict"
+        in report
+    )
     assert "latest_remediation_planner_feedback_priority_reason: evaluation_failed" in report
     assert "latest_remediation_execution_plan_status: stalled" in report
-    assert "latest_remediation_execution_plan_next_action_command: uv run sis phase-gate-review" in report
+    assert (
+        "latest_remediation_execution_plan_next_action_command: uv run sis phase-gate-review"
+        in report
+    )
     assert "latest_remediation_execution_plan_feedback_priority_reason: evaluation_failed" in report
     assert "latest_remediation_session_status: ready_for_dry_run" in report
     assert "latest_remediation_session_next_pending_command: uv run sis monitoring-status" in report
@@ -6575,7 +7098,10 @@ def test_build_audit_bundle_history_report(tmp_path) -> None:
     summary = read_json(tmp_path / "audit_bundle_history_summary.json")
     assert isinstance(summary, dict)
     assert summary["latest_remediation_planner_status"] == "stalled"
-    assert summary["latest_remediation_execution_plan_next_action_command"] == "uv run sis phase-gate-review"
+    assert (
+        summary["latest_remediation_execution_plan_next_action_command"]
+        == "uv run sis phase-gate-review"
+    )
     assert summary["latest_remediation_scoreboard_status"] == "retrying"
     assert summary["execution_summary"]["execution_overall_status"] == "ok"
     assert summary["latest_execution_summary"]["execution_overall_status"] == "ok"
@@ -6585,19 +7111,33 @@ def test_build_audit_bundle_history_report(tmp_path) -> None:
         ]
         is True
     )
-    assert summary["latest_execution_drift_overview_summary"]["execution_drift_overview_status"] == "degraded"
-    assert summary["latest_execution_gap_history_summary"]["execution_gap_history_latest_status"] == "ok"
-    assert summary["latest_execution_state_comparison_summary"]["execution_state_comparison_mismatching_count"] == "1"
+    assert (
+        summary["latest_execution_drift_overview_summary"]["execution_drift_overview_status"]
+        == "degraded"
+    )
+    assert (
+        summary["latest_execution_gap_history_summary"]["execution_gap_history_latest_status"]
+        == "ok"
+    )
+    assert (
+        summary["latest_execution_state_comparison_summary"][
+            "execution_state_comparison_mismatching_count"
+        ]
+        == "1"
+    )
     assert summary["latest_readiness_summary"]["readiness_next_phase_candidate"] == "Phase 1"
-    assert summary["latest_phase_gate_summary"]["phase_gate_review_report_path"] == "data/reports/phase_gate_review.md"
     assert (
-        summary["quick_navigation"]["audit_bundle_history_report"]
-        == str(tmp_path / "audit_bundle_history.md")
+        summary["latest_phase_gate_summary"]["phase_gate_review_report_path"]
+        == "data/reports/phase_gate_review.md"
     )
-    assert (
-        summary["related_reports"]["audit_dashboard_report"]
-        == str(tmp_path / "reports/audit_dashboard.md")
+    assert summary["quick_navigation"]["audit_bundle_history_report"] == str(
+        tmp_path / "audit_bundle_history.md"
     )
+    assert summary["related_reports"]["audit_dashboard_report"] == str(
+        tmp_path / "reports/audit_dashboard.md"
+    )
+
+
 def test_build_quote_diagnostics_report(tmp_path) -> None:
     raw_quote = tmp_path / "raw/quotes/gtrade/2026-05-22.jsonl"
     raw_quote.parent.mkdir(parents=True, exist_ok=True)
@@ -6625,7 +7165,10 @@ def test_build_quote_diagnostics_report(tmp_path) -> None:
     assert "## Quick Navigation" in report
     assert f"- quote_diagnostics_report: {tmp_path / 'quote_diagnostics.md'}" in report
     assert "## Related Reports" in report
-    assert f"- execution_venue_diagnostics_report: {tmp_path / 'execution_venue_diagnostics.md'}" in report
+    assert (
+        f"- execution_venue_diagnostics_report: {tmp_path / 'execution_venue_diagnostics.md'}"
+        in report
+    )
     summary = read_json(tmp_path / "quote_diagnostics_summary.json")
     assert summary["diagnostic_count"] == 1
     assert summary["row_count"] == 2

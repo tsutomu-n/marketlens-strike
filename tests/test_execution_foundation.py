@@ -32,7 +32,9 @@ def test_gtrade_execution_adapter_reads_balance_snapshot_file(tmp_path) -> None:
     registry_path = tmp_path / "gtrade_registry.json"
     balance_snapshot_path = tmp_path / "gtrade_balance.json"
     write_json(registry_path, [])
-    write_json(balance_snapshot_path, {"currency": "USD", "equity": 1234.5, "available_cash": 900.0})
+    write_json(
+        balance_snapshot_path, {"currency": "USD", "equity": 1234.5, "available_cash": 900.0}
+    )
     adapter = GTradeExecutionAdapter(
         registry_path=registry_path,
         balance_snapshot_path=balance_snapshot_path,
@@ -127,9 +129,19 @@ def test_gtrade_execution_adapter_order_status_and_cancel_close_are_read_only(tm
     write_json(registry_path, [])
     write_json(
         order_status_path,
-        [{"order_id": "ord-1", "canonical_symbol": "QQQ", "side": "long", "quantity": 1, "status": "working"}],
+        [
+            {
+                "order_id": "ord-1",
+                "canonical_symbol": "QQQ",
+                "side": "long",
+                "quantity": 1,
+                "status": "working",
+            }
+        ],
     )
-    adapter = GTradeExecutionAdapter(registry_path=registry_path, order_status_path=order_status_path)
+    adapter = GTradeExecutionAdapter(
+        registry_path=registry_path, order_status_path=order_status_path
+    )
 
     status = adapter.read_order_status("ord-1")
     cancel = adapter.cancel_order("ord-1")
@@ -285,7 +297,15 @@ def test_ostium_execution_adapter_order_status_and_cancel_close_are_read_only(tm
     positions_root.mkdir(parents=True, exist_ok=True)
     write_json(
         order_status_path,
-        [{"order_id": "ord-2", "canonical_symbol": "SPY", "side": "short", "quantity": 2, "status": "filled"}],
+        [
+            {
+                "order_id": "ord-2",
+                "canonical_symbol": "SPY",
+                "side": "short",
+                "quantity": 2,
+                "status": "filled",
+            }
+        ],
     )
     adapter = OstiumExecutionAdapter(
         registry_path=registry_path,

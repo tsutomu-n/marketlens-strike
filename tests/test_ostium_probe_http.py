@@ -5,7 +5,9 @@ from sis.venues.archive.ostium.probe import write_ostium_live_probe_outputs
 
 
 def test_ostium_probe_http_mock_returns_quotes_without_live_api(httpx_mock, tmp_path) -> None:
-    payload = json.loads(Path("tests/fixtures/archive/ostium_prices.sample.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        Path("tests/fixtures/archive/ostium_prices.sample.json").read_text(encoding="utf-8")
+    )
     httpx_mock.add_response(url="https://builder.ostium.io/v1/prices", json=payload)
 
     specs, quotes = write_ostium_live_probe_outputs(data_dir=tmp_path)

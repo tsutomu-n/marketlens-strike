@@ -131,7 +131,9 @@ def _metadata_notes(
     ):
         if metadata.get(key) is not None:
             notes.append(f"{key}={metadata.get(key)}")
-    notes.append("liquidation_reference=SDK open position liquidationPx; unavailable without position")
+    notes.append(
+        "liquidation_reference=SDK open position liquidationPx; unavailable without position"
+    )
     return notes
 
 
@@ -198,7 +200,9 @@ def _resolve_target(
         if not item:
             continue
         pair = _pair_key(item) or alias.upper()
-        metadata = _matching_item(target.model_copy(update={"venue_symbol": pair}), metadata_index or {})
+        metadata = _matching_item(
+            target.model_copy(update={"venue_symbol": pair}), metadata_index or {}
+        )
         notes = [
             "resolved via read-only Ostium Builder API GET /v1/prices",
             f"feed_id={item.get('feed_id')}",
@@ -213,9 +217,7 @@ def _resolve_target(
                 "api_readable": True,
                 "api_orderable": False,
                 "execution_price_ref": "bid/mid/ask from read-only price probe",
-                "opening_fee_bps": OPENING_FEE_BPS_BY_CANONICAL_SYMBOL.get(
-                    target.canonical_symbol
-                ),
+                "opening_fee_bps": OPENING_FEE_BPS_BY_CANONICAL_SYMBOL.get(target.canonical_symbol),
                 "rollover_fee_per_block": _str_metadata(metadata, "rollover_fee_per_block"),
                 "rollover_rate_long": _str_metadata(metadata, "rollover_rate_long"),
                 "rollover_rate_short": _str_metadata(metadata, "rollover_rate_short"),
@@ -293,7 +295,9 @@ def _quote_for_target(
 ) -> QuoteLog:
     status, is_tradable = _market_status(item)
     timestamp_seconds = item.get("timestampSeconds")
-    oracle_ts_ms = int(timestamp_seconds * 1000) if isinstance(timestamp_seconds, int | float) else None
+    oracle_ts_ms = (
+        int(timestamp_seconds * 1000) if isinstance(timestamp_seconds, int | float) else None
+    )
     pair = _pair_key(item) or target.venue_symbol
     return QuoteLog(
         ts_client=ts_client,
