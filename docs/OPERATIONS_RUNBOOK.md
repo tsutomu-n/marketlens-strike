@@ -25,12 +25,13 @@ registry / universe:
 
 ```bash
 uv run sis probe trade-xyz
+uv run sis collect-trade-xyz-quotes
 ```
 
 quote ingest:
 
-- `trade_xyz` quote collector は code surface と tests では存在するが、現時点では public CLI command を公開していない。
-- `collect-trade-xyz-quotes` はまだ public CLI command として使えない。
+- `collect-trade-xyz-quotes` は `probe trade-xyz` が生成した registry を読んで raw quote JSONL を収集する。
+- default では normalize まで実行する。raw JSONL だけ欲しい時は `--no-normalize` を使う。
 - `uv run sis log-quotes` は legacy `gtrade` replay 専用。
 
 real market and tracking:

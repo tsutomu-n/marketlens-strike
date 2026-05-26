@@ -16,6 +16,7 @@ def test_help_smoke() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "probe" in result.stdout
+    assert "collect-trade-xyz-quotes" in result.stdout
     assert "build-backtest" in result.stdout
     assert "ingest-research-data" in result.stdout
     assert "build-feature-panel" in result.stdout
@@ -1971,6 +1972,130 @@ def test_normalize_and_build_cost_matrix_cli(tmp_path) -> None:
     assert "## Quick Navigation" in report
     summary = read_json(data_dir / "ops/venue_cost_matrix_summary.json")
     assert summary["row_count"] == 6
+
+
+def test_collect_trade_xyz_quotes_cli(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    registry = data_dir / "registry/trade_xyz_instrument_registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        (
+            '[{"venue":"trade_xyz","canonical_symbol":"NVDA","venue_symbol":"NVDA","asset_class":"equity",'
+            '"dex":"xyz","coin":"xyz:NVDA","asset_id":130002,"real_market_symbol":"NVDA",'
+            '"api_readable":true,"api_orderable":true,"active":true}]'
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeTradeXyzClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def all_mids(self):
+            return {"xyz:NVDA": "1000.0"}
+
+        def l2_book(self, _coin):
+            return {
+                "levels": [
+                    [{"px": "99.9", "sz": "10"}],
+                    [{"px": "100.1", "sz": "12"}],
+                ]
+            }
+
+    monkeypatch.setattr("sis.commands.quotes.TradeXyzClient", FakeTradeXyzClient)
+
+    result = runner.invoke(app, ["collect-trade-xyz-quotes"], env=env)
+
+    assert result.exit_code == 0
+    assert "quote_count=1" in result.stdout
+    assert "raw_quotes_path=" in result.stdout
+    assert "normalized_quotes_path=" in result.stdout
+    assert "duckdb_path=" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
+    assert (data_dir / "raw/quotes/trade_xyz").exists()
+    assert (data_dir / "normalized/quotes.parquet").exists()
+    assert (data_dir / "normalized/sis.duckdb").exists()
+    rows = list(read_jsonl(next((data_dir / "raw/quotes/trade_xyz").glob("*.jsonl"))))
+    assert len(rows) == 1
+    assert rows[0]["venue"] == "trade_xyz"
+
+
+def test_collect_trade_xyz_quotes_cli_no_normalize(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    registry = data_dir / "registry/trade_xyz_instrument_registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        (
+            '[{"venue":"trade_xyz","canonical_symbol":"NVDA","venue_symbol":"NVDA","asset_class":"equity",'
+            '"dex":"xyz","coin":"xyz:NVDA","asset_id":130002,"real_market_symbol":"NVDA",'
+            '"api_readable":true,"api_orderable":true,"active":true}]'
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeTradeXyzClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def all_mids(self):
+            return {"xyz:NVDA": "1000.0"}
+
+        def l2_book(self, _coin):
+            return {
+                "levels": [
+                    [{"px": "99.9", "sz": "10"}],
+                    [{"px": "100.1", "sz": "12"}],
+                ]
+            }
+
+    monkeypatch.setattr("sis.commands.quotes.TradeXyzClient", FakeTradeXyzClient)
+
+    result = runner.invoke(app, ["collect-trade-xyz-quotes", "--no-normalize"], env=env)
+
+    assert result.exit_code == 0
+    assert "quote_count=1" in result.stdout
+    assert "normalized_quotes_path=" not in result.stdout
+    assert (data_dir / "normalized/quotes.parquet").exists() is False
+
+
+def test_collect_trade_xyz_quotes_cli_exits_when_registry_missing(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        ["collect-trade-xyz-quotes"],
+        env={"SIS_DATA_DIR": str(tmp_path / "data")},
+    )
+
+    assert result.exit_code == 2
+    assert "trade_xyz registry not found" in result.stdout
+    assert "probe trade-xyz" in result.stdout
+
+
+def test_collect_trade_xyz_quotes_cli_exits_when_no_active_instruments(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    registry = data_dir / "registry/trade_xyz_instrument_registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        (
+            '[{"venue":"trade_xyz","canonical_symbol":"NVDA","venue_symbol":"NVDA","asset_class":"equity",'
+            '"dex":"xyz","coin":"xyz:NVDA","asset_id":130002,"real_market_symbol":"NVDA",'
+            '"api_readable":true,"api_orderable":true,"active":false}]'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["collect-trade-xyz-quotes"], env=env)
+
+    assert result.exit_code == 2
+    assert "no active trade_xyz instruments found in registry" in result.stdout
 
 
 def test_build_event_calendar_and_check_research_quality_cli(tmp_path) -> None:

@@ -45,6 +45,7 @@ Trade[XYZ] universe:
 
 ```bash
 uv run sis probe trade-xyz
+uv run sis collect-trade-xyz-quotes
 ```
 
 paper cycle:
@@ -70,7 +71,7 @@ uv run sis build-evidence-card
 - `trade_xyz` / `real_market` / `tracking` / `paper` / `micro_live` の code surface はある
 - `src/sis/cli.py` は root Typer app の組み立てと `main()` に寄せ、command 実装は `src/sis/commands/` に分割済み
 - micro live は code/test surface であり、現時点では public CLI command を公開していない
-- `collect-trade-xyz-quotes` はまだ public CLI command として公開していない
+- `collect-trade-xyz-quotes` は public CLI command として利用できる
 - wallet secrets, signing, production live trading は未完了
 - `data/` は git 管理外
 

@@ -39,7 +39,7 @@
 
 - 新規実装の主 venue は `trade_xyz`。legacy venue は archive / read-only evidence として扱う。
 - `micro_live` はコードと tests では存在するが、標準の operator CLI にはまだ exposed していない。
-- `collect-trade-xyz-quotes` は現時点では public CLI command として exposed していない。
+- `collect-trade-xyz-quotes` は public CLI command として exposed している。
 - `data/` は git 管理外。再開時は artifact を再生成する。
 - `ostium-python-sdk` は active dependency から削除済み。archive collector 側の optional read-only evidence としてのみ言及が残る。
 

@@ -28,6 +28,13 @@ def load_trade_xyz_seed(seed_path: Path) -> list[InstrumentSpec]:
     return [InstrumentSpec.model_validate(row) for row in rows if isinstance(row, dict)]
 
 
+def load_trade_xyz_registry(path: Path) -> list[InstrumentSpec]:
+    payload = read_json(path)
+    if not isinstance(payload, list):
+        raise ValueError("trade_xyz registry must be a JSON array of InstrumentSpec rows")
+    return [InstrumentSpec.model_validate(row) for row in payload if isinstance(row, dict)]
+
+
 def _extract_perp_dex_index(meta_payload: dict[str, Any]) -> int | None:
     candidates = [
         meta_payload.get("perp_dex_index"),
