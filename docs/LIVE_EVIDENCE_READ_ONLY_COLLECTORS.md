@@ -1,6 +1,7 @@
 # Live Evidence Read-Only Collectors
 
 この文書は、Ostium / gTrade の実データ取得を read-only で監査可能にするための運用メモである。
+実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
 
 ## 結論
 
@@ -35,7 +36,7 @@ data/raw/sidecar/gtrade-backend/manifests/YYYY-MM-DD/<run_id>.json
 data/ops/gtrade_state_reconciliation_<run_id>.json
 ```
 
-pricing WS は unknown pairId を通常 quotes に混ぜず、quarantine に分離する。
+pricing WS v4 は mark price と index price を分けて保存する。flat array payload のように 1 price しか無い場合は、`mark_index_inferred_equal=true` として同値補完を明示する。unknown pairId は通常 quotes に混ぜず、quarantine に分離する。
 
 ```text
 data/raw/sidecar/gtrade-pricing-quarantine/YYYY-MM-DD.jsonl
@@ -45,10 +46,11 @@ data/raw/sidecar/gtrade-pricing-quarantine/YYYY-MM-DD.jsonl
 
 追加した constraint collector は次を保存する。
 
-- latest prices
-- asset 別 latest price
-- asset 別 trading-hours schedule
-- Python SDK read-only dependency status
+- Builder API `https://builder.ostium.io/v1/prices` の latest prices
+- legacy metadata REST `https://metadata-backend.ostium.io/PricePublish/latest-prices`
+- legacy metadata REST の asset 別 latest price
+- legacy metadata REST の asset 別 trading-hours schedule
+- Python SDK の秘密鍵なし read-only 実取得 status
 - market close を missing data と区別する constraint summary
 - 2026-02 以降の非成行 `openTrade` slippage constraint
 
@@ -65,7 +67,7 @@ data/raw/sidecar/ostium-constraints/YYYY-MM-DD/<run_id>.json
 data/ops/ostium_constraints_<run_id>.json
 ```
 
-Python SDK が環境に無い場合、artifact は `constraint_status=failed` になる。これは意図的な fail-closed であり、Python SDK read-only を確認したとは扱わない。
+Python SDK が環境に無い、または秘密鍵なし read-only 実取得に失敗した場合、artifact は `constraint_status=failed` になる。これは意図的な fail-closed であり、dependency が存在するだけでは Python SDK read-only を確認したとは扱わない。
 
 ## Live Evidence Runner
 
@@ -85,6 +87,8 @@ manifest の `row_counts` に次が追加される。
 - `gtrade_backend_deep_reorg_count`
 - `ostium_constraint_assets`
 - `ostium_constraint_failures`
+- `ostium_builder_prices_artifacts`
+- `ostium_sdk_read_only_probe_passed`
 
 ## Phase Gate
 
@@ -94,6 +98,8 @@ manifest の `row_counts` に次が追加される。
 - latest Ostium constraint artifact
 - gTrade backend collector manifest が `completed`
 - Ostium constraint artifact が `constraint_status=pass`
+- Ostium constraint artifact が Builder API raw artifact を持つ
+- Ostium constraint artifact が Python SDK `read_only_probe_passed` を持つ
 - `deepReorg` 検出時に full refresh path が記録されている
 
 market close は missing data ではない。Ostium constraint artifact で closed と分類されていれば、価格欠損とは別に扱う。

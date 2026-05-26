@@ -175,7 +175,31 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
             {
                 "constraint_status": "pass",
                 "failures": [],
-                "python_sdk": {"available": True, "version": "3.2.1"},
+                "python_sdk": {
+                    "available": True,
+                    "version": "3.2.1",
+                    "status": "read_only_probe_passed",
+                },
+                "builder_prices_artifact": {
+                    "path": str(data_dir / "raw/sidecar/ostium-constraints/r1_builder_prices.json"),
+                    "body_digest": "builder-body",
+                    "schema_digest": "builder-schema",
+                },
+                "legacy_latest_prices_artifact": {
+                    "path": str(data_dir / "raw/sidecar/ostium-constraints/r1_latest_prices.json"),
+                    "body_digest": "legacy-body",
+                    "schema_digest": "legacy-schema",
+                },
+                "assets": [
+                    {
+                        "canonical_symbol": "XAU",
+                        "venue_pair": "XAU-USD",
+                        "legacy_asset_param": "XAUUSD",
+                        "trading_hours_artifact": {
+                            "path": str(data_dir / "raw/sidecar/ostium-constraints/r1_trading_hours_XAUUSD.json")
+                        },
+                    }
+                ],
             }
         ),
         encoding="utf-8",
@@ -283,6 +307,8 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert payload["read_only_collector_gate_passed"] is True
     assert payload["latest_gtrade_backend_manifest_path"] == str(gtrade_backend_manifest_path)
     assert payload["latest_ostium_constraint_path"] == str(ostium_constraints_path)
+    assert payload["latest_ostium_python_sdk_status"] == "read_only_probe_passed"
+    assert payload["latest_ostium_builder_prices_artifact_path"].endswith("r1_builder_prices.json")
     assert payload["required_artifact_paths"]["latest_execution_snapshot_summary_path"] == str(
         data_dir / "ops/execution_snapshot_summary.json"
     )

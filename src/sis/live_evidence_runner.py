@@ -1031,6 +1031,15 @@ def main(
                 payload = safe_read_json_dict(ostium_summary)
                 manifest.row_counts["ostium_constraint_failures"] = len(payload.get("failures", []))
                 manifest.row_counts["ostium_constraint_assets"] = len(payload.get("assets", []))
+                manifest.row_counts["ostium_builder_prices_artifacts"] = (
+                    1 if payload.get("builder_prices_artifact") else 0
+                )
+                manifest.row_counts["ostium_sdk_read_only_probe_passed"] = (
+                    1
+                    if (payload.get("python_sdk") or {}).get("status")
+                    == "read_only_probe_passed"
+                    else 0
+                )
             write_manifest(effective_manifest_path, manifest)
 
         try:

@@ -50,6 +50,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
           pair_index: point.pair_index,
           mark_price: point.mark_price,
           index_price: point.index_price,
+          mark_index_inferred_equal: point.mark_index_inferred_equal,
         };
         if (target) {
           prices.push(row);

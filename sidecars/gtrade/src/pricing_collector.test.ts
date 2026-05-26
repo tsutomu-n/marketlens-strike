@@ -16,11 +16,13 @@ test("parsePricingPayload parses v4-style m/i/t payload", () => {
     pair_index: 86,
     mark_price: 512.34,
     index_price: 512.31,
+    mark_index_inferred_equal: false,
   });
   expect(parsed.points).toContainEqual({
     pair_index: 90,
     mark_price: 2365.12,
     index_price: 2365.15,
+    mark_index_inferred_equal: false,
   });
 });
 
@@ -35,6 +37,7 @@ test("parsePricingPayload supports m/i array fallback", () => {
     pair_index: 2,
     mark_price: 100,
     index_price: 99,
+    mark_index_inferred_equal: false,
   });
 });
 
@@ -46,10 +49,12 @@ test("parsePricingPayload supports flat pairIndex/price array payload", () => {
     pair_index: 86,
     mark_price: 746.2425,
     index_price: 746.2425,
+    mark_index_inferred_equal: true,
   });
   expect(parsed.points).toContainEqual({
     pair_index: 90,
     mark_price: 2365.12,
     index_price: 2365.12,
+    mark_index_inferred_equal: true,
   });
 });

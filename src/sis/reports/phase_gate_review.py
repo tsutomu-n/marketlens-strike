@@ -103,6 +103,19 @@ def _read_only_collector_gate(data_dir: Path) -> dict[str, object]:
         blockers.append("missing_ostium_constraint_artifact")
     elif ostium_constraints.get("constraint_status") != "pass":
         blockers.append("ostium_constraint_artifact_failed")
+    if ostium_constraints_path and not ostium_constraints.get("builder_prices_artifact"):
+        blockers.append("missing_ostium_builder_prices_artifact")
+    if ostium_constraints_path and not ostium_constraints.get("legacy_latest_prices_artifact"):
+        blockers.append("missing_ostium_legacy_latest_prices_artifact")
+    sdk_status = (ostium_constraints.get("python_sdk") or {}).get("status")
+    if ostium_constraints_path and sdk_status != "read_only_probe_passed":
+        blockers.append("ostium_python_sdk_read_only_probe_not_passed")
+    if ostium_constraints_path:
+        assets = ostium_constraints.get("assets")
+        if not isinstance(assets, list) or not assets:
+            blockers.append("missing_ostium_asset_constraints")
+        elif any(not isinstance(item, dict) or not item.get("trading_hours_artifact") for item in assets):
+            blockers.append("missing_ostium_trading_hours_artifact")
 
     return {
         "read_only_collector_gate_passed": not blockers,
@@ -119,6 +132,10 @@ def _read_only_collector_gate(data_dir: Path) -> dict[str, object]:
         ),
         "latest_ostium_constraint_status": ostium_constraints.get("constraint_status"),
         "latest_ostium_constraint_failures": ostium_constraints.get("failures", []),
+        "latest_ostium_python_sdk_status": (ostium_constraints.get("python_sdk") or {}).get("status"),
+        "latest_ostium_builder_prices_artifact_path": (
+            (ostium_constraints.get("builder_prices_artifact") or {}).get("path")
+        ),
     }
 
 

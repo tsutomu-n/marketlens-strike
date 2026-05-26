@@ -89,6 +89,7 @@ This generated report lists implementation coverage from the current codebase. O
 | Epic 73 | Local daemon loop runner | DONE | daemon-run provides bounded or explicit --forever local command-loop execution with kill-switch blocking, event logs, daemon-loop summary, and operation-chain manifest entries |
 | Epic 74 | Notification outbox foundation | DONE | notification-outbox queues local notification records, latest notification JSON, report/summary artifacts, and operation-chain entries without requiring an external notification provider |
 | Epic 75 | Daemon and notification restart aggregation | DONE | operations-dashboard, current-state-index, and readiness-snapshot now surface daemon-loop and notification-outbox summaries when present |
+| Epic 76 | Read-only collector artifact contract hardening | DONE | gTrade pricing v4 mark/index semantics, Ostium Builder API + metadata REST + Python SDK read-only probe, and Phase gate collector blockers are implemented; live smoke remains pending |
 
 ## Live Evidence Still Required
 

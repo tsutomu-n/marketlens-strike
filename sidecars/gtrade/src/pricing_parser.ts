@@ -2,6 +2,7 @@ export type PricingPoint = {
   pair_index: number;
   mark_price: number | null;
   index_price: number | null;
+  mark_index_inferred_equal: boolean;
 };
 
 export type ParsedPricingPayload = {
@@ -32,6 +33,7 @@ function parsePoint(input: unknown): PricingPoint | null {
     pair_index: Math.trunc(pairIndex),
     mark_price: toFiniteNumber(row.m ?? row.mark ?? row.mark_price),
     index_price: toFiniteNumber(row.i ?? row.index ?? row.index_price),
+    mark_index_inferred_equal: false,
   };
 }
 
@@ -48,6 +50,7 @@ export function parsePricingPayload(payload: unknown): ParsedPricingPayload {
         // Use it for both fields so downstream quote generation can proceed.
         mark_price: price,
         index_price: price,
+        mark_index_inferred_equal: true,
       });
     }
     return {

@@ -136,6 +136,7 @@ from sis.validation.artifacts import validate_artifacts
 from sis.venues.gtrade.quotes import convert_sidecar_to_quote_logs, latest_pricing_file, latest_sidecar_file
 from sis.venues.gtrade.registry import GTRADE_TARGETS
 from sis.venues.ostium.constraints import (
+    DEFAULT_BUILDER_PRICES_ENDPOINT,
     DEFAULT_LATEST_PRICE_ENDPOINT,
     DEFAULT_LATEST_PRICES_ENDPOINT,
     DEFAULT_TRADING_HOURS_ENDPOINT,
@@ -215,6 +216,10 @@ def ostium_constraint_artifact(
         DEFAULT_TRADING_HOURS_ENDPOINT,
         "--trading-hours-endpoint",
     ),
+    builder_prices_endpoint: str = typer.Option(
+        DEFAULT_BUILDER_PRICES_ENDPOINT,
+        "--builder-prices-endpoint",
+    ),
 ) -> None:
     settings = get_settings()
     result = write_ostium_constraint_artifact(
@@ -224,6 +229,7 @@ def ostium_constraint_artifact(
         latest_prices_endpoint=latest_prices_endpoint,
         latest_price_endpoint=latest_price_endpoint,
         trading_hours_endpoint=trading_hours_endpoint,
+        builder_prices_endpoint=builder_prices_endpoint,
     )
     typer.echo(f"constraint_status={result['constraint_status']}")
     typer.echo(f"artifact_path={result['artifact_path']}")
