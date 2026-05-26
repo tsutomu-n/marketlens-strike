@@ -23,7 +23,6 @@ dependencies = [
   "yahooquery>=2.3",
   "fredapi>=0.5",
   "pandas-datareader>=0.10",
-  "ostium-python-sdk>=3.2.1",
 ]
 
 [project.scripts]
