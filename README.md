@@ -36,14 +36,16 @@ not as tracked source documents.
 ## Setup
 
 ```bash
+uv python install 3.14
 uv sync --dev
+uv run python -V
 uv run sis --help
 ```
 
 JavaScript sidecars use `bun`:
 
 ```bash
-bun install
+bun install --frozen-lockfile
 bun run gtrade:typecheck
 bun run ostium:typecheck
 ```

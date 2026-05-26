@@ -3,15 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "sidecars/gtrade",
+    "sidecars/ostium"
+  ],
   "scripts": {
-    "gtrade:probe": "cd sidecars/gtrade && bun run probe",
-    "gtrade:backend-collect": "cd sidecars/gtrade && bun run backend:collect",
-    "gtrade:collect-window": "cd sidecars/gtrade && bun run collect:window",
-    "gtrade:test": "cd sidecars/gtrade && bun test",
-    "gtrade:typecheck": "cd sidecars/gtrade && bun run typecheck",
-    "ostium:probe:pairs": "cd sidecars/ostium && bun run probe:pairs",
-    "ostium:probe:positions": "cd sidecars/ostium && bun run probe:positions",
-    "ostium:test": "cd sidecars/ostium && bun test",
-    "ostium:typecheck": "cd sidecars/ostium && bun run typecheck"
+    "gtrade:probe": "bun --cwd sidecars/gtrade run probe",
+    "gtrade:backend-collect": "bun --cwd sidecars/gtrade run backend:collect",
+    "gtrade:collect-window": "bun --cwd sidecars/gtrade run collect:window",
+    "gtrade:test": "bun --cwd sidecars/gtrade test",
+    "gtrade:typecheck": "bun --cwd sidecars/gtrade run typecheck",
+    "ostium:probe:pairs": "bun --cwd sidecars/ostium run probe:pairs",
+    "ostium:probe:positions": "bun --cwd sidecars/ostium run probe:positions",
+    "ostium:test": "bun --cwd sidecars/ostium test",
+    "ostium:typecheck": "bun --cwd sidecars/ostium run typecheck"
   }
 }

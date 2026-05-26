@@ -2,6 +2,7 @@
 
 この文書は、Ostium / gTrade の実データ取得を read-only で監査可能にするための運用メモである。
 実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
+残リスクと hardening backlog は `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。
 
 ## 結論
 
@@ -99,8 +100,12 @@ manifest の `row_counts` に次が追加される。
 - gTrade backend collector manifest が `completed`
 - Ostium constraint artifact が `constraint_status=pass`
 - Ostium constraint artifact が Builder API raw artifact を持つ
+- Ostium constraint artifact が legacy latest prices artifact を持つ
 - Ostium constraint artifact が Python SDK `read_only_probe_passed` を持つ
+- Ostium asset-level trading-hours artifact を持つ
 - `deepReorg` 検出時に full refresh path が記録されている
 
 market close は missing data ではない。Ostium constraint artifact で closed と分類されていれば、価格欠損とは別に扱う。
+
+現在の gate は summary field の存在検査が中心であり、artifact file existence / digest validation は future hardening として `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` に残している。
 

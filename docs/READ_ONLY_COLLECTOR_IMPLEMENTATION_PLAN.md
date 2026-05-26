@@ -2,6 +2,7 @@
 
 この文書は、Ostium / gTrade の read-only 実データ取得を実装・検証・再開するための計画とタスク一覧である。
 運用手順と artifact contract の正本は `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。
+残リスクと hardening backlog は `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。
 
 ## 結論
 
@@ -294,6 +295,36 @@ Verification:
 uv run python -m json.tool data/ops/phase_gate_review_summary.json
 ```
 
+### T9. Risk hardening implementation
+
+Status: pending
+
+Goal:
+
+- `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` の Better Backlog を実装し、Phase gate の過信リスクを下げる
+
+Target files:
+
+- `src/sis/venues/ostium/constraints.py`
+- `src/sis/reports/phase_gate_review.py`
+- `tests/test_ostium_constraints.py`
+- `tests/test_phase_gate_review.py`
+- `tests/test_cli_smoke.py`
+
+Acceptance:
+
+- SDK empty payload は `read_only_probe_passed` にならない
+- top-level fetch failure でも summary が生成される
+- artifact ref の path / digest / schema digest / file existence を gate が検査する
+- asset-level `trading_hours_observed=true` を gate が検査する
+
+Verification:
+
+```bash
+uv run pytest tests/test_ostium_constraints.py tests/test_phase_gate_review.py tests/test_cli_smoke.py -q
+uv run pytest -q
+```
+
 ## Current Verification
 
 実装後に確認済み:
@@ -314,6 +345,19 @@ uv run sis ostium-constraint-artifact --help
 - gTrade sidecar tests: 12 passed
 - gTrade typecheck: pass
 - CLI help: new `--builder-prices-endpoint` と metadata endpoint default を確認済み
+
+## Known Gaps / Risk Review
+
+現行実装の残リスクは `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` に分離して管理する。
+
+特に次は未実装の hardening backlog である。
+
+- SDK empty payload を `read_only_probe_passed` にしない payload quality validation
+- Builder API / legacy latest-prices の top-level fetch failure を raw error artifact と summary に残す処理
+- Phase gate による artifact ref の path / digest / schema digest / file existence 検査
+- asset-level `trading_hours_observed=true` の gate 側再確認
+- old fixture の new contract 化
+- live smoke artifact 由来の regression fixture 追加
 
 ## Stop Conditions
 

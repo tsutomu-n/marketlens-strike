@@ -2,7 +2,7 @@
 name = "marketlens-strike"
 version = "0.1.0"
 description = "Venue research and Go/No-Go engine for Ostium/gTrade QQQ/SPY/XAU swing research"
-requires-python = ">=3.11"
+requires-python = ">=3.14,<3.15"
 dependencies = [
   "typer>=0.12",
   "rich>=13",
@@ -24,7 +24,6 @@ dependencies = [
   "fredapi>=0.5",
   "pandas-datareader>=0.10",
   "ostium-python-sdk>=3.2.1",
-  "pyrefly>=1.0.0",
 ]
 
 [project.scripts]
@@ -48,13 +47,13 @@ pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py314"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sis"]
 
 [tool.pyrefly]
-python-version = "3.12"
+python-version = "3.14"
 project-includes = [
   "src/**/*.py",
 ]
