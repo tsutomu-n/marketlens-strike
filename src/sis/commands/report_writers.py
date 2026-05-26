@@ -188,7 +188,7 @@ def _write_phase_gate_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
     summary_out = settings_data_dir / "ops/phase_gate_review_summary.json"
     text = build_phase_gate_review(
         settings_data_dir,
-        schema_root=Path(__file__).resolve().parents[2] / "schemas",
+        schema_root=Path(__file__).resolve().parents[3] / "schemas",
         execution_snapshot_summary_path=settings_data_dir / "ops/execution_snapshot_summary.json",
         execution_venue_comparison_summary_path=settings_data_dir / "ops/execution_venue_comparison_summary.json",
         execution_venue_diagnostics_summary_path=settings_data_dir / "ops/execution_venue_diagnostics_summary.json",
