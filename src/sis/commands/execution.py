@@ -7,10 +7,12 @@ from typing import Callable, Protocol
 import typer
 from loguru import logger
 
-from sis.execution.base import AdapterActionResult, AdapterOrderStatus, ExecutionAdapter
+from sis.execution.base import AdapterActionResult, AdapterOrderStatus, ExecutionAdapter, OrderIntent
 from sis.paper.portfolio import PaperPosition
 from sis.reports.execution_adapter_status import (
     build_action_status_report,
+    build_balance_status_report,
+    build_fill_status_report,
     build_order_status_report,
     build_reconcile_positions_report,
 )
@@ -138,6 +140,81 @@ def register_execution_commands(
         typer.echo(f"side={status.side}")
         typer.echo(f"quantity={status.quantity}")
         typer.echo(f"notes={','.join(status.notes)}")
+        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
+            typer.echo(f"recommended_read_order_{index}={item}")
+
+    @app.command("estimate-order")
+    def estimate_order_cmd(
+        venue: str = typer.Option(..., "--venue"),
+        symbol: str = typer.Option(..., "--symbol"),
+        side: str = typer.Option(..., "--side"),
+        quantity: float = typer.Option(1.0, "--quantity"),
+        timeframe: str = typer.Option("4h", "--timeframe"),
+    ) -> None:
+        settings = get_settings()
+        adapter = adapter_for_venue_fn(settings.data_dir, venue)
+        estimate = adapter.estimate_order(
+            OrderIntent(
+                venue=venue,
+                canonical_symbol=symbol.upper(),
+                side=side.lower(),
+                quantity=quantity,
+                timeframe=timeframe,
+            )
+        )
+        typer.echo(f"venue={estimate.venue}")
+        typer.echo(f"symbol={estimate.canonical_symbol}")
+        typer.echo(f"side={estimate.side}")
+        typer.echo(f"estimated_cost_bps={estimate.estimated_cost_bps}")
+        typer.echo(f"price_reference={estimate.price_reference}")
+        typer.echo(f"notes={','.join(estimate.notes)}")
+        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
+            typer.echo(f"recommended_read_order_{index}={item}")
+
+    @app.command("balance-status")
+    def balance_status_cmd(
+        venue: str = typer.Option(..., "--venue"),
+    ) -> None:
+        settings = get_settings()
+        adapter = adapter_for_venue_fn(settings.data_dir, venue)
+        balance = adapter.read_balance()
+        build_balance_status_report(
+            venue=venue.strip().lower(),
+            balance=balance,
+            out_path=settings.data_dir / "reports/execution_balance_status.md",
+            summary_path=settings.data_dir / "ops/execution_balance_status_summary.json",
+        )
+        for key in sorted(balance):
+            typer.echo(f"{key}={balance[key]}")
+        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
+            typer.echo(f"recommended_read_order_{index}={item}")
+
+    @app.command("fill-status")
+    def fill_status_cmd(
+        venue: str = typer.Option(..., "--venue"),
+        limit: int = typer.Option(20, "--limit"),
+    ) -> None:
+        settings = get_settings()
+        adapter = adapter_for_venue_fn(settings.data_dir, venue)
+        fills = adapter.read_fills(limit=limit)
+        build_fill_status_report(
+            venue=venue.strip().lower(),
+            fills=fills,
+            limit=limit,
+            out_path=settings.data_dir / "reports/execution_fill_status.md",
+            summary_path=settings.data_dir / "ops/execution_fill_status_summary.json",
+        )
+        typer.echo(f"venue={venue.strip().lower()}")
+        typer.echo(f"fills_count={len(fills)}")
+        for index, fill in enumerate(fills, start=1):
+            typer.echo(f"fill_{index}_id={fill.fill_id}")
+            typer.echo(f"fill_{index}_order_id={fill.order_id}")
+            typer.echo(f"fill_{index}_symbol={fill.canonical_symbol}")
+            typer.echo(f"fill_{index}_side={fill.side}")
+            typer.echo(f"fill_{index}_quantity={fill.quantity}")
+            typer.echo(f"fill_{index}_price={fill.price}")
+            typer.echo(f"fill_{index}_status={fill.status}")
+            typer.echo(f"fill_{index}_ts_fill={fill.ts_fill}")
         for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
 

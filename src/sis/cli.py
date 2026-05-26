@@ -15,11 +15,9 @@ from sis.backtest.bridge import (
     write_backtest_metrics_summary_json,
     write_backtest_report,
 )
-from sis.execution.base import OrderIntent
 from sis.execution.archive.gtrade_adapter import GTradeExecutionAdapter
 from sis.execution.archive.ostium_adapter import OstiumExecutionAdapter
 from sis.market_calendar import market_session_window
-from sis.ops.daily_loss_limit import evaluate_daily_loss_limit, evaluate_max_exposure
 from sis.ops.healthcheck import build_healthcheck
 from sis.ops.kill_switch import KillSwitch
 from sis.ops.alerts import queue_notification, write_alert
@@ -31,9 +29,11 @@ from sis.paper.fills import PaperFill
 from sis.paper.portfolio import PaperPosition
 from sis.paper.report import build_daily_paper_report
 from sis.paper.runner import PaperRunSummary, run_paper_step
+from sis.commands.ops import register_ops_commands
 from sis.commands.probe import register_probe_commands
 from sis.commands.quotes import register_quote_commands
 from sis.commands.research import register_research_commands
+from sis.commands.execution import register_execution_commands
 from sis.reports.audit_bundle_history import build_audit_bundle_history_report
 from sis.reports.audit_bundle import build_audit_bundle_manifest
 from sis.reports.comparison import build_paper_live_comparison_report
@@ -41,12 +41,7 @@ from sis.reports.current_state_index import build_current_state_index
 from sis.reports.doc_paths import CODE_STATUS_DOC, recommended_read_order
 from sis.reports.execution_drift_overview import build_execution_drift_overview_report
 from sis.reports.execution_adapter_status import (
-    build_action_status_report,
-    build_balance_status_report,
-    build_fill_status_report,
-    build_order_status_report,
     build_execution_read_only_surfaces_report,
-    build_reconcile_positions_report,
 )
 from sis.reports.execution_gap_history import build_execution_gap_history_report
 from sis.reports.execution_snapshot_drift_history import build_execution_snapshot_drift_history_report
@@ -84,8 +79,6 @@ from sis.reports.state_command_status import (
 from sis.reports.operations_dashboard import build_operations_dashboard
 from sis.reports.ops_command_status import (
     build_alert_report,
-    build_healthcheck_report,
-    build_kill_switch_report,
     build_notification_outbox_report,
     build_schedule_run_report,
 )
@@ -818,6 +811,14 @@ def _recommended_read_order(settings_data_dir: Path) -> list[str]:
 
 register_research_commands(app, _recommended_read_order)
 register_quote_commands(app, _recommended_read_order)
+register_ops_commands(
+    app,
+    state_store_fn=_state_store,
+    write_monitoring_snapshot_fn=_write_monitoring_snapshot,
+    echo_audit_summary_fn=_echo_audit_summary,
+    echo_phase_gate_summary_fn=_echo_phase_gate_summary,
+    recommended_read_order_fn=_recommended_read_order,
+)
 
 
 def _write_ops_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
@@ -1328,6 +1329,18 @@ def _write_execution_read_only_surfaces(
         summary_path=summary_out,
     )
     return out, summary_out, text
+
+
+register_execution_commands(
+    app,
+    adapter_for_venue_fn=_adapter_for_venue,
+    state_store_fn=_state_store,
+    write_execution_snapshot_fn=_write_execution_snapshot,
+    write_execution_venue_comparison_fn=_write_execution_venue_comparison,
+    write_execution_venue_diagnostics_fn=_write_execution_venue_diagnostics,
+    write_execution_read_only_surfaces_fn=_write_execution_read_only_surfaces,
+    recommended_read_order_fn=_recommended_read_order,
+)
 
 
 def _write_phase_gate_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
@@ -2222,396 +2235,6 @@ def paper_report_cmd() -> None:
     )
     logger.info("written: {}", out)
     typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("estimate-order")
-def estimate_order_cmd(
-    venue: str = typer.Option(..., "--venue"),
-    symbol: str = typer.Option(..., "--symbol"),
-    side: str = typer.Option(..., "--side"),
-    quantity: float = typer.Option(1.0, "--quantity"),
-    timeframe: str = typer.Option("4h", "--timeframe"),
-) -> None:
-    settings = get_settings()
-    adapter = _adapter_for_venue(settings.data_dir, venue)
-    estimate = adapter.estimate_order(
-        OrderIntent(
-            venue=venue,
-            canonical_symbol=symbol.upper(),
-            side=side.lower(),
-            quantity=quantity,
-            timeframe=timeframe,
-        )
-    )
-    typer.echo(f"venue={estimate.venue}")
-    typer.echo(f"symbol={estimate.canonical_symbol}")
-    typer.echo(f"side={estimate.side}")
-    typer.echo(f"estimated_cost_bps={estimate.estimated_cost_bps}")
-    typer.echo(f"price_reference={estimate.price_reference}")
-    typer.echo(f"notes={','.join(estimate.notes)}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("balance-status")
-def balance_status_cmd(
-    venue: str = typer.Option(..., "--venue"),
-) -> None:
-    settings = get_settings()
-    adapter = _adapter_for_venue(settings.data_dir, venue)
-    balance = adapter.read_balance()
-    build_balance_status_report(
-        venue=venue.strip().lower(),
-        balance=balance,
-        out_path=settings.data_dir / "reports/execution_balance_status.md",
-        summary_path=settings.data_dir / "ops/execution_balance_status_summary.json",
-    )
-    for key in sorted(balance):
-        typer.echo(f"{key}={balance[key]}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("fill-status")
-def fill_status_cmd(
-    venue: str = typer.Option(..., "--venue"),
-    limit: int = typer.Option(20, "--limit"),
-) -> None:
-    settings = get_settings()
-    adapter = _adapter_for_venue(settings.data_dir, venue)
-    fills = adapter.read_fills(limit=limit)
-    build_fill_status_report(
-        venue=venue.strip().lower(),
-        fills=fills,
-        limit=limit,
-        out_path=settings.data_dir / "reports/execution_fill_status.md",
-        summary_path=settings.data_dir / "ops/execution_fill_status_summary.json",
-    )
-    typer.echo(f"venue={venue.strip().lower()}")
-    typer.echo(f"fills_count={len(fills)}")
-    for index, fill in enumerate(fills, start=1):
-        typer.echo(f"fill_{index}_id={fill.fill_id}")
-        typer.echo(f"fill_{index}_order_id={fill.order_id}")
-        typer.echo(f"fill_{index}_symbol={fill.canonical_symbol}")
-        typer.echo(f"fill_{index}_side={fill.side}")
-        typer.echo(f"fill_{index}_quantity={fill.quantity}")
-        typer.echo(f"fill_{index}_price={fill.price}")
-        typer.echo(f"fill_{index}_status={fill.status}")
-        typer.echo(f"fill_{index}_ts_fill={fill.ts_fill}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("execution-snapshot")
-def execution_snapshot_cmd(
-    venue: str | None = typer.Option(None, "--venue"),
-    fills_limit: int = typer.Option(5, "--fills-limit"),
-    order_limit: int = typer.Option(5, "--order-limit"),
-) -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_execution_snapshot(
-        settings.data_dir,
-        venue=venue,
-        fills_limit=fills_limit,
-        order_limit=order_limit,
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("execution-venue-comparison")
-def execution_venue_comparison_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_execution_venue_comparison(settings.data_dir)
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("execution-venue-diagnostics")
-def execution_venue_diagnostics_cmd() -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_execution_venue_diagnostics(settings.data_dir)
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    typer.echo(text)
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("execution-read-only-surfaces")
-def execution_read_only_surfaces_cmd(
-    state_path: Path | None = typer.Option(
-        None,
-        "--state-path",
-        help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
-    ),
-) -> None:
-    settings = get_settings()
-    out, summary_out, text = _write_execution_read_only_surfaces(
-        settings.data_dir,
-        state_path=state_path,
-    )
-    logger.info("written: {}", out)
-    logger.info("written: {}", summary_out)
-    typer.echo(text)
-    typer.echo(f"execution_read_only_surfaces_path={out}")
-    typer.echo(f"execution_read_only_surfaces_summary_path={summary_out}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("order-status")
-def order_status_cmd(
-    venue: str = typer.Option(..., "--venue"),
-    order_id: str = typer.Option(..., "--order-id"),
-) -> None:
-    settings = get_settings()
-    adapter = _adapter_for_venue(settings.data_dir, venue)
-    status = adapter.read_order_status(order_id)
-    build_order_status_report(
-        status=status,
-        out_path=settings.data_dir / "reports/execution_order_status.md",
-        summary_path=settings.data_dir / "ops/execution_order_status_summary.json",
-    )
-    typer.echo(f"venue={status.venue}")
-    typer.echo(f"order_id={status.order_id}")
-    typer.echo(f"status={status.status}")
-    typer.echo(f"symbol={status.canonical_symbol}")
-    typer.echo(f"side={status.side}")
-    typer.echo(f"quantity={status.quantity}")
-    typer.echo(f"notes={','.join(status.notes)}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("cancel-order")
-def cancel_order_cmd(
-    venue: str = typer.Option(..., "--venue"),
-    order_id: str = typer.Option(..., "--order-id"),
-) -> None:
-    settings = get_settings()
-    adapter = _adapter_for_venue(settings.data_dir, venue)
-    result = adapter.cancel_order(order_id)
-    build_action_status_report(
-        title="Execution Cancel Order",
-        report_key="cancel_order_report_path",
-        result=result,
-        out_path=settings.data_dir / "reports/execution_cancel_order.md",
-        summary_path=settings.data_dir / "ops/execution_cancel_order_summary.json",
-    )
-    typer.echo(f"venue={result.venue}")
-    typer.echo(f"action={result.action}")
-    typer.echo(f"target={result.target}")
-    typer.echo(f"success={result.success}")
-    typer.echo(f"status={result.status}")
-    typer.echo(f"notes={','.join(result.notes)}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("close-position")
-def close_position_cmd(
-    venue: str = typer.Option(..., "--venue"),
-    symbol: str = typer.Option(..., "--symbol"),
-    side: str | None = typer.Option(None, "--side"),
-) -> None:
-    settings = get_settings()
-    adapter = _adapter_for_venue(settings.data_dir, venue)
-    result = adapter.close_position(symbol.upper(), side)
-    build_action_status_report(
-        title="Execution Close Position",
-        report_key="close_position_report_path",
-        result=result,
-        out_path=settings.data_dir / "reports/execution_close_position.md",
-        summary_path=settings.data_dir / "ops/execution_close_position_summary.json",
-    )
-    typer.echo(f"venue={result.venue}")
-    typer.echo(f"action={result.action}")
-    typer.echo(f"target={result.target}")
-    typer.echo(f"success={result.success}")
-    typer.echo(f"status={result.status}")
-    typer.echo(f"notes={','.join(result.notes)}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("reconcile-positions")
-def reconcile_positions_cmd(
-    venue: str = typer.Option(..., "--venue"),
-    state_path: Path | None = typer.Option(
-        None,
-        "--state-path",
-        help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
-    ),
-) -> None:
-    settings = get_settings()
-    store = _state_store(settings.data_dir, state_path)
-    payload = store.get_json("paper_positions")
-    internal_positions = [PaperPosition.model_validate(item) for item in payload] if isinstance(payload, list) else []
-    adapter = _adapter_for_venue(settings.data_dir, venue)
-    result = reconcile_positions(internal_positions, adapter.read_positions())
-    out = {
-        "venue": venue,
-        "matched": result.matched,
-        "missing_in_adapter": result.missing_in_adapter,
-        "missing_in_internal": result.missing_in_internal,
-    }
-    run_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    store.record_reconciliation(run_id, datetime.now(timezone.utc).isoformat(), out)
-    build_reconcile_positions_report(
-        venue=venue.strip().lower(),
-        result=result,
-        run_id=run_id,
-        state_store_path=str(store.path),
-        out_path=settings.data_dir / "reports/execution_reconcile_positions.md",
-        summary_path=settings.data_dir / "ops/execution_reconcile_positions_summary.json",
-    )
-    typer.echo(f"matched={result.matched}")
-    typer.echo(f"missing_in_adapter={len(result.missing_in_adapter)}")
-    typer.echo(f"missing_in_internal={len(result.missing_in_internal)}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("healthcheck")
-def healthcheck_cmd(
-    state_path: Path | None = typer.Option(
-        None,
-        "--state-path",
-        help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
-    ),
-    current_pnl: float = typer.Option(0.0, "--current-pnl"),
-    daily_loss_limit: float = typer.Option(100.0, "--daily-loss-limit"),
-    current_exposure: float = typer.Option(0.0, "--current-exposure"),
-    max_exposure: float = typer.Option(2.0, "--max-exposure"),
-) -> None:
-    settings = get_settings()
-    store = _state_store(settings.data_dir, state_path)
-    kill_switch = KillSwitch(settings.data_dir / "state/kill_switch.flag")
-    loss_status = evaluate_daily_loss_limit(current_pnl, daily_loss_limit)
-    exposure_status = evaluate_max_exposure(current_exposure, max_exposure)
-    health = build_healthcheck(
-        kill_switch=kill_switch,
-        decision_summary_path=settings.data_dir / "research/decision_summary.json",
-        audit_dashboard_summary_path=settings.data_dir / "ops/audit_dashboard_summary.json",
-        audit_bundle_summary_path=settings.data_dir / "ops/audit_bundle_manifest.json",
-        operations_bundle_manifest_path=settings.data_dir / "ops/operations_bundle_manifest.json",
-        phase_gate_summary_path=settings.data_dir / "ops/phase_gate_review_summary.json",
-        execution_summary_path=settings.data_dir / "ops/execution_snapshot_summary.json",
-        execution_comparison_summary_path=settings.data_dir / "ops/execution_venue_comparison_summary.json",
-        execution_diagnostics_summary_path=settings.data_dir / "ops/execution_venue_diagnostics_summary.json",
-        execution_gap_history_summary_path=settings.data_dir / "ops/execution_gap_history_summary.json",
-        execution_state_comparison_summary_path=settings.data_dir / "ops/execution_state_comparison_history_summary.json",
-        execution_snapshot_drift_summary_path=settings.data_dir / "ops/execution_snapshot_drift_history_summary.json",
-        execution_drift_overview_summary_path=settings.data_dir / "ops/execution_drift_overview_summary.json",
-        readiness_summary_path=settings.data_dir / "ops/readiness_snapshot.json",
-        reconciliation_store_present=store.latest_reconciliation() is not None,
-    )
-    build_healthcheck_report(
-        health=health,
-        daily_loss_status=loss_status,
-        exposure_status=exposure_status,
-        out_path=settings.data_dir / "reports/ops_healthcheck.md",
-        summary_path=settings.data_dir / "ops/ops_healthcheck_summary.json",
-    )
-    typer.echo(f"status={health['status']}")
-    typer.echo(f"kill_switch_enabled={health['kill_switch_enabled']}")
-    typer.echo(f"decision_summary_exists={health['decision_summary_exists']}")
-    _echo_audit_summary(health)
-    _echo_phase_gate_summary(health)
-    typer.echo(f"execution_drift_overview_status={health.get('execution_drift_overview_status')}")
-    typer.echo(
-        "execution_drift_overview_diagnostics_alignment_match="
-        f"{health.get('execution_drift_overview_diagnostics_alignment_match')}"
-    )
-    typer.echo(
-        "execution_drift_overview_state_comparison_mismatching_count="
-        f"{health.get('execution_drift_overview_state_comparison_mismatching_count')}"
-    )
-    typer.echo(
-        "execution_drift_overview_snapshot_drift_mismatching_snapshot_count="
-        f"{health.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count')}"
-    )
-    typer.echo(f"readiness_next_phase_candidate={health.get('readiness_next_phase_candidate')}")
-    typer.echo(f"readiness_execution_ready={health.get('readiness_execution_ready')}")
-    typer.echo(f"reconciliation_store_present={health['reconciliation_store_present']}")
-    typer.echo(f"daily_loss_allowed={loss_status.allowed}")
-    typer.echo(f"daily_loss_reason={loss_status.reason}")
-    typer.echo(f"exposure_allowed={exposure_status.allowed}")
-    typer.echo(f"exposure_reason={exposure_status.reason}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("monitoring-status")
-def monitoring_status_cmd(
-    state_path: Path | None = typer.Option(
-        None,
-        "--state-path",
-        help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
-    ),
-) -> None:
-    settings = get_settings()
-    out, snapshot = _write_monitoring_snapshot(settings.data_dir, state_path)
-    logger.info("written: {}", out)
-    typer.echo(f"status={snapshot['status']}")
-    typer.echo(f"decision_summary_exists={snapshot['decision_summary_exists']}")
-    typer.echo(f"weekly_review_exists={snapshot['weekly_review_exists']}")
-    typer.echo(f"daily_pnl_exists={snapshot['daily_pnl_exists']}")
-    typer.echo(f"operation_chain_exists={snapshot['operation_chain_exists']}")
-    _echo_audit_summary(snapshot)
-    _echo_phase_gate_summary(snapshot)
-    typer.echo(f"execution_drift_overview_status={snapshot.get('execution_drift_overview_status')}")
-    typer.echo(
-        "execution_drift_overview_diagnostics_alignment_match="
-        f"{snapshot.get('execution_drift_overview_diagnostics_alignment_match')}"
-    )
-    typer.echo(
-        "execution_drift_overview_state_comparison_mismatching_count="
-        f"{snapshot.get('execution_drift_overview_state_comparison_mismatching_count')}"
-    )
-    typer.echo(
-        "execution_drift_overview_snapshot_drift_mismatching_snapshot_count="
-        f"{snapshot.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count')}"
-    )
-    typer.echo(f"readiness_next_phase_candidate={snapshot.get('readiness_next_phase_candidate')}")
-    typer.echo(f"readiness_execution_ready={snapshot.get('readiness_execution_ready')}")
-    for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
-        typer.echo(f"recommended_read_order_{index}={item}")
-
-
-@app.command("kill-switch")
-def kill_switch_cmd(
-    enable: bool = typer.Option(False, "--enable"),
-    disable: bool = typer.Option(False, "--disable"),
-    reason: str = typer.Option("manual", "--reason"),
-) -> None:
-    if enable and disable:
-        typer.echo("Choose either --enable or --disable, not both.")
-        raise typer.Exit(code=2)
-    settings = get_settings()
-    switch = KillSwitch(settings.data_dir / "state/kill_switch.flag")
-    if enable:
-        switch.enable(reason)
-    elif disable:
-        switch.disable()
-    status = switch.status()
-    build_kill_switch_report(
-        status=status,
-        out_path=settings.data_dir / "reports/ops_kill_switch.md",
-        summary_path=settings.data_dir / "ops/ops_kill_switch_summary.json",
-    )
-    typer.echo(f"enabled={status['enabled']}")
-    typer.echo(f"path={status['path']}")
-    settings = get_settings()
     for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
         typer.echo(f"recommended_read_order_{index}={item}")
 
