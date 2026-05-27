@@ -16,6 +16,7 @@ from sis.commands.quotes import register_quote_commands
 from sis.commands.remediation import register_remediation_commands
 from sis.commands.research import register_research_commands
 from sis.commands.execution import register_execution_commands
+from sis.commands.bot import register_bot_commands
 from sis.commands.execution_artifacts import (
     _adapter_for_venue,
     _refresh_execution_lineage_artifacts as _refresh_execution_lineage_artifacts_base,
@@ -110,6 +111,7 @@ register_probe_commands(app)
 
 register_research_commands(app, _recommended_read_order)
 register_quote_commands(app, _recommended_read_order)
+register_bot_commands(app, _recommended_read_order)
 
 
 _write_execution_read_only_surfaces = partial(
