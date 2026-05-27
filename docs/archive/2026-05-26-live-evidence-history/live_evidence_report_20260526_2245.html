@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Evidence Detailed Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f1e8;
+      --surface: #fffdfa;
+      --ink: #1e1b16;
+      --muted: #6b6258;
+      --line: #d8d0c3;
+      --accent: #14532d;
+      --warn: #9a3412;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+    main { max-width: 1200px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1, h2 { margin: 0 0 12px; }
+    section { margin-top: 24px; background: var(--surface); border: 1px solid var(--line); padding: 20px; }
+    .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .metric { border: 1px solid var(--line); padding: 12px; background: #fff; }
+    .metric .label { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    .metric .value { margin-top: 6px; font-size: 18px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
+    th { background: #f9f6ef; }
+    pre { margin: 0; overflow: auto; background: #171411; color: #f7f2ea; padding: 16px; }
+    .ok { color: var(--accent); }
+    .warn { color: var(--warn); }
+    ul { margin: 0; padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Live Evidence Detailed Report</h1>
+    <section>
+      <h2>Status</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Run Status</div><div class="value">failed_collection</div></div>
+        <div class="metric"><div class="label">Decision</div><div class="value">CONDITIONAL_GO_NEEDS_LIVE_WINDOW</div></div>
+        <div class="metric"><div class="label">Started At UTC</div><div class="value">2026-05-26T13:45:00Z</div></div>
+        <div class="metric"><div class="label">Finished At UTC</div><div class="value">2026-05-26T13:47:00Z</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Audit Summary</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value">degraded</div></div>
+        <div class="metric"><div class="label">Latest Operation</div><div class="value">audit_bundle_snapshot</div></div>
+        <div class="metric"><div class="label">Bundle History Snapshot Count</div><div class="value">2</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Phase Gate Summary</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Decision</div><div class="value">CONDITIONAL_GO_NEEDS_LIVE_WINDOW</div></div>
+        <div class="metric"><div class="label">Phase 2 Entry Allowed</div><div class="value">False</div></div>
+        <div class="metric"><div class="label">Reason</div><div class="value">remain_in_phase1_until_live_evidence_gate_clears</div></div>
+        <div class="metric"><div class="label">Strict Validation</div><div class="value">True</div></div>
+        <div class="metric"><div class="label">Strict Validation Issues</div><div class="value">0</div></div>
+        <div class="metric"><div class="label">Checked Files</div><div class="value">14</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Readiness Summary</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Next Phase Candidate</div><div class="value">Stay Phase 1</div></div>
+        <div class="metric"><div class="label">Execution Ready</div><div class="value">False</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Current Remediation Queue</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Planner Status</div><div class="value">stalled</div></div>
+        <div class="metric"><div class="label">Planner Next Best Command</div><div class="value">uv run sis refresh-operations-artifacts</div></div>
+        <div class="metric"><div class="label">Planner Feedback Reason</div><div class="value">evaluation_failed</div></div>
+        <div class="metric"><div class="label">Execution Plan Status</div><div class="value">stalled</div></div>
+        <div class="metric"><div class="label">Execution Plan Next Action</div><div class="value">uv run sis monitoring-status</div></div>
+        <div class="metric"><div class="label">Execution Plan Feedback Reason</div><div class="value">evaluation_failed</div></div>
+        <div class="metric"><div class="label">Session Status</div><div class="value">ready_for_dry_run</div></div>
+        <div class="metric"><div class="label">Session Next Pending Command</div><div class="value">uv run sis phase-gate-review</div></div>
+        <div class="metric"><div class="label">Session Feedback Reason</div><div class="value">evaluation_failed</div></div>
+        <div class="metric"><div class="label">Checkpoint Status</div><div class="value">in_progress</div></div>
+        <div class="metric"><div class="label">Checkpoint Next Action</div><div class="value">uv run sis phase-gate-review</div></div>
+        <div class="metric"><div class="label">Checkpoint Feedback Reason</div><div class="value">evaluation_failed</div></div>
+        <div class="metric"><div class="label">Scoreboard Status</div><div class="value">in_progress</div></div>
+        <div class="metric"><div class="label">Scoreboard Next Action</div><div class="value">uv run sis phase-gate-review</div></div>
+        <div class="metric"><div class="label">Scoreboard Feedback Reason</div><div class="value">evaluation_failed</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Restart Pointers</h2>
+      <div class="meta">
+
+      </div>
+    </section>
+    <section>
+      <h2>Quick Navigation</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Phase Gate Review Report</div><div class="value">data/reports/phase_gate_review.md</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Related Reports</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Phase Gate Review Report</div><div class="value">data/reports/phase_gate_review.md</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Latest Execution Lineage</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Timeline Overall Status</div><div class="value">None</div></div>
+        <div class="metric"><div class="label">Timeline Venue Count</div><div class="value">None</div></div>
+        <div class="metric"><div class="label">Timeline Comparison</div><div class="value">None</div></div>
+        <div class="metric"><div class="label">Bundle History Overall Status</div><div class="value">None</div></div>
+        <div class="metric"><div class="label">Bundle History Venue Count</div><div class="value">None</div></div>
+        <div class="metric"><div class="label">Bundle History Comparison</div><div class="value">None</div></div>
+        <div class="metric"><div class="label">Cycle History Overall Status</div><div class="value">None</div></div>
+        <div class="metric"><div class="label">Cycle History Venue Count</div><div class="value">None</div></div>
+        <div class="metric"><div class="label">Cycle History Comparison</div><div class="value">None</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Snapshot</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value">ok</div></div>
+        <div class="metric"><div class="label">Venue Count</div><div class="value">2</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">data/reports/execution_snapshot.md</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Venue Comparison</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">All Registries Present</div><div class="value">True</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">data/reports/execution_venue_comparison.md</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Venue Diagnostics</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value">degraded</div></div>
+        <div class="metric"><div class="label">Balance Gap</div><div class="value">True</div></div>
+        <div class="metric"><div class="label">Fills Gap</div><div class="value">True</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">data/reports/execution_venue_diagnostics.md</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Gap History</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Entry Count</div><div class="value">9</div></div>
+        <div class="metric"><div class="label">Latest Status</div><div class="value">degraded</div></div>
+        <div class="metric"><div class="label">Latest Diagnostics Status</div><div class="value">degraded</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">data/reports/execution_gap_history.md</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution State Comparison History</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Entry Count</div><div class="value">6</div></div>
+        <div class="metric"><div class="label">Latest Status Match</div><div class="value">True</div></div>
+        <div class="metric"><div class="label">Mismatching Count</div><div class="value">3</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">data/reports/execution_state_comparison_history.md</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Snapshot Drift History</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Entry Count</div><div class="value">6</div></div>
+        <div class="metric"><div class="label">Latest State Match</div><div class="value">False</div></div>
+        <div class="metric"><div class="label">Mismatching Snapshot Count</div><div class="value">3</div></div>
+        <div class="metric"><div class="label">Report Path</div><div class="value">data/reports/execution_snapshot_drift_history.md</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Execution Drift Overview</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Overall Status</div><div class="value">degraded</div></div>
+        <div class="metric"><div class="label">Diagnostics Alignment</div><div class="value">True</div></div>
+        <div class="metric"><div class="label">State Comparison Mismatch Count</div><div class="value">3</div></div>
+        <div class="metric"><div class="label">Snapshot Drift Mismatch Count</div><div class="value">3</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Artifacts</h2>
+      <div class="meta">
+        <div class="metric"><div class="label">Sidecar Metadata Rows</div><div class="value">0</div></div>
+        <div class="metric"><div class="label">Sidecar Pricing Rows</div><div class="value">0</div></div>
+        <div class="metric"><div class="label">Raw Quote Rows</div><div class="value">0</div></div>
+        <div class="metric"><div class="label">Evidence Card</div><div class="value">data/evidence/evidence_card_20260525_125425.json</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Venue Decisions</h2>
+      <table>
+        <thead><tr><th>Venue</th><th>Decision</th><th>Main Blocker</th></tr></thead>
+        <tbody><tr><td>gtrade</td><td>CONDITIONAL_GO_NEEDS_LIVE_WINDOW</td><td>stale_rate at or below threshold</td></tr>
+<tr><td>ostium</td><td>GO</td><td></td></tr></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>GTrade Diagnostics</h2>
+      <table>
+        <thead><tr><th>Symbol</th><th>Rows</th><th>Open Rows</th><th>Tradable Rate</th><th>Stale Rate</th><th>Missing Mark</th><th>Missing Index</th><th>Oracle p90 ms</th><th>Spread p90 bps</th></tr></thead>
+        <tbody><tr><td>QQQ</td><td>65</td><td>60</td><td>0.9231</td><td>0.9692</td><td>0.0769</td><td>0.0769</td><td>96108</td><td>2.0</td></tr>
+<tr><td>SPY</td><td>65</td><td>60</td><td>0.9231</td><td>0.9692</td><td>0.0769</td><td>0.0769</td><td>96108</td><td>2.0</td></tr>
+<tr><td>XAU</td><td>65</td><td>65</td><td>1.0000</td><td>0.9692</td><td>0.0769</td><td>0.0769</td><td>96108</td><td>0.0</td></tr></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Cost Matrix Snapshot</h2>
+      <table>
+        <thead><tr><th>Venue</th><th>Symbol</th><th>Stale Rate</th><th>Tradable Rate</th><th>Spread p90 bps</th><th>Holding 4h bps</th><th>Notes</th></tr></thead>
+        <tbody><tr><td>gtrade</td><td>SPY</td><td>0.9692307692307692</td><td>0.9230769230769231</td><td>2.0</td><td>0.0</td><td>gTrade sidecar=data/raw/sidecar/gtrade/2026-05-22.jsonl; fee_index=5; holding cost uses max active collateral borrowing/funding rate from trading-variables</td></tr>
+<tr><td>gtrade</td><td>QQQ</td><td>0.9692307692307692</td><td>0.9230769230769231</td><td>2.0</td><td>0.0</td><td>gTrade sidecar=data/raw/sidecar/gtrade/2026-05-22.jsonl; fee_index=5; holding cost uses max active collateral borrowing/funding rate from trading-variables</td></tr>
+<tr><td>gtrade</td><td>XAU</td><td>0.9692307692307692</td><td>1.0</td><td>0.0</td><td>22.497049733184</td><td>gTrade sidecar=data/raw/sidecar/gtrade/2026-05-22.jsonl; fee_index=13; holding cost uses max active collateral borrowing/funding rate from trading-variables</td></tr>
+<tr><td>ostium</td><td>SPX_EQUIV</td><td>0.0</td><td>1.0</td><td>1.0034440433904563</td><td>0.255967561152</td><td>ostium registry=data/registry/ostium_instrument_registry.json; rollover_fee_per_block=2.85388127e-10; rollover_rate_long=-0.00511935122304; rollover_rate_short=0.0014559912230400001; holding cost uses conservative max(abs(long), abs(short)) 8hr percent conversion</td></tr>
+<tr><td>ostium</td><td>NDX_EQUIV</td><td>0.0</td><td>1.0</td><td>0.4745310165324132</td><td>0.255967561152</td><td>ostium registry=data/registry/ostium_instrument_registry.json; rollover_fee_per_block=2.85388127e-10; rollover_rate_long=-0.00511935122304; rollover_rate_short=0.0014559912230400001; holding cost uses conservative max(abs(long), abs(short)) 8hr percent conversion</td></tr>
+<tr><td>ostium</td><td>XAU</td><td>0.0</td><td>1.0</td><td>2.1890039037231457</td><td>0.23463989856</td><td>ostium registry=data/registry/ostium_instrument_registry.json; rollover_fee_per_block=1.69360935e-10; rollover_rate_long=-0.0046927979712; rollover_rate_short=-0.0007907220288; holding cost uses conservative max(abs(long), abs(short)) 8hr percent conversion</td></tr></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Backtest Snapshot</h2>
+      <table>
+        <thead><tr><th>Venue</th><th>Symbol</th><th>Trade Count</th><th>Avg Trade Return</th><th>Cost Drag bps</th><th>Stale Rejected</th><th>Halt Rejected</th></tr></thead>
+        <tbody><tr><td>gtrade</td><td>SPY</td><td>59</td><td>-0.0011621644928994977</td><td>708.0</td><td>1</td><td>5</td></tr>
+<tr><td>gtrade</td><td>QQQ</td><td>59</td><td>-0.001127547378643834</td><td>708.0</td><td>1</td><td>5</td></tr>
+<tr><td>gtrade</td><td>XAU</td><td>59</td><td>-0.003764898852638281</td><td>2250.1002166625613</td><td>6</td><td>0</td></tr>
+<tr><td>ostium</td><td>SPX_EQUIV</td><td>3</td><td>-0.00012028247940723445</td><td>12.578700858865947</td><td>0</td><td>0</td></tr>
+<tr><td>ostium</td><td>NDX_EQUIV</td><td>3</td><td>0.00018143923732168748</td><td>11.171893724123382</td><td>0</td><td>0</td></tr>
+<tr><td>ostium</td><td>XAU</td><td>3</td><td>-0.0007125387607483172</td><td>15.55411774059705</td><td>0</td><td>0</td></tr></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Validation</h2>
+      <p>checked_files=14, issue_count=0</p>
+      <ul><li>none</li></ul>
+    </section>
+    <section>
+      <h2>Blockers</h2>
+      <ul><li>stale_rate at or below threshold</li><li>tradable_rate at or above threshold</li></ul>
+    </section>
+    <section>
+      <h2>Next Actions</h2>
+      <ul><li>Collect quote rows with fresh venue timestamps so stale_rate is at or below threshold</li><li>Collect a sufficient gTrade/Ostium quote window during tradable sessions</li><li>Provide data/research/signals.csv to run signal-driven backtests instead of quote-only fallback</li></ul>
+    </section>
+    <section>
+      <h2>Log Tail</h2>
+      <pre>
+[2026-05-26T13:45:00Z] Scheduled live evidence run starting
+error: Script not found &quot;gtrade:collect-window&quot;
+error: Script not found &quot;gtrade:collect-window&quot;
+error: Script not found &quot;gtrade:collect-window&quot;</pre>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,5 +1,7 @@
 # Legacy Read-Only Collector Risk Review
 
+> Current status: historical / legacy. This risk review describes the old gTrade/Ostium read-only collector path, not the current Trade[XYZ] quote collection path.
+
 この文書は legacy `gtrade` / `ostium` read-only collector の現行実装に残る抜け、漏れ、誤謬リスク、改善余地を記録する。
 実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
 運用上の artifact contract は `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。

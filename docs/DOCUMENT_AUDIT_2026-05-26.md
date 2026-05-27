@@ -1,5 +1,7 @@
 # Documentation Audit (2026-05-26)
 
+> Superseded: current audit is `docs/DOCUMENT_AUDIT_2026-05-27.md`. This file is a 2026-05-26 snapshot.
+
 コード、設定、CLI surface、tracked files を正として、tracked docs の current / stale / historical boundary を再監査した結果をまとめる。
 
 ## 結論
@@ -8,7 +10,7 @@
 - `plan/` は active implementation instruction ではなく、PR-00 から PR-08 の historical migration contract として扱う。
 - `data/reports/*.md` と `data/research/*.md` は生成 artifact なので手編集しない。必要なら CLI で再生成する。
 - ignored/local `.tmp/*.md` は source docs として扱わない。
-- tracked `.tmp/live_evidence_current_status_2026-05-26.md` は historical status snapshot であり、current status の正本ではない。
+- `.tmp/live_evidence_current_status_2026-05-26.md` は local historical status snapshot であり、current status の正本ではない。
 
 ## 更新できるドキュメント
 
@@ -39,7 +41,7 @@
 - `plan/README.md` は PR-00 をこれから開始する前提で書かれていたため、historical planning index に更新する。
 - PR-00 / PR-08 までの migration plan は実施済み contract として残す。
 - `collect-trade-xyz-quotes` は public CLI 化済み。今後の次PR候補は、これを operations/readiness/phase gate に接続する cutover。
-- tracked `.tmp/live_evidence_current_status_2026-05-26.md` は当時の status snapshot として残す場合も、current truth ではないと明記する。
+- `.tmp/live_evidence_current_status_2026-05-26.md` は当時の status snapshot として残す場合も、current truth ではないと明記する。
 
 ## 作り直したほうがいいドキュメント
 

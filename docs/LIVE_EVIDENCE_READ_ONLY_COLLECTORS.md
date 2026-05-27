@@ -1,5 +1,7 @@
 # Legacy Live Evidence Read-Only Collectors
 
+> Current status: historical / legacy. Commands such as `bun run gtrade:backend-collect` and `uv run sis ostium-constraint-artifact` are not current public CLI surfaces in this checkout. Treat this file as evidence history unless the legacy archive is intentionally restored.
+
 この文書は legacy `gtrade` / `ostium` read-only collector chain の運用メモです。`Trade[XYZ]` migration 全体の正本ではありません。
 実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
 残リスクと hardening backlog は `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。

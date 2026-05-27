@@ -25,13 +25,15 @@ registry / universe:
 
 ```bash
 uv run sis probe trade-xyz
-uv run sis collect-trade-xyz-quotes
+uv run sis collect-trade-xyz-quotes --write-summary --write-report
 ```
 
 quote ingest:
 
 - `collect-trade-xyz-quotes` は `probe trade-xyz` が生成した registry を読んで raw quote JSONL を収集する。
 - default では normalize まで実行する。raw JSONL だけ欲しい時は `--no-normalize` を使う。
+- `--symbols`, `--max-symbols`, `--duration-minutes`, `--interval-seconds`, `--replace`, `--dry-run`, `--write-summary`, `--write-report`, `--output-dir` で収集対象と artifact 出力を絞れる。
+- `--write-summary` は `data/ops/trade_xyz_quote_collection_summary.json`、`--write-report` は `data/reports/trade_xyz_quote_collection_report.md` を出す。
 - legacy `gtrade` / `ostium` replay command は active CLI から削除済み。
 
 real market and tracking:
@@ -80,7 +82,7 @@ uv run sis notification-outbox --level warn --title "Stale" --body "recollect li
 
 ## Live Evidence
 
-gTrade / Ostium の legacy collector は `archive/gtrade_ostium_legacy_archive_*.zip` に圧縮済みで、展開済み file tree は active repo から削除済み。
+gTrade / Ostium の legacy collector は `archive/gtrade_ostium_legacy_archive_*.zip` に圧縮済みで、展開済み file tree は active repo から削除済み。legacy sidecar command を直接呼ぶ手順は current CLI として扱わない。
 
 dry-run:
 
@@ -98,7 +100,7 @@ Trade[XYZ] refresh path:
 
 ```bash
 uv run sis probe trade-xyz
-uv run sis collect-trade-xyz-quotes
+uv run sis collect-trade-xyz-quotes --write-summary --write-report
 uv run sis normalize-quotes
 uv run sis build-cost-matrix
 uv run sis build-backtest
@@ -139,7 +141,7 @@ manual live smoke は標準運用手順に含めない。wallet / signing / exch
 
 ## Stop Conditions
 
-- `phase-gate-review` が `phase2_entry_allowed=false` の間は、運用上の昇格完了と扱わない。
+- `phase-gate-review` が `phase2_entry_allowed=false` の間は、運用上の昇格完了と扱わない。ただし legacy artifact blocker が出ている場合は current Trade[XYZ] path と legacy path を分けて読む。
 - generated artifact が欠けている場合、推測で判断せず再生成する。
 - micro live code path があることをもって live trading ready と解釈しない。
 - migration docs と legacy live evidence docs を混同しない。

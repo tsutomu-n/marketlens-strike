@@ -147,6 +147,36 @@
         "null"
       ]
     },
+    "bid_depth_10bps_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ask_depth_10bps_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "bid_depth_25bps_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ask_depth_25bps_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "min_side_depth_10bps_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
     "funding_rate": {
       "type": [
         "number",
@@ -164,6 +194,42 @@
         "number",
         "null"
       ]
+    },
+    "premium": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "prev_day_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "day_notional_volume": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "fee_mode": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "venue_quality_score": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "block_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "market_status": {
       "type": "string",

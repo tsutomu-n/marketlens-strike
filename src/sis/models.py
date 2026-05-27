@@ -147,9 +147,18 @@ class QuoteLog(BaseModel):
     spread_bps: float | None = None
     depth_10bps_usd: float | None = None
     depth_25bps_usd: float | None = None
+    bid_depth_10bps_usd: float | None = None
+    ask_depth_10bps_usd: float | None = None
+    bid_depth_25bps_usd: float | None = None
+    ask_depth_25bps_usd: float | None = None
+    min_side_depth_10bps_usd: float | None = None
     funding_rate: float | None = None
     funding_interval_minutes: int | None = None
     open_interest_usd: float | None = None
+    premium: float | None = None
+    prev_day_price: float | None = None
+    day_notional_volume: float | None = None
+    fee_mode: str | None = None
     oracle_ts_ms: int | None = None
 
     market_status: MarketStatus = MarketStatus.UNKNOWN

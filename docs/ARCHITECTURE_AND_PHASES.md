@@ -8,10 +8,10 @@
 - `src/sis/real_market`: research-side bars, quality, feature builder, provider policy
 - `src/sis/tracking`: real-market vs venue comparison and trade-allowed decisions
 - `src/sis/paper`: venue-gated paper fills, portfolio state, reports
-- `src/sis/execution`: archive read-only adapters plus `Trade[XYZ]` micro live safety code
+- `src/sis/execution`: `Trade[XYZ]` micro live safety code and execution read-only surfaces
 - `src/sis/reports`, `src/sis/ops`, `src/sis/state`: operations, dashboards, remediation, daemon, notifications
 - `src/sis/cli.py` and `src/sis/commands/`: root Typer app registration plus feature-specific command modules
-- `archive/legacy_sidecars/` and `src/sis/venues/archive/`: legacy read-only collectors retained for evidence and replay
+- `archive/gtrade_ostium_legacy_archive_*.zip`: legacy gTrade/Ostium source and sidecar history
 
 ## Phase Interpretation
 
@@ -34,7 +34,7 @@ current truth:
 ## Migration Boundary
 
 - 新規コードの主軸は `trade_xyz`
-- `gtrade` / `ostium` は archive または compatibility / read-only artifact surface として残る
+- `gtrade` / `ostium` は active implementation tree ではなく archive zip と historical artifacts として残る
 - `ostium-python-sdk` は active dependency ではない
 
 ## Data Boundary
@@ -49,7 +49,7 @@ current truth:
 
 `src/sis/execution` には 2 系統ある:
 
-- archive read-only adapters: `gtrade`, `ostium`
+- execution read-only observation / reporting surfaces
 - `Trade[XYZ]` micro live safety surface: policy, adapter, canary
 
 micro live の current boundary:
@@ -71,7 +71,7 @@ micro live の current boundary:
 
 ## Ops Boundary
 
-`refresh-operations-artifacts` 以下の operations chain は依然として legacy read-only collector と paper / execution artifact を束ねる restart surface である。
+`refresh-operations-artifacts` 以下の operations chain は paper / execution artifact を束ねる restart surface である。一部 generated reports は legacy read-only collector blocker を表示し得るため、Trade[XYZ] readiness とは分けて読む。
 
 つまり:
 

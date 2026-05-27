@@ -49,6 +49,14 @@ uv run sis probe trade-xyz
 uv run sis collect-trade-xyz-quotes
 ```
 
+Useful quote collection variants:
+
+```bash
+uv run sis collect-trade-xyz-quotes --symbols SP500,NVDA --duration-minutes 5 --interval-seconds 60
+uv run sis collect-trade-xyz-quotes --no-normalize --write-summary --write-report
+uv run sis collect-trade-xyz-quotes --dry-run --max-symbols 3
+```
+
 paper cycle:
 
 ```bash
@@ -78,11 +86,11 @@ uv run sis build-evidence-card
 
 ## Current Verification
 
-2026-05-26 時点:
+2026-05-27 時点:
 
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 300 passed
+- `uv run pytest -q`: 270 passed
 - `./scripts/check`: pass
 
 ## Legacy Notes

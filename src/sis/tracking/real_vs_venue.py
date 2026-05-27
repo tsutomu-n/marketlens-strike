@@ -26,8 +26,12 @@ def build_tracking_record(
         tracking_policy.get("max_mark_real_diff_bps", {}).get("default_equity", 50)
     )
 
+    if quote.mark_price is None:
+        reasons.append("BLOCK_MISSING_MARK_PRICE")
+    if quote.oracle_price is None:
+        reasons.append("BLOCK_MISSING_ORACLE_PRICE")
     if feature.market_session != "regular":
-        reasons.append("BLOCK_UNDERLYING_NOT_REGULAR_SESSION")
+        reasons.append("BLOCK_UNDERLYING_SESSION_CLOSED")
     if feature.source_confidence < min_source_conf:
         reasons.append("BLOCK_LOW_SOURCE_CONFIDENCE")
     if not quote.is_tradable:
@@ -45,6 +49,12 @@ def build_tracking_record(
         reasons.append("BLOCK_SPREAD_TOO_WIDE")
     if mark_diff is not None and mark_diff > max_mark_real:
         reasons.append("BLOCK_MARK_REAL_DIVERGENCE")
+    if oracle_diff is not None and oracle_diff > max_mark_real:
+        reasons.append("BLOCK_ORACLE_REAL_DIVERGENCE")
+    if quote.min_side_depth_10bps_usd is not None and quote.min_side_depth_10bps_usd <= 0:
+        reasons.append("BLOCK_SIDE_DEPTH_TOO_THIN")
+    if quote.fee_mode in (None, "unknown"):
+        reasons.append("BLOCK_FEE_MODE_UNKNOWN")
 
     quality = 1.0
     if any(r == "BLOCK_SPREAD_TOO_WIDE" for r in reasons):

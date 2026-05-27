@@ -339,6 +339,7 @@ def register_review_commands(
         stale_thresholds = {
             "gtrade": int(stale_policy.get("gtrade_max_age_ms", 3000)),
             "ostium": int(stale_policy.get("ostium_max_age_ms", 5000)),
+            "trade_xyz": int(stale_policy.get("trade_xyz_max_age_ms", 5000)),
         }
         diagnostics = build_quote_diagnostics(
             settings.data_dir / "raw/quotes",
@@ -358,7 +359,13 @@ def register_review_commands(
             typer.echo(f"stale_rate={item.stale_rate:.4f}")
             typer.echo(f"missing_mark_price_rate={item.missing_mark_price_rate:.4f}")
             typer.echo(f"missing_index_price_rate={item.missing_index_price_rate:.4f}")
+            typer.echo(f"missing_oracle_price_rate={item.missing_oracle_price_rate:.4f}")
+            typer.echo(f"missing_funding_rate={item.missing_funding_rate:.4f}")
+            typer.echo(f"missing_open_interest_rate={item.missing_open_interest_rate:.4f}")
             typer.echo(f"missing_spread_rate={item.missing_spread_rate:.4f}")
+            typer.echo(f"l2_only_rate={item.l2_only_rate:.4f}")
+            typer.echo(f"fee_mode_unknown_rate={item.fee_mode_unknown_rate:.4f}")
+            typer.echo(f"block_reason_distribution={item.block_reason_distribution}")
             typer.echo(f"stale_missing_oracle_ts_rate={item.stale_missing_oracle_ts_rate:.4f}")
             typer.echo(f"stale_old_oracle_ts_rate={item.stale_old_oracle_ts_rate:.4f}")
             typer.echo(f"market_status_unknown_rate={item.market_status_unknown_rate:.4f}")

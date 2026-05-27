@@ -1,7 +1,9 @@
 # Trade[XYZ] Quote Collector CLI Status And Next Plan
 
 Timestamp: 2026-05-26 21:17:46 JST  
-Updated: 2026-05-26 JST
+Updated: 2026-05-27 JST
+
+> Current status: historical plan plus status note. The CLI described here has since grown additional options and artifacts. Check `uv run sis collect-trade-xyz-quotes --help` and `docs/DOCUMENT_AUDIT_2026-05-27.md` before using this as an implementation source.
 
 ## 結論
 
@@ -22,9 +24,11 @@ Implemented:
 - `uv run sis collect-trade-xyz-quotes` が public CLI として使える。
 - `--registry-path` で registry JSON を指定できる。
 - `--normalize/--no-normalize` で normalize 実行を切り替えられる。
+- `--symbols`, `--max-symbols`, `--duration-minutes`, `--interval-seconds`, `--replace`, `--dry-run`, `--write-summary`, `--write-report`, `--output-dir` が使える。
+- `--write-summary` は `data/ops/trade_xyz_quote_collection_summary.json`、`--write-report` は `data/reports/trade_xyz_quote_collection_report.md` を出す。
 - default では raw quote JSONL 収集後に `data/normalized/quotes.parquet` と `data/normalized/sis.duckdb` を更新する。
 - `probe trade-xyz` が生成する `data/registry/trade_xyz_instrument_registry.json` を標準入力 artifact とする。
-- `log-quotes --venue gtrade` は legacy replay 専用のまま維持する。
+- `log-quotes --venue gtrade` は current public CLI surface ではない。
 
 Current command flow:
 
@@ -48,6 +52,15 @@ CLI:
 - options:
   - `--registry-path`
   - `--normalize/--no-normalize`
+  - `--symbols`
+  - `--max-symbols`
+  - `--duration-minutes`
+  - `--interval-seconds`
+  - `--replace/--append`
+  - `--dry-run`
+  - `--write-summary`
+  - `--write-report`
+  - `--output-dir`
 
 Registry helper:
 
@@ -93,6 +106,9 @@ Stdout:
 - normalize 実行時:
   - `normalized_quotes_path=<path>`
   - `duckdb_path=<path>`
+- summary/report 実行時:
+  - `summary_path=<path>`
+  - `report_path=<path>`
 - `recommended_read_order_*`
 
 ## 現在の残課題
@@ -130,13 +146,14 @@ Trade[XYZ] operations gate cutover
 第一候補:
 
 ```bash
-uv run sis refresh-trade-xyz-artifacts
+uv run sis collect-trade-xyz-quotes --write-summary --write-report
+uv run sis validate-artifacts --strict
 ```
 
 責務:
 
 1. `probe trade-xyz`
-2. `collect-trade-xyz-quotes`
+2. `collect-trade-xyz-quotes --write-summary --write-report`
 3. real market data ingest
 4. feature panel build
 5. signal build
@@ -234,6 +251,7 @@ Current CLI verification:
 
 ```bash
 uv run sis collect-trade-xyz-quotes --help
+uv run sis validate-artifacts --help
 uv run pytest tests/test_cli_smoke.py -q
 ./scripts/check
 ```
@@ -244,7 +262,8 @@ Next PR verification should include:
 uv run sis probe trade-xyz
 uv run sis collect-trade-xyz-quotes --no-normalize
 uv run sis collect-trade-xyz-quotes
-uv run sis refresh-trade-xyz-artifacts
+uv run sis collect-trade-xyz-quotes --write-summary --write-report
+uv run sis validate-artifacts --strict
 uv run sis phase-gate-review
 uv run pytest tests/test_cli_smoke.py -q
 uv run pytest -q

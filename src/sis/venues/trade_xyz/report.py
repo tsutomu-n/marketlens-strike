@@ -66,7 +66,7 @@ def build_trade_xyz_universe_report(build_result: TradeXyzRegistryBuildResult) -
         [
             "",
             "## Next Blocking Questions",
-            "- confirm perp_dex_index from live Trade[XYZ] meta payload",
+            "- confirm perp_dex_index from live Trade[XYZ] meta/perpDexs payload",
             "- confirm missing symbols in meta/allMids before enabling api_orderable",
             "- keep excluded symbols out of active universe until policy changes",
             "",

@@ -42,10 +42,10 @@ def register_research_commands(
     def ingest_research_data() -> None:
         settings = get_settings()
         market_panel = build_market_panel(settings.data_dir)
-        macro_panel = build_macro_panel(
-            settings.data_dir,
-            provider=FredMacroProvider(api_key=settings.fred_api_key),
+        macro_provider = (
+            FredMacroProvider(api_key=settings.fred_api_key) if settings.fred_api_key else None
         )
+        macro_panel = build_macro_panel(settings.data_dir, provider=macro_provider)
         logger.info("written: {}", market_panel)
         logger.info("written: {}", macro_panel)
         for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):

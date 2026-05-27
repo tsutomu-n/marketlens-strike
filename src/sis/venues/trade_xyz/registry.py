@@ -54,6 +54,25 @@ def _extract_perp_dex_index(meta_payload: dict[str, Any]) -> int | None:
     return None
 
 
+def _extract_perp_dex_index_from_perp_dexs(
+    perp_dexs_payload: list[Any],
+    *,
+    dex: str,
+) -> int | None:
+    normalized_dex = dex.strip().lower()
+    for idx, item in enumerate(perp_dexs_payload):
+        name: str | None = None
+        if isinstance(item, str):
+            name = item
+        elif isinstance(item, dict):
+            value = item.get("name")
+            if isinstance(value, str):
+                name = value
+        if name is not None and name.strip().lower() == normalized_dex:
+            return idx
+    return None
+
+
 def _extract_universe_index(meta_payload: dict[str, Any]) -> dict[str, int]:
     universe: list[Any] = []
     for key in ("universe", "assets", "coins"):
@@ -89,20 +108,34 @@ def _normalize_mid_keys(all_mids: dict[str, str]) -> set[str]:
     return keys
 
 
+def mid_candidates(canonical_symbol: str, coin: str) -> set[str]:
+    symbol = canonical_symbol.strip().upper()
+    coin_u = coin.strip().upper()
+    return {symbol, coin_u, coin_u.removeprefix("XYZ:"), f"XYZ:{symbol}", f"xyz:{symbol}"}
+
+
 def build_trade_xyz_registry(
     seed_path: Path,
     *,
     client: TradeXyzClient | None = None,
     all_mids_payload: dict[str, str] | None = None,
     meta_payload: dict[str, Any] | None = None,
+    perp_dexs_payload: list[Any] | None = None,
 ) -> TradeXyzRegistryBuildResult:
     seed_specs = load_trade_xyz_seed(seed_path)
     mids = (
         all_mids_payload if all_mids_payload is not None else (client.all_mids() if client else {})
     )
     meta = meta_payload if meta_payload is not None else (client.meta() if client else {})
+    perp_dexs = (
+        perp_dexs_payload
+        if perp_dexs_payload is not None
+        else (client.perp_dexs() if client else [])
+    )
 
-    perp_dex_index = _extract_perp_dex_index(meta)
+    perp_dex_index = _extract_perp_dex_index_from_perp_dexs(perp_dexs, dex="xyz")
+    if perp_dex_index is None:
+        perp_dex_index = _extract_perp_dex_index(meta)
     universe_index = _extract_universe_index(meta)
     mid_symbols = _normalize_mid_keys(mids)
 
@@ -114,7 +147,7 @@ def build_trade_xyz_registry(
         coin = f"xyz:{symbol}"
         excluded = symbol in EXCLUDED_ACTIVE_SYMBOLS
         index_in_meta = universe_index.get(symbol)
-        has_mid_price = symbol in mid_symbols
+        has_mid_price = bool(mid_candidates(symbol, coin) & set(mids.keys())) or symbol in mid_symbols
         asset_id = (
             resolve_asset_id(perp_dex_index, index_in_meta)
             if perp_dex_index is not None and index_in_meta is not None

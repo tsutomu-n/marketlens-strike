@@ -7,8 +7,21 @@ import polars as pl
 
 def build_event_calendar(data_dir: Path, *, csv_path: Path | None = None) -> Path:
     source_path = csv_path or data_dir / "research/event_calendar.csv"
+    out = data_dir / "research/event_calendar.parquet"
     if not source_path.exists():
-        raise FileNotFoundError(f"Research event calendar CSV not found: {source_path}")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        pl.DataFrame(
+            schema={
+                "event_ts": pl.Datetime(time_unit="us", time_zone="UTC"),
+                "event_name": pl.Utf8,
+                "event_class": pl.Utf8,
+                "importance": pl.Utf8,
+                "before_minutes": pl.Int64,
+                "after_minutes": pl.Int64,
+                "action": pl.Utf8,
+            }
+        ).write_parquet(out)
+        return out
 
     frame = pl.read_csv(source_path, try_parse_dates=True)
     required = {
@@ -42,7 +55,6 @@ def build_event_calendar(data_dir: Path, *, csv_path: Path | None = None) -> Pat
         "action",
     )
 
-    out = data_dir / "research/event_calendar.parquet"
     out.parent.mkdir(parents=True, exist_ok=True)
     normalized.sort("event_ts").write_parquet(out)
     return out

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXYZQuoteCollectionSummary",
+  "type": "object",
+  "required": [
+    "venue",
+    "started_at",
+    "ended_at",
+    "duration_minutes",
+    "interval_seconds",
+    "requested_symbols",
+    "collected_symbols",
+    "row_count",
+    "api_error_count",
+    "per_symbol"
+  ],
+  "properties": {
+    "venue": { "const": "trade_xyz" },
+    "started_at": { "type": "string" },
+    "ended_at": { "type": "string" },
+    "duration_minutes": { "type": "integer", "minimum": 1 },
+    "interval_seconds": { "type": "integer", "minimum": 1 },
+    "requested_symbols": { "type": "array", "items": { "type": "string" } },
+    "collected_symbols": { "type": "array", "items": { "type": "string" } },
+    "row_count": { "type": "integer", "minimum": 0 },
+    "api_error_count": { "type": "integer", "minimum": 0 },
+    "per_symbol": { "type": "object" }
+  },
+  "additionalProperties": true
+}

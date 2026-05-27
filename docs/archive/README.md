@@ -30,4 +30,9 @@ Archived on 2026-05-26:
 - `docs/live_evidence_reports/live_evidence_report_*.html` -> `docs/archive/2026-05-26-live-evidence-history/`
 - `docs/live_evidence_reports/live_evidence_followup_*.md` -> `docs/archive/2026-05-26-live-evidence-history/`
 
+Archived on 2026-05-27:
+
+- local `docs/live_evidence_reports/live_evidence_report_20260526_2245.*` -> `docs/archive/2026-05-26-live-evidence-history/`
+- local `docs/live_evidence_reports/live_evidence_followup_20260526_2245.md` -> `docs/archive/2026-05-26-live-evidence-history/`
+
 Do not treat archived documents as current requirements.

@@ -29,6 +29,8 @@
 - root CLI split: `src/sis/cli.py` は command registration と `main()` が中心で、command 実装は `src/sis/commands/` に分割済み
 - legacy `gtrade` / `ostium` の ZIP archive 化と active file tree からの削除
 - `Trade[XYZ]` registry builder, universe report, quote collector, quote normalizer
+- `Trade[XYZ]` `perpDexs` fallback による HIP-3 `asset_id` 解決
+- `Trade[XYZ]` quote collection summary / report / strict artifact validation
 - `real_market` feature builder と free-source quality gating
 - `tracking` layer による real-market vs venue 判定
 - venue quality gate 付き paper fill / fee model / paper report
@@ -45,12 +47,12 @@
 
 ## Verification Status
 
-2026-05-26 時点で確認済み:
+2026-05-27 時点で確認済み:
 
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 300 passed
+- `uv run pytest -q`: 270 passed
 
 PR-08 専用確認:
 
@@ -66,6 +68,7 @@ PR-08 専用確認:
 - signing / wallet / exchange write integration
 - `trade_xyz` を主軸にした operations artifact chain への全面 cutover
 - fresh live evidence を使った operational Go/No-Go 再判定
+- legacy `gtrade` / `ostium` read-only collector command を使う docs と current CLI surface の完全同期
 
 ## Recommended Read Order
 

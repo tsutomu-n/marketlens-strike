@@ -26,7 +26,13 @@ from sis.storage.jsonl_store import write_json
 from sis.validation.artifacts import validate_artifacts
 
 
-PHASE2_ALLOWED_DECISIONS = {"GO", "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST"}
+PHASE2_ALLOWED_DECISIONS = {
+    "GO",
+    "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST",
+    "READ_ONLY_GO",
+    "PAPER_GO",
+    "CONDITIONAL_INDEX_ONLY",
+}
 
 
 class RemediationStep(TypedDict):
@@ -80,6 +86,35 @@ def _latest_recursive_path(pattern_root: Path, glob_pattern: str) -> Path | None
 
 
 def _read_only_collector_gate(data_dir: Path) -> dict[str, object]:
+    trade_registry_path = data_dir / "registry/trade_xyz_instrument_registry.json"
+    trade_summary_path = data_dir / "ops/trade_xyz_quote_collection_summary.json"
+    trade_quote_path = _latest_path(data_dir / "raw/quotes/trade_xyz", "*.jsonl")
+    if trade_registry_path.exists() or trade_summary_path.exists() or trade_quote_path:
+        blockers: list[str] = []
+        if not trade_registry_path.exists():
+            blockers.append("missing_trade_xyz_registry")
+        if not trade_quote_path:
+            blockers.append("missing_trade_xyz_quote_window")
+        if not trade_summary_path.exists():
+            blockers.append("missing_trade_xyz_quote_collection_summary")
+        return {
+            "read_only_collector_gate_passed": not blockers,
+            "read_only_collector_blockers": blockers,
+            "latest_trade_xyz_registry_path": str(trade_registry_path) if trade_registry_path.exists() else None,
+            "latest_trade_xyz_quote_path": str(trade_quote_path) if trade_quote_path else None,
+            "latest_trade_xyz_summary_path": str(trade_summary_path) if trade_summary_path.exists() else None,
+            "latest_gtrade_backend_manifest_path": None,
+            "latest_gtrade_backend_status": None,
+            "latest_gtrade_backend_event_count": None,
+            "latest_gtrade_backend_reconnect_count": None,
+            "latest_gtrade_backend_deep_reorg_detected": None,
+            "latest_ostium_constraint_path": None,
+            "latest_ostium_constraint_status": None,
+            "latest_ostium_constraint_failures": [],
+            "latest_ostium_python_sdk_status": None,
+            "latest_ostium_builder_prices_artifact_path": None,
+        }
+
     gtrade_manifest_path = _latest_recursive_path(
         data_dir / "raw/sidecar/gtrade-backend/manifests",
         "*.json",
@@ -157,11 +192,19 @@ def _load_stale_thresholds() -> dict[str, int]:
     return {
         "gtrade": int(stale_policy.get("gtrade_max_age_ms", 3000)),
         "ostium": int(stale_policy.get("ostium_max_age_ms", 5000)),
+        "trade_xyz": int(stale_policy.get("trade_xyz_max_age_ms", 5000)),
     }
 
 
 def _required_artifact_paths(summary: dict[str, object]) -> dict[str, str | None]:
-    artifact_keys = (
+    if summary.get("latest_trade_xyz_quote_path") or summary.get("latest_trade_xyz_summary_path"):
+        artifact_keys = (
+            "latest_trade_xyz_registry_path",
+            "latest_trade_xyz_quote_path",
+            "latest_trade_xyz_summary_path",
+        )
+    else:
+        artifact_keys = (
         "latest_manifest_path",
         "latest_evidence_card_path",
         "latest_execution_snapshot_summary_path",
@@ -173,7 +216,7 @@ def _required_artifact_paths(summary: dict[str, object]) -> dict[str, str | None
         "latest_execution_drift_overview_summary_path",
         "latest_gtrade_backend_manifest_path",
         "latest_ostium_constraint_path",
-    )
+        )
     paths: dict[str, str | None] = {}
     for key in artifact_keys:
         value = summary.get(key)
@@ -489,7 +532,7 @@ def build_phase_gate_review(
     data_dir: Path,
     *,
     schema_root: Path,
-    diagnostics_symbols: tuple[str, ...] = ("QQQ", "SPY", "XAU"),
+    diagnostics_symbols: tuple[str, ...] = ("SP500", "XYZ100", "NVDA", "AAPL", "MSFT"),
     execution_snapshot_summary_path: Path | None = None,
     execution_venue_comparison_summary_path: Path | None = None,
     execution_venue_diagnostics_summary_path: Path | None = None,
@@ -505,15 +548,29 @@ def build_phase_gate_review(
     validation = validate_artifacts(data_dir, schema_root, strict=True)
     stale_thresholds = _load_stale_thresholds()
     prior_summary = safe_read_json_dict(summary_path)
+    has_trade_xyz_artifacts = (
+        (data_dir / "registry/trade_xyz_instrument_registry.json").exists()
+        or (data_dir / "ops/trade_xyz_quote_collection_summary.json").exists()
+        or _latest_path(data_dir / "raw/quotes/trade_xyz", "*.jsonl") is not None
+    )
+    if not has_trade_xyz_artifacts and diagnostics_symbols == ("SP500", "XYZ100", "NVDA", "AAPL", "MSFT"):
+        diagnostics_symbols = ("QQQ", "SPY", "XAU")
 
     diagnostics: list[dict] = []
     for symbol in diagnostics_symbols:
         items = build_quote_diagnostics(
             data_dir / "raw/quotes",
-            venue="gtrade",
+            venue="trade_xyz",
             symbol=symbol,
             stale_thresholds_ms=stale_thresholds,
         )
+        if not items:
+            items = build_quote_diagnostics(
+                data_dir / "raw/quotes",
+                venue="gtrade",
+                symbol=symbol,
+                stale_thresholds_ms=stale_thresholds,
+            )
         diagnostics.append(
             {
                 "symbol": symbol,
@@ -557,6 +614,65 @@ def build_phase_gate_review(
 
     strict_validation_passed = len(validation.issues) == 0
     diagnostics_all_available = all(item["available"] for item in diagnostics)
+    if has_trade_xyz_artifacts:
+        healthy_symbols = {
+            str(item["symbol"])
+            for item in diagnostics
+            if item["available"]
+            and item["items"]
+            and all(
+                (entry.get("missing_mark_price_rate") == 0)
+                and (entry.get("missing_oracle_price_rate") == 0)
+                and (entry.get("missing_funding_rate") == 0)
+                and (entry.get("missing_open_interest_rate") == 0)
+                for entry in item["items"]
+            )
+        }
+        index_healthy = {"SP500", "XYZ100"}.issubset(healthy_symbols)
+        individual_healthy = {"NVDA", "AAPL", "MSFT"}.issubset(healthy_symbols)
+        if strict_validation_passed and diagnostics_all_available and individual_healthy:
+            decision = "READ_ONLY_GO"
+            individual_stock_decision = "paper_only"
+            index_only_decision = "not_required"
+        elif strict_validation_passed and index_healthy:
+            decision = "CONDITIONAL_INDEX_ONLY"
+            individual_stock_decision = "disabled_index_only"
+            index_only_decision = "enabled"
+        else:
+            decision = "NO_GO"
+            individual_stock_decision = "disabled_index_only"
+            index_only_decision = "blocked"
+        venue_decisions = [
+            {
+                "venue": "trade_xyz",
+                "decision": decision,
+                "main_blocker": None if decision != "NO_GO" else "trade_xyz_evidence_incomplete",
+            }
+        ]
+        blockers = [] if decision != "NO_GO" else ["trade_xyz_evidence_incomplete"]
+        pr12_summary = safe_read_json_dict(data_dir / "ops/pr12_fresh_read_only_smoke_summary.json")
+        pr12_observed_window = pr12_summary.get("observed_window_seconds")
+        pr12_observed_window_ok = (
+            isinstance(pr12_observed_window, int | float)
+            and not isinstance(pr12_observed_window, bool)
+            and pr12_observed_window >= 3600
+        )
+        pr12_completed = (
+            pr12_summary.get("final_decision") == "READ_ONLY_GO"
+            and pr12_observed_window_ok
+            and pr12_summary.get("next_action") == "none"
+        )
+        next_actions = [] if pr12_completed else ["run_pr12_fresh_read_only_smoke"]
+    elif not isinstance(decision, str):
+        if strict_validation_passed and diagnostics_all_available and collector_gate["read_only_collector_gate_passed"] is True:
+            decision = "READ_ONLY_GO"
+        else:
+            decision = "NO_GO"
+        individual_stock_decision = "unknown"
+        index_only_decision = "unknown"
+    else:
+        individual_stock_decision = "unknown"
+        index_only_decision = "unknown"
     phase2_entry_allowed = bool(
         strict_validation_passed
         and diagnostics_all_available
@@ -622,6 +738,8 @@ def build_phase_gate_review(
         ),
         "decision": decision,
         "phase_gate_decision": decision,
+        "individual_stock_decision": individual_stock_decision,
+        "index_only_decision": index_only_decision,
         "venue_decisions": venue_decisions if isinstance(venue_decisions, list) else [],
         "blockers": blockers if isinstance(blockers, list) else [],
         "next_actions": next_actions if isinstance(next_actions, list) else [],
@@ -813,6 +931,8 @@ def build_phase_gate_review(
         "",
         f"- current_phase: {summary['current_phase']}",
         f"- decision: {summary['decision']}",
+        f"- individual_stock_decision: {summary['individual_stock_decision']}",
+        f"- index_only_decision: {summary['index_only_decision']}",
         f"- strict_validation_passed: {summary['strict_validation_passed']}",
         f"- strict_validation_issue_count: {summary['strict_validation_issue_count']}",
         f"- latest_manifest_status: {summary['latest_manifest_status']}",

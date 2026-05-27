@@ -43,6 +43,39 @@ def test_trade_xyz_seed_symbols_are_expected() -> None:
     }
 
 
+def test_trade_xyz_registry_resolves_perp_dex_index_from_perp_dexs() -> None:
+    meta_payload = _fixture("tests/fixtures/trade_xyz_meta.sample.json")
+    meta_payload.pop("perpDexIndex")
+    result = build_trade_xyz_registry(
+        Path("configs/instrument_registry.seed.json"),
+        all_mids_payload=_fixture("tests/fixtures/trade_xyz_all_mids.sample.json"),
+        meta_payload=meta_payload,
+        perp_dexs_payload=_fixture("tests/fixtures/trade_xyz_perp_dexs.sample.json"),
+    )
+    by_symbol = {item.canonical_symbol: item for item in result.instruments}
+
+    assert by_symbol["SP500"].perp_dex_index == 2
+    assert by_symbol["SP500"].index_in_meta == 0
+    assert by_symbol["SP500"].asset_id == 120000
+    assert by_symbol["SP500"].api_orderable is True
+
+
+def test_trade_xyz_registry_fails_closed_when_perp_dex_index_missing() -> None:
+    meta_payload = _fixture("tests/fixtures/trade_xyz_meta.sample.json")
+    meta_payload.pop("perpDexIndex")
+    result = build_trade_xyz_registry(
+        Path("configs/instrument_registry.seed.json"),
+        all_mids_payload=_fixture("tests/fixtures/trade_xyz_all_mids.sample.json"),
+        meta_payload=meta_payload,
+        perp_dexs_payload=[None, {"name": "other"}],
+    )
+    by_symbol = {item.canonical_symbol: item for item in result.instruments}
+
+    assert by_symbol["SP500"].perp_dex_index is None
+    assert by_symbol["SP500"].asset_id is None
+    assert by_symbol["SP500"].api_orderable is False
+
+
 def test_trade_xyz_registry_marks_unresolved_asset_as_not_orderable() -> None:
     meta_payload = _fixture("tests/fixtures/trade_xyz_meta.sample.json")
     meta_payload["universe"] = [row for row in meta_payload["universe"] if row.get("name") != "EWJ"]

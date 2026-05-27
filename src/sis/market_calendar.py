@@ -10,7 +10,8 @@ import pandas as pd
 EASTERN = ZoneInfo("America/New_York")
 JST = ZoneInfo("Asia/Tokyo")
 
-INDEX_SYMBOLS = {"SPY", "QQQ"}
+INDEX_SYMBOLS = {"SPY", "QQQ", "SP500", "XYZ100"}
+XNYS_EQUITY_SYMBOLS = {"NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AMD", "EWJ"}
 COMMODITY_SYMBOLS = {"XAU"}
 
 
@@ -136,7 +137,7 @@ def market_session_window(venue: str, symbol: str, now: datetime | None = None) 
         raise ValueError("Only trade_xyz is supported for market session planning.")
 
     now_utc = _resolve_now(now)
-    if normalized_symbol in INDEX_SYMBOLS:
+    if normalized_symbol in INDEX_SYMBOLS or normalized_symbol in XNYS_EQUITY_SYMBOLS:
         session_open, session_close, status = _next_xnys_window(now_utc)
         recommended_start = session_open + timedelta(minutes=15)
         recommended_end = session_close - timedelta(minutes=30)

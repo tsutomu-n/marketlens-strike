@@ -18,4 +18,6 @@ uv run sis phase-gate-review
 1. `data/reports/phase_gate_review.md`
 2. `data/reports/readiness_snapshot.md`
 3. `data/reports/current_state_index.md`
-4. `docs/live_evidence_reports/live_evidence_report_<run_id>.md`
+4. local に再生成された `docs/live_evidence_reports/live_evidence_report_<run_id>.md`
+
+この directory にある generated report は source doc ではありません。tracked に戻す場合は、まず `docs/archive/` へ移すか、current docs から参照しない形にしてください。

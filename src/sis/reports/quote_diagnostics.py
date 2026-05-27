@@ -18,7 +18,13 @@ class QuoteDiagnostic:
     stale_rate: float
     missing_mark_price_rate: float
     missing_index_price_rate: float
+    missing_oracle_price_rate: float
+    missing_funding_rate: float
+    missing_open_interest_rate: float
     missing_spread_rate: float
+    l2_only_rate: float
+    fee_mode_unknown_rate: float
+    block_reason_distribution: dict[str, int]
     stale_missing_oracle_ts_rate: float
     stale_old_oracle_ts_rate: float
     market_status_unknown_rate: float
@@ -81,7 +87,13 @@ def build_quote_diagnostics(
         stale_old_oracle = 0
         missing_mark = 0
         missing_index = 0
+        missing_oracle = 0
+        missing_funding = 0
+        missing_open_interest = 0
         missing_spread = 0
+        l2_only = 0
+        fee_unknown = 0
+        block_reasons: dict[str, int] = defaultdict(int)
         market_unknown = 0
         market_closed = 0
         oracle_ages: list[int] = []
@@ -89,7 +101,7 @@ def build_quote_diagnostics(
 
         for row in rows:
             ts_client = row.get("ts_client")
-            oracle_ts_ms = row.get("oracle_ts_ms")
+            oracle_ts_ms = row.get("oracle_ts_ms") or row.get("source_ts_ms") or row.get("recv_ts_ms")
             market_status = row.get("market_status")
             if market_status == "unknown":
                 market_unknown += 1
@@ -120,6 +132,19 @@ def build_quote_diagnostics(
                 missing_mark += 1
             if row.get("index_price") is None:
                 missing_index += 1
+            if row.get("oracle_price") is None:
+                missing_oracle += 1
+            if row.get("funding_rate") is None:
+                missing_funding += 1
+            if row.get("open_interest_usd") is None:
+                missing_open_interest += 1
+            if row.get("mark_price") is None and row.get("oracle_price") is None:
+                l2_only += 1
+            if row.get("fee_mode") in (None, "unknown"):
+                fee_unknown += 1
+            for reason in row.get("block_reasons") or []:
+                if isinstance(reason, str):
+                    block_reasons[reason] += 1
             spread = row.get("spread_bps")
             if spread is None:
                 missing_spread += 1
@@ -137,7 +162,13 @@ def build_quote_diagnostics(
                 stale_rate=_pct(stale_rows, len(rows)),
                 missing_mark_price_rate=_pct(missing_mark, len(rows)),
                 missing_index_price_rate=_pct(missing_index, len(rows)),
+                missing_oracle_price_rate=_pct(missing_oracle, len(rows)),
+                missing_funding_rate=_pct(missing_funding, len(rows)),
+                missing_open_interest_rate=_pct(missing_open_interest, len(rows)),
                 missing_spread_rate=_pct(missing_spread, len(rows)),
+                l2_only_rate=_pct(l2_only, len(rows)),
+                fee_mode_unknown_rate=_pct(fee_unknown, len(rows)),
+                block_reason_distribution=dict(sorted(block_reasons.items())),
                 stale_missing_oracle_ts_rate=_pct(stale_missing_oracle, len(rows)),
                 stale_old_oracle_ts_rate=_pct(stale_old_oracle, len(rows)),
                 market_status_unknown_rate=_pct(market_unknown, len(rows)),
@@ -248,7 +279,13 @@ def build_quote_diagnostics_report(
             lines.append(f"  - stale_rate: {item.stale_rate:.4f}")
             lines.append(f"  - missing_mark_price_rate: {item.missing_mark_price_rate:.4f}")
             lines.append(f"  - missing_index_price_rate: {item.missing_index_price_rate:.4f}")
+            lines.append(f"  - missing_oracle_price_rate: {item.missing_oracle_price_rate:.4f}")
+            lines.append(f"  - missing_funding_rate: {item.missing_funding_rate:.4f}")
+            lines.append(f"  - missing_open_interest_rate: {item.missing_open_interest_rate:.4f}")
             lines.append(f"  - missing_spread_rate: {item.missing_spread_rate:.4f}")
+            lines.append(f"  - l2_only_rate: {item.l2_only_rate:.4f}")
+            lines.append(f"  - fee_mode_unknown_rate: {item.fee_mode_unknown_rate:.4f}")
+            lines.append(f"  - block_reason_distribution: {item.block_reason_distribution}")
             lines.append(f"  - oracle_age_p50_ms: {item.oracle_age_p50_ms}")
             lines.append(f"  - oracle_age_p90_ms: {item.oracle_age_p90_ms}")
             lines.append(f"  - spread_p50_bps: {item.spread_p50_bps}")

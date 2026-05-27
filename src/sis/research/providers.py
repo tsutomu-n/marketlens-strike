@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Callable
+from urllib.request import urlopen
 
 import polars as pl
 
@@ -36,9 +37,7 @@ def _normalize_price_frame(frame: pl.DataFrame, provider: str) -> pl.DataFrame:
         raise ValueError(f"Price provider output missing columns: {sorted(missing)}")
 
     available = set(frame.columns)
-    value_columns = [
-        name for name in ("open", "high", "low", "close", "volume") if name in available
-    ]
+    value_columns = [name for name in ("open", "high", "low", "close") if name in available]
     normalized = frame.with_columns(
         pl.col("ts").cast(pl.Datetime(time_unit="us", time_zone="UTC")),
         pl.col("symbol").cast(pl.Utf8).str.to_uppercase(),
@@ -133,9 +132,16 @@ class YahooFinancePriceProvider(PriceProvider):
             )
             if raw is None or getattr(raw, "empty", False):
                 continue
+            if getattr(raw.columns, "nlevels", 1) > 1:
+                raw = raw.copy()
+                raw.columns = [
+                    item[0] if isinstance(item, tuple) and item else item
+                    for item in raw.columns.to_list()
+                ]
             pandas_frame = raw.reset_index()
             renamed = pandas_frame.rename(
                 columns={
+                    "index": "ts",
                     "Datetime": "ts",
                     "Date": "ts",
                     "Open": "open",
@@ -216,6 +222,35 @@ class FredMacroProvider(MacroProvider):
                 pl.lit("latest").alias("vintage_mode"),
                 pl.lit(None).cast(pl.Date).alias("realtime_start"),
                 pl.lit(None).cast(pl.Date).alias("realtime_end"),
+            )
+            frames.append(frame)
+        if not frames:
+            return pl.DataFrame(schema={"date": pl.Date, "series_id": pl.Utf8, "value": pl.Float64})
+        return _normalize_macro_frame(pl.concat(frames, how="vertical_relaxed"), self.name)
+
+
+class FredGraphCsvMacroProvider(MacroProvider):
+    name = "fredgraph_csv"
+
+    def fetch_series(self, series_ids: list[str], start: date, end: date) -> pl.DataFrame:
+        frames: list[pl.DataFrame] = []
+        for series_id in series_ids:
+            url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
+            with urlopen(url, timeout=20) as response:
+                frame = pl.read_csv(response)
+            if "observation_date" not in frame.columns or series_id not in frame.columns:
+                continue
+            frame = (
+                frame.rename({"observation_date": "date", series_id: "value"})
+                .with_columns(
+                    pl.col("date").str.strptime(pl.Date, "%Y-%m-%d", strict=False),
+                    pl.col("value").cast(pl.Float64, strict=False),
+                    pl.lit(series_id).alias("series_id"),
+                    pl.lit("latest").alias("vintage_mode"),
+                    pl.lit(None).cast(pl.Date).alias("realtime_start"),
+                    pl.lit(None).cast(pl.Date).alias("realtime_end"),
+                )
+                .filter(pl.col("date").is_between(start, end), pl.col("value").is_not_null())
             )
             frames.append(frame)
         if not frames:

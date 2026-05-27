@@ -45,17 +45,42 @@ class TradeXyzClient:
             )
         return response.json()
 
-    def all_mids(self) -> dict[str, str]:
-        payload = {"type": "allMids", "dex": self.config.dex}
+    def all_mids(self, *, dex: str | None = None) -> dict[str, str]:
+        payload = {"type": "allMids", "dex": dex or self.config.dex}
         data = self.post_info(payload)
         if not isinstance(data, dict):
             raise TradeXyzApiError(f"allMids returned non-object: {type(data).__name__}")
         return {str(k): str(v) for k, v in data.items()}
 
-    def meta(self) -> dict[str, Any]:
-        data = self.post_info({"type": "meta", "dex": self.config.dex})
+    def meta(self, *, dex: str | None = None) -> dict[str, Any]:
+        data = self.post_info({"type": "meta", "dex": dex or self.config.dex})
         if not isinstance(data, dict):
             raise TradeXyzApiError(f"meta returned non-object: {type(data).__name__}")
+        return data
+
+    def perp_dexs(self) -> list[Any]:
+        data = self.post_info({"type": "perpDexs"})
+        if not isinstance(data, list):
+            raise TradeXyzApiError(f"perpDexs returned non-list: {type(data).__name__}")
+        return data
+
+    def meta_and_asset_ctxs(self, *, dex: str | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        data = self.post_info({"type": "metaAndAssetCtxs", "dex": dex or self.config.dex})
+        if (
+            not isinstance(data, list)
+            or len(data) < 2
+            or not isinstance(data[0], dict)
+            or not isinstance(data[1], list)
+        ):
+            raise TradeXyzApiError(
+                f"metaAndAssetCtxs returned unexpected payload: {type(data).__name__}"
+            )
+        return data[0], [row for row in data[1] if isinstance(row, dict)]
+
+    def all_perp_metas(self) -> list[Any]:
+        data = self.post_info({"type": "allPerpMetas"})
+        if not isinstance(data, list):
+            raise TradeXyzApiError(f"allPerpMetas returned non-list: {type(data).__name__}")
         return data
 
     def l2_book(self, coin: str) -> dict[str, Any]:

@@ -7,10 +7,10 @@
 | PR | Title | Status | Evidence |
 |---|---|---|---|
 | PR-00 | Python 3.13 migration | DONE | pyproject.toml, .python-version, uv.lock, .github/workflows/ci.yml, scripts/check |
-| PR-01 | Archive legacy venues | DONE | archive/legacy_sidecars/, src/sis/venues/archive/, src/sis/execution/archive/, pyproject.toml without ostium-python-sdk |
+| PR-01 | Archive legacy venues | DONE | archive/gtrade_ostium_legacy_archive_*.zip, package.json legacy note, pyproject.toml without ostium-python-sdk |
 | PR-02 | Generalize models and schemas | DONE | src/sis/models.py, schemas/, configs/*.yaml, configs/instrument_registry.seed.json |
-| PR-03 | Build Trade[XYZ] universe mapping | DONE | src/sis/venues/trade_xyz/registry.py, src/sis/venues/trade_xyz/report.py, tests/test_trade_xyz_registry.py |
-| PR-04 | Add Trade[XYZ] read-only collector | DONE | src/sis/venues/trade_xyz/collector.py, src/sis/venues/trade_xyz/normalizer.py, tests/test_trade_xyz_collector.py |
+| PR-03 | Build Trade[XYZ] universe mapping | DONE | src/sis/venues/trade_xyz/registry.py, src/sis/venues/trade_xyz/report.py, tests/test_trade_xyz_registry.py, `perpDexs` fallback |
+| PR-04 | Add Trade[XYZ] read-only collector | DONE | src/sis/venues/trade_xyz/collector.py, src/sis/venues/trade_xyz/normalizer.py, tests/test_trade_xyz_collector.py, quote collection summary/report |
 | PR-05 | Add real market data layer | DONE | src/sis/real_market/*, tests/test_real_market_models.py, tests/test_real_market_quality.py, tests/test_real_market_features.py |
 | PR-06 | Add real vs venue tracking | DONE | src/sis/tracking/*, tests/test_tracking_models.py, tests/test_real_vs_venue_tracking.py, tests/test_lead_lag.py |
 | PR-07 | Gate paper execution by venue quality | DONE | src/sis/paper/*, src/sis/core/execution_plan.py, tests/test_paper_trading.py, tests/test_paper_runner.py |
@@ -22,6 +22,7 @@
 - `src/sis/cli.py` は root Typer app registration と `main()` に近い構成へ分割済み。
 - ただし operator-facing runtime artifact chain は一部 legacy collector surface をまだ利用する。
 - そのため "code complete" と "operationally cut over" は分けて扱う。
+- `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
 
 ## Verified Acceptance Highlights
 
@@ -48,12 +49,12 @@ PR-08:
 
 ## Verification
 
-2026-05-26 current verification:
+2026-05-27 current verification:
 
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 300 passed
+- `uv run pytest -q`: 270 passed
 - `./scripts/check`: pass
 
 ## Reading Pointers

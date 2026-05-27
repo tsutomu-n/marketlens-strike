@@ -485,13 +485,13 @@
       <div class="grid">
         <article class="card third status-ok">
           <h3>対象一覧を作る</h3>
-          <p>どの銘柄を見るかを一覧にします。</p>
+          <p>どの銘柄を見るかを一覧にします。Trade[XYZ] の発注用IDも、取得できる場合はここで解決します。</p>
           <pre><code>uv run sis probe trade-xyz</code></pre>
         </article>
         <article class="card third status-ok">
           <h3>価格を集める</h3>
-          <p>Trade[XYZ] から価格や板の情報を集めます。</p>
-          <pre><code>uv run sis collect-trade-xyz-quotes</code></pre>
+          <p>Trade[XYZ] から価格、板、集計用の要約を集めます。</p>
+          <pre><code>uv run sis collect-trade-xyz-quotes --write-summary --write-report</code></pre>
         </article>
         <article class="card third status-info">
           <h3>生データだけ集める</h3>
@@ -521,7 +521,7 @@ uv run sis build-signals</code></pre>
       <div class="grid">
         <article class="card third status-ok">
           <h3>できる</h3>
-          <p>銘柄リストを作り、Trade[XYZ]の価格を集め、計算しやすい表に変換できます。現実市場のデータ作成と仮想取引の入口もあります。</p>
+          <p>銘柄リストと発注用IDを作り、Trade[XYZ]の価格を集め、計算しやすい表に変換できます。現実市場のデータ作成と仮想取引の入口もあります。</p>
         </article>
         <article class="card third status-warn">
           <h3>途中</h3>
@@ -630,7 +630,7 @@ data/reports/bot_orders_preview.md</code></pre>
         <span class="section-tag">roadmap</span>
       </div>
       <div class="roadmap">
-        <div class="road"><strong>一括更新</strong>必要なデータをまとめて作る `refresh-trade-xyz-artifacts` を用意する。</div>
+        <div class="road"><strong>一括更新</strong>必要なデータをまとめて作る Trade[XYZ] 用の更新手順を固定する。</div>
         <div class="road"><strong>価格チェック</strong>`trade_xyz_data_quality` で価格が使えるかを診断する。</div>
         <div class="road"><strong>準備判定</strong>`trade_xyz_readiness` でBot前の健康診断を作る。</div>
         <div class="road"><strong>判断メモ</strong>`bot_decision.json` に「取引する / しない」と理由を書く。</div>
