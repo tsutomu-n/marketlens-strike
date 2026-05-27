@@ -68,12 +68,11 @@ Trade[XYZ] quote refresh:
 ```bash
 uv run sis probe trade-xyz
 uv run sis collect-trade-xyz-quotes --write-summary --write-report
-uv run sis normalize-quotes
-uv run sis build-cost-matrix
-uv run sis build-backtest
-uv run sis check-go-no-go
-uv run sis build-evidence-card
+uv run sis validate-artifacts --strict
+uv run sis phase-gate-review
 ```
+
+`check-go-no-go` and `build-evidence-card` remain supplemental artifact reports. They are not the primary Bot-readiness gate; use `phase-gate-review` for the current Trade[XYZ] decision.
 
 PR12 read-only smoke evidence:
 
@@ -98,7 +97,7 @@ PR12 read-only smoke evidence:
 
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 273 passed
+- `uv run pytest -q`: 275 passed
 - `./scripts/check`: pass
 
 ## Legacy Notes

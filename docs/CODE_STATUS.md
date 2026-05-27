@@ -65,7 +65,7 @@ PR-08:
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 273 passed
+- `uv run pytest -q`: 275 passed
 - `./scripts/check`: pass
 - targeted PR9a-PR12 tests: 19 passed
 - latest strict validation: `checked_files=11`, `issues=0`

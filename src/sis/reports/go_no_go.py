@@ -233,6 +233,103 @@ def _venue_cost_rows(rows: list[dict[str, str | None]], venue: str) -> list[dict
     return [row for row in rows if row.get("venue") == venue]
 
 
+def _has_trade_xyz_artifacts(data_dir: Path) -> bool:
+    return (
+        (data_dir / "registry/trade_xyz_instrument_registry.json").exists()
+        or any((data_dir / "raw/quotes/trade_xyz").glob("*.jsonl"))
+        or (data_dir / "ops/trade_xyz_quote_collection_summary.json").exists()
+    )
+
+
+def _latest_trade_xyz_quote(data_dir: Path) -> Path | None:
+    paths = sorted((data_dir / "raw/quotes/trade_xyz").glob("*.jsonl"))
+    return paths[-1] if paths else None
+
+
+def _trade_xyz_summary_row_count(path: Path) -> int:
+    if not path.exists():
+        return 0
+    payload = read_json(path)
+    if not isinstance(payload, dict):
+        return 0
+    try:
+        return int(payload.get("row_count") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _build_trade_xyz_go_no_go_report(data_dir: Path) -> GoNoGoReport:
+    registry = data_dir / "registry/trade_xyz_instrument_registry.json"
+    quote_path = _latest_trade_xyz_quote(data_dir)
+    summary_path = data_dir / "ops/trade_xyz_quote_collection_summary.json"
+    normalized_quotes = data_dir / "normalized/quotes.parquet"
+    phase_gate_summary = data_dir / "ops/phase_gate_review_summary.json"
+    row_count = _trade_xyz_summary_row_count(summary_path)
+    criteria = [
+        GoNoGoCriterion(
+            criterion="Trade[XYZ] registry generated",
+            result="PASS" if registry.exists() else "MISSING",
+            evidence=str(registry),
+        ),
+        GoNoGoCriterion(
+            criterion="Trade[XYZ] quote window collected",
+            result="PASS" if quote_path is not None else "MISSING",
+            evidence=str(quote_path) if quote_path else str(data_dir / "raw/quotes/trade_xyz"),
+        ),
+        GoNoGoCriterion(
+            criterion="Trade[XYZ] quote collection summary",
+            result="PASS"
+            if row_count > 0
+            else ("MISSING" if not summary_path.exists() else "NO_GO"),
+            evidence=str(summary_path),
+        ),
+        GoNoGoCriterion(
+            criterion="Normalized quote data",
+            result="PASS" if normalized_quotes.exists() else "MISSING",
+            evidence=str(normalized_quotes),
+        ),
+        GoNoGoCriterion(
+            criterion="Phase gate review summary",
+            result="PASS" if phase_gate_summary.exists() else "MISSING",
+            evidence=str(phase_gate_summary),
+        ),
+    ]
+    blockers = [
+        item.criterion
+        for item in criteria
+        if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "NO_GO", "PARTIAL"}
+    ]
+    next_actions: list[str] = []
+    if not registry.exists():
+        next_actions.append("Run `uv run sis probe trade-xyz`.")
+    if quote_path is None or row_count <= 0:
+        next_actions.append(
+            "Run `uv run sis collect-trade-xyz-quotes --write-summary --write-report`."
+        )
+    if not normalized_quotes.exists():
+        next_actions.append("Collect Trade[XYZ] quotes with normalization enabled.")
+    if not phase_gate_summary.exists():
+        next_actions.append("Run `uv run sis phase-gate-review`.")
+    decision = Decision.GO if not blockers else Decision.NO_GO
+    return GoNoGoReport(
+        decision=decision,
+        summary=(
+            "Trade[XYZ] supplemental Go/No-Go report. Bot readiness is gated by "
+            "`phase-gate-review`; this report only summarizes local artifacts."
+        ),
+        criteria=criteria,
+        venue_decisions=[
+            VenueDecision(
+                venue="trade_xyz",
+                decision=decision,
+                main_blocker=blockers[0] if blockers else None,
+            )
+        ],
+        blockers=blockers,
+        next_actions=next_actions,
+    )
+
+
 def _venue_decision_from_checks(venue: str, checks: list[GoNoGoCriterion]) -> VenueDecision:
     blocker = _first_blocker(checks)
     if blocker is None:
@@ -269,7 +366,9 @@ def _next_actions(blockers: list[str], signals_exists: bool) -> list[str]:
             "Collect quote rows with fresh venue timestamps so stale_rate is at or below threshold"
         )
     if "tradable_rate at or above threshold" in blockers:
-        actions.append("Collect a sufficient gTrade/Ostium quote window during tradable sessions")
+        actions.append(
+            "Collect a sufficient legacy gTrade/Ostium quote window only if the legacy archive is intentionally restored"
+        )
     if not signals_exists:
         actions.append(
             "Provide data/research/signals.csv to run signal-driven backtests instead of quote-only fallback"
@@ -309,6 +408,9 @@ def _decision_for_state(
 
 
 def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
+    if _has_trade_xyz_artifacts(data_dir):
+        return _build_trade_xyz_go_no_go_report(data_dir)
+
     gtrade_registry = data_dir / "registry/gtrade_instrument_registry.json"
     ostium_registry = data_dir / "registry/ostium_instrument_registry.json"
     quotes = data_dir / "normalized/quotes.parquet"
@@ -361,7 +463,7 @@ def build_go_no_go_report(data_dir: Path) -> GoNoGoReport:
             result="PASS" if positions_have_liquidation_reference(ostium_positions) else "NOT_DONE",
             evidence=str(ostium_positions)
             if ostium_positions
-            else "Ostium liquidationPx requires an open-position sidecar from SDK getOpenPositions",
+            else "Legacy Ostium liquidationPx requires restored open-position sidecar data",
         ),
         GoNoGoCriterion(
             criterion="4h-3d after-cost backtest",

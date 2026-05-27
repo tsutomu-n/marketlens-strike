@@ -33,6 +33,14 @@ def latest_positions_sidecar(root: Path) -> Path | None:
     return None
 
 
+def _has_trade_xyz_artifacts(data_dir: Path) -> bool:
+    return (
+        (data_dir / "registry/trade_xyz_instrument_registry.json").exists()
+        or any((data_dir / "raw/quotes/trade_xyz").glob("*.jsonl"))
+        or (data_dir / "ops/trade_xyz_quote_collection_summary.json").exists()
+    )
+
+
 def _reports_dir(data_dir: Path) -> Path:
     return data_dir / "reports"
 
@@ -258,16 +266,37 @@ def build_evidence_card(
     execution_drift_flat = execution_drift_overview_flat_fields(
         normalized_execution_drift_overview_summary
     )
-    card = {
-        "run_id": run_id,
-        "created_at": now.isoformat(),
-        "scope": {
+    has_trade_xyz_artifacts = _has_trade_xyz_artifacts(data_dir)
+    scope = (
+        {
+            "venues": ["trade_xyz"],
+            "symbols": ["SP500", "XYZ100", "NVDA", "AAPL", "MSFT"],
+            "timeframes": ["read_only_quote_window"],
+            "scalping_policy": "prohibited_by_default",
+        }
+        if has_trade_xyz_artifacts
+        else {
             "venues": ["gtrade", "ostium"],
             "symbols": ["SPY", "QQQ", "XAU"],
             "timeframes": ["4h", "1d", "3d"],
             "scalping_policy": "prohibited_by_default",
-        },
-        "data": {
+        }
+    )
+    data = (
+        {
+            "raw_quote_digest": sha256_tree(data_dir / "raw/quotes/trade_xyz"),
+            "trade_xyz_registry_digest": sha256_file(
+                data_dir / "registry/trade_xyz_instrument_registry.json"
+            ),
+            "trade_xyz_quote_collection_summary_digest": sha256_file(
+                data_dir / "ops/trade_xyz_quote_collection_summary.json"
+            ),
+            "normalized_quote_digest": sha256_file(data_dir / "normalized/quotes.parquet"),
+            "go_no_go_report_digest": sha256_file(data_dir / "research/go_no_go_report.md"),
+            "decision_logs_digest": sha256_tree(data_dir / "evidence/decision_logs"),
+        }
+        if has_trade_xyz_artifacts
+        else {
             "raw_quote_digest": sha256_tree(data_dir / "raw/quotes"),
             "gtrade_registry_digest": sha256_file(
                 data_dir / "registry/gtrade_instrument_registry.json"
@@ -283,7 +312,13 @@ def build_evidence_card(
             "decision_summary_digest": sha256_file(data_dir / "research/decision_summary.json"),
             "go_no_go_report_digest": sha256_file(data_dir / "research/go_no_go_report.md"),
             "decision_logs_digest": sha256_tree(data_dir / "evidence/decision_logs"),
-        },
+        }
+    )
+    card = {
+        "run_id": run_id,
+        "created_at": now.isoformat(),
+        "scope": scope,
+        "data": data,
         "decision": report.decision.value,
         "venue_decisions": [item.model_dump(mode="json") for item in report.venue_decisions],
         "criteria": [item.model_dump(mode="json") for item in report.criteria],

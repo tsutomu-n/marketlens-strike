@@ -93,21 +93,21 @@ uv run python scripts/run_live_evidence.py --dry-run
 run:
 
 ```bash
-uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-interval-seconds 60 --backend-event-duration-minutes 30
+uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-interval-seconds 60
 ```
+
+この non-dry-run path は現在停止する。legacy gTrade/Ostium collector はZIP化済みなので、現行の収集は次のTrade[XYZ] refresh pathを使う。
 
 Trade[XYZ] refresh path:
 
 ```bash
 uv run sis probe trade-xyz
 uv run sis collect-trade-xyz-quotes --write-summary --write-report
-uv run sis normalize-quotes
-uv run sis build-cost-matrix
-uv run sis build-backtest
-uv run sis check-go-no-go
-uv run sis build-evidence-card
+uv run sis validate-artifacts --strict
 uv run sis phase-gate-review
 ```
+
+`check-go-no-go` と `build-evidence-card` は補助reportとして残る。Bot前の現行判定は `phase-gate-review` を正本にする。
 
 PR12 fresh read-only smoke path:
 

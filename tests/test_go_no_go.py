@@ -1,10 +1,12 @@
 from sis.models import Decision, GoNoGoCriterion, GoNoGoReport, VenueDecision
 from sis.reports.go_no_go import (
+    build_go_no_go_report,
     _decision_for_state,
     _threshold_result,
     _venue_decision_from_checks,
     write_go_no_go_markdown,
 )
+from sis.storage.jsonl_store import write_json
 
 
 def test_threshold_result_requires_values_for_every_row() -> None:
@@ -70,6 +72,36 @@ def test_decision_for_state_go_when_ready_and_signal_backtest_present() -> None:
         )
         == Decision.GO
     )
+
+
+def test_build_go_no_go_report_prefers_trade_xyz_artifacts(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    write_json(
+        data_dir / "registry/trade_xyz_instrument_registry.json",
+        [{"venue": "trade_xyz", "canonical_symbol": "NVDA"}],
+    )
+    (data_dir / "raw/quotes/trade_xyz").mkdir(parents=True)
+    (data_dir / "raw/quotes/trade_xyz/2026-05-27.jsonl").write_text(
+        '{"venue":"trade_xyz","canonical_symbol":"NVDA"}\n',
+        encoding="utf-8",
+    )
+    write_json(
+        data_dir / "ops/trade_xyz_quote_collection_summary.json",
+        {"venue": "trade_xyz", "row_count": 1},
+    )
+    (data_dir / "normalized").mkdir(parents=True)
+    (data_dir / "normalized/quotes.parquet").write_bytes(b"placeholder")
+    write_json(
+        data_dir / "ops/phase_gate_review_summary.json",
+        {"phase_gate_decision": "READ_ONLY_GO"},
+    )
+
+    report = build_go_no_go_report(data_dir)
+
+    assert report.decision == Decision.GO
+    assert [item.venue for item in report.venue_decisions] == ["trade_xyz"]
+    assert report.blockers == []
+    assert "Trade[XYZ] supplemental" in report.summary
 
 
 def test_go_no_go_markdown_includes_venue_decisions(tmp_path) -> None:

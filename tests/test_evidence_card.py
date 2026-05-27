@@ -248,3 +248,34 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
         == "NOT_DONE"
     )
     assert "Ostium liquidation reference requires real open position data" not in json.dumps(card)
+
+
+def test_evidence_card_prefers_trade_xyz_scope_when_trade_artifacts_exist(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    write_json(
+        data_dir / "registry/trade_xyz_instrument_registry.json",
+        [{"venue": "trade_xyz", "canonical_symbol": "NVDA"}],
+    )
+    (data_dir / "raw/quotes/trade_xyz").mkdir(parents=True)
+    (data_dir / "raw/quotes/trade_xyz/2026-05-27.jsonl").write_text(
+        '{"venue":"trade_xyz","canonical_symbol":"NVDA"}\n',
+        encoding="utf-8",
+    )
+    write_json(
+        data_dir / "ops/trade_xyz_quote_collection_summary.json",
+        {"venue": "trade_xyz", "row_count": 1},
+    )
+    (data_dir / "normalized").mkdir(parents=True)
+    (data_dir / "normalized/quotes.parquet").write_bytes(b"placeholder")
+    write_json(
+        data_dir / "ops/phase_gate_review_summary.json",
+        {"phase_gate_decision": "READ_ONLY_GO"},
+    )
+
+    card_path = build_evidence_card(data_dir, data_dir / "evidence")
+    card = json.loads(card_path.read_text(encoding="utf-8"))
+
+    assert card["scope"]["venues"] == ["trade_xyz"]
+    assert [item["venue"] for item in card["venue_decisions"]] == ["trade_xyz"]
+    assert "trade_xyz_registry_digest" in card["data"]
+    assert "gtrade_registry_digest" not in card["data"]

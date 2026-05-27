@@ -54,7 +54,7 @@
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 273 passed
+- `uv run pytest -q`: 275 passed
 - targeted PR9a-PR12 verification: `19 passed`
 - `uv run sis validate-artifacts --strict`: `checked_files=11`, `issues=0`
 - latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows
@@ -73,7 +73,7 @@ PR-08 専用確認:
 - production live order smoke
 - signing / wallet / exchange write integration
 - `bot_decision.json` / live order preview の正式 command surface
-- legacy `gtrade` / `ostium` read-only collector command を使う docs と current CLI surface の完全同期
+- `check-go-no-go` / `build-evidence-card` は補助reportであり、Bot前の現行判定正本は `phase-gate-review`
 
 ## Recommended Read Order
 
