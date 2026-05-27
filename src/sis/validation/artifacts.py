@@ -105,20 +105,27 @@ def validate_artifacts(
     quote_schema = _load_schema(schema_root, "quote_log_v1.schema.json")
 
     registry_files = [
+        data_dir / "registry/trade_xyz_instrument_registry.json",
         data_dir / "registry/gtrade_instrument_registry.json",
         data_dir / "registry/ostium_instrument_registry.json",
     ]
+    registry_exists = False
     for path in registry_files:
         if path.exists():
+            registry_exists = True
             _validate_json(path, {"type": "array", "items": instrument_schema}, issues)
             checked_files += 1
-        elif strict:
-            issues.append(
-                ValidationIssue(path=str(path), message="Missing required registry artifact")
+    if strict and not registry_exists:
+        issues.append(
+            ValidationIssue(
+                path=str(data_dir / "registry"), message="Missing required registry artifact"
             )
+        )
 
-    quote_files = _iter_files(str(data_dir / "raw/quotes/gtrade/*.jsonl")) + _iter_files(
-        str(data_dir / "raw/quotes/ostium/*.jsonl")
+    quote_files = (
+        _iter_files(str(data_dir / "raw/quotes/trade_xyz/*.jsonl"))
+        + _iter_files(str(data_dir / "raw/quotes/gtrade/*.jsonl"))
+        + _iter_files(str(data_dir / "raw/quotes/ostium/*.jsonl"))
     )
     if not quote_files and strict:
         issues.append(

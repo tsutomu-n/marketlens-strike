@@ -132,8 +132,8 @@ def _next_xau_window(now_utc: datetime) -> tuple[datetime, datetime, str]:
 def market_session_window(venue: str, symbol: str, now: datetime | None = None) -> SessionWindow:
     normalized_venue = venue.strip().lower()
     normalized_symbol = symbol.strip().upper()
-    if normalized_venue != "gtrade":
-        raise ValueError("Only gtrade is supported for market session planning.")
+    if normalized_venue != "trade_xyz":
+        raise ValueError("Only trade_xyz is supported for market session planning.")
 
     now_utc = _resolve_now(now)
     if normalized_symbol in INDEX_SYMBOLS:
@@ -145,7 +145,7 @@ def market_session_window(venue: str, symbol: str, now: datetime | None = None) 
         session_open, session_close, status = _next_xau_window(now_utc)
         recommended_start = session_open + timedelta(minutes=10)
         recommended_end = session_close - timedelta(minutes=10)
-        calendar = "GTRADE_COMMODITY"
+        calendar = "TRADE_XYZ_COMMODITY"
     else:
         raise ValueError(f"Unsupported symbol for market session planning: {normalized_symbol}")
 

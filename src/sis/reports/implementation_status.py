@@ -23,7 +23,7 @@ IMPLEMENTATION_STATUS: list[StatusItem] = [
         "PR-01",
         "Archive legacy venues",
         "DONE",
-        "archive/legacy_sidecars/, src/sis/venues/archive/, src/sis/execution/archive/, pyproject.toml without ostium-python-sdk",
+        "archive/gtrade_ostium_legacy_archive_*.zip, active legacy file tree removed, pyproject.toml without ostium-python-sdk",
     ),
     StatusItem(
         "PR-02",

@@ -804,6 +804,13 @@ def main(
     should_write_reports = not dry_run
     effective_run_id = run_id or datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     effective_manifest_path = manifest_path or default_manifest_path(effective_run_id)
+    if not dry_run:
+        typer.echo(
+            "live evidence execution is disabled because legacy gTrade/Ostium collectors "
+            "were zipped and removed. Use `uv run sis probe trade-xyz` and "
+            "`uv run sis collect-trade-xyz-quotes` for active Trade[XYZ] quote collection."
+        )
+        raise typer.Exit(code=2)
     manifest = LiveEvidenceManifest(
         run_id=effective_run_id,
         requested_schedule_jst=requested_schedule_jst,
@@ -850,13 +857,13 @@ def main(
 
         def preflight() -> None:
             log_step("Preflight: command availability")
-            for name in ("uv", "bun"):
+            for name in ("uv",):
                 if not shutil_which(name):
                     raise PreflightError(f"Required command not found: {name}")
 
             outside_symbols: list[str] = []
             for symbol in ("QQQ", "SPY", "XAU"):
-                window = market_session_window("gtrade", symbol)
+                window = market_session_window("trade_xyz", symbol)
                 log_step(f"Preflight: next live window {symbol}")
                 print(f"symbol={window.symbol}")
                 print(f"now_jst={window.now_jst.isoformat()}")
@@ -869,7 +876,7 @@ def main(
                     outside_symbols.append(symbol)
             if outside_symbols and not force and not dry_run:
                 raise PreflightError(
-                    "Current time is outside recommended gTrade live window for: "
+                    "Current time is outside recommended Trade[XYZ] live window for: "
                     + " ".join(outside_symbols)
                     + ". Use --force to collect anyway."
                 )

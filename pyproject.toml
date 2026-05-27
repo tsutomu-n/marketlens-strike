@@ -1,7 +1,7 @@
 [project]
 name = "marketlens-strike"
 version = "0.1.0"
-description = "Venue research and Go/No-Go engine for Ostium/gTrade QQQ/SPY/XAU swing research"
+description = "Trade[XYZ] venue research, paper operations, and Go/No-Go engine"
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "typer>=0.12",

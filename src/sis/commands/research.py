@@ -28,8 +28,6 @@ def register_research_commands(
         build_cost_matrix_from_quotes(
             settings.data_dir / "normalized/quotes.parquet",
             out,
-            gtrade_sidecar_root=settings.data_dir / "raw/sidecar/gtrade",
-            ostium_registry_path=settings.data_dir / "registry/ostium_instrument_registry.json",
         )
         build_cost_matrix_report(
             cost_matrix_path=out,

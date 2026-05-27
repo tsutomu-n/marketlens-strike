@@ -21,7 +21,7 @@ class LiveEvidencePlan:
 def build_live_evidence_plan(
     symbols: list[str],
     *,
-    venue: str = "gtrade",
+    venue: str = "trade_xyz",
     now: datetime | None = None,
 ) -> LiveEvidencePlan:
     if not symbols:

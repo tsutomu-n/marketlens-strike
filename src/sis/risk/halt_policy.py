@@ -49,11 +49,11 @@ def summarize_halt_policy(policy: dict) -> list[str]:
     stale_pairs = ", ".join(
         f"{k}={v}" for k, v in sorted(stale.items()) if isinstance(v, int | float)
     )
-    gtrade_age = stale.get("gtrade_max_age_ms", stale.get("trade_xyz_max_age_ms"))
-    ostium_age = stale.get("ostium_max_age_ms", stale.get("real_market_max_age_ms"))
+    trade_xyz_age = stale.get("trade_xyz_max_age_ms")
+    real_market_age = stale.get("real_market_max_age_ms")
     return [
-        f"gtrade_max_age_ms={gtrade_age}",
-        f"ostium_max_age_ms={ostium_age}",
+        f"trade_xyz_max_age_ms={trade_xyz_age}",
+        f"real_market_max_age_ms={real_market_age}",
         f"stale_price={stale_pairs}" if stale_pairs else "stale_price=unset",
         f"block_before_close_minutes={session.get('block_before_close_minutes')}",
         f"block_after_open_minutes={session.get('block_after_open_minutes')}",

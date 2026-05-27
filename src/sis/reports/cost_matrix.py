@@ -353,7 +353,46 @@ def build_cost_matrix_from_quotes(
         )
         return
 
-    matrix = base.join(aggregates, on=["venue", "symbol"], how="left").with_columns(
+    aggregate_keys = aggregates.select(["venue", "symbol"])
+    new_aggregate_rows = (
+        aggregates.join(base.select(["venue", "symbol"]), on=["venue", "symbol"], how="anti")
+        .with_columns(
+            pl.lit(None, dtype=pl.Utf8).alias("asset_class"),
+            pl.lit(None, dtype=pl.Float64).alias("open_fee_bps"),
+            pl.lit(None, dtype=pl.Float64).alias("close_fee_bps"),
+            pl.col("spread_p50_bps_live").alias("spread_p50_bps"),
+            pl.col("spread_p90_bps_live").alias("spread_p90_bps"),
+            pl.col("spread_p99_bps_live").alias("spread_p99_bps"),
+            pl.lit(None, dtype=pl.Float64).alias("holding_cost_4h_bps"),
+            pl.lit(None, dtype=pl.Float64).alias("holding_cost_24h_bps"),
+            pl.lit(None, dtype=pl.Float64).alias("holding_cost_72h_bps"),
+            pl.col("stale_rate_live").alias("stale_rate"),
+            pl.col("tradable_rate_live").alias("tradable_rate"),
+            pl.lit("derived from normalized quotes").alias("notes"),
+        )
+        .select(
+            [
+                "venue",
+                "symbol",
+                "asset_class",
+                "open_fee_bps",
+                "close_fee_bps",
+                "spread_p50_bps",
+                "spread_p90_bps",
+                "spread_p99_bps",
+                "holding_cost_4h_bps",
+                "holding_cost_24h_bps",
+                "holding_cost_72h_bps",
+                "stale_rate",
+                "tradable_rate",
+                "notes",
+            ]
+        )
+    )
+    matrix = base.join(aggregate_keys, on=["venue", "symbol"], how="semi").join(
+        aggregates, on=["venue", "symbol"], how="left"
+    )
+    matrix = matrix.with_columns(
         pl.coalesce(["spread_p50_bps_live", "spread_p50_bps"]).alias("spread_p50_bps"),
         pl.coalesce(["spread_p90_bps_live", "spread_p90_bps"]).alias("spread_p90_bps"),
         pl.coalesce(["spread_p99_bps_live", "spread_p99_bps"]).alias("spread_p99_bps"),
@@ -369,6 +408,7 @@ def build_cost_matrix_from_quotes(
             "tradable_rate_live",
         ]
     )
+    matrix = pl.concat([matrix, new_aggregate_rows], how="diagonal_relaxed")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     matrix.write_csv(out_path)
 

@@ -100,13 +100,13 @@ def test_diagnose_quotes_exits_when_no_quotes() -> None:
 def test_diagnose_quotes_cli_writes_report_and_summary(tmp_path) -> None:
     data_dir = tmp_path / "data"
     env = {"SIS_DATA_DIR": str(data_dir)}
-    raw_quote = data_dir / "raw/quotes/gtrade/2026-05-22.jsonl"
+    raw_quote = data_dir / "raw/quotes/trade_xyz/2026-05-22.jsonl"
     raw_quote.parent.mkdir(parents=True, exist_ok=True)
     raw_quote.write_text(
         "\n".join(
             [
-                '{"ts_client":"2026-05-22T00:00:00+00:00","venue":"gtrade","canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"mark_price":100.0,"index_price":100.0,"spread_bps":2.0,"market_status":"open","is_tradable":true,"source":"test","raw_payload_sha256":"a","oracle_ts_ms":1747872000000}',
-                '{"ts_client":"2026-05-22T00:05:00+00:00","venue":"gtrade","canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"mark_price":100.5,"index_price":100.5,"spread_bps":3.0,"market_status":"open","is_tradable":false,"source":"test","raw_payload_sha256":"b","oracle_ts_ms":1747872300000}',
+                '{"ts_client":"2026-05-22T00:00:00+00:00","venue":"trade_xyz","canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"mark_price":100.0,"index_price":100.0,"spread_bps":2.0,"market_status":"open","is_tradable":true,"source":"test","raw_payload_sha256":"a","oracle_ts_ms":1747872000000}',
+                '{"ts_client":"2026-05-22T00:05:00+00:00","venue":"trade_xyz","canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"mark_price":100.5,"index_price":100.5,"spread_bps":3.0,"market_status":"open","is_tradable":false,"source":"test","raw_payload_sha256":"b","oracle_ts_ms":1747872300000}',
             ]
         )
         + "\n",
@@ -114,11 +114,11 @@ def test_diagnose_quotes_cli_writes_report_and_summary(tmp_path) -> None:
     )
 
     result = runner.invoke(
-        app, ["diagnose-quotes", "--venue", "gtrade", "--symbol", "SPY"], env=env
+        app, ["diagnose-quotes", "--venue", "trade_xyz", "--symbol", "SPY"], env=env
     )
 
     assert result.exit_code == 0
-    assert "venue=gtrade symbol=SPY" in result.stdout
+    assert "venue=trade_xyz symbol=SPY" in result.stdout
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
     assert (data_dir / "reports/quote_diagnostics.md").exists()
     assert (data_dir / "ops/quote_diagnostics_summary.json").exists()
@@ -129,7 +129,7 @@ def test_diagnose_quotes_cli_writes_report_and_summary(tmp_path) -> None:
 
 
 def test_market_session_cli_for_qqq() -> None:
-    result = runner.invoke(app, ["market-session", "--venue", "gtrade", "--symbol", "QQQ"])
+    result = runner.invoke(app, ["market-session", "--venue", "trade_xyz", "--symbol", "QQQ"])
     assert result.exit_code == 0
     assert "symbol=QQQ" in result.stdout
     assert "calendar=XNYS" in result.stdout
@@ -138,10 +138,10 @@ def test_market_session_cli_for_qqq() -> None:
 
 
 def test_next_live_window_cli_for_xau() -> None:
-    result = runner.invoke(app, ["next-live-window", "--venue", "gtrade", "--symbol", "XAU"])
+    result = runner.invoke(app, ["next-live-window", "--venue", "trade_xyz", "--symbol", "XAU"])
     assert result.exit_code == 0
     assert "symbol=XAU" in result.stdout
-    assert "calendar=GTRADE_COMMODITY" in result.stdout
+    assert "calendar=TRADE_XYZ_COMMODITY" in result.stdout
     assert "recommended_start_jst=" in result.stdout
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
@@ -1420,13 +1420,13 @@ def test_build_evidence_card_cli_includes_audit_summary(tmp_path) -> None:
 def test_normalize_and_build_cost_matrix_cli(tmp_path) -> None:
     data_dir = tmp_path / "data"
     env = {"SIS_DATA_DIR": str(data_dir)}
-    raw_quote = data_dir / "raw/quotes/gtrade/2026-05-22.jsonl"
+    raw_quote = data_dir / "raw/quotes/trade_xyz/2026-05-22.jsonl"
     raw_quote.parent.mkdir(parents=True, exist_ok=True)
     raw_quote.write_text(
         "\n".join(
             [
-                '{"ts_client":"2026-05-22T00:00:00+00:00","venue":"gtrade","canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"mark_price":100.0,"index_price":100.0,"spread_bps":2.0,"market_status":"open","is_tradable":true,"source":"test","raw_payload_sha256":"a"}',
-                '{"ts_client":"2026-05-22T00:05:00+00:00","venue":"gtrade","canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"mark_price":100.5,"index_price":100.5,"spread_bps":3.0,"market_status":"open","is_tradable":false,"source":"test","raw_payload_sha256":"b"}',
+                '{"ts_client":"2026-05-22T00:00:00+00:00","venue":"trade_xyz","canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"mark_price":100.0,"index_price":100.0,"spread_bps":2.0,"market_status":"open","is_tradable":true,"source":"test","raw_payload_sha256":"a"}',
+                '{"ts_client":"2026-05-22T00:05:00+00:00","venue":"trade_xyz","canonical_symbol":"SPY","venue_symbol":"SPY/USD","pair_index":86,"mark_price":100.5,"index_price":100.5,"spread_bps":3.0,"market_status":"open","is_tradable":false,"source":"test","raw_payload_sha256":"b"}',
             ]
         )
         + "\n",
@@ -1447,7 +1447,7 @@ def test_normalize_and_build_cost_matrix_cli(tmp_path) -> None:
     report = (data_dir / "reports/venue_cost_matrix.md").read_text(encoding="utf-8")
     assert "## Quick Navigation" in report
     summary = read_json(data_dir / "ops/venue_cost_matrix_summary.json")
-    assert summary["row_count"] == 6
+    assert summary["row_count"] == 1
 
 
 def test_collect_trade_xyz_quotes_cli(tmp_path, monkeypatch) -> None:
@@ -1683,7 +1683,7 @@ def test_check_halt_policy_and_validate_artifacts_cli(tmp_path) -> None:
     validate = runner.invoke(app, ["validate-artifacts"], env=env)
 
     assert halt.exit_code == 0
-    assert "gtrade_max_age_ms=" in halt.stdout
+    assert "trade_xyz_max_age_ms=" in halt.stdout
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in halt.stdout
     assert validate.exit_code == 0
     assert "checked_files=6" in validate.stdout
