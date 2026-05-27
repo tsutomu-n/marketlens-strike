@@ -70,9 +70,11 @@ uv run sis probe trade-xyz
 uv run sis collect-trade-xyz-quotes --write-summary --write-report
 uv run sis validate-artifacts --strict
 uv run sis phase-gate-review
+uv run sis bot-preview
 ```
 
 `check-go-no-go` and `build-evidence-card` remain supplemental artifact reports. They are not the primary Bot-readiness gate; use `phase-gate-review` for the current Trade[XYZ] decision.
+`bot-preview` writes a read-only HOLD decision to `data/bot/bot_decision.json` and `data/reports/bot_orders_preview.md`; it does not use wallet secrets, signing, or exchange writes.
 
 PR12 read-only smoke evidence:
 
@@ -88,6 +90,7 @@ PR12 read-only smoke evidence:
 - micro live は code/test surface であり、現時点では public CLI command を公開していない
 - `collect-trade-xyz-quotes` は public CLI command として利用できる
 - Trade[XYZ] read-only artifact は phase gate に接続済み
+- `bot-preview` は read-only HOLD preview を出力する
 - wallet secrets, signing, production live trading は未完了
 - `data/` は git 管理外
 
@@ -97,7 +100,7 @@ PR12 read-only smoke evidence:
 
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 275 passed
+- `uv run pytest -q`: 280 passed
 - `./scripts/check`: pass
 
 ## Legacy Notes

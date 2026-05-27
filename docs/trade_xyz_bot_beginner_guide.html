@@ -525,7 +525,7 @@ uv run sis build-signals</code></pre>
         </article>
         <article class="card third status-warn">
           <h3>途中</h3>
-          <p>Trade[XYZ]用の読み取り専用ゲートは通りました。次はBotの判断メモと注文下書きを作る段階です。</p>
+          <p>Trade[XYZ]用の読み取り専用ゲートは通りました。Botの判断メモは作れますが、まだ注文候補は作りません。</p>
         </article>
         <article class="card third status-stop">
           <h3>まだしない</h3>
@@ -590,7 +590,7 @@ uv run sis build-signals</code></pre>
         </article>
         <article class="card third status-warn">
           <h3>Bot用の判断メモ</h3>
-          <p>読み取り専用の関門は通りました。次はBotが「取引する / しない」と理由を書ける形にします。</p>
+          <p><code>uv run sis bot-preview</code> で「今は取引しない」と理由を書いたメモを出せます。</p>
         </article>
         <article class="card third status-warn">
           <h3>取引しない理由</h3>
@@ -598,7 +598,7 @@ uv run sis build-signals</code></pre>
         </article>
         <article class="card status-info">
           <h3>注文の下書き</h3>
-          <p>本物の注文を出す前に、「もし出すならこの内容」というプレビューを作ります。ここでもまだお金は動きません。</p>
+          <p>v1ではまだ注文候補を作りません。まず「待つ理由」を安全に出すところまでです。</p>
         </article>
         <article class="card status-info">
           <h3>一括更新コマンド</h3>
@@ -614,7 +614,7 @@ uv run sis build-signals</code></pre>
       </div>
       <div class="card full status-warn">
         <h3>Trade[XYZ] bot decision preview</h3>
-        <p>言い換えると、本物の注文を出す前に「取引してよいか」「今はやめるべきか」と、その理由を人間が読める形にすることです。</p>
+        <p>言い換えると、本物の注文を出す前に「今はやめる」と、その理由を人間が読める形にすることです。</p>
         <pre><code>作りたい出力の例:
 data/bot/bot_decision.json
 data/reports/bot_orders_preview.md</code></pre>
@@ -630,8 +630,8 @@ data/reports/bot_orders_preview.md</code></pre>
         <div class="road"><strong>証跡確認</strong>PR12の読み取り専用ゲート結果を毎回確認する。</div>
         <div class="road"><strong>価格チェック</strong>既存のTrade[XYZ]要約と診断をBot判断に渡す。</div>
         <div class="road"><strong>準備判定</strong>phase gateの結果をBot前の健康診断として読む。</div>
-        <div class="road"><strong>判断メモ</strong>`bot_decision.json` に「取引する / しない」と理由を書く。</div>
-        <div class="road"><strong>注文下書き</strong>`bot_orders_preview.md` で、本物の注文前に人間が読める下書きを出す。</div>
+        <div class="road"><strong>判断メモ</strong>`bot_decision.json` に「今は取引しない」と理由を書く。</div>
+        <div class="road"><strong>HOLD preview</strong>`bot_orders_preview.md` で、注文候補なしと理由を人間が読める形にする。</div>
         <div class="road"><strong>まだ本番にしない</strong>paperとpreviewで確認し、walletや秘密鍵は使わない。</div>
       </div>
     </section>
@@ -645,8 +645,8 @@ data/reports/bot_orders_preview.md</code></pre>
         <div class="example-row"><code>data/ops/trade_xyz_quote_collection_summary.json</code><span>価格データの健康診断。新しいか、差が広すぎないか、量が足りるかを見る。</span></div>
         <div class="example-row"><code>data/ops/pr12_fresh_read_only_smoke_summary.json</code><span>60分以上の読み取り専用確認が通ったかをまとめた証跡。</span></div>
         <div class="example-row"><code>data/ops/phase_gate_review_summary.json</code><span>Botを作る前に、準備ができているかをまとめた判定。</span></div>
-        <div class="example-row"><code>data/bot/bot_decision.json</code><span>Botの判断メモ。「取引する / しない」と、その理由を書く。</span></div>
-        <div class="example-row"><code>data/reports/bot_orders_preview.md</code><span>本物の注文前の下書き。人間が確認するためのページ。</span></div>
+        <div class="example-row"><code>data/bot/bot_decision.json</code><span>Botの判断メモ。v1では「今は取引しない」と、その理由を書く。</span></div>
+        <div class="example-row"><code>data/reports/bot_orders_preview.md</code><span>注文候補なしの確認ページ。walletや秘密鍵は使わない。</span></div>
       </div>
     </section>
 

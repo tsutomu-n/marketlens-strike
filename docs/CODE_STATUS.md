@@ -32,6 +32,7 @@
 - migration 実装は完了している。
 - `src/sis/cli.py` は root Typer app registration と `main()` に近い構成へ分割済み。
 - Trade[XYZ] read-only artifacts は strict validation / diagnostics / phase gate に接続済み。
+- `bot-preview` は read-only HOLD decision と preview report を生成する。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
 
@@ -56,7 +57,7 @@ PR-08:
 - manual signing, wallet secrets, exchange write credentials
 - public CLI からの micro live 実行 surface
 - production live trading
-- bot decision / live order preview の正式 artifact surface
+- live order preview / 注文候補生成の正式 artifact surface
 
 ## Verification
 
@@ -65,7 +66,7 @@ PR-08:
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 275 passed
+- `uv run pytest -q`: 280 passed
 - `./scripts/check`: pass
 - targeted PR9a-PR12 tests: 19 passed
 - latest strict validation: `checked_files=11`, `issues=0`

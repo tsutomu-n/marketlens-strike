@@ -39,8 +39,16 @@ def _latest_quote_path(data_dir: Path) -> Path | None:
 
 
 def _int_value(value: object) -> int:
+    if value is None:
+        return 0
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if not isinstance(value, str):
+        return 0
     try:
-        return int(value or 0)
+        return int(value)
     except (TypeError, ValueError):
         return 0
 
@@ -62,12 +70,17 @@ def _next_actions(reason_codes: list[str]) -> list[str]:
         actions.append("Run `uv run sis phase-gate-review`.")
     if "PHASE_GATE_NOT_READ_ONLY_GO" in reason_codes:
         actions.append("Clear phase gate blockers, then rerun `uv run sis phase-gate-review`.")
-    if "MISSING_TRADE_XYZ_QUOTE_SUMMARY" in reason_codes or "EMPTY_TRADE_XYZ_QUOTE_SUMMARY" in reason_codes:
+    if (
+        "MISSING_TRADE_XYZ_QUOTE_SUMMARY" in reason_codes
+        or "EMPTY_TRADE_XYZ_QUOTE_SUMMARY" in reason_codes
+    ):
         actions.append("Run `uv run sis collect-trade-xyz-quotes --write-summary --write-report`.")
     if "MISSING_TRADE_XYZ_QUOTE_WINDOW" in reason_codes:
         actions.append("Collect a Trade[XYZ] quote window before building bot preview.")
     if "BOT_ORDER_LOGIC_NOT_IMPLEMENTED" in reason_codes:
-        actions.append("Implement explicit order selection logic before producing order candidates.")
+        actions.append(
+            "Implement explicit order selection logic before producing order candidates."
+        )
     return list(dict.fromkeys(actions))
 
 
@@ -161,7 +174,9 @@ def build_bot_preview(data_dir: Path) -> BotPreviewResult:
         "phase_gate_decision": phase_gate_decision or None,
         "phase2_entry_allowed": phase_summary.get("phase2_entry_allowed"),
         "read_only_artifacts": {
-            "phase_gate_summary_path": str(phase_summary_path) if phase_summary_path.exists() else None,
+            "phase_gate_summary_path": str(phase_summary_path)
+            if phase_summary_path.exists()
+            else None,
             "quote_summary_path": str(quote_summary_path) if quote_summary_path.exists() else None,
             "raw_quote_path": str(raw_quote_path) if raw_quote_path is not None else None,
             "quote_row_count": row_count,

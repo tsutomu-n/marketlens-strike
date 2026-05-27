@@ -105,9 +105,11 @@ uv run sis probe trade-xyz
 uv run sis collect-trade-xyz-quotes --write-summary --write-report
 uv run sis validate-artifacts --strict
 uv run sis phase-gate-review
+uv run sis bot-preview
 ```
 
 `check-go-no-go` と `build-evidence-card` は補助reportとして残る。Bot前の現行判定は `phase-gate-review` を正本にする。
+`bot-preview` は read-only のHOLD判定だけを生成する。wallet、署名、exchange write APIは使わない。
 
 PR12 fresh read-only smoke path:
 

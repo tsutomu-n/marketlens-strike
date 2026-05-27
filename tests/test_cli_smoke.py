@@ -17,6 +17,7 @@ def test_help_smoke() -> None:
     assert result.exit_code == 0
     assert "probe" in result.stdout
     assert "collect-trade-xyz-quotes" in result.stdout
+    assert "bot-preview" in result.stdout
     assert "build-backtest" in result.stdout
     assert "ingest-research-data" in result.stdout
     assert "build-feature-panel" in result.stdout
@@ -1572,6 +1573,49 @@ def test_collect_trade_xyz_quotes_cli_exits_when_no_active_instruments(tmp_path)
 
     assert result.exit_code == 2
     assert "no active trade_xyz instruments found in registry" in result.stdout
+
+
+def test_bot_preview_cli_writes_hold_outputs(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    (data_dir / "raw/quotes/trade_xyz").mkdir(parents=True, exist_ok=True)
+    (data_dir / "raw/quotes/trade_xyz/2026-05-27.jsonl").write_text(
+        '{"venue":"trade_xyz","canonical_symbol":"SP500"}\n',
+        encoding="utf-8",
+    )
+    (data_dir / "ops").mkdir(parents=True, exist_ok=True)
+    (data_dir / "ops/phase_gate_review_summary.json").write_text(
+        '{"phase_gate_decision":"READ_ONLY_GO","phase2_entry_allowed":true}',
+        encoding="utf-8",
+    )
+    (data_dir / "ops/trade_xyz_quote_collection_summary.json").write_text(
+        '{"venue":"trade_xyz","row_count":1,"collected_symbols":["SP500"]}',
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["bot-preview"], env=env)
+
+    assert result.exit_code == 0
+    assert "decision=HOLD" in result.stdout
+    assert "BOT_ORDER_LOGIC_NOT_IMPLEMENTED" in result.stdout
+    assert (data_dir / "bot/bot_decision.json").exists()
+    assert (data_dir / "reports/bot_orders_preview.md").exists()
+    payload = read_json(data_dir / "bot/bot_decision.json")
+    assert payload["decision"] == "HOLD"
+    assert payload["reason_codes"] == ["BOT_ORDER_LOGIC_NOT_IMPLEMENTED"]
+
+
+def test_bot_preview_cli_fail_on_not_ready_exits_2(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    result = runner.invoke(
+        app,
+        ["bot-preview", "--fail-on-not-ready"],
+        env={"SIS_DATA_DIR": str(data_dir)},
+    )
+
+    assert result.exit_code == 2
+    assert "MISSING_PHASE_GATE_SUMMARY" in result.stdout
+    assert (data_dir / "bot/bot_decision.json").exists()
 
 
 def test_build_event_calendar_and_check_research_quality_cli(tmp_path) -> None:

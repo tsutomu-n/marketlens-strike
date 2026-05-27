@@ -33,6 +33,7 @@
 - `Trade[XYZ]` `perpDexs` fallback による HIP-3 `asset_id` 解決
 - `Trade[XYZ]` quote collection summary / report / strict artifact validation
 - `Trade[XYZ]` diagnostics / strict validation / phase gate cutover for read-only PR12
+- `bot-preview` による read-only HOLD decision / orders preview artifact
 - `real_market` feature builder と free-source quality gating
 - `tracking` layer による real-market vs venue 判定
 - venue quality gate 付き paper fill / fee model / paper report
@@ -54,7 +55,7 @@
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 275 passed
+- `uv run pytest -q`: 280 passed
 - targeted PR9a-PR12 verification: `19 passed`
 - `uv run sis validate-artifacts --strict`: `checked_files=11`, `issues=0`
 - latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows
@@ -72,7 +73,7 @@ PR-08 専用確認:
 
 - production live order smoke
 - signing / wallet / exchange write integration
-- `bot_decision.json` / live order preview の正式 command surface
+- live order preview / 注文候補生成の正式 command surface
 - `check-go-no-go` / `build-evidence-card` は補助reportであり、Bot前の現行判定正本は `phase-gate-review`
 
 ## Recommended Read Order
@@ -97,4 +98,5 @@ artifact が古い場合:
 uv run sis implementation-status --write
 uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
+uv run sis bot-preview
 ```
