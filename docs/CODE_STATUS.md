@@ -43,7 +43,6 @@ PR-08:
 
 - manual signing, wallet secrets, exchange write credentials
 - public CLI からの micro live 実行 surface
-- public CLI からの `collect-trade-xyz-quotes` surface
 - production live trading
 - `trade_xyz` を主軸にした operations chain への全面移行
 

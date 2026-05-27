@@ -65,8 +65,8 @@ micro live の current boundary:
 
 - signing
 - wallet / exchange secrets
-- public CLI operator surface
-- public `collect-trade-xyz-quotes` command
+- public micro live operator surface
+- Trade[XYZ] 主軸の operations/readiness/phase gate cutover
 - production live trading
 
 ## Ops Boundary

@@ -38,7 +38,7 @@
 
 - `plan/README.md` は PR-00 をこれから開始する前提で書かれていたため、historical planning index に更新する。
 - PR-00 / PR-08 までの migration plan は実施済み contract として残す。
-- `collect-trade-xyz-quotes` は未実装の次PR候補であり、現行CLIとしては書かない。
+- `collect-trade-xyz-quotes` は public CLI 化済み。今後の次PR候補は、これを operations/readiness/phase gate に接続する cutover。
 - tracked `.tmp/live_evidence_current_status_2026-05-26.md` は当時の status snapshot として残す場合も、current truth ではないと明記する。
 
 ## 作り直したほうがいいドキュメント
@@ -49,7 +49,7 @@
 補足:
 
 - この文書自体は、旧監査結果が stale になったため current audit として再作成した。
-- quote collector CLI plan は、CLI refactor 完了後の現行構造を前提にした pending implementation memo へ直す。
+- quote collector CLI plan は、CLI 実装済み status と次の operations gate cutover plan へ直す。
 
 ## 削除・アーカイブしてもよいドキュメント
 
@@ -73,10 +73,11 @@
 - `src/sis/cli.py`: 348 lines
 - 最大 command module: `src/sis/commands/runtime_context.py`, 627 lines
 - 700 行超の Python command file は現時点で確認されていない
-- `collect-trade-xyz-quotes` は現行 public CLI に存在しない
+- `collect-trade-xyz-quotes` は現行 public CLI に存在する
 
 ## 残る注意点
 
 - `data/reports/*.md` の内容が古い場合は、手編集せず `uv run sis refresh-operations-artifacts` などで再生成する。
 - ignored/local `.tmp` の古い巨大ファイル調査メモは current docs に混ぜない。
 - historical generated artifacts の Python 3.14 traceback や過去ログは audit trail として書き換えない。
+- Bot 化前の主な残作業は、`collect-trade-xyz-quotes` の fresh artifact を Trade[XYZ] 主軸の operations/readiness/phase gate に接続すること。
