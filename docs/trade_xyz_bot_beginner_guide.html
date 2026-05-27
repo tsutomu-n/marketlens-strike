@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trade[XYZ] Bot準備ガイド 高校生向け</title>
+  <style>
+    :root {
+      --ink: #18201b;
+      --muted: #5f685f;
+      --paper: #f5f0e4;
+      --paper-strong: #fff9eb;
+      --line: #292f27;
+      --green: #226b4d;
+      --green-soft: #d8ead5;
+      --amber: #f0b94a;
+      --amber-soft: #fff0c4;
+      --red: #b84735;
+      --red-soft: #f4d4c9;
+      --blue: #315f8f;
+      --blue-soft: #d9e7f4;
+      --shadow: 10px 10px 0 rgba(24, 32, 27, 0.18);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 8%, rgba(240, 185, 74, 0.35), transparent 28rem),
+        radial-gradient(circle at 92% 12%, rgba(49, 95, 143, 0.2), transparent 24rem),
+        linear-gradient(135deg, rgba(24, 32, 27, 0.06) 25%, transparent 25%) 0 0 / 34px 34px,
+        var(--paper);
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", sans-serif;
+      line-height: 1.8;
+    }
+
+    a {
+      color: inherit;
+      text-decoration-thickness: 0.14em;
+      text-underline-offset: 0.18em;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 34px 0 72px;
+    }
+
+    .hero {
+      position: relative;
+      padding: clamp(28px, 6vw, 64px);
+      border: 3px solid var(--line);
+      border-radius: 34px;
+      background: linear-gradient(120deg, var(--paper-strong), #e6f0d5 68%, #dcebf5);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -64px;
+      bottom: -88px;
+      width: 260px;
+      height: 260px;
+      border: 3px solid var(--line);
+      border-radius: 50%;
+      background: repeating-linear-gradient(45deg, rgba(34, 107, 77, 0.18) 0 12px, transparent 12px 24px);
+      transform: rotate(-12deg);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+      padding: 6px 13px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: var(--amber-soft);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    h1, h2, h3 {
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", "BIZ UDPMincho", serif;
+      line-height: 1.16;
+      letter-spacing: -0.03em;
+    }
+
+    h1 {
+      max-width: 850px;
+      margin: 0;
+      font-size: clamp(2.4rem, 7vw, 5.8rem);
+    }
+
+    .lead {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 24px 0 0;
+      font-size: clamp(1.05rem, 2vw, 1.32rem);
+      font-weight: 700;
+    }
+
+    .warning-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 26px 0 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pill {
+      padding: 14px 16px;
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 249, 235, 0.84);
+      font-weight: 800;
+    }
+
+    .toc {
+      margin: 34px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .toc a {
+      padding: 9px 13px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-strong);
+      text-decoration: none;
+      font-weight: 700;
+      box-shadow: 3px 3px 0 rgba(24, 32, 27, 0.14);
+      transition: transform 140ms ease, box-shadow 140ms ease;
+    }
+
+    .toc a:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 rgba(24, 32, 27, 0.2);
+    }
+
+    section {
+      margin: 34px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+    }
+
+    .section-tag {
+      min-width: max-content;
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      grid-column: span 6;
+      padding: 22px;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 249, 235, 0.9);
+      box-shadow: 6px 6px 0 rgba(24, 32, 27, 0.12);
+    }
+
+    .card.full {
+      grid-column: 1 / -1;
+    }
+
+    .card.third {
+      grid-column: span 4;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 1.55rem;
+    }
+
+    .status-ok { background: var(--green-soft); }
+    .status-warn { background: var(--amber-soft); }
+    .status-stop { background: var(--red-soft); }
+    .status-info { background: var(--blue-soft); }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .step {
+      position: relative;
+      min-height: 142px;
+      padding: 17px;
+      border: 2px solid var(--line);
+      border-radius: 20px;
+      background: var(--paper-strong);
+    }
+
+    .step::after {
+      content: "→";
+      position: absolute;
+      right: -18px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--line);
+      border-radius: 50%;
+      background: var(--amber);
+      font-weight: 900;
+    }
+
+    .step:last-child::after {
+      content: none;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+    }
+
+    code, pre {
+      font-family: "SFMono-Regular", "Cascadia Code", "Liberation Mono", monospace;
+    }
+
+    pre {
+      margin: 12px 0 0;
+      overflow-x: auto;
+      padding: 16px;
+      border: 2px solid var(--line);
+      border-radius: 16px;
+      color: #f9f6e8;
+      background: #1f2a22;
+      line-height: 1.55;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .term {
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      gap: 0;
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--paper-strong);
+    }
+
+    .term div {
+      padding: 13px 15px;
+      border-bottom: 1px solid rgba(24, 32, 27, 0.22);
+    }
+
+    .term div:nth-child(odd) {
+      background: rgba(34, 107, 77, 0.12);
+      font-weight: 900;
+    }
+
+    .term div:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      counter-reset: road;
+    }
+
+    .road {
+      position: relative;
+      padding: 18px 14px 16px;
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper-strong);
+      min-height: 172px;
+    }
+
+    .road::before {
+      counter-increment: road;
+      content: counter(road);
+      display: inline-grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 10px;
+      border: 2px solid var(--line);
+      border-radius: 50%;
+      background: var(--green);
+      color: #fff9eb;
+      font-weight: 900;
+    }
+
+    .road strong {
+      display: block;
+      margin-bottom: 8px;
+      line-height: 1.35;
+    }
+
+    .example-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .example-row {
+      display: grid;
+      grid-template-columns: minmax(210px, 0.9fr) 1.4fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 249, 235, 0.86);
+    }
+
+    .example-row code {
+      font-weight: 900;
+      color: var(--blue);
+      word-break: break-word;
+    }
+
+    ul.clean {
+      padding-left: 1.2em;
+    }
+
+    .big-note {
+      padding: 26px;
+      border: 3px solid var(--line);
+      border-radius: 28px;
+      background: linear-gradient(135deg, var(--red-soft), var(--amber-soft));
+      box-shadow: var(--shadow);
+      font-size: 1.08rem;
+      font-weight: 750;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    footer {
+      margin-top: 44px;
+      padding: 20px;
+      border-top: 3px solid var(--line);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 860px) {
+      .warning-strip,
+      .flow,
+      .roadmap,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card,
+      .card.third,
+      .card.full {
+        grid-column: auto;
+      }
+
+      .step::after {
+        content: "↓";
+        right: 18px;
+        top: auto;
+        bottom: -18px;
+        transform: none;
+      }
+
+      .term {
+        grid-template-columns: 1fr;
+      }
+
+      .example-row {
+        grid-template-columns: 1fr;
+      }
+
+      .term div:nth-child(odd) {
+        border-bottom: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero, .toc a, .card, .step, .road, .big-note {
+        animation: rise 520ms ease both;
+      }
+
+      .toc a:nth-child(2), .card:nth-child(2), .step:nth-child(2) { animation-delay: 45ms; }
+      .toc a:nth-child(3), .card:nth-child(3), .step:nth-child(3) { animation-delay: 90ms; }
+      .toc a:nth-child(4), .card:nth-child(4), .step:nth-child(4) { animation-delay: 135ms; }
+      .toc a:nth-child(5), .card:nth-child(5), .step:nth-child(5) { animation-delay: 180ms; }
+
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(14px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">高校生向け / 本物のお金はまだ使わない</p>
+      <h1>Trade[XYZ] Bot準備ガイド</h1>
+      <p class="lead">
+        このページは、いまの仕組みが「何を集めて」「何を出して」「Botを作る前に何を確認するのか」を、できるだけ普通の言葉で説明します。
+      </p>
+      <div class="warning-strip">
+        <div class="pill">今できる: 価格を集めて、表にして、仮想取引の準備をする</div>
+        <div class="pill">まだしない: 本物のお金で自動売買する</div>
+      </div>
+    </header>
+
+    <nav class="toc" aria-label="目次">
+      <a href="#what">これは何？</a>
+      <a href="#now">今できること</a>
+      <a href="#flow">データの流れ</a>
+      <a href="#outputs">出力の意味</a>
+      <a href="#checks">安全確認</a>
+      <a href="#missing">足りないもの</a>
+      <a href="#next">次に作るもの</a>
+      <a href="#future">今後どうするか</a>
+      <a href="#examples">出力例</a>
+      <a href="#myths">よくある誤解</a>
+    </nav>
+
+    <section id="what">
+      <div class="section-head">
+        <h2>1. これは何？</h2>
+        <span class="section-tag">plain view</span>
+      </div>
+      <div class="grid">
+        <article class="card status-info">
+          <h3>ざっくり言うと</h3>
+          <p>現実の市場の動きと、Trade[XYZ] 側の価格を見比べて、「今は取引してよさそうか」を調べるための準備システムです。</p>
+        </article>
+        <article class="card status-stop">
+          <h3>大事な注意</h3>
+          <p>これはまだ本番の自動売買Botではありません。秘密鍵、wallet、本物のお金を使った自動発注は、この段階では扱いません。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="now">
+      <div class="section-head">
+        <h2>2. 今できること</h2>
+        <span class="section-tag">current features</span>
+      </div>
+      <div class="grid">
+        <article class="card third status-ok">
+          <h3>対象一覧を作る</h3>
+          <p>どの銘柄を見るかを一覧にします。</p>
+          <pre><code>uv run sis probe trade-xyz</code></pre>
+        </article>
+        <article class="card third status-ok">
+          <h3>価格を集める</h3>
+          <p>Trade[XYZ] から価格や板の情報を集めます。</p>
+          <pre><code>uv run sis collect-trade-xyz-quotes</code></pre>
+        </article>
+        <article class="card third status-info">
+          <h3>生データだけ集める</h3>
+          <p>あとで別に整理したい時は、生の価格メモだけ保存できます。</p>
+          <pre><code>uv run sis collect-trade-xyz-quotes --no-normalize</code></pre>
+        </article>
+        <article class="card status-info">
+          <h3>現実市場を調べる</h3>
+          <p>現実市場の価格や特徴を作ります。特徴とは、あとで判断に使う材料のことです。</p>
+          <pre><code>uv run sis ingest-research-data
+uv run sis build-feature-panel
+uv run sis build-signals</code></pre>
+        </article>
+        <article class="card status-warn">
+          <h3>仮想取引で試す</h3>
+          <p>本物のお金を使わず、もし取引したらどうなりそうかを練習できます。</p>
+          <pre><code>uv run sis paper-operations-cycle</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <section id="state">
+      <div class="section-head">
+        <h2>3. 今の状態まとめ</h2>
+        <span class="section-tag">status board</span>
+      </div>
+      <div class="grid">
+        <article class="card third status-ok">
+          <h3>できる</h3>
+          <p>銘柄リストを作り、Trade[XYZ]の価格を集め、計算しやすい表に変換できます。現実市場のデータ作成と仮想取引の入口もあります。</p>
+        </article>
+        <article class="card third status-warn">
+          <h3>途中</h3>
+          <p>Trade[XYZ]用の安全確認は、まだ運用全体の判定に完全にはつながっていません。古い仕組みの判定も一部残っています。</p>
+        </article>
+        <article class="card third status-stop">
+          <h3>まだしない</h3>
+          <p>本番自動売買、wallet、秘密鍵、普通のCLIからのmicro live実行はまだ扱いません。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="flow">
+      <div class="section-head">
+        <h2>4. データの流れ</h2>
+        <span class="section-tag">from data to decision</span>
+      </div>
+      <div class="flow">
+        <div class="step"><strong>1. 銘柄リスト</strong>見る対象を決める。</div>
+        <div class="step"><strong>2. 価格メモ</strong>Trade[XYZ] の今の価格を集める。</div>
+        <div class="step"><strong>3. 現実市場</strong>現実の株やETFの動きを見る。</div>
+        <div class="step"><strong>4. 比較</strong>Trade[XYZ] と現実市場のズレを見る。</div>
+        <div class="step"><strong>5. 判定</strong>取引するか、待つかを決める準備をする。</div>
+      </div>
+    </section>
+
+    <section id="outputs">
+      <div class="section-head">
+        <h2>5. 出力ファイルの意味</h2>
+        <span class="section-tag">files in normal words</span>
+      </div>
+      <div class="term" role="table" aria-label="出力ファイルの説明">
+        <div>registry</div><div>見るべき銘柄のリスト。学校の出席名簿のようなもの。</div>
+        <div>raw quotes</div><div>取ってきた価格情報をそのまま保存したメモ。</div>
+        <div>normalized quotes</div><div>あとで計算しやすいように整えた価格表。</div>
+        <div>readiness</div><div>Botの前に「準備できているか」を見る健康診断。</div>
+        <div>phase gate</div><div>次の段階へ進んでよいかを止める関門。</div>
+        <div>paper</div><div>本物のお金を使わない練習取引。</div>
+      </div>
+    </section>
+
+    <section id="checks">
+      <div class="section-head">
+        <h2>6. Bot前の安全確認</h2>
+        <span class="section-tag">before bot</span>
+      </div>
+      <div class="grid">
+        <article class="card third"><h3>価格は新しい？</h3><p>古い価格で判断すると、地図を見ずに走るようなものです。</p></article>
+        <article class="card third"><h3>差が広すぎない？</h3><p>買う値段と売る値段の差が大きいと、始めた瞬間に不利です。</p></article>
+        <article class="card third"><h3>量は足りる？</h3><p>注文できる量が少ないと、思った値段で取引できません。</p></article>
+        <article class="card third"><h3>現実市場とズレすぎてない？</h3><p>現実側とTrade[XYZ]側の価格が離れすぎていたら危険です。</p></article>
+        <article class="card third"><h3>情報源は信用できる？</h3><p>ひとつの怪しいデータだけで決めないようにします。</p></article>
+        <article class="card third"><h3>危ない時間ではない？</h3><p>市場が閉まっている時間や大きなニュースの近くは、待つ判断が必要です。</p></article>
+      </div>
+    </section>
+
+    <section id="missing">
+      <div class="section-head">
+        <h2>7. Bot化前に足りないもの</h2>
+        <span class="section-tag">missing pieces</span>
+      </div>
+      <div class="grid">
+        <article class="card third status-warn">
+          <h3>価格の健康診断</h3>
+          <p>集めた価格が新しいか、ズレが大きすぎないか、注文できる量があるかを自動で見たいです。</p>
+        </article>
+        <article class="card third status-warn">
+          <h3>Trade[XYZ]専用の関門</h3>
+          <p>古いgTrade/Ostium用の関門ではなく、Trade[XYZ]のデータを中心にした判定が必要です。</p>
+        </article>
+        <article class="card third status-warn">
+          <h3>取引しない理由</h3>
+          <p>Botは「買う」だけでなく、「今はやめる」と言える必要があります。その理由も人間に見える形にします。</p>
+        </article>
+        <article class="card status-info">
+          <h3>注文の下書き</h3>
+          <p>本物の注文を出す前に、「もし出すならこの内容」というプレビューを作ります。ここでもまだお金は動きません。</p>
+        </article>
+        <article class="card status-info">
+          <h3>一括更新コマンド</h3>
+          <p>銘柄リスト、価格、現実市場、比較、判定をまとめて更新する入口があると、毎回の確認ミスが減ります。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="next">
+      <div class="section-head">
+        <h2>8. 次に作るもの</h2>
+        <span class="section-tag">next build</span>
+      </div>
+      <div class="card full status-warn">
+        <h3>Trade[XYZ] operations gate cutover</h3>
+        <p>言い換えると、Trade[XYZ]用の安全確認ゲートを作ることです。価格を集める入口はできました。次は、その価格を使って「取引してよいか」「今はやめるべきか」をはっきり出す仕組みを作ります。</p>
+        <pre><code>作りたい出力の例:
+data/ops/trade_xyz_data_quality.json
+data/reports/trade_xyz_data_quality.md
+data/ops/trade_xyz_readiness.json
+data/bot/bot_decision.json
+data/reports/bot_orders_preview.md</code></pre>
+      </div>
+    </section>
+
+    <section id="future">
+      <div class="section-head">
+        <h2>9. 今後どうするか</h2>
+        <span class="section-tag">roadmap</span>
+      </div>
+      <div class="roadmap">
+        <div class="road"><strong>一括更新</strong>必要なデータをまとめて作る `refresh-trade-xyz-artifacts` を用意する。</div>
+        <div class="road"><strong>価格チェック</strong>`trade_xyz_data_quality` で価格が使えるかを診断する。</div>
+        <div class="road"><strong>準備判定</strong>`trade_xyz_readiness` でBot前の健康診断を作る。</div>
+        <div class="road"><strong>判断メモ</strong>`bot_decision.json` に「取引する / しない」と理由を書く。</div>
+        <div class="road"><strong>注文下書き</strong>`bot_orders_preview.md` で、本物の注文前に人間が読める下書きを出す。</div>
+        <div class="road"><strong>まだ本番にしない</strong>paperとpreviewで確認し、walletや秘密鍵は使わない。</div>
+      </div>
+    </section>
+
+    <section id="examples">
+      <div class="section-head">
+        <h2>10. 想定出力の例</h2>
+        <span class="section-tag">expected files</span>
+      </div>
+      <div class="example-list">
+        <div class="example-row"><code>data/ops/trade_xyz_data_quality.json</code><span>価格データの健康診断。新しいか、差が広すぎないか、量が足りるかを見る。</span></div>
+        <div class="example-row"><code>data/reports/trade_xyz_data_quality.md</code><span>人間が読むための価格データ診断レポート。</span></div>
+        <div class="example-row"><code>data/ops/trade_xyz_readiness.json</code><span>Botを作る前に、準備ができているかをまとめた判定。</span></div>
+        <div class="example-row"><code>data/bot/bot_decision.json</code><span>Botの判断メモ。「取引する / しない」と、その理由を書く。</span></div>
+        <div class="example-row"><code>data/reports/bot_orders_preview.md</code><span>本物の注文前の下書き。人間が確認するためのページ。</span></div>
+      </div>
+    </section>
+
+    <section id="myths">
+      <div class="section-head">
+        <h2>11. よくある誤解</h2>
+        <span class="section-tag">myth check</span>
+      </div>
+      <div class="grid">
+        <article class="card third status-stop"><h3>価格を集めた = Bot完成？</h3><p>違います。価格は材料です。まだ安全判定と注文下書きが必要です。</p></article>
+        <article class="card third status-stop"><h3>仮想取引OK = 本番OK？</h3><p>違います。仮想取引は練習です。本番には秘密鍵、wallet、失敗時の停止策が必要です。</p></article>
+        <article class="card third status-stop"><h3>micro liveがある = 自動売買OK？</h3><p>違います。micro liveは小さな安全確認用です。普通のBotとして公開されていません。</p></article>
+      </div>
+    </section>
+
+    <section>
+      <div class="big-note">
+        <h2>12. 絶対に誤解しないこと</h2>
+        <ul class="clean">
+          <li>この段階では、本物のお金で自動売買しない。</li>
+          <li>秘密鍵やwalletは使わない。</li>
+          <li>micro live は安全確認用のコードで、普通のBotとして公開されていない。</li>
+          <li>古い gTrade / Ostium 用の判定を、Trade[XYZ] の準備完了と勘違いしない。</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>
+      <p>関連資料: <a href="CURRENT_STATE.md">CURRENT_STATE.md</a> / <a href="OPERATIONS_RUNBOOK.md">OPERATIONS_RUNBOOK.md</a> / <a href="../plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md">Trade[XYZ] Quote Collector CLI Status And Next Plan</a></p>
+      <p class="small">Generated guide target: beginners. Implementation code and generated data artifacts are not changed by this document.</p>
+    </footer>
+  </main>
+</body>
+</html>
