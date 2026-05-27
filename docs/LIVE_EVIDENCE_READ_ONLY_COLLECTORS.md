@@ -1,6 +1,6 @@
 # Legacy Live Evidence Read-Only Collectors
 
-> Current status: historical / legacy. Commands such as `bun run gtrade:backend-collect` and `uv run sis ostium-constraint-artifact` are not current public CLI surfaces in this checkout. Treat this file as evidence history unless the legacy archive is intentionally restored.
+> Current status: historical / legacy. Commands such as `bun run gtrade:backend-collect` and `uv run sis ostium-constraint-artifact` are not current public CLI surfaces in this checkout. Treat this file as evidence history unless the legacy archive is intentionally restored. For current Trade[XYZ] read-only gate status, read `docs/CURRENT_STATE.md` and `docs/OPERATIONS_RUNBOOK.md`.
 
 この文書は legacy `gtrade` / `ostium` read-only collector chain の運用メモです。`Trade[XYZ]` migration 全体の正本ではありません。
 実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
@@ -100,7 +100,9 @@ manifest の `row_counts` に次が追加される。
 
 ## Phase Gate
 
-`uv run sis phase-gate-review` は、次が欠ける場合に Phase 2 を許可しない。
+legacy collector path では、`uv run sis phase-gate-review` は次が欠ける場合に Phase 2 を許可しない。
+
+Trade[XYZ] artifacts が存在する current path では、phase gate は Trade[XYZ] registry / quote / collection summary / diagnostics / strict validation を主入力にする。
 
 - latest gTrade backend collector manifest
 - latest Ostium constraint artifact

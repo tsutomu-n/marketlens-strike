@@ -109,6 +109,29 @@ uv run sis build-evidence-card
 uv run sis phase-gate-review
 ```
 
+PR12 fresh read-only smoke path:
+
+```bash
+uv run sis probe trade-xyz
+uv run sis collect-trade-xyz-quotes --symbols SP500,XYZ100,NVDA,AAPL,MSFT --duration-minutes 60 --interval-seconds 60 --normalize --replace --write-summary --write-report
+uv run sis ingest-research-data
+uv run sis build-event-calendar
+uv run sis build-feature-panel
+uv run sis build-signals
+uv run sis check-research-quality
+uv run sis diagnose-quotes --venue trade_xyz
+uv run sis validate-artifacts --strict
+uv run sis paper-operations-cycle
+uv run sis refresh-operations-artifacts
+uv run sis phase-gate-review
+```
+
+2026-05-27 の既知良好 artifact:
+
+- `data/ops/trade_xyz_quote_collection_summary.json`: 310 rows, 3673.995702 observed seconds
+- `data/ops/pr12_fresh_read_only_smoke_summary.json`: `final_decision=READ_ONLY_GO`
+- `data/ops/phase_gate_review_summary.json`: `phase_gate_decision=READ_ONLY_GO`, `next_actions=[]`
+
 `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` 以降の 3 文書は、この legacy read-only collector chain の補助資料です。`Trade[XYZ]` migration 完了そのものの説明ではありません。
 
 ## Daemon And Notifications

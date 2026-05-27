@@ -65,7 +65,9 @@ def compute_book_metrics(payload: dict[str, Any]) -> BookMetrics:
     if best_ask is None:
         block_reasons.append("BLOCK_NO_ASK")
     if best_bid is None or best_ask is None:
-        return BookMetrics(best_bid, best_ask, None, None, None, None, None, None, None, None, block_reasons)
+        return BookMetrics(
+            best_bid, best_ask, None, None, None, None, None, None, None, None, block_reasons
+        )
 
     mid = (best_bid + best_ask) / 2
     spread_bps = (best_ask - best_bid) / mid * 10_000 if mid > 0 else None

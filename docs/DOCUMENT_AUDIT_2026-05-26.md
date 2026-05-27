@@ -1,6 +1,6 @@
 # Documentation Audit (2026-05-26)
 
-> Superseded: current audit is `docs/DOCUMENT_AUDIT_2026-05-27.md`. This file is a 2026-05-26 snapshot.
+> Superseded: current audit is `docs/DOCUMENT_AUDIT_2026-05-27.md`. This file is a 2026-05-26 snapshot from before the PR12 Trade[XYZ] read-only smoke and `READ_ONLY_GO` phase gate evidence.
 
 コード、設定、CLI surface、tracked files を正として、tracked docs の current / stale / historical boundary を再監査した結果をまとめる。
 

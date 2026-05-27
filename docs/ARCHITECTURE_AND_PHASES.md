@@ -28,6 +28,7 @@
 current truth:
 
 - Phase 1 から Phase 6 の code surface は存在する
+- Trade[XYZ] read-only PR12 の generated artifact gate は `READ_ONLY_GO` まで確認済み
 - Phase 7 は未完了
 - operational promotion は generated artifact gate に依存する
 
@@ -66,16 +67,17 @@ micro live の current boundary:
 - signing
 - wallet / exchange secrets
 - public micro live operator surface
-- Trade[XYZ] 主軸の operations/readiness/phase gate cutover
+- bot decision / live order preview の正式 surface
 - production live trading
 
 ## Ops Boundary
 
-`refresh-operations-artifacts` 以下の operations chain は paper / execution artifact を束ねる restart surface である。一部 generated reports は legacy read-only collector blocker を表示し得るため、Trade[XYZ] readiness とは分けて読む。
+`refresh-operations-artifacts` 以下の operations chain は paper / execution artifact を束ねる restart surface である。Trade[XYZ] read-only PR12 は phase gate まで接続済みだが、execution drift や legacy generated report の文脈は bot/live readiness と分けて読む。
 
 つまり:
 
 - migration 実装完了
-- full operational cutover 未完了
+- Trade[XYZ] read-only phase gate cutover 完了
+- live trading / production operations 未完了
 
-この 2 つは同時に真になり得る。
+これらは同時に真になり得る。

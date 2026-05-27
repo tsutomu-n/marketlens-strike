@@ -95,7 +95,9 @@ def _validate_jsonl(path: Path, schema: dict, issues: list[ValidationIssue]) -> 
         issues.append(ValidationIssue(path=f"{path}#row={idx}", message=str(exc)))
 
 
-def _validate_trade_xyz_strict_row(path: Path, row_index: int, row: dict, issues: list[ValidationIssue]) -> None:
+def _validate_trade_xyz_strict_row(
+    path: Path, row_index: int, row: dict, issues: list[ValidationIssue]
+) -> None:
     required_non_null = {
         "venue": "TRADE_XYZ_STRICT_VENUE_MISSING",
         "canonical_symbol": "TRADE_XYZ_STRICT_SYMBOL_MISSING",
@@ -120,12 +122,16 @@ def _validate_trade_xyz_strict_row(path: Path, row_index: int, row: dict, issues
             issues.append(ValidationIssue(path=f"{path}#row={row_index}", message=reason))
 
 
-def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) -> ValidationSummary:
+def validate_artifacts(
+    data_dir: Path, schema_root: Path, strict: bool = False
+) -> ValidationSummary:
     issues: list[ValidationIssue] = []
     checked_files = 0
 
     instrument_schema = _load_schema(schema_root, "instrument_registry.schema.json")
-    quote_schema = _load_schema(schema_root, "quote_log_v2.schema.json" if strict else "quote_log_v1.schema.json")
+    quote_schema = _load_schema(
+        schema_root, "quote_log_v2.schema.json" if strict else "quote_log_v1.schema.json"
+    )
     trade_strict = strict and (
         (data_dir / "registry/trade_xyz_instrument_registry.json").exists()
         or bool(_iter_files(str(data_dir / "raw/quotes/trade_xyz/*.jsonl")))
@@ -156,8 +162,10 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
     trade_xyz_quote_files = _iter_files(str(data_dir / "raw/quotes/trade_xyz/*.jsonl"))
     quote_files = trade_xyz_quote_files
     if not trade_strict:
-        quote_files = quote_files + _iter_files(str(data_dir / "raw/quotes/gtrade/*.jsonl")) + _iter_files(
-            str(data_dir / "raw/quotes/ostium/*.jsonl")
+        quote_files = (
+            quote_files
+            + _iter_files(str(data_dir / "raw/quotes/gtrade/*.jsonl"))
+            + _iter_files(str(data_dir / "raw/quotes/ostium/*.jsonl"))
         )
     if not quote_files and strict:
         issues.append(
@@ -177,21 +185,35 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
         if summary_path.exists():
             summary_schema_path = schema_root / "trade_xyz_quote_collection_summary.schema.json"
             if summary_schema_path.exists():
-                _validate_json(summary_path, _load_schema(schema_root, summary_schema_path.name), issues)
+                _validate_json(
+                    summary_path, _load_schema(schema_root, summary_schema_path.name), issues
+                )
             elif not _is_json_dict(summary_path):
-                issues.append(ValidationIssue(path=str(summary_path), message="summary must be a JSON object"))
+                issues.append(
+                    ValidationIssue(path=str(summary_path), message="summary must be a JSON object")
+                )
             checked_files += 1
         else:
-            issues.append(ValidationIssue(path=str(summary_path), message="Missing Trade[XYZ] quote collection summary"))
+            issues.append(
+                ValidationIssue(
+                    path=str(summary_path), message="Missing Trade[XYZ] quote collection summary"
+                )
+            )
 
         normalized_path = data_dir / "normalized/quotes.parquet"
         if normalized_path.exists():
             checked_files += 1
         else:
-            issues.append(ValidationIssue(path=str(normalized_path), message="Missing normalized quotes parquet"))
+            issues.append(
+                ValidationIssue(
+                    path=str(normalized_path), message="Missing normalized quotes parquet"
+                )
+            )
 
         if not (schema_root / "quote_log_v2.schema.json").exists():
-            issues.append(ValidationIssue(path=str(schema_root), message="Missing quote_log_v2 schema"))
+            issues.append(
+                ValidationIssue(path=str(schema_root), message="Missing quote_log_v2 schema")
+            )
 
     backtest_metrics_path = data_dir / "research/backtest_metrics.json"
     if not trade_strict and backtest_metrics_path.exists():
@@ -213,7 +235,7 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
                 path=str(data_dir / "evidence"), message="No evidence card artifacts found"
             )
         )
-    for path in ([] if trade_strict else _latest_file(evidence_files)):
+    for path in [] if trade_strict else _latest_file(evidence_files):
         _validate_json(path, EVIDENCE_CARD_SCHEMA, issues)
         checked_files += 1
 
@@ -233,7 +255,7 @@ def validate_artifacts(data_dir: Path, schema_root: Path, strict: bool = False) 
                     ValidationIssue(path=str(path), message=f"{path.name} must be a JSON object")
                 )
             checked_files += 1
-        elif trade_strict and False:
+        elif strict and not trade_strict:
             issues.append(
                 ValidationIssue(
                     path=str(path),

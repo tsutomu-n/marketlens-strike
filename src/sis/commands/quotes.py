@@ -107,7 +107,9 @@ def register_quote_commands(
             typer.echo(f"normalized_quotes_path={summary['normalized_quotes_path']}")
             typer.echo(f"duckdb_path={summary['duckdb_path']}")
         if write_summary:
-            typer.echo(f"summary_path={(output_dir or settings.data_dir) / 'ops/trade_xyz_quote_collection_summary.json'}")
+            typer.echo(
+                f"summary_path={(output_dir or settings.data_dir) / 'ops/trade_xyz_quote_collection_summary.json'}"
+            )
         if write_report:
             typer.echo(f"report_path={summary.get('report_path')}")
 

@@ -53,7 +53,7 @@ def test_tracking_blocks_underlying_closed_session() -> None:
     )
     row = build_tracking_record(feature, _quote(), {"halt_policy": {}})
     assert row.trade_allowed is False
-    assert "BLOCK_UNDERLYING_NOT_REGULAR_SESSION" in row.block_reasons
+    assert "BLOCK_UNDERLYING_SESSION_CLOSED" in row.block_reasons
 
 
 def test_tracking_blocks_low_source_confidence() -> None:

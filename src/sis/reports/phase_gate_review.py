@@ -100,9 +100,13 @@ def _read_only_collector_gate(data_dir: Path) -> dict[str, object]:
         return {
             "read_only_collector_gate_passed": not blockers,
             "read_only_collector_blockers": blockers,
-            "latest_trade_xyz_registry_path": str(trade_registry_path) if trade_registry_path.exists() else None,
+            "latest_trade_xyz_registry_path": str(trade_registry_path)
+            if trade_registry_path.exists()
+            else None,
             "latest_trade_xyz_quote_path": str(trade_quote_path) if trade_quote_path else None,
-            "latest_trade_xyz_summary_path": str(trade_summary_path) if trade_summary_path.exists() else None,
+            "latest_trade_xyz_summary_path": str(trade_summary_path)
+            if trade_summary_path.exists()
+            else None,
             "latest_gtrade_backend_manifest_path": None,
             "latest_gtrade_backend_status": None,
             "latest_gtrade_backend_event_count": None,
@@ -205,17 +209,17 @@ def _required_artifact_paths(summary: dict[str, object]) -> dict[str, str | None
         )
     else:
         artifact_keys = (
-        "latest_manifest_path",
-        "latest_evidence_card_path",
-        "latest_execution_snapshot_summary_path",
-        "latest_execution_venue_comparison_summary_path",
-        "latest_execution_venue_diagnostics_summary_path",
-        "latest_execution_gap_history_summary_path",
-        "latest_execution_state_comparison_history_summary_path",
-        "latest_execution_snapshot_drift_history_summary_path",
-        "latest_execution_drift_overview_summary_path",
-        "latest_gtrade_backend_manifest_path",
-        "latest_ostium_constraint_path",
+            "latest_manifest_path",
+            "latest_evidence_card_path",
+            "latest_execution_snapshot_summary_path",
+            "latest_execution_venue_comparison_summary_path",
+            "latest_execution_venue_diagnostics_summary_path",
+            "latest_execution_gap_history_summary_path",
+            "latest_execution_state_comparison_history_summary_path",
+            "latest_execution_snapshot_drift_history_summary_path",
+            "latest_execution_drift_overview_summary_path",
+            "latest_gtrade_backend_manifest_path",
+            "latest_ostium_constraint_path",
         )
     paths: dict[str, str | None] = {}
     for key in artifact_keys:
@@ -553,7 +557,13 @@ def build_phase_gate_review(
         or (data_dir / "ops/trade_xyz_quote_collection_summary.json").exists()
         or _latest_path(data_dir / "raw/quotes/trade_xyz", "*.jsonl") is not None
     )
-    if not has_trade_xyz_artifacts and diagnostics_symbols == ("SP500", "XYZ100", "NVDA", "AAPL", "MSFT"):
+    if not has_trade_xyz_artifacts and diagnostics_symbols == (
+        "SP500",
+        "XYZ100",
+        "NVDA",
+        "AAPL",
+        "MSFT",
+    ):
         diagnostics_symbols = ("QQQ", "SPY", "XAU")
 
     diagnostics: list[dict] = []
@@ -664,7 +674,11 @@ def build_phase_gate_review(
         )
         next_actions = [] if pr12_completed else ["run_pr12_fresh_read_only_smoke"]
     elif not isinstance(decision, str):
-        if strict_validation_passed and diagnostics_all_available and collector_gate["read_only_collector_gate_passed"] is True:
+        if (
+            strict_validation_passed
+            and diagnostics_all_available
+            and collector_gate["read_only_collector_gate_passed"] is True
+        ):
             decision = "READ_ONLY_GO"
         else:
             decision = "NO_GO"

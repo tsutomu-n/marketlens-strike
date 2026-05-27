@@ -101,7 +101,9 @@ def build_quote_diagnostics(
 
         for row in rows:
             ts_client = row.get("ts_client")
-            oracle_ts_ms = row.get("oracle_ts_ms") or row.get("source_ts_ms") or row.get("recv_ts_ms")
+            oracle_ts_ms = (
+                row.get("oracle_ts_ms") or row.get("source_ts_ms") or row.get("recv_ts_ms")
+            )
             market_status = row.get("market_status")
             if market_status == "unknown":
                 market_unknown += 1

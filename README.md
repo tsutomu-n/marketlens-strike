@@ -1,6 +1,6 @@
 # marketlens-strike
 
-`marketlens-strike` は、`Trade[XYZ] / real market / tracking / paper / micro live safety` への migration を実装済みの workspace です。現行の operator-facing artifact chain には legacy read-only collector も一部残ります。
+`marketlens-strike` は、`Trade[XYZ] / real market / tracking / paper / micro live safety` への migration を実装済みの workspace です。2026-05-27 時点では Trade[XYZ] read-only PR12 smoke まで通っており、phase gate は `READ_ONLY_GO` です。
 
 ## Read First
 
@@ -46,7 +46,7 @@ Trade[XYZ] universe:
 
 ```bash
 uv run sis probe trade-xyz
-uv run sis collect-trade-xyz-quotes
+uv run sis collect-trade-xyz-quotes --write-summary --write-report
 ```
 
 Useful quote collection variants:
@@ -67,7 +67,7 @@ Trade[XYZ] quote refresh:
 
 ```bash
 uv run sis probe trade-xyz
-uv run sis collect-trade-xyz-quotes
+uv run sis collect-trade-xyz-quotes --write-summary --write-report
 uv run sis normalize-quotes
 uv run sis build-cost-matrix
 uv run sis build-backtest
@@ -75,12 +75,20 @@ uv run sis check-go-no-go
 uv run sis build-evidence-card
 ```
 
+PR12 read-only smoke evidence:
+
+- `data/ops/pr12_fresh_read_only_smoke_summary.json`
+- `data/reports/pr12_fresh_read_only_smoke_report.md`
+- latest observed window: 310 rows / 3673.995702 seconds / `SP500`, `XYZ100`, `NVDA`, `AAPL`, `MSFT`
+- latest phase gate: `READ_ONLY_GO`, `individual_stock_decision=paper_only`, `next_actions=[]`
+
 ## Current Boundaries
 
 - `trade_xyz` / `real_market` / `tracking` / `paper` / `micro_live` の code surface はある
 - `src/sis/cli.py` は root Typer app の組み立てと `main()` に寄せ、command 実装は `src/sis/commands/` に分割済み
 - micro live は code/test surface であり、現時点では public CLI command を公開していない
 - `collect-trade-xyz-quotes` は public CLI command として利用できる
+- Trade[XYZ] read-only artifact は phase gate に接続済み
 - wallet secrets, signing, production live trading は未完了
 - `data/` は git 管理外
 

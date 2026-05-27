@@ -1,21 +1,21 @@
-# Trade[XYZ] Quote Collector CLI Status And Next Plan
+# Trade[XYZ] Quote Collector CLI Consumed Plan
 
 Timestamp: 2026-05-26 21:17:46 JST  
 Updated: 2026-05-27 JST
 
-> Current status: historical plan plus status note. The CLI described here has since grown additional options and artifacts. Check `uv run sis collect-trade-xyz-quotes --help` and `docs/DOCUMENT_AUDIT_2026-05-27.md` before using this as an implementation source.
+> Current status: historical consumed plan plus status note. PR12 read-only smoke and Trade[XYZ] phase gate cutover are complete. Check `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, and `uv run sis collect-trade-xyz-quotes --help` before using this as an implementation source.
 
 ## 結論
 
-`trade_xyz` quote collector の public CLI 化は完了済み。
+`trade_xyz` quote collector の public CLI 化と、PR12 read-only smoke までの phase gate 接続は完了済み。
 
 現行 command:
 
 ```bash
-uv run sis collect-trade-xyz-quotes
+uv run sis collect-trade-xyz-quotes --write-summary --write-report
 ```
 
-この文書は、旧「CLI 化実装メモ」ではなく、次に必要な `Trade[XYZ] operations gate cutover` の前提資料として読む。
+この文書は current implementation plan ではなく、PR9a-PR12 で消化された historical plan として読む。
 
 ## 現行 status
 
@@ -29,6 +29,7 @@ Implemented:
 - default では raw quote JSONL 収集後に `data/normalized/quotes.parquet` と `data/normalized/sis.duckdb` を更新する。
 - `probe trade-xyz` が生成する `data/registry/trade_xyz_instrument_registry.json` を標準入力 artifact とする。
 - `log-quotes --venue gtrade` は current public CLI surface ではない。
+- `phase-gate-review` は Trade[XYZ] artifacts を使って `READ_ONLY_GO` を出せる。
 
 Current command flow:
 
@@ -111,57 +112,39 @@ Stdout:
   - `report_path=<path>`
 - `recommended_read_order_*`
 
+## PR12 result
+
+2026-05-27 の latest artifact:
+
+- `data/ops/trade_xyz_quote_collection_summary.json`: 310 rows, 3673.995702 observed seconds
+- `data/ops/pr12_fresh_read_only_smoke_summary.json`: `final_decision=READ_ONLY_GO`
+- `data/reports/pr12_fresh_read_only_smoke_report.md`
+- `data/ops/phase_gate_review_summary.json`: `phase_gate_decision=READ_ONLY_GO`, `next_actions=[]`
+
 ## 現在の残課題
 
-`collect-trade-xyz-quotes` は実装済みだが、Bot 化前にはまだ不足がある。
+`collect-trade-xyz-quotes` と Trade[XYZ] read-only phase gate は実装済みだが、Bot 化前にはまだ不足がある。
 
-現状の operations/readiness artifact は一部 legacy `gtrade` / `ostium` 前提を見ている。
-そのため、Trade[XYZ] quote が取得できても、`phase-gate-review` が Trade[XYZ] 主軸の readiness 判定になっているとは限らない。
+現状では live order はまだ出さない。残る主題は、paper / preview / no-trade reason を正式な bot artifact として切り出す作業である。
 
 既知の不足:
 
-- `Trade[XYZ]` quote freshness / spread / depth / tradable rate を phase gate の主入力にする cutover
-- real market quality と `trade_xyz` venue quality の combined gate
 - tracking report を Bot 判断へ接続する decision artifact
-- legacy `gtrade` / `ostium` blocker によらない readiness snapshot
 - `bot_decision.json` / orders preview の生成
 - live order はまだ出さない
 
 ## 次に作るべきもの
 
-次PR候補:
+次候補:
 
 ```text
-Trade[XYZ] operations gate cutover
+Trade[XYZ] bot decision preview
 ```
 
 目的:
 
-- `collect-trade-xyz-quotes` で生成した fresh artifact を operations/readiness/phase gate に接続する。
-- legacy live evidence gate ではなく、Trade[XYZ] + real market + tracking の品質で Bot 前段の Go/No-Go を判定する。
+- Trade[XYZ] + real market + tracking の品質を Bot 前段の Go/No-Go artifact に落とす。
 - 実発注はしない。まず paper / preview / no-trade reason を生成する。
-
-## 推奨 command surface
-
-第一候補:
-
-```bash
-uv run sis collect-trade-xyz-quotes --write-summary --write-report
-uv run sis validate-artifacts --strict
-```
-
-責務:
-
-1. `probe trade-xyz`
-2. `collect-trade-xyz-quotes --write-summary --write-report`
-3. real market data ingest
-4. feature panel build
-5. signal build
-6. real market vs Trade[XYZ] tracking report
-7. Trade[XYZ] quality gate
-8. readiness snapshot / phase gate refresh
-
-この command は live order を出さない。
 
 ## Bot 前段 artifact
 
@@ -256,25 +239,28 @@ uv run pytest tests/test_cli_smoke.py -q
 ./scripts/check
 ```
 
-Next PR verification should include:
+PR12 verification included:
 
 ```bash
 uv run sis probe trade-xyz
-uv run sis collect-trade-xyz-quotes --no-normalize
-uv run sis collect-trade-xyz-quotes
-uv run sis collect-trade-xyz-quotes --write-summary --write-report
+uv run sis collect-trade-xyz-quotes --symbols SP500,XYZ100,NVDA,AAPL,MSFT --duration-minutes 60 --interval-seconds 60 --normalize --replace --write-summary --write-report
+uv run sis ingest-research-data
+uv run sis build-event-calendar
+uv run sis build-feature-panel
+uv run sis build-signals
+uv run sis check-research-quality
+uv run sis diagnose-quotes --venue trade_xyz
 uv run sis validate-artifacts --strict
+uv run sis paper-operations-cycle
+uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
-uv run pytest tests/test_cli_smoke.py -q
-uv run pytest -q
-./scripts/check
 ```
 
 ## Docs status
 
 The active docs have been updated to treat `collect-trade-xyz-quotes` as implemented:
 
-- `docs/DOCUMENT_AUDIT_2026-05-26.md`
+- `docs/DOCUMENT_AUDIT_2026-05-27.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
 - `docs/CODE_STATUS.md`
 

@@ -525,7 +525,7 @@ uv run sis build-signals</code></pre>
         </article>
         <article class="card third status-warn">
           <h3>途中</h3>
-          <p>Trade[XYZ]用の安全確認は、まだ運用全体の判定に完全にはつながっていません。古い仕組みの判定も一部残っています。</p>
+          <p>Trade[XYZ]用の読み取り専用ゲートは通りました。次はBotの判断メモと注文下書きを作る段階です。</p>
         </article>
         <article class="card third status-stop">
           <h3>まだしない</h3>
@@ -589,8 +589,8 @@ uv run sis build-signals</code></pre>
           <p>集めた価格が新しいか、ズレが大きすぎないか、注文できる量があるかを自動で見たいです。</p>
         </article>
         <article class="card third status-warn">
-          <h3>Trade[XYZ]専用の関門</h3>
-          <p>古いgTrade/Ostium用の関門ではなく、Trade[XYZ]のデータを中心にした判定が必要です。</p>
+          <h3>Bot用の判断メモ</h3>
+          <p>読み取り専用の関門は通りました。次はBotが「取引する / しない」と理由を書ける形にします。</p>
         </article>
         <article class="card third status-warn">
           <h3>取引しない理由</h3>
@@ -613,12 +613,9 @@ uv run sis build-signals</code></pre>
         <span class="section-tag">next build</span>
       </div>
       <div class="card full status-warn">
-        <h3>Trade[XYZ] operations gate cutover</h3>
-        <p>言い換えると、Trade[XYZ]用の安全確認ゲートを作ることです。価格を集める入口はできました。次は、その価格を使って「取引してよいか」「今はやめるべきか」をはっきり出す仕組みを作ります。</p>
+        <h3>Trade[XYZ] bot decision preview</h3>
+        <p>言い換えると、本物の注文を出す前に「取引してよいか」「今はやめるべきか」と、その理由を人間が読める形にすることです。</p>
         <pre><code>作りたい出力の例:
-data/ops/trade_xyz_data_quality.json
-data/reports/trade_xyz_data_quality.md
-data/ops/trade_xyz_readiness.json
 data/bot/bot_decision.json
 data/reports/bot_orders_preview.md</code></pre>
       </div>
@@ -630,9 +627,9 @@ data/reports/bot_orders_preview.md</code></pre>
         <span class="section-tag">roadmap</span>
       </div>
       <div class="roadmap">
-        <div class="road"><strong>一括更新</strong>必要なデータをまとめて作る Trade[XYZ] 用の更新手順を固定する。</div>
-        <div class="road"><strong>価格チェック</strong>`trade_xyz_data_quality` で価格が使えるかを診断する。</div>
-        <div class="road"><strong>準備判定</strong>`trade_xyz_readiness` でBot前の健康診断を作る。</div>
+        <div class="road"><strong>証跡確認</strong>PR12の読み取り専用ゲート結果を毎回確認する。</div>
+        <div class="road"><strong>価格チェック</strong>既存のTrade[XYZ]要約と診断をBot判断に渡す。</div>
+        <div class="road"><strong>準備判定</strong>phase gateの結果をBot前の健康診断として読む。</div>
         <div class="road"><strong>判断メモ</strong>`bot_decision.json` に「取引する / しない」と理由を書く。</div>
         <div class="road"><strong>注文下書き</strong>`bot_orders_preview.md` で、本物の注文前に人間が読める下書きを出す。</div>
         <div class="road"><strong>まだ本番にしない</strong>paperとpreviewで確認し、walletや秘密鍵は使わない。</div>
@@ -645,9 +642,9 @@ data/reports/bot_orders_preview.md</code></pre>
         <span class="section-tag">expected files</span>
       </div>
       <div class="example-list">
-        <div class="example-row"><code>data/ops/trade_xyz_data_quality.json</code><span>価格データの健康診断。新しいか、差が広すぎないか、量が足りるかを見る。</span></div>
-        <div class="example-row"><code>data/reports/trade_xyz_data_quality.md</code><span>人間が読むための価格データ診断レポート。</span></div>
-        <div class="example-row"><code>data/ops/trade_xyz_readiness.json</code><span>Botを作る前に、準備ができているかをまとめた判定。</span></div>
+        <div class="example-row"><code>data/ops/trade_xyz_quote_collection_summary.json</code><span>価格データの健康診断。新しいか、差が広すぎないか、量が足りるかを見る。</span></div>
+        <div class="example-row"><code>data/ops/pr12_fresh_read_only_smoke_summary.json</code><span>60分以上の読み取り専用確認が通ったかをまとめた証跡。</span></div>
+        <div class="example-row"><code>data/ops/phase_gate_review_summary.json</code><span>Botを作る前に、準備ができているかをまとめた判定。</span></div>
         <div class="example-row"><code>data/bot/bot_decision.json</code><span>Botの判断メモ。「取引する / しない」と、その理由を書く。</span></div>
         <div class="example-row"><code>data/reports/bot_orders_preview.md</code><span>本物の注文前の下書き。人間が確認するためのページ。</span></div>
       </div>

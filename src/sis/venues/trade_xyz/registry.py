@@ -147,7 +147,9 @@ def build_trade_xyz_registry(
         coin = f"xyz:{symbol}"
         excluded = symbol in EXCLUDED_ACTIVE_SYMBOLS
         index_in_meta = universe_index.get(symbol)
-        has_mid_price = bool(mid_candidates(symbol, coin) & set(mids.keys())) or symbol in mid_symbols
+        has_mid_price = (
+            bool(mid_candidates(symbol, coin) & set(mids.keys())) or symbol in mid_symbols
+        )
         asset_id = (
             resolve_asset_id(perp_dex_index, index_in_meta)
             if perp_dex_index is not None and index_in_meta is not None

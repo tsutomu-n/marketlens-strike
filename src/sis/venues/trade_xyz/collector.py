@@ -13,7 +13,9 @@ from sis.venues.trade_xyz.normalizer import quote_from_l2_book
 from sis.venues.trade_xyz.registry import mid_candidates
 
 
-def _ctx_by_symbol(meta_payload: dict[str, Any], ctxs: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _ctx_by_symbol(
+    meta_payload: dict[str, Any], ctxs: list[dict[str, Any]]
+) -> dict[str, dict[str, Any]]:
     universe = meta_payload.get("universe")
     if not isinstance(universe, list):
         return {}
@@ -298,7 +300,9 @@ def collect_trade_xyz_quote_window(
                 f"{item['missing_funding_rate']:.4f} | {item['missing_open_interest_rate']:.4f} | "
                 f"{item['spread_bps_p50']} | {item['spread_bps_p90']} |"
             )
-        lines.extend(["", "## Next Action", "", "- Run `uv run sis diagnose-quotes --venue trade_xyz`."])
+        lines.extend(
+            ["", "## Next Action", "", "- Run `uv run sis diagnose-quotes --venue trade_xyz`."]
+        )
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         summary["report_path"] = str(report_path)

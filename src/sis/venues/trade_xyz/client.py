@@ -64,7 +64,9 @@ class TradeXyzClient:
             raise TradeXyzApiError(f"perpDexs returned non-list: {type(data).__name__}")
         return data
 
-    def meta_and_asset_ctxs(self, *, dex: str | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    def meta_and_asset_ctxs(
+        self, *, dex: str | None = None
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         data = self.post_info({"type": "metaAndAssetCtxs", "dex": dex or self.config.dex})
         if (
             not isinstance(data, list)

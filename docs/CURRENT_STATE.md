@@ -6,6 +6,7 @@
 
 - `plan/archive/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
 - repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
+- PR9a-PR12 の read-only smoke まで完了しており、最新 phase gate は `READ_ONLY_GO`。
 - `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
 - 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。
 
@@ -31,6 +32,7 @@
 - `Trade[XYZ]` registry builder, universe report, quote collector, quote normalizer
 - `Trade[XYZ]` `perpDexs` fallback による HIP-3 `asset_id` 解決
 - `Trade[XYZ]` quote collection summary / report / strict artifact validation
+- `Trade[XYZ]` diagnostics / strict validation / phase gate cutover for read-only PR12
 - `real_market` feature builder と free-source quality gating
 - `tracking` layer による real-market vs venue 判定
 - venue quality gate 付き paper fill / fee model / paper report
@@ -53,6 +55,10 @@
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
 - `uv run pytest -q`: 270 passed
+- targeted PR9a-PR12 verification: `19 passed`
+- `uv run sis validate-artifacts --strict`: `checked_files=11`, `issues=0`
+- latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows
+- latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `next_actions=[]`
 
 PR-08 専用確認:
 
@@ -64,10 +70,9 @@ PR-08 専用確認:
 
 ## What Is Still Not Proven
 
-- 実ネットワークを使う manual live smoke
+- production live order smoke
 - signing / wallet / exchange write integration
-- `trade_xyz` を主軸にした operations artifact chain への全面 cutover
-- fresh live evidence を使った operational Go/No-Go 再判定
+- `bot_decision.json` / live order preview の正式 command surface
 - legacy `gtrade` / `ostium` read-only collector command を使う docs と current CLI surface の完全同期
 
 ## Recommended Read Order

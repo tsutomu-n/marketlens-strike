@@ -16,12 +16,23 @@
 | PR-07 | Gate paper execution by venue quality | DONE | src/sis/paper/*, src/sis/core/execution_plan.py, tests/test_paper_trading.py, tests/test_paper_runner.py |
 | PR-08 | Add Trade[XYZ] micro live safety canary | DONE | src/sis/execution/trade_xyz_adapter.py, src/sis/execution/live_order_policy.py, src/sis/execution/micro_live_canary.py, PR-08 tests |
 
+## Post-PR08 / PR9a-PR12 Status
+
+| Slice | Status | Evidence |
+|---|---|---|
+| PR9a CLI import recovery | DONE | `uv run sis --help`, `uv run python -m sis.cli --help` |
+| PR9b HIP-3 mapping and contexts | DONE | `perpDexs` asset-id fallback, `metaAndAssetCtxs` enrichment, `tests/test_trade_xyz_registry.py` |
+| PR9c fresh quote window | DONE | `collect-trade-xyz-quotes --duration-minutes --interval-seconds --write-summary --write-report`, `data/ops/trade_xyz_quote_collection_summary.json` |
+| PR10 strict validation and diagnostics | DONE | `validate-artifacts --strict`, `diagnose-quotes --venue trade_xyz`, `tests/test_validate_artifacts_trade_xyz.py` |
+| PR11 operations cutover | DONE | `phase-gate-review` consumes Trade[XYZ] artifacts and emits `READ_ONLY_GO` / `CONDITIONAL_INDEX_ONLY` / `NO_GO` |
+| PR12 fresh read-only smoke | DONE | `data/ops/pr12_fresh_read_only_smoke_summary.json`, `data/reports/pr12_fresh_read_only_smoke_report.md` |
+
 ## Current Operational Interpretation
 
 - migration 実装は完了している。
 - `src/sis/cli.py` は root Typer app registration と `main()` に近い構成へ分割済み。
-- ただし operator-facing runtime artifact chain は一部 legacy collector surface をまだ利用する。
-- そのため "code complete" と "operationally cut over" は分けて扱う。
+- Trade[XYZ] read-only artifacts は strict validation / diagnostics / phase gate に接続済み。
+- production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
 
 ## Verified Acceptance Highlights
@@ -45,7 +56,7 @@ PR-08:
 - manual signing, wallet secrets, exchange write credentials
 - public CLI からの micro live 実行 surface
 - production live trading
-- `trade_xyz` を主軸にした operations chain への全面移行
+- bot decision / live order preview の正式 artifact surface
 
 ## Verification
 
@@ -56,6 +67,9 @@ PR-08:
 - `uv run pyrefly check`: pass
 - `uv run pytest -q`: 270 passed
 - `./scripts/check`: pass
+- targeted PR9a-PR12 tests: 19 passed
+- latest strict validation: `checked_files=11`, `issues=0`
+- latest phase gate: `READ_ONLY_GO`, `next_actions=[]`
 
 ## Reading Pointers
 
