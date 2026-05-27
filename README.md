@@ -55,11 +55,11 @@ paper cycle:
 uv run sis paper-operations-cycle
 ```
 
-legacy live evidence replay:
+Trade[XYZ] quote refresh:
 
 ```bash
-bun run --cwd archive/legacy_sidecars/gtrade probe
-uv run sis log-quotes --venue gtrade --replace
+uv run sis probe trade-xyz
+uv run sis collect-trade-xyz-quotes
 uv run sis normalize-quotes
 uv run sis build-cost-matrix
 uv run sis build-backtest
@@ -87,4 +87,4 @@ uv run sis build-evidence-card
 
 ## Legacy Notes
 
-`archive/legacy_sidecars/` は migration 前の gTrade / Ostium read-only collector の参照物です。新規実装の主軸ではありませんが、現行の live evidence / phase gate の一部ではまだ参照されます。
+gTrade / Ostium の legacy source, sidecar, raw data, registry, 専用テストは `archive/gtrade_ostium_legacy_archive_*.zip` に圧縮済みです。展開済みの file tree は active repo から削除済みで、新規実装の主軸は Trade[XYZ] です。

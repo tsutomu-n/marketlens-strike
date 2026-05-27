@@ -6,7 +6,7 @@
 
 - `plan/archive/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
 - repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
-- ただし運用系 artifact chain の一部は、archive 済み `gtrade` / `ostium` read-only collector をまだ参照する。migration 完了と operational cutover 完了は同義ではない。
+- `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
 - 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。
 
 ## Source Of Truth
@@ -27,7 +27,7 @@
 
 - Python 3.13 前提の runtime / lock / CI
 - root CLI split: `src/sis/cli.py` は command registration と `main()` が中心で、command 実装は `src/sis/commands/` に分割済み
-- legacy `gtrade` / `ostium` の archive 化
+- legacy `gtrade` / `ostium` の ZIP archive 化と active file tree からの削除
 - `Trade[XYZ]` registry builder, universe report, quote collector, quote normalizer
 - `real_market` feature builder と free-source quality gating
 - `tracking` layer による real-market vs venue 判定
@@ -37,11 +37,11 @@
 
 ## Important Boundaries
 
-- 新規実装の主 venue は `trade_xyz`。legacy venue は archive / read-only evidence として扱う。
+- 新規実装の主 venue は `trade_xyz`。legacy venue は `archive/gtrade_ostium_legacy_archive_*.zip` 内の履歴参照として扱う。
 - `micro_live` はコードと tests では存在するが、標準の operator CLI にはまだ exposed していない。
 - `collect-trade-xyz-quotes` は public CLI command として exposed している。
 - `data/` は git 管理外。再開時は artifact を再生成する。
-- `ostium-python-sdk` は active dependency から削除済み。archive collector 側の optional read-only evidence としてのみ言及が残る。
+- `ostium-python-sdk` は active dependency から削除済み。
 
 ## Verification Status
 

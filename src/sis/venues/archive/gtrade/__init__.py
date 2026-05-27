@@ -1,1 +1,0 @@
-"""gTrade venue helpers."""

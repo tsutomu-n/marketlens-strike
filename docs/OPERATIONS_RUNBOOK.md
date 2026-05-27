@@ -32,7 +32,7 @@ quote ingest:
 
 - `collect-trade-xyz-quotes` は `probe trade-xyz` が生成した registry を読んで raw quote JSONL を収集する。
 - default では normalize まで実行する。raw JSONL だけ欲しい時は `--no-normalize` を使う。
-- `uv run sis log-quotes` は legacy `gtrade` replay 専用。
+- legacy `gtrade` / `ostium` replay command は active CLI から削除済み。
 
 real market and tracking:
 
@@ -65,7 +65,7 @@ uv run sis paper-operations-cycle
 read-only execution surface:
 
 ```bash
-uv run sis execution-snapshot --venue gtrade --fills-limit 5 --order-limit 5
+uv run sis execution-snapshot
 uv run sis execution-venue-comparison
 uv run sis execution-venue-diagnostics
 uv run sis execution-read-only-surfaces
@@ -74,17 +74,13 @@ uv run sis execution-read-only-surfaces
 single-command surface:
 
 ```bash
-uv run sis balance-status --venue gtrade
-uv run sis fill-status --venue gtrade --limit 20
-uv run sis order-status --venue gtrade --order-id ord-1
-uv run sis reconcile-positions --venue ostium
 uv run sis healthcheck
 uv run sis notification-outbox --level warn --title "Stale" --body "recollect live evidence"
 ```
 
 ## Live Evidence
 
-現在の operational live evidence chain は legacy archive collector を含む。
+gTrade / Ostium の legacy collector は `archive/gtrade_ostium_legacy_archive_*.zip` に圧縮済みで、展開済み file tree は active repo から削除済み。
 
 dry-run:
 
@@ -98,11 +94,11 @@ run:
 uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-interval-seconds 60 --backend-event-duration-minutes 30
 ```
 
-legacy replay path:
+Trade[XYZ] refresh path:
 
 ```bash
-bun run --cwd archive/legacy_sidecars/gtrade probe
-uv run sis log-quotes --venue gtrade --replace
+uv run sis probe trade-xyz
+uv run sis collect-trade-xyz-quotes
 uv run sis normalize-quotes
 uv run sis build-cost-matrix
 uv run sis build-backtest

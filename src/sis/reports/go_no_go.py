@@ -21,14 +21,18 @@ from sis.reports.summary_normalizers import (
     readiness_flat_fields,
 )
 from sis.storage.jsonl_store import read_json
-from sis.venues.archive.ostium.positions import (
-    latest_positions_sidecar,
-    positions_have_liquidation_reference,
-)
 
 MAX_STALE_RATE = 0.05
 MIN_TRADABLE_RATE = 0.95
 MAX_SPREAD_P90_BPS = 25.0
+
+
+def latest_positions_sidecar(root: Path) -> Path | None:
+    return None
+
+
+def positions_have_liquidation_reference(path: Path | None) -> bool:
+    return False
 
 
 def _reports_dir(out_path: Path) -> Path:

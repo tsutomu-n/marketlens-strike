@@ -16,7 +16,6 @@ from sis.commands.quotes import register_quote_commands
 from sis.commands.remediation import register_remediation_commands
 from sis.commands.research import register_research_commands
 from sis.commands.execution import register_execution_commands
-from sis.commands.archive import register_archive_commands
 from sis.commands.execution_artifacts import (
     _adapter_for_venue,
     _refresh_execution_lineage_artifacts as _refresh_execution_lineage_artifacts_base,
@@ -107,7 +106,6 @@ from sis.reports.summary_normalizers import (
 
 app = typer.Typer(no_args_is_help=True)
 register_probe_commands(app)
-register_archive_commands(app)
 
 
 register_research_commands(app, _recommended_read_order)

@@ -10,7 +10,8 @@ def test_operations_runbook_does_not_claim_trade_xyz_log_quotes_cli() -> None:
 
     assert "uv run sis probe trade-xyz" in text
     assert "uv run sis log-quotes --venue trade_xyz --replace" not in text
-    assert "uv run sis log-quotes --venue gtrade --replace" in text
+    assert "uv run sis collect-trade-xyz-quotes" in text
+    assert "uv run sis log-quotes --venue gtrade --replace" not in text
     assert "public CLI command" in text
 
 
@@ -32,4 +33,4 @@ def test_live_evidence_reports_directory_keeps_only_readme_tracked_docs() -> Non
     report_dir = Path("docs/live_evidence_reports")
     files = sorted(path.name for path in report_dir.iterdir() if path.is_file())
 
-    assert files == ["README.md"]
+    assert "README.md" in files

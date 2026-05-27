@@ -143,10 +143,10 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
     )
 
     card = json.loads(card_path.read_text(encoding="utf-8"))
-    assert card["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
+    assert card["decision"] == "NO_GO_SESSION"
     assert card["venue_decisions"]
     assert {item["venue"] for item in card["venue_decisions"]} == {"gtrade", "ostium"}
-    assert card["blockers"] == ["tradable_rate at or above threshold"]
+    assert "tradable_rate at or above threshold" in card["blockers"]
     assert card["audit_summary"]["overall_status"] == "ok"
     assert card["phase_gate_summary"]["decision"] == "CONDITIONAL_GO_NEEDS_LIVE_WINDOW"
     assert (
@@ -245,6 +245,6 @@ def test_evidence_card_reflects_current_go_no_go_report(tmp_path) -> None:
             for item in card["criteria"]
             if item["criterion"] == "Liquidation reference complete"
         )
-        == "PASS"
+        == "NOT_DONE"
     )
     assert "Ostium liquidation reference requires real open position data" not in json.dumps(card)

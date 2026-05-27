@@ -7,8 +7,6 @@ from sis.execution.base import (
     ExecutionAdapter,
     OrderIntent,
 )
-from sis.execution.archive.gtrade_adapter import GTradeExecutionAdapter
-from sis.execution.archive.ostium_adapter import OstiumExecutionAdapter
 from sis.execution.live_order_policy import (
     MicroLiveGateInput,
     MicroLivePolicy,
@@ -29,13 +27,11 @@ __all__ = [
     "AdapterActionResult",
     "AdapterFillSnapshot",
     "ExecutionAdapter",
-    "GTradeExecutionAdapter",
     "MicroLiveCanaryRequest",
     "MicroLiveCanaryResult",
     "MicroLiveGateInput",
     "MicroLivePolicy",
     "OrderIntent",
-    "OstiumExecutionAdapter",
     "TradeXyzOrderIntent",
     "TradeXyzSafetyAdapter",
     "evaluate_micro_live_gates",

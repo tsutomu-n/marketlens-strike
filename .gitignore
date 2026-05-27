@@ -59,6 +59,9 @@ temp/
 !.tmp/live_evidence_20260527_recovery_watchdog.sh
 !.tmp/live_evidence_current_status_2026-05-26.md
 
+# Track compressed legacy venue archives even when a global ignore excludes *.zip.
+!archive/gtrade_ostium_legacy_archive_*.zip
+
 # Generated tracked-doc outputs
 docs/live_evidence_reports/live_evidence_report_*.md
 docs/live_evidence_reports/live_evidence_report_*.html

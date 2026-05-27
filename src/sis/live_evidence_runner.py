@@ -1040,7 +1040,7 @@ def main(
                 retryable=True,
             )
             run_subprocess(
-                ["uv", "run", "sis", "ostium-constraint-artifact", "--run-id", effective_run_id],
+                ["uv", "run", "sis", "collect-trade-xyz-quotes", "--no-normalize"],
                 retryable=True,
             )
             gtrade_manifest = next(
@@ -1107,7 +1107,7 @@ def main(
         def quote_regen() -> None:
             log_step("Rebuilding quote evidence")
             run_subprocess(
-                ["uv", "run", "sis", "log-quotes", "--venue", "gtrade", "--replace"], retryable=True
+                ["uv", "run", "sis", "collect-trade-xyz-quotes", "--no-normalize"], retryable=True
             )
             quote_rows = row_count(quote_path)
             manifest.row_counts["raw_quotes"] = quote_rows
@@ -1122,7 +1122,7 @@ def main(
         downstream_commands: list[tuple[str, list[str], bool]] = [
             (
                 "quote_regen",
-                ["uv", "run", "sis", "log-quotes", "--venue", "gtrade", "--replace"],
+                ["uv", "run", "sis", "collect-trade-xyz-quotes", "--no-normalize"],
                 True,
             ),
             ("normalize", ["uv", "run", "sis", "normalize-quotes"], True),

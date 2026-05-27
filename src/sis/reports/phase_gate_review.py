@@ -234,9 +234,9 @@ def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str
         ],
         "latest_execution_drift_overview_summary_path": ["uv run sis refresh-operations-artifacts"],
         "latest_gtrade_backend_manifest_path": [
-            "bun run --cwd archive/legacy_sidecars/gtrade backend:collect -- --duration-minutes 30"
+            "uv run sis collect-trade-xyz-quotes --no-normalize"
         ],
-        "latest_ostium_constraint_path": ["uv run sis ostium-constraint-artifact"],
+        "latest_ostium_constraint_path": ["uv run sis collect-trade-xyz-quotes --no-normalize"],
     }
     return {
         name: command_map.get(name, ["uv run sis refresh-operations-artifacts"])

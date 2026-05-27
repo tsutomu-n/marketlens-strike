@@ -27,7 +27,10 @@ from sis.reports.summary_normalizers import (
     normalize_readiness_summary,
 )
 from sis.storage.jsonl_store import write_json
-from sis.venues.archive.ostium.positions import latest_positions_sidecar
+
+
+def latest_positions_sidecar(root: Path) -> Path | None:
+    return None
 
 
 def _reports_dir(data_dir: Path) -> Path:
