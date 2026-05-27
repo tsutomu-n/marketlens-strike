@@ -265,3 +265,146 @@ The active docs have been updated to treat `collect-trade-xyz-quotes` as impleme
 - `docs/CODE_STATUS.md`
 
 Do not update historical generated artifacts in `docs/archive/` or `docs/live_evidence_reports/`.
+
+---
+
+## New Task: Bot Preview v1後の次作業計画
+
+作成日時: 2026-05-27 20:47 JST
+
+### 結論
+
+ここからは、`bot-preview v1` を土台にして、次を順番に進める。
+
+1. `bot-preview v1` を現在の安全な正本として固定する。
+2. 注文候補を出す前に、候補生成ルールを別タスクで定義する。
+3. 候補生成は paper 接続までに限定し、live order には進まない。
+4. manual micro live は最後の別ゲートとして扱う。
+
+### 現在地
+
+実装済み:
+
+- `uv run sis bot-preview`
+- `data/bot/bot_decision.json`
+- `data/reports/bot_orders_preview.md`
+- v1 は常に `decision=HOLD`
+- `READ_ONLY_GO` でも `BOT_ORDER_LOGIC_NOT_IMPLEMENTED` を理由に注文候補を出さない
+- wallet / signing / exchange write は未使用
+- `./scripts/check` は `280 passed`
+
+### Task 1: Bot Preview v1を運用正本にする
+
+目的:
+
+- Bot前の確認入口を `phase-gate-review` + `bot-preview` に固定する。
+- `check-go-no-go` / `build-evidence-card` は補助reportとして扱い続ける。
+
+作業:
+
+- README / runbook / current state docs の導線を確認する。
+- `uv run sis bot-preview --fail-on-not-ready` をmerge前確認に含めるか判断する。
+- `bot_decision.json` の v1 schema をdocsに短く固定する。
+
+Done:
+
+- `bot-preview` の出力場所、HOLD固定、no wallet/no signing/no exchange write がdocsから一目で分かる。
+- artifact不足時の exit code 2 がテスト済み。
+
+### Task 2: Order Candidate Preview v2を設計する
+
+目的:
+
+- `bot-preview` が注文候補を出す前に、判断ルールを固定する。
+- v2でも live order は出さない。
+
+未決事項:
+
+- symbol選定ルール
+- BUY / SELL / HOLD の判定条件
+- limit price の算出方法
+- quantity / notional の算出方法
+- max risk / stop条件
+- no-trade reason の優先順位
+- candidateをpaperへ渡すJSON schema
+
+推奨方針:
+
+- 既定は v1 と同じ `HOLD`。
+- 注文候補は `--include-order-candidates` 指定時だけ出す。
+- 出力先は `data/bot/order_candidates.json` と `data/reports/bot_orders_preview.md`。
+- wallet / signing / exchange write は引き続き禁止。
+
+Done:
+
+- 注文候補schemaが決まっている。
+- no-trade reasonが候補生成より優先される。
+- candidate生成はpaper専用で、live executionへ接続しない。
+
+### Task 3: Paper接続を定義する
+
+目的:
+
+- Bot preview候補を、本物のお金を使わないpaper flowで検証できるようにする。
+
+作業:
+
+- `bot_decision.json` / `order_candidates.json` をpaper入力に変換する境界を決める。
+- paper result と bot decision の比較reportを定義する。
+- `data/reports/bot_paper_comparison.md` のような出力を検討する。
+
+Done:
+
+- Bot判断とpaper結果が同じrunで追跡できる。
+- paperで失敗した理由がBot側のreasonと比較できる。
+- live orderに進まず検証できる。
+
+### Task 4: Manual Micro Live前ゲートを別タスク化する
+
+目的:
+
+- micro live safety codeが存在することと、実運用できることを混同しない。
+
+前提:
+
+- public CLI化はまだしない。
+- dedicated API wallet、資金、権限、scheduleCancel preflight が必要。
+- max notional は安全上限内に固定する。
+
+必要な定義:
+
+- operator confirm flag
+- dedicated API wallet requirement
+- scheduleCancel preflight
+- max_notional_usd
+- failure stop condition
+- audit artifact
+- local-only manual runbook
+
+Done:
+
+- manual micro live を実行してよい条件と、止める条件が明文化されている。
+- 標準CIや通常PR verificationには live canary を含めない。
+
+### Stop Conditions
+
+次の状態では先へ進まない。
+
+- `phase-gate-review` が `READ_ONLY_GO` でない。
+- `bot-preview` が artifact不足を出している。
+- no-trade reason が曖昧。
+- 注文候補の数量・価格・リスク上限が未定義。
+- wallet / signing / exchange write に触れそうな変更が混ざる。
+
+### 次に着手する最小単位
+
+次の1PRはこれだけにする。
+
+```text
+Bot Preview v2 design doc:
+- order candidate schema
+- HOLD / BUY / SELL rules
+- no-trade reason priority
+- paper handoff boundary
+- explicit non-goals: live order, wallet, signing, exchange write
+```
