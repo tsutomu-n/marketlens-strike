@@ -408,3 +408,265 @@ Bot Preview v2 design doc:
 - paper handoff boundary
 - explicit non-goals: live order, wallet, signing, exchange write
 ```
+
+---
+
+## 指示待ちタスク台帳: Bot Preview v1以降
+
+作成日時: 2026-05-27 20:52 JST
+
+この台帳は、ユーザーから明示指示があるまで実装しない。番号単位で依頼できるように、内容と要素を細分化する。
+
+### A. Bot Preview v1 固定化
+
+A1. v1 schemaの明文化
+
+- 対象: `data/bot/bot_decision.json`
+- 要素: `schema_version`, `generated_at`, `venue`, `decision`, `reason_codes`, `read_only_artifacts`, `symbols_checked`, `next_actions`
+- 成果物: docs上の短いschema説明
+- 実装有無: docsのみ
+
+A2. v1 reportの明文化
+
+- 対象: `data/reports/bot_orders_preview.md`
+- 要素: HOLD判定、理由、phase gate状態、artifact参照、注文候補なし、no wallet/no signing/no exchange write
+- 成果物: docs上のreport説明
+- 実装有無: docsのみ
+
+A3. merge前確認コマンドの追加判断
+
+- 候補: `uv run sis bot-preview --fail-on-not-ready`
+- 要素: 標準checkに入れるか、手動確認に留めるか
+- 判断基準: `data/` artifact依存があるためCI標準には入れにくい
+- 実装有無: 方針決定後にscripts/docs更新
+
+A4. v1の完了条件固定
+
+- 要素: HOLD固定、artifact不足時exit 2、wallet不使用、exchange write不使用
+- 成果物: acceptance section
+- 実装有無: docs/test確認のみ
+
+### B. Order Candidate Preview v2 設計
+
+B1. candidate schema定義
+
+- 対象候補: `data/bot/order_candidates.json`
+- 必須要素: `schema_version`, `generated_at`, `venue`, `source_decision_path`, `candidates`, `blocked_reasons`
+- candidate要素: `symbol`, `side`, `order_type`, `limit_price`, `quantity`, `notional_usd`, `reason`, `risk_notes`
+- 実装有無: まずdocs/schema案のみ
+
+B2. BUY / SELL / HOLD 判定ルール定義
+
+- 要素: どの入力でBUY/SELLを許可するか
+- 入力候補: phase gate, quote summary, tracking quality, source confidence, venue quality, paper state
+- 未決事項: 戦略シグナルを使うか、まず全HOLDに近い安全ルールにするか
+- 実装有無: docsのみ
+
+B3. no-trade reason優先順位
+
+- 例: `PHASE_GATE_NOT_READY` > `QUOTE_STALE` > `LOW_LIQUIDITY` > `LOW_SOURCE_CONFIDENCE` > `ORDER_LOGIC_DISABLED`
+- 要素: 複数理由がある時に何を一番上に出すか
+- 成果物: reason priority table
+- 実装有無: docsのみ
+
+B4. limit price算出ルール
+
+- 候補: best bid/ask基準、mid基準、conservative offset基準
+- 必須要素: 価格が欠けた場合は候補を作らない
+- 成果物: price rule spec
+- 実装有無: docsのみ
+
+B5. quantity / notional算出ルール
+
+- 候補: 固定notional、policy上限割合、symbol別上限
+- 必須要素: max_notional_usd, max_leverage, min_size, rounding
+- 成果物: sizing rule spec
+- 実装有無: docsのみ
+
+B6. `--include-order-candidates` CLI仕様
+
+- 対象: `uv run sis bot-preview --include-order-candidates`
+- 既定: 指定なしではv1同様HOLDのみ
+- 指定時: candidate schemaに従ってpreviewだけ出す
+- 禁止: live order, wallet, signing, exchange write
+- 実装有無: docs後に実装可
+
+B7. v2 acceptance定義
+
+- 条件: artifacts不足時は候補ゼロ、reason明示、paper専用、testsあり
+- 成果物: acceptance checklist
+- 実装有無: docsのみ
+
+### C. Paper接続設計
+
+C1. bot candidateからpaper inputへの変換境界
+
+- 入力: `data/bot/order_candidates.json`
+- 出力候補: paper order planまたは既存paper runner入力
+- 要素: symbol, side, quantity, price, reason, source artifact
+- 実装有無: docsのみ
+
+C2. paper実行との接続方式
+
+- 候補1: 既存 `paper-operations-cycle` にcandidate読込を追加
+- 候補2: 新CLI `paper-from-bot-preview` を追加
+- 候補3: まずreportだけで実行接続しない
+- 推奨: 候補2。既存paper flowを壊しにくい
+- 実装有無: 方針決定後
+
+C3. bot vs paper比較report
+
+- 出力候補: `data/reports/bot_paper_comparison.md`
+- 要素: candidate, paper fill/block, PnL, block reason, mismatch reason
+- 実装有無: docs後に実装可
+
+C4. paper接続の停止条件
+
+- candidateなし
+- price/quantity欠損
+- phase gate not ready
+- source confidence不足
+- venue quality不足
+- 実装有無: docs/test対象
+
+C5. paper接続acceptance
+
+- candidateあり/なし両方をtest
+- live orderに接続していないことをtest
+- generated reportにreasonが出ることをtest
+- 実装有無: tests込みで実装可
+
+### D. Manual Micro Live前ゲート設計
+
+D1. manual canary前提条件
+
+- dedicated API wallet
+- small balance only
+- max_notional_usd上限
+- scheduleCancel preflight
+- kill switch clear
+- explicit confirm flag
+- local only
+- 実装有無: docsのみ
+
+D2. public CLI化しない境界
+
+- 標準CLIには出さない
+- 通常CIには入れない
+- manual opt-inだけにする
+- 実装有無: docsのみ
+
+D3. manual runbook項目
+
+- preflight
+- command
+- expected artifacts
+- abort conditions
+- recovery steps
+- post-run audit
+- 実装有無: docsのみ
+
+D4. failure stop condition
+
+- scheduleCancel失敗
+- orderStatus確認不能
+- cancelByCloid失敗
+- reduce-only close失敗
+- unexpected fill
+- API wallet残高/権限異常
+- 実装有無: docs/test対象
+
+D5. micro live acceptance
+
+- mock/fake exchange testsのみ標準verificationに含める
+- real live canaryはmanual local only
+- max_notional_usd <= 50 を維持
+- 実装有無: docs後に必要なら実装
+
+### E. Documentation / Handoff整理
+
+E1. current docs同期
+
+- 対象: README, CURRENT_STATE, CODE_STATUS, OPERATIONS_RUNBOOK
+- 要素: v1実装済み、v2未実装、paper接続未実装、micro live未公開
+- 実装有無: docsのみ
+
+E2. beginner HTML同期
+
+- 対象: `docs/trade_xyz_bot_beginner_guide.html`
+- 要素: HOLD preview済み、注文候補は未実装、paper接続は次段階
+- 実装有無: docsのみ
+
+E3. plan分割
+
+- 対象: `plan/`
+- 候補: `bot_preview_v2_design_plan.md`, `bot_paper_connection_plan.md`, `manual_micro_live_gate_plan.md`
+- 実装有無: docsのみ
+
+E4. historical docs非対象確認
+
+- 対象外: `docs/archive/`, `docs/live_evidence_reports/`
+- 実装有無: 触らない
+
+### F. 検証カテゴリ
+
+F1. unit tests
+
+- bot preview schema
+- reason priority
+- candidate generation rules
+- paper conversion
+
+F2. CLI smoke
+
+- `uv run sis bot-preview --help`
+- `uv run sis bot-preview`
+- `uv run sis bot-preview --fail-on-not-ready`
+- 将来: `uv run sis bot-preview --include-order-candidates`
+
+F3. integration tests
+
+- ready artifacts + HOLD
+- missing artifacts + exit 2
+- candidate generated but paper-only
+- paper comparison report generated
+
+F4. full gate
+
+- `./scripts/check`
+- test count docs update if count changes
+
+### G. 実装禁止境界
+
+G1. live order禁止
+
+- exchange write APIを呼ばない
+- order submitしない
+
+G2. wallet / signing禁止
+
+- secretを読まない
+- private keyを扱わない
+
+G3. micro live public CLI禁止
+
+- manual canary設計前に公開しない
+
+G4. candidate自動有効化禁止
+
+- v2でも既定はHOLD
+- `--include-order-candidates` のような明示オプションなしに候補を出さない
+
+### 推奨される次の指示単位
+
+実装前に、次のどれか1つだけを指定する。
+
+```text
+A1だけ: v1 schema docsを固定する
+B1だけ: order candidate schemaを設計する
+B2だけ: BUY/SELL/HOLDルールを設計する
+B3だけ: no-trade reason優先順位を設計する
+C2だけ: paper接続方式を決める
+D3だけ: manual micro live runbook項目を作る
+E3だけ: planファイルを分割する
+```
