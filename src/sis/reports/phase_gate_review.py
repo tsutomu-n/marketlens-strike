@@ -1266,7 +1266,7 @@ def build_phase_gate_review(
             "- If `diagnostics_all_available` is not `True`, stop and recollect quote diagnostics for QQQ / SPY / XAU.",
             "- If `execution_comparison_all_registries_present` is not `True`, stop and inspect cross-venue registry coverage.",
             "- If `execution_drift_overview_status` is not `ok`, stop and resolve execution drift mismatches before considering Phase 2.",
-            "- If `read_only_collector_gate_passed` is not `True`, stop and collect gTrade backend WS / Ostium constraint artifacts before considering Phase 2.",
+            "- If `read_only_collector_gate_passed` is not `True`, stop and refresh Trade[XYZ] read-only artifacts with `collect-trade-xyz-quotes --write-summary --write-report` before considering Bot preview work.",
         ]
     )
 

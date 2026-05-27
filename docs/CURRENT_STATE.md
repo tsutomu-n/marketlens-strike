@@ -54,7 +54,7 @@
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 270 passed
+- `uv run pytest -q`: 273 passed
 - targeted PR9a-PR12 verification: `19 passed`
 - `uv run sis validate-artifacts --strict`: `checked_files=11`, `issues=0`
 - latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows

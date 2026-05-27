@@ -49,7 +49,7 @@
 - `validate-artifacts --strict` checks Trade[XYZ] v2 quote fields and `trade_xyz_quote_collection_summary.json`
 - latest PR12 smoke observed: 310 rows, 3673.995702 seconds, 5 symbols x 62 rows
 - latest phase gate observed: `READ_ONLY_GO`, `next_actions=[]`
-- latest standard gate observed: `./scripts/check` -> 270 passed
+- latest standard gate observed: `./scripts/check` -> 273 passed
 
 ## Rule
 

@@ -98,7 +98,7 @@ PR12 read-only smoke evidence:
 
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 270 passed
+- `uv run pytest -q`: 273 passed
 - `./scripts/check`: pass
 
 ## Legacy Notes
