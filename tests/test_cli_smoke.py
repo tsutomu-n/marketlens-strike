@@ -110,6 +110,7 @@ def test_alpaca_smoke_cli_writes_failure_summary_without_credentials(tmp_path, m
     ):
         monkeypatch.delenv(key, raising=False)
     data_dir = tmp_path / "data"
+    monkeypatch.chdir(tmp_path)
 
     result = runner.invoke(
         app,
@@ -121,6 +122,8 @@ def test_alpaca_smoke_cli_writes_failure_summary_without_credentials(tmp_path, m
     assert "status=failed" in result.stdout
     assert "live_suitability_reasons=BLOCK_ALPACA_PROVIDER_UNAVAILABLE" in result.stdout
     assert "error_class=AlpacaProviderUnavailable" in result.stdout
+    assert "start=None" in result.stdout
+    assert "end=None" in result.stdout
     assert (data_dir / "ops/alpaca_live_smoke_summary.json").exists()
     assert (data_dir / "reports/alpaca_live_smoke.md").exists()
 

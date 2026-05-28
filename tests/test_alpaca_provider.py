@@ -23,7 +23,7 @@ class _Response:
         return json.dumps(self.payload).encode("utf-8")
 
 
-def test_alpaca_provider_requires_credentials(monkeypatch) -> None:
+def test_alpaca_provider_requires_credentials(tmp_path, monkeypatch) -> None:
     for key in (
         "APCA_API_KEY_ID",
         "APCA_API_SECRET_KEY",
@@ -33,6 +33,7 @@ def test_alpaca_provider_requires_credentials(monkeypatch) -> None:
         "SIS_ALPACA_SECRET_KEY",
     ):
         monkeypatch.delenv(key, raising=False)
+    monkeypatch.chdir(tmp_path)
 
     with pytest.raises(AlpacaProviderUnavailable, match="credentials"):
         fetch_alpaca_bars(symbol="NVDA", timeframe="15m")
@@ -162,6 +163,7 @@ def test_alpaca_live_smoke_writes_failed_summary_without_credentials(
         "SIS_ALPACA_SECRET_KEY",
     ):
         monkeypatch.delenv(key, raising=False)
+    monkeypatch.chdir(tmp_path)
 
     summary = run_alpaca_live_smoke(data_dir=tmp_path, symbol="NVDA", timeframe="15m")
 
@@ -204,11 +206,15 @@ def test_alpaca_live_smoke_passes_and_writes_artifacts(tmp_path, monkeypatch) ->
         data_dir=tmp_path,
         symbol="NVDA",
         timeframe="15m",
+        start=datetime(2026, 5, 26, 14, 0, tzinfo=timezone.utc),
+        end=datetime(2026, 5, 26, 14, 30, tzinfo=timezone.utc),
         opener=opener,
         now=datetime(2026, 5, 26, 14, 16, tzinfo=timezone.utc),
     )
 
     assert summary["status"] == "pass"
+    assert summary["start"] == "2026-05-26T14:00:00+00:00"
+    assert summary["end"] == "2026-05-26T14:30:00+00:00"
     assert summary["bar_count"] == 1
     assert summary["provider"] == "alpaca"
     assert summary["latest_close"] == 100.5

@@ -7,6 +7,12 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
 - 「多少でも役立つ」を広めに解釈し、直接戦略、検証、データ取得、Bot 実装、運用補助まで含めた。
 - 既存の秘密値はこの文書へ転記しない。
 
+## この版で直した点
+
+- `0507-戦略1..5` を direct strategy 候補へ追加。
+- 強い候補と、構造理解には useful だが直接戦略とは言いにくい候補を分ける方針を明示。
+- 文章上の「有用」は、vault ノートを読んだ上での設計仮説であり、検証済み優位性ではないと明記する。
+
 ## このカタログから見える戦略テーマ
 
 - `トレンド追随`
@@ -56,7 +62,9 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
 - `1202-API-Devbot.md`
 - `1202-JitoとSolana.md`
 - `1202-Solana Development.md`
+- `1202-SolVal Guardian (SG).md`
 - `1202-トークンが凍結されている場合、凍結を解除する方法.md`
+- `1206-ai-hedge-fund.md`
 - `1221-Q-bot.md`
 - `1221-テクニカルを超えて.md`
 - `1223-BOT-PHOTON-and-NeoBullX.md`
@@ -90,6 +98,11 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
 - `0226 OSS Mastra.md`
 - `0310-awesome-mcp-servers.md`
 - `0506-Bruno-API-Tool.md`
+- `0507-戦略1_適応型ボラティリティ・スケーリング付きマルチシグナル・トレンド戦略.md`
+- `0507-戦略2_レジームスイッチング・トレンドフォロー戦略.md`
+- `0507-戦略3_オンチェーンデータ強化型トレンド確信度モデル戦略.md`
+- `0507_戦略4_マルチアセット・ダイナミック・トレンドアロケーション戦略.md`
+- `0507-戦略5_「トレンドの成熟度」判定によるイグジット戦略.md`
 - `0510-ScrapeGraph情報収集.md`
 - `0515-Google-Gemini-API-KYE.md`
 - `0518-AI-Setting-Prompt.md`
@@ -119,6 +132,7 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
 - `1129-Firecrawl.md`
 - `1130-CopilotKit.md`
 - `1202-Qwen-Agent.md`
+- `1205-MeME-token-Tools.md`
 - `1223-Haystack-サーバーRAGで使えそう.md`
 - `251124_AIログ取得ブックマークレット.md`
 - `LLM-Prompts/@0516_Prompt_SARB、CERA、CGRRP.md`
@@ -170,6 +184,11 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
   - `0714-Adaptive-Alpha-Trendトレードプログラム.md`
   - `0715-Alt-Alpha-Trend改2131.md`
   - `0212-Trend-Bot.md`
+  - `0507-戦略1_適応型ボラティリティ・スケーリング付きマルチシグナル・トレンド戦略.md`
+  - `0507-戦略2_レジームスイッチング・トレンドフォロー戦略.md`
+  - `0507-戦略3_オンチェーンデータ強化型トレンド確信度モデル戦略.md`
+  - `0507_戦略4_マルチアセット・ダイナミック・トレンドアロケーション戦略.md`
+  - `0507-戦略5_「トレンドの成熟度」判定によるイグジット戦略.md`
   - `1117_uptrend_botΧ.md`
 - バックテスト/評価:
   - `0710-VectorBT.md`
@@ -201,6 +220,7 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
 - `Solana` 系が複数あるので、CEX 中心ではなく on-chain 執行や meme/token 監視まで視野を広げられる。
 - `ポートフォリオ最適化` は資産配分だけでなく、戦略配分、銘柄配分、時間帯配分の設計にも読み替えられる。
 - `遺伝的アルゴリズム` と `LightGBM` は、売買ルールの自動発見よりも、既存ルールの補助フィルタや閾値最適化として使う方が現実的に見える。
+- `0507` 戦略群を見ると、entry, regime, on-chain confidence, allocation, exit が分業されており、単一ロジックより module 合成で考える方が良いと分かる。
 
 ## これから戦略を考える時の問い
 
@@ -221,9 +241,14 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
   - 実執行と運用保守を最初から一体で考える構成。
 - `ニュース/収集系` + `時系列予測` + `ポートフォリオ最適化`
   - 銘柄選定、regime 判定、配分決定を分ける構成。
+- `Trend Entry` + `Maturity Exit`
+  - エントリーとイグジットを別思想で組み合わせる構成。
+- `Technical Trend` + `On-Chain Confidence`
+  - 方向と participation conviction を分離する構成。
 
 ## 注意
 
 - `API_KEY` や取引所認証がファイル名に出ているノートは、再利用前に秘密情報の扱いを必ず分離する。
 - 一部は直接実装ノートではなく、記事メモ、比較メモ、ツール調査を含む。
 - このカタログは「候補を落とさない」ことを優先しているため、広めに載せている。
+- ノート本文が宣伝、紹介、概説寄りのものは、戦略優位の根拠ではなく発想源として扱う。

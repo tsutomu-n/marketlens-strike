@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
@@ -16,6 +17,16 @@ from sis.research.research_quality import build_research_quality_report
 from sis.research.signal_builder import build_signals
 from sis.real_market.alpaca_smoke import run_alpaca_live_smoke
 from sis.settings import get_settings
+
+
+def _parse_optional_datetime(value: str | None) -> datetime | None:
+    if value is None:
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
 def register_research_commands(
@@ -94,6 +105,16 @@ def register_research_commands(
     def alpaca_smoke_cmd(
         symbol: str = typer.Option("NVDA", "--symbol", help="Alpaca stock symbol."),
         timeframe: str = typer.Option("15m", "--timeframe", help="Alpaca bars timeframe."),
+        start: str | None = typer.Option(
+            None,
+            "--start",
+            help="Optional ISO start time for historical connectivity smoke.",
+        ),
+        end: str | None = typer.Option(
+            None,
+            "--end",
+            help="Optional ISO end time for historical connectivity smoke.",
+        ),
         limit: int = typer.Option(1, "--limit", min=1, help="Number of bars to request."),
         feed: str = typer.Option("iex", "--feed", help="Alpaca data feed."),
         timeout: float = typer.Option(10.0, "--timeout", min=0.1, help="Request timeout seconds."),
@@ -108,6 +129,8 @@ def register_research_commands(
             data_dir=settings.data_dir,
             symbol=symbol,
             timeframe=timeframe,
+            start=_parse_optional_datetime(start),
+            end=_parse_optional_datetime(end),
             limit=limit,
             feed=feed,
             timeout=timeout,
@@ -116,6 +139,8 @@ def register_research_commands(
         typer.echo(f"status={summary['status']}")
         typer.echo(f"symbol={summary['symbol']}")
         typer.echo(f"timeframe={summary['timeframe']}")
+        typer.echo(f"start={summary['start']}")
+        typer.echo(f"end={summary['end']}")
         typer.echo(f"bar_count={summary['bar_count']}")
         typer.echo(f"source_confidence={summary['source_confidence']}")
         live_suitability_reasons = summary.get("live_suitability_reasons")

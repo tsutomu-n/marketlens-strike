@@ -12,6 +12,11 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
 - 予測モデルは売買判断の全部を持たせず、フィルタ、配分、停止条件に寄せる。
 - 板情報は方向予測より、見送り判断と執行品質改善に使う。
 
+この版で直した点:
+- `0507-戦略1..5` を反映し、entry/regime/on-chain/allocation/exit の5モジュール発想を明示した。
+- 高優先案に対して `捨て条件` を追加し、進める/やめる判断ができるようにした。
+- 有望そうに見えても、宣伝寄り・概説寄りノートは主戦略案の中核に置かないよう修正した。
+
 ## 1. Trend Filtered Pullback
 
 - 発想:
@@ -205,6 +210,45 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
   - 1週間で回せる仮説数が何倍になるか。
   - research loop のボトルネックが計算か、データ整形か、可視化かを把握する。
 
+## 13. Adaptive Volatility Scaled Trend
+
+- 発想:
+  - 同じ方向シグナルでも、日々の実現ボラに応じて size を変える。
+  - エントリー精度より、risk-normalized exposure の安定化を狙う。
+- 使うノート:
+  - `0507-戦略1_適応型ボラティリティ・スケーリング付きマルチシグナル・トレンド戦略.md`
+  - `1114_ポートフォリオ最適化.md`
+- 最初の実装イメージ:
+  - 複数の trend signal を合成し、realized vol で leverage/sizing を調整する。
+- 最初の検証観点:
+  - fixed size と比べて、Sharpe と MDD が改善するか。
+
+## 14. On-Chain Conviction Overlay
+
+- 発想:
+  - テクニカル方向が同じでも、オンチェーンの活性度や資金流入が弱い時は size を落とすか見送る。
+- 使うノート:
+  - `0507-戦略3_オンチェーンデータ強化型トレンド確信度モデル戦略.md`
+  - `1021_SOLANA.md`
+  - `1129-Solanaトレーディングボット.md`
+- 最初の実装イメージ:
+  - ベース trend signal に対し、on-chain score を participation multiplier として掛ける。
+- 最初の検証観点:
+  - participation overlay が false breakout を減らすか。
+
+## 15. Trend Maturity Exit Module
+
+- 発想:
+  - entry は既存戦略のまま、exit だけを smarter にする。
+  - トレンド終盤の利益吐き出しを減らす。
+- 使うノート:
+  - `0507-戦略5_「トレンドの成熟度」判定によるイグジット戦略.md`
+  - `0212-Trend-Bot.md`
+- 最初の実装イメージ:
+  - RSI/MACD divergence、短中期 vol 変化、出来高鈍化を exit warning score に変換する。
+- 最初の検証観点:
+  - fixed TP / simple trailing と比べて、avg win と giveback が改善するか。
+
 ## まず優先して試すなら
 
 - 優先1: `Trend Filtered Pullback`
@@ -216,8 +260,20 @@ Source vault: `/home/tn/Docs/algo/obsidian-vault`
 - 優先4: `Research Stack First`
   - 理由: 以降の全戦略の試行回数を増やせる。
 
+## 優先案の捨て条件
+
+- `Trend Filtered Pullback`
+  - 捨て条件: trend filter を入れても PF と MDD が改善しない。
+- `Trend Plus Order Book Confirmation`
+  - 捨て条件: 板フィルタで取引数だけ減り、slippage や adverse move が改善しない。
+- `Anomaly Skip Filter`
+  - 捨て条件: skip により大勝ち局面まで落としてしまい、tail risk 改善より期待値悪化が大きい。
+- `Research Stack First`
+  - 捨て条件: stack を変えても研究回転数が上がらず、整形コストだけ増える。
+
 ## 現時点の結論
 
 - 一番筋が良いのは、`長期トレンドフィルタ + 短期エントリー + リスクガード + 板確認` の4層構造。
 - ML は主役ではなく、`regime判定` `異常検知` `配分調整` に置く方が崩れにくい。
 - strategy edge と execution edge を分離して考えるべきで、vault の材料もその方向に揃っている。
+- さらに言うと、`entry` `regime` `conviction` `allocation` `exit` を別モジュールとして設計するのが、今回の vault から得られる最も再利用性の高い学び。

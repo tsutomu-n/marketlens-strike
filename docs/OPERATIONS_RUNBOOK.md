@@ -78,6 +78,12 @@ Alpaca credentials smoke:
 uv run sis alpaca-smoke --symbol NVDA --timeframe 15m --limit 1 --feed iex
 ```
 
+Historical connectivity smoke:
+
+```bash
+uv run sis alpaca-smoke --symbol NVDA --timeframe 1d --start 2025-05-01 --end 2025-05-02 --limit 1 --feed iex
+```
+
 Expected artifacts:
 
 - `data/ops/alpaca_live_smoke_summary.json`
@@ -88,6 +94,7 @@ Failure behavior:
 
 - credentials が無い場合も summary / report を書いて `status=failed` で終了する。
 - live bars が返っても `source_confidence` が閾値未満なら `status=blocked` とし、`live_suitability_reasons=BLOCK_LOW_SOURCE_CONFIDENCE` を出す。
+- historical connectivity smoke は API / credentials の疎通確認用。古いbarなので `status=blocked` でも `bar_count>=1` なら provider connectivity は確認できている。
 - summary / report / raw payload に credential secret を書かない。
 - `status=pass` は Alpaca provider が live bars を返し、live suitability blocker が無いことを示す。production live trading ready ではない。
 
