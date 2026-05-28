@@ -59,7 +59,7 @@
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 292 passed
+- `uv run pytest -q`: 293 passed
 - P2 targeted verification: Trade[XYZ] / diagnostics / phase gate / Alpaca / tracking tests pass
 - `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
 - latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows

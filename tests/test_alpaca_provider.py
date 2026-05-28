@@ -38,6 +38,51 @@ def test_alpaca_provider_requires_credentials(monkeypatch) -> None:
         fetch_alpaca_bars(symbol="NVDA", timeframe="15m")
 
 
+def test_alpaca_provider_loads_credentials_from_dotenv(tmp_path, monkeypatch) -> None:
+    for key in (
+        "APCA_API_KEY_ID",
+        "APCA_API_SECRET_KEY",
+        "ALPACA_API_KEY",
+        "ALPACA_SECRET_KEY",
+        "SIS_ALPACA_API_KEY",
+        "SIS_ALPACA_SECRET_KEY",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env").write_text(
+        "APCA_API_KEY_ID=dotenv-key\nAPCA_API_SECRET_KEY=dotenv-secret\n",
+        encoding="utf-8",
+    )
+    captured = {}
+
+    def opener(request, *, timeout: float):
+        _ = timeout
+        captured["headers"] = dict(request.header_items())
+        return _Response(
+            {
+                "bars": {
+                    "NVDA": [
+                        {
+                            "t": "2026-05-26T14:00:00Z",
+                            "o": 100.0,
+                            "h": 101.0,
+                            "l": 99.5,
+                            "c": 100.5,
+                            "v": 12345,
+                        }
+                    ]
+                }
+            }
+        )
+
+    bars = fetch_alpaca_bars(symbol="NVDA", timeframe="15m", opener=opener)
+
+    assert len(bars) == 1
+    headers = {str(key).lower(): value for key, value in captured["headers"].items()}
+    assert headers["apca-api-key-id"] == "dotenv-key"
+    assert headers["apca-api-secret-key"] == "dotenv-secret"
+
+
 def test_alpaca_provider_maps_bars_and_writes_raw_payload(tmp_path) -> None:
     captured = {}
 

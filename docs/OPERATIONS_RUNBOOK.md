@@ -55,8 +55,22 @@ Alpaca provider:
 
 - `fetch_alpaca_bars()` は silent empty stub ではない。
 - credentials が無い場合は `AlpacaProviderUnavailable` で止まる。
-- live fetch を使う場合は `APCA_API_KEY_ID` / `APCA_API_SECRET_KEY`、または `ALPACA_API_KEY` / `ALPACA_SECRET_KEY`、または `SIS_ALPACA_API_KEY` / `SIS_ALPACA_SECRET_KEY` を環境変数で渡す。
+- live fetch を使う場合は `.env` に `APCA_API_KEY_ID` / `APCA_API_SECRET_KEY` を書く。`ALPACA_API_KEY` / `ALPACA_SECRET_KEY`、`SIS_ALPACA_API_KEY` / `SIS_ALPACA_SECRET_KEY` も fallback として使える。
 - credentials を repo に書かない。
+
+`.env` setup:
+
+```bash
+cp .env.example .env
+$EDITOR .env
+```
+
+`.env` に書く最小値:
+
+```bash
+APCA_API_KEY_ID=...
+APCA_API_SECRET_KEY=...
+```
 
 Alpaca credentials smoke:
 

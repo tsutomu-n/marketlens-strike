@@ -76,8 +76,8 @@ PR-08:
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 292 passed
-- `./scripts/check`: pass, 292 passed
+- `uv run pytest -q`: 293 passed
+- `./scripts/check`: pass, 293 passed
 - targeted P2 tests: Trade[XYZ] / quote diagnostics / phase gate / Alpaca / tracking tests pass
 - latest strict validation: `checked_files=12`, `issues=0`
 - latest phase gate: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`

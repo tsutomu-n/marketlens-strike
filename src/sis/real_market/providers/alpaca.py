@@ -9,6 +9,8 @@ from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from dotenv import find_dotenv, load_dotenv
+
 from sis.real_market.models import RealMarketBar
 
 ALPACA_DATA_BASE_URL = "https://data.alpaca.markets"
@@ -29,6 +31,9 @@ def _credentials(
 ) -> tuple[str, str]:
     if api_key and api_secret:
         return api_key, api_secret
+    dotenv_path = find_dotenv(usecwd=True)
+    if dotenv_path:
+        load_dotenv(dotenv_path=dotenv_path, override=False)
     for key_name, secret_name in ALPACA_CREDENTIAL_ENV_KEYS:
         key = os.getenv(key_name)
         secret = os.getenv(secret_name)
