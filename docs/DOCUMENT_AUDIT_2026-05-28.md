@@ -90,9 +90,9 @@ Trade[XYZ] target fee fields:
 
 | file | status | 理由 | 完了条件 |
 |---|---|---|---|
-| `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` | legacy reference | gTrade/Ostium collector chain の履歴。冒頭に legacy 表示あり | current Trade[XYZ] CLI と混同しない |
-| `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` | legacy consumed/partial plan | gTrade/Ostium path の未実装 backlog を含む。current public CLI ではない | active docs から標準手順として参照しない |
-| `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` | legacy risk review | old collector risk として有用。current gate の blocker ではない | future legacy restore 時だけ参照する |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` | archived legacy reference | gTrade/Ostium collector chain の履歴 | current Trade[XYZ] CLI と混同しない |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` | archived legacy consumed/partial plan | gTrade/Ostium path の未実装 backlog を含む。current public CLI ではない | future legacy restore 時だけ参照する |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_RISK_REVIEW.md` | archived legacy risk review | old collector risk として有用。current gate の blocker ではない | future legacy restore 時だけ参照する |
 | `docs/live_evidence_reports/README.md` | generated-history index | live evidence report は history / generated artifact | current status として読まない |
 | `docs/archive/**` | archive | historical only | current runbook から command を拾わない |
 
@@ -171,14 +171,14 @@ docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md
 
 対象:
 
-- `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`
-- `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md`
-- `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md`
+- `docs/archive/legacy_read_only_collectors_2026-05-28/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`
+- `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md`
+- `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_RISK_REVIEW.md`
 
-作り直し方:
+現在状態:
 
-- active docs ではなく `docs/archive/legacy_read_only_collectors_2026-05-28/` にまとめる。
-- current runbook からは直接たどらせず、archive README からだけ参照する。
+- `docs/archive/legacy_read_only_collectors_2026-05-28/` に archive 済み。
+- current runbook は archive directory を指す。
 
 完了条件:
 
@@ -194,9 +194,9 @@ docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md
 | `docs/DOCUMENT_AUDIT_2026-05-26.md` | archive | 2026-05-27 / 2026-05-28 audit に superseded |
 | `docs/DOCUMENT_AUDIT_2026-05-27.md` | archive later | 本ファイルに superseded。すぐ削除せず履歴として残す |
 | `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | archive after 2026-05-28 rewrite | P2 前の棚卸しとしては有用 |
-| `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` | archive | legacy gTrade/Ostium plan |
-| `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` | archive | legacy gTrade/Ostium collector docs |
-| `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` | archive | legacy risk review |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` | archived | legacy gTrade/Ostium plan |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` | archived | legacy gTrade/Ostium collector docs |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_RISK_REVIEW.md` | archived | legacy risk review |
 | `docs/live_evidence_reports/*` | archive/generated history | current source docs ではない |
 
 ## 抜け・漏れ・誤謬リスク
@@ -254,10 +254,11 @@ Current guard:
 
 - legacy docs の冒頭 banner は存在。
 - runbook は Trade[XYZ] refresh path を標準化。
+- legacy docs 3 本は `docs/archive/legacy_read_only_collectors_2026-05-28/` へ移動済み。
 
 Better:
 
-- legacy docs 3 本を archive directory に移し、active docs root を軽くする。
+- archive README を current docs からの唯一の入口として維持する。
 
 ### R5. Generated reports の stale 値
 
@@ -277,14 +278,14 @@ Better:
 
 優先順:
 
-1. legacy read-only collector docs 3 本を `docs/archive/legacy_read_only_collectors_2026-05-28/` へ移す。
-2. Alpaca live credentials smoke の operator doc を追加する。ただし secrets は repo に書かない。
-3. `data/reports/weekly_strategy_review.md` が old symbol を出す理由を調べ、generated report の current symbol universe と legacy history を分ける。
+1. Alpaca live credentials smoke の operator doc を追加する。ただし secrets は repo に書かない。
+2. `data/reports/weekly_strategy_review.md` が old symbol を出す理由を調べ、generated report の current symbol universe と legacy history を分ける。
 
 完了済み:
 
 - `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` を新規作成し、FD state を resolved / active / deferred に更新した。
 - `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` を新規作成し、2026-05-27 audit を current status から外した。
+- legacy read-only collector docs 3 本を `docs/archive/legacy_read_only_collectors_2026-05-28/` へ移動した。
 
 ## Verification
 

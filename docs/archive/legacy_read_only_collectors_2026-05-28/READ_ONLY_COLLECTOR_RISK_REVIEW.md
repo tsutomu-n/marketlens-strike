@@ -3,8 +3,8 @@
 > Current status: historical / legacy. This risk review describes the old gTrade/Ostium read-only collector path, not the current Trade[XYZ] quote collection path. Current Trade[XYZ] gate status is tracked in `docs/CURRENT_STATE.md` and `data/ops/phase_gate_review_summary.json`.
 
 この文書は legacy `gtrade` / `ostium` read-only collector の実装に残る抜け、漏れ、誤謬リスク、改善余地を記録する。current Trade[XYZ] PR12 read-only gate のリスク一覧ではない。
-実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
-運用上の artifact contract は `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。
+実装計画とタスク一覧は `READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
+運用上の artifact contract は `LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。
 
 ## Conclusion
 
@@ -120,7 +120,7 @@ Risk:
 
 Better acceptance:
 
-- `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` の Phase Gate 条件を code truth と同期する
+- `LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` の Phase Gate 条件を code truth と同期する
 - risk review doc への参照を runbook に残す
 - future hardening が未実装であることを明示する
 

@@ -63,7 +63,7 @@
 
 - すぐ削除はしない。migration 経緯や live evidence 経緯の audit trail として価値があるため、削除より archive / historical banner を優先する。
 - `docs/archive/**` は既に archive なので削除対象にしない。
-- `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`, `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md`, `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` は legacy operational evidence の補助資料として残す。
+- `docs/archive/legacy_read_only_collectors_2026-05-28/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`, `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md`, `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_RISK_REVIEW.md` は legacy operational evidence の補助資料として残す。
 
 ## Current Code Truth
 

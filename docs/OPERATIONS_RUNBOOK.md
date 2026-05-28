@@ -152,7 +152,7 @@ uv run sis phase-gate-review
 - `data/ops/pr12_fresh_read_only_smoke_summary.json`: `final_decision=READ_ONLY_GO`
 - `data/reports/pr12_fresh_read_only_smoke_report.md`: 5 symbols x 62 rows
 
-`docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` 以降の 3 文書は、この legacy read-only collector chain の補助資料です。`Trade[XYZ]` migration 完了そのものの説明ではありません。
+`docs/archive/legacy_read_only_collectors_2026-05-28/` 配下の 3 文書は、この legacy read-only collector chain の補助資料です。`Trade[XYZ]` migration 完了そのものの説明ではありません。
 
 ## Daemon And Notifications
 

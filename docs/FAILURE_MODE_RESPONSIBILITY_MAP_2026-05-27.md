@@ -516,8 +516,8 @@ uv run sis phase-gate-review
 
 - `docs/CURRENT_STATE.md`
 - `docs/OPERATIONS_RUNBOOK.md`
-- `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`
-- `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md`
+- `docs/archive/legacy_read_only_collectors_2026-05-28/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`
+- `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_RISK_REVIEW.md`
 - `archive/gtrade_ostium_legacy_archive_*.zip`
 
 止める条件:

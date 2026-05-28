@@ -8,6 +8,9 @@ Current docs:
 - `docs/CODE_STATUS.md`
 - `docs/OPERATIONS_RUNBOOK.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
+- `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
+- `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
+- `docs/DOCUMENT_AUDIT_2026-05-28.md`
 
 Archived on 2026-05-25:
 
@@ -34,5 +37,11 @@ Archived on 2026-05-27:
 
 - local `docs/live_evidence_reports/live_evidence_report_20260526_2245.*` -> `docs/archive/2026-05-26-live-evidence-history/`
 - local `docs/live_evidence_reports/live_evidence_followup_20260526_2245.md` -> `docs/archive/2026-05-26-live-evidence-history/`
+
+Archived on 2026-05-28:
+
+- `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` -> `docs/archive/legacy_read_only_collectors_2026-05-28/`
+- `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` -> `docs/archive/legacy_read_only_collectors_2026-05-28/`
+- `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` -> `docs/archive/legacy_read_only_collectors_2026-05-28/`
 
 Do not treat archived documents as current requirements.

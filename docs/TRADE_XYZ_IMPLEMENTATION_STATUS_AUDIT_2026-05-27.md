@@ -1622,9 +1622,9 @@ docs/live_evidence_reports/README.md:
 | path | 古い理由 | 現在の扱い |
 |---|---|---|
 | `docs/DOCUMENT_AUDIT_2026-05-26.md` | PR12 前の snapshot | superseded。archive 移動候補 |
-| `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` | legacy gTrade/Ostium collector plan | historical / legacy。current CLI 正本ではない |
-| `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` | legacy gTrade/Ostium collector operations | historical / legacy。archive restore 前提なら有用 |
-| `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` | legacy collector risk review | historical / legacy。Trade[XYZ] PR12 risk ではない |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` | legacy gTrade/Ostium collector plan | historical / legacy。current CLI 正本ではない |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` | legacy gTrade/Ostium collector operations | historical / legacy。archive restore 前提なら有用 |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_RISK_REVIEW.md` | legacy collector risk review | historical / legacy。Trade[XYZ] PR12 risk ではない |
 | `plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | 前半は consumed plan | 後半 A-G ledger は current 参照なので要分割 |
 | `plan/README.md` | plan 全体は historical と説明済み | 維持可 |
 | `plan/archive/*` | migration contract の履歴 | archive として維持 |
@@ -1668,9 +1668,9 @@ plan/bot_preview_next_task_ledger.md
 対象:
 
 ```text
-docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md
-docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md
-docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md
+docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md
+docs/archive/legacy_read_only_collectors_2026-05-28/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md
+docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_RISK_REVIEW.md
 ```
 
 理由:
@@ -1682,7 +1682,7 @@ docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md
 推奨:
 
 ```text
-docs/archive/legacy_read_only_collectors/
+docs/archive/legacy_read_only_collectors_2026-05-28/
   README.md
   IMPLEMENTATION_PLAN.md
   RISK_REVIEW.md
@@ -1720,9 +1720,9 @@ HTML は生成 artifact として扱う。
 | path | 推奨 | 理由 |
 |---|---|---|
 | `docs/DOCUMENT_AUDIT_2026-05-26.md` | archive 移動候補 | superseded snapshot |
-| `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` | archive 移動候補 | current Trade[XYZ] path ではない |
-| `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` | archive 移動候補 | current public CLI ではない legacy command を含む |
-| `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` | archive 移動候補 | Trade[XYZ] PR12 risk review ではない |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` | archived | current Trade[XYZ] path ではない |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` | archived | current public CLI ではない legacy command を含む |
+| `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_RISK_REVIEW.md` | archived | Trade[XYZ] PR12 risk review ではない |
 | `docs/live_evidence_reports/live_evidence_report_*` | archive / generated 扱い | source docs ではない |
 | `docs/live_evidence_reports/live_evidence_followup_*` | archive / generated 扱い | source docs ではない |
 
@@ -1746,7 +1746,7 @@ archive/gtrade_ostium_legacy_archive_*.zip
 3. docs/CODE_STATUS.md の PR9a-PR12 DONE 表に caveat column を足す。
 4. docs/OPERATIONS_RUNBOOK.md の bot-preview と live evidence non-dry-run 境界をさらに強調する。
 5. plan/20260526... を consumed PR9a-PR12 plan と active A-G ledger に分割する。
-6. legacy read-only collector docs 3 本を archive restore runbook へ統合する。
+6. legacy read-only collector docs 3 本は `docs/archive/legacy_read_only_collectors_2026-05-28/` へ移動済み。将来 restore する場合だけ archive README から読む。
 ```
 
 この順序なら、current user がまず読む docs から誤読リスクを下げられる。

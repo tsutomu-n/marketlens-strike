@@ -3,8 +3,8 @@
 > Current status: historical / legacy. Commands such as `bun run gtrade:backend-collect` and `uv run sis ostium-constraint-artifact` are not current public CLI surfaces in this checkout. Treat this file as evidence history unless the legacy archive is intentionally restored. For current Trade[XYZ] read-only gate status, read `docs/CURRENT_STATE.md` and `docs/OPERATIONS_RUNBOOK.md`.
 
 この文書は legacy `gtrade` / `ostium` read-only collector chain の運用メモです。`Trade[XYZ]` migration 全体の正本ではありません。
-実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
-残リスクと hardening backlog は `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。
+実装計画とタスク一覧は `READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
+残リスクと hardening backlog は `READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。
 
 ## 結論
 
@@ -116,4 +116,4 @@ Trade[XYZ] artifacts が存在する current path では、phase gate は Trade[
 
 market close は missing data ではない。Ostium constraint artifact で closed と分類されていれば、価格欠損とは別に扱う。
 
-現在の gate は summary field の存在検査が中心であり、artifact file existence / digest validation は future hardening として `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` に残している。
+現在の gate は summary field の存在検査が中心であり、artifact file existence / digest validation は future hardening として `READ_ONLY_COLLECTOR_RISK_REVIEW.md` に残している。

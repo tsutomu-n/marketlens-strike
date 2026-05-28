@@ -3,8 +3,8 @@
 > Current status: historical / legacy. The active repo no longer exposes the referenced gTrade/Ostium sidecar commands or Ostium collector CLI as normal operator surfaces. Use `Trade[XYZ]` docs and `uv run sis collect-trade-xyz-quotes` for current work. Current Trade[XYZ] gate status is tracked in `docs/CURRENT_STATE.md` and `data/ops/phase_gate_review_summary.json`; pending items here apply only to the legacy collector chain.
 
 この文書は legacy `gtrade` / `ostium` read-only collector の実装・検証・再開用メモである。current Trade[XYZ] PR12 read-only gate の正本ではない。repo 全体の migration plan 正本は `plan/archive/PR-00_to_PR-08_implementation_plan.md` を使う。
-運用手順と artifact contract の正本は `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。
-残リスクと hardening backlog は `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。
+運用手順と artifact contract の正本は `LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。
+残リスクと hardening backlog は `READ_ONLY_COLLECTOR_RISK_REVIEW.md` を読む。
 
 ## 結論
 
@@ -225,9 +225,9 @@ Goal:
 Target files:
 
 - `src/sis/live_evidence_runner.py`
-- `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`
+- `LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`
 - `docs/OPERATIONS_RUNBOOK.md`
-- `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md`
+- `READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md`
 
 Acceptance:
 
@@ -306,7 +306,7 @@ Status: pending
 
 Goal:
 
-- `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` の Better Backlog を実装し、Phase gate の過信リスクを下げる
+- `READ_ONLY_COLLECTOR_RISK_REVIEW.md` の Better Backlog を実装し、Phase gate の過信リスクを下げる
 
 Target files:
 
@@ -356,7 +356,7 @@ uv run sis ostium-constraint-artifact --help
 
 ## Known Gaps / Risk Review
 
-現行実装の残リスクは `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` に分離して管理する。
+現行実装の残リスクは `READ_ONLY_COLLECTOR_RISK_REVIEW.md` に分離して管理する。
 
 特に次は未実装の hardening backlog である。
 

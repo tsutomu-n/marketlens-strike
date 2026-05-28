@@ -31,7 +31,7 @@
 
 - `docs/DOCUMENT_AUDIT_2026-05-26.md`: 2026-05-26 snapshot。現行 audit ではない。
 - `plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md`: initial CLI plan。PR12 後は consumed plan / historical note として扱う。
-- `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md`, `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`, `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md`: legacy command を参照する。current public CLI としては使わない。
+- `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md`, `docs/archive/legacy_read_only_collectors_2026-05-28/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md`, `docs/archive/legacy_read_only_collectors_2026-05-28/READ_ONLY_COLLECTOR_RISK_REVIEW.md`: legacy command を参照する。current public CLI としては使わない。
 - `data/reports/phase_gate_review.md`, `data/reports/readiness_snapshot.md`: generated snapshot。古ければ再生成する。
 - `.ai_memory/HANDOFF.md`: handoff としては current restart 正本だが、artifact existence は再開時に `find data/bot data/reports ...` で再確認する。
 
