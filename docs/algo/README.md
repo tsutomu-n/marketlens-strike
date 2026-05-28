@@ -18,11 +18,14 @@
    - バックテスト、walk-forward、Monte Carlo、リーク検査、捨て条件を確認する。
 7. [SOURCE_NOTES_INDEX.md](SOURCE_NOTES_INDEX.md)
    - どのObsidianノートに由来するか、どのノートを除外したかを確認する。
+8. [obsidian_note_rewrites_2026-05-28/](obsidian_note_rewrites_2026-05-28/)
+   - 原ノート24本を、理想的ナラティブ、誤謬リスク、戦略部品、検証条件つきで読み直す。
 
 ## 正本と参照元
 
 - 現行正本: このディレクトリ直下の `ALGO_*`, `STRATEGY_*`, `RESEARCH_*`, `SOURCE_*` docs。
 - 一次参照: [obsidian_note_copies/](obsidian_note_copies/) にある実ノートコピー。
+- 再構成参照: [obsidian_note_rewrites_2026-05-28/](obsidian_note_rewrites_2026-05-28/) にある原ノートの批判的リライト。
 - 旧docs: [../archive/2026-05-28-algo-doc-refresh/](../archive/2026-05-28-algo-doc-refresh/) に退避済み。
 
 旧 `OBSIDIAN_*` docs は調査ログとして残しますが、今後の戦略検討ではこの新docs群を正本にします。
