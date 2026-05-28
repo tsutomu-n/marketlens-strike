@@ -251,6 +251,67 @@ def _as_dict_list(value: object) -> list[dict[str, object]]:
     return [item for item in value if isinstance(item, dict)]
 
 
+def _execution_drift_classifications(summary: dict[str, object]) -> list[dict[str, object]]:
+    checks = [
+        (
+            "execution_drift_overview_status",
+            summary.get("execution_drift_overview_status"),
+            "ok",
+            "LIVE_READINESS_BLOCKER",
+            "execution drift must be clean before live execution readiness",
+        ),
+        (
+            "execution_balance_gap_detected",
+            summary.get("execution_balance_gap_detected"),
+            False,
+            "LIVE_READINESS_BLOCKER",
+            "balance gaps affect execution readiness, not read-only quote research",
+        ),
+        (
+            "execution_fills_gap_detected",
+            summary.get("execution_fills_gap_detected"),
+            False,
+            "LIVE_READINESS_BLOCKER",
+            "fills gaps affect execution readiness, not read-only quote research",
+        ),
+        (
+            "execution_comparison_all_registries_present",
+            summary.get("execution_comparison_all_registries_present"),
+            True,
+            "LIVE_READINESS_BLOCKER",
+            "execution venue comparison coverage is required before live execution",
+        ),
+        (
+            "execution_state_comparison_mismatching_count",
+            summary.get("execution_state_comparison_mismatching_count"),
+            0,
+            "LIVE_READINESS_BLOCKER",
+            "execution state mismatches are live-readiness drift",
+        ),
+        (
+            "execution_snapshot_drift_mismatching_snapshot_count",
+            summary.get("execution_snapshot_drift_mismatching_snapshot_count"),
+            0,
+            "LIVE_READINESS_BLOCKER",
+            "execution snapshot drift is live-readiness drift",
+        ),
+    ]
+    classifications: list[dict[str, object]] = []
+    for signal, observed, expected, classification, reason in checks:
+        if observed == expected or observed is None:
+            continue
+        classifications.append(
+            {
+                "signal": signal,
+                "observed": observed,
+                "expected": expected,
+                "classification": classification,
+                "reason": reason,
+            }
+        )
+    return classifications
+
+
 def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str]]:
     command_map = {
         "latest_manifest_path": ["uv run sis phase-gate-review"],
@@ -559,6 +620,7 @@ def build_phase_gate_review(
             venue="trade_xyz",
             symbol=symbol,
             stale_thresholds_ms=stale_thresholds,
+            latest_only=True,
         )
         diagnostics.append(
             {
@@ -781,6 +843,20 @@ def build_phase_gate_review(
             ]
         ),
     }
+    execution_drift_classifications = _execution_drift_classifications(summary)
+    summary["execution_drift_classifications"] = execution_drift_classifications
+    summary["execution_drift_classification_counts"] = {
+        "P2_BLOCKER": sum(
+            1
+            for item in execution_drift_classifications
+            if item.get("classification") == "P2_BLOCKER"
+        ),
+        "LIVE_READINESS_BLOCKER": sum(
+            1
+            for item in execution_drift_classifications
+            if item.get("classification") == "LIVE_READINESS_BLOCKER"
+        ),
+    }
     required_artifact_paths = _required_artifact_paths(summary)
     missing_required_artifact_paths = [
         key for key, value in required_artifact_paths.items() if not value
@@ -979,6 +1055,14 @@ def build_phase_gate_review(
         (
             "- execution_drift_overview_snapshot_drift_mismatching_snapshot_count: "
             f"{summary['execution_drift_overview_snapshot_drift_mismatching_snapshot_count']}"
+        ),
+        (
+            "- execution_drift_p2_blocker_count: "
+            f"{summary['execution_drift_classification_counts']['P2_BLOCKER']}"
+        ),
+        (
+            "- execution_drift_live_readiness_blocker_count: "
+            f"{summary['execution_drift_classification_counts']['LIVE_READINESS_BLOCKER']}"
         ),
         *latest_execution_lineage_flat_lines(summary),
         "",
@@ -1224,6 +1308,24 @@ def build_phase_gate_review(
     lines.append(
         f"- latest_execution_drift_overview_summary_path: {summary['latest_execution_drift_overview_summary_path']}"
     )
+
+    lines.extend(["", "## Execution Drift Classification", ""])
+    classifications = _as_dict_list(summary.get("execution_drift_classifications"))
+    if classifications:
+        lines.append("| signal | observed | expected | classification | reason |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for item in classifications:
+            lines.append(
+                "| {signal} | {observed} | {expected} | {classification} | {reason} |".format(
+                    signal=item.get("signal", ""),
+                    observed=item.get("observed", ""),
+                    expected=item.get("expected", ""),
+                    classification=item.get("classification", ""),
+                    reason=str(item.get("reason", "")).replace("|", "/"),
+                )
+            )
+    else:
+        lines.append("- execution_drift_classifications: none")
 
     lines.extend(["", "## Next Actions", ""])
     if next_actions:

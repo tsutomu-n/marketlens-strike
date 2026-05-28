@@ -159,6 +159,8 @@ class QuoteLog(BaseModel):
     prev_day_price: float | None = None
     day_notional_volume: float | None = None
     fee_mode: str | None = None
+    taker_fee_bps: float | None = None
+    maker_fee_bps: float | None = None
     oracle_ts_ms: int | None = None
 
     market_status: MarketStatus = MarketStatus.UNKNOWN

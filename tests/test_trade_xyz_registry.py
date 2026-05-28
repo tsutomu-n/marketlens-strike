@@ -60,6 +60,67 @@ def test_trade_xyz_registry_resolves_perp_dex_index_from_perp_dexs() -> None:
     assert by_symbol["SP500"].api_orderable is True
 
 
+def test_trade_xyz_registry_resolves_fee_mode_from_config_classification() -> None:
+    result = build_trade_xyz_registry(
+        Path("configs/instrument_registry.seed.json"),
+        all_mids_payload=_fixture("tests/fixtures/trade_xyz_all_mids.sample.json"),
+        meta_payload=_fixture("tests/fixtures/trade_xyz_meta.sample.json"),
+    )
+    by_symbol = {item.canonical_symbol: item for item in result.instruments}
+
+    for symbol in ("SP500", "XYZ100", "NVDA", "AAPL", "MSFT"):
+        item = by_symbol[symbol]
+        assert item.fee_mode == "standard"
+        assert item.taker_fee_bps == 9.0
+        assert item.maker_fee_bps == 3.0
+        assert "fee_mode_source=config" in item.notes
+
+
+def test_trade_xyz_registry_keeps_unclassified_fee_mode_unknown(tmp_path) -> None:
+    seed_path = tmp_path / "seed.json"
+    seed_path.write_text(
+        json.dumps(
+            {
+                "venues": {
+                    "trade_xyz": [
+                        {
+                            "venue": "trade_xyz",
+                            "canonical_symbol": "NVDA",
+                            "venue_symbol": "NVDA",
+                            "asset_class": "equity",
+                            "api_readable": True,
+                            "api_orderable": False,
+                            "active": True,
+                            "notes": [],
+                        }
+                    ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    result = build_trade_xyz_registry(
+        seed_path,
+        all_mids_payload={"xyz:NVDA": "1000"},
+        meta_payload={"perpDexIndex": 1, "universe": [{"name": "NVDA"}]},
+        fee_model_payload={
+            "fee_model": {
+                "trade_xyz": {
+                    "fallback": {
+                        "standard": {"taker_bps": 9.0, "maker_bps": 3.0},
+                    },
+                    "classification": {},
+                }
+            }
+        },
+    )
+    item = result.instruments[0]
+    assert item.fee_mode == "unknown"
+    assert item.taker_fee_bps is None
+    assert item.maker_fee_bps is None
+    assert "fee_mode_unknown" in item.notes
+
+
 def test_trade_xyz_registry_fails_closed_when_perp_dex_index_missing() -> None:
     meta_payload = _fixture("tests/fixtures/trade_xyz_meta.sample.json")
     meta_payload.pop("perpDexIndex")

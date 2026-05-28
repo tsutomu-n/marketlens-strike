@@ -346,6 +346,7 @@ def register_review_commands(
             venue=venue,
             symbol=symbol,
             stale_thresholds_ms=stale_thresholds,
+            latest_only=venue == "trade_xyz",
         )
         if not diagnostics:
             typer.echo("No quote rows found for diagnostics.")
@@ -379,6 +380,7 @@ def register_review_commands(
             venue=venue,
             symbol=symbol,
             stale_thresholds_ms=stale_thresholds,
+            latest_only=venue == "trade_xyz",
             out_path=settings.data_dir / "reports/quote_diagnostics.md",
             summary_path=settings.data_dir / "ops/quote_diagnostics_summary.json",
         )

@@ -19,6 +19,9 @@ def test_l2_book_to_quote_log_computes_spread_and_depth() -> None:
         asset_id=130002,
         real_market_symbol="NVDA",
         payload=payload,
+        fee_mode="standard",
+        taker_fee_bps=9.0,
+        maker_fee_bps=3.0,
         now=datetime(2026, 5, 26, 0, 0, tzinfo=timezone.utc),
     )
     assert quote.best_bid == 99.9
@@ -27,6 +30,9 @@ def test_l2_book_to_quote_log_computes_spread_and_depth() -> None:
     assert round(quote.spread_bps or 0, 2) == 20.0
     assert (quote.depth_10bps_usd or 0) > 0
     assert (quote.depth_25bps_usd or 0) > 0
+    assert quote.fee_mode == "standard"
+    assert quote.taker_fee_bps == 9.0
+    assert quote.maker_fee_bps == 3.0
 
 
 def test_missing_book_side_sets_not_tradable() -> None:

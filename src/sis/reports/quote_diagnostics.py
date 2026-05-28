@@ -56,14 +56,29 @@ def _quantile_int(values: list[int], q: float) -> int | None:
     return int(result)
 
 
+def _quote_paths(raw_quotes_root: Path, venue: str | None, latest_only: bool) -> list[Path]:
+    if not latest_only:
+        return sorted(raw_quotes_root.glob("*/*.jsonl"))
+    if venue:
+        venue_paths = sorted((raw_quotes_root / venue).glob("*.jsonl"))
+        return venue_paths[-1:] if venue_paths else []
+    paths: list[Path] = []
+    for venue_dir in sorted(path for path in raw_quotes_root.iterdir() if path.is_dir()):
+        venue_paths = sorted(venue_dir.glob("*.jsonl"))
+        if venue_paths:
+            paths.append(venue_paths[-1])
+    return paths
+
+
 def build_quote_diagnostics(
     raw_quotes_root: Path,
     venue: str | None = None,
     symbol: str | None = None,
     stale_thresholds_ms: dict[str, int] | None = None,
+    latest_only: bool = False,
 ) -> list[QuoteDiagnostic]:
     grouped: dict[tuple[str, str], list[dict]] = defaultdict(list)
-    for path in sorted(raw_quotes_root.glob("*/*.jsonl")):
+    for path in _quote_paths(raw_quotes_root, venue, latest_only):
         for row in read_jsonl(path):
             key = (row.get("venue"), row.get("canonical_symbol"))
             if key[0] is None or key[1] is None:
@@ -223,6 +238,7 @@ def build_quote_diagnostics_report(
     venue: str | None = None,
     symbol: str | None = None,
     stale_thresholds_ms: dict[str, int] | None = None,
+    latest_only: bool = False,
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
@@ -231,6 +247,7 @@ def build_quote_diagnostics_report(
         venue=venue,
         symbol=symbol,
         stale_thresholds_ms=stale_thresholds_ms,
+        latest_only=latest_only,
     )
     row_count = sum(item.rows for item in diagnostics)
     venues = sorted({item.venue for item in diagnostics})

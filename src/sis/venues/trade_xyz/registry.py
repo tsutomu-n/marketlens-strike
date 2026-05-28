@@ -3,12 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from sis.models import InstrumentSpec, Venue
 from sis.storage.jsonl_store import read_json, write_json
 from sis.venues.trade_xyz.client import TradeXyzClient
 from sis.venues.trade_xyz.models import TradeXyzAssetResolution, TradeXyzRegistryBuildResult
 
 EXCLUDED_ACTIVE_SYMBOLS = {"MSTR", "COIN", "CRCL", "XAU", "WTI", "JPY", "BTC"}
+DEFAULT_FEE_MODEL_PATH = Path("configs/fee_model.trade_xyz.yaml")
+KNOWN_FEE_MODES = {"growth", "standard", "observed"}
 
 
 def resolve_asset_id(perp_dex_index: int, index_in_meta: int) -> int:
@@ -33,6 +37,71 @@ def load_trade_xyz_registry(path: Path) -> list[InstrumentSpec]:
     if not isinstance(payload, list):
         raise ValueError("trade_xyz registry must be a JSON array of InstrumentSpec rows")
     return [InstrumentSpec.model_validate(row) for row in payload if isinstance(row, dict)]
+
+
+def _load_fee_model(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return payload if isinstance(payload, dict) else {}
+
+
+def _trade_xyz_fee_config(payload: dict[str, Any]) -> dict[str, Any]:
+    fee_model = payload.get("fee_model")
+    if not isinstance(fee_model, dict):
+        return {}
+    trade_xyz = fee_model.get("trade_xyz")
+    return trade_xyz if isinstance(trade_xyz, dict) else {}
+
+
+def _fee_bps_for_mode(
+    fee_config: dict[str, Any],
+    mode: str | None,
+) -> tuple[float | None, float | None]:
+    if mode is None:
+        return None, None
+    fallback = fee_config.get("fallback")
+    if not isinstance(fallback, dict):
+        return None, None
+    entry = fallback.get(mode)
+    if not isinstance(entry, dict):
+        return None, None
+    taker = entry.get("taker_bps")
+    maker = entry.get("maker_bps")
+    return (
+        float(taker) if isinstance(taker, int | float) else None,
+        float(maker) if isinstance(maker, int | float) else None,
+    )
+
+
+def _resolve_fee_fields(
+    spec: InstrumentSpec,
+    fee_config: dict[str, Any],
+) -> tuple[str | None, float | None, float | None, str | None]:
+    explicit_mode = spec.fee_mode if spec.fee_mode in KNOWN_FEE_MODES else None
+    if explicit_mode is not None:
+        taker = spec.taker_fee_bps
+        maker = spec.maker_fee_bps
+        fallback_taker, fallback_maker = _fee_bps_for_mode(fee_config, explicit_mode)
+        return (
+            explicit_mode,
+            taker if taker is not None else fallback_taker,
+            maker if maker is not None else fallback_maker,
+            "fee_mode_source=seed",
+        )
+
+    classification = fee_config.get("classification")
+    symbol = spec.canonical_symbol.upper()
+    configured_mode = (
+        classification.get(symbol)
+        if isinstance(classification, dict) and isinstance(classification.get(symbol), str)
+        else None
+    )
+    fee_mode = configured_mode if configured_mode in KNOWN_FEE_MODES else None
+    taker, maker = _fee_bps_for_mode(fee_config, fee_mode)
+    if fee_mode is None:
+        return "unknown", None, None, "fee_mode_unknown"
+    return fee_mode, taker, maker, "fee_mode_source=config"
 
 
 def _extract_perp_dex_index(meta_payload: dict[str, Any]) -> int | None:
@@ -121,8 +190,14 @@ def build_trade_xyz_registry(
     all_mids_payload: dict[str, str] | None = None,
     meta_payload: dict[str, Any] | None = None,
     perp_dexs_payload: list[Any] | None = None,
+    fee_model_payload: dict[str, Any] | None = None,
+    fee_model_path: Path = DEFAULT_FEE_MODEL_PATH,
 ) -> TradeXyzRegistryBuildResult:
     seed_specs = load_trade_xyz_seed(seed_path)
+    fee_model = (
+        fee_model_payload if fee_model_payload is not None else _load_fee_model(fee_model_path)
+    )
+    fee_config = _trade_xyz_fee_config(fee_model)
     mids = (
         all_mids_payload if all_mids_payload is not None else (client.all_mids() if client else {})
     )
@@ -163,6 +238,9 @@ def build_trade_xyz_registry(
             notes.append("missing_all_mids_price")
         if excluded:
             notes.append("excluded_active_symbol")
+        fee_mode, taker_fee_bps, maker_fee_bps, fee_note = _resolve_fee_fields(spec, fee_config)
+        if fee_note is not None:
+            notes.append(fee_note)
         updated = spec.model_copy(
             update={
                 "venue": Venue.TRADE_XYZ,
@@ -173,6 +251,9 @@ def build_trade_xyz_registry(
                 "asset_id": asset_id,
                 "api_orderable": api_orderable,
                 "active": spec.active and not excluded,
+                "fee_mode": fee_mode,
+                "taker_fee_bps": taker_fee_bps,
+                "maker_fee_bps": maker_fee_bps,
                 "notes": list(dict.fromkeys(notes)),
             }
         )

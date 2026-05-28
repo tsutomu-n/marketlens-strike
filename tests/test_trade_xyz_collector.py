@@ -22,6 +22,9 @@ def _active_instrument() -> InstrumentSpec:
         coin="xyz:NVDA",
         asset_id=130002,
         real_market_symbol="NVDA",
+        fee_mode="standard",
+        taker_fee_bps=9.0,
+        maker_fee_bps=3.0,
         api_readable=True,
         api_orderable=True,
         active=True,
@@ -41,6 +44,9 @@ def test_collector_writes_jsonl_with_raw_hash(tmp_path) -> None:
     rows = list(read_jsonl(out_path))
     assert len(rows) == 1
     assert rows[0]["raw_payload_sha256"]
+    assert rows[0]["fee_mode"] == "standard"
+    assert rows[0]["taker_fee_bps"] == 9.0
+    assert rows[0]["maker_fee_bps"] == 3.0
 
 
 def test_collector_enriches_quote_from_meta_and_asset_ctxs(tmp_path) -> None:

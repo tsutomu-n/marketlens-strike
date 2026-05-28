@@ -54,6 +54,9 @@ def _write_trade_xyz_phase_gate_artifacts(data_dir: Path) -> None:
                     "api_readable": True,
                     "api_orderable": True,
                     "active": True,
+                    "fee_mode": "standard",
+                    "taker_fee_bps": 9.0,
+                    "maker_fee_bps": 3.0,
                     "notes": [],
                 }
                 for idx, symbol in enumerate(symbols)
@@ -90,6 +93,8 @@ def _write_trade_xyz_phase_gate_artifacts(data_dir: Path) -> None:
                     "funding_rate": 0.0,
                     "open_interest_usd": 10000.0,
                     "fee_mode": "standard",
+                    "taker_fee_bps": 9.0,
+                    "maker_fee_bps": 3.0,
                     "market_status": "open",
                     "session_type": "unknown",
                     "is_tradable": True,
@@ -507,6 +512,18 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert payload["execution_snapshot_drift_mismatching_snapshot_count"] == 1
     assert payload["execution_drift_overview_state_comparison_mismatching_count"] == 1
     assert payload["execution_drift_overview_snapshot_drift_mismatching_snapshot_count"] == 1
+    assert payload["execution_drift_classification_counts"] == {
+        "P2_BLOCKER": 0,
+        "LIVE_READINESS_BLOCKER": 3,
+    }
+    assert {
+        item["signal"]: item["classification"]
+        for item in payload["execution_drift_classifications"]
+    } == {
+        "execution_drift_overview_status": "LIVE_READINESS_BLOCKER",
+        "execution_balance_gap_detected": "LIVE_READINESS_BLOCKER",
+        "execution_snapshot_drift_mismatching_snapshot_count": "LIVE_READINESS_BLOCKER",
+    }
     assert payload["timeline_latest_execution_summary"]["execution_overall_status"] == "ok"
     assert (
         payload["timeline_latest_execution_comparison_summary"][
@@ -554,6 +571,8 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert "## Remediation Recommendations" in text
     assert "status: improving" in text
     assert "## Stop Conditions" in text
+    assert "## Execution Drift Classification" in text
+    assert "LIVE_READINESS_BLOCKER" in text
 
 
 def test_phase_gate_review_rejects_legacy_only_evidence(tmp_path, monkeypatch) -> None:
@@ -593,6 +612,38 @@ def test_phase_gate_review_rejects_legacy_only_evidence(tmp_path, monkeypatch) -
         issue["message"] == "Missing required Trade[XYZ] registry artifact"
         for issue in payload["phase_gate_strict_validation_issues"]
     )
+
+
+def test_phase_gate_review_blocks_trade_xyz_unknown_fee_mode(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    data_dir = tmp_path / "data"
+    _write_trade_xyz_phase_gate_artifacts(data_dir)
+    quote_path = data_dir / "raw/quotes/trade_xyz/2026-05-27.jsonl"
+    rows = []
+    for line in quote_path.read_text(encoding="utf-8").splitlines():
+        row = json.loads(line)
+        row["fee_mode"] = "unknown"
+        rows.append(json.dumps(row))
+    quote_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    summary_path = data_dir / "ops/phase_gate_review_summary.json"
+    build_phase_gate_review(
+        data_dir,
+        schema_root=PROJECT_ROOT / "schemas",
+        out_path=data_dir / "reports/phase_gate_review.md",
+        summary_path=summary_path,
+    )
+
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert payload["phase_gate_decision"] == "NO_GO"
+    assert payload["phase2_entry_allowed"] is False
+    assert payload["blockers"] == [
+        "SP500:fee_mode_unknown_rate=1.0",
+        "XYZ100:fee_mode_unknown_rate=1.0",
+        "NVDA:fee_mode_unknown_rate=1.0",
+        "AAPL:fee_mode_unknown_rate=1.0",
+        "MSFT:fee_mode_unknown_rate=1.0",
+    ]
 
 
 def test_phase_gate_normalizer_keeps_prefixed_validation_counts() -> None:

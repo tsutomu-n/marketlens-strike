@@ -81,6 +81,8 @@ def collect_trade_xyz_quotes(
                 payload=payload,
                 asset_ctx=ctxs_by_symbol.get(instrument.canonical_symbol.upper()),
                 fee_mode=instrument.fee_mode,
+                taker_fee_bps=instrument.taker_fee_bps,
+                maker_fee_bps=instrument.maker_fee_bps,
                 now=ts,
             )
             if not _has_mid(mids, instrument):

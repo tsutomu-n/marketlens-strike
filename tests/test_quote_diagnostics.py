@@ -67,3 +67,32 @@ def test_build_quote_diagnostics_counts_missing_oracle_ts_as_stale(tmp_path) -> 
 
     assert diag.stale_rate == 1.0
     assert diag.stale_missing_oracle_ts_rate == 1.0
+
+
+def test_build_quote_diagnostics_can_use_latest_venue_file_only(tmp_path) -> None:
+    quotes_dir = tmp_path / "raw/quotes/trade_xyz"
+    quotes_dir.mkdir(parents=True)
+    (quotes_dir / "2026-05-27.jsonl").write_text(
+        '{"ts_client":"2026-05-27T00:00:00Z","venue":"trade_xyz","canonical_symbol":"SP500",'
+        '"source_ts_ms":1779840000000,"mark_price":100.0,"index_price":100.0,'
+        '"oracle_price":100.0,"funding_rate":0.0,"open_interest_usd":1.0,'
+        '"spread_bps":1.0,"fee_mode":"unknown","market_status":"open","is_tradable":true}\n',
+        encoding="utf-8",
+    )
+    (quotes_dir / "2026-05-28.jsonl").write_text(
+        '{"ts_client":"2026-05-28T00:00:00Z","venue":"trade_xyz","canonical_symbol":"SP500",'
+        '"source_ts_ms":1779926400000,"mark_price":100.0,"index_price":100.0,'
+        '"oracle_price":100.0,"funding_rate":0.0,"open_interest_usd":1.0,'
+        '"spread_bps":1.0,"fee_mode":"standard","market_status":"open","is_tradable":true}\n',
+        encoding="utf-8",
+    )
+
+    [diag] = build_quote_diagnostics(
+        tmp_path / "raw/quotes",
+        venue="trade_xyz",
+        symbol="SP500",
+        latest_only=True,
+    )
+
+    assert diag.rows == 1
+    assert diag.fee_mode_unknown_rate == 0.0

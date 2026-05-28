@@ -8,6 +8,18 @@ fee_model:
       standard:
         taker_bps: 9.0
         maker_bps: 3.0
+    classification:
+      SP500: standard
+      XYZ100: standard
+      NVDA: standard
+      AAPL: standard
+      MSFT: standard
+      AMZN: standard
+      GOOGL: standard
+      META: standard
+      TSLA: standard
+      AMD: standard
+      EWJ: standard
     notes:
       - Do not hardcode the old 0.04% assumption for Trade[XYZ].
       - Determine fee_mode per instrument before paper/live scoring.
