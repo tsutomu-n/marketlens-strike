@@ -37,6 +37,7 @@
 - Trade[XYZ] read-only artifacts は strict validation / diagnostics / phase gate に接続済み。
 - Trade[XYZ] fee fields は `configs/fee_model.trade_xyz.yaml` の explicit classification から registry / raw quote row へ伝播する。
 - phase gate は execution drift を `P2_BLOCKER` と `LIVE_READINESS_BLOCKER` に分類する。
+- phase gate は `phase2_entry_allowed=true` かつ `P2_BLOCKER=0` の場合、live-readiness-only drift を P2 remediation order に入れない。
 - Alpaca provider は silent empty stub ではない。credentials 未設定時は controlled failure、成功時は Alpaca stock bars response を `RealMarketBar` に変換する。
 - `bot-preview` は実行時に read-only HOLD decision と preview report を生成する。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
@@ -75,8 +76,8 @@ PR-08:
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 291 passed
-- `./scripts/check`: pass, 291 passed
+- `uv run pytest -q`: 292 passed
+- `./scripts/check`: pass, 292 passed
 - targeted P2 tests: Trade[XYZ] / quote diagnostics / phase gate / Alpaca / tracking tests pass
 - latest strict validation: `checked_files=12`, `issues=0`
 - latest phase gate: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`

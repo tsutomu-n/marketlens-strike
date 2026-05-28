@@ -10,7 +10,7 @@ Current snapshot:
 
 ```text
 ./scripts/check:
-  291 passed
+  292 passed
 
 validate-artifacts --strict:
   checked_files: 12
@@ -327,7 +327,8 @@ State: `ACTIVE_LIVE_READINESS`
 
 - Alpaca provider は silent stub ではない。
 - credentials 未設定、request failure、non-JSON response、empty bars は `AlpacaProviderUnavailable` で止まる。
-- `uv run sis alpaca-smoke` は成功・失敗どちらでも summary / report を残す operator entry。
+- `uv run sis alpaca-smoke` は `pass` / `blocked` / `failed` のどれでも summary / report を残す operator entry。
+- live bars が返っても source confidence が低ければ `status=blocked` で止まる。
 - credentials ありの live API success は未検証。
 
 責任 surface:
@@ -356,7 +357,7 @@ uv run pytest tests/test_alpaca_provider.py tests/test_real_vs_venue_tracking.py
 完了条件:
 
 - offline provider behavior が unit test で pass。
-- credentials あり環境で Alpaca live smoke が pass。
+- credentials あり環境で Alpaca live smoke が `status=pass`。
 - live / paper-to-live 判定で provider type と source confidence が説明できる。
 
 ## 8. Tracking Truth / Mid-vs-Mark Failure
@@ -459,6 +460,7 @@ State: `ACTIVE_LIVE_READINESS`
 
 - `P2_BLOCKER=0`。
 - `LIVE_READINESS_BLOCKER=6`。
+- phase gate remediation order は、only live-readiness blockers の場合 `none`。
 - current live-readiness blockers:
   - `execution_drift_overview_status`: observed `degraded`, expected `ok`
   - `execution_balance_gap_detected`: observed `true`, expected `false`
@@ -491,6 +493,7 @@ uv run pytest tests/test_phase_gate_review.py tests/test_monitoring_comparison.p
 
 - P2 判定では `P2_BLOCKER=0` を確認する。
 - live-readiness 判定では `LIVE_READINESS_BLOCKER=0` まで解消する。
+- P2 remediation order は live-readiness-only drift を再生成ループに入れない。
 - drift signal ごとに observed / expected / classification が report で説明できる。
 
 ## 11. Legacy / Current Surface Confusion
@@ -553,6 +556,7 @@ State: `RESOLVED_GUARD`
 - `data/ops/*.json` は generated current snapshot。
 - `data/reports/*.md` は generated readable snapshot。
 - `data/reports/weekly_strategy_review.md` は current Trade[XYZ] gate snapshot を先頭に出し、old symbols を historical/backtest input と明示する。
+- weekly review は `Paper Last Run Phase Gate` と current `phase_gate_review_summary.json` の差分も別セクションで明示する。
 - source docs は `docs/`、runtime snapshot は `data/ops/`、generated readable report は `data/reports/` として分ける。
 
 責任 surface:
@@ -583,6 +587,7 @@ uv run sis phase-gate-review
 - current docs は source of truth と generated snapshot を分けている。
 - generated reports の stale risk が docs audit に反映されている。
 - weekly review の `Backtest Metrics Snapshot` を current Trade[XYZ] target universe と誤読しない。
+- weekly review の `Paper Last Run Phase Gate` を latest phase gate summary と誤読しない。
 
 ## FD Status Mapping
 

@@ -59,7 +59,7 @@
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 291 passed
+- `uv run pytest -q`: 292 passed
 - P2 targeted verification: Trade[XYZ] / diagnostics / phase gate / Alpaca / tracking tests pass
 - `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
 - latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows
@@ -67,6 +67,7 @@
 - latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `next_actions=[]`
 - latest diagnostics show Trade[XYZ] `fee_mode_unknown_rate=0.0` for `SP500`, `XYZ100`, `NVDA`, `AAPL`, `MSFT`
 - latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded. Current classification is `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`; read-only/paper readiness and live execution readiness are separate surfaces.
+- latest phase gate remediation order is `none` when only live-readiness blockers remain. Do not run `refresh-operations-artifacts` as a P2 remediation loop for those blockers.
 
 PR-08 専用確認:
 

@@ -167,6 +167,7 @@ def test_build_weekly_review_report_uses_backtest_and_paper_inputs(tmp_path) -> 
     backtest_path = tmp_path / "backtest_metrics.json"
     daily_pnl_path = tmp_path / "daily_pnl.parquet"
     phase_gate_path = tmp_path / "phase_gate_review_summary.json"
+    paper_last_run_path = tmp_path / "paper_last_run.json"
     pl.DataFrame([{"venue": "gtrade", "canonical_symbol": "QQQ", "trade_count": 3}]).write_json(
         backtest_path
     )
@@ -180,10 +181,18 @@ def test_build_weekly_review_report_uses_backtest_and_paper_inputs(tmp_path) -> 
         ),
         encoding="utf-8",
     )
+    paper_last_run_path.write_text(
+        (
+            '{"phase_gate":{"decision":"READ_ONLY_GO","strict_validation_passed":true,'
+            '"checked_files":11}}'
+        ),
+        encoding="utf-8",
+    )
 
     text = build_weekly_review_report(
         backtest_metrics_path=backtest_path,
         daily_pnl_path=daily_pnl_path,
+        paper_last_run_path=paper_last_run_path,
         current_phase_gate_summary_path=phase_gate_path,
         out_path=tmp_path / "weekly.md",
     )
@@ -195,5 +204,10 @@ def test_build_weekly_review_report_uses_backtest_and_paper_inputs(tmp_path) -> 
     assert "diagnostics_symbols: SP500, XYZ100, NVDA" in text
     assert "backtest_symbol_scope: historical_or_legacy_symbols" in text
     assert "not the current Trade[XYZ] symbol universe" in text
+    assert "Paper Last Run Vs Current Gate" in text
+    assert "paper_last_run_checked_files: 11" in text
+    assert "current_checked_files: 12" in text
+    assert "same_checked_files: False" in text
+    assert "saved paper run" in text
     assert "Backtest Metrics Snapshot" in text
     assert "Paper PnL Snapshot" in text

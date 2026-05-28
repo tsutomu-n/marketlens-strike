@@ -178,6 +178,7 @@ def build_weekly_review_report(
         metrics_rows = safe_read_json_dict_list(backtest_metrics_path)
         symbols = _canonical_symbols(metrics_rows)
 
+    current_phase_gate: dict[str, object] = {}
     if current_phase_gate_summary_path is not None:
         current_phase_gate = safe_read_json_dict(current_phase_gate_summary_path)
         lines.extend(["## Current Trade[XYZ] Gate Snapshot", ""])
@@ -287,6 +288,36 @@ def build_weekly_review_report(
                     "",
                 ]
             )
+            if current_phase_gate:
+                current_phase_gate_flat = phase_gate_flat_fields(
+                    normalize_phase_gate_summary(current_phase_gate)
+                )
+                paper_decision = phase_gate_flat.get("phase_gate_decision")
+                current_decision = current_phase_gate_flat.get("phase_gate_decision")
+                paper_checked_files = phase_gate_flat.get("phase_gate_checked_files")
+                current_checked_files = current_phase_gate_flat.get("phase_gate_checked_files")
+                lines.extend(
+                    [
+                        "## Paper Last Run Vs Current Gate",
+                        "",
+                        (
+                            "- comparison_scope: "
+                            "paper_last_run_embedded_gate_vs_current_phase_gate_summary"
+                        ),
+                        f"- paper_last_run_decision: {paper_decision or ''}",
+                        f"- current_decision: {current_decision or ''}",
+                        f"- same_decision: {paper_decision == current_decision}",
+                        f"- paper_last_run_checked_files: {paper_checked_files}",
+                        f"- current_checked_files: {current_checked_files}",
+                        f"- same_checked_files: {paper_checked_files == current_checked_files}",
+                        (
+                            "- interpretation: Paper Last Run Phase Gate is the embedded gate "
+                            "from the saved paper run; Current Trade[XYZ] Gate Snapshot is the "
+                            "latest ops summary."
+                        ),
+                        "",
+                    ]
+                )
         readiness = row.get("readiness_summary")
         if isinstance(readiness, dict):
             readiness = normalize_readiness_summary(readiness)

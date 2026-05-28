@@ -439,59 +439,23 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     )
     assert payload["missing_required_artifact_paths"] == []
     assert payload["artifact_recovery_commands"] == {}
-    assert payload["remediation_order"][0]["priority"] == 4
-    assert payload["remediation_order"][0]["reason"] == "execution_drift_unresolved"
-    assert payload["remediation_success_criteria"]["execution_drift_unresolved"] == [
-        "execution_drift_overview_status == ok",
-        "execution_drift_overview_diagnostics_alignment_match == True",
-    ]
-    assert payload["remediation_preflight_commands"]["execution_drift_unresolved"] == [
-        "uv run sis refresh-operations-artifacts"
-    ]
-    assert payload["remediation_postcheck_commands"]["execution_drift_unresolved"] == [
-        "uv run sis phase-gate-review"
-    ]
-    assert payload["remediation_preflight_expected_outputs"]["execution_drift_unresolved"] == [
-        "refresh-operations-artifacts regenerates execution summaries",
-        "execution drift overview summary is rewritten",
-    ]
-    assert payload["remediation_execute_expected_outputs"]["execution_drift_unresolved"] == [
-        "execution_drift_overview_summary.json is regenerated",
-        "drift status is re-evaluated from fresh artifacts",
-    ]
-    assert payload["remediation_postcheck_pass_signals"]["execution_drift_unresolved"] == [
-        "execution_drift_overview_status == ok",
-        "execution_drift_overview_diagnostics_alignment_match == True",
-    ]
-    assert payload["remediation_signal_snapshots_before"]["execution_drift_unresolved"] == {
-        "execution_drift_overview_status": "degraded",
-        "execution_drift_overview_diagnostics_alignment_match": False,
+    assert payload["remediation_order"] == []
+    assert payload["remediation_success_criteria"] == {}
+    assert payload["remediation_preflight_commands"] == {}
+    assert payload["remediation_postcheck_commands"] == {}
+    assert payload["remediation_preflight_expected_outputs"] == {}
+    assert payload["remediation_execute_expected_outputs"] == {}
+    assert payload["remediation_postcheck_pass_signals"] == {}
+    assert payload["remediation_signal_snapshots_before"] == {}
+    assert payload["remediation_signal_snapshots_target"] == {}
+    assert payload["remediation_signal_snapshots_previous"] == {
+        "execution_drift_unresolved": {
+            "execution_drift_overview_status": "blocked",
+            "execution_drift_overview_diagnostics_alignment_match": False,
+        }
     }
-    assert payload["remediation_signal_snapshots_target"]["execution_drift_unresolved"] == {
-        "execution_drift_overview_status": "ok",
-        "execution_drift_overview_diagnostics_alignment_match": True,
-    }
-    assert payload["remediation_signal_snapshots_previous"]["execution_drift_unresolved"] == {
-        "execution_drift_overview_status": "blocked",
-        "execution_drift_overview_diagnostics_alignment_match": False,
-    }
-    assert payload["remediation_signal_snapshot_diffs"]["execution_drift_unresolved"][
-        "execution_drift_overview_status"
-    ] == {
-        "previous": "blocked",
-        "current": "degraded",
-        "target": "ok",
-        "trend": "changed",
-        "target_matched": False,
-    }
-    assert payload["remediation_recommendations"]["execution_drift_unresolved"] == {
-        "status": "improving",
-        "commands": ["uv run sis refresh-operations-artifacts"],
-        "why": "signals changed but low-confidence verification sources require revalidation before execute",
-        "source_confidence": "high",
-        "source_policy": "direct_observation_priority",
-        "execute_signal_confidence": "low",
-    }
+    assert payload["remediation_signal_snapshot_diffs"] == {}
+    assert payload["remediation_recommendations"] == {}
     assert payload["remediation_planner_summary_path"] == str(planner_summary_path)
     assert payload["remediation_evaluator_summary_path"] == str(evaluator_summary_path)
     assert payload["phase_gate_review_report_path"] == str(out_path)
@@ -553,24 +517,25 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert "## Recovery Commands" in text
     assert "recovery_commands: none" in text
     assert "## Remediation Order" in text
-    assert "priority_4: execution_drift_unresolved" in text
+    assert "remediation_order: none" in text
     assert "## Remediation Success Criteria" in text
-    assert "execution_drift_overview_status == ok" in text
+    assert "remediation_success_criteria: none" in text
     assert "## Remediation Command Flow" in text
-    assert "`uv run sis refresh-operations-artifacts`" in text
-    assert "`uv run sis phase-gate-review`" in text
+    assert "remediation_command_flow: none" in text
     assert "## Remediation Verification Signals" in text
-    assert "preflight_expected_output:" in text
-    assert "execute_expected_output:" in text
-    assert "postcheck_pass_signal:" in text
+    assert "remediation_verification_signals: none" in text
     assert "## Remediation Signal Snapshots" in text
-    assert "before:" in text
-    assert "target:" in text
+    assert "remediation_signal_snapshots: none" in text
     assert "## Remediation Signal Diffs" in text
-    assert "trend=changed" in text
+    assert "remediation_signal_diffs: none" in text
     assert "## Remediation Recommendations" in text
-    assert "status: improving" in text
+    assert "remediation_recommendations: none" in text
     assert "## Stop Conditions" in text
+    assert (
+        "execution_drift_live_readiness_blocker_count` is greater than `0`, stop before live execution readiness"
+        in text
+    )
+    assert "before considering Phase 2" in text
     assert "## Execution Drift Classification" in text
     assert "LIVE_READINESS_BLOCKER" in text
 

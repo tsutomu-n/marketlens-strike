@@ -160,6 +160,7 @@ def test_alpaca_live_smoke_passes_and_writes_artifacts(tmp_path, monkeypatch) ->
         symbol="NVDA",
         timeframe="15m",
         opener=opener,
+        now=datetime(2026, 5, 26, 14, 16, tzinfo=timezone.utc),
     )
 
     assert summary["status"] == "pass"
@@ -169,3 +170,42 @@ def test_alpaca_live_smoke_passes_and_writes_artifacts(tmp_path, monkeypatch) ->
     assert (tmp_path / "ops/alpaca_live_smoke_summary.json").exists()
     assert (tmp_path / "reports/alpaca_live_smoke.md").exists()
     assert (tmp_path / "raw/real_market/alpaca/NVDA_15m_latest.json").exists()
+
+
+def test_alpaca_live_smoke_blocks_low_source_confidence(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("APCA_API_KEY_ID", "key")
+    monkeypatch.setenv("APCA_API_SECRET_KEY", "secret")
+
+    def opener(request, *, timeout: float):
+        _ = (request, timeout)
+        return _Response(
+            {
+                "bars": {
+                    "NVDA": [
+                        {
+                            "t": "2026-05-26T14:00:00Z",
+                            "o": 100.0,
+                            "h": 101.0,
+                            "l": 99.5,
+                            "c": 100.5,
+                            "v": 12345,
+                        }
+                    ]
+                }
+            }
+        )
+
+    summary = run_alpaca_live_smoke(
+        data_dir=tmp_path,
+        symbol="NVDA",
+        timeframe="15m",
+        opener=opener,
+        now=datetime(2026, 5, 26, 14, 45, tzinfo=timezone.utc),
+    )
+
+    assert summary["status"] == "blocked"
+    assert summary["error_class"] == "AlpacaLiveSuitabilityBlocked"
+    assert summary["live_suitability_reasons"] == ["BLOCK_LOW_SOURCE_CONFIDENCE"]
+    report = (tmp_path / "reports/alpaca_live_smoke.md").read_text(encoding="utf-8")
+    assert "status: blocked" in report
+    assert "BLOCK_LOW_SOURCE_CONFIDENCE" in report

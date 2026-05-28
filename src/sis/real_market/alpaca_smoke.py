@@ -64,8 +64,9 @@ def run_alpaca_live_smoke(
     timeout: float = 10.0,
     raw_payload_path: Path | None = None,
     opener: Callable[..., Any] | None = None,
+    now: datetime | None = None,
 ) -> dict[str, object]:
-    checked_at = datetime.now(timezone.utc)
+    checked_at = now or datetime.now(timezone.utc)
     raw_path = raw_payload_path or _default_raw_payload_path(data_dir, symbol, timeframe)
     summary_path = _summary_path(data_dir)
     report_path = _report_path(data_dir)
@@ -96,7 +97,7 @@ def run_alpaca_live_smoke(
             providers=["alpaca"],
         )
         summary: dict[str, object] = {
-            "status": "pass",
+            "status": "pass" if not reasons else "blocked",
             "provider": "alpaca",
             "symbol": symbol,
             "timeframe": timeframe,
@@ -114,6 +115,9 @@ def run_alpaca_live_smoke(
             "report_path": str(report_path),
             "checked_at": checked_at.isoformat(),
         }
+        if reasons:
+            summary["error_class"] = "AlpacaLiveSuitabilityBlocked"
+            summary["error_message"] = ",".join(reasons)
     except AlpacaProviderUnavailable as exc:
         summary = {
             "status": "failed",

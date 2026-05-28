@@ -4,7 +4,7 @@
 
 ## 結論
 
-Trade[XYZ] の PR9a-PR12 read-only evidence chain と P2 gate restore は完了済み。現時点の repo は P2 へスムーズに進める状態で、最新 phase gate は `READ_ONLY_GO`、strict validation は `checked_files=12`, `issues=0`、full check は `291 passed`。
+Trade[XYZ] の PR9a-PR12 read-only evidence chain と P2 gate restore は完了済み。現時点の repo は P2 へスムーズに進める状態で、最新 phase gate は `READ_ONLY_GO`、strict validation は `checked_files=12`, `issues=0`、full check は `292 passed`。
 
 ただし、これは production live trading ready ではない。execution drift は live-readiness blocker として 6 件残っており、Alpaca credentials ありの live API success smoke、wallet/signing、exchange write integration、public micro live CLI はまだ未完了または意図的に未公開である。
 
@@ -12,7 +12,7 @@ Current snapshot:
 
 ```text
 ./scripts/check:
-  291 passed
+  292 passed
 
 validate-artifacts --strict:
   checked_files: 12
@@ -83,8 +83,8 @@ Current verification:
 uv run python -V: Python 3.13.7
 uv run ruff check .: pass
 uv run pyrefly check: 0 errors
-uv run pytest -q: 291 passed
-./scripts/check: pass, 291 passed
+uv run pytest -q: 292 passed
+./scripts/check: pass, 292 passed
 ```
 
 The current acceptance command for repo health is:
@@ -138,6 +138,7 @@ Interpretation:
 
 - P2 entry is not blocked.
 - live execution readiness is blocked.
+- phase gate remediation order is `none` for live-readiness-only drift, so it no longer loops on `refresh-operations-artifacts` as a P2 remediation.
 - These two statements are not contradictory.
 
 ### Quote / Fee Evidence

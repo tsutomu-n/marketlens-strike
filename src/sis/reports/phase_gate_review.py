@@ -380,7 +380,18 @@ def _remediation_order(
                 "commands": ["uv run sis diagnose-quotes"],
             }
         )
-    if summary.get("execution_drift_overview_status") != "ok":
+    classification_counts = summary.get("execution_drift_classification_counts")
+    p2_blocker_count = (
+        _as_int(classification_counts.get("P2_BLOCKER"))
+        if isinstance(classification_counts, dict)
+        else 0
+    ) or 0
+    phase2_entry_allowed = summary.get("phase2_entry_allowed") is True
+    execution_drift_is_live_readiness_only = phase2_entry_allowed and p2_blocker_count == 0
+    if (
+        summary.get("execution_drift_overview_status") != "ok"
+        and not execution_drift_is_live_readiness_only
+    ):
         steps.append(
             {
                 "priority": 4,
@@ -1352,8 +1363,8 @@ def build_phase_gate_review(
             "- If `missing_required_artifact_paths` is not empty, stop and regenerate the missing manifest or execution artifacts before continuing.",
             "- If `strict_validation_issue_count` is not `0`, stop and clear strict validation issues before considering Phase 2.",
             "- If `diagnostics_all_available` is not `True`, stop and recollect quote diagnostics for SP500 / XYZ100 / NVDA / AAPL / MSFT.",
-            "- If `execution_comparison_all_registries_present` is not `True`, stop and inspect cross-venue registry coverage.",
-            "- If `execution_drift_overview_status` is not `ok`, stop and resolve execution drift mismatches before considering Phase 2.",
+            "- If `execution_drift_p2_blocker_count` is greater than `0`, stop before considering Phase 2.",
+            "- If `execution_drift_live_readiness_blocker_count` is greater than `0`, stop before live execution readiness; do not treat it as a read-only Phase 2 blocker.",
             "- If `read_only_collector_gate_passed` is not `True`, stop and refresh Trade[XYZ] read-only artifacts with `collect-trade-xyz-quotes --write-summary --write-report` before considering Bot preview work.",
         ]
     )

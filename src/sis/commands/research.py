@@ -118,6 +118,13 @@ def register_research_commands(
         typer.echo(f"timeframe={summary['timeframe']}")
         typer.echo(f"bar_count={summary['bar_count']}")
         typer.echo(f"source_confidence={summary['source_confidence']}")
+        live_suitability_reasons = summary.get("live_suitability_reasons")
+        formatted_reasons = (
+            ",".join(str(reason) for reason in live_suitability_reasons)
+            if isinstance(live_suitability_reasons, list)
+            else ""
+        )
+        typer.echo(f"live_suitability_reasons={formatted_reasons}")
         typer.echo(f"summary_path={summary['summary_path']}")
         typer.echo(f"report_path={summary['report_path']}")
         typer.echo(f"raw_payload_path={summary['raw_payload_path']}")
