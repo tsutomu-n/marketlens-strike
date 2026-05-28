@@ -10,9 +10,13 @@
    - 汎用戦略を作るための部品を、入力、出力、失敗モード、検証指標まで分解して見る。
 3. [STRATEGY_BLUEPRINTS.md](STRATEGY_BLUEPRINTS.md)
    - 部品を組み合わせた実験候補を見る。
-4. [RESEARCH_VALIDATION_PLAYBOOK.md](RESEARCH_VALIDATION_PLAYBOOK.md)
+4. [STRATEGY_PREP_WORKFLOW.md](STRATEGY_PREP_WORKFLOW.md)
+   - 戦略実装前に、仮説、データ、baseline、捨て条件を揃える。
+5. [EXPERIMENT_SCORECARD.md](EXPERIMENT_SCORECARD.md)
+   - 候補戦略を同じ物差しで採点し、優先順位を決める。
+6. [RESEARCH_VALIDATION_PLAYBOOK.md](RESEARCH_VALIDATION_PLAYBOOK.md)
    - バックテスト、walk-forward、Monte Carlo、リーク検査、捨て条件を確認する。
-5. [SOURCE_NOTES_INDEX.md](SOURCE_NOTES_INDEX.md)
+7. [SOURCE_NOTES_INDEX.md](SOURCE_NOTES_INDEX.md)
    - どのObsidianノートに由来するか、どのノートを除外したかを確認する。
 
 ## 正本と参照元
@@ -29,4 +33,3 @@
 - YouTube、X、メモ由来の勝率や利益主張は検証済み事実として扱いません。
 - APIキー、秘密鍵、2FA、recovery codeを含むノートはコピーしません。索引にも値は書きません。
 - 実弾運用は範囲外です。まずは再現可能なデータ収集、paper signal、検証から始めます。
-

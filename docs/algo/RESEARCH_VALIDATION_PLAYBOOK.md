@@ -4,16 +4,17 @@
 
 ## 検証の順番
 
-1. 仮説を1文で書く。
-2. 使う部品を `STRATEGY_PARTS_CATALOG.md` から選ぶ。
-3. 入力データ、出力シグナル、停止条件を固定する。
-4. baselineを作る。
-5. コストなしで粗く確認する。
-6. 手数料、スリッページ、約定不能を入れる。
-7. walk-forwardで見る。
-8. stress periodとMonte Carloを見る。
-9. parameter stabilityを見る。
-10. 捨てるか、paper observationへ進める。
+1. [STRATEGY_PREP_WORKFLOW.md](STRATEGY_PREP_WORKFLOW.md) で準備条件を満たす。
+2. [EXPERIMENT_SCORECARD.md](EXPERIMENT_SCORECARD.md) を作る。
+3. 使う部品を `STRATEGY_PARTS_CATALOG.md` から選ぶ。
+4. 入力データ、出力シグナル、停止条件を固定する。
+5. baselineを作る。
+6. コストなしで粗く確認する。
+7. 手数料、スリッページ、約定不能を入れる。
+8. walk-forwardで見る。
+9. stress periodとMonte Carloを見る。
+10. parameter stabilityを見る。
+11. 捨てるか、paper observationへ進める。
 
 ## 必須チェック
 
