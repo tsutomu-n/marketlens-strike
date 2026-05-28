@@ -388,9 +388,7 @@
 
 関連ノート:
 - `0522_公開されているAPIについて.md`
-- `1222-Shyft.ioソラナ関連のツール.md`
 - `0710-APIs.md`
-- `1202-API-Devbot.md`
 
 ## 11. Evaluation Harness
 
