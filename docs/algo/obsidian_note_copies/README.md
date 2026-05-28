@@ -4,9 +4,9 @@
 
 ルール:
 - 元ファイルをそのままコピーする。
-- 解釈や要約は親ディレクトリの docs に書く。
+- 解釈や要約は親ディレクトリの現行docsに書く。
 - API key や秘密情報を含むノートは、原則ここへはコピーしない。
 
 入口:
-- [OBSIDIAN_NOTE_COPIES_INDEX.md](/home/tn/projects/marketlens-strike/docs/algo/OBSIDIAN_NOTE_COPIES_INDEX.md)
-- [OBSIDIAN_ADDITIONAL_RESEARCH.md](/home/tn/projects/marketlens-strike/docs/algo/OBSIDIAN_ADDITIONAL_RESEARCH.md)
+- [../README.md](../README.md)
+- [../SOURCE_NOTES_INDEX.md](../SOURCE_NOTES_INDEX.md)
