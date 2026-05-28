@@ -1,6 +1,6 @@
 # Legacy Read-Only Collector Risk Review
 
-> Current status: historical / legacy. This risk review describes the old gTrade/Ostium read-only collector path, not the current Trade[XYZ] quote collection path. Current Trade[XYZ] PR12 read-only phase gate is `READ_ONLY_GO`.
+> Current status: historical / legacy. This risk review describes the old gTrade/Ostium read-only collector path, not the current Trade[XYZ] quote collection path. Current Trade[XYZ] gate status is tracked in `docs/CURRENT_STATE.md` and `data/ops/phase_gate_review_summary.json`.
 
 この文書は legacy `gtrade` / `ostium` read-only collector の実装に残る抜け、漏れ、誤謬リスク、改善余地を記録する。current Trade[XYZ] PR12 read-only gate のリスク一覧ではない。
 実装計画とタスク一覧は `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` を読む。
@@ -11,7 +11,7 @@
 legacy read-only 実データ取得の土台として使える。
 ただし legacy collector chain の Phase gate を過信して Phase 2 へ進めるには早い。
 
-Trade[XYZ] current path は別系統で、2026-05-27 時点の latest phase gate は `READ_ONLY_GO`。
+Trade[XYZ] current path は別系統で、2026-05-28 時点の latest phase gate は `READ_ONLY_GO`、`phase2_entry_allowed=true`、`blockers=[]`。
 
 主な理由は次のとおり。
 

@@ -1,5 +1,7 @@
 # Trade[XYZ] 実装状況棚卸し 2026-05-27
 
+> Superseded for current status: this is the 2026-05-27 pre-P2 gate restore audit. Current state is tracked in `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md`, and `docs/DOCUMENT_AUDIT_2026-05-28.md`.
+
 ## 0. 結論
 
 この文書は、`/home/tn/projects/marketlens-strike/資料` に入っている 2 つの ZIP 指示書を基準に、現在の `marketlens-strike` repo がどこまで実装済みか、どこが一部実装か、どこが未実装かを、現 repo のコード、テスト、設定、生成 artifact から確認した棚卸しである。

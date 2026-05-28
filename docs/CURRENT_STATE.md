@@ -6,9 +6,10 @@
 
 - `plan/archive/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
 - repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
-- PR9a-PR12 の read-only smoke まで完了しており、最新 phase gate は `READ_ONLY_GO`。
+- PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、最新 phase gate は `READ_ONLY_GO`。
+- Trade[XYZ] の対象銘柄は fee mode / taker fee / maker fee を registry と raw quote row に持つ。`fee_mode_unknown_rate` は current gate blocker ではない。
 - `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
-- 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。
+- 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。execution drift は live-readiness blocker として残る。
 
 ## Source Of Truth
 
@@ -33,8 +34,9 @@
 - `Trade[XYZ]` `perpDexs` fallback による HIP-3 `asset_id` 解決
 - `Trade[XYZ]` quote collection summary / report / strict artifact validation
 - `Trade[XYZ]` diagnostics / strict validation / phase gate cutover for read-only PR12
+- `Trade[XYZ]` fee mode resolution through `configs/fee_model.trade_xyz.yaml`, registry rows, raw quote rows, diagnostics, and phase gate
 - `bot-preview` による read-only HOLD decision / orders preview artifact 生成
-- `real_market` feature builder と free-source quality gating
+- `real_market` feature builder、Alpaca provider、free-source quality gating
 - `tracking` layer による real-market vs venue 判定
 - venue quality gate 付き paper fill / fee model / paper report
 - `Trade[XYZ]` micro live safety adapter / policy / canary code path
@@ -47,22 +49,24 @@
 - `collect-trade-xyz-quotes` は public CLI command として exposed している。
 - `data/` は git 管理外。再開時は artifact を再生成する。
 - `bot-preview` の `data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` は実行時生成 artifact。現 checkout に無い場合は `uv run sis bot-preview` で再生成する。
+- Alpaca live fetch は credentials が必要。credentials なしでは明示的に unavailable として失敗するため、silent empty data と混同しない。
 - `ostium-python-sdk` は active dependency から削除済み。
 
 ## Verification Status
 
-2026-05-27 時点で確認済み:
+2026-05-28 時点で確認済み:
 
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 280 passed
-- targeted PR9a-PR12 verification: `19 passed`
-- `uv run sis validate-artifacts --strict`: `checked_files=11`, `issues=0`
+- `uv run pytest -q`: 288 passed
+- P2 targeted verification: Trade[XYZ] / diagnostics / phase gate / Alpaca / tracking tests pass
+- `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
 - latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows
-- latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `next_actions=[]`
-- latest diagnostics show Trade[XYZ] `fee_mode_unknown_rate=1.0` for the PR12 core symbols, so this is not a micro-live readiness signal.
-- latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded; read-only/paper readiness and live execution readiness are separate surfaces.
+- latest current quote collection summary: `11` Trade[XYZ] active rows in `data/raw/quotes/trade_xyz/2026-05-28.jsonl`
+- latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `next_actions=[]`
+- latest diagnostics show Trade[XYZ] `fee_mode_unknown_rate=0.0` for `SP500`, `XYZ100`, `NVDA`, `AAPL`, `MSFT`
+- latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded. Current classification is `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`; read-only/paper readiness and live execution readiness are separate surfaces.
 
 PR-08 専用確認:
 
@@ -77,6 +81,7 @@ PR-08 専用確認:
 - production live order smoke
 - signing / wallet / exchange write integration
 - live order preview / 注文候補生成の正式 command surface
+- Alpaca credentials ありの live API success smoke
 - `check-go-no-go` / `build-evidence-card` は補助reportであり、Bot前の現行判定正本は `phase-gate-review`
 
 ## Recommended Read Order

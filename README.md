@@ -1,6 +1,6 @@
 # marketlens-strike
 
-`marketlens-strike` は、`Trade[XYZ] / real market / tracking / paper / micro live safety` への migration を実装済みの workspace です。2026-05-27 時点では Trade[XYZ] read-only PR12 smoke まで通っており、phase gate は `READ_ONLY_GO` です。
+`marketlens-strike` は、`Trade[XYZ] / real market / tracking / paper / micro live safety` への migration を実装済みの workspace です。2026-05-28 時点では Trade[XYZ] read-only gate は `READ_ONLY_GO` で、fee mode blocker は解消済みです。
 
 ## Read First
 
@@ -82,6 +82,8 @@ PR12 read-only smoke evidence:
 - `data/reports/pr12_fresh_read_only_smoke_report.md`
 - latest observed window: 310 rows / 3673.995702 seconds / `SP500`, `XYZ100`, `NVDA`, `AAPL`, `MSFT`
 - latest phase gate: `READ_ONLY_GO`, `individual_stock_decision=paper_only`, `next_actions=[]`
+- current strict validation: `checked_files=12`, `issues=0`
+- current execution drift classification: `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`
 
 ## Current Boundaries
 
@@ -90,18 +92,22 @@ PR12 read-only smoke evidence:
 - micro live は code/test surface であり、現時点では public CLI command を公開していない
 - `collect-trade-xyz-quotes` は public CLI command として利用できる
 - Trade[XYZ] read-only artifact は phase gate に接続済み
+- Trade[XYZ] active symbols の `fee_mode`, `taker_fee_bps`, `maker_fee_bps` は `configs/fee_model.trade_xyz.yaml` から registry / quote row へ伝播する
+- Alpaca provider は silent empty stub ではなく、credentials 未設定時は明示的に unavailable で失敗する
 - `bot-preview` は実行時に read-only HOLD preview artifact を出力する
 - wallet secrets, signing, production live trading は未完了
 - `data/` は git 管理外
 
 ## Current Verification
 
-2026-05-27 時点:
+2026-05-28 時点:
 
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 280 passed
-- `./scripts/check`: pass
+- `uv run pytest -q`: 288 passed
+- `./scripts/check`: pass, 288 passed
+- `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
+- `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
 
 ## Legacy Notes
 

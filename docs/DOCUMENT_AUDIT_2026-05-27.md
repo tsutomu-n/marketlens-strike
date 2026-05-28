@@ -1,5 +1,7 @@
 # Documentation Audit (2026-05-27)
 
+> Superseded: current audit is `docs/DOCUMENT_AUDIT_2026-05-28.md`. This file remains as the 2026-05-27 PR12 snapshot.
+
 コード、設定、CLI surface、tracked / ignored files、生成 artifact を正として、docs の current / stale / generated / archive boundary を再監査した結果。
 
 > Updated: `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` を追加した後の current audit。詳細な PR9a-PR12 実装棚卸しは同文書を読む。

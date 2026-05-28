@@ -26,6 +26,9 @@ registry / universe:
 ```bash
 uv run sis probe trade-xyz
 uv run sis collect-trade-xyz-quotes --write-summary --write-report
+uv run sis diagnose-quotes --venue trade_xyz
+uv run sis validate-artifacts --strict
+uv run sis phase-gate-review
 ```
 
 quote ingest:
@@ -34,6 +37,8 @@ quote ingest:
 - default では normalize まで実行する。raw JSONL だけ欲しい時は `--no-normalize` を使う。
 - `--symbols`, `--max-symbols`, `--duration-minutes`, `--interval-seconds`, `--replace`, `--dry-run`, `--write-summary`, `--write-report`, `--output-dir` で収集対象と artifact 出力を絞れる。
 - `--write-summary` は `data/ops/trade_xyz_quote_collection_summary.json`、`--write-report` は `data/reports/trade_xyz_quote_collection_report.md` を出す。
+- registry / raw quote の fee fields は `configs/fee_model.trade_xyz.yaml` 由来。`fee_mode_unknown_rate` が再発した場合は config / registry / quote propagation を先に確認する。
+- Trade[XYZ] diagnostics と phase gate は current artifact として latest quote file を見る。古い raw JSONL は audit trail として残り得る。
 - legacy `gtrade` / `ostium` replay command は active CLI から削除済み。
 
 real market and tracking:
@@ -45,6 +50,13 @@ uv run sis build-feature-panel
 uv run sis build-signals
 uv run sis check-research-quality
 ```
+
+Alpaca provider:
+
+- `fetch_alpaca_bars()` は silent empty stub ではない。
+- credentials が無い場合は `AlpacaProviderUnavailable` で止まる。
+- live fetch を使う場合は `APCA_API_KEY_ID` / `APCA_API_SECRET_KEY`、または `ALPACA_API_KEY` / `ALPACA_SECRET_KEY`、または `SIS_ALPACA_API_KEY` / `SIS_ALPACA_SECRET_KEY` を環境変数で渡す。
+- credentials を repo に書かない。
 
 ## Paper Operations
 
@@ -128,11 +140,17 @@ uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
 ```
 
-2026-05-27 の既知良好 artifact:
+2026-05-28 の current artifact:
+
+- `data/ops/trade_xyz_quote_collection_summary.json`: 11 active Trade[XYZ] rows in the latest refresh
+- `data/ops/phase_gate_review_summary.json`: `phase_gate_decision=READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
+- `data/ops/phase_gate_review_summary.json`: `execution_drift_classification_counts={"P2_BLOCKER":0,"LIVE_READINESS_BLOCKER":6}`
+
+2026-05-27 の PR12 long-window evidence:
 
 - `data/ops/trade_xyz_quote_collection_summary.json`: 310 rows, 3673.995702 observed seconds
 - `data/ops/pr12_fresh_read_only_smoke_summary.json`: `final_decision=READ_ONLY_GO`
-- `data/ops/phase_gate_review_summary.json`: `phase_gate_decision=READ_ONLY_GO`, `next_actions=[]`
+- `data/reports/pr12_fresh_read_only_smoke_report.md`: 5 symbols x 62 rows
 
 `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` 以降の 3 文書は、この legacy read-only collector chain の補助資料です。`Trade[XYZ]` migration 完了そのものの説明ではありません。
 
@@ -168,6 +186,7 @@ manual live smoke は標準運用手順に含めない。wallet / signing / exch
 
 - `phase-gate-review` が `phase2_entry_allowed=false` の間は、運用上の昇格完了と扱わない。ただし legacy artifact blocker が出ている場合は current Trade[XYZ] path と legacy path を分けて読む。
 - generated artifact が欠けている場合、推測で判断せず再生成する。
-- `READ_ONLY_GO` を production live trading ready と読まない。fee mode unknown、execution drift degraded、micro live public CLI 不在は別 gate として扱う。
+- `READ_ONLY_GO` を production live trading ready と読まない。fee mode unknown の再発、execution drift degraded、micro live public CLI 不在は別 gate として扱う。
+- `execution_drift_classification_counts.LIVE_READINESS_BLOCKER > 0` の間は live trading ready と扱わない。
 - micro live code path があることをもって live trading ready と解釈しない。
 - migration docs と legacy live evidence docs を混同しない。

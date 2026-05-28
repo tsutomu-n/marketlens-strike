@@ -26,12 +26,18 @@
 | PR10 strict validation and diagnostics | DONE | `validate-artifacts --strict`, `diagnose-quotes --venue trade_xyz`, `tests/test_validate_artifacts_trade_xyz.py` |
 | PR11 operations cutover | DONE | `phase-gate-review` consumes Trade[XYZ] artifacts and emits `READ_ONLY_GO` / `CONDITIONAL_INDEX_ONLY` / `NO_GO` |
 | PR12 fresh read-only smoke | DONE | `data/ops/pr12_fresh_read_only_smoke_summary.json`, `data/reports/pr12_fresh_read_only_smoke_report.md` |
+| P2 gate restore / fee mode resolution | DONE | `configs/fee_model.trade_xyz.yaml`, `tests/test_trade_xyz_registry.py`, `tests/test_trade_xyz_collector.py`, `tests/test_phase_gate_review.py` |
+| P2 execution drift classification | DONE | `src/sis/reports/phase_gate_review.py`, `data/ops/phase_gate_review_summary.json` |
+| P2 Alpaca provider stub removal | DONE | `src/sis/real_market/providers/alpaca.py`, `tests/test_alpaca_provider.py` |
 
 ## Current Operational Interpretation
 
 - migration 実装は完了している。
 - `src/sis/cli.py` は root Typer app registration と `main()` に近い構成へ分割済み。
 - Trade[XYZ] read-only artifacts は strict validation / diagnostics / phase gate に接続済み。
+- Trade[XYZ] fee fields は `configs/fee_model.trade_xyz.yaml` の explicit classification から registry / raw quote row へ伝播する。
+- phase gate は execution drift を `P2_BLOCKER` と `LIVE_READINESS_BLOCKER` に分類する。
+- Alpaca provider は silent empty stub ではない。credentials 未設定時は controlled failure、成功時は Alpaca stock bars response を `RealMarketBar` に変換する。
 - `bot-preview` は実行時に read-only HOLD decision と preview report を生成する。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
@@ -58,21 +64,22 @@ PR-08:
 - public CLI からの micro live 実行 surface
 - production live trading
 - live order preview / 注文候補生成の正式 artifact surface
-- Trade[XYZ] `fee_mode` の銘柄別確定。現 PR12 artifact では fee mode unknown が残るため、read-only/paper と micro live readiness は分けて扱う。
-- side-specific depth は quote field と tracking gate に存在するが、collector quality gate には合算 depth の影響が残る。
+- Alpaca credentials ありの live API success smoke
+- execution drift の live-readiness blocker 解消
+- side-specific depth は quote field と tracking gate に存在する。read-only phase gate は spread / stale / l2-only / fee unknown を current blocker として見る。
 
 ## Verification
 
-2026-05-27 current verification:
+2026-05-28 current verification:
 
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 280 passed
-- `./scripts/check`: pass
-- targeted PR9a-PR12 tests: 19 passed
-- latest strict validation: `checked_files=11`, `issues=0`
-- latest phase gate: `READ_ONLY_GO`, `next_actions=[]`
+- `uv run pytest -q`: 288 passed
+- `./scripts/check`: pass, 288 passed
+- targeted P2 tests: Trade[XYZ] / quote diagnostics / phase gate / Alpaca / tracking tests pass
+- latest strict validation: `checked_files=12`, `issues=0`
+- latest phase gate: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`
 
 ## Reading Pointers
 

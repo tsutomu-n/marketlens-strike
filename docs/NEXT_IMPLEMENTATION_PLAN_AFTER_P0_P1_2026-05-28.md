@@ -2,11 +2,13 @@
 
 この文書は、P0-P1 の混在除去後に次へ進むための実装計画です。
 
+> Current status: implemented. The `Pre-Implementation Gate Snapshot` section below is the snapshot that motivated the work. Use `Implementation Result 2026-05-28` and `data/ops/phase_gate_review_summary.json` for the current state.
+
 ## 結論
 
-次にやることは、機能追加ではなく **P2 に入る前の gate restore** です。
+実装前に次にやることだったのは、機能追加ではなく **P2 に入る前の gate restore** です。
 
-現在の `validate-artifacts --strict` は通っています。つまり、次の問題は schema / artifact existence ではありません。現在の主 blocker は、Trade[XYZ] の対象 5 銘柄すべてで `fee_mode_unknown_rate=1.0` が残っていることです。
+実装前の `validate-artifacts --strict` は通っていました。つまり、当時の問題は schema / artifact existence ではありませんでした。当時の主 blocker は、Trade[XYZ] の対象 5 銘柄すべてで `fee_mode_unknown_rate=1.0` が残っていることでした。
 
 したがって、実装順序は次のとおりです。
 
@@ -18,9 +20,9 @@
 
 wallet、signing、exchange write API、public micro live CLI、production live trading はまだやらない。
 
-## Current Gate
+## Pre-Implementation Gate Snapshot
 
-2026-05-28 時点の確認済み current values:
+2026-05-28 の P2-00 実装前に確認した values:
 
 ```text
 validate-artifacts --strict:
@@ -210,7 +212,7 @@ jq '{phase_gate_decision, phase2_entry_allowed, blockers, diagnostics_symbols}' 
 
 execution drift degraded を P2 の research blocker と live-readiness blocker に分ける。
 
-現状:
+実装前の現状:
 
 - `phase-gate-review` は execution drift degraded を表示する。
 - ただし、これは read-only quote gate と同じ failure mode ではない。

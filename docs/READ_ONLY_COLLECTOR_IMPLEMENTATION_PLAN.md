@@ -1,6 +1,6 @@
 # Legacy Read-Only Collector Implementation Plan
 
-> Current status: historical / legacy. The active repo no longer exposes the referenced gTrade/Ostium sidecar commands or Ostium collector CLI as normal operator surfaces. Use `Trade[XYZ]` docs and `uv run sis collect-trade-xyz-quotes` for current work. Current Trade[XYZ] PR12 read-only smoke is complete; pending items here apply only to the legacy collector chain.
+> Current status: historical / legacy. The active repo no longer exposes the referenced gTrade/Ostium sidecar commands or Ostium collector CLI as normal operator surfaces. Use `Trade[XYZ]` docs and `uv run sis collect-trade-xyz-quotes` for current work. Current Trade[XYZ] gate status is tracked in `docs/CURRENT_STATE.md` and `data/ops/phase_gate_review_summary.json`; pending items here apply only to the legacy collector chain.
 
 この文書は legacy `gtrade` / `ostium` read-only collector の実装・検証・再開用メモである。current Trade[XYZ] PR12 read-only gate の正本ではない。repo 全体の migration plan 正本は `plan/archive/PR-00_to_PR-08_implementation_plan.md` を使う。
 運用手順と artifact contract の正本は `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` を読む。
@@ -10,7 +10,7 @@
 
 本番発注システムではなく、監査可能な legacy read-only collector を先に固める、という当時の計画である。
 
-2026-05-27 時点の current path では Trade[XYZ] PR12 read-only smoke が `READ_ONLY_GO` まで完了している。この文書の pending item は legacy collector chain に限定して読む。
+2026-05-28 時点の current path では Trade[XYZ] gate が `READ_ONLY_GO`、`phase2_entry_allowed=true`、`blockers=[]` まで進んでいる。この文書の pending item は legacy collector chain に限定して読む。
 
 現在の実装は次を満たす。
 
