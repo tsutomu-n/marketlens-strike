@@ -138,6 +138,7 @@ def register_research_commands(
         )
         typer.echo(f"status={summary['status']}")
         typer.echo(f"provider_connectivity_status={summary['provider_connectivity_status']}")
+        typer.echo(f"data_availability_status={summary['data_availability_status']}")
         typer.echo(f"symbol={summary['symbol']}")
         typer.echo(f"timeframe={summary['timeframe']}")
         typer.echo(f"start={summary['start']}")

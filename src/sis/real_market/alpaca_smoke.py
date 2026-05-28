@@ -5,7 +5,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from sis.real_market.providers.alpaca import AlpacaProviderUnavailable, fetch_alpaca_bars
+from sis.real_market.providers.alpaca import (
+    AlpacaNoBarsReturned,
+    AlpacaProviderUnavailable,
+    fetch_alpaca_bars,
+)
 from sis.real_market.quality import estimate_source_confidence, live_suitability_reasons
 from sis.storage.jsonl_store import write_json
 
@@ -28,6 +32,7 @@ def _write_report(path: Path, summary: dict[str, object]) -> None:
         "",
         f"- status: {summary.get('status')}",
         f"- provider_connectivity_status: {summary.get('provider_connectivity_status')}",
+        f"- data_availability_status: {summary.get('data_availability_status')}",
         f"- symbol: {summary.get('symbol')}",
         f"- timeframe: {summary.get('timeframe')}",
         f"- feed: {summary.get('feed')}",
@@ -108,6 +113,7 @@ def run_alpaca_live_smoke(
         summary: dict[str, object] = {
             "status": "pass" if not reasons else "blocked",
             "provider_connectivity_status": "pass",
+            "data_availability_status": "pass",
             "provider": "alpaca",
             "symbol": symbol,
             "timeframe": timeframe,
@@ -130,10 +136,33 @@ def run_alpaca_live_smoke(
         if reasons:
             summary["error_class"] = "AlpacaLiveSuitabilityBlocked"
             summary["error_message"] = ",".join(reasons)
+    except AlpacaNoBarsReturned as exc:
+        summary = {
+            "status": "blocked",
+            "provider_connectivity_status": "pass",
+            "data_availability_status": "empty",
+            "provider": "alpaca",
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "feed": feed,
+            "start": start.isoformat() if start is not None else None,
+            "end": end.isoformat() if end is not None else None,
+            "limit": max(1, limit),
+            "bar_count": 0,
+            "source_confidence": 0.0,
+            "live_suitability_reasons": ["BLOCK_ALPACA_NO_BARS"],
+            "raw_payload_path": str(raw_path),
+            "summary_path": str(summary_path),
+            "report_path": str(report_path),
+            "checked_at": checked_at.isoformat(),
+            "error_class": exc.__class__.__name__,
+            "error_message": _safe_error_message(exc),
+        }
     except AlpacaProviderUnavailable as exc:
         summary = {
             "status": "failed",
             "provider_connectivity_status": "failed",
+            "data_availability_status": "unknown",
             "provider": "alpaca",
             "symbol": symbol,
             "timeframe": timeframe,

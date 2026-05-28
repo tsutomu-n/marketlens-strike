@@ -5,7 +5,11 @@ from datetime import datetime, timezone
 
 import pytest
 
-from sis.real_market.providers.alpaca import AlpacaProviderUnavailable, fetch_alpaca_bars
+from sis.real_market.providers.alpaca import (
+    AlpacaNoBarsReturned,
+    AlpacaProviderUnavailable,
+    fetch_alpaca_bars,
+)
 from sis.real_market.alpaca_smoke import run_alpaca_live_smoke
 
 
@@ -135,12 +139,12 @@ def test_alpaca_provider_maps_bars_and_writes_raw_payload(tmp_path) -> None:
     assert raw_payload["row_count"] == 1
 
 
-def test_alpaca_provider_does_not_silent_pass_empty_response() -> None:
+def test_alpaca_provider_raises_no_bars_for_empty_response() -> None:
     def opener(request, *, timeout: float):
         _ = (request, timeout)
         return _Response({"bars": {"NVDA": []}})
 
-    with pytest.raises(AlpacaProviderUnavailable, match="returned no bars"):
+    with pytest.raises(AlpacaNoBarsReturned, match="returned no bars"):
         fetch_alpaca_bars(
             symbol="NVDA",
             timeframe="15m",
@@ -168,6 +172,8 @@ def test_alpaca_live_smoke_writes_failed_summary_without_credentials(
     summary = run_alpaca_live_smoke(data_dir=tmp_path, symbol="NVDA", timeframe="15m")
 
     assert summary["status"] == "failed"
+    assert summary["provider_connectivity_status"] == "failed"
+    assert summary["data_availability_status"] == "unknown"
     assert summary["error_class"] == "AlpacaProviderUnavailable"
     assert "credentials" in str(summary["error_message"])
     summary_path = tmp_path / "ops/alpaca_live_smoke_summary.json"
@@ -177,6 +183,31 @@ def test_alpaca_live_smoke_writes_failed_summary_without_credentials(
     written = summary_path.read_text(encoding="utf-8")
     assert "APCA_API_SECRET_KEY" not in written
     assert "secret" not in written.lower()
+
+
+def test_alpaca_live_smoke_blocks_empty_bars_as_data_availability(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("APCA_API_KEY_ID", "key")
+    monkeypatch.setenv("APCA_API_SECRET_KEY", "secret")
+
+    def opener(request, *, timeout: float):
+        _ = (request, timeout)
+        return _Response({"bars": {"NVDA": []}})
+
+    summary = run_alpaca_live_smoke(
+        data_dir=tmp_path,
+        symbol="NVDA",
+        timeframe="15m",
+        opener=opener,
+    )
+
+    assert summary["status"] == "blocked"
+    assert summary["provider_connectivity_status"] == "pass"
+    assert summary["data_availability_status"] == "empty"
+    assert summary["error_class"] == "AlpacaNoBarsReturned"
+    assert summary["live_suitability_reasons"] == ["BLOCK_ALPACA_NO_BARS"]
+    report = (tmp_path / "reports/alpaca_live_smoke.md").read_text(encoding="utf-8")
+    assert "data_availability_status: empty" in report
+    assert "BLOCK_ALPACA_NO_BARS" in report
 
 
 def test_alpaca_live_smoke_passes_and_writes_artifacts(tmp_path, monkeypatch) -> None:
@@ -213,6 +244,8 @@ def test_alpaca_live_smoke_passes_and_writes_artifacts(tmp_path, monkeypatch) ->
     )
 
     assert summary["status"] == "pass"
+    assert summary["provider_connectivity_status"] == "pass"
+    assert summary["data_availability_status"] == "pass"
     assert summary["start"] == "2026-05-26T14:00:00+00:00"
     assert summary["end"] == "2026-05-26T14:30:00+00:00"
     assert summary["bar_count"] == 1
@@ -255,6 +288,8 @@ def test_alpaca_live_smoke_blocks_low_source_confidence(tmp_path, monkeypatch) -
     )
 
     assert summary["status"] == "blocked"
+    assert summary["provider_connectivity_status"] == "pass"
+    assert summary["data_availability_status"] == "pass"
     assert summary["error_class"] == "AlpacaLiveSuitabilityBlocked"
     assert summary["live_suitability_reasons"] == ["BLOCK_LOW_SOURCE_CONFIDENCE"]
     report = (tmp_path / "reports/alpaca_live_smoke.md").read_text(encoding="utf-8")

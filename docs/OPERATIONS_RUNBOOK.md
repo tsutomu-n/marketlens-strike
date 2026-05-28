@@ -93,8 +93,9 @@ Expected artifacts:
 Failure behavior:
 
 - credentials が無い場合も summary / report を書いて `status=failed` で終了する。
+- Alpaca が正常な JSON response を返しても `bars={}` の場合は `status=blocked`, `provider_connectivity_status=pass`, `data_availability_status=empty`, `live_suitability_reasons=BLOCK_ALPACA_NO_BARS` とする。
 - live bars が返っても `source_confidence` が閾値未満なら `status=blocked` とし、`live_suitability_reasons=BLOCK_LOW_SOURCE_CONFIDENCE` を出す。
-- historical connectivity smoke は API / credentials の疎通確認用。古いbarなので `status=blocked` でも `bar_count>=1` なら provider connectivity は確認できている。
+- historical connectivity smoke は API / credentials の疎通確認用。古いbarなので `status=blocked` でも `provider_connectivity_status=pass` なら provider connectivity は確認できている。
 - summary / report / raw payload に credential secret を書かない。
 - `status=pass` は Alpaca provider が live bars を返し、live suitability blocker が無いことを示す。production live trading ready ではない。
 

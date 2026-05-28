@@ -120,6 +120,8 @@ def test_alpaca_smoke_cli_writes_failure_summary_without_credentials(tmp_path, m
 
     assert result.exit_code == 2
     assert "status=failed" in result.stdout
+    assert "provider_connectivity_status=failed" in result.stdout
+    assert "data_availability_status=unknown" in result.stdout
     assert "live_suitability_reasons=BLOCK_ALPACA_PROVIDER_UNAVAILABLE" in result.stdout
     assert "error_class=AlpacaProviderUnavailable" in result.stdout
     assert "start=None" in result.stdout

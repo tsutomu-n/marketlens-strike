@@ -25,6 +25,10 @@ class AlpacaProviderUnavailable(RuntimeError):
     pass
 
 
+class AlpacaNoBarsReturned(AlpacaProviderUnavailable):
+    pass
+
+
 def _credentials(
     api_key: str | None,
     api_secret: str | None,
@@ -209,5 +213,5 @@ def fetch_alpaca_bars(
             payload=payload,
         )
     if not rows:
-        raise AlpacaProviderUnavailable(f"Alpaca returned no bars for {symbol} {timeframe}")
+        raise AlpacaNoBarsReturned(f"Alpaca returned no bars for {symbol} {timeframe}")
     return rows
