@@ -9,6 +9,7 @@
 - 元ノートの全文を読みたい時は、この索引から `copy` を開く。
 - 元の場所を確認したい時は `source` を開く。
 - 何に使うノートかを知りたい時は [OBSIDIAN_TRADE_BOT_SHORTLIST.md](/home/tn/projects/marketlens-strike/docs/algo/OBSIDIAN_TRADE_BOT_SHORTLIST.md) と [OBSIDIAN_TRADE_STRATEGY_IDEAS.md](/home/tn/projects/marketlens-strike/docs/algo/OBSIDIAN_TRADE_STRATEGY_IDEAS.md) を先に見る。
+- 追加調査で見つかった未コピー候補、秘匿情報リスク、次にコピーする順番は [OBSIDIAN_ADDITIONAL_RESEARCH.md](/home/tn/projects/marketlens-strike/docs/algo/OBSIDIAN_ADDITIONAL_RESEARCH.md) を見る。
 
 ## 01 Core Trend
 

@@ -9,3 +9,4 @@
 
 入口:
 - [OBSIDIAN_NOTE_COPIES_INDEX.md](/home/tn/projects/marketlens-strike/docs/algo/OBSIDIAN_NOTE_COPIES_INDEX.md)
+- [OBSIDIAN_ADDITIONAL_RESEARCH.md](/home/tn/projects/marketlens-strike/docs/algo/OBSIDIAN_ADDITIONAL_RESEARCH.md)
