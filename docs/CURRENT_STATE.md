@@ -90,8 +90,10 @@ PR-08 専用確認:
 2. `docs/CODE_STATUS.md`
 3. `docs/OPERATIONS_RUNBOOK.md`
 4. `docs/ARCHITECTURE_AND_PHASES.md`
-5. `docs/trade_xyz_bot_beginner_guide.html`
-6. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+5. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
+6. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
+7. `docs/trade_xyz_bot_beginner_guide.html`
+8. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
 
 その後、必要に応じて:
 

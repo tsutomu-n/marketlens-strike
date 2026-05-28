@@ -1,6 +1,6 @@
 # Trade[XYZ] 実装状況棚卸し 2026-05-27
 
-> Superseded for current status: this is the 2026-05-27 pre-P2 gate restore audit. Current state is tracked in `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md`, and `docs/DOCUMENT_AUDIT_2026-05-28.md`.
+> Superseded for current status: this is the 2026-05-27 pre-P2 gate restore audit. Current state is tracked in `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`, `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`, and `docs/DOCUMENT_AUDIT_2026-05-28.md`.
 
 ## 0. 結論
 
