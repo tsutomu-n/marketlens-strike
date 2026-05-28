@@ -14,6 +14,7 @@ from sis.research.price_ingest import build_market_panel
 from sis.research.providers import FredMacroProvider
 from sis.research.research_quality import build_research_quality_report
 from sis.research.signal_builder import build_signals
+from sis.real_market.alpaca_smoke import run_alpaca_live_smoke
 from sis.settings import get_settings
 
 
@@ -88,3 +89,41 @@ def register_research_commands(
         logger.info("written: {}", out)
         for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
+
+    @app.command("alpaca-smoke")
+    def alpaca_smoke_cmd(
+        symbol: str = typer.Option("NVDA", "--symbol", help="Alpaca stock symbol."),
+        timeframe: str = typer.Option("15m", "--timeframe", help="Alpaca bars timeframe."),
+        limit: int = typer.Option(1, "--limit", min=1, help="Number of bars to request."),
+        feed: str = typer.Option("iex", "--feed", help="Alpaca data feed."),
+        timeout: float = typer.Option(10.0, "--timeout", min=0.1, help="Request timeout seconds."),
+        raw_payload_path: Path | None = typer.Option(
+            None,
+            "--raw-payload-path",
+            help="Optional raw payload output path. Defaults under data/raw/real_market/alpaca.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        summary = run_alpaca_live_smoke(
+            data_dir=settings.data_dir,
+            symbol=symbol,
+            timeframe=timeframe,
+            limit=limit,
+            feed=feed,
+            timeout=timeout,
+            raw_payload_path=raw_payload_path,
+        )
+        typer.echo(f"status={summary['status']}")
+        typer.echo(f"symbol={summary['symbol']}")
+        typer.echo(f"timeframe={summary['timeframe']}")
+        typer.echo(f"bar_count={summary['bar_count']}")
+        typer.echo(f"source_confidence={summary['source_confidence']}")
+        typer.echo(f"summary_path={summary['summary_path']}")
+        typer.echo(f"report_path={summary['report_path']}")
+        typer.echo(f"raw_payload_path={summary['raw_payload_path']}")
+        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
+            typer.echo(f"recommended_read_order_{index}={item}")
+        if summary.get("status") != "pass":
+            typer.echo(f"error_class={summary.get('error_class')}")
+            typer.echo(f"error_message={summary.get('error_message')}")
+            raise typer.Exit(2)

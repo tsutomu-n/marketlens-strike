@@ -104,8 +104,8 @@ PR12 read-only smoke evidence:
 
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 288 passed
-- `./scripts/check`: pass, 288 passed
+- `uv run pytest -q`: 291 passed
+- `./scripts/check`: pass, 291 passed
 - `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
 - `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
 

@@ -27,6 +27,19 @@ from sis.reports.summary_normalizers import (
     readiness_flat_fields,
 )
 
+_LEGACY_BACKTEST_SYMBOLS = frozenset({"QQQ", "SPY", "XAU", "NDX_EQUIV", "SPX_EQUIV"})
+
+
+def _canonical_symbols(metrics_rows: list[dict[str, object]]) -> list[str]:
+    return sorted(
+        {
+            str(symbol)
+            for row in metrics_rows
+            for symbol in [row.get("canonical_symbol")]
+            if isinstance(symbol, str) and symbol
+        }
+    )
+
 
 def _quick_navigation(
     out_path: Path | None,
@@ -150,6 +163,7 @@ def build_weekly_review_report(
     backtest_metrics_path: Path | None = None,
     daily_pnl_path: Path | None = None,
     paper_last_run_path: Path | None = None,
+    current_phase_gate_summary_path: Path | None = None,
     out_path: Path | None = None,
 ) -> str:
     lines = [
@@ -157,8 +171,53 @@ def build_weekly_review_report(
         "",
     ]
 
-    if backtest_metrics_path and backtest_metrics_path.exists():
+    metrics_rows: list[dict[str, object]] = []
+    symbols: list[str] = []
+    has_backtest_metrics = bool(backtest_metrics_path and backtest_metrics_path.exists())
+    if has_backtest_metrics:
         metrics_rows = safe_read_json_dict_list(backtest_metrics_path)
+        symbols = _canonical_symbols(metrics_rows)
+
+    if current_phase_gate_summary_path is not None:
+        current_phase_gate = safe_read_json_dict(current_phase_gate_summary_path)
+        lines.extend(["## Current Trade[XYZ] Gate Snapshot", ""])
+        lines.append(f"- source: {current_phase_gate_summary_path}")
+        if current_phase_gate:
+            phase_gate = normalize_phase_gate_summary(current_phase_gate)
+            phase_gate_flat = phase_gate_flat_fields(phase_gate)
+            diagnostics_symbols = current_phase_gate.get("diagnostics_symbols")
+            lines.extend(
+                [
+                    f"- decision: {phase_gate_flat.get('phase_gate_decision') or ''}",
+                    f"- strict_validation_passed: {phase_gate_flat.get('strict_validation_passed')}",
+                    f"- phase_gate_checked_files: {phase_gate_flat.get('phase_gate_checked_files')}",
+                ]
+            )
+            if isinstance(diagnostics_symbols, list):
+                formatted_symbols = ", ".join(
+                    str(symbol) for symbol in diagnostics_symbols if isinstance(symbol, str)
+                )
+                lines.append(f"- diagnostics_symbols: {formatted_symbols}")
+        else:
+            lines.append("- status: unavailable")
+        if symbols:
+            backtest_symbol_scope = (
+                "historical_or_legacy_symbols"
+                if set(symbols) & _LEGACY_BACKTEST_SYMBOLS
+                else "current_or_non_legacy_symbols"
+            )
+            lines.extend(
+                [
+                    f"- backtest_symbol_scope: {backtest_symbol_scope}",
+                    (
+                        "- interpretation: Backtest Metrics Snapshot is a historical/backtest "
+                        "input and is not the current Trade[XYZ] symbol universe."
+                    ),
+                ]
+            )
+        lines.append("")
+
+    if has_backtest_metrics:
         lines.extend(
             [
                 "## Backtest Metrics Snapshot",
@@ -166,15 +225,7 @@ def build_weekly_review_report(
                 f"- rows: {len(metrics_rows)}",
             ]
         )
-        if metrics_rows:
-            symbols = sorted(
-                {
-                    str(symbol)
-                    for row in metrics_rows
-                    for symbol in [row.get("canonical_symbol")]
-                    if isinstance(symbol, str) and symbol
-                }
-            )
+        if symbols:
             lines.append(f"- symbols: {', '.join(symbols)}")
         lines.append("")
 

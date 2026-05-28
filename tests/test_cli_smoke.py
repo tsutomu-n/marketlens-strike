@@ -20,6 +20,7 @@ def test_help_smoke() -> None:
     assert "bot-preview" in result.stdout
     assert "build-backtest" in result.stdout
     assert "ingest-research-data" in result.stdout
+    assert "alpaca-smoke" in result.stdout
     assert "build-feature-panel" in result.stdout
     assert "build-signals" in result.stdout
     assert "paper-step" in result.stdout
@@ -96,6 +97,31 @@ def test_diagnose_quotes_exits_when_no_quotes() -> None:
         result = runner.invoke(app, ["diagnose-quotes"], env={"SIS_DATA_DIR": "tmp_data"})
         assert result.exit_code == 2
         assert "No quote rows found for diagnostics." in result.stdout
+
+
+def test_alpaca_smoke_cli_writes_failure_summary_without_credentials(tmp_path, monkeypatch) -> None:
+    for key in (
+        "APCA_API_KEY_ID",
+        "APCA_API_SECRET_KEY",
+        "ALPACA_API_KEY",
+        "ALPACA_SECRET_KEY",
+        "SIS_ALPACA_API_KEY",
+        "SIS_ALPACA_SECRET_KEY",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    data_dir = tmp_path / "data"
+
+    result = runner.invoke(
+        app,
+        ["alpaca-smoke", "--symbol", "NVDA", "--timeframe", "15m"],
+        env={"SIS_DATA_DIR": str(data_dir)},
+    )
+
+    assert result.exit_code == 2
+    assert "status=failed" in result.stdout
+    assert "error_class=AlpacaProviderUnavailable" in result.stdout
+    assert (data_dir / "ops/alpaca_live_smoke_summary.json").exists()
+    assert (data_dir / "reports/alpaca_live_smoke.md").exists()
 
 
 def test_diagnose_quotes_cli_writes_report_and_summary(tmp_path) -> None:

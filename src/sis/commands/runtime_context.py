@@ -56,6 +56,7 @@ def _write_weekly_review(settings_data_dir: Path) -> tuple[Path, str]:
         backtest_metrics_path=settings_data_dir / "research/backtest_metrics.json",
         daily_pnl_path=settings_data_dir / "paper/daily_pnl.parquet",
         paper_last_run_path=_paper_last_run_path(settings_data_dir),
+        current_phase_gate_summary_path=settings_data_dir / "ops/phase_gate_review_summary.json",
         out_path=out,
     )
     return out, text

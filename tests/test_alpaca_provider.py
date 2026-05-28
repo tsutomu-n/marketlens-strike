@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import pytest
 
 from sis.real_market.providers.alpaca import AlpacaProviderUnavailable, fetch_alpaca_bars
+from sis.real_market.alpaca_smoke import run_alpaca_live_smoke
 
 
 class _Response:
@@ -101,3 +102,70 @@ def test_alpaca_provider_does_not_silent_pass_empty_response() -> None:
             api_secret="secret",
             opener=opener,
         )
+
+
+def test_alpaca_live_smoke_writes_failed_summary_without_credentials(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    for key in (
+        "APCA_API_KEY_ID",
+        "APCA_API_SECRET_KEY",
+        "ALPACA_API_KEY",
+        "ALPACA_SECRET_KEY",
+        "SIS_ALPACA_API_KEY",
+        "SIS_ALPACA_SECRET_KEY",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    summary = run_alpaca_live_smoke(data_dir=tmp_path, symbol="NVDA", timeframe="15m")
+
+    assert summary["status"] == "failed"
+    assert summary["error_class"] == "AlpacaProviderUnavailable"
+    assert "credentials" in str(summary["error_message"])
+    summary_path = tmp_path / "ops/alpaca_live_smoke_summary.json"
+    report_path = tmp_path / "reports/alpaca_live_smoke.md"
+    assert summary_path.exists()
+    assert report_path.exists()
+    written = summary_path.read_text(encoding="utf-8")
+    assert "APCA_API_SECRET_KEY" not in written
+    assert "secret" not in written.lower()
+
+
+def test_alpaca_live_smoke_passes_and_writes_artifacts(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("APCA_API_KEY_ID", "key")
+    monkeypatch.setenv("APCA_API_SECRET_KEY", "secret")
+
+    def opener(request, *, timeout: float):
+        _ = (request, timeout)
+        return _Response(
+            {
+                "bars": {
+                    "NVDA": [
+                        {
+                            "t": "2026-05-26T14:00:00Z",
+                            "o": 100.0,
+                            "h": 101.0,
+                            "l": 99.5,
+                            "c": 100.5,
+                            "v": 12345,
+                        }
+                    ]
+                }
+            }
+        )
+
+    summary = run_alpaca_live_smoke(
+        data_dir=tmp_path,
+        symbol="NVDA",
+        timeframe="15m",
+        opener=opener,
+    )
+
+    assert summary["status"] == "pass"
+    assert summary["bar_count"] == 1
+    assert summary["provider"] == "alpaca"
+    assert summary["latest_close"] == 100.5
+    assert (tmp_path / "ops/alpaca_live_smoke_summary.json").exists()
+    assert (tmp_path / "reports/alpaca_live_smoke.md").exists()
+    assert (tmp_path / "raw/real_market/alpaca/NVDA_15m_latest.json").exists()

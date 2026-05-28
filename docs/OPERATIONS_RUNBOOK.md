@@ -58,6 +58,24 @@ Alpaca provider:
 - live fetch を使う場合は `APCA_API_KEY_ID` / `APCA_API_SECRET_KEY`、または `ALPACA_API_KEY` / `ALPACA_SECRET_KEY`、または `SIS_ALPACA_API_KEY` / `SIS_ALPACA_SECRET_KEY` を環境変数で渡す。
 - credentials を repo に書かない。
 
+Alpaca credentials smoke:
+
+```bash
+uv run sis alpaca-smoke --symbol NVDA --timeframe 15m --limit 1 --feed iex
+```
+
+Expected artifacts:
+
+- `data/ops/alpaca_live_smoke_summary.json`
+- `data/reports/alpaca_live_smoke.md`
+- `data/raw/real_market/alpaca/NVDA_15m_latest.json`
+
+Failure behavior:
+
+- credentials が無い場合も summary / report を書いて `status=failed` で終了する。
+- summary / report / raw payload に credential secret を書かない。
+- `status=pass` は Alpaca provider が live bars を返したことだけを示す。production live trading ready ではない。
+
 ## Paper Operations
 
 paper state を 1 cycle 進める:

@@ -166,19 +166,34 @@ def test_operation_manifest_chain_append_and_read_latest(tmp_path) -> None:
 def test_build_weekly_review_report_uses_backtest_and_paper_inputs(tmp_path) -> None:
     backtest_path = tmp_path / "backtest_metrics.json"
     daily_pnl_path = tmp_path / "daily_pnl.parquet"
+    phase_gate_path = tmp_path / "phase_gate_review_summary.json"
     pl.DataFrame([{"venue": "gtrade", "canonical_symbol": "QQQ", "trade_count": 3}]).write_json(
         backtest_path
     )
     pl.DataFrame(
         [{"date": "2026-05-24", "realized_pnl": 12.5, "fills_count": 2, "open_positions": 1}]
     ).write_parquet(daily_pnl_path)
+    phase_gate_path.write_text(
+        (
+            '{"decision":"READ_ONLY_GO","strict_validation_passed":true,'
+            '"checked_files":12,"diagnostics_symbols":["SP500","XYZ100","NVDA"]}'
+        ),
+        encoding="utf-8",
+    )
 
     text = build_weekly_review_report(
         backtest_metrics_path=backtest_path,
         daily_pnl_path=daily_pnl_path,
+        current_phase_gate_summary_path=phase_gate_path,
         out_path=tmp_path / "weekly.md",
     )
 
     assert "Weekly Strategy Review" in text
+    assert "Current Trade[XYZ] Gate Snapshot" in text
+    assert "decision: READ_ONLY_GO" in text
+    assert "phase_gate_checked_files: 12" in text
+    assert "diagnostics_symbols: SP500, XYZ100, NVDA" in text
+    assert "backtest_symbol_scope: historical_or_legacy_symbols" in text
+    assert "not the current Trade[XYZ] symbol universe" in text
     assert "Backtest Metrics Snapshot" in text
     assert "Paper PnL Snapshot" in text

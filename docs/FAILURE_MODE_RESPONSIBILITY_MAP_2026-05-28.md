@@ -10,7 +10,7 @@ Current snapshot:
 
 ```text
 ./scripts/check:
-  288 passed
+  291 passed
 
 validate-artifacts --strict:
   checked_files: 12
@@ -327,6 +327,7 @@ State: `ACTIVE_LIVE_READINESS`
 
 - Alpaca provider は silent stub ではない。
 - credentials 未設定、request failure、non-JSON response、empty bars は `AlpacaProviderUnavailable` で止まる。
+- `uv run sis alpaca-smoke` は成功・失敗どちらでも summary / report を残す operator entry。
 - credentials ありの live API success は未検証。
 
 責任 surface:
@@ -348,6 +349,7 @@ Stop condition:
 Recovery / verification:
 
 ```bash
+uv run sis alpaca-smoke --symbol NVDA --timeframe 15m --limit 1 --feed iex
 uv run pytest tests/test_alpaca_provider.py tests/test_real_vs_venue_tracking.py -q
 ```
 
@@ -550,6 +552,7 @@ State: `RESOLVED_GUARD`
 
 - `data/ops/*.json` は generated current snapshot。
 - `data/reports/*.md` は generated readable snapshot。
+- `data/reports/weekly_strategy_review.md` は current Trade[XYZ] gate snapshot を先頭に出し、old symbols を historical/backtest input と明示する。
 - source docs は `docs/`、runtime snapshot は `data/ops/`、generated readable report は `data/reports/` として分ける。
 
 責任 surface:
@@ -579,6 +582,7 @@ uv run sis phase-gate-review
 
 - current docs は source of truth と generated snapshot を分けている。
 - generated reports の stale risk が docs audit に反映されている。
+- weekly review の `Backtest Metrics Snapshot` を current Trade[XYZ] target universe と誤読しない。
 
 ## FD Status Mapping
 
