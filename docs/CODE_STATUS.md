@@ -65,7 +65,7 @@ PR-08:
 - public CLI からの micro live 実行 surface
 - production live trading
 - live order preview / 注文候補生成の正式 artifact surface
-- Alpaca credentials ありの live API success smoke
+- Alpaca credentials ありの API connectivity は確認済み。fresh live `status=pass` は市場時間中の fresh bar 取得で再確認する
 - execution drift の live-readiness blocker 解消
 - side-specific depth は quote field と tracking gate に存在する。read-only phase gate は spread / stale / l2-only / fee unknown を current blocker として見る。
 
@@ -76,8 +76,8 @@ PR-08:
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 293 passed
-- `./scripts/check`: pass, 293 passed
+- `uv run pytest -q`: 294 passed
+- `./scripts/check`: pass, 294 passed
 - targeted P2 tests: Trade[XYZ] / quote diagnostics / phase gate / Alpaca / tracking tests pass
 - latest strict validation: `checked_files=12`, `issues=0`
 - latest phase gate: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`

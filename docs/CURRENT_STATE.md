@@ -59,7 +59,7 @@
 - `./scripts/check`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 293 passed
+- `uv run pytest -q`: 294 passed
 - P2 targeted verification: Trade[XYZ] / diagnostics / phase gate / Alpaca / tracking tests pass
 - `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
 - latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows
@@ -82,7 +82,7 @@ PR-08 専用確認:
 - production live order smoke
 - signing / wallet / exchange write integration
 - live order preview / 注文候補生成の正式 command surface
-- Alpaca credentials ありの live API success smoke。operator entry は `uv run sis alpaca-smoke` として存在するが、この checkout では credentials 付き live success は未検証
+- Alpaca credentials ありの API connectivity smoke。historical IEX bar で `provider_connectivity_status=pass`, `data_availability_status=pass` は確認済み。fresh 15m は `BLOCK_ALPACA_NO_BARS` で blocked になり得るため、live `status=pass` は市場時間中の fresh bar 取得で再確認する
 - `check-go-no-go` / `build-evidence-card` は補助reportであり、Bot前の現行判定正本は `phase-gate-review`
 
 ## Recommended Read Order

@@ -20,7 +20,7 @@ current docs の正本は次の 7 本に寄せる。
 
 ```text
 ./scripts/check:
-  293 passed
+  294 passed
 
 validate-artifacts --strict:
   checked_files: 12
@@ -73,7 +73,7 @@ Trade[XYZ] target fee fields:
 | `docs/OPERATIONS_RUNBOOK.md` | current | operator が再生成するための手順 | current CLI に存在しない command を標準手順として出さない |
 | `docs/ARCHITECTURE_AND_PHASES.md` | current, minor risk | 大枠は code truth と一致。詳細数値は持たない | legacy / Trade[XYZ] / micro live boundary が崩れていない |
 | `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | current | 壊れ方単位の責任境界。P2 blocker と live-readiness blocker を分離済み | `READ_ONLY_GO`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6` を current truth として扱う |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | current | Trade[XYZ] 実装状況の current audit。P2 gate restore 後の値へ更新済み | `checked_files=12`, `293 passed`, fee mode resolved, Alpaca non-stub を current truth として扱う |
+| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | current | Trade[XYZ] 実装状況の current audit。P2 gate restore 後の値へ更新済み | `checked_files=12`, `294 passed`, fee mode resolved, Alpaca non-stub を current truth として扱う |
 | `docs/XNYS_MARKET_CALENDAR.md` | current, scoped | underlying session の説明として有効 | active XAU surface と混同しない |
 
 ### Current But Historical-Result Oriented
@@ -136,7 +136,7 @@ docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md
 
 - `fee_mode_unknown_rate=1.0` を current blocker として書かない。
 - `Alpaca provider is stub` と書かない。
-- `checked_files=12`, `293 passed`, `READ_ONLY_GO`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6` を反映する。
+- `checked_files=12`, `294 passed`, `READ_ONLY_GO`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6` を反映する。
 - production live trading ready ではないことを明記する。
 
 現在状態:
@@ -313,5 +313,5 @@ uv run sis phase-gate-review
 uv run sis --help: pass
 uv run sis validate-artifacts --strict: checked_files=12, issues=0
 uv run sis phase-gate-review: READ_ONLY_GO, phase2_entry_allowed=true, blockers=[]
-./scripts/check: pass, 293 passed
+./scripts/check: pass, 294 passed
 ```

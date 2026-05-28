@@ -10,7 +10,7 @@ Current snapshot:
 
 ```text
 ./scripts/check:
-  293 passed
+  294 passed
 
 validate-artifacts --strict:
   checked_files: 12

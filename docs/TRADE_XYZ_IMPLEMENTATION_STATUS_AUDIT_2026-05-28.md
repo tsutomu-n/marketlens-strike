@@ -4,15 +4,15 @@
 
 ## 結論
 
-Trade[XYZ] の PR9a-PR12 read-only evidence chain と P2 gate restore は完了済み。現時点の repo は P2 へスムーズに進める状態で、最新 phase gate は `READ_ONLY_GO`、strict validation は `checked_files=12`, `issues=0`、full check は `293 passed`。
+Trade[XYZ] の PR9a-PR12 read-only evidence chain と P2 gate restore は完了済み。現時点の repo は P2 へスムーズに進める状態で、最新 phase gate は `READ_ONLY_GO`、strict validation は `checked_files=12`, `issues=0`、full check は `294 passed`。
 
-ただし、これは production live trading ready ではない。execution drift は live-readiness blocker として 6 件残っており、Alpaca credentials ありの live API success smoke、wallet/signing、exchange write integration、public micro live CLI はまだ未完了または意図的に未公開である。
+ただし、これは production live trading ready ではない。execution drift は live-readiness blocker として 6 件残っており、Alpaca credentials ありの API connectivity は確認済みだが fresh live `status=pass`、wallet/signing、exchange write integration、public micro live CLI はまだ未完了または意図的に未公開である。
 
 Current snapshot:
 
 ```text
 ./scripts/check:
-  293 passed
+  294 passed
 
 validate-artifacts --strict:
   checked_files: 12
@@ -83,8 +83,8 @@ Current verification:
 uv run python -V: Python 3.13.7
 uv run ruff check .: pass
 uv run pyrefly check: 0 errors
-uv run pytest -q: 293 passed
-./scripts/check: pass, 293 passed
+uv run pytest -q: 294 passed
+./scripts/check: pass, 294 passed
 ```
 
 The current acceptance command for repo health is:
