@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import exchange_calendars as xcals
@@ -12,7 +12,6 @@ JST = ZoneInfo("Asia/Tokyo")
 
 INDEX_SYMBOLS = {"SPY", "QQQ", "SP500", "XYZ100"}
 XNYS_EQUITY_SYMBOLS = {"NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AMD", "EWJ"}
-COMMODITY_SYMBOLS = {"XAU"}
 
 
 @dataclass(frozen=True)
@@ -67,69 +66,6 @@ def _next_xnys_window(now_utc: datetime) -> tuple[datetime, datetime, str]:
     raise RuntimeError("Unable to determine next XNYS session within 14 days")
 
 
-def _xau_is_market_open(now_et: datetime) -> bool:
-    weekday = now_et.weekday()  # Mon=0 .. Sun=6
-    t = now_et.time()
-
-    if weekday == 5:
-        return False
-    if weekday == 6:
-        return t >= time(18, 0)
-    if weekday == 4 and t >= time(17, 0):
-        return False
-    return not (time(17, 0) <= t < time(18, 0))
-
-
-def _next_xau_open(now_et: datetime) -> datetime:
-    candidate = now_et
-    for _ in range(24 * 14):
-        if _xau_is_market_open(candidate):
-            return candidate
-        candidate += timedelta(hours=1)
-        candidate = candidate.replace(minute=0, second=0, microsecond=0)
-    raise RuntimeError("Unable to determine next XAU open within 14 days")
-
-
-def _xau_close_for_open_time(open_et: datetime) -> datetime:
-    weekday = open_et.weekday()
-    if weekday == 6:
-        return open_et.replace(hour=17, minute=0, second=0, microsecond=0) + timedelta(days=5)
-    if weekday in {0, 1, 2, 3}:
-        close = open_et.replace(hour=17, minute=0, second=0, microsecond=0)
-        if open_et.time() >= time(18, 0):
-            close += timedelta(days=1)
-        return close
-    if weekday == 4:
-        return open_et.replace(hour=17, minute=0, second=0, microsecond=0)
-    return open_et + timedelta(hours=1)
-
-
-def _current_xau_session_open(now_et: datetime) -> datetime:
-    weekday = now_et.weekday()  # Mon=0 .. Sun=6
-    session_anchor = now_et.replace(hour=18, minute=0, second=0, microsecond=0)
-
-    if weekday == 6:
-        return session_anchor
-    if weekday in {0, 1, 2, 3, 4}:
-        if now_et.time() >= time(18, 0):
-            return session_anchor
-        return session_anchor - timedelta(days=1)
-    raise RuntimeError("Saturday is not an open XAU session")
-
-
-def _next_xau_window(now_utc: datetime) -> tuple[datetime, datetime, str]:
-    now_et = now_utc.astimezone(EASTERN)
-    open_now = _xau_is_market_open(now_et)
-    if open_now:
-        status = "OPEN"
-        next_open = _current_xau_session_open(now_et)
-    else:
-        status = "CLOSED"
-        next_open = _next_xau_open(now_et)
-    next_close = _xau_close_for_open_time(next_open)
-    return next_open.astimezone(timezone.utc), next_close.astimezone(timezone.utc), status
-
-
 def market_session_window(venue: str, symbol: str, now: datetime | None = None) -> SessionWindow:
     normalized_venue = venue.strip().lower()
     normalized_symbol = symbol.strip().upper()
@@ -142,11 +78,6 @@ def market_session_window(venue: str, symbol: str, now: datetime | None = None) 
         recommended_start = session_open + timedelta(minutes=15)
         recommended_end = session_close - timedelta(minutes=30)
         calendar = "XNYS"
-    elif normalized_symbol in COMMODITY_SYMBOLS:
-        session_open, session_close, status = _next_xau_window(now_utc)
-        recommended_start = session_open + timedelta(minutes=10)
-        recommended_end = session_close - timedelta(minutes=10)
-        calendar = "TRADE_XYZ_COMMODITY"
     else:
         raise ValueError(f"Unsupported symbol for market session planning: {normalized_symbol}")
 

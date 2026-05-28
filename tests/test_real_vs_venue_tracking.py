@@ -42,6 +42,23 @@ def test_tracking_computes_mark_real_diff_bps() -> None:
     assert row.mark_real_diff_bps > 0
 
 
+def test_tracking_does_not_use_mid_as_mark_substitute() -> None:
+    feature = RealMarketFeature(
+        ts=datetime.now(timezone.utc),
+        symbol="NVDA",
+        timeframe="15m",
+        close=101.0,
+        source_confidence=0.9,
+        market_session="regular",
+    )
+    row = build_tracking_record(
+        feature, _quote(mark_price=None, mid_price=150.0), {"halt_policy": {}}
+    )
+    assert row.mark_real_diff_bps is None
+    assert row.trade_allowed is False
+    assert "BLOCK_MISSING_MARK_PRICE" in row.block_reasons
+
+
 def test_tracking_blocks_underlying_closed_session() -> None:
     feature = RealMarketFeature(
         ts=datetime.now(timezone.utc),

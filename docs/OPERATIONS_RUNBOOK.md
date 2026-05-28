@@ -109,7 +109,7 @@ uv run sis bot-preview
 ```
 
 `check-go-no-go` と `build-evidence-card` は補助reportとして残る。Bot前の現行判定は `phase-gate-review` を正本にする。
-`bot-preview` は read-only のHOLD判定だけを生成する。wallet、署名、exchange write APIは使わない。
+`bot-preview` は read-only のHOLD判定 artifact を実行時に生成する。wallet、署名、exchange write APIは使わない。`data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` が無い場合は未実装ではなく、まだ実行されていない可能性が高い。
 
 PR12 fresh read-only smoke path:
 
@@ -168,5 +168,6 @@ manual live smoke は標準運用手順に含めない。wallet / signing / exch
 
 - `phase-gate-review` が `phase2_entry_allowed=false` の間は、運用上の昇格完了と扱わない。ただし legacy artifact blocker が出ている場合は current Trade[XYZ] path と legacy path を分けて読む。
 - generated artifact が欠けている場合、推測で判断せず再生成する。
+- `READ_ONLY_GO` を production live trading ready と読まない。fee mode unknown、execution drift degraded、micro live public CLI 不在は別 gate として扱う。
 - micro live code path があることをもって live trading ready と解釈しない。
 - migration docs と legacy live evidence docs を混同しない。

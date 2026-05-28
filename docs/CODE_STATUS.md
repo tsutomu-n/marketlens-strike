@@ -32,7 +32,7 @@
 - migration 実装は完了している。
 - `src/sis/cli.py` は root Typer app registration と `main()` に近い構成へ分割済み。
 - Trade[XYZ] read-only artifacts は strict validation / diagnostics / phase gate に接続済み。
-- `bot-preview` は read-only HOLD decision と preview report を生成する。
+- `bot-preview` は実行時に read-only HOLD decision と preview report を生成する。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
 
@@ -58,6 +58,8 @@ PR-08:
 - public CLI からの micro live 実行 surface
 - production live trading
 - live order preview / 注文候補生成の正式 artifact surface
+- Trade[XYZ] `fee_mode` の銘柄別確定。現 PR12 artifact では fee mode unknown が残るため、read-only/paper と micro live readiness は分けて扱う。
+- side-specific depth は quote field と tracking gate に存在するが、collector quality gate には合算 depth の影響が残る。
 
 ## Verification
 

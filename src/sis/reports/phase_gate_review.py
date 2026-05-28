@@ -80,108 +80,37 @@ def _latest_path(pattern_root: Path, glob_pattern: str) -> Path | None:
     return paths[-1] if paths else None
 
 
-def _latest_recursive_path(pattern_root: Path, glob_pattern: str) -> Path | None:
-    paths = sorted(pattern_root.rglob(glob_pattern)) if pattern_root.exists() else []
-    return paths[-1] if paths else None
-
-
 def _read_only_collector_gate(data_dir: Path) -> dict[str, object]:
     trade_registry_path = data_dir / "registry/trade_xyz_instrument_registry.json"
     trade_summary_path = data_dir / "ops/trade_xyz_quote_collection_summary.json"
     trade_quote_path = _latest_path(data_dir / "raw/quotes/trade_xyz", "*.jsonl")
-    if trade_registry_path.exists() or trade_summary_path.exists() or trade_quote_path:
-        blockers: list[str] = []
-        if not trade_registry_path.exists():
-            blockers.append("missing_trade_xyz_registry")
-        if not trade_quote_path:
-            blockers.append("missing_trade_xyz_quote_window")
-        if not trade_summary_path.exists():
-            blockers.append("missing_trade_xyz_quote_collection_summary")
-        return {
-            "read_only_collector_gate_passed": not blockers,
-            "read_only_collector_blockers": blockers,
-            "latest_trade_xyz_registry_path": str(trade_registry_path)
-            if trade_registry_path.exists()
-            else None,
-            "latest_trade_xyz_quote_path": str(trade_quote_path) if trade_quote_path else None,
-            "latest_trade_xyz_summary_path": str(trade_summary_path)
-            if trade_summary_path.exists()
-            else None,
-            "latest_gtrade_backend_manifest_path": None,
-            "latest_gtrade_backend_status": None,
-            "latest_gtrade_backend_event_count": None,
-            "latest_gtrade_backend_reconnect_count": None,
-            "latest_gtrade_backend_deep_reorg_detected": None,
-            "latest_ostium_constraint_path": None,
-            "latest_ostium_constraint_status": None,
-            "latest_ostium_constraint_failures": [],
-            "latest_ostium_python_sdk_status": None,
-            "latest_ostium_builder_prices_artifact_path": None,
-        }
-
-    gtrade_manifest_path = _latest_recursive_path(
-        data_dir / "raw/sidecar/gtrade-backend/manifests",
-        "*.json",
-    )
-    ostium_constraints_path = _latest_path(data_dir / "ops", "ostium_constraints_*.json")
-    gtrade_manifest = safe_read_json_dict(gtrade_manifest_path)
-    ostium_constraints = safe_read_json_dict(ostium_constraints_path)
-
     blockers: list[str] = []
-    if not gtrade_manifest_path:
-        blockers.append("missing_gtrade_backend_ws_manifest")
-    elif gtrade_manifest.get("status") != "completed":
-        blockers.append("gtrade_backend_ws_manifest_not_completed")
-    if gtrade_manifest_path and not gtrade_manifest.get("backend_ws_path"):
-        blockers.append("missing_gtrade_backend_ws_path")
-    if gtrade_manifest_path and not gtrade_manifest.get("rest_snapshot_paths"):
-        blockers.append("missing_gtrade_rest_snapshot_paths")
-    if gtrade_manifest.get("deep_reorg_detected") is True and not gtrade_manifest.get(
-        "deep_reorg_refresh_paths"
-    ):
-        blockers.append("gtrade_deep_reorg_without_full_refresh")
-
-    if not ostium_constraints_path:
-        blockers.append("missing_ostium_constraint_artifact")
-    elif ostium_constraints.get("constraint_status") != "pass":
-        blockers.append("ostium_constraint_artifact_failed")
-    if ostium_constraints_path and not ostium_constraints.get("builder_prices_artifact"):
-        blockers.append("missing_ostium_builder_prices_artifact")
-    if ostium_constraints_path and not ostium_constraints.get("legacy_latest_prices_artifact"):
-        blockers.append("missing_ostium_legacy_latest_prices_artifact")
-    sdk_status = (ostium_constraints.get("python_sdk") or {}).get("status")
-    if ostium_constraints_path and sdk_status != "read_only_probe_passed":
-        blockers.append("ostium_python_sdk_read_only_probe_not_passed")
-    if ostium_constraints_path:
-        assets = ostium_constraints.get("assets")
-        if not isinstance(assets, list) or not assets:
-            blockers.append("missing_ostium_asset_constraints")
-        elif any(
-            not isinstance(item, dict) or not item.get("trading_hours_artifact") for item in assets
-        ):
-            blockers.append("missing_ostium_trading_hours_artifact")
-
+    if not trade_registry_path.exists():
+        blockers.append("missing_trade_xyz_registry")
+    if not trade_quote_path:
+        blockers.append("missing_trade_xyz_quote_window")
+    if not trade_summary_path.exists():
+        blockers.append("missing_trade_xyz_quote_collection_summary")
     return {
         "read_only_collector_gate_passed": not blockers,
         "read_only_collector_blockers": blockers,
-        "latest_gtrade_backend_manifest_path": (
-            str(gtrade_manifest_path) if gtrade_manifest_path is not None else None
-        ),
-        "latest_gtrade_backend_status": gtrade_manifest.get("status"),
-        "latest_gtrade_backend_event_count": gtrade_manifest.get("event_count"),
-        "latest_gtrade_backend_reconnect_count": gtrade_manifest.get("reconnect_count"),
-        "latest_gtrade_backend_deep_reorg_detected": gtrade_manifest.get("deep_reorg_detected"),
-        "latest_ostium_constraint_path": (
-            str(ostium_constraints_path) if ostium_constraints_path is not None else None
-        ),
-        "latest_ostium_constraint_status": ostium_constraints.get("constraint_status"),
-        "latest_ostium_constraint_failures": ostium_constraints.get("failures", []),
-        "latest_ostium_python_sdk_status": (ostium_constraints.get("python_sdk") or {}).get(
-            "status"
-        ),
-        "latest_ostium_builder_prices_artifact_path": (
-            (ostium_constraints.get("builder_prices_artifact") or {}).get("path")
-        ),
+        "latest_trade_xyz_registry_path": str(trade_registry_path)
+        if trade_registry_path.exists()
+        else None,
+        "latest_trade_xyz_quote_path": str(trade_quote_path) if trade_quote_path else None,
+        "latest_trade_xyz_summary_path": str(trade_summary_path)
+        if trade_summary_path.exists()
+        else None,
+        "latest_gtrade_backend_manifest_path": None,
+        "latest_gtrade_backend_status": None,
+        "latest_gtrade_backend_event_count": None,
+        "latest_gtrade_backend_reconnect_count": None,
+        "latest_gtrade_backend_deep_reorg_detected": None,
+        "latest_ostium_constraint_path": None,
+        "latest_ostium_constraint_status": None,
+        "latest_ostium_constraint_failures": [],
+        "latest_ostium_python_sdk_status": None,
+        "latest_ostium_builder_prices_artifact_path": None,
     }
 
 
@@ -200,27 +129,91 @@ def _load_stale_thresholds() -> dict[str, int]:
     }
 
 
+def _load_spread_thresholds() -> dict[str, float]:
+    try:
+        from sis.risk.halt_policy import load_halt_policy
+
+        policy = load_halt_policy()
+        spread_policy = (
+            policy.get("halt_policy", policy).get("spread", {}).get("max_spread_bps", {})
+        )
+    except FileNotFoundError:
+        spread_policy = {}
+    if not isinstance(spread_policy, dict):
+        spread_policy = {}
+    return {
+        str(key): float(value)
+        for key, value in spread_policy.items()
+        if isinstance(value, (int, float))
+    }
+
+
+def _spread_threshold_for_symbol(symbol: str, thresholds: dict[str, float]) -> float:
+    if symbol in thresholds:
+        return thresholds[symbol]
+    if symbol in {"SP500", "XYZ100", "SPY", "QQQ"}:
+        return thresholds.get("default_index", 12.0)
+    return thresholds.get("default_equity", 25.0)
+
+
+def _trade_xyz_diagnostic_healthy(
+    entry: dict, symbol: str, spread_thresholds: dict[str, float]
+) -> bool:
+    spread_p90 = entry.get("spread_p90_bps")
+    return (
+        entry.get("missing_mark_price_rate") == 0
+        and entry.get("missing_oracle_price_rate") == 0
+        and entry.get("missing_funding_rate") == 0
+        and entry.get("missing_open_interest_rate") == 0
+        and entry.get("stale_rate") == 0
+        and entry.get("l2_only_rate") == 0
+        and entry.get("fee_mode_unknown_rate") == 0
+        and isinstance(spread_p90, (int, float))
+        and spread_p90 <= _spread_threshold_for_symbol(symbol, spread_thresholds)
+    )
+
+
+def _trade_xyz_diagnostic_blockers(
+    diagnostics: list[dict], spread_thresholds: dict[str, float]
+) -> list[str]:
+    blockers: list[str] = []
+    for item in diagnostics:
+        symbol = str(item.get("symbol") or "")
+        entries = item.get("items")
+        if not item.get("available") or not isinstance(entries, list) or not entries:
+            blockers.append(f"{symbol}:diagnostics_unavailable")
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                blockers.append(f"{symbol}:diagnostics_malformed")
+                continue
+            spread_p90 = entry.get("spread_p90_bps")
+            spread_limit = _spread_threshold_for_symbol(symbol, spread_thresholds)
+            checks = {
+                "missing_mark_price_rate": entry.get("missing_mark_price_rate"),
+                "missing_oracle_price_rate": entry.get("missing_oracle_price_rate"),
+                "missing_funding_rate": entry.get("missing_funding_rate"),
+                "missing_open_interest_rate": entry.get("missing_open_interest_rate"),
+                "stale_rate": entry.get("stale_rate"),
+                "l2_only_rate": entry.get("l2_only_rate"),
+                "fee_mode_unknown_rate": entry.get("fee_mode_unknown_rate"),
+            }
+            for name, value in checks.items():
+                if value != 0:
+                    blockers.append(f"{symbol}:{name}={value}")
+            if not isinstance(spread_p90, (int, float)):
+                blockers.append(f"{symbol}:spread_p90_bps_missing")
+            elif spread_p90 > spread_limit:
+                blockers.append(f"{symbol}:spread_p90_bps={spread_p90}>limit={spread_limit}")
+    return blockers
+
+
 def _required_artifact_paths(summary: dict[str, object]) -> dict[str, str | None]:
-    if summary.get("latest_trade_xyz_quote_path") or summary.get("latest_trade_xyz_summary_path"):
-        artifact_keys = (
-            "latest_trade_xyz_registry_path",
-            "latest_trade_xyz_quote_path",
-            "latest_trade_xyz_summary_path",
-        )
-    else:
-        artifact_keys = (
-            "latest_manifest_path",
-            "latest_evidence_card_path",
-            "latest_execution_snapshot_summary_path",
-            "latest_execution_venue_comparison_summary_path",
-            "latest_execution_venue_diagnostics_summary_path",
-            "latest_execution_gap_history_summary_path",
-            "latest_execution_state_comparison_history_summary_path",
-            "latest_execution_snapshot_drift_history_summary_path",
-            "latest_execution_drift_overview_summary_path",
-            "latest_gtrade_backend_manifest_path",
-            "latest_ostium_constraint_path",
-        )
+    artifact_keys = (
+        "latest_trade_xyz_registry_path",
+        "latest_trade_xyz_quote_path",
+        "latest_trade_xyz_summary_path",
+    )
     paths: dict[str, str | None] = {}
     for key in artifact_keys:
         value = summary.get(key)
@@ -280,10 +273,11 @@ def _artifact_recovery_commands(artifact_names: list[str]) -> dict[str, list[str
             "uv run sis refresh-operations-artifacts"
         ],
         "latest_execution_drift_overview_summary_path": ["uv run sis refresh-operations-artifacts"],
-        "latest_gtrade_backend_manifest_path": [
-            "uv run sis collect-trade-xyz-quotes --no-normalize"
+        "latest_trade_xyz_registry_path": ["uv run sis probe trade-xyz"],
+        "latest_trade_xyz_quote_path": ["uv run sis collect-trade-xyz-quotes --no-normalize"],
+        "latest_trade_xyz_summary_path": [
+            "uv run sis collect-trade-xyz-quotes --write-summary --write-report"
         ],
-        "latest_ostium_constraint_path": ["uv run sis collect-trade-xyz-quotes --no-normalize"],
     }
     return {
         name: command_map.get(name, ["uv run sis refresh-operations-artifacts"])
@@ -551,21 +545,13 @@ def build_phase_gate_review(
 ) -> str:
     validation = validate_artifacts(data_dir, schema_root, strict=True)
     stale_thresholds = _load_stale_thresholds()
+    spread_thresholds = _load_spread_thresholds()
     prior_summary = safe_read_json_dict(summary_path)
     has_trade_xyz_artifacts = (
         (data_dir / "registry/trade_xyz_instrument_registry.json").exists()
         or (data_dir / "ops/trade_xyz_quote_collection_summary.json").exists()
         or _latest_path(data_dir / "raw/quotes/trade_xyz", "*.jsonl") is not None
     )
-    if not has_trade_xyz_artifacts and diagnostics_symbols == (
-        "SP500",
-        "XYZ100",
-        "NVDA",
-        "AAPL",
-        "MSFT",
-    ):
-        diagnostics_symbols = ("QQQ", "SPY", "XAU")
-
     diagnostics: list[dict] = []
     for symbol in diagnostics_symbols:
         items = build_quote_diagnostics(
@@ -574,13 +560,6 @@ def build_phase_gate_review(
             symbol=symbol,
             stale_thresholds_ms=stale_thresholds,
         )
-        if not items:
-            items = build_quote_diagnostics(
-                data_dir / "raw/quotes",
-                venue="gtrade",
-                symbol=symbol,
-                stale_thresholds_ms=stale_thresholds,
-            )
         diagnostics.append(
             {
                 "symbol": symbol,
@@ -631,10 +610,11 @@ def build_phase_gate_review(
             if item["available"]
             and item["items"]
             and all(
-                (entry.get("missing_mark_price_rate") == 0)
-                and (entry.get("missing_oracle_price_rate") == 0)
-                and (entry.get("missing_funding_rate") == 0)
-                and (entry.get("missing_open_interest_rate") == 0)
+                _trade_xyz_diagnostic_healthy(
+                    entry,
+                    str(item["symbol"]),
+                    spread_thresholds,
+                )
                 for entry in item["items"]
             )
         }
@@ -652,14 +632,19 @@ def build_phase_gate_review(
             decision = "NO_GO"
             individual_stock_decision = "disabled_index_only"
             index_only_decision = "blocked"
+        trade_xyz_blockers = _trade_xyz_diagnostic_blockers(diagnostics, spread_thresholds)
         venue_decisions = [
             {
                 "venue": "trade_xyz",
                 "decision": decision,
-                "main_blocker": None if decision != "NO_GO" else "trade_xyz_evidence_incomplete",
+                "main_blocker": None
+                if decision != "NO_GO"
+                else (
+                    trade_xyz_blockers[0] if trade_xyz_blockers else "trade_xyz_evidence_incomplete"
+                ),
             }
         ]
-        blockers = [] if decision != "NO_GO" else ["trade_xyz_evidence_incomplete"]
+        blockers = [] if decision != "NO_GO" else trade_xyz_blockers
         pr12_summary = safe_read_json_dict(data_dir / "ops/pr12_fresh_read_only_smoke_summary.json")
         pr12_observed_window = pr12_summary.get("observed_window_seconds")
         pr12_observed_window_ok = (
@@ -673,18 +658,17 @@ def build_phase_gate_review(
             and pr12_summary.get("next_action") == "none"
         )
         next_actions = [] if pr12_completed else ["run_pr12_fresh_read_only_smoke"]
-    elif not isinstance(decision, str):
-        if (
-            strict_validation_passed
-            and diagnostics_all_available
-            and collector_gate["read_only_collector_gate_passed"] is True
-        ):
-            decision = "READ_ONLY_GO"
-        else:
-            decision = "NO_GO"
-        individual_stock_decision = "unknown"
-        index_only_decision = "unknown"
     else:
+        decision = "NO_GO"
+        venue_decisions = [
+            {
+                "venue": "trade_xyz",
+                "decision": "NO_GO",
+                "main_blocker": "missing_trade_xyz_evidence",
+            }
+        ]
+        blockers = _as_str_list(collector_gate.get("read_only_collector_blockers"))
+        next_actions = ["collect_trade_xyz_read_only_evidence"]
         individual_stock_decision = "unknown"
         index_only_decision = "unknown"
     phase2_entry_allowed = bool(
@@ -1142,18 +1126,20 @@ def build_phase_gate_review(
 
     lines.extend(["", "## Diagnostics", ""])
     lines.append(
-        "| symbol | available | rows | tradable_rate | stale_rate | missing_mark_price_rate | missing_index_price_rate | spread_p90_bps |"
+        "| symbol | available | rows | tradable_rate | stale_rate | l2_only_rate | fee_mode_unknown_rate | missing_mark_price_rate | missing_index_price_rate | spread_p90_bps |"
     )
-    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
+    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
     for item in diagnostics:
         diagnostic = item["items"][0] if item["items"] else {}
         lines.append(
-            "| {symbol} | {available} | {rows} | {tradable_rate} | {stale_rate} | {missing_mark} | {missing_index} | {spread_p90} |".format(
+            "| {symbol} | {available} | {rows} | {tradable_rate} | {stale_rate} | {l2_only} | {fee_unknown} | {missing_mark} | {missing_index} | {spread_p90} |".format(
                 symbol=item["symbol"],
                 available=item["available"],
                 rows=diagnostic.get("rows", ""),
                 tradable_rate=diagnostic.get("tradable_rate", ""),
                 stale_rate=diagnostic.get("stale_rate", ""),
+                l2_only=diagnostic.get("l2_only_rate", ""),
+                fee_unknown=diagnostic.get("fee_mode_unknown_rate", ""),
                 missing_mark=diagnostic.get("missing_mark_price_rate", ""),
                 missing_index=diagnostic.get("missing_index_price_rate", ""),
                 spread_p90=diagnostic.get("spread_p90_bps", ""),
@@ -1246,7 +1232,7 @@ def build_phase_gate_review(
         lines.extend(
             [
                 "- recollect live evidence during the recommended window",
-                "- rerun diagnose-quotes for QQQ / SPY / XAU",
+                "- rerun diagnose-quotes for SP500 / XYZ100 / NVDA / AAPL / MSFT",
                 "- rerun validate-artifacts --strict",
                 "- rerun check-go-no-go and build-evidence-card",
             ]
@@ -1263,7 +1249,7 @@ def build_phase_gate_review(
         [
             "- If `missing_required_artifact_paths` is not empty, stop and regenerate the missing manifest or execution artifacts before continuing.",
             "- If `strict_validation_issue_count` is not `0`, stop and clear strict validation issues before considering Phase 2.",
-            "- If `diagnostics_all_available` is not `True`, stop and recollect quote diagnostics for QQQ / SPY / XAU.",
+            "- If `diagnostics_all_available` is not `True`, stop and recollect quote diagnostics for SP500 / XYZ100 / NVDA / AAPL / MSFT.",
             "- If `execution_comparison_all_registries_present` is not `True`, stop and inspect cross-venue registry coverage.",
             "- If `execution_drift_overview_status` is not `ok`, stop and resolve execution drift mismatches before considering Phase 2.",
             "- If `read_only_collector_gate_passed` is not `True`, stop and refresh Trade[XYZ] read-only artifacts with `collect-trade-xyz-quotes --write-summary --write-report` before considering Bot preview work.",

@@ -14,7 +14,7 @@ def _diff_bps(a: float | None, b: float | None) -> float | None:
 def build_tracking_record(
     feature: RealMarketFeature, quote: QuoteLog, policy: dict
 ) -> TrackingRecord:
-    mark_diff = _diff_bps(quote.mark_price or quote.mid_price, feature.close)
+    mark_diff = _diff_bps(quote.mark_price, feature.close)
     oracle_diff = _diff_bps(quote.oracle_price, feature.close)
     reasons: list[str] = []
 

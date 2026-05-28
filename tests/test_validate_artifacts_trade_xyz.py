@@ -46,6 +46,7 @@ def _write_trade_xyz_artifacts(data_dir: Path, *, omit: str | None = None) -> No
         "oracle_price": 100.0,
         "funding_rate": -0.00001,
         "open_interest_usd": 10000.0,
+        "fee_mode": "standard",
         "market_status": "open",
         "session_type": "unknown",
         "is_tradable": True,
@@ -89,3 +90,43 @@ def test_validate_artifacts_trade_xyz_strict_requires_funding(tmp_path) -> None:
     summary = validate_artifacts(tmp_path / "data", PROJECT_ROOT / "schemas", strict=True)
 
     assert any(issue.message == "TRADE_XYZ_STRICT_FUNDING_MISSING" for issue in summary.issues)
+
+
+def test_validate_artifacts_strict_rejects_legacy_only_artifacts(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    write_json(
+        data_dir / "registry/gtrade_instrument_registry.json",
+        [
+            {
+                "venue": "gtrade",
+                "canonical_symbol": "SPY",
+                "venue_symbol": "SPY/USD",
+                "asset_class": "index",
+                "pair_index": 86,
+                "api_readable": True,
+                "api_orderable": True,
+                "active": True,
+            }
+        ],
+    )
+    append_jsonl(
+        data_dir / "raw/quotes/gtrade/2026-05-27.jsonl",
+        {
+            "ts_client": datetime(2026, 5, 27, tzinfo=timezone.utc).isoformat(),
+            "venue": "gtrade",
+            "canonical_symbol": "SPY",
+            "venue_symbol": "SPY/USD",
+            "source": "test",
+            "raw_payload_sha256": "legacy",
+            "mark_price": 100.0,
+            "index_price": 100.0,
+            "market_status": "open",
+            "is_tradable": True,
+        },
+    )
+
+    summary = validate_artifacts(data_dir, PROJECT_ROOT / "schemas", strict=True)
+
+    assert any("Trade[XYZ] registry" in issue.message for issue in summary.issues)
+    assert any("Trade[XYZ] quote JSONL" in issue.message for issue in summary.issues)
+    assert any("Trade[XYZ] quote collection summary" in issue.message for issue in summary.issues)

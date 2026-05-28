@@ -33,7 +33,7 @@
 - `Trade[XYZ]` `perpDexs` fallback による HIP-3 `asset_id` 解決
 - `Trade[XYZ]` quote collection summary / report / strict artifact validation
 - `Trade[XYZ]` diagnostics / strict validation / phase gate cutover for read-only PR12
-- `bot-preview` による read-only HOLD decision / orders preview artifact
+- `bot-preview` による read-only HOLD decision / orders preview artifact 生成
 - `real_market` feature builder と free-source quality gating
 - `tracking` layer による real-market vs venue 判定
 - venue quality gate 付き paper fill / fee model / paper report
@@ -46,6 +46,7 @@
 - `micro_live` はコードと tests では存在するが、標準の operator CLI にはまだ exposed していない。
 - `collect-trade-xyz-quotes` は public CLI command として exposed している。
 - `data/` は git 管理外。再開時は artifact を再生成する。
+- `bot-preview` の `data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` は実行時生成 artifact。現 checkout に無い場合は `uv run sis bot-preview` で再生成する。
 - `ostium-python-sdk` は active dependency から削除済み。
 
 ## Verification Status
@@ -60,6 +61,8 @@
 - `uv run sis validate-artifacts --strict`: `checked_files=11`, `issues=0`
 - latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows
 - latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `next_actions=[]`
+- latest diagnostics show Trade[XYZ] `fee_mode_unknown_rate=1.0` for the PR12 core symbols, so this is not a micro-live readiness signal.
+- latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded; read-only/paper readiness and live execution readiness are separate surfaces.
 
 PR-08 専用確認:
 

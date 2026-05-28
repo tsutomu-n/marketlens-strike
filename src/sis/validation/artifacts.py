@@ -132,14 +132,10 @@ def validate_artifacts(
     quote_schema = _load_schema(
         schema_root, "quote_log_v2.schema.json" if strict else "quote_log_v1.schema.json"
     )
-    trade_strict = strict and (
-        (data_dir / "registry/trade_xyz_instrument_registry.json").exists()
-        or bool(_iter_files(str(data_dir / "raw/quotes/trade_xyz/*.jsonl")))
-        or (data_dir / "ops/trade_xyz_quote_collection_summary.json").exists()
-    )
+    trade_strict = strict
 
     registry_files = [data_dir / "registry/trade_xyz_instrument_registry.json"]
-    if not trade_strict:
+    if not strict:
         registry_files.extend(
             [
                 data_dir / "registry/gtrade_instrument_registry.json",
@@ -155,13 +151,14 @@ def validate_artifacts(
     if strict and not registry_exists:
         issues.append(
             ValidationIssue(
-                path=str(data_dir / "registry"), message="Missing required registry artifact"
+                path=str(data_dir / "registry/trade_xyz_instrument_registry.json"),
+                message="Missing required Trade[XYZ] registry artifact",
             )
         )
 
     trade_xyz_quote_files = _iter_files(str(data_dir / "raw/quotes/trade_xyz/*.jsonl"))
     quote_files = trade_xyz_quote_files
-    if not trade_strict:
+    if not strict:
         quote_files = (
             quote_files
             + _iter_files(str(data_dir / "raw/quotes/gtrade/*.jsonl"))
@@ -170,7 +167,8 @@ def validate_artifacts(
     if not quote_files and strict:
         issues.append(
             ValidationIssue(
-                path=str(data_dir / "raw/quotes"), message="No quote JSONL artifacts found"
+                path=str(data_dir / "raw/quotes/trade_xyz"),
+                message="No Trade[XYZ] quote JSONL artifacts found",
             )
         )
     for path in quote_files:

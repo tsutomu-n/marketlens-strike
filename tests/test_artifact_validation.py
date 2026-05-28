@@ -79,6 +79,57 @@ def _write_execution_summaries(root: Path) -> None:
         (ops / name).write_text(payload, encoding="utf-8")
 
 
+def _write_trade_xyz_strict_artifacts(root: Path) -> None:
+    registry = root / "registry/trade_xyz_instrument_registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        json.dumps(
+            [
+                {
+                    "venue": "trade_xyz",
+                    "canonical_symbol": "NVDA",
+                    "venue_symbol": "NVDA",
+                    "asset_class": "equity",
+                    "dex": "xyz",
+                    "coin": "xyz:NVDA",
+                    "asset_id": 110002,
+                    "api_readable": True,
+                    "api_orderable": True,
+                    "active": True,
+                    "notes": [],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    quote = root / "raw/quotes/trade_xyz/2026-05-27.jsonl"
+    quote.parent.mkdir(parents=True, exist_ok=True)
+    quote.write_text(
+        '{"ts_client":"2026-05-27T00:00:00+00:00","venue":"trade_xyz",'
+        '"canonical_symbol":"NVDA","venue_symbol":"NVDA","source":"test",'
+        '"raw_payload_sha256":"abc","coin":"xyz:NVDA","asset_id":110002,'
+        '"recv_ts_ms":1779840000000,"best_bid":100.0,"best_ask":100.1,'
+        '"mid_price":100.05,"spread_bps":10.0,"bid_depth_10bps_usd":1000.0,'
+        '"ask_depth_10bps_usd":1000.0,"mark_price":100.0,"oracle_price":100.0,'
+        '"funding_rate":0.0,"open_interest_usd":10000.0,"market_status":"open",'
+        '"session_type":"unknown","is_tradable":true,"block_reasons":[],'
+        '"venue_quality_score":1.0}\n',
+        encoding="utf-8",
+    )
+    summary = root / "ops/trade_xyz_quote_collection_summary.json"
+    summary.parent.mkdir(parents=True, exist_ok=True)
+    summary.write_text(
+        '{"venue":"trade_xyz","started_at":"2026-05-27T00:00:00+00:00",'
+        '"ended_at":"2026-05-27T00:01:00+00:00","duration_minutes":1,'
+        '"interval_seconds":60,"requested_symbols":["NVDA"],"collected_symbols":["NVDA"],'
+        '"row_count":1,"api_error_count":0,"per_symbol":{}}',
+        encoding="utf-8",
+    )
+    normalized = root / "normalized/quotes.parquet"
+    normalized.parent.mkdir(parents=True, exist_ok=True)
+    normalized.write_bytes(b"placeholder")
+
+
 def test_validate_artifacts_passes_with_valid_files(tmp_path) -> None:
     _write_registry(tmp_path / "data/registry/gtrade_instrument_registry.json", "gtrade")
     _write_registry(tmp_path / "data/registry/ostium_instrument_registry.json", "ostium")
@@ -96,9 +147,11 @@ def test_validate_artifacts_strict_flags_missing_artifacts(tmp_path) -> None:
     summary = validate_artifacts(tmp_path / "data", Path("schemas"), strict=True)
 
     assert summary.issues
-    assert any("Missing required registry artifact" in issue.message for issue in summary.issues)
     assert any(
-        "Missing required execution summary artifact" in issue.message for issue in summary.issues
+        "Missing required Trade[XYZ] registry artifact" in issue.message for issue in summary.issues
+    )
+    assert any(
+        "No Trade[XYZ] quote JSONL artifacts found" in issue.message for issue in summary.issues
     )
 
 
@@ -119,14 +172,10 @@ def test_validate_artifacts_checks_latest_evidence_card_only(tmp_path) -> None:
 
 
 def test_validate_artifacts_strict_passes_with_execution_summaries(tmp_path) -> None:
-    _write_registry(tmp_path / "data/registry/gtrade_instrument_registry.json", "gtrade")
-    _write_registry(tmp_path / "data/registry/ostium_instrument_registry.json", "ostium")
-    _write_quote(tmp_path / "data/raw/quotes/gtrade/2026-05-22.jsonl")
-    _write_backtest_metrics(tmp_path / "data/research/backtest_metrics.json")
-    _write_evidence_card(tmp_path / "data/evidence/evidence_card_20260522_000000.json")
+    _write_trade_xyz_strict_artifacts(tmp_path / "data")
     _write_execution_summaries(tmp_path / "data")
 
     summary = validate_artifacts(tmp_path / "data", Path("schemas"), strict=True)
 
     assert summary.issues == []
-    assert summary.checked_files == 12
+    assert summary.checked_files == 11

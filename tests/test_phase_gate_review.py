@@ -36,9 +36,106 @@ def _write_registry(path: Path, venue: str) -> None:
     )
 
 
+def _write_trade_xyz_phase_gate_artifacts(data_dir: Path) -> None:
+    symbols = ["SP500", "XYZ100", "NVDA", "AAPL", "MSFT"]
+    registry_path = data_dir / "registry/trade_xyz_instrument_registry.json"
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    registry_path.write_text(
+        json.dumps(
+            [
+                {
+                    "venue": "trade_xyz",
+                    "canonical_symbol": symbol,
+                    "venue_symbol": symbol,
+                    "asset_class": "index" if symbol in {"SP500", "XYZ100"} else "equity",
+                    "dex": "xyz",
+                    "coin": f"xyz:{symbol}",
+                    "asset_id": 110000 + idx,
+                    "api_readable": True,
+                    "api_orderable": True,
+                    "active": True,
+                    "notes": [],
+                }
+                for idx, symbol in enumerate(symbols)
+            ]
+        ),
+        encoding="utf-8",
+    )
+    quote_path = data_dir / "raw/quotes/trade_xyz/2026-05-27.jsonl"
+    quote_path.parent.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for idx, symbol in enumerate(symbols):
+        rows.append(
+            json.dumps(
+                {
+                    "ts_client": "2026-05-27T00:00:00+00:00",
+                    "venue": "trade_xyz",
+                    "canonical_symbol": symbol,
+                    "venue_symbol": symbol,
+                    "source": "test",
+                    "raw_payload_sha256": f"trade-{symbol}",
+                    "coin": f"xyz:{symbol}",
+                    "asset_id": 110000 + idx,
+                    "recv_ts_ms": 1779840000000,
+                    "source_ts_ms": 1779840000000,
+                    "best_bid": 100.0,
+                    "best_ask": 100.1,
+                    "mid_price": 100.05,
+                    "spread_bps": 5.0,
+                    "bid_depth_10bps_usd": 1000.0,
+                    "ask_depth_10bps_usd": 1000.0,
+                    "mark_price": 100.0,
+                    "oracle_price": 100.0,
+                    "index_price": 100.0,
+                    "funding_rate": 0.0,
+                    "open_interest_usd": 10000.0,
+                    "fee_mode": "standard",
+                    "market_status": "open",
+                    "session_type": "unknown",
+                    "is_tradable": True,
+                    "block_reasons": [],
+                    "venue_quality_score": 1.0,
+                }
+            )
+        )
+    quote_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    summary_path = data_dir / "ops/trade_xyz_quote_collection_summary.json"
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text(
+        json.dumps(
+            {
+                "venue": "trade_xyz",
+                "started_at": "2026-05-27T00:00:00+00:00",
+                "ended_at": "2026-05-27T01:00:00+00:00",
+                "duration_minutes": 60,
+                "interval_seconds": 60,
+                "requested_symbols": symbols,
+                "collected_symbols": symbols,
+                "row_count": len(symbols),
+                "api_error_count": 0,
+                "per_symbol": {symbol: {"rows": 1} for symbol in symbols},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "normalized").mkdir(parents=True, exist_ok=True)
+    (data_dir / "normalized/quotes.parquet").write_bytes(b"placeholder")
+    (data_dir / "ops/pr12_fresh_read_only_smoke_summary.json").write_text(
+        json.dumps(
+            {
+                "final_decision": "READ_ONLY_GO",
+                "observed_window_seconds": 3600,
+                "next_action": "none",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     data_dir = tmp_path / "data"
+    _write_trade_xyz_phase_gate_artifacts(data_dir)
     _write_registry(data_dir / "registry/gtrade_instrument_registry.json", "gtrade")
     _write_registry(data_dir / "registry/ostium_instrument_registry.json", "ostium")
 
@@ -307,18 +404,33 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert payload["strict_validation_issue_count"] == 0
     assert payload["checked_files"] >= 1
     assert payload["phase2_entry_allowed"] is True
-    assert payload["phase_gate_decision"] == "GO"
+    assert payload["phase_gate_decision"] == "READ_ONLY_GO"
     assert payload["phase_gate_reason"] == "decision_cleared_and_phase1_gate_complete"
     assert payload["phase_gate_strict_validation_passed"] is True
     assert payload["phase_gate_strict_validation_issue_count"] == 0
     assert payload["phase_gate_checked_files"] >= 1
     assert payload["read_only_collector_gate_passed"] is True
-    assert payload["latest_gtrade_backend_manifest_path"] == str(gtrade_backend_manifest_path)
-    assert payload["latest_ostium_constraint_path"] == str(ostium_constraints_path)
-    assert payload["latest_ostium_python_sdk_status"] == "read_only_probe_passed"
-    assert payload["latest_ostium_builder_prices_artifact_path"].endswith("r1_builder_prices.json")
-    assert payload["required_artifact_paths"]["latest_execution_snapshot_summary_path"] == str(
-        data_dir / "ops/execution_snapshot_summary.json"
+    assert payload["latest_trade_xyz_registry_path"] == str(
+        data_dir / "registry/trade_xyz_instrument_registry.json"
+    )
+    assert payload["latest_trade_xyz_quote_path"] == str(
+        data_dir / "raw/quotes/trade_xyz/2026-05-27.jsonl"
+    )
+    assert payload["latest_trade_xyz_summary_path"] == str(
+        data_dir / "ops/trade_xyz_quote_collection_summary.json"
+    )
+    assert payload["latest_gtrade_backend_manifest_path"] is None
+    assert payload["latest_ostium_constraint_path"] is None
+    assert payload["latest_ostium_python_sdk_status"] is None
+    assert payload["latest_ostium_builder_prices_artifact_path"] is None
+    assert payload["required_artifact_paths"]["latest_trade_xyz_registry_path"] == str(
+        data_dir / "registry/trade_xyz_instrument_registry.json"
+    )
+    assert payload["required_artifact_paths"]["latest_trade_xyz_quote_path"] == str(
+        data_dir / "raw/quotes/trade_xyz/2026-05-27.jsonl"
+    )
+    assert payload["required_artifact_paths"]["latest_trade_xyz_summary_path"] == str(
+        data_dir / "ops/trade_xyz_quote_collection_summary.json"
     )
     assert payload["missing_required_artifact_paths"] == []
     assert payload["artifact_recovery_commands"] == {}
@@ -380,7 +492,7 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert payload["phase_gate_review_report_path"] == str(out_path)
     assert payload["phase_gate_strict_validation_issues"] == []
     assert payload["latest_manifest_status"] == "completed"
-    assert payload["decision"] == "GO"
+    assert payload["decision"] == "READ_ONLY_GO"
     assert payload["diagnostics_all_available"] is True
     assert payload["execution_overall_status"] == "ok"
     assert payload["execution_venue_count"] == 2
@@ -442,6 +554,45 @@ def test_build_phase_gate_review_writes_summary_and_markdown(tmp_path, monkeypat
     assert "## Remediation Recommendations" in text
     assert "status: improving" in text
     assert "## Stop Conditions" in text
+
+
+def test_phase_gate_review_rejects_legacy_only_evidence(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    data_dir = tmp_path / "data"
+    _write_registry(data_dir / "registry/gtrade_instrument_registry.json", "gtrade")
+    raw_quote_path = data_dir / "raw/quotes/gtrade/2026-05-22.jsonl"
+    raw_quote_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_quote_path.write_text(
+        '{"ts_client":"2026-05-22T00:00:00+00:00","venue":"gtrade",'
+        '"canonical_symbol":"SPY","venue_symbol":"SPY/USD","mark_price":100.0,'
+        '"index_price":100.0,"spread_bps":2.0,"oracle_ts_ms":1779407999000,'
+        '"market_status":"open","is_tradable":true,"source":"test",'
+        '"raw_payload_sha256":"legacy"}\n',
+        encoding="utf-8",
+    )
+
+    summary_path = data_dir / "ops/phase_gate_review_summary.json"
+    text = build_phase_gate_review(
+        data_dir,
+        schema_root=PROJECT_ROOT / "schemas",
+        out_path=data_dir / "reports/phase_gate_review.md",
+        summary_path=summary_path,
+    )
+
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert "phase2_entry_allowed: False" in text
+    assert payload["phase_gate_decision"] == "NO_GO"
+    assert payload["phase2_entry_allowed"] is False
+    assert payload["diagnostics_symbols"] == ["SP500", "XYZ100", "NVDA", "AAPL", "MSFT"]
+    assert payload["read_only_collector_blockers"] == [
+        "missing_trade_xyz_registry",
+        "missing_trade_xyz_quote_window",
+        "missing_trade_xyz_quote_collection_summary",
+    ]
+    assert any(
+        issue["message"] == "Missing required Trade[XYZ] registry artifact"
+        for issue in payload["phase_gate_strict_validation_issues"]
+    )
 
 
 def test_phase_gate_normalizer_keeps_prefixed_validation_counts() -> None:

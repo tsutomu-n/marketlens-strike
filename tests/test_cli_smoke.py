@@ -138,13 +138,10 @@ def test_market_session_cli_for_qqq() -> None:
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
-def test_next_live_window_cli_for_xau() -> None:
+def test_next_live_window_cli_rejects_xau() -> None:
     result = runner.invoke(app, ["next-live-window", "--venue", "trade_xyz", "--symbol", "XAU"])
-    assert result.exit_code == 0
-    assert "symbol=XAU" in result.stdout
-    assert "calendar=TRADE_XYZ_COMMODITY" in result.stdout
-    assert "recommended_start_jst=" in result.stdout
-    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
+    assert result.exit_code != 0
+    assert "Unsupported symbol" in result.output
 
 
 def test_execution_venue_comparison_cli(tmp_path) -> None:
@@ -1822,7 +1819,7 @@ def test_phase_gate_review_cli(tmp_path, monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "Phase Gate Review" in result.stdout
-    assert "phase2_entry_allowed: True" in result.stdout
+    assert "phase2_entry_allowed: False" in result.stdout
     assert "execution_overall_status: ok" in result.stdout
     assert "execution_comparison_all_registries_present: True" in result.stdout
     assert "execution_diagnostics_status: degraded" in result.stdout
@@ -1833,10 +1830,16 @@ def test_phase_gate_review_cli(tmp_path, monkeypatch) -> None:
     assert "execution_snapshot_drift_latest_status_match: True" in result.stdout
     assert "execution_snapshot_drift_mismatching_snapshot_count: 1" in result.stdout
     assert "## Required Artifacts" in result.stdout
-    assert "missing_required_artifact_paths: none" in result.stdout
+    assert "missing_required_artifact_paths:" in result.stdout
+    assert "latest_trade_xyz_registry_path" in result.stdout
+    assert "latest_trade_xyz_quote_path" in result.stdout
+    assert "latest_trade_xyz_summary_path" in result.stdout
     assert "## Recovery Commands" in result.stdout
-    assert "recovery_commands: none" in result.stdout
+    assert "`uv run sis probe trade-xyz`" in result.stdout
+    assert "`uv run sis collect-trade-xyz-quotes --write-summary --write-report`" in result.stdout
     assert "## Remediation Order" in result.stdout
+    assert "priority_1: missing_required_artifacts" in result.stdout
+    assert "priority_2: strict_validation_failed" in result.stdout
     assert "priority_4: execution_drift_unresolved" in result.stdout
     assert "## Remediation Success Criteria" in result.stdout
     assert "execution_drift_overview_status == ok" in result.stdout
