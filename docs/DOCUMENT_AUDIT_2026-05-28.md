@@ -4,13 +4,14 @@
 
 ## 結論
 
-current docs の正本は次の 5 本に寄せる。
+current docs の正本は次の 6 本に寄せる。
 
 1. `docs/CURRENT_STATE.md`
 2. `docs/CODE_STATUS.md`
 3. `docs/OPERATIONS_RUNBOOK.md`
 4. `docs/ARCHITECTURE_AND_PHASES.md`
-5. `docs/DOCUMENT_AUDIT_2026-05-28.md`
+5. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
+6. `docs/DOCUMENT_AUDIT_2026-05-28.md`
 
 `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` は「実装済み計画 + 実装結果」として残す。今後の実行 plan としては読まない。
 
@@ -70,6 +71,7 @@ Trade[XYZ] target fee fields:
 | `docs/CODE_STATUS.md` | current | code surface と tests の実装状態 | PR/P2 status と tests が一致する |
 | `docs/OPERATIONS_RUNBOOK.md` | current | operator が再生成するための手順 | current CLI に存在しない command を標準手順として出さない |
 | `docs/ARCHITECTURE_AND_PHASES.md` | current, minor risk | 大枠は code truth と一致。詳細数値は持たない | legacy / Trade[XYZ] / micro live boundary が崩れていない |
+| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | current | 壊れ方単位の責任境界。P2 blocker と live-readiness blocker を分離済み | `READ_ONLY_GO`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6` を current truth として扱う |
 | `docs/XNYS_MARKET_CALENDAR.md` | current, scoped | underlying session の説明として有効 | active XAU surface と混同しない |
 
 ### Current But Historical-Result Oriented
@@ -77,7 +79,7 @@ Trade[XYZ] target fee fields:
 | file | status | 理由 | 完了条件 |
 |---|---|---|---|
 | `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | implemented-plan | P2-00〜P2-05 の作業記録として有用。冒頭に current status を追加済み | 今後の未実装 plan と誤読されない |
-| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | design reference | 壊れ方単位の判断軸として有用。ただし一部の例は実装前 state | current fact ではなく failure-mode map として読む |
+| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | historical design reference | 壊れ方単位の判断軸として有用。ただし一部の例は実装前 state。2026-05-28 版へ superseded 済み | current fact ではなく historical failure-mode design として読む |
 | `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | historical audit | P2 gate restore 前の棚卸し。superseded 表示済み | current status として引用しない |
 | `docs/DOCUMENT_AUDIT_2026-05-27.md` | historical audit | PR12 時点の docs audit。superseded 表示済み | current audit は本ファイルを読む |
 | `docs/DOCUMENT_AUDIT_2026-05-26.md` | old snapshot | すでに superseded 表示あり | archive へ移すか、snapshot としてだけ残す |
@@ -137,7 +139,7 @@ docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md
 
 ### 2. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md`
 
-作り直し候補:
+作り直し済み:
 
 ```text
 docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md
@@ -154,6 +156,10 @@ docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md
 - resolved / active / deferred を FD ごとに分ける。
 - `fee_mode_unknown_rate` は regression check へ移す。
 - `execution_drift_classifications` を live-readiness failure mode として入れる。
+
+現在状態:
+
+- `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` に反映済み。
 
 ### 3. Legacy read-only collector docs 3 本
 
@@ -200,9 +206,9 @@ Current guard:
 - `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md` に live-readiness blocker を明記。
 - `phase_gate_review_summary.json` に `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6` がある。
 
-Better:
+Current guard:
 
-- `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` を作り、live-readiness blocker を failure mode として正本化する。
+- `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` で live-readiness blocker を failure mode として正本化済み。
 
 ### R2. PR12 long-window artifact と latest quote artifact の混同
 
@@ -265,11 +271,14 @@ Better:
 
 優先順:
 
-1. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` を新規作成し、FD state を resolved / active / deferred に更新する。
-2. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` を新規作成し、2026-05-27 audit を current status から外す。
-3. legacy read-only collector docs 3 本を `docs/archive/legacy_read_only_collectors_2026-05-28/` へ移す。
-4. Alpaca live credentials smoke の operator doc を追加する。ただし secrets は repo に書かない。
-5. `data/reports/weekly_strategy_review.md` が old symbol を出す理由を調べ、generated report の current symbol universe と legacy history を分ける。
+1. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` を新規作成し、2026-05-27 audit を current status から外す。
+2. legacy read-only collector docs 3 本を `docs/archive/legacy_read_only_collectors_2026-05-28/` へ移す。
+3. Alpaca live credentials smoke の operator doc を追加する。ただし secrets は repo に書かない。
+4. `data/reports/weekly_strategy_review.md` が old symbol を出す理由を調べ、generated report の current symbol universe と legacy history を分ける。
+
+完了済み:
+
+- `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` を新規作成し、FD state を resolved / active / deferred に更新した。
 
 ## Verification
 

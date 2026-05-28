@@ -1,5 +1,7 @@
 # Failure Mode Responsibility Map 2026-05-27
 
+> Superseded for current-state use: 2026-05-28 時点の current map は `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` を読む。この文書は failure-mode 分解の設計 reference として残す。
+
 この文書は `marketlens-strike` を機能単位ではなく、壊れ方単位で読むための整理メモです。
 
 ## 結論
@@ -577,4 +579,3 @@ uv run sis collect-trade-xyz-quotes --dry-run
 - `docs/OPERATIONS_RUNBOOK.md`: 再生成と運用手順。
 - `docs/CODE_STATUS.md`: PR / implementation status の入口。
 - この文書: 壊れ方を基準に、責任境界と止める条件を読むための整理図。
-
