@@ -27,6 +27,7 @@ def _write_report(path: Path, summary: dict[str, object]) -> None:
         "# Alpaca Live Smoke",
         "",
         f"- status: {summary.get('status')}",
+        f"- provider_connectivity_status: {summary.get('provider_connectivity_status')}",
         f"- symbol: {summary.get('symbol')}",
         f"- timeframe: {summary.get('timeframe')}",
         f"- feed: {summary.get('feed')}",
@@ -106,6 +107,7 @@ def run_alpaca_live_smoke(
         )
         summary: dict[str, object] = {
             "status": "pass" if not reasons else "blocked",
+            "provider_connectivity_status": "pass",
             "provider": "alpaca",
             "symbol": symbol,
             "timeframe": timeframe,
@@ -131,6 +133,7 @@ def run_alpaca_live_smoke(
     except AlpacaProviderUnavailable as exc:
         summary = {
             "status": "failed",
+            "provider_connectivity_status": "failed",
             "provider": "alpaca",
             "symbol": symbol,
             "timeframe": timeframe,
