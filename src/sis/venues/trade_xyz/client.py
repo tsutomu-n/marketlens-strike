@@ -4,11 +4,21 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 
 class TradeXyzApiError(RuntimeError):
     pass
+
+
+def _retryable_info_exception(exc: BaseException) -> bool:
+    if isinstance(exc, httpx.TimeoutException | httpx.TransportError):
+        return True
+    return (
+        isinstance(exc, TradeXyzApiError)
+        and bool(exc.args)
+        and str(exc.args[0]).startswith(("info endpoint failed: 429", "info endpoint failed: 5"))
+    )
 
 
 @dataclass(frozen=True)
@@ -38,9 +48,17 @@ class TradeXyzClient:
     def __exit__(self, *_exc: object) -> None:
         self.close()
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.25, min=0.25, max=2.0))
+    @retry(
+        retry=retry_if_exception(_retryable_info_exception),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=0.25, min=0.25, max=2.0),
+        reraise=True,
+    )
     def post_info(self, payload: dict[str, Any]) -> Any:
-        response = self._client.post("/info", json=payload)
+        try:
+            response = self._client.post("/info", json=payload)
+        except (httpx.TimeoutException, httpx.TransportError):
+            raise
         if response.status_code >= 400:
             raise TradeXyzApiError(
                 f"info endpoint failed: {response.status_code} {response.text[:500]}"
@@ -60,8 +78,8 @@ class TradeXyzClient:
             raise TradeXyzApiError(f"clearinghouseState returned non-object: {type(data).__name__}")
         return data
 
-    def open_orders(self, user: str) -> list[dict[str, Any]]:
-        data = self.post_info({"type": "openOrders", "user": user})
+    def open_orders(self, user: str, *, dex: str | None = None) -> list[dict[str, Any]]:
+        data = self.post_info({"type": "openOrders", "user": user, "dex": dex or self.config.dex})
         if not isinstance(data, list):
             raise TradeXyzApiError(f"openOrders returned non-list: {type(data).__name__}")
         return [row for row in data if isinstance(row, dict)]

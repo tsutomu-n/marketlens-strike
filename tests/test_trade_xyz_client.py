@@ -50,7 +50,7 @@ def test_trade_xyz_client_read_only_execution_state_methods() -> None:
 
     assert requests == [
         {"type": "clearinghouseState", "user": "0xabc"},
-        {"type": "openOrders", "user": "0xabc"},
+        {"type": "openOrders", "user": "0xabc", "dex": "xyz"},
         {"type": "userFills", "user": "0xabc"},
         {
             "type": "userFillsByTime",
@@ -80,3 +80,28 @@ def test_trade_xyz_client_order_status_requires_identifier() -> None:
             client.order_status(user="0xabc")
     finally:
         client.close()
+
+
+def test_trade_xyz_client_does_not_retry_non_retryable_4xx() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        _ = request
+        return httpx.Response(400, text="bad request")
+
+    client = TradeXyzClient(
+        TradeXyzClientConfig(
+            base_url="https://example.test",
+            transport=httpx.MockTransport(handler),
+        )
+    )
+
+    try:
+        with pytest.raises(TradeXyzApiError, match="info endpoint failed: 400"):
+            client.post_info({"type": "openOrders", "user": "0xabc"})
+    finally:
+        client.close()
+
+    assert calls == 1

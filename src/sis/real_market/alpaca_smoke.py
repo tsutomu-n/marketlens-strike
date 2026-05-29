@@ -4,11 +4,13 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sis.real_market.providers.alpaca import (
     AlpacaNoBarsReturned,
     AlpacaProviderUnavailable,
     fetch_alpaca_bars,
+    fetch_alpaca_latest_bar,
 )
 from sis.real_market.quality import estimate_source_confidence, live_suitability_reasons
 from sis.storage.jsonl_store import write_json
@@ -35,8 +37,10 @@ def _write_report(path: Path, summary: dict[str, object]) -> None:
         f"- data_availability_status: {summary.get('data_availability_status')}",
         f"- symbol: {summary.get('symbol')}",
         f"- timeframe: {summary.get('timeframe')}",
+        f"- effective_timeframe: {summary.get('effective_timeframe')}",
         f"- feed: {summary.get('feed')}",
         f"- requested_window: {summary.get('requested_window')}",
+        f"- request_endpoint: {summary.get('request_endpoint')}",
         f"- start: {summary.get('start')}",
         f"- end: {summary.get('end')}",
         f"- bar_count: {summary.get('bar_count')}",
@@ -82,14 +86,14 @@ def _market_session(ts: datetime, *, requested_window: str) -> str:
     if requested_window != "latest":
         return "historical_window"
     aware = ts if ts.tzinfo is not None else ts.replace(tzinfo=timezone.utc)
-    utc_ts = aware.astimezone(timezone.utc)
-    minutes = utc_ts.hour * 60 + utc_ts.minute
-    is_weekday = utc_ts.weekday() < 5
-    regular_open_utc_minutes = 13 * 60 + 30
-    regular_close_utc_minutes = 20 * 60
-    if is_weekday and regular_open_utc_minutes <= minutes <= regular_close_utc_minutes:
-        return "us_equity_regular_utc_window"
-    return "outside_us_equity_regular_utc_window"
+    eastern_ts = aware.astimezone(ZoneInfo("America/New_York"))
+    minutes = eastern_ts.hour * 60 + eastern_ts.minute
+    is_weekday = eastern_ts.weekday() < 5
+    regular_open_minutes = 9 * 60 + 30
+    regular_close_minutes = 16 * 60
+    if is_weekday and regular_open_minutes <= minutes <= regular_close_minutes:
+        return "us_equity_regular_et_window"
+    return "outside_us_equity_regular_et_window"
 
 
 def _source_confidence_reason(
@@ -127,8 +131,25 @@ def run_alpaca_live_smoke(
     summary_path = _summary_path(data_dir)
     report_path = _report_path(data_dir)
     requested_window = _requested_window(start, end)
+    request_endpoint = "latest_bars" if requested_window == "latest" else "historical_bars"
     try:
-        if opener is None:
+        if requested_window == "latest" and opener is None:
+            bars = fetch_alpaca_latest_bar(
+                symbol=symbol,
+                feed=feed,
+                timeout=timeout,
+                raw_payload_path=raw_path,
+            )
+        elif requested_window == "latest":
+            assert opener is not None
+            bars = fetch_alpaca_latest_bar(
+                symbol=symbol,
+                feed=feed,
+                timeout=timeout,
+                raw_payload_path=raw_path,
+                opener=opener,
+            )
+        elif opener is None:
             bars = fetch_alpaca_bars(
                 symbol=symbol,
                 timeframe=timeframe,
@@ -172,8 +193,10 @@ def run_alpaca_live_smoke(
             "provider": "alpaca",
             "symbol": symbol,
             "timeframe": timeframe,
+            "effective_timeframe": latest.timeframe,
             "feed": feed,
             "requested_window": requested_window,
+            "request_endpoint": request_endpoint,
             "start": start.isoformat() if start is not None else None,
             "end": end.isoformat() if end is not None else None,
             "limit": max(1, limit),
@@ -204,8 +227,10 @@ def run_alpaca_live_smoke(
             "provider": "alpaca",
             "symbol": symbol,
             "timeframe": timeframe,
+            "effective_timeframe": "1m" if requested_window == "latest" else timeframe,
             "feed": feed,
             "requested_window": requested_window,
+            "request_endpoint": request_endpoint,
             "start": start.isoformat() if start is not None else None,
             "end": end.isoformat() if end is not None else None,
             "limit": max(1, limit),
@@ -235,8 +260,10 @@ def run_alpaca_live_smoke(
             "provider": "alpaca",
             "symbol": symbol,
             "timeframe": timeframe,
+            "effective_timeframe": "1m" if requested_window == "latest" else timeframe,
             "feed": feed,
             "requested_window": requested_window,
+            "request_endpoint": request_endpoint,
             "start": start.isoformat() if start is not None else None,
             "end": end.isoformat() if end is not None else None,
             "limit": max(1, limit),

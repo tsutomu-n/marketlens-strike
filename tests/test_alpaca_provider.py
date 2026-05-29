@@ -9,6 +9,7 @@ from sis.real_market.providers.alpaca import (
     AlpacaNoBarsReturned,
     AlpacaProviderUnavailable,
     fetch_alpaca_bars,
+    fetch_alpaca_latest_bar,
 )
 from sis.real_market.alpaca_smoke import run_alpaca_live_smoke
 
@@ -140,6 +141,49 @@ def test_alpaca_provider_maps_bars_and_writes_raw_payload(tmp_path) -> None:
     assert raw_payload["row_count"] == 1
 
 
+def test_alpaca_provider_fetches_latest_bar_endpoint(tmp_path) -> None:
+    captured = {}
+
+    def opener(request, *, timeout: float):
+        captured["url"] = request.full_url
+        captured["timeout"] = timeout
+        return _Response(
+            {
+                "bars": {
+                    "NVDA": {
+                        "t": "2026-05-26T14:00:00Z",
+                        "o": 100.0,
+                        "h": 101.0,
+                        "l": 99.5,
+                        "c": 100.5,
+                        "v": 12345,
+                    }
+                }
+            }
+        )
+
+    raw_path = tmp_path / "raw/alpaca/NVDA_latest.json"
+    bars = fetch_alpaca_latest_bar(
+        symbol="NVDA",
+        feed="iex",
+        api_key="key",
+        api_secret="secret",
+        opener=opener,
+        raw_payload_path=raw_path,
+    )
+
+    assert len(bars) == 1
+    assert bars[0].timeframe == "1m"
+    assert bars[0].ts_start.isoformat() == "2026-05-26T14:00:00+00:00"
+    assert bars[0].ts_end.isoformat() == "2026-05-26T14:01:00+00:00"
+    assert "/v2/stocks/bars/latest?" in str(captured["url"])
+    assert "symbols=NVDA" in str(captured["url"])
+    assert "feed=iex" in str(captured["url"])
+    raw_payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    assert raw_payload["timeframe"] == "1m"
+    assert raw_payload["row_count"] == 1
+
+
 def test_alpaca_provider_raises_no_bars_for_empty_response() -> None:
     def opener(request, *, timeout: float):
         _ = (request, timeout)
@@ -191,7 +235,8 @@ def test_alpaca_live_smoke_blocks_empty_bars_as_data_availability(tmp_path, monk
     monkeypatch.setenv("APCA_API_SECRET_KEY", "secret")
 
     def opener(request, *, timeout: float):
-        _ = (request, timeout)
+        assert "/v2/stocks/bars/latest?" in request.full_url
+        _ = timeout
         return _Response({"bars": {"NVDA": []}})
 
     summary = run_alpaca_live_smoke(
@@ -207,6 +252,8 @@ def test_alpaca_live_smoke_blocks_empty_bars_as_data_availability(tmp_path, monk
     assert summary["error_class"] == "AlpacaNoBarsReturned"
     assert summary["live_suitability_reasons"] == ["BLOCK_ALPACA_NO_BARS"]
     assert summary["requested_window"] == "latest"
+    assert summary["request_endpoint"] == "latest_bars"
+    assert summary["effective_timeframe"] == "1m"
     assert summary["latest_bar_ts"] is None
     assert summary["market_session"] == "unknown"
     assert "no_bars" in str(summary["source_confidence_reason"])
@@ -220,7 +267,8 @@ def test_alpaca_live_smoke_passes_and_writes_artifacts(tmp_path, monkeypatch) ->
     monkeypatch.setenv("APCA_API_SECRET_KEY", "secret")
 
     def opener(request, *, timeout: float):
-        _ = (request, timeout)
+        assert "/v2/stocks/bars?" in request.full_url
+        _ = timeout
         return _Response(
             {
                 "bars": {
@@ -257,6 +305,8 @@ def test_alpaca_live_smoke_passes_and_writes_artifacts(tmp_path, monkeypatch) ->
     assert summary["provider"] == "alpaca"
     assert summary["feed"] == "iex"
     assert summary["requested_window"] == "bounded"
+    assert summary["request_endpoint"] == "historical_bars"
+    assert summary["effective_timeframe"] == "15m"
     assert summary["latest_bar_ts"] == "2026-05-26T14:15:00+00:00"
     assert summary["latest_ts_start"] == "2026-05-26T14:00:00+00:00"
     assert summary["latest_ts_end"] == "2026-05-26T14:15:00+00:00"
@@ -279,20 +329,19 @@ def test_alpaca_live_smoke_blocks_low_source_confidence(tmp_path, monkeypatch) -
     monkeypatch.setenv("APCA_API_SECRET_KEY", "secret")
 
     def opener(request, *, timeout: float):
-        _ = (request, timeout)
+        assert "/v2/stocks/bars/latest?" in request.full_url
+        _ = timeout
         return _Response(
             {
                 "bars": {
-                    "NVDA": [
-                        {
-                            "t": "2026-05-26T14:00:00Z",
-                            "o": 100.0,
-                            "h": 101.0,
-                            "l": 99.5,
-                            "c": 100.5,
-                            "v": 12345,
-                        }
-                    ]
+                    "NVDA": {
+                        "t": "2026-05-26T14:14:00Z",
+                        "o": 100.0,
+                        "h": 101.0,
+                        "l": 99.5,
+                        "c": 100.5,
+                        "v": 12345,
+                    }
                 }
             }
         )
@@ -311,9 +360,11 @@ def test_alpaca_live_smoke_blocks_low_source_confidence(tmp_path, monkeypatch) -
     assert summary["error_class"] == "AlpacaLiveSuitabilityBlocked"
     assert summary["live_suitability_reasons"] == ["BLOCK_LOW_SOURCE_CONFIDENCE"]
     assert summary["requested_window"] == "latest"
+    assert summary["request_endpoint"] == "latest_bars"
+    assert summary["effective_timeframe"] == "1m"
     assert summary["latest_bar_ts"] == "2026-05-26T14:15:00+00:00"
     assert "blocked: score=" in str(summary["source_confidence_reason"])
-    assert "market_session=us_equity_regular_utc_window" in str(summary["source_confidence_reason"])
+    assert "market_session=us_equity_regular_et_window" in str(summary["source_confidence_reason"])
     report = (tmp_path / "reports/alpaca_live_smoke.md").read_text(encoding="utf-8")
     assert "status: blocked" in report
     assert "BLOCK_LOW_SOURCE_CONFIDENCE" in report
