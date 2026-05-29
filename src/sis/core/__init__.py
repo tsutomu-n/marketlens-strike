@@ -1,13 +1,14 @@
 from sis.core.context import DecisionContext
 from sis.core.decision import DecisionRecord, RiskDecision, StrategyDecision
 from sis.core.execution_plan import ExecutionPlan, build_execution_plan
-from sis.core.strategy import ResearchSignalStrategy, Strategy
+from sis.core.strategy import ResearchSignalStrategy, SignalPassthroughStrategy, Strategy
 
 __all__ = [
     "DecisionContext",
     "DecisionRecord",
     "ExecutionPlan",
     "ResearchSignalStrategy",
+    "SignalPassthroughStrategy",
     "RiskDecision",
     "Strategy",
     "StrategyDecision",

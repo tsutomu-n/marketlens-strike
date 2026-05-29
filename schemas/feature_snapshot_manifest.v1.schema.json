@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "feature_snapshot_id",
+    "input_data_snapshot_id",
+    "feature_panel_path",
+    "feature_version",
+    "feature_build_config_hash"
+  ],
+  "properties": {
+    "schema_version": { "const": "feature_snapshot_manifest.v1" }
+  }
+}

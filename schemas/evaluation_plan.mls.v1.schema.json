@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "evaluation_plan_id",
+    "target_venue",
+    "split_method",
+    "label_horizon_minutes",
+    "purge_minutes",
+    "embargo_minutes",
+    "era_unit"
+  ],
+  "properties": {
+    "schema_version": { "const": "evaluation_plan.mls.v1" },
+    "target_venue": { "const": "trade_xyz" }
+  }
+}

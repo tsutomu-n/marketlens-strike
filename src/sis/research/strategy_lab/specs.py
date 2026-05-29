@@ -61,7 +61,9 @@ class StrategyExperimentSpec(BaseModel):
             if not str(getattr(self, name)).strip():
                 raise ValueError(f"{name} must be non-empty")
         if "live_ready_claim" in self.forbidden_claims:
-            raise ValueError("live_ready_claim is not an allowed claim name; use live_ready_claimed")
+            raise ValueError(
+                "live_ready_claim is not an allowed claim name; use live_ready_claimed"
+            )
         missing = set(DEFAULT_FORBIDDEN_CLAIMS).difference(self.forbidden_claims)
         if missing:
             raise ValueError(f"forbidden_claims missing: {sorted(missing)}")

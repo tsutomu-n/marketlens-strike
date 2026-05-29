@@ -10,6 +10,7 @@ from loguru import logger
 from sis.paper.fills import PaperFill
 from sis.paper.portfolio import PaperPosition
 from sis.paper.report import build_daily_paper_report
+from sis.paper.runner import run_paper_from_intents
 from sis.settings import get_settings
 from sis.state.store import StateStore
 
@@ -57,6 +58,36 @@ def register_paper_commands(
         typer.echo(f"fills={summary.fills_count}")
         typer.echo(f"open_positions={summary.open_positions}")
         typer.echo(f"realized_pnl={summary.realized_pnl}")
+        for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
+            typer.echo(f"recommended_read_order_{index}={item}")
+
+    @app.command("paper-from-intents")
+    def paper_from_intents_cmd(
+        intents_path: Path = typer.Option(
+            Path("data/bot/paper_intent_preview.json"),
+            "--intents-path",
+            help="PaperIntentPreview JSON path.",
+        ),
+        state_path: Path | None = typer.Option(
+            None,
+            "--state-path",
+            help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        summary = run_paper_from_intents(
+            settings.data_dir,
+            intents_path=intents_path,
+            state_path=state_path,
+        )
+        logger.info("written: {}", summary.orders_path)
+        logger.info("written: {}", summary.fills_path)
+        logger.info("written: {}", summary.positions_path)
+        logger.info("written: {}", summary.observation_ledger_path)
+        typer.echo(f"orders={summary.orders_count}")
+        typer.echo(f"fills={summary.fills_count}")
+        typer.echo(f"blocked={summary.blocked_count}")
+        typer.echo(f"observation_ledger_path={summary.observation_ledger_path}")
         for index, item in enumerate(_recommended_read_order(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
 

@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "signal_id",
+    "strategy_id",
+    "ts_signal",
+    "execution_venue",
+    "execution_symbol",
+    "real_market_symbol",
+    "side",
+    "timeframe"
+  ],
+  "properties": {
+    "schema_version": { "const": "strategy_signal.v1" },
+    "execution_venue": { "const": "trade_xyz" }
+  }
+}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 from typing import Callable
 
@@ -10,12 +11,15 @@ import yaml
 
 from sis.backtest.bridge import run_backtest_bridge_with_decisions
 from sis.paper.broker import PaperBroker
+from sis.core.context import DecisionContext
+from sis.core.decision import DecisionRecord, RiskDecision, StrategyDecision
 from sis.core.execution_plan import ExecutionPlan
 from sis.paper.fills import PaperFill, write_fills_parquet
 from sis.paper.orders import PaperOrder, write_orders_parquet
 from sis.paper.portfolio import PaperPortfolio, PaperPosition, write_positions_parquet
 from sis.paper.report import build_daily_paper_report
 from sis.risk.halt_policy import load_halt_policy
+from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
     execution_comparison_flat_fields,
@@ -53,6 +57,17 @@ class PaperRunSummary:
     positions_path: Path
     daily_pnl_path: Path
     report_path: Path
+
+
+@dataclass(frozen=True)
+class PaperFromIntentsSummary:
+    orders_count: int
+    fills_count: int
+    blocked_count: int
+    orders_path: Path
+    fills_path: Path
+    positions_path: Path
+    observation_ledger_path: Path
 
 
 def _read_json_dict(path: Path) -> dict:
@@ -93,6 +108,192 @@ def _build_quote_lookup(quotes: pl.DataFrame) -> dict[tuple[str, str, str], dict
         ts_key = ts.isoformat() if isinstance(ts, datetime) else str(ts)
         lookup[(str(row["venue"]), str(row["canonical_symbol"]).upper(), ts_key)] = row
     return lookup
+
+
+def _latest_quote_by_symbol(quotes: pl.DataFrame) -> dict[tuple[str, str], dict]:
+    latest: dict[tuple[str, str], dict] = {}
+    for row in quotes.sort("ts_client").to_dicts():
+        latest[(str(row["venue"]), str(row["canonical_symbol"]).upper())] = row
+    return latest
+
+
+def _load_paper_intents(path: Path) -> list[PaperIntentPreview]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rows = payload if isinstance(payload, list) else [payload]
+    return [PaperIntentPreview.model_validate(row) for row in rows]
+
+
+def _action_for_intent(intent: PaperIntentPreview) -> str:
+    if intent.action == "skip" or intent.side == "none":
+        return "skip"
+    if intent.action == "enter":
+        return "enter_long" if intent.side == "long" else "enter_short"
+    if intent.action == "exit":
+        return "exit_long" if intent.side == "long" else "exit_short"
+    if intent.action == "reduce":
+        return "exit_long" if intent.side == "long" else "exit_short"
+    return "skip"
+
+
+def _write_observation(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
+
+
+def run_paper_from_intents(
+    data_dir: Path,
+    *,
+    intents_path: Path,
+    quotes_path: Path | None = None,
+    state_path: Path | None = None,
+) -> PaperFromIntentsSummary:
+    selected_quotes_path = quotes_path or (data_dir / "normalized/quotes.parquet")
+    if not selected_quotes_path.exists():
+        raise FileNotFoundError(f"Normalized quote parquet not found: {selected_quotes_path}")
+    quotes = pl.read_parquet(selected_quotes_path)
+    latest_quotes = _latest_quote_by_symbol(quotes)
+    intents = _load_paper_intents(intents_path)
+    halt_policy = load_halt_policy(Path("configs/halt_policy.yaml"))
+    fee_model_path = Path("configs/fee_model.trade_xyz.yaml")
+    fee_model = (
+        yaml.safe_load(fee_model_path.read_text(encoding="utf-8"))
+        if fee_model_path.exists()
+        else {}
+    )
+    broker = PaperBroker(
+        halt_policy=halt_policy, fee_model=fee_model if isinstance(fee_model, dict) else {}
+    )
+    store = StateStore(state_path or (data_dir / "state/marketlens.sqlite"))
+    portfolio = _load_portfolio(store)
+    observation_ledger_path = data_dir / "paper/paper_observation_ledger.jsonl"
+    orders: list[PaperOrder] = []
+    fills: list[PaperFill] = []
+    blocked_count = 0
+    now = datetime.now(timezone.utc)
+
+    for intent in intents:
+        block_reasons: list[str] = []
+        if intent.valid_until is not None and intent.valid_until < now:
+            block_reasons.append("INTENT_EXPIRED")
+        quote = latest_quotes.get((intent.execution_venue, intent.execution_symbol))
+        if quote is None:
+            block_reasons.append("LATEST_QUOTE_MISSING")
+        if block_reasons or quote is None:
+            blocked_count += 1
+            _write_observation(
+                observation_ledger_path,
+                {
+                    "intent_id": intent.intent_id,
+                    "status": "blocked",
+                    "block_reasons": block_reasons,
+                    "live_order_submitted": False,
+                    "wallet_used": False,
+                    "exchange_write_used": False,
+                },
+            )
+            continue
+
+        quote_ts = quote["ts_client"]
+        if not isinstance(quote_ts, datetime):
+            quote_ts = datetime.fromisoformat(str(quote_ts).replace("Z", "+00:00"))
+        action = _action_for_intent(intent)
+        context = DecisionContext(
+            decision_ts=now,
+            venue=intent.execution_venue,
+            canonical_symbol=intent.execution_symbol,
+            timeframe="paper_intent",
+            quote_ts=quote_ts,
+            signal_ts=intent.source_feature_ts,
+            signal_side=intent.side,
+            signal_strength=None,
+            strategy_name=intent.strategy_id,
+            market_status=str(quote.get("market_status", "unknown")),
+            is_tradable=bool(quote.get("is_tradable")),
+        )
+        record = DecisionRecord(
+            context=context,
+            strategy_decision=StrategyDecision(
+                strategy_name=intent.strategy_id,
+                should_enter=action != "skip",
+                side=intent.side,
+                timeframe="paper_intent",
+                reason="paper_intent_preview",
+                score=None,
+            ),
+            risk_decision=RiskDecision(allowed=True, blocked_reasons=[]),
+            execution_plan={
+                "action": action,
+                "venue": intent.execution_venue,
+                "canonical_symbol": intent.execution_symbol,
+                "timeframe": "paper_intent",
+                "price_reference": intent.price_reference,
+                "notes": ["paper_intent_preview"],
+            },
+        )
+        order = PaperOrder(
+            ts_order=now,
+            venue=intent.execution_venue,
+            canonical_symbol=intent.execution_symbol,
+            side=intent.side,
+            action=action,
+            quantity=float(intent.quantity or 1.0),
+            strategy_name=intent.strategy_id,
+            notes=["paper_intent_preview"],
+        )
+        fill = broker.create_fill(
+            ExecutionPlan.model_validate(record.execution_plan),
+            record,
+            quote,
+            quantity=float(intent.quantity or 1.0),
+        )
+        if fill is None:
+            blocked_count += 1
+            _write_observation(
+                observation_ledger_path,
+                {
+                    "intent_id": intent.intent_id,
+                    "status": "blocked",
+                    "block_reasons": ["PAPER_BROKER_REVALIDATION_BLOCKED"],
+                    "live_order_submitted": False,
+                    "wallet_used": False,
+                    "exchange_write_used": False,
+                },
+            )
+            continue
+        orders.append(order)
+        fills.append(fill)
+        portfolio.apply_fill(fill)
+        _write_observation(
+            observation_ledger_path,
+            {
+                "intent_id": intent.intent_id,
+                "status": "paper_filled",
+                "order_id": order.order_id,
+                "fill_id": fill.fill_id,
+                "live_order_submitted": False,
+                "wallet_used": False,
+                "exchange_write_used": False,
+            },
+        )
+
+    positions = portfolio.positions()
+    store.set_json("paper_positions", [position.model_dump(mode="json") for position in positions])
+    orders_path = data_dir / "paper/orders.parquet"
+    fills_path = data_dir / "paper/fills.parquet"
+    positions_path = data_dir / "paper/positions.parquet"
+    write_orders_parquet(orders_path, orders)
+    write_fills_parquet(fills_path, fills)
+    write_positions_parquet(positions_path, positions)
+    return PaperFromIntentsSummary(
+        orders_count=len(orders),
+        fills_count=len(fills),
+        blocked_count=blocked_count,
+        orders_path=orders_path,
+        fills_path=fills_path,
+        positions_path=positions_path,
+        observation_ledger_path=observation_ledger_path,
+    )
 
 
 def _read_audit_summary(data_dir: Path) -> dict:

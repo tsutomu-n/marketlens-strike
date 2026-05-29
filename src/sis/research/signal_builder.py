@@ -8,8 +8,8 @@ from pathlib import Path
 import polars as pl
 
 from sis.research.strategy_lab.signal_frame import validate_strategy_signal_frame
+from sis.research.strategy_lab.signal_registry import default_signal_generator_registry
 from sis.research.strategy_lab.specs import SymbolBinding
-from sis.strategies.qqq_trend_rates_vix import build_qqq_trend_rates_vix_signals
 
 DEFAULT_STRATEGY_ID = "equity_index_momentum_v0"
 DEFAULT_STRATEGY_FAMILY = "momentum"
@@ -54,9 +54,11 @@ def _build_strategy_signal_artifact(signals: pl.DataFrame) -> pl.DataFrame:
         rank_score = None
         if raw_score is not None:
             rank_score = max(0.0, min(1.0, raw_score))
-        execution_symbol = "XYZ100" if str(row["canonical_symbol"]).upper() == "QQQ" else str(
-            row["canonical_symbol"]
-        ).upper()
+        execution_symbol = (
+            "XYZ100"
+            if str(row["canonical_symbol"]).upper() == "QQQ"
+            else str(row["canonical_symbol"]).upper()
+        )
         real_market_symbol = str(row["canonical_symbol"]).upper()
         rows.append(
             {
@@ -141,7 +143,7 @@ def build_signals(data_dir: Path) -> Path:
     if frame.is_empty():
         raise ValueError("Feature panel is empty.")
 
-    signals = build_qqq_trend_rates_vix_signals(frame)
+    signals = default_signal_generator_registry().run(DEFAULT_GENERATOR_ID, frame, spec=None)
     strategy_signals = _build_strategy_signal_artifact(signals)
 
     parquet_out = data_dir / "research/strategy_signals.parquet"

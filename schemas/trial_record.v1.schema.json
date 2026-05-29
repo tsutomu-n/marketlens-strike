@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "trial_id",
+    "trial_group_id",
+    "trial_index",
+    "strategy_id",
+    "evaluation_plan_id",
+    "data_snapshot_id",
+    "parameter_hash",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": { "const": "trial_record.v1" },
+    "live_ready_claimed": { "const": false }
+  }
+}

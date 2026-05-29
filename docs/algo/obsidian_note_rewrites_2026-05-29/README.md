@@ -29,6 +29,15 @@
 11. [appendix_materials/](appendix_materials/)
    - 図解、部品カード、シグナル設計資料、サンプル成果物、チェックリスト、テンプレート、ナラティブ誤謬カード。
 
+## 戦略を量産する場合
+
+このフォルダーは原ノートの批判的リライトと補助資料です。戦略候補を安全に量産する運用では、上位の [../strategy_factory/](../strategy_factory/) を使います。
+
+- 1戦略1枚で書く: `../strategy_factory/SIGNAL_CANDIDATE_TEMPLATE.md`
+- reject理由を固定する: `../strategy_factory/SIGNAL_REJECT_REASON_TAXONOMY.md`
+- 候補を台帳管理する: `../strategy_factory/STRATEGY_BACKLOG_TABLE.md`
+- 状態遷移gateを見る: `../strategy_factory/FACTORY_WORKFLOW.md`
+
 ## この版の方針
 
 - 原ノートの物語を保存するのではなく、戦略に使える事実・仮説・失敗条件に変換する。

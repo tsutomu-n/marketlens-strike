@@ -14,17 +14,19 @@
    - 戦略実装前に、仮説、データ、baseline、捨て条件を揃える。
 5. [EXPERIMENT_SCORECARD.md](EXPERIMENT_SCORECARD.md)
    - 候補戦略を同じ物差しで採点し、優先順位を決める。
-6. [RESEARCH_VALIDATION_PLAYBOOK.md](RESEARCH_VALIDATION_PLAYBOOK.md)
+6. [strategy_factory/](strategy_factory/)
+   - 戦略候補を安全に量産するため、1戦略1枚の候補シート、reject taxonomy、backlog台帳、状態遷移gateで管理する。
+7. [RESEARCH_VALIDATION_PLAYBOOK.md](RESEARCH_VALIDATION_PLAYBOOK.md)
    - バックテスト、walk-forward、Monte Carlo、リーク検査、捨て条件を確認する。
-7. [SOURCE_NOTES_INDEX.md](SOURCE_NOTES_INDEX.md)
+8. [SOURCE_NOTES_INDEX.md](SOURCE_NOTES_INDEX.md)
    - どのObsidianノートに由来するか、どのノートを除外したかを確認する。
-8. [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/)
+9. [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/)
    - 原ノート24本を、原本なしで読める厚さに再構成した版。誤り補正、追加調査、戦略部品化を含む。
    - 図表、部品カード、売買発生シグナル設計、artifact例、テンプレートは [obsidian_note_rewrites_2026-05-29/appendix_materials/](obsidian_note_rewrites_2026-05-29/appendix_materials/) を見る。
 
 ## 正本と参照元
 
-- 現行正本: このディレクトリ直下の `ALGO_*`, `STRATEGY_*`, `RESEARCH_*`, `SOURCE_*` docs。
+- 現行正本: このディレクトリ直下の `ALGO_*`, `STRATEGY_*`, `RESEARCH_*`, `SOURCE_*` docs と [strategy_factory/](strategy_factory/)。
 - 一次参照: [obsidian_note_copies/](obsidian_note_copies/) にある実ノートコピー。
 - 再構成参照: [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/) にある原ノートの批判的リライト。
 - 旧再構成: [obsidian_note_rewrites_2026-05-28/](obsidian_note_rewrites_2026-05-28/) は薄い初版として残すが、通常は使わない。

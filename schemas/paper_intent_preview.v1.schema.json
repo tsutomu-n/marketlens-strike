@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "intent_id",
+    "source_pack_id",
+    "candidate_id",
+    "strategy_id",
+    "execution_venue",
+    "execution_symbol",
+    "real_market_symbol",
+    "requires_revalidation",
+    "paper_only"
+  ],
+  "properties": {
+    "schema_version": { "const": "paper_intent_preview.v1" },
+    "requires_revalidation": { "const": true },
+    "paper_only": { "const": true },
+    "live_conversion_allowed": { "const": false }
+  }
+}

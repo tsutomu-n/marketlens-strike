@@ -1,0 +1,59 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field, model_validator
+
+from sis.research.strategy_lab.candidates import TradeCandidate
+
+
+class PaperCandidatePack(BaseModel):
+    schema_version: Literal["paper_candidate_pack.v1"]
+    pack_id: str
+    generated_at: datetime
+    evaluation_plan_id: str
+    data_snapshot_id: str
+    feature_snapshot_id: str | None
+    trial_group_id: str | None
+    candidates: list[TradeCandidate]
+    selected_candidate_ids: list[str] = Field(default_factory=list)
+    rejected_candidate_ids: list[str] = Field(default_factory=list)
+    selection_policy: dict[str, Any]
+    reason_codes: list[str] = Field(default_factory=list)
+    block_reasons: list[str] = Field(default_factory=list)
+    profitability_claimed: bool = False
+    paper_ready_claimed: bool = False
+    tiny_live_ready_claimed: bool = False
+    live_ready_claimed: bool = False
+    live_order_submitted: bool = False
+    wallet_used: bool = False
+    exchange_write_used: bool = False
+
+    @model_validator(mode="after")
+    def validate_pack(self) -> PaperCandidatePack:
+        for field_name in ("pack_id", "evaluation_plan_id", "data_snapshot_id"):
+            if not str(getattr(self, field_name)).strip():
+                raise ValueError(f"{field_name} must be non-empty")
+        candidate_ids = {candidate.candidate_id for candidate in self.candidates}
+        unknown_selected = set(self.selected_candidate_ids).difference(candidate_ids)
+        if unknown_selected:
+            raise ValueError(f"selected_candidate_ids unknown: {sorted(unknown_selected)}")
+        unknown_rejected = set(self.rejected_candidate_ids).difference(candidate_ids)
+        if unknown_rejected:
+            raise ValueError(f"rejected_candidate_ids unknown: {sorted(unknown_rejected)}")
+        if self.profitability_claimed:
+            raise ValueError("profitability_claimed must remain false for PaperCandidatePack")
+        if self.paper_ready_claimed:
+            raise ValueError("paper_ready_claimed must remain false for PaperCandidatePack")
+        if self.tiny_live_ready_claimed:
+            raise ValueError("tiny_live_ready_claimed must remain false for PaperCandidatePack")
+        if self.live_ready_claimed:
+            raise ValueError("live_ready_claimed must remain false for PaperCandidatePack")
+        if self.live_order_submitted:
+            raise ValueError("live_order_submitted must remain false for PaperCandidatePack")
+        if self.wallet_used:
+            raise ValueError("wallet_used must remain false for PaperCandidatePack")
+        if self.exchange_write_used:
+            raise ValueError("exchange_write_used must remain false for PaperCandidatePack")
+        return self

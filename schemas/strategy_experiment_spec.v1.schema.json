@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "strategy_id",
+    "strategy_family",
+    "strategy_version",
+    "symbol_bindings",
+    "generator_id",
+    "evaluation_plan_id",
+    "run_profile_id"
+  ],
+  "properties": {
+    "schema_version": { "const": "strategy_experiment_spec.v1" },
+    "symbol_bindings": { "type": "array", "minItems": 1 }
+  }
+}

@@ -13,7 +13,7 @@ from sis.backtest.signals import ResearchSignal, load_research_signals
 from sis.core.context import DecisionContext
 from sis.core.decision import DecisionRecord
 from sis.core.execution_plan import build_execution_plan
-from sis.core.strategy import ResearchSignalStrategy
+from sis.core.strategy import SignalPassthroughStrategy
 from sis.risk.risk_gate import evaluate_risk_gate
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
@@ -258,7 +258,9 @@ def _metrics_for_signals(
 ) -> tuple[list[BacktestMetrics], list[DecisionRecord], dict]:
     if exit_model not in {"next_row", "fixed_horizon"}:
         raise ValueError(f"Unsupported exit_model: {exit_model}")
-    if exit_model == "fixed_horizon" and (holding_horizon_minutes is None or holding_horizon_minutes <= 0):
+    if exit_model == "fixed_horizon" and (
+        holding_horizon_minutes is None or holding_horizon_minutes <= 0
+    ):
         raise ValueError("holding_horizon_minutes must be positive for fixed_horizon")
     rows_by_key: dict[tuple[str, str], list[dict]] = {}
     for row in quotes.sort("ts_client").to_dicts():
@@ -274,7 +276,7 @@ def _metrics_for_signals(
     blocked_reason_counts: dict[str, int] = {}
     executed = 0
     blocked = 0
-    strategy = ResearchSignalStrategy()
+    strategy = SignalPassthroughStrategy()
     for (venue, symbol), rows in rows_by_key.items():
         symbol_signals = signals_by_symbol.get(symbol, [])
         if not symbol_signals:
@@ -307,7 +309,9 @@ def _metrics_for_signals(
                 exit_index = next(
                     (
                         index
-                        for index, quote_time in enumerate(quote_times[entry_index + 1 :], start=entry_index + 1)
+                        for index, quote_time in enumerate(
+                            quote_times[entry_index + 1 :], start=entry_index + 1
+                        )
                         if quote_time >= target_exit_ts
                     ),
                     None,
@@ -329,7 +333,7 @@ def _metrics_for_signals(
                 signal_ts=signal.ts_signal,
                 signal_side=signal.side,
                 signal_strength=signal.signal_strength,
-                strategy_name="research_signal_strategy",
+                strategy_name="signal_passthrough_strategy",
                 market_status=str(entry.get("market_status", "unknown")),
                 is_tradable=bool(entry.get("is_tradable")),
             )

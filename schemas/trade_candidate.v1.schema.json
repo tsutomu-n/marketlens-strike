@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "strategy_id",
+    "execution_venue",
+    "execution_symbol",
+    "real_market_symbol",
+    "status"
+  ],
+  "properties": {
+    "schema_version": { "const": "trade_candidate.v1" },
+    "live_order_submitted": { "const": false }
+  }
+}
