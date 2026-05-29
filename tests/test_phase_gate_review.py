@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from sis.reports.phase_gate_review import build_phase_gate_review
+from sis.reports.phase_gate_review import _execution_drift_classifications, build_phase_gate_review
 from sis.reports.summary_normalizers import (
     normalize_phase_gate_summary,
     phase_gate_flat_fields,
@@ -12,6 +12,40 @@ from sis.reports.summary_normalizers import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_execution_drift_classifications_include_lineage_for_empty_snapshot() -> None:
+    classifications = _execution_drift_classifications(
+        {
+            "execution_snapshot_reason": "trade_xyz_live_execution_snapshot_not_connected",
+            "execution_snapshot_root_source": "execution_snapshot_summary.venues=[]",
+            "execution_comparison_reason": "source_execution_snapshot_empty",
+            "execution_comparison_root_source": "execution_snapshot_summary.venues=[]",
+            "execution_diagnostics_reason": "source_execution_snapshot_empty",
+            "execution_diagnostics_root_source": "execution_snapshot_summary.venues=[]",
+            "execution_drift_overview_status": "degraded",
+            "execution_drift_overview_reason_codes": [
+                "trade_xyz_live_execution_snapshot_not_connected"
+            ],
+            "execution_balance_gap_detected": True,
+            "execution_fills_gap_detected": True,
+            "execution_comparison_all_registries_present": False,
+        }
+    )
+
+    by_signal = {item["signal"]: item for item in classifications}
+    assert by_signal["execution_drift_overview_status"]["root_source"] == (
+        "execution_snapshot_summary.venues=[]"
+    )
+    assert by_signal["execution_drift_overview_status"]["derived_from"] == (
+        "trade_xyz_live_execution_snapshot_not_connected"
+    )
+    assert by_signal["execution_comparison_all_registries_present"]["derived_from"] == (
+        "source_execution_snapshot_empty"
+    )
+    assert by_signal["execution_balance_gap_detected"]["recommended_next_action"] == (
+        "decide_read_only_execution_state_collector_scope"
+    )
 
 
 def _write_registry(path: Path, venue: str) -> None:

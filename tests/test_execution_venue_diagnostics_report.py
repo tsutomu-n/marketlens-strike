@@ -59,3 +59,39 @@ def test_build_execution_venue_diagnostics_report(tmp_path) -> None:
     )
     assert summary["positions_count_span"] == 2
     assert summary["shared_balance_currency"] == "USD"
+
+
+def test_build_execution_venue_diagnostics_report_carries_empty_snapshot_reason(
+    tmp_path,
+) -> None:
+    comparison_summary = tmp_path / "execution_venue_comparison_summary.json"
+    write_json(
+        comparison_summary,
+        {
+            "overall_status": "degraded",
+            "venues": [],
+            "source_snapshot_empty": True,
+            "source_snapshot_reason": "trade_xyz_live_execution_snapshot_not_connected",
+            "source_snapshot_reason_codes": ["trade_xyz_live_execution_snapshot_not_connected"],
+            "source_snapshot_root_source": "execution_snapshot_summary.venues=[]",
+        },
+    )
+
+    report = build_execution_venue_diagnostics_report(
+        execution_venue_comparison_summary_path=comparison_summary,
+        out_path=tmp_path / "execution_venue_diagnostics.md",
+        summary_path=tmp_path / "execution_venue_diagnostics_summary.json",
+    )
+
+    assert "diagnostics_reason: source_execution_snapshot_empty" in report
+    assert "diagnostics_root_source: execution_snapshot_summary.venues=[]" in report
+    summary = read_json(tmp_path / "execution_venue_diagnostics_summary.json")
+    assert isinstance(summary, dict)
+    assert summary["overall_status"] == "degraded"
+    assert summary["venue_count"] == 0
+    assert summary["source_snapshot_empty"] is True
+    assert summary["source_snapshot_reason"] == "trade_xyz_live_execution_snapshot_not_connected"
+    assert summary["diagnostics_reason"] == "source_execution_snapshot_empty"
+    assert summary["diagnostics_root_source"] == "execution_snapshot_summary.venues=[]"
+    assert summary["execution_balance_gap_detected"] is True
+    assert summary["execution_fills_gap_detected"] is True

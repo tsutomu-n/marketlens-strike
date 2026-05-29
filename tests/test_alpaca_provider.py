@@ -136,6 +136,7 @@ def test_alpaca_provider_maps_bars_and_writes_raw_payload(tmp_path) -> None:
     assert raw_path.exists()
     raw_payload = json.loads(raw_path.read_text(encoding="utf-8"))
     assert raw_payload["provider"] == "alpaca"
+    assert raw_payload["feed"] == "iex"
     assert raw_payload["row_count"] == 1
 
 
@@ -250,10 +251,23 @@ def test_alpaca_live_smoke_passes_and_writes_artifacts(tmp_path, monkeypatch) ->
     assert summary["end"] == "2026-05-26T14:30:00+00:00"
     assert summary["bar_count"] == 1
     assert summary["provider"] == "alpaca"
+    assert summary["feed"] == "iex"
+    assert summary["requested_window"] == "bounded"
+    assert summary["latest_bar_ts"] == "2026-05-26T14:15:00+00:00"
+    assert summary["latest_ts_start"] == "2026-05-26T14:00:00+00:00"
+    assert summary["latest_ts_end"] == "2026-05-26T14:15:00+00:00"
+    assert summary["market_session"] == "historical_window"
+    assert str(summary["source_confidence_reason"]).startswith("pass: score=")
+    assert "feed=iex" in str(summary["source_confidence_reason"])
     assert summary["latest_close"] == 100.5
     assert (tmp_path / "ops/alpaca_live_smoke_summary.json").exists()
     assert (tmp_path / "reports/alpaca_live_smoke.md").exists()
     assert (tmp_path / "raw/real_market/alpaca/NVDA_15m_latest.json").exists()
+    report = (tmp_path / "reports/alpaca_live_smoke.md").read_text(encoding="utf-8")
+    assert "requested_window: bounded" in report
+    assert "latest_bar_ts: 2026-05-26T14:15:00+00:00" in report
+    assert "market_session: historical_window" in report
+    assert "source_confidence_reason: pass:" in report
 
 
 def test_alpaca_live_smoke_blocks_low_source_confidence(tmp_path, monkeypatch) -> None:
@@ -292,6 +306,10 @@ def test_alpaca_live_smoke_blocks_low_source_confidence(tmp_path, monkeypatch) -
     assert summary["data_availability_status"] == "pass"
     assert summary["error_class"] == "AlpacaLiveSuitabilityBlocked"
     assert summary["live_suitability_reasons"] == ["BLOCK_LOW_SOURCE_CONFIDENCE"]
+    assert summary["requested_window"] == "latest"
+    assert summary["latest_bar_ts"] == "2026-05-26T14:15:00+00:00"
+    assert "blocked: score=" in str(summary["source_confidence_reason"])
+    assert "market_session=us_equity_regular_utc_window" in str(summary["source_confidence_reason"])
     report = (tmp_path / "reports/alpaca_live_smoke.md").read_text(encoding="utf-8")
     assert "status: blocked" in report
     assert "BLOCK_LOW_SOURCE_CONFIDENCE" in report

@@ -2573,6 +2573,78 @@ def test_build_execution_drift_overview_report(tmp_path) -> None:
     assert summary["execution_drift_overview_report_path"] == str(
         tmp_path / "execution_drift_overview.md"
     )
+
+
+def test_build_execution_drift_overview_report_marks_empty_snapshot_lineage(tmp_path) -> None:
+    gap_history = tmp_path / "execution_gap_history.json"
+    state_comparison = tmp_path / "execution_state_comparison.json"
+    snapshot_drift = tmp_path / "execution_snapshot_drift.json"
+    write_json(
+        gap_history,
+        {
+            "entry_count": 4,
+            "latest_status": "ok",
+            "latest_execution_diagnostics_status": "degraded",
+            "latest_execution_summary": {
+                "execution_overall_status": "degraded",
+                "execution_venue_count": 0,
+            },
+            "latest_execution_comparison_summary": {
+                "execution_comparison_all_registries_present": False,
+            },
+        },
+    )
+    write_json(
+        state_comparison,
+        {
+            "latest_execution_diagnostics_status": "degraded",
+            "latest_execution_gap_history_diagnostics_status": "degraded",
+            "latest_status_match": True,
+            "mismatching_count": 0,
+        },
+    )
+    write_json(
+        snapshot_drift,
+        {
+            "latest_execution_state_comparison_status_match": True,
+            "mismatching_snapshot_count": 0,
+        },
+    )
+
+    report = build_execution_drift_overview_report(
+        execution_gap_history_summary_path=gap_history,
+        execution_state_comparison_history_summary_path=state_comparison,
+        execution_snapshot_drift_history_summary_path=snapshot_drift,
+        out_path=tmp_path / "execution_drift_overview.md",
+        summary_path=tmp_path / "execution_drift_overview.json",
+    )
+
+    assert "trade_xyz_live_execution_snapshot_not_connected" in report
+    assert "source_execution_snapshot_empty" in report
+    summary = read_json(tmp_path / "execution_drift_overview.json")
+    assert summary["execution_drift_overview_status"] == "degraded"
+    assert summary["execution_drift_overview_reason_codes"] == [
+        "trade_xyz_live_execution_snapshot_not_connected",
+        "source_execution_snapshot_empty",
+    ]
+    assert summary["execution_drift_overview_lineage"] == [
+        {
+            "signal": "latest_execution_venue_count",
+            "observed": 0,
+            "expected": ">0",
+            "root_source": "execution_snapshot_summary.venues=[]",
+            "derived": False,
+            "reason": "trade_xyz_live_execution_snapshot_not_connected",
+        },
+        {
+            "signal": "latest_execution_comparison_all_registries_present",
+            "observed": False,
+            "expected": True,
+            "root_source": "execution_snapshot_summary.venues=[]",
+            "derived": True,
+            "reason": "source_execution_snapshot_empty",
+        },
+    ]
     assert summary["quick_navigation"]["execution_drift_overview_report"] == str(
         tmp_path / "execution_drift_overview.md"
     )
@@ -2831,6 +2903,7 @@ def test_build_execution_read_only_surfaces_report(tmp_path) -> None:
     assert "venue_ostium_positions_client_ts: 2026-05-22T07:56:39.516Z" in text
     summary = read_json(summary_path)
     assert summary["venue_count"] == 2
+    assert summary["unavailable_venue_count"] == 0
     assert summary["with_positions_snapshot_count"] == 2
     assert summary["reconciled_venue_count"] == 2
     assert summary["with_positions_financial_totals_count"] == 2
@@ -2859,6 +2932,46 @@ def test_build_execution_read_only_surfaces_report(tmp_path) -> None:
     assert summary["latest_positions_open_timestamp_ms"] == 1779580800000
     assert summary["latest_positions_updated_at"] == "2026-05-24T01:00:00+00:00"
     assert summary["latest_positions_client_ts"] == "2026-05-22T07:56:39.516Z"
+
+
+def test_build_execution_read_only_surfaces_report_marks_unavailable_collector(
+    tmp_path,
+) -> None:
+    out_path = tmp_path / "execution_read_only_surfaces.md"
+    summary_path = tmp_path / "execution_read_only_surfaces_summary.json"
+
+    text = build_execution_read_only_surfaces_report(
+        venue_surfaces=[
+            {
+                "venue": "trade_xyz",
+                "registry_exists": True,
+                "balance_snapshot_exists": False,
+                "positions_snapshot_exists": False,
+                "fills_snapshot_exists": False,
+                "order_status_snapshot_exists": False,
+                "collector_status": "not_connected",
+                "collector_reason": "read_only_execution_state_collector_not_implemented",
+                "collector_root_source": (
+                    "execution_read_only_surfaces_summary.venues[].collector_status"
+                ),
+                "read_only_endpoint_scope": "info_endpoint_only",
+                "next_action": "connect_trade_xyz_read_only_execution_state_collector",
+            }
+        ],
+        out_path=out_path,
+        summary_path=summary_path,
+    )
+
+    assert "venue_trade_xyz_collector_status: not_connected" in text
+    assert (
+        "venue_trade_xyz_collector_reason: read_only_execution_state_collector_not_implemented"
+        in text
+    )
+    assert "venue_trade_xyz_read_only_endpoint_scope: info_endpoint_only" in text
+    summary = read_json(summary_path)
+    assert summary["venue_count"] == 1
+    assert summary["unavailable_venue_count"] == 1
+    assert summary["venues"][0]["collector_status"] == "not_connected"
 
 
 def test_build_daemon_manifest_report(tmp_path) -> None:

@@ -252,6 +252,43 @@ def _as_dict_list(value: object) -> list[dict[str, object]]:
 
 
 def _execution_drift_classifications(summary: dict[str, object]) -> list[dict[str, object]]:
+    snapshot_reason = summary.get("execution_snapshot_reason")
+    snapshot_root_source = summary.get("execution_snapshot_root_source")
+    comparison_reason = summary.get("execution_comparison_reason")
+    comparison_root_source = summary.get("execution_comparison_root_source")
+    diagnostics_reason = summary.get("execution_diagnostics_reason")
+    diagnostics_root_source = summary.get("execution_diagnostics_root_source")
+    drift_reason_codes = summary.get("execution_drift_overview_reason_codes")
+    if not isinstance(drift_reason_codes, list):
+        drift_reason_codes = []
+
+    def lineage_for(signal: str) -> dict[str, object]:
+        if signal == "execution_comparison_all_registries_present" and comparison_reason:
+            return {
+                "root_source": comparison_root_source or snapshot_root_source,
+                "derived_from": comparison_reason,
+                "recommended_next_action": "explain_or_connect_trade_xyz_execution_snapshot",
+            }
+        if signal in {"execution_balance_gap_detected", "execution_fills_gap_detected"}:
+            return {
+                "root_source": diagnostics_root_source or comparison_root_source,
+                "derived_from": diagnostics_reason or comparison_reason,
+                "recommended_next_action": "decide_read_only_execution_state_collector_scope",
+            }
+        if signal == "execution_drift_overview_status" and drift_reason_codes:
+            return {
+                "root_source": snapshot_root_source or "execution_snapshot_summary.venues=[]",
+                "derived_from": ",".join(str(item) for item in drift_reason_codes),
+                "recommended_next_action": "map_root_and_derived_execution_drift_signals",
+            }
+        if snapshot_reason:
+            return {
+                "root_source": snapshot_root_source,
+                "derived_from": snapshot_reason,
+                "recommended_next_action": "preserve_live_readiness_blocker_until_snapshot_connected",
+            }
+        return {}
+
     checks = [
         (
             "execution_drift_overview_status",
@@ -307,6 +344,7 @@ def _execution_drift_classifications(summary: dict[str, object]) -> list[dict[st
                 "expected": expected,
                 "classification": classification,
                 "reason": reason,
+                **lineage_for(signal),
             }
         )
     return classifications
@@ -1323,16 +1361,23 @@ def build_phase_gate_review(
     lines.extend(["", "## Execution Drift Classification", ""])
     classifications = _as_dict_list(summary.get("execution_drift_classifications"))
     if classifications:
-        lines.append("| signal | observed | expected | classification | reason |")
-        lines.append("| --- | --- | --- | --- | --- |")
+        lines.append(
+            "| signal | observed | expected | classification | reason | root_source | derived_from | recommended_next_action |"
+        )
+        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
         for item in classifications:
             lines.append(
-                "| {signal} | {observed} | {expected} | {classification} | {reason} |".format(
+                "| {signal} | {observed} | {expected} | {classification} | {reason} | {root_source} | {derived_from} | {recommended_next_action} |".format(
                     signal=item.get("signal", ""),
                     observed=item.get("observed", ""),
                     expected=item.get("expected", ""),
                     classification=item.get("classification", ""),
                     reason=str(item.get("reason", "")).replace("|", "/"),
+                    root_source=str(item.get("root_source", "")).replace("|", "/"),
+                    derived_from=str(item.get("derived_from", "")).replace("|", "/"),
+                    recommended_next_action=str(item.get("recommended_next_action", "")).replace(
+                        "|", "/"
+                    ),
                 )
             )
     else:

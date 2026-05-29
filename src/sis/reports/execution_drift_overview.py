@@ -74,6 +74,38 @@ def build_execution_drift_overview_report(
         (state_comparison_summary, "latest"),
         (gap_history_summary, "latest"),
     )
+    reason_codes: list[str] = []
+    lineage: list[dict[str, object]] = []
+    latest_execution_status = latest_execution_lineage.get("latest_execution_overall_status")
+    latest_execution_venue_count = latest_execution_lineage.get("latest_execution_venue_count")
+    latest_registries_present = latest_execution_lineage.get(
+        "latest_execution_comparison_all_registries_present"
+    )
+    if latest_execution_status == "degraded" and latest_execution_venue_count == 0:
+        reason_codes.append("trade_xyz_live_execution_snapshot_not_connected")
+        lineage.append(
+            {
+                "signal": "latest_execution_venue_count",
+                "observed": latest_execution_venue_count,
+                "expected": ">0",
+                "root_source": "execution_snapshot_summary.venues=[]",
+                "derived": False,
+                "reason": "trade_xyz_live_execution_snapshot_not_connected",
+            }
+        )
+    if latest_registries_present is False:
+        if "source_execution_snapshot_empty" not in reason_codes:
+            reason_codes.append("source_execution_snapshot_empty")
+        lineage.append(
+            {
+                "signal": "latest_execution_comparison_all_registries_present",
+                "observed": latest_registries_present,
+                "expected": True,
+                "root_source": "execution_snapshot_summary.venues=[]",
+                "derived": True,
+                "reason": "source_execution_snapshot_empty",
+            }
+        )
     quick_navigation = _quick_navigation(out_path)
     related_reports = _related_reports(out_path)
     artifacts = {
@@ -113,6 +145,8 @@ def build_execution_drift_overview_report(
     overall_status = (
         "ok"
         if int(gap_history_fields.get("execution_gap_history_entry_count") or 0) > 0
+        and latest_execution_lineage.get("latest_execution_overall_status") != "degraded"
+        and latest_execution_lineage.get("latest_execution_venue_count") != 0
         and state_comparison_match is True
         and int(state_comparison_fields.get("execution_state_comparison_mismatching_count") or 0)
         == 0
@@ -142,6 +176,8 @@ def build_execution_drift_overview_report(
         ),
         "diagnostics_alignment_match": diagnostics_alignment_match,
         "execution_drift_overview_status": overall_status,
+        "execution_drift_overview_reason_codes": reason_codes,
+        "execution_drift_overview_lineage": lineage,
         "execution_drift_overview_diagnostics_alignment_match": diagnostics_alignment_match,
         "execution_drift_overview_state_comparison_mismatching_count": state_comparison_fields.get(
             "execution_state_comparison_mismatching_count"
@@ -174,6 +210,7 @@ def build_execution_drift_overview_report(
             "## Summary",
             "",
             f"- overall_status: {summary['overall_status']}",
+            f"- reason_codes: {summary['execution_drift_overview_reason_codes']}",
             f"- latest_execution_overall_status: {summary['latest_execution_overall_status']}",
             f"- latest_execution_venue_count: {summary['latest_execution_venue_count']}",
             (
@@ -191,6 +228,28 @@ def build_execution_drift_overview_report(
                 f"{summary['snapshot_drift_mismatching_snapshot_count']}"
             ),
             f"- diagnostics_alignment_match: {summary['diagnostics_alignment_match']}",
+            "",
+            "## Lineage",
+            "",
+        ]
+    )
+    if lineage:
+        lines.extend(
+            [
+                "| signal | observed | expected | root_source | derived | reason |",
+                "| --- | --- | --- | --- | --- | --- |",
+            ]
+        )
+        for item in lineage:
+            lines.append(
+                "| {signal} | {observed} | {expected} | {root_source} | {derived} | {reason} |".format(
+                    **item
+                )
+            )
+    else:
+        lines.append("- no execution drift lineage reason was inferred")
+    lines.extend(
+        [
             "",
             "## Artifact Paths",
             "",

@@ -19,6 +19,26 @@ def _adapter_for_venue(settings_data_dir: Path, venue: str):
     )
 
 
+def _trade_xyz_read_only_surface(settings_data_dir: Path) -> dict[str, object]:
+    registry_path = settings_data_dir / "registry/trade_xyz_instrument_registry.json"
+    return {
+        "venue": "trade_xyz",
+        "registry_exists": registry_path.exists(),
+        "balance_snapshot_exists": False,
+        "positions_snapshot_exists": False,
+        "fills_snapshot_exists": False,
+        "order_status_snapshot_exists": False,
+        "positions_count": None,
+        "fills_count": None,
+        "order_status_count": None,
+        "collector_status": "not_connected",
+        "collector_reason": "read_only_execution_state_collector_not_implemented",
+        "collector_root_source": "execution_read_only_surfaces_summary.venues[].collector_status",
+        "read_only_endpoint_scope": "info_endpoint_only",
+        "next_action": "connect_trade_xyz_read_only_execution_state_collector",
+    }
+
+
 def _write_execution_snapshot(
     settings_data_dir: Path,
     *,
@@ -29,7 +49,7 @@ def _write_execution_snapshot(
     out = settings_data_dir / "reports/execution_snapshot.md"
     summary_out = settings_data_dir / "ops/execution_snapshot_summary.json"
     text = build_execution_snapshot_report(
-        venue_snapshots=[],
+        venue_snapshots=[_trade_xyz_read_only_surface(settings_data_dir)],
         out_path=out,
         summary_path=summary_out,
     )
@@ -135,7 +155,7 @@ def _write_execution_read_only_surfaces(
     out = settings_data_dir / "reports/execution_read_only_surfaces.md"
     summary_out = settings_data_dir / "ops/execution_read_only_surfaces_summary.json"
     text = build_execution_read_only_surfaces_report(
-        venue_surfaces=[],
+        venue_surfaces=[_trade_xyz_read_only_surface(settings_data_dir)],
         out_path=out,
         summary_path=summary_out,
     )

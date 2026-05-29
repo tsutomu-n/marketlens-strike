@@ -51,6 +51,12 @@ def build_execution_venue_comparison_report(
     venues = payload.get("venues")
     if not isinstance(venues, list):
         venues = []
+    upstream_reason = payload.get("execution_snapshot_reason") or payload.get("snapshot_reason")
+    upstream_reason_codes = payload.get("execution_snapshot_reason_codes")
+    if not isinstance(upstream_reason_codes, list):
+        upstream_reason_codes = [upstream_reason] if isinstance(upstream_reason, str) else []
+    upstream_root_source = payload.get("execution_snapshot_root_source")
+    empty_source_snapshot = len(venues) == 0
 
     comparison_rows: list[dict[str, object]] = []
     for snapshot in venues:
@@ -79,6 +85,16 @@ def build_execution_venue_comparison_report(
         "overall_status": payload.get("overall_status"),
         "venue_count": len(comparison_rows),
         "venues": comparison_rows,
+        "source_snapshot_empty": empty_source_snapshot,
+        "source_snapshot_reason": upstream_reason,
+        "source_snapshot_reason_codes": upstream_reason_codes,
+        "source_snapshot_root_source": upstream_root_source,
+        "execution_comparison_reason": (
+            "source_execution_snapshot_empty" if empty_source_snapshot else None
+        ),
+        "execution_comparison_root_source": (
+            upstream_root_source if empty_source_snapshot else None
+        ),
         "all_registries_present": all(bool(row.get("registry_exists")) for row in comparison_rows)
         if comparison_rows
         else False,
@@ -135,6 +151,8 @@ def build_execution_venue_comparison_report(
             "",
             f"- overall_status: {summary['overall_status']}",
             f"- venue_count: {summary['venue_count']}",
+            f"- source_snapshot_empty: {summary['source_snapshot_empty']}",
+            f"- source_snapshot_reason: {summary['source_snapshot_reason']}",
             f"- all_registries_present: {summary['all_registries_present']}",
             f"- all_balance_snapshots_present: {summary['all_balance_snapshots_present']}",
             f"- all_positions_snapshots_present: {summary['all_positions_snapshots_present']}",

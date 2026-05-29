@@ -71,6 +71,14 @@ def build_execution_venue_diagnostics_report(
     venues = payload.get("venues")
     if not isinstance(venues, list):
         venues = []
+    source_snapshot_empty = payload.get("source_snapshot_empty") is True
+    source_snapshot_reason = payload.get("source_snapshot_reason")
+    source_snapshot_reason_codes = payload.get("source_snapshot_reason_codes")
+    if not isinstance(source_snapshot_reason_codes, list):
+        source_snapshot_reason_codes = (
+            [source_snapshot_reason] if isinstance(source_snapshot_reason, str) else []
+        )
+    source_snapshot_root_source = payload.get("source_snapshot_root_source")
 
     rows = [row for row in venues if isinstance(row, dict)]
     currencies = sorted(
@@ -126,6 +134,12 @@ def build_execution_venue_diagnostics_report(
             else "degraded"
         ),
         "venue_count": len(rows),
+        "diagnostics_reason": "source_execution_snapshot_empty" if source_snapshot_empty else None,
+        "diagnostics_root_source": source_snapshot_root_source if source_snapshot_empty else None,
+        "source_snapshot_empty": source_snapshot_empty,
+        "source_snapshot_reason": source_snapshot_reason,
+        "source_snapshot_reason_codes": source_snapshot_reason_codes,
+        "source_snapshot_root_source": source_snapshot_root_source,
         "registry_gap_detected": registry_gap_detected,
         "balance_gap_detected": balance_gap_detected,
         "positions_snapshot_gap_detected": positions_snapshot_gap_detected,
@@ -185,6 +199,8 @@ def build_execution_venue_diagnostics_report(
             "",
             f"- overall_status: {summary['overall_status']}",
             f"- venue_count: {summary['venue_count']}",
+            f"- diagnostics_reason: {summary['diagnostics_reason']}",
+            f"- diagnostics_root_source: {summary['diagnostics_root_source']}",
             f"- registry_gap_detected: {summary['registry_gap_detected']}",
             f"- balance_gap_detected: {summary['balance_gap_detected']}",
             f"- positions_snapshot_gap_detected: {summary['positions_snapshot_gap_detected']}",

@@ -111,13 +111,21 @@ def normalize_execution_drift_overview_summary(summary: Mapping[str, Any] | None
         if payload.get("snapshot_drift_mismatching_snapshot_count") is not None
         else payload.get("execution_drift_overview_snapshot_drift_mismatching_snapshot_count")
     )
+    reason_codes = payload.get("execution_drift_overview_reason_codes")
+    if not isinstance(reason_codes, list):
+        reason_codes = []
+    lineage = payload.get("execution_drift_overview_lineage")
     return {
         **payload,
         "overall_status": overall_status,
+        "reason_codes": reason_codes,
+        "lineage": lineage,
         "diagnostics_alignment_match": diagnostics_alignment_match,
         "state_comparison_mismatching_count": state_comparison_mismatching_count,
         "snapshot_drift_mismatching_snapshot_count": snapshot_drift_mismatching_snapshot_count,
         "execution_drift_overview_status": overall_status,
+        "execution_drift_overview_reason_codes": reason_codes,
+        "execution_drift_overview_lineage": lineage,
         "execution_drift_overview_diagnostics_alignment_match": diagnostics_alignment_match,
         "execution_drift_overview_state_comparison_mismatching_count": state_comparison_mismatching_count,
         "execution_drift_overview_snapshot_drift_mismatching_snapshot_count": (
@@ -414,6 +422,10 @@ def execution_drift_overview_flat_fields(summary: Mapping[str, Any] | None) -> d
     payload = normalize_execution_drift_overview_summary(summary)
     return {
         "execution_drift_overview_status": payload.get("execution_drift_overview_status"),
+        "execution_drift_overview_reason_codes": payload.get(
+            "execution_drift_overview_reason_codes"
+        ),
+        "execution_drift_overview_lineage": payload.get("execution_drift_overview_lineage"),
         "execution_drift_overview_diagnostics_alignment_match": payload.get(
             "execution_drift_overview_diagnostics_alignment_match"
         ),
@@ -432,6 +444,10 @@ def execution_snapshot_flat_fields(summary: Mapping[str, Any] | None) -> dict[st
     return {
         "execution_overall_status": payload.get("overall_status"),
         "execution_venue_count": payload.get("venue_count"),
+        "execution_snapshot_reason": payload.get("execution_snapshot_reason"),
+        "execution_snapshot_reason_codes": payload.get("execution_snapshot_reason_codes"),
+        "execution_snapshot_root_source": payload.get("execution_snapshot_root_source"),
+        "execution_snapshot_next_action": payload.get("execution_snapshot_next_action"),
         "execution_report_path": payload.get("report_path"),
     }
 
@@ -440,6 +456,8 @@ def execution_comparison_flat_fields(summary: Mapping[str, Any] | None) -> dict[
     payload = normalize_execution_comparison_summary(summary)
     return {
         "execution_comparison_all_registries_present": payload.get("all_registries_present"),
+        "execution_comparison_reason": payload.get("execution_comparison_reason"),
+        "execution_comparison_root_source": payload.get("execution_comparison_root_source"),
         "execution_comparison_report_path": payload.get("report_path"),
     }
 
@@ -448,6 +466,8 @@ def execution_diagnostics_flat_fields(summary: Mapping[str, Any] | None) -> dict
     payload = normalize_execution_diagnostics_summary(summary)
     return {
         "execution_diagnostics_status": payload.get("overall_status"),
+        "execution_diagnostics_reason": payload.get("diagnostics_reason"),
+        "execution_diagnostics_root_source": payload.get("diagnostics_root_source"),
         "execution_balance_gap_detected": payload.get("balance_gap_detected"),
         "execution_positions_snapshot_gap_detected": payload.get("positions_snapshot_gap_detected"),
         "execution_fills_gap_detected": payload.get("fills_gap_detected"),
@@ -466,11 +486,22 @@ def normalize_execution_snapshot_summary(summary: Mapping[str, Any] | None) -> d
         else payload.get("execution_venue_count")
     )
     report_path = payload.get("report_path") or payload.get("execution_report_path")
+    reason = payload.get("execution_snapshot_reason") or payload.get("snapshot_reason")
+    reason_codes = payload.get("execution_snapshot_reason_codes")
+    if not isinstance(reason_codes, list):
+        reason_codes = [reason] if isinstance(reason, str) else []
+    root_source = payload.get("execution_snapshot_root_source")
+    next_action = payload.get("execution_snapshot_next_action")
     return {
         **payload,
         "overall_status": overall_status,
         "venue_count": venue_count,
         "report_path": report_path,
+        "snapshot_reason": reason,
+        "execution_snapshot_reason": reason,
+        "execution_snapshot_reason_codes": reason_codes,
+        "execution_snapshot_root_source": root_source,
+        "execution_snapshot_next_action": next_action,
         "execution_overall_status": overall_status,
         "execution_venue_count": venue_count,
         "execution_report_path": report_path,
@@ -488,10 +519,14 @@ def normalize_execution_comparison_summary(summary: Mapping[str, Any] | None) ->
     )
     all_registries_present = _normalize_bool_like(all_registries_present)
     report_path = payload.get("report_path") or payload.get("execution_comparison_report_path")
+    reason = payload.get("execution_comparison_reason")
+    root_source = payload.get("execution_comparison_root_source")
     return {
         **payload,
         "all_registries_present": all_registries_present,
         "report_path": report_path,
+        "execution_comparison_reason": reason,
+        "execution_comparison_root_source": root_source,
         "execution_comparison_all_registries_present": all_registries_present,
         "execution_comparison_report_path": report_path,
     }
@@ -917,14 +952,24 @@ def normalize_execution_diagnostics_summary(summary: Mapping[str, Any] | None) -
         else payload.get("execution_fills_gap_detected")
     )
     report_path = payload.get("report_path") or payload.get("execution_diagnostics_report_path")
+    diagnostics_reason = payload.get("diagnostics_reason") or payload.get(
+        "execution_diagnostics_reason"
+    )
+    diagnostics_root_source = payload.get("diagnostics_root_source") or payload.get(
+        "execution_diagnostics_root_source"
+    )
     return {
         **payload,
         "overall_status": overall_status,
+        "diagnostics_reason": diagnostics_reason,
+        "diagnostics_root_source": diagnostics_root_source,
         "balance_gap_detected": balance_gap_detected,
         "positions_snapshot_gap_detected": positions_snapshot_gap_detected,
         "fills_gap_detected": fills_gap_detected,
         "report_path": report_path,
         "execution_diagnostics_status": overall_status,
+        "execution_diagnostics_reason": diagnostics_reason,
+        "execution_diagnostics_root_source": diagnostics_root_source,
         "execution_balance_gap_detected": balance_gap_detected,
         "execution_positions_snapshot_gap_detected": positions_snapshot_gap_detected,
         "execution_fills_gap_detected": fills_gap_detected,

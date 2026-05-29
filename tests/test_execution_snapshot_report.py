@@ -38,3 +38,62 @@ def test_build_execution_snapshot_report(tmp_path) -> None:
     assert summary["execution_venue_count"] == 1
     assert summary["execution_report_path"] == str(tmp_path / "execution_snapshot.md")
     assert summary["recommended_read_order"][0] == "docs/CURRENT_STATE.md"
+
+
+def test_build_execution_snapshot_report_marks_empty_trade_xyz_snapshot_reason(tmp_path) -> None:
+    report = build_execution_snapshot_report(
+        venue_snapshots=[],
+        out_path=tmp_path / "execution_snapshot.md",
+        summary_path=tmp_path / "execution_snapshot_summary.json",
+    )
+
+    assert "snapshot_reason: trade_xyz_live_execution_snapshot_not_connected" in report
+    summary = read_json(tmp_path / "execution_snapshot_summary.json")
+    assert isinstance(summary, dict)
+    assert summary["overall_status"] == "degraded"
+    assert summary["venue_count"] == 0
+    assert summary["execution_snapshot_empty"] is True
+    assert summary["execution_snapshot_reason"] == "trade_xyz_live_execution_snapshot_not_connected"
+    assert summary["execution_snapshot_reason_codes"] == [
+        "trade_xyz_live_execution_snapshot_not_connected"
+    ]
+    assert summary["execution_snapshot_root_source"] == "execution_snapshot_summary.venues=[]"
+    assert (
+        summary["execution_snapshot_next_action"]
+        == "decide_read_only_execution_state_collector_scope"
+    )
+
+
+def test_build_execution_snapshot_report_marks_unavailable_read_only_collector(
+    tmp_path,
+) -> None:
+    report = build_execution_snapshot_report(
+        venue_snapshots=[
+            {
+                "venue": "trade_xyz",
+                "registry_exists": True,
+                "balance_snapshot_exists": False,
+                "positions_snapshot_exists": False,
+                "fills_snapshot_exists": False,
+                "order_status_snapshot_exists": False,
+                "collector_status": "not_connected",
+                "collector_reason": "read_only_execution_state_collector_not_implemented",
+            }
+        ],
+        out_path=tmp_path / "execution_snapshot.md",
+        summary_path=tmp_path / "execution_snapshot_summary.json",
+    )
+
+    assert "snapshot_reason: read_only_execution_state_collector_not_implemented" in report
+    assert "## Venue: trade_xyz" in report
+    summary = read_json(tmp_path / "execution_snapshot_summary.json")
+    assert isinstance(summary, dict)
+    assert summary["overall_status"] == "degraded"
+    assert summary["venue_count"] == 1
+    assert summary["execution_snapshot_empty"] is False
+    assert summary["execution_snapshot_reason"] == (
+        "read_only_execution_state_collector_not_implemented"
+    )
+    assert summary["execution_snapshot_root_source"] == (
+        "execution_read_only_surfaces_summary.venues[].collector_status"
+    )

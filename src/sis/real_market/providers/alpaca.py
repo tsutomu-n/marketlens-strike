@@ -110,6 +110,7 @@ def _write_raw_payload(
     request_url: str,
     symbol: str,
     timeframe: str,
+    feed: str,
     row_count: int,
     payload: dict[str, Any],
 ) -> None:
@@ -121,6 +122,7 @@ def _write_raw_payload(
                 "request_url": request_url,
                 "symbol": symbol,
                 "timeframe": timeframe,
+                "feed": feed,
                 "row_count": row_count,
                 "payload": payload,
             },
@@ -209,6 +211,7 @@ def fetch_alpaca_bars(
             request_url=url,
             symbol=symbol,
             timeframe=timeframe,
+            feed=feed,
             row_count=len(rows),
             payload=payload,
         )

@@ -16,6 +16,7 @@ class TradeXyzClientConfig:
     base_url: str = "https://api.hyperliquid.xyz"
     dex: str = "xyz"
     timeout_seconds: float = 10.0
+    transport: httpx.BaseTransport | None = None
 
 
 class TradeXyzClient:
@@ -25,6 +26,7 @@ class TradeXyzClient:
             base_url=self.config.base_url,
             timeout=httpx.Timeout(self.config.timeout_seconds),
             headers={"content-type": "application/json"},
+            transport=self.config.transport,
         )
 
     def close(self) -> None:
@@ -51,6 +53,50 @@ class TradeXyzClient:
         if not isinstance(data, dict):
             raise TradeXyzApiError(f"allMids returned non-object: {type(data).__name__}")
         return {str(k): str(v) for k, v in data.items()}
+
+    def clearinghouse_state(self, user: str) -> dict[str, Any]:
+        data = self.post_info({"type": "clearinghouseState", "user": user})
+        if not isinstance(data, dict):
+            raise TradeXyzApiError(f"clearinghouseState returned non-object: {type(data).__name__}")
+        return data
+
+    def open_orders(self, user: str) -> list[dict[str, Any]]:
+        data = self.post_info({"type": "openOrders", "user": user})
+        if not isinstance(data, list):
+            raise TradeXyzApiError(f"openOrders returned non-list: {type(data).__name__}")
+        return [row for row in data if isinstance(row, dict)]
+
+    def user_fills(self, user: str) -> list[dict[str, Any]]:
+        data = self.post_info({"type": "userFills", "user": user})
+        if not isinstance(data, list):
+            raise TradeXyzApiError(f"userFills returned non-list: {type(data).__name__}")
+        return [row for row in data if isinstance(row, dict)]
+
+    def user_fills_by_time(
+        self, user: str, *, start_time_ms: int, end_time_ms: int | None = None
+    ) -> list[dict[str, Any]]:
+        payload: dict[str, Any] = {
+            "type": "userFillsByTime",
+            "user": user,
+            "startTime": start_time_ms,
+        }
+        if end_time_ms is not None:
+            payload["endTime"] = end_time_ms
+        data = self.post_info(payload)
+        if not isinstance(data, list):
+            raise TradeXyzApiError(f"userFillsByTime returned non-list: {type(data).__name__}")
+        return [row for row in data if isinstance(row, dict)]
+
+    def order_status(
+        self, *, user: str, oid: int | None = None, cloid: str | None = None
+    ) -> dict[str, Any]:
+        if oid is None and cloid is None:
+            raise ValueError("order_status requires oid or cloid")
+        oid_payload: int | str = oid if oid is not None else str(cloid)
+        data = self.post_info({"type": "orderStatus", "user": user, "oid": oid_payload})
+        if not isinstance(data, dict):
+            raise TradeXyzApiError(f"orderStatus returned non-object: {type(data).__name__}")
+        return data
 
     def meta(self, *, dex: str | None = None) -> dict[str, Any]:
         data = self.post_info({"type": "meta", "dex": dex or self.config.dex})

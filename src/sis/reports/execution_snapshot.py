@@ -5,6 +5,12 @@ from pathlib import Path
 from sis.reports.doc_paths import recommended_read_order
 from sis.storage.jsonl_store import write_json
 
+EMPTY_SNAPSHOT_REASON = "trade_xyz_live_execution_snapshot_not_connected"
+EMPTY_SNAPSHOT_ROOT_SOURCE = "execution_snapshot_summary.venues=[]"
+EMPTY_SNAPSHOT_NEXT_ACTION = "decide_read_only_execution_state_collector_scope"
+UNAVAILABLE_SNAPSHOT_REASON = "read_only_execution_state_collector_not_implemented"
+UNAVAILABLE_SNAPSHOT_ROOT_SOURCE = "execution_read_only_surfaces_summary.venues[].collector_status"
+
 
 def _quick_navigation(out_path: Path | None) -> dict[str, str]:
     if out_path is None:
@@ -47,15 +53,60 @@ def build_execution_snapshot_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    overall_status = "ok" if venue_snapshots else "degraded"
+    required_flags = (
+        "registry_exists",
+        "balance_snapshot_exists",
+        "positions_snapshot_exists",
+        "fills_snapshot_exists",
+        "order_status_snapshot_exists",
+    )
+    overall_status = (
+        "ok"
+        if venue_snapshots
+        and all(
+            all(snapshot.get(flag) is True for flag in required_flags)
+            for snapshot in venue_snapshots
+        )
+        else "degraded"
+    )
     if venue_snapshots and not any(snapshot.get("registry_exists") for snapshot in venue_snapshots):
         overall_status = "degraded"
+    empty_snapshot = len(venue_snapshots) == 0
+    unavailable_reason = next(
+        (
+            snapshot.get("collector_reason")
+            for snapshot in venue_snapshots
+            if snapshot.get("collector_status") in {"not_connected", "unavailable"}
+            and isinstance(snapshot.get("collector_reason"), str)
+        ),
+        None,
+    )
+    snapshot_reason = (
+        EMPTY_SNAPSHOT_REASON
+        if empty_snapshot
+        else unavailable_reason
+        or (UNAVAILABLE_SNAPSHOT_REASON if overall_status == "degraded" else None)
+    )
+    reason_codes = [snapshot_reason] if isinstance(snapshot_reason, str) else []
+    root_source = (
+        EMPTY_SNAPSHOT_ROOT_SOURCE
+        if empty_snapshot
+        else UNAVAILABLE_SNAPSHOT_ROOT_SOURCE
+        if snapshot_reason
+        else None
+    )
 
     summary = {
         "overall_status": overall_status,
         "venue_count": len(venue_snapshots),
         "execution_overall_status": overall_status,
         "execution_venue_count": len(venue_snapshots),
+        "snapshot_reason": snapshot_reason,
+        "execution_snapshot_reason": snapshot_reason,
+        "execution_snapshot_reason_codes": reason_codes,
+        "execution_snapshot_root_source": root_source,
+        "execution_snapshot_next_action": EMPTY_SNAPSHOT_NEXT_ACTION if snapshot_reason else None,
+        "execution_snapshot_empty": empty_snapshot,
         "execution_report_path": str(out_path) if out_path is not None else None,
         "venues": venue_snapshots,
         "recommended_read_order": recommended_read_order(
@@ -85,6 +136,9 @@ def build_execution_snapshot_report(
             "",
             f"- overall_status: {summary['overall_status']}",
             f"- venue_count: {summary['venue_count']}",
+            f"- snapshot_reason: {summary['snapshot_reason']}",
+            f"- execution_snapshot_root_source: {summary['execution_snapshot_root_source']}",
+            f"- execution_snapshot_next_action: {summary['execution_snapshot_next_action']}",
             "",
         ]
     )

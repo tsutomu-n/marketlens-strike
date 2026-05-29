@@ -360,6 +360,9 @@ def build_execution_read_only_surfaces_report(
     with_order_status_snapshot_count = sum(
         bool(item.get("order_status_snapshot_exists")) for item in venues
     )
+    unavailable_venue_count = sum(
+        item.get("collector_status") in {"not_connected", "unavailable"} for item in venues
+    )
     reconciled_venue_count = sum(item.get("reconcile_matched") is not None for item in venues)
     with_positions_financial_totals_count = sum(
         item.get("positions_notional_usd_total") is not None for item in venues
@@ -507,6 +510,7 @@ def build_execution_read_only_surfaces_report(
         "with_positions_snapshot_count": with_positions_snapshot_count,
         "with_fills_snapshot_count": with_fills_snapshot_count,
         "with_order_status_snapshot_count": with_order_status_snapshot_count,
+        "unavailable_venue_count": unavailable_venue_count,
         "reconciled_venue_count": reconciled_venue_count,
         "with_positions_financial_totals_count": with_positions_financial_totals_count,
         "with_positions_rollover_metrics_count": with_positions_rollover_metrics_count,
@@ -545,6 +549,7 @@ def build_execution_read_only_surfaces_report(
         f"- with_positions_snapshot_count: {with_positions_snapshot_count}",
         f"- with_fills_snapshot_count: {with_fills_snapshot_count}",
         f"- with_order_status_snapshot_count: {with_order_status_snapshot_count}",
+        f"- unavailable_venue_count: {unavailable_venue_count}",
         f"- reconciled_venue_count: {reconciled_venue_count}",
         f"- with_positions_financial_totals_count: {with_positions_financial_totals_count}",
         f"- with_positions_rollover_metrics_count: {with_positions_rollover_metrics_count}",
@@ -578,6 +583,11 @@ def build_execution_read_only_surfaces_report(
         detail_lines.extend(
             [
                 f"- venue_{venue}_balance_snapshot_exists: {item.get('balance_snapshot_exists')}",
+                f"- venue_{venue}_collector_status: {item.get('collector_status')}",
+                f"- venue_{venue}_collector_reason: {item.get('collector_reason')}",
+                f"- venue_{venue}_collector_root_source: {item.get('collector_root_source')}",
+                f"- venue_{venue}_read_only_endpoint_scope: {item.get('read_only_endpoint_scope')}",
+                f"- venue_{venue}_next_action: {item.get('next_action')}",
                 f"- venue_{venue}_positions_snapshot_exists: {item.get('positions_snapshot_exists')}",
                 f"- venue_{venue}_fills_snapshot_exists: {item.get('fills_snapshot_exists')}",
                 f"- venue_{venue}_order_status_snapshot_exists: {item.get('order_status_snapshot_exists')}",
