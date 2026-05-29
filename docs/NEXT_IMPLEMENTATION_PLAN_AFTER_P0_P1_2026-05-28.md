@@ -326,6 +326,203 @@ uv run pytest tests/test_real_vs_venue_tracking.py tests/test_tracking_models.py
 
 ## Completion Criteria
 
+## Restart Plan After A5
+
+この節は `./.ai_memory/HANDOFF.md` の 2026-05-29 restart contract に基づく、A5 以降の実行計画です。古い chat transcript や過去ログは前提にしません。
+
+### A5 Repository Health Gate
+
+目的:
+
+新しい実装に入る前に、repo 全体の health gate を再確認する。
+
+実行:
+
+```bash
+./scripts/check
+```
+
+期待値:
+
+- Python `3.13.7`
+- `ruff` pass
+- `pyrefly` 0 errors
+- `pytest` 294 passed
+
+Stop condition:
+
+- `./scripts/check` が失敗した場合は、以降の新規実装に進まず、最小失敗単位を特定する。
+- 失敗原因が generated artifact の鮮度だけなら、該当 artifact の再生成コマンドを明記してから再実行する。
+- unrelated な docs/algo 変更や user-owned 変更は revert しない。
+
+### After A5: Live Readiness Blocker Decomposition
+
+現時点の境界:
+
+- read-only Phase 2 entry は green。
+- `phase-gate-review` は `READ_ONLY_GO`。
+- `phase2_entry_allowed=True`。
+- `P2_BLOCKER=0`。
+- `LIVE_READINESS_BLOCKER=6`。
+- live order submission、exchange write API、wallet / signing work はまだ対象外。
+
+A5 後にやることは、`LIVE_READINESS_BLOCKER=6` を production live readiness の blocker として分解すること。read-only P2 entry の blocker と混同しない。
+
+分解対象:
+
+1. live execution readiness cleanup
+2. execution adapter coverage
+3. balance / fills gap resolution
+4. execution state comparison mismatch resolution
+5. snapshot drift mismatch resolution
+6. policy 上必要な場合の fresh Alpaca source confidence pass
+
+### B1 Live Readiness Blocker Inventory
+
+目的:
+
+6 個の live-readiness blocker を、現在の artifact から named blocker と named file に落とす。
+
+読むもの:
+
+```bash
+jq '.' data/ops/phase_gate_review_summary.json
+jq '.' data/ops/execution_drift_overview_summary.json
+jq '.' data/ops/execution_venue_diagnostics_summary.json
+jq '.' data/ops/execution_venue_comparison_summary.json
+jq '.' data/ops/execution_state_comparison_history_summary.json
+jq '.' data/ops/execution_snapshot_drift_history_summary.json
+```
+
+完了条件:
+
+- 各 blocker が `signal`, `observed`, `expected`, `source artifact`, `likely owning code path` を持つ。
+- `P2_BLOCKER` と `LIVE_READINESS_BLOCKER` を混同しない。
+- docs または generated report に blocker inventory が残る。
+
+Stop condition:
+
+- live-readiness blocker を消すために phase gate 条件を緩める必要が出た場合は止める。
+- balance / fills / order state の不足を read-only P2 blocker として扱い始めた場合は止める。
+
+### B2 Execution Adapter Coverage
+
+目的:
+
+live execution readiness に必要な execution adapter の coverage gap を、コードと tests で特定する。
+
+読むもの:
+
+- `src/sis/execution/`
+- `tests/test_trade_xyz_adapter_safety.py`
+- `tests/test_micro_live_canary.py`
+- `tests/test_trade_xyz_live_order_policy.py`
+
+完了条件:
+
+- adapter が read-only / dry-run / live write boundary を明示している。
+- uncovered live-readiness behavior が test 名付きで分かる。
+- public CLI surface に live order execution を exposed しない。
+
+Stop condition:
+
+- 実取引 API write、wallet、signing、secret の投入が必要になった場合は止める。
+
+### B3 Balance / Fills Gap Resolution
+
+目的:
+
+`execution_balance_gap_detected=True` と `execution_fills_gap_detected=True` の原因を、artifact 不足、比較ロジック不一致、または adapter 未接続に分類する。
+
+読むもの:
+
+```bash
+jq '.' data/ops/execution_snapshot_summary.json
+jq '.' data/ops/execution_gap_history_summary.json
+jq '.' data/ops/execution_venue_diagnostics_summary.json
+```
+
+完了条件:
+
+- balance gap と fills gap の expected source が明記されている。
+- current run で missing なのか、historical comparison で mismatch なのかが分かる。
+- 解消案が artifact regeneration、code fix、policy decision のいずれかに分類されている。
+
+Stop condition:
+
+- missing balance / fills を dummy data で埋める必要が出た場合は止める。
+
+### B4 State Comparison And Snapshot Drift Cleanup
+
+目的:
+
+`execution_state_comparison_mismatching_count=3` と `execution_snapshot_drift_mismatching_snapshot_count=3` を、どの snapshot / state がずれているかまで分解する。
+
+読むもの:
+
+```bash
+jq '.' data/ops/execution_state_comparison_history_summary.json
+jq '.' data/ops/execution_snapshot_drift_history_summary.json
+jq '.' data/ops/execution_drift_overview_summary.json
+```
+
+完了条件:
+
+- mismatch 3 件の具体的な field / artifact / timestamp が分かる。
+- snapshot drift が expected policy change なのか regression なのか分類されている。
+- 修正する場合は、先に failing targeted test または reproducible artifact comparison を用意する。
+
+Stop condition:
+
+- historical artifact を根拠なく書き換える必要が出た場合は止める。
+
+### B5 Fresh Alpaca Source Confidence Pass
+
+目的:
+
+policy 上必要な場合だけ、Alpaca source confidence を fresh bar で再確認する。
+
+前提:
+
+- credentials なしの controlled failure と、credentials ありの provider connectivity / data availability は別物として扱う。
+- historical IEX bar の success は fresh live `status=pass` と同義ではない。
+
+完了条件:
+
+- provider connectivity、data availability、live suitability のどれが pass / blocked か分かる。
+- `BLOCK_LOW_SOURCE_CONFIDENCE` または `BLOCK_ALPACA_NO_BARS` が残る場合、market session / request window / provider response が artifact に残る。
+
+Stop condition:
+
+- API key / secret を repo、docs、logs に書く必要が出た場合は止める。
+- fallback provider を primary truth として silent 採用する必要が出た場合は止める。
+
+### B6 Verification Closeout
+
+目的:
+
+live-readiness blocker の分解または修正後に、read-only Phase 2 entry と live-readiness 境界が維持されていることを確認する。
+
+実行:
+
+```bash
+uv run sis validate-artifacts --strict
+uv run sis phase-gate-review
+./scripts/check
+```
+
+期待値:
+
+- strict validation は `issues=0`。
+- read-only Phase 2 entry は `READ_ONLY_GO` / `phase2_entry_allowed=True` を維持する。
+- live-readiness blocker が残る場合は、`LIVE_READINESS_BLOCKER` として残り、P2 blocker に混ざらない。
+- live-readiness blocker を解消した場合でも、live order submission は別 gate として扱う。
+
+Stop condition:
+
+- `LIVE_READINESS_BLOCKER=0` だけを根拠に production live trading ready と判断しない。
+- live order submission、exchange write API、wallet / signing work へ進まない。
+
 ### P2前 Gate Restore 完了
 
 次をすべて満たすこと。
