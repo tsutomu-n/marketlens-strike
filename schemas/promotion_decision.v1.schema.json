@@ -10,6 +10,10 @@
   ],
   "properties": {
     "schema_version": { "const": "promotion_decision.v1" },
-    "live_ready_claimed": { "const": false }
+    "paper_ready_claimed": { "const": false },
+    "tiny_live_ready_claimed": { "const": false },
+    "live_ready_claimed": { "const": false },
+    "wallet_used": { "const": false },
+    "exchange_write_used": { "const": false }
   }
 }

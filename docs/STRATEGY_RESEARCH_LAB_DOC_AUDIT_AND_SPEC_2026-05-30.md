@@ -5,7 +5,7 @@
 ## 結論
 
 - Strategy Research Lab の主要 schema / Pydantic model / CLI surface は実装済み。
-- ただし tracked JSON Schema は full contract ではなく、最低限の required / const guard を置く薄い契約である。詳細な runtime validation の正本は `src/sis/research/strategy_lab/` の Pydantic model。
+- ただし tracked JSON Schema は full contract ではなく、最低限の required / const guard を置く薄い契約である。詳細な runtime validation の正本は `src/sis/research/strategy_lab/` と `src/sis/research_protocol/` の Pydantic model。
 - `data/research/signals.csv` / `ResearchSignalStrategy` / `DecisionContext` / `ExecutionPlan` 中心の文書は legacy paper path の説明であり、Strategy Research Lab の現行正本として読まない。
 - `PaperIntentPreview` は paper-only の仮注文意図であり、live order へ変換してはいけない。`paper-from-intents` でも最新データで再検証される。
 
@@ -102,7 +102,9 @@ Validation:
 - `symbol_bindings` は 1 件以上。
 - `strategy_id`, `strategy_family`, `strategy_version`, `generator_id` は空文字禁止。
 - `forbidden_claims` は `DEFAULT_FORBIDDEN_CLAIMS` をすべて含む。
-- `live_ready_claim` という古い claim 名は禁止。使うなら `live_ready_claimed`。
+- `DEFAULT_FORBIDDEN_CLAIMS` は `profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, `live_ready_claimed`。
+- `profitability_claim`, `paper_ready_claim`, `tiny_live_ready_claim`, `live_ready_claim` という古い claim 名は禁止。使うなら `*_claimed`。
+- 現行 default generator registry の実装済み generator は `qqq_trend_rates_vix`。
 
 ### StrategySignalRecord
 
@@ -153,6 +155,7 @@ Validation:
 - horizon / purge / embargo / min trade count は positive。
 - cost / slippage stress multiplier は 1.0 以上。
 - `forbidden_claims` は `DEFAULT_FORBIDDEN_CLAIMS` をすべて含む。
+- `DEFAULT_FORBIDDEN_CLAIMS` は `*_claimed` 名で統一する。旧 `*_claim` 名は StrategyExperimentSpec / StrategyRunProfile では legacy name として拒否される。
 
 ### TrialRecord / TrialLedger
 
@@ -267,7 +270,7 @@ Fields:
 Validation:
 
 - `promotion_id` と `source_pack_id` は空文字禁止。
-- `live_ready_claimed`, `wallet_used`, `exchange_write_used` は false のまま。
+- `paper_ready_claimed`, `tiny_live_ready_claimed`, `live_ready_claimed`, `wallet_used`, `exchange_write_used` は false のまま。
 - `promote` は required evidence をすべて observed に含め、approval reason が必要。
 - `reject` / `hold` は rejection reason が必要。
 
@@ -359,7 +362,8 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 
 重要:
 
-- `strategy-preview` は canonical artifact として `data/research/strategy_signals.parquet` を示し、legacy export も出す。
+- `strategy-preview` は `build_signals()` を通じて `data/research/strategy_signals.parquet`, `data/research/strategy_signals.jsonl`, legacy export `data/research/signals.csv`, `data/reports/strategy_signals_preview.md` を出す。
+- `build_signals()` は現時点では default generator `qqq_trend_rates_vix` を使う。arbitrary `StrategyExperimentSpec` / `parameter_grid` を CLI 引数で読み込む汎用 runner ではない。
 - `evaluate-strategy-lab` は `data/research/strategy_signals.parquet` が無い場合 exit code 2 で止まる。
 - `build-paper-intent-preview` は `PromotionDecision` が無い場合 exit code 2 で止まる。
 - `promotion-decision --decision promote` は required evidence が揃っていないと model validation で止まる。

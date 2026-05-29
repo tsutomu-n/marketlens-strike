@@ -25,7 +25,7 @@ def test_evaluation_plan_requires_purge_and_embargo() -> None:
             min_trade_count=20,
             primary_metric="per_era_mean_return_after_cost",
             secondary_metrics=["sharpe", "max_drawdown"],
-            forbidden_claims=["profitability_claim", "paper_ready_claim", "live_ready_claim"],
+            forbidden_claims=["profitability_claimed", "paper_ready_claimed", "live_ready_claimed"],
         )
 
 
@@ -48,10 +48,10 @@ def test_evaluation_plan_accepts_strategy_lab_research_profile() -> None:
         primary_metric="per_era_mean_return_after_cost",
         secondary_metrics=["sharpe", "max_drawdown"],
         forbidden_claims=[
-            "profitability_claim",
-            "paper_ready_claim",
-            "tiny_live_ready_claim",
-            "live_ready_claim",
+            "profitability_claimed",
+            "paper_ready_claimed",
+            "tiny_live_ready_claimed",
+            "live_ready_claimed",
         ],
     )
 

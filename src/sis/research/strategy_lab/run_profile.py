@@ -5,6 +5,13 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 DEFAULT_FORBIDDEN_CLAIMS = [
+    "profitability_claimed",
+    "paper_ready_claimed",
+    "tiny_live_ready_claimed",
+    "live_ready_claimed",
+]
+
+LEGACY_FORBIDDEN_CLAIMS = [
     "profitability_claim",
     "paper_ready_claim",
     "tiny_live_ready_claim",
@@ -31,6 +38,12 @@ class StrategyRunProfile(BaseModel):
             raise ValueError("wallet_required must be false for strategy_lab")
         if self.live_order_submission_allowed:
             raise ValueError("live_order_submission_allowed must be false for strategy_lab")
+        legacy = set(LEGACY_FORBIDDEN_CLAIMS).intersection(self.forbidden_claims)
+        if legacy:
+            raise ValueError(
+                "strategy_lab forbidden_claims uses legacy claim names; "
+                f"use *_claimed names instead: {sorted(legacy)}"
+            )
         missing = set(DEFAULT_FORBIDDEN_CLAIMS).difference(self.forbidden_claims)
         if missing:
             raise ValueError(f"strategy_lab forbidden_claims missing: {sorted(missing)}")

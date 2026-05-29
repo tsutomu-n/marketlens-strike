@@ -29,7 +29,7 @@
 | P2 gate restore / fee mode resolution | DONE | `configs/fee_model.trade_xyz.yaml`, `tests/test_trade_xyz_registry.py`, `tests/test_trade_xyz_collector.py`, `tests/test_phase_gate_review.py` |
 | P2 execution drift classification | DONE | `src/sis/reports/phase_gate_review.py`, `data/ops/phase_gate_review_summary.json` |
 | P2 Alpaca provider stub removal | DONE | `src/sis/real_market/providers/alpaca.py`, `tests/test_alpaca_provider.py` |
-| Strategy Research Lab schemas/models | DONE | `src/sis/research/strategy_lab/`, `schemas/strategy_experiment_spec.v1.schema.json`, `schemas/strategy_signal.v1.schema.json`, `schemas/evaluation_plan.mls.v1.schema.json`, `schemas/trial_record.v1.schema.json`, `schemas/trade_candidate.v1.schema.json`, `schemas/paper_candidate_pack.v1.schema.json`, `schemas/promotion_decision.v1.schema.json`, `schemas/paper_intent_preview.v1.schema.json` |
+| Strategy Research Lab schemas/models | DONE | `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `schemas/strategy_experiment_spec.v1.schema.json`, `schemas/strategy_signal.v1.schema.json`, `schemas/evaluation_plan.mls.v1.schema.json`, `schemas/trial_record.v1.schema.json`, `schemas/trade_candidate.v1.schema.json`, `schemas/paper_candidate_pack.v1.schema.json`, `schemas/promotion_decision.v1.schema.json`, `schemas/paper_intent_preview.v1.schema.json`, `schemas/data_snapshot_manifest.v1.schema.json`, `schemas/feature_snapshot_manifest.v1.schema.json` |
 | Strategy Lab paper-only workflow | DONE | `strategy-preview`, `evaluate-strategy-lab`, `build-paper-candidate-pack`, `promotion-decision`, `build-paper-intent-preview`, `paper-from-intents` |
 
 ## Current Operational Interpretation
@@ -44,7 +44,7 @@
 - `bot-preview` は実行時に read-only HOLD decision と preview report を生成する。
 - Strategy Research Lab は strategy definition / signal / evaluation / trial ledger / candidate pack / promotion decision / paper intent preview の code surface を持つ。
 - `PaperIntentPreview` は paper-only artifact で、`requires_revalidation=true`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を model validation で守る。
-- tracked JSON Schema は guard / interoperability 用の薄い契約であり、詳細 validation は Pydantic model が正本。
+- tracked JSON Schema は guard / interoperability 用の薄い契約であり、詳細 validation は Pydantic model が正本。claim guard は `*_claimed` 名に統一済み。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
 

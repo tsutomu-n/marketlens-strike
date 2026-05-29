@@ -75,6 +75,8 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 artifact boundary:
 
 - `data/research/strategy_signals.parquet` is the Strategy Lab signal artifact.
+- `data/research/strategy_signals.jsonl` is the Strategy Lab line-delimited export.
+- `data/research/signals.csv` is a legacy thin export, not the Strategy Lab source of truth.
 - `data/research/trial_ledger.jsonl` records all trials, not only the best trial.
 - `data/research/paper_candidate_pack.json` contains candidates and selected/rejected IDs.
 - `data/research/promotion_decision.json` is the human decision artifact required before paper intent preview.
@@ -86,6 +88,7 @@ stop conditions:
 - Do not build `PaperIntentPreview` without `PromotionDecision`.
 - Do not treat `PaperIntentPreview` as `OrderIntent` or live order.
 - Do not override `live_conversion_allowed=false`, `wallet_used=false`, or `exchange_write_used=false`.
+- Use `profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, and `live_ready_claimed` for forbidden claim names. Legacy `*_claim` names are not the current Strategy Lab claim names.
 
 Alpaca provider:
 

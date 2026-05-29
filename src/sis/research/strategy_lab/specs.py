@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from sis.research.strategy_lab.run_profile import DEFAULT_FORBIDDEN_CLAIMS
+from sis.research.strategy_lab.run_profile import DEFAULT_FORBIDDEN_CLAIMS, LEGACY_FORBIDDEN_CLAIMS
 
 PROXY_REQUIREMENTS = {
     "XYZ100": {"QQQ"},
@@ -60,9 +60,11 @@ class StrategyExperimentSpec(BaseModel):
         for name in ("strategy_id", "strategy_family", "strategy_version", "generator_id"):
             if not str(getattr(self, name)).strip():
                 raise ValueError(f"{name} must be non-empty")
-        if "live_ready_claim" in self.forbidden_claims:
+        legacy = set(LEGACY_FORBIDDEN_CLAIMS).intersection(self.forbidden_claims)
+        if legacy:
             raise ValueError(
-                "live_ready_claim is not an allowed claim name; use live_ready_claimed"
+                "forbidden_claims uses legacy claim names; "
+                f"use *_claimed names instead: {sorted(legacy)}"
             )
         missing = set(DEFAULT_FORBIDDEN_CLAIMS).difference(self.forbidden_claims)
         if missing:

@@ -30,6 +30,10 @@ class PromotionDecision(BaseModel):
         for field_name in ("promotion_id", "source_pack_id"):
             if not str(getattr(self, field_name)).strip():
                 raise ValueError(f"{field_name} must be non-empty")
+        if self.paper_ready_claimed:
+            raise ValueError("paper_ready_claimed must remain false for PromotionDecision")
+        if self.tiny_live_ready_claimed:
+            raise ValueError("tiny_live_ready_claimed must remain false for PromotionDecision")
         if self.live_ready_claimed:
             raise ValueError("live_ready_claimed must remain false for PromotionDecision")
         if self.wallet_used:

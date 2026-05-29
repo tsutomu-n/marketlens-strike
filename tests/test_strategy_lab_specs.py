@@ -36,7 +36,7 @@ def test_symbol_binding_requires_explicit_proxy_for_xyz100() -> None:
 
 
 def test_strategy_experiment_spec_rejects_live_claims() -> None:
-    with pytest.raises(ValidationError, match="live_ready_claim"):
+    with pytest.raises(ValidationError, match="legacy claim names"):
         StrategyExperimentSpec(
             schema_version="strategy_experiment_spec.v1",
             strategy_id="equity_index_momentum_v0",
@@ -58,6 +58,31 @@ def test_strategy_experiment_spec_rejects_live_claims() -> None:
             run_profile_id="strategy_lab",
             forbidden_claims=["profitability_claim", "live_ready_claim"],
         )
+
+
+def test_strategy_experiment_spec_default_claims_are_valid() -> None:
+    spec = StrategyExperimentSpec(
+        schema_version="strategy_experiment_spec.v1",
+        strategy_id="equity_index_momentum_v0",
+        strategy_family="momentum",
+        strategy_version="v0",
+        enabled=True,
+        description=None,
+        symbol_bindings=[
+            SymbolBinding(
+                execution_venue="trade_xyz",
+                execution_symbol="SP500",
+                real_market_symbol="SPY",
+                asset_class="index",
+            )
+        ],
+        generator_id="qqq_trend_rates_vix",
+        parameter_grid={"min_source_confidence": [0.7]},
+        evaluation_plan_id="initial_single_window_v1",
+        run_profile_id="strategy_lab",
+    )
+
+    assert "live_ready_claimed" in spec.forbidden_claims
 
 
 def test_strategy_signal_record_requires_symbol_binding_fields() -> None:

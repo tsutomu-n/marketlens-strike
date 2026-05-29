@@ -43,7 +43,7 @@
 - `Trade[XYZ]` micro live safety adapter / policy / canary code path
 - read-only execution surfaces, operations dashboard, remediation chain, daemon loop, notification outbox
 - Strategy Research Lab models and commands: `StrategyExperimentSpec`, `StrategySignalRecord`, `EvaluationPlan`, `TrialRecord`, `TradeCandidate`, `PaperCandidatePack`, `PromotionDecision`, `PaperIntentPreview`
-- Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/`
+- Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/` and `src/sis/research_protocol/`
 
 ## Important Boundaries
 

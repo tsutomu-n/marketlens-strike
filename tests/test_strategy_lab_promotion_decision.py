@@ -47,6 +47,25 @@ def test_promotion_decision_rejects_live_ready_claim() -> None:
         )
 
 
+def test_promotion_decision_rejects_paper_ready_claim() -> None:
+    with pytest.raises(ValidationError, match="paper_ready_claimed"):
+        PromotionDecision(
+            schema_version="promotion_decision.v1",
+            promotion_id="promotion-001",
+            generated_at=datetime.now(timezone.utc),
+            source_pack_id="pack-001",
+            reviewer="tn",
+            from_stage="strategy_lab",
+            to_stage="paper_observation",
+            decision="hold",
+            required_evidence=["trial_ledger"],
+            observed_evidence=["trial_ledger"],
+            approval_reasons=[],
+            rejection_reasons=["still_research"],
+            paper_ready_claimed=True,
+        )
+
+
 def test_promotion_decision_promote_requires_observed_evidence() -> None:
     with pytest.raises(ValidationError, match="required_evidence"):
         PromotionDecision(
