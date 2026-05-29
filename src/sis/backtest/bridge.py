@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import json
 
@@ -252,7 +252,14 @@ def _metrics_for_signals(
     quotes: pl.DataFrame,
     signals: list[ResearchSignal],
     cost_profiles: dict[tuple[str, str], CostProfile] | None = None,
+    *,
+    exit_model: str = "next_row",
+    holding_horizon_minutes: int | None = None,
 ) -> tuple[list[BacktestMetrics], list[DecisionRecord], dict]:
+    if exit_model not in {"next_row", "fixed_horizon"}:
+        raise ValueError(f"Unsupported exit_model: {exit_model}")
+    if exit_model == "fixed_horizon" and (holding_horizon_minutes is None or holding_horizon_minutes <= 0):
+        raise ValueError("holding_horizon_minutes must be positive for fixed_horizon")
     rows_by_key: dict[tuple[str, str], list[dict]] = {}
     for row in quotes.sort("ts_client").to_dicts():
         key = (str(row["venue"]), str(row["canonical_symbol"]).upper())
@@ -290,12 +297,29 @@ def _metrics_for_signals(
                 ),
                 None,
             )
-            if entry_index is None or entry_index + 1 >= len(rows):
+            if entry_index is None:
+                stale_rejected += 1
+                continue
+            if exit_model == "fixed_horizon":
+                target_exit_ts = quote_times[entry_index] + timedelta(
+                    minutes=holding_horizon_minutes or 0
+                )
+                exit_index = next(
+                    (
+                        index
+                        for index, quote_time in enumerate(quote_times[entry_index + 1 :], start=entry_index + 1)
+                        if quote_time >= target_exit_ts
+                    ),
+                    None,
+                )
+            else:
+                exit_index = entry_index + 1 if entry_index + 1 < len(rows) else None
+            if exit_index is None:
                 stale_rejected += 1
                 continue
 
             entry = rows[entry_index]
-            exit_ = rows[entry_index + 1]
+            exit_ = rows[exit_index]
             context = DecisionContext(
                 decision_ts=signal.ts_signal,
                 venue=venue,
@@ -366,6 +390,8 @@ def _metrics_for_signals(
         )
     summary = {
         "mode": "signal_driven",
+        "exit_model": exit_model,
+        "holding_horizon_minutes": holding_horizon_minutes,
         "signals_considered": len(signals),
         "executed_count": executed,
         "blocked_count": blocked,
@@ -393,6 +419,8 @@ def run_backtest_bridge_with_decisions(
     quotes_path: Path,
     signals_path: Path | None = None,
     cost_matrix_path: Path | None = None,
+    exit_model: str = "next_row",
+    holding_horizon_minutes: int | None = None,
     decision_log_path: Path | None = None,
     decision_summary_path: Path | None = None,
     audit_summary: dict | None = None,
@@ -481,7 +509,13 @@ def run_backtest_bridge_with_decisions(
     if signals_path is not None:
         signals = load_research_signals(signals_path)
         if signals:
-            metrics, records, summary = _metrics_for_signals(quotes, signals, cost_profiles)
+            metrics, records, summary = _metrics_for_signals(
+                quotes,
+                signals,
+                cost_profiles,
+                exit_model=exit_model,
+                holding_horizon_minutes=holding_horizon_minutes,
+            )
             if isinstance(audit_summary, dict) and any(audit_summary.values()):
                 summary["audit"] = audit_summary
             if normalized_phase_gate_summary and any(normalized_phase_gate_summary.values()):
@@ -542,6 +576,8 @@ def run_backtest_bridge_with_decisions(
     ]
     summary = {
         "mode": "quote_fallback",
+        "exit_model": exit_model,
+        "holding_horizon_minutes": holding_horizon_minutes,
         "signals_considered": 0,
         "executed_count": 0,
         "blocked_count": 0,

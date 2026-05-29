@@ -104,6 +104,7 @@ def test_research_pipeline_builds_reproducible_artifacts(tmp_path) -> None:
     assert "trade_allowed" in feature.columns
 
     signals = pl.read_csv(signals_path, try_parse_dates=True)
+    strategy_signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
     assert signals.height > 0
     assert set(signals.columns) == {
         "ts_signal",
@@ -114,7 +115,9 @@ def test_research_pipeline_builds_reproducible_artifacts(tmp_path) -> None:
         "strategy_name",
         "reason",
     }
-    assert set(signals.get_column("canonical_symbol").to_list()) == {"QQQ"}
+    assert set(signals.get_column("canonical_symbol").to_list()) == {"XYZ100"}
+    assert set(strategy_signals.get_column("execution_symbol").to_list()) == {"XYZ100"}
+    assert set(strategy_signals.get_column("real_market_symbol").to_list()) == {"QQQ"}
     assert set(signals.get_column("timeframe").to_list()) == {"4h"}
 
 
