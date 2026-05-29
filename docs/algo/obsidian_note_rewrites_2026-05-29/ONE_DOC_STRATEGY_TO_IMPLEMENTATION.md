@@ -1012,10 +1012,13 @@ Verification:
 | 部品を1枚カードで見る | `appendix_materials/02_COMPONENT_CARDS.md` |
 | repoの実装先を見る | `appendix_materials/03_REPO_IMPLEMENTATION_MAP.md` |
 | signal CSVやdecision logの例を見る | `appendix_materials/04_ARTIFACT_EXAMPLES.md` |
+| 売買発生シグナルを設計する | `appendix_materials/12_SIGNAL_DESIGN_PLAYBOOK.md` |
+| シグナル型を選ぶ | `appendix_materials/13_SIGNAL_PATTERN_LIBRARY.md` |
+| シグナル候補を採点する | `appendix_materials/14_SIGNAL_REVIEW_SCORECARD.md` |
 | Trend Pullbackを通しで見る | `appendix_materials/05_WORKED_EXAMPLE_TREND_PULLBACK.md` |
 | leakage / walk-forwardを確認する | `appendix_materials/06_VALIDATION_LEAKAGE_AND_WALK_FORWARD.md` |
 | LightGBM / Polars / VectorBTの誤用を避ける | `appendix_materials/07_MODEL_AND_FEATURE_RISK_SHEETS.md` |
-| Solana / Jito / token safetyを見る | `appendix_materials/08_SOLANA_JITO_TOKEN_SAFETY_SHEETS.md` |
+| Crypto/DeFi固有の安全確認を見る | `appendix_materials/08_SOLANA_JITO_TOKEN_SAFETY_SHEETS.md` |
 | 作業テンプレートを使う | `appendix_materials/09_CHECKLISTS_AND_TEMPLATES.md` |
 | 理想的ナラティブを疑う | `appendix_materials/10_NARRATIVE_RISK_FLASHCARDS.md` |
 | 実装直前の公式情報入口を見る | `appendix_materials/11_CURRENTNESS_SOURCE_NOTES.md` |

@@ -6,7 +6,7 @@
 
 | item | content |
 |---|---|
-| 役割 | 対象銘柄/トークンを選ぶ |
+| 役割 | 対象銘柄を選ぶ |
 | 入力 | registry, quote coverage, spread, depth, session |
 | 出力 | `selected`, `rejected(reason)` |
 | 捨て条件 | データ不足、取引不能、流動性不足、履歴が短い |
@@ -27,7 +27,7 @@
 | item | content |
 |---|---|
 | 役割 | signal/riskに使う特徴量を作る |
-| 入力 | OHLCV, quote, book, on-chain, event calendar |
+| 入力 | OHLCV, quote, order book, event calendar, cross-asset series |
 | 出力 | feature frame |
 | 捨て条件 | feature timeがdecision timeより後、rolling計算の未来参照 |
 | 誤用 | 高速処理できることを正しさと混同する |
@@ -57,7 +57,7 @@
 | item | content |
 |---|---|
 | 役割 | 良さそうなsignalでも入らない条件を作る |
-| 入力 | spread, slippage estimate, liquidity, regime, event, token safety |
+| 入力 | spread, slippage estimate, liquidity, regime, event, data status |
 | 出力 | `allow`, `skip(reason)` |
 | 捨て条件 | skipした取引の仮想PnLを記録していない |
 | 誤用 | skip率が高いだけで有効だと判断する |

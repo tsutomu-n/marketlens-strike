@@ -12,30 +12,37 @@
    - このrepoのどこに何が対応するかを見る。
 4. `04_ARTIFACT_EXAMPLES.md`
    - signal CSV、decision log、paper outputの具体例を見る。
-5. `05_WORKED_EXAMPLE_TREND_PULLBACK.md`
+5. `12_SIGNAL_DESIGN_PLAYBOOK.md`
+   - 売買発生シグナルの定義、出力契約、良い/悪いシグナルを確認する。
+6. `13_SIGNAL_PATTERN_LIBRARY.md`
+   - trend、pullback、breakout、mean reversionなどのシグナル型を見る。
+7. `14_SIGNAL_REVIEW_SCORECARD.md`
+   - シグナル候補を検証前・backtest後に採点する。
+8. `05_WORKED_EXAMPLE_TREND_PULLBACK.md`
    - Trend Pullbackを例に、仮説からpaper評価まで通して見る。
-6. `06_VALIDATION_LEAKAGE_AND_WALK_FORWARD.md`
+9. `06_VALIDATION_LEAKAGE_AND_WALK_FORWARD.md`
    - リーク、walk-forward、cost/slippage stressの具体例を見る。
-7. `07_MODEL_AND_FEATURE_RISK_SHEETS.md`
+10. `07_MODEL_AND_FEATURE_RISK_SHEETS.md`
    - LightGBM、時系列モデル、Polars、VectorBTの誤用リスクを見る。
-8. `08_SOLANA_JITO_TOKEN_SAFETY_SHEETS.md`
-   - Solana/Jito/token bot系をobserver-firstに直す。
-9. `09_CHECKLISTS_AND_TEMPLATES.md`
+11. `09_CHECKLISTS_AND_TEMPLATES.md`
    - 実験メモやレビューにそのまま使う。
-10. `10_NARRATIVE_RISK_FLASHCARDS.md`
+12. `10_NARRATIVE_RISK_FLASHCARDS.md`
     - 理想的ナラティブを疑うための暗記カード。
-11. `11_CURRENTNESS_SOURCE_NOTES.md`
+13. `11_CURRENTNESS_SOURCE_NOTES.md`
     - 実装直前に再確認する公式資料。
-12. `00_SOURCE_TO_APPENDIX_MAP.md`
+14. `08_SOLANA_JITO_TOKEN_SAFETY_SHEETS.md`
+   - Crypto/DeFi固有の補助資料。通常の戦略・シグナル検討では後回し。
+15. `00_SOURCE_TO_APPENDIX_MAP.md`
     - 原ノート24本と付録の対応を見る。
 
 ## 使い方
 
 - 戦略を考える時は、まず `09_CHECKLISTS_AND_TEMPLATES.md` の `Hypothesis Intake` を埋める。
 - 部品が曖昧なら `02_COMPONENT_CARDS.md` で入力と出力を固定する。
+- 売買発生シグナルそのものを詰める時は、`12_SIGNAL_DESIGN_PLAYBOOK.md`、`13_SIGNAL_PATTERN_LIBRARY.md`、`14_SIGNAL_REVIEW_SCORECARD.md` を使う。
 - repoに実装する前に `03_REPO_IMPLEMENTATION_MAP.md` で触る場所と触らない場所を確認する。
 - backtest結果が良く見えた時は `06_VALIDATION_LEAKAGE_AND_WALK_FORWARD.md` と `10_NARRATIVE_RISK_FLASHCARDS.md` で疑う。
-- Solana/Meme token系は `08_SOLANA_JITO_TOKEN_SAFETY_SHEETS.md` を先に通す。
+- Crypto/DeFi固有の観測やtoken安全性を扱う時だけ、`08_SOLANA_JITO_TOKEN_SAFETY_SHEETS.md` を使う。
 
 ## 注意
 

@@ -14,13 +14,14 @@
 - `COMPLETE_REWRITE.md` で24本を通読可能な統合ノートにした。
 - `INDIVIDUAL_NOTE_DETAILS.md` で24本それぞれを独立カード化した。
 - `ERROR_CORRECTION_REGISTER.md` で、原ノートの誤り・古い主張・誤解しやすい表現を補正した。
-- `EXPERIMENT_CARDS.md` で、戦略化のための10個の検証カードに落とした。
+- `EXPERIMENT_CARDS.md` で、戦略化のための検証カードに落とした。後続修正で、Crypto/DeFiよりもtrend、pullback、breakout、mean reversionなどの売買発生シグナルを前段に再編した。
 - `STRATEGY_PARTS_HANDBOOK.md` で、戦略部品の役割、入力、出力、判断ロジック、誤用、検証指標、捨て条件を説明した。
 - `STRATEGY_PARTS_DEEP_DIVE.md` で、データスキーマ、判定順、計算例、部品依存関係まで掘り下げた。
 - `ONE_DOC_STRATEGY_TO_IMPLEMENTATION.md` で、部品理解から repo 内の実装先、signal CSV、backtest、paper run、first issue までを1本で追える正本にした。
-- `appendix_materials/` で、図解、部品カード、repo実装対応、artifact例、worked example、検証表、Solana/Jito安全表、テンプレート、ナラティブ誤謬カードを追加した。
+- `appendix_materials/` で、図解、部品カード、repo実装対応、artifact例、worked example、検証表、テンプレート、ナラティブ誤謬カードを追加した。
+- Crypto/DeFi固有資料が前に出すぎるリスクを補正し、`SIGNAL_DESIGN_PLAYBOOK`、`SIGNAL_PATTERN_LIBRARY`、`SIGNAL_REVIEW_SCORECARD` を追加して、純粋な戦略・売買発生シグナルを主軸にした。
 - `INDIVIDUAL_NOTE_DETAILS.md` の部品名だけの列挙を、24本分の抽出部品テーブルへ置き換えた。
-- `STRATEGY_COMPOSITION_EXAMPLES.md` で、部品を実際の戦略案へ組み合わせる例を追加した。
+- `STRATEGY_COMPOSITION_EXAMPLES.md` で、部品を実際の戦略案へ組み合わせる例を追加した。後続修正で、Token Safety / Jitoを後段の特殊ケースへ下げ、シグナルarchetype中心へ再編した。
 
 ## まだ残るリスク
 
@@ -42,3 +43,4 @@
 - 1本だけ読んでも、最初に触るファイル、触らない方がよいlive execution層、テスト観点、paper runの確認対象が分かる。
 - 長文を読まなくても、図表、カード、artifact例、テンプレートから戦略検討を開始できる。
 - 原ノート24本が、どの付録や補助資料に変換されたか追跡できる。
+- Crypto/DeFi固有の話より先に、シグナルの定義、型、出力契約、invalidation、baseline、採点基準を確認できる。

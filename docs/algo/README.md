@@ -20,7 +20,7 @@
    - どのObsidianノートに由来するか、どのノートを除外したかを確認する。
 8. [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/)
    - 原ノート24本を、原本なしで読める厚さに再構成した版。誤り補正、追加調査、戦略部品化を含む。
-   - 図表、部品カード、artifact例、テンプレートは [obsidian_note_rewrites_2026-05-29/appendix_materials/](obsidian_note_rewrites_2026-05-29/appendix_materials/) を見る。
+   - 図表、部品カード、売買発生シグナル設計、artifact例、テンプレートは [obsidian_note_rewrites_2026-05-29/appendix_materials/](obsidian_note_rewrites_2026-05-29/appendix_materials/) を見る。
 
 ## 正本と参照元
 
