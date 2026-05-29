@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "data_snapshot_id",
+    "generated_at",
+    "quote_data_path",
+    "feature_panel_path",
+    "symbols",
+    "venues"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "data_snapshot_manifest.v1"
+    },
+    "data_snapshot_id": {
+      "type": "string"
+    },
+    "quote_data_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

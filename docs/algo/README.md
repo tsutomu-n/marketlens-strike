@@ -18,14 +18,16 @@
    - バックテスト、walk-forward、Monte Carlo、リーク検査、捨て条件を確認する。
 7. [SOURCE_NOTES_INDEX.md](SOURCE_NOTES_INDEX.md)
    - どのObsidianノートに由来するか、どのノートを除外したかを確認する。
-8. [obsidian_note_rewrites_2026-05-28/](obsidian_note_rewrites_2026-05-28/)
-   - 原ノート24本を、理想的ナラティブ、誤謬リスク、戦略部品、検証条件つきで読み直す。
+8. [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/)
+   - 原ノート24本を、原本なしで読める厚さに再構成した版。誤り補正、追加調査、戦略部品化を含む。
+   - 図表、部品カード、artifact例、テンプレートは [obsidian_note_rewrites_2026-05-29/appendix_materials/](obsidian_note_rewrites_2026-05-29/appendix_materials/) を見る。
 
 ## 正本と参照元
 
 - 現行正本: このディレクトリ直下の `ALGO_*`, `STRATEGY_*`, `RESEARCH_*`, `SOURCE_*` docs。
 - 一次参照: [obsidian_note_copies/](obsidian_note_copies/) にある実ノートコピー。
-- 再構成参照: [obsidian_note_rewrites_2026-05-28/](obsidian_note_rewrites_2026-05-28/) にある原ノートの批判的リライト。
+- 再構成参照: [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/) にある原ノートの批判的リライト。
+- 旧再構成: [obsidian_note_rewrites_2026-05-28/](obsidian_note_rewrites_2026-05-28/) は薄い初版として残すが、通常は使わない。
 - 旧docs: [../archive/2026-05-28-algo-doc-refresh/](../archive/2026-05-28-algo-doc-refresh/) に退避済み。
 
 旧 `OBSIDIAN_*` docs は調査ログとして残しますが、今後の戦略検討ではこの新docs群を正本にします。

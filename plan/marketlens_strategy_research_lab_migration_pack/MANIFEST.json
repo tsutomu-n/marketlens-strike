@@ -1,0 +1,348 @@
+{
+  "pack_name": "marketlens_strategy_research_lab_migration_pack",
+  "generated_at": "2026-05-29T12:27:00.669386+00:00",
+  "purpose": "Implementation contract for Strategy Research Lab migration in marketlens-strike.",
+  "file_count": 68,
+  "files": [
+    {
+      "path": "README.md",
+      "size": 2863,
+      "sha256": "d2747941e9b67687dd605e2829e9bf39e970e4e76fd33baaa58f82c90c0910bb"
+    },
+    {
+      "path": "00_EXECUTIVE_DECISION.md",
+      "size": 3477,
+      "sha256": "f2d15ccfbc47ee91eaee8da7d21de7d371847b71731010ac7113ebf0a3af76e0"
+    },
+    {
+      "path": "01_CURRENT_REPO_CONTEXT.md",
+      "size": 2288,
+      "sha256": "d08b520a0c527523097ce920765de08f6fa79fe259e3dbc5f156fbdcfa440202"
+    },
+    {
+      "path": "02_TARGET_ARCHITECTURE.md",
+      "size": 2534,
+      "sha256": "10dd7dd73c3d7267019e5675e9568ecc8c35c55e0500e01bf03c4bfe7b167a1b"
+    },
+    {
+      "path": "03_NON_GOALS_AND_GUARDS.md",
+      "size": 1636,
+      "sha256": "d649a48397a6d43df8694bc49e1f6bb9c5bb996dd20d3184331a14572855c56c"
+    },
+    {
+      "path": "04_TERMS_AND_BOUNDARIES.md",
+      "size": 1446,
+      "sha256": "d5ad588c49c492fbf2021b3d5b9e9e848eb702657d07d33733e5cb5f747b5017"
+    },
+    {
+      "path": "05_SYMBOL_BINDING_CONTRACT.md",
+      "size": 1722,
+      "sha256": "fd24d947eb3e7d0923780269678eba969d9a5d0da4182406ed47dd8624267b8c"
+    },
+    {
+      "path": "06_SCHEMA_CONTRACTS.md",
+      "size": 8014,
+      "sha256": "7d875418ad95fac3b5dd4b8fd3a0f8402f04fb1ca46042f6c861da69570216d8"
+    },
+    {
+      "path": "07_IMPLEMENTATION_ROADMAP.md",
+      "size": 2189,
+      "sha256": "fed0e386a4db4d1482a2b824eaba03bc6297f1151f07bb6f7a77d65fbeae6484"
+    },
+    {
+      "path": "08_MIGRATION_BRANCHING_AND_COMMIT_PLAN.md",
+      "size": 1259,
+      "sha256": "25213c7384e736816c8e9883ce76c9cfc798f8dde390108d9ea821808b3b3296"
+    },
+    {
+      "path": "09_COMMANDS_AND_ARTIFACTS.md",
+      "size": 2050,
+      "sha256": "7db1cc15c044c4796ebd137afb7e269bab255d5c5c6be6cb058d0d171ab5f4b6"
+    },
+    {
+      "path": "prs/PR-MLS-SL0_STRATEGY_RESEARCH_LAB_FOUNDATION.md",
+      "size": 1362,
+      "sha256": "8002ff0c43fe9d59a25ffa07aac2e4a3b000087d39a20dfb1cad44882cc35a17"
+    },
+    {
+      "path": "prs/PR-MLS-SL1_STRATEGY_SIGNALS_ARTIFACT.md",
+      "size": 1137,
+      "sha256": "358b31cbc0ced4b6b2ce460945d3af57a4046fcd24de2ba6ac854dbf431f9037"
+    },
+    {
+      "path": "prs/PR-MLS-SL2_EVALUATION_PLAN_TRIAL_LEDGER.md",
+      "size": 1283,
+      "sha256": "4fc6016040095dc13e68b05b6633f9998eb67f8178466b5d3bbfab6606ba422b"
+    },
+    {
+      "path": "prs/PR-MLS-SL3_BACKTEST_FIXED_HORIZON.md",
+      "size": 886,
+      "sha256": "55db7a8ef770818906ca49e23e71658e0f5bcd0eab43fb15e442f56b94284400"
+    },
+    {
+      "path": "prs/PR-MLS-SL4_TRADE_CANDIDATE_PAPER_CANDIDATE_PACK.md",
+      "size": 931,
+      "sha256": "69cf6985ea99c63f726412b2b4a578a0b95bf3f7c03d4238f688c29e02e37859"
+    },
+    {
+      "path": "prs/PR-MLS-SL5_PROMOTION_DECISION.md",
+      "size": 833,
+      "sha256": "51a8902b48760a51babee42382bd527bf638992dff09cf81652083c30293b0a5"
+    },
+    {
+      "path": "prs/PR-MLS-SL6_PAPER_INTENT_PREVIEW.md",
+      "size": 944,
+      "sha256": "511b31a3d9df50cc5b5b61fca46f977401af1e342490c6dc319bb15b131ac116"
+    },
+    {
+      "path": "prs/PR-MLS-SL7_PAPER_FROM_INTENTS.md",
+      "size": 993,
+      "sha256": "33a8b5c0add942fa3469d122d6e3b2da69e583ef40ebab36d5d04bc426ebdbb5"
+    },
+    {
+      "path": "prs/PR-MLS-SL8_LEGACY_SIGNALS_RETIREMENT.md",
+      "size": 866,
+      "sha256": "b8913174c3c265fbdcdfc4ff8f3273f810be230b7e576f915a605310b9930b89"
+    },
+    {
+      "path": "contracts/DATA_SNAPSHOT_MANIFEST.md",
+      "size": 270,
+      "sha256": "6cd705729de876d044f2bdd188335e3ab48843363a1069cb63bc1558ca4e65db"
+    },
+    {
+      "path": "contracts/FEATURE_SNAPSHOT_MANIFEST.md",
+      "size": 266,
+      "sha256": "812c6957f9188aab8001a00bb50bbc3db7d046d36b2a9dc607348f14190d27c0"
+    },
+    {
+      "path": "contracts/STRATEGY_EXPERIMENT_SPEC.md",
+      "size": 252,
+      "sha256": "63022d83a4c9e494fca491cd5b29951a2ac951151a9610942f7e2fb61bc53e21"
+    },
+    {
+      "path": "contracts/STRATEGY_SIGNAL_ARTIFACT.md",
+      "size": 236,
+      "sha256": "d1e9f00da3c2f2c858cc11e44ef189beb0590f6696c76a8241e25849d2f685c5"
+    },
+    {
+      "path": "contracts/EVALUATION_PLAN.md",
+      "size": 172,
+      "sha256": "2827b4dc92a198c645ef40f68357634459508fce26c9be7020a0bc35078211a0"
+    },
+    {
+      "path": "contracts/TRIAL_LEDGER.md",
+      "size": 194,
+      "sha256": "b9016f896f4aa66b86c3cb28281cf75efc15f8494b88cbc2a73d4d6fb67e0929"
+    },
+    {
+      "path": "contracts/LEAKAGE_CHECK_REPORT.md",
+      "size": 184,
+      "sha256": "7674809b01a13b08b3498dc4d9c50263959e15542a707b56b83e61bff7d69d3f"
+    },
+    {
+      "path": "contracts/TRADE_CANDIDATE.md",
+      "size": 188,
+      "sha256": "0e0b6702e7e759035f9784f48966a40b982d9daca5f5df340f5eef691e449bdb"
+    },
+    {
+      "path": "contracts/PAPER_CANDIDATE_PACK.md",
+      "size": 191,
+      "sha256": "22c8180aee27fca0691a86756bd0de01c812ca20128db82d0c067a48d0f06451"
+    },
+    {
+      "path": "contracts/PROMOTION_DECISION.md",
+      "size": 180,
+      "sha256": "371d9922d0d8fe26cb4ef985c4c43df7ec2b529ea8c795abbe1d2882e0aedfc1"
+    },
+    {
+      "path": "contracts/PAPER_INTENT_PREVIEW.md",
+      "size": 188,
+      "sha256": "a1d340f8130ca0b83b880055fb18b465031422026ce49c346e3b676b4bcbdbb8"
+    },
+    {
+      "path": "appendices/WHY_STRATEGY_RESEARCH_LAB.md",
+      "size": 404,
+      "sha256": "3bd3a4d3c845252c4aa364c41b9c5f76e912d23fd601c2718bbc36271865c673"
+    },
+    {
+      "path": "appendices/WHY_NOT_STATESTRIKE_FACTORY.md",
+      "size": 417,
+      "sha256": "f68b7265a656427ae2700e6919193fc49b9208575c31b0ca7b3a1457e60e4b6b"
+    },
+    {
+      "path": "appendices/WHY_NOT_BOT_PREVIEW_STRATEGY_ENGINE.md",
+      "size": 469,
+      "sha256": "e5b34c1bcb5acf6fd027f0c14297df3a15598e6d8f8a884a8738f9eb53c7f3a6"
+    },
+    {
+      "path": "appendices/RESEARCH_RISK_GUARDS_KAGGLE_NUMERAI_FINML.md",
+      "size": 843,
+      "sha256": "9bbcbb59206a3353d93ea592a4fc52f8155f3454e862d4e6c6b3f46d817ecacf"
+    },
+    {
+      "path": "appendices/FAILURE_MODE_MAP_FOR_STRATEGY_RESEARCH_LAB.md",
+      "size": 1053,
+      "sha256": "1c65c539af009d5e0aa95b629476882f7e7da8400cddc4366291d003a61c1fe3"
+    },
+    {
+      "path": "appendices/PATH_MAP.md",
+      "size": 726,
+      "sha256": "de0cc0226feb3e7a409767fd1599e48e829d4b78cfd24fb7110e3807e912dcdd"
+    },
+    {
+      "path": "appendices/TEST_MATRIX.md",
+      "size": 1285,
+      "sha256": "058f950bcf8dff805a6890ca17b20f42ee5be459c7c56a97d235b9430af436cd"
+    },
+    {
+      "path": "checklists/IMPLEMENTER_CHECKLIST.md",
+      "size": 897,
+      "sha256": "7da313a89ca110ee5e7718f5ab5d618207eef7c007d95adbc9f73438a8e3da5c"
+    },
+    {
+      "path": "checklists/REVIEWER_CHECKLIST.md",
+      "size": 694,
+      "sha256": "0ed5035eb2717a295ca7430e8a6cdc5a7e702cde36830d0a116b541a2781da1d"
+    },
+    {
+      "path": "checklists/DONE_CRITERIA.md",
+      "size": 671,
+      "sha256": "61506bd419d6b0fee95627aaa2fd021490ebb839d81fb51b60e13622eb47dfa9"
+    },
+    {
+      "path": "checklists/STOP_CONDITIONS.md",
+      "size": 487,
+      "sha256": "cd2a76f7cb922ab846de46d6b65b903d827cbed66c4b593f3a7a747c36068406"
+    },
+    {
+      "path": "checklists/SECURITY_AND_LIVE_GUARDS.md",
+      "size": 289,
+      "sha256": "89e83e2dc093863c1bef6cab6963f2115e9982af818bb0e6b73c19da4bc42701"
+    },
+    {
+      "path": "templates/data_snapshot_manifest.schema.sketch.json",
+      "size": 429,
+      "sha256": "d6e53a8197aaab74d121a574b9badfa07b2265749f8052607673aac1e9994d34"
+    },
+    {
+      "path": "templates/feature_snapshot_manifest.schema.sketch.json",
+      "size": 302,
+      "sha256": "94fd5677a1ed55d1749e3f256cf53febb1d2df9991cb9f0848d8b50e400d3e83"
+    },
+    {
+      "path": "templates/strategy_experiment_spec.schema.sketch.json",
+      "size": 319,
+      "sha256": "b2771e257813e65b5a940beee07e2ec95d675cf62d9b6e0629b2453506165301"
+    },
+    {
+      "path": "templates/strategy_signal_record.schema.sketch.json",
+      "size": 308,
+      "sha256": "7caf99babdc2e0dba3c6a5dc33646d2330bab0b7e712b06c8e691c94e86b9fc8"
+    },
+    {
+      "path": "templates/evaluation_plan.schema.sketch.json",
+      "size": 312,
+      "sha256": "a8d7887b395482d5a525c2ead21426990051ec9a1423236c4e1a69d9e769e2d4"
+    },
+    {
+      "path": "templates/trial_record.schema.sketch.json",
+      "size": 369,
+      "sha256": "2fbd9d43d3a5f43c0993ec2c83daa8178242cfdf022f0647a0bc867796e6a520"
+    },
+    {
+      "path": "templates/trade_candidate.schema.sketch.json",
+      "size": 337,
+      "sha256": "00624b2529df9b6e21981ac009d7b8d33914ca34cff6f995db797319f9b321f4"
+    },
+    {
+      "path": "templates/paper_candidate_pack.schema.sketch.json",
+      "size": 415,
+      "sha256": "5739e818d759b7076c9ae33fee81a25429ba0999466be78a0e436bd9ba0c2ca1"
+    },
+    {
+      "path": "templates/promotion_decision.schema.sketch.json",
+      "size": 320,
+      "sha256": "2e861354e9607653304ad5eaefbc9c75d3b3220d3577064f1db6b9e89d43dcfb"
+    },
+    {
+      "path": "templates/paper_intent_preview.schema.sketch.json",
+      "size": 522,
+      "sha256": "9c32352c2e4d3192a04ef0ab54fe38d469b874495f79591e6e98bd7343016055"
+    },
+    {
+      "path": "templates/strategy_experiment_spec.example.yaml",
+      "size": 1094,
+      "sha256": "d5746c05f489bf9a2794bc5590b0e4ba8f3d1f545170b7909e44f0fdac4b30fc"
+    },
+    {
+      "path": "templates/evaluation_plan.example.yaml",
+      "size": 944,
+      "sha256": "8f5ab19f758ffb8165bcb9f123e8039c7658867bc83b85cf2118c0cac7788f76"
+    },
+    {
+      "path": "templates/completion_report_template.md",
+      "size": 413,
+      "sha256": "9bf4e1519f6e05fcfba31a9cbcc3836453ededcec9af30a99eb8f43bf57bac92"
+    },
+    {
+      "path": "templates/code_review_comment_template.md",
+      "size": 525,
+      "sha256": "42afe056c6bab65ad7683975eae9222ef6369e46ffa6ebc7ff131fedfe466b78"
+    },
+    {
+      "path": "codex_prompts/PR-MLS-SL0_prompt.md",
+      "size": 548,
+      "sha256": "ad18293d6b79b2ceb3df2f7f4640fc4e1f87a8e421397c6b37eb6033a236aaeb"
+    },
+    {
+      "path": "codex_prompts/PR-MLS-SL1_prompt.md",
+      "size": 548,
+      "sha256": "9b8c5c5bb26d731fbbe13242b03ffc94e6f90d9ae81d733882b4d323c2dd2d53"
+    },
+    {
+      "path": "codex_prompts/PR-MLS-SL2_prompt.md",
+      "size": 548,
+      "sha256": "66cef7b692abb7a96ed910a11cb3bc909e0098773b327df3da83df6c35fbbb33"
+    },
+    {
+      "path": "codex_prompts/PR-MLS-SL3_prompt.md",
+      "size": 548,
+      "sha256": "4a1aeffca9e14aa5769301d2ea656f1fda157add7d2c6d97d4ab622385043aef"
+    },
+    {
+      "path": "codex_prompts/PR-MLS-SL4_prompt.md",
+      "size": 548,
+      "sha256": "14dc3c86449379d52cc46ce1847e36c92c4085a0291b9bff2acac77e5965fca2"
+    },
+    {
+      "path": "codex_prompts/PR-MLS-SL5_prompt.md",
+      "size": 548,
+      "sha256": "ba65ae3aef15c848216fdf88c09ae261e0386d3e582332b8591b132b907f5ce3"
+    },
+    {
+      "path": "codex_prompts/PR-MLS-SL6_prompt.md",
+      "size": 548,
+      "sha256": "dfd8f25976bea755ec533e86c5a4e45e08ac6f9977844486a8364b4e85c3720f"
+    },
+    {
+      "path": "codex_prompts/PR-MLS-SL7_prompt.md",
+      "size": 548,
+      "sha256": "30aac65bb4ce7f548cdb7e487d07072bf17638839f3c1b332229b2785a1075a8"
+    },
+    {
+      "path": "codex_prompts/PR-MLS-SL8_prompt.md",
+      "size": 548,
+      "sha256": "06b9fb5f954389792688338c23d2130561886e04b28dfe46b41345e512e390ba"
+    },
+    {
+      "path": "scripts/run_strategy_lab_verification.sh",
+      "size": 204,
+      "sha256": "a391007d559d2e6bb388de40c33ee353b646428460d349dff961a77fca749928"
+    },
+    {
+      "path": "scripts/run_strategy_lab_verification.ps1",
+      "size": 197,
+      "sha256": "09ba36ff2e0bcd2361c450ad5657cef3e0388050a04dc60954fa2a32f2ca877f"
+    }
+  ]
+}

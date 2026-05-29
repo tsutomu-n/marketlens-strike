@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "promotion_id",
+    "source_pack_id",
+    "decision",
+    "required_evidence",
+    "observed_evidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "promotion_decision.v1"
+    },
+    "live_ready_claimed": {
+      "const": false
+    }
+  }
+}

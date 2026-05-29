@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "pack_id",
+    "candidates",
+    "selected_candidate_ids",
+    "rejected_candidate_ids"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "paper_candidate_pack.v1"
+    },
+    "live_order_submitted": {
+      "const": false
+    },
+    "wallet_used": {
+      "const": false
+    },
+    "exchange_write_used": {
+      "const": false
+    }
+  }
+}
