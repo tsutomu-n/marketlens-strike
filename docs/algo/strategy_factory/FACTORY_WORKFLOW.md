@@ -45,9 +45,12 @@ Do not continue when:
 Candidate Sheet
   -> Pre-backtest Score
   -> Backlog Entry
+  -> Duplicate Check
   -> Gate Review
   -> Reject or Next State
 ```
+
+Gate Reviewの詳細は `GATE_REVIEW_CHECKLIST.md` を使う。
 
 ## 5. Batch Review Cadence
 
@@ -59,6 +62,7 @@ For a batch of candidates:
 4. Score remaining candidates.
 5. Move only top candidates to data-ready.
 6. Record every rejection with a taxonomy code.
+7. Archive variants that only change thresholds or lookback windows.
 
 ## 6. What Not To Do
 

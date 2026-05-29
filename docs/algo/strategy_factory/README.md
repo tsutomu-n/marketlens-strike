@@ -12,10 +12,16 @@
    - 落とす理由を固定コードで記録する。
 4. `STRATEGY_BACKLOG_TABLE.md`
    - 候補を台帳に載せ、状態と次のgateを管理する。
-5. `FACTORY_WORKFLOW.md`
+5. `GATE_REVIEW_CHECKLIST.md`
+   - 次gateへ進める前の合格/停止条件を確認する。
+6. `DUPLICATE_CONTROL.md`
+   - 似た候補や亜種の増殖を止める。
+7. `FACTORY_WORKFLOW.md`
    - 状態遷移とgateを確認する。
-6. `EXAMPLE_FILLED_SIGNAL_CARDS.md`
+8. `EXAMPLE_FILLED_SIGNAL_CARDS.md`
    - 記入例を見る。
+9. `FACTORY_QUALITY_AUDIT.md`
+   - 抜け漏れ、誤謬リスク、残リスクを見る。
 
 ## 状態の考え方
 
@@ -39,6 +45,8 @@ idea
 - baselineがない候補はbacktestへ進めない。
 - reject理由は自由文だけでなく、taxonomy codeで残す。
 - 似た候補はduplicate keyでまとめ、重複量産しない。
+- 次gateへ進める時は `GATE_REVIEW_CHECKLIST.md` を使う。
+- thresholdや期間だけが違う候補は新戦略にせずvariantとして扱う。
 - Crypto/DeFi固有の候補は通常候補とは分け、特殊ケースとして扱う。
 
 ## Relation To Existing Docs

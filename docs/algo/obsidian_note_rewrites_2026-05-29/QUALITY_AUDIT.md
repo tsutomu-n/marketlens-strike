@@ -23,6 +23,7 @@
 - `INDIVIDUAL_NOTE_DETAILS.md` の部品名だけの列挙を、24本分の抽出部品テーブルへ置き換えた。
 - `STRATEGY_COMPOSITION_EXAMPLES.md` で、部品を実際の戦略案へ組み合わせる例を追加した。後続修正で、Token Safety / Jitoを後段の特殊ケースへ下げ、シグナルarchetype中心へ再編した。
 - 上位 `../strategy_factory/` を追加し、読み物ではなく、candidate sheet、reject taxonomy、backlog table、state gateで戦略候補を量産管理できるようにした。
+- `strategy_factory/` の抜けを再点検し、gate checklist、duplicate control、factory audit、promotion blocker/evidence欄を追加した。
 
 ## まだ残るリスク
 
@@ -46,3 +47,4 @@
 - 原ノート24本が、どの付録や補助資料に変換されたか追跡できる。
 - Crypto/DeFi固有の話より先に、シグナルの定義、型、出力契約、invalidation、baseline、採点基準を確認できる。
 - 戦略候補を自由文で増やすのではなく、状態、重複キー、固定reject理由、次gateで管理できる。
+- 次gateへ進める時に、証跡、blocker、duplicate、taxonomy codeを確認できる。

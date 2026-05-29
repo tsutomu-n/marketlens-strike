@@ -60,6 +60,24 @@
 | `RISK_EXPOSURE_UNBOUNDED` | exposure上限がない |
 | `RISK_LIVE_REQUIRED_TOO_EARLY` | 早すぎるlive依存 |
 
+## PROMOTION
+
+| code | meaning |
+|---|---|
+| `PROMOTION_EVIDENCE_MISSING` | 次gateへ進める証跡がない |
+| `PROMOTION_GATE_NOT_PASSED` | gate checklist未通過 |
+| `PROMOTION_BLOCKER_OPEN` | promotion blockerが残っている |
+| `PROMOTION_OWNERLESS` | owner/reviewerが不明 |
+
+## OPS
+
+| code | meaning |
+|---|---|
+| `OPS_BACKLOG_INCONSISTENT` | backlogとcandidate sheetの状態が矛盾 |
+| `OPS_EVIDENCE_PATH_MISSING` | evidence pathが存在しない |
+| `OPS_STATUS_INVALID` | workflowにないstatus |
+| `OPS_REJECT_CODE_UNKNOWN` | taxonomyにないreject code |
+
 ## DUP
 
 | code | meaning |

@@ -13,6 +13,9 @@
 - updated:
 - next_gate:
 - duplicate_key:
+- reviewer:
+- evidence_paths:
+- promotion_blockers:
 
 ## Hypothesis
 
@@ -27,6 +30,7 @@
 ## Signal Contract
 
 - required_inputs:
+- required_input_sources:
 - trigger:
 - invalidation:
 - no_trade_conditions:
@@ -52,6 +56,8 @@
 - observed_at_available:
 - known_missingness:
 - leakage_risks:
+- timezone_policy:
+- data_delay_policy:
 
 ## Pre-backtest Score
 
@@ -69,6 +75,7 @@
 
 - reject_if:
 - taxonomy_codes:
+- evidence_required:
 
 ## Backtest Review
 
@@ -80,6 +87,7 @@
 - cost_x2_result:
 - slippage_x2_result:
 - parameter_neighborhood:
+- skipped_signal_review:
 
 ## Paper Review
 
@@ -88,6 +96,7 @@
 - skipped_count:
 - paper_backtest_gap:
 - unexplained_gap:
+- promotion_blockers:
 
 ## Decision Log
 
@@ -99,3 +108,5 @@
 - `next_gate` must be one of the workflow states in `FACTORY_WORKFLOW.md`.
 - `duplicate_key` should be `<archetype>:<universe>:<timeframe>:<trigger-family>`.
 - `taxonomy_codes` should come from `SIGNAL_REJECT_REASON_TAXONOMY.md`.
+- `evidence_paths` should point to reports, logs, scorecards, or source notes when available.
+- `promotion_blockers` should be empty before moving to the next gate.
