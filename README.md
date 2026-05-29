@@ -6,10 +6,11 @@
 
 1. [docs/CURRENT_STATE.md](/home/tn/projects/marketlens-strike/docs/CURRENT_STATE.md)
 2. [docs/CODE_STATUS.md](/home/tn/projects/marketlens-strike/docs/CODE_STATUS.md)
-3. [docs/OPERATIONS_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/OPERATIONS_RUNBOOK.md)
-4. [docs/ARCHITECTURE_AND_PHASES.md](/home/tn/projects/marketlens-strike/docs/ARCHITECTURE_AND_PHASES.md)
-5. [docs/trade_xyz_bot_beginner_guide.html](/home/tn/projects/marketlens-strike/docs/trade_xyz_bot_beginner_guide.html)
-6. [plan/archive/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/archive/PR-00_to_PR-08_implementation_plan.md) は historical migration contract として読む
+3. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](/home/tn/projects/marketlens-strike/docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
+4. [docs/OPERATIONS_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/OPERATIONS_RUNBOOK.md)
+5. [docs/ARCHITECTURE_AND_PHASES.md](/home/tn/projects/marketlens-strike/docs/ARCHITECTURE_AND_PHASES.md)
+6. [docs/trade_xyz_bot_beginner_guide.html](/home/tn/projects/marketlens-strike/docs/trade_xyz_bot_beginner_guide.html)
+7. [plan/archive/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/archive/PR-00_to_PR-08_implementation_plan.md) は historical migration contract として読む
 
 ## Setup
 
@@ -63,6 +64,17 @@ paper cycle:
 uv run sis paper-operations-cycle
 ```
 
+Strategy Research Lab to paper-only preview:
+
+```bash
+uv run sis strategy-preview
+uv run sis evaluate-strategy-lab
+uv run sis build-paper-candidate-pack
+uv run sis promotion-decision --decision hold
+uv run sis build-paper-intent-preview
+uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
+```
+
 Trade[XYZ] quote refresh:
 
 ```bash
@@ -95,6 +107,8 @@ PR12 read-only smoke evidence:
 - Trade[XYZ] active symbols の `fee_mode`, `taker_fee_bps`, `maker_fee_bps` は `configs/fee_model.trade_xyz.yaml` から registry / quote row へ伝播する
 - Alpaca provider は silent empty stub ではなく、credentials 未設定時は明示的に unavailable で失敗する
 - `bot-preview` は実行時に read-only HOLD preview artifact を出力する
+- Strategy Research Lab は `StrategyExperimentSpec` から `PaperIntentPreview` までの研究 / 候補生成 / paper昇格判断 surface を持つ
+- `PaperIntentPreview` は paper-only で、live order への変換は禁止
 - wallet secrets, signing, production live trading は未完了
 - `data/` は git 管理外
 

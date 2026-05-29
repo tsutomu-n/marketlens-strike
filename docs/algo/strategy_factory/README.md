@@ -31,6 +31,7 @@ idea
   -> data-ready
   -> backtest-ready
   -> backtested
+  -> strategy-lab-candidate
   -> paper-observing
   -> continue | rejected | archived
 ```
@@ -49,10 +50,27 @@ idea
 - thresholdや期間だけが違う候補は新戦略にせずvariantとして扱う。
 - Crypto/DeFi固有の候補は通常候補とは分け、特殊ケースとして扱う。
 
+## Relation To Implemented Strategy Lab
+
+Factory docs は候補設計の入口です。実装済み artifact chain へ進める時は、次の対応で落とし込みます。
+
+| Factory concept | Implemented artifact |
+|---|---|
+| Signal Candidate Sheet | `StrategyExperimentSpec` |
+| archetype / family | `strategy_family` |
+| variant / parameter sweep | `strategy_version`, `parameter_grid`, `parameter_hash` |
+| required inputs | `EvaluationPlan`, `DataSnapshotManifest`, `FeatureSnapshotManifest` |
+| reject taxonomy | `rejection_reasons`, `block_reasons`, `reason_codes` |
+| gate review | `PromotionDecision` |
+| paper observing entry | `PaperIntentPreview` |
+
+詳細な現行 schema と docs 監査は `../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` を読む。`PaperIntentPreview` は paper-only であり、live order や execution-side `OrderIntent` と混同しない。
+
 ## Relation To Existing Docs
 
 - 設計思想: `../ALGO_STRATEGY_SYSTEM_GUIDE.md`
 - 戦略部品: `../STRATEGY_PARTS_CATALOG.md`
 - 検証手順: `../RESEARCH_VALIDATION_PLAYBOOK.md`
+- 実装済み Strategy Lab 仕様: `../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
 - 原ノート再構成: `../obsidian_note_rewrites_2026-05-29/`
 - signal設計付録: `../obsidian_note_rewrites_2026-05-29/appendix_materials/12_SIGNAL_DESIGN_PLAYBOOK.md`

@@ -8,6 +8,7 @@
 - repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
 - PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、最新 phase gate は `READ_ONLY_GO`。
 - Trade[XYZ] の対象銘柄は fee mode / taker fee / maker fee を registry と raw quote row に持つ。`fee_mode_unknown_rate` は current gate blocker ではない。
+- Strategy Research Lab の schema / model / CLI surface は実装済み。`StrategyExperimentSpec` から `PaperIntentPreview` までを研究、候補生成、評価、paper昇格判断として扱う。
 - `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
 - 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。execution drift は live-readiness blocker として残る。
 
@@ -41,6 +42,8 @@
 - venue quality gate 付き paper fill / fee model / paper report
 - `Trade[XYZ]` micro live safety adapter / policy / canary code path
 - read-only execution surfaces, operations dashboard, remediation chain, daemon loop, notification outbox
+- Strategy Research Lab models and commands: `StrategyExperimentSpec`, `StrategySignalRecord`, `EvaluationPlan`, `TrialRecord`, `TradeCandidate`, `PaperCandidatePack`, `PromotionDecision`, `PaperIntentPreview`
+- Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/`
 
 ## Important Boundaries
 
@@ -49,6 +52,8 @@
 - `collect-trade-xyz-quotes` は public CLI command として exposed している。
 - `data/` は git 管理外。再開時は artifact を再生成する。
 - `bot-preview` の `data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` は実行時生成 artifact。現 checkout に無い場合は `uv run sis bot-preview` で再生成する。
+- Strategy Lab の canonical signal artifact は `data/research/strategy_signals.parquet`。旧 `data/research/signals.csv` は Strategy Lab 正本ではなく legacy export として読む。
+- `PaperIntentPreview` は paper-only の仮注文意図。`live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を守り、live order として扱わない。
 - Alpaca live fetch は credentials が必要。credentials なしでは明示的に unavailable として失敗するため、silent empty data と混同しない。
 - `ostium-python-sdk` は active dependency から削除済み。
 
@@ -89,12 +94,13 @@ PR-08 専用確認:
 
 1. `docs/CURRENT_STATE.md`
 2. `docs/CODE_STATUS.md`
-3. `docs/OPERATIONS_RUNBOOK.md`
-4. `docs/ARCHITECTURE_AND_PHASES.md`
-5. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-6. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
-7. `docs/trade_xyz_bot_beginner_guide.html`
-8. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+3. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+4. `docs/OPERATIONS_RUNBOOK.md`
+5. `docs/ARCHITECTURE_AND_PHASES.md`
+6. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
+7. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
+8. `docs/trade_xyz_bot_beginner_guide.html`
+9. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
 
 その後、必要に応じて:
 

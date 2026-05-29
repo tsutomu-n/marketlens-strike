@@ -1,5 +1,10 @@
 # Repo Implementation Map
 
+> Superseded for current Strategy Research Lab implementation map as of 2026-05-30.
+> This map describes an older signal CSV / DecisionContext / ExecutionPlan-centered path.
+> Current code truth is `src/sis/research/strategy_lab/`, `src/sis/commands/research.py`, `src/sis/commands/paper.py`, and `src/sis/paper/runner.py`.
+> See `../../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`.
+
 このrepoに戦略を落とす時の対応表です。最初にlive executionを触らないための境界表でもあります。
 
 ## 1. Main Mapping

@@ -1,5 +1,9 @@
 # Pipeline Diagrams
 
+> Superseded for current Strategy Research Lab diagrams as of 2026-05-30.
+> These diagrams remain useful as research notes, but the current code path is `StrategyExperimentSpec -> StrategySignalRecord -> TrialRecord -> PaperCandidatePack -> PromotionDecision -> PaperIntentPreview`.
+> See `../../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`.
+
 ## 1. Strategy Preparation Flow
 
 ```text

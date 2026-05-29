@@ -1,5 +1,10 @@
 # One Doc: Strategy Parts to Implementation
 
+> Superseded for current implementation path as of 2026-05-30.
+> This note still helps with strategy thinking, but its repo implementation path is legacy.
+> For current code truth, schema contracts, and doc audit, read `../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`.
+> In particular, `data/research/signals.csv`, `DecisionContext`, and `ExecutionPlan` are not the Strategy Research Lab canonical chain.
+
 この文書は、戦略部品の考え方から、この repo で実装・検証・paper 運用へ進めるまでを 1 本で読める粒度にした実装用メモです。
 
 結論:

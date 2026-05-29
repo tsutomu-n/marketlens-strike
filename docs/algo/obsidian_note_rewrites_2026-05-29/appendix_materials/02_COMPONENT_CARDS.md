@@ -1,5 +1,9 @@
 # Component Cards
 
+> Legacy component-card reference for implementation details as of 2026-05-30.
+> Use `../../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` for the current Strategy Research Lab artifact names and paper-only boundary.
+> Cards that mention `ExecutionPlan` describe the older paper path, not the canonical Strategy Lab chain.
+
 各部品を、入力、出力、捨て条件、誤用で固定するためのカードです。
 
 ## Universe Selector

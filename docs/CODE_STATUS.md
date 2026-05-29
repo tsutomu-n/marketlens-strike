@@ -29,6 +29,8 @@
 | P2 gate restore / fee mode resolution | DONE | `configs/fee_model.trade_xyz.yaml`, `tests/test_trade_xyz_registry.py`, `tests/test_trade_xyz_collector.py`, `tests/test_phase_gate_review.py` |
 | P2 execution drift classification | DONE | `src/sis/reports/phase_gate_review.py`, `data/ops/phase_gate_review_summary.json` |
 | P2 Alpaca provider stub removal | DONE | `src/sis/real_market/providers/alpaca.py`, `tests/test_alpaca_provider.py` |
+| Strategy Research Lab schemas/models | DONE | `src/sis/research/strategy_lab/`, `schemas/strategy_experiment_spec.v1.schema.json`, `schemas/strategy_signal.v1.schema.json`, `schemas/evaluation_plan.mls.v1.schema.json`, `schemas/trial_record.v1.schema.json`, `schemas/trade_candidate.v1.schema.json`, `schemas/paper_candidate_pack.v1.schema.json`, `schemas/promotion_decision.v1.schema.json`, `schemas/paper_intent_preview.v1.schema.json` |
+| Strategy Lab paper-only workflow | DONE | `strategy-preview`, `evaluate-strategy-lab`, `build-paper-candidate-pack`, `promotion-decision`, `build-paper-intent-preview`, `paper-from-intents` |
 
 ## Current Operational Interpretation
 
@@ -40,6 +42,9 @@
 - phase gate は `phase2_entry_allowed=true` かつ `P2_BLOCKER=0` の場合、live-readiness-only drift を P2 remediation order に入れない。
 - Alpaca provider は silent empty stub ではない。credentials 未設定時は controlled failure、成功時は Alpaca stock bars response を `RealMarketBar` に変換する。
 - `bot-preview` は実行時に read-only HOLD decision と preview report を生成する。
+- Strategy Research Lab は strategy definition / signal / evaluation / trial ledger / candidate pack / promotion decision / paper intent preview の code surface を持つ。
+- `PaperIntentPreview` は paper-only artifact で、`requires_revalidation=true`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を model validation で守る。
+- tracked JSON Schema は guard / interoperability 用の薄い契約であり、詳細 validation は Pydantic model が正本。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
 
@@ -65,6 +70,7 @@ PR-08:
 - public CLI からの micro live 実行 surface
 - production live trading
 - live order preview / 注文候補生成の正式 artifact surface
+- Strategy Lab から micro live への直接昇格 surface
 - Alpaca credentials ありの API connectivity は確認済み。fresh live `status=pass` は市場時間中の fresh bar 取得で再確認する
 - execution drift の live-readiness blocker 解消
 - side-specific depth は quote field と tracking gate に存在する。read-only phase gate は spread / stale / l2-only / fee unknown を current blocker として見る。
@@ -85,6 +91,7 @@ PR-08:
 ## Reading Pointers
 
 - historical migration contract: `plan/archive/PR-00_to_PR-08_implementation_plan.md`
+- Strategy Lab doc audit and schema spec: `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
 - runtime status: `docs/CURRENT_STATE.md`
 - operator procedure: `docs/OPERATIONS_RUNBOOK.md`
 - architecture and boundaries: `docs/ARCHITECTURE_AND_PHASES.md`

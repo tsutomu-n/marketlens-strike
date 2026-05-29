@@ -51,6 +51,42 @@ uv run sis build-signals
 uv run sis check-research-quality
 ```
 
+## Strategy Research Lab
+
+Strategy Lab は研究、候補生成、評価、paper 昇格判断までの surface です。live order surface ではありません。
+
+canonical docs:
+
+- `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+- `src/sis/research/strategy_lab/`
+- `schemas/*strategy*`, `schemas/*candidate*`, `schemas/*intent*`
+
+paper-only preview path:
+
+```bash
+uv run sis strategy-preview
+uv run sis evaluate-strategy-lab
+uv run sis build-paper-candidate-pack
+uv run sis promotion-decision --decision hold
+uv run sis build-paper-intent-preview
+uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
+```
+
+artifact boundary:
+
+- `data/research/strategy_signals.parquet` is the Strategy Lab signal artifact.
+- `data/research/trial_ledger.jsonl` records all trials, not only the best trial.
+- `data/research/paper_candidate_pack.json` contains candidates and selected/rejected IDs.
+- `data/research/promotion_decision.json` is the human decision artifact required before paper intent preview.
+- `data/bot/paper_intent_preview.json` is paper-only and must be revalidated before paper execution.
+
+stop conditions:
+
+- Do not treat `data/research/signals.csv` as the Strategy Lab source of truth.
+- Do not build `PaperIntentPreview` without `PromotionDecision`.
+- Do not treat `PaperIntentPreview` as `OrderIntent` or live order.
+- Do not override `live_conversion_allowed=false`, `wallet_used=false`, or `exchange_write_used=false`.
+
 Alpaca provider:
 
 - `fetch_alpaca_bars()` は silent empty stub ではない。
@@ -231,4 +267,6 @@ manual live smoke は標準運用手順に含めない。wallet / signing / exch
 - `READ_ONLY_GO` を production live trading ready と読まない。fee mode unknown の再発、execution drift degraded、micro live public CLI 不在は別 gate として扱う。
 - `execution_drift_classification_counts.LIVE_READINESS_BLOCKER > 0` の間は live trading ready と扱わない。
 - micro live code path があることをもって live trading ready と解釈しない。
+- Strategy Lab schema / candidate / paper preview があることをもって live-ready と解釈しない。
+- Strategy Lab の JSON Schema は thin guard。詳細 validation は `src/sis/research/strategy_lab/` の Pydantic model に従う。
 - migration docs と legacy live evidence docs を混同しない。
