@@ -206,6 +206,10 @@ def test_alpaca_live_smoke_blocks_empty_bars_as_data_availability(tmp_path, monk
     assert summary["data_availability_status"] == "empty"
     assert summary["error_class"] == "AlpacaNoBarsReturned"
     assert summary["live_suitability_reasons"] == ["BLOCK_ALPACA_NO_BARS"]
+    assert summary["requested_window"] == "latest"
+    assert summary["latest_bar_ts"] is None
+    assert summary["market_session"] == "unknown"
+    assert "no_bars" in str(summary["source_confidence_reason"])
     report = (tmp_path / "reports/alpaca_live_smoke.md").read_text(encoding="utf-8")
     assert "data_availability_status: empty" in report
     assert "BLOCK_ALPACA_NO_BARS" in report
