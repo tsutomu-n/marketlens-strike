@@ -655,6 +655,66 @@ rules:
     assert frame.get_column("side").to_list() == ["long", "long"]
 
 
+def test_authoring_derived_features_support_distance_from_ma_inputs(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "distance-from-ma.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": start + timedelta(hours=index),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": True,
+                "research_close": close,
+                "research_return_1d": 0.01,
+                "research_return_4h": 0.0,
+            }
+            for index, close in enumerate([100.0, 110.0, 120.0])
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: distance_from_ma_authoring_v1
+  strategy_family: mean_reversion
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: XYZ100
+      real_market_symbol: QQQ
+      asset_class: equity_index
+data:
+  feature_panel_path: data/research/feature_panel.parquet
+rules:
+  side: long
+  derived_features:
+    - name: close_distance_from_ma
+      op: distance_from_ma
+      columns: [research_close]
+      window: 3
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: close_distance_from_ma
+        op: gt
+        value: 0.08
+  reason_code: distance_from_ma_authoring_v1
+  hold_reason_code: distance_from_ma_hold_v1
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert frame.get_column("ts_signal").to_list() == [start + timedelta(hours=2)]
+    assert frame.get_column("side").to_list() == ["long"]
+
+
 def test_authoring_derived_features_support_atr_volatility_inputs(tmp_path) -> None:
     data_dir = tmp_path / "data"
     spec_path = tmp_path / "atr-volatility.yaml"
@@ -1417,6 +1477,81 @@ rules:
     frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
 
     assert frame.get_column("ts_signal").to_list() == [start]
+    assert frame.get_column("side").to_list() == ["long"]
+
+
+def test_authoring_derived_features_support_cross_sectional_standardization(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "cross-sectional-standardization.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": start,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "factor_score": score,
+                "research_return_1d": 0.01,
+                "research_return_4h": 0.0,
+            }
+            for symbol, score in [("AAA", 1.0), ("BBB", 2.0), ("CCC", 4.0)]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: cross_sectional_standardization_v1
+  strategy_family: factor_rotation
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+data:
+  feature_panel_path: data/research/feature_panel.parquet
+rules:
+  side: long
+  derived_features:
+    - name: factor_z
+      op: cross_sectional_zscore
+      columns: [factor_score]
+    - name: factor_demeaned
+      op: cross_sectional_demean
+      columns: [factor_score]
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: factor_z
+        op: gt
+        value: 1.0
+      - column: factor_demeaned
+        op: gt
+        value: 1.5
+  reason_code: cross_sectional_standardization_v1
+  hold_reason_code: cross_sectional_standardization_hold_v1
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert frame.get_column("execution_symbol").to_list() == ["CCC100"]
     assert frame.get_column("side").to_list() == ["long"]
 
 

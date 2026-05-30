@@ -940,6 +940,7 @@ class DerivedFeature(BaseModel):
         "cumulative_return",
         "slope",
         "mean_reversion_score",
+        "distance_from_ma",
         "rolling_corr",
         "rolling_beta",
         "rolling_spread_zscore",
@@ -959,6 +960,8 @@ class DerivedFeature(BaseModel):
         "risk_adjusted_score",
         "inverse_volatility_weight",
         "cross_sectional_rank",
+        "cross_sectional_zscore",
+        "cross_sectional_demean",
         "queue_position_score",
         "latency_penalty_bps",
         "maker_taker_fee_edge_bps",
@@ -1029,6 +1032,7 @@ class DerivedFeature(BaseModel):
             "expected_shortfall",
             "slope",
             "mean_reversion_score",
+            "distance_from_ma",
         }:
             if len(self.columns) != 1:
                 raise ValueError(
@@ -1082,7 +1086,12 @@ class DerivedFeature(BaseModel):
                 raise ValueError(
                     f"rules.derived_features.{self.name}.latency_penalty_bps requires one column"
                 )
-        if self.op in {"inverse_volatility_weight", "cross_sectional_rank"}:
+        if self.op in {
+            "inverse_volatility_weight",
+            "cross_sectional_rank",
+            "cross_sectional_zscore",
+            "cross_sectional_demean",
+        }:
             if len(self.columns) != 1:
                 raise ValueError(
                     f"rules.derived_features.{self.name}.{self.op} requires one column"
@@ -1172,6 +1181,7 @@ class DerivedFeature(BaseModel):
             "expected_shortfall",
             "slope",
             "mean_reversion_score",
+            "distance_from_ma",
             "rolling_corr",
             "rolling_beta",
             "rolling_spread_zscore",
@@ -2418,6 +2428,11 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
             "canonical_symbol"
         )
         expr = -((first - mean) / _safe_denominator(std))
+    elif feature.op == "distance_from_ma":
+        mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        expr = (first - mean) / _safe_denominator(mean.abs())
     elif feature.op in {"rolling_corr", "rolling_beta", "rolling_spread_zscore"}:
         second = pl.col(feature.columns[1])
         if feature.op == "rolling_spread_zscore":
@@ -2507,6 +2522,13 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
             .then(1.0)
             .otherwise(1.0 - ((rank - 1.0) / _safe_denominator(count - 1.0)))
         )
+    elif feature.op in {"cross_sectional_zscore", "cross_sectional_demean"}:
+        mean = first.mean().over("ts")
+        demeaned = first - mean
+        if feature.op == "cross_sectional_demean":
+            expr = demeaned
+        else:
+            expr = demeaned / _safe_denominator(first.std().over("ts"))
     elif feature.op == "queue_position_score":
         second = pl.col(feature.columns[1])
         expr = 1.0 - (first / _safe_denominator(first + second))
@@ -3107,7 +3129,9 @@ def _allocation_raw_weights(rows: list[dict[str, Any]], portfolio: PortfolioRule
             else 0.0
             for row in rows
         ]
-        return raw_weights if any(weight > 0.0 for weight in raw_weights) else [1.0 for _row in rows]
+        return (
+            raw_weights if any(weight > 0.0 for weight in raw_weights) else [1.0 for _row in rows]
+        )
     raw_weights = [
         1.0 / float(row["_allocation_volatility"])
         if isinstance(row.get("_allocation_volatility"), int | float)

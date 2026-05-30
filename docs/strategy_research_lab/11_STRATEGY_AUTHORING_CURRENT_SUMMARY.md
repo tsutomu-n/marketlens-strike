@@ -25,7 +25,7 @@
 | Trend following | EMA / MACD / ADX / moving average cross / Donchian / Ichimoku / Keltner / channel breakout を derived feature と condition で表現できる。 |
 | Mean reversion | RSI、rolling z-score、mean reversion score、Bollinger band、rolling min/max、spread z-score を使える。 |
 | Breakout | Donchian、Keltner、Bollinger、true range、ATR、volume z-score、volatility breakout を使える。 |
-| Momentum / relative strength | rolling return、cumulative return、slope、cross-sectional rank、risk-adjusted score、benchmark beta / correlation を使える。 |
+| Momentum / relative strength | rolling return、cumulative return、slope、cross-sectional rank / z-score / demean、risk-adjusted score、benchmark beta / correlation を使える。 |
 | Kelly / tail-risk sizing | `kelly_fraction`, `historical_var`, `expected_shortfall` を rolling return column から作り、Kelly sizing 候補、VaR filter、expected shortfall filter に使える。 |
 | Pair trade / hedge | rolling spread z-score、rolling beta、multi-leg、dynamic hedge ratio column で paper signal を展開できる。 |
 | Long / short rotation | `rules.cross_sectional` で top / bottom n または fraction を global または group ごとに選べる。 |
@@ -86,7 +86,7 @@
 - price / volatility: `true_range`, `atr`, `rolling_volatility`, `annualized_volatility`, `realized_variance`, `downside_volatility`
 - channel / band: `bollinger_upper`, `bollinger_lower`, `bollinger_width`, `bollinger_percent_b`, `donchian_upper`, `donchian_lower`, `donchian_mid`, `donchian_width`, `keltner_upper`, `keltner_lower`, `keltner_width`
 - trend / oscillator: `ewm_mean`, `rsi`, `macd_line`, `stochastic_k`, `stochastic_d`, `adx`, `obv`, `volume_zscore`, `ichimoku_conversion`, `ichimoku_base`, `ichimoku_span_a`, `ichimoku_span_b`
-- returns / statistics: `pct_change`, `log_return`, `lag`, `rolling_return`, `rolling_sum`, `rolling_mean`, `rolling_std`, `rolling_zscore`, `sharpe_like`, `sortino_like`, `kelly_fraction`, `historical_var`, `expected_shortfall`, `cumulative_return`, `slope`, `mean_reversion_score`, `rolling_min`, `rolling_max`
+- returns / statistics: `pct_change`, `log_return`, `lag`, `rolling_return`, `rolling_sum`, `rolling_mean`, `rolling_std`, `rolling_zscore`, `sharpe_like`, `sortino_like`, `kelly_fraction`, `historical_var`, `expected_shortfall`, `cumulative_return`, `slope`, `mean_reversion_score`, `distance_from_ma`, `rolling_min`, `rolling_max`
 - pair / benchmark: `rolling_corr`, `rolling_beta`, `rolling_spread_zscore`
 - market microstructure / capacity features: `order_flow_imbalance`, `liquidity_depth_ratio`, `spread_bps`, `queue_position_score`, `latency_penalty_bps`, `capacity_usage_ratio`, `turnover_pressure`, `correlation_crowding_score`
 - flow / carry / options / sentiment / fundamentals: `funding_bps`, `carry_adjusted_return`, `vol_risk_premium`, `put_call_skew`, `liquidity_stress`, `net_exchange_flow`, `onchain_activity_ratio`, `sentiment_weighted_score`, `event_surprise`, `fundamental_value_gap`, `risk_adjusted_score`, `cross_sectional_rank`
@@ -106,7 +106,7 @@
 | Portfolio exposure cap | `max_total_position_weight`, `max_long_position_weight`, `max_short_position_weight`, `max_abs_net_position_weight` | 同一 timestamp の total / long / short / net exposure を制限する。 |
 | Symbol cap | `max_symbol_position_weight` | 同一 symbol の同時 exposure を制限する。 |
 | Group cap | `max_group_position_weight`, `max_group_abs_net_position_weight`, `group_column` | sector / theme / asset class など任意 group の gross / net exposure を制限する。 |
-| Allocation | `allocation_method`, `target_total_position_weight`, `allocation_volatility_column` | equal weight、score proportional、inverse volatility に正規化する。 |
+| Allocation | `allocation_method`, `target_total_position_weight`, `allocation_volatility_column`, `allocation_beta_column`, `group_column` | equal weight、score proportional、inverse volatility、dollar neutral、beta neutral、group neutral に正規化する。beta neutral は beta column、group neutral は group column が必要。neutral 系は片側しかない timestamp / group では反対側の half target を使わない。 |
 | Risk throttle | `rules.risk_throttle` | drawdown、daily loss、loss streak で新規 paper signal を止める。 |
 | Position overlap | `rules.position` | 同一 symbol の仮想 open signal 数と open weight を制限する。 |
 
@@ -153,7 +153,7 @@
 最新 full check では、次を確認済みです。
 
 - `./scripts/check`: pass
-- pytest: `466 passed`
+- pytest: `471 passed`
 - pyrefly: `0 errors`
 - current-docs lint: `checked 76 current docs: links, EOF, and legacy roots ok`
 
