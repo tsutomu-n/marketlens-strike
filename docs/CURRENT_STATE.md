@@ -44,7 +44,7 @@
 - `Trade[XYZ]` micro live safety adapter / policy / canary code path
 - read-only execution surfaces, operations dashboard, remediation chain, daemon loop, notification outbox
 - Strategy Research Lab models and commands: `StrategyExperimentSpec`, `StrategySignalRecord`, `EvaluationPlan`, `TrialRecord`, `TradeCandidate`, `PaperCandidatePack`, `PromotionDecision`, `PaperIntentPreview`
-- Strategy authoring commands: `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`
+- Strategy authoring commands: `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`, `strategy-author-train-model`
 - Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/` and `src/sis/research_protocol/`
 
 ## Important Boundaries
@@ -62,12 +62,12 @@
 
 ## Verification Status
 
-2026-05-30 code/docs check:
+2026-05-31 code/docs check:
 
 - `./scripts/check`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 565 passed via `./scripts/check`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 76 current docs`
+- `uv run pytest -q`: 586 passed via `./scripts/check`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 78 current docs`
 
 2026-05-28 runtime artifact snapshot:
 
@@ -100,7 +100,7 @@ PR-08 専用確認:
 
 1. `docs/CURRENT_STATE.md`
 2. `docs/CODE_STATUS.md`
-3. `docs/DOCUMENT_AUDIT_2026-05-30.md`
+3. `docs/DOCUMENT_AUDIT_2026-05-31.md`
 4. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
 5. `docs/strategy_research_lab/README.md`
 6. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`

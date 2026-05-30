@@ -6,7 +6,7 @@
 
 1. [docs/CURRENT_STATE.md](/home/tn/projects/marketlens-strike/docs/CURRENT_STATE.md)
 2. [docs/CODE_STATUS.md](/home/tn/projects/marketlens-strike/docs/CODE_STATUS.md)
-3. [docs/DOCUMENT_AUDIT_2026-05-30.md](/home/tn/projects/marketlens-strike/docs/DOCUMENT_AUDIT_2026-05-30.md)
+3. [docs/DOCUMENT_AUDIT_2026-05-31.md](/home/tn/projects/marketlens-strike/docs/DOCUMENT_AUDIT_2026-05-31.md)
 4. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](/home/tn/projects/marketlens-strike/docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
 5. [docs/strategy_research_lab/README.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/README.md)
 6. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
@@ -131,11 +131,11 @@ PR12 read-only smoke evidence:
 
 ## Current Verification
 
-2026-05-30 code/docs check:
+2026-05-31 code/docs check:
 
-- `./scripts/check`: pass, 565 passed
+- `./scripts/check`: pass, 586 passed
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run python scripts/check_current_docs.py`: pass, `checked 76 current docs`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 78 current docs`
 
 2026-05-28 runtime artifact snapshot:
 

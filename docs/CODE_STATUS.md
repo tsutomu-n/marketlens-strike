@@ -79,14 +79,14 @@ PR-08:
 
 ## Verification
 
-2026-05-30 code/docs verification:
+2026-05-31 code/docs verification:
 
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 565 passed via `./scripts/check`
-- `./scripts/check`: pass, 565 passed
-- `uv run python scripts/check_current_docs.py`: pass, `checked 76 current docs`
+- `uv run pytest -q`: 586 passed via `./scripts/check`
+- `./scripts/check`: pass, 586 passed
+- `uv run python scripts/check_current_docs.py`: pass, `checked 78 current docs`
 
 2026-05-28 runtime artifact snapshot:
 

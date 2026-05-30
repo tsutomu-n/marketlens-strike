@@ -113,12 +113,11 @@ uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/exampl
 
 ## 検証済み
 
-2026-05-30 時点で確認済みです。
+2026-05-31 の最終確認値です。
 
-- `uv run pytest tests/test_strategy_authoring.py -q`: `181 passed`
-- `uv run pytest tests/test_strategy_lab_schemas.py -q`: `2 passed`
-- `uv run python scripts/check_current_docs.py`: `checked 76 current docs: links, EOF, and legacy roots ok`
-- `./scripts/check`: pass, pytest `565 passed`, pyrefly `0 errors`
+- `uv run pytest tests/test_strategy_authoring.py tests/test_strategy_lab_schemas.py -q`: `204 passed`
+- `uv run python scripts/check_current_docs.py`: `checked 78 current docs: links, EOF, and legacy roots ok`
+- `./scripts/check`: pass, pytest `586 passed`, pyrefly `0 errors`
 
 ## 残る範囲
 

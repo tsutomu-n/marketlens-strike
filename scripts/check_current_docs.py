@@ -12,7 +12,7 @@ CURRENT_DOC_FILES = (
     "README.md",
     "docs/CURRENT_STATE.md",
     "docs/CODE_STATUS.md",
-    "docs/DOCUMENT_AUDIT_2026-05-30.md",
+    "docs/DOCUMENT_AUDIT_2026-05-31.md",
     "docs/DOCS_LINT_POLICY_2026-05-30.md",
     "docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md",
     "docs/OPERATIONS_RUNBOOK.md",
@@ -59,7 +59,7 @@ LEGACY_ROOT_PATHS = (
 )
 
 ALLOW_LEGACY_ROOT_PATH_TEXT = {
-    "docs/DOCUMENT_AUDIT_2026-05-30.md",
+    "docs/DOCUMENT_AUDIT_2026-05-31.md",
     "docs/DOCS_LINT_POLICY_2026-05-30.md",
     "docs/archive/README.md",
 }
