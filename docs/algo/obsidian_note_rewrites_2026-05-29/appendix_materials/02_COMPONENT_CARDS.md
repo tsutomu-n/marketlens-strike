@@ -1,107 +1,268 @@
 # Component Cards
 
-> Legacy component-card reference for implementation details as of 2026-05-30.
-> Use `../../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` for the current Strategy Research Lab artifact names and paper-only boundary.
-> Cards that mention `ExecutionPlan` describe the older paper path, not the canonical Strategy Lab chain.
+この付録は、戦略部品を Strategy Research Lab の実装済み component に対応させるカードです。旧 `ExecutionPlan(action, symbol, quantity, notes)` 中心の説明は legacy paper runner 内部 bridge として扱い、Strategy Lab の設計入口にはしません。
 
-各部品を、入力、出力、捨て条件、誤用で固定するためのカードです。
+## StrategyExperimentSpec
 
-## Universe Selector
+役割:
 
-| item | content |
-|---|---|
-| 役割 | 対象銘柄を選ぶ |
-| 入力 | registry, quote coverage, spread, depth, session |
-| 出力 | `selected`, `rejected(reason)` |
-| 捨て条件 | データ不足、取引不能、流動性不足、履歴が短い |
-| 誤用 | 後から生き残った銘柄だけを使う |
+- 戦略仮説と実験条件を固定する。
 
-## Data Quality Gate
+入力:
 
-| item | content |
-|---|---|
-| 役割 | 使ってよいデータか判定する |
-| 入力 | timestamp, price columns, source timestamp, missing/null, source confidence |
-| 出力 | `valid`, `stale`, `missing`, `untrusted` |
-| 捨て条件 | oracle/source時刻欠落、価格欠損、異常な重複、timezone不明 |
-| 誤用 | 欠損をforward fillして売買可能データにする |
+- strategy family
+- symbol binding
+- generator ID
+- parameter grid
+- evaluation plan ID
+- run profile ID
 
-## Feature Factory
+出力:
 
-| item | content |
-|---|---|
-| 役割 | signal/riskに使う特徴量を作る |
-| 入力 | OHLCV, quote, order book, event calendar, cross-asset series |
-| 出力 | feature frame |
-| 捨て条件 | feature timeがdecision timeより後、rolling計算の未来参照 |
-| 誤用 | 高速処理できることを正しさと混同する |
+- generator / evaluator が参照する実験契約
 
-## Regime Detector
+禁止:
 
-| item | content |
-|---|---|
-| 役割 | 戦略を通常稼働/縮小/停止する環境を決める |
-| 入力 | volatility, spread, depth, trend slope, event flags |
-| 出力 | `trend`, `range`, `panic`, `thin_liquidity`, `unknown` |
-| 捨て条件 | unknownをnormal扱いしている |
-| 誤用 | regimeを方向予測として扱う |
+- order quantity
+- live-ready claim
+- wallet / exchange write
 
-## Signal Generator
+## SymbolBinding
 
-| item | content |
-|---|---|
-| 役割 | entry候補を出す |
-| 入力 | feature frame, regime, data status |
-| 出力 | `ts_signal`, `symbol`, `side`, `timeframe`, `reason`, `score` |
-| 捨て条件 | invalidationなし、reasonなし、data_statusなし |
-| 誤用 | signalを注文命令として扱う |
+役割:
 
-## Participation Filter
+- execution symbol と real market symbol を分ける。
 
-| item | content |
-|---|---|
-| 役割 | 良さそうなsignalでも入らない条件を作る |
-| 入力 | spread, slippage estimate, liquidity, regime, event, data status |
-| 出力 | `allow`, `skip(reason)` |
-| 捨て条件 | skipした取引の仮想PnLを記録していない |
-| 誤用 | skip率が高いだけで有効だと判断する |
+例:
 
-## Position Sizer
+- `XYZ100 -> QQQ`
+- `SP500 -> SPY`
 
-| item | content |
-|---|---|
-| 役割 | 損失上限から数量を決める |
-| 入力 | equity, risk_per_trade, entry_ref, invalidation_price, liquidity cap |
-| 出力 | `quantity`, `risk_amount`, `size_reason` |
-| 捨て条件 | stop distanceがない、流動性capがない |
-| 誤用 | ML scoreが高い時に安易にサイズを増やす |
+失敗モード:
 
-## Exit Module
+- proxy 関係を失い、実市場 feature と execution venue quote が混ざる。
 
-| item | content |
-|---|---|
-| 役割 | いつ閉じるかを決める |
-| 入力 | position, price, invalidation, trail, max holding, risk state |
-| 出力 | `hold`, `exit(reason)` |
-| 捨て条件 | entryだけありexitがない |
-| 誤用 | stop lossで損失が必ず限定できると考える |
+## SignalGeneratorRegistry
 
-## Execution Planner
+役割:
 
-| item | content |
-|---|---|
-| 役割 | 戦略判断を注文計画へ変換する |
-| 入力 | strategy decision, risk decision, sizing, price reference |
-| 出力 | `ExecutionPlan(action, symbol, quantity, notes)` |
-| 捨て条件 | stale data時にenterが出る |
-| 誤用 | adapterに戦略判断を混ぜる |
+- signal generator を ID で登録・取得・実行する。
 
-## Evaluation Harness
+現行 generator:
 
-| item | content |
-|---|---|
-| 役割 | 候補を採用/棄却する |
-| 入力 | trades, decision log, cost model, baseline |
-| 出力 | scorecard, reject/continue |
-| 捨て条件 | in-sampleだけ、gross returnだけ |
-| 誤用 | 最良結果を代表値として扱う |
+- `qqq_trend_rates_vix`
+
+失敗モード:
+
+- 未登録 generator は fail closed。
+- generator ID の重複登録は禁止。
+
+## StrategySignalRecord
+
+役割:
+
+- generator が出した signal を canonical artifact にする。
+
+artifact:
+
+- `data/research/strategy_signals.parquet`
+
+主な field:
+
+- `side`
+- `rank_score`
+- `confidence`
+- `source_confidence`
+- `venue_quality_score`
+- `reason_codes`
+- `block_reasons`
+
+禁止:
+
+- signal を order とみなす。
+- `signals.csv` を正本にする。
+
+## EvaluationPlan
+
+役割:
+
+- 評価条件、leakage guard、cost stress、合格 metric を固定する。
+
+主な field:
+
+- split method
+- horizon
+- purge / embargo
+- source confidence requirement
+- venue quality requirement
+- cost / slippage stress
+
+失敗モード:
+
+- 同一期間への過剰最適化。
+- cost 無視。
+- low-quality source の混入。
+
+## TrialRecord / TrialLedger
+
+役割:
+
+- 全 trial を append-only に残す。
+
+artifact:
+
+- `data/research/trial_ledger.jsonl`
+
+主な field:
+
+- `trial_id`
+- `parameter_hash`
+- `data_snapshot_id`
+- `feature_snapshot_id`
+- `metrics`
+- `selected_for_next_stage`
+- `rejection_reasons`
+
+禁止:
+
+- best trial だけ残す。
+- selected を paper-ready / live-ready と読む。
+
+## TradeCandidate
+
+役割:
+
+- signal / trial 由来の売買候補を表す。
+
+主な field:
+
+- `candidate_id`
+- `signal_id`
+- `trial_id`
+- `side`
+- `status`
+- `entry_reason_codes`
+- `block_reasons`
+
+禁止:
+
+- paper order とみなす。
+- live order とみなす。
+- `live_order_submitted=true`。
+
+## PaperCandidatePack
+
+役割:
+
+- paper に進める前の候補束を保持する。
+
+artifact:
+
+- `data/research/paper_candidate_pack.json`
+
+主な field:
+
+- `candidates`
+- `selected_candidate_ids`
+- `rejected_candidate_ids`
+- `selection_policy`
+
+禁止:
+
+- `blocked_candidate_ids` がある前提で読む。
+- profitability / paper-ready / live-ready claim を含める。
+
+## PromotionDecision
+
+役割:
+
+- paper intent preview 生成前の人間判断 artifact。
+
+decision:
+
+- `promote`
+- `reject`
+- `hold`
+
+主な guard:
+
+- promote requires evidence
+- hold/reject require rejection reason
+- wallet / exchange write false
+
+禁止:
+
+- promote を live-ready と読む。
+
+## PaperIntentPreview
+
+役割:
+
+- paper runner へ渡す仮注文意図。
+
+artifact:
+
+- `data/bot/paper_intent_preview.json`
+
+必須 guard:
+
+- `requires_revalidation=true`
+- `paper_only=true`
+- `live_conversion_allowed=false`
+- `live_order_submitted=false`
+- `wallet_used=false`
+- `exchange_write_used=false`
+
+禁止:
+
+- live order とみなす。
+- exchange adapter へ渡す。
+
+## paper-from-intents
+
+役割:
+
+- PaperIntentPreview を latest quote と PaperBroker で再検証し、paper artifacts を作る。
+
+出力:
+
+- `data/paper/orders.parquet`
+- `data/paper/fills.parquet`
+- `data/paper/positions.parquet`
+- `data/paper/paper_observation_ledger.jsonl`
+
+block reason:
+
+- `INTENT_EXPIRED`
+- `LATEST_QUOTE_MISSING`
+- `PAPER_BROKER_REVALIDATION_BLOCKED`
+
+## DataSnapshotManifest
+
+役割:
+
+- quote / feature / tracking data の snapshot lineage を固定する。
+
+主な field:
+
+- `data_snapshot_id`
+- paths and sha256
+- symbols
+- venues
+- `min_ts`, `max_ts`
+- data quality summary
+
+## FeatureSnapshotManifest
+
+役割:
+
+- feature panel の build lineage と leakage guard を固定する。
+
+主な field:
+
+- `feature_snapshot_id`
+- `input_data_snapshot_id`
+- `feature_version`
+- `feature_cutoff_policy`
+- `leakage_checks`
+- `missing_rate_by_feature`

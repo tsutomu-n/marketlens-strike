@@ -7,10 +7,11 @@
 1. [docs/CURRENT_STATE.md](/home/tn/projects/marketlens-strike/docs/CURRENT_STATE.md)
 2. [docs/CODE_STATUS.md](/home/tn/projects/marketlens-strike/docs/CODE_STATUS.md)
 3. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](/home/tn/projects/marketlens-strike/docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
-4. [docs/OPERATIONS_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/OPERATIONS_RUNBOOK.md)
-5. [docs/ARCHITECTURE_AND_PHASES.md](/home/tn/projects/marketlens-strike/docs/ARCHITECTURE_AND_PHASES.md)
-6. [docs/trade_xyz_bot_beginner_guide.html](/home/tn/projects/marketlens-strike/docs/trade_xyz_bot_beginner_guide.html)
-7. [plan/archive/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/archive/PR-00_to_PR-08_implementation_plan.md) は historical migration contract として読む
+4. [docs/strategy_research_lab/README.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/README.md)
+5. [docs/OPERATIONS_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/OPERATIONS_RUNBOOK.md)
+6. [docs/ARCHITECTURE_AND_PHASES.md](/home/tn/projects/marketlens-strike/docs/ARCHITECTURE_AND_PHASES.md)
+7. [docs/trade_xyz_bot_beginner_guide.html](/home/tn/projects/marketlens-strike/docs/trade_xyz_bot_beginner_guide.html)
+8. [plan/archive/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/archive/PR-00_to_PR-08_implementation_plan.md) は historical migration contract として読む
 
 ## Setup
 
@@ -75,6 +76,8 @@ uv run sis build-paper-intent-preview
 uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 ```
 
+Strategy Lab の schema / artifact flow / paper-only boundary は [docs/strategy_research_lab/README.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/README.md) を読む。`data/research/strategy_signals.parquet` が canonical signal artifact で、`data/research/signals.csv` は legacy export。
+
 Trade[XYZ] quote refresh:
 
 ```bash
@@ -109,6 +112,7 @@ PR12 read-only smoke evidence:
 - `bot-preview` は実行時に read-only HOLD preview artifact を出力する
 - Strategy Research Lab は `StrategyExperimentSpec` から `PaperIntentPreview` までの研究 / 候補生成 / paper昇格判断 surface を持つ
 - `PaperIntentPreview` は paper-only で、live order への変換は禁止
+- Strategy Lab の詳細 runtime validation は Pydantic model が正本で、tracked JSON Schema は thin guard として扱う
 - wallet secrets, signing, production live trading は未完了
 - `data/` は git 管理外
 

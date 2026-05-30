@@ -95,12 +95,14 @@ PR-08 専用確認:
 1. `docs/CURRENT_STATE.md`
 2. `docs/CODE_STATUS.md`
 3. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-4. `docs/OPERATIONS_RUNBOOK.md`
-5. `docs/ARCHITECTURE_AND_PHASES.md`
-6. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-7. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
-8. `docs/trade_xyz_bot_beginner_guide.html`
-9. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+4. `docs/strategy_research_lab/README.md`
+5. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+6. `docs/OPERATIONS_RUNBOOK.md`
+7. `docs/ARCHITECTURE_AND_PHASES.md`
+8. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
+9. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
+10. `docs/trade_xyz_bot_beginner_guide.html`
+11. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
 
 その後、必要に応じて:
 

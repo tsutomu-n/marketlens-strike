@@ -92,6 +92,7 @@ PR-08:
 
 - historical migration contract: `plan/archive/PR-00_to_PR-08_implementation_plan.md`
 - Strategy Lab doc audit and schema spec: `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+- Strategy Lab detailed specs: `docs/strategy_research_lab/README.md`
 - runtime status: `docs/CURRENT_STATE.md`
 - operator procedure: `docs/OPERATIONS_RUNBOOK.md`
 - architecture and boundaries: `docs/ARCHITECTURE_AND_PHASES.md`

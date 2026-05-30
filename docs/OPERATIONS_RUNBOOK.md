@@ -58,6 +58,8 @@ Strategy Lab は研究、候補生成、評価、paper 昇格判断までの sur
 canonical docs:
 
 - `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+- `docs/strategy_research_lab/README.md`
+- `docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md`
 - `src/sis/research/strategy_lab/`
 - `schemas/*strategy*`, `schemas/*candidate*`, `schemas/*intent*`
 

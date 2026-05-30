@@ -72,6 +72,7 @@ StrategyExperimentSpec
 - `PromotionDecision` は paper へ進める人間判断 artifact。
 - `PaperIntentPreview` は paper-only の仮注文意図であり、live order へ変換しない。
 - JSON Schema は薄い guard として存在し、詳細な runtime validation は Pydantic model にある。
+- 詳細仕様は `docs/strategy_research_lab/README.md` 以下にある。
 
 ## Execution Boundary
 

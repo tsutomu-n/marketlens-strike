@@ -22,6 +22,8 @@
    - 記入例を見る。
 9. `FACTORY_QUALITY_AUDIT.md`
    - 抜け漏れ、誤謬リスク、残リスクを見る。
+10. `../../strategy_research_lab/README.md`
+   - 候補を実装済み Strategy Lab schema と artifact chain に落とす時の正本を見る。
 
 ## 状態の考え方
 
@@ -64,7 +66,7 @@ Factory docs は候補設計の入口です。実装済み artifact chain へ進
 | gate review | `PromotionDecision` |
 | paper observing entry | `PaperIntentPreview` |
 
-詳細な現行 schema と docs 監査は `../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` を読む。`PaperIntentPreview` は paper-only であり、live order や execution-side `OrderIntent` と混同しない。
+詳細な現行 schema と docs 監査は `../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`、実務仕様は `../../strategy_research_lab/README.md` 以下を読む。`PaperIntentPreview` は paper-only であり、live order や execution-side `OrderIntent` と混同しない。
 
 ## Relation To Existing Docs
 
@@ -72,5 +74,6 @@ Factory docs は候補設計の入口です。実装済み artifact chain へ進
 - 戦略部品: `../STRATEGY_PARTS_CATALOG.md`
 - 検証手順: `../RESEARCH_VALIDATION_PLAYBOOK.md`
 - 実装済み Strategy Lab 仕様: `../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+- Strategy Lab 詳細仕様: `../../strategy_research_lab/README.md`
 - 原ノート再構成: `../obsidian_note_rewrites_2026-05-29/`
 - signal設計付録: `../obsidian_note_rewrites_2026-05-29/appendix_materials/12_SIGNAL_DESIGN_PLAYBOOK.md`

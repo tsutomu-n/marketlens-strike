@@ -1,107 +1,103 @@
 # Repo Implementation Map
 
-> Superseded for current Strategy Research Lab implementation map as of 2026-05-30.
-> This map describes an older signal CSV / DecisionContext / ExecutionPlan-centered path.
-> Current code truth is `src/sis/research/strategy_lab/`, `src/sis/commands/research.py`, `src/sis/commands/paper.py`, and `src/sis/paper/runner.py`.
-> See `../../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`.
+この付録は、Strategy Research Lab の現行実装を repo path で辿るための map です。旧 legacy paper path ではなく、`StrategyExperimentSpec -> PaperIntentPreview -> paper-from-intents` を中心に読む。
 
-このrepoに戦略を落とす時の対応表です。最初にlive executionを触らないための境界表でもあります。
+## 正本 code paths
 
-## 1. Main Mapping
-
-| やりたいこと | 触る場所 | 触らない場所 |
+| Area | Path | Role |
 |---|---|---|
-| signal generatorを作る | `src/sis/strategies/` | `src/sis/execution/` |
-| signal CSVを読む | `src/sis/backtest/signals.py` | live adapter |
-| signalをrisk gateに通す | `src/sis/backtest/bridge.py`, `src/sis/risk/risk_gate.py` | external exchange API |
-| order planを作る | `src/sis/core/execution_plan.py` | secret/env |
-| paperで見る | `src/sis/paper/runner.py` | live order policy |
-| reportを見る | `data/reports/`, `data/research/decision_summary.json` | production deploy |
+| strategy lab models | `src/sis/research/strategy_lab/` | Strategy Lab の Pydantic runtime contract |
+| research protocol | `src/sis/research_protocol/` | data / feature snapshot manifests |
+| research commands | `src/sis/commands/research.py` | Strategy Lab artifact chain commands |
+| paper commands | `src/sis/commands/paper.py` | paper-from-intents command |
+| paper runner | `src/sis/paper/runner.py` | intent revalidation and paper artifacts |
+| schemas | `schemas/*.v1.schema.json` | thin JSON Schema guard |
+| tests | `tests/test_strategy_lab_*.py` | schema / command chain validation |
+| paper intent tests | `tests/test_paper_from_intents.py` | paper-from-intents revalidation |
 
-## 2. Initial Slice
+## Model files
 
-```text
-src/sis/strategies/trend_pullback.py
-tests/test_strategies.py
-data/research/signals.csv
-```
-
-最初のsliceでは、signal frameを作れることだけを固定する。paperやexecution planの拡張は後。
-
-## 3. Existing Contracts
-
-### Signal CSV
-
-```text
-ts_signal,canonical_symbol,side,timeframe,signal_strength
-```
-
-### DecisionContext
-
-```text
-decision_ts
-venue
-canonical_symbol
-timeframe
-quote_ts
-signal_ts
-signal_side
-signal_strength
-strategy_name
-market_status
-is_tradable
-notes
-```
-
-### ExecutionPlan
-
-現状で持つもの:
-
-```text
-action
-venue
-canonical_symbol
-timeframe
-price_reference
-source_confidence
-venue_quality_score
-tracking_trade_allowed
-fee_mode
-estimated_round_trip_cost_bps
-fill_price_source
-notes
-```
-
-将来足す候補:
-
-```text
-side
-quantity
-entry_ref
-invalidation_price
-max_slippage_bps
-risk_amount
-participation_reason
-```
-
-## 4. Do Not Touch First
-
-| path | 理由 |
+| Model | File |
 |---|---|
-| `src/sis/execution/trade_xyz_adapter.py` | live executionは戦略検証後 |
-| `src/sis/execution/live_order_policy.py` | 実弾境界に近い |
-| secrets/env files | docs作業・paper検証に不要 |
-| external API write path | まずread-only/paperで十分 |
+| `StrategyExperimentSpec` | `src/sis/research/strategy_lab/specs.py` |
+| `SymbolBinding` | `src/sis/research/strategy_lab/specs.py` |
+| `StrategySignalRecord` | `src/sis/research/strategy_lab/specs.py` |
+| `EvaluationPlan` | `src/sis/research/strategy_lab/evaluation_plan.py` |
+| `TrialRecord`, `TrialLedger` | `src/sis/research/strategy_lab/trial_ledger.py` |
+| `TradeCandidate` | `src/sis/research/strategy_lab/candidates.py` |
+| `PaperCandidatePack` | `src/sis/research/strategy_lab/paper_candidate_pack.py` |
+| `PromotionDecision` | `src/sis/research/strategy_lab/promotion_decision.py` |
+| `PaperIntentPreview` | `src/sis/research/strategy_lab/paper_intent_preview.py` |
+| `StrategyRunProfile` | `src/sis/research/strategy_lab/run_profile.py` |
+| `SignalGeneratorRegistry` | `src/sis/research/strategy_lab/signal_registry.py` |
+| `DataSnapshotManifest` | `src/sis/research_protocol/data_snapshot.py` |
+| `FeatureSnapshotManifest` | `src/sis/research_protocol/feature_snapshot.py` |
 
-## 5. Implementation Readiness Gate
+## Command map
 
-```text
-signal generator exists
-tests pass
-signal CSV parses
-decision log records block reasons
-paper orders/fills are explainable
-quantity / exit limitations are documented
-```
+| Command | Code | Main output |
+|---|---|---|
+| `uv run sis strategy-preview` | `src/sis/commands/research.py` | `strategy_signals.parquet`, JSONL, legacy CSV, preview report |
+| `uv run sis evaluate-strategy-lab` | `src/sis/commands/research.py` | `trial_ledger.jsonl`, strategy trial report |
+| `uv run sis build-paper-candidate-pack` | `src/sis/commands/research.py` | `paper_candidate_pack.json`, pack report |
+| `uv run sis promotion-decision` | `src/sis/commands/research.py` | `promotion_decision.json`, decision report |
+| `uv run sis build-paper-intent-preview` | `src/sis/commands/research.py` | `paper_intent_preview.json`, preview report |
+| `uv run sis paper-from-intents` | `src/sis/commands/paper.py`, `src/sis/paper/runner.py` | paper orders/fills/positions/observation ledger |
 
-このgateを満たす前にBot化しない。
+## Artifact map
+
+| Artifact | Meaning |
+|---|---|
+| `data/research/strategy_signals.parquet` | Strategy Lab canonical signal artifact |
+| `data/research/strategy_signals.jsonl` | line-delimited export |
+| `data/research/signals.csv` | legacy thin export, not Strategy Lab source of truth |
+| `data/research/trial_ledger.jsonl` | append-only trial records |
+| `data/research/paper_candidate_pack.json` | candidate bundle before paper promotion |
+| `data/research/promotion_decision.json` | human decision artifact |
+| `data/bot/paper_intent_preview.json` | paper-only intent preview |
+| `data/paper/orders.parquet` | paper orders only |
+| `data/paper/fills.parquet` | paper fills only |
+| `data/paper/positions.parquet` | paper positions only |
+| `data/paper/paper_observation_ledger.jsonl` | paper revalidation observation trail |
+
+## Schema map
+
+| Schema | File |
+|---|---|
+| `strategy_experiment_spec.v1` | `schemas/strategy_experiment_spec.v1.schema.json` |
+| `strategy_signal.v1` | `schemas/strategy_signal.v1.schema.json` |
+| `evaluation_plan.mls.v1` | `schemas/evaluation_plan.mls.v1.schema.json` |
+| `trial_record.v1` | `schemas/trial_record.v1.schema.json` |
+| `trade_candidate.v1` | `schemas/trade_candidate.v1.schema.json` |
+| `paper_candidate_pack.v1` | `schemas/paper_candidate_pack.v1.schema.json` |
+| `promotion_decision.v1` | `schemas/promotion_decision.v1.schema.json` |
+| `paper_intent_preview.v1` | `schemas/paper_intent_preview.v1.schema.json` |
+| `data_snapshot_manifest.v1` | `schemas/data_snapshot_manifest.v1.schema.json` |
+| `feature_snapshot_manifest.v1` | `schemas/feature_snapshot_manifest.v1.schema.json` |
+
+## Test map
+
+| Test | Role |
+|---|---|
+| `tests/test_strategy_run_profile.py` | strategy lab live-surface guards |
+| `tests/test_strategy_lab_specs.py` | experiment spec, symbol binding, signal record |
+| `tests/test_strategy_lab_signal_registry.py` | generator registry and signal frame validation |
+| `tests/test_strategy_lab_evaluation_plan.py` | evaluation plan guard |
+| `tests/test_strategy_lab_trial_ledger.py` | trial ledger append/read |
+| `tests/test_strategy_lab_candidate_pack.py` | trade candidate and pack validation |
+| `tests/test_strategy_lab_promotion_decision.py` | promotion decision validation |
+| `tests/test_strategy_lab_paper_intent_preview.py` | paper intent preview guard |
+| `tests/test_strategy_lab_schemas.py` | JSON schema presence and thin guards |
+| `tests/test_strategy_lab_commands.py` | CLI artifact chain |
+| `tests/test_paper_from_intents.py` | paper runner revalidation |
+
+## Read order for implementers
+
+1. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+2. `docs/strategy_research_lab/README.md`
+3. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+4. `docs/strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md`
+5. `docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md`
+6. `src/sis/research/strategy_lab/`
+7. `src/sis/commands/research.py`
+8. `src/sis/paper/runner.py`

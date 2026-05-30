@@ -1,94 +1,157 @@
 # Pipeline Diagrams
 
-> Superseded for current Strategy Research Lab diagrams as of 2026-05-30.
-> These diagrams remain useful as research notes, but the current code path is `StrategyExperimentSpec -> StrategySignalRecord -> TrialRecord -> PaperCandidatePack -> PromotionDecision -> PaperIntentPreview`.
-> See `../../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`.
+この付録は、現行 Strategy Research Lab の artifact chain を図として読むための資料です。旧 `data/research/signals.csv` 中心の図は legacy paper path であり、現行 Strategy Lab の正本ではありません。
 
-## 1. Strategy Preparation Flow
+## 1. Strategy Research Lab full chain
 
 ```text
-Idea
-  -> Hypothesis Intake
-  -> Data Availability Check
-  -> Baseline Definition
-  -> Parts Selection
-  -> Feature Contract
-  -> Signal Contract
-  -> Backtest / Decision Log
-  -> Paper Observation
-  -> Reject / Continue / Archive
+Strategy idea
+  |
+  v
+StrategyExperimentSpec
+  |
+  v
+Signal generator registry
+  |
+  v
+StrategySignalRecord rows
+  |
+  v
+data/research/strategy_signals.parquet
+  |
+  v
+EvaluationPlan
+  |
+  v
+TrialRecord rows
+  |
+  v
+data/research/trial_ledger.jsonl
+  |
+  v
+TradeCandidate rows
+  |
+  v
+data/research/paper_candidate_pack.json
+  |
+  v
+PromotionDecision
+  |
+  v
+data/bot/paper_intent_preview.json
+  |
+  v
+paper-from-intents revalidation
+  |
+  v
+paper orders/fills/positions only
 ```
 
-この流れでは、`Idea` から直接 `Bot` へ進まない。最初に作るのは実行Botではなく、仮説、データ契約、signal、decision logです。
-
-## 2. Component Pipeline
+## 2. Symbol binding diagram
 
 ```text
-Universe Selector
-  -> Data Collector
-  -> Data Quality Gate
-  -> Feature Factory
-  -> Regime Detector
-  -> Signal Generator
-  -> Participation Filter
-  -> Position Sizer
-  -> Exit Module
-  -> Risk Guard
-  -> Execution Planner
-  -> Paper Broker
-  -> Evaluation Harness
-  -> Monitoring
+real market data                         execution venue
+----------------                         ----------------
+QQQ bars / features / tracking  ----->   XYZ100 on trade_xyz
+SPY bars / features / tracking  ----->   SP500 on trade_xyz
 ```
 
-`Signal Generator` は中心ではあるが、単独では使わない。必ずfilter、sizer、risk、execution planを通す。
+`real_market_symbol` は feature truth、`execution_symbol` は paper/execution-side quote lookup です。ここを同一視しないでください。
 
-## 3. Repo Flow
+## 3. Candidate selection diagram
 
 ```text
-feature_frame
-  -> src/sis/strategies/<strategy>.py
-  -> signal frame
-  -> data/research/signals.csv
-  -> src/sis/backtest/signals.py
-  -> src/sis/backtest/bridge.py
-  -> DecisionRecord
-  -> src/sis/risk/risk_gate.py
-  -> src/sis/core/execution_plan.py
-  -> src/sis/paper/runner.py
-  -> data/paper/*.parquet
-  -> data/reports/daily_paper_report.md
+StrategySignalRecord
+  |
+  | evaluate with EvaluationPlan
+  v
+TrialRecord
+  |
+  | selected_for_next_stage?
+  +-- false --> TradeCandidate(status=blocked, block_reasons=[...])
+  |
+  +-- true  --> TradeCandidate(status=candidate, side=long/short)
+                    |
+                    v
+              PaperCandidatePack
 ```
 
-## 4. Reject-first Evaluation
+`selected_for_next_stage=true` は paper candidate へ進むだけです。paper-ready / live-ready ではありません。
+
+## 4. Promotion diagram
 
 ```text
-Candidate result looks good
-  -> Check leakage
-  -> Check cost/slippage x2
-  -> Check walk-forward
-  -> Check parameter neighborhood
-  -> Check trade count
-  -> Check paper/live gap
-  -> reject if fragile
+PaperCandidatePack
+  |
+  v
+PromotionDecision(decision=hold)
+  |
+  +--> no intent or empty preview
+
+PromotionDecision(decision=reject)
+  |
+  +--> no intent or empty preview
+
+PromotionDecision(decision=promote)
+  |
+  v
+PaperIntentPreview(paper_only=true)
 ```
 
-評価は、良い結果を正当化する作業ではなく、壊れる候補を早く捨てる作業です。
+`promote` は live order 許可ではありません。paper observation に進む許可です。
 
-## 5. Solana / Meme Token Observer Flow
+## 5. Paper revalidation diagram
 
 ```text
-Token Discovery
-  -> Token Safety Filter
-  -> Sellability Simulation
-  -> Paper Observation
-  -> Manual Review
-  -> Small Canary Only If Preconditions Pass
+PaperIntentPreview
+  |
+  | validate model guards
+  v
+latest normalized quote lookup
+  |
+  +-- missing --> blocked: LATEST_QUOTE_MISSING
+  |
+  v
+valid_until check
+  |
+  +-- expired --> blocked: INTENT_EXPIRED
+  |
+  v
+PaperBroker validation
+  |
+  +-- blocked --> blocked: PAPER_BROKER_REVALIDATION_BLOCKED
+  |
+  v
+paper order + paper fill + paper position
 ```
 
-禁止する短絡:
+Observation ledger は `live_order_submitted=false`, `wallet_used=false`, `exchange_write_used=false` を残します。
+
+## 6. Legacy bridge diagram
+
+`paper-from-intents` の内部では、既存 paper runner に接続するため `DecisionContext` と `ExecutionPlan` が使われます。
 
 ```text
-Token Discovery -> Auto Buy
+PaperIntentPreview
+  |
+  v
+DecisionContext / ExecutionPlan internal bridge
+  |
+  v
+PaperBroker
 ```
 
-`safe_to_observe` は `safe_to_buy` ではありません。
+これは internal bridge です。Strategy Lab の設計入口は `StrategySignalRecord`, `TradeCandidate`, `PaperIntentPreview` です。
+
+## 7. Current docs map
+
+詳細仕様:
+
+- `docs/strategy_research_lab/README.md`
+- `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+- `docs/strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md`
+- `docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md`
+
+入口監査:
+
+- `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
