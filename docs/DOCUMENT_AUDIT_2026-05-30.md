@@ -15,6 +15,10 @@
 7. `docs/ARCHITECTURE_AND_PHASES.md`
 8. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
 9. `docs/algo/strategy_factory/`
+10. scoped current references:
+    - `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md`
+    - `docs/XNYS_MARKET_CALENDAR.md`
+    - `plan/README.md`
 
 `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` は有用ですが、2026-05-28 の focused historical audit として読み、current verification の入口にはしません。
 
@@ -74,7 +78,7 @@ src/sis/execution/
 | `docs/archive/2026-05-30-doc-audit/` | superseded docs 6本を archive move |
 | `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | consumed plan を archive move |
 | `docs/DOCS_LINT_POLICY_2026-05-30.md` | current docs だけを strict lint する方針を追加 |
-| `scripts/check_current_docs.py` | current docs の link / EOF / legacy root path check を追加し、`docs/algo` 直下の現行 strategy prep docs 7本を対象化 |
+| `scripts/check_current_docs.py` | current docs の link / EOF / legacy root path check を追加し、`docs/algo` 直下の現行 strategy prep docs、live-readiness plan、XNYS calendar、plan index を対象化 |
 | `docs/algo/SOURCE_NOTES_INDEX.md` | strict check 対応のため、括弧入り local link を URL encoding で安全化 |
 | `docs/algo/EXPERIMENT_SCORECARD.md`, `docs/algo/STRATEGY_PREP_WORKFLOW.md` | strict check 対応のため、EOF 余分空行を修正 |
 | `docs/DOCUMENT_AUDIT_2026-05-30.md` | 本監査を新規作成 |
@@ -89,6 +93,9 @@ src/sis/execution/
 | `docs/OPERATIONS_RUNBOOK.md` | operator 手順は current CLI と一致 | `docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md` への誘導を強める |
 | `docs/ARCHITECTURE_AND_PHASES.md` | subsystem 境界は有効 | legacy paper bridge と Strategy Lab 正本の分離をさらに明文化可能 |
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | Strategy Lab 入口として有効 | Docs Audit section を「実施済み」に更新するとよい |
+| `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | live readiness blocker 分解の作業計画として有効 | current code/artifact で再検証してから使う。P2 read-only gate と live readiness を混同しない |
+| `docs/XNYS_MARKET_CALENDAR.md` | real_market / tracking / micro_live の session 前提として有効 | `src/sis/market_calendar.py` と `configs/instrument_registry.seed.json` の symbol 対応と合わせて読む |
+| `plan/README.md` | plan 全体の historical index として有効 | PR-00〜PR-08 は実装済みであり、current status は docs 側を先に読むことを維持 |
 | `docs/trade_xyz_bot_beginner_guide.html` | 初心者向けとして有効 | Strategy Lab → paper intent preview の説明を追加できる |
 | `docs/algo/EXPERIMENT_SCORECARD.md` | 戦略候補の比較テンプレートとして有効 | `TrialRecord`, `PromotionDecision`, `PaperIntentPreview` への対応欄を足すとさらに使いやすい |
 | `docs/algo/strategy_factory/SIGNAL_CANDIDATE_TEMPLATE.md` | signal candidate intake として有効 | `Decision Log` を人間レビュー記録として明記し、Strategy Lab artifact と誤読しない注記を足せる |
@@ -104,6 +111,10 @@ src/sis/execution/
 | `docs/archive/2026-05-30-doc-audit/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | P2 実装前の failure state | archived historical design reference |
 | `docs/archive/2026-05-30-doc-audit/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | 実装済み計画と pre-snapshot | archived implemented-plan / historical |
 | `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | PR9a-PR12 消化済み計画と future候補が混在 | archived historical consumed plan |
+| `plan/archive/PR-00_to_PR-08_implementation_plan.md` | PR-00〜PR-08 実装前/実装中の acceptance と micro live canary 計画 | archived historical migration contract。current code status は `docs/CODE_STATUS.md` を先に読む |
+| `plan/archive/PR-00_python_313_migration_plan.md` | Python 3.13 migration の事前計画 | archived historical plan。Python 3.13 migration は現行 `scripts/check` と lockfile を正とする |
+| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | full check `294 passed` と PR12 runtime snapshot | focused historical Trade[XYZ] audit。current code/docs verification は `378 passed` / current-docs lint を使う |
+| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | full check `294 passed` を含む 2026-05-28 snapshot | failure-mode design reference として有効。current verification 値として引用しない |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | 薄い初版 rewrite bundle | old rewrite snapshot |
 
 ## 作り直したほうがいい docs
@@ -115,6 +126,8 @@ src/sis/execution/
 | `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/05_WORKED_EXAMPLE_TREND_PULLBACK.md` | 作り直し済み | 旧 paper review / signal CSV 前提だった |
 | `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/09_CHECKLISTS_AND_TEMPLATES.md` | 作り直し済み | Strategy Lab schema checklist になっていなかった |
 | `docs/trade_xyz_bot_beginner_guide.html` | 部分再作成候補 | Strategy Lab / PaperIntentPreview の初心者向け説明が薄い |
+| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | 作り直すなら current Trade[XYZ] status audit と historical PR12 audit を分離 | 2026-05-28 runtime evidence と 2026-05-30 code/docs verification が混ざると current truth と誤読されやすい |
+| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | 作り直すなら `P2_BLOCKER` と `LIVE_READINESS_BLOCKER` の現行分類だけを短く再掲 | historical failure-mode evidence と current blocker handling を分けると operator が読みやすい |
 
 ## 削除・アーカイブしてよい docs
 
@@ -129,6 +142,8 @@ src/sis/execution/
 | `docs/archive/2026-05-30-doc-audit/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | archived | 2026-05-28 map に superseded |
 | `docs/archive/2026-05-30-doc-audit/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | archived | implemented-planであり、次の実装計画ではない |
 | `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | archived | consumed plan |
+| `plan/archive/PR-00_to_PR-08_implementation_plan.md` | archived | PR-00〜PR-08 は実装済み。historical migration contract として維持 |
+| `plan/archive/PR-00_python_313_migration_plan.md` | archived | Python 3.13 migration は実装済み |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | archive | 2026-05-29 rewrite bundle に superseded |
 
 削除しない:
@@ -162,7 +177,7 @@ Current docs の機械チェックは `docs/DOCS_LINT_POLICY_2026-05-30.md` と 
 uv run python scripts/check_current_docs.py
 ```
 
-検査対象は current read-first docs、`docs/algo` 直下の現行 strategy prep docs、Strategy Lab specs、strategy factory、archive index、live evidence README、beginner guide に限定する。`docs/archive/**`, `docs/algo/obsidian_note_copies/**`, `docs/algo/obsidian_note_rewrites_2026-05-28/**`, unchecked 2026-05-29 rewrite snapshots, `plan/archive/**` は通常 lint 対象外。
+検査対象は current read-first docs、`docs/algo` 直下の現行 strategy prep docs、Strategy Lab specs、strategy factory、archive index、live evidence README、beginner guide、live-readiness plan、XNYS calendar、plan index に限定する。`docs/archive/**`, `docs/algo/obsidian_note_copies/**`, `docs/algo/obsidian_note_rewrites_2026-05-28/**`, unchecked 2026-05-29 rewrite snapshots, `plan/archive/**` は通常 lint 対象外。
 
 ## 追加照査メモ
 

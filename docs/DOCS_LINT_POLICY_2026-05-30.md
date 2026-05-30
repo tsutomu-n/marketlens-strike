@@ -23,6 +23,8 @@ docs/OPERATIONS_RUNBOOK.md
 docs/ARCHITECTURE_AND_PHASES.md
 docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md
 docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md
+docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md
+docs/XNYS_MARKET_CALENDAR.md
 docs/algo/README.md
 docs/algo/ALGO_STRATEGY_SYSTEM_GUIDE.md
 docs/algo/STRATEGY_PARTS_CATALOG.md
@@ -36,6 +38,7 @@ docs/strategy_research_lab/**
 docs/live_evidence_reports/README.md
 docs/archive/README.md
 docs/trade_xyz_bot_beginner_guide.html
+plan/README.md
 ```
 
 ## 通常 lint から外すもの

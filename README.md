@@ -124,7 +124,7 @@ PR12 read-only smoke evidence:
 
 - `./scripts/check`: pass, 378 passed
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run python scripts/check_current_docs.py`: pass, `checked 42 current docs`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 45 current docs`
 
 2026-05-28 runtime artifact snapshot:
 
