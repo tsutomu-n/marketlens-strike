@@ -256,6 +256,140 @@ def test_build_paper_candidate_pack_uses_latest_signal_row(tmp_path, monkeypatch
     assert pack["candidates"][0]["candidate_id"].endswith("-sig-new")
 
 
+def test_build_paper_candidate_pack_can_select_multiple_signal_rows(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    path = data_dir / "research/strategy_signals.parquet"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    base_ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            _strategy_signal_row(
+                signal_id="sig-old",
+                strategy_id="equity_index_momentum_v0",
+                execution_symbol="XYZ100",
+                real_market_symbol="QQQ",
+                ts_signal=base_ts,
+            ),
+            _strategy_signal_row(
+                signal_id="sig-new",
+                strategy_id="equity_index_momentum_v0",
+                execution_symbol="XYZ100",
+                real_market_symbol="QQQ",
+                ts_signal=base_ts + timedelta(days=1),
+            ),
+        ]
+    ).write_parquet(path)
+
+    result = runner.invoke(app, ["evaluate-strategy-lab", "--candidate-limit", "0"])
+    assert result.exit_code == 0
+    ledger_record = json.loads((data_dir / "research/trial_ledger.jsonl").read_text())
+    assert ledger_record["paper_candidate_count"] == 2
+    assert ledger_record["metrics"]["candidate_selection_policy"] == (
+        "all_threshold_passing_by_ts_desc"
+    )
+    assert ledger_record["metrics"]["selected_signal_ids"] == ["sig-new", "sig-old"]
+
+    result = runner.invoke(app, ["build-paper-candidate-pack"])
+    assert result.exit_code == 0
+    pack = json.loads((data_dir / "research/paper_candidate_pack.json").read_text())
+    assert [candidate["signal_id"] for candidate in pack["candidates"]] == [
+        "sig-new",
+        "sig-old",
+    ]
+    assert len(pack["selected_candidate_ids"]) == 2
+
+
+def test_evaluate_strategy_lab_rejects_duplicate_signal_ids(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    path = data_dir / "research/strategy_signals.parquet"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    base_ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            _strategy_signal_row(
+                signal_id="sig-duplicate",
+                strategy_id="equity_index_momentum_v0",
+                execution_symbol="XYZ100",
+                real_market_symbol="QQQ",
+                ts_signal=base_ts,
+            ),
+            _strategy_signal_row(
+                signal_id="sig-duplicate",
+                strategy_id="equity_index_momentum_v0",
+                execution_symbol="XYZ100",
+                real_market_symbol="QQQ",
+                ts_signal=base_ts + timedelta(days=1),
+            ),
+        ]
+    ).write_parquet(path)
+
+    result = runner.invoke(app, ["evaluate-strategy-lab"])
+
+    assert result.exit_code == 2
+    assert "duplicate signal_id" in result.output
+
+
+def test_evaluate_strategy_lab_rank_threshold_sweep_records_multiple_trials(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    path = data_dir / "research/strategy_signals.parquet"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    base_ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    low_rank = {
+        **_strategy_signal_row(
+            signal_id="sig-low",
+            strategy_id="equity_index_momentum_v0",
+            execution_symbol="XYZ100",
+            real_market_symbol="QQQ",
+            ts_signal=base_ts,
+        ),
+        "rank_score": 0.4,
+        "percentile_rank": 0.4,
+        "tail_bucket": "middle",
+    }
+    high_rank = _strategy_signal_row(
+        signal_id="sig-high",
+        strategy_id="equity_index_momentum_v0",
+        execution_symbol="XYZ100",
+        real_market_symbol="QQQ",
+        ts_signal=base_ts + timedelta(days=1),
+    )
+    pl.DataFrame([low_rank, high_rank]).write_parquet(path)
+
+    result = runner.invoke(
+        app,
+        [
+            "evaluate-strategy-lab",
+            "--rank-thresholds",
+            "0.2,0.8",
+            "--candidate-limit",
+            "0",
+            "--split-method",
+            "walk_forward",
+            "--era-unit",
+            "trading_day",
+        ],
+    )
+
+    assert result.exit_code == 0
+    records = [
+        json.loads(line)
+        for line in (data_dir / "research/trial_ledger.jsonl").read_text().splitlines()
+    ]
+    assert len(records) == 2
+    assert records[0]["candidate_count"] == 2
+    assert records[0]["paper_candidate_count"] == 2
+    assert records[1]["candidate_count"] == 1
+    assert records[1]["paper_candidate_count"] == 1
+    assert records[1]["metrics"]["selected_signal_ids"] == ["sig-high"]
+    assert records[1]["metrics"]["split_method"] == "walk_forward"
+    assert records[1]["metrics"]["era_count"] == 1
+
+
 def test_build_paper_candidate_pack_defaults_to_latest_trial_group(tmp_path, monkeypatch) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))

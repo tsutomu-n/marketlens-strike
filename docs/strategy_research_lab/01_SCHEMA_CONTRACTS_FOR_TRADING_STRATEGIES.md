@@ -113,6 +113,7 @@ canonical artifact:
 validation:
 
 - `execution_symbol`, `real_market_symbol` は空文字禁止、大文字化。
+- 現行 CLI は `signal_id` が空または重複している signal artifact を evaluation 前に止める。
 - `confidence` は 0.0 から 1.0。
 - `rank_score`, `percentile_rank` は存在する場合 0.0 から 1.0。
 - `validate_strategy_signal_frame()` は必須 column と `SymbolBinding` 一致を確認する。
@@ -200,6 +201,8 @@ validation:
 - `selected_for_next_stage=true` は paper candidate pack に進める候補という意味で、paper-ready や live-ready ではない。
 - `metrics` は評価結果の容器です。収益性主張をする場合は別途検証文脈が必要ですが、現行 model では収益性 claim は禁止です。
 - 現行 CLI は同じ `trial_id` を重複追記しない。`metrics.signal_artifact_run_id` で signal artifact と接続する。
+- `--rank-thresholds` は複数 TrialRecord を同一 `trial_group_id` に記録する paper-only parameter sweep です。
+- `--split-method walk_forward` / `--era-unit` は era 別 signal count metrics を `metrics` に残す。PnL や live-ready 証明ではない。
 
 ## TradeCandidate
 
@@ -264,7 +267,8 @@ validation:
 - pack は paper 観測に進める候補の束であり、注文束ではない。
 - `selected_candidate_ids` は paper intent preview の候補ソースになる。
 - `rejected_candidate_ids` と candidate-level `block_reasons` は、量産時の重複失敗を減らすための学習材料です。
-- 現行 CLI は latest trial group を default で pack 化し、selected candidate は最新 `ts_signal` の 1 signal から作る。
+- 現行 CLI は latest trial group を default で pack 化し、TrialRecord の `metrics.selected_signal_ids` から candidate を作る。
+- default evaluation では最新 `ts_signal` の 1 signal だけを選ぶ。`--candidate-limit 0` を使うと threshold 通過 signal を複数 candidate 化できる。
 
 ## PromotionDecision
 

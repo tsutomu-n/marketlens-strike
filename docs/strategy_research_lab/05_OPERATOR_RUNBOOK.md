@@ -78,6 +78,9 @@ uv run sis evaluate-strategy-lab
 - 現行 CLI の evaluation は簡易 artifact chain 実装です。
 - `TrialRecord` schema と ledger append の契約は存在しますが、汎用 walk-forward engine ではありません。
 - 同じ signal artifact の再評価では、同じ `trial_id` を重複追記しません。
+- `--rank-thresholds 0.2,0.8` は同じ `trial_group_id` に threshold 別の `TrialRecord` を記録します。
+- default は最新 `ts_signal` の 1 signal だけを選びます。`--candidate-limit 0` は threshold 通過 signal を複数 selected signal として記録します。
+- `--split-method walk_forward` / `--era-unit` は era 別 signal count metrics を残すだけで、PnL や live-ready の証明ではありません。
 - `trial_id`, `trial_group_id`, `paper_candidate_pack.pack_id`, `promotion_id` は signal artifact content 由来の deterministic `run_id` で作られます。
 
 ## 4. Paper candidate pack を作る
@@ -109,7 +112,7 @@ uv run sis build-paper-candidate-pack --trial-ledger data/research/trial_ledger.
 uv run sis build-paper-candidate-pack --trial-group-id trial-group-<run_id>
 ```
 
-現行 CLI は default で ledger 内の latest trial group だけを pack 化します。selected candidate は最新 `ts_signal` の 1 signal から作ります。
+現行 CLI は default で ledger 内の latest trial group だけを pack 化します。selected candidate は `TrialRecord.metrics.selected_signal_ids` から作ります。default evaluation では最新 `ts_signal` の 1 signal ですが、`evaluate-strategy-lab --candidate-limit 0` で複数 selected signal を candidate 化できます。
 
 ## 5. Promotion decision を作る
 

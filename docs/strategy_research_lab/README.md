@@ -63,7 +63,9 @@ StrategyExperimentSpec
 - `build_signals()` の default generator は `qqq_trend_rates_vix` です。
 - registered generator として `sp500_trend_rates_vix` も選べます。
 - `build_signals()` は no-signal でも empty schema 付き `strategy_signals.parquet` と `strategy_signal_manifest.json` を書きます。
-- `evaluate-strategy-lab` は同一 `trial_id` を重複追記せず、paper candidate は最新 `ts_signal` の 1 signal から作ります。
-- CLI は任意の `StrategyExperimentSpec` YAML/JSON と任意 parameter sweep を直接読む汎用 runner ではありません。選べるのは登録済み `generator_id` だけです。
+- `evaluate-strategy-lab` は同一 `trial_id` を重複追記しません。default では最新 `ts_signal` の 1 signal を選び、`--candidate-limit 0` で threshold 通過 signal を複数選べます。
+- `evaluate-strategy-lab --rank-thresholds 0.2,0.8` で paper-only の rank threshold sweep を記録できます。
+- `--split-method walk_forward` / `--era-unit` は era 別 signal count metrics を記録します。PnL や live-ready 証明ではありません。
+- CLI は任意の `StrategyExperimentSpec` YAML/JSON を直接読む汎用 runner ではありません。選べる generator は登録済み `generator_id` だけです。
 - `promotion-decision --decision promote` は required evidence が揃わないと model validation で止まります。
 - `paper-from-intents` は最新 quote と paper broker で再検証し、expired intent や quote missing を block します。

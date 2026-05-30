@@ -71,7 +71,7 @@ live_order_submitted=false
 
 この候補はまだ order ではありません。quantity、wallet、signing、exchange write は出てきません。
 
-現行 CLI では、1 trial group から paper candidate pack に進める selected signal は最新 `ts_signal` の 1 件です。過去の全 signal row をそのまま order 候補へ展開しません。
+現行 CLI では、default evaluation は最新 `ts_signal` の 1 件だけを `TrialRecord.metrics.selected_signal_ids` に記録します。`evaluate-strategy-lab --candidate-limit 0` を使うと threshold 通過 signal を複数 selected signal として記録でき、`build-paper-candidate-pack` はその `selected_signal_ids` から候補を作ります。過去の全 signal row を無条件に order 候補へ展開するわけではありません。
 
 ## Blocked candidate
 
@@ -98,7 +98,7 @@ blocked を残す理由:
 最低条件:
 
 - `execution_symbol` と `real_market_symbol` が明確に分離されている。
-- `signal_id` または `trial_id` から由来を追える。
+- `signal_id` または `trial_id` から由来を追える。`signal_id` は artifact 内で重複していない。
 - `confidence` が 0.0 から 1.0 の範囲。
 - `rank_score` / `percentile_rank` がある場合 0.0 から 1.0 の範囲。
 - `entry_reason_codes` が空ではない、または selection policy で説明できる。

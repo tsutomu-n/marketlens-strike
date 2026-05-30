@@ -150,10 +150,13 @@ parameter_grid={}
 - family が同じで input と exit がほぼ同じなら variant として扱う。
 - duplicate control は `docs/algo/strategy_factory/DUPLICATE_CONTROL.md` と接続する。
 
+現行 `evaluate-strategy-lab` の `--rank-thresholds` は `TrialRecord.parameter_hash` と `trial_id` を threshold / `--candidate-limit` / `--split-method` / `--era-unit` ごとに分けます。default evaluation だけは既存 artifact 互換のため `generator-default-{run_id}` と `trial-{run_id}` を維持します。
+
 ## Current limitations
 
 - 現行 CLI は arbitrary `StrategyExperimentSpec` file を読む runner ではない。`--generator-id` は登録済み `SignalGeneratorDefinition` の選択だけです。
-- 現行 evaluation は full walk-forward backtester ではなく、artifact chain を成立させる簡易 runner です。
+- 現行 evaluation は full walk-forward backtester ではなく、artifact chain を成立させる簡易 runner です。`--split-method` は metrics に記録されますが、PnL 計算や walk-forward 検証 engine はまだ実装していません。
+- 現行 candidate selection は default で最新 `ts_signal` の 1 件、`--candidate-limit 0` で threshold 通過 signal 全件を `selected_signal_ids` として pack に渡す最小実装です。
 - 現行 `promotion-decision` は human review artifact を生成するが、review UI ではない。
 - 現行 `build-paper-intent-preview` は selected candidate を simple notional / quantity placeholder で preview 化する。
 

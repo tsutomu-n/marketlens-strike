@@ -373,8 +373,11 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 - `build_signals()` は `strategy_signal_manifest.json` を書き、no-signal 時も empty schema と generator lineage を残す。
 - `evaluate-strategy-lab` は `data/research/strategy_signals.parquet` が無い場合、empty artifact で manifest が無い場合、または 1 artifact 内に複数の strategy / symbol identity が混在する場合、exit code 2 で止まる。
 - `evaluate-strategy-lab` は同じ `trial_id` を重複追記しない。
+- `evaluate-strategy-lab --rank-thresholds 0.2,0.8` は同じ `trial_group_id` に threshold 別の `TrialRecord` を記録する。
+- `evaluate-strategy-lab --candidate-limit 0` は threshold 通過 signal を複数 `metrics.selected_signal_ids` として記録できる。default は最新 `ts_signal` の 1 signal。
+- `--split-method` / `--era-unit` は era 別 signal count metrics の記録であり、PnL や live-ready 証明ではない。
 - `trial_id`, `trial_group_id`, `paper_candidate_pack.pack_id`, `promotion_id` は signal artifact content 由来の deterministic `run_id` で作る。
-- `build-paper-candidate-pack` は default で latest trial group だけを使い、selected candidate は最新 `ts_signal` の 1 signal row から作る。古い group は `--trial-group-id` で明示する。
+- `build-paper-candidate-pack` は default で latest trial group だけを使い、selected candidate は `TrialRecord.metrics.selected_signal_ids` から作る。古い group は `--trial-group-id` で明示する。
 - `promotion-decision` は実際の `PaperCandidatePack.pack_id` を `source_pack_id` に保存し、`build-paper-intent-preview` は pack と decision の source mismatch を exit code 2 で止める。
 - `promotion-decision` と `build-paper-intent-preview` は source pack が無い場合 exit code 2 で止まる。
 - `build-paper-intent-preview` は `PromotionDecision` が無い場合 exit code 2 で止まる。

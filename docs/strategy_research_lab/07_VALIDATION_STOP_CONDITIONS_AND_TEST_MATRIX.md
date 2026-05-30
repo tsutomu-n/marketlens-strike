@@ -20,7 +20,7 @@
 | `StrategyExperimentSpec` | non-empty strategy IDs; symbol bindings required; legacy claim names rejected |
 | `SymbolBinding` | `XYZ100 -> QQQ`, `SP500 -> SPY`; symbols uppercase |
 | `StrategySignalManifest` | generator metadata, symbol bindings, feature fingerprint, and non-negative signal count |
-| `StrategySignalRecord` | symbol fields non-empty; confidence / rank ranges |
+| `StrategySignalRecord` | symbol fields non-empty; signal IDs unique in the artifact; confidence / rank ranges |
 | `EvaluationPlan` | positive horizon / purge / embargo / min trade count; stress multipliers >= 1.0 |
 | `TrialRecord` | non-negative counts; parameter count > 0; claim flags false |
 | `TradeCandidate` | identity fields non-empty; live order flag false; score ranges |
@@ -43,7 +43,7 @@
 | `tests/test_strategy_lab_promotion_decision.py` | PromotionDecision promote/reject/hold validation and live guard |
 | `tests/test_strategy_lab_paper_intent_preview.py` | PaperIntentPreview paper-only and live conversion guard |
 | `tests/test_strategy_lab_schemas.py` | tracked JSON Schema files, including signal manifest, exist and paper-only const guards match |
-| `tests/test_strategy_lab_commands.py` | CLI artifact chain, idempotent evaluation, latest-signal candidate selection, and missing-pack stops |
+| `tests/test_strategy_lab_commands.py` | CLI artifact chain, idempotent evaluation, rank threshold sweep, multi-signal candidate selection, and missing-pack stops |
 | `tests/test_paper_from_intents.py` | paper-from-intents revalidates, writes paper artifacts, blocks expired intent |
 
 ## Verification commands

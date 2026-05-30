@@ -91,9 +91,12 @@ Important behavior:
 - `evaluate-strategy-lab` exits with code 2 if `strategy_signals.parquet` is missing.
 - `evaluate-strategy-lab` exits with code 2 if one `strategy_signals.parquet` mixes multiple `(strategy_id, strategy_family, strategy_version, execution_venue, execution_symbol, real_market_symbol)` identities.
 - `evaluate-strategy-lab` does not append duplicate `trial_id` rows for the same artifact.
+- `evaluate-strategy-lab --rank-thresholds 0.2,0.8` appends one paper-only `TrialRecord` per rank threshold in the same `trial_group_id`.
+- `evaluate-strategy-lab --candidate-limit 0` records every threshold-passing selected signal ID; the default selects only the latest `ts_signal` row.
+- `--split-method` and `--era-unit` record era signal count metrics only. They do not turn the CLI into a full walk-forward backtester.
 - v1 lineage IDs are deterministic from the signal artifact content: `trial-{run_id}`, `trial-group-{run_id}`, `paper-pack-{run_id}`, `promotion-{run_id}`.
 - `build-paper-candidate-pack` reads the latest trial group by default, or a specific group via `--trial-group-id`.
-- selected paper candidates use the latest `ts_signal` row, not every historical row.
+- selected paper candidates are built from `TrialRecord.metrics.selected_signal_ids`; default evaluation records the latest `ts_signal` row only.
 - `promotion-decision` records the actual `PaperCandidatePack.pack_id` as `source_pack_id`.
 - `build-paper-intent-preview` exits with code 2 if `PromotionDecision.source_pack_id` does not match `PaperCandidatePack.pack_id`.
 - `promotion-decision` and `build-paper-intent-preview` exit with code 2 when the source pack is missing.

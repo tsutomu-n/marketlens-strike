@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable, Literal, cast
@@ -23,7 +24,6 @@ from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
 from sis.research.strategy_lab.promotion_decision import PromotionDecision
 from sis.research.strategy_lab.signal_artifact import (
     StrategySignalManifest,
-    latest_signal_row,
     read_strategy_signal_manifest,
     require_single_signal_identity,
     run_id_from_pack_id,
@@ -61,6 +61,25 @@ def _read_signal_manifest(data_dir: Path) -> StrategySignalManifest | None:
     return read_strategy_signal_manifest(path) if path.exists() else None
 
 
+def _require_unique_signal_ids(frame: pl.DataFrame) -> None:
+    if frame.is_empty():
+        return
+    if "signal_id" not in frame.columns:
+        raise ValueError("Strategy signal artifact missing signal_id column.")
+    seen: set[str] = set()
+    duplicates: list[str] = []
+    for value in frame.get_column("signal_id").to_list():
+        signal_id = str(value or "").strip()
+        if not signal_id:
+            raise ValueError("Strategy signal artifact contains empty signal_id.")
+        if signal_id in seen and signal_id not in duplicates:
+            duplicates.append(signal_id)
+        seen.add(signal_id)
+    if duplicates:
+        sample = ", ".join(duplicates[:5])
+        raise ValueError(f"Strategy signal artifact contains duplicate signal_id values: {sample}")
+
+
 def _current_signal_context(
     data_dir: Path,
 ) -> tuple[pl.DataFrame, StrategySignalManifest | None, str]:
@@ -68,6 +87,7 @@ def _current_signal_context(
     if not signals_path.exists():
         raise FileNotFoundError(f"Strategy signal artifact not found: {signals_path}")
     frame = pl.read_parquet(signals_path)
+    _require_unique_signal_ids(frame)
     manifest = _read_signal_manifest(data_dir)
     if frame.is_empty():
         if manifest is None:
@@ -102,6 +122,126 @@ def _latest_records_by_trial_id(records: list[TrialRecord]) -> list[TrialRecord]
     for record in records:
         by_id[record.trial_id] = record
     return sorted(by_id.values(), key=lambda item: (item.trial_index, item.trial_id))
+
+
+def _parse_rank_thresholds(value: str) -> list[float | None]:
+    text = value.strip()
+    if not text:
+        return [None]
+    thresholds: list[float | None] = []
+    for item in text.split(","):
+        candidate = item.strip()
+        if not candidate:
+            continue
+        threshold = float(candidate)
+        if not 0.0 <= threshold <= 1.0:
+            raise ValueError("rank thresholds must be between 0.0 and 1.0")
+        thresholds.append(threshold)
+    return thresholds or [None]
+
+
+def _parameter_hash(
+    *,
+    run_id: str,
+    rank_threshold: float | None,
+    candidate_limit: int,
+    split_method: str,
+    era_unit: str,
+) -> str:
+    if (
+        rank_threshold is None
+        and candidate_limit == 1
+        and split_method == "single_window"
+        and era_unit == "trading_day"
+    ):
+        return f"generator-default-{run_id}"
+    payload = json.dumps(
+        {
+            "rank_threshold": rank_threshold,
+            "candidate_limit": candidate_limit,
+            "split_method": split_method,
+            "era_unit": era_unit,
+        },
+        sort_keys=True,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
+
+
+def _trial_id_for_parameters(run_id: str, parameter_hash: str) -> str:
+    default_hash = f"generator-default-{run_id}"
+    return (
+        f"trial-{run_id}" if parameter_hash == default_hash else f"trial-{run_id}-{parameter_hash}"
+    )
+
+
+def _thresholded_signal_frame(frame: pl.DataFrame, rank_threshold: float | None) -> pl.DataFrame:
+    if frame.is_empty() or rank_threshold is None:
+        return frame
+    return frame.filter(pl.col("rank_score").fill_null(-1.0) >= rank_threshold)
+
+
+def _selected_signal_rows(frame: pl.DataFrame, *, candidate_limit: int) -> list[dict[str, Any]]:
+    if frame.is_empty():
+        return []
+    sorted_frame = frame.sort(["ts_signal", "signal_id"], descending=[True, False])
+    if candidate_limit > 0:
+        sorted_frame = sorted_frame.head(candidate_limit)
+    return sorted_frame.to_dicts()
+
+
+def _candidate_selection_policy(candidate_limit: int) -> str:
+    if candidate_limit == 1:
+        return "latest_signal_by_ts"
+    if candidate_limit == 0:
+        return "all_threshold_passing_by_ts_desc"
+    return f"top_{candidate_limit}_signals_by_ts_desc"
+
+
+def _signal_rows_by_id(frame: pl.DataFrame) -> dict[str, dict[str, Any]]:
+    if frame.is_empty():
+        return {}
+    return {str(row["signal_id"]): row for row in frame.to_dicts()}
+
+
+def _signal_rows_for_record(frame: pl.DataFrame, record: TrialRecord) -> list[dict[str, Any]]:
+    signal_by_id = _signal_rows_by_id(frame)
+    selected_ids = record.metrics.get("selected_signal_ids")
+    if not isinstance(selected_ids, list):
+        fallback = record.metrics.get("selected_signal_id")
+        selected_ids = [fallback] if isinstance(fallback, str) and fallback else []
+    rows: list[dict[str, Any]] = []
+    for signal_id in selected_ids:
+        row = signal_by_id.get(str(signal_id))
+        if row is not None:
+            rows.append(row)
+    return rows
+
+
+def _era_key(value: object, era_unit: str) -> str:
+    if isinstance(value, datetime):
+        ts = value
+    else:
+        ts = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    if era_unit in {"session", "trading_day"}:
+        return ts.date().isoformat()
+    if era_unit == "week":
+        year, week, _ = ts.isocalendar()
+        return f"{year}-W{week:02d}"
+    if era_unit == "month":
+        return f"{ts.year:04d}-{ts.month:02d}"
+    return ts.date().isoformat()
+
+
+def _era_signal_counts(frame: pl.DataFrame, era_unit: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    if frame.is_empty():
+        return counts
+    for row in frame.select("ts_signal").to_dicts():
+        key = _era_key(row["ts_signal"], era_unit)
+        counts[key] = counts.get(key, 0) + 1
+    return counts
 
 
 def _float_or_none(value: object) -> float | None:
@@ -211,24 +351,47 @@ def register_research_commands(
         typer.echo(f"report_path={report_path}")
 
     @app.command("evaluate-strategy-lab")
-    def evaluate_strategy_lab_cmd() -> None:
+    def evaluate_strategy_lab_cmd(
+        rank_thresholds: str = typer.Option(
+            "",
+            "--rank-thresholds",
+            help="Comma-separated rank_score thresholds for paper-only parameter sweep.",
+        ),
+        candidate_limit: int = typer.Option(
+            1,
+            "--candidate-limit",
+            min=0,
+            help="Selected signal limit per trial. Use 0 to select all threshold-passing signals.",
+        ),
+        split_method: Literal["single_window", "walk_forward", "purged_walk_forward"] = (
+            typer.Option(
+                "single_window",
+                "--split-method",
+                help="Paper-only evaluation split metadata.",
+            )
+        ),
+        era_unit: Literal["session", "trading_day", "week", "month"] = typer.Option(
+            "trading_day",
+            "--era-unit",
+            help="Era unit for walk-forward style signal-count metrics.",
+        ),
+    ) -> None:
         settings = get_settings()
         signals_path = settings.data_dir / "research/strategy_signals.parquet"
         if not signals_path.exists():
             typer.echo(f"Strategy signal artifact not found: {signals_path}")
             raise typer.Exit(2)
         try:
+            parsed_thresholds = _parse_rank_thresholds(rank_thresholds)
             frame, manifest, run_id = _current_signal_context(settings.data_dir)
             signal_identity = require_single_signal_identity(frame)
-        except ValueError as exc:
+        except (ValueError, TypeError) as exc:
             typer.echo(str(exc))
             raise typer.Exit(2) from exc
         except FileNotFoundError as exc:
             typer.echo(str(exc))
             raise typer.Exit(2) from exc
-        selected = frame.height > 0
-        selected_signal = latest_signal_row(frame) if selected else {}
-        if selected:
+        if not frame.is_empty():
             metadata = signal_identity
         elif manifest is not None:
             metadata = {
@@ -239,53 +402,82 @@ def register_research_commands(
         else:
             typer.echo("Strategy signal manifest not found for empty signal artifact.")
             raise typer.Exit(2)
-        metrics: dict[str, Any] = {
-            "signal_count": frame.height,
-            "signal_artifact_run_id": run_id,
-            "candidate_selection_policy": "latest_signal_by_ts",
-        }
-        if selected:
-            metrics["selected_signal_id"] = str(selected_signal.get("signal_id") or "")
-        record = TrialRecord(
-            schema_version="trial_record.v1",
-            trial_id=f"trial-{run_id}",
-            trial_group_id=f"trial-group-{run_id}",
-            trial_index=0,
-            strategy_id=str(metadata.get("strategy_id")),
-            strategy_family=str(metadata.get("strategy_family")),
-            strategy_version=str(metadata.get("strategy_version")),
-            evaluation_plan_id="initial_walkforward",
-            data_snapshot_id="data-snap-current",
-            feature_snapshot_id="feature-snap-current",
-            parameter_hash=f"generator-default-{run_id}",
-            parameter_count=1,
-            parameter_space_hash="registered-generator-default-space",
-            random_seed=None,
-            git_sha=None,
-            signal_count=frame.height,
-            candidate_count=1 if selected else 0,
-            paper_candidate_count=1 if selected else 0,
-            executed_count=0,
-            blocked_count=0,
-            no_signal_count=0 if selected else 1,
-            blocked_reason_counts={},
-            metrics=metrics,
-            baseline_strategy_id=None,
-            baseline_delta_metrics={},
-            selected_for_next_stage=selected,
-            rejection_reasons=[] if selected else ["no_signals"],
-        )
+        records: list[TrialRecord] = []
+        for trial_index, rank_threshold in enumerate(parsed_thresholds):
+            candidate_frame = _thresholded_signal_frame(frame, rank_threshold)
+            selected_rows = _selected_signal_rows(candidate_frame, candidate_limit=candidate_limit)
+            selected_signal_ids = [str(row["signal_id"]) for row in selected_rows]
+            selected = bool(selected_signal_ids)
+            parameter_hash = _parameter_hash(
+                run_id=run_id,
+                rank_threshold=rank_threshold,
+                candidate_limit=candidate_limit,
+                split_method=split_method,
+                era_unit=era_unit,
+            )
+            metrics: dict[str, Any] = {
+                "signal_count": frame.height,
+                "candidate_signal_count": candidate_frame.height,
+                "signal_artifact_run_id": run_id,
+                "candidate_selection_policy": _candidate_selection_policy(candidate_limit),
+                "candidate_limit": candidate_limit,
+                "rank_threshold": rank_threshold,
+                "split_method": split_method,
+                "era_unit": era_unit,
+                "era_signal_counts": _era_signal_counts(candidate_frame, era_unit),
+            }
+            metrics["era_count"] = len(metrics["era_signal_counts"])
+            if selected_signal_ids:
+                metrics["selected_signal_id"] = selected_signal_ids[0]
+                metrics["selected_signal_ids"] = selected_signal_ids
+            records.append(
+                TrialRecord(
+                    schema_version="trial_record.v1",
+                    trial_id=_trial_id_for_parameters(run_id, parameter_hash),
+                    trial_group_id=f"trial-group-{run_id}",
+                    trial_index=trial_index,
+                    strategy_id=str(metadata.get("strategy_id")),
+                    strategy_family=str(metadata.get("strategy_family")),
+                    strategy_version=str(metadata.get("strategy_version")),
+                    evaluation_plan_id="initial_walkforward",
+                    data_snapshot_id="data-snap-current",
+                    feature_snapshot_id="feature-snap-current",
+                    parameter_hash=parameter_hash,
+                    parameter_count=1,
+                    parameter_space_hash="registered-generator-default-space",
+                    random_seed=None,
+                    git_sha=None,
+                    signal_count=frame.height,
+                    candidate_count=candidate_frame.height,
+                    paper_candidate_count=len(selected_signal_ids),
+                    executed_count=0,
+                    blocked_count=0,
+                    no_signal_count=0 if selected else 1,
+                    blocked_reason_counts={},
+                    metrics=metrics,
+                    baseline_strategy_id=None,
+                    baseline_delta_metrics={},
+                    selected_for_next_stage=selected,
+                    rejection_reasons=[] if selected else ["no_signals"],
+                )
+            )
         ledger_path = settings.data_dir / "research/trial_ledger.jsonl"
         ledger = TrialLedger(ledger_path)
-        if record.trial_id not in {existing.trial_id for existing in ledger.read_all()}:
-            ledger.append(record)
+        existing_trial_ids = {existing.trial_id for existing in ledger.read_all()}
+        for record in records:
+            if record.trial_id not in existing_trial_ids:
+                ledger.append(record)
+                existing_trial_ids.add(record.trial_id)
         report_path = settings.data_dir / "reports/strategy_trial_report.md"
         report_path.parent.mkdir(parents=True, exist_ok=True)
+        latest_record = records[-1]
         report_path.write_text(
             "# Strategy Trial Report\n\n"
-            f"- trial_id: {record.trial_id}\n"
-            f"- signal_count: {record.signal_count}\n"
-            f"- selected_for_next_stage: {record.selected_for_next_stage}\n",
+            f"- trial_group_id: trial-group-{run_id}\n"
+            f"- trial_count: {len(records)}\n"
+            f"- latest_trial_id: {latest_record.trial_id}\n"
+            f"- signal_count: {latest_record.signal_count}\n"
+            f"- selected_for_next_stage: {latest_record.selected_for_next_stage}\n",
             encoding="utf-8",
         )
         typer.echo(f"trial_ledger={ledger_path}")
@@ -316,12 +508,10 @@ def register_research_commands(
             signal_frame, signal_manifest, current_run_id = _current_signal_context(
                 settings.data_dir
             )
-            current_signal = latest_signal_row(signal_frame)
         except (FileNotFoundError, ValueError) as exc:
             signal_frame = pl.DataFrame()
             signal_manifest = _read_signal_manifest(settings.data_dir)
             current_run_id = signal_manifest.signal_artifact_run_id if signal_manifest else ""
-            current_signal = {}
             if any(record.selected_for_next_stage for record in records_for_pack):
                 typer.echo(str(exc))
                 raise typer.Exit(2) from exc
@@ -330,8 +520,6 @@ def register_research_commands(
         selected_ids: list[str] = []
         rejected_ids: list[str] = []
         for record in records_for_pack:
-            status = "candidate" if record.selected_for_next_stage else "blocked"
-            signal = current_signal if record.selected_for_next_stage else {}
             if record.selected_for_next_stage:
                 record_run_id = _record_run_id(record)
                 if record_run_id != current_run_id:
@@ -340,74 +528,91 @@ def register_research_commands(
                         f"{record_run_id} != {current_run_id}"
                     )
                     raise typer.Exit(2)
-                signal_id = str(signal.get("signal_id") or "")
-                candidate_id = f"candidate-{record.trial_id}-{signal_id}"
+                selected_signal_rows = _signal_rows_for_record(signal_frame, record)
+                if not selected_signal_rows:
+                    typer.echo(
+                        f"Selected trial has no matching selected signals: {record.trial_id}"
+                    )
+                    raise typer.Exit(2)
             else:
-                signal_id = None
-                candidate_id = f"candidate-{record.trial_id}-no-signal"
-                if "no_signals" in record.rejection_reasons:
-                    status = "no_signal"
-            side = str(signal.get("side") or ("long" if record.selected_for_next_stage else "none"))
-            if side not in {"long", "short"}:
-                side = "none"
-            reason_codes = list(signal.get("reason_codes") or [])
-            if record.selected_for_next_stage and not reason_codes:
-                reason_codes = ["trial_selected"]
-            if signal:
-                execution_symbol = str(signal.get("execution_symbol") or "XYZ100")
-                real_market_symbol = str(signal.get("real_market_symbol") or "QQQ")
-                execution_venue = signal.get("execution_venue") or "trade_xyz"
-                timeframe = str(signal.get("timeframe") or "4h")
-                feature_snapshot_ref = (
-                    signal.get("feature_snapshot_ref") or record.feature_snapshot_id
+                selected_signal_rows = [{}]
+            for signal in selected_signal_rows:
+                status = "candidate" if record.selected_for_next_stage else "blocked"
+                if record.selected_for_next_stage:
+                    signal_id = str(signal.get("signal_id") or "")
+                    candidate_id = f"candidate-{record.trial_id}-{signal_id}"
+                else:
+                    signal_id = None
+                    candidate_id = f"candidate-{record.trial_id}-no-signal"
+                    if "no_signals" in record.rejection_reasons:
+                        status = "no_signal"
+                side = str(
+                    signal.get("side") or ("long" if record.selected_for_next_stage else "none")
                 )
-            elif signal_manifest is not None:
-                binding = signal_manifest.symbol_bindings[0]
-                execution_symbol = binding.execution_symbol
-                real_market_symbol = binding.real_market_symbol
-                execution_venue = binding.execution_venue
-                timeframe = "4h"
-                feature_snapshot_ref = record.feature_snapshot_id
-            else:
-                typer.echo("Strategy signal manifest not found for blocked/no-signal candidate.")
-                raise typer.Exit(2)
-            candidates.append(
-                TradeCandidate(
-                    schema_version="trade_candidate.v1",
-                    candidate_id=candidate_id,
-                    generated_at=now,
-                    signal_id=signal_id,
-                    strategy_id=record.strategy_id,
-                    trial_id=record.trial_id,
-                    execution_venue=execution_venue,
-                    execution_symbol=execution_symbol,
-                    real_market_symbol=real_market_symbol,
-                    side=side,
-                    timeframe=timeframe,
-                    status=status,
-                    raw_score=_float_or_none(signal.get("raw_score")),
-                    rank_score=_float_or_none(signal.get("rank_score"))
-                    if record.selected_for_next_stage
-                    else None,
-                    percentile_rank=_float_or_none(signal.get("percentile_rank"))
-                    if record.selected_for_next_stage
-                    else None,
-                    tail_bucket=_tail_bucket_value(
-                        signal.get("tail_bucket"), selected=record.selected_for_next_stage
-                    ),
-                    confidence=(_float_or_none(signal.get("confidence")) or 0.8)
-                    if record.selected_for_next_stage
-                    else 0.0,
-                    entry_reason_codes=reason_codes if record.selected_for_next_stage else [],
-                    block_reasons=[]
-                    if record.selected_for_next_stage
-                    else record.rejection_reasons,
-                    feature_snapshot_ref=feature_snapshot_ref,
-                    quote_ref=signal.get("quote_ref"),
-                    tracking_ref=signal.get("tracking_ref"),
+                if side not in {"long", "short"}:
+                    side = "none"
+                reason_codes = list(signal.get("reason_codes") or [])
+                if record.selected_for_next_stage and not reason_codes:
+                    reason_codes = ["trial_selected"]
+                if signal:
+                    execution_symbol = str(signal.get("execution_symbol") or "XYZ100")
+                    real_market_symbol = str(signal.get("real_market_symbol") or "QQQ")
+                    execution_venue = signal.get("execution_venue") or "trade_xyz"
+                    timeframe = str(signal.get("timeframe") or "4h")
+                    feature_snapshot_ref = (
+                        signal.get("feature_snapshot_ref") or record.feature_snapshot_id
+                    )
+                elif signal_manifest is not None:
+                    binding = signal_manifest.symbol_bindings[0]
+                    execution_symbol = binding.execution_symbol
+                    real_market_symbol = binding.real_market_symbol
+                    execution_venue = binding.execution_venue
+                    timeframe = "4h"
+                    feature_snapshot_ref = record.feature_snapshot_id
+                else:
+                    typer.echo(
+                        "Strategy signal manifest not found for blocked/no-signal candidate."
+                    )
+                    raise typer.Exit(2)
+                candidates.append(
+                    TradeCandidate(
+                        schema_version="trade_candidate.v1",
+                        candidate_id=candidate_id,
+                        generated_at=now,
+                        signal_id=signal_id,
+                        strategy_id=record.strategy_id,
+                        trial_id=record.trial_id,
+                        execution_venue=execution_venue,
+                        execution_symbol=execution_symbol,
+                        real_market_symbol=real_market_symbol,
+                        side=side,
+                        timeframe=timeframe,
+                        status=status,
+                        raw_score=_float_or_none(signal.get("raw_score")),
+                        rank_score=_float_or_none(signal.get("rank_score"))
+                        if record.selected_for_next_stage
+                        else None,
+                        percentile_rank=_float_or_none(signal.get("percentile_rank"))
+                        if record.selected_for_next_stage
+                        else None,
+                        tail_bucket=_tail_bucket_value(
+                            signal.get("tail_bucket"), selected=record.selected_for_next_stage
+                        ),
+                        confidence=(_float_or_none(signal.get("confidence")) or 0.8)
+                        if record.selected_for_next_stage
+                        else 0.0,
+                        entry_reason_codes=reason_codes if record.selected_for_next_stage else [],
+                        block_reasons=[]
+                        if record.selected_for_next_stage
+                        else record.rejection_reasons,
+                        feature_snapshot_ref=feature_snapshot_ref,
+                        quote_ref=signal.get("quote_ref"),
+                        tracking_ref=signal.get("tracking_ref"),
+                    )
                 )
-            )
-            (selected_ids if record.selected_for_next_stage else rejected_ids).append(candidate_id)
+                (selected_ids if record.selected_for_next_stage else rejected_ids).append(
+                    candidate_id
+                )
         pack_run_id = run_id_from_trial_group(selected_group_id)
         pack = PaperCandidatePack(
             schema_version="paper_candidate_pack.v1",
@@ -423,7 +628,7 @@ def register_research_commands(
             selection_policy={
                 "selected_for_next_stage": True,
                 "trial_group_id": selected_group_id,
-                "candidate_selection_policy": "latest_signal_by_ts",
+                "candidate_selection_policy": "selected_signal_ids",
             },
             reason_codes=["from_trial_ledger"],
             block_reasons=[],
