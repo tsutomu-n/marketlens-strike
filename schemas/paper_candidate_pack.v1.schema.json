@@ -9,6 +9,8 @@
   ],
   "properties": {
     "schema_version": { "const": "paper_candidate_pack.v1" },
+    "selected_candidate_ids": { "type": "array", "uniqueItems": true },
+    "rejected_candidate_ids": { "type": "array", "uniqueItems": true },
     "profitability_claimed": { "const": false },
     "paper_ready_claimed": { "const": false },
     "tiny_live_ready_claimed": { "const": false },

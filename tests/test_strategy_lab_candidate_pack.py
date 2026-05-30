@@ -96,3 +96,41 @@ def test_paper_candidate_pack_rejects_unknown_selected_id() -> None:
             reason_codes=[],
             block_reasons=[],
         )
+
+
+def test_paper_candidate_pack_rejects_duplicate_candidate_ids() -> None:
+    with pytest.raises(ValidationError, match="candidate_id values must be unique"):
+        PaperCandidatePack(
+            schema_version="paper_candidate_pack.v1",
+            pack_id="pack-001",
+            generated_at=datetime.now(timezone.utc),
+            evaluation_plan_id="initial_walkforward",
+            data_snapshot_id="data-snap-001",
+            feature_snapshot_id="feature-snap-001",
+            trial_group_id="group-001",
+            candidates=[_candidate("candidate-001"), _candidate("candidate-001")],
+            selected_candidate_ids=["candidate-001"],
+            rejected_candidate_ids=[],
+            selection_policy={},
+            reason_codes=[],
+            block_reasons=[],
+        )
+
+
+def test_paper_candidate_pack_rejects_duplicate_selected_ids() -> None:
+    with pytest.raises(ValidationError, match="selected_candidate_ids must be unique"):
+        PaperCandidatePack(
+            schema_version="paper_candidate_pack.v1",
+            pack_id="pack-001",
+            generated_at=datetime.now(timezone.utc),
+            evaluation_plan_id="initial_walkforward",
+            data_snapshot_id="data-snap-001",
+            feature_snapshot_id="feature-snap-001",
+            trial_group_id="group-001",
+            candidates=[_candidate("candidate-001")],
+            selected_candidate_ids=["candidate-001", "candidate-001"],
+            rejected_candidate_ids=[],
+            selection_policy={},
+            reason_codes=[],
+            block_reasons=[],
+        )

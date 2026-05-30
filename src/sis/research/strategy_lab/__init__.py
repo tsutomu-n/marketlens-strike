@@ -5,6 +5,7 @@ from sis.research.strategy_lab.paper_candidate_pack import PaperCandidatePack
 from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
 from sis.research.strategy_lab.promotion_decision import PromotionDecision
 from sis.research.strategy_lab.run_profile import StrategyRunProfile
+from sis.research.strategy_lab.signal_artifact import StrategySignalManifest
 from sis.research.strategy_lab.signal_frame import validate_strategy_signal_frame
 from sis.research.strategy_lab.signal_registry import (
     SignalGeneratorRegistry,
@@ -25,6 +26,7 @@ __all__ = [
     "PaperIntentPreview",
     "PromotionDecision",
     "StrategyExperimentSpec",
+    "StrategySignalManifest",
     "StrategyRunProfile",
     "StrategySignalRecord",
     "SymbolBinding",

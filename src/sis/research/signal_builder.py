@@ -7,6 +7,15 @@ from pathlib import Path
 
 import polars as pl
 
+from sis.research.strategy_lab.signal_artifact import (
+    StrategySignalManifest,
+    empty_signal_artifact_run_id,
+    empty_strategy_signal_frame,
+    file_sha256,
+    signal_artifact_run_id,
+    strategy_signal_manifest_path,
+    write_strategy_signal_manifest,
+)
 from sis.research.strategy_lab.signal_frame import validate_strategy_signal_frame
 from sis.research.strategy_lab.signal_registry import (
     SignalGeneratorDefinition,
@@ -92,7 +101,7 @@ def _build_strategy_signal_artifact(
             }
         )
     if not rows:
-        return pl.DataFrame()
+        return empty_strategy_signal_frame()
     return validate_strategy_signal_frame(
         pl.DataFrame(rows),
         symbol_bindings=definition.symbol_bindings,
@@ -143,12 +152,39 @@ def build_signals(data_dir: Path, *, generator_id: str = DEFAULT_GENERATOR_ID) -
     definition = registry.definition(generator_id)
     signals = registry.run(definition.generator_id, frame, spec=None)
     strategy_signals = _build_strategy_signal_artifact(signals, definition=definition)
+    feature_panel_sha256 = file_sha256(feature_panel_path)
+    if strategy_signals.is_empty():
+        run_id = empty_signal_artifact_run_id(
+            generator_id=definition.generator_id,
+            strategy_id=definition.strategy_id,
+            strategy_family=definition.strategy_family,
+            strategy_version=definition.strategy_version,
+            symbol_bindings=definition.symbol_bindings,
+            feature_panel_sha256=feature_panel_sha256,
+        )
+    else:
+        run_id = signal_artifact_run_id(strategy_signals)
 
     parquet_out = data_dir / "research/strategy_signals.parquet"
     jsonl_out = data_dir / "research/strategy_signals.jsonl"
     parquet_out.parent.mkdir(parents=True, exist_ok=True)
     strategy_signals.write_parquet(parquet_out)
     _write_jsonl(strategy_signals, jsonl_out)
+    write_strategy_signal_manifest(
+        StrategySignalManifest(
+            schema_version="strategy_signal_manifest.v1",
+            generated_at=datetime.now(timezone.utc),
+            generator_id=definition.generator_id,
+            strategy_id=definition.strategy_id,
+            strategy_family=definition.strategy_family,
+            strategy_version=definition.strategy_version,
+            symbol_bindings=list(definition.symbol_bindings),
+            feature_panel_sha256=feature_panel_sha256,
+            signal_count=strategy_signals.height,
+            signal_artifact_run_id=run_id,
+        ),
+        strategy_signal_manifest_path(data_dir),
+    )
 
     out = data_dir / "research/signals.csv"
     out.parent.mkdir(parents=True, exist_ok=True)

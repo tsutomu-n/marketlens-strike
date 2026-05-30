@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable, Literal, cast
@@ -22,6 +21,16 @@ from sis.research.strategy_lab.candidates import TradeCandidate
 from sis.research.strategy_lab.paper_candidate_pack import PaperCandidatePack
 from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
 from sis.research.strategy_lab.promotion_decision import PromotionDecision
+from sis.research.strategy_lab.signal_artifact import (
+    StrategySignalManifest,
+    latest_signal_row,
+    read_strategy_signal_manifest,
+    require_single_signal_identity,
+    run_id_from_pack_id,
+    run_id_from_trial_group,
+    signal_artifact_run_id,
+    strategy_signal_manifest_path,
+)
 from sis.research.strategy_lab.signal_registry import default_signal_generator_registry
 from sis.research.strategy_lab.trial_ledger import TrialLedger, TrialRecord
 from sis.real_market.alpaca_smoke import run_alpaca_live_smoke
@@ -38,100 +47,6 @@ def _parse_optional_datetime(value: str | None) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _first_signal_row(frame: pl.DataFrame) -> dict[str, Any]:
-    if frame.is_empty():
-        return {}
-    return frame.sort("ts_signal").to_dicts()[0]
-
-
-SIGNAL_IDENTITY_COLUMNS = (
-    "strategy_id",
-    "strategy_family",
-    "strategy_version",
-    "execution_venue",
-    "execution_symbol",
-    "real_market_symbol",
-)
-
-SIGNAL_RUN_ID_COLUMNS = (
-    "signal_id",
-    "strategy_id",
-    "strategy_family",
-    "strategy_version",
-    "execution_venue",
-    "execution_symbol",
-    "real_market_symbol",
-    "side",
-    "ts_signal",
-    "timeframe",
-    "raw_score",
-    "rank_score",
-    "tail_bucket",
-    "reason_codes",
-)
-
-
-def _require_single_signal_identity(frame: pl.DataFrame) -> dict[str, Any]:
-    if frame.is_empty():
-        return {}
-    missing = [column for column in SIGNAL_IDENTITY_COLUMNS if column not in frame.columns]
-    if missing:
-        raise ValueError(f"Strategy signal artifact missing identity columns: {missing}")
-    identities = frame.select(list(SIGNAL_IDENTITY_COLUMNS)).unique()
-    if identities.height != 1:
-        raise ValueError(
-            "Strategy signal artifact contains mixed strategy/symbol identities; "
-            "rebuild one generator per strategy_signals.parquet artifact."
-        )
-    return identities.to_dicts()[0]
-
-
-def _strategy_signal_run_id(frame: pl.DataFrame) -> str:
-    if frame.is_empty():
-        return "no-signals"
-    columns = [column for column in SIGNAL_RUN_ID_COLUMNS if column in frame.columns]
-    if not columns:
-        return hashlib.sha256(b"strategy-signals:missing-run-columns").hexdigest()[:12]
-    sort_columns = [
-        column
-        for column in (
-            "strategy_id",
-            "strategy_version",
-            "execution_symbol",
-            "real_market_symbol",
-            "ts_signal",
-            "signal_id",
-        )
-        if column in columns
-    ]
-    stable_frame = frame.select(columns)
-    if sort_columns:
-        stable_frame = stable_frame.sort(sort_columns)
-    payload = json.dumps(
-        stable_frame.to_dicts(),
-        ensure_ascii=True,
-        sort_keys=True,
-        default=str,
-    )
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
-
-
-def _run_id_from_trial_group(trial_group_id: str | None) -> str:
-    text = str(trial_group_id or "").strip()
-    if text.startswith("trial-group-"):
-        return text.removeprefix("trial-group-")
-    if not text:
-        return "empty"
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
-
-
-def _run_id_from_pack_id(pack_id: str) -> str:
-    text = str(pack_id).strip()
-    if text.startswith("paper-pack-"):
-        return text.removeprefix("paper-pack-")
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
-
-
 def _build_signals_or_exit(data_dir: Path, *, generator_id: str) -> Path:
     try:
         return build_signals(data_dir, generator_id=generator_id)
@@ -141,17 +56,50 @@ def _build_signals_or_exit(data_dir: Path, *, generator_id: str) -> Path:
         raise typer.Exit(2) from exc
 
 
-def _signal_rows_by_strategy(data_dir: Path) -> dict[str, dict[str, Any]]:
+def _read_signal_manifest(data_dir: Path) -> StrategySignalManifest | None:
+    path = strategy_signal_manifest_path(data_dir)
+    return read_strategy_signal_manifest(path) if path.exists() else None
+
+
+def _current_signal_context(data_dir: Path) -> tuple[pl.DataFrame, StrategySignalManifest | None, str]:
     signals_path = data_dir / "research/strategy_signals.parquet"
     if not signals_path.exists():
-        return {}
+        raise FileNotFoundError(f"Strategy signal artifact not found: {signals_path}")
     frame = pl.read_parquet(signals_path)
-    rows: dict[str, dict[str, Any]] = {}
-    for row in frame.sort("ts_signal").to_dicts():
-        strategy_id = str(row.get("strategy_id") or "")
-        if strategy_id and strategy_id not in rows:
-            rows[strategy_id] = row
-    return rows
+    manifest = _read_signal_manifest(data_dir)
+    if frame.is_empty():
+        if manifest is None:
+            raise ValueError(
+                "Empty strategy signal artifact requires strategy_signal_manifest.json."
+            )
+        return frame, manifest, manifest.signal_artifact_run_id
+    run_id = signal_artifact_run_id(frame)
+    if manifest is not None:
+        if manifest.signal_count != frame.height:
+            raise ValueError(
+                "Strategy signal manifest signal_count does not match artifact: "
+                f"{manifest.signal_count} != {frame.height}"
+            )
+        if manifest.signal_artifact_run_id != run_id:
+            raise ValueError(
+                "Strategy signal manifest run_id does not match artifact: "
+                f"{manifest.signal_artifact_run_id} != {run_id}"
+            )
+    return frame, manifest, run_id
+
+
+def _record_run_id(record: TrialRecord) -> str:
+    value = record.metrics.get("signal_artifact_run_id")
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return run_id_from_trial_group(record.trial_group_id)
+
+
+def _latest_records_by_trial_id(records: list[TrialRecord]) -> list[TrialRecord]:
+    by_id: dict[str, TrialRecord] = {}
+    for record in records:
+        by_id[record.trial_id] = record
+    return sorted(by_id.values(), key=lambda item: (item.trial_index, item.trial_id))
 
 
 def _float_or_none(value: object) -> float | None:
@@ -267,23 +215,43 @@ def register_research_commands(
         if not signals_path.exists():
             typer.echo(f"Strategy signal artifact not found: {signals_path}")
             raise typer.Exit(2)
-        frame = pl.read_parquet(signals_path)
         try:
-            signal_identity = _require_single_signal_identity(frame)
+            frame, manifest, run_id = _current_signal_context(settings.data_dir)
+            signal_identity = require_single_signal_identity(frame)
         except ValueError as exc:
             typer.echo(str(exc))
             raise typer.Exit(2) from exc
-        run_id = _strategy_signal_run_id(frame)
+        except FileNotFoundError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
         selected = frame.height > 0
-        first_signal = signal_identity or _first_signal_row(frame)
+        selected_signal = latest_signal_row(frame) if selected else {}
+        if selected:
+            metadata = signal_identity
+        elif manifest is not None:
+            metadata = {
+                "strategy_id": manifest.strategy_id,
+                "strategy_family": manifest.strategy_family,
+                "strategy_version": manifest.strategy_version,
+            }
+        else:
+            typer.echo("Strategy signal manifest not found for empty signal artifact.")
+            raise typer.Exit(2)
+        metrics: dict[str, Any] = {
+            "signal_count": frame.height,
+            "signal_artifact_run_id": run_id,
+            "candidate_selection_policy": "latest_signal_by_ts",
+        }
+        if selected:
+            metrics["selected_signal_id"] = str(selected_signal.get("signal_id") or "")
         record = TrialRecord(
             schema_version="trial_record.v1",
             trial_id=f"trial-{run_id}",
             trial_group_id=f"trial-group-{run_id}",
             trial_index=0,
-            strategy_id=str(first_signal.get("strategy_id") or "unknown_strategy"),
-            strategy_family=str(first_signal.get("strategy_family") or "unknown"),
-            strategy_version=str(first_signal.get("strategy_version") or "unknown"),
+            strategy_id=str(metadata.get("strategy_id")),
+            strategy_family=str(metadata.get("strategy_family")),
+            strategy_version=str(metadata.get("strategy_version")),
             evaluation_plan_id="initial_walkforward",
             data_snapshot_id="data-snap-current",
             feature_snapshot_id="feature-snap-current",
@@ -293,20 +261,22 @@ def register_research_commands(
             random_seed=None,
             git_sha=None,
             signal_count=frame.height,
-            candidate_count=frame.height,
-            paper_candidate_count=frame.height if selected else 0,
+            candidate_count=1 if selected else 0,
+            paper_candidate_count=1 if selected else 0,
             executed_count=0,
             blocked_count=0,
             no_signal_count=0 if selected else 1,
             blocked_reason_counts={},
-            metrics={"signal_count": frame.height, "signal_artifact_run_id": run_id},
+            metrics=metrics,
             baseline_strategy_id=None,
             baseline_delta_metrics={},
             selected_for_next_stage=selected,
             rejection_reasons=[] if selected else ["no_signals"],
         )
         ledger_path = settings.data_dir / "research/trial_ledger.jsonl"
-        TrialLedger(ledger_path).append(record)
+        ledger = TrialLedger(ledger_path)
+        if record.trial_id not in {existing.trial_id for existing in ledger.read_all()}:
+            ledger.append(record)
         report_path = settings.data_dir / "reports/strategy_trial_report.md"
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(
@@ -322,38 +292,94 @@ def register_research_commands(
     @app.command("build-paper-candidate-pack")
     def build_paper_candidate_pack_cmd(
         trial_ledger: Path | None = typer.Option(None, "--trial-ledger"),
+        trial_group_id: str | None = typer.Option(
+            None,
+            "--trial-group-id",
+            help="Optional trial_group_id. Defaults to the latest group in the ledger.",
+        ),
     ) -> None:
         settings = get_settings()
         ledger_path = trial_ledger or (settings.data_dir / "research/trial_ledger.jsonl")
         records = TrialLedger(ledger_path).read_all()
+        if not records:
+            typer.echo(f"Trial ledger has no records: {ledger_path}")
+            raise typer.Exit(2)
+        selected_group_id = trial_group_id or records[-1].trial_group_id
+        group_records = [record for record in records if record.trial_group_id == selected_group_id]
+        if not group_records:
+            typer.echo(f"Trial group not found in ledger: {selected_group_id}")
+            raise typer.Exit(2)
+        records_for_pack = _latest_records_by_trial_id(group_records)
+        try:
+            signal_frame, signal_manifest, current_run_id = _current_signal_context(
+                settings.data_dir
+            )
+            current_signal = latest_signal_row(signal_frame)
+        except (FileNotFoundError, ValueError) as exc:
+            signal_frame = pl.DataFrame()
+            signal_manifest = _read_signal_manifest(settings.data_dir)
+            current_run_id = signal_manifest.signal_artifact_run_id if signal_manifest else ""
+            current_signal = {}
+            if any(record.selected_for_next_stage for record in records_for_pack):
+                typer.echo(str(exc))
+                raise typer.Exit(2) from exc
         now = datetime.now(timezone.utc)
         candidates: list[TradeCandidate] = []
         selected_ids: list[str] = []
         rejected_ids: list[str] = []
-        signal_by_strategy = _signal_rows_by_strategy(settings.data_dir)
-        for record in records:
-            candidate_id = f"candidate-{record.trial_id}"
+        for record in records_for_pack:
             status = "candidate" if record.selected_for_next_stage else "blocked"
-            signal = signal_by_strategy.get(record.strategy_id, {})
+            signal = current_signal if record.selected_for_next_stage else {}
+            if record.selected_for_next_stage:
+                record_run_id = _record_run_id(record)
+                if record_run_id != current_run_id:
+                    typer.echo(
+                        "Trial run_id does not match current strategy signal artifact: "
+                        f"{record_run_id} != {current_run_id}"
+                    )
+                    raise typer.Exit(2)
+                signal_id = str(signal.get("signal_id") or "")
+                candidate_id = f"candidate-{record.trial_id}-{signal_id}"
+            else:
+                signal_id = None
+                candidate_id = f"candidate-{record.trial_id}-no-signal"
+                if "no_signals" in record.rejection_reasons:
+                    status = "no_signal"
             side = str(signal.get("side") or ("long" if record.selected_for_next_stage else "none"))
             if side not in {"long", "short"}:
                 side = "none"
             reason_codes = list(signal.get("reason_codes") or [])
             if record.selected_for_next_stage and not reason_codes:
                 reason_codes = ["trial_selected"]
+            if signal:
+                execution_symbol = str(signal.get("execution_symbol") or "XYZ100")
+                real_market_symbol = str(signal.get("real_market_symbol") or "QQQ")
+                execution_venue = signal.get("execution_venue") or "trade_xyz"
+                timeframe = str(signal.get("timeframe") or "4h")
+                feature_snapshot_ref = signal.get("feature_snapshot_ref") or record.feature_snapshot_id
+            elif signal_manifest is not None:
+                binding = signal_manifest.symbol_bindings[0]
+                execution_symbol = binding.execution_symbol
+                real_market_symbol = binding.real_market_symbol
+                execution_venue = binding.execution_venue
+                timeframe = "4h"
+                feature_snapshot_ref = record.feature_snapshot_id
+            else:
+                typer.echo("Strategy signal manifest not found for blocked/no-signal candidate.")
+                raise typer.Exit(2)
             candidates.append(
                 TradeCandidate(
                     schema_version="trade_candidate.v1",
                     candidate_id=candidate_id,
                     generated_at=now,
-                    signal_id=signal.get("signal_id"),
+                    signal_id=signal_id,
                     strategy_id=record.strategy_id,
                     trial_id=record.trial_id,
-                    execution_venue=signal.get("execution_venue") or "trade_xyz",
-                    execution_symbol=str(signal.get("execution_symbol") or "XYZ100"),
-                    real_market_symbol=str(signal.get("real_market_symbol") or "QQQ"),
+                    execution_venue=execution_venue,
+                    execution_symbol=execution_symbol,
+                    real_market_symbol=real_market_symbol,
                     side=side,
-                    timeframe=str(signal.get("timeframe") or "4h"),
+                    timeframe=timeframe,
                     status=status,
                     raw_score=_float_or_none(signal.get("raw_score")),
                     rank_score=_float_or_none(signal.get("rank_score"))
@@ -365,31 +391,36 @@ def register_research_commands(
                     tail_bucket=_tail_bucket_value(
                         signal.get("tail_bucket"), selected=record.selected_for_next_stage
                     ),
-                    confidence=_float_or_none(signal.get("confidence")) or 0.8,
+                    confidence=(_float_or_none(signal.get("confidence")) or 0.8)
+                    if record.selected_for_next_stage
+                    else 0.0,
                     entry_reason_codes=reason_codes if record.selected_for_next_stage else [],
                     block_reasons=[]
                     if record.selected_for_next_stage
                     else record.rejection_reasons,
-                    feature_snapshot_ref=signal.get("feature_snapshot_ref")
-                    or record.feature_snapshot_id,
+                    feature_snapshot_ref=feature_snapshot_ref,
                     quote_ref=signal.get("quote_ref"),
                     tracking_ref=signal.get("tracking_ref"),
                 )
             )
             (selected_ids if record.selected_for_next_stage else rejected_ids).append(candidate_id)
-        pack_run_id = _run_id_from_trial_group(records[-1].trial_group_id if records else None)
+        pack_run_id = run_id_from_trial_group(selected_group_id)
         pack = PaperCandidatePack(
             schema_version="paper_candidate_pack.v1",
             pack_id=f"paper-pack-{pack_run_id}",
             generated_at=now,
-            evaluation_plan_id=records[-1].evaluation_plan_id if records else "unknown",
-            data_snapshot_id=records[-1].data_snapshot_id if records else "unknown",
-            feature_snapshot_id=records[-1].feature_snapshot_id if records else None,
-            trial_group_id=records[-1].trial_group_id if records else None,
+            evaluation_plan_id=records_for_pack[-1].evaluation_plan_id,
+            data_snapshot_id=records_for_pack[-1].data_snapshot_id,
+            feature_snapshot_id=records_for_pack[-1].feature_snapshot_id,
+            trial_group_id=selected_group_id,
             candidates=candidates,
             selected_candidate_ids=selected_ids,
             rejected_candidate_ids=rejected_ids,
-            selection_policy={"selected_for_next_stage": True},
+            selection_policy={
+                "selected_for_next_stage": True,
+                "trial_group_id": selected_group_id,
+                "candidate_selection_policy": "latest_signal_by_ts",
+            },
             reason_codes=["from_trial_ledger"],
             block_reasons=[],
         )
@@ -421,14 +452,12 @@ def register_research_commands(
         observed = ["paper_candidate_pack"] if pack_path.exists() else []
         if (settings.data_dir / "research/trial_ledger.jsonl").exists():
             observed.append("trial_ledger")
-        if pack_path.exists():
-            pack = PaperCandidatePack.model_validate(
-                json.loads(pack_path.read_text(encoding="utf-8"))
-            )
-            source_pack_id = pack.pack_id
-        else:
-            source_pack_id = "paper-pack-missing"
-        promotion_run_id = _run_id_from_pack_id(source_pack_id)
+        if not pack_path.exists():
+            typer.echo(f"PaperCandidatePack not found: {pack_path}")
+            raise typer.Exit(2)
+        pack = PaperCandidatePack.model_validate(json.loads(pack_path.read_text(encoding="utf-8")))
+        source_pack_id = pack.pack_id
+        promotion_run_id = run_id_from_pack_id(source_pack_id)
         promotion = PromotionDecision(
             schema_version="promotion_decision.v1",
             promotion_id=f"promotion-{promotion_run_id}",
@@ -465,6 +494,9 @@ def register_research_commands(
         )
         if not decision_path.exists():
             typer.echo(f"PromotionDecision not found: {decision_path}")
+            raise typer.Exit(2)
+        if not pack_path.exists():
+            typer.echo(f"PaperCandidatePack not found: {pack_path}")
             raise typer.Exit(2)
         pack = PaperCandidatePack.model_validate(json.loads(pack_path.read_text(encoding="utf-8")))
         promotion = PromotionDecision.model_validate(

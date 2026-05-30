@@ -35,7 +35,22 @@ class PaperCandidatePack(BaseModel):
         for field_name in ("pack_id", "evaluation_plan_id", "data_snapshot_id"):
             if not str(getattr(self, field_name)).strip():
                 raise ValueError(f"{field_name} must be non-empty")
-        candidate_ids = {candidate.candidate_id for candidate in self.candidates}
+        candidate_id_values = [candidate.candidate_id for candidate in self.candidates]
+        candidate_ids = set(candidate_id_values)
+        if len(candidate_id_values) != len(candidate_ids):
+            raise ValueError("candidate_id values must be unique")
+        if len(self.selected_candidate_ids) != len(set(self.selected_candidate_ids)):
+            raise ValueError("selected_candidate_ids must be unique")
+        if len(self.rejected_candidate_ids) != len(set(self.rejected_candidate_ids)):
+            raise ValueError("rejected_candidate_ids must be unique")
+        selected_rejected_overlap = set(self.selected_candidate_ids).intersection(
+            self.rejected_candidate_ids
+        )
+        if selected_rejected_overlap:
+            raise ValueError(
+                f"selected_candidate_ids overlap rejected_candidate_ids: "
+                f"{sorted(selected_rejected_overlap)}"
+            )
         unknown_selected = set(self.selected_candidate_ids).difference(candidate_ids)
         if unknown_selected:
             raise ValueError(f"selected_candidate_ids unknown: {sorted(unknown_selected)}")
