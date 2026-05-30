@@ -8,7 +8,7 @@
 
 今回の current truth:
 
-- additional audit baseline HEAD: `847e0fc`
+- additional audit baseline HEAD: `c4b17b1`
 - root CLI: `uv run sis --help` で `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`, `strategy-author-train-model` を確認。
 - docs lint: `uv run python scripts/check_current_docs.py` が current docs `78` 件を検査。
 - full gate: `./scripts/check` は `586 passed` を最新の全体検証値として扱う。
@@ -48,7 +48,7 @@ tests/test_strategy_lab_schemas.py
 | `docs/CODE_STATUS.md` | 実装状態一覧 | verification を 2026-05-31 / `586 passed` / current docs `78` 件へ更新 |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | capabilities の current entry | check 結果を `586 passed` / current docs `78` 件へ更新 |
 | `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md` | authoring の現状説明 | check 結果を `586 passed` / current docs `78` 件へ更新 |
-| `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | 進捗まとめ | 最終検証値だけ 2026-05-31 完了 gate へ追記更新 |
+| `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | 進捗まとめ | 最終検証値は 2026-05-31 完了 gate へ更新済み |
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | Strategy Lab audit/spec の入口 | 全体 docs audit の参照先を `docs/DOCUMENT_AUDIT_2026-05-31.md` へ差し替え |
 | `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | completion evidence ledger | 05-31 audit 追加前の current-docs count `77` を、現行 count `78` へ注記更新 |
 | `docs/DOCS_LINT_POLICY_2026-05-30.md` | current docs allowlist の説明 | current audit を `docs/DOCUMENT_AUDIT_2026-05-31.md` へ差し替え |
@@ -60,18 +60,18 @@ tests/test_strategy_lab_schemas.py
 | Path | 古い内容 | 現在の扱い |
 |---|---|---|
 | `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md` | Strategy Authoring completion 前の audit。`446 passed` / 2026-05-30 前提の表現が残る | archived superseded audit。現行入口は本ファイル |
-| `README.md` | `565 passed`, current docs `76` 件 | この変更で `586 passed` / `78` 件へ修正済み |
-| `docs/CURRENT_STATE.md` | `565 passed`, current docs `76` 件、authoring command list に `strategy-author-train-model` が無い | この変更で修正済み |
-| `docs/CODE_STATUS.md` | `565 passed`, current docs `76` 件 | この変更で修正済み |
-| `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | `565 passed`, current docs `76` 件 | この変更で修正済み |
-| `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md` | `565 passed`, current docs `76` 件 | この変更で修正済み |
-| `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | `181 passed` / schema tests `2 passed` / full gate `565 passed` の中間 snapshot | historical progress doc として有効。この変更で最終 focused gate `204 passed` と full gate `586 passed` へ更新済み |
-| `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | 全体 docs audit の参照先が `docs/DOCUMENT_AUDIT_2026-05-30.md` のまま | この変更で current audit `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
-| `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | `checked 77 current docs` は 05-31 audit 追加前の値 | この変更で現行 `checked 78 current docs` も併記 |
-| `README.md`, `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md`, `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | `LIVE_READINESS_BLOCKER=6` が最新 `phase-gate-review` の `5` とズレていた | この変更で `LIVE_READINESS_BLOCKER=5` へ修正済み |
+| `README.md` | `565 passed`, current docs `76` 件 | 現行では `586 passed` / `78` 件へ修正済み |
+| `docs/CURRENT_STATE.md` | `565 passed`, current docs `76` 件、authoring command list に `strategy-author-train-model` が無い | 現行では修正済み |
+| `docs/CODE_STATUS.md` | `565 passed`, current docs `76` 件 | 現行では修正済み |
+| `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | `565 passed`, current docs `76` 件 | 現行では修正済み |
+| `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md` | `565 passed`, current docs `76` 件 | 現行では修正済み |
+| `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | `181 passed` / schema tests `2 passed` / full gate `565 passed` の中間 snapshot | historical progress doc として有効。現行では最終 focused gate `204 passed` と full gate `586 passed` へ更新済み |
+| `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | 全体 docs audit の参照先が `docs/DOCUMENT_AUDIT_2026-05-30.md` のまま | 現行では current audit `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
+| `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | `checked 77 current docs` は 05-31 audit 追加前の値 | 現行では `checked 78 current docs` も併記 |
+| `README.md`, `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md`, `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | `LIVE_READINESS_BLOCKER=6` が最新 `phase-gate-review` の `5` とズレていた | 現行では `LIVE_READINESS_BLOCKER=5` へ修正済み |
 | `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | `294 passed` と 2026-05-28 runtime snapshot | focused historical audit。Trade[XYZ] read-only 証跡として読む。current full gate として引用しない |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | What To Read が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | この変更で `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
-| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | `294 passed` を含む 2026-05-28 failure-mode snapshot。read-first が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | design reference。current verification 値として引用しない。read-first 参照はこの変更で `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
+| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | What To Read が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | 現行では `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
+| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | `294 passed` を含む 2026-05-28 failure-mode snapshot。read-first が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | design reference。current verification 値として引用しない。read-first 参照は現行では `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | 2026-05-29 rewrite bundle より古い初版 rewrite | historical snapshot。current入口にしない |
 | `plan/archive/**` | 実装前/実装中の計画 | historical migration contract。現行状態は `docs/CURRENT_STATE.md` と code を優先 |
 | `data/reports/*.md`, `data/research/*.md` | runtime 生成時点の snapshot | 必要なら CLI で再生成。tracked docs の current truth とは分ける |
@@ -126,13 +126,13 @@ uv run sis --help
 uv run python scripts/check_current_docs.py
 ./scripts/check
 rg -n "565 passed|586 passed|446 passed|294 passed|checked 76|checked 78|strategy-author-|strategy_authoring_backtest_result|strategy_authoring_bundle_result|13_STRATEGY_ARCHETYPE|14_COMPLETION_EVIDENCE" README.md docs/CURRENT_STATE.md docs/CODE_STATUS.md docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md docs/strategy_research_lab docs/algo/README.md docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md -g '*.md' -g '*.html'
-rg -n "DOCUMENT_AUDIT_2026-05-30|DOCUMENT_AUDIT_2026-05-31|checked 77|checked 78|6609575|847e0fc" README.md docs plan -g '*.md' -g '*.html'
+rg -n "DOCUMENT_AUDIT_2026-05-30|DOCUMENT_AUDIT_2026-05-31|checked 77|checked 78|c4b17b1" README.md docs plan -g '*.md' -g '*.html'
 rg -n "@app\.command|def register_|strategy_author|strategy-experiment-run|build-paper|promotion|paper-from-intents|bot-preview" src/sis/commands src/sis/cli.py src/sis/research/strategy_lab src/sis/backtest -g '*.py'
 ```
 
 確認結果:
 
-- additional audit started clean at `847e0fc`.
+- additional audit started clean at `c4b17b1`.
 - docs lint passed before edits: `checked 78 current docs: links, EOF, and legacy roots ok`.
 - full gate passed: `586 passed`.
 - CLI help includes the Strategy Authoring commands and paper-only Strategy Lab commands.
