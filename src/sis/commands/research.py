@@ -61,7 +61,9 @@ def _read_signal_manifest(data_dir: Path) -> StrategySignalManifest | None:
     return read_strategy_signal_manifest(path) if path.exists() else None
 
 
-def _current_signal_context(data_dir: Path) -> tuple[pl.DataFrame, StrategySignalManifest | None, str]:
+def _current_signal_context(
+    data_dir: Path,
+) -> tuple[pl.DataFrame, StrategySignalManifest | None, str]:
     signals_path = data_dir / "research/strategy_signals.parquet"
     if not signals_path.exists():
         raise FileNotFoundError(f"Strategy signal artifact not found: {signals_path}")
@@ -356,7 +358,9 @@ def register_research_commands(
                 real_market_symbol = str(signal.get("real_market_symbol") or "QQQ")
                 execution_venue = signal.get("execution_venue") or "trade_xyz"
                 timeframe = str(signal.get("timeframe") or "4h")
-                feature_snapshot_ref = signal.get("feature_snapshot_ref") or record.feature_snapshot_id
+                feature_snapshot_ref = (
+                    signal.get("feature_snapshot_ref") or record.feature_snapshot_id
+                )
             elif signal_manifest is not None:
                 binding = signal_manifest.symbol_bindings[0]
                 execution_symbol = binding.execution_symbol

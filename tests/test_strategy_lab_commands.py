@@ -256,9 +256,7 @@ def test_build_paper_candidate_pack_uses_latest_signal_row(tmp_path, monkeypatch
     assert pack["candidates"][0]["candidate_id"].endswith("-sig-new")
 
 
-def test_build_paper_candidate_pack_defaults_to_latest_trial_group(
-    tmp_path, monkeypatch
-) -> None:
+def test_build_paper_candidate_pack_defaults_to_latest_trial_group(tmp_path, monkeypatch) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
     _write_strategy_signals(data_dir, signal_id="sig-old")
@@ -316,9 +314,7 @@ def test_build_paper_candidate_pack_rejects_empty_ledger(tmp_path, monkeypatch) 
     assert "Trial ledger has no records" in result.stdout
 
 
-def test_evaluate_strategy_lab_preserves_no_signal_manifest_lineage(
-    tmp_path, monkeypatch
-) -> None:
+def test_evaluate_strategy_lab_preserves_no_signal_manifest_lineage(tmp_path, monkeypatch) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
     feature_panel_path = data_dir / "research/feature_panel.parquet"
