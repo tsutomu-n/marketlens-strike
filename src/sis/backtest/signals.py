@@ -8,6 +8,15 @@ import polars as pl
 
 from sis.risk.scalping_policy import check_timeframe
 
+DEFAULT_EXIT_PRIORITY = (
+    "break_even_stop",
+    "stop_loss",
+    "partial_take_profit",
+    "take_profit",
+    "trailing_stop",
+    "time_stop",
+)
+
 
 @dataclass(frozen=True)
 class ResearchSignal:
@@ -17,11 +26,20 @@ class ResearchSignal:
     timeframe: str
     signal_strength: float | None = None
     stop_loss_bps: float | None = None
+    min_stop_loss_bps: float | None = None
+    max_stop_loss_bps: float | None = None
     take_profit_bps: float | None = None
+    min_take_profit_bps: float | None = None
+    max_take_profit_bps: float | None = None
+    min_reward_risk_ratio: float | None = None
+    reward_risk_ratio: float | None = None
     trailing_stop_bps: float | None = None
+    trailing_stop_activation_bps: float | None = None
     partial_take_profit_bps: float | None = None
     partial_exit_fraction: float | None = None
     min_holding_minutes: int | None = None
+    max_holding_minutes: int | None = None
+    exit_priority: str = ",".join(DEFAULT_EXIT_PRIORITY)
     exit_on_opposite_signal: bool = False
     exit_on_close_signal: bool = False
     exit_on_reduce_signal: bool = False
@@ -30,17 +48,21 @@ class ResearchSignal:
     add_fraction: float | None = None
     exit_on_rebalance_signal: bool = False
     rebalance_target_fraction: float | None = None
+    rebalance_min_delta_fraction: float | None = None
     bracket_type: str = "none"
     bracket_time_stop_minutes: int | None = None
     bracket_break_even_after_bps: float | None = None
+    bracket_break_even_after_partial_take_profit: bool = False
     entry_order_type: str = "market"
     entry_limit_offset_bps: float | None = None
     entry_stop_offset_bps: float | None = None
     entry_timeout_minutes: int | None = None
     entry_time_in_force: str = "gtc"
     entry_post_only: bool = False
+    entry_reduce_only: bool = False
     slippage_bps: float = 0.0
     max_fill_fraction: float = 1.0
+    min_fill_fraction: float | None = None
     max_spread_bps: float | None = None
     min_depth_usd: float | None = None
     depth_column: str | None = None
@@ -57,10 +79,19 @@ class ResearchSignal:
     tax_drag_bps: float | None = None
     max_turnover_pressure: float | None = None
     turnover_pressure: float | None = None
+    max_capacity_usage_ratio: float | None = None
+    capacity_usage_ratio: float | None = None
+    max_correlation_crowding_score: float | None = None
+    correlation_crowding_score: float | None = None
     min_fee_edge_bps: float | None = None
     fee_edge_bps: float | None = None
     position_weight: float = 1.0
     notional_usd: float | None = None
+    signal_id: str | None = None
+    multi_leg_group_id: str | None = None
+    multi_leg_leg_index: int | None = None
+    multi_leg_leg_count: int | None = None
+    multi_leg_anchor_real_market_symbol: str | None = None
 
 
 def _parse_timestamp(value: object) -> datetime:
@@ -161,11 +192,33 @@ def _parse_entry_time_in_force(value: object) -> str:
     raise ValueError(f"Unsupported entry_time_in_force: {value}")
 
 
+def _parse_optional_string(value: object) -> str | None:
+    if value is None or value == "":
+        return None
+    parsed = str(value).strip()
+    return parsed or None
+
+
 def _parse_bracket_type(value: object) -> str:
     normalized = str(value or "none").strip().lower()
     if normalized in {"none", "oco"}:
         return normalized
     raise ValueError(f"Unsupported bracket_type: {value}")
+
+
+def _parse_exit_priority(value: object) -> str:
+    if value is None or value == "":
+        return ",".join(DEFAULT_EXIT_PRIORITY)
+    items = [item.strip() for item in str(value).split(",") if item.strip()]
+    allowed = set(DEFAULT_EXIT_PRIORITY)
+    if not items:
+        return ",".join(DEFAULT_EXIT_PRIORITY)
+    unsupported = [item for item in items if item not in allowed]
+    if unsupported:
+        raise ValueError(f"Unsupported exit_priority item: {unsupported}")
+    if len(set(items)) != len(items):
+        raise ValueError("exit_priority must not contain duplicates")
+    return ",".join(items)
 
 
 def _parse_optional_positive_int(value: object, *, field_name: str) -> int | None:
@@ -176,6 +229,13 @@ def _parse_optional_positive_int(value: object, *, field_name: str) -> int | Non
         raise ValueError(f"{field_name} must be an integer")
     if parsed < 0:
         raise ValueError(f"{field_name} must be >= 0")
+    return parsed
+
+
+def _parse_optional_strict_positive_int(value: object, *, field_name: str) -> int | None:
+    parsed = _parse_optional_positive_int(value, field_name=field_name)
+    if parsed is not None and parsed <= 0:
+        raise ValueError(f"{field_name} must be positive")
     return parsed
 
 
@@ -212,11 +272,33 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                 stop_loss_bps=_parse_optional_positive_float(
                     row.get("stop_loss_bps"), field_name="stop_loss_bps"
                 ),
+                min_stop_loss_bps=_parse_optional_positive_float(
+                    row.get("min_stop_loss_bps"), field_name="min_stop_loss_bps"
+                ),
+                max_stop_loss_bps=_parse_optional_positive_float(
+                    row.get("max_stop_loss_bps"), field_name="max_stop_loss_bps"
+                ),
                 take_profit_bps=_parse_optional_positive_float(
                     row.get("take_profit_bps"), field_name="take_profit_bps"
                 ),
+                min_take_profit_bps=_parse_optional_positive_float(
+                    row.get("min_take_profit_bps"), field_name="min_take_profit_bps"
+                ),
+                max_take_profit_bps=_parse_optional_positive_float(
+                    row.get("max_take_profit_bps"), field_name="max_take_profit_bps"
+                ),
+                min_reward_risk_ratio=_parse_optional_positive_float(
+                    row.get("min_reward_risk_ratio"), field_name="min_reward_risk_ratio"
+                ),
+                reward_risk_ratio=_parse_optional_positive_float(
+                    row.get("reward_risk_ratio"), field_name="reward_risk_ratio"
+                ),
                 trailing_stop_bps=_parse_optional_positive_float(
                     row.get("trailing_stop_bps"), field_name="trailing_stop_bps"
+                ),
+                trailing_stop_activation_bps=_parse_optional_positive_float(
+                    row.get("trailing_stop_activation_bps"),
+                    field_name="trailing_stop_activation_bps",
                 ),
                 partial_take_profit_bps=_parse_optional_positive_float(
                     row.get("partial_take_profit_bps"), field_name="partial_take_profit_bps"
@@ -227,6 +309,10 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                 min_holding_minutes=_parse_optional_positive_int(
                     row.get("min_holding_minutes"), field_name="min_holding_minutes"
                 ),
+                max_holding_minutes=_parse_optional_strict_positive_int(
+                    row.get("max_holding_minutes"), field_name="max_holding_minutes"
+                ),
+                exit_priority=_parse_exit_priority(row.get("exit_priority")),
                 exit_on_opposite_signal=_parse_bool(row.get("exit_on_opposite_signal")),
                 exit_on_close_signal=_parse_bool(row.get("exit_on_close_signal")),
                 exit_on_reduce_signal=_parse_bool(row.get("exit_on_reduce_signal")),
@@ -242,6 +328,10 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                     row.get("rebalance_target_fraction"),
                     field_name="rebalance_target_fraction",
                 ),
+                rebalance_min_delta_fraction=_parse_optional_positive_float(
+                    row.get("rebalance_min_delta_fraction"),
+                    field_name="rebalance_min_delta_fraction",
+                ),
                 bracket_type=_parse_bracket_type(row.get("bracket_type")),
                 bracket_time_stop_minutes=_parse_optional_positive_int(
                     row.get("bracket_time_stop_minutes"), field_name="bracket_time_stop_minutes"
@@ -249,6 +339,9 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                 bracket_break_even_after_bps=_parse_optional_positive_float(
                     row.get("bracket_break_even_after_bps"),
                     field_name="bracket_break_even_after_bps",
+                ),
+                bracket_break_even_after_partial_take_profit=_parse_bool(
+                    row.get("bracket_break_even_after_partial_take_profit")
                 ),
                 entry_order_type=_parse_entry_order_type(row.get("entry_order_type")),
                 entry_limit_offset_bps=_parse_optional_positive_float(
@@ -262,14 +355,18 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                 ),
                 entry_time_in_force=_parse_entry_time_in_force(row.get("entry_time_in_force")),
                 entry_post_only=_parse_bool(row.get("entry_post_only")),
+                entry_reduce_only=_parse_bool(row.get("entry_reduce_only")),
                 slippage_bps=_parse_optional_positive_float(
                     row.get("slippage_bps"), field_name="slippage_bps"
                 )
                 or 0.0,
-                max_fill_fraction=_parse_optional_positive_float(
+                max_fill_fraction=_parse_optional_unit_float(
                     row.get("max_fill_fraction"), field_name="max_fill_fraction"
                 )
                 or 1.0,
+                min_fill_fraction=_parse_optional_unit_float(
+                    row.get("min_fill_fraction"), field_name="min_fill_fraction"
+                ),
                 max_spread_bps=_parse_optional_positive_float(
                     row.get("max_spread_bps"), field_name="max_spread_bps"
                 ),
@@ -320,6 +417,20 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                 turnover_pressure=_parse_optional_positive_float(
                     row.get("turnover_pressure"), field_name="turnover_pressure"
                 ),
+                max_capacity_usage_ratio=_parse_optional_positive_float(
+                    row.get("max_capacity_usage_ratio"), field_name="max_capacity_usage_ratio"
+                ),
+                capacity_usage_ratio=_parse_optional_positive_float(
+                    row.get("capacity_usage_ratio"), field_name="capacity_usage_ratio"
+                ),
+                max_correlation_crowding_score=_parse_optional_positive_float(
+                    row.get("max_correlation_crowding_score"),
+                    field_name="max_correlation_crowding_score",
+                ),
+                correlation_crowding_score=_parse_optional_positive_float(
+                    row.get("correlation_crowding_score"),
+                    field_name="correlation_crowding_score",
+                ),
                 min_fee_edge_bps=_parse_optional_float(
                     row.get("min_fee_edge_bps"), field_name="min_fee_edge_bps"
                 ),
@@ -332,6 +443,17 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                 or 1.0,
                 notional_usd=_parse_optional_positive_float(
                     row.get("notional_usd"), field_name="notional_usd"
+                ),
+                signal_id=_parse_optional_string(row.get("signal_id")),
+                multi_leg_group_id=_parse_optional_string(row.get("multi_leg_group_id")),
+                multi_leg_leg_index=_parse_optional_strict_positive_int(
+                    row.get("multi_leg_leg_index"), field_name="multi_leg_leg_index"
+                ),
+                multi_leg_leg_count=_parse_optional_strict_positive_int(
+                    row.get("multi_leg_leg_count"), field_name="multi_leg_leg_count"
+                ),
+                multi_leg_anchor_real_market_symbol=_parse_optional_string(
+                    row.get("multi_leg_anchor_real_market_symbol")
                 ),
             )
         )

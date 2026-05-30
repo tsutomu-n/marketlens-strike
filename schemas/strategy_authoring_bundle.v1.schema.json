@@ -26,7 +26,7 @@
         "allocation_method": {"enum": ["fixed_weight", "equal_weight", "risk_parity"]},
         "max_total_allocation_weight": {"type": ["number", "null"], "exclusiveMinimum": 0},
         "selection_metric": {"type": "string"},
-        "selection_direction": {"enum": ["maximize", "minimize"]}
+        "selection_direction": {"enum": ["maximize", "minimize", "auto"]}
       },
       "additionalProperties": false
     }

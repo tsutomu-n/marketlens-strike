@@ -5,6 +5,18 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+ALLOWED_EXIT_PRIORITY_ITEMS = {
+    "break_even_stop",
+    "stop_loss",
+    "partial_take_profit",
+    "take_profit",
+    "trailing_stop",
+    "time_stop",
+}
+DEFAULT_EXIT_PRIORITY = (
+    "break_even_stop,stop_loss,partial_take_profit,take_profit,trailing_stop,time_stop"
+)
+
 
 class TradeCandidate(BaseModel):
     schema_version: Literal["trade_candidate.v1"]
@@ -29,23 +41,35 @@ class TradeCandidate(BaseModel):
     entry_reason_codes: list[str] = Field(default_factory=list)
     block_reasons: list[str] = Field(default_factory=list)
     stop_loss_bps: float | None = None
+    min_stop_loss_bps: float | None = None
+    max_stop_loss_bps: float | None = None
     take_profit_bps: float | None = None
+    min_take_profit_bps: float | None = None
+    max_take_profit_bps: float | None = None
+    min_reward_risk_ratio: float | None = None
+    reward_risk_ratio: float | None = None
     trailing_stop_bps: float | None = None
+    trailing_stop_activation_bps: float | None = None
     partial_take_profit_bps: float | None = None
     partial_exit_fraction: float | None = None
     min_holding_minutes: int | None = None
+    max_holding_minutes: int | None = None
+    exit_priority: str = DEFAULT_EXIT_PRIORITY
     exit_on_opposite_signal: bool = False
     bracket_type: Literal["none", "oco"] = "none"
     bracket_time_stop_minutes: int | None = None
     bracket_break_even_after_bps: float | None = None
+    bracket_break_even_after_partial_take_profit: bool = False
     entry_order_type: Literal["market", "limit", "stop_market"] = "market"
     entry_limit_offset_bps: float | None = None
     entry_stop_offset_bps: float | None = None
     entry_timeout_minutes: int | None = None
     entry_time_in_force: Literal["gtc", "gtd", "ioc", "fok"] = "gtc"
     entry_post_only: bool = False
+    entry_reduce_only: bool = False
     slippage_bps: float = 0.0
     max_fill_fraction: float = 1.0
+    min_fill_fraction: float | None = None
     max_spread_bps: float | None = None
     min_depth_usd: float | None = None
     depth_column: str | None = None
@@ -62,6 +86,10 @@ class TradeCandidate(BaseModel):
     tax_drag_bps: float | None = None
     max_turnover_pressure: float | None = None
     turnover_pressure: float | None = None
+    max_capacity_usage_ratio: float | None = None
+    capacity_usage_ratio: float | None = None
+    max_correlation_crowding_score: float | None = None
+    correlation_crowding_score: float | None = None
     min_fee_edge_bps: float | None = None
     fee_edge_bps: float | None = None
     position_weight: float | None = None
@@ -88,10 +116,37 @@ class TradeCandidate(BaseModel):
             raise ValueError("partial_exit_fraction must be between 0 and 1")
         if self.min_holding_minutes is not None and self.min_holding_minutes <= 0:
             raise ValueError("min_holding_minutes must be positive")
+        if self.max_holding_minutes is not None and self.max_holding_minutes <= 0:
+            raise ValueError("max_holding_minutes must be positive")
+        if (
+            self.min_holding_minutes is not None
+            and self.max_holding_minutes is not None
+            and self.max_holding_minutes < self.min_holding_minutes
+        ):
+            raise ValueError("max_holding_minutes must be >= min_holding_minutes")
+        if not self.exit_priority.strip():
+            raise ValueError("exit_priority must be non-empty")
+        exit_priority_items = [
+            item.strip() for item in self.exit_priority.split(",") if item.strip()
+        ]
+        if len(set(exit_priority_items)) != len(exit_priority_items):
+            raise ValueError("exit_priority must not contain duplicates")
+        unsupported_exit_priority = [
+            item for item in exit_priority_items if item not in ALLOWED_EXIT_PRIORITY_ITEMS
+        ]
+        if unsupported_exit_priority:
+            raise ValueError(f"Unsupported exit_priority item: {unsupported_exit_priority}")
         for field_name in (
             "stop_loss_bps",
+            "min_stop_loss_bps",
+            "max_stop_loss_bps",
             "take_profit_bps",
+            "min_take_profit_bps",
+            "max_take_profit_bps",
+            "min_reward_risk_ratio",
+            "reward_risk_ratio",
             "trailing_stop_bps",
+            "trailing_stop_activation_bps",
             "partial_take_profit_bps",
             "entry_limit_offset_bps",
             "entry_stop_offset_bps",
@@ -107,6 +162,10 @@ class TradeCandidate(BaseModel):
             "tax_drag_bps",
             "max_turnover_pressure",
             "turnover_pressure",
+            "max_capacity_usage_ratio",
+            "capacity_usage_ratio",
+            "max_correlation_crowding_score",
+            "correlation_crowding_score",
             "position_weight",
             "notional_usd",
         ):
@@ -119,6 +178,8 @@ class TradeCandidate(BaseModel):
             raise ValueError("bracket_time_stop_minutes must be >= 0")
         if not 0.0 <= self.max_fill_fraction <= 1.0:
             raise ValueError("max_fill_fraction must be between 0 and 1")
+        if self.min_fill_fraction is not None and not 0.0 <= self.min_fill_fraction <= 1.0:
+            raise ValueError("min_fill_fraction must be between 0 and 1")
         if self.depth_column is not None and not self.depth_column.strip():
             raise ValueError("depth_column must be non-empty when set")
         if not 0.0 <= self.depth_participation_rate <= 1.0:

@@ -396,10 +396,23 @@ def test_backtest_bridge_writes_decision_artifacts_for_signal_mode(tmp_path) -> 
     assert len(metrics) == 1
     assert len(records) == 1
     assert summary["executed_count"] == 1
+    assert summary["executed_signal_summary"]["result_count"] == 1
+    assert summary["executed_signal_summary"]["side_counts"] == {"long": 1}
+    assert summary["executed_signal_summary"]["symbol_counts"] == {"QQQ": 1}
+    assert summary["executed_signal_summary"]["timeframe_counts"] == {"4h": 1}
+    assert summary["executed_signal_summary"]["total_signal_return"] > 0
+    assert summary["executed_signal_summary"]["avg_signal_return"] > 0
+    assert summary["executed_signal_summary"]["win_rate"] == 1.0
+    assert summary["executed_signal_summary"]["total_cost_drag_bps"] == pytest.approx(
+        metrics[0].cost_drag_bps
+    )
+    assert summary["executed_signal_summary"]["total_notional_usd"] == 0.0
+    assert summary["executed_signal_summary"]["notional_weighted_signal_return"] is None
     assert decision_log_path.exists()
     assert decision_summary_path.exists()
     assert '"action":"enter_long"' in decision_log_path.read_text(encoding="utf-8")
     assert '"mode": "signal_driven"' in decision_summary_path.read_text(encoding="utf-8")
+    assert '"executed_signal_summary"' in decision_summary_path.read_text(encoding="utf-8")
     assert '"audit"' in decision_summary_path.read_text(encoding="utf-8")
     assert '"phase_gate"' in decision_summary_path.read_text(encoding="utf-8")
     assert '"readiness_summary"' in decision_summary_path.read_text(encoding="utf-8")

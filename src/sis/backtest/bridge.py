@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 import math
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
@@ -66,6 +67,14 @@ def _parse_quote_ts(value: object) -> datetime:
     if isinstance(value, str):
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     raise ValueError(f"Unsupported quote timestamp: {value!r}")
+
+
+def _float_from_summary_value(value: object) -> float:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        return float(value)
+    return 0.0
 
 
 def _execution_price(row: dict, side: str = "long") -> float | None:
@@ -202,7 +211,7 @@ def _scaled_signal_return(
     microstructure_fill_fraction: float = 1.0,
     reduce_events: list[tuple[int, float]] | None = None,
     add_events: list[tuple[int, float]] | None = None,
-    rebalance_events: list[tuple[int, float]] | None = None,
+    rebalance_events: list[tuple[int, float, float | None]] | None = None,
 ) -> tuple[float, str]:
     open_legs: list[tuple[float, float]] = [(entry_price, 1.0)]
     exit_legs: list[tuple[float, float, float, str]] = []
@@ -212,18 +221,30 @@ def _scaled_signal_return(
     final_reason = final_exit_reason
     break_even_armed = False
     bracket_enabled = signal.bracket_type == "oco"
+    exit_priority = tuple(
+        item.strip() for item in str(signal.exit_priority or "").split(",") if item.strip()
+    ) or (
+        "break_even_stop",
+        "stop_loss",
+        "partial_take_profit",
+        "take_profit",
+        "trailing_stop",
+        "time_stop",
+    )
     time_stop_at = (
         quote_times[entry_index] + timedelta(minutes=signal.bracket_time_stop_minutes)
         if bracket_enabled and signal.bracket_time_stop_minutes is not None
         else None
     )
-    adjustment_events_by_index: dict[int, list[tuple[str, float]]] = {}
+    adjustment_events_by_index: dict[int, list[tuple[str, float, float | None]]] = {}
     for index, fraction in reduce_events or []:
-        adjustment_events_by_index.setdefault(index, []).append(("reduce", fraction))
+        adjustment_events_by_index.setdefault(index, []).append(("reduce", fraction, None))
     for index, fraction in add_events or []:
-        adjustment_events_by_index.setdefault(index, []).append(("add", fraction))
-    for index, target_fraction in rebalance_events or []:
-        adjustment_events_by_index.setdefault(index, []).append(("rebalance", target_fraction))
+        adjustment_events_by_index.setdefault(index, []).append(("add", fraction, None))
+    for index, target_fraction, min_delta_fraction in rebalance_events or []:
+        adjustment_events_by_index.setdefault(index, []).append(
+            ("rebalance", target_fraction, min_delta_fraction)
+        )
 
     def open_fraction() -> float:
         return sum(fraction for _leg_entry_price, fraction in open_legs)
@@ -255,7 +276,9 @@ def _scaled_signal_return(
         exit_allowed = min_exit_index is None or index >= min_exit_index
         gross_bps = _gross_return_bps(entry_price, exit_price, side)
         best_bps = max(best_bps, gross_bps)
-        for event_type, value in adjustment_events_by_index.get(index, []) if exit_allowed else []:
+        for event_type, value, min_delta in (
+            adjustment_events_by_index.get(index, []) if exit_allowed else []
+        ):
             current_open = open_fraction()
             if current_open <= 0:
                 break
@@ -272,6 +295,9 @@ def _scaled_signal_return(
                         marker_reasons.append("add_signal")
             else:
                 target = max(value, 0.0)
+                if min_delta is not None and abs(target - current_open) < min_delta:
+                    marker_reasons.append("rebalance_band_skip")
+                    continue
                 marker_reasons.append("rebalance_signal")
                 if target < current_open:
                     close_open_fraction(exit_price, current_open - target, "rebalance_signal")
@@ -290,46 +316,72 @@ def _scaled_signal_return(
             and gross_bps >= signal.bracket_break_even_after_bps
         ):
             break_even_armed = True
-        if exit_allowed and bracket_enabled and break_even_armed and gross_bps <= 0:
-            close_all(exit_price, "bracket_break_even_stop")
-            final_reason = "bracket_break_even_stop"
-            break
-        if exit_allowed and signal.stop_loss_bps is not None and gross_bps <= -signal.stop_loss_bps:
-            final_reason = "bracket_stop_loss" if bracket_enabled else "stop_loss"
-            close_all(exit_price, final_reason)
-            break
-        if (
-            exit_allowed
-            and signal.partial_take_profit_bps is not None
-            and signal.partial_exit_fraction is not None
-            and not partial_done
-            and gross_bps >= signal.partial_take_profit_bps
-        ):
-            fraction = min(max(signal.partial_exit_fraction, 0.0), open_fraction())
-            if fraction > 0:
-                close_open_fraction(exit_price, fraction, "partial_take_profit")
-                partial_done = True
-        if (
-            exit_allowed
-            and signal.take_profit_bps is not None
-            and gross_bps >= signal.take_profit_bps
-        ):
-            final_reason = "bracket_take_profit" if bracket_enabled else "take_profit"
-            close_all(exit_price, final_reason)
-            break
-        if (
-            exit_allowed
-            and signal.trailing_stop_bps is not None
-            and best_bps > 0
-            and gross_bps <= best_bps - signal.trailing_stop_bps
-        ):
-            close_all(exit_price, "trailing_stop")
-            final_reason = "trailing_stop"
-            break
-        if exit_allowed and time_stop_at is not None and quote_times[index] >= time_stop_at:
-            close_all(exit_price, "bracket_time_stop")
-            final_reason = "bracket_time_stop"
-            break
+        if exit_allowed:
+            for exit_rule in exit_priority:
+                if (
+                    exit_rule == "break_even_stop"
+                    and bracket_enabled
+                    and break_even_armed
+                    and gross_bps <= 0
+                ):
+                    close_all(exit_price, "bracket_break_even_stop")
+                    final_reason = "bracket_break_even_stop"
+                    break
+                if (
+                    exit_rule == "stop_loss"
+                    and signal.stop_loss_bps is not None
+                    and gross_bps <= -signal.stop_loss_bps
+                ):
+                    final_reason = "bracket_stop_loss" if bracket_enabled else "stop_loss"
+                    close_all(exit_price, final_reason)
+                    break
+                if (
+                    exit_rule == "partial_take_profit"
+                    and signal.partial_take_profit_bps is not None
+                    and signal.partial_exit_fraction is not None
+                    and not partial_done
+                    and gross_bps >= signal.partial_take_profit_bps
+                ):
+                    fraction = min(max(signal.partial_exit_fraction, 0.0), open_fraction())
+                    if fraction > 0:
+                        close_open_fraction(exit_price, fraction, "partial_take_profit")
+                        partial_done = True
+                        if bracket_enabled and signal.bracket_break_even_after_partial_take_profit:
+                            break_even_armed = True
+                        if open_fraction() <= 0:
+                            final_reason = "partial_take_profit"
+                            break
+                if (
+                    exit_rule == "take_profit"
+                    and signal.take_profit_bps is not None
+                    and gross_bps >= signal.take_profit_bps
+                ):
+                    final_reason = "bracket_take_profit" if bracket_enabled else "take_profit"
+                    close_all(exit_price, final_reason)
+                    break
+                if (
+                    exit_rule == "trailing_stop"
+                    and signal.trailing_stop_bps is not None
+                    and best_bps > 0
+                    and (
+                        signal.trailing_stop_activation_bps is None
+                        or best_bps >= signal.trailing_stop_activation_bps
+                    )
+                    and gross_bps <= best_bps - signal.trailing_stop_bps
+                ):
+                    close_all(exit_price, "trailing_stop")
+                    final_reason = "trailing_stop"
+                    break
+                if (
+                    exit_rule == "time_stop"
+                    and time_stop_at is not None
+                    and quote_times[index] >= time_stop_at
+                ):
+                    close_all(exit_price, "bracket_time_stop")
+                    final_reason = "bracket_time_stop"
+                    break
+            if open_fraction() <= 0:
+                break
 
     if open_fraction() > 0:
         horizon_price = _exit_price(rows[horizon_exit_index], side)
@@ -354,13 +406,17 @@ def _scaled_signal_return(
             ]
         )
     )
-    fill_fraction = min(max(signal.max_fill_fraction, 0.0), 1.0) * min(
-        max(microstructure_fill_fraction, 0.0), 1.0
-    )
+    fill_fraction = _effective_fill_fraction(signal, microstructure_fill_fraction)
     execution_cost_bps = cost_bps + signal.slippage_bps
     return (
         gross_return - execution_cost_bps / 10_000
     ) * signal.position_weight * fill_fraction, reason
+
+
+def _effective_fill_fraction(signal: ResearchSignal, microstructure_fill_fraction: float) -> float:
+    return min(max(signal.max_fill_fraction, 0.0), 1.0) * min(
+        max(microstructure_fill_fraction, 0.0), 1.0
+    )
 
 
 def _microstructure_fill_fraction(
@@ -396,6 +452,16 @@ def _microstructure_fill_fraction(
             return None, "turnover_pressure_missing"
         if signal.turnover_pressure > signal.max_turnover_pressure:
             return None, "turnover_pressure_too_high"
+    if signal.max_capacity_usage_ratio is not None:
+        if signal.capacity_usage_ratio is None:
+            return None, "capacity_usage_missing"
+        if signal.capacity_usage_ratio > signal.max_capacity_usage_ratio:
+            return None, "capacity_usage_too_high"
+    if signal.max_correlation_crowding_score is not None:
+        if signal.correlation_crowding_score is None:
+            return None, "correlation_crowding_missing"
+        if signal.correlation_crowding_score > signal.max_correlation_crowding_score:
+            return None, "correlation_crowding_too_high"
     if signal.min_fee_edge_bps is not None:
         if signal.fee_edge_bps is None:
             return None, "fee_edge_missing"
@@ -599,6 +665,7 @@ def _metrics_for_signals(
     blocked_reason_counts: dict[str, int] = {}
     exit_reason_counts: dict[str, int] = {}
     entry_order_type_counts: dict[str, int] = {}
+    executed_signal_results: list[dict[str, object]] = []
     entry_order_unfilled = 0
     executed = 0
     blocked = 0
@@ -683,6 +750,28 @@ def _metrics_for_signals(
                     stale_rejected += 1
                     continue
                 exit_index = max(exit_index, min_exit_index)
+            if signal.max_holding_minutes is not None:
+                max_exit_ts = quote_times[entry_index] + timedelta(
+                    minutes=signal.max_holding_minutes
+                )
+                max_exit_index = next(
+                    (
+                        index
+                        for index, quote_time in enumerate(
+                            quote_times[entry_index + 1 :], start=entry_index + 1
+                        )
+                        if quote_time >= max_exit_ts
+                    ),
+                    None,
+                )
+                if max_exit_index is None:
+                    stale_rejected += 1
+                    continue
+                if min_exit_index is not None and max_exit_index < min_exit_index:
+                    max_exit_index = min_exit_index
+                if max_exit_index < exit_index:
+                    exit_index = max_exit_index
+                    final_exit_reason = "max_holding_time"
             if signal.exit_on_close_signal:
                 close_signal = next(
                     (
@@ -763,7 +852,7 @@ def _metrics_for_signals(
                     )
                     if add_index is not None and add_index < exit_index:
                         add_events.append((add_index, add_signal.add_fraction or 1.0))
-            rebalance_events: list[tuple[int, float]] = []
+            rebalance_events: list[tuple[int, float, float | None]] = []
             if signal.exit_on_rebalance_signal:
                 for rebalance_signal in (
                     item
@@ -791,6 +880,7 @@ def _metrics_for_signals(
                             (
                                 rebalance_index,
                                 rebalance_signal.rebalance_target_fraction or 0.0,
+                                rebalance_signal.rebalance_min_delta_fraction,
                             )
                         )
             if signal.exit_on_opposite_signal:
@@ -873,6 +963,18 @@ def _metrics_for_signals(
                     blocked_reason_counts.get(microstructure_block_reason, 0) + 1
                 )
                 continue
+            effective_fill_fraction = _effective_fill_fraction(
+                signal, microstructure_fill_fraction or 1.0
+            )
+            if (
+                signal.min_fill_fraction is not None
+                and effective_fill_fraction < signal.min_fill_fraction
+            ):
+                blocked += 1
+                blocked_reason_counts["execution_fill_fraction_too_low"] = (
+                    blocked_reason_counts.get("execution_fill_fraction_too_low", 0) + 1
+                )
+                continue
             spread_raw = entry.get("spread_bps")
             spread = float(spread_raw) if isinstance(spread_raw, int | float) else None
             cost_bps, cost_source = round_trip_cost_bps(
@@ -907,6 +1009,27 @@ def _metrics_for_signals(
             cost_sources.append(cost_source)
             equity.append(equity[-1] * (1.0 + returns[-1]))
             executed += 1
+            executed_signal_results.append(
+                {
+                    "signal_id": signal.signal_id,
+                    "ts_signal": signal.ts_signal,
+                    "venue": venue,
+                    "canonical_symbol": symbol,
+                    "side": signal.side,
+                    "timeframe": signal.timeframe,
+                    "signal_return": signal_return,
+                    "exit_reason": exit_reason,
+                    "cost_drag_bps": cost_bps + signal.slippage_bps,
+                    "position_weight": signal.position_weight,
+                    "notional_usd": signal.notional_usd,
+                    "multi_leg_group_id": signal.multi_leg_group_id,
+                    "multi_leg_leg_index": signal.multi_leg_leg_index,
+                    "multi_leg_leg_count": signal.multi_leg_leg_count,
+                    "multi_leg_anchor_real_market_symbol": (
+                        signal.multi_leg_anchor_real_market_symbol
+                    ),
+                }
+            )
 
         metrics.append(
             _metrics_from_returns(
@@ -932,9 +1055,63 @@ def _metrics_for_signals(
         "exit_reason_counts": exit_reason_counts,
         "entry_order_type_counts": entry_order_type_counts,
         "entry_order_unfilled_count": entry_order_unfilled,
+        "executed_signal_results": executed_signal_results,
+        "executed_signal_summary": _executed_signal_summary(executed_signal_results),
         "records_written": len(decision_records),
     }
     return metrics, decision_records, summary
+
+
+def _executed_signal_summary(results: list[dict[str, object]]) -> dict[str, object]:
+    if not results:
+        return {
+            "result_count": 0,
+            "first_ts_signal": None,
+            "last_ts_signal": None,
+            "side_counts": {},
+            "symbol_counts": {},
+            "timeframe_counts": {},
+            "exit_reason_counts": {},
+            "total_signal_return": 0.0,
+            "avg_signal_return": None,
+            "win_rate": None,
+            "total_cost_drag_bps": 0.0,
+            "total_notional_usd": 0.0,
+            "notional_weighted_signal_return": None,
+        }
+
+    signal_returns = [
+        _float_from_summary_value(item.get("signal_return") or 0.0) for item in results
+    ]
+    notionals = [_float_from_summary_value(item.get("notional_usd") or 0.0) for item in results]
+    total_notional = sum(notionals)
+    total_signal_return = sum(signal_returns)
+    ts_values = [str(item.get("ts_signal")) for item in results if item.get("ts_signal")]
+    return {
+        "result_count": len(results),
+        "first_ts_signal": min(ts_values) if ts_values else None,
+        "last_ts_signal": max(ts_values) if ts_values else None,
+        "side_counts": dict(Counter(str(item.get("side")) for item in results)),
+        "symbol_counts": dict(Counter(str(item.get("canonical_symbol")) for item in results)),
+        "timeframe_counts": dict(Counter(str(item.get("timeframe")) for item in results)),
+        "exit_reason_counts": dict(Counter(str(item.get("exit_reason")) for item in results)),
+        "total_signal_return": total_signal_return,
+        "avg_signal_return": total_signal_return / len(signal_returns),
+        "win_rate": sum(1 for value in signal_returns if value > 0) / len(signal_returns),
+        "total_cost_drag_bps": sum(
+            _float_from_summary_value(item.get("cost_drag_bps") or 0.0) for item in results
+        ),
+        "total_notional_usd": total_notional,
+        "notional_weighted_signal_return": (
+            sum(
+                signal_return * notional
+                for signal_return, notional in zip(signal_returns, notionals, strict=True)
+            )
+            / total_notional
+            if total_notional > 0
+            else None
+        ),
+    }
 
 
 def _write_decision_records(records: list[DecisionRecord], path: Path) -> None:

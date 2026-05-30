@@ -42,7 +42,7 @@
 | `tests/test_strategy_lab_candidate_pack.py` | TradeCandidate and PaperCandidatePack selected/rejected ID validation and live flag guard |
 | `tests/test_strategy_lab_promotion_decision.py` | PromotionDecision promote/reject/hold validation and live guard |
 | `tests/test_strategy_lab_paper_intent_preview.py` | PaperIntentPreview paper-only and live conversion guard |
-| `tests/test_strategy_lab_schemas.py` | tracked JSON Schema files, including signal manifest, exist and paper-only const guards match |
+| `tests/test_strategy_lab_schemas.py` | tracked JSON Schema files, including signal manifest, authoring backtest result, and bundle result, exist and paper-only const guards match |
 | `tests/test_strategy_lab_commands.py` | CLI artifact chain, idempotent evaluation, rank threshold sweep, multi-signal candidate selection, and missing-pack stops |
 | `tests/test_paper_from_intents.py` | paper-from-intents revalidates, writes paper artifacts, blocks expired intent |
 

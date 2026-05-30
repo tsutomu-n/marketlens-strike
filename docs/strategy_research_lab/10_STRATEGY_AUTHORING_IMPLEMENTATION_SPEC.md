@@ -59,60 +59,68 @@ validation は次を stop condition にします。
 - `symbol_bindings.real_market_symbol` の row が feature panel に存在しない
 - `backtest.label_horizon_minutes` が 0 以下
 - `rules.confidence` が 0.0 から 1.0 の範囲外
-- `rules.exit.stop_loss_bps` / `take_profit_bps` が負数
-- `rules.exit.trailing_stop_bps` / `partial_take_profit_bps` が負数
+- `rules.exit.stop_loss_bps` / `take_profit_bps` / `min_stop_loss_bps` / `max_stop_loss_bps` / `min_take_profit_bps` / `max_take_profit_bps` が負数、`max_stop_loss_bps` が `min_stop_loss_bps` より小さい、`max_take_profit_bps` が `min_take_profit_bps` より小さい、または各 `_column` が空
+- `rules.exit.min_reward_risk_ratio` が負数、または `min_reward_risk_ratio_column` が空
+- `rules.exit.trailing_stop_bps` / `trailing_stop_activation_bps` / `partial_take_profit_bps` が負数、または `trailing_stop_activation_bps_column` が空
 - `rules.exit.partial_exit_fraction` が 0.0 から 1.0 の範囲外
-- `rules.exit.min_holding_minutes` が 0 以下
+- `rules.exit.min_holding_minutes` / `max_holding_minutes` が 0 以下、`min_holding_minutes_column` / `max_holding_minutes_column` が空、`max_holding_minutes` が `min_holding_minutes` より短い、または `rules.exit.exit_priority` が重複・未対応 item を含む
 - `rules.exit.reduce_fraction` が 0.0 から 1.0 の範囲外
 - `rules.reduce` があるのに `rules.exit.reduce_fraction` / `reduce_fraction_column` のどちらも無い
 - `rules.exit.add_fraction` が 0.0 から 1.0 の範囲外
 - `rules.add` があるのに `rules.exit.add_fraction` / `add_fraction_column` のどちらも無い
+- `rules.exit.rebalance_min_delta_fraction` が負数、または `rebalance_min_delta_fraction_column` が空
 - `rules.sizing.position_weight` / `notional_usd` が負数
 - `rules.sizing.volatility_target` が 0 以下
 - `rules.sizing.volatility_target` があるのに `volatility_column` が無い、空、または feature panel に存在しない
 - `rules.sizing.max_volatility_scaled_position_weight` が負数
-- `rules.order.entry_type=limit` なのに `limit_offset_bps` が無い
-- `rules.order.entry_type=stop_market` なのに `stop_offset_bps` が無い
+- `rules.order.entry_type=limit` なのに、row-level `entry_type_column` なしで `limit_offset_bps` / `limit_offset_bps_column` が無い
+- `rules.order.entry_type=stop_market` なのに、row-level `entry_type_column` なしで `stop_offset_bps` / `stop_offset_bps_column` が無い
 - `rules.order.time_in_force` が `gtc`, `gtd`, `ioc`, `fok` 以外
-- `rules.order.time_in_force=gtd` なのに `timeout_minutes` が無い
-- `rules.order.time_in_force=ioc` / `fok` なのに `timeout_minutes` がある
-- `rules.order.post_only=true` なのに `entry_type=limit` ではない
+- `rules.order.time_in_force=gtd` なのに `timeout_minutes` / `timeout_minutes_column` が無い
+- `rules.order.time_in_force=ioc` / `fok` なのに、row-level `time_in_force_column` なしで `timeout_minutes` / `timeout_minutes_column` がある
+- `rules.order.post_only=true` または `post_only_column` 指定なのに `entry_type=limit` ではない
+- `rules.order.entry_type_column` / `limit_offset_bps_column` / `stop_offset_bps_column` / `timeout_minutes_column` / `time_in_force_column` / `post_only_column` / `reduce_only_column` が空文字
 - `rules.order.limit_offset_bps` / `stop_offset_bps` / `timeout_minutes` が負数
-- `rules.bracket.time_stop_minutes` / `break_even_after_bps` が負数
-- `rules.bracket.enabled=true` なのに stop / take / trailing / time stop / break-even stop のいずれも無い
-- `rules.execution.slippage_bps` が負数
+- `rules.bracket.time_stop_minutes` / `break_even_after_bps` が負数、または `time_stop_minutes_column` / `break_even_after_bps_column` が空
+- `rules.bracket.break_even_after_partial_take_profit=true` なのに `partial_take_profit_bps` / `partial_take_profit_bps_column` と `partial_exit_fraction` / `partial_exit_fraction_column` のどちらかの組み合わせが無い
+- `rules.bracket.enabled=true` なのに fixed / row-level stop / take / trailing / time stop / break-even stop / partial-profit break-even のいずれも無い
+- `rules.execution.slippage_bps` が負数、または `rules.execution.slippage_bps_column` が空
 - `rules.execution.profile` が `none`, `liquid_only`, `balanced`, `conservative` 以外
-- `rules.execution.max_fill_fraction` が 0.0 から 1.0 の範囲外
-- `rules.execution.max_spread_bps` / `min_depth_usd` / `max_latency_ms` / `max_borrow_cost_bps` / `max_tax_drag_bps` / `max_turnover_pressure` が負数
-- `rules.execution.depth_column` / `latency_column` / `queue_position_score_column` / `borrow_availability_column` / `borrow_cost_column` / `tax_drag_column` / `turnover_pressure_column` / `fee_edge_column` が空文字
+- `rules.execution.max_fill_fraction` または `rules.execution.min_fill_fraction` が 0.0 から 1.0 の範囲外、または `rules.execution.max_fill_fraction_column` / `min_fill_fraction_column` / `max_spread_bps_column` / `min_depth_usd_column` / `max_latency_ms_column` / `min_queue_position_score_column` が空
+- `rules.execution.max_spread_bps` / `min_depth_usd` / `max_latency_ms` / `max_borrow_cost_bps` / `max_tax_drag_bps` / `max_turnover_pressure` / `max_capacity_usage_ratio` / `max_correlation_crowding_score` が負数、または `max_borrow_cost_bps_column` / `max_tax_drag_bps_column` / `max_turnover_pressure_column` / `max_capacity_usage_ratio_column` / `max_correlation_crowding_score_column` / `min_fee_edge_bps_column` が空
+- `rules.execution.depth_column` / `latency_column` / `queue_position_score_column` / `borrow_availability_column` / `borrow_cost_column` / `tax_drag_column` / `turnover_pressure_column` / `capacity_usage_column` / `correlation_crowding_column` / `fee_edge_column` が空文字
 - `rules.execution.depth_participation_rate` が 0.0 から 1.0 の範囲外
 - `rules.execution.min_queue_position_score` が 0.0 から 1.0 の範囲外
-- `rules.execution.min_borrow_availability_ratio` が 0.0 から 1.0 の範囲外
+- `rules.execution.min_borrow_availability_ratio` が 0.0 から 1.0 の範囲外、または `min_borrow_availability_ratio_column` が空
 - `rules.execution.max_latency_ms` があるのに `latency_column` が無い
-- `rules.execution.min_queue_position_score` があるのに `queue_position_score_column` が無い
-- `rules.execution.min_borrow_availability_ratio` があるのに `borrow_availability_column` が無い
-- `rules.execution.max_borrow_cost_bps` があるのに `borrow_cost_column` が無い
-- `rules.execution.max_tax_drag_bps` があるのに `tax_drag_column` が無い
-- `rules.execution.max_turnover_pressure` があるのに `turnover_pressure_column` が無い
-- `rules.execution.min_fee_edge_bps` があるのに `fee_edge_column` が無い
+- `rules.execution.min_queue_position_score` または `min_queue_position_score_column` があるのに `queue_position_score_column` が無い
+- `rules.execution.min_borrow_availability_ratio` または `min_borrow_availability_ratio_column` があるのに `borrow_availability_column` が無い
+- `rules.execution.max_borrow_cost_bps` または `max_borrow_cost_bps_column` があるのに `borrow_cost_column` が無い
+- `rules.execution.max_tax_drag_bps` または `max_tax_drag_bps_column` があるのに `tax_drag_column` が無い
+- `rules.execution.max_turnover_pressure` または `max_turnover_pressure_column` があるのに `turnover_pressure_column` が無い
+- `rules.execution.max_capacity_usage_ratio` または `max_capacity_usage_ratio_column` があるのに `capacity_usage_column` が無い
+- `rules.execution.max_correlation_crowding_score` または `max_correlation_crowding_score_column` があるのに `correlation_crowding_column` が無い
+- `rules.execution.min_fee_edge_bps` または `min_fee_edge_bps_column` があるのに `fee_edge_column` が無い
 - `rules.portfolio.max_signals_per_timestamp` が 0 以下
-- `rules.portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` / `max_group_abs_net_position_weight` / `max_turnover_weight_per_timestamp` が負数
+- `rules.portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` / `max_group_abs_net_position_weight` / `max_turnover_weight_per_timestamp` が負数、または portfolio exposure の `*_column` が空
 - `rules.portfolio.turnover_weight_column` が空
-- `rules.portfolio.max_group_position_weight` / `max_group_abs_net_position_weight` / `allocation_method=group_neutral` があるのに `group_column` が無い、または `group_column` が空
+- `rules.portfolio.max_group_position_weight` / `max_group_position_weight_column` / `max_group_abs_net_position_weight` / `max_group_abs_net_position_weight_column` / `allocation_method=group_neutral` があるのに `group_column` が無い、または `group_column` が空
 - `group_column` があるのに group exposure limit が無く、`allocation_method=group_neutral` でもない
 - `rules.portfolio.allocation_method` が `none`, `equal_weight`, `score_proportional`, `inverse_volatility`, `dollar_neutral`, `beta_neutral`, `group_neutral` 以外
-- `rules.portfolio.allocation_method` が `none` 以外なのに `target_total_position_weight` が無い
-- `rules.portfolio.target_total_position_weight` が負数
+- `rules.portfolio.allocation_method` が `none` 以外なのに `target_total_position_weight` / `target_total_position_weight_column` が無い
+- `rules.portfolio.target_total_position_weight` が負数、または `target_total_position_weight_column` が空
 - `rules.portfolio.allocation_method=inverse_volatility` なのに `allocation_volatility_column` が無い、空、または feature panel に存在しない
 - `rules.portfolio.allocation_method=beta_neutral` なのに `allocation_beta_column` が無い、空、または feature panel に存在しない
 - `rules.position.max_open_signals_per_symbol` が 0 以下
 - `rules.position.max_open_position_weight_per_symbol` が負数
 - `rules.position.holding_horizon_minutes` が 0 以下
-- `rules.risk_throttle` の column と threshold が片方だけ指定されている
+- `rules.risk_throttle.profile` が `none`, `conservative`, `strict` 以外
+- `rules.risk_throttle` の observed value column と fixed threshold / threshold column が不完全に指定されている
 - `rules.risk_throttle.*_column` が空または feature panel に存在しない
-- `rules.risk_throttle.max_loss_streak` が 0 以下
+- `rules.risk_throttle.max_loss_streak` が 0 以下、または `max_loss_streak_column` の row 値が正の整数ではない
+- `rules.risk_throttle.cooldown_minutes` が 0 以下
 - `rules.data_guard.profile` が `none`, `fresh_only`, `quality_only`, `strict` 以外
-- `rules.data_guard` の threshold field が負数、または confidence / quality threshold が 0.0 から 1.0 の範囲外
+- `rules.data_guard` の fixed / row-level threshold が負数、または confidence / quality threshold が 0.0 から 1.0 の範囲外
 - `rules.data_guard.*_column` が空、または enabled threshold に対応する column が feature panel に存在しない
 - `rules.temporal.allowed_weekdays_utc` が 0 から 6 の範囲外
 - `rules.temporal.allowed_hours_utc` が 0 から 23 の範囲外
@@ -133,6 +141,9 @@ validation は次を stop condition にします。
 - `rules.multi_leg.legs[].real_market_symbol` が `experiment.symbol_bindings` に存在しない
 - `rules.multi_leg.legs[].position_weight` / `notional_usd` が負数
 - `rules.multi_leg.legs[].position_weight_column` / `notional_usd_column` が空または feature panel に存在しない
+- `rules.multi_leg.legs[]` の leg-level exit override が負数、`partial_exit_fraction` が `0..1` 外、または min/max 幅が逆転している
+- `rules.multi_leg.legs[]` の leg-level order override が負数、空 column、limit entry なのに limit offset 無し、stop-market entry なのに stop offset 無し、GTD なのに timeout 無し、または post-only non-limit になっている
+- `rules.multi_leg.legs[]` の leg-level execution override が負数、unit interval 外、または空 column になっている
 - `rules.regime_overrides[].when` が空
 - `rules.regime_overrides[]` の risk / sizing / execution override 値が負数または 0.0 から 1.0 範囲外
 - `rules.regime_overrides[].name` が重複している
@@ -162,34 +173,40 @@ rebalance 判定は close / reduce / add / hold / entry より先に評価しま
 
 `rules.risk_throttle` がある場合は、entry / side / event window 判定後、multi-leg 展開前に feature row の risk state を評価します。
 
-- `max_drawdown_column <= max_drawdown_floor` なら `risk_throttle_max_drawdown` で block する。
-- `daily_loss_column <= daily_loss_floor` なら `risk_throttle_daily_loss` で block する。
-- `loss_streak_column >= max_loss_streak` なら `risk_throttle_loss_streak` で block する。
+- `profile=conservative` は未指定 field に `strategy_drawdown <= -0.15`, `daily_pnl <= -0.05`, `loss_streak >= 3` を適用する。
+- `profile=strict` は未指定 field に `strategy_drawdown <= -0.10`, `daily_pnl <= -0.03`, `loss_streak >= 2` を適用する。
+- 明示された column / threshold は profile default より優先する。
+- `max_drawdown_floor_column` / `daily_loss_floor_column` / `max_loss_streak_column` がある場合は row 値を threshold として使い、空なら fixed threshold へ fallback する。
+- `max_drawdown_column <= max_drawdown_floor` または row-level drawdown floor なら `risk_throttle_max_drawdown` で block する。
+- `daily_loss_column <= daily_loss_floor` または row-level daily loss floor なら `risk_throttle_daily_loss` で block する。
+- `loss_streak_column >= max_loss_streak` または row-level max loss streak なら `risk_throttle_loss_streak` で block する。
+- `cooldown_minutes` がある場合は、上記 risk throttle block 発生後、同一 symbol の後続候補を指定分数だけ `risk_throttle_cooldown` で block する。
 - risk throttle block は signal を削除せず、`side: none` として残し、backtest の売買対象から除外する。
 
-`rules.data_guard` がある場合は、event window 判定後、risk throttle と multi-leg 展開より前に feature row の freshness / source quality / venue quality / staleness / regime transition を fail-closed に評価します。`profile=fresh_only` は `max_feature_age_minutes=60`、`profile=quality_only` は `min_source_confidence=0.70` と `min_venue_quality_score=0.70`、`profile=strict` は `max_feature_age_minutes=30`, `min_source_confidence=0.80`, `min_venue_quality_score=0.80`, `max_staleness_bps=5`, `max_regime_transition_score=0.50` を未指定 field にだけ適用します。欠損または閾値違反は `data_guard_feature_age_missing`, `data_guard_feature_age_too_old`, `data_guard_source_confidence_missing`, `data_guard_source_confidence_too_low`, `data_guard_venue_quality_missing`, `data_guard_venue_quality_too_low`, `data_guard_staleness_missing`, `data_guard_staleness_too_high`, `data_guard_regime_transition_missing`, `data_guard_regime_transition_too_high` のいずれかで `side: none` として残します。
+`rules.data_guard` がある場合は、event window 判定後、risk throttle と multi-leg 展開より前に feature row の freshness / source quality / venue quality / staleness / regime transition を fail-closed に評価します。`profile=fresh_only` は `max_feature_age_minutes=60`、`profile=quality_only` は `min_source_confidence=0.70` と `min_venue_quality_score=0.70`、`profile=strict` は `max_feature_age_minutes=30`, `min_source_confidence=0.80`, `min_venue_quality_score=0.80`, `max_staleness_bps=5`, `max_regime_transition_score=0.50` を未指定 field にだけ適用します。`max_feature_age_minutes_column` / `min_source_confidence_column` / `min_venue_quality_score_column` / `max_staleness_bps_column` / `max_regime_transition_score_column` がある場合は row 値を threshold として使い、空なら fixed / profile threshold へ fallback します。欠損または閾値違反は `data_guard_feature_age_missing`, `data_guard_feature_age_too_old`, `data_guard_source_confidence_missing`, `data_guard_source_confidence_too_low`, `data_guard_venue_quality_missing`, `data_guard_venue_quality_too_low`, `data_guard_staleness_missing`, `data_guard_staleness_too_high`, `data_guard_regime_transition_missing`, `data_guard_regime_transition_too_high` のいずれかで `side: none` として残します。
 
-`rules.multi_leg.enabled=true` の場合は、`anchor_real_market_symbol` の feature row だけを entry / hold / score 判定に使い、通過した trade signal を `legs` に展開します。`side=same` は anchor signal side と同方向、`side=opposite` は反対方向へ解決します。leg の `position_weight` は global `sizing.position_weight` に掛け、`position_weight_column` がある場合は feature row の値を row ごとの leg multiplier として優先します。leg `notional_usd_column` がある場合は feature row の値を leg notional として優先します。leg `notional_usd` が無い場合は global `notional_usd * leg multiplier` を使います。これは paper-only の leg 展開であり、broker の atomic multi-leg order や live rebalance ではありません。
+`rules.multi_leg.enabled=true` の場合は、`anchor_real_market_symbol` の feature row だけを entry / hold / score 判定に使い、通過した trade signal を `legs` に展開します。`side=same` は anchor signal side と同方向、`side=opposite` は反対方向へ解決します。leg の `position_weight` は global `sizing.position_weight` に掛け、`position_weight_column` がある場合は feature row の値を row ごとの leg multiplier として優先します。leg `notional_usd_column` がある場合は feature row の値を leg notional として優先します。leg `notional_usd` が無い場合は global `notional_usd * leg multiplier` を使います。leg ごとの `stop_loss_bps`, `min_stop_loss_bps`, `max_stop_loss_bps`, `take_profit_bps`, `min_take_profit_bps`, `max_take_profit_bps`, `trailing_stop_bps`, `trailing_stop_activation_bps`, `partial_take_profit_bps`, `partial_exit_fraction`, `min_reward_risk_ratio` と同名の `_column` は通常の `rules.exit` / `regime_overrides` を上書きします。leg ごとの `entry_type`, `limit_offset_bps`, `stop_offset_bps`, `time_in_force`, `timeout_minutes`, `post_only`, `reduce_only` と同名の `_column` は通常の `rules.order` を上書きします。leg ごとの `slippage_bps`, `max_fill_fraction`, `min_fill_fraction`, `max_spread_bps`, `min_depth_usd`, `depth_participation_rate`, `max_latency_ms`, `min_queue_position_score`, `min_borrow_availability_ratio`, `max_borrow_cost_bps`, `max_tax_drag_bps`, `max_turnover_pressure`, `max_capacity_usage_ratio`, `max_correlation_crowding_score`, `min_fee_edge_bps` と同名の `_column`、および observed value 用の `depth_column`, `latency_column`, `queue_position_score_column`, `borrow_availability_column`, `borrow_cost_column`, `tax_drag_column`, `turnover_pressure_column`, `capacity_usage_column`, `correlation_crowding_column`, `fee_edge_column` は通常の `rules.execution` / `regime_overrides` を上書きします。展開された leg には同じ `multi_leg_group_id`、1 origin の `multi_leg_leg_index`、総 leg 数の `multi_leg_leg_count`、anchor の `multi_leg_anchor_real_market_symbol` を付けます。backtest では従来の leg 別 metrics を維持し、`summary.multi_leg_group_metrics` に group 数、complete / incomplete group 数、expected / executed leg 数、group 合算 return / average group return / win rate / worst group return / max drawdown / profit factor / average leg return imbalance / total notional / notional-weighted signal return / cost drag、group ごとの average leg return、leg return imbalance、notional-weighted return、exit reason count を出します。`notional_weighted_total_return` は実行済み leg の backtest 済み `signal_return` を `notional_usd` で重み付けした paper metric です。既存 `total_return` は leg の `signal_return` 合算のままです。profit factor は loss group が無い場合は `null` です。これは paper-only の leg 展開と集計であり、broker の atomic multi-leg order や live rebalance ではありません。
 
-`rules.regime_overrides` がある場合は、trade signal row の risk / sizing / execution 値を作る時に上から順に `when` を評価し、最初に一致した override を適用します。override できる値は exit bps、partial exit fraction、position weight、notional、slippage、fill fraction、spread/depth threshold、depth participation です。`*_column` がある exit / sizing 値は row の dynamic column 値を優先します。一致した regime は `reason_codes` に `regime:<name>` として残します。
+`rules.regime_overrides` がある場合は、trade signal row の risk / sizing / execution 値を作る時に上から順に `when` を評価し、最初に一致した override を適用します。override できる値は exit bps、partial exit fraction、position weight、notional、slippage、row slippage、fill fraction、spread/depth threshold、depth participation です。`*_column` がある exit / sizing 値は row の dynamic column 値を優先します。一致した regime は `reason_codes` に `regime:<name>` として残します。
 
 通過 row は `strategy_signal.v1` row へ変換されます。
 
 - `execution_symbol` は symbol binding から決める
 - `real_market_symbol` は feature panel の `canonical_symbol`
+- `multi_leg_group_id` / `multi_leg_leg_index` / `multi_leg_leg_count` / `multi_leg_anchor_real_market_symbol` は multi-leg 展開時だけ入り、同じ anchor signal から発生した leg 群を追跡する
 - `reason_codes` は `rules.reason_code`
 - `parameter_hash` は YAML payload の stable hash
 - `confidence` は `rules.confidence`
-- `stop_loss_bps` / `take_profit_bps` / `trailing_stop_bps` / `partial_take_profit_bps` / `partial_exit_fraction` / `min_holding_minutes` / `exit_on_opposite_signal` / `exit_on_close_signal` / `exit_on_reduce_signal` / `exit_on_add_signal` は `rules.exit` から引き継ぐ。`*_column` がある場合は row の column 値を優先し、空なら固定値へ fallback する。
-- `bracket_type` / `bracket_time_stop_minutes` / `bracket_break_even_after_bps` は `rules.bracket` から引き継ぐ。`rules.bracket.enabled=false` の場合は `bracket_type=none` とする。
+- `stop_loss_bps` / `min_stop_loss_bps` / `max_stop_loss_bps` / `take_profit_bps` / `min_take_profit_bps` / `max_take_profit_bps` / `min_reward_risk_ratio` / `min_reward_risk_ratio_column` / `reward_risk_ratio` / `trailing_stop_bps` / `trailing_stop_activation_bps` / `partial_take_profit_bps` / `partial_exit_fraction` / `min_holding_minutes` / `min_holding_minutes_column` / `max_holding_minutes` / `max_holding_minutes_column` / `exit_priority` / `exit_on_opposite_signal` / `exit_on_close_signal` / `exit_on_reduce_signal` / `exit_on_add_signal` / `rebalance_min_delta_fraction` は `rules.exit` から引き継ぐ。`*_column` がある場合は row の column 値を優先し、空なら固定値へ fallback する。
+- `bracket_type` / `bracket_time_stop_minutes` / `bracket_break_even_after_bps` / `bracket_break_even_after_partial_take_profit` は `rules.bracket` から引き継ぐ。`time_stop_minutes_column` / `break_even_after_bps_column` がある場合は row の column 値を優先し、空なら固定値へ fallback する。`rules.bracket.enabled=false` の場合は `bracket_type=none` とし、partial-profit break-even は false とする。
 - `position_weight` / `notional_usd` は `rules.sizing` から引き継ぐ。`position_weight` は backtest return の paper weight として使う。
 - `rules.sizing.volatility_target` がある場合は、row の `volatility_column` が正の数値なら `position_weight * volatility_target / volatility_column` へ変換し、`max_volatility_scaled_position_weight` があれば上限で cap する。volatility が欠損または 0 以下なら base `position_weight` を使う。
-- `entry_order_type` / `entry_limit_offset_bps` / `entry_stop_offset_bps` / `entry_timeout_minutes` / `entry_time_in_force` / `entry_post_only` は `rules.order` から引き継ぐ。
-- `slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_column` / `depth_participation_rate` / `max_latency_ms` / `latency_ms` / `min_queue_position_score` / `queue_position_score` / `min_borrow_availability_ratio` / `borrow_availability_ratio` / `max_borrow_cost_bps` / `borrow_cost_bps` / `max_tax_drag_bps` / `tax_drag_bps` / `max_turnover_pressure` / `turnover_pressure` / `min_fee_edge_bps` / `fee_edge_bps` は `rules.execution` と feature panel row から引き継ぐ。
+- `entry_order_type` / `entry_limit_offset_bps` / `entry_stop_offset_bps` / `entry_timeout_minutes` / `entry_time_in_force` / `entry_post_only` / `entry_reduce_only` は `rules.order` から引き継ぐ。`entry_type_column` / `limit_offset_bps_column` / `stop_offset_bps_column` / `timeout_minutes_column` / `time_in_force_column` / `post_only_column` / `reduce_only_column` がある場合は row の値を優先し、空なら固定値へ fallback する。
+- `slippage_bps` / `slippage_bps_column` / `max_fill_fraction` / `max_fill_fraction_column` / `min_fill_fraction` / `min_fill_fraction_column` / `max_spread_bps` / `max_spread_bps_column` / `min_depth_usd` / `min_depth_usd_column` / `depth_column` / `depth_participation_rate` / `max_latency_ms` / `max_latency_ms_column` / `latency_ms` / `min_queue_position_score` / `min_queue_position_score_column` / `queue_position_score` / `min_borrow_availability_ratio` / `min_borrow_availability_ratio_column` / `borrow_availability_ratio` / `max_borrow_cost_bps` / `max_borrow_cost_bps_column` / `borrow_cost_bps` / `max_tax_drag_bps` / `max_tax_drag_bps_column` / `tax_drag_bps` / `max_turnover_pressure` / `max_turnover_pressure_column` / `turnover_pressure` / `max_capacity_usage_ratio` / `max_capacity_usage_ratio_column` / `capacity_usage_ratio` / `max_correlation_crowding_score` / `max_correlation_crowding_score_column` / `correlation_crowding_score` / `min_fee_edge_bps` / `min_fee_edge_bps_column` / `fee_edge_bps` は `rules.execution` と feature panel row から引き継ぐ。
 - `portfolio.max_signals_per_timestamp` がある場合は、同一 `ts_signal` の trade signal を `rank_score` 降順で上位 N 件に制限する。hold / ambiguous signal は記録として残す。
-- `portfolio.allocation_method=equal_weight` / `score_proportional` / `inverse_volatility` / `dollar_neutral` / `beta_neutral` / `group_neutral` がある場合は、同一 `ts_signal` の採用候補の `position_weight` を `target_total_position_weight` に正規化する。`score_proportional` は正の `raw_score` 比例で配分し、全 score が 0 以下または欠損なら equal weight に fallback する。`inverse_volatility` は `allocation_volatility_column` の正の値の逆数で配分し、全 volatility が 0 以下または欠損なら equal weight に fallback する。`dollar_neutral` は long / short の gross weight を半分ずつにし、片側の候補しかない timestamp では反対側の half target を未使用にする。`beta_neutral` は `allocation_beta_column` から long beta exposure と short beta exposure が釣り合うように配分し、片側 beta が無い、0、または候補が片側だけの場合は dollar-neutral と同じ half target 配分へ fallback する。`group_neutral` は `group_column` ごとに long / short gross weight を中立化し、group が欠けた候補は neutral allocation 上 0 weight にする。
+- `portfolio.allocation_method=equal_weight` / `score_proportional` / `inverse_volatility` / `dollar_neutral` / `beta_neutral` / `group_neutral` がある場合は、同一 `ts_signal` の採用候補の `position_weight` を `target_total_position_weight` または `target_total_position_weight_column` に正規化する。`target_total_position_weight_column` がある場合は timestamp 内の非空値が一致する必要があり、空なら固定値へ fallback する。`score_proportional` は正の `raw_score` 比例で配分し、全 score が 0 以下または欠損なら equal weight に fallback する。`inverse_volatility` は `allocation_volatility_column` の正の値の逆数で配分し、全 volatility が 0 以下または欠損なら equal weight に fallback する。`dollar_neutral` は long / short の gross weight を半分ずつにし、片側の候補しかない timestamp では反対側の half target を未使用にする。`beta_neutral` は `allocation_beta_column` から long beta exposure と short beta exposure が釣り合うように配分し、片側 beta が無い、0、または候補が片側だけの場合は dollar-neutral と同じ half target 配分へ fallback する。`group_neutral` は `group_column` ごとに long / short gross weight を中立化し、group が欠けた候補は neutral allocation 上 0 weight にする。
 - `portfolio.max_turnover_weight_per_timestamp` がある場合は、allocation 後、exposure limit 前に同一 `ts_signal` の trade signal を `rank_score` 降順で採用し、turnover budget 超過候補を `side: none`、`block_reasons: [portfolio_turnover_budget_limit]` として残す。`turnover_weight_column` がある場合は feature row の値の絶対値を使い、無い場合は allocation 後の `position_weight` の絶対値を使う。
-- `portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` / `max_group_abs_net_position_weight` がある場合は、同一 `ts_signal` の trade signal を `rank_score` 降順で採用し、超過候補を `side: none`、`block_reasons` に `portfolio_total_exposure_limit`, `portfolio_long_exposure_limit`, `portfolio_short_exposure_limit`, `portfolio_net_exposure_limit`, `portfolio_symbol_exposure_limit`, `portfolio_group_exposure_limit`, `portfolio_group_net_exposure_limit` のいずれかを残す。`max_abs_net_position_weight` は採用候補全体の long weight minus short weight の絶対値を見て、超過時は過剰側の低 rank 候補から `portfolio_net_exposure_limit` として見送る。`max_group_abs_net_position_weight` は `group_column` ごとの long weight minus short weight の絶対値を見て、超過時はその group の過剰側の低 rank 候補から `portfolio_group_net_exposure_limit` として見送る。group exposure は `group_column` の値で集計し、値が欠損した候補は fail-closed で `portfolio_group_missing` として見送る。
+- `portfolio.max_total_position_weight` / `max_total_position_weight_column` / `max_long_position_weight` / `max_long_position_weight_column` / `max_short_position_weight` / `max_short_position_weight_column` / `max_abs_net_position_weight` / `max_abs_net_position_weight_column` / `max_symbol_position_weight` / `max_symbol_position_weight_column` / `max_group_position_weight` / `max_group_position_weight_column` / `max_group_abs_net_position_weight` / `max_group_abs_net_position_weight_column` がある場合は、同一 `ts_signal` の trade signal を `rank_score` 降順で採用し、超過候補を `side: none`、`block_reasons` に `portfolio_total_exposure_limit`, `portfolio_long_exposure_limit`, `portfolio_short_exposure_limit`, `portfolio_net_exposure_limit`, `portfolio_symbol_exposure_limit`, `portfolio_group_exposure_limit`, `portfolio_group_net_exposure_limit` のいずれかを残す。portfolio exposure の `*_column` がある場合は timestamp 内の非空値が一致する必要があり、空なら同名の固定値へ fallback する。`max_abs_net_position_weight` / `_column` は採用候補全体の long weight minus short weight の絶対値を見て、超過時は過剰側の低 rank 候補から `portfolio_net_exposure_limit` として見送る。`max_group_abs_net_position_weight` / `_column` は `group_column` ごとの long weight minus short weight の絶対値を見て、超過時はその group の過剰側の低 rank 候補から `portfolio_group_net_exposure_limit` として見送る。group exposure は `group_column` の値で集計し、値が欠損した候補は fail-closed で `portfolio_group_missing` として見送る。
 
 `rules.cross_sectional` がある場合は、entry 通過後の同一 `ts_signal` 候補を `raw_score` で順位化します。`group_column` がある場合は、同一 `ts_signal` かつ同一 group の中だけで順位化し、sector-neutral / theme-neutral / asset-class-neutral な top-bottom rotation を作れます。
 
@@ -219,7 +236,15 @@ rebalance 判定は close / reduce / add / hold / entry より先に評価しま
 - open window は `rules.position.holding_horizon_minutes` があればそれを使い、なければ `backtest.label_horizon_minutes` を使う。
 - `max_open_signals_per_symbol` は同一 execution symbol の open signal 数上限として評価する。
 - `max_open_position_weight_per_symbol` は同一 execution symbol の open `position_weight` 合計上限として評価する。
-- position block は signal を削除せず、`side: none`、`block_reasons` に `position_open_signal_limit` または `position_open_weight_limit` を残す。
+- `side: close` は同一 execution symbol の仮想 open state を消す。
+- `side: reduce` は同一 execution symbol の仮想 open weight を `reduce_fraction` 分だけ減らす。
+- `side: add` は同一 execution symbol の仮想 open weight を `add_fraction` 分だけ増やし、`max_open_position_weight_per_symbol` を超える場合は `position_open_weight_limit` として見送る。
+- `side: rebalance` は同一 execution symbol の仮想 open weight を `rebalance_target_fraction` へ寄せ、`max_open_position_weight_per_symbol` を超える場合は `position_open_weight_limit` として見送る。
+- `require_open_position_for_markers=true` の場合、仮想 open state が無い `close` / `reduce` / `add` / `rebalance` marker は `position_marker_without_open` として見送る。
+- `allow_opposing_open_positions=false` の場合、未期限の long open state がある時の short entry、または short open state がある時の long entry は `position_opposing_open_position` として見送る。
+- `allow_pyramiding=false` の場合、未期限の同方向 open state がある時の追加 long entry または追加 short entry は `position_pyramiding_not_allowed` として見送る。
+- `entry_reduce_only=true` の long / short signal は反対方向の未期限 open state がある場合だけ `side: reduce` marker に変換し、無い場合は `position_reduce_only_without_opposing_open` として見送る。
+- position block は signal を削除せず、`side: none`、`block_reasons` に `position_open_signal_limit`, `position_open_weight_limit`, `position_marker_without_open`, `position_opposing_open_position`, `position_pyramiding_not_allowed`, `position_reduce_only_without_opposing_open` のいずれかを残す。
 - これは paper-only の selection rule であり、broker position や live portfolio state は読まない。
 
 `rules.event_windows` がある場合は、entry / side 判定後、multi-leg 展開前に event timestamp column を評価します。
@@ -243,43 +268,59 @@ rebalance 判定は close / reduce / add / hold / entry より先に評価しま
 - exit quote は entry quote から `label_horizon_minutes` 後以降の最初の quote
 - `rules.exit.stop_loss_bps` / `take_profit_bps` がある場合は、fixed horizon までの quote を順に見て最初に到達した stop loss / take profit を exit として使う
 - `rules.exit.stop_loss_bps_column` / `take_profit_bps_column` がある場合は、signal row ごとの bps を使う
-- `trailing_stop_bps` は fixed horizon までの最良含み益からの戻り幅で exit する
+- `trailing_stop_bps` は fixed horizon までの最良含み益からの戻り幅で exit する。`trailing_stop_activation_bps` / `_column` がある場合は、最良含み益が指定 bps に到達するまで trailing stop を発動しない
 - `partial_take_profit_bps` / `partial_exit_fraction` は一部利確 leg と残り leg を合成して return を計算する
-- `rules.exit.min_holding_minutes` がある場合、entry quote から指定分数後以降の最初の quote までは stop loss / take profit / trailing stop / partial take profit / close signal / reduce signal / add signal / rebalance signal / opposite signal / bracket time stop を無視する。`label_horizon_minutes` が最低保有時間より短い場合、exit quote は最低保有時間側まで延長する。最低保有時間以降の quote が無い場合は stale reject とする
+- `rules.exit.min_holding_minutes` または `min_holding_minutes_column` がある場合、entry quote から指定分数後以降の最初の quote までは stop loss / take profit / trailing stop / partial take profit / close signal / reduce signal / add signal / rebalance signal / opposite signal / bracket time stop を無視する。`label_horizon_minutes` が最低保有時間より短い場合、exit quote は最低保有時間側まで延長する。最低保有時間以降の quote が無い場合は stale reject とする
+- `rules.exit.max_holding_minutes` または `max_holding_minutes_column` がある場合、fixed horizon より早く指定時間に到達した最初の quote で残り position を `max_holding_time` として exit する。`min_holding_minutes` と併用する場合は `max_holding_minutes >= min_holding_minutes` を必須にする。最大保有時間以降の quote が無い場合は stale reject とする
+- `rules.exit.exit_priority` は同じ quote で複数 exit 条件が成立した場合の評価順。許可 item は `break_even_stop`, `stop_loss`, `partial_take_profit`, `take_profit`, `trailing_stop`, `time_stop`。未指定時は既存順序を維持する
+- `rules.exit.min_reward_risk_ratio` または `min_reward_risk_ratio_column` がある場合、trade row の `take_profit_bps / stop_loss_bps` を `reward_risk_ratio` として記録する。ratio が欠損または stop が 0 以下なら `reward_risk_ratio_missing`、ratio が閾値未満なら `reward_risk_ratio_too_low` として `side: none` に残す
+- `rules.exit.min_stop_loss_bps` / `max_stop_loss_bps` / `min_take_profit_bps` / `max_take_profit_bps` または各 `_column` がある場合、trade row の stop/take 幅を直接 gate する。欠損は `stop_loss_bps_missing` / `take_profit_bps_missing`、狭すぎる幅は `*_too_low`、広すぎる幅は `*_too_high` として `side: none` に残す。既に hold / risk throttle / event window などで `side: none` になった row には二重適用しない
 - `rules.bracket.enabled=true` の場合、stop loss / take profit の exit reason は `bracket_stop_loss` / `bracket_take_profit` として記録する
-- `rules.bracket.break_even_after_bps` がある場合、指定 bps 以上の含み益到達後に return が 0 以下へ戻ると `bracket_break_even_stop` で exit する
-- `rules.bracket.time_stop_minutes` がある場合、entry quote から指定分数後以降の最初の quote で残り position を `bracket_time_stop` として exit する
+- `rules.bracket.break_even_after_bps` または `break_even_after_bps_column` がある場合、固定または row ごとの指定 bps 以上の含み益到達後に return が 0 以下へ戻ると `bracket_break_even_stop` で exit する
+- `rules.bracket.time_stop_minutes` または `time_stop_minutes_column` がある場合、entry quote から固定または row ごとの指定分数後以降の最初の quote で残り position を `bracket_time_stop` として exit する
 - bracket は paper-only OCO lifecycle であり、実 broker の bracket / OCO order は作らない
 - `rules.execution.profile` は `none`, `liquid_only`, `balanced`, `conservative` の preset です。`liquid_only` / `balanced` / `conservative` は validation 前に未指定 execution field だけを埋め、YAML で明示された field は上書きしません。preset は paper-only の約定品質仮定であり、実注文や live execution policy は作りません
-- `rules.execution.slippage_bps` は round trip の追加 drag として return から差し引き、`cost_drag_bps` に足す
-- `rules.execution.max_fill_fraction` は `position_weight` と掛け合わせて exposure を縮小する
-- `rules.execution.max_spread_bps` は entry quote の `spread_bps` が指定値を超える場合に entry を paper-only で block する
-- `rules.execution.min_depth_usd` は entry quote の `depth_column` を確認し、不足または欠損なら entry を paper-only で block する
+- `rules.execution.slippage_bps` または `slippage_bps_column` は round trip の追加 drag として return から差し引き、`cost_drag_bps` に足す
+- `rules.execution.max_fill_fraction` または `max_fill_fraction_column` は `position_weight` と掛け合わせて exposure を固定または row ごとの約定率へ縮小する
+- `rules.execution.min_fill_fraction` または `min_fill_fraction_column` は `max_fill_fraction * microstructure_fill_fraction` の有効約定率が固定または row ごとの閾値未満なら entry を `execution_fill_fraction_too_low` として paper-only で block する
+- `rules.execution.max_spread_bps` または `max_spread_bps_column` は entry quote の `spread_bps` が固定または row ごとの上限を超える場合に entry を paper-only で block する
+- `rules.execution.min_depth_usd` または `min_depth_usd_column` は entry quote の `depth_column` を確認し、固定または row ごとの必要額に対して不足または欠損なら entry を paper-only で block する
 - `rules.execution.depth_participation_rate` と signal の `notional_usd` がある場合、depth から取れる想定数量で paper exposure をさらに縮小する
-- `rules.execution.max_latency_ms` は signal row に焼き込んだ `latency_ms` が欠損または上限超過なら entry を paper-only で block する
-- `rules.execution.min_queue_position_score` は signal row に焼き込んだ `queue_position_score` が欠損または閾値未満なら entry を paper-only で block する
-- `rules.execution.min_borrow_availability_ratio` は short signal の `borrow_availability_ratio` が欠損または閾値未満なら entry を paper-only で block する。long signal には適用しない
-- `rules.execution.max_borrow_cost_bps` は short signal の `borrow_cost_bps` が欠損または上限超過なら entry を paper-only で block する。long signal には適用しない
-- `rules.execution.max_tax_drag_bps` は signal row に焼き込んだ `tax_drag_bps` が欠損または上限超過なら entry を paper-only で block する
-- `rules.execution.max_turnover_pressure` は signal row に焼き込んだ `turnover_pressure` が欠損または上限超過なら entry を paper-only で block する
-- `rules.execution.min_fee_edge_bps` は signal row に焼き込んだ `fee_edge_bps` が欠損または閾値未満なら entry を paper-only で block する
+- `rules.execution.max_latency_ms` または `max_latency_ms_column` は signal row に焼き込んだ `latency_ms` が欠損、または固定 / row ごとの上限超過なら entry を paper-only で block する
+- `rules.execution.min_queue_position_score` または `min_queue_position_score_column` は signal row に焼き込んだ `queue_position_score` が欠損、または固定 / row ごとの閾値未満なら entry を paper-only で block する
+- `rules.execution.min_borrow_availability_ratio` または `min_borrow_availability_ratio_column` は short signal の `borrow_availability_ratio` が欠損、または固定 / row ごとの閾値未満なら entry を paper-only で block する。long signal には適用しない
+- `rules.execution.max_borrow_cost_bps` または `max_borrow_cost_bps_column` は short signal の `borrow_cost_bps` が欠損、または固定 / row ごとの上限超過なら entry を paper-only で block する。long signal には適用しない
+- `rules.execution.max_tax_drag_bps` または `max_tax_drag_bps_column` は signal row に焼き込んだ `tax_drag_bps` が欠損、または固定 / row ごとの上限超過なら entry を paper-only で block する
+- `rules.execution.max_turnover_pressure` または `max_turnover_pressure_column` は signal row に焼き込んだ `turnover_pressure` が欠損、または固定 / row ごとの上限超過なら entry を paper-only で block する
+- `rules.execution.max_capacity_usage_ratio` または `max_capacity_usage_ratio_column` は signal row に焼き込んだ `capacity_usage_ratio` が欠損、または固定 / row ごとの上限超過なら entry を paper-only で block する
+- `rules.execution.max_correlation_crowding_score` または `max_correlation_crowding_score_column` は signal row に焼き込んだ `correlation_crowding_score` が欠損、または固定 / row ごとの上限超過なら entry を paper-only で block する
+- `rules.execution.min_fee_edge_bps` または `min_fee_edge_bps_column` は signal row に焼き込んだ `fee_edge_bps` が欠損、または固定 / row ごとの閾値未満なら entry を paper-only で block する
 - `exit_on_opposite_signal=true` の場合、同一 execution symbol の反対方向シグナルが fixed horizon より先に来たら、その時刻以降の最初の quote を exit とし、`summary.exit_reason_counts.opposite_signal` に記録する
 - `exit_on_close_signal=true` の場合、同一 execution symbol の `side: close` signal が fixed horizon より先に来たら、その時刻以降の最初の quote を exit とし、`summary.exit_reason_counts.close_signal` に記録する。close signal 自体は trade entry として評価しない
 - `exit_on_reduce_signal=true` の場合、同一 execution symbol の `side: reduce` signal が fixed horizon より先に来たら、その時刻以降の最初の quote で `reduce_fraction` 分だけ部分 exit し、残り position は horizon / stop / take profit まで維持する。`summary.exit_reason_counts` には `reduce_signal` を含む exit reason を記録する。reduce signal 自体は trade entry として評価しない
 - `exit_on_add_signal=true` の場合、同一 execution symbol の `side: add` signal が fixed horizon より先に来たら、その時刻以降の最初の quote で `add_fraction` 分だけ追加入りし、元 position と追加分を同じ exit lifecycle で評価する。`summary.exit_reason_counts` には `add_signal` を含む exit reason を記録する。add signal 自体は独立 trade entry として評価しない
-- `exit_on_rebalance_signal=true` の場合、同一 execution symbol の `side: rebalance` signal が fixed horizon より先に来たら、その時刻以降の最初の quote で `rebalance_target_fraction` の target exposure に寄せる。target が現在値より小さい場合は縮小、大きい場合は追加入りとして paper return に反映する。`summary.exit_reason_counts` には `rebalance_signal` を含む exit reason を記録する。rebalance signal 自体は独立 trade entry として評価しない
+- `exit_on_rebalance_signal=true` の場合、同一 execution symbol の `side: rebalance` signal が fixed horizon より先に来たら、その時刻以降の最初の quote で `rebalance_target_fraction` の target exposure に寄せる。target が現在値より小さい場合は縮小、大きい場合は追加入りとして paper return に反映する。`rebalance_min_delta_fraction` があり、target と現在 exposure の絶対差がその値未満なら調整せず `rebalance_band_skip` を exit reason に記録する。`summary.exit_reason_counts` には `rebalance_signal` または `rebalance_band_skip` を含む exit reason を記録する。rebalance signal 自体は独立 trade entry として評価しない
 - `position_weight` は signal return に掛ける。これは paper backtest の重みであり、live position size ではない
 - cost は `data.cost_model_path` が存在すれば使い、無ければ quote spread fallback を使う
 - metrics は既存 `BacktestMetrics` を JSON と Markdown に出す
+- `data/research/strategy_backtest_metrics.json` の schema version は `strategy_authoring_backtest_result.v1`
+- JSON Schema は `schemas/strategy_authoring_backtest_result.v1.schema.json`
+- schema は `paper_only=true`, `live_order_submitted=false`, `summary.executed_signal_summary`, `summary.multi_leg_group_metrics`, `summary.strategy_scorecard` を固定する
 - exit reason count は `summary.exit_reason_counts` に出す
-- `split_method=walk_forward` / `purged_walk_forward` は `summary.walk_forward_eras` に era ごとの signal count / aggregate metrics を出す
-- `optimizer.parameter_sweep` がある場合は、許可された spec path だけを grid sweep し、`summary.optimizer.variants` と `summary.optimizer.best_variant` に paper-only 比較結果を出す
-- `summary.strategy_scorecard` は `strategy_authoring_scorecard.v1` として、derived feature 名と op、signal side counts、reason code counts、signal block reason counts、execution block reason counts、exit reason counts、pass/fail threshold を集約する
-- paper-preview 出力では `TrialRecord.metrics.strategy_scorecard` と `PromotionDecision.scorecard_summary` に scorecard 要約を残す。`build-paper-intent-preview` が `promote` decision から intent を作る場合は `PaperIntentPreview.scorecard_summary` にも伝播する
-- `pass_thresholds` は aggregate metrics と比較し、`summary.pass_thresholds`, `summary.pass_all_thresholds`, `summary.backtest_passed` に出す
+- 実行済み signal の verbose rows は互換性のため `summary.executed_signal_results` に残す。通常の公開確認用には `summary.executed_signal_summary` に result count、first / last signal timestamp、side / symbol / timeframe / exit reason counts、total / average signal return、win rate、total cost drag、total notional、notional-weighted signal return を出す
+- multi-leg signal がある場合は `summary.multi_leg_group_metrics` に、同じ `multi_leg_group_id` で束ねた paper group metrics を出す。per-leg execution/backtest は変えず、group metrics は実行済み leg の `signal_return` と `cost_drag_bps` を合算し、average group return、win rate、worst group return、group equity max drawdown、profit factor、average leg return imbalance、total notional、notional-weighted signal return も計算する。profit factor は loss group が無い場合は `null`
+- `split_method=walk_forward` / `purged_walk_forward` は `summary.walk_forward_eras` に era ごとの signal count / aggregate metrics を出す。multi-leg signal がある era では `multi_leg_group_metrics` も出す
+- `optimizer.parameter_sweep` がある場合は、許可された spec path だけを grid sweep し、`summary.optimizer.variants` と `summary.optimizer.best_variant` に paper-only 比較結果を出す。multi-leg variant では variant ごとの `multi_leg_group_metrics` も出す。`optimizer.selection_metric` は aggregate metric または variant summary dotted path を使える。`optimizer.selection_direction=auto` は lower-is-better metric を `minimize`、それ以外を `maximize` として解決し、`summary.optimizer.resolved_selection_direction` に残す
+- `strategy-author-bundle-run` の `portfolio.selection_metric` は aggregate metric または member summary dotted path を使って `best_member` と `members` ranking を決める。例: `multi_leg_group_metrics.total_return`
+- `portfolio.selection_direction=auto` は metric 名から lower-is-better を判定し、`multi_leg_group_metrics.incomplete_group_count`、`cost_drag_bps`、`*_imbalance`、rejected / blocked / unfilled 系 count では `minimize`、それ以外では `maximize` として ranking する。result JSON の `portfolio.resolved_selection_direction` に解決後の方向を残す
+- bundle member が multi-leg group metrics を持つ場合、bundle result の `aggregate_metrics.multi_leg_group_metrics` に bundle 全体の group 数、complete / incomplete group 数、expected / executed leg 数、total notional、effective allocation weight を掛けた weighted total return / weighted notional return / cost drag / average group return / win rate / max drawdown / profit factor / leg imbalance を出す
+- bundle member が multi-leg group metrics を持つ場合、`strategy_authoring_bundle_report.md` に `## Multi-Leg Group Metrics` セクションを出し、bundle-level group completion rate / total notional / weighted notional return / weighted win rate / worst group return / weighted max drawdown / weighted profit factor / weighted average leg imbalance と、member 別 weighted group return / weighted notional return / total notional / weighted win rate / weighted max drawdown / weighted profit factor / weighted leg imbalance table を出す
+- `summary.strategy_scorecard` は `strategy_authoring_scorecard.v1` として、derived feature 名と op、signal side counts、reason code counts、signal block reason counts、execution block reason counts、exit reason counts、pass/fail threshold、multi-leg compact group metrics を集約する
+- paper-preview 出力では `TrialRecord.metrics.strategy_scorecard` と `PromotionDecision.scorecard_summary` に scorecard 要約を残す。multi-leg の場合、`scorecard_summary.multi_leg_group_metrics` は verbose な `groups[]` を除いた compact summary として group 数、complete / incomplete group 数、expected / executed leg 数、total return、average group return、win rate、worst group return、max drawdown、profit factor、average leg return imbalance、total notional、notional-weighted total return、cost drag を残す。`build-paper-intent-preview` が `promote` decision から intent を作る場合は `PaperIntentPreview.scorecard_summary` にも伝播する
+- `pass_thresholds` は aggregate metrics または summary dotted path と比較し、`summary.pass_thresholds`, `summary.pass_all_thresholds`, `summary.backtest_passed` に出す。例: `multi_leg_group_metrics.complete_group_count`, `multi_leg_group_metrics.incomplete_group_count`, `multi_leg_group_metrics.total_return`, `multi_leg_group_metrics.avg_leg_return_imbalance`。`*_cost_bps`, `*_drag_bps`, `*_imbalance`, rejected / blocked / unfilled 系 count、`incomplete_*` は threshold 以下なら pass、それ以外は threshold 以上なら pass
 - `summary.backtest_passed` は `min_trade_count` と `pass_thresholds` の両方を満たした場合だけ true
 
-optimizer は任意式や任意 Python を実行しません。許可 path は `rules.confidence`, `rules.exit.*bps`, `rules.exit.partial_exit_fraction`, `rules.sizing.position_weight`, `rules.portfolio.max_signals_per_timestamp`, `rules.temporal.cooldown_minutes`, `rules.temporal.max_signals_per_symbol_per_day`, `rules.cross_sectional.long_top_n`, `rules.cross_sectional.short_bottom_n`, `rules.cross_sectional.long_top_fraction`, `rules.cross_sectional.short_bottom_fraction`, `rules.cross_sectional.min_candidates`, `rules.cross_sectional.min_long_score`, `rules.cross_sectional.max_short_score`, `backtest.label_horizon_minutes` です。
+optimizer は任意式や任意 Python を実行しません。許可 path は `rules.confidence`, `rules.exit.*bps`, `rules.exit.partial_exit_fraction`, `rules.sizing.position_weight`, `rules.portfolio.max_signals_per_timestamp`, `rules.risk_throttle.max_drawdown_floor`, `rules.risk_throttle.daily_loss_floor`, `rules.risk_throttle.max_loss_streak`, `rules.risk_throttle.cooldown_minutes`, `rules.data_guard.max_feature_age_minutes`, `rules.data_guard.min_source_confidence`, `rules.data_guard.min_venue_quality_score`, `rules.data_guard.max_staleness_bps`, `rules.data_guard.max_regime_transition_score`, `rules.temporal.cooldown_minutes`, `rules.temporal.max_signals_per_symbol_per_day`, `rules.cross_sectional.long_top_n`, `rules.cross_sectional.short_bottom_n`, `rules.cross_sectional.long_top_fraction`, `rules.cross_sectional.short_bottom_fraction`, `rules.cross_sectional.min_candidates`, `rules.cross_sectional.min_long_score`, `rules.cross_sectional.max_short_score`, `backtest.label_horizon_minutes` です。
 
 ## Score Model Adapter
 
@@ -315,6 +356,8 @@ optimizer は任意式や任意 Python を実行しません。許可 path は `
 - `portfolio.max_total_allocation_weight` がある場合、合計 weight が cap を超えないよう比例縮小する
 - 各 member は既存の authoring validate / signal build / backtest をそのまま通す
 - 出力は `strategy_authoring_bundle_result.v1`
+- JSON Schema は `schemas/strategy_authoring_bundle_result.v1.schema.json`
+- schema は `paper_only=true`, `live_order_submitted=false`, `portfolio.resolved_selection_direction`, bundle-level `aggregate_metrics.multi_leg_group_metrics.total_notional_usd`, `weighted_notional_return` を固定する
 - `weighted_total_return` は member の `total_return * effective_allocation_weight` の合計
 
 出力 artifact:

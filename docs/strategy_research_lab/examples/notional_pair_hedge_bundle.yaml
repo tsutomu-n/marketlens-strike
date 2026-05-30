@@ -1,0 +1,14 @@
+schema_version: strategy_authoring_bundle.v1
+bundle_id: notional_pair_hedge_bundle_v1
+members:
+  - spec_path: pair_hedge_notional_authoring_spec.yaml
+    allocation_weight: 0.65
+    enabled: true
+  - spec_path: pair_hedge_conservative_authoring_spec.yaml
+    allocation_weight: 0.35
+    enabled: true
+portfolio:
+  allocation_method: fixed_weight
+  max_total_allocation_weight: 1.0
+  selection_metric: multi_leg_group_metrics.notional_weighted_total_return
+  selection_direction: auto

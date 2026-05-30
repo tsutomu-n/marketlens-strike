@@ -33,6 +33,16 @@ from sis.research.strategy_lab.signal_frame import validate_strategy_signal_fram
 from sis.research.strategy_lab.specs import SymbolBinding
 from sis.research.strategy_lab.trial_ledger import TrialLedger, TrialRecord
 
+EXIT_PRIORITY_ITEMS = (
+    "break_even_stop",
+    "stop_loss",
+    "partial_take_profit",
+    "take_profit",
+    "trailing_stop",
+    "time_stop",
+)
+DEFAULT_EXIT_PRIORITY = ",".join(EXIT_PRIORITY_ITEMS)
+
 ALLOWED_OPERATORS = {
     "gt",
     "gte",
@@ -260,24 +270,47 @@ class ExitRules(BaseModel):
     exit_on_rebalance_signal: bool = False
     rebalance_target_fraction: float | None = None
     rebalance_target_fraction_column: str | None = None
+    rebalance_min_delta_fraction: float | None = None
+    rebalance_min_delta_fraction_column: str | None = None
     stop_loss_bps: float | None = None
     stop_loss_bps_column: str | None = None
+    min_stop_loss_bps: float | None = None
+    min_stop_loss_bps_column: str | None = None
+    max_stop_loss_bps: float | None = None
+    max_stop_loss_bps_column: str | None = None
     take_profit_bps: float | None = None
     take_profit_bps_column: str | None = None
+    min_take_profit_bps: float | None = None
+    min_take_profit_bps_column: str | None = None
+    max_take_profit_bps: float | None = None
+    max_take_profit_bps_column: str | None = None
+    min_reward_risk_ratio: float | None = None
+    min_reward_risk_ratio_column: str | None = None
     trailing_stop_bps: float | None = None
     trailing_stop_bps_column: str | None = None
+    trailing_stop_activation_bps: float | None = None
+    trailing_stop_activation_bps_column: str | None = None
     partial_take_profit_bps: float | None = None
     partial_take_profit_bps_column: str | None = None
     partial_exit_fraction: float | None = None
     partial_exit_fraction_column: str | None = None
     min_holding_minutes: int | None = None
+    min_holding_minutes_column: str | None = None
+    max_holding_minutes: int | None = None
+    max_holding_minutes_column: str | None = None
+    exit_priority: list[str] = Field(default_factory=lambda: list(EXIT_PRIORITY_ITEMS))
 
     @model_validator(mode="after")
     def validate_exit(self) -> ExitRules:
         for field_name in (
             "stop_loss_bps",
+            "min_stop_loss_bps",
+            "max_stop_loss_bps",
             "take_profit_bps",
+            "min_take_profit_bps",
+            "max_take_profit_bps",
             "trailing_stop_bps",
+            "trailing_stop_activation_bps",
             "partial_take_profit_bps",
         ):
             value = getattr(self, field_name)
@@ -291,17 +324,59 @@ class ExitRules(BaseModel):
             raise ValueError("rules.exit.add_fraction must be between 0 and 1")
         if self.rebalance_target_fraction is not None and self.rebalance_target_fraction < 0:
             raise ValueError("rules.exit.rebalance_target_fraction must be >= 0")
+        if self.rebalance_min_delta_fraction is not None and self.rebalance_min_delta_fraction < 0:
+            raise ValueError("rules.exit.rebalance_min_delta_fraction must be >= 0")
+        if self.min_reward_risk_ratio is not None and self.min_reward_risk_ratio < 0:
+            raise ValueError("rules.exit.min_reward_risk_ratio must be >= 0")
+        if (
+            self.min_stop_loss_bps is not None
+            and self.max_stop_loss_bps is not None
+            and self.max_stop_loss_bps < self.min_stop_loss_bps
+        ):
+            raise ValueError("rules.exit.max_stop_loss_bps must be >= min_stop_loss_bps")
+        if (
+            self.min_take_profit_bps is not None
+            and self.max_take_profit_bps is not None
+            and self.max_take_profit_bps < self.min_take_profit_bps
+        ):
+            raise ValueError("rules.exit.max_take_profit_bps must be >= min_take_profit_bps")
         if self.min_holding_minutes is not None and self.min_holding_minutes <= 0:
             raise ValueError("rules.exit.min_holding_minutes must be positive")
+        if self.max_holding_minutes is not None and self.max_holding_minutes <= 0:
+            raise ValueError("rules.exit.max_holding_minutes must be positive")
+        if (
+            self.min_holding_minutes is not None
+            and self.max_holding_minutes is not None
+            and self.max_holding_minutes < self.min_holding_minutes
+        ):
+            raise ValueError("rules.exit.max_holding_minutes must be >= min_holding_minutes")
+        if len(set(self.exit_priority)) != len(self.exit_priority):
+            raise ValueError("rules.exit.exit_priority must not contain duplicates")
+        unsupported_exit_priority = [
+            item for item in self.exit_priority if item not in EXIT_PRIORITY_ITEMS
+        ]
+        if unsupported_exit_priority:
+            raise ValueError(
+                f"rules.exit.exit_priority contains unsupported items: {unsupported_exit_priority}"
+            )
         for field_name in (
             "stop_loss_bps_column",
+            "min_stop_loss_bps_column",
+            "max_stop_loss_bps_column",
             "take_profit_bps_column",
+            "min_take_profit_bps_column",
+            "max_take_profit_bps_column",
+            "min_reward_risk_ratio_column",
             "trailing_stop_bps_column",
+            "trailing_stop_activation_bps_column",
             "partial_take_profit_bps_column",
             "partial_exit_fraction_column",
+            "min_holding_minutes_column",
+            "max_holding_minutes_column",
             "reduce_fraction_column",
             "add_fraction_column",
             "rebalance_target_fraction_column",
+            "rebalance_min_delta_fraction_column",
         ):
             value = getattr(self, field_name)
             if value is not None and not value.strip():
@@ -342,30 +417,82 @@ class SizingRules(BaseModel):
 
 class OrderRules(BaseModel):
     entry_type: Literal["market", "limit", "stop_market"] = "market"
+    entry_type_column: str | None = None
     limit_offset_bps: float | None = None
+    limit_offset_bps_column: str | None = None
     stop_offset_bps: float | None = None
+    stop_offset_bps_column: str | None = None
     timeout_minutes: int | None = None
+    timeout_minutes_column: str | None = None
     time_in_force: Literal["gtc", "gtd", "ioc", "fok"] = "gtc"
+    time_in_force_column: str | None = None
     post_only: bool = False
+    post_only_column: str | None = None
+    reduce_only: bool = False
+    reduce_only_column: str | None = None
 
     @model_validator(mode="after")
     def validate_order(self) -> OrderRules:
-        if self.entry_type == "limit" and self.limit_offset_bps is None:
-            raise ValueError("rules.order.limit_offset_bps is required for limit entry")
-        if self.entry_type == "stop_market" and self.stop_offset_bps is None:
-            raise ValueError("rules.order.stop_offset_bps is required for stop_market entry")
-        if self.time_in_force == "gtd" and self.timeout_minutes is None:
-            raise ValueError("rules.order.timeout_minutes is required when time_in_force is gtd")
-        if self.time_in_force in {"ioc", "fok"} and self.timeout_minutes is not None:
+        if (
+            self.entry_type == "limit"
+            and self.entry_type_column is None
+            and self.limit_offset_bps is None
+            and self.limit_offset_bps_column is None
+        ):
+            raise ValueError(
+                "rules.order.limit_offset_bps or limit_offset_bps_column is required "
+                "for limit entry"
+            )
+        if (
+            self.entry_type == "stop_market"
+            and self.entry_type_column is None
+            and self.stop_offset_bps is None
+            and self.stop_offset_bps_column is None
+        ):
+            raise ValueError(
+                "rules.order.stop_offset_bps or stop_offset_bps_column is required "
+                "for stop_market entry"
+            )
+        if (
+            self.time_in_force == "gtd"
+            and self.time_in_force_column is None
+            and self.timeout_minutes is None
+            and self.timeout_minutes_column is None
+        ):
+            raise ValueError(
+                "rules.order.timeout_minutes or timeout_minutes_column is required "
+                "when time_in_force is gtd"
+            )
+        if (
+            self.time_in_force in {"ioc", "fok"}
+            and self.time_in_force_column is None
+            and (self.timeout_minutes is not None or self.timeout_minutes_column is not None)
+        ):
             raise ValueError(
                 "rules.order.timeout_minutes cannot be set when time_in_force is ioc or fok"
             )
-        if self.post_only and self.entry_type != "limit":
-            raise ValueError("rules.order.post_only is only supported for limit entry")
         for field_name in ("limit_offset_bps", "stop_offset_bps"):
             value = getattr(self, field_name)
             if value is not None and value < 0:
                 raise ValueError(f"rules.order.{field_name} must be >= 0")
+        for field_name in (
+            "entry_type_column",
+            "limit_offset_bps_column",
+            "stop_offset_bps_column",
+            "timeout_minutes_column",
+            "time_in_force_column",
+            "post_only_column",
+            "reduce_only_column",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and not value.strip():
+                raise ValueError(f"rules.order.{field_name} must be non-empty when set")
+        if (
+            (self.post_only or self.post_only_column is not None)
+            and self.entry_type_column is None
+            and self.entry_type != "limit"
+        ):
+            raise ValueError("rules.order.post_only is only supported for limit entry")
         if self.timeout_minutes is not None and self.timeout_minutes < 0:
             raise ValueError("rules.order.timeout_minutes must be >= 0")
         return self
@@ -375,38 +502,67 @@ class BracketRules(BaseModel):
     enabled: bool = False
     bracket_type: Literal["oco"] = "oco"
     time_stop_minutes: int | None = None
+    time_stop_minutes_column: str | None = None
     break_even_after_bps: float | None = None
+    break_even_after_bps_column: str | None = None
+    break_even_after_partial_take_profit: bool = False
 
     @model_validator(mode="after")
     def validate_bracket(self) -> BracketRules:
         if self.time_stop_minutes is not None and self.time_stop_minutes < 0:
             raise ValueError("rules.bracket.time_stop_minutes must be >= 0")
+        if self.time_stop_minutes_column is not None and not self.time_stop_minutes_column.strip():
+            raise ValueError("rules.bracket.time_stop_minutes_column must be non-empty when set")
         if self.break_even_after_bps is not None and self.break_even_after_bps < 0:
             raise ValueError("rules.bracket.break_even_after_bps must be >= 0")
+        if (
+            self.break_even_after_bps_column is not None
+            and not self.break_even_after_bps_column.strip()
+        ):
+            raise ValueError("rules.bracket.break_even_after_bps_column must be non-empty when set")
         return self
 
 
 class ExecutionRules(BaseModel):
     profile: Literal["none", "liquid_only", "balanced", "conservative"] = "none"
     slippage_bps: float = 0.0
+    slippage_bps_column: str | None = None
     max_fill_fraction: float = 1.0
+    max_fill_fraction_column: str | None = None
+    min_fill_fraction: float | None = None
+    min_fill_fraction_column: str | None = None
     max_spread_bps: float | None = None
+    max_spread_bps_column: str | None = None
     min_depth_usd: float | None = None
+    min_depth_usd_column: str | None = None
     depth_column: str | None = "min_side_depth_10bps_usd"
     depth_participation_rate: float = 1.0
     max_latency_ms: float | None = None
+    max_latency_ms_column: str | None = None
     latency_column: str | None = "latency_ms"
     min_queue_position_score: float | None = None
+    min_queue_position_score_column: str | None = None
     queue_position_score_column: str | None = "queue_position_score"
     min_borrow_availability_ratio: float | None = None
+    min_borrow_availability_ratio_column: str | None = None
     borrow_availability_column: str | None = "borrow_availability_ratio"
     max_borrow_cost_bps: float | None = None
+    max_borrow_cost_bps_column: str | None = None
     borrow_cost_column: str | None = "borrow_cost_bps"
     max_tax_drag_bps: float | None = None
+    max_tax_drag_bps_column: str | None = None
     tax_drag_column: str | None = "tax_drag_bps"
     max_turnover_pressure: float | None = None
+    max_turnover_pressure_column: str | None = None
     turnover_pressure_column: str | None = "turnover_pressure"
+    max_capacity_usage_ratio: float | None = None
+    max_capacity_usage_ratio_column: str | None = None
+    capacity_usage_column: str | None = "capacity_usage_ratio"
+    max_correlation_crowding_score: float | None = None
+    max_correlation_crowding_score_column: str | None = None
+    correlation_crowding_column: str | None = "correlation_crowding_score"
     min_fee_edge_bps: float | None = None
+    min_fee_edge_bps_column: str | None = None
     fee_edge_column: str | None = "maker_taker_fee_edge_bps"
 
     @model_validator(mode="after")
@@ -428,6 +584,8 @@ class ExecutionRules(BaseModel):
                 "max_latency_ms": 250.0,
                 "min_queue_position_score": 0.30,
                 "max_turnover_pressure": 0.80,
+                "max_capacity_usage_ratio": 0.80,
+                "max_correlation_crowding_score": 0.80,
             },
             "conservative": {
                 "slippage_bps": 25.0,
@@ -438,6 +596,8 @@ class ExecutionRules(BaseModel):
                 "max_latency_ms": 100.0,
                 "min_queue_position_score": 0.60,
                 "max_turnover_pressure": 0.40,
+                "max_capacity_usage_ratio": 0.50,
+                "max_correlation_crowding_score": 0.60,
                 "min_fee_edge_bps": 0.0,
             },
         }
@@ -446,14 +606,28 @@ class ExecutionRules(BaseModel):
                 setattr(self, field_name, value)
         if self.slippage_bps < 0:
             raise ValueError("rules.execution.slippage_bps must be >= 0")
+        if self.slippage_bps_column is not None and not self.slippage_bps_column.strip():
+            raise ValueError("rules.execution.slippage_bps_column must be non-empty when set")
         if not 0.0 <= self.max_fill_fraction <= 1.0:
             raise ValueError("rules.execution.max_fill_fraction must be between 0 and 1")
+        if self.max_fill_fraction_column is not None and not self.max_fill_fraction_column.strip():
+            raise ValueError("rules.execution.max_fill_fraction_column must be non-empty when set")
+        if self.min_fill_fraction is not None and not 0.0 <= self.min_fill_fraction <= 1.0:
+            raise ValueError("rules.execution.min_fill_fraction must be between 0 and 1")
+        if self.min_fill_fraction_column is not None and not self.min_fill_fraction_column.strip():
+            raise ValueError("rules.execution.min_fill_fraction_column must be non-empty when set")
         if self.max_spread_bps is not None and self.max_spread_bps < 0:
             raise ValueError("rules.execution.max_spread_bps must be >= 0")
+        if self.max_spread_bps_column is not None and not self.max_spread_bps_column.strip():
+            raise ValueError("rules.execution.max_spread_bps_column must be non-empty when set")
         if self.min_depth_usd is not None and self.min_depth_usd < 0:
             raise ValueError("rules.execution.min_depth_usd must be >= 0")
+        if self.min_depth_usd_column is not None and not self.min_depth_usd_column.strip():
+            raise ValueError("rules.execution.min_depth_usd_column must be non-empty when set")
         if self.max_latency_ms is not None and self.max_latency_ms < 0:
             raise ValueError("rules.execution.max_latency_ms must be >= 0")
+        if self.max_latency_ms_column is not None and not self.max_latency_ms_column.strip():
+            raise ValueError("rules.execution.max_latency_ms_column must be non-empty when set")
         if self.max_latency_ms is not None and self.latency_column is None:
             raise ValueError("rules.execution.latency_column is required for max_latency_ms")
         if (
@@ -461,9 +635,19 @@ class ExecutionRules(BaseModel):
             and not 0.0 <= self.min_queue_position_score <= 1.0
         ):
             raise ValueError("rules.execution.min_queue_position_score must be between 0 and 1")
-        if self.min_queue_position_score is not None and self.queue_position_score_column is None:
+        if (
+            self.min_queue_position_score is not None
+            or self.min_queue_position_score_column is not None
+        ) and self.queue_position_score_column is None:
             raise ValueError(
                 "rules.execution.queue_position_score_column is required for min_queue_position_score"
+            )
+        if (
+            self.min_queue_position_score_column is not None
+            and not self.min_queue_position_score_column.strip()
+        ):
+            raise ValueError(
+                "rules.execution.min_queue_position_score_column must be non-empty when set"
             )
         if (
             self.min_borrow_availability_ratio is not None
@@ -474,29 +658,97 @@ class ExecutionRules(BaseModel):
             )
         if (
             self.min_borrow_availability_ratio is not None
-            and self.borrow_availability_column is None
-        ):
+            or self.min_borrow_availability_ratio_column is not None
+        ) and self.borrow_availability_column is None:
             raise ValueError(
                 "rules.execution.borrow_availability_column is required for min_borrow_availability_ratio"
             )
+        if (
+            self.min_borrow_availability_ratio_column is not None
+            and not self.min_borrow_availability_ratio_column.strip()
+        ):
+            raise ValueError(
+                "rules.execution.min_borrow_availability_ratio_column must be non-empty when set"
+            )
         if self.max_borrow_cost_bps is not None and self.max_borrow_cost_bps < 0:
             raise ValueError("rules.execution.max_borrow_cost_bps must be >= 0")
-        if self.max_borrow_cost_bps is not None and self.borrow_cost_column is None:
+        if (
+            self.max_borrow_cost_bps is not None or self.max_borrow_cost_bps_column is not None
+        ) and self.borrow_cost_column is None:
             raise ValueError(
                 "rules.execution.borrow_cost_column is required for max_borrow_cost_bps"
             )
+        if (
+            self.max_borrow_cost_bps_column is not None
+            and not self.max_borrow_cost_bps_column.strip()
+        ):
+            raise ValueError(
+                "rules.execution.max_borrow_cost_bps_column must be non-empty when set"
+            )
         if self.max_tax_drag_bps is not None and self.max_tax_drag_bps < 0:
             raise ValueError("rules.execution.max_tax_drag_bps must be >= 0")
-        if self.max_tax_drag_bps is not None and self.tax_drag_column is None:
+        if (
+            self.max_tax_drag_bps is not None or self.max_tax_drag_bps_column is not None
+        ) and self.tax_drag_column is None:
             raise ValueError("rules.execution.tax_drag_column is required for max_tax_drag_bps")
+        if self.max_tax_drag_bps_column is not None and not self.max_tax_drag_bps_column.strip():
+            raise ValueError("rules.execution.max_tax_drag_bps_column must be non-empty when set")
         if self.max_turnover_pressure is not None and self.max_turnover_pressure < 0:
             raise ValueError("rules.execution.max_turnover_pressure must be >= 0")
-        if self.max_turnover_pressure is not None and self.turnover_pressure_column is None:
+        if (
+            self.max_turnover_pressure is not None or self.max_turnover_pressure_column is not None
+        ) and self.turnover_pressure_column is None:
             raise ValueError(
                 "rules.execution.turnover_pressure_column is required for max_turnover_pressure"
             )
-        if self.min_fee_edge_bps is not None and self.fee_edge_column is None:
+        if (
+            self.max_turnover_pressure_column is not None
+            and not self.max_turnover_pressure_column.strip()
+        ):
+            raise ValueError(
+                "rules.execution.max_turnover_pressure_column must be non-empty when set"
+            )
+        if self.max_capacity_usage_ratio is not None and self.max_capacity_usage_ratio < 0:
+            raise ValueError("rules.execution.max_capacity_usage_ratio must be >= 0")
+        if (
+            self.max_capacity_usage_ratio is not None
+            or self.max_capacity_usage_ratio_column is not None
+        ) and self.capacity_usage_column is None:
+            raise ValueError(
+                "rules.execution.capacity_usage_column is required for max_capacity_usage_ratio"
+            )
+        if (
+            self.max_capacity_usage_ratio_column is not None
+            and not self.max_capacity_usage_ratio_column.strip()
+        ):
+            raise ValueError(
+                "rules.execution.max_capacity_usage_ratio_column must be non-empty when set"
+            )
+        if (
+            self.max_correlation_crowding_score is not None
+            and self.max_correlation_crowding_score < 0
+        ):
+            raise ValueError("rules.execution.max_correlation_crowding_score must be >= 0")
+        if (
+            self.max_correlation_crowding_score is not None
+            or self.max_correlation_crowding_score_column is not None
+        ) and self.correlation_crowding_column is None:
+            raise ValueError(
+                "rules.execution.correlation_crowding_column is required for max_correlation_crowding_score"
+            )
+        if (
+            self.max_correlation_crowding_score_column is not None
+            and not self.max_correlation_crowding_score_column.strip()
+        ):
+            raise ValueError(
+                "rules.execution.max_correlation_crowding_score_column must be non-empty when set"
+            )
+        if (
+            self.min_fee_edge_bps is not None or self.min_fee_edge_bps_column is not None
+        ) and self.fee_edge_column is None:
             raise ValueError("rules.execution.fee_edge_column is required for min_fee_edge_bps")
+        if self.min_fee_edge_bps_column is not None and not self.min_fee_edge_bps_column.strip():
+            raise ValueError("rules.execution.min_fee_edge_bps_column must be non-empty when set")
         if self.depth_column is not None and not self.depth_column.strip():
             raise ValueError("rules.execution.depth_column must be non-empty when set")
         if self.latency_column is not None and not self.latency_column.strip():
@@ -521,6 +773,15 @@ class ExecutionRules(BaseModel):
             raise ValueError("rules.execution.tax_drag_column must be non-empty when set")
         if self.turnover_pressure_column is not None and not self.turnover_pressure_column.strip():
             raise ValueError("rules.execution.turnover_pressure_column must be non-empty when set")
+        if self.capacity_usage_column is not None and not self.capacity_usage_column.strip():
+            raise ValueError("rules.execution.capacity_usage_column must be non-empty when set")
+        if (
+            self.correlation_crowding_column is not None
+            and not self.correlation_crowding_column.strip()
+        ):
+            raise ValueError(
+                "rules.execution.correlation_crowding_column must be non-empty when set"
+            )
         if self.fee_edge_column is not None and not self.fee_edge_column.strip():
             raise ValueError("rules.execution.fee_edge_column must be non-empty when set")
         if not 0.0 <= self.depth_participation_rate <= 1.0:
@@ -531,12 +792,19 @@ class ExecutionRules(BaseModel):
 class PortfolioRules(BaseModel):
     max_signals_per_timestamp: int | None = None
     max_total_position_weight: float | None = None
+    max_total_position_weight_column: str | None = None
     max_long_position_weight: float | None = None
+    max_long_position_weight_column: str | None = None
     max_short_position_weight: float | None = None
+    max_short_position_weight_column: str | None = None
     max_abs_net_position_weight: float | None = None
+    max_abs_net_position_weight_column: str | None = None
     max_symbol_position_weight: float | None = None
+    max_symbol_position_weight_column: str | None = None
     max_group_position_weight: float | None = None
+    max_group_position_weight_column: str | None = None
     max_group_abs_net_position_weight: float | None = None
+    max_group_abs_net_position_weight_column: str | None = None
     max_turnover_weight_per_timestamp: float | None = None
     turnover_weight_column: str | None = None
     group_column: str | None = None
@@ -550,6 +818,7 @@ class PortfolioRules(BaseModel):
         "group_neutral",
     ] = "none"
     target_total_position_weight: float | None = None
+    target_total_position_weight_column: str | None = None
     allocation_volatility_column: str | None = None
     allocation_beta_column: str | None = None
 
@@ -573,8 +842,28 @@ class PortfolioRules(BaseModel):
         if self.turnover_weight_column is not None and not self.turnover_weight_column.strip():
             raise ValueError("rules.portfolio.turnover_weight_column must be non-empty when set")
         if (
+            self.max_total_position_weight_column is not None
+            and not self.max_total_position_weight_column.strip()
+        ):
+            raise ValueError(
+                "rules.portfolio.max_total_position_weight_column must be non-empty when set"
+            )
+        for field_name in (
+            "max_long_position_weight_column",
+            "max_short_position_weight_column",
+            "max_abs_net_position_weight_column",
+            "max_symbol_position_weight_column",
+            "max_group_position_weight_column",
+            "max_group_abs_net_position_weight_column",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and not value.strip():
+                raise ValueError(f"rules.portfolio.{field_name} must be non-empty when set")
+        if (
             self.max_group_position_weight is not None
+            or self.max_group_position_weight_column is not None
             or self.max_group_abs_net_position_weight is not None
+            or self.max_group_abs_net_position_weight_column is not None
             or self.allocation_method == "group_neutral"
         ) and self.group_column is None:
             raise ValueError("rules.portfolio.group_column is required for group exposure limits")
@@ -583,7 +872,9 @@ class PortfolioRules(BaseModel):
         if (
             self.group_column is not None
             and self.max_group_position_weight is None
+            and self.max_group_position_weight_column is None
             and self.max_group_abs_net_position_weight is None
+            and self.max_group_abs_net_position_weight_column is None
             and self.allocation_method != "group_neutral"
         ):
             raise ValueError(
@@ -591,9 +882,21 @@ class PortfolioRules(BaseModel):
             )
         if self.target_total_position_weight is not None and self.target_total_position_weight < 0:
             raise ValueError("rules.portfolio.target_total_position_weight must be >= 0")
-        if self.allocation_method != "none" and self.target_total_position_weight is None:
+        if (
+            self.allocation_method != "none"
+            and self.target_total_position_weight is None
+            and self.target_total_position_weight_column is None
+        ):
             raise ValueError(
-                "rules.portfolio.target_total_position_weight is required when allocation_method is not none"
+                "rules.portfolio.target_total_position_weight or target_total_position_weight_column "
+                "is required when allocation_method is not none"
+            )
+        if (
+            self.target_total_position_weight_column is not None
+            and not self.target_total_position_weight_column.strip()
+        ):
+            raise ValueError(
+                "rules.portfolio.target_total_position_weight_column must be non-empty when set"
             )
         if self.allocation_method == "inverse_volatility":
             if self.allocation_volatility_column is None:
@@ -624,12 +927,19 @@ class PortfolioRules(BaseModel):
             value is not None
             for value in (
                 self.max_total_position_weight,
+                self.max_total_position_weight_column,
                 self.max_long_position_weight,
+                self.max_long_position_weight_column,
                 self.max_short_position_weight,
+                self.max_short_position_weight_column,
                 self.max_abs_net_position_weight,
+                self.max_abs_net_position_weight_column,
                 self.max_symbol_position_weight,
+                self.max_symbol_position_weight_column,
                 self.max_group_position_weight,
+                self.max_group_position_weight_column,
                 self.max_group_abs_net_position_weight,
+                self.max_group_abs_net_position_weight_column,
             )
         )
 
@@ -638,6 +948,9 @@ class PositionRules(BaseModel):
     max_open_signals_per_symbol: int | None = None
     max_open_position_weight_per_symbol: float | None = None
     holding_horizon_minutes: int | None = None
+    require_open_position_for_markers: bool = False
+    allow_opposing_open_positions: bool = True
+    allow_pyramiding: bool = True
 
     @model_validator(mode="after")
     def validate_position(self) -> PositionRules:
@@ -657,37 +970,101 @@ class PositionRules(BaseModel):
         return (
             self.max_open_signals_per_symbol is not None
             or self.max_open_position_weight_per_symbol is not None
+            or self.require_open_position_for_markers
+            or not self.allow_opposing_open_positions
+            or not self.allow_pyramiding
         )
 
 
 class RiskThrottleRules(BaseModel):
+    profile: Literal["none", "conservative", "strict"] = "none"
     max_drawdown_column: str | None = None
     max_drawdown_floor: float | None = None
+    max_drawdown_floor_column: str | None = None
     daily_loss_column: str | None = None
     daily_loss_floor: float | None = None
+    daily_loss_floor_column: str | None = None
     loss_streak_column: str | None = None
     max_loss_streak: int | None = None
+    max_loss_streak_column: str | None = None
+    cooldown_minutes: int | None = None
 
     @model_validator(mode="after")
     def validate_risk_throttle(self) -> RiskThrottleRules:
-        if (self.max_drawdown_column is None) != (self.max_drawdown_floor is None):
-            raise ValueError(
-                "rules.risk_throttle max_drawdown_column and max_drawdown_floor must be set together"
+        if self.profile == "conservative":
+            self.max_drawdown_column = self.max_drawdown_column or "strategy_drawdown"
+            self.max_drawdown_floor = (
+                -0.15 if self.max_drawdown_floor is None else self.max_drawdown_floor
             )
-        if (self.daily_loss_column is None) != (self.daily_loss_floor is None):
-            raise ValueError(
-                "rules.risk_throttle daily_loss_column and daily_loss_floor must be set together"
+            self.daily_loss_column = self.daily_loss_column or "daily_pnl"
+            self.daily_loss_floor = (
+                -0.05 if self.daily_loss_floor is None else self.daily_loss_floor
             )
-        if (self.loss_streak_column is None) != (self.max_loss_streak is None):
+            self.loss_streak_column = self.loss_streak_column or "loss_streak"
+            self.max_loss_streak = 3 if self.max_loss_streak is None else self.max_loss_streak
+        elif self.profile == "strict":
+            self.max_drawdown_column = self.max_drawdown_column or "strategy_drawdown"
+            self.max_drawdown_floor = (
+                -0.10 if self.max_drawdown_floor is None else self.max_drawdown_floor
+            )
+            self.daily_loss_column = self.daily_loss_column or "daily_pnl"
+            self.daily_loss_floor = (
+                -0.03 if self.daily_loss_floor is None else self.daily_loss_floor
+            )
+            self.loss_streak_column = self.loss_streak_column or "loss_streak"
+            self.max_loss_streak = 2 if self.max_loss_streak is None else self.max_loss_streak
+        if self.max_drawdown_column is None and (
+            self.max_drawdown_floor is not None or self.max_drawdown_floor_column is not None
+        ):
             raise ValueError(
-                "rules.risk_throttle loss_streak_column and max_loss_streak must be set together"
+                "rules.risk_throttle max_drawdown_column is required when max drawdown "
+                "threshold is set"
+            )
+        if self.max_drawdown_column is not None and (
+            self.max_drawdown_floor is None and self.max_drawdown_floor_column is None
+        ):
+            raise ValueError(
+                "rules.risk_throttle max_drawdown_floor or max_drawdown_floor_column "
+                "is required when max_drawdown_column is set"
+            )
+        if self.daily_loss_column is None and (
+            self.daily_loss_floor is not None or self.daily_loss_floor_column is not None
+        ):
+            raise ValueError(
+                "rules.risk_throttle daily_loss_column is required when daily loss threshold is set"
+            )
+        if self.daily_loss_column is not None and (
+            self.daily_loss_floor is None and self.daily_loss_floor_column is None
+        ):
+            raise ValueError(
+                "rules.risk_throttle daily_loss_floor or daily_loss_floor_column "
+                "is required when daily_loss_column is set"
+            )
+        if self.loss_streak_column is None and (
+            self.max_loss_streak is not None or self.max_loss_streak_column is not None
+        ):
+            raise ValueError(
+                "rules.risk_throttle loss_streak_column is required when loss streak "
+                "threshold is set"
+            )
+        if self.loss_streak_column is not None and (
+            self.max_loss_streak is None and self.max_loss_streak_column is None
+        ):
+            raise ValueError(
+                "rules.risk_throttle max_loss_streak or max_loss_streak_column "
+                "is required when loss_streak_column is set"
             )
         if self.max_loss_streak is not None and self.max_loss_streak <= 0:
             raise ValueError("rules.risk_throttle.max_loss_streak must be positive")
+        if self.cooldown_minutes is not None and self.cooldown_minutes <= 0:
+            raise ValueError("rules.risk_throttle.cooldown_minutes must be positive")
         for field_name in (
             "max_drawdown_column",
+            "max_drawdown_floor_column",
             "daily_loss_column",
+            "daily_loss_floor_column",
             "loss_streak_column",
+            "max_loss_streak_column",
         ):
             value = getattr(self, field_name)
             if value is not None and not value.strip():
@@ -697,23 +1074,33 @@ class RiskThrottleRules(BaseModel):
     @property
     def enabled(self) -> bool:
         return (
-            self.max_drawdown_column is not None
+            self.profile != "none"
+            or self.max_drawdown_column is not None
+            or self.max_drawdown_floor_column is not None
             or self.daily_loss_column is not None
+            or self.daily_loss_floor_column is not None
             or self.loss_streak_column is not None
+            or self.max_loss_streak_column is not None
+            or self.cooldown_minutes is not None
         )
 
 
 class DataGuardRules(BaseModel):
     profile: Literal["none", "fresh_only", "quality_only", "strict"] = "none"
     max_feature_age_minutes: float | None = None
+    max_feature_age_minutes_column: str | None = None
     feature_age_column: str | None = "feature_age_minutes"
     min_source_confidence: float | None = None
+    min_source_confidence_column: str | None = None
     source_confidence_column: str | None = "source_confidence"
     min_venue_quality_score: float | None = None
+    min_venue_quality_score_column: str | None = None
     venue_quality_score_column: str | None = "venue_quality_score"
     max_staleness_bps: float | None = None
+    max_staleness_bps_column: str | None = None
     staleness_bps_column: str | None = "staleness_bps"
     max_regime_transition_score: float | None = None
+    max_regime_transition_score_column: str | None = None
     regime_transition_score_column: str | None = "regime_transition_score"
 
     @model_validator(mode="after")
@@ -751,25 +1138,42 @@ class DataGuardRules(BaseModel):
                 raise ValueError(f"rules.data_guard.{field_name} must be between 0 and 1")
         for field_name in (
             "feature_age_column",
+            "max_feature_age_minutes_column",
             "source_confidence_column",
+            "min_source_confidence_column",
             "venue_quality_score_column",
+            "min_venue_quality_score_column",
             "staleness_bps_column",
+            "max_staleness_bps_column",
             "regime_transition_score_column",
+            "max_regime_transition_score_column",
         ):
             value = getattr(self, field_name)
             if value is not None and not value.strip():
                 raise ValueError(f"rules.data_guard.{field_name} must be non-empty when set")
         threshold_columns = (
-            ("max_feature_age_minutes", "feature_age_column"),
-            ("min_source_confidence", "source_confidence_column"),
-            ("min_venue_quality_score", "venue_quality_score_column"),
-            ("max_staleness_bps", "staleness_bps_column"),
-            ("max_regime_transition_score", "regime_transition_score_column"),
+            ("max_feature_age_minutes", "max_feature_age_minutes_column", "feature_age_column"),
+            ("min_source_confidence", "min_source_confidence_column", "source_confidence_column"),
+            (
+                "min_venue_quality_score",
+                "min_venue_quality_score_column",
+                "venue_quality_score_column",
+            ),
+            ("max_staleness_bps", "max_staleness_bps_column", "staleness_bps_column"),
+            (
+                "max_regime_transition_score",
+                "max_regime_transition_score_column",
+                "regime_transition_score_column",
+            ),
         )
-        for threshold_field, column_field in threshold_columns:
-            if getattr(self, threshold_field) is not None and getattr(self, column_field) is None:
+        for threshold_field, threshold_column_field, value_column_field in threshold_columns:
+            threshold_enabled = (
+                getattr(self, threshold_field) is not None
+                or getattr(self, threshold_column_field) is not None
+            )
+            if threshold_enabled and getattr(self, value_column_field) is None:
                 raise ValueError(
-                    f"rules.data_guard.{column_field} is required for {threshold_field}"
+                    f"rules.data_guard.{value_column_field} is required for {threshold_field}"
                 )
         return self
 
@@ -779,10 +1183,15 @@ class DataGuardRules(BaseModel):
             value is not None
             for value in (
                 self.max_feature_age_minutes,
+                self.max_feature_age_minutes_column,
                 self.min_source_confidence,
+                self.min_source_confidence_column,
                 self.min_venue_quality_score,
+                self.min_venue_quality_score_column,
                 self.max_staleness_bps,
+                self.max_staleness_bps_column,
                 self.max_regime_transition_score,
+                self.max_regime_transition_score_column,
             )
         )
 
@@ -908,6 +1317,81 @@ class MultiLegEntry(BaseModel):
     position_weight_column: str | None = None
     notional_usd: float | None = None
     notional_usd_column: str | None = None
+    stop_loss_bps: float | None = None
+    stop_loss_bps_column: str | None = None
+    min_stop_loss_bps: float | None = None
+    min_stop_loss_bps_column: str | None = None
+    max_stop_loss_bps: float | None = None
+    max_stop_loss_bps_column: str | None = None
+    take_profit_bps: float | None = None
+    take_profit_bps_column: str | None = None
+    min_take_profit_bps: float | None = None
+    min_take_profit_bps_column: str | None = None
+    max_take_profit_bps: float | None = None
+    max_take_profit_bps_column: str | None = None
+    trailing_stop_bps: float | None = None
+    trailing_stop_bps_column: str | None = None
+    trailing_stop_activation_bps: float | None = None
+    trailing_stop_activation_bps_column: str | None = None
+    partial_take_profit_bps: float | None = None
+    partial_take_profit_bps_column: str | None = None
+    partial_exit_fraction: float | None = None
+    partial_exit_fraction_column: str | None = None
+    min_reward_risk_ratio: float | None = None
+    min_reward_risk_ratio_column: str | None = None
+    entry_type: Literal["market", "limit", "stop_market"] | None = None
+    entry_type_column: str | None = None
+    limit_offset_bps: float | None = None
+    limit_offset_bps_column: str | None = None
+    stop_offset_bps: float | None = None
+    stop_offset_bps_column: str | None = None
+    timeout_minutes: int | None = None
+    timeout_minutes_column: str | None = None
+    time_in_force: Literal["gtc", "gtd", "ioc", "fok"] | None = None
+    time_in_force_column: str | None = None
+    post_only: bool | None = None
+    post_only_column: str | None = None
+    reduce_only: bool | None = None
+    reduce_only_column: str | None = None
+    slippage_bps: float | None = None
+    slippage_bps_column: str | None = None
+    max_fill_fraction: float | None = None
+    max_fill_fraction_column: str | None = None
+    min_fill_fraction: float | None = None
+    min_fill_fraction_column: str | None = None
+    max_spread_bps: float | None = None
+    max_spread_bps_column: str | None = None
+    min_depth_usd: float | None = None
+    min_depth_usd_column: str | None = None
+    depth_column: str | None = None
+    depth_participation_rate: float | None = None
+    max_latency_ms: float | None = None
+    max_latency_ms_column: str | None = None
+    latency_column: str | None = None
+    min_queue_position_score: float | None = None
+    min_queue_position_score_column: str | None = None
+    queue_position_score_column: str | None = None
+    min_borrow_availability_ratio: float | None = None
+    min_borrow_availability_ratio_column: str | None = None
+    borrow_availability_column: str | None = None
+    max_borrow_cost_bps: float | None = None
+    max_borrow_cost_bps_column: str | None = None
+    borrow_cost_column: str | None = None
+    max_tax_drag_bps: float | None = None
+    max_tax_drag_bps_column: str | None = None
+    tax_drag_column: str | None = None
+    max_turnover_pressure: float | None = None
+    max_turnover_pressure_column: str | None = None
+    turnover_pressure_column: str | None = None
+    max_capacity_usage_ratio: float | None = None
+    max_capacity_usage_ratio_column: str | None = None
+    capacity_usage_column: str | None = None
+    max_correlation_crowding_score: float | None = None
+    max_correlation_crowding_score_column: str | None = None
+    correlation_crowding_column: str | None = None
+    min_fee_edge_bps: float | None = None
+    min_fee_edge_bps_column: str | None = None
+    fee_edge_column: str | None = None
     reason_code: str | None = None
 
     @model_validator(mode="after")
@@ -918,10 +1402,155 @@ class MultiLegEntry(BaseModel):
             raise ValueError("rules.multi_leg.legs[].position_weight must be >= 0")
         if self.notional_usd is not None and self.notional_usd < 0:
             raise ValueError("rules.multi_leg.legs[].notional_usd must be >= 0")
-        for field_name in ("position_weight_column", "notional_usd_column"):
+        for field_name in (
+            "stop_loss_bps",
+            "min_stop_loss_bps",
+            "max_stop_loss_bps",
+            "take_profit_bps",
+            "min_take_profit_bps",
+            "max_take_profit_bps",
+            "trailing_stop_bps",
+            "trailing_stop_activation_bps",
+            "partial_take_profit_bps",
+            "min_reward_risk_ratio",
+            "limit_offset_bps",
+            "stop_offset_bps",
+            "slippage_bps",
+            "max_spread_bps",
+            "min_depth_usd",
+            "max_latency_ms",
+            "max_borrow_cost_bps",
+            "max_tax_drag_bps",
+            "max_turnover_pressure",
+            "max_capacity_usage_ratio",
+            "max_correlation_crowding_score",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"rules.multi_leg.legs[].{field_name} must be >= 0")
+        for field_name in (
+            "max_fill_fraction",
+            "min_fill_fraction",
+            "depth_participation_rate",
+            "min_queue_position_score",
+            "min_borrow_availability_ratio",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and not 0.0 <= value <= 1.0:
+                raise ValueError(f"rules.multi_leg.legs[].{field_name} must be between 0 and 1")
+        if self.timeout_minutes is not None and self.timeout_minutes < 0:
+            raise ValueError("rules.multi_leg.legs[].timeout_minutes must be >= 0")
+        if (
+            self.min_stop_loss_bps is not None
+            and self.max_stop_loss_bps is not None
+            and self.max_stop_loss_bps < self.min_stop_loss_bps
+        ):
+            raise ValueError(
+                "rules.multi_leg.legs[].max_stop_loss_bps must be >= min_stop_loss_bps"
+            )
+        if (
+            self.min_take_profit_bps is not None
+            and self.max_take_profit_bps is not None
+            and self.max_take_profit_bps < self.min_take_profit_bps
+        ):
+            raise ValueError(
+                "rules.multi_leg.legs[].max_take_profit_bps must be >= min_take_profit_bps"
+            )
+        if self.partial_exit_fraction is not None and not 0.0 <= self.partial_exit_fraction <= 1.0:
+            raise ValueError("rules.multi_leg.legs[].partial_exit_fraction must be between 0 and 1")
+        for field_name in (
+            "position_weight_column",
+            "notional_usd_column",
+            "stop_loss_bps_column",
+            "min_stop_loss_bps_column",
+            "max_stop_loss_bps_column",
+            "take_profit_bps_column",
+            "min_take_profit_bps_column",
+            "max_take_profit_bps_column",
+            "trailing_stop_bps_column",
+            "trailing_stop_activation_bps_column",
+            "partial_take_profit_bps_column",
+            "partial_exit_fraction_column",
+            "min_reward_risk_ratio_column",
+            "entry_type_column",
+            "limit_offset_bps_column",
+            "stop_offset_bps_column",
+            "timeout_minutes_column",
+            "time_in_force_column",
+            "post_only_column",
+            "reduce_only_column",
+            "slippage_bps_column",
+            "max_fill_fraction_column",
+            "min_fill_fraction_column",
+            "max_spread_bps_column",
+            "min_depth_usd_column",
+            "depth_column",
+            "max_latency_ms_column",
+            "latency_column",
+            "min_queue_position_score_column",
+            "queue_position_score_column",
+            "min_borrow_availability_ratio_column",
+            "borrow_availability_column",
+            "max_borrow_cost_bps_column",
+            "borrow_cost_column",
+            "max_tax_drag_bps_column",
+            "tax_drag_column",
+            "max_turnover_pressure_column",
+            "turnover_pressure_column",
+            "max_capacity_usage_ratio_column",
+            "capacity_usage_column",
+            "max_correlation_crowding_score_column",
+            "correlation_crowding_column",
+            "min_fee_edge_bps_column",
+            "fee_edge_column",
+        ):
             value = getattr(self, field_name)
             if value is not None and not value.strip():
                 raise ValueError(f"rules.multi_leg.legs[].{field_name} must be non-empty when set")
+        if (
+            self.entry_type == "limit"
+            and self.entry_type_column is None
+            and self.limit_offset_bps is None
+            and self.limit_offset_bps_column is None
+        ):
+            raise ValueError(
+                "rules.multi_leg.legs[].limit_offset_bps or limit_offset_bps_column "
+                "is required for limit entry"
+            )
+        if (
+            self.entry_type == "stop_market"
+            and self.entry_type_column is None
+            and self.stop_offset_bps is None
+            and self.stop_offset_bps_column is None
+        ):
+            raise ValueError(
+                "rules.multi_leg.legs[].stop_offset_bps or stop_offset_bps_column "
+                "is required for stop_market entry"
+            )
+        if (
+            self.time_in_force == "gtd"
+            and self.time_in_force_column is None
+            and self.timeout_minutes is None
+            and self.timeout_minutes_column is None
+        ):
+            raise ValueError(
+                "rules.multi_leg.legs[].timeout_minutes or timeout_minutes_column "
+                "is required when time_in_force is gtd"
+            )
+        if (
+            self.time_in_force in {"ioc", "fok"}
+            and self.time_in_force_column is None
+            and (self.timeout_minutes is not None or self.timeout_minutes_column is not None)
+        ):
+            raise ValueError(
+                "rules.multi_leg.legs[].timeout_minutes cannot be set when time_in_force is ioc or fok"
+            )
+        if (
+            (self.post_only or self.post_only_column is not None)
+            and self.entry_type_column is None
+            and self.entry_type != "limit"
+        ):
+            raise ValueError("rules.multi_leg.legs[].post_only is only supported for limit entry")
         if self.reason_code is not None and not self.reason_code.strip():
             raise ValueError("rules.multi_leg.legs[].reason_code must be non-empty when set")
         self.real_market_symbol = self.real_market_symbol.strip().upper()
@@ -951,14 +1580,21 @@ class RegimeOverride(BaseModel):
     name: str
     when: EntryRules
     stop_loss_bps: float | None = None
+    min_stop_loss_bps: float | None = None
+    max_stop_loss_bps: float | None = None
     take_profit_bps: float | None = None
+    min_take_profit_bps: float | None = None
+    max_take_profit_bps: float | None = None
     trailing_stop_bps: float | None = None
+    trailing_stop_activation_bps: float | None = None
     partial_take_profit_bps: float | None = None
     partial_exit_fraction: float | None = None
+    min_reward_risk_ratio: float | None = None
     position_weight: float | None = None
     notional_usd: float | None = None
     slippage_bps: float | None = None
     max_fill_fraction: float | None = None
+    min_fill_fraction: float | None = None
     max_spread_bps: float | None = None
     min_depth_usd: float | None = None
     depth_participation_rate: float | None = None
@@ -968,7 +1604,9 @@ class RegimeOverride(BaseModel):
     max_borrow_cost_bps: float | None = None
     max_tax_drag_bps: float | None = None
     max_turnover_pressure: float | None = None
+    max_capacity_usage_ratio: float | None = None
     min_fee_edge_bps: float | None = None
+    max_correlation_crowding_score: float | None = None
 
     @model_validator(mode="after")
     def validate_regime_override(self) -> RegimeOverride:
@@ -976,9 +1614,15 @@ class RegimeOverride(BaseModel):
             raise ValueError("rules.regime_overrides[].name must be non-empty")
         for field_name in (
             "stop_loss_bps",
+            "min_stop_loss_bps",
+            "max_stop_loss_bps",
             "take_profit_bps",
+            "min_take_profit_bps",
+            "max_take_profit_bps",
             "trailing_stop_bps",
+            "trailing_stop_activation_bps",
             "partial_take_profit_bps",
+            "min_reward_risk_ratio",
             "position_weight",
             "notional_usd",
             "slippage_bps",
@@ -988,6 +1632,8 @@ class RegimeOverride(BaseModel):
             "max_borrow_cost_bps",
             "max_tax_drag_bps",
             "max_turnover_pressure",
+            "max_capacity_usage_ratio",
+            "max_correlation_crowding_score",
         ):
             value = getattr(self, field_name)
             if value is not None and value < 0:
@@ -995,6 +1641,7 @@ class RegimeOverride(BaseModel):
         for field_name in (
             "partial_exit_fraction",
             "max_fill_fraction",
+            "min_fill_fraction",
             "depth_participation_rate",
             "min_queue_position_score",
             "min_borrow_availability_ratio",
@@ -1487,17 +2134,40 @@ class AuthoringRules(BaseModel):
             raise ValueError(
                 "rules.cross_sectional requires rules.score.weighted_sum or model_score"
             )
-        if self.bracket.enabled and not any(
-            value is not None
-            for value in (
-                self.exit.stop_loss_bps,
-                self.exit.take_profit_bps,
-                self.exit.trailing_stop_bps,
-                self.bracket.time_stop_minutes,
-                self.bracket.break_even_after_bps,
+        if (
+            self.bracket.enabled
+            and not any(
+                value is not None
+                for value in (
+                    self.exit.stop_loss_bps,
+                    self.exit.stop_loss_bps_column,
+                    self.exit.take_profit_bps,
+                    self.exit.take_profit_bps_column,
+                    self.exit.trailing_stop_bps,
+                    self.exit.trailing_stop_bps_column,
+                    self.bracket.time_stop_minutes,
+                    self.bracket.time_stop_minutes_column,
+                    self.bracket.break_even_after_bps,
+                    self.bracket.break_even_after_bps_column,
+                )
             )
+            and not self.bracket.break_even_after_partial_take_profit
         ):
             raise ValueError("rules.bracket.enabled requires at least one exit control")
+        if self.bracket.break_even_after_partial_take_profit and (
+            (
+                self.exit.partial_take_profit_bps is None
+                and self.exit.partial_take_profit_bps_column is None
+            )
+            or (
+                self.exit.partial_exit_fraction is None
+                and self.exit.partial_exit_fraction_column is None
+            )
+        ):
+            raise ValueError(
+                "rules.bracket.break_even_after_partial_take_profit requires "
+                "rules.exit.partial_take_profit_bps and partial_exit_fraction"
+            )
         if (
             self.reduce is not None
             and self.exit.reduce_fraction is None
@@ -1552,13 +2222,28 @@ class AuthoringBacktest(BaseModel):
 ALLOWED_SWEEP_PATHS = {
     "rules.confidence",
     "rules.exit.stop_loss_bps",
+    "rules.exit.min_stop_loss_bps",
+    "rules.exit.max_stop_loss_bps",
     "rules.exit.take_profit_bps",
+    "rules.exit.min_take_profit_bps",
+    "rules.exit.max_take_profit_bps",
     "rules.exit.trailing_stop_bps",
+    "rules.exit.trailing_stop_activation_bps",
     "rules.exit.partial_take_profit_bps",
     "rules.exit.partial_exit_fraction",
     "rules.exit.min_holding_minutes",
+    "rules.exit.max_holding_minutes",
     "rules.sizing.position_weight",
     "rules.portfolio.max_signals_per_timestamp",
+    "rules.risk_throttle.max_drawdown_floor",
+    "rules.risk_throttle.daily_loss_floor",
+    "rules.risk_throttle.max_loss_streak",
+    "rules.risk_throttle.cooldown_minutes",
+    "rules.data_guard.max_feature_age_minutes",
+    "rules.data_guard.min_source_confidence",
+    "rules.data_guard.min_venue_quality_score",
+    "rules.data_guard.max_staleness_bps",
+    "rules.data_guard.max_regime_transition_score",
     "rules.temporal.cooldown_minutes",
     "rules.temporal.max_signals_per_symbol_per_day",
     "rules.cross_sectional.long_top_n",
@@ -1575,7 +2260,7 @@ ALLOWED_SWEEP_PATHS = {
 class AuthoringOptimizer(BaseModel):
     parameter_sweep: dict[str, list[float | int | str]] = Field(default_factory=dict)
     selection_metric: str = "total_return"
-    selection_direction: Literal["maximize", "minimize"] = "maximize"
+    selection_direction: Literal["maximize", "minimize", "auto"] = "maximize"
     max_variants: int = 64
 
     @model_validator(mode="after")
@@ -1623,7 +2308,7 @@ class BundlePortfolio(BaseModel):
     allocation_method: Literal["fixed_weight", "equal_weight", "risk_parity"] = "fixed_weight"
     max_total_allocation_weight: float | None = None
     selection_metric: str = "total_return"
-    selection_direction: Literal["maximize", "minimize"] = "maximize"
+    selection_direction: Literal["maximize", "minimize", "auto"] = "maximize"
 
     @model_validator(mode="after")
     def validate_portfolio(self) -> BundlePortfolio:
@@ -1731,8 +2416,13 @@ rules:
         value: 30
   exit:
     stop_loss_bps: 150
+    min_stop_loss_bps: 50
+    max_stop_loss_bps: 1000
     take_profit_bps: 300
+    min_take_profit_bps: 100
+    max_take_profit_bps: 1000
     trailing_stop_bps: 120
+    trailing_stop_activation_bps: 0
     partial_take_profit_bps: 200
     partial_exit_fraction: 0.5
   sizing:
@@ -1943,67 +2633,157 @@ def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
             add_column(term.column)
     if spec.rules.side_column is not None:
         add_column(spec.rules.side_column)
+    if spec.rules.order.entry_type_column is not None:
+        add_column(spec.rules.order.entry_type_column)
+    if spec.rules.order.limit_offset_bps_column is not None:
+        add_column(spec.rules.order.limit_offset_bps_column)
+    if spec.rules.order.stop_offset_bps_column is not None:
+        add_column(spec.rules.order.stop_offset_bps_column)
+    if spec.rules.order.timeout_minutes_column is not None:
+        add_column(spec.rules.order.timeout_minutes_column)
+    if spec.rules.order.time_in_force_column is not None:
+        add_column(spec.rules.order.time_in_force_column)
+    if spec.rules.order.post_only_column is not None:
+        add_column(spec.rules.order.post_only_column)
+    if spec.rules.order.reduce_only_column is not None:
+        add_column(spec.rules.order.reduce_only_column)
     if spec.rules.exit.stop_loss_bps_column is not None:
         columns.add(spec.rules.exit.stop_loss_bps_column)
+    if spec.rules.exit.min_stop_loss_bps_column is not None:
+        columns.add(spec.rules.exit.min_stop_loss_bps_column)
+    if spec.rules.exit.max_stop_loss_bps_column is not None:
+        columns.add(spec.rules.exit.max_stop_loss_bps_column)
     if spec.rules.exit.take_profit_bps_column is not None:
         columns.add(spec.rules.exit.take_profit_bps_column)
+    if spec.rules.exit.min_take_profit_bps_column is not None:
+        columns.add(spec.rules.exit.min_take_profit_bps_column)
+    if spec.rules.exit.max_take_profit_bps_column is not None:
+        columns.add(spec.rules.exit.max_take_profit_bps_column)
+    if spec.rules.exit.min_reward_risk_ratio_column is not None:
+        columns.add(spec.rules.exit.min_reward_risk_ratio_column)
     if spec.rules.exit.trailing_stop_bps_column is not None:
         columns.add(spec.rules.exit.trailing_stop_bps_column)
+    if spec.rules.exit.trailing_stop_activation_bps_column is not None:
+        columns.add(spec.rules.exit.trailing_stop_activation_bps_column)
     if spec.rules.exit.partial_take_profit_bps_column is not None:
         columns.add(spec.rules.exit.partial_take_profit_bps_column)
     if spec.rules.exit.partial_exit_fraction_column is not None:
         columns.add(spec.rules.exit.partial_exit_fraction_column)
+    if spec.rules.exit.min_holding_minutes_column is not None:
+        columns.add(spec.rules.exit.min_holding_minutes_column)
+    if spec.rules.exit.max_holding_minutes_column is not None:
+        columns.add(spec.rules.exit.max_holding_minutes_column)
     if spec.rules.exit.reduce_fraction_column is not None:
         columns.add(spec.rules.exit.reduce_fraction_column)
     if spec.rules.exit.add_fraction_column is not None:
         columns.add(spec.rules.exit.add_fraction_column)
     if spec.rules.exit.rebalance_target_fraction_column is not None:
         columns.add(spec.rules.exit.rebalance_target_fraction_column)
+    if spec.rules.exit.rebalance_min_delta_fraction_column is not None:
+        columns.add(spec.rules.exit.rebalance_min_delta_fraction_column)
     if spec.rules.sizing.position_weight_column is not None:
         columns.add(spec.rules.sizing.position_weight_column)
     if spec.rules.sizing.notional_usd_column is not None:
         columns.add(spec.rules.sizing.notional_usd_column)
     if spec.rules.sizing.volatility_column is not None:
         columns.add(spec.rules.sizing.volatility_column)
+    if spec.rules.bracket.time_stop_minutes_column is not None:
+        add_column(spec.rules.bracket.time_stop_minutes_column)
+    if spec.rules.bracket.break_even_after_bps_column is not None:
+        add_column(spec.rules.bracket.break_even_after_bps_column)
     if (
         spec.rules.execution.max_latency_ms is not None
-        and spec.rules.execution.latency_column is not None
-    ):
+        or spec.rules.execution.max_latency_ms_column is not None
+    ) and spec.rules.execution.latency_column is not None:
         add_column(spec.rules.execution.latency_column)
+    if spec.rules.execution.slippage_bps_column is not None:
+        add_column(spec.rules.execution.slippage_bps_column)
+    if spec.rules.execution.max_fill_fraction_column is not None:
+        add_column(spec.rules.execution.max_fill_fraction_column)
+    if spec.rules.execution.min_fill_fraction_column is not None:
+        add_column(spec.rules.execution.min_fill_fraction_column)
+    if spec.rules.execution.max_spread_bps_column is not None:
+        add_column(spec.rules.execution.max_spread_bps_column)
+    if spec.rules.execution.min_depth_usd_column is not None:
+        add_column(spec.rules.execution.min_depth_usd_column)
+    if spec.rules.execution.max_latency_ms_column is not None:
+        add_column(spec.rules.execution.max_latency_ms_column)
     if (
         spec.rules.execution.min_queue_position_score is not None
-        and spec.rules.execution.queue_position_score_column is not None
-    ):
+        or spec.rules.execution.min_queue_position_score_column is not None
+    ) and spec.rules.execution.queue_position_score_column is not None:
         add_column(spec.rules.execution.queue_position_score_column)
+    if spec.rules.execution.min_queue_position_score_column is not None:
+        add_column(spec.rules.execution.min_queue_position_score_column)
     if (
         spec.rules.execution.min_borrow_availability_ratio is not None
-        and spec.rules.execution.borrow_availability_column is not None
-    ):
+        or spec.rules.execution.min_borrow_availability_ratio_column is not None
+    ) and spec.rules.execution.borrow_availability_column is not None:
         add_column(spec.rules.execution.borrow_availability_column)
+    if spec.rules.execution.min_borrow_availability_ratio_column is not None:
+        add_column(spec.rules.execution.min_borrow_availability_ratio_column)
     if (
         spec.rules.execution.max_borrow_cost_bps is not None
-        and spec.rules.execution.borrow_cost_column is not None
-    ):
+        or spec.rules.execution.max_borrow_cost_bps_column is not None
+    ) and spec.rules.execution.borrow_cost_column is not None:
         add_column(spec.rules.execution.borrow_cost_column)
+    if spec.rules.execution.max_borrow_cost_bps_column is not None:
+        add_column(spec.rules.execution.max_borrow_cost_bps_column)
     if (
         spec.rules.execution.max_tax_drag_bps is not None
-        and spec.rules.execution.tax_drag_column is not None
-    ):
+        or spec.rules.execution.max_tax_drag_bps_column is not None
+    ) and spec.rules.execution.tax_drag_column is not None:
         add_column(spec.rules.execution.tax_drag_column)
+    if spec.rules.execution.max_tax_drag_bps_column is not None:
+        add_column(spec.rules.execution.max_tax_drag_bps_column)
     if (
         spec.rules.execution.max_turnover_pressure is not None
-        and spec.rules.execution.turnover_pressure_column is not None
-    ):
+        or spec.rules.execution.max_turnover_pressure_column is not None
+    ) and spec.rules.execution.turnover_pressure_column is not None:
         add_column(spec.rules.execution.turnover_pressure_column)
+    if spec.rules.execution.max_turnover_pressure_column is not None:
+        add_column(spec.rules.execution.max_turnover_pressure_column)
+    if (
+        spec.rules.execution.max_capacity_usage_ratio is not None
+        or spec.rules.execution.max_capacity_usage_ratio_column is not None
+    ) and spec.rules.execution.capacity_usage_column is not None:
+        add_column(spec.rules.execution.capacity_usage_column)
+    if spec.rules.execution.max_capacity_usage_ratio_column is not None:
+        add_column(spec.rules.execution.max_capacity_usage_ratio_column)
+    if (
+        spec.rules.execution.max_correlation_crowding_score is not None
+        or spec.rules.execution.max_correlation_crowding_score_column is not None
+    ) and spec.rules.execution.correlation_crowding_column is not None:
+        add_column(spec.rules.execution.correlation_crowding_column)
+    if spec.rules.execution.max_correlation_crowding_score_column is not None:
+        add_column(spec.rules.execution.max_correlation_crowding_score_column)
     if (
         spec.rules.execution.min_fee_edge_bps is not None
-        and spec.rules.execution.fee_edge_column is not None
-    ):
+        or spec.rules.execution.min_fee_edge_bps_column is not None
+    ) and spec.rules.execution.fee_edge_column is not None:
         add_column(spec.rules.execution.fee_edge_column)
+    if spec.rules.execution.min_fee_edge_bps_column is not None:
+        add_column(spec.rules.execution.min_fee_edge_bps_column)
     if spec.rules.portfolio.allocation_volatility_column is not None:
         columns.add(spec.rules.portfolio.allocation_volatility_column)
     if spec.rules.portfolio.allocation_beta_column is not None:
         columns.add(spec.rules.portfolio.allocation_beta_column)
+    if spec.rules.portfolio.target_total_position_weight_column is not None:
+        columns.add(spec.rules.portfolio.target_total_position_weight_column)
+    if spec.rules.portfolio.max_total_position_weight_column is not None:
+        columns.add(spec.rules.portfolio.max_total_position_weight_column)
+    if spec.rules.portfolio.max_long_position_weight_column is not None:
+        columns.add(spec.rules.portfolio.max_long_position_weight_column)
+    if spec.rules.portfolio.max_short_position_weight_column is not None:
+        columns.add(spec.rules.portfolio.max_short_position_weight_column)
+    if spec.rules.portfolio.max_abs_net_position_weight_column is not None:
+        columns.add(spec.rules.portfolio.max_abs_net_position_weight_column)
+    if spec.rules.portfolio.max_symbol_position_weight_column is not None:
+        columns.add(spec.rules.portfolio.max_symbol_position_weight_column)
+    if spec.rules.portfolio.max_group_position_weight_column is not None:
+        columns.add(spec.rules.portfolio.max_group_position_weight_column)
+    if spec.rules.portfolio.max_group_abs_net_position_weight_column is not None:
+        columns.add(spec.rules.portfolio.max_group_abs_net_position_weight_column)
     if spec.rules.portfolio.group_column is not None:
         columns.add(spec.rules.portfolio.group_column)
     if spec.rules.portfolio.turnover_weight_column is not None:
@@ -2012,30 +2792,51 @@ def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
         columns.add(spec.rules.cross_sectional.group_column)
     if spec.rules.risk_throttle.max_drawdown_column is not None:
         columns.add(spec.rules.risk_throttle.max_drawdown_column)
+    if spec.rules.risk_throttle.max_drawdown_floor_column is not None:
+        columns.add(spec.rules.risk_throttle.max_drawdown_floor_column)
     if spec.rules.risk_throttle.daily_loss_column is not None:
         columns.add(spec.rules.risk_throttle.daily_loss_column)
+    if spec.rules.risk_throttle.daily_loss_floor_column is not None:
+        columns.add(spec.rules.risk_throttle.daily_loss_floor_column)
     if spec.rules.risk_throttle.loss_streak_column is not None:
         columns.add(spec.rules.risk_throttle.loss_streak_column)
+    if spec.rules.risk_throttle.max_loss_streak_column is not None:
+        columns.add(spec.rules.risk_throttle.max_loss_streak_column)
     data_guard = spec.rules.data_guard
-    if data_guard.max_feature_age_minutes is not None and data_guard.feature_age_column is not None:
+    if (
+        data_guard.max_feature_age_minutes is not None
+        or data_guard.max_feature_age_minutes_column is not None
+    ) and data_guard.feature_age_column is not None:
         columns.add(data_guard.feature_age_column)
+    if data_guard.max_feature_age_minutes_column is not None:
+        columns.add(data_guard.max_feature_age_minutes_column)
     if (
         data_guard.min_source_confidence is not None
-        and data_guard.source_confidence_column is not None
-    ):
+        or data_guard.min_source_confidence_column is not None
+    ) and data_guard.source_confidence_column is not None:
         columns.add(data_guard.source_confidence_column)
+    if data_guard.min_source_confidence_column is not None:
+        columns.add(data_guard.min_source_confidence_column)
     if (
         data_guard.min_venue_quality_score is not None
-        and data_guard.venue_quality_score_column is not None
-    ):
+        or data_guard.min_venue_quality_score_column is not None
+    ) and data_guard.venue_quality_score_column is not None:
         columns.add(data_guard.venue_quality_score_column)
-    if data_guard.max_staleness_bps is not None and data_guard.staleness_bps_column is not None:
+    if data_guard.min_venue_quality_score_column is not None:
+        columns.add(data_guard.min_venue_quality_score_column)
+    if (
+        data_guard.max_staleness_bps is not None or data_guard.max_staleness_bps_column is not None
+    ) and data_guard.staleness_bps_column is not None:
         columns.add(data_guard.staleness_bps_column)
+    if data_guard.max_staleness_bps_column is not None:
+        columns.add(data_guard.max_staleness_bps_column)
     if (
         data_guard.max_regime_transition_score is not None
-        and data_guard.regime_transition_score_column is not None
-    ):
+        or data_guard.max_regime_transition_score_column is not None
+    ) and data_guard.regime_transition_score_column is not None:
         columns.add(data_guard.regime_transition_score_column)
+    if data_guard.max_regime_transition_score_column is not None:
+        columns.add(data_guard.max_regime_transition_score_column)
     for event_window in spec.rules.event_windows:
         columns.add(event_window.event_ts_column)
     for leg in spec.rules.multi_leg.legs:
@@ -2043,6 +2844,82 @@ def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
             columns.add(leg.position_weight_column)
         if leg.notional_usd_column is not None:
             columns.add(leg.notional_usd_column)
+        for column_name in (
+            leg.stop_loss_bps_column,
+            leg.min_stop_loss_bps_column,
+            leg.max_stop_loss_bps_column,
+            leg.take_profit_bps_column,
+            leg.min_take_profit_bps_column,
+            leg.max_take_profit_bps_column,
+            leg.trailing_stop_bps_column,
+            leg.trailing_stop_activation_bps_column,
+            leg.partial_take_profit_bps_column,
+            leg.partial_exit_fraction_column,
+            leg.min_reward_risk_ratio_column,
+            leg.entry_type_column,
+            leg.limit_offset_bps_column,
+            leg.stop_offset_bps_column,
+            leg.timeout_minutes_column,
+            leg.time_in_force_column,
+            leg.post_only_column,
+            leg.reduce_only_column,
+            leg.slippage_bps_column,
+            leg.max_fill_fraction_column,
+            leg.min_fill_fraction_column,
+            leg.max_spread_bps_column,
+            leg.min_depth_usd_column,
+            leg.max_latency_ms_column,
+            leg.min_queue_position_score_column,
+            leg.min_borrow_availability_ratio_column,
+            leg.max_borrow_cost_bps_column,
+            leg.max_tax_drag_bps_column,
+            leg.max_turnover_pressure_column,
+            leg.max_capacity_usage_ratio_column,
+            leg.max_correlation_crowding_score_column,
+            leg.min_fee_edge_bps_column,
+        ):
+            if column_name is not None:
+                columns.add(column_name)
+        if (
+            leg.max_latency_ms is not None or leg.max_latency_ms_column is not None
+        ) and leg.latency_column is not None:
+            columns.add(leg.latency_column)
+        if (
+            leg.min_queue_position_score is not None
+            or leg.min_queue_position_score_column is not None
+        ) and leg.queue_position_score_column is not None:
+            columns.add(leg.queue_position_score_column)
+        if (
+            leg.min_borrow_availability_ratio is not None
+            or leg.min_borrow_availability_ratio_column is not None
+        ) and leg.borrow_availability_column is not None:
+            columns.add(leg.borrow_availability_column)
+        if (
+            leg.max_borrow_cost_bps is not None or leg.max_borrow_cost_bps_column is not None
+        ) and leg.borrow_cost_column is not None:
+            columns.add(leg.borrow_cost_column)
+        if (
+            leg.max_tax_drag_bps is not None or leg.max_tax_drag_bps_column is not None
+        ) and leg.tax_drag_column is not None:
+            columns.add(leg.tax_drag_column)
+        if (
+            leg.max_turnover_pressure is not None or leg.max_turnover_pressure_column is not None
+        ) and leg.turnover_pressure_column is not None:
+            columns.add(leg.turnover_pressure_column)
+        if (
+            leg.max_capacity_usage_ratio is not None
+            or leg.max_capacity_usage_ratio_column is not None
+        ) and leg.capacity_usage_column is not None:
+            columns.add(leg.capacity_usage_column)
+        if (
+            leg.max_correlation_crowding_score is not None
+            or leg.max_correlation_crowding_score_column is not None
+        ) and leg.correlation_crowding_column is not None:
+            columns.add(leg.correlation_crowding_column)
+        if (
+            leg.min_fee_edge_bps is not None or leg.min_fee_edge_bps_column is not None
+        ) and leg.fee_edge_column is not None:
+            columns.add(leg.fee_edge_column)
     return columns
 
 
@@ -3024,6 +3901,130 @@ def _sizing_value(row: dict[str, Any], *, fixed: float | None, column: str | Non
     return dynamic if dynamic is not None else fixed
 
 
+def _non_negative_bps_value(
+    row: dict[str, Any],
+    *,
+    fixed: float | None,
+    column: str | None,
+    field_name: str,
+) -> float | None:
+    value = _exit_bps(row, fixed=fixed, column=column)
+    if value is not None and value < 0:
+        raise StrategyAuthoringValidationError(f"{field_name} must be >= 0")
+    return value
+
+
+def _minutes_value(row: dict[str, Any], *, fixed: int | None, column: str | None) -> int | None:
+    dynamic = _optional_float_from_row(row, column)
+    if dynamic is None:
+        return fixed
+    if not float(dynamic).is_integer():
+        raise StrategyAuthoringValidationError(f"{column} must be an integer minute value")
+    return int(dynamic)
+
+
+def _positive_integer_value(
+    row: dict[str, Any],
+    *,
+    fixed: int | None,
+    column: str | None,
+    field_name: str,
+) -> int | None:
+    dynamic = _optional_float_from_row(row, column)
+    value = fixed if dynamic is None else dynamic
+    if value is None:
+        return None
+    if not float(value).is_integer():
+        raise StrategyAuthoringValidationError(f"{field_name} must be an integer value")
+    integer_value = int(value)
+    if integer_value <= 0:
+        raise StrategyAuthoringValidationError(f"{field_name} must be positive")
+    return integer_value
+
+
+def _non_negative_value(
+    row: dict[str, Any],
+    *,
+    fixed: float | None,
+    column: str | None,
+    field_name: str,
+) -> float | None:
+    value = _sizing_value(row, fixed=fixed, column=column)
+    if value is not None and value < 0:
+        raise StrategyAuthoringValidationError(f"{field_name} must be >= 0")
+    return value
+
+
+def _unit_interval_value(
+    row: dict[str, Any],
+    *,
+    fixed: float | None,
+    column: str | None,
+    field_name: str,
+) -> float | None:
+    value = _sizing_value(row, fixed=fixed, column=column)
+    if value is not None and not 0.0 <= value <= 1.0:
+        raise StrategyAuthoringValidationError(f"{field_name} must be between 0 and 1")
+    return value
+
+
+def _entry_type_value(
+    row: dict[str, Any],
+    *,
+    fixed: Literal["market", "limit", "stop_market"],
+    column: str | None,
+) -> Literal["market", "limit", "stop_market"]:
+    if column is None:
+        return fixed
+    value = row.get(column)
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return fixed
+    normalized = str(value).strip().lower()
+    if normalized in {"market", "limit", "stop_market"}:
+        return cast(Literal["market", "limit", "stop_market"], normalized)
+    raise StrategyAuthoringValidationError(
+        f"Unsupported rules.order.entry_type_column value: {value}"
+    )
+
+
+def _time_in_force_value(
+    row: dict[str, Any],
+    *,
+    fixed: Literal["gtc", "gtd", "ioc", "fok"],
+    column: str | None,
+) -> Literal["gtc", "gtd", "ioc", "fok"]:
+    if column is None:
+        return fixed
+    value = row.get(column)
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return fixed
+    normalized = str(value).strip().lower()
+    if normalized in {"gtc", "gtd", "ioc", "fok"}:
+        return cast(Literal["gtc", "gtd", "ioc", "fok"], normalized)
+    raise StrategyAuthoringValidationError(
+        f"Unsupported rules.order.time_in_force_column value: {value}"
+    )
+
+
+def _optional_bool_from_row(row: dict[str, Any], column: str | None) -> bool | None:
+    if column is None:
+        return None
+    value = row.get(column)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int | float):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if not normalized:
+            return None
+        if normalized in {"true", "1", "yes", "y"}:
+            return True
+        if normalized in {"false", "0", "no", "n"}:
+            return False
+    raise StrategyAuthoringValidationError(f"Unsupported boolean value in {column}: {value}")
+
+
 def _matching_regime_override(
     row: dict[str, Any], spec: StrategyAuthoringSpec
 ) -> RegimeOverride | None:
@@ -3040,6 +4041,38 @@ def _regime_value(
         return default
     value = getattr(regime, field_name)
     return value if value is not None else default
+
+
+def _exit_override(
+    overrides: dict[str, float | None] | None, field_name: str, default: float | None
+) -> float | None:
+    if overrides is None:
+        return default
+    value = overrides.get(field_name)
+    return value if value is not None else default
+
+
+def _exit_override_column(
+    overrides: dict[str, float | None] | None, field_name: str, default: str | None
+) -> str | None:
+    if overrides is not None and field_name in overrides:
+        return None
+    return default
+
+
+def _override_value(overrides: dict[str, Any] | None, field_name: str, default: Any) -> Any:
+    if overrides is None:
+        return default
+    value = overrides.get(field_name)
+    return value if value is not None else default
+
+
+def _override_column(
+    overrides: dict[str, Any] | None, field_name: str, default: str | None
+) -> str | None:
+    if overrides is not None and field_name in overrides:
+        return None
+    return default
 
 
 def _signal_position_weight(row: dict[str, Any], spec: StrategyAuthoringSpec) -> float | None:
@@ -3109,27 +4142,38 @@ def _risk_throttle_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec
     if not throttle.enabled:
         return None
     drawdown = _optional_float_from_row(row, throttle.max_drawdown_column)
-    if (
-        drawdown is not None
-        and throttle.max_drawdown_floor is not None
-        and drawdown <= throttle.max_drawdown_floor
-    ):
+    drawdown_floor = _sizing_value(
+        row,
+        fixed=throttle.max_drawdown_floor,
+        column=throttle.max_drawdown_floor_column,
+    )
+    if drawdown is not None and drawdown_floor is not None and drawdown <= drawdown_floor:
         return "risk_throttle_max_drawdown"
     daily_loss = _optional_float_from_row(row, throttle.daily_loss_column)
-    if (
-        daily_loss is not None
-        and throttle.daily_loss_floor is not None
-        and daily_loss <= throttle.daily_loss_floor
-    ):
+    daily_loss_floor = _sizing_value(
+        row,
+        fixed=throttle.daily_loss_floor,
+        column=throttle.daily_loss_floor_column,
+    )
+    if daily_loss is not None and daily_loss_floor is not None and daily_loss <= daily_loss_floor:
         return "risk_throttle_daily_loss"
     loss_streak = _optional_float_from_row(row, throttle.loss_streak_column)
-    if (
-        loss_streak is not None
-        and throttle.max_loss_streak is not None
-        and loss_streak >= throttle.max_loss_streak
-    ):
+    max_loss_streak = _positive_integer_value(
+        row,
+        fixed=throttle.max_loss_streak,
+        column=throttle.max_loss_streak_column,
+        field_name="rules.risk_throttle.max_loss_streak",
+    )
+    if loss_streak is not None and max_loss_streak is not None and loss_streak >= max_loss_streak:
         return "risk_throttle_loss_streak"
     return None
+
+
+def _feature_timestamp(row: dict[str, Any]) -> datetime:
+    ts = _parse_event_ts(row.get("ts"))
+    if ts is None:
+        raise StrategyAuthoringValidationError(f"Unsupported feature ts value: {row.get('ts')!r}")
+    return ts
 
 
 def _data_guard_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec) -> str | None:
@@ -3137,34 +4181,64 @@ def _data_guard_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec) -
     if not guard.enabled:
         return None
     feature_age = _optional_float_from_row(row, guard.feature_age_column)
-    if guard.max_feature_age_minutes is not None:
+    max_feature_age = _non_negative_value(
+        row,
+        fixed=guard.max_feature_age_minutes,
+        column=guard.max_feature_age_minutes_column,
+        field_name="rules.data_guard.max_feature_age_minutes",
+    )
+    if max_feature_age is not None:
         if feature_age is None:
             return "data_guard_feature_age_missing"
-        if feature_age > guard.max_feature_age_minutes:
+        if feature_age > max_feature_age:
             return "data_guard_feature_age_too_old"
     source_confidence = _optional_float_from_row(row, guard.source_confidence_column)
-    if guard.min_source_confidence is not None:
+    min_source_confidence = _unit_interval_value(
+        row,
+        fixed=guard.min_source_confidence,
+        column=guard.min_source_confidence_column,
+        field_name="rules.data_guard.min_source_confidence",
+    )
+    if min_source_confidence is not None:
         if source_confidence is None:
             return "data_guard_source_confidence_missing"
-        if source_confidence < guard.min_source_confidence:
+        if source_confidence < min_source_confidence:
             return "data_guard_source_confidence_too_low"
     venue_quality = _optional_float_from_row(row, guard.venue_quality_score_column)
-    if guard.min_venue_quality_score is not None:
+    min_venue_quality = _unit_interval_value(
+        row,
+        fixed=guard.min_venue_quality_score,
+        column=guard.min_venue_quality_score_column,
+        field_name="rules.data_guard.min_venue_quality_score",
+    )
+    if min_venue_quality is not None:
         if venue_quality is None:
             return "data_guard_venue_quality_missing"
-        if venue_quality < guard.min_venue_quality_score:
+        if venue_quality < min_venue_quality:
             return "data_guard_venue_quality_too_low"
     staleness_bps = _optional_float_from_row(row, guard.staleness_bps_column)
-    if guard.max_staleness_bps is not None:
+    max_staleness_bps = _non_negative_value(
+        row,
+        fixed=guard.max_staleness_bps,
+        column=guard.max_staleness_bps_column,
+        field_name="rules.data_guard.max_staleness_bps",
+    )
+    if max_staleness_bps is not None:
         if staleness_bps is None:
             return "data_guard_staleness_missing"
-        if staleness_bps > guard.max_staleness_bps:
+        if staleness_bps > max_staleness_bps:
             return "data_guard_staleness_too_high"
     regime_transition = _optional_float_from_row(row, guard.regime_transition_score_column)
-    if guard.max_regime_transition_score is not None:
+    max_regime_transition = _non_negative_value(
+        row,
+        fixed=guard.max_regime_transition_score,
+        column=guard.max_regime_transition_score_column,
+        field_name="rules.data_guard.max_regime_transition_score",
+    )
+    if max_regime_transition is not None:
         if regime_transition is None:
             return "data_guard_regime_transition_missing"
-        if regime_transition > guard.max_regime_transition_score:
+        if regime_transition > max_regime_transition:
             return "data_guard_regime_transition_too_high"
     return None
 
@@ -3240,22 +4314,30 @@ def _block_trade_row(
     blocked["confidence"] = 0.0
     blocked["stop_loss_bps"] = None
     blocked["take_profit_bps"] = None
+    blocked["min_reward_risk_ratio"] = row.get("min_reward_risk_ratio")
+    blocked["reward_risk_ratio"] = row.get("reward_risk_ratio")
     blocked["trailing_stop_bps"] = None
+    blocked["trailing_stop_activation_bps"] = None
     blocked["partial_take_profit_bps"] = None
     blocked["partial_exit_fraction"] = None
     blocked["min_holding_minutes"] = None
+    blocked["max_holding_minutes"] = None
+    blocked["exit_priority"] = DEFAULT_EXIT_PRIORITY
     blocked["exit_on_opposite_signal"] = False
     blocked["bracket_type"] = "none"
     blocked["bracket_time_stop_minutes"] = None
     blocked["bracket_break_even_after_bps"] = None
+    blocked["bracket_break_even_after_partial_take_profit"] = False
     blocked["entry_order_type"] = "market"
     blocked["entry_limit_offset_bps"] = None
     blocked["entry_stop_offset_bps"] = None
     blocked["entry_timeout_minutes"] = None
     blocked["entry_time_in_force"] = "gtc"
     blocked["entry_post_only"] = False
+    blocked["entry_reduce_only"] = False
     blocked["slippage_bps"] = 0.0
     blocked["max_fill_fraction"] = 0.0
+    blocked["min_fill_fraction"] = None
     blocked["max_spread_bps"] = None
     blocked["min_depth_usd"] = None
     blocked["depth_column"] = None
@@ -3276,6 +4358,74 @@ def _block_trade_row(
     blocked["reason_codes"] = [spec.rules.hold_reason_code]
     blocked["block_reasons"] = [*list(row.get("block_reasons") or []), block_reason]
     return blocked
+
+
+def _reward_risk_ratio(row: dict[str, Any]) -> float | None:
+    stop_loss_bps = row.get("stop_loss_bps")
+    take_profit_bps = row.get("take_profit_bps")
+    if stop_loss_bps is None or take_profit_bps is None:
+        return None
+    stop = float(stop_loss_bps)
+    if stop <= 0:
+        return None
+    return float(take_profit_bps) / stop
+
+
+def _apply_stop_target_width_gate(
+    row: dict[str, Any], spec: StrategyAuthoringSpec
+) -> dict[str, Any]:
+    stop_loss_bps = row.get("stop_loss_bps")
+    take_profit_bps = row.get("take_profit_bps")
+    min_stop = row.get("min_stop_loss_bps")
+    max_stop = row.get("max_stop_loss_bps")
+    min_take = row.get("min_take_profit_bps")
+    max_take = row.get("max_take_profit_bps")
+
+    if row.get("side") not in {"long", "short"}:
+        return row
+
+    if min_stop is not None and max_stop is not None and float(max_stop) < float(min_stop):
+        raise StrategyAuthoringValidationError(
+            "rules.exit.max_stop_loss_bps must be >= min_stop_loss_bps"
+        )
+    if min_take is not None and max_take is not None and float(max_take) < float(min_take):
+        raise StrategyAuthoringValidationError(
+            "rules.exit.max_take_profit_bps must be >= min_take_profit_bps"
+        )
+
+    if min_stop is not None or max_stop is not None:
+        if stop_loss_bps is None:
+            return _block_trade_row(row, spec=spec, block_reason="stop_loss_bps_missing")
+        stop = float(stop_loss_bps)
+        if min_stop is not None and stop < float(min_stop):
+            return _block_trade_row(row, spec=spec, block_reason="stop_loss_bps_too_low")
+        if max_stop is not None and stop > float(max_stop):
+            return _block_trade_row(row, spec=spec, block_reason="stop_loss_bps_too_high")
+
+    if min_take is not None or max_take is not None:
+        if take_profit_bps is None:
+            return _block_trade_row(row, spec=spec, block_reason="take_profit_bps_missing")
+        take = float(take_profit_bps)
+        if min_take is not None and take < float(min_take):
+            return _block_trade_row(row, spec=spec, block_reason="take_profit_bps_too_low")
+        if max_take is not None and take > float(max_take):
+            return _block_trade_row(row, spec=spec, block_reason="take_profit_bps_too_high")
+
+    return row
+
+
+def _apply_reward_risk_gate(row: dict[str, Any], spec: StrategyAuthoringSpec) -> dict[str, Any]:
+    minimum = row.get("min_reward_risk_ratio")
+    if minimum is None or row.get("side") not in {"long", "short"}:
+        return row
+    ratio = _reward_risk_ratio(row)
+    row["min_reward_risk_ratio"] = minimum
+    row["reward_risk_ratio"] = ratio
+    if ratio is None:
+        return _block_trade_row(row, spec=spec, block_reason="reward_risk_ratio_missing")
+    if ratio < minimum:
+        return _block_trade_row(row, spec=spec, block_reason="reward_risk_ratio_too_low")
+    return row
 
 
 def _score_value(row: dict[str, Any]) -> float | None:
@@ -3363,12 +4513,48 @@ def _apply_position_state_limits(
     rows: list[dict[str, Any]], spec: StrategyAuthoringSpec
 ) -> list[dict[str, Any]]:
     position = spec.rules.position
-    if not position.enabled:
+    if (
+        not position.enabled
+        and not spec.rules.order.reduce_only
+        and spec.rules.order.reduce_only_column is None
+    ):
         return rows
 
     horizon_minutes = position.holding_horizon_minutes or spec.backtest.label_horizon_minutes
-    active_by_symbol: dict[str, list[tuple[datetime, float]]] = {}
+    active_by_symbol: dict[str, list[tuple[datetime, str, float]]] = {}
     selected: list[dict[str, Any]] = []
+
+    def compact_active(
+        active: list[tuple[datetime, str, float]], weight: float
+    ) -> list[tuple[datetime, str, float]]:
+        if weight <= 0:
+            return []
+        end_at = max(
+            (item_end_at for item_end_at, _item_side, _item_weight in active), default=None
+        )
+        if end_at is None:
+            return []
+        sides = [item_side for _item_end_at, item_side, item_weight in active if item_weight > 0]
+        side = sides[0] if sides else "long"
+        return [(end_at, side, weight)]
+
+    def reduce_active_side(
+        active: list[tuple[datetime, str, float]], side: str, fraction: float
+    ) -> list[tuple[datetime, str, float]]:
+        total = sum(weight for _end_at, active_side, weight in active if active_side == side)
+        to_reduce = total * min(max(fraction, 0.0), 1.0)
+        updated: list[tuple[datetime, str, float]] = []
+        for end_at, active_side, weight in active:
+            if active_side != side or to_reduce <= 0:
+                updated.append((end_at, active_side, weight))
+                continue
+            reduced = min(weight, to_reduce)
+            remaining = weight - reduced
+            to_reduce -= reduced
+            if remaining > 0:
+                updated.append((end_at, active_side, remaining))
+        return updated
+
     for row in sorted(rows, key=lambda item: (item["ts_signal"], item["signal_id"])):
         if row.get("side") == "none":
             selected.append(row)
@@ -3377,13 +4563,116 @@ def _apply_position_state_limits(
         ts_signal = _signal_timestamp(row)
         symbol = str(row["execution_symbol"])
         active = [
-            (end_at, weight)
-            for end_at, weight in active_by_symbol.get(symbol, [])
+            (end_at, active_side, weight)
+            for end_at, active_side, weight in active_by_symbol.get(symbol, [])
             if end_at > ts_signal
         ]
         active_by_symbol[symbol] = active
-        open_weight = sum(weight for _end_at, weight in active)
+        open_weight = sum(weight for _end_at, _active_side, weight in active)
+        side = str(row.get("side") or "")
+
+        if side in {"close", "reduce", "add", "rebalance"}:
+            if position.require_open_position_for_markers and open_weight <= 0:
+                selected.append(
+                    _block_trade_row(row, spec=spec, block_reason="position_marker_without_open")
+                )
+                continue
+            if side == "close":
+                active_by_symbol[symbol] = []
+            elif side == "reduce" and open_weight > 0:
+                reduce_fraction = row.get("reduce_fraction")
+                fraction = (
+                    min(max(float(reduce_fraction), 0.0), 1.0)
+                    if isinstance(reduce_fraction, int | float)
+                    else 1.0
+                )
+                active_by_symbol[symbol] = compact_active(active, open_weight * (1.0 - fraction))
+            elif side == "add" and open_weight > 0:
+                add_fraction = row.get("add_fraction")
+                added_weight = (
+                    max(float(add_fraction), 0.0) if isinstance(add_fraction, int | float) else 1.0
+                )
+                if (
+                    position.max_open_position_weight_per_symbol is not None
+                    and open_weight + added_weight > position.max_open_position_weight_per_symbol
+                ):
+                    selected.append(
+                        _block_trade_row(row, spec=spec, block_reason="position_open_weight_limit")
+                    )
+                    continue
+                active_by_symbol[symbol] = compact_active(active, open_weight + added_weight)
+            elif side == "rebalance" and open_weight > 0:
+                target_fraction = row.get("rebalance_target_fraction")
+                target_weight = (
+                    max(float(target_fraction), 0.0)
+                    if isinstance(target_fraction, int | float)
+                    else open_weight
+                )
+                if (
+                    position.max_open_position_weight_per_symbol is not None
+                    and target_weight > position.max_open_position_weight_per_symbol
+                ):
+                    selected.append(
+                        _block_trade_row(row, spec=spec, block_reason="position_open_weight_limit")
+                    )
+                    continue
+                active_by_symbol[symbol] = compact_active(active, target_weight)
+            selected.append(row)
+            continue
+
         weight = abs(_position_weight_value(row))
+        if row.get("entry_reduce_only") and side in {"long", "short"}:
+            opposing_side = "short" if side == "long" else "long"
+            opposing_weight = sum(
+                active_weight
+                for _end_at, active_side, active_weight in active
+                if active_side == opposing_side
+            )
+            if opposing_weight <= 0:
+                selected.append(
+                    _block_trade_row(
+                        row, spec=spec, block_reason="position_reduce_only_without_opposing_open"
+                    )
+                )
+                continue
+            reduce_fraction = row.get("reduce_fraction")
+            fraction = (
+                min(max(float(reduce_fraction), 0.0), 1.0)
+                if isinstance(reduce_fraction, int | float)
+                else 1.0
+            )
+            active_by_symbol[symbol] = reduce_active_side(active, opposing_side, fraction)
+            reduce_row = dict(row)
+            reduce_row["side"] = "reduce"
+            reduce_row["signal_id"] = _compiled_signal_id(spec, reduce_row, side="reduce")
+            reduce_row["position_weight"] = 0.0
+            reduce_row["notional_usd"] = None
+            reduce_row["reason_codes"] = [*list(row.get("reason_codes") or []), "reduce_only"]
+            selected.append(reduce_row)
+            continue
+        if not position.allow_opposing_open_positions and side in {"long", "short"}:
+            opposing_side = "short" if side == "long" else "long"
+            opposing_weight = sum(
+                active_weight
+                for _end_at, active_side, active_weight in active
+                if active_side == opposing_side
+            )
+            if opposing_weight > 0:
+                selected.append(
+                    _block_trade_row(row, spec=spec, block_reason="position_opposing_open_position")
+                )
+                continue
+        if not position.allow_pyramiding and side in {"long", "short"}:
+            same_side_weight = sum(
+                active_weight
+                for _end_at, active_side, active_weight in active
+                if active_side == side
+            )
+            if same_side_weight > 0:
+                selected.append(
+                    _block_trade_row(row, spec=spec, block_reason="position_pyramiding_not_allowed")
+                )
+                continue
 
         if (
             position.max_open_signals_per_symbol is not None
@@ -3402,7 +4691,7 @@ def _apply_position_state_limits(
             )
             continue
 
-        active.append((ts_signal + timedelta(minutes=horizon_minutes), weight))
+        active.append((ts_signal + timedelta(minutes=horizon_minutes), side, weight))
         active_by_symbol[symbol] = active
         selected.append(row)
     return selected
@@ -3413,9 +4702,6 @@ def _apply_portfolio_allocation(
 ) -> list[dict[str, Any]]:
     portfolio = spec.rules.portfolio
     if portfolio.allocation_method == "none":
-        return rows
-    target = portfolio.target_total_position_weight
-    if target is None:
         return rows
 
     grouped: dict[Any, list[dict[str, Any]]] = {}
@@ -3428,6 +4714,10 @@ def _apply_portfolio_allocation(
 
     selected: list[dict[str, Any]] = [*passthrough]
     for timestamp_rows in grouped.values():
+        target = _portfolio_target_total_position_weight(timestamp_rows, portfolio)
+        if target is None:
+            selected.extend(timestamp_rows)
+            continue
         if portfolio.allocation_method in {
             "dollar_neutral",
             "beta_neutral",
@@ -3449,6 +4739,46 @@ def _apply_portfolio_allocation(
             updated["position_weight"] = allocated
             selected.append(updated)
     return selected
+
+
+def _portfolio_target_total_position_weight(
+    rows: list[dict[str, Any]], portfolio: PortfolioRules
+) -> float | None:
+    column = portfolio.target_total_position_weight_column
+    if column is None:
+        return portfolio.target_total_position_weight
+    return _portfolio_timestamp_limit(
+        rows,
+        fixed=portfolio.target_total_position_weight,
+        value_key="_portfolio_target_total_position_weight",
+        field_name="rules.portfolio.target_total_position_weight_column",
+    )
+
+
+def _portfolio_timestamp_limit(
+    rows: list[dict[str, Any]],
+    *,
+    fixed: float | None,
+    value_key: str,
+    field_name: str,
+) -> float | None:
+    resolved: list[float] = []
+    for row in rows:
+        raw_value = row.get(value_key)
+        value = float(raw_value) if isinstance(raw_value, int | float) else None
+        if value is None:
+            continue
+        if value < 0:
+            raise StrategyAuthoringValidationError(f"{field_name} must be >= 0")
+        resolved.append(value)
+    if not resolved:
+        return fixed
+    first = resolved[0]
+    if any(not math.isclose(value, first, rel_tol=0.0, abs_tol=1e-12) for value in resolved[1:]):
+        raise StrategyAuthoringValidationError(
+            f"{field_name} must resolve to one value per timestamp"
+        )
+    return first
 
 
 def _allocation_raw_weights(rows: list[dict[str, Any]], portfolio: PortfolioRules) -> list[float]:
@@ -3598,6 +4928,11 @@ def _portfolio_exposure_block_reason(
     row: dict[str, Any],
     *,
     portfolio: PortfolioRules,
+    max_total_position_weight: float | None,
+    max_long_position_weight: float | None,
+    max_short_position_weight: float | None,
+    max_symbol_position_weight: float | None,
+    max_group_position_weight: float | None,
     total_weight: float,
     long_weight: float,
     short_weight: float,
@@ -3608,38 +4943,94 @@ def _portfolio_exposure_block_reason(
     side = str(row.get("side") or "")
     symbol = str(row.get("execution_symbol") or "")
     group = str(row.get("_portfolio_group") or "").strip()
-    if (
-        portfolio.max_total_position_weight is not None
-        and total_weight + weight > portfolio.max_total_position_weight
-    ):
+    if max_total_position_weight is not None and total_weight + weight > max_total_position_weight:
         return "portfolio_total_exposure_limit"
+    if side == "long" and max_long_position_weight is not None:
+        if long_weight + weight > max_long_position_weight:
+            return "portfolio_long_exposure_limit"
+    if side == "short" and max_short_position_weight is not None:
+        if short_weight + weight > max_short_position_weight:
+            return "portfolio_short_exposure_limit"
+    if max_symbol_position_weight is not None:
+        if symbol_weights.get(symbol, 0.0) + weight > max_symbol_position_weight:
+            return "portfolio_symbol_exposure_limit"
     if (
-        side == "long"
-        and portfolio.max_long_position_weight is not None
-        and long_weight + weight > portfolio.max_long_position_weight
-    ):
-        return "portfolio_long_exposure_limit"
-    if (
-        side == "short"
-        and portfolio.max_short_position_weight is not None
-        and short_weight + weight > portfolio.max_short_position_weight
-    ):
-        return "portfolio_short_exposure_limit"
-    if (
-        portfolio.max_symbol_position_weight is not None
-        and symbol_weights.get(symbol, 0.0) + weight > portfolio.max_symbol_position_weight
-    ):
-        return "portfolio_symbol_exposure_limit"
-    if (
-        portfolio.max_group_position_weight is not None
+        max_group_position_weight is not None
         or portfolio.max_group_abs_net_position_weight is not None
+        or portfolio.max_group_abs_net_position_weight_column is not None
     ):
         if not group:
             return "portfolio_group_missing"
-    if portfolio.max_group_position_weight is not None:
-        if group_weights.get(group, 0.0) + weight > portfolio.max_group_position_weight:
+    if max_group_position_weight is not None:
+        if group_weights.get(group, 0.0) + weight > max_group_position_weight:
             return "portfolio_group_exposure_limit"
     return None
+
+
+def _portfolio_max_long_position_weight(
+    rows: list[dict[str, Any]], portfolio: PortfolioRules
+) -> float | None:
+    return _portfolio_timestamp_limit(
+        rows,
+        fixed=portfolio.max_long_position_weight,
+        value_key="_portfolio_max_long_position_weight",
+        field_name="rules.portfolio.max_long_position_weight_column",
+    )
+
+
+def _portfolio_max_short_position_weight(
+    rows: list[dict[str, Any]], portfolio: PortfolioRules
+) -> float | None:
+    return _portfolio_timestamp_limit(
+        rows,
+        fixed=portfolio.max_short_position_weight,
+        value_key="_portfolio_max_short_position_weight",
+        field_name="rules.portfolio.max_short_position_weight_column",
+    )
+
+
+def _portfolio_max_abs_net_position_weight(
+    rows: list[dict[str, Any]], portfolio: PortfolioRules
+) -> float | None:
+    return _portfolio_timestamp_limit(
+        rows,
+        fixed=portfolio.max_abs_net_position_weight,
+        value_key="_portfolio_max_abs_net_position_weight",
+        field_name="rules.portfolio.max_abs_net_position_weight_column",
+    )
+
+
+def _portfolio_max_symbol_position_weight(
+    rows: list[dict[str, Any]], portfolio: PortfolioRules
+) -> float | None:
+    return _portfolio_timestamp_limit(
+        rows,
+        fixed=portfolio.max_symbol_position_weight,
+        value_key="_portfolio_max_symbol_position_weight",
+        field_name="rules.portfolio.max_symbol_position_weight_column",
+    )
+
+
+def _portfolio_max_group_position_weight(
+    rows: list[dict[str, Any]], portfolio: PortfolioRules
+) -> float | None:
+    return _portfolio_timestamp_limit(
+        rows,
+        fixed=portfolio.max_group_position_weight,
+        value_key="_portfolio_max_group_position_weight",
+        field_name="rules.portfolio.max_group_position_weight_column",
+    )
+
+
+def _portfolio_max_group_abs_net_position_weight(
+    rows: list[dict[str, Any]], portfolio: PortfolioRules
+) -> float | None:
+    return _portfolio_timestamp_limit(
+        rows,
+        fixed=portfolio.max_group_abs_net_position_weight,
+        value_key="_portfolio_max_group_abs_net_position_weight",
+        field_name="rules.portfolio.max_group_abs_net_position_weight_column",
+    )
 
 
 def _apply_portfolio_exposure_limits(
@@ -3658,6 +5049,24 @@ def _apply_portfolio_exposure_limits(
 
     selected: list[dict[str, Any]] = [*passthrough]
     for timestamp_rows in grouped.values():
+        max_total_position_weight = _portfolio_timestamp_limit(
+            timestamp_rows,
+            fixed=portfolio.max_total_position_weight,
+            value_key="_portfolio_max_total_position_weight",
+            field_name="rules.portfolio.max_total_position_weight_column",
+        )
+        max_long_position_weight = _portfolio_max_long_position_weight(timestamp_rows, portfolio)
+        max_short_position_weight = _portfolio_max_short_position_weight(timestamp_rows, portfolio)
+        max_symbol_position_weight = _portfolio_max_symbol_position_weight(
+            timestamp_rows, portfolio
+        )
+        max_group_position_weight = _portfolio_max_group_position_weight(timestamp_rows, portfolio)
+        max_abs_net_position_weight = _portfolio_max_abs_net_position_weight(
+            timestamp_rows, portfolio
+        )
+        max_group_abs_net_position_weight = _portfolio_max_group_abs_net_position_weight(
+            timestamp_rows, portfolio
+        )
         total_weight = 0.0
         long_weight = 0.0
         short_weight = 0.0
@@ -3673,6 +5082,11 @@ def _apply_portfolio_exposure_limits(
             reason = _portfolio_exposure_block_reason(
                 row,
                 portfolio=portfolio,
+                max_total_position_weight=max_total_position_weight,
+                max_long_position_weight=max_long_position_weight,
+                max_short_position_weight=max_short_position_weight,
+                max_symbol_position_weight=max_symbol_position_weight,
+                max_group_position_weight=max_group_position_weight,
                 total_weight=total_weight,
                 long_weight=long_weight,
                 short_weight=short_weight,
@@ -3695,19 +5109,26 @@ def _apply_portfolio_exposure_limits(
                 group_weights[group] = group_weights.get(group, 0.0) + weight
             accepted_rows.append(row)
         accepted_rows, net_blocked_rows = _apply_portfolio_net_exposure_limit(
-            accepted_rows, portfolio=portfolio, spec=spec
+            accepted_rows,
+            max_abs_net_position_weight=max_abs_net_position_weight,
+            spec=spec,
         )
         accepted_rows, group_net_blocked_rows = _apply_portfolio_group_net_exposure_limit(
-            accepted_rows, portfolio=portfolio, spec=spec
+            accepted_rows,
+            max_group_abs_net_position_weight=max_group_abs_net_position_weight,
+            spec=spec,
         )
         selected.extend([*blocked_rows, *net_blocked_rows, *group_net_blocked_rows, *accepted_rows])
     return selected
 
 
 def _apply_portfolio_net_exposure_limit(
-    rows: list[dict[str, Any]], *, portfolio: PortfolioRules, spec: StrategyAuthoringSpec
+    rows: list[dict[str, Any]],
+    *,
+    max_abs_net_position_weight: float | None,
+    spec: StrategyAuthoringSpec,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    if portfolio.max_abs_net_position_weight is None:
+    if max_abs_net_position_weight is None:
         return rows, []
 
     accepted = [*rows]
@@ -3720,7 +5141,7 @@ def _apply_portfolio_net_exposure_limit(
             abs(_position_weight_value(row)) for row in accepted if row.get("side") == "short"
         )
         net_weight = long_weight - short_weight
-        if abs(net_weight) <= portfolio.max_abs_net_position_weight:
+        if abs(net_weight) <= max_abs_net_position_weight:
             return accepted, blocked
 
         overweight_side = "long" if net_weight > 0 else "short"
@@ -3744,9 +5165,12 @@ def _apply_portfolio_net_exposure_limit(
 
 
 def _apply_portfolio_group_net_exposure_limit(
-    rows: list[dict[str, Any]], *, portfolio: PortfolioRules, spec: StrategyAuthoringSpec
+    rows: list[dict[str, Any]],
+    *,
+    max_group_abs_net_position_weight: float | None,
+    spec: StrategyAuthoringSpec,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    if portfolio.max_group_abs_net_position_weight is None:
+    if max_group_abs_net_position_weight is None:
         return rows, []
 
     accepted = [*rows]
@@ -3771,7 +5195,7 @@ def _apply_portfolio_group_net_exposure_limit(
                 if row.get("side") == "short"
             )
             net_weight = long_weight - short_weight
-            if abs(net_weight) > portfolio.max_group_abs_net_position_weight:
+            if abs(net_weight) > max_group_abs_net_position_weight:
                 over_limit = (group, net_weight)
                 break
         if over_limit is None:
@@ -3959,6 +5383,24 @@ def _signal_id(
     )
 
 
+def _multi_leg_group_id(
+    spec: StrategyAuthoringSpec,
+    row: dict[str, Any],
+    *,
+    base_side: str,
+) -> str:
+    return _stable_digest(
+        {
+            "strategy_id": spec.experiment.strategy_id,
+            "ts": row.get("ts"),
+            "canonical_symbol": row.get("canonical_symbol"),
+            "anchor_real_market_symbol": spec.rules.multi_leg.anchor_real_market_symbol,
+            "base_side": base_side,
+            "reason_code": spec.rules.reason_code,
+        }
+    )
+
+
 def _resolve_leg_side(base_side: str, leg_side: str) -> Literal["long", "short"]:
     if leg_side == "long":
         return "long"
@@ -4002,11 +5444,20 @@ def _close_signal_row(
         "quote_ref": None,
         "tracking_ref": None,
         "stop_loss_bps": None,
+        "min_stop_loss_bps": None,
+        "max_stop_loss_bps": None,
         "take_profit_bps": None,
+        "min_take_profit_bps": None,
+        "max_take_profit_bps": None,
+        "min_reward_risk_ratio": None,
+        "reward_risk_ratio": None,
         "trailing_stop_bps": None,
+        "trailing_stop_activation_bps": None,
         "partial_take_profit_bps": None,
         "partial_exit_fraction": None,
         "min_holding_minutes": None,
+        "max_holding_minutes": None,
+        "exit_priority": DEFAULT_EXIT_PRIORITY,
         "exit_on_opposite_signal": False,
         "exit_on_close_signal": False,
         "exit_on_reduce_signal": False,
@@ -4015,17 +5466,21 @@ def _close_signal_row(
         "add_fraction": None,
         "exit_on_rebalance_signal": False,
         "rebalance_target_fraction": None,
+        "rebalance_min_delta_fraction": None,
         "bracket_type": "none",
         "bracket_time_stop_minutes": None,
         "bracket_break_even_after_bps": None,
+        "bracket_break_even_after_partial_take_profit": False,
         "entry_order_type": "market",
         "entry_limit_offset_bps": None,
         "entry_stop_offset_bps": None,
         "entry_timeout_minutes": None,
         "entry_time_in_force": "gtc",
         "entry_post_only": False,
+        "entry_reduce_only": False,
         "slippage_bps": 0.0,
         "max_fill_fraction": 0.0,
+        "min_fill_fraction": None,
         "max_spread_bps": None,
         "min_depth_usd": None,
         "depth_column": None,
@@ -4042,6 +5497,10 @@ def _close_signal_row(
         "tax_drag_bps": None,
         "max_turnover_pressure": None,
         "turnover_pressure": None,
+        "max_capacity_usage_ratio": None,
+        "capacity_usage_ratio": None,
+        "max_correlation_crowding_score": None,
+        "correlation_crowding_score": None,
         "min_fee_edge_bps": None,
         "fee_edge_bps": None,
         "position_weight": 0.0,
@@ -4084,11 +5543,20 @@ def _reduce_signal_row(
         "quote_ref": None,
         "tracking_ref": None,
         "stop_loss_bps": None,
+        "min_stop_loss_bps": None,
+        "max_stop_loss_bps": None,
         "take_profit_bps": None,
+        "min_take_profit_bps": None,
+        "max_take_profit_bps": None,
+        "min_reward_risk_ratio": None,
+        "reward_risk_ratio": None,
         "trailing_stop_bps": None,
+        "trailing_stop_activation_bps": None,
         "partial_take_profit_bps": None,
         "partial_exit_fraction": None,
         "min_holding_minutes": None,
+        "max_holding_minutes": None,
+        "exit_priority": DEFAULT_EXIT_PRIORITY,
         "exit_on_opposite_signal": False,
         "exit_on_close_signal": False,
         "exit_on_reduce_signal": False,
@@ -4100,14 +5568,17 @@ def _reduce_signal_row(
         "bracket_type": "none",
         "bracket_time_stop_minutes": None,
         "bracket_break_even_after_bps": None,
+        "bracket_break_even_after_partial_take_profit": False,
         "entry_order_type": "market",
         "entry_limit_offset_bps": None,
         "entry_stop_offset_bps": None,
         "entry_timeout_minutes": None,
         "entry_time_in_force": "gtc",
         "entry_post_only": False,
+        "entry_reduce_only": False,
         "slippage_bps": 0.0,
         "max_fill_fraction": 0.0,
+        "min_fill_fraction": None,
         "max_spread_bps": None,
         "min_depth_usd": None,
         "depth_column": None,
@@ -4124,6 +5595,10 @@ def _reduce_signal_row(
         "tax_drag_bps": None,
         "max_turnover_pressure": None,
         "turnover_pressure": None,
+        "max_capacity_usage_ratio": None,
+        "capacity_usage_ratio": None,
+        "max_correlation_crowding_score": None,
+        "correlation_crowding_score": None,
         "min_fee_edge_bps": None,
         "fee_edge_bps": None,
         "position_weight": 0.0,
@@ -4166,11 +5641,20 @@ def _add_signal_row(
         "quote_ref": None,
         "tracking_ref": None,
         "stop_loss_bps": None,
+        "min_stop_loss_bps": None,
+        "max_stop_loss_bps": None,
         "take_profit_bps": None,
+        "min_take_profit_bps": None,
+        "max_take_profit_bps": None,
+        "min_reward_risk_ratio": None,
+        "reward_risk_ratio": None,
         "trailing_stop_bps": None,
+        "trailing_stop_activation_bps": None,
         "partial_take_profit_bps": None,
         "partial_exit_fraction": None,
         "min_holding_minutes": None,
+        "max_holding_minutes": None,
+        "exit_priority": DEFAULT_EXIT_PRIORITY,
         "exit_on_opposite_signal": False,
         "exit_on_close_signal": False,
         "exit_on_reduce_signal": False,
@@ -4183,17 +5667,21 @@ def _add_signal_row(
         ),
         "exit_on_rebalance_signal": False,
         "rebalance_target_fraction": None,
+        "rebalance_min_delta_fraction": None,
         "bracket_type": "none",
         "bracket_time_stop_minutes": None,
         "bracket_break_even_after_bps": None,
+        "bracket_break_even_after_partial_take_profit": False,
         "entry_order_type": "market",
         "entry_limit_offset_bps": None,
         "entry_stop_offset_bps": None,
         "entry_timeout_minutes": None,
         "entry_time_in_force": "gtc",
         "entry_post_only": False,
+        "entry_reduce_only": False,
         "slippage_bps": 0.0,
         "max_fill_fraction": 0.0,
+        "min_fill_fraction": None,
         "max_spread_bps": None,
         "min_depth_usd": None,
         "depth_column": None,
@@ -4210,6 +5698,10 @@ def _add_signal_row(
         "tax_drag_bps": None,
         "max_turnover_pressure": None,
         "turnover_pressure": None,
+        "max_capacity_usage_ratio": None,
+        "capacity_usage_ratio": None,
+        "max_correlation_crowding_score": None,
+        "correlation_crowding_score": None,
         "min_fee_edge_bps": None,
         "fee_edge_bps": None,
         "position_weight": 0.0,
@@ -4252,11 +5744,20 @@ def _rebalance_signal_row(
         "quote_ref": None,
         "tracking_ref": None,
         "stop_loss_bps": None,
+        "min_stop_loss_bps": None,
+        "max_stop_loss_bps": None,
         "take_profit_bps": None,
+        "min_take_profit_bps": None,
+        "max_take_profit_bps": None,
+        "min_reward_risk_ratio": None,
+        "reward_risk_ratio": None,
         "trailing_stop_bps": None,
+        "trailing_stop_activation_bps": None,
         "partial_take_profit_bps": None,
         "partial_exit_fraction": None,
         "min_holding_minutes": None,
+        "max_holding_minutes": None,
+        "exit_priority": DEFAULT_EXIT_PRIORITY,
         "exit_on_opposite_signal": False,
         "exit_on_close_signal": False,
         "exit_on_reduce_signal": False,
@@ -4269,17 +5770,25 @@ def _rebalance_signal_row(
             fixed=spec.rules.exit.rebalance_target_fraction,
             column=spec.rules.exit.rebalance_target_fraction_column,
         ),
+        "rebalance_min_delta_fraction": _sizing_value(
+            row,
+            fixed=spec.rules.exit.rebalance_min_delta_fraction,
+            column=spec.rules.exit.rebalance_min_delta_fraction_column,
+        ),
         "bracket_type": "none",
         "bracket_time_stop_minutes": None,
         "bracket_break_even_after_bps": None,
+        "bracket_break_even_after_partial_take_profit": False,
         "entry_order_type": "market",
         "entry_limit_offset_bps": None,
         "entry_stop_offset_bps": None,
         "entry_timeout_minutes": None,
         "entry_time_in_force": "gtc",
         "entry_post_only": False,
+        "entry_reduce_only": False,
         "slippage_bps": 0.0,
         "max_fill_fraction": 0.0,
+        "min_fill_fraction": None,
         "max_spread_bps": None,
         "min_depth_usd": None,
         "depth_column": None,
@@ -4296,6 +5805,10 @@ def _rebalance_signal_row(
         "tax_drag_bps": None,
         "max_turnover_pressure": None,
         "turnover_pressure": None,
+        "max_capacity_usage_ratio": None,
+        "capacity_usage_ratio": None,
+        "max_correlation_crowding_score": None,
+        "correlation_crowding_score": None,
         "min_fee_edge_bps": None,
         "fee_edge_bps": None,
         "position_weight": 0.0,
@@ -4316,12 +5829,107 @@ def _trade_signal_row(
     rank: float | None,
     position_weight: float | None = None,
     notional_usd: float | None = None,
+    exit_overrides: dict[str, float | None] | None = None,
+    order_overrides: dict[str, Any] | None = None,
+    execution_overrides: dict[str, Any] | None = None,
+    multi_leg_group_id: str | None = None,
+    multi_leg_leg_index: int | None = None,
+    multi_leg_leg_count: int | None = None,
+    multi_leg_anchor_real_market_symbol: str | None = None,
     reason_codes: list[str] | None = None,
 ) -> dict[str, Any]:
     regime = _matching_regime_override(row, spec)
     effective_reason_codes = reason_codes or [spec.rules.reason_code]
     if regime is not None:
         effective_reason_codes = [*effective_reason_codes, f"regime:{regime.name}"]
+    reduce_only = (
+        _optional_bool_from_row(
+            row,
+            _override_column(order_overrides, "reduce_only", spec.rules.order.reduce_only_column),
+        )
+        if _override_column(order_overrides, "reduce_only", spec.rules.order.reduce_only_column)
+        is not None
+        else None
+    )
+    reduce_only = (
+        _override_value(order_overrides, "reduce_only", spec.rules.order.reduce_only)
+        if reduce_only is None
+        else reduce_only
+    )
+    entry_timeout_minutes = _minutes_value(
+        row,
+        fixed=_override_value(order_overrides, "timeout_minutes", spec.rules.order.timeout_minutes),
+        column=_override_column(
+            order_overrides, "timeout_minutes", spec.rules.order.timeout_minutes_column
+        ),
+    )
+    entry_time_in_force = _time_in_force_value(
+        row,
+        fixed=_override_value(order_overrides, "time_in_force", spec.rules.order.time_in_force),
+        column=_override_column(
+            order_overrides, "time_in_force", spec.rules.order.time_in_force_column
+        ),
+    )
+    if entry_time_in_force == "gtd" and entry_timeout_minutes is None:
+        raise StrategyAuthoringValidationError(
+            "rules.order.timeout_minutes or timeout_minutes_column is required "
+            "when row time_in_force is gtd"
+        )
+    if entry_time_in_force in {"ioc", "fok"} and entry_timeout_minutes is not None:
+        raise StrategyAuthoringValidationError(
+            "rules.order.timeout_minutes cannot be set when row time_in_force is ioc or fok"
+        )
+    entry_order_type = _entry_type_value(
+        row,
+        fixed=_override_value(order_overrides, "entry_type", spec.rules.order.entry_type),
+        column=_override_column(order_overrides, "entry_type", spec.rules.order.entry_type_column),
+    )
+    entry_limit_offset_bps = _non_negative_bps_value(
+        row,
+        fixed=_override_value(
+            order_overrides, "limit_offset_bps", spec.rules.order.limit_offset_bps
+        ),
+        column=_override_column(
+            order_overrides, "limit_offset_bps", spec.rules.order.limit_offset_bps_column
+        ),
+        field_name="rules.order.limit_offset_bps",
+    )
+    entry_stop_offset_bps = _non_negative_bps_value(
+        row,
+        fixed=_override_value(order_overrides, "stop_offset_bps", spec.rules.order.stop_offset_bps),
+        column=_override_column(
+            order_overrides, "stop_offset_bps", spec.rules.order.stop_offset_bps_column
+        ),
+        field_name="rules.order.stop_offset_bps",
+    )
+    if entry_order_type == "limit" and entry_limit_offset_bps is None:
+        raise StrategyAuthoringValidationError(
+            "rules.order.limit_offset_bps or limit_offset_bps_column is required "
+            "when row entry_type is limit"
+        )
+    if entry_order_type == "stop_market" and entry_stop_offset_bps is None:
+        raise StrategyAuthoringValidationError(
+            "rules.order.stop_offset_bps or stop_offset_bps_column is required "
+            "when row entry_type is stop_market"
+        )
+    post_only = (
+        _optional_bool_from_row(
+            row,
+            _override_column(order_overrides, "post_only", spec.rules.order.post_only_column),
+        )
+        if _override_column(order_overrides, "post_only", spec.rules.order.post_only_column)
+        is not None
+        else None
+    )
+    post_only = (
+        _override_value(order_overrides, "post_only", spec.rules.order.post_only)
+        if post_only is None
+        else post_only
+    )
+    if post_only and entry_order_type != "limit":
+        raise StrategyAuthoringValidationError(
+            "rules.order.post_only is only supported for limit entry"
+        )
     return {
         "schema_version": "strategy_signal.v1",
         "signal_id": _signal_id(spec, row, binding, side=side),
@@ -4336,6 +5944,10 @@ def _trade_signal_row(
         "execution_venue": binding.execution_venue,
         "execution_symbol": binding.execution_symbol,
         "real_market_symbol": binding.real_market_symbol,
+        "multi_leg_group_id": multi_leg_group_id,
+        "multi_leg_leg_index": multi_leg_leg_index,
+        "multi_leg_leg_count": multi_leg_leg_count,
+        "multi_leg_anchor_real_market_symbol": multi_leg_anchor_real_market_symbol,
         "side": side,
         "raw_score": raw_score,
         "rank_score": rank,
@@ -4349,111 +5961,506 @@ def _trade_signal_row(
         "tracking_ref": None,
         "stop_loss_bps": _exit_bps(
             row,
-            fixed=_regime_value(regime, "stop_loss_bps", spec.rules.exit.stop_loss_bps),
-            column=spec.rules.exit.stop_loss_bps_column,
+            fixed=_exit_override(
+                exit_overrides,
+                "stop_loss_bps",
+                _regime_value(regime, "stop_loss_bps", spec.rules.exit.stop_loss_bps),
+            ),
+            column=_exit_override_column(
+                exit_overrides, "stop_loss_bps", spec.rules.exit.stop_loss_bps_column
+            ),
+        ),
+        "min_stop_loss_bps": _exit_bps(
+            row,
+            fixed=_exit_override(
+                exit_overrides,
+                "min_stop_loss_bps",
+                _regime_value(regime, "min_stop_loss_bps", spec.rules.exit.min_stop_loss_bps),
+            ),
+            column=_exit_override_column(
+                exit_overrides, "min_stop_loss_bps", spec.rules.exit.min_stop_loss_bps_column
+            ),
+        ),
+        "max_stop_loss_bps": _exit_bps(
+            row,
+            fixed=_exit_override(
+                exit_overrides,
+                "max_stop_loss_bps",
+                _regime_value(regime, "max_stop_loss_bps", spec.rules.exit.max_stop_loss_bps),
+            ),
+            column=_exit_override_column(
+                exit_overrides, "max_stop_loss_bps", spec.rules.exit.max_stop_loss_bps_column
+            ),
         ),
         "take_profit_bps": _exit_bps(
             row,
-            fixed=_regime_value(regime, "take_profit_bps", spec.rules.exit.take_profit_bps),
-            column=spec.rules.exit.take_profit_bps_column,
+            fixed=_exit_override(
+                exit_overrides,
+                "take_profit_bps",
+                _regime_value(regime, "take_profit_bps", spec.rules.exit.take_profit_bps),
+            ),
+            column=_exit_override_column(
+                exit_overrides, "take_profit_bps", spec.rules.exit.take_profit_bps_column
+            ),
         ),
+        "min_take_profit_bps": _exit_bps(
+            row,
+            fixed=_exit_override(
+                exit_overrides,
+                "min_take_profit_bps",
+                _regime_value(
+                    regime,
+                    "min_take_profit_bps",
+                    spec.rules.exit.min_take_profit_bps,
+                ),
+            ),
+            column=_exit_override_column(
+                exit_overrides, "min_take_profit_bps", spec.rules.exit.min_take_profit_bps_column
+            ),
+        ),
+        "max_take_profit_bps": _exit_bps(
+            row,
+            fixed=_exit_override(
+                exit_overrides,
+                "max_take_profit_bps",
+                _regime_value(
+                    regime,
+                    "max_take_profit_bps",
+                    spec.rules.exit.max_take_profit_bps,
+                ),
+            ),
+            column=_exit_override_column(
+                exit_overrides, "max_take_profit_bps", spec.rules.exit.max_take_profit_bps_column
+            ),
+        ),
+        "min_reward_risk_ratio": _sizing_value(
+            row,
+            fixed=_exit_override(
+                exit_overrides,
+                "min_reward_risk_ratio",
+                _regime_value(
+                    regime,
+                    "min_reward_risk_ratio",
+                    spec.rules.exit.min_reward_risk_ratio,
+                ),
+            ),
+            column=_exit_override_column(
+                exit_overrides,
+                "min_reward_risk_ratio",
+                spec.rules.exit.min_reward_risk_ratio_column,
+            ),
+        ),
+        "reward_risk_ratio": None,
         "trailing_stop_bps": _exit_bps(
             row,
-            fixed=_regime_value(regime, "trailing_stop_bps", spec.rules.exit.trailing_stop_bps),
-            column=spec.rules.exit.trailing_stop_bps_column,
+            fixed=_exit_override(
+                exit_overrides,
+                "trailing_stop_bps",
+                _regime_value(regime, "trailing_stop_bps", spec.rules.exit.trailing_stop_bps),
+            ),
+            column=_exit_override_column(
+                exit_overrides, "trailing_stop_bps", spec.rules.exit.trailing_stop_bps_column
+            ),
+        ),
+        "trailing_stop_activation_bps": _exit_bps(
+            row,
+            fixed=_exit_override(
+                exit_overrides,
+                "trailing_stop_activation_bps",
+                _regime_value(
+                    regime,
+                    "trailing_stop_activation_bps",
+                    spec.rules.exit.trailing_stop_activation_bps,
+                ),
+            ),
+            column=_exit_override_column(
+                exit_overrides,
+                "trailing_stop_activation_bps",
+                spec.rules.exit.trailing_stop_activation_bps_column,
+            ),
         ),
         "partial_take_profit_bps": _exit_bps(
             row,
-            fixed=_regime_value(
-                regime,
+            fixed=_exit_override(
+                exit_overrides,
                 "partial_take_profit_bps",
-                spec.rules.exit.partial_take_profit_bps,
+                _regime_value(
+                    regime,
+                    "partial_take_profit_bps",
+                    spec.rules.exit.partial_take_profit_bps,
+                ),
             ),
-            column=spec.rules.exit.partial_take_profit_bps_column,
+            column=_exit_override_column(
+                exit_overrides,
+                "partial_take_profit_bps",
+                spec.rules.exit.partial_take_profit_bps_column,
+            ),
         ),
         "partial_exit_fraction": _sizing_value(
             row,
-            fixed=_regime_value(
-                regime,
+            fixed=_exit_override(
+                exit_overrides,
                 "partial_exit_fraction",
-                spec.rules.exit.partial_exit_fraction,
+                _regime_value(
+                    regime,
+                    "partial_exit_fraction",
+                    spec.rules.exit.partial_exit_fraction,
+                ),
             ),
-            column=spec.rules.exit.partial_exit_fraction_column,
+            column=_exit_override_column(
+                exit_overrides,
+                "partial_exit_fraction",
+                spec.rules.exit.partial_exit_fraction_column,
+            ),
         ),
-        "min_holding_minutes": spec.rules.exit.min_holding_minutes,
+        "min_holding_minutes": _minutes_value(
+            row,
+            fixed=spec.rules.exit.min_holding_minutes,
+            column=spec.rules.exit.min_holding_minutes_column,
+        ),
+        "max_holding_minutes": _minutes_value(
+            row,
+            fixed=spec.rules.exit.max_holding_minutes,
+            column=spec.rules.exit.max_holding_minutes_column,
+        ),
+        "exit_priority": ",".join(spec.rules.exit.exit_priority),
         "exit_on_opposite_signal": spec.rules.exit.exit_on_opposite_signal,
         "exit_on_close_signal": spec.rules.exit.exit_on_close_signal,
         "exit_on_reduce_signal": spec.rules.exit.exit_on_reduce_signal,
-        "reduce_fraction": None,
+        "reduce_fraction": _sizing_value(
+            row,
+            fixed=spec.rules.exit.reduce_fraction if reduce_only else None,
+            column=(spec.rules.exit.reduce_fraction_column if reduce_only else None),
+        ),
         "exit_on_add_signal": spec.rules.exit.exit_on_add_signal,
         "add_fraction": None,
         "exit_on_rebalance_signal": spec.rules.exit.exit_on_rebalance_signal,
         "rebalance_target_fraction": None,
+        "rebalance_min_delta_fraction": None,
         "bracket_type": spec.rules.bracket.bracket_type if spec.rules.bracket.enabled else "none",
-        "bracket_time_stop_minutes": (
-            spec.rules.bracket.time_stop_minutes if spec.rules.bracket.enabled else None
+        "bracket_time_stop_minutes": _minutes_value(
+            row,
+            fixed=spec.rules.bracket.time_stop_minutes if spec.rules.bracket.enabled else None,
+            column=(
+                spec.rules.bracket.time_stop_minutes_column if spec.rules.bracket.enabled else None
+            ),
         ),
-        "bracket_break_even_after_bps": (
-            spec.rules.bracket.break_even_after_bps if spec.rules.bracket.enabled else None
+        "bracket_break_even_after_bps": _exit_bps(
+            row,
+            fixed=spec.rules.bracket.break_even_after_bps if spec.rules.bracket.enabled else None,
+            column=(
+                spec.rules.bracket.break_even_after_bps_column
+                if spec.rules.bracket.enabled
+                else None
+            ),
         ),
-        "entry_order_type": spec.rules.order.entry_type,
-        "entry_limit_offset_bps": spec.rules.order.limit_offset_bps,
-        "entry_stop_offset_bps": spec.rules.order.stop_offset_bps,
-        "entry_timeout_minutes": spec.rules.order.timeout_minutes,
-        "entry_time_in_force": spec.rules.order.time_in_force,
-        "entry_post_only": spec.rules.order.post_only,
-        "slippage_bps": _regime_value(regime, "slippage_bps", spec.rules.execution.slippage_bps),
-        "max_fill_fraction": _regime_value(
-            regime, "max_fill_fraction", spec.rules.execution.max_fill_fraction
+        "bracket_break_even_after_partial_take_profit": (
+            spec.rules.bracket.break_even_after_partial_take_profit
+            if spec.rules.bracket.enabled
+            else False
         ),
-        "max_spread_bps": _regime_value(
-            regime, "max_spread_bps", spec.rules.execution.max_spread_bps
+        "entry_order_type": entry_order_type,
+        "entry_limit_offset_bps": entry_limit_offset_bps,
+        "entry_stop_offset_bps": entry_stop_offset_bps,
+        "entry_timeout_minutes": entry_timeout_minutes,
+        "entry_time_in_force": entry_time_in_force,
+        "entry_post_only": post_only,
+        "entry_reduce_only": reduce_only,
+        "slippage_bps": _exit_bps(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "slippage_bps",
+                _regime_value(regime, "slippage_bps", spec.rules.execution.slippage_bps),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "slippage_bps",
+                spec.rules.execution.slippage_bps_column,
+            ),
+        )
+        or 0.0,
+        "max_fill_fraction": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "max_fill_fraction",
+                _regime_value(
+                    regime,
+                    "max_fill_fraction",
+                    spec.rules.execution.max_fill_fraction,
+                ),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "max_fill_fraction",
+                spec.rules.execution.max_fill_fraction_column,
+            ),
         ),
-        "min_depth_usd": _regime_value(regime, "min_depth_usd", spec.rules.execution.min_depth_usd),
-        "depth_column": spec.rules.execution.depth_column,
-        "depth_participation_rate": _regime_value(
-            regime,
+        "min_fill_fraction": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "min_fill_fraction",
+                _regime_value(
+                    regime,
+                    "min_fill_fraction",
+                    spec.rules.execution.min_fill_fraction,
+                ),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "min_fill_fraction",
+                spec.rules.execution.min_fill_fraction_column,
+            ),
+        ),
+        "max_spread_bps": _exit_bps(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "max_spread_bps",
+                _regime_value(regime, "max_spread_bps", spec.rules.execution.max_spread_bps),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "max_spread_bps",
+                spec.rules.execution.max_spread_bps_column,
+            ),
+        ),
+        "min_depth_usd": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "min_depth_usd",
+                _regime_value(regime, "min_depth_usd", spec.rules.execution.min_depth_usd),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "min_depth_usd",
+                spec.rules.execution.min_depth_usd_column,
+            ),
+        ),
+        "depth_column": _override_value(
+            execution_overrides,
+            "depth_column",
+            spec.rules.execution.depth_column,
+        ),
+        "depth_participation_rate": _override_value(
+            execution_overrides,
             "depth_participation_rate",
-            spec.rules.execution.depth_participation_rate,
+            _regime_value(
+                regime,
+                "depth_participation_rate",
+                spec.rules.execution.depth_participation_rate,
+            ),
         ),
-        "max_latency_ms": _regime_value(
-            regime, "max_latency_ms", spec.rules.execution.max_latency_ms
+        "max_latency_ms": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "max_latency_ms",
+                _regime_value(regime, "max_latency_ms", spec.rules.execution.max_latency_ms),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "max_latency_ms",
+                spec.rules.execution.max_latency_ms_column,
+            ),
         ),
-        "latency_ms": _optional_float_from_row(row, spec.rules.execution.latency_column),
-        "min_queue_position_score": _regime_value(
-            regime,
-            "min_queue_position_score",
-            spec.rules.execution.min_queue_position_score,
+        "latency_ms": _optional_float_from_row(
+            row,
+            _override_value(
+                execution_overrides, "latency_column", spec.rules.execution.latency_column
+            ),
+        ),
+        "min_queue_position_score": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "min_queue_position_score",
+                _regime_value(
+                    regime,
+                    "min_queue_position_score",
+                    spec.rules.execution.min_queue_position_score,
+                ),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "min_queue_position_score",
+                spec.rules.execution.min_queue_position_score_column,
+            ),
         ),
         "queue_position_score": _optional_float_from_row(
-            row, spec.rules.execution.queue_position_score_column
+            row,
+            _override_value(
+                execution_overrides,
+                "queue_position_score_column",
+                spec.rules.execution.queue_position_score_column,
+            ),
         ),
-        "min_borrow_availability_ratio": _regime_value(
-            regime,
-            "min_borrow_availability_ratio",
-            spec.rules.execution.min_borrow_availability_ratio,
+        "min_borrow_availability_ratio": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "min_borrow_availability_ratio",
+                _regime_value(
+                    regime,
+                    "min_borrow_availability_ratio",
+                    spec.rules.execution.min_borrow_availability_ratio,
+                ),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "min_borrow_availability_ratio",
+                spec.rules.execution.min_borrow_availability_ratio_column,
+            ),
         ),
         "borrow_availability_ratio": _optional_float_from_row(
-            row, spec.rules.execution.borrow_availability_column
+            row,
+            _override_value(
+                execution_overrides,
+                "borrow_availability_column",
+                spec.rules.execution.borrow_availability_column,
+            ),
         ),
-        "max_borrow_cost_bps": _regime_value(
-            regime, "max_borrow_cost_bps", spec.rules.execution.max_borrow_cost_bps
+        "max_borrow_cost_bps": _exit_bps(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "max_borrow_cost_bps",
+                _regime_value(
+                    regime, "max_borrow_cost_bps", spec.rules.execution.max_borrow_cost_bps
+                ),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "max_borrow_cost_bps",
+                spec.rules.execution.max_borrow_cost_bps_column,
+            ),
         ),
-        "borrow_cost_bps": _optional_float_from_row(row, spec.rules.execution.borrow_cost_column),
-        "max_tax_drag_bps": _regime_value(
-            regime, "max_tax_drag_bps", spec.rules.execution.max_tax_drag_bps
+        "borrow_cost_bps": _optional_float_from_row(
+            row,
+            _override_value(
+                execution_overrides,
+                "borrow_cost_column",
+                spec.rules.execution.borrow_cost_column,
+            ),
         ),
-        "tax_drag_bps": _optional_float_from_row(row, spec.rules.execution.tax_drag_column),
-        "max_turnover_pressure": _regime_value(
-            regime, "max_turnover_pressure", spec.rules.execution.max_turnover_pressure
+        "max_tax_drag_bps": _exit_bps(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "max_tax_drag_bps",
+                _regime_value(
+                    regime,
+                    "max_tax_drag_bps",
+                    spec.rules.execution.max_tax_drag_bps,
+                ),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "max_tax_drag_bps",
+                spec.rules.execution.max_tax_drag_bps_column,
+            ),
+        ),
+        "tax_drag_bps": _optional_float_from_row(
+            row,
+            _override_value(
+                execution_overrides, "tax_drag_column", spec.rules.execution.tax_drag_column
+            ),
+        ),
+        "max_turnover_pressure": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "max_turnover_pressure",
+                _regime_value(
+                    regime, "max_turnover_pressure", spec.rules.execution.max_turnover_pressure
+                ),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "max_turnover_pressure",
+                spec.rules.execution.max_turnover_pressure_column,
+            ),
         ),
         "turnover_pressure": _optional_float_from_row(
-            row, spec.rules.execution.turnover_pressure_column
+            row,
+            _override_value(
+                execution_overrides,
+                "turnover_pressure_column",
+                spec.rules.execution.turnover_pressure_column,
+            ),
         ),
-        "min_fee_edge_bps": _regime_value(
-            regime, "min_fee_edge_bps", spec.rules.execution.min_fee_edge_bps
+        "max_capacity_usage_ratio": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "max_capacity_usage_ratio",
+                _regime_value(
+                    regime,
+                    "max_capacity_usage_ratio",
+                    spec.rules.execution.max_capacity_usage_ratio,
+                ),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "max_capacity_usage_ratio",
+                spec.rules.execution.max_capacity_usage_ratio_column,
+            ),
         ),
-        "fee_edge_bps": _optional_float_from_row(row, spec.rules.execution.fee_edge_column),
+        "capacity_usage_ratio": _optional_float_from_row(
+            row,
+            _override_value(
+                execution_overrides,
+                "capacity_usage_column",
+                spec.rules.execution.capacity_usage_column,
+            ),
+        ),
+        "max_correlation_crowding_score": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "max_correlation_crowding_score",
+                _regime_value(
+                    regime,
+                    "max_correlation_crowding_score",
+                    spec.rules.execution.max_correlation_crowding_score,
+                ),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "max_correlation_crowding_score",
+                spec.rules.execution.max_correlation_crowding_score_column,
+            ),
+        ),
+        "correlation_crowding_score": _optional_float_from_row(
+            row,
+            _override_value(
+                execution_overrides,
+                "correlation_crowding_column",
+                spec.rules.execution.correlation_crowding_column,
+            ),
+        ),
+        "min_fee_edge_bps": _sizing_value(
+            row,
+            fixed=_override_value(
+                execution_overrides,
+                "min_fee_edge_bps",
+                _regime_value(regime, "min_fee_edge_bps", spec.rules.execution.min_fee_edge_bps),
+            ),
+            column=_override_column(
+                execution_overrides,
+                "min_fee_edge_bps",
+                spec.rules.execution.min_fee_edge_bps_column,
+            ),
+        ),
+        "fee_edge_bps": _optional_float_from_row(
+            row,
+            _override_value(
+                execution_overrides, "fee_edge_column", spec.rules.execution.fee_edge_column
+            ),
+        ),
         "position_weight": position_weight
         if position_weight is not None
         else _signal_position_weight(row, spec),
@@ -4468,6 +6475,46 @@ def _trade_signal_row(
         else None,
         "_allocation_beta": row.get(spec.rules.portfolio.allocation_beta_column)
         if spec.rules.portfolio.allocation_beta_column is not None
+        else None,
+        "_portfolio_target_total_position_weight": _optional_float_from_row(
+            row, spec.rules.portfolio.target_total_position_weight_column
+        )
+        if spec.rules.portfolio.target_total_position_weight_column is not None
+        else None,
+        "_portfolio_max_total_position_weight": _optional_float_from_row(
+            row, spec.rules.portfolio.max_total_position_weight_column
+        )
+        if spec.rules.portfolio.max_total_position_weight_column is not None
+        else None,
+        "_portfolio_max_long_position_weight": _optional_float_from_row(
+            row, spec.rules.portfolio.max_long_position_weight_column
+        )
+        if spec.rules.portfolio.max_long_position_weight_column is not None
+        else None,
+        "_portfolio_max_short_position_weight": _optional_float_from_row(
+            row, spec.rules.portfolio.max_short_position_weight_column
+        )
+        if spec.rules.portfolio.max_short_position_weight_column is not None
+        else None,
+        "_portfolio_max_abs_net_position_weight": _optional_float_from_row(
+            row, spec.rules.portfolio.max_abs_net_position_weight_column
+        )
+        if spec.rules.portfolio.max_abs_net_position_weight_column is not None
+        else None,
+        "_portfolio_max_symbol_position_weight": _optional_float_from_row(
+            row, spec.rules.portfolio.max_symbol_position_weight_column
+        )
+        if spec.rules.portfolio.max_symbol_position_weight_column is not None
+        else None,
+        "_portfolio_max_group_position_weight": _optional_float_from_row(
+            row, spec.rules.portfolio.max_group_position_weight_column
+        )
+        if spec.rules.portfolio.max_group_position_weight_column is not None
+        else None,
+        "_portfolio_max_group_abs_net_position_weight": _optional_float_from_row(
+            row, spec.rules.portfolio.max_group_abs_net_position_weight_column
+        )
+        if spec.rules.portfolio.max_group_abs_net_position_weight_column is not None
         else None,
         "_portfolio_group": row.get(spec.rules.portfolio.group_column)
         if spec.rules.portfolio.group_column is not None
@@ -4501,6 +6548,9 @@ def _multi_leg_signal_rows(
         column=None,
     )
     rows: list[dict[str, Any]] = []
+    group_id = _multi_leg_group_id(spec, row, base_side=base_side)
+    leg_count = len(spec.rules.multi_leg.legs)
+    anchor_symbol = spec.rules.multi_leg.anchor_real_market_symbol
     for index, leg in enumerate(spec.rules.multi_leg.legs):
         binding = bindings[leg.real_market_symbol]
         leg_side = _resolve_leg_side(base_side, leg.side)
@@ -4521,6 +6571,134 @@ def _multi_leg_signal_rows(
             leg_notional = base_notional * (
                 leg_weight_multiplier if leg_weight_multiplier is not None else leg.position_weight
             )
+        exit_overrides: dict[str, float | None] = {}
+        for field_name in (
+            "stop_loss_bps",
+            "min_stop_loss_bps",
+            "max_stop_loss_bps",
+            "take_profit_bps",
+            "min_take_profit_bps",
+            "max_take_profit_bps",
+            "trailing_stop_bps",
+            "trailing_stop_activation_bps",
+            "partial_take_profit_bps",
+        ):
+            value = _non_negative_bps_value(
+                row,
+                fixed=getattr(leg, field_name),
+                column=getattr(leg, f"{field_name}_column"),
+                field_name=f"rules.multi_leg.legs[].{field_name}",
+            )
+            if value is not None:
+                exit_overrides[field_name] = value
+        partial_exit_fraction = _unit_interval_value(
+            row,
+            fixed=leg.partial_exit_fraction,
+            column=leg.partial_exit_fraction_column,
+            field_name="rules.multi_leg.legs[].partial_exit_fraction",
+        )
+        if partial_exit_fraction is not None:
+            exit_overrides["partial_exit_fraction"] = partial_exit_fraction
+        min_reward_risk_ratio = _non_negative_value(
+            row,
+            fixed=leg.min_reward_risk_ratio,
+            column=leg.min_reward_risk_ratio_column,
+            field_name="rules.multi_leg.legs[].min_reward_risk_ratio",
+        )
+        if min_reward_risk_ratio is not None:
+            exit_overrides["min_reward_risk_ratio"] = min_reward_risk_ratio
+        order_overrides: dict[str, Any] = {}
+        if leg.entry_type is not None or leg.entry_type_column is not None:
+            order_overrides["entry_type"] = _entry_type_value(
+                row,
+                fixed=leg.entry_type or spec.rules.order.entry_type,
+                column=leg.entry_type_column,
+            )
+        for field_name in ("limit_offset_bps", "stop_offset_bps"):
+            value = _non_negative_bps_value(
+                row,
+                fixed=getattr(leg, field_name),
+                column=getattr(leg, f"{field_name}_column"),
+                field_name=f"rules.multi_leg.legs[].{field_name}",
+            )
+            if value is not None:
+                order_overrides[field_name] = value
+        timeout_minutes = _minutes_value(
+            row,
+            fixed=leg.timeout_minutes,
+            column=leg.timeout_minutes_column,
+        )
+        if timeout_minutes is not None:
+            order_overrides["timeout_minutes"] = timeout_minutes
+        if leg.time_in_force is not None or leg.time_in_force_column is not None:
+            order_overrides["time_in_force"] = _time_in_force_value(
+                row,
+                fixed=leg.time_in_force or spec.rules.order.time_in_force,
+                column=leg.time_in_force_column,
+            )
+        for field_name in ("post_only", "reduce_only"):
+            column_value = _optional_bool_from_row(row, getattr(leg, f"{field_name}_column"))
+            fixed_value = getattr(leg, field_name)
+            value = column_value if column_value is not None else fixed_value
+            if value is not None:
+                order_overrides[field_name] = value
+        execution_overrides: dict[str, Any] = {}
+        for field_name in (
+            "slippage_bps",
+            "max_spread_bps",
+            "min_depth_usd",
+            "max_latency_ms",
+            "max_borrow_cost_bps",
+            "max_tax_drag_bps",
+            "max_turnover_pressure",
+            "max_capacity_usage_ratio",
+            "max_correlation_crowding_score",
+        ):
+            value = _non_negative_value(
+                row,
+                fixed=getattr(leg, field_name),
+                column=getattr(leg, f"{field_name}_column"),
+                field_name=f"rules.multi_leg.legs[].{field_name}",
+            )
+            if value is not None:
+                execution_overrides[field_name] = value
+        for field_name in (
+            "max_fill_fraction",
+            "min_fill_fraction",
+            "depth_participation_rate",
+            "min_queue_position_score",
+            "min_borrow_availability_ratio",
+        ):
+            value = _unit_interval_value(
+                row,
+                fixed=getattr(leg, field_name),
+                column=getattr(leg, f"{field_name}_column", None),
+                field_name=f"rules.multi_leg.legs[].{field_name}",
+            )
+            if value is not None:
+                execution_overrides[field_name] = value
+        min_fee_edge_bps = _sizing_value(
+            row,
+            fixed=leg.min_fee_edge_bps,
+            column=leg.min_fee_edge_bps_column,
+        )
+        if min_fee_edge_bps is not None:
+            execution_overrides["min_fee_edge_bps"] = min_fee_edge_bps
+        for field_name in (
+            "depth_column",
+            "latency_column",
+            "queue_position_score_column",
+            "borrow_availability_column",
+            "borrow_cost_column",
+            "tax_drag_column",
+            "turnover_pressure_column",
+            "capacity_usage_column",
+            "correlation_crowding_column",
+            "fee_edge_column",
+        ):
+            value = getattr(leg, field_name)
+            if value is not None:
+                execution_overrides[field_name] = value
         rows.append(
             _trade_signal_row(
                 spec=spec,
@@ -4532,6 +6710,13 @@ def _multi_leg_signal_rows(
                 rank=rank,
                 position_weight=leg_weight,
                 notional_usd=leg_notional,
+                exit_overrides=exit_overrides,
+                order_overrides=order_overrides,
+                execution_overrides=execution_overrides,
+                multi_leg_group_id=group_id,
+                multi_leg_leg_index=index + 1,
+                multi_leg_leg_count=leg_count,
+                multi_leg_anchor_real_market_symbol=anchor_symbol,
                 reason_codes=[
                     spec.rules.reason_code,
                     "multi_leg",
@@ -4559,6 +6744,7 @@ def build_authoring_signals(
     bindings = {binding.real_market_symbol: binding for binding in spec.experiment.symbol_bindings}
     rows: list[dict[str, Any]] = []
     generated_at = datetime.now(timezone.utc)
+    risk_throttle_cooldown_until_by_symbol: dict[str, datetime] = {}
     for row in feature.sort(["canonical_symbol", "ts"]).to_dicts():
         symbol = str(row.get("canonical_symbol") or "").upper()
         if (
@@ -4637,11 +6823,20 @@ def build_authoring_signals(
                     "quote_ref": None,
                     "tracking_ref": None,
                     "stop_loss_bps": None,
+                    "min_stop_loss_bps": None,
+                    "max_stop_loss_bps": None,
                     "take_profit_bps": None,
+                    "min_take_profit_bps": None,
+                    "max_take_profit_bps": None,
+                    "min_reward_risk_ratio": None,
+                    "reward_risk_ratio": None,
                     "trailing_stop_bps": None,
+                    "trailing_stop_activation_bps": None,
                     "partial_take_profit_bps": None,
                     "partial_exit_fraction": None,
                     "min_holding_minutes": None,
+                    "max_holding_minutes": None,
+                    "exit_priority": DEFAULT_EXIT_PRIORITY,
                     "exit_on_opposite_signal": False,
                     "exit_on_close_signal": False,
                     "exit_on_reduce_signal": False,
@@ -4650,17 +6845,21 @@ def build_authoring_signals(
                     "add_fraction": None,
                     "exit_on_rebalance_signal": False,
                     "rebalance_target_fraction": None,
+                    "rebalance_min_delta_fraction": None,
                     "bracket_type": "none",
                     "bracket_time_stop_minutes": None,
                     "bracket_break_even_after_bps": None,
+                    "bracket_break_even_after_partial_take_profit": False,
                     "entry_order_type": "market",
                     "entry_limit_offset_bps": None,
                     "entry_stop_offset_bps": None,
                     "entry_timeout_minutes": None,
                     "entry_time_in_force": "gtc",
                     "entry_post_only": False,
+                    "entry_reduce_only": False,
                     "slippage_bps": 0.0,
                     "max_fill_fraction": 0.0,
+                    "min_fill_fraction": None,
                     "max_spread_bps": None,
                     "min_depth_usd": None,
                     "depth_column": None,
@@ -4677,6 +6876,10 @@ def build_authoring_signals(
                     "tax_drag_bps": None,
                     "max_turnover_pressure": None,
                     "turnover_pressure": None,
+                    "max_capacity_usage_ratio": None,
+                    "capacity_usage_ratio": None,
+                    "max_correlation_crowding_score": None,
+                    "correlation_crowding_score": None,
                     "min_fee_edge_bps": None,
                     "fee_edge_bps": None,
                     "position_weight": 0.0,
@@ -4717,11 +6920,20 @@ def build_authoring_signals(
                     "quote_ref": None,
                     "tracking_ref": None,
                     "stop_loss_bps": None,
+                    "min_stop_loss_bps": None,
+                    "max_stop_loss_bps": None,
                     "take_profit_bps": None,
+                    "min_take_profit_bps": None,
+                    "max_take_profit_bps": None,
+                    "min_reward_risk_ratio": None,
+                    "reward_risk_ratio": None,
                     "trailing_stop_bps": None,
+                    "trailing_stop_activation_bps": None,
                     "partial_take_profit_bps": None,
                     "partial_exit_fraction": None,
                     "min_holding_minutes": None,
+                    "max_holding_minutes": None,
+                    "exit_priority": DEFAULT_EXIT_PRIORITY,
                     "exit_on_opposite_signal": False,
                     "exit_on_close_signal": False,
                     "exit_on_reduce_signal": False,
@@ -4730,17 +6942,21 @@ def build_authoring_signals(
                     "add_fraction": None,
                     "exit_on_rebalance_signal": False,
                     "rebalance_target_fraction": None,
+                    "rebalance_min_delta_fraction": None,
                     "bracket_type": "none",
                     "bracket_time_stop_minutes": None,
                     "bracket_break_even_after_bps": None,
+                    "bracket_break_even_after_partial_take_profit": False,
                     "entry_order_type": "market",
                     "entry_limit_offset_bps": None,
                     "entry_stop_offset_bps": None,
                     "entry_timeout_minutes": None,
                     "entry_time_in_force": "gtc",
                     "entry_post_only": False,
+                    "entry_reduce_only": False,
                     "slippage_bps": 0.0,
                     "max_fill_fraction": 0.0,
+                    "min_fill_fraction": None,
                     "max_spread_bps": None,
                     "min_depth_usd": None,
                     "depth_column": None,
@@ -4757,6 +6973,10 @@ def build_authoring_signals(
                     "tax_drag_bps": None,
                     "max_turnover_pressure": None,
                     "turnover_pressure": None,
+                    "max_capacity_usage_ratio": None,
+                    "capacity_usage_ratio": None,
+                    "max_correlation_crowding_score": None,
+                    "correlation_crowding_score": None,
                     "min_fee_edge_bps": None,
                     "fee_edge_bps": None,
                     "position_weight": 0.0,
@@ -4804,8 +7024,20 @@ def build_authoring_signals(
                 )
             )
             continue
-        risk_throttle_block_reason = _risk_throttle_block_reason(row, spec)
+        ts_signal = _feature_timestamp(row)
+        cooldown_until = risk_throttle_cooldown_until_by_symbol.get(symbol)
+        if cooldown_until is not None and ts_signal < cooldown_until:
+            risk_throttle_block_reason = "risk_throttle_cooldown"
+        else:
+            risk_throttle_block_reason = _risk_throttle_block_reason(row, spec)
         if risk_throttle_block_reason is not None:
+            if (
+                risk_throttle_block_reason != "risk_throttle_cooldown"
+                and spec.rules.risk_throttle.cooldown_minutes is not None
+            ):
+                risk_throttle_cooldown_until_by_symbol[symbol] = ts_signal + timedelta(
+                    minutes=spec.rules.risk_throttle.cooldown_minutes
+                )
             rows.append(
                 _block_trade_row(
                     _trade_signal_row(
@@ -4846,6 +7078,8 @@ def build_authoring_signals(
                     rank=rank,
                 )
             )
+    rows = [_apply_stop_target_width_gate(row, spec) for row in rows]
+    rows = [_apply_reward_risk_gate(row, spec) for row in rows]
     rows = _apply_cross_sectional_selection(rows, spec)
     rows = _apply_temporal_selection(rows, spec)
     rows = _apply_position_state_limits(rows, spec)
@@ -4947,11 +7181,20 @@ def strategy_signals_to_research_signals(frame: pl.DataFrame) -> list[ResearchSi
             timeframe=str(row["timeframe"]).lower(),
             signal_strength=row.get("raw_score"),
             stop_loss_bps=row.get("stop_loss_bps"),
+            min_stop_loss_bps=row.get("min_stop_loss_bps"),
+            max_stop_loss_bps=row.get("max_stop_loss_bps"),
             take_profit_bps=row.get("take_profit_bps"),
+            min_take_profit_bps=row.get("min_take_profit_bps"),
+            max_take_profit_bps=row.get("max_take_profit_bps"),
+            min_reward_risk_ratio=row.get("min_reward_risk_ratio"),
+            reward_risk_ratio=row.get("reward_risk_ratio"),
             trailing_stop_bps=row.get("trailing_stop_bps"),
+            trailing_stop_activation_bps=row.get("trailing_stop_activation_bps"),
             partial_take_profit_bps=row.get("partial_take_profit_bps"),
             partial_exit_fraction=row.get("partial_exit_fraction"),
             min_holding_minutes=row.get("min_holding_minutes"),
+            max_holding_minutes=row.get("max_holding_minutes"),
+            exit_priority=str(row.get("exit_priority") or ""),
             exit_on_opposite_signal=bool(row.get("exit_on_opposite_signal")),
             exit_on_close_signal=bool(row.get("exit_on_close_signal")),
             exit_on_reduce_signal=bool(row.get("exit_on_reduce_signal")),
@@ -4960,17 +7203,23 @@ def strategy_signals_to_research_signals(frame: pl.DataFrame) -> list[ResearchSi
             add_fraction=row.get("add_fraction"),
             exit_on_rebalance_signal=bool(row.get("exit_on_rebalance_signal")),
             rebalance_target_fraction=row.get("rebalance_target_fraction"),
+            rebalance_min_delta_fraction=row.get("rebalance_min_delta_fraction"),
             bracket_type=str(row.get("bracket_type") or "none"),
             bracket_time_stop_minutes=row.get("bracket_time_stop_minutes"),
             bracket_break_even_after_bps=row.get("bracket_break_even_after_bps"),
+            bracket_break_even_after_partial_take_profit=bool(
+                row.get("bracket_break_even_after_partial_take_profit")
+            ),
             entry_order_type=str(row.get("entry_order_type") or "market"),
             entry_limit_offset_bps=row.get("entry_limit_offset_bps"),
             entry_stop_offset_bps=row.get("entry_stop_offset_bps"),
             entry_timeout_minutes=row.get("entry_timeout_minutes"),
             entry_time_in_force=str(row.get("entry_time_in_force") or "gtc"),
             entry_post_only=bool(row.get("entry_post_only")),
+            entry_reduce_only=bool(row.get("entry_reduce_only")),
             slippage_bps=row.get("slippage_bps") or 0.0,
             max_fill_fraction=row.get("max_fill_fraction") or 1.0,
+            min_fill_fraction=row.get("min_fill_fraction"),
             max_spread_bps=row.get("max_spread_bps"),
             min_depth_usd=row.get("min_depth_usd"),
             depth_column=row.get("depth_column"),
@@ -4987,10 +7236,21 @@ def strategy_signals_to_research_signals(frame: pl.DataFrame) -> list[ResearchSi
             tax_drag_bps=row.get("tax_drag_bps"),
             max_turnover_pressure=row.get("max_turnover_pressure"),
             turnover_pressure=row.get("turnover_pressure"),
+            max_capacity_usage_ratio=row.get("max_capacity_usage_ratio"),
+            capacity_usage_ratio=row.get("capacity_usage_ratio"),
+            max_correlation_crowding_score=row.get("max_correlation_crowding_score"),
+            correlation_crowding_score=row.get("correlation_crowding_score"),
             min_fee_edge_bps=row.get("min_fee_edge_bps"),
             fee_edge_bps=row.get("fee_edge_bps"),
             position_weight=row.get("position_weight") or 1.0,
             notional_usd=row.get("notional_usd"),
+            signal_id=str(row.get("signal_id") or "") or None,
+            multi_leg_group_id=str(row.get("multi_leg_group_id") or "") or None,
+            multi_leg_leg_index=row.get("multi_leg_leg_index"),
+            multi_leg_leg_count=row.get("multi_leg_leg_count"),
+            multi_leg_anchor_real_market_symbol=(
+                str(row.get("multi_leg_anchor_real_market_symbol") or "") or None
+            ),
         )
         for row in frame.sort(["ts_signal", "signal_id"]).to_dicts()
         if str(row.get("side") or "").lower()
@@ -5117,6 +7377,71 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
                 f"position_weight_column={leg.position_weight_column} "
                 f"notional_usd={leg.notional_usd} "
                 f"notional_usd_column={leg.notional_usd_column} "
+                f"stop_loss_bps={leg.stop_loss_bps} "
+                f"stop_loss_bps_column={leg.stop_loss_bps_column} "
+                f"take_profit_bps={leg.take_profit_bps} "
+                f"take_profit_bps_column={leg.take_profit_bps_column} "
+                f"trailing_stop_bps={leg.trailing_stop_bps} "
+                f"trailing_stop_bps_column={leg.trailing_stop_bps_column} "
+                f"partial_take_profit_bps={leg.partial_take_profit_bps} "
+                f"partial_take_profit_bps_column={leg.partial_take_profit_bps_column} "
+                f"partial_exit_fraction={leg.partial_exit_fraction} "
+                f"partial_exit_fraction_column={leg.partial_exit_fraction_column} "
+                f"min_reward_risk_ratio={leg.min_reward_risk_ratio} "
+                f"min_reward_risk_ratio_column={leg.min_reward_risk_ratio_column} "
+                f"entry_type={leg.entry_type} "
+                f"entry_type_column={leg.entry_type_column} "
+                f"limit_offset_bps={leg.limit_offset_bps} "
+                f"limit_offset_bps_column={leg.limit_offset_bps_column} "
+                f"stop_offset_bps={leg.stop_offset_bps} "
+                f"stop_offset_bps_column={leg.stop_offset_bps_column} "
+                f"time_in_force={leg.time_in_force} "
+                f"time_in_force_column={leg.time_in_force_column} "
+                f"timeout_minutes={leg.timeout_minutes} "
+                f"timeout_minutes_column={leg.timeout_minutes_column} "
+                f"post_only={leg.post_only} "
+                f"post_only_column={leg.post_only_column} "
+                f"reduce_only={leg.reduce_only} "
+                f"reduce_only_column={leg.reduce_only_column} "
+                f"slippage_bps={leg.slippage_bps} "
+                f"slippage_bps_column={leg.slippage_bps_column} "
+                f"max_fill_fraction={leg.max_fill_fraction} "
+                f"max_fill_fraction_column={leg.max_fill_fraction_column} "
+                f"min_fill_fraction={leg.min_fill_fraction} "
+                f"min_fill_fraction_column={leg.min_fill_fraction_column} "
+                f"max_spread_bps={leg.max_spread_bps} "
+                f"max_spread_bps_column={leg.max_spread_bps_column} "
+                f"min_depth_usd={leg.min_depth_usd} "
+                f"min_depth_usd_column={leg.min_depth_usd_column} "
+                f"depth_column={leg.depth_column} "
+                f"depth_participation_rate={leg.depth_participation_rate} "
+                f"max_latency_ms={leg.max_latency_ms} "
+                f"max_latency_ms_column={leg.max_latency_ms_column} "
+                f"latency_column={leg.latency_column} "
+                f"min_queue_position_score={leg.min_queue_position_score} "
+                f"min_queue_position_score_column={leg.min_queue_position_score_column} "
+                f"queue_position_score_column={leg.queue_position_score_column} "
+                f"min_borrow_availability_ratio={leg.min_borrow_availability_ratio} "
+                f"min_borrow_availability_ratio_column={leg.min_borrow_availability_ratio_column} "
+                f"borrow_availability_column={leg.borrow_availability_column} "
+                f"max_borrow_cost_bps={leg.max_borrow_cost_bps} "
+                f"max_borrow_cost_bps_column={leg.max_borrow_cost_bps_column} "
+                f"borrow_cost_column={leg.borrow_cost_column} "
+                f"max_tax_drag_bps={leg.max_tax_drag_bps} "
+                f"max_tax_drag_bps_column={leg.max_tax_drag_bps_column} "
+                f"tax_drag_column={leg.tax_drag_column} "
+                f"max_turnover_pressure={leg.max_turnover_pressure} "
+                f"max_turnover_pressure_column={leg.max_turnover_pressure_column} "
+                f"turnover_pressure_column={leg.turnover_pressure_column} "
+                f"max_capacity_usage_ratio={leg.max_capacity_usage_ratio} "
+                f"max_capacity_usage_ratio_column={leg.max_capacity_usage_ratio_column} "
+                f"capacity_usage_column={leg.capacity_usage_column} "
+                f"max_correlation_crowding_score={leg.max_correlation_crowding_score} "
+                f"max_correlation_crowding_score_column={leg.max_correlation_crowding_score_column} "
+                f"correlation_crowding_column={leg.correlation_crowding_column} "
+                f"min_fee_edge_bps={leg.min_fee_edge_bps} "
+                f"min_fee_edge_bps_column={leg.min_fee_edge_bps_column} "
+                f"fee_edge_column={leg.fee_edge_column} "
                 f"reason_code={leg.reason_code or f'leg_{index + 1}'}"
             )
             for index, leg in enumerate(spec.rules.multi_leg.legs)
@@ -5157,6 +7482,10 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         + rebalance_lines
         + "\n\n## Exit Rules\n\n"
         f"- stop_loss_bps: {spec.rules.exit.stop_loss_bps}\n"
+        f"- min_stop_loss_bps: {spec.rules.exit.min_stop_loss_bps}\n"
+        f"- min_stop_loss_bps_column: {spec.rules.exit.min_stop_loss_bps_column}\n"
+        f"- max_stop_loss_bps: {spec.rules.exit.max_stop_loss_bps}\n"
+        f"- max_stop_loss_bps_column: {spec.rules.exit.max_stop_loss_bps_column}\n"
         f"- exit_on_opposite_signal: {spec.rules.exit.exit_on_opposite_signal}\n"
         f"- exit_on_close_signal: {spec.rules.exit.exit_on_close_signal}\n"
         f"- exit_on_reduce_signal: {spec.rules.exit.exit_on_reduce_signal}\n"
@@ -5169,21 +7498,41 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         f"- rebalance_target_fraction: {spec.rules.exit.rebalance_target_fraction}\n"
         f"- rebalance_target_fraction_column: "
         f"{spec.rules.exit.rebalance_target_fraction_column}\n"
+        f"- rebalance_min_delta_fraction: {spec.rules.exit.rebalance_min_delta_fraction}\n"
+        f"- rebalance_min_delta_fraction_column: "
+        f"{spec.rules.exit.rebalance_min_delta_fraction_column}\n"
         f"- stop_loss_bps_column: {spec.rules.exit.stop_loss_bps_column}\n"
         f"- take_profit_bps: {spec.rules.exit.take_profit_bps}\n"
+        f"- min_take_profit_bps: {spec.rules.exit.min_take_profit_bps}\n"
+        f"- min_take_profit_bps_column: {spec.rules.exit.min_take_profit_bps_column}\n"
+        f"- max_take_profit_bps: {spec.rules.exit.max_take_profit_bps}\n"
+        f"- max_take_profit_bps_column: {spec.rules.exit.max_take_profit_bps_column}\n"
         f"- take_profit_bps_column: {spec.rules.exit.take_profit_bps_column}\n"
+        f"- min_reward_risk_ratio: {spec.rules.exit.min_reward_risk_ratio}\n"
+        f"- min_reward_risk_ratio_column: {spec.rules.exit.min_reward_risk_ratio_column}\n"
         f"- trailing_stop_bps: {spec.rules.exit.trailing_stop_bps}\n"
         f"- trailing_stop_bps_column: {spec.rules.exit.trailing_stop_bps_column}\n"
+        f"- trailing_stop_activation_bps: {spec.rules.exit.trailing_stop_activation_bps}\n"
+        f"- trailing_stop_activation_bps_column: "
+        f"{spec.rules.exit.trailing_stop_activation_bps_column}\n"
         f"- partial_take_profit_bps: {spec.rules.exit.partial_take_profit_bps}\n"
         f"- partial_take_profit_bps_column: {spec.rules.exit.partial_take_profit_bps_column}\n"
         f"- partial_exit_fraction: {spec.rules.exit.partial_exit_fraction}\n"
         f"- partial_exit_fraction_column: {spec.rules.exit.partial_exit_fraction_column}\n"
         f"- min_holding_minutes: {spec.rules.exit.min_holding_minutes}\n"
+        f"- min_holding_minutes_column: {spec.rules.exit.min_holding_minutes_column}\n"
+        f"- max_holding_minutes: {spec.rules.exit.max_holding_minutes}\n"
+        f"- max_holding_minutes_column: {spec.rules.exit.max_holding_minutes_column}\n"
+        f"- exit_priority: {spec.rules.exit.exit_priority}\n"
         "\n\n## Bracket / OCO\n\n"
         f"- enabled: {spec.rules.bracket.enabled}\n"
         f"- bracket_type: {spec.rules.bracket.bracket_type if spec.rules.bracket.enabled else 'none'}\n"
         f"- time_stop_minutes: {spec.rules.bracket.time_stop_minutes}\n"
+        f"- time_stop_minutes_column: {spec.rules.bracket.time_stop_minutes_column}\n"
         f"- break_even_after_bps: {spec.rules.bracket.break_even_after_bps}\n"
+        f"- break_even_after_bps_column: {spec.rules.bracket.break_even_after_bps_column}\n"
+        f"- break_even_after_partial_take_profit: "
+        f"{spec.rules.bracket.break_even_after_partial_take_profit}\n"
         "\n\n## Sizing\n\n"
         f"- position_weight: {spec.rules.sizing.position_weight}\n"
         f"- position_weight_column: {spec.rules.sizing.position_weight_column}\n"
@@ -5191,54 +7540,137 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         f"- notional_usd_column: {spec.rules.sizing.notional_usd_column}\n"
         "\n\n## Order Simulation\n\n"
         f"- entry_type: {spec.rules.order.entry_type}\n"
+        f"- entry_type_column: {spec.rules.order.entry_type_column}\n"
         f"- limit_offset_bps: {spec.rules.order.limit_offset_bps}\n"
+        f"- limit_offset_bps_column: {spec.rules.order.limit_offset_bps_column}\n"
         f"- stop_offset_bps: {spec.rules.order.stop_offset_bps}\n"
+        f"- stop_offset_bps_column: {spec.rules.order.stop_offset_bps_column}\n"
         f"- timeout_minutes: {spec.rules.order.timeout_minutes}\n"
+        f"- timeout_minutes_column: {spec.rules.order.timeout_minutes_column}\n"
         f"- time_in_force: {spec.rules.order.time_in_force}\n"
+        f"- time_in_force_column: {spec.rules.order.time_in_force_column}\n"
         f"- post_only: {spec.rules.order.post_only}\n"
+        f"- post_only_column: {spec.rules.order.post_only_column}\n"
+        f"- reduce_only: {spec.rules.order.reduce_only}\n"
+        f"- reduce_only_column: {spec.rules.order.reduce_only_column}\n"
         "\n\n## Execution Quality\n\n"
         f"- slippage_bps: {spec.rules.execution.slippage_bps}\n"
+        f"- slippage_bps_column: {spec.rules.execution.slippage_bps_column}\n"
         f"- max_fill_fraction: {spec.rules.execution.max_fill_fraction}\n"
+        f"- max_fill_fraction_column: {spec.rules.execution.max_fill_fraction_column}\n"
+        f"- min_fill_fraction: {spec.rules.execution.min_fill_fraction}\n"
+        f"- min_fill_fraction_column: {spec.rules.execution.min_fill_fraction_column}\n"
         f"- max_spread_bps: {spec.rules.execution.max_spread_bps}\n"
+        f"- max_spread_bps_column: {spec.rules.execution.max_spread_bps_column}\n"
         f"- min_depth_usd: {spec.rules.execution.min_depth_usd}\n"
+        f"- min_depth_usd_column: {spec.rules.execution.min_depth_usd_column}\n"
         f"- depth_column: {spec.rules.execution.depth_column}\n"
         f"- depth_participation_rate: {spec.rules.execution.depth_participation_rate}\n"
         f"- max_latency_ms: {spec.rules.execution.max_latency_ms}\n"
+        f"- max_latency_ms_column: {spec.rules.execution.max_latency_ms_column}\n"
         f"- latency_column: {spec.rules.execution.latency_column}\n"
         f"- min_queue_position_score: {spec.rules.execution.min_queue_position_score}\n"
+        f"- min_queue_position_score_column: {spec.rules.execution.min_queue_position_score_column}\n"
         f"- queue_position_score_column: {spec.rules.execution.queue_position_score_column}\n"
         f"- min_borrow_availability_ratio: {spec.rules.execution.min_borrow_availability_ratio}\n"
+        f"- min_borrow_availability_ratio_column: {spec.rules.execution.min_borrow_availability_ratio_column}\n"
         f"- borrow_availability_column: {spec.rules.execution.borrow_availability_column}\n"
         f"- max_borrow_cost_bps: {spec.rules.execution.max_borrow_cost_bps}\n"
+        f"- max_borrow_cost_bps_column: {spec.rules.execution.max_borrow_cost_bps_column}\n"
         f"- borrow_cost_column: {spec.rules.execution.borrow_cost_column}\n"
         f"- max_tax_drag_bps: {spec.rules.execution.max_tax_drag_bps}\n"
+        f"- max_tax_drag_bps_column: {spec.rules.execution.max_tax_drag_bps_column}\n"
         f"- tax_drag_column: {spec.rules.execution.tax_drag_column}\n"
         f"- max_turnover_pressure: {spec.rules.execution.max_turnover_pressure}\n"
+        f"- max_turnover_pressure_column: "
+        f"{spec.rules.execution.max_turnover_pressure_column}\n"
         f"- turnover_pressure_column: {spec.rules.execution.turnover_pressure_column}\n"
+        f"- max_capacity_usage_ratio: {spec.rules.execution.max_capacity_usage_ratio}\n"
+        f"- max_capacity_usage_ratio_column: "
+        f"{spec.rules.execution.max_capacity_usage_ratio_column}\n"
+        f"- capacity_usage_column: {spec.rules.execution.capacity_usage_column}\n"
+        f"- max_correlation_crowding_score: {spec.rules.execution.max_correlation_crowding_score}\n"
+        f"- max_correlation_crowding_score_column: "
+        f"{spec.rules.execution.max_correlation_crowding_score_column}\n"
+        f"- correlation_crowding_column: {spec.rules.execution.correlation_crowding_column}\n"
         f"- min_fee_edge_bps: {spec.rules.execution.min_fee_edge_bps}\n"
+        f"- min_fee_edge_bps_column: {spec.rules.execution.min_fee_edge_bps_column}\n"
         f"- fee_edge_column: {spec.rules.execution.fee_edge_column}\n"
         "\n\n## Portfolio\n\n"
         f"- max_signals_per_timestamp: {spec.rules.portfolio.max_signals_per_timestamp}\n"
+        f"- max_total_position_weight: {spec.rules.portfolio.max_total_position_weight}\n"
+        f"- max_total_position_weight_column: "
+        f"{spec.rules.portfolio.max_total_position_weight_column}\n"
+        f"- max_long_position_weight: {spec.rules.portfolio.max_long_position_weight}\n"
+        f"- max_long_position_weight_column: "
+        f"{spec.rules.portfolio.max_long_position_weight_column}\n"
+        f"- max_short_position_weight: {spec.rules.portfolio.max_short_position_weight}\n"
+        f"- max_short_position_weight_column: "
+        f"{spec.rules.portfolio.max_short_position_weight_column}\n"
+        f"- max_abs_net_position_weight: {spec.rules.portfolio.max_abs_net_position_weight}\n"
+        f"- max_abs_net_position_weight_column: "
+        f"{spec.rules.portfolio.max_abs_net_position_weight_column}\n"
+        f"- max_symbol_position_weight: {spec.rules.portfolio.max_symbol_position_weight}\n"
+        f"- max_symbol_position_weight_column: "
+        f"{spec.rules.portfolio.max_symbol_position_weight_column}\n"
+        f"- max_group_position_weight: {spec.rules.portfolio.max_group_position_weight}\n"
+        f"- max_group_position_weight_column: "
+        f"{spec.rules.portfolio.max_group_position_weight_column}\n"
+        f"- max_group_abs_net_position_weight: "
+        f"{spec.rules.portfolio.max_group_abs_net_position_weight}\n"
+        f"- max_group_abs_net_position_weight_column: "
+        f"{spec.rules.portfolio.max_group_abs_net_position_weight_column}\n"
         f"- allocation_method: {spec.rules.portfolio.allocation_method}\n"
         f"- target_total_position_weight: {spec.rules.portfolio.target_total_position_weight}\n"
+        f"- target_total_position_weight_column: "
+        f"{spec.rules.portfolio.target_total_position_weight_column}\n"
         f"- allocation_volatility_column: {spec.rules.portfolio.allocation_volatility_column}\n"
         f"- allocation_beta_column: {spec.rules.portfolio.allocation_beta_column}\n"
         f"- max_turnover_weight_per_timestamp: "
         f"{spec.rules.portfolio.max_turnover_weight_per_timestamp}\n"
         f"- turnover_weight_column: {spec.rules.portfolio.turnover_weight_column}\n"
         f"- group_column: {spec.rules.portfolio.group_column}\n"
+        "\n\n## Position State\n\n"
+        f"- max_open_signals_per_symbol: {spec.rules.position.max_open_signals_per_symbol}\n"
+        f"- max_open_position_weight_per_symbol: "
+        f"{spec.rules.position.max_open_position_weight_per_symbol}\n"
+        f"- holding_horizon_minutes: {spec.rules.position.holding_horizon_minutes}\n"
+        f"- require_open_position_for_markers: "
+        f"{spec.rules.position.require_open_position_for_markers}\n"
+        f"- allow_opposing_open_positions: {spec.rules.position.allow_opposing_open_positions}\n"
+        f"- allow_pyramiding: {spec.rules.position.allow_pyramiding}\n"
+        "\n\n## Risk Throttle\n\n"
+        f"- profile: {spec.rules.risk_throttle.profile}\n"
+        f"- max_drawdown_column: {spec.rules.risk_throttle.max_drawdown_column}\n"
+        f"- max_drawdown_floor: {spec.rules.risk_throttle.max_drawdown_floor}\n"
+        f"- max_drawdown_floor_column: {spec.rules.risk_throttle.max_drawdown_floor_column}\n"
+        f"- daily_loss_column: {spec.rules.risk_throttle.daily_loss_column}\n"
+        f"- daily_loss_floor: {spec.rules.risk_throttle.daily_loss_floor}\n"
+        f"- daily_loss_floor_column: {spec.rules.risk_throttle.daily_loss_floor_column}\n"
+        f"- loss_streak_column: {spec.rules.risk_throttle.loss_streak_column}\n"
+        f"- max_loss_streak: {spec.rules.risk_throttle.max_loss_streak}\n"
+        f"- max_loss_streak_column: {spec.rules.risk_throttle.max_loss_streak_column}\n"
+        f"- cooldown_minutes: {spec.rules.risk_throttle.cooldown_minutes}\n"
         "\n\n## Data Guard\n\n"
         f"- profile: {spec.rules.data_guard.profile}\n"
         f"- max_feature_age_minutes: {spec.rules.data_guard.max_feature_age_minutes}\n"
+        f"- max_feature_age_minutes_column: "
+        f"{spec.rules.data_guard.max_feature_age_minutes_column}\n"
         f"- feature_age_column: {spec.rules.data_guard.feature_age_column}\n"
         f"- min_source_confidence: {spec.rules.data_guard.min_source_confidence}\n"
+        f"- min_source_confidence_column: {spec.rules.data_guard.min_source_confidence_column}\n"
         f"- source_confidence_column: {spec.rules.data_guard.source_confidence_column}\n"
         f"- min_venue_quality_score: {spec.rules.data_guard.min_venue_quality_score}\n"
+        f"- min_venue_quality_score_column: "
+        f"{spec.rules.data_guard.min_venue_quality_score_column}\n"
         f"- venue_quality_score_column: {spec.rules.data_guard.venue_quality_score_column}\n"
         f"- max_staleness_bps: {spec.rules.data_guard.max_staleness_bps}\n"
+        f"- max_staleness_bps_column: {spec.rules.data_guard.max_staleness_bps_column}\n"
         f"- staleness_bps_column: {spec.rules.data_guard.staleness_bps_column}\n"
         f"- max_regime_transition_score: "
         f"{spec.rules.data_guard.max_regime_transition_score}\n"
+        f"- max_regime_transition_score_column: "
+        f"{spec.rules.data_guard.max_regime_transition_score_column}\n"
         f"- regime_transition_score_column: "
         f"{spec.rules.data_guard.regime_transition_score_column}\n"
         "\n\n## Temporal Controls\n\n"
@@ -5302,6 +7734,31 @@ def _count_values(rows: list[dict[str, Any]], column: str) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
+def _compact_multi_leg_group_metrics(summary: dict[str, Any]) -> dict[str, Any] | None:
+    metrics = summary.get("multi_leg_group_metrics")
+    if not isinstance(metrics, dict):
+        return None
+    keys = (
+        "group_count",
+        "executed_group_count",
+        "complete_group_count",
+        "incomplete_group_count",
+        "expected_leg_count",
+        "executed_leg_count",
+        "total_return",
+        "avg_group_return",
+        "win_rate",
+        "worst_group_return",
+        "max_drawdown",
+        "profit_factor",
+        "avg_leg_return_imbalance",
+        "total_notional_usd",
+        "notional_weighted_total_return",
+        "cost_drag_bps",
+    )
+    return {key: metrics[key] for key in keys if key in metrics}
+
+
 def _strategy_scorecard(
     spec: StrategyAuthoringSpec, frame: pl.DataFrame, summary: dict[str, Any]
 ) -> dict[str, Any]:
@@ -5320,7 +7777,7 @@ def _strategy_scorecard(
         for name, result in pass_thresholds.items()
         if isinstance(result, dict) and bool(result.get("passed"))
     ]
-    return {
+    scorecard = {
         "schema_version": "strategy_authoring_scorecard.v1",
         "derived_feature_count": len(spec.rules.derived_features),
         "derived_feature_names": [feature.name for feature in spec.rules.derived_features],
@@ -5339,6 +7796,10 @@ def _strategy_scorecard(
         "paper_only": True,
         "live_order_submitted": False,
     }
+    compact_group_metrics = _compact_multi_leg_group_metrics(summary)
+    if compact_group_metrics is not None:
+        scorecard["multi_leg_group_metrics"] = compact_group_metrics
+    return scorecard
 
 
 def _paper_preview_scorecard_summary(summary: dict[str, Any]) -> dict[str, Any]:
@@ -5358,8 +7819,196 @@ def _paper_preview_scorecard_summary(summary: dict[str, Any]) -> dict[str, Any]:
         "backtest_passed",
         "paper_only",
         "live_order_submitted",
+        "multi_leg_group_metrics",
     )
     return {key: scorecard[key] for key in keys if key in scorecard}
+
+
+def _equity_max_drawdown(equity: list[float]) -> float:
+    peak = 1.0
+    worst = 0.0
+    for value in equity:
+        peak = max(peak, value)
+        if peak:
+            worst = min(worst, value / peak - 1.0)
+    return worst
+
+
+def _profit_factor(returns: list[float]) -> float | None:
+    wins = [value for value in returns if value > 0]
+    losses = [value for value in returns if value < 0]
+    if losses:
+        return sum(wins) / abs(sum(losses))
+    return None
+
+
+def _multi_leg_group_backtest_metrics(
+    frame: pl.DataFrame, summary: dict[str, Any]
+) -> dict[str, Any]:
+    if frame.is_empty() or "multi_leg_group_id" not in frame.columns:
+        return {
+            "group_count": 0,
+            "executed_group_count": 0,
+            "complete_group_count": 0,
+            "incomplete_group_count": 0,
+            "expected_leg_count": 0,
+            "executed_leg_count": 0,
+            "total_return": 0.0,
+            "avg_group_return": None,
+            "win_rate": None,
+            "worst_group_return": None,
+            "max_drawdown": None,
+            "profit_factor": None,
+            "avg_leg_return_imbalance": None,
+            "total_notional_usd": 0.0,
+            "notional_weighted_total_return": None,
+            "cost_drag_bps": 0.0,
+            "groups": [],
+        }
+
+    expected_by_group: dict[str, list[dict[str, Any]]] = {}
+    for row in frame.to_dicts():
+        group_id = str(row.get("multi_leg_group_id") or "").strip()
+        if not group_id:
+            continue
+        if str(row.get("side") or "").lower() not in {"long", "short"}:
+            continue
+        expected_by_group.setdefault(group_id, []).append(row)
+
+    executed_by_group: dict[str, list[dict[str, Any]]] = {}
+    for result in summary.get("executed_signal_results") or []:
+        if not isinstance(result, dict):
+            continue
+        group_id = str(result.get("multi_leg_group_id") or "").strip()
+        if not group_id:
+            continue
+        executed_by_group.setdefault(group_id, []).append(result)
+
+    groups: list[dict[str, Any]] = []
+    total_expected_legs = 0
+    total_executed_legs = 0
+    total_return = 0.0
+    total_cost_drag_bps = 0.0
+    total_notional_usd = 0.0
+    total_notional_weighted_return = 0.0
+    complete_count = 0
+    executed_group_count = 0
+    executed_group_returns: list[float] = []
+    leg_return_imbalances: list[float] = []
+
+    for group_id in sorted(expected_by_group):
+        expected_rows = expected_by_group[group_id]
+        executed_rows = executed_by_group.get(group_id, [])
+        expected_counts = [
+            int(value)
+            for value in (row.get("multi_leg_leg_count") for row in expected_rows)
+            if isinstance(value, int | float) and int(value) > 0
+        ]
+        expected_leg_count = max(expected_counts, default=len(expected_rows))
+        executed_leg_count = len(executed_rows)
+        leg_returns = [float(row.get("signal_return") or 0.0) for row in executed_rows]
+        group_return = sum(leg_returns)
+        leg_return_imbalance = (
+            max(leg_returns) - min(leg_returns) if len(leg_returns) >= 2 else None
+        )
+        leg_notional_pairs = [
+            (float(row.get("signal_return") or 0.0), float(row.get("notional_usd") or 0.0))
+            for row in executed_rows
+            if isinstance(row.get("notional_usd"), int | float)
+            and float(row.get("notional_usd") or 0.0) > 0
+        ]
+        group_notional_usd = sum(notional for _signal_return, notional in leg_notional_pairs)
+        group_notional_weighted_return = (
+            sum(signal_return * notional for signal_return, notional in leg_notional_pairs)
+            / group_notional_usd
+            if group_notional_usd > 0
+            else None
+        )
+        group_cost_drag_bps = sum(float(row.get("cost_drag_bps") or 0.0) for row in executed_rows)
+        exit_reason_counts: dict[str, int] = {}
+        for executed in executed_rows:
+            _increment_count(exit_reason_counts, executed.get("exit_reason"))
+        complete = executed_leg_count >= expected_leg_count
+        if complete:
+            complete_count += 1
+        if executed_leg_count > 0:
+            executed_group_count += 1
+        total_expected_legs += expected_leg_count
+        total_executed_legs += executed_leg_count
+        total_return += group_return
+        total_cost_drag_bps += group_cost_drag_bps
+        total_notional_usd += group_notional_usd
+        if group_notional_weighted_return is not None:
+            total_notional_weighted_return += group_notional_weighted_return * group_notional_usd
+        if executed_leg_count > 0:
+            executed_group_returns.append(group_return)
+        if leg_return_imbalance is not None:
+            leg_return_imbalances.append(leg_return_imbalance)
+        anchor = next(
+            (
+                str(row.get("multi_leg_anchor_real_market_symbol") or "").strip()
+                for row in expected_rows
+                if str(row.get("multi_leg_anchor_real_market_symbol") or "").strip()
+            ),
+            None,
+        )
+        groups.append(
+            {
+                "multi_leg_group_id": group_id,
+                "anchor_real_market_symbol": anchor,
+                "leg_count": len(expected_rows),
+                "expected_leg_count": expected_leg_count,
+                "executed_leg_count": executed_leg_count,
+                "complete": complete,
+                "total_return": group_return,
+                "total_notional_usd": group_notional_usd,
+                "notional_weighted_return": group_notional_weighted_return,
+                "avg_leg_return": group_return / executed_leg_count if executed_leg_count else None,
+                "leg_return_imbalance": leg_return_imbalance,
+                "win": group_return > 0 if executed_leg_count else None,
+                "cost_drag_bps": group_cost_drag_bps,
+                "exit_reason_counts": dict(sorted(exit_reason_counts.items())),
+            }
+        )
+
+    group_count = len(groups)
+    equity = [1.0]
+    for group_return in executed_group_returns:
+        equity.append(equity[-1] * (1.0 + group_return))
+    return {
+        "group_count": group_count,
+        "executed_group_count": executed_group_count,
+        "complete_group_count": complete_count,
+        "incomplete_group_count": group_count - complete_count,
+        "expected_leg_count": total_expected_legs,
+        "executed_leg_count": total_executed_legs,
+        "total_return": total_return,
+        "avg_group_return": (
+            sum(executed_group_returns) / len(executed_group_returns)
+            if executed_group_returns
+            else None
+        ),
+        "win_rate": (
+            sum(1 for group_return in executed_group_returns if group_return > 0)
+            / len(executed_group_returns)
+            if executed_group_returns
+            else None
+        ),
+        "worst_group_return": min(executed_group_returns) if executed_group_returns else None,
+        "max_drawdown": _equity_max_drawdown(equity) if executed_group_returns else None,
+        "profit_factor": _profit_factor(executed_group_returns),
+        "avg_leg_return_imbalance": (
+            sum(leg_return_imbalances) / len(leg_return_imbalances)
+            if leg_return_imbalances
+            else None
+        ),
+        "total_notional_usd": total_notional_usd,
+        "notional_weighted_total_return": (
+            total_notional_weighted_return / total_notional_usd if total_notional_usd > 0 else None
+        ),
+        "cost_drag_bps": total_cost_drag_bps,
+        "groups": groups,
+    }
 
 
 def _aggregate_backtest_metrics(metrics: list[Any]) -> dict[str, float | int | None]:
@@ -5382,7 +8031,109 @@ def _aggregate_backtest_metrics(metrics: list[Any]) -> dict[str, float | int | N
     }
 
 
-def _aggregate_bundle_metrics(members: list[dict[str, Any]]) -> dict[str, float | int | None]:
+def _aggregate_bundle_multi_leg_group_metrics(
+    members: list[dict[str, Any]],
+) -> dict[str, float | int | None]:
+    group_metrics = [
+        (member, member["summary"].get("multi_leg_group_metrics"))
+        for member in members
+        if isinstance(member["summary"].get("multi_leg_group_metrics"), dict)
+        and int(member["summary"]["multi_leg_group_metrics"].get("group_count") or 0) > 0
+    ]
+    if not group_metrics:
+        return {
+            "member_count": 0,
+            "group_count": 0,
+            "executed_group_count": 0,
+            "complete_group_count": 0,
+            "incomplete_group_count": 0,
+            "expected_leg_count": 0,
+            "executed_leg_count": 0,
+            "weighted_total_return": 0.0,
+            "weighted_cost_drag_bps": 0.0,
+            "weighted_avg_group_return": None,
+            "weighted_win_rate": None,
+            "worst_group_return": None,
+            "weighted_max_drawdown": None,
+            "weighted_profit_factor": None,
+            "weighted_avg_leg_return_imbalance": None,
+            "total_notional_usd": 0.0,
+            "weighted_notional_return": None,
+        }
+
+    weighted_total_return = 0.0
+    weighted_cost_drag_bps = 0.0
+    total_notional_usd = 0.0
+    weighted_avg_group_return_values: list[float] = []
+    weighted_win_rate_values: list[float] = []
+    weighted_drawdowns: list[float] = []
+    weighted_profit_factors: list[float] = []
+    weighted_leg_return_imbalances: list[float] = []
+    weighted_notional_returns: list[float] = []
+    worst_group_returns: list[float] = []
+    totals = {
+        "member_count": len(group_metrics),
+        "group_count": 0,
+        "executed_group_count": 0,
+        "complete_group_count": 0,
+        "incomplete_group_count": 0,
+        "expected_leg_count": 0,
+        "executed_leg_count": 0,
+    }
+    for member, metrics in group_metrics:
+        weight = float(member["effective_allocation_weight"])
+        totals["group_count"] += int(metrics.get("group_count") or 0)
+        totals["executed_group_count"] += int(metrics.get("executed_group_count") or 0)
+        totals["complete_group_count"] += int(metrics.get("complete_group_count") or 0)
+        totals["incomplete_group_count"] += int(metrics.get("incomplete_group_count") or 0)
+        totals["expected_leg_count"] += int(metrics.get("expected_leg_count") or 0)
+        totals["executed_leg_count"] += int(metrics.get("executed_leg_count") or 0)
+        weighted_total_return += float(metrics.get("total_return") or 0.0) * weight
+        weighted_cost_drag_bps += float(metrics.get("cost_drag_bps") or 0.0) * weight
+        total_notional_usd += float(metrics.get("total_notional_usd") or 0.0)
+        if metrics.get("avg_group_return") is not None:
+            weighted_avg_group_return_values.append(float(metrics["avg_group_return"]) * weight)
+        if metrics.get("win_rate") is not None:
+            weighted_win_rate_values.append(float(metrics["win_rate"]) * weight)
+        if metrics.get("worst_group_return") is not None:
+            worst_group_returns.append(float(metrics["worst_group_return"]) * weight)
+        if metrics.get("max_drawdown") is not None:
+            weighted_drawdowns.append(float(metrics["max_drawdown"]) * weight)
+        if metrics.get("profit_factor") is not None:
+            weighted_profit_factors.append(float(metrics["profit_factor"]) * weight)
+        if metrics.get("avg_leg_return_imbalance") is not None:
+            weighted_leg_return_imbalances.append(
+                float(metrics["avg_leg_return_imbalance"]) * weight
+            )
+        if metrics.get("notional_weighted_total_return") is not None:
+            weighted_notional_returns.append(
+                float(metrics["notional_weighted_total_return"]) * weight
+            )
+
+    return {
+        **totals,
+        "weighted_total_return": weighted_total_return,
+        "weighted_cost_drag_bps": weighted_cost_drag_bps,
+        "weighted_avg_group_return": (
+            sum(weighted_avg_group_return_values) if weighted_avg_group_return_values else None
+        ),
+        "weighted_win_rate": sum(weighted_win_rate_values) if weighted_win_rate_values else None,
+        "worst_group_return": min(worst_group_returns) if worst_group_returns else None,
+        "weighted_max_drawdown": min(weighted_drawdowns) if weighted_drawdowns else None,
+        "weighted_profit_factor": (
+            sum(weighted_profit_factors) if weighted_profit_factors else None
+        ),
+        "weighted_avg_leg_return_imbalance": (
+            sum(weighted_leg_return_imbalances) if weighted_leg_return_imbalances else None
+        ),
+        "total_notional_usd": total_notional_usd,
+        "weighted_notional_return": (
+            sum(weighted_notional_returns) if weighted_notional_returns else None
+        ),
+    }
+
+
+def _aggregate_bundle_metrics(members: list[dict[str, Any]]) -> dict[str, Any]:
     if not members:
         return {
             "member_count": 0,
@@ -5390,6 +8141,7 @@ def _aggregate_bundle_metrics(members: list[dict[str, Any]]) -> dict[str, float 
             "weighted_total_return": 0.0,
             "max_drawdown": None,
             "cost_drag_bps": 0.0,
+            "multi_leg_group_metrics": _aggregate_bundle_multi_leg_group_metrics([]),
         }
     weighted_total_return = 0.0
     max_drawdowns: list[float] = []
@@ -5409,6 +8161,7 @@ def _aggregate_bundle_metrics(members: list[dict[str, Any]]) -> dict[str, float 
         "weighted_total_return": weighted_total_return,
         "max_drawdown": min(max_drawdowns) if max_drawdowns else None,
         "cost_drag_bps": cost_drag_bps,
+        "multi_leg_group_metrics": _aggregate_bundle_multi_leg_group_metrics(members),
     }
 
 
@@ -5460,20 +8213,74 @@ def _bundle_effective_weights(
     return _cap_bundle_weights(raw, bundle.portfolio.max_total_allocation_weight)
 
 
+def _threshold_actual(summary: dict[str, Any], metric_name: str) -> float | int | None:
+    aggregate_metrics = summary.get("aggregate_metrics")
+    if isinstance(aggregate_metrics, dict) and metric_name in aggregate_metrics:
+        value = aggregate_metrics.get(metric_name)
+    else:
+        current: Any = summary
+        for part in metric_name.split("."):
+            if not isinstance(current, dict):
+                return None
+            current = current.get(part)
+        value = current
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int | float):
+        return value
+    return None
+
+
 def _threshold_passes(metric_name: str, actual: float | int | None, threshold: float) -> bool:
     if actual is None:
         return False
-    if metric_name in {"cost_drag_bps", "stale_rejected_count", "halt_rejected_count"}:
+    if _metric_lower_is_better(metric_name):
         return float(actual) <= threshold
     return float(actual) >= threshold
 
 
+def _metric_lower_is_better(metric_name: str) -> bool:
+    lower_is_better = {
+        "cost_drag_bps",
+        "stale_rejected_count",
+        "halt_rejected_count",
+        "blocked_count",
+        "no_signal_count",
+        "entry_order_unfilled_count",
+        "multi_leg_group_metrics.incomplete_group_count",
+        "multi_leg_group_metrics.cost_drag_bps",
+    }
+    if metric_name in lower_is_better:
+        return True
+    leaf = metric_name.rsplit(".", maxsplit=1)[-1]
+    lower_leaf_suffixes = (
+        "_cost_bps",
+        "_drag_bps",
+        "_imbalance",
+        "_imbalance_bps",
+        "_rejected_count",
+        "_blocked_count",
+        "_unfilled_count",
+    )
+    return leaf.endswith(lower_leaf_suffixes) or leaf.startswith(("incomplete_", "rejected_"))
+
+
+def _resolve_selection_direction(
+    direction: str, metric_name: str
+) -> Literal["maximize", "minimize"]:
+    if direction == "auto":
+        return "minimize" if _metric_lower_is_better(metric_name) else "maximize"
+    if direction in {"maximize", "minimize"}:
+        return cast(Literal["maximize", "minimize"], direction)
+    raise StrategyAuthoringValidationError(f"unsupported selection_direction: {direction}")
+
+
 def _evaluate_pass_thresholds(
-    spec: StrategyAuthoringSpec, aggregate_metrics: dict[str, float | int | None]
+    spec: StrategyAuthoringSpec, summary: dict[str, Any]
 ) -> dict[str, dict[str, float | int | bool | None]]:
     results: dict[str, dict[str, float | int | bool | None]] = {}
     for metric_name, threshold in spec.backtest.pass_thresholds.items():
-        actual = aggregate_metrics.get(metric_name)
+        actual = _threshold_actual(summary, metric_name)
         results[metric_name] = {
             "actual": actual,
             "threshold": threshold,
@@ -5512,7 +8319,8 @@ def _walk_forward_eras(
             {
                 "era": era,
                 "signal_count": era_frame.height,
-                "aggregate_metrics": _aggregate_backtest_metrics(metrics),
+                "aggregate_metrics": summary["aggregate_metrics"],
+                "multi_leg_group_metrics": summary["multi_leg_group_metrics"],
                 "executed_count": summary.get("executed_count", 0),
             }
         )
@@ -5540,7 +8348,7 @@ def _nested_get(payload: dict[str, Any], dotted_path: str) -> Any:
 
 
 def _optimizer_sort_value(item: dict[str, Any], metric_name: str, *, maximize: bool) -> float:
-    value = item["aggregate_metrics"].get(metric_name)
+    value = _threshold_actual(item, metric_name)
     if value is None:
         return float("-inf") if maximize else float("inf")
     return float(value)
@@ -5583,12 +8391,13 @@ def _run_authoring_backtest_once(
         holding_horizon_minutes=spec.backtest.label_horizon_minutes,
     )
     aggregate_metrics = _aggregate_backtest_metrics(metrics)
-    threshold_results = _evaluate_pass_thresholds(spec, aggregate_metrics)
-    pass_all_thresholds = all(bool(result["passed"]) for result in threshold_results.values())
     summary["authoring_split_method"] = spec.backtest.split_method
     summary["authoring_era_unit"] = spec.backtest.era_unit
     summary["min_trade_count"] = spec.backtest.min_trade_count
     summary["aggregate_metrics"] = aggregate_metrics
+    summary["multi_leg_group_metrics"] = _multi_leg_group_backtest_metrics(frame, summary)
+    threshold_results = _evaluate_pass_thresholds(spec, summary)
+    pass_all_thresholds = all(bool(result["passed"]) for result in threshold_results.values())
     summary["pass_thresholds"] = threshold_results
     summary["pass_all_thresholds"] = pass_all_thresholds
     summary["pass_min_trade_count"] = (
@@ -5618,12 +8427,16 @@ def run_authoring_backtest(
                     for path in sorted(spec.optimizer.parameter_sweep)
                 },
                 "aggregate_metrics": variant_summary["aggregate_metrics"],
+                "multi_leg_group_metrics": variant_summary["multi_leg_group_metrics"],
                 "backtest_passed": variant_summary["backtest_passed"],
             }
         )
     if variant_results:
         metric_name = spec.optimizer.selection_metric
-        reverse = spec.optimizer.selection_direction == "maximize"
+        resolved_direction = _resolve_selection_direction(
+            spec.optimizer.selection_direction, metric_name
+        )
+        reverse = resolved_direction == "maximize"
         ranked = sorted(
             variant_results,
             key=lambda item: _optimizer_sort_value(item, metric_name, maximize=reverse),
@@ -5632,6 +8445,7 @@ def run_authoring_backtest(
         summary["optimizer"] = {
             "selection_metric": metric_name,
             "selection_direction": spec.optimizer.selection_direction,
+            "resolved_selection_direction": resolved_direction,
             "variant_count": len(variant_results),
             "best_variant": ranked[0],
             "variants": ranked,
@@ -5728,11 +8542,14 @@ def run_authoring_bundle(
         )
     aggregate_metrics = _aggregate_bundle_metrics(member_results)
     metric_name = bundle.portfolio.selection_metric
-    reverse = bundle.portfolio.selection_direction == "maximize"
+    resolved_direction = _resolve_selection_direction(
+        bundle.portfolio.selection_direction, metric_name
+    )
+    reverse = resolved_direction == "maximize"
     ranked_members = sorted(
         member_results,
         key=lambda item: _optimizer_sort_value(
-            {"aggregate_metrics": item["summary"]["aggregate_metrics"]},
+            item["summary"],
             metric_name,
             maximize=reverse,
         ),
@@ -5743,7 +8560,10 @@ def run_authoring_bundle(
         "bundle_id": bundle.bundle_id,
         "paper_only": True,
         "live_order_submitted": False,
-        "portfolio": bundle.portfolio.model_dump(mode="json"),
+        "portfolio": {
+            **bundle.portfolio.model_dump(mode="json"),
+            "resolved_selection_direction": resolved_direction,
+        },
         "aggregate_metrics": aggregate_metrics,
         "best_member": ranked_members[0] if ranked_members else None,
         "members": ranked_members,
@@ -5768,6 +8588,111 @@ def write_authoring_bundle_outputs(payload: dict[str, Any], *, data_dir: Path) -
         )
         for member in payload["members"]
     )
+    group_metrics = (payload.get("aggregate_metrics") or {}).get("multi_leg_group_metrics") or {}
+    group_section = ""
+    if int(group_metrics.get("group_count") or 0) > 0:
+        group_count = int(group_metrics.get("group_count") or 0)
+        complete_group_count = int(group_metrics.get("complete_group_count") or 0)
+        group_completion_rate = complete_group_count / group_count if group_count else 0.0
+
+        def _format_optional_float(value: Any) -> str:
+            if value is None:
+                return "null"
+            return f"{float(value):.6f}"
+
+        group_rows = "\n".join(
+            (
+                "| {strategy_id} | {groups} | {complete} | {completion_rate:.6f} | "
+                "{weighted_return:.6f} | {weighted_notional_return} | {total_notional_usd} | "
+                "{weighted_win_rate} | {weighted_max_drawdown} | "
+                "{weighted_profit_factor} | "
+                "{weighted_leg_imbalance} |"
+            ).format(
+                strategy_id=member["strategy_id"],
+                groups=int(member["summary"]["multi_leg_group_metrics"].get("group_count") or 0),
+                complete=int(
+                    member["summary"]["multi_leg_group_metrics"].get("complete_group_count") or 0
+                ),
+                completion_rate=(
+                    int(
+                        member["summary"]["multi_leg_group_metrics"].get("complete_group_count")
+                        or 0
+                    )
+                    / int(member["summary"]["multi_leg_group_metrics"].get("group_count") or 1)
+                ),
+                weighted_return=float(
+                    member["summary"]["multi_leg_group_metrics"].get("total_return") or 0.0
+                )
+                * float(member["effective_allocation_weight"]),
+                weighted_notional_return=_format_optional_float(
+                    float(
+                        member["summary"]["multi_leg_group_metrics"][
+                            "notional_weighted_total_return"
+                        ]
+                    )
+                    * float(member["effective_allocation_weight"])
+                    if member["summary"]["multi_leg_group_metrics"].get(
+                        "notional_weighted_total_return"
+                    )
+                    is not None
+                    else None
+                ),
+                total_notional_usd=_format_optional_float(
+                    member["summary"]["multi_leg_group_metrics"].get("total_notional_usd")
+                ),
+                weighted_win_rate=_format_optional_float(
+                    float(member["summary"]["multi_leg_group_metrics"]["win_rate"])
+                    * float(member["effective_allocation_weight"])
+                    if member["summary"]["multi_leg_group_metrics"].get("win_rate") is not None
+                    else None
+                ),
+                weighted_max_drawdown=_format_optional_float(
+                    float(member["summary"]["multi_leg_group_metrics"]["max_drawdown"])
+                    * float(member["effective_allocation_weight"])
+                    if member["summary"]["multi_leg_group_metrics"].get("max_drawdown") is not None
+                    else None
+                ),
+                weighted_profit_factor=_format_optional_float(
+                    float(member["summary"]["multi_leg_group_metrics"]["profit_factor"])
+                    * float(member["effective_allocation_weight"])
+                    if member["summary"]["multi_leg_group_metrics"].get("profit_factor") is not None
+                    else None
+                ),
+                weighted_leg_imbalance=_format_optional_float(
+                    float(member["summary"]["multi_leg_group_metrics"]["avg_leg_return_imbalance"])
+                    * float(member["effective_allocation_weight"])
+                    if member["summary"]["multi_leg_group_metrics"].get("avg_leg_return_imbalance")
+                    is not None
+                    else None
+                ),
+            )
+            for member in payload["members"]
+            if int(member["summary"].get("multi_leg_group_metrics", {}).get("group_count") or 0) > 0
+        )
+        group_section = (
+            "\n## Multi-Leg Group Metrics\n\n"
+            f"- group_count: {group_metrics.get('group_count', 0)}\n"
+            f"- complete_group_count: {group_metrics.get('complete_group_count', 0)}\n"
+            f"- incomplete_group_count: {group_metrics.get('incomplete_group_count', 0)}\n"
+            f"- expected_leg_count: {group_metrics.get('expected_leg_count', 0)}\n"
+            f"- executed_leg_count: {group_metrics.get('executed_leg_count', 0)}\n"
+            f"- weighted_total_return: {float(group_metrics.get('weighted_total_return') or 0.0):.6f}\n"
+            f"- total_notional_usd: {_format_optional_float(group_metrics.get('total_notional_usd'))}\n"
+            f"- weighted_notional_return: {_format_optional_float(group_metrics.get('weighted_notional_return'))}\n"
+            f"- weighted_cost_drag_bps: {float(group_metrics.get('weighted_cost_drag_bps') or 0.0):.6f}\n\n"
+            f"- group_completion_rate: {group_completion_rate:.6f}\n"
+            f"- weighted_win_rate: {_format_optional_float(group_metrics.get('weighted_win_rate'))}\n"
+            f"- worst_group_return: {_format_optional_float(group_metrics.get('worst_group_return'))}\n"
+            f"- weighted_max_drawdown: {_format_optional_float(group_metrics.get('weighted_max_drawdown'))}\n"
+            f"- weighted_profit_factor: {_format_optional_float(group_metrics.get('weighted_profit_factor'))}\n"
+            f"- weighted_avg_leg_return_imbalance: {_format_optional_float(group_metrics.get('weighted_avg_leg_return_imbalance'))}\n\n"
+            "| Strategy | Groups | Complete | Completion Rate | Weighted Group Return | "
+            "Weighted Notional Return | Total Notional USD | Weighted Win Rate | "
+            "Weighted Max Drawdown | Weighted Profit Factor | "
+            "Weighted Leg Imbalance |\n"
+            "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n"
+            f"{group_rows}\n"
+        )
     report_path.write_text(
         "# Strategy Authoring Bundle Report\n\n"
         "paper_only: true\n\n"
@@ -5777,7 +8702,8 @@ def write_authoring_bundle_outputs(payload: dict[str, Any], *, data_dir: Path) -
         f"- best_member: {(payload.get('best_member') or {}).get('strategy_id')}\n\n"
         "| Strategy | Effective Weight | Trades | Total Return | Backtest Passed |\n"
         "|---|---:|---:|---:|---:|\n"
-        f"{rows}\n",
+        f"{rows}\n"
+        f"{group_section}",
         encoding="utf-8",
     )
     return {"bundle_result": result_path, "bundle_report": report_path}
@@ -5885,13 +8811,26 @@ def write_authoring_paper_preview_outputs(
             entry_reason_codes=list(row.get("reason_codes") or []) if selected and row else [],
             block_reasons=[] if selected else record.rejection_reasons,
             stop_loss_bps=row.get("stop_loss_bps") if selected and row else None,
+            min_stop_loss_bps=row.get("min_stop_loss_bps") if selected and row else None,
+            max_stop_loss_bps=row.get("max_stop_loss_bps") if selected and row else None,
             take_profit_bps=row.get("take_profit_bps") if selected and row else None,
+            min_take_profit_bps=row.get("min_take_profit_bps") if selected and row else None,
+            max_take_profit_bps=row.get("max_take_profit_bps") if selected and row else None,
+            min_reward_risk_ratio=(row.get("min_reward_risk_ratio") if selected and row else None),
+            reward_risk_ratio=row.get("reward_risk_ratio") if selected and row else None,
             trailing_stop_bps=row.get("trailing_stop_bps") if selected and row else None,
+            trailing_stop_activation_bps=(
+                row.get("trailing_stop_activation_bps") if selected and row else None
+            ),
             partial_take_profit_bps=(
                 row.get("partial_take_profit_bps") if selected and row else None
             ),
             partial_exit_fraction=row.get("partial_exit_fraction") if selected and row else None,
             min_holding_minutes=row.get("min_holding_minutes") if selected and row else None,
+            max_holding_minutes=row.get("max_holding_minutes") if selected and row else None,
+            exit_priority=str(row.get("exit_priority") or DEFAULT_EXIT_PRIORITY)
+            if selected and row
+            else DEFAULT_EXIT_PRIORITY,
             exit_on_opposite_signal=(
                 bool(row.get("exit_on_opposite_signal")) if selected and row else False
             ),
@@ -5904,6 +8843,11 @@ def write_authoring_paper_preview_outputs(
             bracket_break_even_after_bps=(
                 row.get("bracket_break_even_after_bps") if selected and row else None
             ),
+            bracket_break_even_after_partial_take_profit=(
+                bool(row.get("bracket_break_even_after_partial_take_profit"))
+                if selected and row
+                else False
+            ),
             entry_order_type=entry_order_type,
             entry_limit_offset_bps=row.get("entry_limit_offset_bps") if selected and row else None,
             entry_stop_offset_bps=row.get("entry_stop_offset_bps") if selected and row else None,
@@ -5915,6 +8859,7 @@ def write_authoring_paper_preview_outputs(
                 )
             ),
             entry_post_only=bool(row.get("entry_post_only")) if selected and row else False,
+            entry_reduce_only=bool(row.get("entry_reduce_only")) if selected and row else False,
             slippage_bps=_float_or_default(
                 row.get("slippage_bps") if selected and row else None,
                 0.0,
@@ -5923,6 +8868,7 @@ def write_authoring_paper_preview_outputs(
                 row.get("max_fill_fraction") if selected and row else None,
                 0.0,
             ),
+            min_fill_fraction=row.get("min_fill_fraction") if selected and row else None,
             max_spread_bps=row.get("max_spread_bps") if selected and row else None,
             min_depth_usd=row.get("min_depth_usd") if selected and row else None,
             depth_column=row.get("depth_column") if selected and row else None,
@@ -5948,6 +8894,16 @@ def write_authoring_paper_preview_outputs(
             tax_drag_bps=row.get("tax_drag_bps") if selected and row else None,
             max_turnover_pressure=(row.get("max_turnover_pressure") if selected and row else None),
             turnover_pressure=row.get("turnover_pressure") if selected and row else None,
+            max_capacity_usage_ratio=(
+                row.get("max_capacity_usage_ratio") if selected and row else None
+            ),
+            capacity_usage_ratio=row.get("capacity_usage_ratio") if selected and row else None,
+            max_correlation_crowding_score=(
+                row.get("max_correlation_crowding_score") if selected and row else None
+            ),
+            correlation_crowding_score=(
+                row.get("correlation_crowding_score") if selected and row else None
+            ),
             min_fee_edge_bps=row.get("min_fee_edge_bps") if selected and row else None,
             fee_edge_bps=row.get("fee_edge_bps") if selected and row else None,
             position_weight=row.get("position_weight") if selected and row else None,

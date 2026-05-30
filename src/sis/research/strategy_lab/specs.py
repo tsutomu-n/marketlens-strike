@@ -11,6 +11,17 @@ PROXY_REQUIREMENTS = {
     "XYZ100": {"QQQ"},
     "SP500": {"SPY"},
 }
+ALLOWED_EXIT_PRIORITY_ITEMS = {
+    "break_even_stop",
+    "stop_loss",
+    "partial_take_profit",
+    "take_profit",
+    "trailing_stop",
+    "time_stop",
+}
+DEFAULT_EXIT_PRIORITY = (
+    "break_even_stop,stop_loss,partial_take_profit,take_profit,trailing_stop,time_stop"
+)
 
 
 class SymbolBinding(BaseModel):
@@ -86,6 +97,10 @@ class StrategySignalRecord(BaseModel):
     execution_venue: Literal["trade_xyz"]
     execution_symbol: str
     real_market_symbol: str
+    multi_leg_group_id: str | None = None
+    multi_leg_leg_index: int | None = None
+    multi_leg_leg_count: int | None = None
+    multi_leg_anchor_real_market_symbol: str | None = None
     side: Literal["long", "short", "close", "reduce", "add", "rebalance", "none"]
     raw_score: float | None
     rank_score: float | None
@@ -98,11 +113,20 @@ class StrategySignalRecord(BaseModel):
     quote_ref: str | None
     tracking_ref: str | None
     stop_loss_bps: float | None = None
+    min_stop_loss_bps: float | None = None
+    max_stop_loss_bps: float | None = None
     take_profit_bps: float | None = None
+    min_take_profit_bps: float | None = None
+    max_take_profit_bps: float | None = None
+    min_reward_risk_ratio: float | None = None
+    reward_risk_ratio: float | None = None
     trailing_stop_bps: float | None = None
+    trailing_stop_activation_bps: float | None = None
     partial_take_profit_bps: float | None = None
     partial_exit_fraction: float | None = None
     min_holding_minutes: int | None = None
+    max_holding_minutes: int | None = None
+    exit_priority: str = DEFAULT_EXIT_PRIORITY
     exit_on_opposite_signal: bool = False
     exit_on_close_signal: bool = False
     exit_on_reduce_signal: bool = False
@@ -111,17 +135,21 @@ class StrategySignalRecord(BaseModel):
     add_fraction: float | None = None
     exit_on_rebalance_signal: bool = False
     rebalance_target_fraction: float | None = None
+    rebalance_min_delta_fraction: float | None = None
     bracket_type: Literal["none", "oco"] = "none"
     bracket_time_stop_minutes: int | None = None
     bracket_break_even_after_bps: float | None = None
+    bracket_break_even_after_partial_take_profit: bool = False
     entry_order_type: Literal["market", "limit", "stop_market"] = "market"
     entry_limit_offset_bps: float | None = None
     entry_stop_offset_bps: float | None = None
     entry_timeout_minutes: int | None = None
     entry_time_in_force: Literal["gtc", "gtd", "ioc", "fok"] = "gtc"
     entry_post_only: bool = False
+    entry_reduce_only: bool = False
     slippage_bps: float = 0.0
     max_fill_fraction: float = 1.0
+    min_fill_fraction: float | None = None
     max_spread_bps: float | None = None
     min_depth_usd: float | None = None
     depth_column: str | None = None
@@ -138,6 +166,10 @@ class StrategySignalRecord(BaseModel):
     tax_drag_bps: float | None = None
     max_turnover_pressure: float | None = None
     turnover_pressure: float | None = None
+    max_capacity_usage_ratio: float | None = None
+    capacity_usage_ratio: float | None = None
+    max_correlation_crowding_score: float | None = None
+    correlation_crowding_score: float | None = None
     min_fee_edge_bps: float | None = None
     fee_edge_bps: float | None = None
     position_weight: float | None = None
@@ -151,6 +183,24 @@ class StrategySignalRecord(BaseModel):
             raise ValueError("execution_symbol must be non-empty")
         if not self.real_market_symbol.strip():
             raise ValueError("real_market_symbol must be non-empty")
+        if self.multi_leg_group_id is not None and not self.multi_leg_group_id.strip():
+            raise ValueError("multi_leg_group_id must be non-empty when set")
+        if self.multi_leg_anchor_real_market_symbol is not None:
+            if not self.multi_leg_anchor_real_market_symbol.strip():
+                raise ValueError("multi_leg_anchor_real_market_symbol must be non-empty when set")
+            self.multi_leg_anchor_real_market_symbol = (
+                self.multi_leg_anchor_real_market_symbol.strip().upper()
+            )
+        if self.multi_leg_leg_index is not None and self.multi_leg_leg_index <= 0:
+            raise ValueError("multi_leg_leg_index must be positive")
+        if self.multi_leg_leg_count is not None and self.multi_leg_leg_count <= 0:
+            raise ValueError("multi_leg_leg_count must be positive")
+        if (
+            self.multi_leg_leg_index is not None
+            and self.multi_leg_leg_count is not None
+            and self.multi_leg_leg_index > self.multi_leg_leg_count
+        ):
+            raise ValueError("multi_leg_leg_index must be <= multi_leg_leg_count")
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("confidence must be between 0 and 1")
         if self.rank_score is not None and not 0.0 <= self.rank_score <= 1.0:
@@ -159,22 +209,70 @@ class StrategySignalRecord(BaseModel):
             raise ValueError("percentile_rank must be between 0 and 1")
         if self.stop_loss_bps is not None and self.stop_loss_bps < 0:
             raise ValueError("stop_loss_bps must be >= 0")
+        if self.min_stop_loss_bps is not None and self.min_stop_loss_bps < 0:
+            raise ValueError("min_stop_loss_bps must be >= 0")
+        if self.max_stop_loss_bps is not None and self.max_stop_loss_bps < 0:
+            raise ValueError("max_stop_loss_bps must be >= 0")
+        if (
+            self.min_stop_loss_bps is not None
+            and self.max_stop_loss_bps is not None
+            and self.max_stop_loss_bps < self.min_stop_loss_bps
+        ):
+            raise ValueError("max_stop_loss_bps must be >= min_stop_loss_bps")
         if self.take_profit_bps is not None and self.take_profit_bps < 0:
             raise ValueError("take_profit_bps must be >= 0")
+        if self.min_take_profit_bps is not None and self.min_take_profit_bps < 0:
+            raise ValueError("min_take_profit_bps must be >= 0")
+        if self.max_take_profit_bps is not None and self.max_take_profit_bps < 0:
+            raise ValueError("max_take_profit_bps must be >= 0")
+        if (
+            self.min_take_profit_bps is not None
+            and self.max_take_profit_bps is not None
+            and self.max_take_profit_bps < self.min_take_profit_bps
+        ):
+            raise ValueError("max_take_profit_bps must be >= min_take_profit_bps")
+        if self.min_reward_risk_ratio is not None and self.min_reward_risk_ratio < 0:
+            raise ValueError("min_reward_risk_ratio must be >= 0")
+        if self.reward_risk_ratio is not None and self.reward_risk_ratio < 0:
+            raise ValueError("reward_risk_ratio must be >= 0")
         if self.trailing_stop_bps is not None and self.trailing_stop_bps < 0:
             raise ValueError("trailing_stop_bps must be >= 0")
+        if self.trailing_stop_activation_bps is not None and self.trailing_stop_activation_bps < 0:
+            raise ValueError("trailing_stop_activation_bps must be >= 0")
         if self.partial_take_profit_bps is not None and self.partial_take_profit_bps < 0:
             raise ValueError("partial_take_profit_bps must be >= 0")
         if self.partial_exit_fraction is not None and not 0.0 <= self.partial_exit_fraction <= 1.0:
             raise ValueError("partial_exit_fraction must be between 0 and 1")
         if self.min_holding_minutes is not None and self.min_holding_minutes <= 0:
             raise ValueError("min_holding_minutes must be positive")
+        if self.max_holding_minutes is not None and self.max_holding_minutes <= 0:
+            raise ValueError("max_holding_minutes must be positive")
+        if (
+            self.min_holding_minutes is not None
+            and self.max_holding_minutes is not None
+            and self.max_holding_minutes < self.min_holding_minutes
+        ):
+            raise ValueError("max_holding_minutes must be >= min_holding_minutes")
+        if not self.exit_priority.strip():
+            raise ValueError("exit_priority must be non-empty")
+        exit_priority_items = [
+            item.strip() for item in self.exit_priority.split(",") if item.strip()
+        ]
+        if len(set(exit_priority_items)) != len(exit_priority_items):
+            raise ValueError("exit_priority must not contain duplicates")
+        unsupported_exit_priority = [
+            item for item in exit_priority_items if item not in ALLOWED_EXIT_PRIORITY_ITEMS
+        ]
+        if unsupported_exit_priority:
+            raise ValueError(f"Unsupported exit_priority item: {unsupported_exit_priority}")
         if self.reduce_fraction is not None and not 0.0 <= self.reduce_fraction <= 1.0:
             raise ValueError("reduce_fraction must be between 0 and 1")
         if self.add_fraction is not None and not 0.0 <= self.add_fraction <= 1.0:
             raise ValueError("add_fraction must be between 0 and 1")
         if self.rebalance_target_fraction is not None and self.rebalance_target_fraction < 0:
             raise ValueError("rebalance_target_fraction must be >= 0")
+        if self.rebalance_min_delta_fraction is not None and self.rebalance_min_delta_fraction < 0:
+            raise ValueError("rebalance_min_delta_fraction must be >= 0")
         if self.bracket_time_stop_minutes is not None and self.bracket_time_stop_minutes < 0:
             raise ValueError("bracket_time_stop_minutes must be >= 0")
         if self.bracket_break_even_after_bps is not None and self.bracket_break_even_after_bps < 0:
@@ -195,6 +293,8 @@ class StrategySignalRecord(BaseModel):
             raise ValueError("slippage_bps must be >= 0")
         if not 0.0 <= self.max_fill_fraction <= 1.0:
             raise ValueError("max_fill_fraction must be between 0 and 1")
+        if self.min_fill_fraction is not None and not 0.0 <= self.min_fill_fraction <= 1.0:
+            raise ValueError("min_fill_fraction must be between 0 and 1")
         if self.max_spread_bps is not None and self.max_spread_bps < 0:
             raise ValueError("max_spread_bps must be >= 0")
         if self.min_depth_usd is not None and self.min_depth_usd < 0:
@@ -232,6 +332,17 @@ class StrategySignalRecord(BaseModel):
             raise ValueError("max_turnover_pressure must be >= 0")
         if self.turnover_pressure is not None and self.turnover_pressure < 0:
             raise ValueError("turnover_pressure must be >= 0")
+        if self.max_capacity_usage_ratio is not None and self.max_capacity_usage_ratio < 0:
+            raise ValueError("max_capacity_usage_ratio must be >= 0")
+        if self.capacity_usage_ratio is not None and self.capacity_usage_ratio < 0:
+            raise ValueError("capacity_usage_ratio must be >= 0")
+        if (
+            self.max_correlation_crowding_score is not None
+            and self.max_correlation_crowding_score < 0
+        ):
+            raise ValueError("max_correlation_crowding_score must be >= 0")
+        if self.correlation_crowding_score is not None and self.correlation_crowding_score < 0:
+            raise ValueError("correlation_crowding_score must be >= 0")
         if self.depth_column is not None and not self.depth_column.strip():
             raise ValueError("depth_column must be non-empty when set")
         if not 0.0 <= self.depth_participation_rate <= 1.0:

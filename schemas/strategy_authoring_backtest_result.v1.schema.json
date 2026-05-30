@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_authoring_backtest_result.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "strategy_id",
+    "paper_only",
+    "live_order_submitted",
+    "summary",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_authoring_backtest_result.v1"},
+    "strategy_id": {"type": "string"},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "summary": {
+      "type": "object",
+      "required": [
+        "mode",
+        "signals_considered",
+        "executed_count",
+        "blocked_count",
+        "blocked_reason_counts",
+        "exit_reason_counts",
+        "executed_signal_summary",
+        "multi_leg_group_metrics",
+        "strategy_scorecard",
+        "backtest_passed"
+      ],
+      "properties": {
+        "mode": {"type": "string"},
+        "exit_model": {"type": ["string", "null"]},
+        "holding_horizon_minutes": {"type": ["integer", "null"], "minimum": 1},
+        "signals_considered": {"type": "integer", "minimum": 0},
+        "executed_count": {"type": "integer", "minimum": 0},
+        "blocked_count": {"type": "integer", "minimum": 0},
+        "blocked_reason_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "exit_reason_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "entry_order_type_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "entry_order_unfilled_count": {"type": "integer", "minimum": 0},
+        "executed_signal_results": {
+          "type": "array",
+          "items": {"type": "object"}
+        },
+        "executed_signal_summary": {"$ref": "#/$defs/executed_signal_summary"},
+        "multi_leg_group_metrics": {"$ref": "#/$defs/multi_leg_group_metrics"},
+        "strategy_scorecard": {"$ref": "#/$defs/strategy_scorecard"},
+        "backtest_passed": {"type": "boolean"},
+        "pass_all_thresholds": {"type": "boolean"},
+        "pass_thresholds": {"type": "object"},
+        "optimizer": {"type": "object"},
+        "walk_forward_eras": {
+          "type": "array",
+          "items": {"type": "object"}
+        }
+      },
+      "additionalProperties": true
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "venue",
+          "canonical_symbol",
+          "trade_count",
+          "total_return",
+          "max_drawdown",
+          "cost_drag_bps"
+        ],
+        "properties": {
+          "venue": {"type": "string"},
+          "canonical_symbol": {"type": "string"},
+          "trade_count": {"type": "integer", "minimum": 0},
+          "total_return": {"type": "number"},
+          "max_drawdown": {"type": "number"},
+          "cost_drag_bps": {"type": "number"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "string_integer_counts": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "executed_signal_summary": {
+      "type": "object",
+      "required": [
+        "result_count",
+        "first_ts_signal",
+        "last_ts_signal",
+        "side_counts",
+        "symbol_counts",
+        "timeframe_counts",
+        "exit_reason_counts",
+        "total_signal_return",
+        "avg_signal_return",
+        "win_rate",
+        "total_cost_drag_bps",
+        "total_notional_usd",
+        "notional_weighted_signal_return"
+      ],
+      "properties": {
+        "result_count": {"type": "integer", "minimum": 0},
+        "first_ts_signal": {"type": ["string", "null"]},
+        "last_ts_signal": {"type": ["string", "null"]},
+        "side_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "symbol_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "timeframe_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "exit_reason_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "total_signal_return": {"type": "number"},
+        "avg_signal_return": {"type": ["number", "null"]},
+        "win_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "total_cost_drag_bps": {"type": "number"},
+        "total_notional_usd": {"type": "number", "minimum": 0},
+        "notional_weighted_signal_return": {"type": ["number", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "multi_leg_group_metrics": {
+      "type": "object",
+      "required": [
+        "group_count",
+        "executed_group_count",
+        "complete_group_count",
+        "incomplete_group_count",
+        "expected_leg_count",
+        "executed_leg_count",
+        "total_return",
+        "avg_group_return",
+        "win_rate",
+        "worst_group_return",
+        "max_drawdown",
+        "profit_factor",
+        "avg_leg_return_imbalance",
+        "total_notional_usd",
+        "notional_weighted_total_return",
+        "cost_drag_bps"
+      ],
+      "properties": {
+        "group_count": {"type": "integer", "minimum": 0},
+        "executed_group_count": {"type": "integer", "minimum": 0},
+        "complete_group_count": {"type": "integer", "minimum": 0},
+        "incomplete_group_count": {"type": "integer", "minimum": 0},
+        "expected_leg_count": {"type": "integer", "minimum": 0},
+        "executed_leg_count": {"type": "integer", "minimum": 0},
+        "total_return": {"type": "number"},
+        "avg_group_return": {"type": ["number", "null"]},
+        "win_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "worst_group_return": {"type": ["number", "null"]},
+        "max_drawdown": {"type": ["number", "null"]},
+        "profit_factor": {"type": ["number", "null"]},
+        "avg_leg_return_imbalance": {"type": ["number", "null"]},
+        "total_notional_usd": {"type": "number", "minimum": 0},
+        "notional_weighted_total_return": {"type": ["number", "null"]},
+        "cost_drag_bps": {"type": "number"},
+        "groups": {
+          "type": "array",
+          "items": {"type": "object"}
+        }
+      },
+      "additionalProperties": true
+    },
+    "strategy_scorecard": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "derived_feature_count",
+        "signal_count",
+        "side_counts",
+        "block_reason_counts",
+        "execution_block_reason_counts",
+        "exit_reason_counts",
+        "backtest_passed",
+        "paper_only",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "schema_version": {"const": "strategy_authoring_scorecard.v1"},
+        "derived_feature_count": {"type": "integer", "minimum": 0},
+        "derived_feature_names": {"type": "array", "items": {"type": "string"}},
+        "derived_feature_ops": {"$ref": "#/$defs/string_integer_counts"},
+        "signal_count": {"type": "integer", "minimum": 0},
+        "side_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "reason_code_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "block_reason_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "execution_block_reason_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "exit_reason_counts": {"$ref": "#/$defs/string_integer_counts"},
+        "passed_thresholds": {"type": "array", "items": {"type": "string"}},
+        "failed_thresholds": {"type": "array", "items": {"type": "string"}},
+        "backtest_passed": {"type": "boolean"},
+        "paper_only": {"const": true},
+        "live_order_submitted": {"const": false},
+        "multi_leg_group_metrics": {"$ref": "#/$defs/multi_leg_group_metrics"}
+      },
+      "additionalProperties": true
+    }
+  }
+}

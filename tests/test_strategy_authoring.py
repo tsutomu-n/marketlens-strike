@@ -4,13 +4,16 @@ from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 
+from jsonschema import validate
 import polars as pl
 import pytest
 from typer.testing import CliRunner
 
 from sis.cli import app
 from sis.research.strategy_lab.authoring import (
+    StrategyAuthoringValidationError,
     build_authoring_signals,
+    load_authoring_bundle_spec,
     load_authoring_spec,
     strategy_signals_to_research_signals,
     template_yaml,
@@ -23,6 +26,22 @@ runner = CliRunner()
 
 def _write_spec(path: Path) -> None:
     path.write_text(template_yaml(), encoding="utf-8")
+
+
+def test_strategy_authoring_example_specs_and_bundles_parse() -> None:
+    examples_dir = Path("docs/strategy_research_lab/examples")
+    spec_paths = sorted(examples_dir.glob("*_authoring_spec.yaml"))
+    bundle_paths = sorted(examples_dir.glob("*bundle.yaml"))
+
+    assert spec_paths
+    assert bundle_paths
+    for spec_path in spec_paths:
+        assert load_authoring_spec(spec_path).schema_version == "strategy_authoring_spec.v1"
+    for bundle_path in bundle_paths:
+        bundle = load_authoring_bundle_spec(bundle_path)
+        assert bundle.schema_version == "strategy_authoring_bundle.v1"
+        for member in bundle.members:
+            assert (bundle_path.parent / member.spec_path).exists()
 
 
 def _feature_rows() -> list[dict]:
@@ -97,6 +116,7 @@ def test_authoring_spec_validates_feature_columns_and_builds_strategy_signals(tm
     assert set(frame.get_column("stop_loss_bps").to_list()) == {150.0}
     assert set(frame.get_column("take_profit_bps").to_list()) == {300.0}
     assert set(frame.get_column("trailing_stop_bps").to_list()) == {120.0}
+    assert set(frame.get_column("trailing_stop_activation_bps").to_list()) == {0.0}
     assert set(frame.get_column("partial_take_profit_bps").to_list()) == {200.0}
     assert set(frame.get_column("partial_exit_fraction").to_list()) == {0.5}
     assert set(frame.get_column("position_weight").to_list()) == {1.0}
@@ -202,6 +222,216 @@ def test_authoring_risk_throttle_blocks_drawdown_daily_loss_and_loss_streak(
         ["risk_throttle_max_drawdown"],
         ["risk_throttle_loss_streak"],
     ]
+
+
+def test_authoring_risk_throttle_can_use_row_threshold_columns(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "risk-throttle-row-thresholds.yaml"
+    _write_data(data_dir)
+    rows = _feature_rows()
+    rows[0]["strategy_drawdown"] = -0.12
+    rows[0]["row_drawdown_floor"] = -0.10
+    rows[0]["daily_pnl"] = 0.0
+    rows[0]["row_daily_loss_floor"] = -0.05
+    rows[0]["loss_streak"] = 0
+    rows[0]["row_max_loss_streak"] = 5
+    rows[1]["strategy_drawdown"] = -0.05
+    rows[1]["row_drawdown_floor"] = -0.10
+    rows[1]["daily_pnl"] = -0.08
+    rows[1]["row_daily_loss_floor"] = -0.07
+    rows[1]["loss_streak"] = 0
+    rows[1]["row_max_loss_streak"] = 5
+    rows[2]["strategy_drawdown"] = -0.05
+    rows[2]["row_drawdown_floor"] = -0.10
+    rows[2]["daily_pnl"] = 0.0
+    rows[2]["row_daily_loss_floor"] = -0.05
+    rows[2]["loss_streak"] = 4
+    rows[2]["row_max_loss_streak"] = 4
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  risk_throttle:\n"
+            "    max_drawdown_column: strategy_drawdown\n"
+            "    max_drawdown_floor_column: row_drawdown_floor\n"
+            "    daily_loss_column: daily_pnl\n"
+            "    daily_loss_floor_column: row_daily_loss_floor\n"
+            "    loss_streak_column: loss_streak\n"
+            "    max_loss_streak_column: row_max_loss_streak",
+        ),
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["none", "none", "none"]
+    assert frame.get_column("block_reasons").to_list() == [
+        ["risk_throttle_max_drawdown"],
+        ["risk_throttle_daily_loss"],
+        ["risk_throttle_loss_streak"],
+    ]
+
+
+def test_authoring_risk_throttle_threshold_columns_must_be_non_empty(tmp_path) -> None:
+    spec_path = tmp_path / "risk-throttle-empty-threshold-column.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  risk_throttle:\n"
+            "    max_drawdown_column: strategy_drawdown\n"
+            '    max_drawdown_floor_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="max_drawdown_floor_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_authoring_risk_throttle_row_loss_streak_threshold_must_be_positive(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "risk-throttle-invalid-row-loss-streak.yaml"
+    _write_data(data_dir)
+    rows = _feature_rows()
+    rows[0]["loss_streak"] = 1
+    rows[0]["row_max_loss_streak"] = 0
+    pl.DataFrame(rows[:1]).write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  risk_throttle:\n"
+            "    loss_streak_column: loss_streak\n"
+            "    max_loss_streak_column: row_max_loss_streak",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyAuthoringValidationError, match="max_loss_streak"):
+        build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+
+def test_authoring_risk_throttle_conservative_profile_applies_defaults(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "risk-throttle-profile.yaml"
+    _write_data(data_dir)
+    rows = _feature_rows()
+    rows[0]["strategy_drawdown"] = -0.05
+    rows[0]["daily_pnl"] = 0.0
+    rows[0]["loss_streak"] = 0
+    rows[1]["strategy_drawdown"] = -0.20
+    rows[1]["daily_pnl"] = 0.0
+    rows[1]["loss_streak"] = 0
+    rows[2]["strategy_drawdown"] = -0.05
+    rows[2]["daily_pnl"] = 0.0
+    rows[2]["loss_streak"] = 3
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  risk_throttle:\n"
+            "    profile: conservative",
+        ),
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert spec.rules.risk_throttle.max_drawdown_column == "strategy_drawdown"
+    assert spec.rules.risk_throttle.max_drawdown_floor == -0.15
+    assert spec.rules.risk_throttle.daily_loss_column == "daily_pnl"
+    assert spec.rules.risk_throttle.daily_loss_floor == -0.05
+    assert spec.rules.risk_throttle.loss_streak_column == "loss_streak"
+    assert spec.rules.risk_throttle.max_loss_streak == 3
+    assert frame.filter(pl.col("side") != "none").height == 1
+    assert frame.filter(pl.col("side") == "none").get_column("block_reasons").to_list() == [
+        ["risk_throttle_max_drawdown"],
+        ["risk_throttle_loss_streak"],
+    ]
+
+
+def test_authoring_risk_throttle_profile_keeps_explicit_thresholds(tmp_path) -> None:
+    spec_path = tmp_path / "risk-throttle-profile.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  risk_throttle:\n"
+            "    profile: strict\n"
+            "    max_drawdown_floor: -0.25\n"
+            "    daily_loss_floor: -0.08\n"
+            "    max_loss_streak: 5",
+        ),
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+
+    assert spec.rules.risk_throttle.max_drawdown_floor == -0.25
+    assert spec.rules.risk_throttle.daily_loss_floor == -0.08
+    assert spec.rules.risk_throttle.max_loss_streak == 5
+
+
+def test_authoring_risk_throttle_cooldown_blocks_following_signals(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "risk-throttle-cooldown.yaml"
+    _write_data(data_dir)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    rows = [
+        {**_feature_rows()[0], "ts": start, "strategy_drawdown": -0.20},
+        {
+            **_feature_rows()[1],
+            "ts": start + timedelta(minutes=60),
+            "strategy_drawdown": -0.05,
+        },
+        {
+            **_feature_rows()[2],
+            "ts": start + timedelta(minutes=120),
+            "strategy_drawdown": -0.05,
+        },
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  risk_throttle:\n"
+            "    max_drawdown_column: strategy_drawdown\n"
+            "    max_drawdown_floor: -0.15\n"
+            "    cooldown_minutes: 90",
+        ),
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["none", "none", "long"]
+    assert frame.filter(pl.col("side") == "none").get_column("block_reasons").to_list() == [
+        ["risk_throttle_max_drawdown"],
+        ["risk_throttle_cooldown"],
+    ]
+
+
+def test_authoring_risk_throttle_cooldown_must_be_positive(tmp_path) -> None:
+    spec_path = tmp_path / "risk-throttle-cooldown-invalid.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  risk_throttle:\n"
+            "    cooldown_minutes: 0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="cooldown_minutes must be positive"):
+        load_authoring_spec(spec_path)
 
 
 def test_authoring_hold_rule_records_no_trade_signal_and_excludes_backtest(tmp_path) -> None:
@@ -1907,6 +2137,8 @@ def test_authoring_execution_profile_applies_defaults_without_overriding_explici
                 "latency_ms": 50.0,
                 "queue_position_score": 0.8,
                 "turnover_pressure": 0.2,
+                "capacity_usage_ratio": 0.3,
+                "correlation_crowding_score": 0.4,
                 "maker_taker_fee_edge_bps": 1.5,
             }
         ]
@@ -1948,6 +2180,8 @@ rules:
     assert spec.rules.execution.max_latency_ms == 100.0
     assert spec.rules.execution.min_queue_position_score == 0.6
     assert spec.rules.execution.max_turnover_pressure == 0.4
+    assert spec.rules.execution.max_capacity_usage_ratio == 0.5
+    assert spec.rules.execution.max_correlation_crowding_score == 0.6
     assert spec.rules.execution.min_fee_edge_bps == 0.0
     assert frame.select(
         [
@@ -1962,6 +2196,10 @@ rules:
             "queue_position_score",
             "max_turnover_pressure",
             "turnover_pressure",
+            "max_capacity_usage_ratio",
+            "capacity_usage_ratio",
+            "max_correlation_crowding_score",
+            "correlation_crowding_score",
             "min_fee_edge_bps",
             "fee_edge_bps",
         ]
@@ -1978,6 +2216,10 @@ rules:
             0.8,
             0.4,
             0.2,
+            0.5,
+            0.3,
+            0.6,
+            0.4,
             0.0,
             1.5,
         )
@@ -2212,6 +2454,128 @@ backtest:
         ["data_guard_source_confidence_too_low"],
         ["data_guard_regime_transition_too_high"],
     ]
+
+
+def test_authoring_data_guard_can_use_row_threshold_columns(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "data-guard-row-thresholds.yaml"
+    _write_data(data_dir)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    rows = [
+        {
+            **_feature_rows()[0],
+            "ts": start + timedelta(hours=index),
+            "feature_age_minutes": feature_age,
+            "row_max_feature_age_minutes": max_feature_age,
+            "source_confidence": source_confidence,
+            "row_min_source_confidence": min_source_confidence,
+            "venue_quality_score": venue_quality,
+            "row_min_venue_quality_score": min_venue_quality,
+            "staleness_bps": staleness_bps,
+            "row_max_staleness_bps": max_staleness_bps,
+            "regime_transition_score": regime_transition,
+            "row_max_regime_transition_score": max_regime_transition,
+        }
+        for index, (
+            feature_age,
+            max_feature_age,
+            source_confidence,
+            min_source_confidence,
+            venue_quality,
+            min_venue_quality,
+            staleness_bps,
+            max_staleness_bps,
+            regime_transition,
+            max_regime_transition,
+        ) in enumerate(
+            [
+                (10.0, 30.0, 0.9, 0.8, 0.9, 0.8, 1.0, 5.0, 0.1, 0.5),
+                (45.0, 30.0, 0.9, 0.8, 0.9, 0.8, 1.0, 5.0, 0.1, 0.5),
+                (10.0, 30.0, 0.7, 0.8, 0.9, 0.8, 1.0, 5.0, 0.1, 0.5),
+                (10.0, 30.0, 0.9, 0.8, 0.7, 0.8, 1.0, 5.0, 0.1, 0.5),
+                (10.0, 30.0, 0.9, 0.8, 0.9, 0.8, 9.0, 5.0, 0.1, 0.5),
+                (10.0, 30.0, 0.9, 0.8, 0.9, 0.8, 1.0, 5.0, 0.8, 0.5),
+            ]
+        )
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  data_guard:\n"
+            "    max_feature_age_minutes: 60\n"
+            "    max_feature_age_minutes_column: row_max_feature_age_minutes\n"
+            "    min_source_confidence: 0.5\n"
+            "    min_source_confidence_column: row_min_source_confidence\n"
+            "    min_venue_quality_score: 0.5\n"
+            "    min_venue_quality_score_column: row_min_venue_quality_score\n"
+            "    max_staleness_bps: 10\n"
+            "    max_staleness_bps_column: row_max_staleness_bps\n"
+            "    max_regime_transition_score: 1.0\n"
+            "    max_regime_transition_score_column: row_max_regime_transition_score",
+        ),
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == [
+        "long",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+    ]
+    assert frame.get_column("block_reasons").to_list() == [
+        [],
+        ["data_guard_feature_age_too_old"],
+        ["data_guard_source_confidence_too_low"],
+        ["data_guard_venue_quality_too_low"],
+        ["data_guard_staleness_too_high"],
+        ["data_guard_regime_transition_too_high"],
+    ]
+
+
+def test_authoring_data_guard_threshold_columns_must_be_non_empty(tmp_path) -> None:
+    spec_path = tmp_path / "data-guard-empty-threshold-column.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            '  portfolio:\n    max_signals_per_timestamp: 3\n  data_guard:\n    max_feature_age_minutes_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="max_feature_age_minutes_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_authoring_data_guard_row_thresholds_validate_ranges(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "data-guard-invalid-row-threshold.yaml"
+    _write_data(data_dir)
+    rows = [
+        {
+            **_feature_rows()[0],
+            "feature_age_minutes": 10.0,
+            "row_min_source_confidence": 1.5,
+        }
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  data_guard:\n"
+            "    min_source_confidence_column: row_min_source_confidence",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(StrategyAuthoringValidationError, match="min_source_confidence"):
+        build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
 
 
 def test_authoring_derived_features_support_return_volatility_and_shape_inputs(
@@ -2665,10 +3029,223 @@ backtest:
     assert frame.get_column("side").to_list() == ["long", "short"]
     assert frame.get_column("position_weight").to_list() == [1.2, 0.8]
     assert frame.get_column("notional_usd").to_list() == [600.0, 400.0]
+    group_ids = frame.get_column("multi_leg_group_id").to_list()
+    assert group_ids[0] is not None
+    assert group_ids[0] == group_ids[1]
+    assert frame.get_column("multi_leg_leg_index").to_list() == [1, 2]
+    assert frame.get_column("multi_leg_leg_count").to_list() == [2, 2]
+    assert frame.get_column("multi_leg_anchor_real_market_symbol").to_list() == ["AAA", "AAA"]
     assert frame.get_column("reason_codes").to_list() == [
         ["pair_trade_v1", "multi_leg", "long_leg"],
         ["pair_trade_v1", "multi_leg", "hedge_leg"],
     ]
+
+
+def test_authoring_backtest_summarizes_multi_leg_groups(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "pair-backtest.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    quote_path = data_dir / "normalized/quotes.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    quote_path.parent.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": "AAA",
+                "trade_allowed": True,
+                "spread_z": 2.0,
+                "research_return_1d": 0.02,
+            }
+        ]
+    ).write_parquet(feature_path)
+    quote_rows = []
+    for symbol, entry, exit_ in (("AAA100", 100.0, 104.0), ("BBB100", 50.0, 48.0)):
+        quote_rows.extend(
+            [
+                {**_quote(ts, entry), "canonical_symbol": symbol, "venue_symbol": symbol},
+                {
+                    **_quote(ts + timedelta(hours=4), exit_),
+                    "canonical_symbol": symbol,
+                    "venue_symbol": symbol,
+                },
+            ]
+        )
+    pl.DataFrame(quote_rows).write_parquet(quote_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: pair_trade_backtest_v1
+  strategy_family: pair_trade
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: spread_z
+        op: gt
+        value: 1
+  multi_leg:
+    enabled: true
+    anchor_real_market_symbol: AAA
+    legs:
+      - real_market_symbol: AAA
+        side: same
+        position_weight: 0.6
+        reason_code: long_leg
+      - real_market_symbol: BBB
+        side: opposite
+        position_weight: 0.4
+        reason_code: hedge_leg
+  sizing:
+    position_weight: 1.0
+    notional_usd: 1000
+  reason_code: pair_trade_v1
+backtest:
+  label_horizon_minutes: 240
+  split_method: walk_forward
+  era_unit: trading_day
+  pass_thresholds:
+    multi_leg_group_metrics.complete_group_count: 1
+    multi_leg_group_metrics.incomplete_group_count: 0
+    multi_leg_group_metrics.total_return: 0.01
+    multi_leg_group_metrics.avg_leg_return_imbalance: 0.001
+optimizer:
+  parameter_sweep:
+    rules.sizing.position_weight: [0.5, 1.0]
+  selection_metric: multi_leg_group_metrics.total_return
+  selection_direction: auto
+  max_variants: 4
+""",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "paper-preview"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    validate(
+        metrics,
+        json.loads(
+            Path("schemas/strategy_authoring_backtest_result.v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        ),
+    )
+    group_metrics = metrics["summary"]["multi_leg_group_metrics"]
+    assert group_metrics["group_count"] == 1
+    assert group_metrics["complete_group_count"] == 1
+    assert group_metrics["executed_leg_count"] == 2
+    assert group_metrics["expected_leg_count"] == 2
+    assert group_metrics["avg_group_return"] == pytest.approx(group_metrics["total_return"])
+    assert group_metrics["win_rate"] == 1.0
+    assert group_metrics["worst_group_return"] == pytest.approx(group_metrics["total_return"])
+    assert group_metrics["max_drawdown"] == 0.0
+    assert group_metrics["profit_factor"] is None
+    assert group_metrics["avg_leg_return_imbalance"] > 0
+    executed_group_results = [
+        result
+        for result in metrics["summary"]["executed_signal_results"]
+        if result["multi_leg_group_id"]
+    ]
+    expected_notional = sum(result["notional_usd"] for result in executed_group_results)
+    expected_notional_weighted_return = (
+        sum(result["signal_return"] * result["notional_usd"] for result in executed_group_results)
+        / expected_notional
+    )
+    assert group_metrics["total_notional_usd"] == pytest.approx(1000.0)
+    assert group_metrics["notional_weighted_total_return"] == pytest.approx(
+        expected_notional_weighted_return
+    )
+    group = group_metrics["groups"][0]
+    assert group["anchor_real_market_symbol"] == "AAA"
+    assert group["leg_count"] == 2
+    assert group["executed_leg_count"] == 2
+    assert group["complete"] is True
+    assert group["total_return"] > 0
+    assert group["total_notional_usd"] == pytest.approx(1000.0)
+    assert group["notional_weighted_return"] == pytest.approx(expected_notional_weighted_return)
+    assert group["avg_leg_return"] > 0
+    assert group["leg_return_imbalance"] > 0
+    assert group["win"] is True
+    assert group["exit_reason_counts"] == {"fixed_horizon": 2}
+    era_group_metrics = metrics["summary"]["walk_forward_eras"][0]["multi_leg_group_metrics"]
+    assert era_group_metrics["complete_group_count"] == 1
+    variants = metrics["summary"]["optimizer"]["variants"]
+    assert len(variants) == 2
+    assert metrics["summary"]["optimizer"]["selection_direction"] == "auto"
+    assert metrics["summary"]["optimizer"]["resolved_selection_direction"] == "maximize"
+    assert all("multi_leg_group_metrics" in variant for variant in variants)
+    assert (
+        metrics["summary"]["optimizer"]["best_variant"]["multi_leg_group_metrics"][
+            "complete_group_count"
+        ]
+        == 1
+    )
+    assert (
+        metrics["summary"]["optimizer"]["best_variant"]["parameters"][
+            "rules.sizing.position_weight"
+        ]
+        == 1.0
+    )
+    thresholds = metrics["summary"]["pass_thresholds"]
+    assert thresholds["multi_leg_group_metrics.complete_group_count"]["actual"] == 1
+    assert thresholds["multi_leg_group_metrics.complete_group_count"]["passed"] is True
+    assert thresholds["multi_leg_group_metrics.incomplete_group_count"]["actual"] == 0
+    assert thresholds["multi_leg_group_metrics.incomplete_group_count"]["passed"] is True
+    assert thresholds["multi_leg_group_metrics.total_return"]["actual"] > 0.01
+    assert thresholds["multi_leg_group_metrics.total_return"]["passed"] is True
+    assert thresholds["multi_leg_group_metrics.avg_leg_return_imbalance"]["actual"] > 0.001
+    assert thresholds["multi_leg_group_metrics.avg_leg_return_imbalance"]["passed"] is False
+    decision = json.loads(
+        (data_dir / "research/promotion_decision.json").read_text(encoding="utf-8")
+    )
+    scorecard_group_metrics = decision["scorecard_summary"]["multi_leg_group_metrics"]
+    assert scorecard_group_metrics["group_count"] == 1
+    assert scorecard_group_metrics["complete_group_count"] == 1
+    assert scorecard_group_metrics["incomplete_group_count"] == 0
+    assert scorecard_group_metrics["expected_leg_count"] == 2
+    assert scorecard_group_metrics["executed_leg_count"] == 2
+    assert scorecard_group_metrics["total_return"] == pytest.approx(group_metrics["total_return"])
+    assert scorecard_group_metrics["avg_group_return"] == pytest.approx(
+        group_metrics["avg_group_return"]
+    )
+    assert scorecard_group_metrics["win_rate"] == 1.0
+    assert scorecard_group_metrics["worst_group_return"] == pytest.approx(
+        group_metrics["worst_group_return"]
+    )
+    assert scorecard_group_metrics["max_drawdown"] == 0.0
+    assert scorecard_group_metrics["profit_factor"] is None
+    assert scorecard_group_metrics["avg_leg_return_imbalance"] == pytest.approx(
+        group_metrics["avg_leg_return_imbalance"]
+    )
+    assert scorecard_group_metrics["total_notional_usd"] == pytest.approx(
+        group_metrics["total_notional_usd"]
+    )
+    assert scorecard_group_metrics["notional_weighted_total_return"] == pytest.approx(
+        group_metrics["notional_weighted_total_return"]
+    )
+    assert scorecard_group_metrics["cost_drag_bps"] == pytest.approx(group_metrics["cost_drag_bps"])
+    assert "groups" not in scorecard_group_metrics
 
 
 def test_authoring_multi_leg_supports_dynamic_hedge_ratio_columns(
@@ -2757,6 +3334,488 @@ backtest:
     ]
 
 
+def test_authoring_multi_leg_supports_leg_exit_overrides(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "pair-leg-exit.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": "AAA",
+                "trade_allowed": True,
+                "spread_z": 2.0,
+                "research_return_1d": 0.02,
+            }
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: pair_leg_exit_authoring_v1
+  strategy_family: pair_trade
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: spread_z
+        op: gt
+        value: 1
+  exit:
+    stop_loss_bps: 100
+    take_profit_bps: 200
+    trailing_stop_bps: 80
+    partial_take_profit_bps: 120
+    partial_exit_fraction: 0.5
+  multi_leg:
+    enabled: true
+    anchor_real_market_symbol: AAA
+    legs:
+      - real_market_symbol: AAA
+        side: same
+        position_weight: 1.0
+        stop_loss_bps: 90
+        take_profit_bps: 180
+        reason_code: lead_leg
+      - real_market_symbol: BBB
+        side: opposite
+        position_weight: 0.5
+        stop_loss_bps: 140
+        take_profit_bps: 260
+        trailing_stop_bps: 110
+        partial_take_profit_bps: 160
+        partial_exit_fraction: 0.25
+        reason_code: hedge_leg
+  sizing:
+    position_weight: 1.0
+    notional_usd: 1000
+  reason_code: pair_leg_exit_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+    frame = frame.sort("execution_symbol")
+
+    assert frame.get_column("execution_symbol").to_list() == ["AAA100", "BBB100"]
+    assert frame.get_column("stop_loss_bps").to_list() == [90.0, 140.0]
+    assert frame.get_column("take_profit_bps").to_list() == [180.0, 260.0]
+    assert frame.get_column("trailing_stop_bps").to_list() == [80.0, 110.0]
+    assert frame.get_column("partial_take_profit_bps").to_list() == [120.0, 160.0]
+    assert frame.get_column("partial_exit_fraction").to_list() == [0.5, 0.25]
+
+
+def test_authoring_multi_leg_supports_row_level_leg_exit_overrides(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "row-leg-exit.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": "AAA",
+                "trade_allowed": True,
+                "spread_z": 2.0,
+                "research_return_1d": 0.02,
+                "global_stop_bps": 999.0,
+                "global_take_bps": 999.0,
+                "lead_stop_bps": 95.0,
+                "lead_take_bps": 190.0,
+                "hedge_stop_bps": 145.0,
+                "hedge_take_bps": 270.0,
+                "hedge_trailing_bps": 115.0,
+                "hedge_partial_bps": 165.0,
+                "hedge_partial_fraction": 0.3,
+                "hedge_min_rr": 1.75,
+            }
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: row_pair_leg_exit_authoring_v1
+  strategy_family: pair_trade
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: spread_z
+        op: gt
+        value: 1
+  exit:
+    stop_loss_bps: 100
+    stop_loss_bps_column: global_stop_bps
+    take_profit_bps: 200
+    take_profit_bps_column: global_take_bps
+    trailing_stop_bps: 80
+    partial_take_profit_bps: 120
+    partial_exit_fraction: 0.5
+  multi_leg:
+    enabled: true
+    anchor_real_market_symbol: AAA
+    legs:
+      - real_market_symbol: AAA
+        side: same
+        position_weight: 1.0
+        stop_loss_bps_column: lead_stop_bps
+        take_profit_bps_column: lead_take_bps
+        reason_code: lead_leg
+      - real_market_symbol: BBB
+        side: opposite
+        position_weight: 0.5
+        stop_loss_bps_column: hedge_stop_bps
+        take_profit_bps_column: hedge_take_bps
+        trailing_stop_bps_column: hedge_trailing_bps
+        partial_take_profit_bps_column: hedge_partial_bps
+        partial_exit_fraction_column: hedge_partial_fraction
+        min_reward_risk_ratio_column: hedge_min_rr
+        reason_code: hedge_leg
+  sizing:
+    position_weight: 1.0
+    notional_usd: 1000
+  reason_code: row_pair_leg_exit_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+    frame = frame.sort("execution_symbol")
+
+    assert frame.get_column("execution_symbol").to_list() == ["AAA100", "BBB100"]
+    assert frame.get_column("stop_loss_bps").to_list() == [95.0, 145.0]
+    assert frame.get_column("take_profit_bps").to_list() == [190.0, 270.0]
+    assert frame.get_column("trailing_stop_bps").to_list() == [80.0, 115.0]
+    assert frame.get_column("partial_take_profit_bps").to_list() == [120.0, 165.0]
+    assert frame.get_column("partial_exit_fraction").to_list() == [0.5, 0.3]
+    assert frame.get_column("min_reward_risk_ratio").to_list() == [None, 1.75]
+
+
+def test_authoring_multi_leg_exit_overrides_must_be_valid(tmp_path) -> None:
+    spec_path = tmp_path / "bad-leg-exit.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "  sizing:\n    position_weight: 1.0",
+            "  multi_leg:\n"
+            "    enabled: true\n"
+            "    anchor_real_market_symbol: QQQ\n"
+            "    legs:\n"
+            "      - real_market_symbol: QQQ\n"
+            "        side: same\n"
+            "        stop_loss_bps: -1\n"
+            "  sizing:\n    position_weight: 1.0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.multi_leg.legs\\[\\].stop_loss_bps"):
+        load_authoring_spec(spec_path)
+
+
+def test_authoring_multi_leg_exit_override_columns_must_be_non_empty(tmp_path) -> None:
+    spec_path = tmp_path / "bad-leg-exit-column.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "  sizing:\n    position_weight: 1.0",
+            "  multi_leg:\n"
+            "    enabled: true\n"
+            "    anchor_real_market_symbol: QQQ\n"
+            "    legs:\n"
+            "      - real_market_symbol: QQQ\n"
+            "        side: same\n"
+            '        stop_loss_bps_column: ""\n'
+            "  sizing:\n    position_weight: 1.0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.multi_leg.legs\\[\\].stop_loss_bps_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_authoring_multi_leg_supports_leg_order_overrides(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "pair-leg-order.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": "AAA",
+                "trade_allowed": True,
+                "spread_z": 2.0,
+                "research_return_1d": 0.02,
+                "hedge_limit_offset_bps": 35.0,
+                "hedge_timeout_minutes": 45,
+                "hedge_tif": "gtd",
+                "hedge_post_only": True,
+            }
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: pair_leg_order_authoring_v1
+  strategy_family: pair_trade
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: spread_z
+        op: gt
+        value: 1
+  order:
+    entry_type: market
+    time_in_force: gtc
+  multi_leg:
+    enabled: true
+    anchor_real_market_symbol: AAA
+    legs:
+      - real_market_symbol: AAA
+        side: same
+        position_weight: 1.0
+        reason_code: lead_leg
+      - real_market_symbol: BBB
+        side: opposite
+        position_weight: 0.5
+        entry_type: limit
+        limit_offset_bps_column: hedge_limit_offset_bps
+        time_in_force_column: hedge_tif
+        timeout_minutes_column: hedge_timeout_minutes
+        post_only_column: hedge_post_only
+        reason_code: hedge_leg
+  sizing:
+    position_weight: 1.0
+    notional_usd: 1000
+  reason_code: pair_leg_order_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+    frame = frame.sort("execution_symbol")
+
+    assert frame.get_column("execution_symbol").to_list() == ["AAA100", "BBB100"]
+    assert frame.get_column("entry_order_type").to_list() == ["market", "limit"]
+    assert frame.get_column("entry_limit_offset_bps").to_list() == [None, 35.0]
+    assert frame.get_column("entry_time_in_force").to_list() == ["gtc", "gtd"]
+    assert frame.get_column("entry_timeout_minutes").to_list() == [None, 45]
+    assert frame.get_column("entry_post_only").to_list() == [False, True]
+
+
+def test_authoring_multi_leg_order_override_columns_must_be_non_empty(tmp_path) -> None:
+    spec_path = tmp_path / "bad-leg-order-column.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "  sizing:\n    position_weight: 1.0",
+            "  multi_leg:\n"
+            "    enabled: true\n"
+            "    anchor_real_market_symbol: QQQ\n"
+            "    legs:\n"
+            "      - real_market_symbol: QQQ\n"
+            "        side: same\n"
+            '        entry_type_column: ""\n'
+            "  sizing:\n    position_weight: 1.0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.multi_leg.legs\\[\\].entry_type_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_authoring_multi_leg_supports_leg_execution_overrides(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "pair-leg-execution.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": "AAA",
+                "trade_allowed": True,
+                "spread_z": 2.0,
+                "research_return_1d": 0.02,
+                "hedge_slippage_bps": 22.0,
+                "hedge_min_fill": 0.3,
+                "hedge_spread_cap": 12.0,
+                "hedge_latency_ms": 35.0,
+                "hedge_queue_required": 0.7,
+                "hedge_queue_score": 0.8,
+                "hedge_tax_drag_bps": 4.0,
+            }
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: pair_leg_execution_authoring_v1
+  strategy_family: pair_trade
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: spread_z
+        op: gt
+        value: 1
+  execution:
+    slippage_bps: 5
+    max_fill_fraction: 0.9
+    max_spread_bps: 100
+  multi_leg:
+    enabled: true
+    anchor_real_market_symbol: AAA
+    legs:
+      - real_market_symbol: AAA
+        side: same
+        position_weight: 1.0
+        reason_code: lead_leg
+      - real_market_symbol: BBB
+        side: opposite
+        position_weight: 0.5
+        slippage_bps_column: hedge_slippage_bps
+        max_fill_fraction: 0.4
+        min_fill_fraction_column: hedge_min_fill
+        max_spread_bps_column: hedge_spread_cap
+        max_latency_ms: 50
+        latency_column: hedge_latency_ms
+        min_queue_position_score_column: hedge_queue_required
+        queue_position_score_column: hedge_queue_score
+        max_tax_drag_bps: 7
+        tax_drag_column: hedge_tax_drag_bps
+        reason_code: hedge_leg
+  sizing:
+    position_weight: 1.0
+    notional_usd: 1000
+  reason_code: pair_leg_execution_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+    frame = frame.sort("execution_symbol")
+
+    assert frame.get_column("execution_symbol").to_list() == ["AAA100", "BBB100"]
+    assert frame.get_column("slippage_bps").to_list() == [5.0, 22.0]
+    assert frame.get_column("max_fill_fraction").to_list() == [0.9, 0.4]
+    assert frame.get_column("min_fill_fraction").to_list() == [None, 0.3]
+    assert frame.get_column("max_spread_bps").to_list() == [100.0, 12.0]
+    assert frame.get_column("max_latency_ms").to_list() == [None, 50.0]
+    assert frame.get_column("latency_ms").to_list() == [None, 35.0]
+    assert frame.get_column("min_queue_position_score").to_list() == [None, 0.7]
+    assert frame.get_column("queue_position_score").to_list() == [None, 0.8]
+    assert frame.get_column("max_tax_drag_bps").to_list() == [None, 7.0]
+    assert frame.get_column("tax_drag_bps").to_list() == [None, 4.0]
+
+
+def test_authoring_multi_leg_execution_override_columns_must_be_non_empty(
+    tmp_path,
+) -> None:
+    spec_path = tmp_path / "bad-leg-execution-column.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "  sizing:\n    position_weight: 1.0",
+            "  multi_leg:\n"
+            "    enabled: true\n"
+            "    anchor_real_market_symbol: QQQ\n"
+            "    legs:\n"
+            "      - real_market_symbol: QQQ\n"
+            "        side: same\n"
+            '        slippage_bps_column: ""\n'
+            "  sizing:\n    position_weight: 1.0",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.multi_leg.legs\\[\\].slippage_bps_column"):
+        load_authoring_spec(spec_path)
+
+
 def test_authoring_portfolio_exposure_limits_block_excess_weight(tmp_path) -> None:
     data_dir = tmp_path / "data"
     spec_path = tmp_path / "spec.yaml"
@@ -2826,6 +3885,492 @@ backtest:
     assert set(blocked.get_column("block_reasons").to_list()[0]) == {
         "portfolio_total_exposure_limit"
     }
+
+
+def test_authoring_portfolio_total_exposure_limit_can_use_row_column(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "spec.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "research_return_1d": score,
+                "research_return_4h": 0.01,
+                "max_total_budget": 1.0,
+            }
+            for symbol, score in [("AAA", 0.03), ("BBB", 0.02), ("CCC", 0.01)]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: row_total_exposure_limited_authoring_v1
+  strategy_family: exposure_limited
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 0.6
+  portfolio:
+    max_total_position_weight_column: max_total_budget
+  score:
+    weighted_sum:
+      - column: research_return_1d
+        weight: 10
+  reason_code: row_total_exposure_limited_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list().count("long") == 1
+    blocked = frame.filter(pl.col("side") == "none")
+    assert blocked.height == 2
+    assert blocked.get_column("block_reasons").to_list() == [
+        ["portfolio_total_exposure_limit"],
+        ["portfolio_total_exposure_limit"],
+    ]
+
+
+def test_authoring_portfolio_total_exposure_limit_rejects_mixed_row_column(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "spec.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "research_return_1d": 0.01,
+                "research_return_4h": 0.01,
+                "max_total_budget": budget,
+            }
+            for symbol, budget in [("AAA", 1.0), ("BBB", 0.5)]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: mixed_row_total_exposure_limited_authoring_v1
+  strategy_family: exposure_limited
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  portfolio:
+    max_total_position_weight_column: max_total_budget
+  reason_code: mixed_row_total_exposure_limited_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="max_total_position_weight_column"):
+        build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+
+def test_authoring_portfolio_side_exposure_limits_can_use_row_columns(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "spec.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "direction": direction,
+                "research_return_1d": score,
+                "research_return_4h": 0.01,
+                "max_long_budget": 1.0,
+                "max_short_budget": 1.0,
+            }
+            for symbol, direction, score in [
+                ("AAA", "long", 0.04),
+                ("BBB", "short", 0.03),
+                ("CCC", "long", 0.02),
+                ("DDD", "short", 0.01),
+            ]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: row_side_exposure_limited_authoring_v1
+  strategy_family: exposure_limited
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: DDD100
+      real_market_symbol: DDD
+      asset_class: equity
+rules:
+  side_column: direction
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 0.6
+  portfolio:
+    max_long_position_weight_column: max_long_budget
+    max_short_position_weight_column: max_short_budget
+  score:
+    weighted_sum:
+      - column: research_return_1d
+        weight: 10
+  reason_code: row_side_exposure_limited_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    live = frame.filter(pl.col("side") != "none").sort("execution_symbol")
+    assert live.select("execution_symbol", "side").rows() == [
+        ("AAA100", "long"),
+        ("BBB100", "short"),
+    ]
+    blocked = frame.filter(pl.col("side") == "none").sort("execution_symbol")
+    assert blocked.select("execution_symbol", "block_reasons").rows() == [
+        ("CCC100", ["portfolio_long_exposure_limit"]),
+        ("DDD100", ["portfolio_short_exposure_limit"]),
+    ]
+
+
+def test_authoring_portfolio_net_exposure_limit_can_use_row_column(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "spec.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "direction": direction,
+                "research_return_1d": score,
+                "research_return_4h": 0.01,
+                "max_net_budget": 0.2,
+            }
+            for symbol, direction, score in [
+                ("AAA", "long", 0.03),
+                ("BBB", "short", 0.02),
+                ("CCC", "long", 0.01),
+            ]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: row_net_exposure_limited_authoring_v1
+  strategy_family: exposure_limited
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+rules:
+  side_column: direction
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 0.6
+  portfolio:
+    max_abs_net_position_weight_column: max_net_budget
+  score:
+    weighted_sum:
+      - column: research_return_1d
+        weight: 10
+  reason_code: row_net_exposure_limited_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    live = frame.filter(pl.col("side") != "none").sort("execution_symbol")
+    assert live.select("execution_symbol", "side").rows() == [
+        ("AAA100", "long"),
+        ("BBB100", "short"),
+    ]
+    blocked = frame.filter(pl.col("side") == "none")
+    assert blocked.get_column("execution_symbol").to_list() == ["CCC100"]
+    assert blocked.get_column("block_reasons").to_list() == [["portfolio_net_exposure_limit"]]
+
+
+def test_authoring_portfolio_symbol_and_group_limits_can_use_row_columns(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "spec.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "sector_bucket": bucket,
+                "trade_allowed": True,
+                "research_return_1d": score,
+                "research_return_4h": 0.01,
+                "max_symbol_budget": 0.8,
+                "max_group_budget": 1.0,
+            }
+            for symbol, bucket, score in [
+                ("AAA", "mega_cap", 0.03),
+                ("BBB", "mega_cap", 0.02),
+                ("CCC", "defensive", 0.01),
+            ]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: row_group_exposure_limited_authoring_v1
+  strategy_family: exposure_limited
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 0.6
+  portfolio:
+    max_symbol_position_weight_column: max_symbol_budget
+    max_group_position_weight_column: max_group_budget
+    group_column: sector_bucket
+  score:
+    weighted_sum:
+      - column: research_return_1d
+        weight: 10
+  reason_code: row_group_exposure_limited_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    live = frame.filter(pl.col("side") == "long").sort("execution_symbol")
+    assert live.get_column("execution_symbol").to_list() == ["AAA100", "CCC100"]
+    blocked = frame.filter(pl.col("side") == "none")
+    assert blocked.get_column("execution_symbol").to_list() == ["BBB100"]
+    assert blocked.get_column("block_reasons").to_list() == [["portfolio_group_exposure_limit"]]
+
+
+def test_authoring_portfolio_group_net_exposure_limit_can_use_row_column(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "spec.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "sector_bucket": "technology",
+                "trade_allowed": True,
+                "direction": direction,
+                "research_return_1d": score,
+                "research_return_4h": 0.01,
+                "max_group_net_budget": 0.2,
+            }
+            for symbol, direction, score in [
+                ("AAA", "long", 0.03),
+                ("BBB", "short", 0.02),
+                ("CCC", "long", 0.01),
+            ]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: row_group_net_exposure_limited_authoring_v1
+  strategy_family: exposure_limited
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+rules:
+  side_column: direction
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 0.6
+  portfolio:
+    max_group_abs_net_position_weight_column: max_group_net_budget
+    group_column: sector_bucket
+  score:
+    weighted_sum:
+      - column: research_return_1d
+        weight: 10
+  reason_code: row_group_net_exposure_limited_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    live = frame.filter(pl.col("side") != "none").sort("execution_symbol")
+    assert live.select("execution_symbol", "side").rows() == [
+        ("AAA100", "long"),
+        ("BBB100", "short"),
+    ]
+    blocked = frame.filter(pl.col("side") == "none")
+    assert blocked.get_column("execution_symbol").to_list() == ["CCC100"]
+    assert blocked.get_column("block_reasons").to_list() == [["portfolio_group_net_exposure_limit"]]
+
+
+def test_authoring_portfolio_exposure_limit_columns_must_be_non_empty(tmp_path) -> None:
+    spec_path = tmp_path / "spec.yaml"
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: empty_portfolio_exposure_column_v1
+  strategy_family: exposure_limited
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  portfolio:
+    max_long_position_weight_column: ""
+  reason_code: empty_portfolio_exposure_column_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="max_long_position_weight_column"):
+        load_authoring_spec(spec_path)
 
 
 def test_authoring_portfolio_group_exposure_limit_blocks_same_bucket(tmp_path) -> None:
@@ -3269,6 +4814,144 @@ backtest:
     frame = frame.sort("execution_symbol")
 
     assert frame.get_column("position_weight").to_list() == pytest.approx([0.75, 0.25])
+
+
+def test_authoring_portfolio_allocation_can_use_row_target_total_weight(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "portfolio-row-target.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "research_return_1d": score,
+                "research_return_4h": 0.01,
+                "target_weight_budget": 0.5,
+            }
+            for symbol, score in [("AAA", 0.03), ("BBB", 0.01)]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: row_target_allocation_authoring_v1
+  strategy_family: allocation
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  portfolio:
+    allocation_method: score_proportional
+    target_total_position_weight_column: target_weight_budget
+  score:
+    weighted_sum:
+      - column: research_return_1d
+        weight: 100
+  reason_code: row_target_allocation_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+    frame = frame.sort("execution_symbol")
+
+    assert frame.get_column("position_weight").to_list() == pytest.approx([0.375, 0.125])
+
+
+def test_authoring_portfolio_allocation_rejects_mixed_row_target_total_weight(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "portfolio-mixed-row-target.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "research_return_1d": 0.01,
+                "research_return_4h": 0.01,
+                "target_weight_budget": target,
+            }
+            for symbol, target in [("AAA", 0.5), ("BBB", 1.0)]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: mixed_row_target_allocation_authoring_v1
+  strategy_family: allocation
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  portfolio:
+    allocation_method: equal_weight
+    target_total_position_weight_column: target_weight_budget
+  reason_code: mixed_row_target_allocation_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="one value per timestamp"):
+        build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+
+def test_authoring_portfolio_target_total_weight_column_must_be_non_empty(tmp_path) -> None:
+    spec_path = tmp_path / "portfolio-empty-row-target.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "    allocation_method: equal_weight\n"
+            '    target_total_position_weight_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="target_total_position_weight_column"):
+        load_authoring_spec(spec_path)
 
 
 def test_authoring_portfolio_dollar_neutral_allocation_balances_long_short_gross(
@@ -4149,6 +5832,190 @@ def test_authoring_position_rules_block_overlapping_symbol_entries(tmp_path) -> 
     ]
 
 
+def test_authoring_position_rules_close_marker_releases_open_state(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "position-close.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace(
+            "  entry:\n    all:",
+            "  close:\n    all:\n      - column: close_signal\n        op: is_true\n"
+            "  entry:\n    none:\n      - column: close_signal\n        op: is_true\n    all:",
+        )
+        .replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  position:\n"
+            "    max_open_signals_per_symbol: 1\n"
+            "    holding_horizon_minutes: 480",
+        ),
+        encoding="utf-8",
+    )
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    feature_rows = [
+        {**_feature_rows()[0], "ts": start, "close_signal": False},
+        {**_feature_rows()[1], "ts": start + timedelta(hours=1), "close_signal": True},
+        {**_feature_rows()[2], "ts": start + timedelta(hours=2), "close_signal": False},
+    ]
+    pl.DataFrame(feature_rows).write_parquet(data_dir / "research/feature_panel.parquet")
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["long", "close", "long"]
+    assert frame.filter(pl.col("side") == "none").is_empty()
+
+
+def test_authoring_position_rules_can_require_open_position_for_markers(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "position-require-marker.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace(
+            "  entry:\n    all:",
+            "  reduce:\n    all:\n      - column: reduce_signal\n        op: is_true\n"
+            "  entry:\n    none:\n      - column: reduce_signal\n        op: is_true\n    all:",
+        )
+        .replace(
+            "exit:\n    stop_loss_bps: 150",
+            "exit:\n    exit_on_reduce_signal: true\n    reduce_fraction: 0.5\n    stop_loss_bps: 150",
+        )
+        .replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  position:\n"
+            "    require_open_position_for_markers: true",
+        ),
+        encoding="utf-8",
+    )
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    feature_rows = [
+        {**_feature_rows()[0], "ts": start, "reduce_signal": True},
+        {**_feature_rows()[1], "ts": start + timedelta(hours=1), "reduce_signal": False},
+    ]
+    pl.DataFrame(feature_rows).write_parquet(data_dir / "research/feature_panel.parquet")
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["none", "long"]
+    assert frame.filter(pl.col("side") == "none").get_column("block_reasons").to_list() == [
+        ["position_marker_without_open"]
+    ]
+
+
+def test_authoring_position_rules_can_block_opposing_open_positions(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "position-no-opposing.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("  side: long\n", "  side: auto\n  side_column: direction\n")
+        .replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  position:\n"
+            "    allow_opposing_open_positions: false",
+        ),
+        encoding="utf-8",
+    )
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    feature_rows = [
+        {**_feature_rows()[0], "ts": start, "direction": "long"},
+        {**_feature_rows()[1], "ts": start + timedelta(hours=1), "direction": "short"},
+    ]
+    pl.DataFrame(feature_rows).write_parquet(data_dir / "research/feature_panel.parquet")
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["long", "none"]
+    assert frame.filter(pl.col("side") == "none").get_column("block_reasons").to_list() == [
+        ["position_opposing_open_position"]
+    ]
+
+
+def test_authoring_position_rules_can_block_same_side_pyramiding(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "position-no-pyramiding.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  portfolio:\n    max_signals_per_timestamp: 3\n"
+            "  position:\n"
+            "    allow_pyramiding: false",
+        ),
+        encoding="utf-8",
+    )
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    feature_rows = [
+        {**_feature_rows()[0], "ts": start},
+        {**_feature_rows()[1], "ts": start + timedelta(hours=1)},
+        {**_feature_rows()[2], "ts": start + timedelta(hours=2)},
+    ]
+    pl.DataFrame(feature_rows).write_parquet(data_dir / "research/feature_panel.parquet")
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["long", "none", "none"]
+    assert frame.filter(pl.col("side") == "none").get_column("block_reasons").to_list() == [
+        ["position_pyramiding_not_allowed"],
+        ["position_pyramiding_not_allowed"],
+    ]
+
+
+def test_authoring_reduce_only_order_reduces_only_opposing_open_position(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "order-reduce-only.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("  side: long\n", "  side: auto\n  side_column: direction\n")
+        .replace(
+            "exit:\n    stop_loss_bps: 150",
+            "exit:\n    exit_on_reduce_signal: true\n    reduce_fraction: 1.0\n    stop_loss_bps: 150",
+        )
+        .replace(
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+            "  order:\n    reduce_only_column: reduce_only_order\n"
+            "  portfolio:\n    max_signals_per_timestamp: 3",
+        ),
+        encoding="utf-8",
+    )
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    feature_rows = [
+        {
+            **_feature_rows()[0],
+            "ts": start,
+            "direction": "long",
+            "reduce_only_order": False,
+        },
+        {
+            **_feature_rows()[1],
+            "ts": start + timedelta(hours=1),
+            "direction": "short",
+            "reduce_only_order": True,
+        },
+        {
+            **_feature_rows()[2],
+            "ts": start + timedelta(hours=2),
+            "direction": "short",
+            "reduce_only_order": True,
+        },
+    ]
+    pl.DataFrame(feature_rows).write_parquet(data_dir / "research/feature_panel.parquet")
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["long", "reduce", "none"]
+    assert frame.get_column("entry_reduce_only").to_list() == [False, True, False]
+    assert frame.get_column("reduce_fraction").to_list() == [None, 1.0, 1.0]
+    assert frame.get_column("reason_codes").to_list()[1][-1] == "reduce_only"
+    assert frame.filter(pl.col("side") == "none").get_column("block_reasons").to_list() == [
+        ["position_reduce_only_without_opposing_open"]
+    ]
+
+
 def test_authoring_event_window_allow_blocks_outside_or_missing_event(
     tmp_path,
 ) -> None:
@@ -4289,6 +6156,71 @@ def test_strategy_authoring_trailing_stop_can_exit_before_horizon(tmp_path, monk
     assert metrics["summary"]["exit_reason_counts"]["trailing_stop"] == 1
 
 
+def test_strategy_authoring_trailing_stop_activation_defers_until_profit_threshold(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("stop_loss_bps: 150", "stop_loss_bps: 900")
+        .replace("take_profit_bps: 300", "take_profit_bps: 900")
+        .replace("partial_take_profit_bps: 200", "partial_take_profit_bps: 900")
+        .replace(
+            "trailing_stop_bps: 120\n    trailing_stop_activation_bps: 0",
+            "trailing_stop_bps: 100\n    trailing_stop_activation_bps: 500",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 104.0),
+            _quote(start + timedelta(hours=2), 101.0),
+            _quote(start + timedelta(hours=4), 105.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["exit_reason_counts"]["fixed_horizon"] == 1
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("trailing_stop_activation_bps").to_list() == [500.0]
+
+
+def test_strategy_authoring_trailing_stop_activation_can_use_row_column(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    rows = [
+        {**row, "row_trailing_activation_bps": activation}
+        for row, activation in zip(_feature_rows()[:2], [500.0, 250.0], strict=True)
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml().replace(
+            "trailing_stop_activation_bps: 0",
+            "trailing_stop_activation_bps: null\n    trailing_stop_activation_bps_column: row_trailing_activation_bps",
+        ),
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("trailing_stop_activation_bps").to_list() == [500.0, 250.0]
+
+
 def test_strategy_authoring_min_holding_minutes_defers_early_stop_loss(
     tmp_path, monkeypatch
 ) -> None:
@@ -4375,6 +6307,51 @@ def test_strategy_authoring_bracket_oco_take_profit_records_lifecycle(
     assert signals.get_column("bracket_type").to_list() == ["oco"]
 
 
+def test_strategy_authoring_bracket_can_use_row_stop_column_as_exit_control(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace(
+            "stop_loss_bps: 150", "stop_loss_bps: null\n    stop_loss_bps_column: row_stop_bps"
+        )
+        .replace("take_profit_bps: 300", "take_profit_bps: 900")
+        .replace("trailing_stop_bps: 120", "trailing_stop_bps: 900")
+        .replace("partial_take_profit_bps: 200", "partial_take_profit_bps: 900")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  bracket:\n    enabled: true\n    bracket_type: oco",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "row_stop_bps": 150.0} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 97.0),
+            _quote(start + timedelta(hours=4), 105.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["exit_reason_counts"]["bracket_stop_loss"] == 1
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("stop_loss_bps").to_list() == [150.0]
+
+
 def test_strategy_authoring_bracket_break_even_stop_can_exit_after_arm(
     tmp_path, monkeypatch
 ) -> None:
@@ -4415,6 +6392,404 @@ def test_strategy_authoring_bracket_break_even_stop_can_exit_after_arm(
         (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
     )
     assert metrics["summary"]["exit_reason_counts"]["bracket_break_even_stop"] == 1
+
+
+def test_strategy_authoring_bracket_break_even_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("stop_loss_bps: 150", "stop_loss_bps: 900")
+        .replace("take_profit_bps: 300", "take_profit_bps: 900")
+        .replace("trailing_stop_bps: 120", "trailing_stop_bps: 900")
+        .replace("partial_take_profit_bps: 200", "partial_take_profit_bps: 900")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  bracket:\n    enabled: true\n    bracket_type: oco\n    break_even_after_bps_column: row_break_even_bps",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "row_break_even_bps": 100.0} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 102.0),
+            _quote(start + timedelta(hours=2), 100.0),
+            _quote(start + timedelta(hours=4), 105.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["exit_reason_counts"]["bracket_break_even_stop"] == 1
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("bracket_break_even_after_bps").to_list() == [100.0]
+
+
+def test_strategy_authoring_bracket_time_stop_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("stop_loss_bps: 150", "stop_loss_bps: 900")
+        .replace("take_profit_bps: 300", "take_profit_bps: 900")
+        .replace("trailing_stop_bps: 120", "trailing_stop_bps: 900")
+        .replace("partial_take_profit_bps: 200", "partial_take_profit_bps: 900")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  bracket:\n    enabled: true\n    bracket_type: oco\n    time_stop_minutes_column: row_time_stop_minutes",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "row_time_stop_minutes": 60} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 101.0),
+            _quote(start + timedelta(hours=4), 105.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["exit_reason_counts"]["bracket_time_stop"] == 1
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("bracket_time_stop_minutes").to_list() == [60]
+
+
+def test_strategy_authoring_bracket_break_even_can_arm_after_partial_take_profit(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("stop_loss_bps: 150", "stop_loss_bps: 900")
+        .replace("take_profit_bps: 300", "take_profit_bps: 900")
+        .replace("trailing_stop_bps: 120", "trailing_stop_bps: 900")
+        .replace("partial_take_profit_bps: 200", "partial_take_profit_bps: 150")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n"
+            "    position_weight: 1.0\n"
+            "  bracket:\n"
+            "    enabled: true\n"
+            "    bracket_type: oco\n"
+            "    break_even_after_partial_take_profit: true",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 102.0),
+            _quote(start + timedelta(hours=2), 100.0),
+            _quote(start + timedelta(hours=4), 105.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert (
+        metrics["summary"]["exit_reason_counts"]["partial_take_profit+bracket_break_even_stop"] == 1
+    )
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("bracket_break_even_after_partial_take_profit").to_list() == [True]
+
+
+def test_strategy_authoring_bracket_partial_take_profit_break_even_accepts_row_columns(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("stop_loss_bps: 150", "stop_loss_bps: 900")
+        .replace("take_profit_bps: 300", "take_profit_bps: 900")
+        .replace("trailing_stop_bps: 120", "trailing_stop_bps: 900")
+        .replace(
+            "partial_take_profit_bps: 200",
+            "partial_take_profit_bps: null\n    partial_take_profit_bps_column: row_partial_take_profit_bps",
+        )
+        .replace(
+            "partial_exit_fraction: 0.5",
+            "partial_exit_fraction: null\n    partial_exit_fraction_column: row_partial_exit_fraction",
+        )
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n"
+            "    position_weight: 1.0\n"
+            "  bracket:\n"
+            "    enabled: true\n"
+            "    bracket_type: oco\n"
+            "    break_even_after_partial_take_profit: true",
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            **row,
+            "row_partial_take_profit_bps": 150.0,
+            "row_partial_exit_fraction": 0.5,
+        }
+        for row in _feature_rows()[:1]
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 102.0),
+            _quote(start + timedelta(hours=2), 100.0),
+            _quote(start + timedelta(hours=4), 105.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert (
+        metrics["summary"]["exit_reason_counts"]["partial_take_profit+bracket_break_even_stop"] == 1
+    )
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("partial_take_profit_bps").to_list() == [150.0]
+    assert signals.get_column("partial_exit_fraction").to_list() == [0.5]
+
+
+def test_strategy_authoring_bracket_partial_take_profit_break_even_requires_partial_exit(
+    tmp_path,
+) -> None:
+    spec_path = tmp_path / "authoring.yaml"
+    spec_path.write_text(
+        template_yaml()
+        .replace("partial_take_profit_bps: 200", "partial_take_profit_bps: null")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n"
+            "    position_weight: 1.0\n"
+            "  bracket:\n"
+            "    enabled: true\n"
+            "    bracket_type: oco\n"
+            "    break_even_after_partial_take_profit: true",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="break_even_after_partial_take_profit requires"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_bracket_columns_must_be_non_empty(tmp_path) -> None:
+    spec_path = tmp_path / "authoring.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  bracket:\n    enabled: true\n    bracket_type: oco\n    time_stop_minutes_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.bracket.time_stop_minutes_column"):
+        load_authoring_spec(spec_path)
+
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  bracket:\n    enabled: true\n    bracket_type: oco\n    break_even_after_bps_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.bracket.break_even_after_bps_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_reward_risk_gate_blocks_low_ratio(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "take_profit_bps: 300",
+            "take_profit_bps: 300\n    min_reward_risk_ratio: 2.5",
+        ),
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["none", "none", "none"]
+    assert frame.get_column("reward_risk_ratio").to_list() == [2.0, 2.0, 2.0]
+    assert frame.get_column("min_reward_risk_ratio").to_list() == [2.5, 2.5, 2.5]
+    assert frame.get_column("block_reasons").to_list() == [
+        ["reward_risk_ratio_too_low"],
+        ["reward_risk_ratio_too_low"],
+        ["reward_risk_ratio_too_low"],
+    ]
+
+
+def test_strategy_authoring_reward_risk_gate_can_use_row_threshold_column(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    frame = pl.read_parquet(data_dir / "research/feature_panel.parquet").with_columns(
+        pl.Series("required_reward_risk", [1.5, 2.5, 1.0])
+    )
+    frame.write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml().replace(
+            "take_profit_bps: 300",
+            "take_profit_bps: 300\n    min_reward_risk_ratio_column: required_reward_risk",
+        ),
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["long", "none", "long"]
+    assert frame.get_column("reward_risk_ratio").to_list() == [2.0, 2.0, 2.0]
+    assert frame.get_column("min_reward_risk_ratio").to_list() == [1.5, 2.5, 1.0]
+    assert frame.get_column("block_reasons").to_list() == [
+        [],
+        ["reward_risk_ratio_too_low"],
+        [],
+    ]
+
+
+def test_strategy_authoring_reward_risk_gate_requires_non_negative_ratio(tmp_path) -> None:
+    spec_path = tmp_path / "authoring.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "take_profit_bps: 300",
+            "take_profit_bps: 300\n    min_reward_risk_ratio: -1",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="min_reward_risk_ratio must be >= 0"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_stop_target_width_guard_blocks_bad_widths(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("min_stop_loss_bps: 50", "min_stop_loss_bps: 200")
+        .replace("max_take_profit_bps: 1000", "max_take_profit_bps: 250"),
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["none", "none", "none"]
+    assert frame.get_column("min_stop_loss_bps").to_list() == [200.0, 200.0, 200.0]
+    assert frame.get_column("block_reasons").to_list() == [
+        ["stop_loss_bps_too_low"],
+        ["stop_loss_bps_too_low"],
+        ["stop_loss_bps_too_low"],
+    ]
+
+
+def test_strategy_authoring_stop_target_width_guard_can_use_row_columns(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    frame = pl.read_parquet(data_dir / "research/feature_panel.parquet").with_columns(
+        pl.Series("row_min_stop_bps", [100.0, 200.0, 100.0]),
+        pl.Series("row_max_take_profit_bps", [400.0, 400.0, 250.0]),
+    )
+    frame.write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml()
+        .replace(
+            "stop_loss_bps: 150",
+            "stop_loss_bps: 150\n    min_stop_loss_bps_column: row_min_stop_bps",
+        )
+        .replace(
+            "take_profit_bps: 300",
+            "take_profit_bps: 300\n    max_take_profit_bps_column: row_max_take_profit_bps",
+        ),
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.get_column("side").to_list() == ["long", "none", "none"]
+    assert frame.get_column("min_stop_loss_bps").to_list() == [100.0, 200.0, 100.0]
+    assert frame.get_column("max_take_profit_bps").to_list() == [400.0, 400.0, 250.0]
+    assert frame.get_column("block_reasons").to_list() == [
+        [],
+        ["stop_loss_bps_too_low"],
+        ["take_profit_bps_too_high"],
+    ]
+
+
+def test_strategy_authoring_stop_target_width_guard_columns_must_be_non_empty(tmp_path) -> None:
+    spec_path = tmp_path / "authoring.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "stop_loss_bps: 150",
+            'stop_loss_bps: 150\n    min_stop_loss_bps_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="min_stop_loss_bps_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_reward_risk_column_must_be_non_empty(tmp_path) -> None:
+    spec_path = tmp_path / "authoring.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "take_profit_bps: 300",
+            'take_profit_bps: 300\n    min_reward_risk_ratio_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="min_reward_risk_ratio_column"):
+        load_authoring_spec(spec_path)
 
 
 def test_strategy_authoring_opposite_signal_can_exit_before_horizon(tmp_path, monkeypatch) -> None:
@@ -4707,6 +7082,69 @@ def test_strategy_authoring_rebalance_signal_moves_to_target_paper_exposure(
     assert signals.get_column("rebalance_target_fraction").to_list() == [None, 1.5]
 
 
+def test_strategy_authoring_rebalance_min_delta_skips_small_drift(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace(
+            "  entry:\n    all:",
+            "  rebalance:\n    all:\n      - column: rebalance_signal\n        op: is_true\n"
+            "  entry:\n    none:\n      - column: rebalance_signal\n        op: is_true\n    all:",
+        )
+        .replace(
+            "exit:\n    stop_loss_bps: 150",
+            "exit:\n    exit_on_rebalance_signal: true\n"
+            "    rebalance_target_fraction: 1.05\n"
+            "    rebalance_min_delta_fraction: 0.10\n"
+            "    stop_loss_bps: 150",
+        ),
+        encoding="utf-8",
+    )
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    feature_rows = [
+        {
+            **_feature_rows()[0],
+            "ts": start,
+            "rebalance_signal": False,
+        },
+        {
+            **_feature_rows()[1],
+            "ts": start + timedelta(hours=1),
+            "rebalance_signal": True,
+        },
+    ]
+    pl.DataFrame(feature_rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 101.0),
+            _quote(start + timedelta(hours=4), 110.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    exit_reasons = metrics["summary"]["exit_reason_counts"]
+    assert (
+        sum(count for reason, count in exit_reasons.items() if "rebalance_band_skip" in reason) == 1
+    )
+    assert sum(count for reason, count in exit_reasons.items() if "rebalance_signal" in reason) == 0
+    total_return = metrics["summary"]["aggregate_metrics"]["total_return"]
+    assert 0.09 < total_return < 0.11
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("side").to_list() == ["long", "rebalance"]
+    assert signals.get_column("rebalance_min_delta_fraction").to_list() == [None, 0.1]
+
+
 def test_strategy_authoring_add_then_rebalance_resizes_open_paper_legs(
     tmp_path, monkeypatch
 ) -> None:
@@ -4898,9 +7336,7 @@ def test_strategy_authoring_ioc_limit_entry_does_not_wait_for_later_fill(
     assert signals.get_column("entry_time_in_force").to_list() == ["ioc"]
 
 
-def test_strategy_authoring_post_only_limit_blocks_marketable_entry(
-    tmp_path, monkeypatch
-) -> None:
+def test_strategy_authoring_post_only_limit_blocks_marketable_entry(tmp_path, monkeypatch) -> None:
     data_dir = tmp_path / "data"
     spec_path = tmp_path / "authoring.yaml"
     monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
@@ -4935,6 +7371,250 @@ def test_strategy_authoring_post_only_limit_blocks_marketable_entry(
     assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
     signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
     assert signals.get_column("entry_post_only").to_list() == [True]
+
+
+def test_strategy_authoring_time_in_force_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  order:\n    entry_type: limit\n"
+            "    limit_offset_bps: 100\n    time_in_force_column: order_tif",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    rows[0]["order_tif"] = "ioc"
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 99.0),
+            _quote(start + timedelta(hours=4), 103.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["entry_order_unfilled_count"] == 1
+    assert metrics["summary"]["blocked_reason_counts"]["entry_order_unfilled"] == 1
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("entry_time_in_force").to_list() == ["ioc"]
+
+
+def test_strategy_authoring_entry_order_type_can_use_row_columns(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  order:\n"
+            "    entry_type_column: order_type\n"
+            "    limit_offset_bps_column: limit_offset\n"
+            "    stop_offset_bps_column: stop_offset",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()
+    rows[0]["order_type"] = "market"
+    rows[0]["limit_offset"] = None
+    rows[0]["stop_offset"] = None
+    rows[1]["order_type"] = "limit"
+    rows[1]["limit_offset"] = 100.0
+    rows[1]["stop_offset"] = None
+    rows[2]["order_type"] = "stop_market"
+    rows[2]["limit_offset"] = None
+    rows[2]["stop_offset"] = 75.0
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+
+    signals, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert signals.get_column("entry_order_type").to_list() == ["market", "limit", "stop_market"]
+    assert signals.get_column("entry_limit_offset_bps").to_list() == [None, 100.0, None]
+    assert signals.get_column("entry_stop_offset_bps").to_list() == [None, None, 75.0]
+
+
+def test_strategy_authoring_entry_order_type_column_requires_row_offset(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  order:\n"
+            "    entry_type_column: order_type\n"
+            "    limit_offset_bps_column: limit_offset",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    rows[0]["order_type"] = "limit"
+    rows[0]["limit_offset"] = None
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+
+    with pytest.raises(ValueError, match="row entry_type is limit"):
+        build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+
+def test_strategy_authoring_entry_order_type_column_rejects_unsupported_value(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  order:\n"
+            "    entry_type_column: order_type\n"
+            "    limit_offset_bps: 100",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    rows[0]["order_type"] = "peg"
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+
+    with pytest.raises(ValueError, match="Unsupported rules.order.entry_type_column value"):
+        build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+
+def test_strategy_authoring_gtd_timeout_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  order:\n    entry_type: limit\n"
+            "    limit_offset_bps: 100\n    time_in_force: gtd\n"
+            "    timeout_minutes_column: order_timeout_minutes",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    rows[0]["order_timeout_minutes"] = 60
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=2), 99.0),
+            _quote(start + timedelta(hours=4), 103.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["entry_order_unfilled_count"] == 1
+    assert metrics["summary"]["blocked_reason_counts"]["entry_order_unfilled"] == 1
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("entry_time_in_force").to_list() == ["gtd"]
+    assert signals.get_column("entry_timeout_minutes").to_list() == [60]
+
+
+def test_strategy_authoring_post_only_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  order:\n    entry_type: limit\n"
+            "    limit_offset_bps: 0\n    post_only_column: order_post_only",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    rows[0]["order_post_only"] = True
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=4), 103.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["entry_order_unfilled_count"] == 1
+    assert metrics["summary"]["blocked_reason_counts"]["entry_order_post_only_would_cross"] == 1
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("entry_post_only").to_list() == [True]
+
+
+def test_strategy_authoring_post_only_column_rejects_unsupported_boolean(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  order:\n    entry_type: limit\n"
+            "    limit_offset_bps: 0\n    post_only_column: order_post_only",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    rows[0]["order_post_only"] = "maybe"
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    spec = load_authoring_spec(spec_path)
+
+    with pytest.raises(ValueError, match="Unsupported boolean value in order_post_only"):
+        build_authoring_signals(spec, data_dir=data_dir)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "expected_error"),
+    [
+        ("entry_type_column", "rules.order.entry_type_column"),
+        ("limit_offset_bps_column", "rules.order.limit_offset_bps_column"),
+        ("stop_offset_bps_column", "rules.order.stop_offset_bps_column"),
+        ("timeout_minutes_column", "rules.order.timeout_minutes_column"),
+        ("time_in_force_column", "rules.order.time_in_force_column"),
+        ("post_only_column", "rules.order.post_only_column"),
+    ],
+)
+def test_strategy_authoring_order_columns_must_be_non_empty(
+    tmp_path, field_name: str, expected_error: str
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            f'sizing:\n    position_weight: 1.0\n  order:\n    {field_name}: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match=expected_error):
+        load_authoring_spec(spec_path)
 
 
 def test_strategy_authoring_slippage_and_partial_fill_reduce_paper_return(
@@ -4981,6 +7661,64 @@ def test_strategy_authoring_slippage_and_partial_fill_reduce_paper_return(
     assert signals.get_column("max_fill_fraction").to_list() == [0.5]
 
 
+def test_strategy_authoring_slippage_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("take_profit_bps: 300", "take_profit_bps: 900")
+        .replace("trailing_stop_bps: 120", "trailing_stop_bps: 900")
+        .replace("partial_take_profit_bps: 200", "partial_take_profit_bps: 900")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n"
+            "    position_weight: 1.0\n"
+            "  execution:\n"
+            "    slippage_bps_column: expected_slippage_bps",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**_feature_rows()[0], "expected_slippage_bps": 75.0}]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=4), 104.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["aggregate_metrics"]["cost_drag_bps"] == 76.0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("slippage_bps").to_list() == [75.0]
+
+
+def test_strategy_authoring_slippage_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    slippage_bps_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.slippage_bps_column"):
+        load_authoring_spec(spec_path)
+
+
 def test_strategy_authoring_microstructure_spread_filter_blocks_trade(
     tmp_path, monkeypatch
 ) -> None:
@@ -5013,6 +7751,59 @@ def test_strategy_authoring_microstructure_spread_filter_blocks_trade(
     )
     assert metrics["summary"]["blocked_reason_counts"]["microstructure_spread_too_wide"] == 1
     assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+
+
+def test_strategy_authoring_max_spread_bps_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n"
+            "    position_weight: 1.0\n"
+            "  execution:\n"
+            "    max_spread_bps_column: max_allowed_spread_bps",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**_feature_rows()[0], "max_allowed_spread_bps": 5.0}]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    wide_entry = {**_quote(start, 100.0), "spread_bps": 10.0}
+    pl.DataFrame([wide_entry, _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["microstructure_spread_too_wide"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_spread_bps").to_list() == [5.0]
+
+
+def test_strategy_authoring_max_spread_bps_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    max_spread_bps_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.max_spread_bps_column"):
+        load_authoring_spec(spec_path)
 
 
 def test_strategy_authoring_microstructure_depth_scales_fill_fraction(
@@ -5056,6 +7847,226 @@ def test_strategy_authoring_microstructure_depth_scales_fill_fraction(
     assert signals.get_column("depth_participation_rate").to_list() == [0.5]
 
 
+def test_strategy_authoring_min_depth_usd_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0\n    notional_usd: 1000",
+            "sizing:\n"
+            "    position_weight: 1.0\n"
+            "    notional_usd: 1000\n"
+            "  execution:\n"
+            "    min_depth_usd_column: required_depth_usd\n"
+            "    depth_column: min_side_depth_10bps_usd",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**_feature_rows()[0], "required_depth_usd": 1_000.0}]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    shallow_entry = {**_quote(start, 100.0), "min_side_depth_10bps_usd": 500.0}
+    pl.DataFrame([shallow_entry, _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["microstructure_depth_too_low"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("min_depth_usd").to_list() == [1_000.0]
+
+
+def test_strategy_authoring_min_depth_usd_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    min_depth_usd_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.min_depth_usd_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_min_fill_fraction_blocks_small_effective_fill(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_fill_fraction: 0.4\n    min_fill_fraction: 0.5",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=4), 104.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["execution_fill_fraction_too_low"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_fill_fraction").to_list() == [0.4]
+    assert signals.get_column("min_fill_fraction").to_list() == [0.5]
+
+
+def test_strategy_authoring_max_fill_fraction_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n"
+            "    position_weight: 1.0\n"
+            "  execution:\n"
+            "    max_fill_fraction_column: expected_fill_fraction",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**_feature_rows()[0], "expected_fill_fraction": 0.4}]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=4), 104.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    total_return = metrics["summary"]["aggregate_metrics"]["total_return"]
+    assert 0 < total_return < 0.02
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_fill_fraction").to_list() == [0.4]
+
+
+def test_strategy_authoring_min_fill_fraction_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n"
+            "    position_weight: 1.0\n"
+            "  execution:\n"
+            "    max_fill_fraction: 0.4\n"
+            "    min_fill_fraction_column: required_fill_fraction",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**_feature_rows()[0], "required_fill_fraction": 0.5}]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=4), 104.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["execution_fill_fraction_too_low"] == 1
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("min_fill_fraction").to_list() == [0.5]
+
+
+def test_strategy_authoring_max_fill_fraction_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    max_fill_fraction_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.max_fill_fraction_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_min_fill_fraction_must_be_unit_interval(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    min_fill_fraction: 1.5",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.min_fill_fraction"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_min_fill_fraction_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    min_fill_fraction_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.min_fill_fraction_column"):
+        load_authoring_spec(spec_path)
+
+
 def test_strategy_authoring_microstructure_latency_filter_blocks_trade(
     tmp_path, monkeypatch
 ) -> None:
@@ -5092,6 +8103,63 @@ def test_strategy_authoring_microstructure_latency_filter_blocks_trade(
     assert signals.get_column("latency_ms").to_list() == [250.0]
 
 
+def test_strategy_authoring_max_latency_ms_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n"
+            "    position_weight: 1.0\n"
+            "  execution:\n"
+            "    max_latency_ms_column: allowed_latency_ms\n"
+            "    latency_column: observed_latency_ms",
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {**row, "allowed_latency_ms": 100.0, "observed_latency_ms": 250.0}
+        for row in _feature_rows()[:1]
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["microstructure_latency_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_latency_ms").to_list() == [100.0]
+    assert signals.get_column("latency_ms").to_list() == [250.0]
+
+
+def test_strategy_authoring_max_latency_ms_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    max_latency_ms_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.max_latency_ms_column"):
+        load_authoring_spec(spec_path)
+
+
 def test_strategy_authoring_microstructure_queue_position_filter_blocks_trade(
     tmp_path, monkeypatch
 ) -> None:
@@ -5126,6 +8194,65 @@ def test_strategy_authoring_microstructure_queue_position_filter_blocks_trade(
     signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
     assert signals.get_column("min_queue_position_score").to_list() == [0.6]
     assert signals.get_column("queue_position_score").to_list() == [0.2]
+
+
+def test_strategy_authoring_queue_position_score_can_use_row_threshold_column(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    min_queue_position_score_column: required_queue_score\n    queue_position_score_column: queue_score",
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            **row,
+            "required_queue_score": 0.7,
+            "queue_score": 0.4,
+        }
+        for row in _feature_rows()[:1]
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["microstructure_queue_position_too_low"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("min_queue_position_score").to_list() == [0.7]
+    assert signals.get_column("queue_position_score").to_list() == [0.4]
+
+
+def test_strategy_authoring_queue_position_score_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    min_queue_position_score_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.min_queue_position_score_column"):
+        load_authoring_spec(spec_path)
 
 
 def test_strategy_authoring_short_borrow_availability_filter_blocks_short_trade(
@@ -5166,6 +8293,71 @@ def test_strategy_authoring_short_borrow_availability_filter_blocks_short_trade(
     assert signals.get_column("borrow_availability_ratio").to_list() == [0.1]
 
 
+def test_strategy_authoring_short_borrow_availability_can_use_row_threshold_column(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("side: long", "side: short")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    min_borrow_availability_ratio_column: required_borrow_available\n    borrow_availability_column: borrow_available",
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            **row,
+            "required_borrow_available": 0.8,
+            "borrow_available": 0.4,
+        }
+        for row in _feature_rows()[:1]
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 96.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["short_borrow_availability_too_low"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("min_borrow_availability_ratio").to_list() == [0.8]
+    assert signals.get_column("borrow_availability_ratio").to_list() == [0.4]
+
+
+def test_strategy_authoring_short_borrow_availability_column_must_be_non_empty(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("side: long", "side: short")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    min_borrow_availability_ratio_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.min_borrow_availability_ratio_column"):
+        load_authoring_spec(spec_path)
+
+
 def test_strategy_authoring_short_borrow_cost_filter_blocks_short_trade(
     tmp_path, monkeypatch
 ) -> None:
@@ -5204,6 +8396,69 @@ def test_strategy_authoring_short_borrow_cost_filter_blocks_short_trade(
     assert signals.get_column("borrow_cost_bps").to_list() == [80.0]
 
 
+def test_strategy_authoring_short_borrow_cost_can_use_row_threshold_column(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("side: long", "side: short")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_borrow_cost_bps_column: allowed_borrow_cost\n    borrow_cost_column: borrow_cost",
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            **row,
+            "allowed_borrow_cost": 30.0,
+            "borrow_cost": 75.0,
+        }
+        for row in _feature_rows()[:1]
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 96.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["short_borrow_cost_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_borrow_cost_bps").to_list() == [30.0]
+    assert signals.get_column("borrow_cost_bps").to_list() == [75.0]
+
+
+def test_strategy_authoring_short_borrow_cost_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("side: long", "side: short")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    max_borrow_cost_bps_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.max_borrow_cost_bps_column"):
+        load_authoring_spec(spec_path)
+
+
 def test_strategy_authoring_tax_drag_filter_blocks_trade(tmp_path, monkeypatch) -> None:
     data_dir = tmp_path / "data"
     spec_path = tmp_path / "authoring.yaml"
@@ -5236,6 +8491,63 @@ def test_strategy_authoring_tax_drag_filter_blocks_trade(tmp_path, monkeypatch) 
     signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
     assert signals.get_column("max_tax_drag_bps").to_list() == [20.0]
     assert signals.get_column("tax_drag_bps").to_list() == [45.0]
+
+
+def test_strategy_authoring_tax_drag_can_use_row_threshold_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_tax_drag_bps_column: allowed_tax_drag\n    tax_drag_column: tax_drag",
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            **row,
+            "allowed_tax_drag": 15.0,
+            "tax_drag": 40.0,
+        }
+        for row in _feature_rows()[:1]
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["tax_drag_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_tax_drag_bps").to_list() == [15.0]
+    assert signals.get_column("tax_drag_bps").to_list() == [40.0]
+
+
+def test_strategy_authoring_tax_drag_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    max_tax_drag_bps_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.max_tax_drag_bps_column"):
+        load_authoring_spec(spec_path)
 
 
 def test_strategy_authoring_turnover_pressure_filter_blocks_trade(tmp_path, monkeypatch) -> None:
@@ -5272,6 +8584,240 @@ def test_strategy_authoring_turnover_pressure_filter_blocks_trade(tmp_path, monk
     assert signals.get_column("turnover_pressure").to_list() == [0.9]
 
 
+def test_strategy_authoring_turnover_pressure_can_use_row_threshold_column(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_turnover_pressure_column: allowed_turnover_pressure\n    turnover_pressure_column: turnover_pressure",
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            **row,
+            "allowed_turnover_pressure": 0.3,
+            "turnover_pressure": 0.8,
+        }
+        for row in _feature_rows()[:1]
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["turnover_pressure_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_turnover_pressure").to_list() == [0.3]
+    assert signals.get_column("turnover_pressure").to_list() == [0.8]
+
+
+def test_strategy_authoring_turnover_pressure_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    max_turnover_pressure_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.max_turnover_pressure_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_capacity_usage_filter_blocks_trade(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_capacity_usage_ratio: 0.6\n    capacity_usage_column: capacity_usage",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "capacity_usage": 0.85} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["capacity_usage_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_capacity_usage_ratio").to_list() == [0.6]
+    assert signals.get_column("capacity_usage_ratio").to_list() == [0.85]
+
+
+def test_strategy_authoring_capacity_usage_can_use_row_threshold_column(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_capacity_usage_ratio_column: allowed_capacity_usage\n    capacity_usage_column: capacity_usage",
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {**row, "allowed_capacity_usage": 0.5, "capacity_usage": 0.85}
+        for row in _feature_rows()[:1]
+    ]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["capacity_usage_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_capacity_usage_ratio").to_list() == [0.5]
+    assert signals.get_column("capacity_usage_ratio").to_list() == [0.85]
+
+
+def test_strategy_authoring_capacity_usage_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    max_capacity_usage_ratio_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.max_capacity_usage_ratio_column"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_correlation_crowding_filter_blocks_trade(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_correlation_crowding_score: 0.7\n    correlation_crowding_column: crowding",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "crowding": 0.95} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["correlation_crowding_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_correlation_crowding_score").to_list() == [0.7]
+    assert signals.get_column("correlation_crowding_score").to_list() == [0.95]
+
+
+def test_strategy_authoring_correlation_crowding_can_use_row_threshold_column(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_correlation_crowding_score_column: allowed_crowding\n    correlation_crowding_column: crowding",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "allowed_crowding": 0.6, "crowding": 0.95} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["correlation_crowding_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_correlation_crowding_score").to_list() == [0.6]
+    assert signals.get_column("correlation_crowding_score").to_list() == [0.95]
+
+
+def test_strategy_authoring_correlation_crowding_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    max_correlation_crowding_score_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.max_correlation_crowding_score_column"):
+        load_authoring_spec(spec_path)
+
+
 def test_strategy_authoring_fee_edge_filter_blocks_trade(tmp_path, monkeypatch) -> None:
     data_dir = tmp_path / "data"
     spec_path = tmp_path / "authoring.yaml"
@@ -5304,6 +8850,56 @@ def test_strategy_authoring_fee_edge_filter_blocks_trade(tmp_path, monkeypatch) 
     signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
     assert signals.get_column("min_fee_edge_bps").to_list() == [1.0]
     assert signals.get_column("fee_edge_bps").to_list() == [-2.0]
+
+
+def test_strategy_authoring_fee_edge_can_use_row_threshold_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    min_fee_edge_bps_column: required_fee_edge\n    fee_edge_column: fee_edge",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "required_fee_edge": 2.0, "fee_edge": -1.0} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["fee_edge_too_low"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("min_fee_edge_bps").to_list() == [2.0]
+    assert signals.get_column("fee_edge_bps").to_list() == [-1.0]
+
+
+def test_strategy_authoring_fee_edge_column_must_be_non_empty(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            'sizing:\n    position_weight: 1.0\n  execution:\n    min_fee_edge_bps_column: ""',
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="rules.execution.min_fee_edge_bps_column"):
+        load_authoring_spec(spec_path)
 
 
 def test_strategy_authoring_cli_init_validate_explain_and_run_backtest(
@@ -5539,6 +9135,14 @@ portfolio:
     payload = json.loads(
         (data_dir / "research/strategy_authoring_bundle_result.json").read_text(encoding="utf-8")
     )
+    validate(
+        payload,
+        json.loads(
+            Path("schemas/strategy_authoring_bundle_result.v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        ),
+    )
     assert payload["paper_only"] is True
     assert payload["live_order_submitted"] is False
     assert payload["aggregate_metrics"]["member_count"] == 2
@@ -5550,6 +9154,311 @@ portfolio:
         member["effective_allocation_weight"] for member in payload["members"]
     ) == pytest.approx(1.0)
     assert (data_dir / "reports/strategy_authoring_bundle_report.md").exists()
+
+
+def test_strategy_authoring_bundle_can_rank_by_dotted_summary_metric(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    feature_path = data_dir / "research/feature_panel.parquet"
+    quote_path = data_dir / "normalized/quotes.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    quote_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": "AAA",
+                "trade_allowed": True,
+                "spread_z": 2.0,
+                "research_return_1d": 0.02,
+            }
+        ]
+    ).write_parquet(feature_path)
+    quote_rows = []
+    for symbol, entry, exit_ in (("AAA100", 100.0, 104.0), ("BBB100", 50.0, 48.0)):
+        quote_rows.extend(
+            [
+                {**_quote(ts, entry), "canonical_symbol": symbol, "venue_symbol": symbol},
+                {
+                    **_quote(ts + timedelta(hours=4), exit_),
+                    "canonical_symbol": symbol,
+                    "venue_symbol": symbol,
+                },
+            ]
+        )
+    pl.DataFrame(quote_rows).write_parquet(quote_path)
+    spec_template = """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: {strategy_id}
+  strategy_family: pair_trade
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: spread_z
+        op: gt
+        value: 1
+  multi_leg:
+    enabled: true
+    anchor_real_market_symbol: AAA
+    legs:
+      - real_market_symbol: AAA
+        side: same
+        position_weight: 0.6
+        reason_code: long_leg
+      - real_market_symbol: BBB
+        side: opposite
+        position_weight: 0.4
+        reason_code: hedge_leg
+  sizing:
+    position_weight: {position_weight}
+    notional_usd: 1000
+  reason_code: pair_trade_v1
+backtest:
+  label_horizon_minutes: 240
+  min_trade_count: 1
+"""
+    spec_low = tmp_path / "pair_low.yaml"
+    spec_high = tmp_path / "pair_high.yaml"
+    spec_low.write_text(
+        spec_template.format(strategy_id="pair_low_group_return_v1", position_weight=0.25),
+        encoding="utf-8",
+    )
+    spec_high.write_text(
+        spec_template.format(strategy_id="pair_high_group_return_v1", position_weight=1.0),
+        encoding="utf-8",
+    )
+    bundle_path = tmp_path / "bundle.yaml"
+    bundle_path.write_text(
+        f"""schema_version: strategy_authoring_bundle.v1
+bundle_id: pair_group_metric_bundle_v1
+members:
+  - spec_path: {spec_low.name}
+    allocation_weight: 0.5
+  - spec_path: {spec_high.name}
+    allocation_weight: 0.5
+portfolio:
+  selection_metric: multi_leg_group_metrics.total_return
+  selection_direction: maximize
+""",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["strategy-author-bundle-run", "--bundle", str(bundle_path)])
+
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(
+        (data_dir / "research/strategy_authoring_bundle_result.json").read_text(encoding="utf-8")
+    )
+    assert payload["best_member"]["strategy_id"] == "pair_high_group_return_v1"
+    assert (
+        payload["best_member"]["summary"]["multi_leg_group_metrics"]["total_return"]
+        > payload["members"][1]["summary"]["multi_leg_group_metrics"]["total_return"]
+    )
+    bundle_group_metrics = payload["aggregate_metrics"]["multi_leg_group_metrics"]
+    member_weighted_return = sum(
+        member["summary"]["multi_leg_group_metrics"]["total_return"]
+        * member["effective_allocation_weight"]
+        for member in payload["members"]
+    )
+    assert bundle_group_metrics["group_count"] == 2
+    assert bundle_group_metrics["complete_group_count"] == 2
+    assert bundle_group_metrics["incomplete_group_count"] == 0
+    assert bundle_group_metrics["expected_leg_count"] == 4
+    assert bundle_group_metrics["executed_leg_count"] == 4
+    assert bundle_group_metrics["weighted_total_return"] == pytest.approx(member_weighted_return)
+    assert bundle_group_metrics["weighted_cost_drag_bps"] == pytest.approx(
+        sum(
+            member["summary"]["multi_leg_group_metrics"]["cost_drag_bps"]
+            * member["effective_allocation_weight"]
+            for member in payload["members"]
+        )
+    )
+    assert bundle_group_metrics["weighted_avg_leg_return_imbalance"] == pytest.approx(
+        sum(
+            member["summary"]["multi_leg_group_metrics"]["avg_leg_return_imbalance"]
+            * member["effective_allocation_weight"]
+            for member in payload["members"]
+        )
+    )
+    expected_total_notional = sum(
+        member["summary"]["multi_leg_group_metrics"]["total_notional_usd"]
+        for member in payload["members"]
+    )
+    expected_weighted_notional_return = sum(
+        member["summary"]["multi_leg_group_metrics"]["notional_weighted_total_return"]
+        * member["effective_allocation_weight"]
+        for member in payload["members"]
+    )
+    assert bundle_group_metrics["total_notional_usd"] == pytest.approx(expected_total_notional)
+    assert bundle_group_metrics["weighted_notional_return"] == pytest.approx(
+        expected_weighted_notional_return
+    )
+    report = (data_dir / "reports/strategy_authoring_bundle_report.md").read_text(encoding="utf-8")
+    assert "## Multi-Leg Group Metrics" in report
+    assert f"- group_count: {bundle_group_metrics['group_count']}" in report
+    assert "- complete_group_count: 2" in report
+    assert "- incomplete_group_count: 0" in report
+    assert "- weighted_total_return:" in report
+    assert "- group_completion_rate: 1.000000" in report
+    assert "- weighted_win_rate:" in report
+    assert "- worst_group_return:" in report
+    assert "- weighted_max_drawdown:" in report
+    assert "- total_notional_usd:" in report
+    assert "- weighted_notional_return:" in report
+    assert "- weighted_profit_factor:" in report
+    assert "- weighted_avg_leg_return_imbalance:" in report
+    assert (
+        "| Strategy | Groups | Complete | Completion Rate | Weighted Group Return | "
+        "Weighted Notional Return | Total Notional USD | Weighted Win Rate | "
+        "Weighted Max Drawdown | Weighted Profit Factor | Weighted Leg Imbalance |"
+    ) in report
+
+
+def test_strategy_authoring_bundle_auto_direction_minimizes_lower_is_better_metric(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    feature_path = data_dir / "research/feature_panel.parquet"
+    quote_path = data_dir / "normalized/quotes.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    quote_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": "AAA",
+                "trade_allowed": True,
+                "spread_z": 2.0,
+                "research_return_1d": 0.02,
+            }
+        ]
+    ).write_parquet(feature_path)
+    quote_rows = []
+    for symbol, entry, exit_ in (("AAA100", 100.0, 104.0), ("BBB100", 50.0, 48.0)):
+        quote_rows.extend(
+            [
+                {**_quote(ts, entry), "canonical_symbol": symbol, "venue_symbol": symbol},
+                {
+                    **_quote(ts + timedelta(hours=4), exit_),
+                    "canonical_symbol": symbol,
+                    "venue_symbol": symbol,
+                },
+            ]
+        )
+    pl.DataFrame(quote_rows).write_parquet(quote_path)
+    spec_template = """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: {strategy_id}
+  strategy_family: pair_trade
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: {hedge_execution_symbol}
+      real_market_symbol: {hedge_real_market_symbol}
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: spread_z
+        op: gt
+        value: 1
+  multi_leg:
+    enabled: true
+    anchor_real_market_symbol: AAA
+    legs:
+      - real_market_symbol: AAA
+        side: same
+        position_weight: 0.6
+        reason_code: long_leg
+      - real_market_symbol: {hedge_real_market_symbol}
+        side: opposite
+        position_weight: 0.4
+        reason_code: hedge_leg
+  sizing:
+    position_weight: 1.0
+    notional_usd: 1000
+  reason_code: pair_trade_v1
+backtest:
+  label_horizon_minutes: 240
+  min_trade_count: 1
+"""
+    complete_spec = tmp_path / "pair_complete.yaml"
+    incomplete_spec = tmp_path / "pair_incomplete.yaml"
+    complete_spec.write_text(
+        spec_template.format(
+            strategy_id="pair_complete_group_v1",
+            hedge_execution_symbol="BBB100",
+            hedge_real_market_symbol="BBB",
+        ),
+        encoding="utf-8",
+    )
+    incomplete_spec.write_text(
+        spec_template.format(
+            strategy_id="pair_incomplete_group_v1",
+            hedge_execution_symbol="CCC100",
+            hedge_real_market_symbol="CCC",
+        ),
+        encoding="utf-8",
+    )
+    bundle_path = tmp_path / "bundle.yaml"
+    bundle_path.write_text(
+        f"""schema_version: strategy_authoring_bundle.v1
+bundle_id: pair_auto_direction_bundle_v1
+members:
+  - spec_path: {incomplete_spec.name}
+    allocation_weight: 0.5
+  - spec_path: {complete_spec.name}
+    allocation_weight: 0.5
+portfolio:
+  selection_metric: multi_leg_group_metrics.incomplete_group_count
+  selection_direction: auto
+""",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["strategy-author-bundle-run", "--bundle", str(bundle_path)])
+
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(
+        (data_dir / "research/strategy_authoring_bundle_result.json").read_text(encoding="utf-8")
+    )
+    assert payload["portfolio"]["selection_direction"] == "auto"
+    assert payload["portfolio"]["resolved_selection_direction"] == "minimize"
+    assert payload["best_member"]["strategy_id"] == "pair_complete_group_v1"
+    assert (
+        payload["best_member"]["summary"]["multi_leg_group_metrics"]["incomplete_group_count"] == 0
+    )
+    assert payload["members"][1]["strategy_id"] == "pair_incomplete_group_v1"
+    assert (
+        payload["members"][1]["summary"]["multi_leg_group_metrics"]["incomplete_group_count"] == 1
+    )
 
 
 def test_strategy_authoring_bundle_risk_parity_allocates_by_drawdown_proxy(
@@ -5699,3 +9608,190 @@ def test_strategy_authoring_stop_loss_can_end_before_fixed_horizon(tmp_path, mon
     )
     assert metrics["summary"]["exit_reason_counts"]["stop_loss"] == 1
     assert metrics["summary"]["aggregate_metrics"]["total_return"] < 0
+
+
+def test_strategy_authoring_max_holding_minutes_caps_fixed_horizon(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("stop_loss_bps: 150", "stop_loss_bps: 900")
+        .replace("take_profit_bps: 300", "take_profit_bps: 900")
+        .replace("trailing_stop_bps: 120", "trailing_stop_bps: 900")
+        .replace("partial_take_profit_bps: 200", "partial_take_profit_bps: 900")
+        .replace(
+            "partial_exit_fraction: 0.5",
+            "partial_exit_fraction: 0.5\n    max_holding_minutes: 60",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 101.0),
+            _quote(start + timedelta(hours=4), 110.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["exit_reason_counts"]["max_holding_time"] == 1
+    total_return = metrics["summary"]["aggregate_metrics"]["total_return"]
+    assert 0.008 < total_return < 0.01
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_holding_minutes").to_list() == [60]
+
+
+def test_strategy_authoring_max_holding_minutes_can_use_row_column(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("stop_loss_bps: 150", "stop_loss_bps: 900")
+        .replace("take_profit_bps: 300", "take_profit_bps: 900")
+        .replace("trailing_stop_bps: 120", "trailing_stop_bps: 900")
+        .replace("partial_take_profit_bps: 200", "partial_take_profit_bps: 900")
+        .replace(
+            "partial_exit_fraction: 0.5",
+            "partial_exit_fraction: 0.5\n    max_holding_minutes_column: row_max_hold_minutes",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**_feature_rows()[0], "row_max_hold_minutes": 60}]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 101.0),
+            _quote(start + timedelta(hours=4), 110.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["exit_reason_counts"]["max_holding_time"] == 1
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_holding_minutes").to_list() == [60]
+
+
+def test_strategy_authoring_max_holding_minutes_must_not_be_shorter_than_min(
+    tmp_path,
+) -> None:
+    spec_path = tmp_path / "authoring.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "partial_exit_fraction: 0.5",
+            "partial_exit_fraction: 0.5\n    min_holding_minutes: 120\n    max_holding_minutes: 60",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="max_holding_minutes must be >= min_holding_minutes"):
+        load_authoring_spec(spec_path)
+
+
+def test_strategy_authoring_holding_minutes_columns_validate_row_order(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    _write_data(data_dir)
+    rows = [{**_feature_rows()[0], "row_min_hold_minutes": 120, "row_max_hold_minutes": 60}]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    spec_path.write_text(
+        template_yaml().replace(
+            "partial_exit_fraction: 0.5",
+            "partial_exit_fraction: 0.5\n"
+            "    min_holding_minutes_column: row_min_hold_minutes\n"
+            "    max_holding_minutes_column: row_max_hold_minutes",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="max_holding_minutes must be >= min_holding_minutes"):
+        build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+
+def test_strategy_authoring_exit_priority_can_take_profit_before_partial(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("stop_loss_bps: 150", "stop_loss_bps: 900")
+        .replace("trailing_stop_bps: 120", "trailing_stop_bps: 900")
+        .replace(
+            "partial_exit_fraction: 0.5",
+            "partial_exit_fraction: 0.5\n"
+            "    exit_priority:\n"
+            "      - take_profit\n"
+            "      - partial_take_profit\n"
+            "      - stop_loss\n"
+            "      - trailing_stop\n"
+            "      - break_even_stop\n"
+            "      - time_stop",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=4), 104.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["exit_reason_counts"]["take_profit"] == 1
+    assert "partial_take_profit" not in metrics["summary"]["exit_reason_counts"]
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("exit_priority").to_list() == [
+        "take_profit,partial_take_profit,stop_loss,trailing_stop,break_even_stop,time_stop"
+    ]
+
+
+def test_strategy_authoring_exit_priority_rejects_duplicates(tmp_path) -> None:
+    spec_path = tmp_path / "authoring.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "partial_exit_fraction: 0.5",
+            "partial_exit_fraction: 0.5\n"
+            "    exit_priority:\n"
+            "      - take_profit\n"
+            "      - take_profit",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="exit_priority must not contain duplicates"):
+        load_authoring_spec(spec_path)

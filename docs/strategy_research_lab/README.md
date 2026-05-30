@@ -31,6 +31,10 @@
    - ユーザーが YAML で作れる売買ロジック、buy / sell signal、hold、損切、portfolio / execution 制約、未実装領域を一覧で確認する。
 12. [12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md](12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md)
    - 今回までに追加・整理した Strategy Authoring 機能、execution quality gate、paper-only 境界、検証済み状態を確認する。
+13. [13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md](13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md)
+   - 生成しうる strategy archetype ごとに、対応状況、DSL surface、証拠 test、paper-only 境界を確認する。
+14. [14_COMPLETION_EVIDENCE_LEDGER.md](14_COMPLETION_EVIDENCE_LEDGER.md)
+   - paper-only Strategy Authoring scope の completion evidence、schema、example、非対象領域、最終 gate を確認する。
 
 入口監査仕様は [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md) です。
 
@@ -84,6 +88,6 @@ StrategyExperimentSpec
 - `evaluate-strategy-lab --rank-thresholds 0.2,0.8` で paper-only の rank threshold sweep を記録できます。
 - `--split-method walk_forward` / `--era-unit` は era 別 signal count metrics を記録します。PnL や live-ready 証明ではありません。
 - `strategy-experiment-run --spec path/to/spec.yaml` は `StrategyExperimentSpec` YAML/JSON を読み、登録済み `generator_id` の build 関数を spec の `strategy_id` / `symbol_bindings` / manifest lineage で実行します。`parameter_grid` は cartesian 展開され、各 variant は `parameter_hash` と `parameter_grid:<hash>` reason code で区別されます。現行 built-in generator は `min_source_confidence`, `max_vix_level` / `vix_gate`, `min_research_return_1d`, `timeframe` を signal 条件または出力 timeframe として消費できます。未登録 generator や `--max-variants` 超過は fail closed で止まります。
-- `strategy-author-*` CLI は `strategy_authoring_spec.v1` YAML を読み、宣言型 rule から Strategy Lab signal artifact と fixed-horizon backtest metrics を作れます。`strategy-author-bundle-run` は `strategy_authoring_bundle.v1` で複数 spec の paper portfolio 比較を作れます。
+- `strategy-author-*` CLI は `strategy_authoring_spec.v1` YAML を読み、宣言型 rule から Strategy Lab signal artifact と fixed-horizon backtest metrics を作れます。`strategy-author-bundle-run` は `strategy_authoring_bundle.v1` で複数 spec の paper portfolio 比較を作れます。notional-aware pair / hedge のコピー用 example は `docs/strategy_research_lab/examples/notional_pair_hedge_bundle.yaml` です。
 - `promotion-decision --decision promote` は required evidence が揃わないと model validation で止まります。
 - `paper-from-intents` は最新 quote と paper broker で再検証し、expired intent や quote missing を block します。

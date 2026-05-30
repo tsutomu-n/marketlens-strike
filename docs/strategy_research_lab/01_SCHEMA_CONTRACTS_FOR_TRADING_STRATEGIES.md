@@ -348,6 +348,78 @@ validation:
 - `paper-from-intents` は最新 quote、expiry、paper broker validation で再検証する。
 - `notional_usd` は現行 paper runner の quantity 計算に直結していない。現行 runner は `quantity` が無ければ `1.0` を使うため、実運用仕様として誤読しない。
 
+## StrategyAuthoringBundleResult
+
+目的: 複数の `strategy_authoring_spec.v1` を paper-only portfolio として比較した結果の公開 contract を固定する。
+
+artifact:
+
+- `data/research/strategy_authoring_bundle_result.json`
+
+主要 field:
+
+- `schema_version`: `strategy_authoring_bundle_result.v1`
+- `bundle_id`
+- `paper_only=true`
+- `live_order_submitted=false`
+- `portfolio.allocation_method`
+- `portfolio.selection_metric`
+- `portfolio.selection_direction`
+- `portfolio.resolved_selection_direction`: `maximize` または `minimize`
+- `aggregate_metrics.member_count`, `trade_count`, `weighted_total_return`, `max_drawdown`, `cost_drag_bps`
+- `aggregate_metrics.multi_leg_group_metrics`
+- `best_member`
+- `members[]`
+
+validation:
+
+- `paper_only` は true。
+- `live_order_submitted` は false。
+- `portfolio.resolved_selection_direction` は `auto` ではなく、解決済みの `maximize` または `minimize`。
+- `aggregate_metrics.multi_leg_group_metrics` は group 数、complete / incomplete group 数、expected / executed leg 数、weighted total return、cost drag、win rate、drawdown、profit factor、leg imbalance、`total_notional_usd`、`weighted_notional_return` を持つ。
+
+売買上の意味:
+
+- bundle result は複数 strategy の paper 比較 artifact であり、実 portfolio rebalance や live order ではない。
+- `effective_allocation_weight` は paper aggregation 用の重みであり、broker position size ではない。
+- `best_member` は paper metric ranking の結果であり、収益保証や live-ready 判定ではない。
+
+## StrategyAuthoringBacktestResult
+
+目的: `strategy-author-run --through backtest` が出す backtest summary の公開 contract を固定する。
+
+artifact:
+
+- `data/research/strategy_backtest_metrics.json`
+
+主要 field:
+
+- `schema_version`: `strategy_authoring_backtest_result.v1`
+- `strategy_id`
+- `paper_only=true`
+- `live_order_submitted=false`
+- `summary.executed_signal_summary`
+- `summary.executed_signal_results`
+- `summary.multi_leg_group_metrics`
+- `summary.strategy_scorecard`
+- `summary.backtest_passed`
+- `metrics[]`
+
+validation:
+
+- `paper_only` は true。
+- `live_order_submitted` は false。
+- `summary.executed_signal_summary` は実行済み signal の compact public surface として、result count、first / last signal timestamp、side / symbol / timeframe / exit reason counts、total / average signal return、win rate、total cost drag、total notional、notional-weighted signal return を持つ。
+- `summary.executed_signal_results` は verbose diagnostic row として残す。
+- `summary.multi_leg_group_metrics` は group 数、complete / incomplete group 数、expected / executed leg 数、total return、average group return、win rate、drawdown、profit factor、leg imbalance、total notional、notional-weighted total return、cost drag を持つ。
+- `summary.strategy_scorecard` は `strategy_authoring_scorecard.v1` で、derived feature、side、block reason、execution block reason、exit reason、threshold pass/fail、paper-only guard を持つ。
+
+売買上の意味:
+
+- backtest result は paper-only evaluation artifact であり、実注文、収益保証、live-ready 判定ではない。
+- `executed_signal_summary` は通常確認用、`executed_signal_results` は詳細診断用です。
+- multi-leg group metrics は paper leg の合算・notional 加重指標であり、atomic multi-leg execution の証明ではない。
+
 ## DataSnapshotManifest
 
 目的: どの data snapshot を使ったかを固定する。

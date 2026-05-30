@@ -1,0 +1,91 @@
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: pair_hedge_conservative_user_v1
+  strategy_family: pair_hedge
+  strategy_version: v1
+  description: Conservative variant of the notional-aware pair hedge example.
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+      country: US
+      currency: USD
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+      country: US
+      currency: USD
+  run_profile_id: strategy_lab_research_only
+data:
+  feature_panel_path: data/research/feature_panel.parquet
+  quote_data_path: data/normalized/quotes.parquet
+  cost_model_path: data/research/venue_cost_matrix.csv
+rules:
+  side: long
+  timeframe: 4h
+  derived_features:
+    - name: rolling_corr
+      op: rolling_corr
+      columns: [asset_return, hedge_return]
+      window: 20
+    - name: pair_spread_z
+      op: rolling_spread_zscore
+      columns: [asset_return, hedge_return]
+      window: 20
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: rolling_corr
+        op: gt
+        value: 0.7
+      - column: pair_spread_z
+        op: gt
+        value: 1.5
+  hold:
+    any:
+      - column: liquidity_stress
+        op: gt
+        value: 0.7
+  exit:
+    stop_loss_bps: 120
+    take_profit_bps: 220
+    trailing_stop_bps: 100
+    partial_take_profit_bps: 160
+    partial_exit_fraction: 0.5
+  multi_leg:
+    enabled: true
+    anchor_real_market_symbol: AAA
+    legs:
+      - real_market_symbol: AAA
+        side: same
+        position_weight: 0.75
+        notional_usd: 750
+        reason_code: lead_long_leg
+      - real_market_symbol: BBB
+        side: opposite
+        position_weight: 0.5
+        position_weight_column: hedge_ratio
+        notional_usd_column: hedge_notional_usd
+        reason_code: dynamic_hedge_leg
+  sizing:
+    position_weight: 0.75
+    notional_usd: 750
+  confidence: 0.65
+  reason_code: pair_hedge_conservative_v1
+  hold_reason_code: pair_hedge_conservative_hold_v1
+backtest:
+  split_method: purged_walk_forward
+  era_unit: trading_day
+  label_horizon_minutes: 240
+  min_trade_count: 1
+  primary_metric: multi_leg_group_metrics.notional_weighted_total_return
+  pass_thresholds:
+    multi_leg_group_metrics.complete_group_count: 1
+    multi_leg_group_metrics.incomplete_group_count: 0
+    multi_leg_group_metrics.avg_leg_return_imbalance: 0.08
+promotion:
+  default_decision: hold
+  allow_paper_preview: true
