@@ -77,8 +77,8 @@ validation は次を stop condition にします。
 - `rules.bracket.enabled=true` なのに stop / take / trailing / time stop / break-even stop のいずれも無い
 - `rules.execution.slippage_bps` が負数
 - `rules.execution.max_fill_fraction` が 0.0 から 1.0 の範囲外
-- `rules.execution.max_spread_bps` / `min_depth_usd` / `max_latency_ms` / `max_borrow_cost_bps` が負数
-- `rules.execution.depth_column` / `latency_column` / `queue_position_score_column` / `borrow_availability_column` / `borrow_cost_column` が空文字
+- `rules.execution.max_spread_bps` / `min_depth_usd` / `max_latency_ms` / `max_borrow_cost_bps` / `max_tax_drag_bps` / `max_turnover_pressure` が負数
+- `rules.execution.depth_column` / `latency_column` / `queue_position_score_column` / `borrow_availability_column` / `borrow_cost_column` / `tax_drag_column` / `turnover_pressure_column` / `fee_edge_column` が空文字
 - `rules.execution.depth_participation_rate` が 0.0 から 1.0 の範囲外
 - `rules.execution.min_queue_position_score` が 0.0 から 1.0 の範囲外
 - `rules.execution.min_borrow_availability_ratio` が 0.0 から 1.0 の範囲外
@@ -86,6 +86,9 @@ validation は次を stop condition にします。
 - `rules.execution.min_queue_position_score` があるのに `queue_position_score_column` が無い
 - `rules.execution.min_borrow_availability_ratio` があるのに `borrow_availability_column` が無い
 - `rules.execution.max_borrow_cost_bps` があるのに `borrow_cost_column` が無い
+- `rules.execution.max_tax_drag_bps` があるのに `tax_drag_column` が無い
+- `rules.execution.max_turnover_pressure` があるのに `turnover_pressure_column` が無い
+- `rules.execution.min_fee_edge_bps` があるのに `fee_edge_column` が無い
 - `rules.portfolio.max_signals_per_timestamp` が 0 以下
 - `rules.portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` / `max_group_abs_net_position_weight` が負数
 - `rules.portfolio.max_group_position_weight` または `max_group_abs_net_position_weight` があるのに `group_column` が無い、`group_column` が空、または `group_column` があるのに group exposure limit が無い
@@ -168,7 +171,7 @@ rebalance 判定は close / reduce / add / hold / entry より先に評価しま
 - `position_weight` / `notional_usd` は `rules.sizing` から引き継ぐ。`position_weight` は backtest return の paper weight として使う。
 - `rules.sizing.volatility_target` がある場合は、row の `volatility_column` が正の数値なら `position_weight * volatility_target / volatility_column` へ変換し、`max_volatility_scaled_position_weight` があれば上限で cap する。volatility が欠損または 0 以下なら base `position_weight` を使う。
 - `entry_order_type` / `entry_limit_offset_bps` / `entry_stop_offset_bps` / `entry_timeout_minutes` は `rules.order` から引き継ぐ。
-- `slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_column` / `depth_participation_rate` / `max_latency_ms` / `latency_ms` / `min_queue_position_score` / `queue_position_score` / `min_borrow_availability_ratio` / `borrow_availability_ratio` / `max_borrow_cost_bps` / `borrow_cost_bps` は `rules.execution` と feature panel row から引き継ぐ。
+- `slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_column` / `depth_participation_rate` / `max_latency_ms` / `latency_ms` / `min_queue_position_score` / `queue_position_score` / `min_borrow_availability_ratio` / `borrow_availability_ratio` / `max_borrow_cost_bps` / `borrow_cost_bps` / `max_tax_drag_bps` / `tax_drag_bps` / `max_turnover_pressure` / `turnover_pressure` / `min_fee_edge_bps` / `fee_edge_bps` は `rules.execution` と feature panel row から引き継ぐ。
 - `portfolio.max_signals_per_timestamp` がある場合は、同一 `ts_signal` の trade signal を `rank_score` 降順で上位 N 件に制限する。hold / ambiguous signal は記録として残す。
 - `portfolio.allocation_method=equal_weight` / `score_proportional` / `inverse_volatility` がある場合は、同一 `ts_signal` の採用候補の `position_weight` を `target_total_position_weight` に正規化する。`score_proportional` は正の `raw_score` 比例で配分し、全 score が 0 以下または欠損なら equal weight に fallback する。`inverse_volatility` は `allocation_volatility_column` の正の値の逆数で配分し、全 volatility が 0 以下または欠損なら equal weight に fallback する。
 - `portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` / `max_group_abs_net_position_weight` がある場合は、同一 `ts_signal` の trade signal を `rank_score` 降順で採用し、超過候補を `side: none`、`block_reasons` に `portfolio_total_exposure_limit`, `portfolio_long_exposure_limit`, `portfolio_short_exposure_limit`, `portfolio_net_exposure_limit`, `portfolio_symbol_exposure_limit`, `portfolio_group_exposure_limit`, `portfolio_group_net_exposure_limit` のいずれかを残す。`max_abs_net_position_weight` は採用候補全体の long weight minus short weight の絶対値を見て、超過時は過剰側の低 rank 候補から `portfolio_net_exposure_limit` として見送る。`max_group_abs_net_position_weight` は `group_column` ごとの long weight minus short weight の絶対値を見て、超過時はその group の過剰側の低 rank 候補から `portfolio_group_net_exposure_limit` として見送る。group exposure は `group_column` の値で集計し、値が欠損した候補は fail-closed で `portfolio_group_missing` として見送る。
@@ -241,6 +244,9 @@ rebalance 判定は close / reduce / add / hold / entry より先に評価しま
 - `rules.execution.min_queue_position_score` は signal row に焼き込んだ `queue_position_score` が欠損または閾値未満なら entry を paper-only で block する
 - `rules.execution.min_borrow_availability_ratio` は short signal の `borrow_availability_ratio` が欠損または閾値未満なら entry を paper-only で block する。long signal には適用しない
 - `rules.execution.max_borrow_cost_bps` は short signal の `borrow_cost_bps` が欠損または上限超過なら entry を paper-only で block する。long signal には適用しない
+- `rules.execution.max_tax_drag_bps` は signal row に焼き込んだ `tax_drag_bps` が欠損または上限超過なら entry を paper-only で block する
+- `rules.execution.max_turnover_pressure` は signal row に焼き込んだ `turnover_pressure` が欠損または上限超過なら entry を paper-only で block する
+- `rules.execution.min_fee_edge_bps` は signal row に焼き込んだ `fee_edge_bps` が欠損または閾値未満なら entry を paper-only で block する
 - `exit_on_opposite_signal=true` の場合、同一 execution symbol の反対方向シグナルが fixed horizon より先に来たら、その時刻以降の最初の quote を exit とし、`summary.exit_reason_counts.opposite_signal` に記録する
 - `exit_on_close_signal=true` の場合、同一 execution symbol の `side: close` signal が fixed horizon より先に来たら、その時刻以降の最初の quote を exit とし、`summary.exit_reason_counts.close_signal` に記録する。close signal 自体は trade entry として評価しない
 - `exit_on_reduce_signal=true` の場合、同一 execution symbol の `side: reduce` signal が fixed horizon より先に来たら、その時刻以降の最初の quote で `reduce_fraction` 分だけ部分 exit し、残り position は horizon / stop / take profit まで維持する。`summary.exit_reason_counts` には `reduce_signal` を含む exit reason を記録する。reduce signal 自体は trade entry として評価しない

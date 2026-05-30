@@ -82,7 +82,7 @@ uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/exampl
 - `rules.portfolio.allocation_method` / `target_total_position_weight` で同一 timestamp の採用候補を equal weight、score proportional、inverse volatility に正規化できる。
 - `rules.position.max_open_signals_per_symbol` / `max_open_position_weight_per_symbol` で同一銘柄の仮想 open signal 数と open weight を制限できる。
 - `rules.regime_overrides` で regime ごとに損切、利確、weight、notional、slippage、fill、spread/depth 条件を切り替えられる。
-- `rules.execution.slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_participation_rate` / `max_latency_ms` / `min_queue_position_score` / `min_borrow_availability_ratio` / `max_borrow_cost_bps` で滑り、部分約定、spread gate、depth-based fill、latency gate、queue-position gate、short-borrow gate を paper-only に評価できる。
+- `rules.execution.slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_participation_rate` / `max_latency_ms` / `min_queue_position_score` / `min_borrow_availability_ratio` / `max_borrow_cost_bps` / `max_tax_drag_bps` / `max_turnover_pressure` / `min_fee_edge_bps` で滑り、部分約定、spread gate、depth-based fill、latency gate、queue-position gate、short-borrow gate、tax / turnover / fee-edge gate を paper-only に評価できる。
 - `rules.temporal.allowed_weekdays_utc` / `allowed_hours_utc` / `cooldown_minutes` / `max_signals_per_symbol_per_day` で曜日・時間帯・同一銘柄 cooldown・銘柄別日次上限を評価できる。
 - `rules.event_windows` で event timestamp column の前後だけを許可、または event 前後を blackout し、見送り理由を signal artifact に残せる。
 - `optimizer.parameter_sweep` で許可された spec path の paper-only grid search を行い、best variant と全 variant metrics を記録できる。
@@ -298,9 +298,9 @@ git diff --check
 確認済み結果:
 
 - `tests/test_strategy_lab_commands.py`: 20 passed
-- `tests/test_strategy_authoring.py`: 78 passed
+- `tests/test_strategy_authoring.py`: 81 passed
 - Strategy Lab focused suite: 45 passed
 - Research pipeline / CLI smoke: 71 passed
 - `scripts/check_current_docs.py`: checked 75 current docs
-- `./scripts/check`: 462 passed, pyrefly 0 errors
+- `./scripts/check`: 465 passed, pyrefly 0 errors
 - `git diff --check`: pass

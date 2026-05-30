@@ -152,7 +152,7 @@
 最新 full check では、次を確認済みです。
 
 - `./scripts/check`: pass
-- pytest: `462 passed`
+- pytest: `465 passed`
 - pyrefly: `0 errors`
 - current-docs lint: `checked 75 current docs: links, EOF, and legacy roots ok`
 
