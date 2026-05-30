@@ -4,6 +4,12 @@
 
 このパックは「思想メモ」ではありません。Repo担当者が、PRごとに、どのファイルを、どの順番で、どのDone条件で、何を禁止して実装するかを迷わないための資料です。
 
+## Current Truth Note
+
+この migration pack は historical implementation contract です。現行正本は `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `schemas/`, `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` です。
+
+`templates/` 配下は copy-safe に保つため、現行 Strategy Lab の claim guard 名へ更新済みです。`profitability_claim`, `paper_ready_claim`, `tiny_live_ready_claim`, `live_ready_claim` のような旧 `*_claim` 名は使わず、`profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, `live_ready_claimed` を使います。PR docs / roadmap / historical prose に残る古い表現は履歴として読みます。
+
 ## 最重要方針
 
 ```text

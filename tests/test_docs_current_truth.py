@@ -1,4 +1,6 @@
 from pathlib import Path
+import subprocess
+import sys
 
 
 def _read(path: str) -> str:
@@ -34,3 +36,27 @@ def test_live_evidence_reports_directory_keeps_only_readme_tracked_docs() -> Non
     files = sorted(path.name for path in report_dir.iterdir() if path.is_file())
 
     assert "README.md" in files
+
+
+def test_current_docs_checker_policy_is_current_scope_only() -> None:
+    script = _read("scripts/check_current_docs.py")
+
+    assert '"docs/DOCUMENT_AUDIT_2026-05-30.md"' in script
+    assert '"docs/strategy_research_lab"' in script
+    assert '"docs/algo/strategy_factory"' in script
+    assert '"docs/archive/"' in script
+    assert '"docs/algo/obsidian_note_copies/"' in script
+    assert '"docs/algo/obsidian_note_rewrites_2026-05-28/"' in script
+    assert '"docs/algo/obsidian_note_rewrites_2026-05-29/"' in script
+    assert '"plan/archive/"' in script
+
+
+def test_current_docs_checker_passes() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/check_current_docs.py"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "current docs" in result.stdout

@@ -423,7 +423,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 | `docs/archive/2026-05-30-doc-audit/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | superseded plan |
 | `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | live-readiness blocker plan; keep for live readiness only |
 
-`plan/marketlens_strategy_research_lab_migration_pack/` は削除しない。これは実装前の詳細 contract と PR 分割の履歴であり、現行仕様の正本ではない。
+`plan/marketlens_strategy_research_lab_migration_pack/` は削除しない。これは実装前の詳細 contract と PR 分割の履歴であり、現行仕様の正本ではない。ただし `templates/` 配下は再利用されやすいため、現行 `*_claimed` claim guard 名へ更新して copy-safe に保つ。
 
 ## Stop Conditions
 

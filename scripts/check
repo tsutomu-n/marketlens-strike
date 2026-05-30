@@ -7,5 +7,6 @@ uv sync --dev --locked
 uv run python -V
 uv run ruff check .
 uv run ruff format --check .
+uv run python scripts/check_current_docs.py
 uv run pyrefly check
 uv run pytest -q

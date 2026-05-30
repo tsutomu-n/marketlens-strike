@@ -11,6 +11,18 @@
     "schema_version": {
       "const": "paper_candidate_pack.v1"
     },
+    "profitability_claimed": {
+      "const": false
+    },
+    "paper_ready_claimed": {
+      "const": false
+    },
+    "tiny_live_ready_claimed": {
+      "const": false
+    },
+    "live_ready_claimed": {
+      "const": false
+    },
     "live_order_submitted": {
       "const": false
     },

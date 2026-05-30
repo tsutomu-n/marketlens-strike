@@ -25,7 +25,7 @@ evaluation_plan:
     - cost_drag_bps
     - turnover
   forbidden_claims:
-    - profitability_claim
-    - paper_ready_claim
-    - tiny_live_ready_claim
-    - live_ready_claim
+    - profitability_claimed
+    - paper_ready_claimed
+    - tiny_live_ready_claimed
+    - live_ready_claimed

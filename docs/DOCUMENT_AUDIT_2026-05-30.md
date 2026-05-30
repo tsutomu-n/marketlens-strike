@@ -72,6 +72,8 @@ src/sis/execution/
 | `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/09_CHECKLISTS_AND_TEMPLATES.md` | checklistを StrategyExperimentSpec / EvaluationPlan / TrialLedger / Candidate / Promotion / PaperIntentPreview 前提へ全面更新 |
 | `docs/archive/2026-05-30-doc-audit/` | superseded docs 6本を archive move |
 | `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | consumed plan を archive move |
+| `docs/DOCS_LINT_POLICY_2026-05-30.md` | current docs だけを strict lint する方針を追加 |
+| `scripts/check_current_docs.py` | current docs の link / EOF / legacy root path check を追加 |
 | `docs/DOCUMENT_AUDIT_2026-05-30.md` | 本監査を新規作成 |
 
 ## 更新できる docs
@@ -145,6 +147,19 @@ src/sis/execution/
 - `signals.csv` を Strategy Lab 正本にしない。
 - historical plan から current command を拾わない。
 - `Decision Log` という語があっても、それが人間レビュー記録なのか、旧 paper path の artifact 説明なのかを分ける。
+- docs lint は `current docs` に限定する。source snapshot / archive の link や EOF は通常 lint の対象にしない。
+
+## Docs Lint
+
+Current docs の機械チェックは `docs/DOCS_LINT_POLICY_2026-05-30.md` と `scripts/check_current_docs.py` を正とする。
+
+実行:
+
+```bash
+uv run python scripts/check_current_docs.py
+```
+
+検査対象は current read-first docs、Strategy Lab specs、strategy factory、archive index、live evidence README、beginner guide に限定する。`docs/archive/**`, `docs/algo/obsidian_note_copies/**`, `docs/algo/obsidian_note_rewrites_2026-05-28/**`, unchecked 2026-05-29 rewrite snapshots, `plan/archive/**` は通常 lint 対象外。
 
 ## 追加照査メモ
 

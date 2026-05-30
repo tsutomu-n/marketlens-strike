@@ -24,6 +24,15 @@
     },
     "live_conversion_allowed": {
       "const": false
+    },
+    "live_order_submitted": {
+      "const": false
+    },
+    "wallet_used": {
+      "const": false
+    },
+    "exchange_write_used": {
+      "const": false
     }
   }
 }
