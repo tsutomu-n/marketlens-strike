@@ -82,6 +82,8 @@ def test_build_signals_writes_canonical_strategy_signal_artifacts(tmp_path) -> N
     }.issubset(set(signals.columns))
     assert set(signals.get_column("execution_symbol").to_list()) == {"XYZ100"}
     assert set(signals.get_column("real_market_symbol").to_list()) == {"QQQ"}
+    assert set(signals.get_column("source_confidence").to_list()) == {0.75}
+    assert set(signals.get_column("venue_quality_score").to_list()) == {0.8}
 
 
 def test_legacy_signals_csv_is_thin_export(tmp_path) -> None:
@@ -117,6 +119,8 @@ def test_build_signals_can_run_sp500_generator(tmp_path) -> None:
     assert set(signals.get_column("strategy_id").to_list()) == {"sp500_index_momentum_v0"}
     assert set(signals.get_column("execution_symbol").to_list()) == {"SP500"}
     assert set(signals.get_column("real_market_symbol").to_list()) == {"SPY"}
+    assert set(signals.get_column("source_confidence").to_list()) == {0.75}
+    assert set(signals.get_column("venue_quality_score").to_list()) == {0.8}
 
 
 def test_build_signals_fails_closed_for_unknown_generator(tmp_path) -> None:

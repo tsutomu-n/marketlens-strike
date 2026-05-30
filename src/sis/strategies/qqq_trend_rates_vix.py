@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import polars as pl
 
+from sis.strategies._signal_quality import QUALITY_COLUMN_SCHEMA, quality_column_expressions
+
 
 def build_qqq_trend_rates_vix_signals(feature_frame: pl.DataFrame) -> pl.DataFrame:
     if feature_frame.is_empty():
@@ -14,6 +16,7 @@ def build_qqq_trend_rates_vix_signals(feature_frame: pl.DataFrame) -> pl.DataFra
                 "signal_strength": pl.Float64,
                 "strategy_name": pl.Utf8,
                 "reason": pl.Utf8,
+                **QUALITY_COLUMN_SCHEMA,
             }
         )
 
@@ -33,6 +36,7 @@ def build_qqq_trend_rates_vix_signals(feature_frame: pl.DataFrame) -> pl.DataFra
             ).alias("signal_strength"),
             pl.lit("qqq_trend_rates_vix").alias("strategy_name"),
             pl.lit("close_above_sma20_and_trade_allowed").alias("reason"),
+            *quality_column_expressions(feature_frame),
         )
         .select(
             "ts_signal",
@@ -42,6 +46,8 @@ def build_qqq_trend_rates_vix_signals(feature_frame: pl.DataFrame) -> pl.DataFra
             "signal_strength",
             "strategy_name",
             "reason",
+            "source_confidence",
+            "venue_quality_score",
         )
         .sort("ts_signal")
     )

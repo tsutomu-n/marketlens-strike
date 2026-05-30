@@ -38,6 +38,8 @@ def test_build_qqq_trend_rates_vix_signals_generates_only_qqq_entries() -> None:
                 "venue_tradable_rate": None,
                 "trade_allowed": True,
                 "blocked_reason": None,
+                "source_confidence": 0.75,
+                "venue_quality_score": 0.8,
             },
             {
                 "ts": datetime(2026, 1, 1, tzinfo=timezone.utc),
@@ -66,6 +68,8 @@ def test_build_qqq_trend_rates_vix_signals_generates_only_qqq_entries() -> None:
                 "venue_tradable_rate": None,
                 "trade_allowed": True,
                 "blocked_reason": None,
+                "source_confidence": 0.65,
+                "venue_quality_score": 0.7,
             },
         ]
     )
@@ -76,6 +80,8 @@ def test_build_qqq_trend_rates_vix_signals_generates_only_qqq_entries() -> None:
     assert signals.get_column("canonical_symbol").to_list() == ["QQQ"]
     assert signals.get_column("strategy_name").to_list() == ["qqq_trend_rates_vix"]
     assert signals.get_column("timeframe").to_list() == ["4h"]
+    assert signals.get_column("source_confidence").to_list() == [0.75]
+    assert signals.get_column("venue_quality_score").to_list() == [0.8]
 
 
 def test_build_sp500_trend_rates_vix_signals_generates_only_spy_entries() -> None:
@@ -110,3 +116,5 @@ def test_build_sp500_trend_rates_vix_signals_generates_only_spy_entries() -> Non
     assert signals.get_column("canonical_symbol").to_list() == ["SPY"]
     assert signals.get_column("strategy_name").to_list() == ["sp500_trend_rates_vix"]
     assert signals.get_column("timeframe").to_list() == ["4h"]
+    assert signals.get_column("source_confidence").to_list() == [None]
+    assert signals.get_column("venue_quality_score").to_list() == [None]

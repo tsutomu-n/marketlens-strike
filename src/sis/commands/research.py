@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable, Literal, cast
@@ -21,6 +22,7 @@ from sis.research.strategy_lab.candidates import TradeCandidate
 from sis.research.strategy_lab.paper_candidate_pack import PaperCandidatePack
 from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
 from sis.research.strategy_lab.promotion_decision import PromotionDecision
+from sis.research.strategy_lab.signal_registry import default_signal_generator_registry
 from sis.research.strategy_lab.trial_ledger import TrialLedger, TrialRecord
 from sis.real_market.alpaca_smoke import run_alpaca_live_smoke
 from sis.settings import get_settings
@@ -40,6 +42,103 @@ def _first_signal_row(frame: pl.DataFrame) -> dict[str, Any]:
     if frame.is_empty():
         return {}
     return frame.sort("ts_signal").to_dicts()[0]
+
+
+SIGNAL_IDENTITY_COLUMNS = (
+    "strategy_id",
+    "strategy_family",
+    "strategy_version",
+    "execution_venue",
+    "execution_symbol",
+    "real_market_symbol",
+)
+
+SIGNAL_RUN_ID_COLUMNS = (
+    "signal_id",
+    "strategy_id",
+    "strategy_family",
+    "strategy_version",
+    "execution_venue",
+    "execution_symbol",
+    "real_market_symbol",
+    "side",
+    "ts_signal",
+    "timeframe",
+    "raw_score",
+    "rank_score",
+    "tail_bucket",
+    "reason_codes",
+)
+
+
+def _require_single_signal_identity(frame: pl.DataFrame) -> dict[str, Any]:
+    if frame.is_empty():
+        return {}
+    missing = [column for column in SIGNAL_IDENTITY_COLUMNS if column not in frame.columns]
+    if missing:
+        raise ValueError(f"Strategy signal artifact missing identity columns: {missing}")
+    identities = frame.select(list(SIGNAL_IDENTITY_COLUMNS)).unique()
+    if identities.height != 1:
+        raise ValueError(
+            "Strategy signal artifact contains mixed strategy/symbol identities; "
+            "rebuild one generator per strategy_signals.parquet artifact."
+        )
+    return identities.to_dicts()[0]
+
+
+def _strategy_signal_run_id(frame: pl.DataFrame) -> str:
+    if frame.is_empty():
+        return "no-signals"
+    columns = [column for column in SIGNAL_RUN_ID_COLUMNS if column in frame.columns]
+    if not columns:
+        return hashlib.sha256(b"strategy-signals:missing-run-columns").hexdigest()[:12]
+    sort_columns = [
+        column
+        for column in (
+            "strategy_id",
+            "strategy_version",
+            "execution_symbol",
+            "real_market_symbol",
+            "ts_signal",
+            "signal_id",
+        )
+        if column in columns
+    ]
+    stable_frame = frame.select(columns)
+    if sort_columns:
+        stable_frame = stable_frame.sort(sort_columns)
+    payload = json.dumps(
+        stable_frame.to_dicts(),
+        ensure_ascii=True,
+        sort_keys=True,
+        default=str,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
+
+
+def _run_id_from_trial_group(trial_group_id: str | None) -> str:
+    text = str(trial_group_id or "").strip()
+    if text.startswith("trial-group-"):
+        return text.removeprefix("trial-group-")
+    if not text:
+        return "empty"
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+
+
+def _run_id_from_pack_id(pack_id: str) -> str:
+    text = str(pack_id).strip()
+    if text.startswith("paper-pack-"):
+        return text.removeprefix("paper-pack-")
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+
+
+def _build_signals_or_exit(data_dir: Path, *, generator_id: str) -> Path:
+    try:
+        return build_signals(data_dir, generator_id=generator_id)
+    except KeyError as exc:
+        registered = ", ".join(default_signal_generator_registry().registered_ids())
+        typer.echo(f"{exc.args[0]}; registered_generator_ids={registered}")
+        raise typer.Exit(2) from exc
 
 
 def _signal_rows_by_strategy(data_dir: Path) -> dict[str, dict[str, Any]]:
@@ -134,7 +233,7 @@ def register_research_commands(
         ),
     ) -> None:
         settings = get_settings()
-        out = build_signals(settings.data_dir, generator_id=generator_id)
+        out = _build_signals_or_exit(settings.data_dir, generator_id=generator_id)
         logger.info("written: {}", out)
         for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
@@ -148,7 +247,7 @@ def register_research_commands(
         ),
     ) -> None:
         settings = get_settings()
-        legacy_path = build_signals(settings.data_dir, generator_id=generator_id)
+        legacy_path = _build_signals_or_exit(settings.data_dir, generator_id=generator_id)
         report_path = settings.data_dir / "reports/strategy_signals_preview.md"
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(
@@ -169,12 +268,18 @@ def register_research_commands(
             typer.echo(f"Strategy signal artifact not found: {signals_path}")
             raise typer.Exit(2)
         frame = pl.read_parquet(signals_path)
+        try:
+            signal_identity = _require_single_signal_identity(frame)
+        except ValueError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        run_id = _strategy_signal_run_id(frame)
         selected = frame.height > 0
-        first_signal = _first_signal_row(frame)
+        first_signal = signal_identity or _first_signal_row(frame)
         record = TrialRecord(
             schema_version="trial_record.v1",
-            trial_id="trial-001",
-            trial_group_id="trial-group-001",
+            trial_id=f"trial-{run_id}",
+            trial_group_id=f"trial-group-{run_id}",
             trial_index=0,
             strategy_id=str(first_signal.get("strategy_id") or "unknown_strategy"),
             strategy_family=str(first_signal.get("strategy_family") or "unknown"),
@@ -182,9 +287,9 @@ def register_research_commands(
             evaluation_plan_id="initial_walkforward",
             data_snapshot_id="data-snap-current",
             feature_snapshot_id="feature-snap-current",
-            parameter_hash="default",
+            parameter_hash=f"generator-default-{run_id}",
             parameter_count=1,
-            parameter_space_hash="default-space",
+            parameter_space_hash="registered-generator-default-space",
             random_seed=None,
             git_sha=None,
             signal_count=frame.height,
@@ -194,7 +299,7 @@ def register_research_commands(
             blocked_count=0,
             no_signal_count=0 if selected else 1,
             blocked_reason_counts={},
-            metrics={"signal_count": frame.height},
+            metrics={"signal_count": frame.height, "signal_artifact_run_id": run_id},
             baseline_strategy_id=None,
             baseline_delta_metrics={},
             selected_for_next_stage=selected,
@@ -272,9 +377,10 @@ def register_research_commands(
                 )
             )
             (selected_ids if record.selected_for_next_stage else rejected_ids).append(candidate_id)
+        pack_run_id = _run_id_from_trial_group(records[-1].trial_group_id if records else None)
         pack = PaperCandidatePack(
             schema_version="paper_candidate_pack.v1",
-            pack_id="paper-pack-001",
+            pack_id=f"paper-pack-{pack_run_id}",
             generated_at=now,
             evaluation_plan_id=records[-1].evaluation_plan_id if records else "unknown",
             data_snapshot_id=records[-1].data_snapshot_id if records else "unknown",
@@ -315,11 +421,19 @@ def register_research_commands(
         observed = ["paper_candidate_pack"] if pack_path.exists() else []
         if (settings.data_dir / "research/trial_ledger.jsonl").exists():
             observed.append("trial_ledger")
+        if pack_path.exists():
+            pack = PaperCandidatePack.model_validate(
+                json.loads(pack_path.read_text(encoding="utf-8"))
+            )
+            source_pack_id = pack.pack_id
+        else:
+            source_pack_id = "paper-pack-missing"
+        promotion_run_id = _run_id_from_pack_id(source_pack_id)
         promotion = PromotionDecision(
             schema_version="promotion_decision.v1",
-            promotion_id="promotion-001",
+            promotion_id=f"promotion-{promotion_run_id}",
             generated_at=datetime.now(timezone.utc),
-            source_pack_id="paper-pack-001",
+            source_pack_id=source_pack_id,
             reviewer=None,
             from_stage="strategy_lab",
             to_stage="paper_observation",
@@ -356,6 +470,12 @@ def register_research_commands(
         promotion = PromotionDecision.model_validate(
             json.loads(decision_path.read_text(encoding="utf-8"))
         )
+        if promotion.source_pack_id != pack.pack_id:
+            typer.echo(
+                "PromotionDecision source_pack_id does not match PaperCandidatePack pack_id: "
+                f"{promotion.source_pack_id} != {pack.pack_id}"
+            )
+            raise typer.Exit(2)
         intents: list[PaperIntentPreview] = []
         if promotion.decision == "promote":
             selected = {

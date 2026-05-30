@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -9,62 +8,12 @@ from pathlib import Path
 import polars as pl
 
 from sis.research.strategy_lab.signal_frame import validate_strategy_signal_frame
-from sis.research.strategy_lab.signal_registry import default_signal_generator_registry
-from sis.research.strategy_lab.specs import SymbolBinding
+from sis.research.strategy_lab.signal_registry import (
+    SignalGeneratorDefinition,
+    default_signal_generator_registry,
+)
 
-DEFAULT_STRATEGY_ID = "equity_index_momentum_v0"
-DEFAULT_STRATEGY_FAMILY = "momentum"
-DEFAULT_STRATEGY_VERSION = "v0"
 DEFAULT_GENERATOR_ID = "qqq_trend_rates_vix"
-
-
-@dataclass(frozen=True)
-class SignalBuildProfile:
-    generator_id: str
-    strategy_id: str
-    strategy_family: str
-    strategy_version: str
-    symbol_bindings: tuple[SymbolBinding, ...]
-
-
-GENERATOR_PROFILES: dict[str, SignalBuildProfile] = {
-    "qqq_trend_rates_vix": SignalBuildProfile(
-        generator_id="qqq_trend_rates_vix",
-        strategy_id=DEFAULT_STRATEGY_ID,
-        strategy_family=DEFAULT_STRATEGY_FAMILY,
-        strategy_version=DEFAULT_STRATEGY_VERSION,
-        symbol_bindings=(
-            SymbolBinding(
-                execution_venue="trade_xyz",
-                execution_symbol="XYZ100",
-                real_market_symbol="QQQ",
-                asset_class="basket_index",
-            ),
-        ),
-    ),
-    "sp500_trend_rates_vix": SignalBuildProfile(
-        generator_id="sp500_trend_rates_vix",
-        strategy_id="sp500_index_momentum_v0",
-        strategy_family="momentum",
-        strategy_version="v0",
-        symbol_bindings=(
-            SymbolBinding(
-                execution_venue="trade_xyz",
-                execution_symbol="SP500",
-                real_market_symbol="SPY",
-                asset_class="index",
-            ),
-        ),
-    ),
-}
-
-
-def _profile_for_generator(generator_id: str) -> SignalBuildProfile:
-    normalized = generator_id.strip()
-    try:
-        return GENERATOR_PROFILES[normalized]
-    except KeyError as exc:
-        raise KeyError(f"Unknown signal generator profile: {normalized}") from exc
 
 
 def _signal_id(*, strategy_id: str, ts_signal: object, execution_symbol: str, side: str) -> str:
@@ -83,17 +32,17 @@ def _rank_bucket(rank_score: float | None) -> str:
 
 
 def _execution_symbol_for_real_market_symbol(
-    real_market_symbol: str, profile: SignalBuildProfile
+    real_market_symbol: str, definition: SignalGeneratorDefinition
 ) -> str:
     normalized = real_market_symbol.strip().upper()
-    for binding in profile.symbol_bindings:
+    for binding in definition.symbol_bindings:
         if binding.real_market_symbol == normalized:
             return binding.execution_symbol
     return normalized
 
 
 def _build_strategy_signal_artifact(
-    signals: pl.DataFrame, *, profile: SignalBuildProfile
+    signals: pl.DataFrame, *, definition: SignalGeneratorDefinition
 ) -> pl.DataFrame:
     rows: list[dict] = []
     generated_at = datetime.now(timezone.utc)
@@ -106,20 +55,20 @@ def _build_strategy_signal_artifact(
         if raw_score is not None:
             rank_score = max(0.0, min(1.0, raw_score))
         real_market_symbol = str(row["canonical_symbol"]).upper()
-        execution_symbol = _execution_symbol_for_real_market_symbol(real_market_symbol, profile)
+        execution_symbol = _execution_symbol_for_real_market_symbol(real_market_symbol, definition)
         rows.append(
             {
                 "schema_version": "strategy_signal.v1",
                 "signal_id": _signal_id(
-                    strategy_id=profile.strategy_id,
+                    strategy_id=definition.strategy_id,
                     ts_signal=ts_signal,
                     execution_symbol=execution_symbol,
                     side=side,
                 ),
                 "generated_at": generated_at,
-                "strategy_id": profile.strategy_id,
-                "strategy_family": profile.strategy_family,
-                "strategy_version": profile.strategy_version,
+                "strategy_id": definition.strategy_id,
+                "strategy_family": definition.strategy_family,
+                "strategy_version": definition.strategy_version,
                 "trial_id": None,
                 "parameter_hash": None,
                 "ts_signal": ts_signal,
@@ -138,7 +87,7 @@ def _build_strategy_signal_artifact(
                 "feature_snapshot_ref": None,
                 "quote_ref": None,
                 "tracking_ref": None,
-                "reason_codes": [str(row.get("reason") or profile.generator_id)],
+                "reason_codes": [str(row.get("reason") or definition.generator_id)],
                 "block_reasons": [],
             }
         )
@@ -146,7 +95,7 @@ def _build_strategy_signal_artifact(
         return pl.DataFrame()
     return validate_strategy_signal_frame(
         pl.DataFrame(rows),
-        symbol_bindings=profile.symbol_bindings,
+        symbol_bindings=definition.symbol_bindings,
     )
 
 
@@ -190,9 +139,10 @@ def build_signals(data_dir: Path, *, generator_id: str = DEFAULT_GENERATOR_ID) -
     if frame.is_empty():
         raise ValueError("Feature panel is empty.")
 
-    profile = _profile_for_generator(generator_id)
-    signals = default_signal_generator_registry().run(profile.generator_id, frame, spec=None)
-    strategy_signals = _build_strategy_signal_artifact(signals, profile=profile)
+    registry = default_signal_generator_registry()
+    definition = registry.definition(generator_id)
+    signals = registry.run(definition.generator_id, frame, spec=None)
+    strategy_signals = _build_strategy_signal_artifact(signals, definition=definition)
 
     parquet_out = data_dir / "research/strategy_signals.parquet"
     jsonl_out = data_dir / "research/strategy_signals.jsonl"

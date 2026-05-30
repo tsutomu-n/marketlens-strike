@@ -7,6 +7,7 @@ import pytest
 
 from sis.research.strategy_lab.signal_frame import validate_strategy_signal_frame
 from sis.research.strategy_lab.signal_registry import (
+    SignalGeneratorDefinition,
     SignalGeneratorRegistry,
     default_signal_generator_registry,
 )
@@ -22,7 +23,23 @@ def test_signal_generator_registry_fails_closed_for_unknown_generator() -> None:
 
 def test_signal_generator_registry_runs_registered_generator() -> None:
     registry = SignalGeneratorRegistry()
-    registry.register("demo", lambda frame, spec: frame.with_columns(pl.lit("demo").alias("kind")))
+    registry.register(
+        SignalGeneratorDefinition(
+            generator_id="demo",
+            strategy_id="demo_strategy",
+            strategy_family="demo",
+            strategy_version="v0",
+            symbol_bindings=(
+                SymbolBinding(
+                    execution_venue="trade_xyz",
+                    execution_symbol="XYZ100",
+                    real_market_symbol="QQQ",
+                    asset_class="basket_index",
+                ),
+            ),
+            build=lambda frame, spec: frame.with_columns(pl.lit("demo").alias("kind")),
+        )
+    )
 
     result = registry.run("demo", pl.DataFrame({"value": [1]}), spec={"id": "demo"})
 
@@ -33,6 +50,20 @@ def test_default_signal_generator_registry_includes_known_generators() -> None:
     registry = default_signal_generator_registry()
 
     assert registry.registered_ids() == ["qqq_trend_rates_vix", "sp500_trend_rates_vix"]
+
+
+def test_default_signal_generator_definitions_carry_strategy_metadata() -> None:
+    registry = default_signal_generator_registry()
+
+    qqq = registry.definition("qqq_trend_rates_vix")
+    sp500 = registry.definition("sp500_trend_rates_vix")
+
+    assert qqq.strategy_id == "equity_index_momentum_v0"
+    assert qqq.symbol_bindings[0].execution_symbol == "XYZ100"
+    assert qqq.symbol_bindings[0].real_market_symbol == "QQQ"
+    assert sp500.strategy_id == "sp500_index_momentum_v0"
+    assert sp500.symbol_bindings[0].execution_symbol == "SP500"
+    assert sp500.symbol_bindings[0].real_market_symbol == "SPY"
 
 
 def test_strategy_signal_frame_requires_binding_columns() -> None:
