@@ -928,7 +928,10 @@ class DerivedFeature(BaseModel):
         "rolling_mean",
         "rolling_std",
         "rolling_zscore",
+        "rolling_percentile_rank",
         "rolling_volatility",
+        "rolling_skew",
+        "rolling_kurtosis",
         "annualized_volatility",
         "realized_variance",
         "downside_volatility",
@@ -1022,7 +1025,10 @@ class DerivedFeature(BaseModel):
             "rolling_mean",
             "rolling_std",
             "rolling_zscore",
+            "rolling_percentile_rank",
             "rolling_volatility",
+            "rolling_skew",
+            "rolling_kurtosis",
             "annualized_volatility",
             "realized_variance",
             "downside_volatility",
@@ -1172,7 +1178,10 @@ class DerivedFeature(BaseModel):
             "rolling_mean",
             "rolling_std",
             "rolling_zscore",
+            "rolling_percentile_rank",
             "rolling_volatility",
+            "rolling_skew",
+            "rolling_kurtosis",
             "annualized_volatility",
             "realized_variance",
             "downside_volatility",
@@ -2350,8 +2359,22 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
             "canonical_symbol"
         )
         expr = (first - mean) / _safe_denominator(std)
+    elif feature.op == "rolling_percentile_rank":
+        expr = first.rolling_map(
+            lambda values: (values <= values[-1]).sum() / len(values),
+            window_size=feature.window or 1,
+            min_samples=1,
+        ).over("canonical_symbol")
     elif feature.op == "rolling_volatility":
         expr = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "rolling_skew":
+        expr = first.rolling_skew(window_size=feature.window or 1, min_samples=3).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "rolling_kurtosis":
+        expr = first.rolling_kurtosis(window_size=feature.window or 1, min_samples=4).over(
             "canonical_symbol"
         )
     elif feature.op == "annualized_volatility":

@@ -2085,6 +2085,80 @@ rules:
     assert frame.get_column("side").to_list() == ["long"]
 
 
+def test_authoring_derived_features_support_percentile_skew_and_kurtosis(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "distribution-shape.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    values = [1.0, 2.0, 3.0, 4.0, 10.0]
+    pl.DataFrame(
+        [
+            {
+                "ts": start + timedelta(hours=index),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": index == 4,
+                "tail_signal": value,
+            }
+            for index, value in enumerate(values)
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: distribution_shape_v1
+  strategy_family: distribution_shape
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: XYZ100
+      real_market_symbol: QQQ
+      asset_class: equity_index
+rules:
+  side: long
+  timeframe: 1h
+  derived_features:
+    - name: local_percentile
+      op: rolling_percentile_rank
+      columns: [tail_signal]
+      window: 5
+    - name: local_skew
+      op: rolling_skew
+      columns: [tail_signal]
+      window: 5
+      fill_null: 0
+    - name: local_kurtosis
+      op: rolling_kurtosis
+      columns: [tail_signal]
+      window: 5
+      fill_null: 0
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: local_percentile
+        op: gte
+        value: 1.0
+      - column: local_skew
+        op: gt
+        value: 0
+      - column: local_kurtosis
+        op: gt
+        value: -0.3
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert frame.get_column("ts_signal").to_list() == [start + timedelta(hours=4)]
+    assert frame.get_column("side").to_list() == ["long"]
+
+
 def test_authoring_multi_leg_expands_anchor_signal_into_pair_trade_legs(
     tmp_path,
 ) -> None:
