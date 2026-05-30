@@ -23,7 +23,7 @@
 | 戦略タイプ | 現状 |
 | --- | --- |
 | Trend following | EMA / MACD / ADX / moving average cross / Donchian / Ichimoku / Keltner / channel breakout を derived feature と condition で表現できる。 |
-| Mean reversion | RSI、rolling z-score、mean reversion score、Bollinger band、rolling min/max、spread z-score を使える。 |
+| Mean reversion | RSI、rolling z-score、rolling percentile rank、rolling skew/kurtosis、mean reversion score、Bollinger band、rolling min/max、spread z-score を使える。 |
 | Breakout | Donchian、Keltner、Bollinger、true range、ATR、volume z-score、volatility breakout を使える。 |
 | Momentum / relative strength | rolling return、cumulative return、slope、cross-sectional rank / z-score / demean、risk-adjusted score、benchmark beta / correlation を使える。 |
 | Kelly / tail-risk sizing | `kelly_fraction`, `historical_var`, `expected_shortfall` を rolling return column から作り、Kelly sizing 候補、VaR filter、expected shortfall filter に使える。 |
@@ -86,11 +86,11 @@
 - price / volatility: `true_range`, `atr`, `rolling_volatility`, `annualized_volatility`, `realized_variance`, `downside_volatility`
 - channel / band: `bollinger_upper`, `bollinger_lower`, `bollinger_width`, `bollinger_percent_b`, `donchian_upper`, `donchian_lower`, `donchian_mid`, `donchian_width`, `keltner_upper`, `keltner_lower`, `keltner_width`
 - trend / oscillator: `ewm_mean`, `rsi`, `macd_line`, `stochastic_k`, `stochastic_d`, `adx`, `obv`, `volume_zscore`, `ichimoku_conversion`, `ichimoku_base`, `ichimoku_span_a`, `ichimoku_span_b`
-- returns / statistics: `pct_change`, `log_return`, `lag`, `rolling_return`, `rolling_sum`, `rolling_mean`, `rolling_std`, `rolling_zscore`, `sharpe_like`, `sortino_like`, `kelly_fraction`, `historical_var`, `expected_shortfall`, `cumulative_return`, `slope`, `mean_reversion_score`, `distance_from_ma`, `rolling_min`, `rolling_max`
+- returns / statistics: `pct_change`, `log_return`, `lag`, `rolling_return`, `rolling_sum`, `rolling_mean`, `rolling_std`, `rolling_zscore`, `rolling_percentile_rank`, `rolling_skew`, `rolling_kurtosis`, `sharpe_like`, `sortino_like`, `kelly_fraction`, `historical_var`, `expected_shortfall`, `cumulative_return`, `slope`, `mean_reversion_score`, `distance_from_ma`, `rolling_min`, `rolling_max`
 - pair / benchmark: `rolling_corr`, `rolling_beta`, `rolling_spread_zscore`, `rolling_autocorr`
 - market microstructure / capacity features: `order_flow_imbalance`, `liquidity_depth_ratio`, `spread_bps`, `queue_position_score`, `latency_penalty_bps`, `capacity_usage_ratio`, `turnover_pressure`, `correlation_crowding_score`
 - flow / carry / options / sentiment / fundamentals: `funding_bps`, `carry_adjusted_return`, `vol_risk_premium`, `put_call_skew`, `liquidity_stress`, `net_exchange_flow`, `onchain_activity_ratio`, `sentiment_weighted_score`, `event_surprise`, `fundamental_value_gap`, `risk_adjusted_score`, `cross_sectional_rank`
-- quality / ensemble / regime: `freshness_score`, `staleness_bps`, `data_quality_blend`, `ensemble_vote_count`, `ensemble_vote_ratio`, `regime_transition_score`, `drawdown_from_peak`
+- quality / ensemble / regime: `freshness_score`, `staleness_bps`, `data_quality_blend`, `ensemble_vote_count`, `ensemble_vote_ratio`, `regime_transition_score`, `drawdown_from_peak`, `rolling_max_drawdown`, `drawdown_duration`
 - calendar: `ts_weekday`, `ts_hour`, `ts_month`, `ts_day`
 
 制約: 任意式、任意 Python、外部 plugin、pickle model loading はしません。
@@ -153,7 +153,7 @@
 最新 full check では、次を確認済みです。
 
 - `./scripts/check`: pass
-- pytest: `472 passed`
+- pytest: `474 passed`
 - pyrefly: `0 errors`
 - current-docs lint: `checked 76 current docs: links, EOF, and legacy roots ok`
 

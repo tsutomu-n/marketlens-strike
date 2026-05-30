@@ -980,6 +980,8 @@ class DerivedFeature(BaseModel):
         "ensemble_vote_ratio",
         "regime_transition_score",
         "drawdown_from_peak",
+        "rolling_max_drawdown",
+        "drawdown_duration",
         "turnover_pressure",
         "capacity_usage_ratio",
         "correlation_crowding_score",
@@ -1015,6 +1017,8 @@ class DerivedFeature(BaseModel):
             "freshness_score",
             "staleness_bps",
             "drawdown_from_peak",
+            "rolling_max_drawdown",
+            "drawdown_duration",
             "lag",
             "rolling_return",
             "ewm_mean",
@@ -1198,6 +1202,8 @@ class DerivedFeature(BaseModel):
             "rolling_spread_zscore",
             "rolling_autocorr",
             "drawdown_from_peak",
+            "rolling_max_drawdown",
+            "drawdown_duration",
         }:
             if self.window is None or self.window <= 0:
                 raise ValueError(
@@ -2618,6 +2624,20 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
             "canonical_symbol"
         )
         expr = (first / _safe_denominator(rolling_peak)) - 1.0
+    elif feature.op == "rolling_max_drawdown":
+        rolling_peak = first.rolling_max(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        drawdown = (first / _safe_denominator(rolling_peak)) - 1.0
+        expr = drawdown.rolling_min(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "drawdown_duration":
+        expr = first.rolling_map(
+            lambda values: len(values) - 1 - int(values.arg_max() or 0),
+            window_size=feature.window or 1,
+            min_samples=1,
+        ).over("canonical_symbol")
     elif feature.op == "turnover_pressure":
         second = pl.col(feature.columns[1])
         expr = first / _safe_denominator(second)

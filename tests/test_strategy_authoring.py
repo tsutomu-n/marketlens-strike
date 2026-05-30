@@ -2159,6 +2159,78 @@ rules:
     assert frame.get_column("side").to_list() == ["long"]
 
 
+def test_authoring_derived_features_support_rolling_drawdown_path_inputs(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "drawdown-path.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    equity_curve = [100.0, 110.0, 105.0, 99.0, 108.0]
+    pl.DataFrame(
+        [
+            {
+                "ts": start + timedelta(hours=index),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": index == 3,
+                "paper_equity": value,
+            }
+            for index, value in enumerate(equity_curve)
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: drawdown_path_v1
+  strategy_family: drawdown_path
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: XYZ100
+      real_market_symbol: QQQ
+      asset_class: equity_index
+rules:
+  side: long
+  timeframe: 1h
+  derived_features:
+    - name: current_drawdown
+      op: drawdown_from_peak
+      columns: [paper_equity]
+      window: 5
+    - name: worst_drawdown
+      op: rolling_max_drawdown
+      columns: [paper_equity]
+      window: 5
+    - name: bars_since_peak
+      op: drawdown_duration
+      columns: [paper_equity]
+      window: 5
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: current_drawdown
+        op: lte
+        value: -0.09
+      - column: worst_drawdown
+        op: lte
+        value: -0.09
+      - column: bars_since_peak
+        op: gte
+        value: 2
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert frame.get_column("ts_signal").to_list() == [start + timedelta(hours=3)]
+    assert frame.get_column("side").to_list() == ["long"]
+
+
 def test_authoring_multi_leg_expands_anchor_signal_into_pair_trade_legs(
     tmp_path,
 ) -> None:

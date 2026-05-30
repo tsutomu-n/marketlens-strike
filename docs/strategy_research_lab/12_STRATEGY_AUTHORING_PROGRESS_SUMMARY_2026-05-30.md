@@ -36,7 +36,7 @@
 | Position state | 同一 symbol の仮想 open signal 数と open weight を制限。 | `rules.position.*` |
 | Cross-sectional | top / bottom n、fraction tail、group rotation、min candidates、score threshold を整理。 | `rules.cross_sectional.*` |
 | Multi-leg | anchor signal から複数 leg の paper signal を展開。 | `rules.multi_leg.*` |
-| Derived features | trend、mean reversion、breakout、pair、Kelly / VaR / expected shortfall、microstructure、capacity、quality 系 feature を YAML で生成。 | `rules.derived_features` |
+| Derived features | trend、mean reversion、breakout、pair、Kelly / VaR / expected shortfall、percentile-rank / skew / kurtosis、microstructure、capacity、quality 系 feature を YAML で生成。 | `rules.derived_features` |
 | Model score | paper-only 線形 score と train-model adapter を整理。 | `rules.score.model_score`, `strategy-author-train-model` |
 | Temporal / event | 曜日、時間帯、cooldown、symbol 日次上限、event allow/block window を整理。 | `rules.temporal.*`, `rules.event_windows.*` |
 | Optimizer / bundle | parameter sweep と multi-spec bundle comparison を整理。 | `optimizer.parameter_sweep`, `strategy_authoring_bundle.v1` |
@@ -111,10 +111,10 @@ uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/exampl
 
 2026-05-30 時点で確認済みです。
 
-- `uv run pytest tests/test_strategy_authoring.py -q`: `88 passed`
+- `uv run pytest tests/test_strategy_authoring.py -q`: `90 passed`
 - `uv run pytest tests/test_strategy_lab_schemas.py -q`: `2 passed`
 - `uv run python scripts/check_current_docs.py`: `checked 76 current docs: links, EOF, and legacy roots ok`
-- `./scripts/check`: pass, pytest `472 passed`, pyrefly `0 errors`
+- `./scripts/check`: pass, pytest `474 passed`, pyrefly `0 errors`
 
 ## 残る範囲
 
