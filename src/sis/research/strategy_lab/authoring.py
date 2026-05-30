@@ -7,7 +7,7 @@ from itertools import product
 import json
 import math
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Iterable, Literal, cast
 
 import polars as pl
 from pydantic import BaseModel, Field, model_validator
@@ -495,10 +495,17 @@ class PortfolioRules(BaseModel):
     max_group_abs_net_position_weight: float | None = None
     group_column: str | None = None
     allocation_method: Literal[
-        "none", "equal_weight", "score_proportional", "inverse_volatility"
+        "none",
+        "equal_weight",
+        "score_proportional",
+        "inverse_volatility",
+        "dollar_neutral",
+        "beta_neutral",
+        "group_neutral",
     ] = "none"
     target_total_position_weight: float | None = None
     allocation_volatility_column: str | None = None
+    allocation_beta_column: str | None = None
 
     @model_validator(mode="after")
     def validate_portfolio(self) -> PortfolioRules:
@@ -519,6 +526,7 @@ class PortfolioRules(BaseModel):
         if (
             self.max_group_position_weight is not None
             or self.max_group_abs_net_position_weight is not None
+            or self.allocation_method == "group_neutral"
         ) and self.group_column is None:
             raise ValueError("rules.portfolio.group_column is required for group exposure limits")
         if self.group_column is not None and not self.group_column.strip():
@@ -527,6 +535,7 @@ class PortfolioRules(BaseModel):
             self.group_column is not None
             and self.max_group_position_weight is None
             and self.max_group_abs_net_position_weight is None
+            and self.allocation_method != "group_neutral"
         ):
             raise ValueError(
                 "rules.portfolio group exposure limit is required when group_column is set"
@@ -549,6 +558,15 @@ class PortfolioRules(BaseModel):
             and not self.allocation_volatility_column.strip()
         ):
             raise ValueError("rules.portfolio.allocation_volatility_column must be non-empty")
+        if self.allocation_method == "beta_neutral":
+            if self.allocation_beta_column is None:
+                raise ValueError(
+                    "rules.portfolio.allocation_beta_column is required for beta_neutral"
+                )
+            if not self.allocation_beta_column.strip():
+                raise ValueError("rules.portfolio.allocation_beta_column must be non-empty")
+        elif self.allocation_beta_column is not None and not self.allocation_beta_column.strip():
+            raise ValueError("rules.portfolio.allocation_beta_column must be non-empty")
         return self
 
     @property
@@ -916,6 +934,9 @@ class DerivedFeature(BaseModel):
         "downside_volatility",
         "sharpe_like",
         "sortino_like",
+        "kelly_fraction",
+        "historical_var",
+        "expected_shortfall",
         "cumulative_return",
         "slope",
         "mean_reversion_score",
@@ -1003,6 +1024,9 @@ class DerivedFeature(BaseModel):
             "downside_volatility",
             "sharpe_like",
             "sortino_like",
+            "kelly_fraction",
+            "historical_var",
+            "expected_shortfall",
             "slope",
             "mean_reversion_score",
         }:
@@ -1143,6 +1167,9 @@ class DerivedFeature(BaseModel):
             "downside_volatility",
             "sharpe_like",
             "sortino_like",
+            "kelly_fraction",
+            "historical_var",
+            "expected_shortfall",
             "slope",
             "mean_reversion_score",
             "rolling_corr",
@@ -1179,6 +1206,12 @@ class DerivedFeature(BaseModel):
         ):
             raise ValueError(
                 f"rules.derived_features.{self.name}.{self.op} requires positive value"
+            )
+        if self.op in {"historical_var", "expected_shortfall"} and (
+            self.value is not None and not 0.0 < self.value < 1.0
+        ):
+            raise ValueError(
+                f"rules.derived_features.{self.name}.{self.op} requires value between 0 and 1"
             )
         if self.fill_null is not None and not math.isfinite(self.fill_null):
             raise ValueError(f"rules.derived_features.{self.name}.fill_null must be finite")
@@ -1778,6 +1811,8 @@ def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
         add_column(spec.rules.execution.fee_edge_column)
     if spec.rules.portfolio.allocation_volatility_column is not None:
         columns.add(spec.rules.portfolio.allocation_volatility_column)
+    if spec.rules.portfolio.allocation_beta_column is not None:
+        columns.add(spec.rules.portfolio.allocation_beta_column)
     if spec.rules.portfolio.group_column is not None:
         columns.add(spec.rules.portfolio.group_column)
     if spec.rules.cross_sectional.group_column is not None:
@@ -2340,6 +2375,36 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
                 "canonical_symbol"
             )
         expr = mean / _safe_denominator(risk) * periods
+    elif feature.op == "kelly_fraction":
+        mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        variance = (
+            first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+                "canonical_symbol"
+            )
+            ** 2
+        )
+        expr = mean / _safe_denominator(variance)
+    elif feature.op == "historical_var":
+        alpha = feature.value if feature.value is not None else 0.05
+        expr = -first.rolling_quantile(
+            quantile=alpha,
+            window_size=feature.window or 1,
+            min_samples=1,
+        ).over("canonical_symbol")
+    elif feature.op == "expected_shortfall":
+        alpha = feature.value if feature.value is not None else 0.05
+        var_threshold = first.rolling_quantile(
+            quantile=alpha,
+            window_size=feature.window or 1,
+            min_samples=1,
+        ).over("canonical_symbol")
+        tail_return = pl.when(first <= var_threshold).then(first).otherwise(None)
+        expr = -tail_return.rolling_mean(
+            window_size=feature.window or 1,
+            min_samples=1,
+        ).over("canonical_symbol")
     elif feature.op == "cumulative_return":
         expr = ((1.0 + first).cum_prod().over("canonical_symbol")) - 1.0
     elif feature.op == "slope":
@@ -3009,27 +3074,20 @@ def _apply_portfolio_allocation(
 
     selected: list[dict[str, Any]] = [*passthrough]
     for timestamp_rows in grouped.values():
-        if portfolio.allocation_method == "equal_weight":
-            raw_weights = [1.0 for _row in timestamp_rows]
-        elif portfolio.allocation_method == "score_proportional":
-            raw_weights = [
-                max(0.0, float(row["raw_score"]))
-                if isinstance(row.get("raw_score"), int | float)
-                else 0.0
-                for row in timestamp_rows
-            ]
-            if not any(weight > 0.0 for weight in raw_weights):
-                raw_weights = [1.0 for _row in timestamp_rows]
-        else:
-            raw_weights = [
-                1.0 / float(row["_allocation_volatility"])
-                if isinstance(row.get("_allocation_volatility"), int | float)
-                and float(row["_allocation_volatility"]) > 0.0
-                else 0.0
-                for row in timestamp_rows
-            ]
-            if not any(weight > 0.0 for weight in raw_weights):
-                raw_weights = [1.0 for _row in timestamp_rows]
+        if portfolio.allocation_method in {
+            "dollar_neutral",
+            "beta_neutral",
+            "group_neutral",
+        }:
+            selected.extend(
+                _neutral_allocated_rows(
+                    timestamp_rows,
+                    target=target,
+                    method=portfolio.allocation_method,
+                )
+            )
+            continue
+        raw_weights = _allocation_raw_weights(timestamp_rows, portfolio)
         total_raw = sum(raw_weights)
         for row, raw_weight in zip(timestamp_rows, raw_weights, strict=True):
             allocated = 0.0 if total_raw == 0.0 else target * raw_weight / total_raw
@@ -3037,6 +3095,98 @@ def _apply_portfolio_allocation(
             updated["position_weight"] = allocated
             selected.append(updated)
     return selected
+
+
+def _allocation_raw_weights(rows: list[dict[str, Any]], portfolio: PortfolioRules) -> list[float]:
+    if portfolio.allocation_method == "equal_weight":
+        return [1.0 for _row in rows]
+    if portfolio.allocation_method == "score_proportional":
+        raw_weights = [
+            max(0.0, float(row["raw_score"]))
+            if isinstance(row.get("raw_score"), int | float)
+            else 0.0
+            for row in rows
+        ]
+        return raw_weights if any(weight > 0.0 for weight in raw_weights) else [1.0 for _row in rows]
+    raw_weights = [
+        1.0 / float(row["_allocation_volatility"])
+        if isinstance(row.get("_allocation_volatility"), int | float)
+        and float(row["_allocation_volatility"]) > 0.0
+        else 0.0
+        for row in rows
+    ]
+    return raw_weights if any(weight > 0.0 for weight in raw_weights) else [1.0 for _row in rows]
+
+
+def _neutral_allocated_rows(
+    rows: list[dict[str, Any]], *, target: float, method: str
+) -> list[dict[str, Any]]:
+    if method == "group_neutral":
+        group_rows: dict[str, list[dict[str, Any]]] = {}
+        ungrouped: list[dict[str, Any]] = []
+        for row in rows:
+            group = str(row.get("_portfolio_group") or "").strip()
+            if group:
+                group_rows.setdefault(group, []).append(row)
+            else:
+                ungrouped.append(row)
+        group_target = target / len(group_rows) if group_rows else 0.0
+        allocated: list[dict[str, Any]] = []
+        for grouped_rows in group_rows.values():
+            allocated.extend(
+                _side_neutral_allocated_rows(
+                    grouped_rows,
+                    long_target=group_target / 2.0,
+                    short_target=group_target / 2.0,
+                )
+            )
+        allocated.extend(_side_neutral_allocated_rows(ungrouped, long_target=0.0, short_target=0.0))
+        return allocated
+
+    long_target = target / 2.0
+    short_target = target / 2.0
+    if method == "beta_neutral":
+        long_beta = _weighted_average_abs_beta(row for row in rows if row.get("side") == "long")
+        short_beta = _weighted_average_abs_beta(row for row in rows if row.get("side") == "short")
+        if long_beta > 0.0 and short_beta > 0.0:
+            long_target = target * short_beta / (long_beta + short_beta)
+            short_target = target * long_beta / (long_beta + short_beta)
+    return _side_neutral_allocated_rows(rows, long_target=long_target, short_target=short_target)
+
+
+def _weighted_average_abs_beta(rows: Iterable[dict[str, Any]]) -> float:
+    weighted_beta = 0.0
+    total_weight = 0.0
+    for row in rows:
+        beta = row.get("_allocation_beta")
+        if not isinstance(beta, int | float):
+            continue
+        weight = abs(_position_weight_value(row))
+        weighted_beta += abs(float(beta)) * weight
+        total_weight += weight
+    return 0.0 if total_weight == 0.0 else weighted_beta / total_weight
+
+
+def _side_neutral_allocated_rows(
+    rows: list[dict[str, Any]], *, long_target: float, short_target: float
+) -> list[dict[str, Any]]:
+    by_side = {
+        "long": [row for row in rows if row.get("side") == "long"],
+        "short": [row for row in rows if row.get("side") == "short"],
+    }
+    allocated: list[dict[str, Any]] = []
+    for side, side_rows in by_side.items():
+        side_target = long_target if side == "long" else short_target
+        total_raw = sum(abs(_position_weight_value(row)) for row in side_rows)
+        for row in side_rows:
+            updated = dict(row)
+            updated["position_weight"] = (
+                0.0
+                if total_raw == 0.0
+                else side_target * abs(_position_weight_value(row)) / total_raw
+            )
+            allocated.append(updated)
+    return allocated
 
 
 def _position_weight_value(row: dict[str, Any]) -> float:
@@ -3906,6 +4056,9 @@ def _trade_signal_row(
         "_allocation_volatility": row.get(spec.rules.portfolio.allocation_volatility_column)
         if spec.rules.portfolio.allocation_volatility_column is not None
         else None,
+        "_allocation_beta": row.get(spec.rules.portfolio.allocation_beta_column)
+        if spec.rules.portfolio.allocation_beta_column is not None
+        else None,
         "_portfolio_group": row.get(spec.rules.portfolio.group_column)
         if spec.rules.portfolio.group_column is not None
         else None,
@@ -4618,6 +4771,12 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         f"- borrow_availability_column: {spec.rules.execution.borrow_availability_column}\n"
         f"- max_borrow_cost_bps: {spec.rules.execution.max_borrow_cost_bps}\n"
         f"- borrow_cost_column: {spec.rules.execution.borrow_cost_column}\n"
+        f"- max_tax_drag_bps: {spec.rules.execution.max_tax_drag_bps}\n"
+        f"- tax_drag_column: {spec.rules.execution.tax_drag_column}\n"
+        f"- max_turnover_pressure: {spec.rules.execution.max_turnover_pressure}\n"
+        f"- turnover_pressure_column: {spec.rules.execution.turnover_pressure_column}\n"
+        f"- min_fee_edge_bps: {spec.rules.execution.min_fee_edge_bps}\n"
+        f"- fee_edge_column: {spec.rules.execution.fee_edge_column}\n"
         "\n\n## Portfolio\n\n"
         f"- max_signals_per_timestamp: {spec.rules.portfolio.max_signals_per_timestamp}\n"
         "\n\n## Temporal Controls\n\n"

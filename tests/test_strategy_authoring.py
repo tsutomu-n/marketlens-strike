@@ -1813,6 +1813,81 @@ rules:
     assert frame.get_column("side").to_list() == ["long"]
 
 
+def test_authoring_derived_features_support_kelly_var_and_expected_shortfall(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "risk-sizing.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    returns = [0.02, -0.01, 0.03, -0.02, 0.04]
+    pl.DataFrame(
+        [
+            {
+                "ts": start + timedelta(hours=index),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": index == 4,
+                "research_return": value,
+            }
+            for index, value in enumerate(returns)
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: risk_sizing_v1
+  strategy_family: risk_sizing
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: XYZ100
+      real_market_symbol: QQQ
+      asset_class: equity_index
+rules:
+  side: long
+  timeframe: 1h
+  derived_features:
+    - name: kelly
+      op: kelly_fraction
+      columns: [research_return]
+      window: 5
+      fill_null: 0
+    - name: var_20
+      op: historical_var
+      columns: [research_return]
+      window: 5
+      value: 0.2
+    - name: expected_shortfall_20
+      op: expected_shortfall
+      columns: [research_return]
+      window: 5
+      value: 0.2
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: kelly
+        op: gt
+        value: 1
+      - column: var_20
+        op: lt
+        value: 0.03
+      - column: expected_shortfall_20
+        op: lt
+        value: 0.03
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert frame.get_column("ts_signal").to_list() == [start + timedelta(hours=4)]
+    assert frame.get_column("side").to_list() == ["long"]
+
+
 def test_authoring_multi_leg_expands_anchor_signal_into_pair_trade_legs(
     tmp_path,
 ) -> None:
@@ -2416,6 +2491,237 @@ backtest:
     frame = frame.sort("execution_symbol")
 
     assert frame.get_column("position_weight").to_list() == pytest.approx([0.75, 0.25])
+
+
+def test_authoring_portfolio_dollar_neutral_allocation_balances_long_short_gross(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "portfolio-dollar-neutral.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "direction": direction,
+                "research_return_1d": 0.01,
+                "research_return_4h": 0.01,
+            }
+            for symbol, direction in [
+                ("AAA", "long"),
+                ("BBB", "long"),
+                ("CCC", "short"),
+                ("DDD", "short"),
+            ]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: dollar_neutral_authoring_v1
+  strategy_family: neutral_portfolio
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: DDD100
+      real_market_symbol: DDD
+      asset_class: equity
+rules:
+  side_column: direction
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 1.0
+  portfolio:
+    allocation_method: dollar_neutral
+    target_total_position_weight: 1.0
+  reason_code: dollar_neutral_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    frame, _manifest = build_authoring_signals(load_authoring_spec(spec_path), data_dir=data_dir)
+
+    assert frame.filter(pl.col("side") == "long").get_column("position_weight").sum() == 0.5
+    assert frame.filter(pl.col("side") == "short").get_column("position_weight").sum() == 0.5
+
+
+def test_authoring_portfolio_beta_neutral_allocation_balances_beta_exposure(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "portfolio-beta-neutral.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "direction": direction,
+                "benchmark_beta": beta,
+                "research_return_1d": 0.01,
+                "research_return_4h": 0.01,
+            }
+            for symbol, direction, beta in [
+                ("AAA", "long", 1.0),
+                ("BBB", "short", 2.0),
+            ]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: beta_neutral_authoring_v1
+  strategy_family: neutral_portfolio
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+rules:
+  side_column: direction
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 1.0
+  portfolio:
+    allocation_method: beta_neutral
+    target_total_position_weight: 1.0
+    allocation_beta_column: benchmark_beta
+  reason_code: beta_neutral_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    long_beta_exposure = (
+        frame.filter(pl.col("side") == "long").get_column("position_weight").sum() * 1.0
+    )
+    short_beta_exposure = (
+        frame.filter(pl.col("side") == "short").get_column("position_weight").sum() * 2.0
+    )
+    assert long_beta_exposure == pytest.approx(short_beta_exposure)
+    assert frame.get_column("position_weight").sum() == pytest.approx(1.0)
+
+
+def test_authoring_portfolio_group_neutral_allocation_balances_each_group(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "portfolio-group-neutral.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "sector_bucket": sector,
+                "trade_allowed": True,
+                "direction": direction,
+                "research_return_1d": 0.01,
+                "research_return_4h": 0.01,
+            }
+            for symbol, sector, direction in [
+                ("AAA", "technology", "long"),
+                ("BBB", "technology", "short"),
+                ("CCC", "energy", "long"),
+                ("DDD", "energy", "short"),
+            ]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: group_neutral_authoring_v1
+  strategy_family: neutral_portfolio
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: DDD100
+      real_market_symbol: DDD
+      asset_class: equity
+rules:
+  side_column: direction
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 1.0
+  portfolio:
+    allocation_method: group_neutral
+    target_total_position_weight: 1.0
+    group_column: sector_bucket
+  reason_code: group_neutral_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    for symbols in (("AAA100", "BBB100"), ("CCC100", "DDD100")):
+        group = frame.filter(pl.col("execution_symbol").is_in(symbols))
+        assert group.filter(pl.col("side") == "long").get_column("position_weight").sum() == 0.25
+        assert group.filter(pl.col("side") == "short").get_column("position_weight").sum() == 0.25
 
 
 def test_authoring_regime_overrides_adjust_risk_sizing_and_execution(tmp_path) -> None:

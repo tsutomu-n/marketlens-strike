@@ -134,10 +134,19 @@
             "max_group_abs_net_position_weight": {"type": ["number", "null"], "minimum": 0},
             "group_column": {"type": ["string", "null"]},
             "allocation_method": {
-              "enum": ["none", "equal_weight", "score_proportional", "inverse_volatility"]
+              "enum": [
+                "none",
+                "equal_weight",
+                "score_proportional",
+                "inverse_volatility",
+                "dollar_neutral",
+                "beta_neutral",
+                "group_neutral"
+              ]
             },
             "target_total_position_weight": {"type": ["number", "null"], "minimum": 0},
-            "allocation_volatility_column": {"type": ["string", "null"]}
+            "allocation_volatility_column": {"type": ["string", "null"]},
+            "allocation_beta_column": {"type": ["string", "null"]}
           },
           "additionalProperties": false
         },
@@ -392,6 +401,9 @@
             "downside_volatility",
             "sharpe_like",
             "sortino_like",
+            "kelly_fraction",
+            "historical_var",
+            "expected_shortfall",
             "cumulative_return",
             "slope",
             "mean_reversion_score",
