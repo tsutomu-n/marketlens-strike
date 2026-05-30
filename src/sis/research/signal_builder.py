@@ -128,7 +128,20 @@ def _legacy_export(strategy_signals: pl.DataFrame) -> pl.DataFrame:
                 "reason": pl.Utf8,
             }
         )
-    return strategy_signals.select(
+    trade_signals = strategy_signals.filter(pl.col("side").is_in(["long", "short"]))
+    if trade_signals.is_empty():
+        return pl.DataFrame(
+            schema={
+                "ts_signal": pl.Datetime(time_zone="UTC"),
+                "canonical_symbol": pl.Utf8,
+                "side": pl.Utf8,
+                "timeframe": pl.Utf8,
+                "signal_strength": pl.Float64,
+                "strategy_name": pl.Utf8,
+                "reason": pl.Utf8,
+            }
+        )
+    return trade_signals.select(
         pl.col("ts_signal"),
         pl.col("execution_symbol").alias("canonical_symbol"),
         pl.col("side"),

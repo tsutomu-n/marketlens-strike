@@ -27,6 +27,8 @@ def test_help_smoke() -> None:
     assert "strategy-author-validate" in result.stdout
     assert "strategy-author-explain" in result.stdout
     assert "strategy-author-run" in result.stdout
+    assert "strategy-author-bundle-run" in result.stdout
+    assert "strategy-author-train-model" in result.stdout
     assert "paper-step" in result.stdout
     assert "estimate-order" in result.stdout
     assert "balance-status" in result.stdout

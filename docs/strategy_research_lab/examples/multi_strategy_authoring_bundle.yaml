@@ -1,0 +1,13 @@
+schema_version: strategy_authoring_bundle.v1
+bundle_id: user_multi_strategy_v1
+members:
+  - spec_path: trend_pullback_authoring_spec.yaml
+    allocation_weight: 0.7
+    enabled: true
+  - spec_path: trend_pullback_authoring_spec.yaml
+    allocation_weight: 0.3
+    enabled: true
+portfolio:
+  max_total_allocation_weight: 1.0
+  selection_metric: total_return
+  selection_direction: maximize

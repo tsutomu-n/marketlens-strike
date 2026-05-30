@@ -86,7 +86,7 @@ class StrategySignalRecord(BaseModel):
     execution_venue: Literal["trade_xyz"]
     execution_symbol: str
     real_market_symbol: str
-    side: Literal["long", "short", "none"]
+    side: Literal["long", "short", "close", "reduce", "add", "rebalance", "none"]
     raw_score: float | None
     rank_score: float | None
     percentile_rank: float | None
@@ -97,6 +97,34 @@ class StrategySignalRecord(BaseModel):
     feature_snapshot_ref: str | None
     quote_ref: str | None
     tracking_ref: str | None
+    stop_loss_bps: float | None = None
+    take_profit_bps: float | None = None
+    trailing_stop_bps: float | None = None
+    partial_take_profit_bps: float | None = None
+    partial_exit_fraction: float | None = None
+    exit_on_opposite_signal: bool = False
+    exit_on_close_signal: bool = False
+    exit_on_reduce_signal: bool = False
+    reduce_fraction: float | None = None
+    exit_on_add_signal: bool = False
+    add_fraction: float | None = None
+    exit_on_rebalance_signal: bool = False
+    rebalance_target_fraction: float | None = None
+    bracket_type: Literal["none", "oco"] = "none"
+    bracket_time_stop_minutes: int | None = None
+    bracket_break_even_after_bps: float | None = None
+    entry_order_type: Literal["market", "limit", "stop_market"] = "market"
+    entry_limit_offset_bps: float | None = None
+    entry_stop_offset_bps: float | None = None
+    entry_timeout_minutes: int | None = None
+    slippage_bps: float = 0.0
+    max_fill_fraction: float = 1.0
+    max_spread_bps: float | None = None
+    min_depth_usd: float | None = None
+    depth_column: str | None = None
+    depth_participation_rate: float = 1.0
+    position_weight: float | None = None
+    notional_usd: float | None = None
     reason_codes: list[str] = Field(default_factory=list)
     block_reasons: list[str] = Field(default_factory=list)
 
@@ -112,6 +140,48 @@ class StrategySignalRecord(BaseModel):
             raise ValueError("rank_score must be between 0 and 1")
         if self.percentile_rank is not None and not 0.0 <= self.percentile_rank <= 1.0:
             raise ValueError("percentile_rank must be between 0 and 1")
+        if self.stop_loss_bps is not None and self.stop_loss_bps < 0:
+            raise ValueError("stop_loss_bps must be >= 0")
+        if self.take_profit_bps is not None and self.take_profit_bps < 0:
+            raise ValueError("take_profit_bps must be >= 0")
+        if self.trailing_stop_bps is not None and self.trailing_stop_bps < 0:
+            raise ValueError("trailing_stop_bps must be >= 0")
+        if self.partial_take_profit_bps is not None and self.partial_take_profit_bps < 0:
+            raise ValueError("partial_take_profit_bps must be >= 0")
+        if self.partial_exit_fraction is not None and not 0.0 <= self.partial_exit_fraction <= 1.0:
+            raise ValueError("partial_exit_fraction must be between 0 and 1")
+        if self.reduce_fraction is not None and not 0.0 <= self.reduce_fraction <= 1.0:
+            raise ValueError("reduce_fraction must be between 0 and 1")
+        if self.add_fraction is not None and not 0.0 <= self.add_fraction <= 1.0:
+            raise ValueError("add_fraction must be between 0 and 1")
+        if self.rebalance_target_fraction is not None and self.rebalance_target_fraction < 0:
+            raise ValueError("rebalance_target_fraction must be >= 0")
+        if self.bracket_time_stop_minutes is not None and self.bracket_time_stop_minutes < 0:
+            raise ValueError("bracket_time_stop_minutes must be >= 0")
+        if self.bracket_break_even_after_bps is not None and self.bracket_break_even_after_bps < 0:
+            raise ValueError("bracket_break_even_after_bps must be >= 0")
+        if self.entry_limit_offset_bps is not None and self.entry_limit_offset_bps < 0:
+            raise ValueError("entry_limit_offset_bps must be >= 0")
+        if self.entry_stop_offset_bps is not None and self.entry_stop_offset_bps < 0:
+            raise ValueError("entry_stop_offset_bps must be >= 0")
+        if self.entry_timeout_minutes is not None and self.entry_timeout_minutes < 0:
+            raise ValueError("entry_timeout_minutes must be >= 0")
+        if self.slippage_bps < 0:
+            raise ValueError("slippage_bps must be >= 0")
+        if not 0.0 <= self.max_fill_fraction <= 1.0:
+            raise ValueError("max_fill_fraction must be between 0 and 1")
+        if self.max_spread_bps is not None and self.max_spread_bps < 0:
+            raise ValueError("max_spread_bps must be >= 0")
+        if self.min_depth_usd is not None and self.min_depth_usd < 0:
+            raise ValueError("min_depth_usd must be >= 0")
+        if self.depth_column is not None and not self.depth_column.strip():
+            raise ValueError("depth_column must be non-empty when set")
+        if not 0.0 <= self.depth_participation_rate <= 1.0:
+            raise ValueError("depth_participation_rate must be between 0 and 1")
+        if self.position_weight is not None and self.position_weight < 0:
+            raise ValueError("position_weight must be >= 0")
+        if self.notional_usd is not None and self.notional_usd < 0:
+            raise ValueError("notional_usd must be >= 0")
         self.execution_symbol = self.execution_symbol.strip().upper()
         self.real_market_symbol = self.real_market_symbol.strip().upper()
         return self

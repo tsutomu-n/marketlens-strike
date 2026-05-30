@@ -103,7 +103,7 @@ canonical artifact:
 - `trial_id`, `parameter_hash`
 - `ts_signal`, `timeframe`
 - `execution_venue`, `execution_symbol`, `real_market_symbol`
-- `side`: `long`, `short`, `none`
+- `side`: `long`, `short`, `close`, `reduce`, `add`, `rebalance`, `none`
 - `raw_score`, `rank_score`, `percentile_rank`
 - `tail_bucket`: `top`, `middle`, `bottom`, `none`
 - `confidence`, `source_confidence`, `venue_quality_score`
@@ -130,7 +130,7 @@ manifest:
 
 売買上の意味:
 
-- `side=long/short/none` は売買方向の候補であり、まだ order action ではない。
+- `side=long/short/close/reduce/add/rebalance/none` は売買方向または paper close / reduce / add / rebalance marker の候補であり、まだ order action ではない。
 - `rank_score`, `percentile_rank`, `tail_bucket` は候補選別用の相対評価です。単独で収益性を証明しない。
 - `source_confidence` と `venue_quality_score` は data/venue quality gate へ接続するための情報です。
 
@@ -320,7 +320,7 @@ artifact:
 - `source_pack_id`, `candidate_id`, `strategy_id`
 - `execution_venue`, `execution_symbol`, `real_market_symbol`
 - `action`: `enter`, `exit`, `reduce`, `skip`
-- `side`: `long`, `short`, `none`
+- `side`: `long`, `short`, `close`, `reduce`, `add`, `rebalance`, `none`
 - `order_style`: `paper_taker`, `paper_maker`, `skip`
 - `price_reference`: `best_bid`, `best_ask`, `mid`, `mark`, `oracle`
 - `notional_usd`, `quantity`

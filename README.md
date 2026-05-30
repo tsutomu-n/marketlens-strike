@@ -85,9 +85,10 @@ uv run sis strategy-author-init --out docs/strategy_research_lab/examples/trend_
 uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
 uv run sis strategy-author-explain --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
 uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
 ```
 
-Strategy Lab の schema / artifact flow / paper-only boundary は [docs/strategy_research_lab/README.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/README.md) を読む。作戦を作る入口は [docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html](/home/tn/projects/marketlens-strike/docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html)。今できることの一覧は [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)、わかりやすい HTML 版は [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html)。`data/research/strategy_signals.parquet` が canonical signal artifact で、`data/research/signals.csv` は legacy export。
+Strategy Lab の schema / artifact flow / paper-only boundary は [docs/strategy_research_lab/README.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/README.md) を読む。作戦を作る入口は [docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html](/home/tn/projects/marketlens-strike/docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html)。今できることの一覧は [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)、わかりやすい HTML 版は [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html)。authoring YAML は entry / hold / close / reduce / add / rebalance / long / short / derived features / column-to-column condition / exclusion-none condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg / pair-trade signal / cross-sectional top-bottom / paper-only linear model score / train-model adapter / temporal-cadence control / event-window calendar filters / bracket-OCO lifecycle / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / order-style entry / slippage / partial-fill / spread gate / depth-based fill / stop-loss / take-profit / close-signal exit / partial exit / trailing stop / sizing / portfolio exposure limits / risk throttle / volatility targeting / target-weight / inverse-vol allocation / position-state pyramiding controls / parameter sweep / era metrics / multi-strategy bundle / risk-parity allocation の paper backtest に対応する。`data/research/strategy_signals.parquet` が canonical signal artifact で、`data/research/signals.csv` は legacy export。
 
 Trade[XYZ] quote refresh:
 
@@ -131,7 +132,7 @@ PR12 read-only smoke evidence:
 
 2026-05-30 code/docs check:
 
-- `./scripts/check`: pass, 384 passed
+- `./scripts/check`: pass, 425 passed
 - `uv run pyrefly check`: pass, 0 errors
 - `uv run python scripts/check_current_docs.py`: pass, `checked 74 current docs`
 

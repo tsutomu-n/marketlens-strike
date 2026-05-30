@@ -11,6 +11,27 @@
   ],
   "properties": {
     "schema_version": { "const": "trade_candidate.v1" },
-    "live_order_submitted": { "const": false }
+    "live_order_submitted": { "const": false },
+    "stop_loss_bps": { "type": ["number", "null"], "minimum": 0 },
+    "take_profit_bps": { "type": ["number", "null"], "minimum": 0 },
+    "trailing_stop_bps": { "type": ["number", "null"], "minimum": 0 },
+    "partial_take_profit_bps": { "type": ["number", "null"], "minimum": 0 },
+    "partial_exit_fraction": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "exit_on_opposite_signal": { "type": "boolean" },
+    "bracket_type": { "enum": ["none", "oco"] },
+    "bracket_time_stop_minutes": { "type": ["integer", "null"], "minimum": 0 },
+    "bracket_break_even_after_bps": { "type": ["number", "null"], "minimum": 0 },
+    "entry_order_type": { "enum": ["market", "limit", "stop_market"] },
+    "entry_limit_offset_bps": { "type": ["number", "null"], "minimum": 0 },
+    "entry_stop_offset_bps": { "type": ["number", "null"], "minimum": 0 },
+    "entry_timeout_minutes": { "type": ["integer", "null"], "minimum": 0 },
+    "slippage_bps": { "type": "number", "minimum": 0 },
+    "max_fill_fraction": { "type": "number", "minimum": 0, "maximum": 1 },
+    "max_spread_bps": { "type": ["number", "null"], "minimum": 0 },
+    "min_depth_usd": { "type": ["number", "null"], "minimum": 0 },
+    "depth_column": { "type": ["string", "null"] },
+    "depth_participation_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+    "position_weight": { "type": ["number", "null"], "minimum": 0 },
+    "notional_usd": { "type": ["number", "null"], "minimum": 0 }
   }
 }

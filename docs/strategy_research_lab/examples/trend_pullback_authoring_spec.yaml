@@ -35,14 +35,31 @@ rules:
       - column: research_return_4h
         op: gt
         value: 0
+  hold:
+    any:
+      - column: vix_level
+        op: gte
+        value: 30
+  exit:
+    stop_loss_bps: 150
+    take_profit_bps: 300
+    trailing_stop_bps: 120
+    partial_take_profit_bps: 200
+    partial_exit_fraction: 0.5
+  sizing:
+    position_weight: 1.0
+    notional_usd: 1000
+  portfolio:
+    max_signals_per_timestamp: 3
   score:
     weighted_sum:
       - column: research_return_1d
         weight: 10
-      - column: source_confidence
-        weight: 0.5
+      - column: research_return_4h
+        weight: 5
   confidence: 0.7
   reason_code: trend_pullback_authoring_v1
+  hold_reason_code: risk_hold_v1
 backtest:
   split_method: purged_walk_forward
   era_unit: trading_day

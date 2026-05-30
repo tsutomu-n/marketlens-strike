@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
+from itertools import product
 import json
+import math
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -31,7 +33,19 @@ from sis.research.strategy_lab.signal_frame import validate_strategy_signal_fram
 from sis.research.strategy_lab.specs import SymbolBinding
 from sis.research.strategy_lab.trial_ledger import TrialLedger, TrialRecord
 
-ALLOWED_OPERATORS = {"gt", "gte", "lt", "lte", "eq", "neq", "is_true", "is_false", "between"}
+ALLOWED_OPERATORS = {
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "eq",
+    "neq",
+    "is_true",
+    "is_false",
+    "between",
+    "in",
+    "not_in",
+}
 VALID_THROUGH = {"signals", "backtest", "paper-preview"}
 
 
@@ -66,29 +80,59 @@ class AuthoringData(BaseModel):
 
 class Condition(BaseModel):
     column: str
-    op: Literal["gt", "gte", "lt", "lte", "eq", "neq", "is_true", "is_false", "between"]
+    op: Literal[
+        "gt",
+        "gte",
+        "lt",
+        "lte",
+        "eq",
+        "neq",
+        "is_true",
+        "is_false",
+        "between",
+        "in",
+        "not_in",
+    ]
     value: Any = None
+    value_column: str | None = None
 
     @model_validator(mode="after")
     def validate_condition(self) -> Condition:
         if not self.column.strip():
             raise ValueError("rule condition column must be non-empty")
+        if self.value_column is not None and not self.value_column.strip():
+            raise ValueError(f"{self.column}: value_column must be non-empty when set")
+        if self.op in {"is_true", "is_false"} and self.value_column is not None:
+            raise ValueError(f"{self.column}: {self.op} does not support value_column")
         if self.op == "between":
+            if self.value_column is not None:
+                raise ValueError(f"{self.column}: between does not support value_column")
             if not isinstance(self.value, list | tuple) or len(self.value) != 2:
                 raise ValueError(f"{self.column}: between requires a two-item value")
-        if self.op in {"gt", "gte", "lt", "lte", "eq", "neq"} and self.value is None:
-            raise ValueError(f"{self.column}: {self.op} requires value")
+        if self.op in {"in", "not_in"}:
+            if self.value_column is not None:
+                raise ValueError(f"{self.column}: {self.op} does not support value_column")
+            if not isinstance(self.value, list | tuple | set) or len(self.value) == 0:
+                raise ValueError(f"{self.column}: {self.op} requires a non-empty value list")
+        if self.op in {"gt", "gte", "lt", "lte", "eq", "neq"}:
+            has_value = self.value is not None
+            has_value_column = self.value_column is not None
+            if has_value == has_value_column:
+                raise ValueError(
+                    f"{self.column}: {self.op} requires exactly one of value or value_column"
+                )
         return self
 
 
 class EntryRules(BaseModel):
     all: list[Condition] = Field(default_factory=list)
     any: list[Condition] = Field(default_factory=list)
+    none: list[Condition] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_entry(self) -> EntryRules:
-        if not self.all and not self.any:
-            raise ValueError("rules.entry must include at least one all/any condition")
+        if not self.all and not self.any and not self.none:
+            raise ValueError("rules.entry must include at least one all/any/none condition")
         return self
 
 
@@ -96,32 +140,656 @@ class ScoreTerm(BaseModel):
     column: str
     weight: float = 1.0
 
+    @model_validator(mode="after")
+    def validate_score_term(self) -> ScoreTerm:
+        if not self.column.strip():
+            raise ValueError("rules.score term column must be non-empty")
+        if not math.isfinite(self.weight):
+            raise ValueError("rules.score term weight must be finite")
+        return self
 
-class WeightedScore(BaseModel):
+
+class ModelScore(BaseModel):
+    model_type: Literal["linear"] = "linear"
+    intercept: float = 0.0
+    coefficients: list[ScoreTerm] = Field(default_factory=list)
+    activation: Literal["identity", "sigmoid", "tanh", "clamp_0_1"] = "identity"
+    missing_value: float | None = None
+
+    @model_validator(mode="after")
+    def validate_model_score(self) -> ModelScore:
+        if not math.isfinite(self.intercept):
+            raise ValueError("rules.score.model_score.intercept must be finite")
+        if self.missing_value is not None and not math.isfinite(self.missing_value):
+            raise ValueError("rules.score.model_score.missing_value must be finite")
+        if not self.coefficients:
+            raise ValueError("rules.score.model_score.coefficients must not be empty")
+        return self
+
+
+class ScoreRules(BaseModel):
     weighted_sum: list[ScoreTerm] = Field(default_factory=list)
+    model_score: ModelScore | None = None
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.weighted_sum) or self.model_score is not None
+
+
+class ExitRules(BaseModel):
+    exit_on_opposite_signal: bool = False
+    exit_on_close_signal: bool = False
+    exit_on_reduce_signal: bool = False
+    reduce_fraction: float | None = None
+    reduce_fraction_column: str | None = None
+    exit_on_add_signal: bool = False
+    add_fraction: float | None = None
+    add_fraction_column: str | None = None
+    exit_on_rebalance_signal: bool = False
+    rebalance_target_fraction: float | None = None
+    rebalance_target_fraction_column: str | None = None
+    stop_loss_bps: float | None = None
+    stop_loss_bps_column: str | None = None
+    take_profit_bps: float | None = None
+    take_profit_bps_column: str | None = None
+    trailing_stop_bps: float | None = None
+    trailing_stop_bps_column: str | None = None
+    partial_take_profit_bps: float | None = None
+    partial_take_profit_bps_column: str | None = None
+    partial_exit_fraction: float | None = None
+    partial_exit_fraction_column: str | None = None
+
+    @model_validator(mode="after")
+    def validate_exit(self) -> ExitRules:
+        for field_name in (
+            "stop_loss_bps",
+            "take_profit_bps",
+            "trailing_stop_bps",
+            "partial_take_profit_bps",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"rules.exit.{field_name} must be >= 0")
+        if self.partial_exit_fraction is not None and not 0.0 <= self.partial_exit_fraction <= 1.0:
+            raise ValueError("rules.exit.partial_exit_fraction must be between 0 and 1")
+        if self.reduce_fraction is not None and not 0.0 <= self.reduce_fraction <= 1.0:
+            raise ValueError("rules.exit.reduce_fraction must be between 0 and 1")
+        if self.add_fraction is not None and not 0.0 <= self.add_fraction <= 1.0:
+            raise ValueError("rules.exit.add_fraction must be between 0 and 1")
+        if self.rebalance_target_fraction is not None and self.rebalance_target_fraction < 0:
+            raise ValueError("rules.exit.rebalance_target_fraction must be >= 0")
+        for field_name in (
+            "stop_loss_bps_column",
+            "take_profit_bps_column",
+            "trailing_stop_bps_column",
+            "partial_take_profit_bps_column",
+            "partial_exit_fraction_column",
+            "reduce_fraction_column",
+            "add_fraction_column",
+            "rebalance_target_fraction_column",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and not value.strip():
+                raise ValueError(f"rules.exit.{field_name} must be non-empty when set")
+        return self
+
+
+class SizingRules(BaseModel):
+    position_weight: float = 1.0
+    position_weight_column: str | None = None
+    notional_usd: float | None = None
+    notional_usd_column: str | None = None
+    volatility_target: float | None = None
+    volatility_column: str | None = None
+    max_volatility_scaled_position_weight: float | None = None
+
+    @model_validator(mode="after")
+    def validate_sizing(self) -> SizingRules:
+        if self.position_weight < 0:
+            raise ValueError("rules.sizing.position_weight must be >= 0")
+        if self.notional_usd is not None and self.notional_usd < 0:
+            raise ValueError("rules.sizing.notional_usd must be >= 0")
+        if self.volatility_target is not None and self.volatility_target <= 0:
+            raise ValueError("rules.sizing.volatility_target must be positive")
+        if (
+            self.max_volatility_scaled_position_weight is not None
+            and self.max_volatility_scaled_position_weight < 0
+        ):
+            raise ValueError("rules.sizing.max_volatility_scaled_position_weight must be >= 0")
+        if self.volatility_target is not None and self.volatility_column is None:
+            raise ValueError("rules.sizing.volatility_column is required for volatility_target")
+        for field_name in ("position_weight_column", "notional_usd_column", "volatility_column"):
+            value = getattr(self, field_name)
+            if value is not None and not value.strip():
+                raise ValueError(f"rules.sizing.{field_name} must be non-empty when set")
+        return self
+
+
+class OrderRules(BaseModel):
+    entry_type: Literal["market", "limit", "stop_market"] = "market"
+    limit_offset_bps: float | None = None
+    stop_offset_bps: float | None = None
+    timeout_minutes: int | None = None
+
+    @model_validator(mode="after")
+    def validate_order(self) -> OrderRules:
+        if self.entry_type == "limit" and self.limit_offset_bps is None:
+            raise ValueError("rules.order.limit_offset_bps is required for limit entry")
+        if self.entry_type == "stop_market" and self.stop_offset_bps is None:
+            raise ValueError("rules.order.stop_offset_bps is required for stop_market entry")
+        for field_name in ("limit_offset_bps", "stop_offset_bps"):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"rules.order.{field_name} must be >= 0")
+        if self.timeout_minutes is not None and self.timeout_minutes < 0:
+            raise ValueError("rules.order.timeout_minutes must be >= 0")
+        return self
+
+
+class BracketRules(BaseModel):
+    enabled: bool = False
+    bracket_type: Literal["oco"] = "oco"
+    time_stop_minutes: int | None = None
+    break_even_after_bps: float | None = None
+
+    @model_validator(mode="after")
+    def validate_bracket(self) -> BracketRules:
+        if self.time_stop_minutes is not None and self.time_stop_minutes < 0:
+            raise ValueError("rules.bracket.time_stop_minutes must be >= 0")
+        if self.break_even_after_bps is not None and self.break_even_after_bps < 0:
+            raise ValueError("rules.bracket.break_even_after_bps must be >= 0")
+        return self
+
+
+class ExecutionRules(BaseModel):
+    slippage_bps: float = 0.0
+    max_fill_fraction: float = 1.0
+    max_spread_bps: float | None = None
+    min_depth_usd: float | None = None
+    depth_column: str | None = "min_side_depth_10bps_usd"
+    depth_participation_rate: float = 1.0
+
+    @model_validator(mode="after")
+    def validate_execution(self) -> ExecutionRules:
+        if self.slippage_bps < 0:
+            raise ValueError("rules.execution.slippage_bps must be >= 0")
+        if not 0.0 <= self.max_fill_fraction <= 1.0:
+            raise ValueError("rules.execution.max_fill_fraction must be between 0 and 1")
+        if self.max_spread_bps is not None and self.max_spread_bps < 0:
+            raise ValueError("rules.execution.max_spread_bps must be >= 0")
+        if self.min_depth_usd is not None and self.min_depth_usd < 0:
+            raise ValueError("rules.execution.min_depth_usd must be >= 0")
+        if self.depth_column is not None and not self.depth_column.strip():
+            raise ValueError("rules.execution.depth_column must be non-empty when set")
+        if not 0.0 <= self.depth_participation_rate <= 1.0:
+            raise ValueError("rules.execution.depth_participation_rate must be between 0 and 1")
+        return self
+
+
+class PortfolioRules(BaseModel):
+    max_signals_per_timestamp: int | None = None
+    max_total_position_weight: float | None = None
+    max_long_position_weight: float | None = None
+    max_short_position_weight: float | None = None
+    max_symbol_position_weight: float | None = None
+    allocation_method: Literal[
+        "none", "equal_weight", "score_proportional", "inverse_volatility"
+    ] = "none"
+    target_total_position_weight: float | None = None
+    allocation_volatility_column: str | None = None
+
+    @model_validator(mode="after")
+    def validate_portfolio(self) -> PortfolioRules:
+        if self.max_signals_per_timestamp is not None and self.max_signals_per_timestamp <= 0:
+            raise ValueError("rules.portfolio.max_signals_per_timestamp must be positive")
+        for field_name in (
+            "max_total_position_weight",
+            "max_long_position_weight",
+            "max_short_position_weight",
+            "max_symbol_position_weight",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"rules.portfolio.{field_name} must be >= 0")
+        if self.target_total_position_weight is not None and self.target_total_position_weight < 0:
+            raise ValueError("rules.portfolio.target_total_position_weight must be >= 0")
+        if self.allocation_method != "none" and self.target_total_position_weight is None:
+            raise ValueError(
+                "rules.portfolio.target_total_position_weight is required when allocation_method is not none"
+            )
+        if self.allocation_method == "inverse_volatility":
+            if self.allocation_volatility_column is None:
+                raise ValueError(
+                    "rules.portfolio.allocation_volatility_column is required for inverse_volatility"
+                )
+            if not self.allocation_volatility_column.strip():
+                raise ValueError("rules.portfolio.allocation_volatility_column must be non-empty")
+        elif (
+            self.allocation_volatility_column is not None
+            and not self.allocation_volatility_column.strip()
+        ):
+            raise ValueError("rules.portfolio.allocation_volatility_column must be non-empty")
+        return self
+
+    @property
+    def exposure_limits_enabled(self) -> bool:
+        return any(
+            value is not None
+            for value in (
+                self.max_total_position_weight,
+                self.max_long_position_weight,
+                self.max_short_position_weight,
+                self.max_symbol_position_weight,
+            )
+        )
+
+
+class PositionRules(BaseModel):
+    max_open_signals_per_symbol: int | None = None
+    max_open_position_weight_per_symbol: float | None = None
+    holding_horizon_minutes: int | None = None
+
+    @model_validator(mode="after")
+    def validate_position(self) -> PositionRules:
+        if self.max_open_signals_per_symbol is not None and self.max_open_signals_per_symbol <= 0:
+            raise ValueError("rules.position.max_open_signals_per_symbol must be positive")
+        if (
+            self.max_open_position_weight_per_symbol is not None
+            and self.max_open_position_weight_per_symbol < 0
+        ):
+            raise ValueError("rules.position.max_open_position_weight_per_symbol must be >= 0")
+        if self.holding_horizon_minutes is not None and self.holding_horizon_minutes <= 0:
+            raise ValueError("rules.position.holding_horizon_minutes must be positive")
+        return self
+
+    @property
+    def enabled(self) -> bool:
+        return (
+            self.max_open_signals_per_symbol is not None
+            or self.max_open_position_weight_per_symbol is not None
+        )
+
+
+class RiskThrottleRules(BaseModel):
+    max_drawdown_column: str | None = None
+    max_drawdown_floor: float | None = None
+    daily_loss_column: str | None = None
+    daily_loss_floor: float | None = None
+    loss_streak_column: str | None = None
+    max_loss_streak: int | None = None
+
+    @model_validator(mode="after")
+    def validate_risk_throttle(self) -> RiskThrottleRules:
+        if (self.max_drawdown_column is None) != (self.max_drawdown_floor is None):
+            raise ValueError(
+                "rules.risk_throttle max_drawdown_column and max_drawdown_floor must be set together"
+            )
+        if (self.daily_loss_column is None) != (self.daily_loss_floor is None):
+            raise ValueError(
+                "rules.risk_throttle daily_loss_column and daily_loss_floor must be set together"
+            )
+        if (self.loss_streak_column is None) != (self.max_loss_streak is None):
+            raise ValueError(
+                "rules.risk_throttle loss_streak_column and max_loss_streak must be set together"
+            )
+        if self.max_loss_streak is not None and self.max_loss_streak <= 0:
+            raise ValueError("rules.risk_throttle.max_loss_streak must be positive")
+        for field_name in (
+            "max_drawdown_column",
+            "daily_loss_column",
+            "loss_streak_column",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and not value.strip():
+                raise ValueError(f"rules.risk_throttle.{field_name} must be non-empty when set")
+        return self
+
+    @property
+    def enabled(self) -> bool:
+        return (
+            self.max_drawdown_column is not None
+            or self.daily_loss_column is not None
+            or self.loss_streak_column is not None
+        )
+
+
+class TemporalRules(BaseModel):
+    allowed_weekdays_utc: list[int] | None = None
+    allowed_hours_utc: list[int] | None = None
+    cooldown_minutes: int | None = None
+    max_signals_per_symbol_per_day: int | None = None
+
+    @model_validator(mode="after")
+    def validate_temporal(self) -> TemporalRules:
+        if self.allowed_weekdays_utc is not None:
+            invalid = [value for value in self.allowed_weekdays_utc if value < 0 or value > 6]
+            if invalid:
+                raise ValueError("rules.temporal.allowed_weekdays_utc values must be 0..6")
+        if self.allowed_hours_utc is not None:
+            invalid = [value for value in self.allowed_hours_utc if value < 0 or value > 23]
+            if invalid:
+                raise ValueError("rules.temporal.allowed_hours_utc values must be 0..23")
+        if self.cooldown_minutes is not None and self.cooldown_minutes < 0:
+            raise ValueError("rules.temporal.cooldown_minutes must be >= 0")
+        if (
+            self.max_signals_per_symbol_per_day is not None
+            and self.max_signals_per_symbol_per_day <= 0
+        ):
+            raise ValueError("rules.temporal.max_signals_per_symbol_per_day must be positive")
+        return self
+
+    @property
+    def enabled(self) -> bool:
+        return (
+            self.allowed_weekdays_utc is not None
+            or self.allowed_hours_utc is not None
+            or self.cooldown_minutes is not None
+            or self.max_signals_per_symbol_per_day is not None
+        )
+
+
+class EventWindowRule(BaseModel):
+    name: str
+    event_ts_column: str
+    mode: Literal["allow", "block"] = "allow"
+    before_minutes: int = 0
+    after_minutes: int = 0
+    block_reason: str | None = None
+
+    @model_validator(mode="after")
+    def validate_event_window(self) -> EventWindowRule:
+        if not self.name.strip():
+            raise ValueError("rules.event_windows[].name must be non-empty")
+        if not self.event_ts_column.strip():
+            raise ValueError("rules.event_windows[].event_ts_column must be non-empty")
+        if self.before_minutes < 0 or self.after_minutes < 0:
+            raise ValueError("rules.event_windows before_minutes/after_minutes must be >= 0")
+        if self.block_reason is not None and not self.block_reason.strip():
+            raise ValueError("rules.event_windows[].block_reason must be non-empty when set")
+        return self
+
+
+class CrossSectionalRules(BaseModel):
+    long_top_n: int | None = None
+    short_bottom_n: int | None = None
+
+    @model_validator(mode="after")
+    def validate_cross_sectional(self) -> CrossSectionalRules:
+        if self.long_top_n is not None and self.long_top_n <= 0:
+            raise ValueError("rules.cross_sectional.long_top_n must be positive")
+        if self.short_bottom_n is not None and self.short_bottom_n <= 0:
+            raise ValueError("rules.cross_sectional.short_bottom_n must be positive")
+        return self
+
+    @property
+    def enabled(self) -> bool:
+        return self.long_top_n is not None or self.short_bottom_n is not None
+
+
+class MultiLegEntry(BaseModel):
+    real_market_symbol: str
+    side: Literal["long", "short", "same", "opposite"]
+    position_weight: float = 1.0
+    position_weight_column: str | None = None
+    notional_usd: float | None = None
+    notional_usd_column: str | None = None
+    reason_code: str | None = None
+
+    @model_validator(mode="after")
+    def validate_multi_leg_entry(self) -> MultiLegEntry:
+        if not self.real_market_symbol.strip():
+            raise ValueError("rules.multi_leg.legs[].real_market_symbol must be non-empty")
+        if self.position_weight < 0:
+            raise ValueError("rules.multi_leg.legs[].position_weight must be >= 0")
+        if self.notional_usd is not None and self.notional_usd < 0:
+            raise ValueError("rules.multi_leg.legs[].notional_usd must be >= 0")
+        for field_name in ("position_weight_column", "notional_usd_column"):
+            value = getattr(self, field_name)
+            if value is not None and not value.strip():
+                raise ValueError(f"rules.multi_leg.legs[].{field_name} must be non-empty when set")
+        if self.reason_code is not None and not self.reason_code.strip():
+            raise ValueError("rules.multi_leg.legs[].reason_code must be non-empty when set")
+        self.real_market_symbol = self.real_market_symbol.strip().upper()
+        return self
+
+
+class MultiLegRules(BaseModel):
+    enabled: bool = False
+    anchor_real_market_symbol: str | None = None
+    legs: list[MultiLegEntry] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_multi_leg_rules(self) -> MultiLegRules:
+        if self.anchor_real_market_symbol is not None:
+            if not self.anchor_real_market_symbol.strip():
+                raise ValueError("rules.multi_leg.anchor_real_market_symbol must be non-empty")
+            self.anchor_real_market_symbol = self.anchor_real_market_symbol.strip().upper()
+        if self.enabled:
+            if self.anchor_real_market_symbol is None:
+                raise ValueError("rules.multi_leg.anchor_real_market_symbol is required")
+            if not self.legs:
+                raise ValueError("rules.multi_leg.legs must not be empty when enabled")
+        return self
+
+
+class RegimeOverride(BaseModel):
+    name: str
+    when: EntryRules
+    stop_loss_bps: float | None = None
+    take_profit_bps: float | None = None
+    trailing_stop_bps: float | None = None
+    partial_take_profit_bps: float | None = None
+    partial_exit_fraction: float | None = None
+    position_weight: float | None = None
+    notional_usd: float | None = None
+    slippage_bps: float | None = None
+    max_fill_fraction: float | None = None
+    max_spread_bps: float | None = None
+    min_depth_usd: float | None = None
+    depth_participation_rate: float | None = None
+
+    @model_validator(mode="after")
+    def validate_regime_override(self) -> RegimeOverride:
+        if not self.name.strip():
+            raise ValueError("rules.regime_overrides[].name must be non-empty")
+        for field_name in (
+            "stop_loss_bps",
+            "take_profit_bps",
+            "trailing_stop_bps",
+            "partial_take_profit_bps",
+            "position_weight",
+            "notional_usd",
+            "slippage_bps",
+            "max_spread_bps",
+            "min_depth_usd",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"rules.regime_overrides.{self.name}.{field_name} must be >= 0")
+        for field_name in (
+            "partial_exit_fraction",
+            "max_fill_fraction",
+            "depth_participation_rate",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and not 0.0 <= value <= 1.0:
+                raise ValueError(
+                    f"rules.regime_overrides.{self.name}.{field_name} must be between 0 and 1"
+                )
+        return self
+
+
+class DerivedFeature(BaseModel):
+    name: str
+    op: Literal[
+        "add",
+        "sub",
+        "mul",
+        "div",
+        "ratio",
+        "diff",
+        "pct_diff",
+        "abs",
+        "neg",
+        "max",
+        "min",
+        "mean",
+        "rolling_mean",
+        "rolling_std",
+        "rolling_zscore",
+    ]
+    columns: list[str] = Field(default_factory=list)
+    value: float | None = None
+    window: int | None = None
+    fill_null: float | None = None
+
+    @model_validator(mode="after")
+    def validate_derived_feature(self) -> DerivedFeature:
+        if not self.name.strip():
+            raise ValueError("rules.derived_features[].name must be non-empty")
+        if not self.columns or any(not column.strip() for column in self.columns):
+            raise ValueError(f"rules.derived_features.{self.name}.columns must be non-empty")
+        if self.op in {"abs", "neg", "rolling_mean", "rolling_std", "rolling_zscore"}:
+            if len(self.columns) != 1:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires one column"
+                )
+        if self.op in {"sub", "div", "ratio", "diff", "pct_diff"}:
+            if len(self.columns) != 2 and self.value is None:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires two columns or value"
+                )
+        if self.op in {"rolling_mean", "rolling_std", "rolling_zscore"}:
+            if self.window is None or self.window <= 0:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires positive window"
+                )
+        if self.fill_null is not None and not math.isfinite(self.fill_null):
+            raise ValueError(f"rules.derived_features.{self.name}.fill_null must be finite")
+        return self
 
 
 class AuthoringRules(BaseModel):
-    side: Literal["long", "short"] = "long"
+    side: Literal["long", "short", "auto"] = "long"
+    side_column: str | None = None
     timeframe: str = "4h"
     entry: EntryRules
-    score: WeightedScore = Field(default_factory=WeightedScore)
+    long_entry: EntryRules | None = None
+    short_entry: EntryRules | None = None
+    hold: EntryRules | None = None
+    close: EntryRules | None = None
+    reduce: EntryRules | None = None
+    add: EntryRules | None = None
+    rebalance: EntryRules | None = None
+    exit: ExitRules = Field(default_factory=ExitRules)
+    sizing: SizingRules = Field(default_factory=SizingRules)
+    order: OrderRules = Field(default_factory=OrderRules)
+    bracket: BracketRules = Field(default_factory=BracketRules)
+    execution: ExecutionRules = Field(default_factory=ExecutionRules)
+    portfolio: PortfolioRules = Field(default_factory=PortfolioRules)
+    position: PositionRules = Field(default_factory=PositionRules)
+    risk_throttle: RiskThrottleRules = Field(default_factory=RiskThrottleRules)
+    temporal: TemporalRules = Field(default_factory=TemporalRules)
+    event_windows: list[EventWindowRule] = Field(default_factory=list)
+    cross_sectional: CrossSectionalRules = Field(default_factory=CrossSectionalRules)
+    multi_leg: MultiLegRules = Field(default_factory=MultiLegRules)
+    derived_features: list[DerivedFeature] = Field(default_factory=list)
+    regime_overrides: list[RegimeOverride] = Field(default_factory=list)
+    score: ScoreRules = Field(default_factory=ScoreRules)
     confidence: float = 0.7
     reason_code: str = "declarative_rule"
+    hold_reason_code: str = "hold_rule"
+    close_reason_code: str = "close_rule"
+    reduce_reason_code: str = "reduce_rule"
+    add_reason_code: str = "add_rule"
+    rebalance_reason_code: str = "rebalance_rule"
 
     @model_validator(mode="after")
     def validate_rules(self) -> AuthoringRules:
         if not self.timeframe.strip():
             raise ValueError("rules.timeframe must be non-empty")
+        if self.side_column is not None and not self.side_column.strip():
+            raise ValueError("rules.side_column must be non-empty when set")
+        if (
+            self.side == "auto"
+            and not self.side_column
+            and not self.long_entry
+            and not self.short_entry
+            and not self.cross_sectional.enabled
+        ):
+            raise ValueError(
+                "rules.side=auto requires side_column, long_entry/short_entry, or cross_sectional"
+            )
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("rules.confidence must be between 0 and 1")
         if not self.reason_code.strip():
             raise ValueError("rules.reason_code must be non-empty")
+        if not self.hold_reason_code.strip():
+            raise ValueError("rules.hold_reason_code must be non-empty")
+        if not self.close_reason_code.strip():
+            raise ValueError("rules.close_reason_code must be non-empty")
+        if not self.reduce_reason_code.strip():
+            raise ValueError("rules.reduce_reason_code must be non-empty")
+        if not self.add_reason_code.strip():
+            raise ValueError("rules.add_reason_code must be non-empty")
+        if not self.rebalance_reason_code.strip():
+            raise ValueError("rules.rebalance_reason_code must be non-empty")
+        names = [feature.name for feature in self.derived_features]
+        if len(names) != len(set(names)):
+            raise ValueError("rules.derived_features names must be unique")
+        regime_names = [regime.name for regime in self.regime_overrides]
+        if len(regime_names) != len(set(regime_names)):
+            raise ValueError("rules.regime_overrides names must be unique")
+        event_names = [event.name for event in self.event_windows]
+        if len(event_names) != len(set(event_names)):
+            raise ValueError("rules.event_windows names must be unique")
+        if self.cross_sectional.enabled and not self.score.enabled:
+            raise ValueError(
+                "rules.cross_sectional requires rules.score.weighted_sum or model_score"
+            )
+        if self.bracket.enabled and not any(
+            value is not None
+            for value in (
+                self.exit.stop_loss_bps,
+                self.exit.take_profit_bps,
+                self.exit.trailing_stop_bps,
+                self.bracket.time_stop_minutes,
+                self.bracket.break_even_after_bps,
+            )
+        ):
+            raise ValueError("rules.bracket.enabled requires at least one exit control")
+        if (
+            self.reduce is not None
+            and self.exit.reduce_fraction is None
+            and self.exit.reduce_fraction_column is None
+        ):
+            raise ValueError(
+                "rules.exit.reduce_fraction or reduce_fraction_column is required when rules.reduce is set"
+            )
+        if (
+            self.add is not None
+            and self.exit.add_fraction is None
+            and self.exit.add_fraction_column is None
+        ):
+            raise ValueError(
+                "rules.exit.add_fraction or add_fraction_column is required when rules.add is set"
+            )
+        if (
+            self.rebalance is not None
+            and self.exit.rebalance_target_fraction is None
+            and self.exit.rebalance_target_fraction_column is None
+        ):
+            raise ValueError(
+                "rules.exit.rebalance_target_fraction or rebalance_target_fraction_column "
+                "is required when rules.rebalance is set"
+            )
         return self
 
 
 class AuthoringBacktest(BaseModel):
-    split_method: Literal["single_window", "purged_walk_forward"] = "purged_walk_forward"
+    split_method: Literal["single_window", "walk_forward", "purged_walk_forward"] = (
+        "purged_walk_forward"
+    )
     era_unit: Literal["trading_day", "week", "month"] = "trading_day"
     label_horizon_minutes: int = 240
     purge_minutes: int = 0
@@ -141,6 +809,41 @@ class AuthoringBacktest(BaseModel):
         return self
 
 
+ALLOWED_SWEEP_PATHS = {
+    "rules.confidence",
+    "rules.exit.stop_loss_bps",
+    "rules.exit.take_profit_bps",
+    "rules.exit.trailing_stop_bps",
+    "rules.exit.partial_take_profit_bps",
+    "rules.exit.partial_exit_fraction",
+    "rules.sizing.position_weight",
+    "rules.portfolio.max_signals_per_timestamp",
+    "rules.temporal.cooldown_minutes",
+    "rules.temporal.max_signals_per_symbol_per_day",
+    "rules.cross_sectional.long_top_n",
+    "rules.cross_sectional.short_bottom_n",
+    "backtest.label_horizon_minutes",
+}
+
+
+class AuthoringOptimizer(BaseModel):
+    parameter_sweep: dict[str, list[float | int | str]] = Field(default_factory=dict)
+    selection_metric: str = "total_return"
+    selection_direction: Literal["maximize", "minimize"] = "maximize"
+    max_variants: int = 64
+
+    @model_validator(mode="after")
+    def validate_optimizer(self) -> AuthoringOptimizer:
+        if self.max_variants <= 0:
+            raise ValueError("optimizer.max_variants must be positive")
+        for path, values in self.parameter_sweep.items():
+            if path not in ALLOWED_SWEEP_PATHS:
+                raise ValueError(f"optimizer.parameter_sweep unsupported path: {path}")
+            if not values:
+                raise ValueError(f"optimizer.parameter_sweep.{path} must not be empty")
+        return self
+
+
 class AuthoringPromotion(BaseModel):
     default_decision: Literal["hold", "reject"] = "hold"
     allow_paper_preview: bool = True
@@ -152,11 +855,75 @@ class StrategyAuthoringSpec(BaseModel):
     data: AuthoringData = Field(default_factory=AuthoringData)
     rules: AuthoringRules
     backtest: AuthoringBacktest = Field(default_factory=AuthoringBacktest)
+    optimizer: AuthoringOptimizer = Field(default_factory=AuthoringOptimizer)
     promotion: AuthoringPromotion = Field(default_factory=AuthoringPromotion)
+
+
+class BundleMember(BaseModel):
+    spec_path: str
+    allocation_weight: float = 1.0
+    enabled: bool = True
+
+    @model_validator(mode="after")
+    def validate_member(self) -> BundleMember:
+        if not self.spec_path.strip():
+            raise ValueError("bundle member spec_path must be non-empty")
+        if self.allocation_weight < 0:
+            raise ValueError("bundle member allocation_weight must be >= 0")
+        return self
+
+
+class BundlePortfolio(BaseModel):
+    allocation_method: Literal["fixed_weight", "equal_weight", "risk_parity"] = "fixed_weight"
+    max_total_allocation_weight: float | None = None
+    selection_metric: str = "total_return"
+    selection_direction: Literal["maximize", "minimize"] = "maximize"
+
+    @model_validator(mode="after")
+    def validate_portfolio(self) -> BundlePortfolio:
+        if self.max_total_allocation_weight is not None and self.max_total_allocation_weight <= 0:
+            raise ValueError("portfolio.max_total_allocation_weight must be positive")
+        return self
+
+
+class StrategyAuthoringBundleSpec(BaseModel):
+    schema_version: Literal["strategy_authoring_bundle.v1"]
+    bundle_id: str
+    members: list[BundleMember]
+    portfolio: BundlePortfolio = Field(default_factory=BundlePortfolio)
+
+    @model_validator(mode="after")
+    def validate_bundle(self) -> StrategyAuthoringBundleSpec:
+        if not self.bundle_id.strip():
+            raise ValueError("bundle_id must be non-empty")
+        if not [member for member in self.members if member.enabled]:
+            raise ValueError("bundle must include at least one enabled member")
+        return self
 
 
 class StrategyAuthoringValidationError(ValueError):
     pass
+
+
+def _solve_linear_system(matrix: list[list[float]], vector: list[float]) -> list[float]:
+    size = len(vector)
+    augmented = [matrix[row][:] + [vector[row]] for row in range(size)]
+    for pivot_index in range(size):
+        pivot_row = max(range(pivot_index, size), key=lambda row: abs(augmented[row][pivot_index]))
+        if abs(augmented[pivot_row][pivot_index]) < 1e-12:
+            raise StrategyAuthoringValidationError("model training matrix is singular")
+        augmented[pivot_index], augmented[pivot_row] = augmented[pivot_row], augmented[pivot_index]
+        pivot = augmented[pivot_index][pivot_index]
+        augmented[pivot_index] = [value / pivot for value in augmented[pivot_index]]
+        for row in range(size):
+            if row == pivot_index:
+                continue
+            factor = augmented[row][pivot_index]
+            augmented[row] = [
+                current - factor * pivot_value
+                for current, pivot_value in zip(augmented[row], augmented[pivot_index], strict=True)
+            ]
+    return [augmented[row][-1] for row in range(size)]
 
 
 def load_authoring_spec(path: Path) -> StrategyAuthoringSpec:
@@ -164,6 +931,13 @@ def load_authoring_spec(path: Path) -> StrategyAuthoringSpec:
     if not isinstance(payload, dict):
         raise StrategyAuthoringValidationError("spec must be a YAML object")
     return StrategyAuthoringSpec.model_validate(payload)
+
+
+def load_authoring_bundle_spec(path: Path) -> StrategyAuthoringBundleSpec:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise StrategyAuthoringValidationError("bundle spec must be a YAML object")
+    return StrategyAuthoringBundleSpec.model_validate(payload)
 
 
 def template_yaml() -> str:
@@ -204,14 +978,31 @@ rules:
       - column: research_return_4h
         op: gt
         value: 0
+  hold:
+    any:
+      - column: vix_level
+        op: gte
+        value: 30
+  exit:
+    stop_loss_bps: 150
+    take_profit_bps: 300
+    trailing_stop_bps: 120
+    partial_take_profit_bps: 200
+    partial_exit_fraction: 0.5
+  sizing:
+    position_weight: 1.0
+    notional_usd: 1000
+  portfolio:
+    max_signals_per_timestamp: 3
   score:
     weighted_sum:
       - column: research_return_1d
         weight: 10
-      - column: source_confidence
-        weight: 0.5
+      - column: research_return_4h
+        weight: 5
   confidence: 0.7
   reason_code: trend_pullback_authoring_v1
+  hold_reason_code: risk_hold_v1
 backtest:
   split_method: purged_walk_forward
   era_unit: trading_day
@@ -222,6 +1013,13 @@ backtest:
   primary_metric: total_return
   pass_thresholds:
     max_drawdown: -0.2
+optimizer:
+  parameter_sweep:
+    rules.exit.stop_loss_bps: [100, 150]
+    rules.exit.take_profit_bps: [250, 300]
+  selection_metric: total_return
+  selection_direction: maximize
+  max_variants: 8
 promotion:
   default_decision: hold
   allow_paper_preview: true
@@ -232,6 +1030,106 @@ def write_template(path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(template_yaml(), encoding="utf-8")
     return path
+
+
+def train_authoring_linear_model_score(
+    spec: StrategyAuthoringSpec,
+    *,
+    data_dir: Path,
+    target_column: str,
+    feature_columns: list[str],
+    ridge_lambda: float = 1e-6,
+    activation: Literal["identity", "sigmoid", "tanh", "clamp_0_1"] = "identity",
+    missing_value: float | None = None,
+) -> dict[str, Any]:
+    if not target_column.strip():
+        raise StrategyAuthoringValidationError("target_column must be non-empty")
+    if not feature_columns or any(not column.strip() for column in feature_columns):
+        raise StrategyAuthoringValidationError("feature_columns must be non-empty")
+    if ridge_lambda < 0:
+        raise StrategyAuthoringValidationError("ridge_lambda must be >= 0")
+
+    feature_path = _resolve_path(spec.data.feature_panel_path, data_dir)
+    if not feature_path.exists():
+        raise FileNotFoundError(f"feature_panel_path not found: {feature_path}")
+    frame = _apply_derived_features(pl.read_parquet(feature_path), spec)
+    required = {"canonical_symbol", target_column, *feature_columns}
+    missing = sorted(required.difference(frame.columns))
+    if missing:
+        raise StrategyAuthoringValidationError(f"feature panel missing model columns: {missing}")
+
+    symbols = {binding.real_market_symbol for binding in spec.experiment.symbol_bindings}
+    rows: list[tuple[list[float], float]] = []
+    for row in frame.to_dicts():
+        if str(row.get("canonical_symbol") or "").upper() not in symbols:
+            continue
+        target = row.get(target_column)
+        values = [row.get(column) for column in feature_columns]
+        if not isinstance(target, int | float):
+            continue
+        if not all(isinstance(value, int | float) for value in values):
+            continue
+        numeric_values = cast(list[int | float], values)
+        rows.append(([1.0, *[float(value) for value in numeric_values]], float(target)))
+    if len(rows) < len(feature_columns) + 1:
+        raise StrategyAuthoringValidationError(
+            "not enough numeric rows to train linear model score"
+        )
+
+    dimension = len(feature_columns) + 1
+    xtx = [[0.0 for _ in range(dimension)] for _ in range(dimension)]
+    xty = [0.0 for _ in range(dimension)]
+    for features, target in rows:
+        for left in range(dimension):
+            xty[left] += features[left] * target
+            for right in range(dimension):
+                xtx[left][right] += features[left] * features[right]
+    for index in range(1, dimension):
+        xtx[index][index] += ridge_lambda
+
+    coefficients = _solve_linear_system(xtx, xty)
+    model_score = {
+        "model_type": "linear",
+        "intercept": coefficients[0],
+        "activation": activation,
+        "missing_value": missing_value,
+        "coefficients": [
+            {"column": column, "weight": weight}
+            for column, weight in zip(feature_columns, coefficients[1:], strict=True)
+        ],
+    }
+    return {
+        "schema_version": "strategy_authoring_model_score.v1",
+        "paper_only": True,
+        "live_order_submitted": False,
+        "strategy_id": spec.experiment.strategy_id,
+        "target_column": target_column,
+        "row_count": len(rows),
+        "ridge_lambda": ridge_lambda,
+        "model_score": model_score,
+    }
+
+
+def write_authoring_model_score_outputs(
+    spec: StrategyAuthoringSpec,
+    payload: dict[str, Any],
+    *,
+    data_dir: Path,
+    out_spec: Path | None = None,
+) -> dict[str, Path]:
+    payload_path = data_dir / "research/strategy_authoring_model_score.json"
+    payload_path.parent.mkdir(parents=True, exist_ok=True)
+    payload_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    outputs = {"model_score": payload_path}
+    if out_spec is not None:
+        spec_payload = spec.model_dump(mode="json")
+        spec_payload.setdefault("rules", {}).setdefault("score", {})["model_score"] = payload[
+            "model_score"
+        ]
+        out_spec.parent.mkdir(parents=True, exist_ok=True)
+        out_spec.write_text(yaml.safe_dump(spec_payload, sort_keys=False), encoding="utf-8")
+        outputs["spec"] = out_spec
+    return outputs
 
 
 def _resolve_path(raw: str, data_dir: Path) -> Path:
@@ -245,10 +1143,88 @@ def _resolve_path(raw: str, data_dir: Path) -> Path:
 
 def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
     columns = {"ts", "canonical_symbol"}
-    for cond in [*spec.rules.entry.all, *spec.rules.entry.any]:
-        columns.add(cond.column)
+    derived_names = {feature.name for feature in spec.rules.derived_features}
+
+    def add_column(column: str) -> None:
+        if column not in derived_names:
+            columns.add(column)
+
+    def add_condition_columns(conditions: list[Condition]) -> None:
+        for cond in conditions:
+            add_column(cond.column)
+            if cond.value_column is not None:
+                add_column(cond.value_column)
+
+    for feature in spec.rules.derived_features:
+        for column in feature.columns:
+            add_column(column)
+
+    add_condition_columns([*spec.rules.entry.all, *spec.rules.entry.any, *spec.rules.entry.none])
+    for entry in (spec.rules.long_entry, spec.rules.short_entry):
+        if entry is not None:
+            add_condition_columns([*entry.all, *entry.any, *entry.none])
+    if spec.rules.hold is not None:
+        add_condition_columns([*spec.rules.hold.all, *spec.rules.hold.any, *spec.rules.hold.none])
+    if spec.rules.close is not None:
+        add_condition_columns(
+            [*spec.rules.close.all, *spec.rules.close.any, *spec.rules.close.none]
+        )
+    if spec.rules.reduce is not None:
+        add_condition_columns(
+            [*spec.rules.reduce.all, *spec.rules.reduce.any, *spec.rules.reduce.none]
+        )
+    if spec.rules.add is not None:
+        add_condition_columns([*spec.rules.add.all, *spec.rules.add.any, *spec.rules.add.none])
+    if spec.rules.rebalance is not None:
+        add_condition_columns(
+            [*spec.rules.rebalance.all, *spec.rules.rebalance.any, *spec.rules.rebalance.none]
+        )
+    for regime in spec.rules.regime_overrides:
+        add_condition_columns([*regime.when.all, *regime.when.any, *regime.when.none])
     for term in spec.rules.score.weighted_sum:
-        columns.add(term.column)
+        add_column(term.column)
+    if spec.rules.score.model_score is not None:
+        for term in spec.rules.score.model_score.coefficients:
+            add_column(term.column)
+    if spec.rules.side_column is not None:
+        add_column(spec.rules.side_column)
+    if spec.rules.exit.stop_loss_bps_column is not None:
+        columns.add(spec.rules.exit.stop_loss_bps_column)
+    if spec.rules.exit.take_profit_bps_column is not None:
+        columns.add(spec.rules.exit.take_profit_bps_column)
+    if spec.rules.exit.trailing_stop_bps_column is not None:
+        columns.add(spec.rules.exit.trailing_stop_bps_column)
+    if spec.rules.exit.partial_take_profit_bps_column is not None:
+        columns.add(spec.rules.exit.partial_take_profit_bps_column)
+    if spec.rules.exit.partial_exit_fraction_column is not None:
+        columns.add(spec.rules.exit.partial_exit_fraction_column)
+    if spec.rules.exit.reduce_fraction_column is not None:
+        columns.add(spec.rules.exit.reduce_fraction_column)
+    if spec.rules.exit.add_fraction_column is not None:
+        columns.add(spec.rules.exit.add_fraction_column)
+    if spec.rules.exit.rebalance_target_fraction_column is not None:
+        columns.add(spec.rules.exit.rebalance_target_fraction_column)
+    if spec.rules.sizing.position_weight_column is not None:
+        columns.add(spec.rules.sizing.position_weight_column)
+    if spec.rules.sizing.notional_usd_column is not None:
+        columns.add(spec.rules.sizing.notional_usd_column)
+    if spec.rules.sizing.volatility_column is not None:
+        columns.add(spec.rules.sizing.volatility_column)
+    if spec.rules.portfolio.allocation_volatility_column is not None:
+        columns.add(spec.rules.portfolio.allocation_volatility_column)
+    if spec.rules.risk_throttle.max_drawdown_column is not None:
+        columns.add(spec.rules.risk_throttle.max_drawdown_column)
+    if spec.rules.risk_throttle.daily_loss_column is not None:
+        columns.add(spec.rules.risk_throttle.daily_loss_column)
+    if spec.rules.risk_throttle.loss_streak_column is not None:
+        columns.add(spec.rules.risk_throttle.loss_streak_column)
+    for event_window in spec.rules.event_windows:
+        columns.add(event_window.event_ts_column)
+    for leg in spec.rules.multi_leg.legs:
+        if leg.position_weight_column is not None:
+            columns.add(leg.position_weight_column)
+        if leg.notional_usd_column is not None:
+            columns.add(leg.notional_usd_column)
     return columns
 
 
@@ -266,7 +1242,23 @@ def validate_authoring_inputs(spec: StrategyAuthoringSpec, *, data_dir: Path) ->
     missing = sorted(_required_columns(spec).difference(feature.columns))
     if missing:
         errors.append(f"feature panel missing columns: {missing}")
-    symbols = {binding.real_market_symbol for binding in spec.experiment.symbol_bindings}
+    generated: set[str] = set()
+    base_columns = set(feature.columns)
+    for derived in spec.rules.derived_features:
+        available = base_columns.union(generated)
+        missing_inputs = sorted(set(derived.columns).difference(available))
+        if missing_inputs:
+            errors.append(f"derived feature {derived.name} missing input columns: {missing_inputs}")
+        generated.add(derived.name)
+    binding_symbols = {binding.real_market_symbol for binding in spec.experiment.symbol_bindings}
+    if spec.rules.multi_leg.enabled:
+        symbols = {str(spec.rules.multi_leg.anchor_real_market_symbol)}
+        leg_symbols = {leg.real_market_symbol for leg in spec.rules.multi_leg.legs}
+        missing_bindings = sorted(leg_symbols.union(symbols).difference(binding_symbols))
+        if missing_bindings:
+            errors.append(f"multi_leg symbols missing symbol_bindings: {missing_bindings}")
+    else:
+        symbols = binding_symbols
     if "canonical_symbol" in feature.columns:
         full = pl.read_parquet(feature_path, columns=["canonical_symbol"])
         observed = {str(value).upper() for value in full.get_column("canonical_symbol").to_list()}
@@ -284,7 +1276,11 @@ def _condition_passes(row: dict[str, Any], condition: Condition) -> bool:
         return value is False
     if value is None:
         return False
-    target = condition.value
+    target = (
+        row.get(condition.value_column) if condition.value_column is not None else condition.value
+    )
+    if target is None:
+        return False
     if condition.op == "gt":
         return value > target
     if condition.op == "gte":
@@ -300,7 +1296,98 @@ def _condition_passes(row: dict[str, Any], condition: Condition) -> bool:
     if condition.op == "between":
         low, high = target
         return low <= value <= high
+    if condition.op == "in":
+        return value in target
+    if condition.op == "not_in":
+        return value not in target
     raise StrategyAuthoringValidationError(f"Unsupported operator: {condition.op}")
+
+
+def _literal_or_col(feature: DerivedFeature, index: int = 1) -> pl.Expr:
+    if len(feature.columns) > index:
+        return pl.col(feature.columns[index])
+    if feature.value is None:
+        raise StrategyAuthoringValidationError(
+            f"derived feature {feature.name} requires column {index + 1} or value"
+        )
+    return pl.lit(feature.value)
+
+
+def _safe_denominator(expr: pl.Expr) -> pl.Expr:
+    return pl.when(expr == 0).then(None).otherwise(expr)
+
+
+def _derived_expression(feature: DerivedFeature) -> pl.Expr:
+    first = pl.col(feature.columns[0])
+    if feature.op == "add":
+        expr = first
+        for column in feature.columns[1:]:
+            expr = expr + pl.col(column)
+        if feature.value is not None:
+            expr = expr + feature.value
+    elif feature.op == "sub":
+        expr = first - _literal_or_col(feature)
+    elif feature.op == "mul":
+        expr = first
+        for column in feature.columns[1:]:
+            expr = expr * pl.col(column)
+        if feature.value is not None:
+            expr = expr * feature.value
+    elif feature.op in {"div", "ratio"}:
+        denominator = _literal_or_col(feature)
+        expr = first / _safe_denominator(denominator)
+    elif feature.op == "diff":
+        expr = first - _literal_or_col(feature)
+    elif feature.op == "pct_diff":
+        denominator = _literal_or_col(feature)
+        expr = (first - denominator) / _safe_denominator(denominator)
+    elif feature.op == "abs":
+        expr = first.abs()
+    elif feature.op == "neg":
+        expr = -first
+    elif feature.op == "max":
+        expr = pl.max_horizontal([pl.col(column) for column in feature.columns])
+        if feature.value is not None:
+            expr = pl.max_horizontal([expr, pl.lit(feature.value)])
+    elif feature.op == "min":
+        expr = pl.min_horizontal([pl.col(column) for column in feature.columns])
+        if feature.value is not None:
+            expr = pl.min_horizontal([expr, pl.lit(feature.value)])
+    elif feature.op == "mean":
+        expressions = [pl.col(column) for column in feature.columns]
+        if feature.value is not None:
+            expressions.append(pl.lit(feature.value))
+        expr = pl.mean_horizontal(expressions)
+    elif feature.op == "rolling_mean":
+        expr = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "rolling_std":
+        expr = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "rolling_zscore":
+        mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        std = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+        expr = (first - mean) / _safe_denominator(std)
+    else:
+        raise StrategyAuthoringValidationError(f"Unsupported derived feature op: {feature.op}")
+    if feature.fill_null is not None:
+        expr = expr.fill_null(feature.fill_null)
+    return expr.alias(feature.name)
+
+
+def _apply_derived_features(frame: pl.DataFrame, spec: StrategyAuthoringSpec) -> pl.DataFrame:
+    if not spec.rules.derived_features:
+        return frame
+    derived = frame.sort(["canonical_symbol", "ts"])
+    for feature in spec.rules.derived_features:
+        derived = derived.with_columns(_derived_expression(feature))
+    return derived
 
 
 def _entry_passes(row: dict[str, Any], entry: EntryRules) -> bool:
@@ -308,11 +1395,12 @@ def _entry_passes(row: dict[str, Any], entry: EntryRules) -> bool:
     any_pass = (
         True if not entry.any else any(_condition_passes(row, condition) for condition in entry.any)
     )
-    return all_pass and any_pass
+    none_pass = not any(_condition_passes(row, condition) for condition in entry.none)
+    return all_pass and any_pass and none_pass
 
 
-def _score(row: dict[str, Any], score: WeightedScore) -> float | None:
-    if not score.weighted_sum:
+def _score(row: dict[str, Any], score: ScoreRules) -> float | None:
+    if not score.enabled:
         return None
     total = 0.0
     used = False
@@ -320,6 +1408,30 @@ def _score(row: dict[str, Any], score: WeightedScore) -> float | None:
         value = row.get(term.column)
         if isinstance(value, int | float):
             total += float(value) * term.weight
+            used = True
+    if score.model_score is not None:
+        model_total = score.model_score.intercept
+        model_used = False
+        for term in score.model_score.coefficients:
+            value = row.get(term.column)
+            if not isinstance(value, int | float) and score.model_score.missing_value is not None:
+                value = score.model_score.missing_value
+            if isinstance(value, int | float):
+                model_total += float(value) * term.weight
+                model_used = True
+        if model_used:
+            if score.model_score.activation == "sigmoid":
+                if model_total >= 0:
+                    z = math.exp(-model_total)
+                    model_total = 1.0 / (1.0 + z)
+                else:
+                    z = math.exp(model_total)
+                    model_total = z / (1.0 + z)
+            elif score.model_score.activation == "tanh":
+                model_total = math.tanh(model_total)
+            elif score.model_score.activation == "clamp_0_1":
+                model_total = max(0.0, min(1.0, model_total))
+            total += model_total
             used = True
     return total if used else None
 
@@ -346,16 +1458,1057 @@ def _tail_bucket(rank_score: float | None) -> str:
     return "middle"
 
 
-def _signal_id(spec: StrategyAuthoringSpec, row: dict[str, Any], binding: SymbolBinding) -> str:
+def _optional_float_from_row(row: dict[str, Any], column: str | None) -> float | None:
+    if column is None:
+        return None
+    value = row.get(column)
+    if value is None:
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str) and value.strip():
+        return float(value)
+    return None
+
+
+def _exit_bps(row: dict[str, Any], *, fixed: float | None, column: str | None) -> float | None:
+    dynamic = _optional_float_from_row(row, column)
+    return dynamic if dynamic is not None else fixed
+
+
+def _sizing_value(row: dict[str, Any], *, fixed: float | None, column: str | None) -> float | None:
+    dynamic = _optional_float_from_row(row, column)
+    return dynamic if dynamic is not None else fixed
+
+
+def _matching_regime_override(
+    row: dict[str, Any], spec: StrategyAuthoringSpec
+) -> RegimeOverride | None:
+    for regime in spec.rules.regime_overrides:
+        if _entry_passes(row, regime.when):
+            return regime
+    return None
+
+
+def _regime_value(
+    regime: RegimeOverride | None, field_name: str, default: float | None
+) -> float | None:
+    if regime is None:
+        return default
+    value = getattr(regime, field_name)
+    return value if value is not None else default
+
+
+def _signal_position_weight(row: dict[str, Any], spec: StrategyAuthoringSpec) -> float | None:
+    regime = _matching_regime_override(row, spec)
+    fixed = _regime_value(regime, "position_weight", spec.rules.sizing.position_weight)
+    base = _sizing_value(row, fixed=fixed, column=spec.rules.sizing.position_weight_column)
+    if (
+        base is None
+        or spec.rules.sizing.volatility_target is None
+        or spec.rules.sizing.volatility_column is None
+    ):
+        return base
+    observed = _optional_float_from_row(row, spec.rules.sizing.volatility_column)
+    if observed is None or observed <= 0:
+        return base
+    scaled = base * spec.rules.sizing.volatility_target / observed
+    cap = spec.rules.sizing.max_volatility_scaled_position_weight
+    return min(scaled, cap) if cap is not None else scaled
+
+
+def _signal_notional_usd(row: dict[str, Any], spec: StrategyAuthoringSpec) -> float | None:
+    regime = _matching_regime_override(row, spec)
+    fixed = _regime_value(regime, "notional_usd", spec.rules.sizing.notional_usd)
+    return _sizing_value(row, fixed=fixed, column=spec.rules.sizing.notional_usd_column)
+
+
+def _parse_event_ts(value: object) -> datetime | None:
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise StrategyAuthoringValidationError(
+                f"Invalid event window timestamp value: {value!r}"
+            ) from exc
+        return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+    return None
+
+
+def _event_window_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec) -> str | None:
+    if not spec.rules.event_windows:
+        return None
+    ts_value = row.get("ts")
+    if not isinstance(ts_value, datetime):
+        raise StrategyAuthoringValidationError(f"Unsupported event window ts value: {ts_value!r}")
+    ts_signal = ts_value if ts_value.tzinfo is not None else ts_value.replace(tzinfo=timezone.utc)
+    for event_window in spec.rules.event_windows:
+        event_ts = _parse_event_ts(row.get(event_window.event_ts_column))
+        reason = event_window.block_reason or f"event_window_{event_window.name}"
+        if event_ts is None:
+            if event_window.mode == "allow":
+                return f"{reason}_missing"
+            continue
+        start = event_ts - timedelta(minutes=event_window.before_minutes)
+        end = event_ts + timedelta(minutes=event_window.after_minutes)
+        in_window = start <= ts_signal <= end
+        if event_window.mode == "allow" and not in_window:
+            return f"{reason}_outside"
+        if event_window.mode == "block" and in_window:
+            return reason
+    return None
+
+
+def _risk_throttle_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec) -> str | None:
+    throttle = spec.rules.risk_throttle
+    if not throttle.enabled:
+        return None
+    drawdown = _optional_float_from_row(row, throttle.max_drawdown_column)
+    if (
+        drawdown is not None
+        and throttle.max_drawdown_floor is not None
+        and drawdown <= throttle.max_drawdown_floor
+    ):
+        return "risk_throttle_max_drawdown"
+    daily_loss = _optional_float_from_row(row, throttle.daily_loss_column)
+    if (
+        daily_loss is not None
+        and throttle.daily_loss_floor is not None
+        and daily_loss <= throttle.daily_loss_floor
+    ):
+        return "risk_throttle_daily_loss"
+    loss_streak = _optional_float_from_row(row, throttle.loss_streak_column)
+    if (
+        loss_streak is not None
+        and throttle.max_loss_streak is not None
+        and loss_streak >= throttle.max_loss_streak
+    ):
+        return "risk_throttle_loss_streak"
+    return None
+
+
+def _format_condition(condition: Condition) -> str:
+    target = (
+        f"column:{condition.value_column}"
+        if condition.value_column is not None
+        else condition.value
+        if condition.value is not None
+        else ""
+    )
+    return f"{condition.column} {condition.op} {target}".rstrip()
+
+
+def _side_from_column(row: dict[str, Any], column: str) -> Literal["long", "short", "none"]:
+    value = str(row.get(column) or "").strip().lower()
+    if value in {"buy", "bull", "long"}:
+        return "long"
+    if value in {"sell", "bear", "short"}:
+        return "short"
+    if value in {"", "hold", "none", "skip", "flat"}:
+        return "none"
+    raise StrategyAuthoringValidationError(f"Unsupported side value in {column}: {value}")
+
+
+def _selected_side(
+    row: dict[str, Any], rules: AuthoringRules
+) -> tuple[Literal["long", "short", "none"] | None, str | None]:
+    long_pass = _entry_passes(row, rules.long_entry) if rules.long_entry is not None else False
+    short_pass = _entry_passes(row, rules.short_entry) if rules.short_entry is not None else False
+    if long_pass and short_pass:
+        return "none", "ambiguous_side"
+    if long_pass:
+        return "long", None
+    if short_pass:
+        return "short", None
+    if rules.side_column is not None:
+        if not _entry_passes(row, rules.entry):
+            return None, None
+        side = _side_from_column(row, rules.side_column)
+        return (side, None) if side != "none" else ("none", "side_column_hold")
+    if _entry_passes(row, rules.entry):
+        if rules.side == "auto":
+            if rules.cross_sectional.enabled:
+                return "long", None
+            return None, None
+        return rules.side, None
+    return None, None
+
+
+def _compiled_signal_id(spec: StrategyAuthoringSpec, row: dict[str, Any], *, side: str) -> str:
+    return _stable_digest(
+        {
+            "strategy_id": spec.experiment.strategy_id,
+            "ts": row.get("ts_signal"),
+            "execution_symbol": row.get("execution_symbol"),
+            "side": side,
+            "reason_code": spec.rules.reason_code,
+        }
+    )
+
+
+def _block_trade_row(
+    row: dict[str, Any],
+    *,
+    spec: StrategyAuthoringSpec,
+    block_reason: str,
+) -> dict[str, Any]:
+    blocked = dict(row)
+    blocked["side"] = "none"
+    blocked["signal_id"] = _compiled_signal_id(spec, blocked, side="none")
+    blocked["confidence"] = 0.0
+    blocked["stop_loss_bps"] = None
+    blocked["take_profit_bps"] = None
+    blocked["trailing_stop_bps"] = None
+    blocked["partial_take_profit_bps"] = None
+    blocked["partial_exit_fraction"] = None
+    blocked["exit_on_opposite_signal"] = False
+    blocked["bracket_type"] = "none"
+    blocked["bracket_time_stop_minutes"] = None
+    blocked["bracket_break_even_after_bps"] = None
+    blocked["entry_order_type"] = "market"
+    blocked["entry_limit_offset_bps"] = None
+    blocked["entry_stop_offset_bps"] = None
+    blocked["entry_timeout_minutes"] = None
+    blocked["slippage_bps"] = 0.0
+    blocked["max_fill_fraction"] = 0.0
+    blocked["max_spread_bps"] = None
+    blocked["min_depth_usd"] = None
+    blocked["depth_column"] = None
+    blocked["depth_participation_rate"] = 0.0
+    blocked["position_weight"] = 0.0
+    blocked["notional_usd"] = None
+    blocked["reason_codes"] = [spec.rules.hold_reason_code]
+    blocked["block_reasons"] = [*list(row.get("block_reasons") or []), block_reason]
+    return blocked
+
+
+def _score_value(row: dict[str, Any]) -> float | None:
+    value = row.get("raw_score")
+    return float(value) if isinstance(value, int | float) else None
+
+
+def _signal_timestamp(row: dict[str, Any]) -> datetime:
+    value = row["ts_signal"]
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    raise StrategyAuthoringValidationError(f"Unsupported ts_signal value: {value!r}")
+
+
+def _temporal_block_reason(
+    row: dict[str, Any],
+    temporal: TemporalRules,
+    *,
+    last_signal_by_symbol: dict[str, datetime],
+    count_by_symbol_day: dict[tuple[str, object], int],
+) -> str | None:
+    ts_signal = _signal_timestamp(row)
+    if temporal.allowed_weekdays_utc is not None and ts_signal.weekday() not in set(
+        temporal.allowed_weekdays_utc
+    ):
+        return "temporal_weekday_filter"
+    if temporal.allowed_hours_utc is not None and ts_signal.hour not in set(
+        temporal.allowed_hours_utc
+    ):
+        return "temporal_hour_filter"
+
+    symbol = str(row["execution_symbol"])
+    previous = last_signal_by_symbol.get(symbol)
+    if (
+        temporal.cooldown_minutes is not None
+        and previous is not None
+        and (ts_signal - previous).total_seconds() < temporal.cooldown_minutes * 60
+    ):
+        return "temporal_cooldown"
+
+    day_key = (symbol, ts_signal.date())
+    if (
+        temporal.max_signals_per_symbol_per_day is not None
+        and count_by_symbol_day.get(day_key, 0) >= temporal.max_signals_per_symbol_per_day
+    ):
+        return "temporal_symbol_daily_limit"
+    return None
+
+
+def _apply_temporal_selection(
+    rows: list[dict[str, Any]], spec: StrategyAuthoringSpec
+) -> list[dict[str, Any]]:
+    if not spec.rules.temporal.enabled:
+        return rows
+
+    last_signal_by_symbol: dict[str, datetime] = {}
+    count_by_symbol_day: dict[tuple[str, object], int] = {}
+    selected: list[dict[str, Any]] = []
+    for row in sorted(rows, key=lambda item: (item["ts_signal"], item["signal_id"])):
+        if row.get("side") == "none":
+            selected.append(row)
+            continue
+        reason = _temporal_block_reason(
+            row,
+            spec.rules.temporal,
+            last_signal_by_symbol=last_signal_by_symbol,
+            count_by_symbol_day=count_by_symbol_day,
+        )
+        if reason is not None:
+            selected.append(_block_trade_row(row, spec=spec, block_reason=reason))
+            continue
+
+        ts_signal = _signal_timestamp(row)
+        symbol = str(row["execution_symbol"])
+        last_signal_by_symbol[symbol] = ts_signal
+        day_key = (symbol, ts_signal.date())
+        count_by_symbol_day[day_key] = count_by_symbol_day.get(day_key, 0) + 1
+        selected.append(row)
+    return selected
+
+
+def _apply_position_state_limits(
+    rows: list[dict[str, Any]], spec: StrategyAuthoringSpec
+) -> list[dict[str, Any]]:
+    position = spec.rules.position
+    if not position.enabled:
+        return rows
+
+    horizon_minutes = position.holding_horizon_minutes or spec.backtest.label_horizon_minutes
+    active_by_symbol: dict[str, list[tuple[datetime, float]]] = {}
+    selected: list[dict[str, Any]] = []
+    for row in sorted(rows, key=lambda item: (item["ts_signal"], item["signal_id"])):
+        if row.get("side") == "none":
+            selected.append(row)
+            continue
+
+        ts_signal = _signal_timestamp(row)
+        symbol = str(row["execution_symbol"])
+        active = [
+            (end_at, weight)
+            for end_at, weight in active_by_symbol.get(symbol, [])
+            if end_at > ts_signal
+        ]
+        active_by_symbol[symbol] = active
+        open_weight = sum(weight for _end_at, weight in active)
+        weight = abs(_position_weight_value(row))
+
+        if (
+            position.max_open_signals_per_symbol is not None
+            and len(active) >= position.max_open_signals_per_symbol
+        ):
+            selected.append(
+                _block_trade_row(row, spec=spec, block_reason="position_open_signal_limit")
+            )
+            continue
+        if (
+            position.max_open_position_weight_per_symbol is not None
+            and open_weight + weight > position.max_open_position_weight_per_symbol
+        ):
+            selected.append(
+                _block_trade_row(row, spec=spec, block_reason="position_open_weight_limit")
+            )
+            continue
+
+        active.append((ts_signal + timedelta(minutes=horizon_minutes), weight))
+        active_by_symbol[symbol] = active
+        selected.append(row)
+    return selected
+
+
+def _apply_portfolio_allocation(
+    rows: list[dict[str, Any]], spec: StrategyAuthoringSpec
+) -> list[dict[str, Any]]:
+    portfolio = spec.rules.portfolio
+    if portfolio.allocation_method == "none":
+        return rows
+    target = portfolio.target_total_position_weight
+    if target is None:
+        return rows
+
+    grouped: dict[Any, list[dict[str, Any]]] = {}
+    passthrough: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("side") == "none":
+            passthrough.append(row)
+            continue
+        grouped.setdefault(row["ts_signal"], []).append(row)
+
+    selected: list[dict[str, Any]] = [*passthrough]
+    for timestamp_rows in grouped.values():
+        if portfolio.allocation_method == "equal_weight":
+            raw_weights = [1.0 for _row in timestamp_rows]
+        elif portfolio.allocation_method == "score_proportional":
+            raw_weights = [
+                max(0.0, float(row["raw_score"]))
+                if isinstance(row.get("raw_score"), int | float)
+                else 0.0
+                for row in timestamp_rows
+            ]
+            if not any(weight > 0.0 for weight in raw_weights):
+                raw_weights = [1.0 for _row in timestamp_rows]
+        else:
+            raw_weights = [
+                1.0 / float(row["_allocation_volatility"])
+                if isinstance(row.get("_allocation_volatility"), int | float)
+                and float(row["_allocation_volatility"]) > 0.0
+                else 0.0
+                for row in timestamp_rows
+            ]
+            if not any(weight > 0.0 for weight in raw_weights):
+                raw_weights = [1.0 for _row in timestamp_rows]
+        total_raw = sum(raw_weights)
+        for row, raw_weight in zip(timestamp_rows, raw_weights, strict=True):
+            allocated = 0.0 if total_raw == 0.0 else target * raw_weight / total_raw
+            updated = dict(row)
+            updated["position_weight"] = allocated
+            selected.append(updated)
+    return selected
+
+
+def _position_weight_value(row: dict[str, Any]) -> float:
+    value = row.get("position_weight")
+    return float(value) if isinstance(value, int | float) else 1.0
+
+
+def _portfolio_exposure_block_reason(
+    row: dict[str, Any],
+    *,
+    portfolio: PortfolioRules,
+    total_weight: float,
+    long_weight: float,
+    short_weight: float,
+    symbol_weights: dict[str, float],
+) -> str | None:
+    weight = abs(_position_weight_value(row))
+    side = str(row.get("side") or "")
+    symbol = str(row.get("execution_symbol") or "")
+    if (
+        portfolio.max_total_position_weight is not None
+        and total_weight + weight > portfolio.max_total_position_weight
+    ):
+        return "portfolio_total_exposure_limit"
+    if (
+        side == "long"
+        and portfolio.max_long_position_weight is not None
+        and long_weight + weight > portfolio.max_long_position_weight
+    ):
+        return "portfolio_long_exposure_limit"
+    if (
+        side == "short"
+        and portfolio.max_short_position_weight is not None
+        and short_weight + weight > portfolio.max_short_position_weight
+    ):
+        return "portfolio_short_exposure_limit"
+    if (
+        portfolio.max_symbol_position_weight is not None
+        and symbol_weights.get(symbol, 0.0) + weight > portfolio.max_symbol_position_weight
+    ):
+        return "portfolio_symbol_exposure_limit"
+    return None
+
+
+def _apply_portfolio_exposure_limits(
+    rows: list[dict[str, Any]], spec: StrategyAuthoringSpec
+) -> list[dict[str, Any]]:
+    portfolio = spec.rules.portfolio
+    if not portfolio.exposure_limits_enabled:
+        return rows
+    grouped: dict[Any, list[dict[str, Any]]] = {}
+    passthrough: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("side") == "none":
+            passthrough.append(row)
+            continue
+        grouped.setdefault(row["ts_signal"], []).append(row)
+
+    selected: list[dict[str, Any]] = [*passthrough]
+    for timestamp_rows in grouped.values():
+        total_weight = 0.0
+        long_weight = 0.0
+        short_weight = 0.0
+        symbol_weights: dict[str, float] = {}
+        for row in sorted(
+            timestamp_rows,
+            key=lambda item: item.get("rank_score") if item.get("rank_score") is not None else -1.0,
+            reverse=True,
+        ):
+            reason = _portfolio_exposure_block_reason(
+                row,
+                portfolio=portfolio,
+                total_weight=total_weight,
+                long_weight=long_weight,
+                short_weight=short_weight,
+                symbol_weights=symbol_weights,
+            )
+            if reason is not None:
+                selected.append(_block_trade_row(row, spec=spec, block_reason=reason))
+                continue
+            weight = abs(_position_weight_value(row))
+            total_weight += weight
+            if row.get("side") == "long":
+                long_weight += weight
+            elif row.get("side") == "short":
+                short_weight += weight
+            symbol = str(row.get("execution_symbol") or "")
+            symbol_weights[symbol] = symbol_weights.get(symbol, 0.0) + weight
+            selected.append(row)
+    return selected
+
+
+def _apply_cross_sectional_selection(
+    rows: list[dict[str, Any]], spec: StrategyAuthoringSpec
+) -> list[dict[str, Any]]:
+    if not spec.rules.cross_sectional.enabled:
+        return rows
+    passthrough = [row for row in rows if row.get("side") == "none"]
+    candidates_by_timestamp: dict[Any, list[dict[str, Any]]] = {}
+    for row in rows:
+        if row.get("side") == "none":
+            continue
+        candidates_by_timestamp.setdefault(row["ts_signal"], []).append(row)
+
+    selected_rows: list[dict[str, Any]] = [*passthrough]
+    for timestamp_rows in candidates_by_timestamp.values():
+        scored = [row for row in timestamp_rows if _score_value(row) is not None]
+        unscored = [row for row in timestamp_rows if _score_value(row) is None]
+        sorted_desc = sorted(scored, key=lambda item: _score_value(item) or 0.0, reverse=True)
+        sorted_asc = list(reversed(sorted_desc))
+        percentile_by_id: dict[str, float] = {}
+        denominator = max(len(sorted_desc) - 1, 1)
+        for index, row in enumerate(sorted_desc):
+            percentile_by_id[str(row["signal_id"])] = (
+                1.0 if len(sorted_desc) == 1 else 1.0 - (index / denominator)
+            )
+
+        top_n = spec.rules.cross_sectional.long_top_n or 0
+        bottom_n = spec.rules.cross_sectional.short_bottom_n or 0
+        unscored_ids = {str(row["signal_id"]) for row in unscored}
+        top_ids = {str(row["signal_id"]) for row in sorted_desc[:top_n]}
+        bottom_ids = {
+            str(row["signal_id"])
+            for row in sorted_asc[:bottom_n]
+            if str(row["signal_id"]) not in top_ids
+        }
+        for row in timestamp_rows:
+            row_id = str(row["signal_id"])
+            if row_id in unscored_ids:
+                selected_rows.append(
+                    _block_trade_row(
+                        row,
+                        spec=spec,
+                        block_reason="cross_sectional_score_missing",
+                    )
+                )
+                continue
+            updated = dict(row)
+            percentile = percentile_by_id[row_id]
+            updated["rank_score"] = percentile
+            updated["percentile_rank"] = percentile
+            updated["tail_bucket"] = _tail_bucket(percentile)
+            if row_id in top_ids:
+                updated["side"] = "long"
+                updated["signal_id"] = _compiled_signal_id(spec, updated, side="long")
+                updated["reason_codes"] = [
+                    *list(row.get("reason_codes") or []),
+                    "cross_sectional_top",
+                ]
+                selected_rows.append(updated)
+            elif row_id in bottom_ids:
+                updated["side"] = "short"
+                updated["signal_id"] = _compiled_signal_id(spec, updated, side="short")
+                updated["reason_codes"] = [
+                    *list(row.get("reason_codes") or []),
+                    "cross_sectional_bottom",
+                ]
+                selected_rows.append(updated)
+            else:
+                selected_rows.append(
+                    _block_trade_row(
+                        updated,
+                        spec=spec,
+                        block_reason="cross_sectional_rank_filter",
+                    )
+                )
+    return selected_rows
+
+
+def _signal_id(
+    spec: StrategyAuthoringSpec,
+    row: dict[str, Any],
+    binding: SymbolBinding,
+    *,
+    side: str | None = None,
+) -> str:
     return _stable_digest(
         {
             "strategy_id": spec.experiment.strategy_id,
             "ts": row.get("ts"),
             "execution_symbol": binding.execution_symbol,
-            "side": spec.rules.side,
+            "side": side or spec.rules.side,
             "reason_code": spec.rules.reason_code,
         }
     )
+
+
+def _resolve_leg_side(base_side: str, leg_side: str) -> Literal["long", "short"]:
+    if leg_side == "long":
+        return "long"
+    if leg_side == "short":
+        return "short"
+    if leg_side == "same":
+        return "short" if base_side == "short" else "long"
+    return "long" if base_side == "short" else "short"
+
+
+def _close_signal_row(
+    *,
+    spec: StrategyAuthoringSpec,
+    row: dict[str, Any],
+    binding: SymbolBinding,
+    generated_at: datetime,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "strategy_signal.v1",
+        "signal_id": _signal_id(spec, row, binding, side="close"),
+        "generated_at": generated_at,
+        "strategy_id": spec.experiment.strategy_id,
+        "strategy_family": spec.experiment.strategy_family,
+        "strategy_version": spec.experiment.strategy_version,
+        "trial_id": None,
+        "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
+        "ts_signal": row["ts"],
+        "timeframe": spec.rules.timeframe,
+        "execution_venue": binding.execution_venue,
+        "execution_symbol": binding.execution_symbol,
+        "real_market_symbol": binding.real_market_symbol,
+        "side": "close",
+        "raw_score": None,
+        "rank_score": None,
+        "percentile_rank": None,
+        "tail_bucket": "none",
+        "confidence": 0.0,
+        "source_confidence": row.get("source_confidence"),
+        "venue_quality_score": row.get("venue_quality_score"),
+        "feature_snapshot_ref": None,
+        "quote_ref": None,
+        "tracking_ref": None,
+        "stop_loss_bps": None,
+        "take_profit_bps": None,
+        "trailing_stop_bps": None,
+        "partial_take_profit_bps": None,
+        "partial_exit_fraction": None,
+        "exit_on_opposite_signal": False,
+        "exit_on_close_signal": False,
+        "exit_on_reduce_signal": False,
+        "reduce_fraction": None,
+        "exit_on_add_signal": False,
+        "add_fraction": None,
+        "exit_on_rebalance_signal": False,
+        "rebalance_target_fraction": None,
+        "bracket_type": "none",
+        "bracket_time_stop_minutes": None,
+        "bracket_break_even_after_bps": None,
+        "entry_order_type": "market",
+        "entry_limit_offset_bps": None,
+        "entry_stop_offset_bps": None,
+        "entry_timeout_minutes": None,
+        "slippage_bps": 0.0,
+        "max_fill_fraction": 0.0,
+        "max_spread_bps": None,
+        "min_depth_usd": None,
+        "depth_column": None,
+        "depth_participation_rate": 0.0,
+        "position_weight": 0.0,
+        "notional_usd": None,
+        "reason_codes": [spec.rules.close_reason_code],
+        "block_reasons": [],
+    }
+
+
+def _reduce_signal_row(
+    *,
+    spec: StrategyAuthoringSpec,
+    row: dict[str, Any],
+    binding: SymbolBinding,
+    generated_at: datetime,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "strategy_signal.v1",
+        "signal_id": _signal_id(spec, row, binding, side="reduce"),
+        "generated_at": generated_at,
+        "strategy_id": spec.experiment.strategy_id,
+        "strategy_family": spec.experiment.strategy_family,
+        "strategy_version": spec.experiment.strategy_version,
+        "trial_id": None,
+        "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
+        "ts_signal": row["ts"],
+        "timeframe": spec.rules.timeframe,
+        "execution_venue": binding.execution_venue,
+        "execution_symbol": binding.execution_symbol,
+        "real_market_symbol": binding.real_market_symbol,
+        "side": "reduce",
+        "raw_score": None,
+        "rank_score": None,
+        "percentile_rank": None,
+        "tail_bucket": "none",
+        "confidence": 0.0,
+        "source_confidence": row.get("source_confidence"),
+        "venue_quality_score": row.get("venue_quality_score"),
+        "feature_snapshot_ref": None,
+        "quote_ref": None,
+        "tracking_ref": None,
+        "stop_loss_bps": None,
+        "take_profit_bps": None,
+        "trailing_stop_bps": None,
+        "partial_take_profit_bps": None,
+        "partial_exit_fraction": None,
+        "exit_on_opposite_signal": False,
+        "exit_on_close_signal": False,
+        "exit_on_reduce_signal": False,
+        "reduce_fraction": _sizing_value(
+            row,
+            fixed=spec.rules.exit.reduce_fraction,
+            column=spec.rules.exit.reduce_fraction_column,
+        ),
+        "bracket_type": "none",
+        "bracket_time_stop_minutes": None,
+        "bracket_break_even_after_bps": None,
+        "entry_order_type": "market",
+        "entry_limit_offset_bps": None,
+        "entry_stop_offset_bps": None,
+        "entry_timeout_minutes": None,
+        "slippage_bps": 0.0,
+        "max_fill_fraction": 0.0,
+        "max_spread_bps": None,
+        "min_depth_usd": None,
+        "depth_column": None,
+        "depth_participation_rate": 0.0,
+        "position_weight": 0.0,
+        "notional_usd": None,
+        "reason_codes": [spec.rules.reduce_reason_code],
+        "block_reasons": [],
+    }
+
+
+def _add_signal_row(
+    *,
+    spec: StrategyAuthoringSpec,
+    row: dict[str, Any],
+    binding: SymbolBinding,
+    generated_at: datetime,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "strategy_signal.v1",
+        "signal_id": _signal_id(spec, row, binding, side="add"),
+        "generated_at": generated_at,
+        "strategy_id": spec.experiment.strategy_id,
+        "strategy_family": spec.experiment.strategy_family,
+        "strategy_version": spec.experiment.strategy_version,
+        "trial_id": None,
+        "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
+        "ts_signal": row["ts"],
+        "timeframe": spec.rules.timeframe,
+        "execution_venue": binding.execution_venue,
+        "execution_symbol": binding.execution_symbol,
+        "real_market_symbol": binding.real_market_symbol,
+        "side": "add",
+        "raw_score": None,
+        "rank_score": None,
+        "percentile_rank": None,
+        "tail_bucket": "none",
+        "confidence": 0.0,
+        "source_confidence": row.get("source_confidence"),
+        "venue_quality_score": row.get("venue_quality_score"),
+        "feature_snapshot_ref": None,
+        "quote_ref": None,
+        "tracking_ref": None,
+        "stop_loss_bps": None,
+        "take_profit_bps": None,
+        "trailing_stop_bps": None,
+        "partial_take_profit_bps": None,
+        "partial_exit_fraction": None,
+        "exit_on_opposite_signal": False,
+        "exit_on_close_signal": False,
+        "exit_on_reduce_signal": False,
+        "reduce_fraction": None,
+        "exit_on_add_signal": False,
+        "add_fraction": _sizing_value(
+            row,
+            fixed=spec.rules.exit.add_fraction,
+            column=spec.rules.exit.add_fraction_column,
+        ),
+        "exit_on_rebalance_signal": False,
+        "rebalance_target_fraction": None,
+        "bracket_type": "none",
+        "bracket_time_stop_minutes": None,
+        "bracket_break_even_after_bps": None,
+        "entry_order_type": "market",
+        "entry_limit_offset_bps": None,
+        "entry_stop_offset_bps": None,
+        "entry_timeout_minutes": None,
+        "slippage_bps": 0.0,
+        "max_fill_fraction": 0.0,
+        "max_spread_bps": None,
+        "min_depth_usd": None,
+        "depth_column": None,
+        "depth_participation_rate": 0.0,
+        "position_weight": 0.0,
+        "notional_usd": None,
+        "reason_codes": [spec.rules.add_reason_code],
+        "block_reasons": [],
+    }
+
+
+def _rebalance_signal_row(
+    *,
+    spec: StrategyAuthoringSpec,
+    row: dict[str, Any],
+    binding: SymbolBinding,
+    generated_at: datetime,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "strategy_signal.v1",
+        "signal_id": _signal_id(spec, row, binding, side="rebalance"),
+        "generated_at": generated_at,
+        "strategy_id": spec.experiment.strategy_id,
+        "strategy_family": spec.experiment.strategy_family,
+        "strategy_version": spec.experiment.strategy_version,
+        "trial_id": None,
+        "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
+        "ts_signal": row["ts"],
+        "timeframe": spec.rules.timeframe,
+        "execution_venue": binding.execution_venue,
+        "execution_symbol": binding.execution_symbol,
+        "real_market_symbol": binding.real_market_symbol,
+        "side": "rebalance",
+        "raw_score": None,
+        "rank_score": None,
+        "percentile_rank": None,
+        "tail_bucket": "none",
+        "confidence": 0.0,
+        "source_confidence": row.get("source_confidence"),
+        "venue_quality_score": row.get("venue_quality_score"),
+        "feature_snapshot_ref": None,
+        "quote_ref": None,
+        "tracking_ref": None,
+        "stop_loss_bps": None,
+        "take_profit_bps": None,
+        "trailing_stop_bps": None,
+        "partial_take_profit_bps": None,
+        "partial_exit_fraction": None,
+        "exit_on_opposite_signal": False,
+        "exit_on_close_signal": False,
+        "exit_on_reduce_signal": False,
+        "reduce_fraction": None,
+        "exit_on_add_signal": False,
+        "add_fraction": None,
+        "exit_on_rebalance_signal": False,
+        "rebalance_target_fraction": _sizing_value(
+            row,
+            fixed=spec.rules.exit.rebalance_target_fraction,
+            column=spec.rules.exit.rebalance_target_fraction_column,
+        ),
+        "bracket_type": "none",
+        "bracket_time_stop_minutes": None,
+        "bracket_break_even_after_bps": None,
+        "entry_order_type": "market",
+        "entry_limit_offset_bps": None,
+        "entry_stop_offset_bps": None,
+        "entry_timeout_minutes": None,
+        "slippage_bps": 0.0,
+        "max_fill_fraction": 0.0,
+        "max_spread_bps": None,
+        "min_depth_usd": None,
+        "depth_column": None,
+        "depth_participation_rate": 0.0,
+        "position_weight": 0.0,
+        "notional_usd": None,
+        "reason_codes": [spec.rules.rebalance_reason_code],
+        "block_reasons": [],
+    }
+
+
+def _trade_signal_row(
+    *,
+    spec: StrategyAuthoringSpec,
+    row: dict[str, Any],
+    binding: SymbolBinding,
+    side: Literal["long", "short"],
+    generated_at: datetime,
+    raw_score: float | None,
+    rank: float | None,
+    position_weight: float | None = None,
+    notional_usd: float | None = None,
+    reason_codes: list[str] | None = None,
+) -> dict[str, Any]:
+    regime = _matching_regime_override(row, spec)
+    effective_reason_codes = reason_codes or [spec.rules.reason_code]
+    if regime is not None:
+        effective_reason_codes = [*effective_reason_codes, f"regime:{regime.name}"]
+    return {
+        "schema_version": "strategy_signal.v1",
+        "signal_id": _signal_id(spec, row, binding, side=side),
+        "generated_at": generated_at,
+        "strategy_id": spec.experiment.strategy_id,
+        "strategy_family": spec.experiment.strategy_family,
+        "strategy_version": spec.experiment.strategy_version,
+        "trial_id": None,
+        "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
+        "ts_signal": row["ts"],
+        "timeframe": spec.rules.timeframe,
+        "execution_venue": binding.execution_venue,
+        "execution_symbol": binding.execution_symbol,
+        "real_market_symbol": binding.real_market_symbol,
+        "side": side,
+        "raw_score": raw_score,
+        "rank_score": rank,
+        "percentile_rank": rank,
+        "tail_bucket": _tail_bucket(rank),
+        "confidence": spec.rules.confidence,
+        "source_confidence": row.get("source_confidence"),
+        "venue_quality_score": row.get("venue_quality_score"),
+        "feature_snapshot_ref": None,
+        "quote_ref": None,
+        "tracking_ref": None,
+        "stop_loss_bps": _exit_bps(
+            row,
+            fixed=_regime_value(regime, "stop_loss_bps", spec.rules.exit.stop_loss_bps),
+            column=spec.rules.exit.stop_loss_bps_column,
+        ),
+        "take_profit_bps": _exit_bps(
+            row,
+            fixed=_regime_value(regime, "take_profit_bps", spec.rules.exit.take_profit_bps),
+            column=spec.rules.exit.take_profit_bps_column,
+        ),
+        "trailing_stop_bps": _exit_bps(
+            row,
+            fixed=_regime_value(regime, "trailing_stop_bps", spec.rules.exit.trailing_stop_bps),
+            column=spec.rules.exit.trailing_stop_bps_column,
+        ),
+        "partial_take_profit_bps": _exit_bps(
+            row,
+            fixed=_regime_value(
+                regime,
+                "partial_take_profit_bps",
+                spec.rules.exit.partial_take_profit_bps,
+            ),
+            column=spec.rules.exit.partial_take_profit_bps_column,
+        ),
+        "partial_exit_fraction": _sizing_value(
+            row,
+            fixed=_regime_value(
+                regime,
+                "partial_exit_fraction",
+                spec.rules.exit.partial_exit_fraction,
+            ),
+            column=spec.rules.exit.partial_exit_fraction_column,
+        ),
+        "exit_on_opposite_signal": spec.rules.exit.exit_on_opposite_signal,
+        "exit_on_close_signal": spec.rules.exit.exit_on_close_signal,
+        "exit_on_reduce_signal": spec.rules.exit.exit_on_reduce_signal,
+        "reduce_fraction": None,
+        "exit_on_add_signal": spec.rules.exit.exit_on_add_signal,
+        "add_fraction": None,
+        "exit_on_rebalance_signal": spec.rules.exit.exit_on_rebalance_signal,
+        "rebalance_target_fraction": None,
+        "bracket_type": spec.rules.bracket.bracket_type if spec.rules.bracket.enabled else "none",
+        "bracket_time_stop_minutes": (
+            spec.rules.bracket.time_stop_minutes if spec.rules.bracket.enabled else None
+        ),
+        "bracket_break_even_after_bps": (
+            spec.rules.bracket.break_even_after_bps if spec.rules.bracket.enabled else None
+        ),
+        "entry_order_type": spec.rules.order.entry_type,
+        "entry_limit_offset_bps": spec.rules.order.limit_offset_bps,
+        "entry_stop_offset_bps": spec.rules.order.stop_offset_bps,
+        "entry_timeout_minutes": spec.rules.order.timeout_minutes,
+        "slippage_bps": _regime_value(regime, "slippage_bps", spec.rules.execution.slippage_bps),
+        "max_fill_fraction": _regime_value(
+            regime, "max_fill_fraction", spec.rules.execution.max_fill_fraction
+        ),
+        "max_spread_bps": _regime_value(
+            regime, "max_spread_bps", spec.rules.execution.max_spread_bps
+        ),
+        "min_depth_usd": _regime_value(regime, "min_depth_usd", spec.rules.execution.min_depth_usd),
+        "depth_column": spec.rules.execution.depth_column,
+        "depth_participation_rate": _regime_value(
+            regime,
+            "depth_participation_rate",
+            spec.rules.execution.depth_participation_rate,
+        ),
+        "position_weight": position_weight
+        if position_weight is not None
+        else _signal_position_weight(row, spec),
+        "notional_usd": notional_usd
+        if notional_usd is not None
+        else _signal_notional_usd(row, spec),
+        "_allocation_volatility": row.get(spec.rules.portfolio.allocation_volatility_column)
+        if spec.rules.portfolio.allocation_volatility_column is not None
+        else None,
+        "reason_codes": effective_reason_codes,
+        "block_reasons": [],
+    }
+
+
+def _multi_leg_signal_rows(
+    *,
+    spec: StrategyAuthoringSpec,
+    row: dict[str, Any],
+    bindings: dict[str, SymbolBinding],
+    base_side: Literal["long", "short"],
+    generated_at: datetime,
+    raw_score: float | None,
+    rank: float | None,
+) -> list[dict[str, Any]]:
+    base_weight = _sizing_value(
+        row,
+        fixed=_signal_position_weight(row, spec),
+        column=None,
+    )
+    base_notional = _sizing_value(
+        row,
+        fixed=_signal_notional_usd(row, spec),
+        column=None,
+    )
+    rows: list[dict[str, Any]] = []
+    for index, leg in enumerate(spec.rules.multi_leg.legs):
+        binding = bindings[leg.real_market_symbol]
+        leg_side = _resolve_leg_side(base_side, leg.side)
+        leg_weight_multiplier = _sizing_value(
+            row,
+            fixed=leg.position_weight,
+            column=leg.position_weight_column,
+        )
+        leg_weight = (base_weight if base_weight is not None else 1.0) * (
+            leg_weight_multiplier if leg_weight_multiplier is not None else 1.0
+        )
+        leg_notional = _sizing_value(
+            row,
+            fixed=leg.notional_usd,
+            column=leg.notional_usd_column,
+        )
+        if leg_notional is None and base_notional is not None:
+            leg_notional = base_notional * (
+                leg_weight_multiplier if leg_weight_multiplier is not None else leg.position_weight
+            )
+        rows.append(
+            _trade_signal_row(
+                spec=spec,
+                row=row,
+                binding=binding,
+                side=leg_side,
+                generated_at=generated_at,
+                raw_score=raw_score,
+                rank=rank,
+                position_weight=leg_weight,
+                notional_usd=leg_notional,
+                reason_codes=[
+                    spec.rules.reason_code,
+                    "multi_leg",
+                    leg.reason_code or f"leg_{index + 1}",
+                ],
+            )
+        )
+    return rows
 
 
 def build_authoring_signals(
@@ -365,47 +2518,274 @@ def build_authoring_signals(
     if errors:
         raise StrategyAuthoringValidationError("; ".join(errors))
     feature_path = _resolve_path(spec.data.feature_panel_path, data_dir)
-    feature = pl.read_parquet(feature_path)
+    feature = _apply_derived_features(pl.read_parquet(feature_path), spec)
     bindings = {binding.real_market_symbol: binding for binding in spec.experiment.symbol_bindings}
     rows: list[dict[str, Any]] = []
     generated_at = datetime.now(timezone.utc)
     for row in feature.sort(["canonical_symbol", "ts"]).to_dicts():
         symbol = str(row.get("canonical_symbol") or "").upper()
+        if (
+            spec.rules.multi_leg.enabled
+            and symbol != spec.rules.multi_leg.anchor_real_market_symbol
+        ):
+            continue
         binding = bindings.get(symbol)
-        if binding is None or not _entry_passes(row, spec.rules.entry):
+        if binding is None:
+            continue
+        if spec.rules.close is not None and _entry_passes(row, spec.rules.close):
+            rows.append(
+                _close_signal_row(
+                    spec=spec,
+                    row=row,
+                    binding=binding,
+                    generated_at=generated_at,
+                )
+            )
+            continue
+        if spec.rules.reduce is not None and _entry_passes(row, spec.rules.reduce):
+            rows.append(
+                _reduce_signal_row(
+                    spec=spec,
+                    row=row,
+                    binding=binding,
+                    generated_at=generated_at,
+                )
+            )
+            continue
+        if spec.rules.add is not None and _entry_passes(row, spec.rules.add):
+            rows.append(
+                _add_signal_row(
+                    spec=spec,
+                    row=row,
+                    binding=binding,
+                    generated_at=generated_at,
+                )
+            )
+            continue
+        if spec.rules.rebalance is not None and _entry_passes(row, spec.rules.rebalance):
+            rows.append(
+                _rebalance_signal_row(
+                    spec=spec,
+                    row=row,
+                    binding=binding,
+                    generated_at=generated_at,
+                )
+            )
+            continue
+        if spec.rules.hold is not None and _entry_passes(row, spec.rules.hold):
+            rows.append(
+                {
+                    "schema_version": "strategy_signal.v1",
+                    "signal_id": _signal_id(spec, row, binding, side="none"),
+                    "generated_at": generated_at,
+                    "strategy_id": spec.experiment.strategy_id,
+                    "strategy_family": spec.experiment.strategy_family,
+                    "strategy_version": spec.experiment.strategy_version,
+                    "trial_id": None,
+                    "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
+                    "ts_signal": row["ts"],
+                    "timeframe": spec.rules.timeframe,
+                    "execution_venue": binding.execution_venue,
+                    "execution_symbol": binding.execution_symbol,
+                    "real_market_symbol": binding.real_market_symbol,
+                    "side": "none",
+                    "raw_score": None,
+                    "rank_score": None,
+                    "percentile_rank": None,
+                    "tail_bucket": "none",
+                    "confidence": 0.0,
+                    "source_confidence": row.get("source_confidence"),
+                    "venue_quality_score": row.get("venue_quality_score"),
+                    "feature_snapshot_ref": None,
+                    "quote_ref": None,
+                    "tracking_ref": None,
+                    "stop_loss_bps": None,
+                    "take_profit_bps": None,
+                    "trailing_stop_bps": None,
+                    "partial_take_profit_bps": None,
+                    "partial_exit_fraction": None,
+                    "exit_on_opposite_signal": False,
+                    "exit_on_close_signal": False,
+                    "exit_on_reduce_signal": False,
+                    "reduce_fraction": None,
+                    "exit_on_add_signal": False,
+                    "add_fraction": None,
+                    "exit_on_rebalance_signal": False,
+                    "rebalance_target_fraction": None,
+                    "bracket_type": "none",
+                    "bracket_time_stop_minutes": None,
+                    "bracket_break_even_after_bps": None,
+                    "entry_order_type": "market",
+                    "entry_limit_offset_bps": None,
+                    "entry_stop_offset_bps": None,
+                    "entry_timeout_minutes": None,
+                    "slippage_bps": 0.0,
+                    "max_fill_fraction": 0.0,
+                    "max_spread_bps": None,
+                    "min_depth_usd": None,
+                    "depth_column": None,
+                    "depth_participation_rate": 0.0,
+                    "position_weight": 0.0,
+                    "notional_usd": None,
+                    "reason_codes": [spec.rules.hold_reason_code],
+                    "block_reasons": ["hold_rule"],
+                }
+            )
+            continue
+        signal_side, block_reason = _selected_side(row, spec.rules)
+        if signal_side is None:
+            continue
+        if signal_side == "none":
+            rows.append(
+                {
+                    "schema_version": "strategy_signal.v1",
+                    "signal_id": _signal_id(spec, row, binding, side="none"),
+                    "generated_at": generated_at,
+                    "strategy_id": spec.experiment.strategy_id,
+                    "strategy_family": spec.experiment.strategy_family,
+                    "strategy_version": spec.experiment.strategy_version,
+                    "trial_id": None,
+                    "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
+                    "ts_signal": row["ts"],
+                    "timeframe": spec.rules.timeframe,
+                    "execution_venue": binding.execution_venue,
+                    "execution_symbol": binding.execution_symbol,
+                    "real_market_symbol": binding.real_market_symbol,
+                    "side": "none",
+                    "raw_score": None,
+                    "rank_score": None,
+                    "percentile_rank": None,
+                    "tail_bucket": "none",
+                    "confidence": 0.0,
+                    "source_confidence": row.get("source_confidence"),
+                    "venue_quality_score": row.get("venue_quality_score"),
+                    "feature_snapshot_ref": None,
+                    "quote_ref": None,
+                    "tracking_ref": None,
+                    "stop_loss_bps": None,
+                    "take_profit_bps": None,
+                    "trailing_stop_bps": None,
+                    "partial_take_profit_bps": None,
+                    "partial_exit_fraction": None,
+                    "exit_on_opposite_signal": False,
+                    "exit_on_close_signal": False,
+                    "exit_on_reduce_signal": False,
+                    "reduce_fraction": None,
+                    "exit_on_add_signal": False,
+                    "add_fraction": None,
+                    "exit_on_rebalance_signal": False,
+                    "rebalance_target_fraction": None,
+                    "bracket_type": "none",
+                    "bracket_time_stop_minutes": None,
+                    "bracket_break_even_after_bps": None,
+                    "entry_order_type": "market",
+                    "entry_limit_offset_bps": None,
+                    "entry_stop_offset_bps": None,
+                    "entry_timeout_minutes": None,
+                    "slippage_bps": 0.0,
+                    "max_fill_fraction": 0.0,
+                    "max_spread_bps": None,
+                    "min_depth_usd": None,
+                    "depth_column": None,
+                    "depth_participation_rate": 0.0,
+                    "position_weight": 0.0,
+                    "notional_usd": None,
+                    "reason_codes": [spec.rules.hold_reason_code],
+                    "block_reasons": [block_reason or "hold_rule"],
+                }
+            )
             continue
         raw_score = _score(row, spec.rules.score)
         rank = _rank_score(raw_score)
-        rows.append(
-            {
-                "schema_version": "strategy_signal.v1",
-                "signal_id": _signal_id(spec, row, binding),
-                "generated_at": generated_at,
-                "strategy_id": spec.experiment.strategy_id,
-                "strategy_family": spec.experiment.strategy_family,
-                "strategy_version": spec.experiment.strategy_version,
-                "trial_id": None,
-                "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
-                "ts_signal": row["ts"],
-                "timeframe": spec.rules.timeframe,
-                "execution_venue": binding.execution_venue,
-                "execution_symbol": binding.execution_symbol,
-                "real_market_symbol": binding.real_market_symbol,
-                "side": spec.rules.side,
-                "raw_score": raw_score,
-                "rank_score": rank,
-                "percentile_rank": rank,
-                "tail_bucket": _tail_bucket(rank),
-                "confidence": spec.rules.confidence,
-                "source_confidence": row.get("source_confidence"),
-                "venue_quality_score": row.get("venue_quality_score"),
-                "feature_snapshot_ref": None,
-                "quote_ref": None,
-                "tracking_ref": None,
-                "reason_codes": [spec.rules.reason_code],
-                "block_reasons": [],
-            }
-        )
+        event_block_reason = _event_window_block_reason(row, spec)
+        if event_block_reason is not None:
+            rows.append(
+                _block_trade_row(
+                    _trade_signal_row(
+                        spec=spec,
+                        row=row,
+                        binding=binding,
+                        side=signal_side,
+                        generated_at=generated_at,
+                        raw_score=raw_score,
+                        rank=rank,
+                    ),
+                    spec=spec,
+                    block_reason=event_block_reason,
+                )
+            )
+            continue
+        risk_throttle_block_reason = _risk_throttle_block_reason(row, spec)
+        if risk_throttle_block_reason is not None:
+            rows.append(
+                _block_trade_row(
+                    _trade_signal_row(
+                        spec=spec,
+                        row=row,
+                        binding=binding,
+                        side=signal_side,
+                        generated_at=generated_at,
+                        raw_score=raw_score,
+                        rank=rank,
+                    ),
+                    spec=spec,
+                    block_reason=risk_throttle_block_reason,
+                )
+            )
+            continue
+        if spec.rules.multi_leg.enabled:
+            rows.extend(
+                _multi_leg_signal_rows(
+                    spec=spec,
+                    row=row,
+                    bindings=bindings,
+                    base_side=signal_side,
+                    generated_at=generated_at,
+                    raw_score=raw_score,
+                    rank=rank,
+                )
+            )
+        else:
+            rows.append(
+                _trade_signal_row(
+                    spec=spec,
+                    row=row,
+                    binding=binding,
+                    side=signal_side,
+                    generated_at=generated_at,
+                    raw_score=raw_score,
+                    rank=rank,
+                )
+            )
+    rows = _apply_cross_sectional_selection(rows, spec)
+    rows = _apply_temporal_selection(rows, spec)
+    rows = _apply_position_state_limits(rows, spec)
+
+    if spec.rules.portfolio.max_signals_per_timestamp is not None:
+        grouped: dict[Any, list[dict[str, Any]]] = {}
+        passthrough: list[dict[str, Any]] = []
+        for item in rows:
+            if item["side"] == "none":
+                passthrough.append(item)
+                continue
+            grouped.setdefault(item["ts_signal"], []).append(item)
+        limited: list[dict[str, Any]] = passthrough[:]
+        limit = spec.rules.portfolio.max_signals_per_timestamp
+        for timestamp_rows in grouped.values():
+            limited.extend(
+                sorted(
+                    timestamp_rows,
+                    key=lambda item: (
+                        item.get("rank_score") if item.get("rank_score") is not None else -1.0
+                    ),
+                    reverse=True,
+                )[:limit]
+            )
+        rows = limited
+    rows = _apply_portfolio_allocation(rows, spec)
+    rows = _apply_portfolio_exposure_limits(rows, spec)
+    rows = sorted(rows, key=lambda item: (item["ts_signal"], item["signal_id"]))
+
     frame = (
         empty_strategy_signal_frame()
         if not rows
@@ -476,9 +2856,38 @@ def strategy_signals_to_research_signals(frame: pl.DataFrame) -> list[ResearchSi
             side=str(row["side"]).lower(),
             timeframe=str(row["timeframe"]).lower(),
             signal_strength=row.get("raw_score"),
+            stop_loss_bps=row.get("stop_loss_bps"),
+            take_profit_bps=row.get("take_profit_bps"),
+            trailing_stop_bps=row.get("trailing_stop_bps"),
+            partial_take_profit_bps=row.get("partial_take_profit_bps"),
+            partial_exit_fraction=row.get("partial_exit_fraction"),
+            exit_on_opposite_signal=bool(row.get("exit_on_opposite_signal")),
+            exit_on_close_signal=bool(row.get("exit_on_close_signal")),
+            exit_on_reduce_signal=bool(row.get("exit_on_reduce_signal")),
+            reduce_fraction=row.get("reduce_fraction"),
+            exit_on_add_signal=bool(row.get("exit_on_add_signal")),
+            add_fraction=row.get("add_fraction"),
+            exit_on_rebalance_signal=bool(row.get("exit_on_rebalance_signal")),
+            rebalance_target_fraction=row.get("rebalance_target_fraction"),
+            bracket_type=str(row.get("bracket_type") or "none"),
+            bracket_time_stop_minutes=row.get("bracket_time_stop_minutes"),
+            bracket_break_even_after_bps=row.get("bracket_break_even_after_bps"),
+            entry_order_type=str(row.get("entry_order_type") or "market"),
+            entry_limit_offset_bps=row.get("entry_limit_offset_bps"),
+            entry_stop_offset_bps=row.get("entry_stop_offset_bps"),
+            entry_timeout_minutes=row.get("entry_timeout_minutes"),
+            slippage_bps=row.get("slippage_bps") or 0.0,
+            max_fill_fraction=row.get("max_fill_fraction") or 1.0,
+            max_spread_bps=row.get("max_spread_bps"),
+            min_depth_usd=row.get("min_depth_usd"),
+            depth_column=row.get("depth_column"),
+            depth_participation_rate=row.get("depth_participation_rate") or 1.0,
+            position_weight=row.get("position_weight") or 1.0,
+            notional_usd=row.get("notional_usd"),
         )
         for row in frame.sort(["ts_signal", "signal_id"]).to_dicts()
-        if str(row.get("side") or "").lower() in {"long", "short"}
+        if str(row.get("side") or "").lower()
+        in {"long", "short", "close", "reduce", "add", "rebalance"}
     ]
 
 
@@ -489,15 +2898,122 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         f"{item.real_market_symbol}->{item.execution_symbol}@{item.execution_venue}"
         for item in spec.experiment.symbol_bindings
     )
-    conditions = [*spec.rules.entry.all, *spec.rules.entry.any]
-    condition_lines = "\n".join(
-        f"- {condition.column} {condition.op} {condition.value if condition.value is not None else ''}".rstrip()
-        for condition in conditions
+    conditions = [*spec.rules.entry.all, *spec.rules.entry.any, *spec.rules.entry.none]
+    long_conditions = (
+        [*spec.rules.long_entry.all, *spec.rules.long_entry.any, *spec.rules.long_entry.none]
+        if spec.rules.long_entry is not None
+        else []
     )
+    short_conditions = (
+        [*spec.rules.short_entry.all, *spec.rules.short_entry.any, *spec.rules.short_entry.none]
+        if spec.rules.short_entry is not None
+        else []
+    )
+    hold_conditions = (
+        [*spec.rules.hold.all, *spec.rules.hold.any, *spec.rules.hold.none]
+        if spec.rules.hold is not None
+        else []
+    )
+    close_conditions = (
+        [*spec.rules.close.all, *spec.rules.close.any, *spec.rules.close.none]
+        if spec.rules.close is not None
+        else []
+    )
+    reduce_conditions = (
+        [*spec.rules.reduce.all, *spec.rules.reduce.any, *spec.rules.reduce.none]
+        if spec.rules.reduce is not None
+        else []
+    )
+    add_conditions = (
+        [*spec.rules.add.all, *spec.rules.add.any, *spec.rules.add.none]
+        if spec.rules.add is not None
+        else []
+    )
+    rebalance_conditions = (
+        [*spec.rules.rebalance.all, *spec.rules.rebalance.any, *spec.rules.rebalance.none]
+        if spec.rules.rebalance is not None
+        else []
+    )
+    condition_lines = "\n".join(f"- {_format_condition(condition)}" for condition in conditions)
     score_lines = (
         "\n".join(f"- {term.column} * {term.weight}" for term in spec.rules.score.weighted_sum)
-        or "- no weighted score; raw/rank score will be null"
+        or "- no weighted_sum terms"
     )
+    if spec.rules.score.model_score is not None:
+        model = spec.rules.score.model_score
+        model_lines = "\n".join(f"- {term.column} * {term.weight}" for term in model.coefficients)
+        score_lines += (
+            "\n"
+            f"- model_score.type: {model.model_type}\n"
+            f"- model_score.intercept: {model.intercept}\n"
+            f"- model_score.activation: {model.activation}\n"
+            f"- model_score.missing_value: {model.missing_value}\n"
+            f"{model_lines}"
+        )
+    if not spec.rules.score.enabled:
+        score_lines = "- no score; raw/rank score will be null"
+    hold_lines = (
+        "\n".join(
+            f"- {condition.column} {condition.op} {condition.value if condition.value is not None else ''}".rstrip()
+            for condition in hold_conditions
+        )
+        or "- no hold rules"
+    )
+    close_lines = (
+        "\n".join(
+            f"- {condition.column} {condition.op} {condition.value if condition.value is not None else ''}".rstrip()
+            for condition in close_conditions
+        )
+        or "- no close rules"
+    )
+    reduce_lines = (
+        "\n".join(
+            f"- {condition.column} {condition.op} {condition.value if condition.value is not None else ''}".rstrip()
+            for condition in reduce_conditions
+        )
+        or "- no reduce rules"
+    )
+    add_lines = (
+        "\n".join(
+            f"- {condition.column} {condition.op} {condition.value if condition.value is not None else ''}".rstrip()
+            for condition in add_conditions
+        )
+        or "- no add rules"
+    )
+    rebalance_lines = (
+        "\n".join(
+            f"- {condition.column} {condition.op} {condition.value if condition.value is not None else ''}".rstrip()
+            for condition in rebalance_conditions
+        )
+        or "- no rebalance rules"
+    )
+    long_lines = (
+        "\n".join(
+            f"- {condition.column} {condition.op} {condition.value if condition.value is not None else ''}".rstrip()
+            for condition in long_conditions
+        )
+        or "- no long-specific rules"
+    )
+    short_lines = (
+        "\n".join(
+            f"- {condition.column} {condition.op} {condition.value if condition.value is not None else ''}".rstrip()
+            for condition in short_conditions
+        )
+        or "- no short-specific rules"
+    )
+    multi_leg_lines = "- disabled"
+    if spec.rules.multi_leg.enabled:
+        multi_leg_lines = "\n".join(
+            (
+                f"- {leg.real_market_symbol} side={leg.side} "
+                f"position_weight={leg.position_weight} "
+                f"position_weight_column={leg.position_weight_column} "
+                f"notional_usd={leg.notional_usd} "
+                f"notional_usd_column={leg.notional_usd_column} "
+                f"reason_code={leg.reason_code or f'leg_{index + 1}'}"
+            )
+            for index, leg in enumerate(spec.rules.multi_leg.legs)
+        )
     status = "ok" if not errors else "invalid"
     error_lines = "\n".join(f"- {error}" for error in errors) or "- none"
     return (
@@ -509,6 +3025,7 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         f"- live_order_submitted: false\n"
         f"- symbol_bindings: {bindings}\n"
         f"- side: {spec.rules.side}\n"
+        f"- side_column: {spec.rules.side_column}\n"
         f"- timeframe: {spec.rules.timeframe}\n"
         f"- feature_panel_path: {_resolve_path(spec.data.feature_panel_path, data_dir)}\n"
         f"- quote_data_path: {_resolve_path(spec.data.quote_data_path, data_dir)}\n"
@@ -517,6 +3034,79 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         + "\n".join(f"- {column}" for column in required_columns)
         + "\n\n## Entry Conditions\n\n"
         + condition_lines
+        + "\n\n## Long Entry Conditions\n\n"
+        + long_lines
+        + "\n\n## Short Entry Conditions\n\n"
+        + short_lines
+        + "\n\n## Hold Conditions\n\n"
+        + hold_lines
+        + "\n\n## Close Conditions\n\n"
+        + close_lines
+        + "\n\n## Reduce Conditions\n\n"
+        + reduce_lines
+        + "\n\n## Add Conditions\n\n"
+        + add_lines
+        + "\n\n## Rebalance Conditions\n\n"
+        + rebalance_lines
+        + "\n\n## Exit Rules\n\n"
+        f"- stop_loss_bps: {spec.rules.exit.stop_loss_bps}\n"
+        f"- exit_on_opposite_signal: {spec.rules.exit.exit_on_opposite_signal}\n"
+        f"- exit_on_close_signal: {spec.rules.exit.exit_on_close_signal}\n"
+        f"- exit_on_reduce_signal: {spec.rules.exit.exit_on_reduce_signal}\n"
+        f"- reduce_fraction: {spec.rules.exit.reduce_fraction}\n"
+        f"- reduce_fraction_column: {spec.rules.exit.reduce_fraction_column}\n"
+        f"- exit_on_add_signal: {spec.rules.exit.exit_on_add_signal}\n"
+        f"- add_fraction: {spec.rules.exit.add_fraction}\n"
+        f"- add_fraction_column: {spec.rules.exit.add_fraction_column}\n"
+        f"- exit_on_rebalance_signal: {spec.rules.exit.exit_on_rebalance_signal}\n"
+        f"- rebalance_target_fraction: {spec.rules.exit.rebalance_target_fraction}\n"
+        f"- rebalance_target_fraction_column: "
+        f"{spec.rules.exit.rebalance_target_fraction_column}\n"
+        f"- stop_loss_bps_column: {spec.rules.exit.stop_loss_bps_column}\n"
+        f"- take_profit_bps: {spec.rules.exit.take_profit_bps}\n"
+        f"- take_profit_bps_column: {spec.rules.exit.take_profit_bps_column}\n"
+        f"- trailing_stop_bps: {spec.rules.exit.trailing_stop_bps}\n"
+        f"- trailing_stop_bps_column: {spec.rules.exit.trailing_stop_bps_column}\n"
+        f"- partial_take_profit_bps: {spec.rules.exit.partial_take_profit_bps}\n"
+        f"- partial_take_profit_bps_column: {spec.rules.exit.partial_take_profit_bps_column}\n"
+        f"- partial_exit_fraction: {spec.rules.exit.partial_exit_fraction}\n"
+        f"- partial_exit_fraction_column: {spec.rules.exit.partial_exit_fraction_column}\n"
+        "\n\n## Bracket / OCO\n\n"
+        f"- enabled: {spec.rules.bracket.enabled}\n"
+        f"- bracket_type: {spec.rules.bracket.bracket_type if spec.rules.bracket.enabled else 'none'}\n"
+        f"- time_stop_minutes: {spec.rules.bracket.time_stop_minutes}\n"
+        f"- break_even_after_bps: {spec.rules.bracket.break_even_after_bps}\n"
+        "\n\n## Sizing\n\n"
+        f"- position_weight: {spec.rules.sizing.position_weight}\n"
+        f"- position_weight_column: {spec.rules.sizing.position_weight_column}\n"
+        f"- notional_usd: {spec.rules.sizing.notional_usd}\n"
+        f"- notional_usd_column: {spec.rules.sizing.notional_usd_column}\n"
+        "\n\n## Order Simulation\n\n"
+        f"- entry_type: {spec.rules.order.entry_type}\n"
+        f"- limit_offset_bps: {spec.rules.order.limit_offset_bps}\n"
+        f"- stop_offset_bps: {spec.rules.order.stop_offset_bps}\n"
+        f"- timeout_minutes: {spec.rules.order.timeout_minutes}\n"
+        "\n\n## Execution Quality\n\n"
+        f"- slippage_bps: {spec.rules.execution.slippage_bps}\n"
+        f"- max_fill_fraction: {spec.rules.execution.max_fill_fraction}\n"
+        f"- max_spread_bps: {spec.rules.execution.max_spread_bps}\n"
+        f"- min_depth_usd: {spec.rules.execution.min_depth_usd}\n"
+        f"- depth_column: {spec.rules.execution.depth_column}\n"
+        f"- depth_participation_rate: {spec.rules.execution.depth_participation_rate}\n"
+        "\n\n## Portfolio\n\n"
+        f"- max_signals_per_timestamp: {spec.rules.portfolio.max_signals_per_timestamp}\n"
+        "\n\n## Temporal Controls\n\n"
+        f"- allowed_weekdays_utc: {spec.rules.temporal.allowed_weekdays_utc}\n"
+        f"- allowed_hours_utc: {spec.rules.temporal.allowed_hours_utc}\n"
+        f"- cooldown_minutes: {spec.rules.temporal.cooldown_minutes}\n"
+        f"- max_signals_per_symbol_per_day: {spec.rules.temporal.max_signals_per_symbol_per_day}\n"
+        "\n\n## Cross Sectional Selection\n\n"
+        f"- long_top_n: {spec.rules.cross_sectional.long_top_n}\n"
+        f"- short_bottom_n: {spec.rules.cross_sectional.short_bottom_n}\n"
+        "\n\n## Multi-Leg\n\n"
+        f"- enabled: {spec.rules.multi_leg.enabled}\n"
+        f"- anchor_real_market_symbol: {spec.rules.multi_leg.anchor_real_market_symbol}\n"
+        + multi_leg_lines
         + "\n\n## Score\n\n"
         + score_lines
         + "\n\n## Backtest\n\n"
@@ -561,6 +3151,84 @@ def _aggregate_backtest_metrics(metrics: list[Any]) -> dict[str, float | int | N
     }
 
 
+def _aggregate_bundle_metrics(members: list[dict[str, Any]]) -> dict[str, float | int | None]:
+    if not members:
+        return {
+            "member_count": 0,
+            "trade_count": 0,
+            "weighted_total_return": 0.0,
+            "max_drawdown": None,
+            "cost_drag_bps": 0.0,
+        }
+    weighted_total_return = 0.0
+    max_drawdowns: list[float] = []
+    trade_count = 0
+    cost_drag_bps = 0.0
+    for member in members:
+        weight = float(member["effective_allocation_weight"])
+        metrics = member["summary"]["aggregate_metrics"]
+        weighted_total_return += float(metrics.get("total_return") or 0.0) * weight
+        if metrics.get("max_drawdown") is not None:
+            max_drawdowns.append(float(metrics["max_drawdown"]) * weight)
+        trade_count += int(metrics.get("trade_count") or 0)
+        cost_drag_bps += float(metrics.get("cost_drag_bps") or 0.0) * weight
+    return {
+        "member_count": len(members),
+        "trade_count": trade_count,
+        "weighted_total_return": weighted_total_return,
+        "max_drawdown": min(max_drawdowns) if max_drawdowns else None,
+        "cost_drag_bps": cost_drag_bps,
+    }
+
+
+def _cap_bundle_weights(
+    raw_weights: dict[int, float], max_total_allocation_weight: float | None
+) -> dict[int, float]:
+    total = sum(raw_weights.values())
+    if total <= 0:
+        return {index: 0.0 for index in raw_weights}
+    scale = (
+        min(1.0, max_total_allocation_weight / total)
+        if max_total_allocation_weight is not None
+        else 1.0
+    )
+    return {index: weight * scale for index, weight in raw_weights.items()}
+
+
+def _risk_parity_risk_value(member: dict[str, Any]) -> float:
+    metrics = member["summary"]["aggregate_metrics"]
+    drawdown = metrics.get("max_drawdown")
+    if drawdown is None:
+        return 1.0
+    return max(abs(float(drawdown)), 0.0001)
+
+
+def _bundle_effective_weights(
+    bundle: StrategyAuthoringBundleSpec, member_results: list[dict[str, Any]]
+) -> dict[int, float]:
+    if not member_results:
+        return {}
+    if bundle.portfolio.allocation_method == "equal_weight":
+        raw = {int(member["member_index"]): 1.0 / len(member_results) for member in member_results}
+    elif bundle.portfolio.allocation_method == "risk_parity":
+        inverse_risk = {
+            int(member["member_index"]): 1.0 / _risk_parity_risk_value(member)
+            for member in member_results
+        }
+        total_inverse = sum(inverse_risk.values())
+        raw = {
+            index: (weight / total_inverse if total_inverse > 0 else 0.0)
+            for index, weight in inverse_risk.items()
+        }
+    else:
+        raw = {
+            index: member.allocation_weight
+            for index, member in enumerate(bundle.members)
+            if member.enabled
+        }
+    return _cap_bundle_weights(raw, bundle.portfolio.max_total_allocation_weight)
+
+
 def _threshold_passes(metric_name: str, actual: float | int | None, threshold: float) -> bool:
     if actual is None:
         return False
@@ -583,7 +3251,94 @@ def _evaluate_pass_thresholds(
     return results
 
 
-def run_authoring_backtest(
+def _era_key(value: object, era_unit: str) -> str:
+    ts = value if isinstance(value, datetime) else datetime.fromisoformat(str(value))
+    if era_unit == "month":
+        return ts.strftime("%Y-%m")
+    if era_unit == "week":
+        year, week, _weekday = ts.isocalendar()
+        return f"{year}-W{week:02d}"
+    return ts.strftime("%Y-%m-%d")
+
+
+def _walk_forward_eras(
+    spec: StrategyAuthoringSpec, frame: pl.DataFrame, *, data_dir: Path
+) -> list[dict[str, Any]]:
+    if frame.is_empty():
+        return []
+    eras: list[dict[str, Any]] = []
+    for era in sorted(
+        {_era_key(row["ts_signal"], spec.backtest.era_unit) for row in frame.to_dicts()}
+    ):
+        era_frame = frame.filter(
+            pl.col("ts_signal").map_elements(
+                lambda value: _era_key(value, spec.backtest.era_unit) == era,
+                return_dtype=pl.Boolean,
+            )
+        )
+        metrics, summary = _run_authoring_backtest_once(spec, era_frame, data_dir=data_dir)
+        eras.append(
+            {
+                "era": era,
+                "signal_count": era_frame.height,
+                "aggregate_metrics": _aggregate_backtest_metrics(metrics),
+                "executed_count": summary.get("executed_count", 0),
+            }
+        )
+    return eras
+
+
+def _set_path(payload: dict[str, Any], dotted_path: str, value: float | int | str) -> None:
+    current: dict[str, Any] = payload
+    parts = dotted_path.split(".")
+    for part in parts[:-1]:
+        next_item = current.setdefault(part, {})
+        if not isinstance(next_item, dict):
+            raise StrategyAuthoringValidationError(f"Cannot set optimizer path: {dotted_path}")
+        current = next_item
+    current[parts[-1]] = value
+
+
+def _nested_get(payload: dict[str, Any], dotted_path: str) -> Any:
+    current: Any = payload
+    for part in dotted_path.split("."):
+        if not isinstance(current, dict):
+            return None
+        current = current.get(part)
+    return current
+
+
+def _optimizer_sort_value(item: dict[str, Any], metric_name: str, *, maximize: bool) -> float:
+    value = item["aggregate_metrics"].get(metric_name)
+    if value is None:
+        return float("-inf") if maximize else float("inf")
+    return float(value)
+
+
+def _optimizer_variants(spec: StrategyAuthoringSpec) -> list[tuple[str, StrategyAuthoringSpec]]:
+    sweep = spec.optimizer.parameter_sweep
+    if not sweep:
+        return []
+    paths = sorted(sweep)
+    combinations = list(product(*(sweep[path] for path in paths)))
+    if len(combinations) > spec.optimizer.max_variants:
+        raise StrategyAuthoringValidationError(
+            f"optimizer variants exceed max_variants: {len(combinations)} > {spec.optimizer.max_variants}"
+        )
+    variants: list[tuple[str, StrategyAuthoringSpec]] = []
+    base_payload = spec.model_dump(mode="json")
+    for index, values in enumerate(combinations):
+        payload = json.loads(json.dumps(base_payload))
+        payload["optimizer"]["parameter_sweep"] = {}
+        parameters = dict(zip(paths, values, strict=True))
+        for path, value in parameters.items():
+            _set_path(payload, path, value)
+        variant = StrategyAuthoringSpec.model_validate(payload)
+        variants.append((f"variant-{index:03d}-{_stable_digest(parameters)}", variant))
+    return variants
+
+
+def _run_authoring_backtest_once(
     spec: StrategyAuthoringSpec, frame: pl.DataFrame, *, data_dir: Path
 ) -> tuple[list[Any], dict[str, Any]]:
     quote_path = _resolve_path(spec.data.quote_data_path, data_dir)
@@ -609,6 +3364,47 @@ def run_authoring_backtest(
         aggregate_metrics["trade_count"] or 0
     ) >= spec.backtest.min_trade_count
     summary["backtest_passed"] = summary["pass_min_trade_count"] and pass_all_thresholds
+    return metrics, summary
+
+
+def run_authoring_backtest(
+    spec: StrategyAuthoringSpec, frame: pl.DataFrame, *, data_dir: Path
+) -> tuple[list[Any], dict[str, Any]]:
+    metrics, summary = _run_authoring_backtest_once(spec, frame, data_dir=data_dir)
+    if spec.backtest.split_method in {"walk_forward", "purged_walk_forward"}:
+        summary["walk_forward_eras"] = _walk_forward_eras(spec, frame, data_dir=data_dir)
+    variant_results = []
+    for variant_id, variant in _optimizer_variants(spec):
+        variant_frame, _manifest = build_authoring_signals(variant, data_dir=data_dir)
+        _variant_metrics, variant_summary = _run_authoring_backtest_once(
+            variant, variant_frame, data_dir=data_dir
+        )
+        variant_results.append(
+            {
+                "variant_id": variant_id,
+                "parameters": {
+                    path: _nested_get(variant.model_dump(mode="json"), path)
+                    for path in sorted(spec.optimizer.parameter_sweep)
+                },
+                "aggregate_metrics": variant_summary["aggregate_metrics"],
+                "backtest_passed": variant_summary["backtest_passed"],
+            }
+        )
+    if variant_results:
+        metric_name = spec.optimizer.selection_metric
+        reverse = spec.optimizer.selection_direction == "maximize"
+        ranked = sorted(
+            variant_results,
+            key=lambda item: _optimizer_sort_value(item, metric_name, maximize=reverse),
+            reverse=reverse,
+        )
+        summary["optimizer"] = {
+            "selection_metric": metric_name,
+            "selection_direction": spec.optimizer.selection_direction,
+            "variant_count": len(variant_results),
+            "best_variant": ranked[0],
+            "variants": ranked,
+        }
     return metrics, summary
 
 
@@ -644,6 +3440,95 @@ def write_authoring_backtest_outputs(
     return {"metrics": metrics_path, "report": report_path}
 
 
+def _resolve_member_spec_path(raw: str, bundle_path: Path) -> Path:
+    path = Path(raw)
+    return path if path.is_absolute() else bundle_path.parent / path
+
+
+def run_authoring_bundle(
+    bundle: StrategyAuthoringBundleSpec, *, bundle_path: Path, data_dir: Path
+) -> dict[str, Any]:
+    member_results: list[dict[str, Any]] = []
+    for index, member in enumerate(bundle.members):
+        if not member.enabled:
+            continue
+        spec_path = _resolve_member_spec_path(member.spec_path, bundle_path)
+        spec = load_authoring_spec(spec_path)
+        frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+        _metrics, summary = run_authoring_backtest(spec, frame, data_dir=data_dir)
+        member_results.append(
+            {
+                "member_index": index,
+                "spec_path": str(spec_path),
+                "strategy_id": spec.experiment.strategy_id,
+                "allocation_weight": member.allocation_weight,
+                "effective_allocation_weight": 0.0,
+                "signal_count": frame.height,
+                "summary": summary,
+            }
+        )
+    effective_weights = _bundle_effective_weights(bundle, member_results)
+    for member_result in member_results:
+        member_result["effective_allocation_weight"] = effective_weights.get(
+            int(member_result["member_index"]), 0.0
+        )
+    aggregate_metrics = _aggregate_bundle_metrics(member_results)
+    metric_name = bundle.portfolio.selection_metric
+    reverse = bundle.portfolio.selection_direction == "maximize"
+    ranked_members = sorted(
+        member_results,
+        key=lambda item: _optimizer_sort_value(
+            {"aggregate_metrics": item["summary"]["aggregate_metrics"]},
+            metric_name,
+            maximize=reverse,
+        ),
+        reverse=reverse,
+    )
+    return {
+        "schema_version": "strategy_authoring_bundle_result.v1",
+        "bundle_id": bundle.bundle_id,
+        "paper_only": True,
+        "live_order_submitted": False,
+        "portfolio": bundle.portfolio.model_dump(mode="json"),
+        "aggregate_metrics": aggregate_metrics,
+        "best_member": ranked_members[0] if ranked_members else None,
+        "members": ranked_members,
+    }
+
+
+def write_authoring_bundle_outputs(payload: dict[str, Any], *, data_dir: Path) -> dict[str, Path]:
+    result_path = data_dir / "research/strategy_authoring_bundle_result.json"
+    report_path = data_dir / "reports/strategy_authoring_bundle_report.md"
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    result_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
+    )
+    rows = "\n".join(
+        "| {strategy_id} | {weight:.4f} | {trades} | {total_return:.6f} | {passed} |".format(
+            strategy_id=member["strategy_id"],
+            weight=float(member["effective_allocation_weight"]),
+            trades=member["summary"]["aggregate_metrics"].get("trade_count") or 0,
+            total_return=float(member["summary"]["aggregate_metrics"].get("total_return") or 0.0),
+            passed=member["summary"].get("backtest_passed"),
+        )
+        for member in payload["members"]
+    )
+    report_path.write_text(
+        "# Strategy Authoring Bundle Report\n\n"
+        "paper_only: true\n\n"
+        f"- bundle_id: {payload['bundle_id']}\n"
+        f"- member_count: {payload['aggregate_metrics']['member_count']}\n"
+        f"- weighted_total_return: {payload['aggregate_metrics']['weighted_total_return']:.6f}\n"
+        f"- best_member: {(payload.get('best_member') or {}).get('strategy_id')}\n\n"
+        "| Strategy | Effective Weight | Trades | Total Return | Backtest Passed |\n"
+        "|---|---:|---:|---:|---:|\n"
+        f"{rows}\n",
+        encoding="utf-8",
+    )
+    return {"bundle_result": result_path, "bundle_report": report_path}
+
+
 def write_authoring_paper_preview_outputs(
     spec: StrategyAuthoringSpec,
     frame: pl.DataFrame,
@@ -656,7 +3541,12 @@ def write_authoring_paper_preview_outputs(
     run_id = signal_artifact_run_id(frame) if not frame.is_empty() else parameter_hash
     trial_id = f"trial-{run_id}"
     trial_group_id = f"trial-group-{run_id}"
-    selected_rows = frame.sort(["ts_signal", "signal_id"]).to_dicts()[:1]
+    selected_rows = [
+        row
+        for row in frame.sort(["ts_signal", "signal_id"]).to_dicts()
+        if str(row.get("side") or "").lower() in {"long", "short"}
+        and not list(row.get("block_reasons") or [])
+    ][:1]
     selected_signal_ids = [str(row["signal_id"]) for row in selected_rows]
     selected = bool(selected_signal_ids) and bool(summary.get("backtest_passed", False))
     record = TrialRecord(
@@ -710,6 +3600,10 @@ def write_authoring_paper_preview_outputs(
         side = cast(
             Literal["long", "short", "none"], row.get("side") if selected and row else "none"
         )
+        entry_order_type = cast(
+            Literal["market", "limit", "stop_market"],
+            row.get("entry_order_type") if selected and row else "market",
+        )
         tail_bucket = cast(
             Literal["top", "middle", "bottom", "none"],
             row.get("tail_bucket") if selected and row else "none",
@@ -735,6 +3629,46 @@ def write_authoring_paper_preview_outputs(
             confidence=confidence,
             entry_reason_codes=list(row.get("reason_codes") or []) if selected and row else [],
             block_reasons=[] if selected else record.rejection_reasons,
+            stop_loss_bps=row.get("stop_loss_bps") if selected and row else None,
+            take_profit_bps=row.get("take_profit_bps") if selected and row else None,
+            trailing_stop_bps=row.get("trailing_stop_bps") if selected and row else None,
+            partial_take_profit_bps=(
+                row.get("partial_take_profit_bps") if selected and row else None
+            ),
+            partial_exit_fraction=row.get("partial_exit_fraction") if selected and row else None,
+            exit_on_opposite_signal=(
+                bool(row.get("exit_on_opposite_signal")) if selected and row else False
+            ),
+            bracket_type=cast(
+                Literal["none", "oco"], row.get("bracket_type") if selected and row else "none"
+            ),
+            bracket_time_stop_minutes=(
+                row.get("bracket_time_stop_minutes") if selected and row else None
+            ),
+            bracket_break_even_after_bps=(
+                row.get("bracket_break_even_after_bps") if selected and row else None
+            ),
+            entry_order_type=entry_order_type,
+            entry_limit_offset_bps=row.get("entry_limit_offset_bps") if selected and row else None,
+            entry_stop_offset_bps=row.get("entry_stop_offset_bps") if selected and row else None,
+            entry_timeout_minutes=row.get("entry_timeout_minutes") if selected and row else None,
+            slippage_bps=_float_or_default(
+                row.get("slippage_bps") if selected and row else None,
+                0.0,
+            ),
+            max_fill_fraction=_float_or_default(
+                row.get("max_fill_fraction") if selected and row else None,
+                0.0,
+            ),
+            max_spread_bps=row.get("max_spread_bps") if selected and row else None,
+            min_depth_usd=row.get("min_depth_usd") if selected and row else None,
+            depth_column=row.get("depth_column") if selected and row else None,
+            depth_participation_rate=_float_or_default(
+                row.get("depth_participation_rate") if selected and row else None,
+                0.0,
+            ),
+            position_weight=row.get("position_weight") if selected and row else None,
+            notional_usd=row.get("notional_usd") if selected and row else None,
             feature_snapshot_ref=row.get("feature_snapshot_ref") if row else None,
             quote_ref=row.get("quote_ref") if row else None,
             tracking_ref=row.get("tracking_ref") if row else None,

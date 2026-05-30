@@ -7,9 +7,360 @@
     "schema_version": {"const": "strategy_authoring_spec.v1"},
     "experiment": {"type": "object"},
     "data": {"type": "object"},
-    "rules": {"type": "object"},
+    "rules": {
+      "type": "object",
+      "required": ["entry"],
+      "properties": {
+        "side": {"enum": ["long", "short", "auto"]},
+        "side_column": {"type": ["string", "null"]},
+        "timeframe": {"type": "string"},
+        "entry": {"$ref": "#/$defs/condition_group"},
+        "long_entry": {"$ref": "#/$defs/condition_group"},
+        "short_entry": {"$ref": "#/$defs/condition_group"},
+        "hold": {"$ref": "#/$defs/condition_group"},
+        "close": {"$ref": "#/$defs/condition_group"},
+        "reduce": {"$ref": "#/$defs/condition_group"},
+        "add": {"$ref": "#/$defs/condition_group"},
+        "rebalance": {"$ref": "#/$defs/condition_group"},
+        "exit": {
+          "type": "object",
+          "properties": {
+            "exit_on_opposite_signal": {"type": "boolean"},
+            "exit_on_close_signal": {"type": "boolean"},
+            "exit_on_reduce_signal": {"type": "boolean"},
+            "reduce_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "reduce_fraction_column": {"type": ["string", "null"]},
+            "exit_on_add_signal": {"type": "boolean"},
+            "add_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "add_fraction_column": {"type": ["string", "null"]},
+            "exit_on_rebalance_signal": {"type": "boolean"},
+            "rebalance_target_fraction": {"type": ["number", "null"], "minimum": 0},
+            "rebalance_target_fraction_column": {"type": ["string", "null"]},
+            "stop_loss_bps": {"type": ["number", "null"], "minimum": 0},
+            "stop_loss_bps_column": {"type": ["string", "null"]},
+            "take_profit_bps": {"type": ["number", "null"], "minimum": 0},
+            "take_profit_bps_column": {"type": ["string", "null"]},
+            "trailing_stop_bps": {"type": ["number", "null"], "minimum": 0},
+            "trailing_stop_bps_column": {"type": ["string", "null"]},
+            "partial_take_profit_bps": {"type": ["number", "null"], "minimum": 0},
+            "partial_take_profit_bps_column": {"type": ["string", "null"]},
+            "partial_exit_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "partial_exit_fraction_column": {"type": ["string", "null"]}
+          },
+          "additionalProperties": false
+        },
+        "sizing": {
+          "type": "object",
+          "properties": {
+            "position_weight": {"type": "number", "minimum": 0},
+            "position_weight_column": {"type": ["string", "null"]},
+            "notional_usd": {"type": ["number", "null"], "minimum": 0},
+            "notional_usd_column": {"type": ["string", "null"]},
+            "volatility_target": {"type": ["number", "null"], "exclusiveMinimum": 0},
+            "volatility_column": {"type": ["string", "null"]},
+            "max_volatility_scaled_position_weight": {"type": ["number", "null"], "minimum": 0}
+          },
+          "additionalProperties": false
+        },
+        "order": {
+          "type": "object",
+          "properties": {
+            "entry_type": {"enum": ["market", "limit", "stop_market"]},
+            "limit_offset_bps": {"type": ["number", "null"], "minimum": 0},
+            "stop_offset_bps": {"type": ["number", "null"], "minimum": 0},
+            "timeout_minutes": {"type": ["integer", "null"], "minimum": 0}
+          },
+          "additionalProperties": false
+        },
+        "bracket": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "bracket_type": {"const": "oco"},
+            "time_stop_minutes": {"type": ["integer", "null"], "minimum": 0},
+            "break_even_after_bps": {"type": ["number", "null"], "minimum": 0}
+          },
+          "additionalProperties": false
+        },
+        "execution": {
+          "type": "object",
+          "properties": {
+            "slippage_bps": {"type": "number", "minimum": 0},
+            "max_fill_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+            "max_spread_bps": {"type": ["number", "null"], "minimum": 0},
+            "min_depth_usd": {"type": ["number", "null"], "minimum": 0},
+            "depth_column": {"type": ["string", "null"]},
+            "depth_participation_rate": {"type": "number", "minimum": 0, "maximum": 1}
+          },
+          "additionalProperties": false
+        },
+        "portfolio": {
+          "type": "object",
+          "properties": {
+            "max_signals_per_timestamp": {"type": ["integer", "null"], "minimum": 1},
+            "max_total_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "max_long_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "max_short_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "max_symbol_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "allocation_method": {
+              "enum": ["none", "equal_weight", "score_proportional", "inverse_volatility"]
+            },
+            "target_total_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "allocation_volatility_column": {"type": ["string", "null"]}
+          },
+          "additionalProperties": false
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "max_open_signals_per_symbol": {"type": ["integer", "null"], "minimum": 1},
+            "max_open_position_weight_per_symbol": {"type": ["number", "null"], "minimum": 0},
+            "holding_horizon_minutes": {"type": ["integer", "null"], "minimum": 1}
+          },
+          "additionalProperties": false
+        },
+        "risk_throttle": {
+          "type": "object",
+          "properties": {
+            "max_drawdown_column": {"type": ["string", "null"]},
+            "max_drawdown_floor": {"type": ["number", "null"]},
+            "daily_loss_column": {"type": ["string", "null"]},
+            "daily_loss_floor": {"type": ["number", "null"]},
+            "loss_streak_column": {"type": ["string", "null"]},
+            "max_loss_streak": {"type": ["integer", "null"], "minimum": 1}
+          },
+          "additionalProperties": false
+        },
+        "temporal": {
+          "type": "object",
+          "properties": {
+            "allowed_weekdays_utc": {
+              "type": ["array", "null"],
+              "items": {"type": "integer", "minimum": 0, "maximum": 6}
+            },
+            "allowed_hours_utc": {
+              "type": ["array", "null"],
+              "items": {"type": "integer", "minimum": 0, "maximum": 23}
+            },
+            "cooldown_minutes": {"type": ["integer", "null"], "minimum": 0},
+            "max_signals_per_symbol_per_day": {"type": ["integer", "null"], "minimum": 1}
+          },
+          "additionalProperties": false
+        },
+        "event_windows": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/event_window"}
+        },
+        "cross_sectional": {
+          "type": "object",
+          "properties": {
+            "long_top_n": {"type": ["integer", "null"], "minimum": 1},
+            "short_bottom_n": {"type": ["integer", "null"], "minimum": 1}
+          },
+          "additionalProperties": false
+        },
+        "multi_leg": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "anchor_real_market_symbol": {"type": ["string", "null"]},
+            "legs": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/multi_leg_entry"}
+            }
+          },
+          "additionalProperties": false
+        },
+        "derived_features": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/derived_feature"}
+        },
+        "regime_overrides": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/regime_override"}
+        },
+        "score": {
+          "type": "object",
+          "properties": {
+            "weighted_sum": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/score_term"}
+            },
+            "model_score": {
+              "type": ["object", "null"],
+              "properties": {
+                "model_type": {"const": "linear"},
+                "intercept": {"type": "number"},
+                "coefficients": {
+                  "type": "array",
+                  "items": {"$ref": "#/$defs/score_term"},
+                  "minItems": 1
+                },
+                "activation": {"enum": ["identity", "sigmoid", "tanh", "clamp_0_1"]},
+                "missing_value": {"type": ["number", "null"]}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "reason_code": {"type": "string"},
+        "hold_reason_code": {"type": "string"},
+        "close_reason_code": {"type": "string"},
+        "reduce_reason_code": {"type": "string"},
+        "add_reason_code": {"type": "string"},
+        "rebalance_reason_code": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
     "backtest": {"type": "object"},
+    "optimizer": {
+      "type": "object",
+      "properties": {
+        "parameter_sweep": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": ["number", "integer", "string"]},
+            "minItems": 1
+          }
+        },
+        "selection_metric": {"type": "string"},
+        "selection_direction": {"enum": ["maximize", "minimize"]},
+        "max_variants": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
     "promotion": {"type": "object"}
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "condition": {
+      "type": "object",
+      "required": ["column", "op"],
+      "properties": {
+        "column": {"type": "string"},
+        "op": {
+          "enum": [
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "eq",
+            "neq",
+            "is_true",
+            "is_false",
+            "between",
+            "in",
+            "not_in"
+          ]
+        },
+        "value": {},
+        "value_column": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "condition_group": {
+      "type": "object",
+      "properties": {
+        "all": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+        "any": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+        "none": {"type": "array", "items": {"$ref": "#/$defs/condition"}}
+      },
+      "additionalProperties": false
+    },
+    "derived_feature": {
+      "type": "object",
+      "required": ["name", "op", "columns"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "op": {
+          "enum": [
+            "add",
+            "sub",
+            "mul",
+            "div",
+            "ratio",
+            "diff",
+            "pct_diff",
+            "abs",
+            "neg",
+            "max",
+            "min",
+            "mean",
+            "rolling_mean",
+            "rolling_std",
+            "rolling_zscore"
+          ]
+        },
+        "columns": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "value": {"type": ["number", "null"]},
+        "window": {"type": ["integer", "null"], "minimum": 1},
+        "fill_null": {"type": ["number", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "multi_leg_entry": {
+      "type": "object",
+      "required": ["real_market_symbol", "side"],
+      "properties": {
+        "real_market_symbol": {"type": "string", "minLength": 1},
+        "side": {"enum": ["long", "short", "same", "opposite"]},
+        "position_weight": {"type": "number", "minimum": 0},
+        "position_weight_column": {"type": ["string", "null"]},
+        "notional_usd": {"type": ["number", "null"], "minimum": 0},
+        "notional_usd_column": {"type": ["string", "null"]},
+        "reason_code": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "event_window": {
+      "type": "object",
+      "required": ["name", "event_ts_column"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "event_ts_column": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["allow", "block"]},
+        "before_minutes": {"type": "integer", "minimum": 0},
+        "after_minutes": {"type": "integer", "minimum": 0},
+        "block_reason": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "regime_override": {
+      "type": "object",
+      "required": ["name", "when"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "when": {"$ref": "#/$defs/condition_group"},
+        "stop_loss_bps": {"type": ["number", "null"], "minimum": 0},
+        "take_profit_bps": {"type": ["number", "null"], "minimum": 0},
+        "trailing_stop_bps": {"type": ["number", "null"], "minimum": 0},
+        "partial_take_profit_bps": {"type": ["number", "null"], "minimum": 0},
+        "partial_exit_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "position_weight": {"type": ["number", "null"], "minimum": 0},
+        "notional_usd": {"type": ["number", "null"], "minimum": 0},
+        "slippage_bps": {"type": ["number", "null"], "minimum": 0},
+        "max_fill_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "max_spread_bps": {"type": ["number", "null"], "minimum": 0},
+        "min_depth_usd": {"type": ["number", "null"], "minimum": 0},
+        "depth_participation_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "score_term": {
+      "type": "object",
+      "required": ["column"],
+      "properties": {
+        "column": {"type": "string", "minLength": 1},
+        "weight": {"type": "number"}
+      },
+      "additionalProperties": false
+    }
+  }
 }

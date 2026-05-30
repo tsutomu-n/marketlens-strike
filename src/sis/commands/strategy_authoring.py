@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal, cast
 
 import typer
 
@@ -9,10 +10,15 @@ from sis.research.strategy_lab.authoring import (
     StrategyAuthoringValidationError,
     build_authoring_signals,
     explain_authoring_spec,
+    load_authoring_bundle_spec,
     load_authoring_spec,
+    run_authoring_bundle,
     run_authoring_backtest,
+    train_authoring_linear_model_score,
     validate_authoring_inputs,
     write_authoring_backtest_outputs,
+    write_authoring_bundle_outputs,
+    write_authoring_model_score_outputs,
     write_authoring_paper_preview_outputs,
     write_authoring_run_summary,
     write_authoring_signal_artifacts,
@@ -26,6 +32,14 @@ def _load_spec_or_exit(path: Path):
         return load_authoring_spec(path)
     except Exception as exc:
         typer.echo(f"invalid strategy authoring spec: {exc}")
+        raise typer.Exit(2) from exc
+
+
+def _load_bundle_or_exit(path: Path):
+    try:
+        return load_authoring_bundle_spec(path)
+    except Exception as exc:
+        typer.echo(f"invalid strategy authoring bundle: {exc}")
         raise typer.Exit(2) from exc
 
 
@@ -118,3 +132,54 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         if "metrics" in artifacts:
             typer.echo(f"backtest_metrics={artifacts['metrics']}")
         typer.echo(f"run_summary={run_summary}")
+
+    @app.command("strategy-author-bundle-run")
+    def strategy_author_bundle_run_cmd(bundle: Path = typer.Option(..., "--bundle")) -> None:
+        settings = get_settings()
+        parsed = _load_bundle_or_exit(bundle)
+        try:
+            payload = run_authoring_bundle(parsed, bundle_path=bundle, data_dir=settings.data_dir)
+            artifacts = write_authoring_bundle_outputs(payload, data_dir=settings.data_dir)
+        except (FileNotFoundError, ValueError, StrategyAuthoringValidationError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"bundle_result={artifacts['bundle_result']}")
+        typer.echo(f"bundle_report={artifacts['bundle_report']}")
+
+    @app.command("strategy-author-train-model")
+    def strategy_author_train_model_cmd(
+        spec: Path = typer.Option(..., "--spec"),
+        target_column: str = typer.Option(..., "--target-column"),
+        feature_column: list[str] = typer.Option(..., "--feature-column"),
+        ridge_lambda: float = typer.Option(1e-6, "--ridge-lambda"),
+        activation: str = typer.Option("identity", "--activation"),
+        missing_value: float | None = typer.Option(None, "--missing-value"),
+        out_spec: Path | None = typer.Option(None, "--out-spec"),
+    ) -> None:
+        if activation not in {"identity", "sigmoid", "tanh", "clamp_0_1"}:
+            typer.echo("activation must be one of: identity, sigmoid, tanh, clamp_0_1")
+            raise typer.Exit(2)
+        settings = get_settings()
+        parsed = _load_spec_or_exit(spec)
+        try:
+            payload = train_authoring_linear_model_score(
+                parsed,
+                data_dir=settings.data_dir,
+                target_column=target_column,
+                feature_columns=feature_column,
+                ridge_lambda=ridge_lambda,
+                activation=cast(Literal["identity", "sigmoid", "tanh", "clamp_0_1"], activation),
+                missing_value=missing_value,
+            )
+            artifacts = write_authoring_model_score_outputs(
+                parsed,
+                payload,
+                data_dir=settings.data_dir,
+                out_spec=out_spec,
+            )
+        except (FileNotFoundError, ValueError, StrategyAuthoringValidationError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"model_score={artifacts['model_score']}")
+        if "spec" in artifacts:
+            typer.echo(f"model_spec={artifacts['spec']}")

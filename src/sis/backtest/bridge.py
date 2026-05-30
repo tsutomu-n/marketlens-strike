@@ -103,6 +103,279 @@ def _net_return(entry_price: float, exit_price: float, side: str, cost_bps: floa
     return gross - cost_bps / 10_000
 
 
+def _gross_return_bps(entry_price: float, exit_price: float, side: str) -> float:
+    gross = exit_price / entry_price - 1.0
+    if side == "short":
+        gross = entry_price / exit_price - 1.0
+    return gross * 10_000
+
+
+def _entry_fill_index(
+    *,
+    rows: list[dict],
+    quote_times: list[datetime],
+    reference_index: int,
+    signal: ResearchSignal,
+) -> int | None:
+    order_type = signal.entry_order_type
+    if order_type == "market":
+        return reference_index
+    reference_price = _execution_price(rows[reference_index], signal.side)
+    if reference_price is None:
+        return None
+    timeout_at = None
+    if signal.entry_timeout_minutes is not None:
+        timeout_at = quote_times[reference_index] + timedelta(minutes=signal.entry_timeout_minutes)
+    if order_type == "limit":
+        offset = signal.entry_limit_offset_bps
+        if offset is None:
+            return None
+        if signal.side == "short":
+            trigger_price = reference_price * (1.0 + offset / 10_000)
+            comparison = "gte"
+        else:
+            trigger_price = reference_price * (1.0 - offset / 10_000)
+            comparison = "lte"
+    elif order_type == "stop_market":
+        offset = signal.entry_stop_offset_bps
+        if offset is None:
+            return None
+        if signal.side == "short":
+            trigger_price = reference_price * (1.0 - offset / 10_000)
+            comparison = "lte"
+        else:
+            trigger_price = reference_price * (1.0 + offset / 10_000)
+            comparison = "gte"
+    else:
+        raise ValueError(f"Unsupported entry_order_type: {order_type}")
+
+    for index in range(reference_index, len(rows)):
+        if timeout_at is not None and quote_times[index] > timeout_at:
+            return None
+        price = _execution_price(rows[index], signal.side)
+        if price is not None and (
+            price >= trigger_price if comparison == "gte" else price <= trigger_price
+        ):
+            return index
+    return None
+
+
+def _risk_exit_index(
+    *,
+    rows: list[dict],
+    entry_index: int,
+    horizon_exit_index: int,
+    entry_price: float,
+    side: str,
+    stop_loss_bps: float | None,
+    take_profit_bps: float | None,
+) -> tuple[int, str]:
+    if stop_loss_bps is None and take_profit_bps is None:
+        return horizon_exit_index, "fixed_horizon"
+    for index in range(entry_index + 1, horizon_exit_index + 1):
+        exit_price = _exit_price(rows[index], side)
+        if exit_price is None:
+            continue
+        gross_bps = _gross_return_bps(entry_price, exit_price, side)
+        if stop_loss_bps is not None and gross_bps <= -stop_loss_bps:
+            return index, "stop_loss"
+        if take_profit_bps is not None and gross_bps >= take_profit_bps:
+            return index, "take_profit"
+    return horizon_exit_index, "fixed_horizon"
+
+
+def _scaled_signal_return(
+    *,
+    rows: list[dict],
+    quote_times: list[datetime],
+    entry_index: int,
+    horizon_exit_index: int,
+    entry_price: float,
+    side: str,
+    cost_bps: float,
+    signal: ResearchSignal,
+    final_exit_reason: str = "fixed_horizon",
+    microstructure_fill_fraction: float = 1.0,
+    reduce_events: list[tuple[int, float]] | None = None,
+    add_events: list[tuple[int, float]] | None = None,
+    rebalance_events: list[tuple[int, float]] | None = None,
+) -> tuple[float, str]:
+    open_legs: list[tuple[float, float]] = [(entry_price, 1.0)]
+    exit_legs: list[tuple[float, float, float, str]] = []
+    marker_reasons: list[str] = []
+    best_bps = 0.0
+    partial_done = False
+    final_reason = final_exit_reason
+    break_even_armed = False
+    bracket_enabled = signal.bracket_type == "oco"
+    time_stop_at = (
+        quote_times[entry_index] + timedelta(minutes=signal.bracket_time_stop_minutes)
+        if bracket_enabled and signal.bracket_time_stop_minutes is not None
+        else None
+    )
+    adjustment_events_by_index: dict[int, list[tuple[str, float]]] = {}
+    for index, fraction in reduce_events or []:
+        adjustment_events_by_index.setdefault(index, []).append(("reduce", fraction))
+    for index, fraction in add_events or []:
+        adjustment_events_by_index.setdefault(index, []).append(("add", fraction))
+    for index, target_fraction in rebalance_events or []:
+        adjustment_events_by_index.setdefault(index, []).append(("rebalance", target_fraction))
+
+    def open_fraction() -> float:
+        return sum(fraction for _leg_entry_price, fraction in open_legs)
+
+    def close_open_fraction(exit_price: float, fraction: float, reason: str) -> None:
+        nonlocal open_legs
+        to_close = max(fraction, 0.0)
+        updated_legs: list[tuple[float, float]] = []
+        for leg_entry_price, leg_fraction in open_legs:
+            if to_close <= 0:
+                updated_legs.append((leg_entry_price, leg_fraction))
+                continue
+            leg_close_fraction = min(leg_fraction, to_close)
+            if leg_close_fraction > 0:
+                exit_legs.append((leg_entry_price, exit_price, leg_close_fraction, reason))
+                to_close -= leg_close_fraction
+            remaining_leg_fraction = leg_fraction - leg_close_fraction
+            if remaining_leg_fraction > 0:
+                updated_legs.append((leg_entry_price, remaining_leg_fraction))
+        open_legs = updated_legs
+
+    def close_all(exit_price: float, reason: str) -> None:
+        close_open_fraction(exit_price, open_fraction(), reason)
+
+    for index in range(entry_index + 1, horizon_exit_index + 1):
+        exit_price = _exit_price(rows[index], side)
+        if exit_price is None:
+            continue
+        gross_bps = _gross_return_bps(entry_price, exit_price, side)
+        best_bps = max(best_bps, gross_bps)
+        for event_type, value in adjustment_events_by_index.get(index, []):
+            current_open = open_fraction()
+            if current_open <= 0:
+                break
+            if event_type == "reduce":
+                fraction = min(max(value, 0.0), 1.0) * current_open
+                if fraction > 0:
+                    close_open_fraction(exit_price, fraction, "reduce_signal")
+            elif event_type == "add":
+                add_entry_price = _execution_price(rows[index], side)
+                if add_entry_price is not None:
+                    add_fraction = max(value, 0.0)
+                    if add_fraction > 0:
+                        open_legs.append((add_entry_price, add_fraction))
+                        marker_reasons.append("add_signal")
+            else:
+                target = max(value, 0.0)
+                marker_reasons.append("rebalance_signal")
+                if target < current_open:
+                    close_open_fraction(exit_price, current_open - target, "rebalance_signal")
+                elif target > current_open:
+                    rebalance_entry_price = _execution_price(rows[index], side)
+                    if rebalance_entry_price is not None:
+                        open_legs.append((rebalance_entry_price, target - current_open))
+            if open_fraction() <= 0:
+                final_reason = f"{event_type}_signal"
+                break
+        if open_fraction() <= 0:
+            break
+        if (
+            bracket_enabled
+            and signal.bracket_break_even_after_bps is not None
+            and gross_bps >= signal.bracket_break_even_after_bps
+        ):
+            break_even_armed = True
+        if bracket_enabled and break_even_armed and gross_bps <= 0:
+            close_all(exit_price, "bracket_break_even_stop")
+            final_reason = "bracket_break_even_stop"
+            break
+        if signal.stop_loss_bps is not None and gross_bps <= -signal.stop_loss_bps:
+            final_reason = "bracket_stop_loss" if bracket_enabled else "stop_loss"
+            close_all(exit_price, final_reason)
+            break
+        if (
+            signal.partial_take_profit_bps is not None
+            and signal.partial_exit_fraction is not None
+            and not partial_done
+            and gross_bps >= signal.partial_take_profit_bps
+        ):
+            fraction = min(max(signal.partial_exit_fraction, 0.0), open_fraction())
+            if fraction > 0:
+                close_open_fraction(exit_price, fraction, "partial_take_profit")
+                partial_done = True
+        if signal.take_profit_bps is not None and gross_bps >= signal.take_profit_bps:
+            final_reason = "bracket_take_profit" if bracket_enabled else "take_profit"
+            close_all(exit_price, final_reason)
+            break
+        if (
+            signal.trailing_stop_bps is not None
+            and best_bps > 0
+            and gross_bps <= best_bps - signal.trailing_stop_bps
+        ):
+            close_all(exit_price, "trailing_stop")
+            final_reason = "trailing_stop"
+            break
+        if time_stop_at is not None and quote_times[index] >= time_stop_at:
+            close_all(exit_price, "bracket_time_stop")
+            final_reason = "bracket_time_stop"
+            break
+
+    if open_fraction() > 0:
+        horizon_price = _exit_price(rows[horizon_exit_index], side)
+        if horizon_price is None:
+            return 0.0, "missing_exit_price"
+        close_all(horizon_price, final_reason)
+
+    gross_return = sum(
+        (
+            exit_price / leg_entry_price - 1.0
+            if side != "short"
+            else leg_entry_price / exit_price - 1.0
+        )
+        * fraction
+        for leg_entry_price, exit_price, fraction, _reason in exit_legs
+    )
+    reason = "+".join(
+        dict.fromkeys(
+            [
+                *marker_reasons,
+                *(reason for _leg_entry_price, _exit_price, _fraction, reason in exit_legs),
+            ]
+        )
+    )
+    fill_fraction = min(max(signal.max_fill_fraction, 0.0), 1.0) * min(
+        max(microstructure_fill_fraction, 0.0), 1.0
+    )
+    execution_cost_bps = cost_bps + signal.slippage_bps
+    return (
+        gross_return - execution_cost_bps / 10_000
+    ) * signal.position_weight * fill_fraction, reason
+
+
+def _microstructure_fill_fraction(
+    signal: ResearchSignal, entry: dict
+) -> tuple[float | None, str | None]:
+    spread = entry.get("spread_bps")
+    if (
+        signal.max_spread_bps is not None
+        and isinstance(spread, int | float)
+        and float(spread) > signal.max_spread_bps
+    ):
+        return None, "microstructure_spread_too_wide"
+    if signal.min_depth_usd is None:
+        return 1.0, None
+    depth_column = signal.depth_column or "min_side_depth_10bps_usd"
+    depth = entry.get(depth_column)
+    if not isinstance(depth, int | float):
+        return None, "microstructure_depth_missing"
+    if float(depth) < signal.min_depth_usd:
+        return None, "microstructure_depth_too_low"
+    if signal.notional_usd is None or signal.notional_usd <= 0:
+        return 1.0, None
+    available = float(depth) * min(max(signal.depth_participation_rate, 0.0), 1.0)
+    return min(1.0, available / signal.notional_usd), None
+
+
 def _max_drawdown(equity: list[float]) -> float:
     peak = 1.0
     worst = 0.0
@@ -270,10 +543,17 @@ def _metrics_for_signals(
     signals_by_symbol: dict[str, list[ResearchSignal]] = {}
     for signal in signals:
         signals_by_symbol.setdefault(signal.canonical_symbol, []).append(signal)
+    signals_by_symbol = {
+        symbol: sorted(symbol_signals, key=lambda item: item.ts_signal)
+        for symbol, symbol_signals in signals_by_symbol.items()
+    }
 
     metrics: list[BacktestMetrics] = []
     decision_records: list[DecisionRecord] = []
     blocked_reason_counts: dict[str, int] = {}
+    exit_reason_counts: dict[str, int] = {}
+    entry_order_type_counts: dict[str, int] = {}
+    entry_order_unfilled = 0
     executed = 0
     blocked = 0
     strategy = SignalPassthroughStrategy()
@@ -291,7 +571,9 @@ def _metrics_for_signals(
         quote_times = [_parse_quote_ts(row["ts_client"]) for row in rows]
 
         for signal in symbol_signals:
-            entry_index = next(
+            if signal.side in {"close", "reduce", "add", "rebalance"}:
+                continue
+            reference_index = next(
                 (
                     index
                     for index, quote_time in enumerate(quote_times)
@@ -299,9 +581,24 @@ def _metrics_for_signals(
                 ),
                 None,
             )
-            if entry_index is None:
+            if reference_index is None:
                 stale_rejected += 1
                 continue
+            entry_index = _entry_fill_index(
+                rows=rows,
+                quote_times=quote_times,
+                reference_index=reference_index,
+                signal=signal,
+            )
+            if entry_index is None:
+                entry_order_unfilled += 1
+                blocked_reason_counts["entry_order_unfilled"] = (
+                    blocked_reason_counts.get("entry_order_unfilled", 0) + 1
+                )
+                continue
+            entry_order_type_counts[signal.entry_order_type] = (
+                entry_order_type_counts.get(signal.entry_order_type, 0) + 1
+            )
             if exit_model == "fixed_horizon":
                 target_exit_ts = quote_times[entry_index] + timedelta(
                     minutes=holding_horizon_minutes or 0
@@ -318,12 +615,122 @@ def _metrics_for_signals(
                 )
             else:
                 exit_index = entry_index + 1 if entry_index + 1 < len(rows) else None
+            final_exit_reason = "fixed_horizon" if exit_model == "fixed_horizon" else "next_row"
             if exit_index is None:
                 stale_rejected += 1
                 continue
+            if signal.exit_on_close_signal:
+                close_signal = next(
+                    (
+                        item
+                        for item in symbol_signals
+                        if item.ts_signal > signal.ts_signal and item.side == "close"
+                    ),
+                    None,
+                )
+                if close_signal is not None:
+                    close_exit_index = next(
+                        (
+                            index
+                            for index, quote_time in enumerate(
+                                quote_times[entry_index + 1 :], start=entry_index + 1
+                            )
+                            if quote_time >= close_signal.ts_signal
+                        ),
+                        None,
+                    )
+                    if close_exit_index is not None and close_exit_index < exit_index:
+                        exit_index = close_exit_index
+                        final_exit_reason = "close_signal"
+            reduce_events: list[tuple[int, float]] = []
+            if signal.exit_on_reduce_signal:
+                for reduce_signal in (
+                    item
+                    for item in symbol_signals
+                    if item.ts_signal > signal.ts_signal and item.side == "reduce"
+                ):
+                    reduce_index = next(
+                        (
+                            index
+                            for index, quote_time in enumerate(
+                                quote_times[entry_index + 1 :], start=entry_index + 1
+                            )
+                            if quote_time >= reduce_signal.ts_signal
+                        ),
+                        None,
+                    )
+                    if reduce_index is not None and reduce_index < exit_index:
+                        reduce_events.append((reduce_index, reduce_signal.reduce_fraction or 1.0))
+            add_events: list[tuple[int, float]] = []
+            if signal.exit_on_add_signal:
+                for add_signal in (
+                    item
+                    for item in symbol_signals
+                    if item.ts_signal > signal.ts_signal and item.side == "add"
+                ):
+                    add_index = next(
+                        (
+                            index
+                            for index, quote_time in enumerate(
+                                quote_times[entry_index + 1 :], start=entry_index + 1
+                            )
+                            if quote_time >= add_signal.ts_signal
+                        ),
+                        None,
+                    )
+                    if add_index is not None and add_index < exit_index:
+                        add_events.append((add_index, add_signal.add_fraction or 1.0))
+            rebalance_events: list[tuple[int, float]] = []
+            if signal.exit_on_rebalance_signal:
+                for rebalance_signal in (
+                    item
+                    for item in symbol_signals
+                    if item.ts_signal > signal.ts_signal and item.side == "rebalance"
+                ):
+                    rebalance_index = next(
+                        (
+                            index
+                            for index, quote_time in enumerate(
+                                quote_times[entry_index + 1 :], start=entry_index + 1
+                            )
+                            if quote_time >= rebalance_signal.ts_signal
+                        ),
+                        None,
+                    )
+                    if rebalance_index is not None and rebalance_index < exit_index:
+                        rebalance_events.append(
+                            (
+                                rebalance_index,
+                                rebalance_signal.rebalance_target_fraction or 0.0,
+                            )
+                        )
+            if signal.exit_on_opposite_signal:
+                opposite_signal = next(
+                    (
+                        item
+                        for item in symbol_signals
+                        if item.ts_signal > signal.ts_signal
+                        and item.side in {"long", "short"}
+                        and item.side != signal.side
+                    ),
+                    None,
+                )
+                if opposite_signal is not None:
+                    opposite_exit_index = next(
+                        (
+                            index
+                            for index, quote_time in enumerate(
+                                quote_times[entry_index + 1 :], start=entry_index + 1
+                            )
+                            if quote_time >= opposite_signal.ts_signal
+                        ),
+                        None,
+                    )
+                    if opposite_exit_index is not None and opposite_exit_index < exit_index:
+                        exit_index = opposite_exit_index
+                        final_exit_reason = "opposite_signal"
 
             entry = rows[entry_index]
-            exit_ = rows[exit_index]
             context = DecisionContext(
                 decision_ts=signal.ts_signal,
                 venue=venue,
@@ -359,11 +766,18 @@ def _metrics_for_signals(
                 continue
 
             entry_price = _execution_price(entry, signal.side)
-            exit_price = _exit_price(exit_, signal.side)
-            if entry_price is None or exit_price is None:
+            if entry_price is None:
                 stale_rejected += 1
                 continue
-
+            microstructure_fill_fraction, microstructure_block_reason = (
+                _microstructure_fill_fraction(signal, entry)
+            )
+            if microstructure_block_reason is not None:
+                blocked += 1
+                blocked_reason_counts[microstructure_block_reason] = (
+                    blocked_reason_counts.get(microstructure_block_reason, 0) + 1
+                )
+                continue
             spread_raw = entry.get("spread_bps")
             spread = float(spread_raw) if isinstance(spread_raw, int | float) else None
             cost_bps, cost_source = round_trip_cost_bps(
@@ -373,8 +787,27 @@ def _metrics_for_signals(
                 quote_spread_bps=spread,
                 cost_profiles=cost_profiles or {},
             )
-            returns.append(_net_return(entry_price, exit_price, signal.side, cost_bps))
-            cost_drag_bps += cost_bps
+            signal_return, exit_reason = _scaled_signal_return(
+                rows=rows,
+                quote_times=quote_times,
+                entry_index=entry_index,
+                horizon_exit_index=exit_index,
+                entry_price=entry_price,
+                side=signal.side,
+                cost_bps=cost_bps,
+                signal=signal,
+                final_exit_reason=final_exit_reason,
+                microstructure_fill_fraction=microstructure_fill_fraction or 1.0,
+                reduce_events=reduce_events,
+                add_events=add_events,
+                rebalance_events=rebalance_events,
+            )
+            if exit_reason == "missing_exit_price":
+                stale_rejected += 1
+                continue
+            returns.append(signal_return)
+            exit_reason_counts[exit_reason] = exit_reason_counts.get(exit_reason, 0) + 1
+            cost_drag_bps += cost_bps + signal.slippage_bps
             cost_sources.append(cost_source)
             equity.append(equity[-1] * (1.0 + returns[-1]))
             executed += 1
@@ -400,6 +833,9 @@ def _metrics_for_signals(
         "executed_count": executed,
         "blocked_count": blocked,
         "blocked_reason_counts": blocked_reason_counts,
+        "exit_reason_counts": exit_reason_counts,
+        "entry_order_type_counts": entry_order_type_counts,
+        "entry_order_unfilled_count": entry_order_unfilled,
         "records_written": len(decision_records),
     }
     return metrics, decision_records, summary

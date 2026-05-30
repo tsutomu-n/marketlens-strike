@@ -10,7 +10,7 @@
 
 今の Strategy Research Lab は、登録済み generator から signal artifact を作り、paper-only の trial / candidate / promotion / intent preview まで進められます。加えて、`strategy_authoring_spec.v1` YAML から宣言型 rule を signal artifact / fixed-horizon backtest / paper-preview artifact へ進められます。
 
-ただし、これは live-ready 証明ではありません。現行 authoring backtest は fixed-horizon の研究用 metrics であり、position sizing、wallet / signing / exchange write は含みません。
+ただし、これは live-ready 証明ではありません。現行 authoring backtest は fixed-horizon の研究用 metrics であり、paper weight / notional は扱えますが、wallet / signing / exchange write は含みません。
 
 ## できるようになったこと
 
@@ -43,13 +43,36 @@ uv run sis strategy-author-init --out docs/strategy_research_lab/examples/trend_
 uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
 uv run sis strategy-author-explain --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
 uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
 ```
 
 できること:
 
-- `strategy_authoring_spec.v1` YAML で entry 条件、side、timeframe、score、backtest horizon を書ける。
+- `strategy_authoring_spec.v1` YAML で entry 条件、hold 条件、explicit close / reduce / add / rebalance 条件、side、`side: auto`、timeframe、score、paper-only 線形 `model_score` / train-model adapter、temporal / cadence control、event-window calendar filters、bracket-OCO lifecycle、backtest horizon を書ける。
+- `rules.side_column`, `long_entry`, `short_entry`, `close`, `reduce`, `add`, `rebalance` で row ごとの long / short / hold / close / reduce / add / rebalance marker を出せる。
+- condition DSL は固定値比較、列同士の比較、`between`、`in` / `not_in`、`none` exclusion group に対応し、moving average cross、adaptive threshold、regime filter を直接書ける。
+- `rules.derived_features` で spread、ratio、rolling mean、rolling std、rolling z-score などの strategy-local feature を YAML 内で作れる。
+- `rules.multi_leg` で anchor signal から複数 long / short leg を同時 timestamp の paper signal として展開でき、leg ごとの hedge ratio / notional は固定値または feature column で動的に指定できる。
+- `rules.exit.stop_loss_bps` / `take_profit_bps` / `trailing_stop_bps` / `partial_take_profit_bps` と `*_column` で、固定幅または row ごとの動的幅の損切・利確・部分利確・トレーリングストップを評価できる。
+- `rules.close` と `rules.exit.exit_on_close_signal` で、反対売買を開かない explicit close signal による paper exit を評価できる。
+- `rules.reduce` と `rules.exit.exit_on_reduce_signal` / `reduce_fraction` で、反対売買を開かない explicit reduce signal による paper 部分縮小を評価できる。
+- `rules.add` と `rules.exit.exit_on_add_signal` / `add_fraction` で、独立 trade を開かない explicit add signal による paper 増し玉を評価できる。
+- `rules.rebalance` と `rules.exit.exit_on_rebalance_signal` / `rebalance_target_fraction` で、独立 trade を開かない explicit rebalance signal による paper exposure resize を評価できる。
+- `rules.bracket.enabled` で stop / take profit / break-even / time stop を OCO 的な paper lifecycle として評価できる。
+- `rules.sizing.position_weight` / `notional_usd` / `volatility_target`, `rules.risk_throttle`, and `rules.portfolio.max_signals_per_timestamp` で paper backtest weight、想定 notional、同時候補数制限を記録・評価できる。
+- `rules.portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_symbol_position_weight` で同一 timestamp の paper exposure を制限できる。
+- `rules.portfolio.allocation_method` / `target_total_position_weight` で同一 timestamp の採用候補を equal weight、score proportional、inverse volatility に正規化できる。
+- `rules.position.max_open_signals_per_symbol` / `max_open_position_weight_per_symbol` で同一銘柄の仮想 open signal 数と open weight を制限できる。
+- `rules.regime_overrides` で regime ごとに損切、利確、weight、notional、slippage、fill、spread/depth 条件を切り替えられる。
+- `rules.execution.slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_participation_rate` で滑り、部分約定、spread gate、depth-based fill を paper-only に評価できる。
+- `rules.temporal.allowed_weekdays_utc` / `allowed_hours_utc` / `cooldown_minutes` / `max_signals_per_symbol_per_day` で曜日・時間帯・同一銘柄 cooldown・銘柄別日次上限を評価できる。
+- `rules.event_windows` で event timestamp column の前後だけを許可、または event 前後を blackout し、見送り理由を signal artifact に残せる。
+- `optimizer.parameter_sweep` で許可された spec path の paper-only grid search を行い、best variant と全 variant metrics を記録できる。
+- `backtest.split_method=walk_forward` / `purged_walk_forward` で era 別 aggregate metrics を記録できる。
+- `strategy_authoring_bundle.v1` で複数 authoring spec を allocation weight / equal weight / risk-parity 付きで比較し、bundle-level aggregate metrics を出せる。
 - rule が参照する feature column と symbol binding を validate できる。
 - `data/research/strategy_signals.parquet` を正本として出せる。
+- hold 条件に当たった row は `side: none` / `block_reasons: ["hold_rule"]` として記録し、backtest の売買対象からは除外できる。
 - Strategy Lab signal を直接 backtest bridge に渡し、legacy `signals.csv` を正本にしない。
 - `--through paper-preview` で paper-only の `trial_ledger.jsonl`, `paper_candidate_pack.json`, `promotion_decision.json`, `paper_intent_preview.json` まで出せる。
 
@@ -58,8 +81,10 @@ uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_
 - `data/research/strategy_authoring_run.json`
 - `data/research/strategy_signals.parquet`
 - `data/research/strategy_backtest_metrics.json`
+- `data/research/strategy_authoring_bundle_result.json`
 - `data/reports/strategy_authoring_explain.md`
 - `data/reports/strategy_backtest_report.md`
+- `data/reports/strategy_authoring_bundle_report.md`
 
 ### 2. signal artifact を TrialRecord に評価記録できる
 
@@ -221,10 +246,10 @@ uv run sis evaluate-strategy-lab \
 ## まだできないこと
 
 - 任意の `StrategyExperimentSpec` YAML / JSON を CLI から直接読む汎用 runner。
-- `parameter_grid` 全体を実行する full experiment engine。
-- PnL / drawdown / Sharpe / slippage-adjusted return の backtest。
-- full walk-forward / purged walk-forward の検証 engine。
-- candidate score から position size / notional / risk budget を決める sizing engine。
+- 任意の `parameter_grid` / 任意式 / 任意 Python を実行する full experiment engine。
+- broker 固有 queue position、order book event replay、latency、maker/taker priority を含む full venue microstructure replay。
+- train/test 再学習を伴う full walk-forward / purged walk-forward engine。
+- 複数戦略をまたぐ本格 portfolio optimizer や live rebalance engine。paper bundle の equal_weight / risk_parity allocation は対応済み。
 - live order, wallet signing, exchange write。
 - `PromotionDecision.decision=promote` から live trading へ進む導線。
 - Strategy Lab artifact だけを根拠にした profitability / paper-ready / live-ready claim。
@@ -245,8 +270,8 @@ git diff --check
 確認済み結果:
 
 - `tests/test_strategy_lab_commands.py`: 15 passed
-- Strategy Lab related targeted suite: 39 passed
+- Strategy authoring focused suite: 46 passed
 - Research pipeline / CLI smoke: 71 passed
 - `scripts/check_current_docs.py`: checked 74 current docs
-- `./scripts/check`: 384 passed, pyrefly 0 errors
+- `./scripts/check`: 425 passed, pyrefly 0 errors
 - `git diff --check`: pass

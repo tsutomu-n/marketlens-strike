@@ -498,7 +498,7 @@
             <div class="detail">
               <p><strong>コマンド:</strong> <code>--split-method walk_forward --era-unit trading_day</code></p>
               <p><strong>出力:</strong> <code>metrics.era_signal_counts</code>, <code>metrics.era_count</code></p>
-              <p><strong>補足:</strong> まだ本格的な walk-forward backtest ではありません。</p>
+              <p><strong>補足:</strong> Strategy Lab評価CLIは signal count metrics、authoring backtest は era別 aggregate metrics を記録します。</p>
             </div>
           </article>
 
@@ -512,6 +512,19 @@
               <p><strong>コマンド:</strong> <code>promotion-decision</code>, <code>build-paper-intent-preview</code></p>
               <p><strong>出力:</strong> <code>data/bot/paper_intent_preview.json</code></p>
               <p><strong>守る境界:</strong> <code>paper_only=true</code>, <code>live_conversion_allowed=false</code></p>
+            </div>
+          </article>
+
+          <article class="capability">
+            <div class="plain">
+              <span class="label ok">できる</span>
+              <h3>YAML で戦略を書いて backtest する</h3>
+              <p>entry / hold / close / reduce / add / rebalance / long / short / derived features / column-to-column condition / exclusion-none condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg / pair-trade signal / cross-sectional top-bottom / paper-only linear model score / train-model adapter / temporal-cadence control / event-window calendar filters / bracket-OCO lifecycle / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / order-style entry / slippage / partial-fill / spread gate / depth-based fill / stop-loss / take-profit / close-signal exit / partial exit / trailing stop / sizing / portfolio exposure limits / risk throttle / volatility targeting / target-weight / inverse-vol allocation / position-state pyramiding controls を YAML に書き、paper-only の fixed-horizon backtest と multi-strategy bundle / risk-parity allocation 比較まで実行できます。</p>
+            </div>
+            <div class="detail">
+              <p><strong>コマンド:</strong> <code>strategy-author-init</code>, <code>strategy-author-run --through backtest</code></p>
+              <p><strong>出力:</strong> <code>strategy_signals.parquet</code>, <code>strategy_backtest_metrics.json</code></p>
+              <p><strong>補足:</strong> <code>side: auto</code> で row ごとの long / short / hold / close / reduce / add / rebalance を扱えます。explicit close / reduce / add / rebalance signal、position weight、部分利確、トレーリングストップ、bundle allocation も paper backtest に反映します。</p>
             </div>
           </article>
         </div>
@@ -551,6 +564,18 @@ uv run sis build-paper-candidate-pack</code></pre>
 uv run sis build-paper-intent-preview
 uv run sis paper-from-intents \
   --intents-path data/bot/paper_intent_preview.json</code></pre>
+          </article>
+          <article class="command">
+            <header><h3>YAML 戦略を backtest する</h3></header>
+            <pre><code>uv run sis strategy-author-init \
+  --out docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-validate \
+  --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-run \
+  --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml \
+  --through backtest
+uv run sis strategy-author-bundle-run \
+  --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml</code></pre>
           </article>
         </div>
       </section>
@@ -613,6 +638,21 @@ uv run sis paper-from-intents \
               <td>candidate pack を hold / reject / promote する判断 artifact。</td>
             </tr>
             <tr>
+              <td>authoring YAML</td>
+              <td>ユーザーが書く作戦ファイル</td>
+              <td><code>strategy_authoring_spec.v1</code>。entry、hold、long / short、損切、利確、部分利確、trailing stop、sizing を paper backtest に渡す。</td>
+            </tr>
+            <tr>
+              <td>authoring bundle</td>
+              <td>複数作戦の比較束</td>
+              <td><code>strategy_authoring_bundle.v1</code>。複数 YAML を allocation weight 付きで paper 比較する。</td>
+            </tr>
+            <tr>
+              <td>hold signal</td>
+              <td>今は入らない記録</td>
+              <td><code>side=none</code> の研究 artifact。注文にも backtest trade にもしない。</td>
+            </tr>
+            <tr>
               <td>PaperIntentPreview</td>
               <td>paper runner に渡す仮注文案</td>
               <td>paper-only の意図。live order へ変換してはいけない。</td>
@@ -620,7 +660,7 @@ uv run sis paper-from-intents \
             <tr>
               <td>walk-forward</td>
               <td>時期を分けて検証する考え方</td>
-              <td>現行 CLI では名前と era count metrics を記録するだけ。backtest engine ではない。</td>
+              <td>Strategy Lab評価CLIでは era count metrics、authoring backtestでは era別 aggregate metrics を記録する。</td>
             </tr>
           </tbody>
         </table>
@@ -641,6 +681,9 @@ uv run sis paper-from-intents \
             <span class="label ok">今できる</span>
             <ul class="checklist">
               <li>登録済み generator から signal artifact を作る。</li>
+              <li>YAML で entry / hold / close / reduce / add / rebalance / long / short / derived features / column-to-column condition / exclusion-none condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg / pair-trade signal / cross-sectional top-bottom / paper-only linear model score / train-model adapter / temporal-cadence control / event-window calendar filters / bracket-OCO lifecycle / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / order-style entry / slippage / partial-fill / spread gate / depth-based fill / stop-loss / take-profit / close-signal exit / partial exit / trailing stop / sizing / portfolio exposure limits / risk throttle / volatility targeting / target-weight / inverse-vol allocation / position-state pyramiding controls を書く。</li>
+              <li>複数 YAML を bundle として paper 比較する。</li>
+              <li>authoring YAML から fixed-horizon backtest metrics を出す。</li>
               <li>threshold を変えて試行記録を残す。</li>
               <li>複数 signal を paper candidate にする。</li>
               <li>paper-only preview を生成する。</li>
@@ -650,9 +693,9 @@ uv run sis paper-from-intents \
           <div>
             <span class="label stop">まだできない</span>
             <ul class="checklist">
-              <li>任意の YAML / JSON experiment spec を CLI から直接実行する。</li>
-              <li>PnL、drawdown、Sharpe などの backtest 結果を出す。</li>
-              <li>position size や risk budget を自動決定する。</li>
+              <li>任意 Python plugin や任意式 eval を実行する。</li>
+              <li>外部モデル学習や live optimizer をこの CLI で直接走らせる。</li>
+              <li>複数戦略をまたぐ本格 portfolio optimizer や live rebalance engineを実行する。paper bundle の equal_weight / risk_parity allocation は対応済み。</li>
               <li>実資金注文、wallet signing、exchange write を行う。</li>
               <li>Strategy Lab artifact だけで live-ready と判断する。</li>
             </ul>
