@@ -38,8 +38,9 @@ registry behavior:
 3. generator output を `StrategySignalRecord` rows へ変換する。
 4. `validate_strategy_signal_frame()` で必須列と symbol binding を検証する。
 5. `data/research/strategy_signals.parquet` を書く。
-6. `data/research/strategy_signals.jsonl` を書く。
-7. legacy `data/research/signals.csv` を書く。
+6. `data/research/strategy_signal_manifest.json` を書く。
+7. `data/research/strategy_signals.jsonl` を書く。
+8. legacy `data/research/signals.csv` を書く。
 
 現行 generator definition:
 
@@ -96,7 +97,8 @@ Generator は Strategy Lab artifact へ変換できる signal frame を返す必
 8. `reason_codes` を固定する。
 9. source confidence / venue quality が無い場合の扱いを決める。
 10. `SignalGeneratorDefinition` として registry に登録する。
-11. `validate_strategy_signal_frame()` を通る test を追加する。
+11. no-signal 時も empty schema と manifest lineage が残る test を追加する。
+12. `validate_strategy_signal_frame()` を通る test を追加する。
 
 ## StrategyExperimentSpec に落とす時の粒度
 

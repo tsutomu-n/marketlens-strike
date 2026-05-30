@@ -44,6 +44,7 @@ uv run sis strategy-preview --generator-id sp500_trend_rates_vix
 出力:
 
 - `data/research/strategy_signals.parquet`
+- `data/research/strategy_signal_manifest.json`
 - `data/research/strategy_signals.jsonl`
 - `data/research/signals.csv`
 - `data/reports/strategy_signals_preview.md`
@@ -51,6 +52,7 @@ uv run sis strategy-preview --generator-id sp500_trend_rates_vix
 読み方:
 
 - `strategy_signals.parquet` が canonical artifact。
+- `strategy_signal_manifest.json` は generator metadata と no-signal lineage。
 - `signals.csv` は legacy export。
 - `strategy_signals_preview.md` は軽い preview report。
 
@@ -68,12 +70,14 @@ uv run sis evaluate-strategy-lab
 止まり方:
 
 - `data/research/strategy_signals.parquet` が無い場合、exit code 2。
+- empty `strategy_signals.parquet` で `strategy_signal_manifest.json` が無い場合、exit code 2。
 - 1 つの `strategy_signals.parquet` に複数の strategy / symbol identity が混在している場合、exit code 2。
 
 現行の注意:
 
 - 現行 CLI の evaluation は簡易 artifact chain 実装です。
 - `TrialRecord` schema と ledger append の契約は存在しますが、汎用 walk-forward engine ではありません。
+- 同じ signal artifact の再評価では、同じ `trial_id` を重複追記しません。
 - `trial_id`, `trial_group_id`, `paper_candidate_pack.pack_id`, `promotion_id` は signal artifact content 由来の deterministic `run_id` で作られます。
 
 ## 4. Paper candidate pack を作る
@@ -98,6 +102,14 @@ uv run sis build-paper-candidate-pack
 ```bash
 uv run sis build-paper-candidate-pack --trial-ledger data/research/trial_ledger.jsonl
 ```
+
+任意 trial group:
+
+```bash
+uv run sis build-paper-candidate-pack --trial-group-id trial-group-<run_id>
+```
+
+現行 CLI は default で ledger 内の latest trial group だけを pack 化します。selected candidate は最新 `ts_signal` の 1 signal から作ります。
 
 ## 5. Promotion decision を作る
 
@@ -138,6 +150,7 @@ uv run sis build-paper-intent-preview
 止まり方:
 
 - `data/research/promotion_decision.json` が無い場合、exit code 2。
+- `data/research/paper_candidate_pack.json` が無い場合、exit code 2。
 - `promotion_decision.source_pack_id` と `paper_candidate_pack.pack_id` が一致しない場合、exit code 2。
 
 読み方:
@@ -191,8 +204,11 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 ## Operator stop conditions
 
 - `strategy_signals.parquet` が無いのに `evaluate-strategy-lab` を通そうとしない。
+- no-signal artifact の manifest 不在を迂回しない。
 - 複数 generator / strategy / symbol の signal を 1 つの `strategy_signals.parquet` に混ぜて評価しない。
+- 古い trial group と現在の signal artifact run_id を混ぜて pack 化しない。
 - `promotion_decision.json` が無いのに `build-paper-intent-preview` を通そうとしない。
+- `paper_candidate_pack.json` が無いのに `promotion-decision` や `build-paper-intent-preview` を通そうとしない。
 - pack と promotion decision の `source_pack_id` 不一致を迂回しない。
 - `promotion-decision --decision promote` が validation で止まった時に evidence guard を迂回しない。
 - `paper_intent_preview.json` を live adapter に渡さない。

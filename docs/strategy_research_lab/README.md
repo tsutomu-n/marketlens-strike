@@ -33,6 +33,7 @@ Strategy Research Lab は、戦略アイデアを直接 order に変える機構
 StrategyExperimentSpec
   -> StrategySignalRecord rows
   -> data/research/strategy_signals.parquet
+  -> data/research/strategy_signal_manifest.json
   -> EvaluationPlan
   -> TrialRecord rows
   -> data/research/trial_ledger.jsonl
@@ -61,6 +62,8 @@ StrategyExperimentSpec
 
 - `build_signals()` の default generator は `qqq_trend_rates_vix` です。
 - registered generator として `sp500_trend_rates_vix` も選べます。
+- `build_signals()` は no-signal でも empty schema 付き `strategy_signals.parquet` と `strategy_signal_manifest.json` を書きます。
+- `evaluate-strategy-lab` は同一 `trial_id` を重複追記せず、paper candidate は最新 `ts_signal` の 1 signal から作ります。
 - CLI は任意の `StrategyExperimentSpec` YAML/JSON と任意 parameter sweep を直接読む汎用 runner ではありません。選べるのは登録済み `generator_id` だけです。
 - `promotion-decision --decision promote` は required evidence が揃わないと model validation で止まります。
 - `paper-from-intents` は最新 quote と paper broker で再検証し、expired intent や quote missing を block します。

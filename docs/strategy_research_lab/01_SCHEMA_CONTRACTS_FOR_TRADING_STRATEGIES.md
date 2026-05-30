@@ -91,6 +91,7 @@ validation:
 canonical artifact:
 
 - `data/research/strategy_signals.parquet`
+- `data/research/strategy_signal_manifest.json`
 - `data/research/strategy_signals.jsonl` は line-delimited export。
 - `data/research/signals.csv` は legacy export。Strategy Lab 正本ではない。
 
@@ -115,6 +116,16 @@ validation:
 - `confidence` は 0.0 から 1.0。
 - `rank_score`, `percentile_rank` は存在する場合 0.0 から 1.0。
 - `validate_strategy_signal_frame()` は必須 column と `SymbolBinding` 一致を確認する。
+
+manifest:
+
+- `schema_version`: `strategy_signal_manifest.v1`
+- `generator_id`, `strategy_id`, `strategy_family`, `strategy_version`
+- `symbol_bindings`
+- `feature_panel_sha256`
+- `signal_count`
+- `signal_artifact_run_id`
+- no-signal 時も generator metadata と feature fingerprint を保持する。
 
 売買上の意味:
 
@@ -188,6 +199,7 @@ validation:
 
 - `selected_for_next_stage=true` は paper candidate pack に進める候補という意味で、paper-ready や live-ready ではない。
 - `metrics` は評価結果の容器です。収益性主張をする場合は別途検証文脈が必要ですが、現行 model では収益性 claim は禁止です。
+- 現行 CLI は同じ `trial_id` を重複追記しない。`metrics.signal_artifact_run_id` で signal artifact と接続する。
 
 ## TradeCandidate
 
@@ -243,6 +255,7 @@ artifact:
 validation:
 
 - selected / rejected ID は `candidates` 内に存在する。
+- candidate ID、selected ID、rejected ID は重複禁止。
 - `profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, `live_ready_claimed` は false。
 - `live_order_submitted`, `wallet_used`, `exchange_write_used` は false。
 
@@ -251,6 +264,7 @@ validation:
 - pack は paper 観測に進める候補の束であり、注文束ではない。
 - `selected_candidate_ids` は paper intent preview の候補ソースになる。
 - `rejected_candidate_ids` と candidate-level `block_reasons` は、量産時の重複失敗を減らすための学習材料です。
+- 現行 CLI は latest trial group を default で pack 化し、selected candidate は最新 `ts_signal` の 1 signal から作る。
 
 ## PromotionDecision
 

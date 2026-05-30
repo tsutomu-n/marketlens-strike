@@ -54,7 +54,7 @@ reason_codes=["close_above_sma20", "vix_not_spiking"]
 Candidate:
 
 ```text
-candidate_id=candidate-trial-{run_id}
+candidate_id=candidate-trial-{run_id}-{signal_id}
 strategy_id=equity_index_momentum_v0
 trial_id=trial-{run_id}
 execution_symbol=XYZ100
@@ -70,6 +70,8 @@ live_order_submitted=false
 ```
 
 この候補はまだ order ではありません。quantity、wallet、signing、exchange write は出てきません。
+
+現行 CLI では、1 trial group から paper candidate pack に進める selected signal は最新 `ts_signal` の 1 件です。過去の全 signal row をそのまま order 候補へ展開しません。
 
 ## Blocked candidate
 

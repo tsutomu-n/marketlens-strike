@@ -28,6 +28,7 @@
 | Concept | Code | Schema |
 |---|---|---|
 | StrategyExperimentSpec / SymbolBinding / StrategySignalRecord | `src/sis/research/strategy_lab/specs.py` | `schemas/strategy_experiment_spec.v1.schema.json`, `schemas/strategy_signal.v1.schema.json` |
+| StrategySignalManifest | `src/sis/research/strategy_lab/signal_artifact.py` | `schemas/strategy_signal_manifest.v1.schema.json` |
 | EvaluationPlan | `src/sis/research/strategy_lab/evaluation_plan.py` | `schemas/evaluation_plan.mls.v1.schema.json` |
 | TrialRecord / TrialLedger | `src/sis/research/strategy_lab/trial_ledger.py` | `schemas/trial_record.v1.schema.json` |
 | TradeCandidate | `src/sis/research/strategy_lab/candidates.py` | `schemas/trade_candidate.v1.schema.json` |
@@ -44,6 +45,7 @@ Strategy Lab の artifact chain:
 ```text
 StrategyExperimentSpec
   -> StrategySignalRecord rows in data/research/strategy_signals.parquet
+  -> StrategySignalManifest in data/research/strategy_signal_manifest.json
   -> EvaluationPlan
   -> TrialRecord rows in data/research/trial_ledger.jsonl
   -> TradeCandidate rows inside PaperCandidatePack
@@ -368,9 +370,13 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 - `build_signals()` の default generator は `qqq_trend_rates_vix`。`--generator-id sp500_trend_rates_vix` で登録済み SP500 generator を選べるが、arbitrary `StrategyExperimentSpec` / `parameter_grid` を CLI 引数で読み込む汎用 runner ではない。
 - generator metadata は `SignalGeneratorDefinition` を正本にし、callable と `strategy_id`, `strategy_family`, `strategy_version`, `SymbolBinding` を同じ registry entry で管理する。
 - generator は feature に `source_confidence` / `venue_quality_score` が存在する場合、Strategy Lab artifact まで pass-through する。存在しない場合は null として扱う。
-- `evaluate-strategy-lab` は `data/research/strategy_signals.parquet` が無い場合、または 1 artifact 内に複数の strategy / symbol identity が混在する場合、exit code 2 で止まる。
+- `build_signals()` は `strategy_signal_manifest.json` を書き、no-signal 時も empty schema と generator lineage を残す。
+- `evaluate-strategy-lab` は `data/research/strategy_signals.parquet` が無い場合、empty artifact で manifest が無い場合、または 1 artifact 内に複数の strategy / symbol identity が混在する場合、exit code 2 で止まる。
+- `evaluate-strategy-lab` は同じ `trial_id` を重複追記しない。
 - `trial_id`, `trial_group_id`, `paper_candidate_pack.pack_id`, `promotion_id` は signal artifact content 由来の deterministic `run_id` で作る。
+- `build-paper-candidate-pack` は default で latest trial group だけを使い、selected candidate は最新 `ts_signal` の 1 signal row から作る。古い group は `--trial-group-id` で明示する。
 - `promotion-decision` は実際の `PaperCandidatePack.pack_id` を `source_pack_id` に保存し、`build-paper-intent-preview` は pack と decision の source mismatch を exit code 2 で止める。
+- `promotion-decision` と `build-paper-intent-preview` は source pack が無い場合 exit code 2 で止まる。
 - `build-paper-intent-preview` は `PromotionDecision` が無い場合 exit code 2 で止まる。
 - `promotion-decision --decision promote` は required evidence が揃っていないと model validation で止まる。
 - `paper-from-intents` は paper runner に渡すだけであり、live adapter には渡さない。
