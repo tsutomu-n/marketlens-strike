@@ -19,4 +19,3 @@
 - 「勝てる」「稼げる」「高精度」「低遅延で有利」は、検証対象であって結論ではない。
 - API、SDK、ライブラリ、protocol、取引所仕様は古くなるため、実装直前に公式情報へ戻る。
 - APIキー、private key、seed phrase、wallet、RPC credential、block engine credentialはdocsへ書かない。
-

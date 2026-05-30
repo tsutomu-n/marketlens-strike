@@ -423,4 +423,3 @@
 | Decision Log | 判断根拠を残す | config/result/reason | log | 成功だけ記録 | auditability |
 
 捨て条件: 少し条件を変えるだけで期待値が消える。
-

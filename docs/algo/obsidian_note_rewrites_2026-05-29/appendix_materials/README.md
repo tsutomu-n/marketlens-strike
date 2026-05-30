@@ -11,7 +11,7 @@
 3. `03_REPO_IMPLEMENTATION_MAP.md`
    - このrepoのどこに何が対応するかを見る。
 4. `04_ARTIFACT_EXAMPLES.md`
-   - signal CSV、decision log、paper outputの具体例を見る。
+   - Strategy Lab artifact chain、legacy export、paper outputの具体例を見る。
 5. `12_SIGNAL_DESIGN_PLAYBOOK.md`
    - 売買発生シグナルの定義、出力契約、良い/悪いシグナルを確認する。
 6. `13_SIGNAL_PATTERN_LIBRARY.md`

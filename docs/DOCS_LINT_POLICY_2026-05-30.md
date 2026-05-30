@@ -34,6 +34,7 @@ docs/algo/EXPERIMENT_SCORECARD.md
 docs/algo/RESEARCH_VALIDATION_PLAYBOOK.md
 docs/algo/SOURCE_NOTES_INDEX.md
 docs/algo/strategy_factory/**
+docs/algo/obsidian_note_rewrites_2026-05-29/**
 docs/strategy_research_lab/**
 docs/live_evidence_reports/README.md
 docs/archive/README.md
@@ -47,7 +48,6 @@ plan/README.md
 docs/archive/**
 docs/algo/obsidian_note_copies/**
 docs/algo/obsidian_note_rewrites_2026-05-28/**
-docs/algo/obsidian_note_rewrites_2026-05-29/**
 plan/archive/**
 ```
 

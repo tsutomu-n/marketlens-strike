@@ -417,4 +417,3 @@ Token Discovery -> Token Safety Filter -> Paper Observation -> Sellability Check
 ```
 
 `Auto Buy` はこの後です。最初に作るものではありません。
-

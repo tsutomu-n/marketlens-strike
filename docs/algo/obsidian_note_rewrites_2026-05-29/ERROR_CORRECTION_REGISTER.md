@@ -19,4 +19,3 @@
 | Polars | 高速化で検証品質が上がる | join/rolling/asofの時刻ミスがリークになる。結果一致テストが先 |
 | Portfolio optimization | 最適化で分散できる | 暗号資産では相関が急上昇する。上限ルールとvol targetが先 |
 | GA / agent | 自律探索で良い戦略を発見できる | 探索自由度が過学習を増やす。仮説生成に限定する |
-

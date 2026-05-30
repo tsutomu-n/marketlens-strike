@@ -573,4 +573,3 @@ create_hypothesis_card(claim, required_data, rejection_rule)
 
 捨て条件:
 - 出典と反証条件がない。
-

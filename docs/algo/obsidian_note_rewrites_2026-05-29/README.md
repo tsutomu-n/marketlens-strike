@@ -52,7 +52,7 @@
 - 図で流れを掴む: `appendix_materials/01_PIPELINE_DIAGRAMS.md`
 - 部品単位で理解する: `appendix_materials/02_COMPONENT_CARDS.md`
 - repoの実装先を見る: `appendix_materials/03_REPO_IMPLEMENTATION_MAP.md`
-- signal CSVやdecision logの形を見る: `appendix_materials/04_ARTIFACT_EXAMPLES.md`
+- Strategy Lab artifact chainとレビュー記録の形を見る: `appendix_materials/04_ARTIFACT_EXAMPLES.md`
 - 売買発生シグナルを設計する: `appendix_materials/12_SIGNAL_DESIGN_PLAYBOOK.md`
 - シグナル型を選ぶ: `appendix_materials/13_SIGNAL_PATTERN_LIBRARY.md`
 - シグナル候補を採点する: `appendix_materials/14_SIGNAL_REVIEW_SCORECARD.md`

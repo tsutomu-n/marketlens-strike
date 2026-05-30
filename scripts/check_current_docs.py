@@ -38,13 +38,13 @@ CURRENT_DOC_FILES = (
 CURRENT_DOC_DIRS = (
     "docs/strategy_research_lab",
     "docs/algo/strategy_factory",
+    "docs/algo/obsidian_note_rewrites_2026-05-29",
 )
 
 EXCLUDED_DOC_PREFIXES = (
     "docs/archive/",
     "docs/algo/obsidian_note_copies/",
     "docs/algo/obsidian_note_rewrites_2026-05-28/",
-    "docs/algo/obsidian_note_rewrites_2026-05-29/",
     "plan/archive/",
 )
 
