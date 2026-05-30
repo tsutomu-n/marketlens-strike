@@ -48,6 +48,10 @@ Archived on 2026-05-30:
 - `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` -> `docs/archive/2026-05-30-doc-audit/`
 - `plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` -> `plan/archive/`
 
+Archived on 2026-05-31:
+
+- `docs/DOCUMENT_AUDIT_2026-05-30.md` -> `docs/archive/2026-05-31-doc-audit/`
+
 Archived on 2026-05-28:
 
 - `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` -> `docs/archive/legacy_read_only_collectors_2026-05-28/`

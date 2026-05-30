@@ -59,7 +59,7 @@ tests/test_strategy_lab_schemas.py
 
 | Path | 古い内容 | 現在の扱い |
 |---|---|---|
-| `docs/DOCUMENT_AUDIT_2026-05-30.md` | Strategy Authoring completion 前の audit。`446 passed` / 2026-05-30 前提の表現が残る | superseded audit。現行入口は本ファイル |
+| `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md` | Strategy Authoring completion 前の audit。`446 passed` / 2026-05-30 前提の表現が残る | archived superseded audit。現行入口は本ファイル |
 | `README.md` | `565 passed`, current docs `76` 件 | この変更で `586 passed` / `78` 件へ修正済み |
 | `docs/CURRENT_STATE.md` | `565 passed`, current docs `76` 件、authoring command list に `strategy-author-train-model` が無い | この変更で修正済み |
 | `docs/CODE_STATUS.md` | `565 passed`, current docs `76` 件 | この変更で修正済み |
@@ -80,7 +80,7 @@ tests/test_strategy_lab_schemas.py
 
 | Path | 推奨 | 理由 |
 |---|---|---|
-| `docs/DOCUMENT_AUDIT_2026-05-30.md` | 作り直し済み: `docs/DOCUMENT_AUDIT_2026-05-31.md` | Strategy Authoring completion evidence と最新 gate を含まない |
+| `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md` | 作り直し済み: `docs/DOCUMENT_AUDIT_2026-05-31.md` | Strategy Authoring completion evidence と最新 gate を含まない |
 | `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | 必要なら `current Trade[XYZ] status audit` と `historical PR12 audit` に分離 | 2026-05-28 runtime evidence と current full gate を混同しやすい |
 | `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | 必要なら current blocker map だけの短い新版を作る | failure-mode catalog と古い検証 snapshot が同居している |
 | `docs/trade_xyz_bot_beginner_guide.html` | 部分再作成候補 | Strategy Authoring / PaperIntentPreview の初心者向け導線をさらに厚くできる |
@@ -92,7 +92,7 @@ tests/test_strategy_lab_schemas.py
 
 | Path | 推奨 | 理由 |
 |---|---|---|
-| `docs/DOCUMENT_AUDIT_2026-05-30.md` | 次回整理時に `docs/archive/2026-05-31-doc-audit/` へ移動可 | 本ファイルに superseded。今回はリンク差し替えで十分 |
+| `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md` | archive 済み | 本ファイルに superseded |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | archive 扱い継続、current docs lint 対象外 | 2026-05-29 rewrite bundle が現行参照 |
 | `plan/archive/**` | 削除せず archive 維持 | 実装済み計画の証跡として有用 |
 | `docs/archive/**` | 削除せず archive 維持 | 過去判断の証跡。current docs ではない |
@@ -125,7 +125,7 @@ git rev-parse --short HEAD
 uv run sis --help
 uv run python scripts/check_current_docs.py
 ./scripts/check
-rg -n "565 passed|586 passed|446 passed|294 passed|checked 76|checked 78|strategy-author-|strategy_authoring_backtest_result|strategy_authoring_bundle_result|13_STRATEGY_ARCHETYPE|14_COMPLETION_EVIDENCE" README.md docs/CURRENT_STATE.md docs/CODE_STATUS.md docs/DOCUMENT_AUDIT_2026-05-30.md docs/strategy_research_lab docs/algo/README.md docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md -g '*.md' -g '*.html'
+rg -n "565 passed|586 passed|446 passed|294 passed|checked 76|checked 78|strategy-author-|strategy_authoring_backtest_result|strategy_authoring_bundle_result|13_STRATEGY_ARCHETYPE|14_COMPLETION_EVIDENCE" README.md docs/CURRENT_STATE.md docs/CODE_STATUS.md docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md docs/strategy_research_lab docs/algo/README.md docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md -g '*.md' -g '*.html'
 rg -n "DOCUMENT_AUDIT_2026-05-30|DOCUMENT_AUDIT_2026-05-31|checked 77|checked 78|6609575|847e0fc" README.md docs plan -g '*.md' -g '*.html'
 rg -n "@app\.command|def register_|strategy_author|strategy-experiment-run|build-paper|promotion|paper-from-intents|bot-preview" src/sis/commands src/sis/cli.py src/sis/research/strategy_lab src/sis/backtest -g '*.py'
 ```
@@ -138,3 +138,4 @@ rg -n "@app\.command|def register_|strategy_author|strategy-experiment-run|build
 - CLI help includes the Strategy Authoring commands and paper-only Strategy Lab commands.
 - stale verification values are now limited to superseded/historical docs or explicitly historical snapshots.
 - additional stale current-doc pointers to `docs/DOCUMENT_AUDIT_2026-05-30.md` were found and corrected in this pass.
+- `docs/DOCUMENT_AUDIT_2026-05-30.md` was archived to `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md`.
