@@ -345,6 +345,8 @@ class OrderRules(BaseModel):
     limit_offset_bps: float | None = None
     stop_offset_bps: float | None = None
     timeout_minutes: int | None = None
+    time_in_force: Literal["gtc", "gtd", "ioc", "fok"] = "gtc"
+    post_only: bool = False
 
     @model_validator(mode="after")
     def validate_order(self) -> OrderRules:
@@ -352,6 +354,14 @@ class OrderRules(BaseModel):
             raise ValueError("rules.order.limit_offset_bps is required for limit entry")
         if self.entry_type == "stop_market" and self.stop_offset_bps is None:
             raise ValueError("rules.order.stop_offset_bps is required for stop_market entry")
+        if self.time_in_force == "gtd" and self.timeout_minutes is None:
+            raise ValueError("rules.order.timeout_minutes is required when time_in_force is gtd")
+        if self.time_in_force in {"ioc", "fok"} and self.timeout_minutes is not None:
+            raise ValueError(
+                "rules.order.timeout_minutes cannot be set when time_in_force is ioc or fok"
+            )
+        if self.post_only and self.entry_type != "limit":
+            raise ValueError("rules.order.post_only is only supported for limit entry")
         for field_name in ("limit_offset_bps", "stop_offset_bps"):
             value = getattr(self, field_name)
             if value is not None and value < 0:
@@ -377,6 +387,7 @@ class BracketRules(BaseModel):
 
 
 class ExecutionRules(BaseModel):
+    profile: Literal["none", "liquid_only", "balanced", "conservative"] = "none"
     slippage_bps: float = 0.0
     max_fill_fraction: float = 1.0
     max_spread_bps: float | None = None
@@ -400,6 +411,39 @@ class ExecutionRules(BaseModel):
 
     @model_validator(mode="after")
     def validate_execution(self) -> ExecutionRules:
+        profile_defaults: dict[str, dict[str, float]] = {
+            "liquid_only": {
+                "slippage_bps": 10.0,
+                "max_fill_fraction": 1.0,
+                "max_spread_bps": 30.0,
+                "min_depth_usd": 50_000.0,
+                "depth_participation_rate": 0.20,
+            },
+            "balanced": {
+                "slippage_bps": 15.0,
+                "max_fill_fraction": 0.75,
+                "max_spread_bps": 20.0,
+                "min_depth_usd": 100_000.0,
+                "depth_participation_rate": 0.10,
+                "max_latency_ms": 250.0,
+                "min_queue_position_score": 0.30,
+                "max_turnover_pressure": 0.80,
+            },
+            "conservative": {
+                "slippage_bps": 25.0,
+                "max_fill_fraction": 0.50,
+                "max_spread_bps": 10.0,
+                "min_depth_usd": 250_000.0,
+                "depth_participation_rate": 0.05,
+                "max_latency_ms": 100.0,
+                "min_queue_position_score": 0.60,
+                "max_turnover_pressure": 0.40,
+                "min_fee_edge_bps": 0.0,
+            },
+        }
+        for field_name, value in profile_defaults.get(self.profile, {}).items():
+            if field_name not in self.model_fields_set:
+                setattr(self, field_name, value)
         if self.slippage_bps < 0:
             raise ValueError("rules.execution.slippage_bps must be >= 0")
         if not 0.0 <= self.max_fill_fraction <= 1.0:
@@ -493,6 +537,8 @@ class PortfolioRules(BaseModel):
     max_symbol_position_weight: float | None = None
     max_group_position_weight: float | None = None
     max_group_abs_net_position_weight: float | None = None
+    max_turnover_weight_per_timestamp: float | None = None
+    turnover_weight_column: str | None = None
     group_column: str | None = None
     allocation_method: Literal[
         "none",
@@ -519,10 +565,13 @@ class PortfolioRules(BaseModel):
             "max_symbol_position_weight",
             "max_group_position_weight",
             "max_group_abs_net_position_weight",
+            "max_turnover_weight_per_timestamp",
         ):
             value = getattr(self, field_name)
             if value is not None and value < 0:
                 raise ValueError(f"rules.portfolio.{field_name} must be >= 0")
+        if self.turnover_weight_column is not None and not self.turnover_weight_column.strip():
+            raise ValueError("rules.portfolio.turnover_weight_column must be non-empty when set")
         if (
             self.max_group_position_weight is not None
             or self.max_group_abs_net_position_weight is not None
@@ -651,6 +700,90 @@ class RiskThrottleRules(BaseModel):
             self.max_drawdown_column is not None
             or self.daily_loss_column is not None
             or self.loss_streak_column is not None
+        )
+
+
+class DataGuardRules(BaseModel):
+    profile: Literal["none", "fresh_only", "quality_only", "strict"] = "none"
+    max_feature_age_minutes: float | None = None
+    feature_age_column: str | None = "feature_age_minutes"
+    min_source_confidence: float | None = None
+    source_confidence_column: str | None = "source_confidence"
+    min_venue_quality_score: float | None = None
+    venue_quality_score_column: str | None = "venue_quality_score"
+    max_staleness_bps: float | None = None
+    staleness_bps_column: str | None = "staleness_bps"
+    max_regime_transition_score: float | None = None
+    regime_transition_score_column: str | None = "regime_transition_score"
+
+    @model_validator(mode="after")
+    def validate_data_guard(self) -> DataGuardRules:
+        profile_defaults: dict[str, dict[str, float]] = {
+            "fresh_only": {
+                "max_feature_age_minutes": 60.0,
+            },
+            "quality_only": {
+                "min_source_confidence": 0.70,
+                "min_venue_quality_score": 0.70,
+            },
+            "strict": {
+                "max_feature_age_minutes": 30.0,
+                "min_source_confidence": 0.80,
+                "min_venue_quality_score": 0.80,
+                "max_staleness_bps": 5.0,
+                "max_regime_transition_score": 0.50,
+            },
+        }
+        for field_name, value in profile_defaults.get(self.profile, {}).items():
+            if field_name not in self.model_fields_set:
+                setattr(self, field_name, value)
+        for field_name in (
+            "max_feature_age_minutes",
+            "max_staleness_bps",
+            "max_regime_transition_score",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"rules.data_guard.{field_name} must be >= 0")
+        for field_name in ("min_source_confidence", "min_venue_quality_score"):
+            value = getattr(self, field_name)
+            if value is not None and not 0.0 <= value <= 1.0:
+                raise ValueError(f"rules.data_guard.{field_name} must be between 0 and 1")
+        for field_name in (
+            "feature_age_column",
+            "source_confidence_column",
+            "venue_quality_score_column",
+            "staleness_bps_column",
+            "regime_transition_score_column",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and not value.strip():
+                raise ValueError(f"rules.data_guard.{field_name} must be non-empty when set")
+        threshold_columns = (
+            ("max_feature_age_minutes", "feature_age_column"),
+            ("min_source_confidence", "source_confidence_column"),
+            ("min_venue_quality_score", "venue_quality_score_column"),
+            ("max_staleness_bps", "staleness_bps_column"),
+            ("max_regime_transition_score", "regime_transition_score_column"),
+        )
+        for threshold_field, column_field in threshold_columns:
+            if getattr(self, threshold_field) is not None and getattr(self, column_field) is None:
+                raise ValueError(
+                    f"rules.data_guard.{column_field} is required for {threshold_field}"
+                )
+        return self
+
+    @property
+    def enabled(self) -> bool:
+        return any(
+            value is not None
+            for value in (
+                self.max_feature_age_minutes,
+                self.min_source_confidence,
+                self.min_venue_quality_score,
+                self.max_staleness_bps,
+                self.max_regime_transition_score,
+            )
         )
 
 
@@ -947,6 +1080,8 @@ class DerivedFeature(BaseModel):
         "rolling_corr",
         "rolling_beta",
         "rolling_spread_zscore",
+        "tracking_error",
+        "information_ratio",
         "rolling_autocorr",
         "order_flow_imbalance",
         "liquidity_depth_ratio",
@@ -966,6 +1101,9 @@ class DerivedFeature(BaseModel):
         "cross_sectional_rank",
         "cross_sectional_zscore",
         "cross_sectional_demean",
+        "group_cross_sectional_rank",
+        "group_cross_sectional_zscore",
+        "group_cross_sectional_demean",
         "queue_position_score",
         "latency_penalty_bps",
         "maker_taker_fee_edge_bps",
@@ -1055,7 +1193,13 @@ class DerivedFeature(BaseModel):
                 raise ValueError(
                     f"rules.derived_features.{self.name}.{self.op} requires two columns or value"
                 )
-        if self.op in {"rolling_corr", "rolling_beta", "rolling_spread_zscore"}:
+        if self.op in {
+            "rolling_corr",
+            "rolling_beta",
+            "rolling_spread_zscore",
+            "tracking_error",
+            "information_ratio",
+        }:
             if len(self.columns) != 2:
                 raise ValueError(
                     f"rules.derived_features.{self.name}.{self.op} requires two columns"
@@ -1073,6 +1217,9 @@ class DerivedFeature(BaseModel):
             "event_surprise",
             "fundamental_value_gap",
             "risk_adjusted_score",
+            "group_cross_sectional_rank",
+            "group_cross_sectional_zscore",
+            "group_cross_sectional_demean",
             "queue_position_score",
             "maker_taker_fee_edge_bps",
             "borrow_cost_bps",
@@ -1107,6 +1254,15 @@ class DerivedFeature(BaseModel):
             if len(self.columns) != 1:
                 raise ValueError(
                     f"rules.derived_features.{self.name}.{self.op} requires one column"
+                )
+        if self.op in {
+            "group_cross_sectional_rank",
+            "group_cross_sectional_zscore",
+            "group_cross_sectional_demean",
+        }:
+            if len(self.columns) != 2:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires score and group columns"
                 )
         if self.op == "funding_bps":
             if len(self.columns) != 1:
@@ -1200,6 +1356,8 @@ class DerivedFeature(BaseModel):
             "rolling_corr",
             "rolling_beta",
             "rolling_spread_zscore",
+            "tracking_error",
+            "information_ratio",
             "rolling_autocorr",
             "drawdown_from_peak",
             "rolling_max_drawdown",
@@ -1229,9 +1387,13 @@ class DerivedFeature(BaseModel):
             raise ValueError(
                 f"rules.derived_features.{self.name}.macd_line requires value greater than window"
             )
-        if self.op in {"annualized_volatility", "sharpe_like", "sortino_like"} and (
-            self.value is not None and self.value <= 0
-        ):
+        if self.op in {
+            "annualized_volatility",
+            "sharpe_like",
+            "sortino_like",
+            "tracking_error",
+            "information_ratio",
+        } and (self.value is not None and self.value <= 0):
             raise ValueError(
                 f"rules.derived_features.{self.name}.{self.op} requires positive value"
             )
@@ -1266,6 +1428,7 @@ class AuthoringRules(BaseModel):
     portfolio: PortfolioRules = Field(default_factory=PortfolioRules)
     position: PositionRules = Field(default_factory=PositionRules)
     risk_throttle: RiskThrottleRules = Field(default_factory=RiskThrottleRules)
+    data_guard: DataGuardRules = Field(default_factory=DataGuardRules)
     temporal: TemporalRules = Field(default_factory=TemporalRules)
     event_windows: list[EventWindowRule] = Field(default_factory=list)
     cross_sectional: CrossSectionalRules = Field(default_factory=CrossSectionalRules)
@@ -1843,6 +2006,8 @@ def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
         columns.add(spec.rules.portfolio.allocation_beta_column)
     if spec.rules.portfolio.group_column is not None:
         columns.add(spec.rules.portfolio.group_column)
+    if spec.rules.portfolio.turnover_weight_column is not None:
+        columns.add(spec.rules.portfolio.turnover_weight_column)
     if spec.rules.cross_sectional.group_column is not None:
         columns.add(spec.rules.cross_sectional.group_column)
     if spec.rules.risk_throttle.max_drawdown_column is not None:
@@ -1851,6 +2016,26 @@ def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
         columns.add(spec.rules.risk_throttle.daily_loss_column)
     if spec.rules.risk_throttle.loss_streak_column is not None:
         columns.add(spec.rules.risk_throttle.loss_streak_column)
+    data_guard = spec.rules.data_guard
+    if data_guard.max_feature_age_minutes is not None and data_guard.feature_age_column is not None:
+        columns.add(data_guard.feature_age_column)
+    if (
+        data_guard.min_source_confidence is not None
+        and data_guard.source_confidence_column is not None
+    ):
+        columns.add(data_guard.source_confidence_column)
+    if (
+        data_guard.min_venue_quality_score is not None
+        and data_guard.venue_quality_score_column is not None
+    ):
+        columns.add(data_guard.venue_quality_score_column)
+    if data_guard.max_staleness_bps is not None and data_guard.staleness_bps_column is not None:
+        columns.add(data_guard.staleness_bps_column)
+    if (
+        data_guard.max_regime_transition_score is not None
+        and data_guard.regime_transition_score_column is not None
+    ):
+        columns.add(data_guard.regime_transition_score_column)
     for event_window in spec.rules.event_windows:
         columns.add(event_window.event_ts_column)
     for leg in spec.rules.multi_leg.legs:
@@ -2465,7 +2650,13 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
             "canonical_symbol"
         )
         expr = (first - mean) / _safe_denominator(mean.abs())
-    elif feature.op in {"rolling_corr", "rolling_beta", "rolling_spread_zscore"}:
+    elif feature.op in {
+        "rolling_corr",
+        "rolling_beta",
+        "rolling_spread_zscore",
+        "tracking_error",
+        "information_ratio",
+    }:
         second = pl.col(feature.columns[1])
         if feature.op == "rolling_spread_zscore":
             spread = first - second
@@ -2476,6 +2667,23 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
                 "canonical_symbol"
             )
             expr = (spread - mean) / _safe_denominator(std)
+        elif feature.op in {"tracking_error", "information_ratio"}:
+            active_return = first - second
+            periods = feature.value if feature.value is not None else 252.0
+            annualization = math.sqrt(periods)
+            tracking_error = (
+                active_return.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+                    "canonical_symbol"
+                )
+                * annualization
+            )
+            if feature.op == "tracking_error":
+                expr = tracking_error
+            else:
+                active_mean = active_return.rolling_mean(
+                    window_size=feature.window or 1, min_samples=1
+                ).over("canonical_symbol")
+                expr = (active_mean * periods) / _safe_denominator(tracking_error)
         else:
             mean_first = first.rolling_mean(window_size=feature.window or 1, min_samples=2).over(
                 "canonical_symbol"
@@ -2582,6 +2790,23 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
             expr = demeaned
         else:
             expr = demeaned / _safe_denominator(first.std().over("ts"))
+    elif feature.op == "group_cross_sectional_rank":
+        group = pl.col(feature.columns[1])
+        rank = first.rank(method="ordinal", descending=True).over(["ts", group])
+        count = pl.len().over(["ts", group])
+        expr = (
+            pl.when(count <= 1)
+            .then(1.0)
+            .otherwise(1.0 - ((rank - 1.0) / _safe_denominator(count - 1.0)))
+        )
+    elif feature.op in {"group_cross_sectional_zscore", "group_cross_sectional_demean"}:
+        group = pl.col(feature.columns[1])
+        mean = first.mean().over(["ts", group])
+        demeaned = first - mean
+        if feature.op == "group_cross_sectional_demean":
+            expr = demeaned
+        else:
+            expr = demeaned / _safe_denominator(first.std().over(["ts", group]))
     elif feature.op == "queue_position_score":
         second = pl.col(feature.columns[1])
         expr = 1.0 - (first / _safe_denominator(first + second))
@@ -2907,6 +3132,43 @@ def _risk_throttle_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec
     return None
 
 
+def _data_guard_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec) -> str | None:
+    guard = spec.rules.data_guard
+    if not guard.enabled:
+        return None
+    feature_age = _optional_float_from_row(row, guard.feature_age_column)
+    if guard.max_feature_age_minutes is not None:
+        if feature_age is None:
+            return "data_guard_feature_age_missing"
+        if feature_age > guard.max_feature_age_minutes:
+            return "data_guard_feature_age_too_old"
+    source_confidence = _optional_float_from_row(row, guard.source_confidence_column)
+    if guard.min_source_confidence is not None:
+        if source_confidence is None:
+            return "data_guard_source_confidence_missing"
+        if source_confidence < guard.min_source_confidence:
+            return "data_guard_source_confidence_too_low"
+    venue_quality = _optional_float_from_row(row, guard.venue_quality_score_column)
+    if guard.min_venue_quality_score is not None:
+        if venue_quality is None:
+            return "data_guard_venue_quality_missing"
+        if venue_quality < guard.min_venue_quality_score:
+            return "data_guard_venue_quality_too_low"
+    staleness_bps = _optional_float_from_row(row, guard.staleness_bps_column)
+    if guard.max_staleness_bps is not None:
+        if staleness_bps is None:
+            return "data_guard_staleness_missing"
+        if staleness_bps > guard.max_staleness_bps:
+            return "data_guard_staleness_too_high"
+    regime_transition = _optional_float_from_row(row, guard.regime_transition_score_column)
+    if guard.max_regime_transition_score is not None:
+        if regime_transition is None:
+            return "data_guard_regime_transition_missing"
+        if regime_transition > guard.max_regime_transition_score:
+            return "data_guard_regime_transition_too_high"
+    return None
+
+
 def _format_condition(condition: Condition) -> str:
     target = (
         f"column:{condition.value_column}"
@@ -2990,6 +3252,8 @@ def _block_trade_row(
     blocked["entry_limit_offset_bps"] = None
     blocked["entry_stop_offset_bps"] = None
     blocked["entry_timeout_minutes"] = None
+    blocked["entry_time_in_force"] = "gtc"
+    blocked["entry_post_only"] = False
     blocked["slippage_bps"] = 0.0
     blocked["max_fill_fraction"] = 0.0
     blocked["max_spread_bps"] = None
@@ -3008,6 +3272,7 @@ def _block_trade_row(
     blocked["notional_usd"] = None
     blocked["_cross_sectional_group"] = row.get("_cross_sectional_group")
     blocked["_portfolio_group"] = row.get("_portfolio_group")
+    blocked["_portfolio_turnover_weight"] = row.get("_portfolio_turnover_weight")
     blocked["reason_codes"] = [spec.rules.hold_reason_code]
     blocked["block_reasons"] = [*list(row.get("block_reasons") or []), block_reason]
     return blocked
@@ -3283,6 +3548,50 @@ def _side_neutral_allocated_rows(
 def _position_weight_value(row: dict[str, Any]) -> float:
     value = row.get("position_weight")
     return float(value) if isinstance(value, int | float) else 1.0
+
+
+def _portfolio_turnover_weight_value(row: dict[str, Any]) -> float:
+    value = row.get("_portfolio_turnover_weight")
+    if isinstance(value, int | float):
+        return abs(float(value))
+    return abs(_position_weight_value(row))
+
+
+def _apply_portfolio_turnover_budget(
+    rows: list[dict[str, Any]], spec: StrategyAuthoringSpec
+) -> list[dict[str, Any]]:
+    portfolio = spec.rules.portfolio
+    if portfolio.max_turnover_weight_per_timestamp is None:
+        return rows
+
+    grouped: dict[Any, list[dict[str, Any]]] = {}
+    passthrough: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("side") == "none":
+            passthrough.append(row)
+            continue
+        grouped.setdefault(row["ts_signal"], []).append(row)
+
+    selected: list[dict[str, Any]] = [*passthrough]
+    for timestamp_rows in grouped.values():
+        used_turnover = 0.0
+        accepted_rows: list[dict[str, Any]] = []
+        blocked_rows: list[dict[str, Any]] = []
+        for row in sorted(
+            timestamp_rows,
+            key=lambda item: item.get("rank_score") if item.get("rank_score") is not None else -1.0,
+            reverse=True,
+        ):
+            turnover_weight = _portfolio_turnover_weight_value(row)
+            if used_turnover + turnover_weight > portfolio.max_turnover_weight_per_timestamp:
+                blocked_rows.append(
+                    _block_trade_row(row, spec=spec, block_reason="portfolio_turnover_budget_limit")
+                )
+                continue
+            used_turnover += turnover_weight
+            accepted_rows.append(row)
+        selected.extend([*blocked_rows, *accepted_rows])
+    return selected
 
 
 def _portfolio_exposure_block_reason(
@@ -3713,6 +4022,8 @@ def _close_signal_row(
         "entry_limit_offset_bps": None,
         "entry_stop_offset_bps": None,
         "entry_timeout_minutes": None,
+        "entry_time_in_force": "gtc",
+        "entry_post_only": False,
         "slippage_bps": 0.0,
         "max_fill_fraction": 0.0,
         "max_spread_bps": None,
@@ -3793,6 +4104,8 @@ def _reduce_signal_row(
         "entry_limit_offset_bps": None,
         "entry_stop_offset_bps": None,
         "entry_timeout_minutes": None,
+        "entry_time_in_force": "gtc",
+        "entry_post_only": False,
         "slippage_bps": 0.0,
         "max_fill_fraction": 0.0,
         "max_spread_bps": None,
@@ -3877,6 +4190,8 @@ def _add_signal_row(
         "entry_limit_offset_bps": None,
         "entry_stop_offset_bps": None,
         "entry_timeout_minutes": None,
+        "entry_time_in_force": "gtc",
+        "entry_post_only": False,
         "slippage_bps": 0.0,
         "max_fill_fraction": 0.0,
         "max_spread_bps": None,
@@ -3961,6 +4276,8 @@ def _rebalance_signal_row(
         "entry_limit_offset_bps": None,
         "entry_stop_offset_bps": None,
         "entry_timeout_minutes": None,
+        "entry_time_in_force": "gtc",
+        "entry_post_only": False,
         "slippage_bps": 0.0,
         "max_fill_fraction": 0.0,
         "max_spread_bps": None,
@@ -4083,6 +4400,8 @@ def _trade_signal_row(
         "entry_limit_offset_bps": spec.rules.order.limit_offset_bps,
         "entry_stop_offset_bps": spec.rules.order.stop_offset_bps,
         "entry_timeout_minutes": spec.rules.order.timeout_minutes,
+        "entry_time_in_force": spec.rules.order.time_in_force,
+        "entry_post_only": spec.rules.order.post_only,
         "slippage_bps": _regime_value(regime, "slippage_bps", spec.rules.execution.slippage_bps),
         "max_fill_fraction": _regime_value(
             regime, "max_fill_fraction", spec.rules.execution.max_fill_fraction
@@ -4152,6 +4471,9 @@ def _trade_signal_row(
         else None,
         "_portfolio_group": row.get(spec.rules.portfolio.group_column)
         if spec.rules.portfolio.group_column is not None
+        else None,
+        "_portfolio_turnover_weight": row.get(spec.rules.portfolio.turnover_weight_column)
+        if spec.rules.portfolio.turnover_weight_column is not None
         else None,
         "reason_codes": effective_reason_codes,
         "block_reasons": [],
@@ -4335,6 +4657,8 @@ def build_authoring_signals(
                     "entry_limit_offset_bps": None,
                     "entry_stop_offset_bps": None,
                     "entry_timeout_minutes": None,
+                    "entry_time_in_force": "gtc",
+                    "entry_post_only": False,
                     "slippage_bps": 0.0,
                     "max_fill_fraction": 0.0,
                     "max_spread_bps": None,
@@ -4413,6 +4737,8 @@ def build_authoring_signals(
                     "entry_limit_offset_bps": None,
                     "entry_stop_offset_bps": None,
                     "entry_timeout_minutes": None,
+                    "entry_time_in_force": "gtc",
+                    "entry_post_only": False,
                     "slippage_bps": 0.0,
                     "max_fill_fraction": 0.0,
                     "max_spread_bps": None,
@@ -4457,6 +4783,24 @@ def build_authoring_signals(
                     ),
                     spec=spec,
                     block_reason=event_block_reason,
+                )
+            )
+            continue
+        data_guard_block_reason = _data_guard_block_reason(row, spec)
+        if data_guard_block_reason is not None:
+            rows.append(
+                _block_trade_row(
+                    _trade_signal_row(
+                        spec=spec,
+                        row=row,
+                        binding=binding,
+                        side=signal_side,
+                        generated_at=generated_at,
+                        raw_score=raw_score,
+                        rank=rank,
+                    ),
+                    spec=spec,
+                    block_reason=data_guard_block_reason,
                 )
             )
             continue
@@ -4528,6 +4872,7 @@ def build_authoring_signals(
             )
         rows = limited
     rows = _apply_portfolio_allocation(rows, spec)
+    rows = _apply_portfolio_turnover_budget(rows, spec)
     rows = _apply_portfolio_exposure_limits(rows, spec)
     rows = sorted(rows, key=lambda item: (item["ts_signal"], item["signal_id"]))
 
@@ -4622,6 +4967,8 @@ def strategy_signals_to_research_signals(frame: pl.DataFrame) -> list[ResearchSi
             entry_limit_offset_bps=row.get("entry_limit_offset_bps"),
             entry_stop_offset_bps=row.get("entry_stop_offset_bps"),
             entry_timeout_minutes=row.get("entry_timeout_minutes"),
+            entry_time_in_force=str(row.get("entry_time_in_force") or "gtc"),
+            entry_post_only=bool(row.get("entry_post_only")),
             slippage_bps=row.get("slippage_bps") or 0.0,
             max_fill_fraction=row.get("max_fill_fraction") or 1.0,
             max_spread_bps=row.get("max_spread_bps"),
@@ -4847,6 +5194,8 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         f"- limit_offset_bps: {spec.rules.order.limit_offset_bps}\n"
         f"- stop_offset_bps: {spec.rules.order.stop_offset_bps}\n"
         f"- timeout_minutes: {spec.rules.order.timeout_minutes}\n"
+        f"- time_in_force: {spec.rules.order.time_in_force}\n"
+        f"- post_only: {spec.rules.order.post_only}\n"
         "\n\n## Execution Quality\n\n"
         f"- slippage_bps: {spec.rules.execution.slippage_bps}\n"
         f"- max_fill_fraction: {spec.rules.execution.max_fill_fraction}\n"
@@ -4874,7 +5223,24 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         f"- target_total_position_weight: {spec.rules.portfolio.target_total_position_weight}\n"
         f"- allocation_volatility_column: {spec.rules.portfolio.allocation_volatility_column}\n"
         f"- allocation_beta_column: {spec.rules.portfolio.allocation_beta_column}\n"
+        f"- max_turnover_weight_per_timestamp: "
+        f"{spec.rules.portfolio.max_turnover_weight_per_timestamp}\n"
+        f"- turnover_weight_column: {spec.rules.portfolio.turnover_weight_column}\n"
         f"- group_column: {spec.rules.portfolio.group_column}\n"
+        "\n\n## Data Guard\n\n"
+        f"- profile: {spec.rules.data_guard.profile}\n"
+        f"- max_feature_age_minutes: {spec.rules.data_guard.max_feature_age_minutes}\n"
+        f"- feature_age_column: {spec.rules.data_guard.feature_age_column}\n"
+        f"- min_source_confidence: {spec.rules.data_guard.min_source_confidence}\n"
+        f"- source_confidence_column: {spec.rules.data_guard.source_confidence_column}\n"
+        f"- min_venue_quality_score: {spec.rules.data_guard.min_venue_quality_score}\n"
+        f"- venue_quality_score_column: {spec.rules.data_guard.venue_quality_score_column}\n"
+        f"- max_staleness_bps: {spec.rules.data_guard.max_staleness_bps}\n"
+        f"- staleness_bps_column: {spec.rules.data_guard.staleness_bps_column}\n"
+        f"- max_regime_transition_score: "
+        f"{spec.rules.data_guard.max_regime_transition_score}\n"
+        f"- regime_transition_score_column: "
+        f"{spec.rules.data_guard.regime_transition_score_column}\n"
         "\n\n## Temporal Controls\n\n"
         f"- allowed_weekdays_utc: {spec.rules.temporal.allowed_weekdays_utc}\n"
         f"- allowed_hours_utc: {spec.rules.temporal.allowed_hours_utc}\n"
@@ -5542,6 +5908,13 @@ def write_authoring_paper_preview_outputs(
             entry_limit_offset_bps=row.get("entry_limit_offset_bps") if selected and row else None,
             entry_stop_offset_bps=row.get("entry_stop_offset_bps") if selected and row else None,
             entry_timeout_minutes=row.get("entry_timeout_minutes") if selected and row else None,
+            entry_time_in_force=(
+                cast(
+                    Literal["gtc", "gtd", "ioc", "fok"],
+                    row.get("entry_time_in_force") if selected and row else "gtc",
+                )
+            ),
+            entry_post_only=bool(row.get("entry_post_only")) if selected and row else False,
             slippage_bps=_float_or_default(
                 row.get("slippage_bps") if selected and row else None,
                 0.0,

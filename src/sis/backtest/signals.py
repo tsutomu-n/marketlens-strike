@@ -37,6 +37,8 @@ class ResearchSignal:
     entry_limit_offset_bps: float | None = None
     entry_stop_offset_bps: float | None = None
     entry_timeout_minutes: int | None = None
+    entry_time_in_force: str = "gtc"
+    entry_post_only: bool = False
     slippage_bps: float = 0.0
     max_fill_fraction: float = 1.0
     max_spread_bps: float | None = None
@@ -152,6 +154,13 @@ def _parse_entry_order_type(value: object) -> str:
     raise ValueError(f"Unsupported entry_order_type: {value}")
 
 
+def _parse_entry_time_in_force(value: object) -> str:
+    normalized = str(value or "gtc").strip().lower()
+    if normalized in {"gtc", "gtd", "ioc", "fok"}:
+        return normalized
+    raise ValueError(f"Unsupported entry_time_in_force: {value}")
+
+
 def _parse_bracket_type(value: object) -> str:
     normalized = str(value or "none").strip().lower()
     if normalized in {"none", "oco"}:
@@ -251,6 +260,8 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                 entry_timeout_minutes=_parse_optional_positive_int(
                     row.get("entry_timeout_minutes"), field_name="entry_timeout_minutes"
                 ),
+                entry_time_in_force=_parse_entry_time_in_force(row.get("entry_time_in_force")),
+                entry_post_only=_parse_bool(row.get("entry_post_only")),
                 slippage_bps=_parse_optional_positive_float(
                     row.get("slippage_bps"), field_name="slippage_bps"
                 )

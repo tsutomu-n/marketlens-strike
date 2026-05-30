@@ -1300,6 +1300,83 @@ rules:
     assert frame.get_column("side").to_list() == ["long"]
 
 
+def test_authoring_derived_features_support_benchmark_active_risk_inputs(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "benchmark-active-risk.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    rows = [
+        (0.02, 0.01),
+        (0.01, 0.01),
+        (0.03, 0.01),
+        (0.00, 0.01),
+        (0.04, 0.01),
+    ]
+    pl.DataFrame(
+        [
+            {
+                "ts": start + timedelta(hours=index),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": index == 4,
+                "asset_return": asset_return,
+                "benchmark_return": benchmark_return,
+            }
+            for index, (asset_return, benchmark_return) in enumerate(rows)
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: benchmark_active_risk_v1
+  strategy_family: benchmark_active_risk
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: XYZ100
+      real_market_symbol: QQQ
+      asset_class: equity_index
+rules:
+  side: long
+  timeframe: 1h
+  derived_features:
+    - name: active_tracking_error
+      op: tracking_error
+      columns: [asset_return, benchmark_return]
+      window: 5
+      value: 1
+    - name: active_information_ratio
+      op: information_ratio
+      columns: [asset_return, benchmark_return]
+      window: 5
+      value: 1
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: active_tracking_error
+        op: gt
+        value: 0.01
+      - column: active_tracking_error
+        op: lt
+        value: 0.02
+      - column: active_information_ratio
+        op: gt
+        value: 0.5
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert frame.get_column("ts_signal").to_list() == [start + timedelta(hours=4)]
+    assert frame.get_column("side").to_list() == ["long"]
+
+
 def test_authoring_derived_features_support_flow_carry_liquidity_and_vol_inputs(
     tmp_path,
 ) -> None:
@@ -1617,6 +1694,96 @@ rules:
     assert frame.get_column("side").to_list() == ["long"]
 
 
+def test_authoring_derived_features_support_group_cross_sectional_standardization(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "group-cross-sectional-standardization.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    rows = [
+        ("TECH_A", "tech", 1.0),
+        ("TECH_B", "tech", 4.0),
+        ("HEALTH_A", "health", 5.0),
+        ("HEALTH_B", "health", 6.0),
+    ]
+    pl.DataFrame(
+        [
+            {
+                "ts": start,
+                "canonical_symbol": symbol,
+                "sector_bucket": sector,
+                "trade_allowed": True,
+                "factor_score": score,
+            }
+            for symbol, sector, score in rows
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: group_cross_sectional_standardization_v1
+  strategy_family: group_factor_rotation
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: TECHA100
+      real_market_symbol: TECH_A
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: TECHB100
+      real_market_symbol: TECH_B
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: HEALTHA100
+      real_market_symbol: HEALTH_A
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: HEALTHB100
+      real_market_symbol: HEALTH_B
+      asset_class: equity
+data:
+  feature_panel_path: data/research/feature_panel.parquet
+rules:
+  side: long
+  derived_features:
+    - name: group_factor_rank
+      op: group_cross_sectional_rank
+      columns: [factor_score, sector_bucket]
+    - name: group_factor_z
+      op: group_cross_sectional_zscore
+      columns: [factor_score, sector_bucket]
+    - name: group_factor_demeaned
+      op: group_cross_sectional_demean
+      columns: [factor_score, sector_bucket]
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: group_factor_rank
+        op: eq
+        value: 1
+      - column: group_factor_z
+        op: gt
+        value: 0.7
+      - column: group_factor_demeaned
+        op: gt
+        value: 0
+  reason_code: group_cross_sectional_standardization_v1
+  hold_reason_code: group_cross_sectional_standardization_hold_v1
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert set(frame.get_column("execution_symbol").to_list()) == {"TECHB100", "HEALTHB100"}
+    assert frame.get_column("side").to_list() == ["long", "long"]
+
+
 def test_authoring_derived_features_support_execution_constraint_inputs(
     tmp_path,
 ) -> None:
@@ -1721,6 +1888,100 @@ rules:
 
     assert frame.get_column("ts_signal").to_list() == [start]
     assert frame.get_column("side").to_list() == ["short"]
+
+
+def test_authoring_execution_profile_applies_defaults_without_overriding_explicit_fields(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "execution-profile.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": start,
+                "canonical_symbol": "QQQ",
+                "trade_allowed": True,
+                "latency_ms": 50.0,
+                "queue_position_score": 0.8,
+                "turnover_pressure": 0.2,
+                "maker_taker_fee_edge_bps": 1.5,
+            }
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: conservative_execution_profile_v1
+  strategy_family: execution_profile
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: XYZ100
+      real_market_symbol: QQQ
+      asset_class: equity_index
+rules:
+  side: long
+  timeframe: 1h
+  execution:
+    profile: conservative
+    max_spread_bps: 12
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert spec.rules.execution.slippage_bps == 25.0
+    assert spec.rules.execution.max_fill_fraction == 0.5
+    assert spec.rules.execution.max_spread_bps == 12.0
+    assert spec.rules.execution.min_depth_usd == 250_000.0
+    assert spec.rules.execution.depth_participation_rate == 0.05
+    assert spec.rules.execution.max_latency_ms == 100.0
+    assert spec.rules.execution.min_queue_position_score == 0.6
+    assert spec.rules.execution.max_turnover_pressure == 0.4
+    assert spec.rules.execution.min_fee_edge_bps == 0.0
+    assert frame.select(
+        [
+            "slippage_bps",
+            "max_fill_fraction",
+            "max_spread_bps",
+            "min_depth_usd",
+            "depth_participation_rate",
+            "max_latency_ms",
+            "latency_ms",
+            "min_queue_position_score",
+            "queue_position_score",
+            "max_turnover_pressure",
+            "turnover_pressure",
+            "min_fee_edge_bps",
+            "fee_edge_bps",
+        ]
+    ).rows() == [
+        (
+            25.0,
+            0.5,
+            12.0,
+            250_000.0,
+            0.05,
+            100.0,
+            50.0,
+            0.6,
+            0.8,
+            0.4,
+            0.2,
+            0.0,
+            1.5,
+        )
+    ]
 
 
 def test_authoring_derived_features_support_quality_ensemble_capacity_inputs(
@@ -1854,6 +2115,103 @@ rules:
         start + timedelta(hours=2),
     ]
     assert frame.get_column("side").to_list() == ["long", "long", "long"]
+
+
+def test_authoring_data_guard_strict_profile_blocks_stale_low_quality_and_regime_shift(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "data-guard-strict.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    rows = [
+        ("AAA", 0.01, 10.0, 0.9, 0.9, 1.0, 0.1),
+        ("BBB", 0.04, 45.0, 0.9, 0.9, 1.0, 0.1),
+        ("CCC", 0.03, 10.0, 0.5, 0.9, 1.0, 0.1),
+        ("DDD", 0.02, 10.0, 0.9, 0.9, 1.0, 0.8),
+    ]
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "research_return_1d": score,
+                "feature_age_minutes": feature_age,
+                "source_confidence": source_confidence,
+                "venue_quality_score": venue_quality,
+                "staleness_bps": staleness_bps,
+                "regime_transition_score": regime_transition,
+            }
+            for (
+                symbol,
+                score,
+                feature_age,
+                source_confidence,
+                venue_quality,
+                staleness_bps,
+                regime_transition,
+            ) in rows
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: strict_data_guard_authoring_v1
+  strategy_family: data_guard
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: DDD100
+      real_market_symbol: DDD
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 1h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  data_guard:
+    profile: strict
+  score:
+    weighted_sum:
+      - column: research_return_1d
+        weight: 10
+  reason_code: strict_data_guard_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    live = frame.filter(pl.col("side") == "long")
+    assert live.get_column("execution_symbol").to_list() == ["AAA100"]
+    blocked = frame.filter(pl.col("side") == "none").sort("execution_symbol")
+    assert blocked.get_column("execution_symbol").to_list() == ["BBB100", "CCC100", "DDD100"]
+    assert blocked.get_column("block_reasons").to_list() == [
+        ["data_guard_feature_age_too_old"],
+        ["data_guard_source_confidence_too_low"],
+        ["data_guard_regime_transition_too_high"],
+    ]
 
 
 def test_authoring_derived_features_support_return_volatility_and_shape_inputs(
@@ -2546,6 +2904,83 @@ backtest:
     blocked = frame.filter(pl.col("side") == "none")
     assert blocked.get_column("execution_symbol").to_list() == ["BBB100"]
     assert blocked.get_column("block_reasons").to_list() == [["portfolio_group_exposure_limit"]]
+
+
+def test_authoring_portfolio_turnover_budget_blocks_excess_rotation(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "portfolio-turnover-budget.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "trade_allowed": True,
+                "research_return_1d": score,
+                "research_return_4h": 0.01,
+                "planned_turnover_weight": turnover_weight,
+            }
+            for symbol, score, turnover_weight in [
+                ("AAA", 0.03, 0.6),
+                ("BBB", 0.02, 0.5),
+                ("CCC", 0.01, 0.4),
+            ]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: turnover_budget_authoring_v1
+  strategy_family: turnover_budget
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 0.5
+  portfolio:
+    max_turnover_weight_per_timestamp: 1.0
+    turnover_weight_column: planned_turnover_weight
+  score:
+    weighted_sum:
+      - column: research_return_1d
+        weight: 10
+  reason_code: turnover_budget_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    live = frame.filter(pl.col("side") == "long").sort("execution_symbol")
+    assert live.get_column("execution_symbol").to_list() == ["AAA100", "CCC100"]
+    blocked = frame.filter(pl.col("side") == "none")
+    assert blocked.get_column("execution_symbol").to_list() == ["BBB100"]
+    assert blocked.get_column("block_reasons").to_list() == [["portfolio_turnover_budget_limit"]]
 
 
 def test_authoring_portfolio_net_exposure_limit_keeps_balanced_long_short(tmp_path) -> None:
@@ -4421,6 +4856,85 @@ def test_strategy_authoring_limit_entry_unfilled_is_counted(tmp_path, monkeypatc
     assert metrics["summary"]["entry_order_unfilled_count"] == 1
     assert metrics["summary"]["blocked_reason_counts"]["entry_order_unfilled"] == 1
     assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+
+
+def test_strategy_authoring_ioc_limit_entry_does_not_wait_for_later_fill(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  order:\n    entry_type: limit\n    limit_offset_bps: 100\n    time_in_force: ioc",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=1), 99.0),
+            _quote(start + timedelta(hours=4), 103.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["entry_order_unfilled_count"] == 1
+    assert metrics["summary"]["blocked_reason_counts"]["entry_order_unfilled"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("entry_time_in_force").to_list() == ["ioc"]
+
+
+def test_strategy_authoring_post_only_limit_blocks_marketable_entry(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  order:\n    entry_type: limit\n    limit_offset_bps: 0\n    post_only: true",
+        ),
+        encoding="utf-8",
+    )
+    rows = _feature_rows()[:1]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame(
+        [
+            _quote(start, 100.0),
+            _quote(start + timedelta(hours=4), 103.0),
+        ]
+    ).write_parquet(data_dir / "normalized/quotes.parquet")
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["entry_order_unfilled_count"] == 1
+    assert metrics["summary"]["blocked_reason_counts"]["entry_order_post_only_would_cross"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("entry_post_only").to_list() == [True]
 
 
 def test_strategy_authoring_slippage_and_partial_fill_reduce_paper_return(

@@ -95,6 +95,8 @@ def validate_strategy_signal_frame(
             entry_limit_offset_bps=row.get("entry_limit_offset_bps"),
             entry_stop_offset_bps=row.get("entry_stop_offset_bps"),
             entry_timeout_minutes=row.get("entry_timeout_minutes"),
+            entry_time_in_force=row.get("entry_time_in_force") or "gtc",
+            entry_post_only=bool(row.get("entry_post_only")),
             slippage_bps=row.get("slippage_bps") or 0.0,
             max_fill_fraction=row.get("max_fill_fraction") or 1.0,
             max_spread_bps=row.get("max_spread_bps"),

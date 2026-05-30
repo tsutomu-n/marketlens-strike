@@ -14,7 +14,7 @@
 
 ## 結論
 
-ユーザーは YAML だけで、entry、long / short 分岐、hold、close、reduce、add、rebalance、損切、利確、部分利確、トレーリングストップ、最低保有時間、OCO 的 bracket、position sizing、portfolio exposure、risk throttle、時間帯 filter、event filter、cross-sectional rotation、multi-leg / pair trade、parameter sweep、paper backtest、paper-preview まで作れます。
+ユーザーは YAML だけで、entry、long / short 分岐、hold、close、reduce、add、rebalance、損切、利確、部分利確、トレーリングストップ、最低保有時間、OCO 的 bracket、position sizing、portfolio exposure、turnover budget、data guard presets、risk throttle、時間帯 filter、event filter、cross-sectional rotation、multi-leg / pair trade、parameter sweep、paper backtest、paper-preview まで作れます。
 
 ただし、これは paper-only research / preview flow です。live order、wallet signing、exchange write、broker queue priority、order book event replay を含む full venue microstructure replay はまだできません。
 
@@ -87,7 +87,7 @@
 - channel / band: `bollinger_upper`, `bollinger_lower`, `bollinger_width`, `bollinger_percent_b`, `donchian_upper`, `donchian_lower`, `donchian_mid`, `donchian_width`, `keltner_upper`, `keltner_lower`, `keltner_width`
 - trend / oscillator: `ewm_mean`, `rsi`, `macd_line`, `stochastic_k`, `stochastic_d`, `adx`, `obv`, `volume_zscore`, `ichimoku_conversion`, `ichimoku_base`, `ichimoku_span_a`, `ichimoku_span_b`
 - returns / statistics: `pct_change`, `log_return`, `lag`, `rolling_return`, `rolling_sum`, `rolling_mean`, `rolling_std`, `rolling_zscore`, `rolling_percentile_rank`, `rolling_skew`, `rolling_kurtosis`, `sharpe_like`, `sortino_like`, `kelly_fraction`, `historical_var`, `expected_shortfall`, `cumulative_return`, `slope`, `mean_reversion_score`, `distance_from_ma`, `rolling_min`, `rolling_max`
-- pair / benchmark: `rolling_corr`, `rolling_beta`, `rolling_spread_zscore`, `rolling_autocorr`
+- pair / benchmark: `rolling_corr`, `rolling_beta`, `rolling_spread_zscore`, `tracking_error`, `information_ratio`, `rolling_autocorr`
 - market microstructure / capacity features: `order_flow_imbalance`, `liquidity_depth_ratio`, `spread_bps`, `queue_position_score`, `latency_penalty_bps`, `capacity_usage_ratio`, `turnover_pressure`, `correlation_crowding_score`
 - flow / carry / options / sentiment / fundamentals: `funding_bps`, `carry_adjusted_return`, `vol_risk_premium`, `put_call_skew`, `liquidity_stress`, `net_exchange_flow`, `onchain_activity_ratio`, `sentiment_weighted_score`, `event_surprise`, `fundamental_value_gap`, `risk_adjusted_score`, `cross_sectional_rank`
 - quality / ensemble / regime: `freshness_score`, `staleness_bps`, `data_quality_blend`, `ensemble_vote_count`, `ensemble_vote_ratio`, `regime_transition_score`, `drawdown_from_peak`, `rolling_max_drawdown`, `drawdown_duration`
@@ -106,14 +106,17 @@
 | Portfolio exposure cap | `max_total_position_weight`, `max_long_position_weight`, `max_short_position_weight`, `max_abs_net_position_weight` | 同一 timestamp の total / long / short / net exposure を制限する。 |
 | Symbol cap | `max_symbol_position_weight` | 同一 symbol の同時 exposure を制限する。 |
 | Group cap | `max_group_position_weight`, `max_group_abs_net_position_weight`, `group_column` | sector / theme / asset class など任意 group の gross / net exposure を制限する。 |
+| Turnover budget | `max_turnover_weight_per_timestamp`, `turnover_weight_column` | 同一 timestamp の paper turnover 使用量を rank 順で制限し、超過候補を `portfolio_turnover_budget_limit` で残す。 |
 | Allocation | `allocation_method`, `target_total_position_weight`, `allocation_volatility_column`, `allocation_beta_column`, `group_column` | equal weight、score proportional、inverse volatility、dollar neutral、beta neutral、group neutral に正規化する。beta neutral は beta column、group neutral は group column が必要。neutral 系は片側しかない timestamp / group では反対側の half target を使わない。 |
 | Risk throttle | `rules.risk_throttle` | drawdown、daily loss、loss streak で新規 paper signal を止める。 |
+| Data guard profiles | `rules.data_guard.profile: fresh_only / quality_only / strict` | freshness、source / venue quality、staleness、regime transition を preset で fail-closed に gate する。 |
 | Position overlap | `rules.position` | 同一 symbol の仮想 open signal 数と open weight を制限する。 |
 
 ## Execution quality でできること
 
 | 機能 | YAML surface | 挙動 |
 | --- | --- | --- |
+| Execution profiles | `rules.execution.profile: liquid_only / balanced / conservative` | 未指定の slippage / fill / spread / depth / latency / queue / turnover / fee-edge gate を preset で埋める。明示 field は上書きしない。 |
 | Slippage | `rules.execution.slippage_bps` | paper return から round-trip drag として差し引き、`cost_drag_bps` に足す。 |
 | Partial fill | `rules.execution.max_fill_fraction` | paper exposure を指定 fraction に縮小する。 |
 | Spread gate | `rules.execution.max_spread_bps` | entry quote の `spread_bps` が上限超過なら `microstructure_spread_too_wide` で block する。 |
@@ -153,7 +156,7 @@
 最新 full check では、次を確認済みです。
 
 - `./scripts/check`: pass
-- pytest: `474 passed`
+- pytest: `479 passed`
 - pyrefly: `0 errors`
 - current-docs lint: `checked 76 current docs: links, EOF, and legacy roots ok`
 

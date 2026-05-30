@@ -42,6 +42,8 @@ class TradeCandidate(BaseModel):
     entry_limit_offset_bps: float | None = None
     entry_stop_offset_bps: float | None = None
     entry_timeout_minutes: int | None = None
+    entry_time_in_force: Literal["gtc", "gtd", "ioc", "fok"] = "gtc"
+    entry_post_only: bool = False
     slippage_bps: float = 0.0
     max_fill_fraction: float = 1.0
     max_spread_bps: float | None = None

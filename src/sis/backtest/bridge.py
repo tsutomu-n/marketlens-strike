@@ -116,20 +116,20 @@ def _entry_fill_index(
     quote_times: list[datetime],
     reference_index: int,
     signal: ResearchSignal,
-) -> int | None:
+) -> tuple[int | None, str | None]:
     order_type = signal.entry_order_type
     if order_type == "market":
-        return reference_index
+        return reference_index, None
     reference_price = _execution_price(rows[reference_index], signal.side)
     if reference_price is None:
-        return None
+        return None, "entry_order_unfilled"
     timeout_at = None
     if signal.entry_timeout_minutes is not None:
         timeout_at = quote_times[reference_index] + timedelta(minutes=signal.entry_timeout_minutes)
     if order_type == "limit":
         offset = signal.entry_limit_offset_bps
         if offset is None:
-            return None
+            return None, "entry_order_unfilled"
         if signal.side == "short":
             trigger_price = reference_price * (1.0 + offset / 10_000)
             comparison = "gte"
@@ -139,7 +139,7 @@ def _entry_fill_index(
     elif order_type == "stop_market":
         offset = signal.entry_stop_offset_bps
         if offset is None:
-            return None
+            return None, "entry_order_unfilled"
         if signal.side == "short":
             trigger_price = reference_price * (1.0 - offset / 10_000)
             comparison = "lte"
@@ -149,15 +149,18 @@ def _entry_fill_index(
     else:
         raise ValueError(f"Unsupported entry_order_type: {order_type}")
 
-    for index in range(reference_index, len(rows)):
+    search_end = reference_index + 1 if signal.entry_time_in_force in {"ioc", "fok"} else len(rows)
+    for index in range(reference_index, search_end):
         if timeout_at is not None and quote_times[index] > timeout_at:
-            return None
+            return None, "entry_order_unfilled"
         price = _execution_price(rows[index], signal.side)
         if price is not None and (
             price >= trigger_price if comparison == "gte" else price <= trigger_price
         ):
-            return index
-    return None
+            if signal.entry_post_only and index == reference_index:
+                return None, "entry_order_post_only_would_cross"
+            return index, None
+    return None, "entry_order_unfilled"
 
 
 def _risk_exit_index(
@@ -627,7 +630,7 @@ def _metrics_for_signals(
             if reference_index is None:
                 stale_rejected += 1
                 continue
-            entry_index = _entry_fill_index(
+            entry_index, entry_block_reason = _entry_fill_index(
                 rows=rows,
                 quote_times=quote_times,
                 reference_index=reference_index,
@@ -635,9 +638,8 @@ def _metrics_for_signals(
             )
             if entry_index is None:
                 entry_order_unfilled += 1
-                blocked_reason_counts["entry_order_unfilled"] = (
-                    blocked_reason_counts.get("entry_order_unfilled", 0) + 1
-                )
+                reason = entry_block_reason or "entry_order_unfilled"
+                blocked_reason_counts[reason] = blocked_reason_counts.get(reason, 0) + 1
                 continue
             entry_order_type_counts[signal.entry_order_type] = (
                 entry_order_type_counts.get(signal.entry_order_type, 0) + 1

@@ -81,7 +81,9 @@
             "entry_type": {"enum": ["market", "limit", "stop_market"]},
             "limit_offset_bps": {"type": ["number", "null"], "minimum": 0},
             "stop_offset_bps": {"type": ["number", "null"], "minimum": 0},
-            "timeout_minutes": {"type": ["integer", "null"], "minimum": 0}
+            "timeout_minutes": {"type": ["integer", "null"], "minimum": 0},
+            "time_in_force": {"enum": ["gtc", "gtd", "ioc", "fok"]},
+            "post_only": {"type": "boolean"}
           },
           "additionalProperties": false
         },
@@ -98,6 +100,7 @@
         "execution": {
           "type": "object",
           "properties": {
+            "profile": {"enum": ["none", "liquid_only", "balanced", "conservative"]},
             "slippage_bps": {"type": "number", "minimum": 0},
             "max_fill_fraction": {"type": "number", "minimum": 0, "maximum": 1},
             "max_spread_bps": {"type": ["number", "null"], "minimum": 0},
@@ -132,6 +135,8 @@
             "max_symbol_position_weight": {"type": ["number", "null"], "minimum": 0},
             "max_group_position_weight": {"type": ["number", "null"], "minimum": 0},
             "max_group_abs_net_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "max_turnover_weight_per_timestamp": {"type": ["number", "null"], "minimum": 0},
+            "turnover_weight_column": {"type": ["string", "null"]},
             "group_column": {"type": ["string", "null"]},
             "allocation_method": {
               "enum": [
@@ -168,6 +173,23 @@
             "daily_loss_floor": {"type": ["number", "null"]},
             "loss_streak_column": {"type": ["string", "null"]},
             "max_loss_streak": {"type": ["integer", "null"], "minimum": 1}
+          },
+          "additionalProperties": false
+        },
+        "data_guard": {
+          "type": "object",
+          "properties": {
+            "profile": {"enum": ["none", "fresh_only", "quality_only", "strict"]},
+            "max_feature_age_minutes": {"type": ["number", "null"], "minimum": 0},
+            "feature_age_column": {"type": ["string", "null"]},
+            "min_source_confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "source_confidence_column": {"type": ["string", "null"]},
+            "min_venue_quality_score": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "venue_quality_score_column": {"type": ["string", "null"]},
+            "max_staleness_bps": {"type": ["number", "null"], "minimum": 0},
+            "staleness_bps_column": {"type": ["string", "null"]},
+            "max_regime_transition_score": {"type": ["number", "null"], "minimum": 0},
+            "regime_transition_score_column": {"type": ["string", "null"]}
           },
           "additionalProperties": false
         },
@@ -414,6 +436,8 @@
             "rolling_corr",
             "rolling_beta",
             "rolling_spread_zscore",
+            "tracking_error",
+            "information_ratio",
             "rolling_autocorr",
             "order_flow_imbalance",
             "liquidity_depth_ratio",
@@ -433,6 +457,9 @@
             "cross_sectional_rank",
             "cross_sectional_zscore",
             "cross_sectional_demean",
+            "group_cross_sectional_rank",
+            "group_cross_sectional_zscore",
+            "group_cross_sectional_demean",
             "queue_position_score",
             "latency_penalty_bps",
             "maker_taker_fee_edge_bps",

@@ -188,10 +188,10 @@ rules:
 対応 op は次です。
 
 - row-wise: `add`, `sub`, `mul`, `div`, `ratio`, `diff`, `pct_diff`, `abs`, `neg`, `max`, `min`, `mean`
-- OHLC/time-series: `true_range`, `atr`, `bollinger_upper`, `bollinger_lower`, `bollinger_width`, `bollinger_percent_b`, `donchian_upper`, `donchian_lower`, `donchian_mid`, `donchian_width`, `keltner_upper`, `keltner_lower`, `keltner_width`, `ichimoku_conversion`, `ichimoku_base`, `ichimoku_span_a`, `ichimoku_span_b`, `macd_line`, `stochastic_k`, `stochastic_d`, `adx`, `obv`, `volume_zscore`, `ts_weekday`, `ts_hour`, `ts_month`, `ts_day`, `lag`, `ewm_mean`, `rsi`, `rolling_min`, `rolling_max`, `rolling_mean`, `rolling_std`, `rolling_zscore`, `rolling_percentile_rank`, `rolling_skew`, `rolling_kurtosis`, `rolling_corr`, `rolling_beta`, `rolling_spread_zscore`, `rolling_autocorr`, `kelly_fraction`, `historical_var`, `expected_shortfall`
-- flow/carry/liquidity/options-vol/on-chain/sentiment/event/fundamental/factor-ranking/execution-constraint/data-quality/ensemble/capacity: `order_flow_imbalance`, `liquidity_depth_ratio`, `spread_bps`, `funding_bps`, `carry_adjusted_return`, `vol_risk_premium`, `put_call_skew`, `liquidity_stress`, `net_exchange_flow`, `onchain_activity_ratio`, `sentiment_weighted_score`, `event_surprise`, `fundamental_value_gap`, `risk_adjusted_score`, `inverse_volatility_weight`, `cross_sectional_rank`, `cross_sectional_zscore`, `cross_sectional_demean`, `queue_position_score`, `latency_penalty_bps`, `maker_taker_fee_edge_bps`, `borrow_cost_bps`, `borrow_availability_ratio`, `tax_drag_bps`, `rebalance_drift`, `freshness_score`, `staleness_bps`, `data_quality_blend`, `ensemble_vote_count`, `ensemble_vote_ratio`, `regime_transition_score`, `drawdown_from_peak`, `rolling_max_drawdown`, `drawdown_duration`, `turnover_pressure`, `capacity_usage_ratio`, `correlation_crowding_score`
+- OHLC/time-series: `true_range`, `atr`, `bollinger_upper`, `bollinger_lower`, `bollinger_width`, `bollinger_percent_b`, `donchian_upper`, `donchian_lower`, `donchian_mid`, `donchian_width`, `keltner_upper`, `keltner_lower`, `keltner_width`, `ichimoku_conversion`, `ichimoku_base`, `ichimoku_span_a`, `ichimoku_span_b`, `macd_line`, `stochastic_k`, `stochastic_d`, `adx`, `obv`, `volume_zscore`, `ts_weekday`, `ts_hour`, `ts_month`, `ts_day`, `lag`, `ewm_mean`, `rsi`, `rolling_min`, `rolling_max`, `rolling_mean`, `rolling_std`, `rolling_zscore`, `rolling_percentile_rank`, `rolling_skew`, `rolling_kurtosis`, `rolling_corr`, `rolling_beta`, `rolling_spread_zscore`, `tracking_error`, `information_ratio`, `rolling_autocorr`, `kelly_fraction`, `historical_var`, `expected_shortfall`
+- flow/carry/liquidity/options-vol/on-chain/sentiment/event/fundamental/factor-ranking/execution-constraint/data-quality/ensemble/capacity: `order_flow_imbalance`, `liquidity_depth_ratio`, `spread_bps`, `funding_bps`, `carry_adjusted_return`, `vol_risk_premium`, `put_call_skew`, `liquidity_stress`, `net_exchange_flow`, `onchain_activity_ratio`, `sentiment_weighted_score`, `event_surprise`, `fundamental_value_gap`, `risk_adjusted_score`, `inverse_volatility_weight`, `cross_sectional_rank`, `cross_sectional_zscore`, `cross_sectional_demean`, `group_cross_sectional_rank`, `group_cross_sectional_zscore`, `group_cross_sectional_demean`, `queue_position_score`, `latency_penalty_bps`, `maker_taker_fee_edge_bps`, `borrow_cost_bps`, `borrow_availability_ratio`, `tax_drag_bps`, `rebalance_drift`, `freshness_score`, `staleness_bps`, `data_quality_blend`, `ensemble_vote_count`, `ensemble_vote_ratio`, `regime_transition_score`, `drawdown_from_peak`, `rolling_max_drawdown`, `drawdown_duration`, `turnover_pressure`, `capacity_usage_ratio`, `correlation_crowding_score`
 
-time-series 系は `canonical_symbol` ごとに `ts` 順で評価します。`fill_null` を指定すると、初期 window やゼロ除算で出る null を指定値で埋めます。例えば breakout は `rolling_max` や `donchian_upper` で channel high を作り、`lag` で prior high にずらしてから現在 price と比較します。EMA crossover は `ewm_mean` で fast / slow EMA を作り、`value_column` で比較します。RSI mean reversion は `rsi` を作って oversold / overbought threshold と比較します。ATR volatility filter は `atr` を high / low / close columns から作って entry、hold、dynamic stop/target columns に使います。Bollinger 系は `window` と標準偏差倍率の `value`、未指定時 2.0 で upper / lower / width / percent_b を作り、band reversal、band breakout、volatility compression の条件に使えます。Keltner 系は close EMA center と ATR envelope を作ります。Ichimoku 系は conversion / base / span A / span B を作り、cloud breakout や trend filter に使えます。MACD は `macd_line` の `window` を fast span、`value` を slow span として作り、必要なら `ewm_mean` で signal line、`diff` で histogram を作れます。Stochastic は `stochastic_k` と `stochastic_d`、trend strength は `adx`、出来高確認は `obv` と `volume_zscore` を使います。Kelly / VaR 系は `kelly_fraction`, `historical_var`, `expected_shortfall` を rolling return column から作り、Kelly sizing、VaR filter、expected shortfall filter に使えます。`rolling_percentile_rank` は現在値が直近 window 内のどの分位にあるかを 0-1 で作り、extreme move / range exhaustion / breakout confirmation に使えます。`rolling_skew` と `rolling_kurtosis` は tail shape を作り、crash-risk filter、tail-risk hedge、non-normal regime filter に使えます。`rolling_max_drawdown` と `drawdown_duration` は equity curve や価格系列から path-dependent な最悪 drawdown と peak からの経過本数を作り、deep drawdown filter、recovery wait、risk-off regime に使えます。Calendar 系は `ts_weekday` を Monday=0、`ts_hour` を 0-23、`ts_month` を 1-12、`ts_day` を 1-31 として作ります。Cross-asset / pair 系は同じ row にある asset return と benchmark return などから `rolling_corr`, `rolling_beta`, `rolling_spread_zscore` を作り、benchmark confirmation、relative strength、pair spread normalization に使えます。`rolling_autocorr` は 1 列の自己相関を作り、trend persistence や mean-reversion regime filter に使えます。Flow / carry / liquidity / options-vol 系は order book size imbalance、depth ratio、quoted spread bps、funding cost bps、carry-adjusted return、implied-realized vol premium、put-call skew、spread/depth stress を作り、order-flow continuation、thin-liquidity exclusion、funding/carry filter、vol risk premium、skew hedge、on-chain flow filter、sentiment confirmation、event surprise、fundamental value gap、factor ranking、cross-sectional standardization、queue-position filter、latency-cost filter、maker-taker fee edge、borrow availability and cost、tax drag filter、rebalance drift、data freshness filter、source-quality blend、ensemble vote filter、regime transition filter、rolling drawdown filter / max-drawdown-duration filter、turnover pressure、capacity usage、correlation crowding 条件に使えます。
+time-series 系は `canonical_symbol` ごとに `ts` 順で評価します。`fill_null` を指定すると、初期 window やゼロ除算で出る null を指定値で埋めます。例えば breakout は `rolling_max` や `donchian_upper` で channel high を作り、`lag` で prior high にずらしてから現在 price と比較します。EMA crossover は `ewm_mean` で fast / slow EMA を作り、`value_column` で比較します。RSI mean reversion は `rsi` を作って oversold / overbought threshold と比較します。ATR volatility filter は `atr` を high / low / close columns から作って entry、hold、dynamic stop/target columns に使います。Bollinger 系は `window` と標準偏差倍率の `value`、未指定時 2.0 で upper / lower / width / percent_b を作り、band reversal、band breakout、volatility compression の条件に使えます。Keltner 系は close EMA center と ATR envelope を作ります。Ichimoku 系は conversion / base / span A / span B を作り、cloud breakout や trend filter に使えます。MACD は `macd_line` の `window` を fast span、`value` を slow span として作り、必要なら `ewm_mean` で signal line、`diff` で histogram を作れます。Stochastic は `stochastic_k` と `stochastic_d`、trend strength は `adx`、出来高確認は `obv` と `volume_zscore` を使います。Kelly / VaR 系は `kelly_fraction`, `historical_var`, `expected_shortfall` を rolling return column から作り、Kelly sizing、VaR filter、expected shortfall filter に使えます。`rolling_percentile_rank` は現在値が直近 window 内のどの分位にあるかを 0-1 で作り、extreme move / range exhaustion / breakout confirmation に使えます。`rolling_skew` と `rolling_kurtosis` は tail shape を作り、crash-risk filter、tail-risk hedge、non-normal regime filter に使えます。`rolling_max_drawdown` と `drawdown_duration` は equity curve や価格系列から path-dependent な最悪 drawdown と peak からの経過本数を作り、deep drawdown filter、recovery wait、risk-off regime に使えます。Calendar 系は `ts_weekday` を Monday=0、`ts_hour` を 0-23、`ts_month` を 1-12、`ts_day` を 1-31 として作ります。Cross-asset / pair 系は同じ row にある asset return と benchmark return などから `rolling_corr`, `rolling_beta`, `rolling_spread_zscore`, `tracking_error`, `information_ratio` を作り、benchmark confirmation、relative strength、pair spread normalization、active risk budget、information-ratio filter に使えます。`rolling_autocorr` は 1 列の自己相関を作り、trend persistence や mean-reversion regime filter に使えます。Flow / carry / liquidity / options-vol 系は order book size imbalance、depth ratio、quoted spread bps、funding cost bps、carry-adjusted return、implied-realized vol premium、put-call skew、spread/depth stress を作り、order-flow continuation、thin-liquidity exclusion、funding/carry filter、vol risk premium、skew hedge、on-chain flow filter、sentiment confirmation、event surprise、fundamental value gap、factor ranking、cross-sectional standardization、group-aware standardization、queue-position filter、latency-cost filter、maker-taker fee edge、borrow availability and cost、tax drag filter、rebalance drift、data freshness filter、source-quality blend、ensemble vote filter、regime transition filter、rolling drawdown filter / max-drawdown-duration filter、turnover pressure、capacity usage、correlation crowding 条件に使えます。
 
 ## Score
 
@@ -298,7 +298,11 @@ rules:
     volatility_column: realized_vol
     max_volatility_scaled_position_weight: 1.5
   order:
-    entry_type: market
+    entry_type: limit
+    limit_offset_bps: 25
+    time_in_force: gtd
+    timeout_minutes: 120
+    post_only: true
   bracket:
     enabled: true
     bracket_type: oco
@@ -306,6 +310,8 @@ rules:
     time_stop_minutes: 180
   portfolio:
     max_signals_per_timestamp: 3
+    max_turnover_weight_per_timestamp: 1.0
+    turnover_weight_column: planned_turnover_weight
     allocation_method: score_proportional
     target_total_position_weight: 1.0
     allocation_volatility_column: realized_vol
@@ -316,6 +322,8 @@ rules:
     daily_loss_floor: -0.10
     loss_streak_column: loss_streak
     max_loss_streak: 3
+  data_guard:
+    profile: strict
 ```
 
 - `side: long` / `side: short` で買い・売りの方向を選べます。
@@ -341,8 +349,11 @@ rules:
 - `sizing.notional_usd` は paper candidate に残す想定 notional です。live order には変換しません。
 - `sizing.volatility_target` は `volatility_column` の値に応じて `position_weight` を `target / observed` で拡大縮小します。`max_volatility_scaled_position_weight` があれば上限で cap します。
 - `order.entry_type: market` は signal 時刻以降の最初の quote で入る paper 評価です。
+- `order.time_in_force` は `gtc`, `gtd`, `ioc`, `fok` から選べます。`gtd` は `timeout_minutes` 必須、`ioc` / `fok` は signal 時点の quote だけで約定判定します。
+- `order.post_only: true` は limit entry 専用です。signal 時点で即時約定する marketable limit は `entry_order_post_only_would_cross` として paper-only に未約定扱いへ落とします。
 - `portfolio.max_signals_per_timestamp` は同一 timestamp の trade signal を rank score 上位 N 件に絞ります。
 - `portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_symbol_position_weight` は同一 timestamp の paper exposure を制限します。超過候補は `side: none` と `portfolio_*_exposure_limit` の `block_reasons` に残ります。
+- `portfolio.max_turnover_weight_per_timestamp` は同一 timestamp の paper turnover 使用量を制限します。`turnover_weight_column` がある場合はその絶対値、無い場合は `position_weight` の絶対値を使い、budget 超過候補は `portfolio_turnover_budget_limit` で見送ります。
 - `portfolio.allocation_method: equal_weight` は同一 timestamp の採用候補へ `target_total_position_weight` を均等配分します。
 - `portfolio.allocation_method: score_proportional` は同一 timestamp の採用候補へ正の `raw_score` 比例で `target_total_position_weight` を配分します。全 score が 0 以下または欠損なら均等配分へ fallback します。
 - `portfolio.allocation_method: inverse_volatility` は `allocation_volatility_column` の正の値の逆数で `target_total_position_weight` を配分します。全 volatility が 0 以下または欠損なら均等配分へ fallback します。
@@ -350,6 +361,7 @@ rules:
 - `portfolio.allocation_method: beta_neutral` は `allocation_beta_column` を使い、long beta exposure と short beta exposure が釣り合うように配分します。片側の beta が無い、0、または候補が片側だけの場合は dollar-neutral と同じ half target 配分へ fallback します。
 - `portfolio.allocation_method: group_neutral` は `group_column` ごとに long / short gross weight が半分ずつになるように配分します。group が欠けた候補は neutral allocation 上は 0 weight になり、group exposure 制限と組み合わせると fail-closed で見送られます。
 - `risk_throttle` は drawdown、daily loss、loss streak の feature column によって新規 signal を止めます。止めた候補は `side: none` と `risk_throttle_*` の `block_reasons` に残ります。
+- `data_guard.profile` は `none`, `fresh_only`, `quality_only`, `strict` から選べる paper-only preset です。`fresh_only` は `feature_age_minutes`、`quality_only` は `source_confidence` / `venue_quality_score`、`strict` は freshness、source/venue quality、`staleness_bps`、`regime_transition_score` を fail-closed に gate します。明示 threshold / column は preset default より優先されます。
 - stop loss / take profit は paper backtest の評価条件です。本番発注の逆指値や利確注文は作りません。
 
 ## Regime Overrides
@@ -411,12 +423,18 @@ rules:
   order:
     entry_type: limit
     limit_offset_bps: 50
+    time_in_force: gtd
     timeout_minutes: 120
+    post_only: true
 ```
 
 - `entry_type: market` は signal 時刻以降の最初の quote で入ります。
 - `entry_type: limit` は long なら基準 entry quote より `limit_offset_bps` だけ安い価格、short なら高い価格に到達した時だけ入ります。
 - `entry_type: stop_market` は long なら基準 entry quote より `stop_offset_bps` だけ高い価格、short なら低い価格に到達した時だけ入ります。
+- `time_in_force: gtc` は timeout が無ければ horizon 内の後続 quote まで待ちます。`timeout_minutes` を併用するとその時刻までです。
+- `time_in_force: gtd` は `timeout_minutes` 必須で、その時刻までだけ待ちます。
+- `time_in_force: ioc` / `fok` は signal 時点の quote だけで判定し、後続 quote を待ちません。quote 粒度の paper simulation なので部分約定数量までは区別しません。
+- `post_only: true` は limit 専用です。即時約定する marketable limit は `entry_order_post_only_would_cross` として `summary.entry_order_unfilled_count` と `blocked_reason_counts` に出ます。
 - `timeout_minutes` を過ぎても条件に届かない場合は未約定として `summary.entry_order_unfilled_count` と `blocked_reason_counts.entry_order_unfilled` に出ます。
 - 約定した注文種別は `summary.entry_order_type_counts` に出ます。
 
@@ -427,6 +445,7 @@ slippage、partial fill、spread / depth / latency / queue-position / short borr
 ```yaml
 rules:
   execution:
+    profile: conservative
     slippage_bps: 25
     max_fill_fraction: 0.5
     max_spread_bps: 15
@@ -449,6 +468,8 @@ rules:
     fee_edge_column: fee_edge
 ```
 
+- `profile` は `none`, `liquid_only`, `balanced`, `conservative` から選べる paper-only preset です。未指定の execution field だけを埋めるので、上の例のように `max_spread_bps` などを明示すると preset default よりその値を優先します。
+- `liquid_only` は slippage / spread / depth の最低限の liquidity gate、`balanced` は latency / queue / turnover も含む標準 gate、`conservative` はより厳しい spread / depth / latency / queue / turnover / fee-edge gate を入れます。
 - `slippage_bps` は round trip の追加 drag として return から差し引き、`cost_drag_bps` に足します。
 - `max_fill_fraction` は約定した想定数量の割合です。`0.5` なら signal return は半分の exposure として評価されます。
 - `max_spread_bps` は entry quote の `spread_bps` が指定値を超える場合に約定対象から外し、`blocked_reason_counts.microstructure_spread_too_wide` に記録します。
@@ -683,10 +704,10 @@ bundle は各 member spec を個別に validate / signal build / backtest し、
 - breakout: `new_high`, `range_breakout`, `donchian_upper`, `volume_spike`, `volume_zscore` などを entry に使う。
 - volatility filter: `vix_level`, `atr_pct`, `realized_vol` を hold または entry に使う。
 - long/short rotation: `side: auto` と `side_column` で方向を feature から選ぶ。
-- pair / hedge style signal: `rolling_spread_zscore`, `rolling_corr`, `rolling_beta` で spread normalization や benchmark confirmation を作り、`side: auto` または `cross_sectional` で long / short を切り替える。
+- pair / hedge style signal: `rolling_spread_zscore`, `rolling_corr`, `rolling_beta`, `tracking_error`, `information_ratio` で spread normalization、benchmark confirmation、active risk budget、information-ratio filter を作り、`side: auto` または `cross_sectional` で long / short を切り替える。
 - exclusion / blackout rules: `entry.none`, `hold.none`, `long_entry.none`, `short_entry.none` で「どれにも該当しない時だけ」を直接書く。
 - moving-average cross / adaptive threshold: `value_column` で `fast_ma > slow_ma` や `score > dynamic_threshold` を直接書く。
-- local feature derivation: `derived_features` で spread、ratio、true range、ATR、Bollinger bands、Donchian channels、Keltner channels、Ichimoku cloud、MACD line、stochastic K/D、ADX、OBV、volume z-score、calendar features、rolling correlation / beta / spread z-score、order-flow imbalance、liquidity depth ratio、spread bps、funding bps、carry-adjusted return、volatility risk premium、put-call skew、liquidity stress、net exchange flow、on-chain activity ratio、sentiment weighted score、event surprise、fundamental value gap、risk-adjusted score、inverse volatility weight、cross-sectional rank、cross-sectional z-score / demean、queue position score、latency penalty bps、maker-taker fee edge、borrow cost bps、borrow availability ratio、tax drag bps、rebalance drift、freshness score、staleness bps、data quality blend、ensemble vote count/ratio、regime transition score、drawdown from peak、rolling max drawdown、drawdown duration、turnover pressure、capacity usage ratio、correlation crowding score、lag、EMA、RSI、rolling min/max/mean/z-score/percentile-rank/skew/kurtosis を YAML 内で作る。
+- local feature derivation: `derived_features` で spread、ratio、true range、ATR、Bollinger bands、Donchian channels、Keltner channels、Ichimoku cloud、MACD line、stochastic K/D、ADX、OBV、volume z-score、calendar features、rolling correlation / beta / spread z-score / tracking error / information ratio、order-flow imbalance、liquidity depth ratio、spread bps、funding bps、carry-adjusted return、volatility risk premium、put-call skew、liquidity stress、net exchange flow、on-chain activity ratio、sentiment weighted score、event surprise、fundamental value gap、risk-adjusted score、inverse volatility weight、cross-sectional rank、cross-sectional z-score / demean、group cross-sectional rank / z-score / demean、queue position score、latency penalty bps、maker-taker fee edge、borrow cost bps、borrow availability ratio、tax drag bps、rebalance drift、freshness score、staleness bps、data quality blend、ensemble vote count/ratio、regime transition score、drawdown from peak、rolling max drawdown、drawdown duration、turnover pressure、capacity usage ratio、correlation crowding score、lag、EMA、RSI、rolling min/max/mean/z-score/percentile-rank/skew/kurtosis を YAML 内で作る。
 - explicit pair / hedge: `multi_leg` で anchor signal から long leg と short leg を同時に出す。
 - regime filter: `in` / `not_in` で bull、bear、event day などのカテゴリを entry / hold に使う。
 - regime-specific risk: `regime_overrides` で high volatility 時だけ損切幅、利確幅、weight、slippage を変える。
@@ -701,11 +722,11 @@ bundle は各 member spec を個別に validate / signal build / backtest し、
 - trailing stop: `trailing_stop_bps` で利益を伸ばしつつ戻りで抜ける条件を評価する。
 - signal reversal: `exit_on_opposite_signal` で反対売買シグナルによる close / reversal を評価する。
 - order style: `order.entry_type` で market / limit / stop-market entry を評価する。
-- execution quality: `execution.slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `max_latency_ms` / `min_queue_position_score` / `min_borrow_availability_ratio` / `max_borrow_cost_bps` / `max_tax_drag_bps` / `max_turnover_pressure` / `min_fee_edge_bps` で滑り、部分約定、spread gate、depth-based fill、latency gate、queue-position gate、short-borrow gate、tax / turnover / fee-edge gate を評価する。
+- execution quality: `execution.profile` / `execution.slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `max_latency_ms` / `min_queue_position_score` / `min_borrow_availability_ratio` / `max_borrow_cost_bps` / `max_tax_drag_bps` / `max_turnover_pressure` / `min_fee_edge_bps` で preset、滑り、部分約定、spread gate、depth-based fill、latency gate、queue-position gate、short-borrow gate、tax / turnover / fee-edge gate を評価する。
 - risk parity / conviction sizing: `position_weight_column` に volatility inverse や confidence weight を入れる。
 - volatility targeting: `sizing.volatility_target` / `volatility_column` で row ごとの paper exposure を目標ボラへ合わせる。
 - drawdown / loss throttle: `risk_throttle` で drawdown、daily loss、loss streak が悪化した時に新規 entry を止める。
-- portfolio throttle: `portfolio.max_signals_per_timestamp` で同時候補数を制限する。
+- portfolio throttle: `portfolio.max_signals_per_timestamp` と `portfolio.max_turnover_weight_per_timestamp` で同時候補数を制限する。
 - parameter sweep: `optimizer.parameter_sweep` で損切幅、利確幅、weight、horizon などを比較する。
 - walk-forward review: `backtest.split_method` と `era_unit` で era 別の安定性を見る。
 - multi-strategy portfolio: `strategy_authoring_bundle.v1` で複数 spec を allocation weight 付きで比較する。

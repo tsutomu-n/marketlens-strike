@@ -118,6 +118,8 @@ class StrategySignalRecord(BaseModel):
     entry_limit_offset_bps: float | None = None
     entry_stop_offset_bps: float | None = None
     entry_timeout_minutes: int | None = None
+    entry_time_in_force: Literal["gtc", "gtd", "ioc", "fok"] = "gtc"
+    entry_post_only: bool = False
     slippage_bps: float = 0.0
     max_fill_fraction: float = 1.0
     max_spread_bps: float | None = None
@@ -183,6 +185,12 @@ class StrategySignalRecord(BaseModel):
             raise ValueError("entry_stop_offset_bps must be >= 0")
         if self.entry_timeout_minutes is not None and self.entry_timeout_minutes < 0:
             raise ValueError("entry_timeout_minutes must be >= 0")
+        if self.entry_time_in_force == "gtd" and self.entry_timeout_minutes is None:
+            raise ValueError("entry_timeout_minutes is required when entry_time_in_force is gtd")
+        if self.entry_time_in_force in {"ioc", "fok"} and self.entry_timeout_minutes is not None:
+            raise ValueError("entry_timeout_minutes cannot be set for ioc or fok")
+        if self.entry_post_only and self.entry_order_type != "limit":
+            raise ValueError("entry_post_only is only supported for limit entry")
         if self.slippage_bps < 0:
             raise ValueError("slippage_bps must be >= 0")
         if not 0.0 <= self.max_fill_fraction <= 1.0:

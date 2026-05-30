@@ -20,9 +20,9 @@
 
 ユーザーが YAML で売買ロジックを作るための機能は、paper-only の Strategy Lab flow として実装済みです。
 
-作れる範囲は、entry、long / short、hold、close、reduce、add、rebalance、損切、利確、部分利確、トレーリングストップ、最低保有時間、bracket / OCO 的 lifecycle、position sizing、portfolio exposure、risk throttle、multi-timeframe confirmation、event window、cross-sectional rotation、multi-leg / pair trade、parameter sweep、bundle comparison、paper backtest、paper-preview です。
+作れる範囲は、entry、long / short、hold、close、reduce、add、rebalance、損切、利確、部分利確、トレーリングストップ、最低保有時間、bracket / OCO 的 lifecycle、position sizing、portfolio exposure、turnover budget、data guard presets、risk throttle、multi-timeframe confirmation、event window、cross-sectional rotation、multi-leg / pair trade、parameter sweep、bundle comparison、paper backtest、paper-preview です。
 
-今回の追加で、execution quality は spread / depth / partial fill だけでなく、latency、queue-position、short-borrow、tax drag、turnover pressure、maker/taker fee edge まで paper-only gate として扱えるようになりました。
+今回の追加で、execution quality は preset profile、spread / depth / partial fill、latency、queue-position、short-borrow、tax drag、turnover pressure、maker/taker fee edge まで paper-only gate として扱えるようになりました。
 
 ## 追加・整理した主要機能
 
@@ -31,12 +31,13 @@
 | Signal lifecycle | entry だけでなく hold / close / reduce / add / rebalance を明確化。 | `rules.entry`, `rules.hold`, `rules.close`, `rules.reduce`, `rules.add`, `rules.rebalance` |
 | Long / short | fixed side、column side、auto side、long / short 条件分岐を整理。 | `rules.side`, `rules.side_column`, `rules.long_entry`, `rules.short_entry` |
 | Exit / risk | stop loss、take profit、partial take profit、trailing stop、minimum hold、bracket を整理。 | `rules.exit.*`, `rules.bracket.*` |
-| Portfolio constraints | total / long / short / net / symbol / group / group-net exposure cap を整理。 | `rules.portfolio.*` |
-| Risk throttle | drawdown、daily loss、loss streak で新規 paper signal を止める。 | `rules.risk_throttle.*` |
+| Portfolio constraints | total / long / short / net / symbol / group / group-net exposure cap と timestamp turnover budget を整理。 | `rules.portfolio.*` |
+| Risk throttle / data guard | drawdown、daily loss、loss streak、freshness、source / venue quality、staleness、regime transition で新規 paper signal を止める。 | `rules.risk_throttle.*`, `rules.data_guard.*` |
 | Position state | 同一 symbol の仮想 open signal 数と open weight を制限。 | `rules.position.*` |
 | Cross-sectional | top / bottom n、fraction tail、group rotation、min candidates、score threshold を整理。 | `rules.cross_sectional.*` |
 | Multi-leg | anchor signal から複数 leg の paper signal を展開。 | `rules.multi_leg.*` |
-| Derived features | trend、mean reversion、breakout、pair、Kelly / VaR / expected shortfall、percentile-rank / skew / kurtosis、microstructure、capacity、quality 系 feature を YAML で生成。 | `rules.derived_features` |
+| Derived features | trend、mean reversion、breakout、pair、benchmark active risk、Kelly / VaR / expected shortfall、percentile-rank / skew / kurtosis、microstructure、capacity、quality 系 feature を YAML で生成。 | `rules.derived_features` |
+| Execution profiles | liquidity / balanced / conservative な paper execution gate preset を指定し、明示 field は上書きしない。 | `rules.execution.profile` |
 | Model score | paper-only 線形 score と train-model adapter を整理。 | `rules.score.model_score`, `strategy-author-train-model` |
 | Temporal / event | 曜日、時間帯、cooldown、symbol 日次上限、event allow/block window を整理。 | `rules.temporal.*`, `rules.event_windows.*` |
 | Optimizer / bundle | parameter sweep と multi-spec bundle comparison を整理。 | `optimizer.parameter_sweep`, `strategy_authoring_bundle.v1` |
@@ -111,10 +112,10 @@ uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/exampl
 
 2026-05-30 時点で確認済みです。
 
-- `uv run pytest tests/test_strategy_authoring.py -q`: `90 passed`
+- `uv run pytest tests/test_strategy_authoring.py -q`: `95 passed`
 - `uv run pytest tests/test_strategy_lab_schemas.py -q`: `2 passed`
 - `uv run python scripts/check_current_docs.py`: `checked 76 current docs: links, EOF, and legacy roots ok`
-- `./scripts/check`: pass, pytest `474 passed`, pyrefly `0 errors`
+- `./scripts/check`: pass, pytest `479 passed`, pyrefly `0 errors`
 
 ## 残る範囲
 
