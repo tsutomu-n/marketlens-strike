@@ -14,7 +14,7 @@
 
 ## 結論
 
-ユーザーは YAML だけで、entry、long / short 分岐、hold、close、reduce、add、rebalance、損切、利確、部分利確、トレーリングストップ、最低保有時間、OCO 的 bracket、position sizing、portfolio exposure、turnover budget、data guard presets、risk throttle、時間帯 filter、event filter、cross-sectional rotation、multi-leg / pair trade、parameter sweep、paper backtest、paper-preview まで作れます。
+ユーザーは YAML だけで、entry、long / short 分岐、hold、close、reduce、add、rebalance、損切、利確、部分利確、トレーリングストップ、最低保有時間、OCO 的 bracket、time-in-force / post-only paper order constraint、position sizing、portfolio exposure、turnover budget、data guard presets、risk throttle、時間帯 filter、event filter、cross-sectional rotation、multi-leg / pair trade、parameter sweep、paper backtest、paper-preview まで作れます。
 
 ただし、これは paper-only research / preview flow です。live order、wallet signing、exchange write、broker queue priority、order book event replay を含む full venue microstructure replay はまだできません。
 
@@ -61,6 +61,7 @@
 | 部分利確 | `rules.exit.partial_take_profit_bps`, `partial_exit_fraction` | 到達時に一部を利確し、残りを維持する。 |
 | 最低保有時間 | `rules.exit.min_holding_minutes` | 指定時間までは stop / take / trailing / partial / close / reduce / add / rebalance / opposite / bracket time stop を遅らせる。 |
 | Bracket / OCO | `rules.bracket.enabled`, `time_stop_minutes`, `break_even_after_bps` | stop / take / break-even / time stop を OCO 的 paper lifecycle として評価する。 |
+| Order TIF / post-only | `rules.order.time_in_force`, `rules.order.post_only` | GTC / GTD / IOC / FOK の待ち方と、即時約定する post-only limit の見送りを paper-only に評価する。 |
 | Fixed horizon | `backtest.label_horizon_minutes` | 通常の評価 horizon。minimum hold がより長い場合は minimum hold まで延長する。 |
 
 ## 条件 DSL でできること

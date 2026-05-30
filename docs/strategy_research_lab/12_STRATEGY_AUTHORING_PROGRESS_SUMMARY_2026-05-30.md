@@ -20,7 +20,7 @@
 
 ユーザーが YAML で売買ロジックを作るための機能は、paper-only の Strategy Lab flow として実装済みです。
 
-作れる範囲は、entry、long / short、hold、close、reduce、add、rebalance、損切、利確、部分利確、トレーリングストップ、最低保有時間、bracket / OCO 的 lifecycle、position sizing、portfolio exposure、turnover budget、data guard presets、risk throttle、multi-timeframe confirmation、event window、cross-sectional rotation、multi-leg / pair trade、parameter sweep、bundle comparison、paper backtest、paper-preview です。
+作れる範囲は、entry、long / short、hold、close、reduce、add、rebalance、損切、利確、部分利確、トレーリングストップ、最低保有時間、bracket / OCO 的 lifecycle、time-in-force / post-only paper order constraint、position sizing、portfolio exposure、turnover budget、data guard presets、risk throttle、multi-timeframe confirmation、event window、cross-sectional rotation、multi-leg / pair trade、parameter sweep、bundle comparison、paper backtest、paper-preview です。
 
 今回の追加で、execution quality は preset profile、spread / depth / partial fill、latency、queue-position、short-borrow、tax drag、turnover pressure、maker/taker fee edge まで paper-only gate として扱えるようになりました。
 
