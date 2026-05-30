@@ -73,6 +73,10 @@ validation は次を stop condition にします。
 - `rules.sizing.max_volatility_scaled_position_weight` が負数
 - `rules.order.entry_type=limit` なのに `limit_offset_bps` が無い
 - `rules.order.entry_type=stop_market` なのに `stop_offset_bps` が無い
+- `rules.order.time_in_force` が `gtc`, `gtd`, `ioc`, `fok` 以外
+- `rules.order.time_in_force=gtd` なのに `timeout_minutes` が無い
+- `rules.order.time_in_force=ioc` / `fok` なのに `timeout_minutes` がある
+- `rules.order.post_only=true` なのに `entry_type=limit` ではない
 - `rules.order.limit_offset_bps` / `stop_offset_bps` / `timeout_minutes` が負数
 - `rules.bracket.time_stop_minutes` / `break_even_after_bps` が負数
 - `rules.bracket.enabled=true` なのに stop / take / trailing / time stop / break-even stop のいずれも無い
@@ -180,7 +184,7 @@ rebalance 判定は close / reduce / add / hold / entry より先に評価しま
 - `bracket_type` / `bracket_time_stop_minutes` / `bracket_break_even_after_bps` は `rules.bracket` から引き継ぐ。`rules.bracket.enabled=false` の場合は `bracket_type=none` とする。
 - `position_weight` / `notional_usd` は `rules.sizing` から引き継ぐ。`position_weight` は backtest return の paper weight として使う。
 - `rules.sizing.volatility_target` がある場合は、row の `volatility_column` が正の数値なら `position_weight * volatility_target / volatility_column` へ変換し、`max_volatility_scaled_position_weight` があれば上限で cap する。volatility が欠損または 0 以下なら base `position_weight` を使う。
-- `entry_order_type` / `entry_limit_offset_bps` / `entry_stop_offset_bps` / `entry_timeout_minutes` は `rules.order` から引き継ぐ。
+- `entry_order_type` / `entry_limit_offset_bps` / `entry_stop_offset_bps` / `entry_timeout_minutes` / `entry_time_in_force` / `entry_post_only` は `rules.order` から引き継ぐ。
 - `slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_column` / `depth_participation_rate` / `max_latency_ms` / `latency_ms` / `min_queue_position_score` / `queue_position_score` / `min_borrow_availability_ratio` / `borrow_availability_ratio` / `max_borrow_cost_bps` / `borrow_cost_bps` / `max_tax_drag_bps` / `tax_drag_bps` / `max_turnover_pressure` / `turnover_pressure` / `min_fee_edge_bps` / `fee_edge_bps` は `rules.execution` と feature panel row から引き継ぐ。
 - `portfolio.max_signals_per_timestamp` がある場合は、同一 `ts_signal` の trade signal を `rank_score` 降順で上位 N 件に制限する。hold / ambiguous signal は記録として残す。
 - `portfolio.allocation_method=equal_weight` / `score_proportional` / `inverse_volatility` / `dollar_neutral` / `beta_neutral` / `group_neutral` がある場合は、同一 `ts_signal` の採用候補の `position_weight` を `target_total_position_weight` に正規化する。`score_proportional` は正の `raw_score` 比例で配分し、全 score が 0 以下または欠損なら equal weight に fallback する。`inverse_volatility` は `allocation_volatility_column` の正の値の逆数で配分し、全 volatility が 0 以下または欠損なら equal weight に fallback する。`dollar_neutral` は long / short の gross weight を半分ずつにし、片側の候補しかない timestamp では反対側の half target を未使用にする。`beta_neutral` は `allocation_beta_column` から long beta exposure と short beta exposure が釣り合うように配分し、片側 beta が無い、0、または候補が片側だけの場合は dollar-neutral と同じ half target 配分へ fallback する。`group_neutral` は `group_column` ごとに long / short gross weight を中立化し、group が欠けた候補は neutral allocation 上 0 weight にする。
