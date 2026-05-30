@@ -79,7 +79,7 @@ def default_signal_generator_registry() -> SignalGeneratorRegistry:
                     asset_class="basket_index",
                 ),
             ),
-            build=lambda frame, _spec: build_qqq_trend_rates_vix_signals(frame),
+            build=build_qqq_trend_rates_vix_signals,
         )
     )
     registry.register(
@@ -96,7 +96,7 @@ def default_signal_generator_registry() -> SignalGeneratorRegistry:
                     asset_class="index",
                 ),
             ),
-            build=lambda frame, _spec: build_sp500_trend_rates_vix_signals(frame),
+            build=build_sp500_trend_rates_vix_signals,
         )
     )
     return registry

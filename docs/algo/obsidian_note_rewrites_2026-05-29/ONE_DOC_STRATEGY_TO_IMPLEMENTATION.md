@@ -112,7 +112,7 @@ uv run sis strategy-preview
 - `strategy_signals.parquet` が Strategy Lab 正本です。
 - `signals.csv` は legacy export です。
 - 現行 `build_signals()` は default generator `qqq_trend_rates_vix` を使います。
-- arbitrary `StrategyExperimentSpec` を CLI 引数で読む汎用 runner ではありません。
+- `strategy-experiment-run --spec` で `StrategyExperimentSpec` YAML/JSON を読み込めます。`parameter_grid` は safe cartesian sweep として展開され、built-in generator は `min_source_confidence`, `max_vix_level` / `vix_gate`, `min_research_return_1d`, `timeframe` を signal 条件または出力 timeframe として消費できます。任意式 eval や任意 Python plugin は実行しません。
 
 Signal row に必要な意味:
 

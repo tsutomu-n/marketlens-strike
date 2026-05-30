@@ -90,7 +90,7 @@ src/sis/execution/
 |---|---|---|
 | `README.md` | 最短入口。現行 flow と検証値を掲載 | 2026-05-30 code/docs check へ更新済み |
 | `docs/CURRENT_STATE.md` | restart 正本として有効 | code/docs verification と runtime artifact snapshot を分離済み |
-| `docs/CODE_STATUS.md` | code surface と tests の実装状態を説明 | 2026-05-30 code/docs check へ更新済み。`StrategyExperimentSpec` 汎用 runner は詳細 Strategy Lab docs 側で制約として明記済み |
+| `docs/CODE_STATUS.md` | code surface と tests の実装状態を説明 | 2026-05-30 code/docs check へ更新済み。`StrategyExperimentSpec` runner は `strategy-experiment-run --spec` として実装済み |
 | `docs/OPERATIONS_RUNBOOK.md` | operator 手順は current CLI と一致 | `docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md` への誘導を強める |
 | `docs/ARCHITECTURE_AND_PHASES.md` | subsystem 境界は有効 | legacy paper bridge と Strategy Lab 正本の分離をさらに明文化可能 |
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | Strategy Lab 入口として有効 | Docs Audit section を「実施済み」に更新するとよい |
@@ -98,7 +98,7 @@ src/sis/execution/
 | `docs/XNYS_MARKET_CALENDAR.md` | real_market / tracking / micro_live の session 前提として有効 | `src/sis/market_calendar.py` と `configs/instrument_registry.seed.json` の symbol 対応と合わせて読む |
 | `plan/README.md` | plan 全体の historical index として有効 | PR-00〜PR-08 は実装済みであり、current status は docs 側を先に読むことを維持 |
 | `docs/trade_xyz_bot_beginner_guide.html` | 初心者向けとして有効 | Strategy Lab → paper intent preview の説明を追加できる |
-| `docs/algo/EXPERIMENT_SCORECARD.md` | 戦略候補の比較テンプレートとして有効 | `TrialRecord`, `PromotionDecision`, `PaperIntentPreview` への対応欄を足すとさらに使いやすい |
+| `docs/algo/EXPERIMENT_SCORECARD.md` | 戦略候補の比較テンプレートとして有効 | `TrialRecord.metrics.strategy_scorecard`, `PromotionDecision.scorecard_summary`, `PaperIntentPreview.scorecard_summary` へ接続済み |
 | `docs/algo/strategy_factory/SIGNAL_CANDIDATE_TEMPLATE.md` | signal candidate intake として有効 | `Decision Log` を人間レビュー記録として明記し、Strategy Lab artifact と誤読しない注記を足せる |
 | `docs/algo/obsidian_note_rewrites_2026-05-29/` | `docs/algo/README.md` が参照する批判的リライト bundle として有効 | current docs lint 対象。Strategy Lab 実装正本ではなく、戦略設計の参照資料として読む |
 
@@ -115,7 +115,7 @@ src/sis/execution/
 | `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | PR9a-PR12 消化済み計画と future候補が混在 | archived historical consumed plan |
 | `plan/archive/PR-00_to_PR-08_implementation_plan.md` | PR-00〜PR-08 実装前/実装中の acceptance と micro live canary 計画 | archived historical migration contract。current code status は `docs/CODE_STATUS.md` を先に読む |
 | `plan/archive/PR-00_python_313_migration_plan.md` | Python 3.13 migration の事前計画 | archived historical plan。Python 3.13 migration は現行 `scripts/check` と lockfile を正とする |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | full check `294 passed` と PR12 runtime snapshot | focused historical Trade[XYZ] audit。current code/docs verification は `426 passed` / current-docs lint を使う |
+| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | full check `294 passed` と PR12 runtime snapshot | focused historical Trade[XYZ] audit。current code/docs verification は `446 passed` / current-docs lint を使う |
 | `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | full check `294 passed` を含む 2026-05-28 snapshot | failure-mode design reference として有効。current verification 値として引用しない |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | 薄い初版 rewrite bundle | old rewrite snapshot |
 

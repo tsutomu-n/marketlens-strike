@@ -195,6 +195,7 @@ def _scaled_signal_return(
     cost_bps: float,
     signal: ResearchSignal,
     final_exit_reason: str = "fixed_horizon",
+    min_exit_index: int | None = None,
     microstructure_fill_fraction: float = 1.0,
     reduce_events: list[tuple[int, float]] | None = None,
     add_events: list[tuple[int, float]] | None = None,
@@ -248,9 +249,10 @@ def _scaled_signal_return(
         exit_price = _exit_price(rows[index], side)
         if exit_price is None:
             continue
+        exit_allowed = min_exit_index is None or index >= min_exit_index
         gross_bps = _gross_return_bps(entry_price, exit_price, side)
         best_bps = max(best_bps, gross_bps)
-        for event_type, value in adjustment_events_by_index.get(index, []):
+        for event_type, value in adjustment_events_by_index.get(index, []) if exit_allowed else []:
             current_open = open_fraction()
             if current_open <= 0:
                 break
@@ -285,16 +287,17 @@ def _scaled_signal_return(
             and gross_bps >= signal.bracket_break_even_after_bps
         ):
             break_even_armed = True
-        if bracket_enabled and break_even_armed and gross_bps <= 0:
+        if exit_allowed and bracket_enabled and break_even_armed and gross_bps <= 0:
             close_all(exit_price, "bracket_break_even_stop")
             final_reason = "bracket_break_even_stop"
             break
-        if signal.stop_loss_bps is not None and gross_bps <= -signal.stop_loss_bps:
+        if exit_allowed and signal.stop_loss_bps is not None and gross_bps <= -signal.stop_loss_bps:
             final_reason = "bracket_stop_loss" if bracket_enabled else "stop_loss"
             close_all(exit_price, final_reason)
             break
         if (
-            signal.partial_take_profit_bps is not None
+            exit_allowed
+            and signal.partial_take_profit_bps is not None
             and signal.partial_exit_fraction is not None
             and not partial_done
             and gross_bps >= signal.partial_take_profit_bps
@@ -303,19 +306,24 @@ def _scaled_signal_return(
             if fraction > 0:
                 close_open_fraction(exit_price, fraction, "partial_take_profit")
                 partial_done = True
-        if signal.take_profit_bps is not None and gross_bps >= signal.take_profit_bps:
+        if (
+            exit_allowed
+            and signal.take_profit_bps is not None
+            and gross_bps >= signal.take_profit_bps
+        ):
             final_reason = "bracket_take_profit" if bracket_enabled else "take_profit"
             close_all(exit_price, final_reason)
             break
         if (
-            signal.trailing_stop_bps is not None
+            exit_allowed
+            and signal.trailing_stop_bps is not None
             and best_bps > 0
             and gross_bps <= best_bps - signal.trailing_stop_bps
         ):
             close_all(exit_price, "trailing_stop")
             final_reason = "trailing_stop"
             break
-        if time_stop_at is not None and quote_times[index] >= time_stop_at:
+        if exit_allowed and time_stop_at is not None and quote_times[index] >= time_stop_at:
             close_all(exit_price, "bracket_time_stop")
             final_reason = "bracket_time_stop"
             break
@@ -619,12 +627,38 @@ def _metrics_for_signals(
             if exit_index is None:
                 stale_rejected += 1
                 continue
+            min_exit_index = None
+            if signal.min_holding_minutes is not None:
+                min_exit_ts = quote_times[entry_index] + timedelta(
+                    minutes=signal.min_holding_minutes
+                )
+                min_exit_index = next(
+                    (
+                        index
+                        for index, quote_time in enumerate(
+                            quote_times[entry_index + 1 :], start=entry_index + 1
+                        )
+                        if quote_time >= min_exit_ts
+                    ),
+                    None,
+                )
+                if min_exit_index is None:
+                    stale_rejected += 1
+                    continue
+                exit_index = max(exit_index, min_exit_index)
             if signal.exit_on_close_signal:
                 close_signal = next(
                     (
                         item
                         for item in symbol_signals
-                        if item.ts_signal > signal.ts_signal and item.side == "close"
+                        if item.ts_signal > signal.ts_signal
+                        and item.side == "close"
+                        and (
+                            signal.min_holding_minutes is None
+                            or item.ts_signal
+                            >= quote_times[entry_index]
+                            + timedelta(minutes=signal.min_holding_minutes)
+                        )
                     ),
                     None,
                 )
@@ -647,7 +681,13 @@ def _metrics_for_signals(
                 for reduce_signal in (
                     item
                     for item in symbol_signals
-                    if item.ts_signal > signal.ts_signal and item.side == "reduce"
+                    if item.ts_signal > signal.ts_signal
+                    and item.side == "reduce"
+                    and (
+                        signal.min_holding_minutes is None
+                        or item.ts_signal
+                        >= quote_times[entry_index] + timedelta(minutes=signal.min_holding_minutes)
+                    )
                 ):
                     reduce_index = next(
                         (
@@ -666,7 +706,13 @@ def _metrics_for_signals(
                 for add_signal in (
                     item
                     for item in symbol_signals
-                    if item.ts_signal > signal.ts_signal and item.side == "add"
+                    if item.ts_signal > signal.ts_signal
+                    and item.side == "add"
+                    and (
+                        signal.min_holding_minutes is None
+                        or item.ts_signal
+                        >= quote_times[entry_index] + timedelta(minutes=signal.min_holding_minutes)
+                    )
                 ):
                     add_index = next(
                         (
@@ -685,7 +731,13 @@ def _metrics_for_signals(
                 for rebalance_signal in (
                     item
                     for item in symbol_signals
-                    if item.ts_signal > signal.ts_signal and item.side == "rebalance"
+                    if item.ts_signal > signal.ts_signal
+                    and item.side == "rebalance"
+                    and (
+                        signal.min_holding_minutes is None
+                        or item.ts_signal
+                        >= quote_times[entry_index] + timedelta(minutes=signal.min_holding_minutes)
+                    )
                 ):
                     rebalance_index = next(
                         (
@@ -712,6 +764,12 @@ def _metrics_for_signals(
                         if item.ts_signal > signal.ts_signal
                         and item.side in {"long", "short"}
                         and item.side != signal.side
+                        and (
+                            signal.min_holding_minutes is None
+                            or item.ts_signal
+                            >= quote_times[entry_index]
+                            + timedelta(minutes=signal.min_holding_minutes)
+                        )
                     ),
                     None,
                 )
@@ -797,6 +855,7 @@ def _metrics_for_signals(
                 cost_bps=cost_bps,
                 signal=signal,
                 final_exit_reason=final_exit_reason,
+                min_exit_index=min_exit_index,
                 microstructure_fill_fraction=microstructure_fill_fraction or 1.0,
                 reduce_events=reduce_events,
                 add_events=add_events,

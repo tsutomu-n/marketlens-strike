@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from typing import Literal
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class PaperIntentPreview(BaseModel):
@@ -27,6 +28,7 @@ class PaperIntentPreview(BaseModel):
     source_tracking_ts: datetime | None
     source_feature_ts: datetime | None
     source_phase_gate_run_id: str | None
+    scorecard_summary: dict[str, Any] = Field(default_factory=dict)
     requires_revalidation: bool = True
     paper_only: bool = True
     live_conversion_allowed: bool = False

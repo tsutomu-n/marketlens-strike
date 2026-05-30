@@ -33,6 +33,7 @@ class TradeCandidate(BaseModel):
     trailing_stop_bps: float | None = None
     partial_take_profit_bps: float | None = None
     partial_exit_fraction: float | None = None
+    min_holding_minutes: int | None = None
     exit_on_opposite_signal: bool = False
     bracket_type: Literal["none", "oco"] = "none"
     bracket_time_stop_minutes: int | None = None
@@ -69,6 +70,8 @@ class TradeCandidate(BaseModel):
             raise ValueError("confidence must be between 0 and 1")
         if self.partial_exit_fraction is not None and not 0.0 <= self.partial_exit_fraction <= 1.0:
             raise ValueError("partial_exit_fraction must be between 0 and 1")
+        if self.min_holding_minutes is not None and self.min_holding_minutes <= 0:
+            raise ValueError("min_holding_minutes must be positive")
         for field_name in (
             "stop_loss_bps",
             "take_profit_bps",

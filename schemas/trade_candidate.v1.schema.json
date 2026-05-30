@@ -17,6 +17,7 @@
     "trailing_stop_bps": { "type": ["number", "null"], "minimum": 0 },
     "partial_take_profit_bps": { "type": ["number", "null"], "minimum": 0 },
     "partial_exit_fraction": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "min_holding_minutes": { "type": ["integer", "null"], "minimum": 1 },
     "exit_on_opposite_signal": { "type": "boolean" },
     "bracket_type": { "enum": ["none", "oco"] },
     "bracket_time_stop_minutes": { "type": ["integer", "null"], "minimum": 0 },

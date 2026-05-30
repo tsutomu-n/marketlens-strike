@@ -89,6 +89,15 @@ def test_strategy_lab_cli_artifact_chain(tmp_path, monkeypatch) -> None:
     run_id = ledger_record["trial_id"].removeprefix("trial-")
     assert ledger_record["trial_group_id"] == f"trial-group-{run_id}"
     assert ledger_record["metrics"]["signal_artifact_run_id"] == run_id
+    ledger_record["metrics"]["strategy_scorecard"] = {
+        "schema_version": "strategy_authoring_scorecard.v1",
+        "signal_count": 1,
+        "failed_thresholds": [],
+        "backtest_passed": True,
+        "paper_only": True,
+        "live_order_submitted": False,
+    }
+    ledger_path.write_text(json.dumps(ledger_record) + "\n", encoding="utf-8")
 
     result = runner.invoke(app, ["build-paper-candidate-pack"])
     assert result.exit_code == 0
@@ -107,6 +116,8 @@ def test_strategy_lab_cli_artifact_chain(tmp_path, monkeypatch) -> None:
     decision = json.loads(decision_path.read_text(encoding="utf-8"))
     assert decision["promotion_id"] == f"promotion-{run_id}"
     assert decision["source_pack_id"] == pack["pack_id"]
+    assert "strategy_scorecard" in decision["observed_evidence"]
+    assert decision["scorecard_summary"]["schema_version"] == "strategy_authoring_scorecard.v1"
 
     result = runner.invoke(app, ["build-paper-intent-preview"])
     assert result.exit_code == 0
@@ -116,6 +127,7 @@ def test_strategy_lab_cli_artifact_chain(tmp_path, monkeypatch) -> None:
     assert intents[0]["paper_only"] is True
     assert intents[0]["live_conversion_allowed"] is False
     assert intents[0]["source_pack_id"] == pack["pack_id"]
+    assert intents[0]["scorecard_summary"]["schema_version"] == "strategy_authoring_scorecard.v1"
 
 
 def test_strategy_lab_cli_preserves_sp500_signal_lineage(tmp_path, monkeypatch) -> None:
@@ -192,6 +204,7 @@ def test_build_signals_unknown_generator_exits_with_registered_ids(tmp_path, mon
                 "research_return_1d": 0.01,
                 "t10y2y": 1.0,
                 "vix_level": 20.0,
+                "source_confidence": 0.9,
             }
         ]
     ).write_parquet(feature_panel_path)
@@ -202,6 +215,311 @@ def test_build_signals_unknown_generator_exits_with_registered_ids(tmp_path, mon
     assert "unknown_generator" in result.stdout
     assert "qqq_trend_rates_vix" in result.stdout
     assert "sp500_trend_rates_vix" in result.stdout
+
+
+def test_strategy_experiment_run_reads_yaml_spec_and_preserves_spec_lineage(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    feature_panel_path = data_dir / "research/feature_panel.parquet"
+    feature_panel_path.parent.mkdir(parents=True)
+    pl.DataFrame(
+        [
+            {
+                "ts": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": True,
+                "is_event_blackout": False,
+                "close_above_sma20": True,
+                "research_return_1d": 0.01,
+                "t10y2y": 1.0,
+                "vix_level": 20.0,
+                "source_confidence": 0.9,
+            }
+        ]
+    ).write_parquet(feature_panel_path)
+    spec_path = tmp_path / "experiment.yaml"
+    spec_path.write_text(
+        "\n".join(
+            [
+                "schema_version: strategy_experiment_spec.v1",
+                "strategy_id: custom_qqq_research_v1",
+                "strategy_family: custom_momentum",
+                "strategy_version: v1",
+                "enabled: true",
+                "description: Custom registered-generator experiment.",
+                "symbol_bindings:",
+                "  - execution_venue: trade_xyz",
+                "    execution_symbol: XYZ100",
+                "    real_market_symbol: QQQ",
+                "    asset_class: basket_index",
+                "generator_id: qqq_trend_rates_vix",
+                "parameter_grid:",
+                "  min_source_confidence: [0.7]",
+                "evaluation_plan_id: initial_single_window_v1",
+                "run_profile_id: strategy_lab",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["strategy-experiment-run", "--spec", str(spec_path)])
+
+    assert result.exit_code == 0, result.stdout
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("strategy_id").to_list() == ["custom_qqq_research_v1"]
+    assert signals.get_column("strategy_family").to_list() == ["custom_momentum"]
+    manifest = json.loads(
+        (data_dir / "research/strategy_signal_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["generator_id"] == "qqq_trend_rates_vix"
+    assert manifest["strategy_id"] == "custom_qqq_research_v1"
+    assert manifest["symbol_bindings"][0]["execution_symbol"] == "XYZ100"
+    report = (data_dir / "reports/strategy_experiment_run.md").read_text(encoding="utf-8")
+    assert "- paper_only: true" in report
+    assert "- live_order_submitted: false" in report
+
+
+def test_strategy_experiment_run_unknown_generator_exits_with_registered_ids(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    feature_panel_path = data_dir / "research/feature_panel.parquet"
+    feature_panel_path.parent.mkdir(parents=True)
+    pl.DataFrame(
+        [
+            {
+                "ts": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": True,
+                "is_event_blackout": False,
+                "close_above_sma20": True,
+                "research_return_1d": 0.01,
+                "t10y2y": 1.0,
+                "vix_level": 20.0,
+                "source_confidence": 0.9,
+            }
+        ]
+    ).write_parquet(feature_panel_path)
+    spec_path = tmp_path / "experiment.yaml"
+    spec_path.write_text(
+        "\n".join(
+            [
+                "schema_version: strategy_experiment_spec.v1",
+                "strategy_id: custom_qqq_research_v1",
+                "strategy_family: custom_momentum",
+                "strategy_version: v1",
+                "enabled: true",
+                "description: Custom registered-generator experiment.",
+                "symbol_bindings:",
+                "  - execution_venue: trade_xyz",
+                "    execution_symbol: XYZ100",
+                "    real_market_symbol: QQQ",
+                "    asset_class: basket_index",
+                "generator_id: missing_generator",
+                "parameter_grid: {}",
+                "evaluation_plan_id: initial_single_window_v1",
+                "run_profile_id: strategy_lab",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["strategy-experiment-run", "--spec", str(spec_path)])
+
+    assert result.exit_code == 2
+    assert "missing_generator" in result.stdout
+    assert "qqq_trend_rates_vix" in result.stdout
+    assert "sp500_trend_rates_vix" in result.stdout
+
+
+def test_strategy_experiment_run_expands_parameter_grid_with_distinct_lineage(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    feature_panel_path = data_dir / "research/feature_panel.parquet"
+    feature_panel_path.parent.mkdir(parents=True)
+    pl.DataFrame(
+        [
+            {
+                "ts": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": True,
+                "is_event_blackout": False,
+                "close_above_sma20": True,
+                "research_return_1d": 0.01,
+                "t10y2y": 1.0,
+                "vix_level": 20.0,
+                "source_confidence": 0.9,
+            }
+        ]
+    ).write_parquet(feature_panel_path)
+    spec_path = tmp_path / "experiment.yaml"
+    spec_path.write_text(
+        "\n".join(
+            [
+                "schema_version: strategy_experiment_spec.v1",
+                "strategy_id: custom_qqq_grid_v1",
+                "strategy_family: custom_momentum",
+                "strategy_version: v1",
+                "enabled: true",
+                "description: Custom registered-generator grid experiment.",
+                "symbol_bindings:",
+                "  - execution_venue: trade_xyz",
+                "    execution_symbol: XYZ100",
+                "    real_market_symbol: QQQ",
+                "    asset_class: basket_index",
+                "generator_id: qqq_trend_rates_vix",
+                "parameter_grid:",
+                "  min_source_confidence: [0.7, 0.8]",
+                "evaluation_plan_id: initial_single_window_v1",
+                "run_profile_id: strategy_lab",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["strategy-experiment-run", "--spec", str(spec_path)])
+
+    assert result.exit_code == 0, result.stdout
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.height == 2
+    parameter_hashes = signals.get_column("parameter_hash").to_list()
+    assert len(set(parameter_hashes)) == 2
+    assert len(set(signals.get_column("signal_id").to_list())) == 2
+    assert all(
+        any(str(reason).startswith("parameter_grid:") for reason in reasons)
+        for reasons in signals.get_column("reason_codes").to_list()
+    )
+    manifest = json.loads(
+        (data_dir / "research/strategy_signal_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["signal_count"] == 2
+
+
+def test_strategy_experiment_run_parameter_grid_changes_signal_conditions(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    feature_panel_path = data_dir / "research/feature_panel.parquet"
+    feature_panel_path.parent.mkdir(parents=True)
+    pl.DataFrame(
+        [
+            {
+                "ts": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": True,
+                "is_event_blackout": False,
+                "close_above_sma20": True,
+                "research_return_1d": 0.01,
+                "t10y2y": 1.0,
+                "vix_level": 20.0,
+                "source_confidence": 0.6,
+            },
+            {
+                "ts": datetime(2026, 1, 2, tzinfo=timezone.utc),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": True,
+                "is_event_blackout": False,
+                "close_above_sma20": True,
+                "research_return_1d": 0.01,
+                "t10y2y": 1.0,
+                "vix_level": 20.0,
+                "source_confidence": 0.9,
+            },
+        ]
+    ).write_parquet(feature_panel_path)
+    spec_path = tmp_path / "experiment.yaml"
+    spec_path.write_text(
+        "\n".join(
+            [
+                "schema_version: strategy_experiment_spec.v1",
+                "strategy_id: custom_qqq_quality_gate_v1",
+                "strategy_family: custom_momentum",
+                "strategy_version: v1",
+                "enabled: true",
+                "description: Custom registered-generator quality gate experiment.",
+                "symbol_bindings:",
+                "  - execution_venue: trade_xyz",
+                "    execution_symbol: XYZ100",
+                "    real_market_symbol: QQQ",
+                "    asset_class: basket_index",
+                "generator_id: qqq_trend_rates_vix",
+                "parameter_grid:",
+                "  min_source_confidence: [0.8]",
+                "  timeframe: [1h]",
+                "evaluation_plan_id: initial_single_window_v1",
+                "run_profile_id: strategy_lab",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["strategy-experiment-run", "--spec", str(spec_path)])
+
+    assert result.exit_code == 0, result.stdout
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.height == 1
+    assert signals.get_column("source_confidence").to_list() == [0.9]
+    assert signals.get_column("timeframe").to_list() == ["1h"]
+
+
+def test_strategy_experiment_run_rejects_oversized_parameter_grid(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    feature_panel_path = data_dir / "research/feature_panel.parquet"
+    feature_panel_path.parent.mkdir(parents=True)
+    pl.DataFrame(
+        [
+            {
+                "ts": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": True,
+                "is_event_blackout": False,
+                "close_above_sma20": True,
+                "research_return_1d": 0.01,
+                "t10y2y": 1.0,
+                "vix_level": 20.0,
+            }
+        ]
+    ).write_parquet(feature_panel_path)
+    spec_path = tmp_path / "experiment.yaml"
+    spec_path.write_text(
+        "\n".join(
+            [
+                "schema_version: strategy_experiment_spec.v1",
+                "strategy_id: custom_qqq_grid_v1",
+                "strategy_family: custom_momentum",
+                "strategy_version: v1",
+                "enabled: true",
+                "description: Custom registered-generator grid experiment.",
+                "symbol_bindings:",
+                "  - execution_venue: trade_xyz",
+                "    execution_symbol: XYZ100",
+                "    real_market_symbol: QQQ",
+                "    asset_class: basket_index",
+                "generator_id: qqq_trend_rates_vix",
+                "parameter_grid:",
+                "  min_source_confidence: [0.7, 0.8]",
+                "  vix_gate: [20, 25]",
+                "evaluation_plan_id: initial_single_window_v1",
+                "run_profile_id: strategy_lab",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        ["strategy-experiment-run", "--spec", str(spec_path), "--max-variants", "3"],
+    )
+
+    assert result.exit_code == 2
+    assert "parameter_grid expands to 4 variants" in result.stdout
 
 
 def test_evaluate_strategy_lab_is_idempotent_for_same_artifact(tmp_path, monkeypatch) -> None:

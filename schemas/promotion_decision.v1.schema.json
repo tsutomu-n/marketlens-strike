@@ -10,6 +10,7 @@
   ],
   "properties": {
     "schema_version": { "const": "promotion_decision.v1" },
+    "scorecard_summary": { "type": "object" },
     "paper_ready_claimed": { "const": false },
     "tiny_live_ready_claimed": { "const": false },
     "live_ready_claimed": { "const": false },

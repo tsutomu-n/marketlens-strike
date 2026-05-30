@@ -3,9 +3,12 @@ from __future__ import annotations
 import polars as pl
 
 from sis.strategies._signal_quality import QUALITY_COLUMN_SCHEMA, quality_column_expressions
+from sis.strategies._trend_rates_vix_parameters import trend_rates_vix_parameters
 
 
-def build_qqq_trend_rates_vix_signals(feature_frame: pl.DataFrame) -> pl.DataFrame:
+def build_qqq_trend_rates_vix_signals(
+    feature_frame: pl.DataFrame, spec: object | None = None
+) -> pl.DataFrame:
     if feature_frame.is_empty():
         return pl.DataFrame(
             schema={
@@ -19,16 +22,26 @@ def build_qqq_trend_rates_vix_signals(feature_frame: pl.DataFrame) -> pl.DataFra
                 **QUALITY_COLUMN_SCHEMA,
             }
         )
-
-    return (
-        feature_frame.filter(pl.col("canonical_symbol") == "QQQ")
+    params = trend_rates_vix_parameters(spec)
+    filtered = (
+        feature_frame.with_columns(*quality_column_expressions(feature_frame))
+        .filter(pl.col("canonical_symbol") == "QQQ")
         .filter(pl.col("trade_allowed"))
         .filter(~pl.col("is_event_blackout"))
         .filter(pl.col("close_above_sma20"))
-        .with_columns(
+    )
+    if params.min_source_confidence is not None:
+        filtered = filtered.filter(pl.col("source_confidence") >= params.min_source_confidence)
+    if params.max_vix_level is not None:
+        filtered = filtered.filter(pl.col("vix_level") <= params.max_vix_level)
+    if params.min_research_return_1d is not None:
+        filtered = filtered.filter(pl.col("research_return_1d") >= params.min_research_return_1d)
+
+    return (
+        filtered.with_columns(
             pl.col("ts").alias("ts_signal"),
             pl.lit("long").alias("side"),
-            pl.lit("4h").alias("timeframe"),
+            pl.lit(params.timeframe).alias("timeframe"),
             (
                 (pl.col("research_return_1d").fill_null(0.0) * 100.0)
                 + (pl.col("t10y2y").fill_null(0.0) * 0.01)
@@ -36,7 +49,6 @@ def build_qqq_trend_rates_vix_signals(feature_frame: pl.DataFrame) -> pl.DataFra
             ).alias("signal_strength"),
             pl.lit("qqq_trend_rates_vix").alias("strategy_name"),
             pl.lit("close_above_sma20_and_trade_allowed").alias("reason"),
-            *quality_column_expressions(feature_frame),
         )
         .select(
             "ts_signal",

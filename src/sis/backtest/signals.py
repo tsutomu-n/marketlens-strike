@@ -21,6 +21,7 @@ class ResearchSignal:
     trailing_stop_bps: float | None = None
     partial_take_profit_bps: float | None = None
     partial_exit_fraction: float | None = None
+    min_holding_minutes: int | None = None
     exit_on_opposite_signal: bool = False
     exit_on_close_signal: bool = False
     exit_on_reduce_signal: bool = False
@@ -184,6 +185,9 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                 ),
                 partial_exit_fraction=_parse_optional_positive_float(
                     row.get("partial_exit_fraction"), field_name="partial_exit_fraction"
+                ),
+                min_holding_minutes=_parse_optional_positive_int(
+                    row.get("min_holding_minutes"), field_name="min_holding_minutes"
                 ),
                 exit_on_opposite_signal=_parse_bool(row.get("exit_on_opposite_signal")),
                 exit_on_close_signal=_parse_bool(row.get("exit_on_close_signal")),

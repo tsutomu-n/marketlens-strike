@@ -45,6 +45,16 @@ ALLOWED_OPERATORS = {
     "between",
     "in",
     "not_in",
+    "crosses_above",
+    "crosses_below",
+    "rising",
+    "falling",
+    "consecutive_gt",
+    "consecutive_gte",
+    "consecutive_lt",
+    "consecutive_lte",
+    "consecutive_eq",
+    "consecutive_neq",
 }
 VALID_THROUGH = {"signals", "backtest", "paper-preview"}
 
@@ -72,10 +82,37 @@ class AuthoringExperiment(BaseModel):
         return self
 
 
+class ConfirmationPanel(BaseModel):
+    path: str
+    prefix: str
+    max_age_minutes: int | None = None
+
+    @model_validator(mode="after")
+    def validate_confirmation_panel(self) -> ConfirmationPanel:
+        if not self.path.strip():
+            raise ValueError("data.confirmation_panels[].path must be non-empty")
+        if not self.prefix.strip():
+            raise ValueError("data.confirmation_panels[].prefix must be non-empty")
+        self.prefix = self.prefix.strip()
+        if self.prefix in {"ts", "canonical_symbol"}:
+            raise ValueError("data.confirmation_panels[].prefix is reserved")
+        if self.max_age_minutes is not None and self.max_age_minutes <= 0:
+            raise ValueError("data.confirmation_panels[].max_age_minutes must be positive")
+        return self
+
+
 class AuthoringData(BaseModel):
     feature_panel_path: str = "data/research/feature_panel.parquet"
     quote_data_path: str = "data/normalized/quotes.parquet"
     cost_model_path: str = "data/research/venue_cost_matrix.csv"
+    confirmation_panels: list[ConfirmationPanel] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_data(self) -> AuthoringData:
+        prefixes = [panel.prefix for panel in self.confirmation_panels]
+        if len(prefixes) != len(set(prefixes)):
+            raise ValueError("data.confirmation_panels prefixes must be unique")
+        return self
 
 
 class Condition(BaseModel):
@@ -92,18 +129,35 @@ class Condition(BaseModel):
         "between",
         "in",
         "not_in",
+        "crosses_above",
+        "crosses_below",
+        "rising",
+        "falling",
+        "consecutive_gt",
+        "consecutive_gte",
+        "consecutive_lt",
+        "consecutive_lte",
+        "consecutive_eq",
+        "consecutive_neq",
     ]
     value: Any = None
     value_column: str | None = None
+    window: int | None = None
 
     @model_validator(mode="after")
     def validate_condition(self) -> Condition:
         if not self.column.strip():
             raise ValueError("rule condition column must be non-empty")
+        if self.window is not None and self.window <= 0:
+            raise ValueError(f"{self.column}: condition window must be positive")
         if self.value_column is not None and not self.value_column.strip():
             raise ValueError(f"{self.column}: value_column must be non-empty when set")
         if self.op in {"is_true", "is_false"} and self.value_column is not None:
             raise ValueError(f"{self.column}: {self.op} does not support value_column")
+        if self.op in {"rising", "falling"}:
+            if self.value is not None or self.value_column is not None:
+                raise ValueError(f"{self.column}: {self.op} does not support value targets")
+            return self
         if self.op == "between":
             if self.value_column is not None:
                 raise ValueError(f"{self.column}: between does not support value_column")
@@ -121,6 +175,24 @@ class Condition(BaseModel):
                 raise ValueError(
                     f"{self.column}: {self.op} requires exactly one of value or value_column"
                 )
+        if self.op in {
+            "crosses_above",
+            "crosses_below",
+            "consecutive_gt",
+            "consecutive_gte",
+            "consecutive_lt",
+            "consecutive_lte",
+            "consecutive_eq",
+            "consecutive_neq",
+        }:
+            has_value = self.value is not None
+            has_value_column = self.value_column is not None
+            if has_value == has_value_column:
+                raise ValueError(
+                    f"{self.column}: {self.op} requires exactly one of value or value_column"
+                )
+            if self.op.startswith("consecutive_") and self.window is None:
+                raise ValueError(f"{self.column}: {self.op} requires condition window")
         return self
 
 
@@ -198,6 +270,7 @@ class ExitRules(BaseModel):
     partial_take_profit_bps_column: str | None = None
     partial_exit_fraction: float | None = None
     partial_exit_fraction_column: str | None = None
+    min_holding_minutes: int | None = None
 
     @model_validator(mode="after")
     def validate_exit(self) -> ExitRules:
@@ -218,6 +291,8 @@ class ExitRules(BaseModel):
             raise ValueError("rules.exit.add_fraction must be between 0 and 1")
         if self.rebalance_target_fraction is not None and self.rebalance_target_fraction < 0:
             raise ValueError("rules.exit.rebalance_target_fraction must be >= 0")
+        if self.min_holding_minutes is not None and self.min_holding_minutes <= 0:
+            raise ValueError("rules.exit.min_holding_minutes must be positive")
         for field_name in (
             "stop_loss_bps_column",
             "take_profit_bps_column",
@@ -331,7 +406,11 @@ class PortfolioRules(BaseModel):
     max_total_position_weight: float | None = None
     max_long_position_weight: float | None = None
     max_short_position_weight: float | None = None
+    max_abs_net_position_weight: float | None = None
     max_symbol_position_weight: float | None = None
+    max_group_position_weight: float | None = None
+    max_group_abs_net_position_weight: float | None = None
+    group_column: str | None = None
     allocation_method: Literal[
         "none", "equal_weight", "score_proportional", "inverse_volatility"
     ] = "none"
@@ -346,11 +425,31 @@ class PortfolioRules(BaseModel):
             "max_total_position_weight",
             "max_long_position_weight",
             "max_short_position_weight",
+            "max_abs_net_position_weight",
             "max_symbol_position_weight",
+            "max_group_position_weight",
+            "max_group_abs_net_position_weight",
         ):
             value = getattr(self, field_name)
             if value is not None and value < 0:
                 raise ValueError(f"rules.portfolio.{field_name} must be >= 0")
+        if (
+            self.max_group_position_weight is not None
+            or self.max_group_abs_net_position_weight is not None
+        ) and self.group_column is None:
+            raise ValueError(
+                "rules.portfolio.group_column is required for group exposure limits"
+            )
+        if self.group_column is not None and not self.group_column.strip():
+            raise ValueError("rules.portfolio.group_column must be non-empty when set")
+        if (
+            self.group_column is not None
+            and self.max_group_position_weight is None
+            and self.max_group_abs_net_position_weight is None
+        ):
+            raise ValueError(
+                "rules.portfolio group exposure limit is required when group_column is set"
+            )
         if self.target_total_position_weight is not None and self.target_total_position_weight < 0:
             raise ValueError("rules.portfolio.target_total_position_weight must be >= 0")
         if self.allocation_method != "none" and self.target_total_position_weight is None:
@@ -379,7 +478,10 @@ class PortfolioRules(BaseModel):
                 self.max_total_position_weight,
                 self.max_long_position_weight,
                 self.max_short_position_weight,
+                self.max_abs_net_position_weight,
                 self.max_symbol_position_weight,
+                self.max_group_position_weight,
+                self.max_group_abs_net_position_weight,
             )
         )
 
@@ -512,6 +614,12 @@ class EventWindowRule(BaseModel):
 class CrossSectionalRules(BaseModel):
     long_top_n: int | None = None
     short_bottom_n: int | None = None
+    long_top_fraction: float | None = None
+    short_bottom_fraction: float | None = None
+    group_column: str | None = None
+    min_candidates: int | None = None
+    min_long_score: float | None = None
+    max_short_score: float | None = None
 
     @model_validator(mode="after")
     def validate_cross_sectional(self) -> CrossSectionalRules:
@@ -519,11 +627,46 @@ class CrossSectionalRules(BaseModel):
             raise ValueError("rules.cross_sectional.long_top_n must be positive")
         if self.short_bottom_n is not None and self.short_bottom_n <= 0:
             raise ValueError("rules.cross_sectional.short_bottom_n must be positive")
+        if self.min_candidates is not None and self.min_candidates <= 0:
+            raise ValueError("rules.cross_sectional.min_candidates must be positive")
+        for field_name in ("long_top_fraction", "short_bottom_fraction"):
+            value = getattr(self, field_name)
+            if value is not None and (not math.isfinite(value) or value <= 0.0 or value > 1.0):
+                raise ValueError(f"rules.cross_sectional.{field_name} must be in (0, 1]")
+        if self.long_top_n is not None and self.long_top_fraction is not None:
+            raise ValueError(
+                "rules.cross_sectional.long_top_n and long_top_fraction are mutually exclusive"
+            )
+        if self.short_bottom_n is not None and self.short_bottom_fraction is not None:
+            raise ValueError(
+                "rules.cross_sectional.short_bottom_n and short_bottom_fraction are mutually exclusive"
+            )
+        if self.group_column is not None and not self.group_column.strip():
+            raise ValueError("rules.cross_sectional.group_column must be non-empty when set")
+        if (
+            self.group_column is not None
+            and self.long_top_n is None
+            and self.short_bottom_n is None
+            and self.long_top_fraction is None
+            and self.short_bottom_fraction is None
+        ):
+            raise ValueError(
+                "rules.cross_sectional top/bottom count or fraction is required when group_column is set"
+            )
+        for field_name in ("min_long_score", "max_short_score"):
+            value = getattr(self, field_name)
+            if value is not None and not math.isfinite(value):
+                raise ValueError(f"rules.cross_sectional.{field_name} must be finite")
         return self
 
     @property
     def enabled(self) -> bool:
-        return self.long_top_n is not None or self.short_bottom_n is not None
+        return (
+            self.long_top_n is not None
+            or self.short_bottom_n is not None
+            or self.long_top_fraction is not None
+            or self.short_bottom_fraction is not None
+        )
 
 
 class MultiLegEntry(BaseModel):
@@ -634,9 +777,90 @@ class DerivedFeature(BaseModel):
         "max",
         "min",
         "mean",
+        "true_range",
+        "atr",
+        "bollinger_upper",
+        "bollinger_lower",
+        "bollinger_width",
+        "bollinger_percent_b",
+        "donchian_upper",
+        "donchian_lower",
+        "donchian_mid",
+        "donchian_width",
+        "keltner_upper",
+        "keltner_lower",
+        "keltner_width",
+        "ichimoku_conversion",
+        "ichimoku_base",
+        "ichimoku_span_a",
+        "ichimoku_span_b",
+        "macd_line",
+        "stochastic_k",
+        "stochastic_d",
+        "adx",
+        "obv",
+        "volume_zscore",
+        "ts_weekday",
+        "ts_hour",
+        "ts_month",
+        "ts_day",
+        "pct_change",
+        "log_return",
+        "lag",
+        "rolling_return",
+        "ewm_mean",
+        "rsi",
+        "rolling_min",
+        "rolling_max",
+        "rolling_sum",
         "rolling_mean",
         "rolling_std",
         "rolling_zscore",
+        "rolling_volatility",
+        "annualized_volatility",
+        "realized_variance",
+        "downside_volatility",
+        "sharpe_like",
+        "sortino_like",
+        "cumulative_return",
+        "slope",
+        "mean_reversion_score",
+        "rolling_corr",
+        "rolling_beta",
+        "rolling_spread_zscore",
+        "order_flow_imbalance",
+        "liquidity_depth_ratio",
+        "spread_bps",
+        "funding_bps",
+        "carry_adjusted_return",
+        "vol_risk_premium",
+        "put_call_skew",
+        "liquidity_stress",
+        "net_exchange_flow",
+        "onchain_activity_ratio",
+        "sentiment_weighted_score",
+        "event_surprise",
+        "fundamental_value_gap",
+        "risk_adjusted_score",
+        "inverse_volatility_weight",
+        "cross_sectional_rank",
+        "queue_position_score",
+        "latency_penalty_bps",
+        "maker_taker_fee_edge_bps",
+        "borrow_cost_bps",
+        "borrow_availability_ratio",
+        "tax_drag_bps",
+        "rebalance_drift",
+        "freshness_score",
+        "staleness_bps",
+        "data_quality_blend",
+        "ensemble_vote_count",
+        "ensemble_vote_ratio",
+        "regime_transition_score",
+        "drawdown_from_peak",
+        "turnover_pressure",
+        "capacity_usage_ratio",
+        "correlation_crowding_score",
     ]
     columns: list[str] = Field(default_factory=list)
     value: float | None = None
@@ -649,7 +873,45 @@ class DerivedFeature(BaseModel):
             raise ValueError("rules.derived_features[].name must be non-empty")
         if not self.columns or any(not column.strip() for column in self.columns):
             raise ValueError(f"rules.derived_features.{self.name}.columns must be non-empty")
-        if self.op in {"abs", "neg", "rolling_mean", "rolling_std", "rolling_zscore"}:
+        if self.op in {
+            "abs",
+            "neg",
+            "bollinger_upper",
+            "bollinger_lower",
+            "bollinger_width",
+            "bollinger_percent_b",
+            "macd_line",
+            "stochastic_d",
+            "volume_zscore",
+            "ts_weekday",
+            "ts_hour",
+            "ts_month",
+            "ts_day",
+            "pct_change",
+            "log_return",
+            "cumulative_return",
+            "freshness_score",
+            "staleness_bps",
+            "drawdown_from_peak",
+            "lag",
+            "rolling_return",
+            "ewm_mean",
+            "rsi",
+            "rolling_min",
+            "rolling_max",
+            "rolling_sum",
+            "rolling_mean",
+            "rolling_std",
+            "rolling_zscore",
+            "rolling_volatility",
+            "annualized_volatility",
+            "realized_variance",
+            "downside_volatility",
+            "sharpe_like",
+            "sortino_like",
+            "slope",
+            "mean_reversion_score",
+        }:
             if len(self.columns) != 1:
                 raise ValueError(
                     f"rules.derived_features.{self.name}.{self.op} requires one column"
@@ -659,11 +921,171 @@ class DerivedFeature(BaseModel):
                 raise ValueError(
                     f"rules.derived_features.{self.name}.{self.op} requires two columns or value"
                 )
-        if self.op in {"rolling_mean", "rolling_std", "rolling_zscore"}:
+        if self.op in {"rolling_corr", "rolling_beta", "rolling_spread_zscore"}:
+            if len(self.columns) != 2:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires two columns"
+                )
+        if self.op in {
+            "order_flow_imbalance",
+            "liquidity_depth_ratio",
+            "spread_bps",
+            "carry_adjusted_return",
+            "vol_risk_premium",
+            "put_call_skew",
+            "net_exchange_flow",
+            "onchain_activity_ratio",
+            "sentiment_weighted_score",
+            "event_surprise",
+            "fundamental_value_gap",
+            "risk_adjusted_score",
+            "queue_position_score",
+            "maker_taker_fee_edge_bps",
+            "borrow_cost_bps",
+            "borrow_availability_ratio",
+            "tax_drag_bps",
+            "rebalance_drift",
+            "regime_transition_score",
+            "turnover_pressure",
+            "capacity_usage_ratio",
+            "correlation_crowding_score",
+        }:
+            if len(self.columns) != 2:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires two columns"
+                )
+        if self.op in {"data_quality_blend", "ensemble_vote_count", "ensemble_vote_ratio"}:
+            if len(self.columns) < 1:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires at least one column"
+                )
+        if self.op == "latency_penalty_bps":
+            if len(self.columns) != 1:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.latency_penalty_bps requires one column"
+                )
+        if self.op in {"inverse_volatility_weight", "cross_sectional_rank"}:
+            if len(self.columns) != 1:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires one column"
+                )
+        if self.op == "funding_bps":
+            if len(self.columns) != 1:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.funding_bps requires one column"
+                )
+        if self.op == "liquidity_stress":
+            if len(self.columns) != 3:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.liquidity_stress requires bid, ask, depth columns"
+                )
+        if self.op == "obv":
+            if len(self.columns) != 2:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.obv requires close and volume columns"
+                )
+        if self.op in {"donchian_upper", "donchian_lower", "donchian_mid", "donchian_width"}:
+            if len(self.columns) != 2:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires high and low columns"
+                )
+        if self.op in {"ichimoku_conversion", "ichimoku_base", "ichimoku_span_b"}:
+            if len(self.columns) != 2:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires high and low columns"
+                )
+        if self.op == "ichimoku_span_a":
+            if len(self.columns) != 2:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.ichimoku_span_a requires conversion and base columns"
+                )
+        if self.op in {
+            "true_range",
+            "atr",
+            "keltner_upper",
+            "keltner_lower",
+            "keltner_width",
+            "stochastic_k",
+            "adx",
+        }:
+            if len(self.columns) != 3:
+                raise ValueError(
+                    f"rules.derived_features.{self.name}.{self.op} requires high, low, close columns"
+                )
+        if self.op in {
+            "atr",
+            "bollinger_upper",
+            "bollinger_lower",
+            "bollinger_width",
+            "bollinger_percent_b",
+            "donchian_upper",
+            "donchian_lower",
+            "donchian_mid",
+            "donchian_width",
+            "keltner_upper",
+            "keltner_lower",
+            "keltner_width",
+            "ichimoku_conversion",
+            "ichimoku_base",
+            "ichimoku_span_b",
+            "macd_line",
+            "stochastic_k",
+            "stochastic_d",
+            "adx",
+            "volume_zscore",
+            "lag",
+            "rolling_return",
+            "ewm_mean",
+            "rsi",
+            "rolling_min",
+            "rolling_max",
+            "rolling_sum",
+            "rolling_mean",
+            "rolling_std",
+            "rolling_zscore",
+            "rolling_volatility",
+            "annualized_volatility",
+            "realized_variance",
+            "downside_volatility",
+            "sharpe_like",
+            "sortino_like",
+            "slope",
+            "mean_reversion_score",
+            "rolling_corr",
+            "rolling_beta",
+            "rolling_spread_zscore",
+            "drawdown_from_peak",
+        }:
             if self.window is None or self.window <= 0:
                 raise ValueError(
                     f"rules.derived_features.{self.name}.{self.op} requires positive window"
                 )
+        if self.value is not None and not math.isfinite(self.value):
+            raise ValueError(f"rules.derived_features.{self.name}.value must be finite")
+        if self.op in {
+            "bollinger_upper",
+            "bollinger_lower",
+            "bollinger_width",
+            "bollinger_percent_b",
+            "keltner_upper",
+            "keltner_lower",
+            "keltner_width",
+        } and (self.value is not None and self.value < 0):
+            raise ValueError(
+                f"rules.derived_features.{self.name}.{self.op} requires non-negative value"
+            )
+        if self.op == "macd_line" and (
+            self.value is None or self.value <= 0 or self.value <= float(self.window or 0)
+        ):
+            raise ValueError(
+                f"rules.derived_features.{self.name}.macd_line requires value greater than window"
+            )
+        if self.op in {"annualized_volatility", "sharpe_like", "sortino_like"} and (
+            self.value is not None and self.value <= 0
+        ):
+            raise ValueError(
+                f"rules.derived_features.{self.name}.{self.op} requires positive value"
+            )
         if self.fill_null is not None and not math.isfinite(self.fill_null):
             raise ValueError(f"rules.derived_features.{self.name}.fill_null must be finite")
         return self
@@ -816,12 +1238,18 @@ ALLOWED_SWEEP_PATHS = {
     "rules.exit.trailing_stop_bps",
     "rules.exit.partial_take_profit_bps",
     "rules.exit.partial_exit_fraction",
+    "rules.exit.min_holding_minutes",
     "rules.sizing.position_weight",
     "rules.portfolio.max_signals_per_timestamp",
     "rules.temporal.cooldown_minutes",
     "rules.temporal.max_signals_per_symbol_per_day",
     "rules.cross_sectional.long_top_n",
     "rules.cross_sectional.short_bottom_n",
+    "rules.cross_sectional.long_top_fraction",
+    "rules.cross_sectional.short_bottom_fraction",
+    "rules.cross_sectional.min_candidates",
+    "rules.cross_sectional.min_long_score",
+    "rules.cross_sectional.max_short_score",
     "backtest.label_horizon_minutes",
 }
 
@@ -1052,7 +1480,10 @@ def train_authoring_linear_model_score(
     feature_path = _resolve_path(spec.data.feature_panel_path, data_dir)
     if not feature_path.exists():
         raise FileNotFoundError(f"feature_panel_path not found: {feature_path}")
-    frame = _apply_derived_features(pl.read_parquet(feature_path), spec)
+    frame = _apply_derived_features(
+        _apply_confirmation_panels(pl.read_parquet(feature_path), spec, data_dir=data_dir),
+        spec,
+    )
     required = {"canonical_symbol", target_column, *feature_columns}
     missing = sorted(required.difference(frame.columns))
     if missing:
@@ -1141,6 +1572,12 @@ def _resolve_path(raw: str, data_dir: Path) -> Path:
     return path
 
 
+def _prefixed_confirmation_columns(panel: ConfirmationPanel, columns: set[str]) -> set[str]:
+    return {
+        f"{panel.prefix}_{column}" for column in columns if column not in {"ts", "canonical_symbol"}
+    }
+
+
 def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
     columns = {"ts", "canonical_symbol"}
     derived_names = {feature.name for feature in spec.rules.derived_features}
@@ -1212,6 +1649,10 @@ def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
         columns.add(spec.rules.sizing.volatility_column)
     if spec.rules.portfolio.allocation_volatility_column is not None:
         columns.add(spec.rules.portfolio.allocation_volatility_column)
+    if spec.rules.portfolio.group_column is not None:
+        columns.add(spec.rules.portfolio.group_column)
+    if spec.rules.cross_sectional.group_column is not None:
+        columns.add(spec.rules.cross_sectional.group_column)
     if spec.rules.risk_throttle.max_drawdown_column is not None:
         columns.add(spec.rules.risk_throttle.max_drawdown_column)
     if spec.rules.risk_throttle.daily_loss_column is not None:
@@ -1228,6 +1669,25 @@ def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
     return columns
 
 
+def _all_conditions(spec: StrategyAuthoringSpec) -> list[Condition]:
+    groups = [
+        spec.rules.entry,
+        spec.rules.long_entry,
+        spec.rules.short_entry,
+        spec.rules.hold,
+        spec.rules.close,
+        spec.rules.reduce,
+        spec.rules.add,
+        spec.rules.rebalance,
+        *(regime.when for regime in spec.rules.regime_overrides),
+    ]
+    conditions: list[Condition] = []
+    for group in groups:
+        if group is not None:
+            conditions.extend([*group.all, *group.any, *group.none])
+    return conditions
+
+
 def validate_authoring_inputs(spec: StrategyAuthoringSpec, *, data_dir: Path) -> list[str]:
     errors: list[str] = []
     feature_path = _resolve_path(spec.data.feature_panel_path, data_dir)
@@ -1239,11 +1699,30 @@ def validate_authoring_inputs(spec: StrategyAuthoringSpec, *, data_dir: Path) ->
     except Exception as exc:  # pragma: no cover - polars gives version-specific exceptions
         errors.append(f"feature_panel_path is not readable parquet: {exc}")
         return errors
-    missing = sorted(_required_columns(spec).difference(feature.columns))
+    available_columns = set(feature.columns)
+    for panel in spec.data.confirmation_panels:
+        panel_path = _resolve_path(panel.path, data_dir)
+        if not panel_path.exists():
+            errors.append(f"confirmation panel not found: {panel_path}")
+            continue
+        try:
+            panel_frame = pl.read_parquet(panel_path, n_rows=1)
+        except Exception as exc:  # pragma: no cover - polars gives version-specific exceptions
+            errors.append(f"confirmation panel is not readable parquet: {panel_path}: {exc}")
+            continue
+        required_panel_columns = {"ts", "canonical_symbol"}
+        missing_panel_columns = sorted(required_panel_columns.difference(panel_frame.columns))
+        if missing_panel_columns:
+            errors.append(
+                f"confirmation panel missing columns: {panel_path}: {missing_panel_columns}"
+            )
+            continue
+        available_columns.update(_prefixed_confirmation_columns(panel, set(panel_frame.columns)))
+    missing = sorted(_required_columns(spec).difference(available_columns))
     if missing:
         errors.append(f"feature panel missing columns: {missing}")
     generated: set[str] = set()
-    base_columns = set(feature.columns)
+    base_columns = available_columns
     for derived in spec.rules.derived_features:
         available = base_columns.union(generated)
         missing_inputs = sorted(set(derived.columns).difference(available))
@@ -1268,7 +1747,104 @@ def validate_authoring_inputs(spec: StrategyAuthoringSpec, *, data_dir: Path) ->
     return errors
 
 
+ADVANCED_CONDITION_OPERATORS = {
+    "crosses_above",
+    "crosses_below",
+    "rising",
+    "falling",
+    "consecutive_gt",
+    "consecutive_gte",
+    "consecutive_lt",
+    "consecutive_lte",
+    "consecutive_eq",
+    "consecutive_neq",
+}
+
+
+def _condition_feature_name(condition: Condition) -> str:
+    payload = condition.model_dump(mode="json", exclude_none=True)
+    return f"__condition_{_stable_digest(payload)}"
+
+
+def _condition_target_expr(condition: Condition) -> pl.Expr:
+    return (
+        pl.col(condition.value_column)
+        if condition.value_column is not None
+        else pl.lit(condition.value)
+    )
+
+
+def _condition_comparison_expr(condition: Condition) -> pl.Expr:
+    target = _condition_target_expr(condition)
+    value = pl.col(condition.column)
+    op = condition.op.removeprefix("consecutive_")
+    if op == "gt":
+        return value > target
+    if op == "gte":
+        return value >= target
+    if op == "lt":
+        return value < target
+    if op == "lte":
+        return value <= target
+    if op == "eq":
+        return value == target
+    if op == "neq":
+        return value != target
+    raise StrategyAuthoringValidationError(f"Unsupported advanced comparison: {condition.op}")
+
+
+def _condition_feature_expr(condition: Condition) -> pl.Expr:
+    value = pl.col(condition.column)
+    if condition.op in {"crosses_above", "crosses_below"}:
+        target = _condition_target_expr(condition)
+        previous_value = value.shift(1).over("canonical_symbol")
+        previous_target = (
+            pl.col(condition.value_column).shift(1).over("canonical_symbol")
+            if condition.value_column is not None
+            else pl.lit(condition.value)
+        )
+        if condition.op == "crosses_above":
+            expr = (value > target) & (previous_value <= previous_target)
+        else:
+            expr = (value < target) & (previous_value >= previous_target)
+    elif condition.op in {"rising", "falling"}:
+        previous_value = value.shift(condition.window or 1).over("canonical_symbol")
+        expr = value > previous_value if condition.op == "rising" else value < previous_value
+    elif condition.op.startswith("consecutive_"):
+        base = _condition_comparison_expr(condition).cast(pl.Int8)
+        expr = (
+            base.rolling_min(window_size=condition.window or 1, min_samples=condition.window or 1)
+            .over("canonical_symbol")
+            .fill_null(0)
+            == 1
+        )
+    else:
+        raise StrategyAuthoringValidationError(f"Unsupported advanced condition: {condition.op}")
+    return expr.fill_null(False).alias(_condition_feature_name(condition))
+
+
+def _apply_condition_features(frame: pl.DataFrame, spec: StrategyAuthoringSpec) -> pl.DataFrame:
+    conditions = [
+        condition
+        for condition in _all_conditions(spec)
+        if condition.op in ADVANCED_CONDITION_OPERATORS
+    ]
+    if not conditions:
+        return frame
+    enriched = frame.sort(["canonical_symbol", "ts"])
+    seen: set[str] = set()
+    for condition in conditions:
+        name = _condition_feature_name(condition)
+        if name in seen:
+            continue
+        seen.add(name)
+        enriched = enriched.with_columns(_condition_feature_expr(condition))
+    return enriched
+
+
 def _condition_passes(row: dict[str, Any], condition: Condition) -> bool:
+    if condition.op in ADVANCED_CONDITION_OPERATORS:
+        return bool(row.get(_condition_feature_name(condition)))
     value = row.get(condition.column)
     if condition.op == "is_true":
         return value is True
@@ -1358,6 +1934,229 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
         if feature.value is not None:
             expressions.append(pl.lit(feature.value))
         expr = pl.mean_horizontal(expressions)
+    elif feature.op in {"true_range", "atr"}:
+        high = pl.col(feature.columns[0])
+        low = pl.col(feature.columns[1])
+        close = pl.col(feature.columns[2])
+        previous_close = close.shift(1).over("canonical_symbol")
+        true_range = pl.max_horizontal(
+            [
+                high - low,
+                (high - previous_close).abs(),
+                (low - previous_close).abs(),
+            ]
+        )
+        expr = (
+            true_range.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+                "canonical_symbol"
+            )
+            if feature.op == "atr"
+            else true_range
+        )
+    elif feature.op in {
+        "bollinger_upper",
+        "bollinger_lower",
+        "bollinger_width",
+        "bollinger_percent_b",
+    }:
+        multiplier = feature.value if feature.value is not None else 2.0
+        mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        std = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+        upper = mean + (std * multiplier)
+        lower = mean - (std * multiplier)
+        if feature.op == "bollinger_upper":
+            expr = upper
+        elif feature.op == "bollinger_lower":
+            expr = lower
+        elif feature.op == "bollinger_width":
+            expr = (upper - lower) / _safe_denominator(mean)
+        else:
+            expr = (first - lower) / _safe_denominator(upper - lower)
+    elif feature.op in {"donchian_upper", "donchian_lower", "donchian_mid", "donchian_width"}:
+        high = pl.col(feature.columns[0])
+        low = pl.col(feature.columns[1])
+        upper = high.rolling_max(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        lower = low.rolling_min(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        if feature.op == "donchian_upper":
+            expr = upper
+        elif feature.op == "donchian_lower":
+            expr = lower
+        elif feature.op == "donchian_mid":
+            expr = (upper + lower) / 2.0
+        else:
+            expr = (upper - lower) / _safe_denominator((upper + lower) / 2.0)
+    elif feature.op in {"keltner_upper", "keltner_lower", "keltner_width"}:
+        high = pl.col(feature.columns[0])
+        low = pl.col(feature.columns[1])
+        close = pl.col(feature.columns[2])
+        multiplier = feature.value if feature.value is not None else 2.0
+        previous_close = close.shift(1).over("canonical_symbol")
+        true_range = pl.max_horizontal(
+            [
+                high - low,
+                (high - previous_close).abs(),
+                (low - previous_close).abs(),
+            ]
+        )
+        center = close.ewm_mean(span=feature.window or 1, adjust=False, min_samples=1).over(
+            "canonical_symbol"
+        )
+        atr = true_range.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        upper = center + (atr * multiplier)
+        lower = center - (atr * multiplier)
+        if feature.op == "keltner_upper":
+            expr = upper
+        elif feature.op == "keltner_lower":
+            expr = lower
+        else:
+            expr = (upper - lower) / _safe_denominator(center)
+    elif feature.op in {"ichimoku_conversion", "ichimoku_base", "ichimoku_span_b"}:
+        high = pl.col(feature.columns[0])
+        low = pl.col(feature.columns[1])
+        high_max = high.rolling_max(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        low_min = low.rolling_min(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        expr = (high_max + low_min) / 2.0
+    elif feature.op == "ichimoku_span_a":
+        expr = (pl.col(feature.columns[0]) + pl.col(feature.columns[1])) / 2.0
+    elif feature.op == "macd_line":
+        fast = first.ewm_mean(span=feature.window or 1, adjust=False, min_samples=1).over(
+            "canonical_symbol"
+        )
+        slow_span = int(feature.value or 1)
+        slow = first.ewm_mean(span=slow_span, adjust=False, min_samples=1).over("canonical_symbol")
+        expr = fast - slow
+    elif feature.op in {"stochastic_k", "adx"}:
+        high = pl.col(feature.columns[0])
+        low = pl.col(feature.columns[1])
+        close = pl.col(feature.columns[2])
+        if feature.op == "stochastic_k":
+            low_min = low.rolling_min(window_size=feature.window or 1, min_samples=1).over(
+                "canonical_symbol"
+            )
+            high_max = high.rolling_max(window_size=feature.window or 1, min_samples=1).over(
+                "canonical_symbol"
+            )
+            expr = 100.0 * (close - low_min) / _safe_denominator(high_max - low_min)
+        else:
+            previous_close = close.shift(1).over("canonical_symbol")
+            true_range = pl.max_horizontal(
+                [
+                    high - low,
+                    (high - previous_close).abs(),
+                    (low - previous_close).abs(),
+                ]
+            )
+            up_move = high - high.shift(1).over("canonical_symbol")
+            down_move = low.shift(1).over("canonical_symbol") - low
+            plus_dm = pl.when((up_move > down_move) & (up_move > 0.0)).then(up_move).otherwise(0.0)
+            minus_dm = (
+                pl.when((down_move > up_move) & (down_move > 0.0)).then(down_move).otherwise(0.0)
+            )
+            atr = true_range.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+                "canonical_symbol"
+            )
+            plus_di = (
+                100.0
+                * plus_dm.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+                    "canonical_symbol"
+                )
+                / _safe_denominator(atr)
+            )
+            minus_di = (
+                100.0
+                * minus_dm.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+                    "canonical_symbol"
+                )
+                / _safe_denominator(atr)
+            )
+            dx = 100.0 * (plus_di - minus_di).abs() / _safe_denominator(plus_di + minus_di)
+            expr = dx.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+                "canonical_symbol"
+            )
+    elif feature.op == "stochastic_d":
+        expr = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "obv":
+        close = pl.col(feature.columns[0])
+        volume = pl.col(feature.columns[1])
+        delta = close.diff().over("canonical_symbol")
+        signed_volume = pl.when(delta > 0).then(volume).when(delta < 0).then(-volume).otherwise(0.0)
+        expr = signed_volume.cum_sum().over("canonical_symbol")
+    elif feature.op == "volume_zscore":
+        mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        std = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+        expr = (first - mean) / _safe_denominator(std)
+    elif feature.op == "ts_weekday":
+        expr = first.dt.weekday() - 1
+    elif feature.op == "ts_hour":
+        expr = first.dt.hour()
+    elif feature.op == "ts_month":
+        expr = first.dt.month()
+    elif feature.op == "ts_day":
+        expr = first.dt.day()
+    elif feature.op == "pct_change":
+        previous = first.shift(1).over("canonical_symbol")
+        expr = (first - previous) / _safe_denominator(previous)
+    elif feature.op == "log_return":
+        previous = first.shift(1).over("canonical_symbol")
+        expr = (first / _safe_denominator(previous)).log()
+    elif feature.op == "lag":
+        expr = first.shift(feature.window or 1).over("canonical_symbol")
+    elif feature.op == "rolling_return":
+        previous = first.shift(feature.window or 1).over("canonical_symbol")
+        expr = (first / _safe_denominator(previous)) - 1.0
+    elif feature.op == "ewm_mean":
+        expr = first.ewm_mean(span=feature.window or 1, adjust=False, min_samples=1).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "rsi":
+        delta = first.diff().over("canonical_symbol")
+        gain = pl.when(delta > 0).then(delta).otherwise(0.0)
+        loss = pl.when(delta < 0).then(-delta).otherwise(0.0)
+        average_gain = gain.rolling_mean(
+            window_size=feature.window or 1, min_samples=feature.window or 1
+        ).over("canonical_symbol")
+        average_loss = loss.rolling_mean(
+            window_size=feature.window or 1, min_samples=feature.window or 1
+        ).over("canonical_symbol")
+        expr = (
+            pl.when((average_loss == 0) & (average_gain > 0))
+            .then(100.0)
+            .when((average_loss == 0) & (average_gain == 0))
+            .then(50.0)
+            .otherwise(100.0 - (100.0 / (1.0 + (average_gain / average_loss))))
+        )
+    elif feature.op == "rolling_min":
+        expr = first.rolling_min(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "rolling_max":
+        expr = first.rolling_max(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "rolling_sum":
+        expr = first.rolling_sum(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
     elif feature.op == "rolling_mean":
         expr = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
             "canonical_symbol"
@@ -1374,6 +2173,197 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
             "canonical_symbol"
         )
         expr = (first - mean) / _safe_denominator(std)
+    elif feature.op == "rolling_volatility":
+        expr = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+    elif feature.op == "annualized_volatility":
+        periods = math.sqrt(feature.value if feature.value is not None else 252.0)
+        expr = (
+            first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+                "canonical_symbol"
+            )
+            * periods
+        )
+    elif feature.op == "realized_variance":
+        expr = (
+            (first * first)
+            .rolling_mean(window_size=feature.window or 1, min_samples=1)
+            .over("canonical_symbol")
+        )
+    elif feature.op == "downside_volatility":
+        downside = pl.when(first < 0.0).then(first).otherwise(0.0)
+        expr = downside.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+    elif feature.op in {"sharpe_like", "sortino_like"}:
+        periods = math.sqrt(feature.value if feature.value is not None else 252.0)
+        mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        if feature.op == "sharpe_like":
+            risk = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+                "canonical_symbol"
+            )
+        else:
+            downside = pl.when(first < 0.0).then(first).otherwise(0.0)
+            risk = downside.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+                "canonical_symbol"
+            )
+        expr = mean / _safe_denominator(risk) * periods
+    elif feature.op == "cumulative_return":
+        expr = ((1.0 + first).cum_prod().over("canonical_symbol")) - 1.0
+    elif feature.op == "slope":
+        previous = first.shift(feature.window or 1).over("canonical_symbol")
+        expr = (first - previous) / float(feature.window or 1)
+    elif feature.op == "mean_reversion_score":
+        mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        std = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+        expr = -((first - mean) / _safe_denominator(std))
+    elif feature.op in {"rolling_corr", "rolling_beta", "rolling_spread_zscore"}:
+        second = pl.col(feature.columns[1])
+        if feature.op == "rolling_spread_zscore":
+            spread = first - second
+            mean = spread.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
+                "canonical_symbol"
+            )
+            std = spread.rolling_std(window_size=feature.window or 1, min_samples=2).over(
+                "canonical_symbol"
+            )
+            expr = (spread - mean) / _safe_denominator(std)
+        else:
+            mean_first = first.rolling_mean(window_size=feature.window or 1, min_samples=2).over(
+                "canonical_symbol"
+            )
+            mean_second = second.rolling_mean(window_size=feature.window or 1, min_samples=2).over(
+                "canonical_symbol"
+            )
+            mean_product = (
+                (first * second)
+                .rolling_mean(window_size=feature.window or 1, min_samples=2)
+                .over("canonical_symbol")
+            )
+            covariance = mean_product - (mean_first * mean_second)
+            variance_second = (second * second).rolling_mean(
+                window_size=feature.window or 1, min_samples=2
+            ).over("canonical_symbol") - (mean_second * mean_second)
+            if feature.op == "rolling_beta":
+                expr = covariance / _safe_denominator(variance_second)
+            else:
+                variance_first = (first * first).rolling_mean(
+                    window_size=feature.window or 1, min_samples=2
+                ).over("canonical_symbol") - (mean_first * mean_first)
+                expr = covariance / _safe_denominator((variance_first * variance_second).sqrt())
+    elif feature.op == "order_flow_imbalance":
+        second = pl.col(feature.columns[1])
+        expr = (first - second) / _safe_denominator(first + second)
+    elif feature.op == "liquidity_depth_ratio":
+        second = pl.col(feature.columns[1])
+        expr = first / _safe_denominator(second)
+    elif feature.op == "spread_bps":
+        ask = pl.col(feature.columns[1])
+        midpoint = (first + ask) / 2.0
+        expr = (ask - first) / _safe_denominator(midpoint) * 10_000.0
+    elif feature.op == "funding_bps":
+        expr = first * 10_000.0
+    elif feature.op == "carry_adjusted_return":
+        second = pl.col(feature.columns[1])
+        expr = first - second
+    elif feature.op == "vol_risk_premium":
+        second = pl.col(feature.columns[1])
+        expr = first - second
+    elif feature.op == "put_call_skew":
+        second = pl.col(feature.columns[1])
+        expr = first - second
+    elif feature.op == "liquidity_stress":
+        ask = pl.col(feature.columns[1])
+        depth = pl.col(feature.columns[2])
+        midpoint = (first + ask) / 2.0
+        spread_bps = (ask - first) / _safe_denominator(midpoint) * 10_000.0
+        expr = spread_bps / _safe_denominator(depth)
+    elif feature.op == "net_exchange_flow":
+        second = pl.col(feature.columns[1])
+        expr = first - second
+    elif feature.op == "onchain_activity_ratio":
+        second = pl.col(feature.columns[1])
+        expr = first / _safe_denominator(second)
+    elif feature.op == "sentiment_weighted_score":
+        second = pl.col(feature.columns[1])
+        expr = first * second
+    elif feature.op == "event_surprise":
+        second = pl.col(feature.columns[1])
+        expr = first - second
+    elif feature.op == "fundamental_value_gap":
+        second = pl.col(feature.columns[1])
+        expr = (first - second) / _safe_denominator(second)
+    elif feature.op == "risk_adjusted_score":
+        second = pl.col(feature.columns[1])
+        expr = first / _safe_denominator(second.abs())
+    elif feature.op == "inverse_volatility_weight":
+        expr = 1.0 / _safe_denominator(first)
+    elif feature.op == "cross_sectional_rank":
+        rank = first.rank(method="ordinal", descending=True).over("ts")
+        count = pl.len().over("ts")
+        expr = (
+            pl.when(count <= 1)
+            .then(1.0)
+            .otherwise(1.0 - ((rank - 1.0) / _safe_denominator(count - 1.0)))
+        )
+    elif feature.op == "queue_position_score":
+        second = pl.col(feature.columns[1])
+        expr = 1.0 - (first / _safe_denominator(first + second))
+    elif feature.op == "latency_penalty_bps":
+        multiplier = feature.value if feature.value is not None else 1.0
+        expr = first * multiplier
+    elif feature.op == "maker_taker_fee_edge_bps":
+        second = pl.col(feature.columns[1])
+        expr = second - first
+    elif feature.op == "borrow_cost_bps":
+        second = pl.col(feature.columns[1])
+        expr = first * second * 10_000.0
+    elif feature.op == "borrow_availability_ratio":
+        second = pl.col(feature.columns[1])
+        expr = first / _safe_denominator(second)
+    elif feature.op == "tax_drag_bps":
+        second = pl.col(feature.columns[1])
+        expr = first * second * 10_000.0
+    elif feature.op == "rebalance_drift":
+        second = pl.col(feature.columns[1])
+        expr = (first - second).abs()
+    elif feature.op == "freshness_score":
+        max_age = feature.value if feature.value is not None else 1.0
+        raw = 1.0 - (first / _safe_denominator(pl.lit(max_age)))
+        expr = pl.when(raw < 0.0).then(0.0).when(raw > 1.0).then(1.0).otherwise(raw)
+    elif feature.op == "staleness_bps":
+        multiplier = feature.value if feature.value is not None else 1.0
+        expr = first * multiplier
+    elif feature.op == "data_quality_blend":
+        expr = pl.mean_horizontal([pl.col(column) for column in feature.columns])
+    elif feature.op == "ensemble_vote_count":
+        expr = pl.sum_horizontal([pl.col(column) for column in feature.columns])
+    elif feature.op == "ensemble_vote_ratio":
+        expr = pl.mean_horizontal([pl.col(column) for column in feature.columns])
+    elif feature.op == "regime_transition_score":
+        second = pl.col(feature.columns[1])
+        expr = first - second
+    elif feature.op == "drawdown_from_peak":
+        rolling_peak = first.rolling_max(window_size=feature.window or 1, min_samples=1).over(
+            "canonical_symbol"
+        )
+        expr = (first / _safe_denominator(rolling_peak)) - 1.0
+    elif feature.op == "turnover_pressure":
+        second = pl.col(feature.columns[1])
+        expr = first / _safe_denominator(second)
+    elif feature.op == "capacity_usage_ratio":
+        second = pl.col(feature.columns[1])
+        expr = first / _safe_denominator(second)
+    elif feature.op == "correlation_crowding_score":
+        second = pl.col(feature.columns[1])
+        expr = first * second
     else:
         raise StrategyAuthoringValidationError(f"Unsupported derived feature op: {feature.op}")
     if feature.fill_null is not None:
@@ -1388,6 +2378,51 @@ def _apply_derived_features(frame: pl.DataFrame, spec: StrategyAuthoringSpec) ->
     for feature in spec.rules.derived_features:
         derived = derived.with_columns(_derived_expression(feature))
     return derived
+
+
+def _apply_confirmation_panels(
+    frame: pl.DataFrame, spec: StrategyAuthoringSpec, *, data_dir: Path
+) -> pl.DataFrame:
+    if not spec.data.confirmation_panels:
+        return frame
+    enriched = frame.sort(["canonical_symbol", "ts"])
+    for panel in spec.data.confirmation_panels:
+        panel_path = _resolve_path(panel.path, data_dir)
+        raw_panel = pl.read_parquet(panel_path)
+        if raw_panel.is_empty():
+            continue
+        stamp_column = f"__{panel.prefix}_ts"
+        rename_map = {
+            column: f"{panel.prefix}_{column}"
+            for column in raw_panel.columns
+            if column not in {"ts", "canonical_symbol"}
+        }
+        right = (
+            raw_panel.with_columns(pl.col("ts").alias(stamp_column))
+            .rename(rename_map)
+            .sort(["canonical_symbol", "ts"])
+        )
+        joined = enriched.join_asof(
+            right,
+            on="ts",
+            by="canonical_symbol",
+            strategy="backward",
+            check_sortedness=False,
+        )
+        prefixed_columns = list(rename_map.values())
+        if panel.max_age_minutes is not None and prefixed_columns:
+            age_minutes = (pl.col("ts") - pl.col(stamp_column)).dt.total_minutes()
+            joined = joined.with_columns(
+                [
+                    pl.when(age_minutes <= panel.max_age_minutes)
+                    .then(pl.col(column))
+                    .otherwise(None)
+                    .alias(column)
+                    for column in prefixed_columns
+                ]
+            )
+        enriched = joined.drop(stamp_column) if stamp_column in joined.columns else joined
+    return enriched
 
 
 def _entry_passes(row: dict[str, Any], entry: EntryRules) -> bool:
@@ -1663,6 +2698,7 @@ def _block_trade_row(
     blocked["trailing_stop_bps"] = None
     blocked["partial_take_profit_bps"] = None
     blocked["partial_exit_fraction"] = None
+    blocked["min_holding_minutes"] = None
     blocked["exit_on_opposite_signal"] = False
     blocked["bracket_type"] = "none"
     blocked["bracket_time_stop_minutes"] = None
@@ -1679,6 +2715,8 @@ def _block_trade_row(
     blocked["depth_participation_rate"] = 0.0
     blocked["position_weight"] = 0.0
     blocked["notional_usd"] = None
+    blocked["_cross_sectional_group"] = row.get("_cross_sectional_group")
+    blocked["_portfolio_group"] = row.get("_portfolio_group")
     blocked["reason_codes"] = [spec.rules.hold_reason_code]
     blocked["block_reasons"] = [*list(row.get("block_reasons") or []), block_reason]
     return blocked
@@ -1877,10 +2915,12 @@ def _portfolio_exposure_block_reason(
     long_weight: float,
     short_weight: float,
     symbol_weights: dict[str, float],
+    group_weights: dict[str, float],
 ) -> str | None:
     weight = abs(_position_weight_value(row))
     side = str(row.get("side") or "")
     symbol = str(row.get("execution_symbol") or "")
+    group = str(row.get("_portfolio_group") or "").strip()
     if (
         portfolio.max_total_position_weight is not None
         and total_weight + weight > portfolio.max_total_position_weight
@@ -1903,6 +2943,11 @@ def _portfolio_exposure_block_reason(
         and symbol_weights.get(symbol, 0.0) + weight > portfolio.max_symbol_position_weight
     ):
         return "portfolio_symbol_exposure_limit"
+    if portfolio.max_group_position_weight is not None:
+        if not group:
+            return "portfolio_group_missing"
+        if group_weights.get(group, 0.0) + weight > portfolio.max_group_position_weight:
+            return "portfolio_group_exposure_limit"
     return None
 
 
@@ -1926,6 +2971,9 @@ def _apply_portfolio_exposure_limits(
         long_weight = 0.0
         short_weight = 0.0
         symbol_weights: dict[str, float] = {}
+        group_weights: dict[str, float] = {}
+        accepted_rows: list[dict[str, Any]] = []
+        blocked_rows: list[dict[str, Any]] = []
         for row in sorted(
             timestamp_rows,
             key=lambda item: item.get("rank_score") if item.get("rank_score") is not None else -1.0,
@@ -1938,9 +2986,10 @@ def _apply_portfolio_exposure_limits(
                 long_weight=long_weight,
                 short_weight=short_weight,
                 symbol_weights=symbol_weights,
+                group_weights=group_weights,
             )
             if reason is not None:
-                selected.append(_block_trade_row(row, spec=spec, block_reason=reason))
+                blocked_rows.append(_block_trade_row(row, spec=spec, block_reason=reason))
                 continue
             weight = abs(_position_weight_value(row))
             total_weight += weight
@@ -1950,8 +2999,54 @@ def _apply_portfolio_exposure_limits(
                 short_weight += weight
             symbol = str(row.get("execution_symbol") or "")
             symbol_weights[symbol] = symbol_weights.get(symbol, 0.0) + weight
-            selected.append(row)
+            group = str(row.get("_portfolio_group") or "").strip()
+            if group:
+                group_weights[group] = group_weights.get(group, 0.0) + weight
+            accepted_rows.append(row)
+        accepted_rows, net_blocked_rows = _apply_portfolio_net_exposure_limit(
+            accepted_rows, portfolio=portfolio, spec=spec
+        )
+        selected.extend([*blocked_rows, *net_blocked_rows, *accepted_rows])
     return selected
+
+
+def _apply_portfolio_net_exposure_limit(
+    rows: list[dict[str, Any]], *, portfolio: PortfolioRules, spec: StrategyAuthoringSpec
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if portfolio.max_abs_net_position_weight is None:
+        return rows, []
+
+    accepted = [*rows]
+    blocked: list[dict[str, Any]] = []
+    while True:
+        long_weight = sum(
+            abs(_position_weight_value(row)) for row in accepted if row.get("side") == "long"
+        )
+        short_weight = sum(
+            abs(_position_weight_value(row)) for row in accepted if row.get("side") == "short"
+        )
+        net_weight = long_weight - short_weight
+        if abs(net_weight) <= portfolio.max_abs_net_position_weight:
+            return accepted, blocked
+
+        overweight_side = "long" if net_weight > 0 else "short"
+        candidates = [
+            (index, row) for index, row in enumerate(accepted) if row.get("side") == overweight_side
+        ]
+        if not candidates:
+            return accepted, blocked
+
+        remove_index, row = min(
+            candidates,
+            key=lambda item: (
+                item[1].get("rank_score") if item[1].get("rank_score") is not None else -1.0,
+                item[0],
+            ),
+        )
+        blocked.append(
+            _block_trade_row(row, spec=spec, block_reason="portfolio_net_exposure_limit")
+        )
+        accepted.pop(remove_index)
 
 
 def _apply_cross_sectional_selection(
@@ -1960,16 +3055,37 @@ def _apply_cross_sectional_selection(
     if not spec.rules.cross_sectional.enabled:
         return rows
     passthrough = [row for row in rows if row.get("side") == "none"]
-    candidates_by_timestamp: dict[Any, list[dict[str, Any]]] = {}
+    candidates_by_timestamp: dict[tuple[Any, str | None], list[dict[str, Any]]] = {}
     for row in rows:
         if row.get("side") == "none":
             continue
-        candidates_by_timestamp.setdefault(row["ts_signal"], []).append(row)
+        group: str | None = None
+        if spec.rules.cross_sectional.group_column is not None:
+            group = str(row.get("_cross_sectional_group") or "").strip()
+            if not group:
+                passthrough.append(
+                    _block_trade_row(
+                        row,
+                        spec=spec,
+                        block_reason="cross_sectional_group_missing",
+                    )
+                )
+                continue
+        candidates_by_timestamp.setdefault((row["ts_signal"], group), []).append(row)
 
     selected_rows: list[dict[str, Any]] = [*passthrough]
     for timestamp_rows in candidates_by_timestamp.values():
         scored = [row for row in timestamp_rows if _score_value(row) is not None]
         unscored = [row for row in timestamp_rows if _score_value(row) is None]
+        if (
+            spec.rules.cross_sectional.min_candidates is not None
+            and len(scored) < spec.rules.cross_sectional.min_candidates
+        ):
+            selected_rows.extend(
+                _block_trade_row(row, spec=spec, block_reason="cross_sectional_min_candidates")
+                for row in timestamp_rows
+            )
+            continue
         sorted_desc = sorted(scored, key=lambda item: _score_value(item) or 0.0, reverse=True)
         sorted_asc = list(reversed(sorted_desc))
         percentile_by_id: dict[str, float] = {}
@@ -1979,8 +3095,16 @@ def _apply_cross_sectional_selection(
                 1.0 if len(sorted_desc) == 1 else 1.0 - (index / denominator)
             )
 
-        top_n = spec.rules.cross_sectional.long_top_n or 0
-        bottom_n = spec.rules.cross_sectional.short_bottom_n or 0
+        top_n = _cross_sectional_selection_count(
+            len(scored),
+            fixed_count=spec.rules.cross_sectional.long_top_n,
+            fraction=spec.rules.cross_sectional.long_top_fraction,
+        )
+        bottom_n = _cross_sectional_selection_count(
+            len(scored),
+            fixed_count=spec.rules.cross_sectional.short_bottom_n,
+            fraction=spec.rules.cross_sectional.short_bottom_fraction,
+        )
         unscored_ids = {str(row["signal_id"]) for row in unscored}
         top_ids = {str(row["signal_id"]) for row in sorted_desc[:top_n]}
         bottom_ids = {
@@ -2005,6 +3129,18 @@ def _apply_cross_sectional_selection(
             updated["percentile_rank"] = percentile
             updated["tail_bucket"] = _tail_bucket(percentile)
             if row_id in top_ids:
+                if (
+                    spec.rules.cross_sectional.min_long_score is not None
+                    and (_score_value(row) or 0.0) < spec.rules.cross_sectional.min_long_score
+                ):
+                    selected_rows.append(
+                        _block_trade_row(
+                            updated,
+                            spec=spec,
+                            block_reason="cross_sectional_long_score_threshold",
+                        )
+                    )
+                    continue
                 updated["side"] = "long"
                 updated["signal_id"] = _compiled_signal_id(spec, updated, side="long")
                 updated["reason_codes"] = [
@@ -2013,6 +3149,18 @@ def _apply_cross_sectional_selection(
                 ]
                 selected_rows.append(updated)
             elif row_id in bottom_ids:
+                if (
+                    spec.rules.cross_sectional.max_short_score is not None
+                    and (_score_value(row) or 0.0) > spec.rules.cross_sectional.max_short_score
+                ):
+                    selected_rows.append(
+                        _block_trade_row(
+                            updated,
+                            spec=spec,
+                            block_reason="cross_sectional_short_score_threshold",
+                        )
+                    )
+                    continue
                 updated["side"] = "short"
                 updated["signal_id"] = _compiled_signal_id(spec, updated, side="short")
                 updated["reason_codes"] = [
@@ -2029,6 +3177,16 @@ def _apply_cross_sectional_selection(
                     )
                 )
     return selected_rows
+
+
+def _cross_sectional_selection_count(
+    candidate_count: int, *, fixed_count: int | None, fraction: float | None
+) -> int:
+    if fixed_count is not None:
+        return fixed_count
+    if fraction is None or candidate_count <= 0:
+        return 0
+    return max(1, math.ceil(candidate_count * fraction))
 
 
 def _signal_id(
@@ -2096,6 +3254,7 @@ def _close_signal_row(
         "trailing_stop_bps": None,
         "partial_take_profit_bps": None,
         "partial_exit_fraction": None,
+        "min_holding_minutes": None,
         "exit_on_opposite_signal": False,
         "exit_on_close_signal": False,
         "exit_on_reduce_signal": False,
@@ -2161,6 +3320,7 @@ def _reduce_signal_row(
         "trailing_stop_bps": None,
         "partial_take_profit_bps": None,
         "partial_exit_fraction": None,
+        "min_holding_minutes": None,
         "exit_on_opposite_signal": False,
         "exit_on_close_signal": False,
         "exit_on_reduce_signal": False,
@@ -2226,6 +3386,7 @@ def _add_signal_row(
         "trailing_stop_bps": None,
         "partial_take_profit_bps": None,
         "partial_exit_fraction": None,
+        "min_holding_minutes": None,
         "exit_on_opposite_signal": False,
         "exit_on_close_signal": False,
         "exit_on_reduce_signal": False,
@@ -2295,6 +3456,7 @@ def _rebalance_signal_row(
         "trailing_stop_bps": None,
         "partial_take_profit_bps": None,
         "partial_exit_fraction": None,
+        "min_holding_minutes": None,
         "exit_on_opposite_signal": False,
         "exit_on_close_signal": False,
         "exit_on_reduce_signal": False,
@@ -2402,6 +3564,7 @@ def _trade_signal_row(
             ),
             column=spec.rules.exit.partial_exit_fraction_column,
         ),
+        "min_holding_minutes": spec.rules.exit.min_holding_minutes,
         "exit_on_opposite_signal": spec.rules.exit.exit_on_opposite_signal,
         "exit_on_close_signal": spec.rules.exit.exit_on_close_signal,
         "exit_on_reduce_signal": spec.rules.exit.exit_on_reduce_signal,
@@ -2441,8 +3604,14 @@ def _trade_signal_row(
         "notional_usd": notional_usd
         if notional_usd is not None
         else _signal_notional_usd(row, spec),
+        "_cross_sectional_group": row.get(spec.rules.cross_sectional.group_column)
+        if spec.rules.cross_sectional.group_column is not None
+        else None,
         "_allocation_volatility": row.get(spec.rules.portfolio.allocation_volatility_column)
         if spec.rules.portfolio.allocation_volatility_column is not None
+        else None,
+        "_portfolio_group": row.get(spec.rules.portfolio.group_column)
+        if spec.rules.portfolio.group_column is not None
         else None,
         "reason_codes": effective_reason_codes,
         "block_reasons": [],
@@ -2518,7 +3687,13 @@ def build_authoring_signals(
     if errors:
         raise StrategyAuthoringValidationError("; ".join(errors))
     feature_path = _resolve_path(spec.data.feature_panel_path, data_dir)
-    feature = _apply_derived_features(pl.read_parquet(feature_path), spec)
+    feature = _apply_condition_features(
+        _apply_derived_features(
+            _apply_confirmation_panels(pl.read_parquet(feature_path), spec, data_dir=data_dir),
+            spec,
+        ),
+        spec,
+    )
     bindings = {binding.real_market_symbol: binding for binding in spec.experiment.symbol_bindings}
     rows: list[dict[str, Any]] = []
     generated_at = datetime.now(timezone.utc)
@@ -2604,6 +3779,7 @@ def build_authoring_signals(
                     "trailing_stop_bps": None,
                     "partial_take_profit_bps": None,
                     "partial_exit_fraction": None,
+                    "min_holding_minutes": None,
                     "exit_on_opposite_signal": False,
                     "exit_on_close_signal": False,
                     "exit_on_reduce_signal": False,
@@ -2667,6 +3843,7 @@ def build_authoring_signals(
                     "trailing_stop_bps": None,
                     "partial_take_profit_bps": None,
                     "partial_exit_fraction": None,
+                    "min_holding_minutes": None,
                     "exit_on_opposite_signal": False,
                     "exit_on_close_signal": False,
                     "exit_on_reduce_signal": False,
@@ -2861,6 +4038,7 @@ def strategy_signals_to_research_signals(frame: pl.DataFrame) -> list[ResearchSi
             trailing_stop_bps=row.get("trailing_stop_bps"),
             partial_take_profit_bps=row.get("partial_take_profit_bps"),
             partial_exit_fraction=row.get("partial_exit_fraction"),
+            min_holding_minutes=row.get("min_holding_minutes"),
             exit_on_opposite_signal=bool(row.get("exit_on_opposite_signal")),
             exit_on_close_signal=bool(row.get("exit_on_close_signal")),
             exit_on_reduce_signal=bool(row.get("exit_on_reduce_signal")),
@@ -3071,6 +4249,7 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         f"- partial_take_profit_bps_column: {spec.rules.exit.partial_take_profit_bps_column}\n"
         f"- partial_exit_fraction: {spec.rules.exit.partial_exit_fraction}\n"
         f"- partial_exit_fraction_column: {spec.rules.exit.partial_exit_fraction_column}\n"
+        f"- min_holding_minutes: {spec.rules.exit.min_holding_minutes}\n"
         "\n\n## Bracket / OCO\n\n"
         f"- enabled: {spec.rules.bracket.enabled}\n"
         f"- bracket_type: {spec.rules.bracket.bracket_type if spec.rules.bracket.enabled else 'none'}\n"
@@ -3103,6 +4282,12 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         "\n\n## Cross Sectional Selection\n\n"
         f"- long_top_n: {spec.rules.cross_sectional.long_top_n}\n"
         f"- short_bottom_n: {spec.rules.cross_sectional.short_bottom_n}\n"
+        f"- long_top_fraction: {spec.rules.cross_sectional.long_top_fraction}\n"
+        f"- short_bottom_fraction: {spec.rules.cross_sectional.short_bottom_fraction}\n"
+        f"- group_column: {spec.rules.cross_sectional.group_column}\n"
+        f"- min_candidates: {spec.rules.cross_sectional.min_candidates}\n"
+        f"- min_long_score: {spec.rules.cross_sectional.min_long_score}\n"
+        f"- max_short_score: {spec.rules.cross_sectional.max_short_score}\n"
         "\n\n## Multi-Leg\n\n"
         f"- enabled: {spec.rules.multi_leg.enabled}\n"
         f"- anchor_real_market_symbol: {spec.rules.multi_leg.anchor_real_market_symbol}\n"
@@ -3129,6 +4314,85 @@ def _metrics_json(
         "summary": summary,
         "metrics": [asdict(item) for item in metrics],
     }
+
+
+def _increment_count(counts: dict[str, int], raw: object) -> None:
+    key = str(raw)
+    if not key:
+        return
+    counts[key] = counts.get(key, 0) + 1
+
+
+def _count_values(rows: list[dict[str, Any]], column: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        value = row.get(column)
+        if isinstance(value, list):
+            for item in value:
+                _increment_count(counts, item)
+        elif value is not None:
+            _increment_count(counts, value)
+    return dict(sorted(counts.items()))
+
+
+def _strategy_scorecard(
+    spec: StrategyAuthoringSpec, frame: pl.DataFrame, summary: dict[str, Any]
+) -> dict[str, Any]:
+    rows = frame.to_dicts() if not frame.is_empty() else []
+    derived_feature_ops: dict[str, int] = {}
+    for feature in spec.rules.derived_features:
+        derived_feature_ops[feature.op] = derived_feature_ops.get(feature.op, 0) + 1
+    pass_thresholds = summary.get("pass_thresholds", {})
+    failed_thresholds = [
+        name
+        for name, result in pass_thresholds.items()
+        if isinstance(result, dict) and not bool(result.get("passed"))
+    ]
+    passed_thresholds = [
+        name
+        for name, result in pass_thresholds.items()
+        if isinstance(result, dict) and bool(result.get("passed"))
+    ]
+    return {
+        "schema_version": "strategy_authoring_scorecard.v1",
+        "derived_feature_count": len(spec.rules.derived_features),
+        "derived_feature_names": [feature.name for feature in spec.rules.derived_features],
+        "derived_feature_ops": dict(sorted(derived_feature_ops.items())),
+        "signal_count": frame.height,
+        "side_counts": _count_values(rows, "side"),
+        "reason_code_counts": _count_values(rows, "reason_codes"),
+        "block_reason_counts": _count_values(rows, "block_reasons"),
+        "execution_block_reason_counts": dict(
+            sorted((summary.get("blocked_reason_counts") or {}).items())
+        ),
+        "exit_reason_counts": dict(sorted((summary.get("exit_reason_counts") or {}).items())),
+        "passed_thresholds": sorted(passed_thresholds),
+        "failed_thresholds": sorted(failed_thresholds),
+        "backtest_passed": bool(summary.get("backtest_passed")),
+        "paper_only": True,
+        "live_order_submitted": False,
+    }
+
+
+def _paper_preview_scorecard_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    scorecard = summary.get("strategy_scorecard")
+    if not isinstance(scorecard, dict):
+        return {}
+    keys = (
+        "schema_version",
+        "derived_feature_count",
+        "signal_count",
+        "side_counts",
+        "block_reason_counts",
+        "execution_block_reason_counts",
+        "exit_reason_counts",
+        "passed_thresholds",
+        "failed_thresholds",
+        "backtest_passed",
+        "paper_only",
+        "live_order_submitted",
+    )
+    return {key: scorecard[key] for key in keys if key in scorecard}
 
 
 def _aggregate_backtest_metrics(metrics: list[Any]) -> dict[str, float | int | None]:
@@ -3405,6 +4669,7 @@ def run_authoring_backtest(
             "best_variant": ranked[0],
             "variants": ranked,
         }
+    summary["strategy_scorecard"] = _strategy_scorecard(spec, frame, summary)
     return metrics, summary
 
 
@@ -3423,6 +4688,21 @@ def write_authoring_backtest_outputs(
         f"| {item.venue} | {item.canonical_symbol} | {item.trade_count} | {item.total_return:.6f} | {item.max_drawdown:.6f} | {item.cost_drag_bps:.2f} |"
         for item in metrics
     )
+    scorecard = summary.get("strategy_scorecard") or {}
+    scorecard_lines = (
+        "\n".join(
+            f"- {name}: {count}"
+            for name, count in (scorecard.get("derived_feature_ops") or {}).items()
+        )
+        or "- none"
+    )
+    block_reason_lines = (
+        "\n".join(
+            f"- {name}: {count}"
+            for name, count in (scorecard.get("block_reason_counts") or {}).items()
+        )
+        or "- none"
+    )
     report_path.write_text(
         "# Strategy Authoring Backtest Report\n\n"
         "paper_only: true\n\n"
@@ -3432,6 +4712,13 @@ def write_authoring_backtest_outputs(
         f"- pass_min_trade_count: {summary.get('pass_min_trade_count')}\n\n"
         f"- pass_all_thresholds: {summary.get('pass_all_thresholds')}\n"
         f"- backtest_passed: {summary.get('backtest_passed')}\n\n"
+        "## Strategy Scorecard\n\n"
+        f"- derived_feature_count: {scorecard.get('derived_feature_count', 0)}\n"
+        f"- failed_thresholds: {scorecard.get('failed_thresholds', [])}\n\n"
+        "### Derived Feature Ops\n\n"
+        f"{scorecard_lines}\n\n"
+        "### Signal Block Reasons\n\n"
+        f"{block_reason_lines}\n\n"
         "| Venue | Symbol | Trades | Total Return | Max Drawdown | Cost Drag bps |\n"
         "|---|---:|---:|---:|---:|---:|\n"
         f"{rows}\n",
@@ -3541,6 +4828,7 @@ def write_authoring_paper_preview_outputs(
     run_id = signal_artifact_run_id(frame) if not frame.is_empty() else parameter_hash
     trial_id = f"trial-{run_id}"
     trial_group_id = f"trial-group-{run_id}"
+    scorecard_summary = _paper_preview_scorecard_summary(summary)
     selected_rows = [
         row
         for row in frame.sort(["ts_signal", "signal_id"]).to_dicts()
@@ -3636,6 +4924,7 @@ def write_authoring_paper_preview_outputs(
                 row.get("partial_take_profit_bps") if selected and row else None
             ),
             partial_exit_fraction=row.get("partial_exit_fraction") if selected and row else None,
+            min_holding_minutes=row.get("min_holding_minutes") if selected and row else None,
             exit_on_opposite_signal=(
                 bool(row.get("exit_on_opposite_signal")) if selected and row else False
             ),
@@ -3707,10 +4996,11 @@ def write_authoring_paper_preview_outputs(
         from_stage="strategy_lab",
         to_stage="paper_observation",
         decision=spec.promotion.default_decision,
-        required_evidence=["trial_ledger", "paper_candidate_pack"],
-        observed_evidence=["trial_ledger", "paper_candidate_pack"],
+        required_evidence=["trial_ledger", "paper_candidate_pack", "strategy_scorecard"],
+        observed_evidence=["trial_ledger", "paper_candidate_pack", "strategy_scorecard"],
         approval_reasons=[],
         rejection_reasons=["operator_review_required"],
+        scorecard_summary=scorecard_summary,
     )
     decision_path = data_dir / "research/promotion_decision.json"
     decision_path.write_text(decision.model_dump_json(indent=2), encoding="utf-8")
@@ -3729,6 +5019,8 @@ def write_authoring_paper_preview_outputs(
         "- source: strategy_authoring\n"
         f"- decision: {decision.decision}\n"
         f"- intents: {len(intents)}\n"
+        f"- scorecard_schema_version: {scorecard_summary.get('schema_version')}\n"
+        f"- scorecard_failed_thresholds: {scorecard_summary.get('failed_thresholds', [])}\n"
         "- paper_only: true\n",
         encoding="utf-8",
     )

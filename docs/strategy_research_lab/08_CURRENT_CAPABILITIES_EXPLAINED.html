@@ -466,6 +466,19 @@
           <article class="capability">
             <div class="plain">
               <span class="label ok">できる</span>
+              <h3>StrategyExperimentSpec から作戦を実行する</h3>
+              <p>YAML/JSON の実験仕様を読み、登録済み generator を spec の lineage で実行できます。</p>
+            </div>
+            <div class="detail">
+              <p><strong>コマンド:</strong> <code>uv run sis strategy-experiment-run --spec path/to/strategy_experiment.yaml</code></p>
+              <p><strong>出力:</strong> <code>strategy_signals.parquet</code>, <code>strategy_signal_manifest.json</code></p>
+              <p><strong>補足:</strong> <code>parameter_grid</code> は cartesian 展開され、variant ごとに <code>parameter_hash</code> が付きます。現行 built-in generator は <code>min_source_confidence</code>, <code>max_vix_level</code> / <code>vix_gate</code>, <code>min_research_return_1d</code>, <code>timeframe</code> を signal 条件または出力 timeframe として使えます。未登録 generator や上限超過は fail closed で止まり、live order は出しません。</p>
+            </div>
+          </article>
+
+          <article class="capability">
+            <div class="plain">
+              <span class="label ok">できる</span>
               <h3>候補条件を変えて比較記録を作る</h3>
               <p>スコアがどの水準以上なら候補にするかを変えて、複数の試行記録を残せます。</p>
             </div>
@@ -519,7 +532,7 @@
             <div class="plain">
               <span class="label ok">できる</span>
               <h3>YAML で戦略を書いて backtest する</h3>
-              <p>entry / hold / close / reduce / add / rebalance / long / short / derived features / column-to-column condition / exclusion-none condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg / pair-trade signal / cross-sectional top-bottom / paper-only linear model score / train-model adapter / temporal-cadence control / event-window calendar filters / bracket-OCO lifecycle / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / order-style entry / slippage / partial-fill / spread gate / depth-based fill / stop-loss / take-profit / close-signal exit / partial exit / trailing stop / sizing / portfolio exposure limits / risk throttle / volatility targeting / target-weight / inverse-vol allocation / position-state pyramiding controls を YAML に書き、paper-only の fixed-horizon backtest と multi-strategy bundle / risk-parity allocation 比較まで実行できます。</p>
+              <p>entry / hold / close / reduce / add / rebalance / long / short / derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max / column-to-column and cross/trend/consecutive condition / exclusion-none condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg / pair-trade signal / group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds / paper-only linear model score / train-model adapter / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / bracket-OCO lifecycle / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / order-style entry / slippage / partial-fill / spread gate / depth-based fill / stop-loss / take-profit / close-signal exit / partial exit / trailing stop / minimum holding period / sizing / grouped and net portfolio exposure limits / risk throttle / volatility targeting / target-weight / inverse-vol allocation / position-state pyramiding controls を YAML に書き、paper-only の fixed-horizon backtest と multi-strategy bundle / risk-parity allocation 比較まで実行できます。</p>
             </div>
             <div class="detail">
               <p><strong>コマンド:</strong> <code>strategy-author-init</code>, <code>strategy-author-run --through backtest</code></p>
@@ -542,6 +555,12 @@
           <article class="command">
             <header><h3>最短で candidate pack まで</h3></header>
             <pre><code>uv run sis strategy-preview
+uv run sis evaluate-strategy-lab
+uv run sis build-paper-candidate-pack</code></pre>
+          </article>
+          <article class="command">
+            <header><h3>StrategyExperimentSpec から candidate pack まで</h3></header>
+            <pre><code>uv run sis strategy-experiment-run --spec path/to/strategy_experiment.yaml
 uv run sis evaluate-strategy-lab
 uv run sis build-paper-candidate-pack</code></pre>
           </article>
@@ -640,7 +659,7 @@ uv run sis strategy-author-bundle-run \
             <tr>
               <td>authoring YAML</td>
               <td>ユーザーが書く作戦ファイル</td>
-              <td><code>strategy_authoring_spec.v1</code>。entry、hold、long / short、損切、利確、部分利確、trailing stop、sizing を paper backtest に渡す。</td>
+              <td><code>strategy_authoring_spec.v1</code>。entry、hold、long / short、true range、ATR、Bollinger bands、Donchian channels、Keltner channels、Ichimoku cloud、MACD line、stochastic K/D、ADX、OBV、volume z-score、calendar features、rolling correlation / beta / spread z-score、flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features、lag、EMA、RSI、rolling min/max/mean/std/z-score の派生列、損切、利確、部分利確、trailing stop、最低保有時間、sizing を paper backtest に渡す。</td>
             </tr>
             <tr>
               <td>authoring bundle</td>
@@ -681,11 +700,12 @@ uv run sis strategy-author-bundle-run \
             <span class="label ok">今できる</span>
             <ul class="checklist">
               <li>登録済み generator から signal artifact を作る。</li>
-              <li>YAML で entry / hold / close / reduce / add / rebalance / long / short / derived features / column-to-column condition / exclusion-none condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg / pair-trade signal / cross-sectional top-bottom / paper-only linear model score / train-model adapter / temporal-cadence control / event-window calendar filters / bracket-OCO lifecycle / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / order-style entry / slippage / partial-fill / spread gate / depth-based fill / stop-loss / take-profit / close-signal exit / partial exit / trailing stop / sizing / portfolio exposure limits / risk throttle / volatility targeting / target-weight / inverse-vol allocation / position-state pyramiding controls を書く。</li>
+              <li>YAML で entry / hold / close / reduce / add / rebalance / long / short / derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max / column-to-column and cross/trend/consecutive condition / exclusion-none condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg / pair-trade signal / group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds / paper-only linear model score / train-model adapter / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / bracket-OCO lifecycle / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / order-style entry / slippage / partial-fill / spread gate / depth-based fill / stop-loss / take-profit / close-signal exit / partial exit / trailing stop / minimum holding period / sizing / grouped and net portfolio exposure limits / risk throttle / volatility targeting / target-weight / inverse-vol allocation / position-state pyramiding controls を書く。</li>
               <li>複数 YAML を bundle として paper 比較する。</li>
               <li>authoring YAML から fixed-horizon backtest metrics を出す。</li>
               <li>threshold を変えて試行記録を残す。</li>
               <li>複数 signal を paper candidate にする。</li>
+              <li>StrategyExperimentSpec YAML/JSON を登録済み generator の lineage として実行する。</li>
               <li>paper-only preview を生成する。</li>
               <li>paper runner が最新 quote で再検証する。</li>
             </ul>

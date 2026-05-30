@@ -110,6 +110,7 @@
 | Candidate Logic | `StrategyExperimentSpec`, `StrategySignalRecord`, `TradeCandidate` | entry/filter/size/exit/stop を signal と candidate 化の条件へ分解する |
 | Validation | `EvaluationPlan`, `TrialRecord` | train/test/stress/minimum trade count を評価計画と trial record に残す |
 | Metrics | `TrialRecord.metrics`, `TrialRecord.baseline_delta_metrics` | raw result と baseline 差分を分ける |
+| Explanation Scorecard | `TrialRecord.metrics.strategy_scorecard`, `PromotionDecision.scorecard_summary`, `PaperIntentPreview.scorecard_summary` | derived feature、side、block reason、exit reason、pass/fail threshold を paper-only explanation として残す |
 | Failure Modes / Rejection Rules | `TrialRecord.rejection_reasons`, `TradeCandidate.block_reasons`, `PaperCandidatePack.rejected_candidate_ids` | なぜ止めたかを次の candidate 生成で再利用できる形にする |
 | Decision Log | `PromotionDecision` | `promote`, `hold`, `reject` と evidence/reason を人間判断 artifact として残す |
 | Paper observation entry | `PaperIntentPreview` | paper runner に渡す仮意図だけを生成する。live order ではない |

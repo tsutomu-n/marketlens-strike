@@ -102,6 +102,7 @@ class StrategySignalRecord(BaseModel):
     trailing_stop_bps: float | None = None
     partial_take_profit_bps: float | None = None
     partial_exit_fraction: float | None = None
+    min_holding_minutes: int | None = None
     exit_on_opposite_signal: bool = False
     exit_on_close_signal: bool = False
     exit_on_reduce_signal: bool = False
@@ -150,6 +151,8 @@ class StrategySignalRecord(BaseModel):
             raise ValueError("partial_take_profit_bps must be >= 0")
         if self.partial_exit_fraction is not None and not 0.0 <= self.partial_exit_fraction <= 1.0:
             raise ValueError("partial_exit_fraction must be between 0 and 1")
+        if self.min_holding_minutes is not None and self.min_holding_minutes <= 0:
+            raise ValueError("min_holding_minutes must be positive")
         if self.reduce_fraction is not None and not 0.0 <= self.reduce_fraction <= 1.0:
             raise ValueError("reduce_fraction must be between 0 and 1")
         if self.add_fraction is not None and not 0.0 <= self.add_fraction <= 1.0:

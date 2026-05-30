@@ -29,14 +29,14 @@ research feature data
 
 | Step | Artifact | Producer | Consumer | Main IDs |
 |---|---|---|---|---|
-| experiment definition | `StrategyExperimentSpec` | human / future spec runner | generator / evaluator | `strategy_id`, `strategy_version`, `evaluation_plan_id` |
-| signal rows | `data/research/strategy_signals.parquet` | `uv run sis strategy-preview` / `build-signals` | `evaluate-strategy-lab` | `signal_id`, `strategy_id`, `parameter_hash` |
-| signal manifest | `data/research/strategy_signal_manifest.json` | `uv run sis strategy-preview` / `build-signals` | `evaluate-strategy-lab`, `build-paper-candidate-pack` | `generator_id`, `signal_artifact_run_id` |
+| experiment definition | `StrategyExperimentSpec` | human / `strategy-experiment-run --spec` | generator / evaluator | `strategy_id`, `strategy_version`, `evaluation_plan_id` |
+| signal rows | `data/research/strategy_signals.parquet` | `uv run sis strategy-preview` / `build-signals` / `strategy-experiment-run --spec` | `evaluate-strategy-lab` | `signal_id`, `strategy_id`, `parameter_hash` |
+| signal manifest | `data/research/strategy_signal_manifest.json` | `uv run sis strategy-preview` / `build-signals` / `strategy-experiment-run --spec` | `evaluate-strategy-lab`, `build-paper-candidate-pack` | `generator_id`, `signal_artifact_run_id` |
 | evaluation definition | `EvaluationPlan` | human / future runner | evaluation runner | `evaluation_plan_id` |
-| trial ledger | `data/research/trial_ledger.jsonl` | `uv run sis evaluate-strategy-lab` | `build-paper-candidate-pack` | `trial_id`, `trial_group_id`, `data_snapshot_id`, `feature_snapshot_id` |
+| trial ledger | `data/research/trial_ledger.jsonl` | `uv run sis evaluate-strategy-lab` / `strategy-author-run --through paper-preview` | `build-paper-candidate-pack`, review | `trial_id`, `trial_group_id`, `data_snapshot_id`, `feature_snapshot_id`, `metrics.strategy_scorecard` |
 | candidate pack | `data/research/paper_candidate_pack.json` | `uv run sis build-paper-candidate-pack` | `promotion-decision`, `build-paper-intent-preview` | `pack_id`, `candidate_id` |
-| promotion decision | `data/research/promotion_decision.json` | `uv run sis promotion-decision` | `build-paper-intent-preview` | `promotion_id`, `source_pack_id` |
-| paper preview | `data/bot/paper_intent_preview.json` | `uv run sis build-paper-intent-preview` | `paper-from-intents` | `intent_id`, `candidate_id`, `source_pack_id` |
+| promotion decision | `data/research/promotion_decision.json` | `uv run sis promotion-decision` / `strategy-author-run --through paper-preview` | `build-paper-intent-preview`, review | `promotion_id`, `source_pack_id`, `scorecard_summary` |
+| paper preview | `data/bot/paper_intent_preview.json` | `uv run sis build-paper-intent-preview` | `paper-from-intents` | `intent_id`, `candidate_id`, `source_pack_id`, `scorecard_summary` |
 | paper observation | `data/paper/*`, `data/paper/paper_observation_ledger.jsonl` | `uv run sis paper-from-intents` | reports / review | `order_id`, `fill_id`, `intent_id` |
 
 ## Lineage keys
@@ -86,6 +86,7 @@ Important behavior:
 - `strategy-preview` calls `build_signals()`.
 - `build_signals()` defaults to generator `qqq_trend_rates_vix`.
 - `build-signals --generator-id sp500_trend_rates_vix` and `strategy-preview --generator-id sp500_trend_rates_vix` select the registered SP500 generator.
+- `strategy-experiment-run --spec path/to/spec.yaml` reads `StrategyExperimentSpec` YAML/JSON, uses the registered `generator_id`, and writes signal artifact lineage from the spec metadata.
 - `build_signals()` writes canonical `data/research/strategy_signals.parquet`, `strategy_signal_manifest.json`, JSONL export, and legacy `signals.csv`.
 - no-signal artifacts keep an empty schema plus manifest lineage instead of becoming `unknown_strategy`.
 - `evaluate-strategy-lab` exits with code 2 if `strategy_signals.parquet` is missing.
@@ -98,6 +99,8 @@ Important behavior:
 - `build-paper-candidate-pack` reads the latest trial group by default, or a specific group via `--trial-group-id`.
 - selected paper candidates are built from `TrialRecord.metrics.selected_signal_ids`; default evaluation records the latest `ts_signal` row only.
 - `promotion-decision` records the actual `PaperCandidatePack.pack_id` as `source_pack_id`.
+- `promotion-decision` copies `TrialRecord.metrics.strategy_scorecard` into `PromotionDecision.scorecard_summary` when the source trial group has one.
+- `build-paper-intent-preview` copies `PromotionDecision.scorecard_summary` into promoted `PaperIntentPreview` rows.
 - `build-paper-intent-preview` exits with code 2 if `PromotionDecision.source_pack_id` does not match `PaperCandidatePack.pack_id`.
 - `promotion-decision` and `build-paper-intent-preview` exit with code 2 when the source pack is missing.
 - `promotion-decision --decision promote` fails validation unless required evidence is observed.

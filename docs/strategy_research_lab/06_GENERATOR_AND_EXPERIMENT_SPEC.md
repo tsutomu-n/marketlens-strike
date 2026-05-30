@@ -110,9 +110,10 @@ strategy_family=momentum
 strategy_version=v0
 generator_id=qqq_trend_rates_vix
 parameter_grid={
-  "trend_window": [20, 50],
-  "vix_filter": [true],
-  "min_source_confidence": [0.70, 0.80]
+  "max_vix_level": [18, 22],
+  "min_research_return_1d": [0.00, 0.01],
+  "min_source_confidence": [0.70, 0.80],
+  "timeframe": ["1h", "4h"]
 }
 evaluation_plan_id=initial_walkforward
 run_profile_id=strategy_lab
@@ -152,9 +153,31 @@ parameter_grid={}
 
 現行 `evaluate-strategy-lab` の `--rank-thresholds` は `TrialRecord.parameter_hash` と `trial_id` を threshold / `--candidate-limit` / `--split-method` / `--era-unit` ごとに分けます。default evaluation だけは既存 artifact 互換のため `generator-default-{run_id}` と `trial-{run_id}` を維持します。
 
+## StrategyExperimentSpec runner
+
+`strategy-experiment-run --spec path/to/spec.yaml` は `StrategyExperimentSpec` YAML/JSON を読み、登録済み `generator_id` の build 関数を使って Strategy Lab signal artifact を生成します。
+
+```bash
+uv run sis strategy-experiment-run --spec docs/strategy_research_lab/examples/experiment.yaml
+```
+
+この runner は spec の `strategy_id`, `strategy_family`, `strategy_version`, `symbol_bindings` を `strategy_signals.parquet` と `strategy_signal_manifest.json` の lineage として使います。`parameter_grid` は safe cartesian sweep として展開し、各 variant の signal に `parameter_hash` と `parameter_grid:<hash>` reason code を付けます。未登録 `generator_id`、空の grid value、`--max-variants` 超過は exit code 2 で止まります。
+
+現行 built-in generator の `qqq_trend_rates_vix` と `sp500_trend_rates_vix` は、`parameter_grid` variant から次のキーを実際の signal 条件として読みます。
+
+| key | effect |
+|---|---|
+| `min_source_confidence` | `source_confidence >= value` を満たす row だけを signal 化する。入力列が無い場合、threshold 指定時は通過しない。 |
+| `max_vix_level` | `vix_level <= value` を満たす row だけを signal 化する。 |
+| `vix_gate` | `max_vix_level` の alias。既存 spec 互換用。 |
+| `min_research_return_1d` | `research_return_1d >= value` を満たす row だけを signal 化する。 |
+| `timeframe` | output signal の `timeframe` を上書きする。空文字は invalid。 |
+
+上記以外の key は built-in generator では条件に使われません。ただし `parameter_hash` と `parameter_grid:<hash>` reason code には反映されるため、custom generator が読む key の lineage は残せます。
+
 ## Current limitations
 
-- 現行 CLI は arbitrary `StrategyExperimentSpec` file を読む runner ではない。`--generator-id` は登録済み `SignalGeneratorDefinition` の選択だけです。
+- `strategy-experiment-run` は registered generator を spec metadata と `parameter_grid` variant で実行する runner です。任意式 eval や任意 Python plugin は実行しません。
 - 現行 evaluation は full walk-forward backtester ではなく、artifact chain を成立させる簡易 runner です。`--split-method` は metrics に記録されますが、PnL 計算や walk-forward 検証 engine はまだ実装していません。
 - 現行 candidate selection は default で最新 `ts_signal` の 1 件、`--candidate-limit 0` で threshold 通過 signal 全件を `selected_signal_ids` として pack に渡す最小実装です。
 - 現行 `promotion-decision` は human review artifact を生成するが、review UI ではない。

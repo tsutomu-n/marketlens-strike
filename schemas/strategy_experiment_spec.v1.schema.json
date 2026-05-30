@@ -5,13 +5,35 @@
     "strategy_id",
     "strategy_family",
     "strategy_version",
+    "enabled",
+    "description",
     "symbol_bindings",
     "generator_id",
+    "parameter_grid",
     "evaluation_plan_id",
     "run_profile_id"
   ],
   "properties": {
     "schema_version": { "const": "strategy_experiment_spec.v1" },
-    "symbol_bindings": { "type": "array", "minItems": 1 }
+    "strategy_id": { "type": "string", "minLength": 1 },
+    "strategy_family": { "type": "string", "minLength": 1 },
+    "strategy_version": { "type": "string", "minLength": 1 },
+    "enabled": { "type": "boolean" },
+    "description": { "type": ["string", "null"] },
+    "symbol_bindings": { "type": "array", "minItems": 1 },
+    "generator_id": { "type": "string", "minLength": 1 },
+    "parameter_grid": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1
+      }
+    },
+    "evaluation_plan_id": { "type": "string", "minLength": 1 },
+    "run_profile_id": { "type": "string", "minLength": 1 },
+    "forbidden_claims": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
   }
 }

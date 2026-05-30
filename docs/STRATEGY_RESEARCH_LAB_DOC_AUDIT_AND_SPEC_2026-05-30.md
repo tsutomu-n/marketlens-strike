@@ -367,7 +367,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 重要:
 
 - `strategy-preview` は `build_signals()` を通じて `data/research/strategy_signals.parquet`, `data/research/strategy_signals.jsonl`, legacy export `data/research/signals.csv`, `data/reports/strategy_signals_preview.md` を出す。
-- `build_signals()` の default generator は `qqq_trend_rates_vix`。`--generator-id sp500_trend_rates_vix` で登録済み SP500 generator を選べるが、arbitrary `StrategyExperimentSpec` / `parameter_grid` を CLI 引数で読み込む汎用 runner ではない。
+- `build_signals()` の default generator は `qqq_trend_rates_vix`。`--generator-id sp500_trend_rates_vix` で登録済み SP500 generator を選べる。`strategy-experiment-run --spec` は `StrategyExperimentSpec` YAML/JSON を読み込んで登録済み generator を spec lineage で実行し、`parameter_grid` を safe cartesian sweep として展開できる。現行 built-in generator は `min_source_confidence`, `max_vix_level` / `vix_gate`, `min_research_return_1d`, `timeframe` を signal 条件または出力 timeframe として消費できる。
 - generator metadata は `SignalGeneratorDefinition` を正本にし、callable と `strategy_id`, `strategy_family`, `strategy_version`, `SymbolBinding` を同じ registry entry で管理する。
 - generator は feature に `source_confidence` / `venue_quality_score` が存在する場合、Strategy Lab artifact まで pass-through する。存在しない場合は null として扱う。
 - `build_signals()` は `strategy_signal_manifest.json` を書き、no-signal 時も empty schema と generator lineage を残す。

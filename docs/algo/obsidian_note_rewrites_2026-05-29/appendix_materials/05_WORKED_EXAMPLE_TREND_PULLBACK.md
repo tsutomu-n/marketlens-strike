@@ -90,7 +90,7 @@ forbidden_claims:
 
 現行制約:
 
-- CLI は任意 `StrategyExperimentSpec` を読み込む汎用 runner ではない。
+- `strategy-experiment-run --spec` は `StrategyExperimentSpec` YAML/JSON を読み込める。`parameter_grid` は safe cartesian sweep として展開され、built-in generator は `min_source_confidence`, `max_vix_level` / `vix_gate`, `min_research_return_1d`, `timeframe` を signal 条件または出力 timeframe として消費できる。任意式 eval や任意 Python plugin は実行しない。
 - 現行 default generator は `qqq_trend_rates_vix`。
 - この spec は「どう作るべきか」の契約例で、live order 定義ではない。
 

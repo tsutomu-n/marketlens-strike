@@ -6,7 +6,19 @@
   "properties": {
     "schema_version": {"const": "strategy_authoring_spec.v1"},
     "experiment": {"type": "object"},
-    "data": {"type": "object"},
+    "data": {
+      "type": "object",
+      "properties": {
+        "feature_panel_path": {"type": "string"},
+        "quote_data_path": {"type": "string"},
+        "cost_model_path": {"type": "string"},
+        "confirmation_panels": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/confirmation_panel"}
+        }
+      },
+      "additionalProperties": false
+    },
     "rules": {
       "type": "object",
       "required": ["entry"],
@@ -45,7 +57,8 @@
             "partial_take_profit_bps": {"type": ["number", "null"], "minimum": 0},
             "partial_take_profit_bps_column": {"type": ["string", "null"]},
             "partial_exit_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-            "partial_exit_fraction_column": {"type": ["string", "null"]}
+            "partial_exit_fraction_column": {"type": ["string", "null"]},
+            "min_holding_minutes": {"type": ["integer", "null"], "minimum": 1}
           },
           "additionalProperties": false
         },
@@ -101,7 +114,10 @@
             "max_total_position_weight": {"type": ["number", "null"], "minimum": 0},
             "max_long_position_weight": {"type": ["number", "null"], "minimum": 0},
             "max_short_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "max_abs_net_position_weight": {"type": ["number", "null"], "minimum": 0},
             "max_symbol_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "max_group_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "group_column": {"type": ["string", "null"]},
             "allocation_method": {
               "enum": ["none", "equal_weight", "score_proportional", "inverse_volatility"]
             },
@@ -155,7 +171,13 @@
           "type": "object",
           "properties": {
             "long_top_n": {"type": ["integer", "null"], "minimum": 1},
-            "short_bottom_n": {"type": ["integer", "null"], "minimum": 1}
+            "short_bottom_n": {"type": ["integer", "null"], "minimum": 1},
+            "long_top_fraction": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1},
+            "short_bottom_fraction": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1},
+            "group_column": {"type": ["string", "null"]},
+            "min_candidates": {"type": ["integer", "null"], "minimum": 1},
+            "min_long_score": {"type": ["number", "null"]},
+            "max_short_score": {"type": ["number", "null"]}
           },
           "additionalProperties": false
         },
@@ -236,6 +258,16 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "confirmation_panel": {
+      "type": "object",
+      "required": ["path", "prefix"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "prefix": {"type": "string", "minLength": 1},
+        "max_age_minutes": {"type": ["integer", "null"], "minimum": 1}
+      },
+      "additionalProperties": false
+    },
     "condition": {
       "type": "object",
       "required": ["column", "op"],
@@ -253,11 +285,22 @@
             "is_false",
             "between",
             "in",
-            "not_in"
+            "not_in",
+            "crosses_above",
+            "crosses_below",
+            "rising",
+            "falling",
+            "consecutive_gt",
+            "consecutive_gte",
+            "consecutive_lt",
+            "consecutive_lte",
+            "consecutive_eq",
+            "consecutive_neq"
           ]
         },
         "value": {},
-        "value_column": {"type": ["string", "null"]}
+        "value_column": {"type": ["string", "null"]},
+        "window": {"type": ["integer", "null"], "minimum": 1}
       },
       "additionalProperties": false
     },
@@ -289,9 +332,90 @@
             "max",
             "min",
             "mean",
+            "true_range",
+            "atr",
+            "bollinger_upper",
+            "bollinger_lower",
+            "bollinger_width",
+            "bollinger_percent_b",
+            "donchian_upper",
+            "donchian_lower",
+            "donchian_mid",
+            "donchian_width",
+            "keltner_upper",
+            "keltner_lower",
+            "keltner_width",
+            "ichimoku_conversion",
+            "ichimoku_base",
+            "ichimoku_span_a",
+            "ichimoku_span_b",
+            "macd_line",
+            "stochastic_k",
+            "stochastic_d",
+            "adx",
+            "obv",
+            "volume_zscore",
+            "ts_weekday",
+            "ts_hour",
+            "ts_month",
+            "ts_day",
+            "pct_change",
+            "log_return",
+            "lag",
+            "rolling_return",
+            "ewm_mean",
+            "rsi",
+            "rolling_min",
+            "rolling_max",
+            "rolling_sum",
             "rolling_mean",
             "rolling_std",
-            "rolling_zscore"
+            "rolling_zscore",
+            "rolling_volatility",
+            "annualized_volatility",
+            "realized_variance",
+            "downside_volatility",
+            "sharpe_like",
+            "sortino_like",
+            "cumulative_return",
+            "slope",
+            "mean_reversion_score",
+            "rolling_corr",
+            "rolling_beta",
+            "rolling_spread_zscore",
+            "order_flow_imbalance",
+            "liquidity_depth_ratio",
+            "spread_bps",
+            "funding_bps",
+            "carry_adjusted_return",
+            "vol_risk_premium",
+            "put_call_skew",
+            "liquidity_stress",
+            "net_exchange_flow",
+            "onchain_activity_ratio",
+            "sentiment_weighted_score",
+            "event_surprise",
+            "fundamental_value_gap",
+            "risk_adjusted_score",
+            "inverse_volatility_weight",
+            "cross_sectional_rank",
+            "queue_position_score",
+            "latency_penalty_bps",
+            "maker_taker_fee_edge_bps",
+            "borrow_cost_bps",
+            "borrow_availability_ratio",
+            "tax_drag_bps",
+            "rebalance_drift",
+            "freshness_score",
+            "staleness_bps",
+            "data_quality_blend",
+            "ensemble_vote_count",
+            "ensemble_vote_ratio",
+            "regime_transition_score",
+            "drawdown_from_peak",
+            "turnover_pressure",
+            "capacity_usage_ratio",
+            "correlation_crowding_score"
           ]
         },
         "columns": {

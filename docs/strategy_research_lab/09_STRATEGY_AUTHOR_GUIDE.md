@@ -63,7 +63,7 @@ uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_
 
 v1 は fixed horizon exit です。`backtest.label_horizon_minutes` で horizon を指定します。
 
-`rules.exit.stop_loss_bps` と `rules.exit.take_profit_bps` を指定した場合は、fixed horizon の手前でも、先に到達した stop loss / take profit quote で仮想 exit します。`trailing_stop_bps` と `partial_take_profit_bps` / `partial_exit_fraction` も paper backtest に反映できます。どの exit が使われたかは `strategy_backtest_metrics.json` の `summary.exit_reason_counts` に出ます。
+`rules.exit.stop_loss_bps` と `rules.exit.take_profit_bps` を指定した場合は、fixed horizon の手前でも、先に到達した stop loss / take profit quote で仮想 exit します。`trailing_stop_bps` と `partial_take_profit_bps` / `partial_exit_fraction` も paper backtest に反映できます。`min_holding_minutes` を指定すると、最低保有時間に到達するまで stop / take / trailing / partial / signal exit / bracket time stop を無視し、早すぎる noise exit を抑えた研究ができます。どの exit が使われたかは `strategy_backtest_metrics.json` の `summary.exit_reason_counts` に出ます。
 
 `rules.exit.exit_on_opposite_signal: true` を指定すると、同じ execution symbol で反対方向の次シグナルが出た時点でも仮想 exit します。これは reversal、ドテン、close-on-sell / close-on-buy 型の評価用です。実注文は出しません。
 
@@ -188,9 +188,10 @@ rules:
 対応 op は次です。
 
 - row-wise: `add`, `sub`, `mul`, `div`, `ratio`, `diff`, `pct_diff`, `abs`, `neg`, `max`, `min`, `mean`
-- rolling: `rolling_mean`, `rolling_std`, `rolling_zscore`
+- OHLC/time-series: `true_range`, `atr`, `bollinger_upper`, `bollinger_lower`, `bollinger_width`, `bollinger_percent_b`, `donchian_upper`, `donchian_lower`, `donchian_mid`, `donchian_width`, `keltner_upper`, `keltner_lower`, `keltner_width`, `ichimoku_conversion`, `ichimoku_base`, `ichimoku_span_a`, `ichimoku_span_b`, `macd_line`, `stochastic_k`, `stochastic_d`, `adx`, `obv`, `volume_zscore`, `ts_weekday`, `ts_hour`, `ts_month`, `ts_day`, `lag`, `ewm_mean`, `rsi`, `rolling_min`, `rolling_max`, `rolling_mean`, `rolling_std`, `rolling_zscore`, `rolling_corr`, `rolling_beta`, `rolling_spread_zscore`
+- flow/carry/liquidity/options-vol/on-chain/sentiment/event/fundamental/factor-ranking/execution-constraint/data-quality/ensemble/capacity: `order_flow_imbalance`, `liquidity_depth_ratio`, `spread_bps`, `funding_bps`, `carry_adjusted_return`, `vol_risk_premium`, `put_call_skew`, `liquidity_stress`, `net_exchange_flow`, `onchain_activity_ratio`, `sentiment_weighted_score`, `event_surprise`, `fundamental_value_gap`, `risk_adjusted_score`, `inverse_volatility_weight`, `cross_sectional_rank`, `queue_position_score`, `latency_penalty_bps`, `maker_taker_fee_edge_bps`, `borrow_cost_bps`, `borrow_availability_ratio`, `tax_drag_bps`, `rebalance_drift`, `freshness_score`, `staleness_bps`, `data_quality_blend`, `ensemble_vote_count`, `ensemble_vote_ratio`, `regime_transition_score`, `drawdown_from_peak`, `turnover_pressure`, `capacity_usage_ratio`, `correlation_crowding_score`
 
-rolling 系は `canonical_symbol` ごとに `ts` 順で評価します。`fill_null` を指定すると、初期 window やゼロ除算で出る null を指定値で埋めます。
+time-series 系は `canonical_symbol` ごとに `ts` 順で評価します。`fill_null` を指定すると、初期 window やゼロ除算で出る null を指定値で埋めます。例えば breakout は `rolling_max` や `donchian_upper` で channel high を作り、`lag` で prior high にずらしてから現在 price と比較します。EMA crossover は `ewm_mean` で fast / slow EMA を作り、`value_column` で比較します。RSI mean reversion は `rsi` を作って oversold / overbought threshold と比較します。ATR volatility filter は `atr` を high / low / close columns から作って entry、hold、dynamic stop/target columns に使います。Bollinger 系は `window` と標準偏差倍率の `value`、未指定時 2.0 で upper / lower / width / percent_b を作り、band reversal、band breakout、volatility compression の条件に使えます。Keltner 系は close EMA center と ATR envelope を作ります。Ichimoku 系は conversion / base / span A / span B を作り、cloud breakout や trend filter に使えます。MACD は `macd_line` の `window` を fast span、`value` を slow span として作り、必要なら `ewm_mean` で signal line、`diff` で histogram を作れます。Stochastic は `stochastic_k` と `stochastic_d`、trend strength は `adx`、出来高確認は `obv` と `volume_zscore` を使います。Calendar 系は `ts_weekday` を Monday=0、`ts_hour` を 0-23、`ts_month` を 1-12、`ts_day` を 1-31 として作ります。Cross-asset / pair 系は同じ row にある asset return と benchmark return などから `rolling_corr`, `rolling_beta`, `rolling_spread_zscore` を作り、benchmark confirmation、relative strength、pair spread normalization に使えます。Flow / carry / liquidity / options-vol 系は order book size imbalance、depth ratio、quoted spread bps、funding cost bps、carry-adjusted return、implied-realized vol premium、put-call skew、spread/depth stress を作り、order-flow continuation、thin-liquidity exclusion、funding/carry filter、vol risk premium、skew hedge、on-chain flow filter、sentiment confirmation、event surprise、fundamental value gap、factor ranking、queue-position filter、latency-cost filter、maker-taker fee edge、borrow availability and cost、tax drag filter、rebalance drift、data freshness filter、source-quality blend、ensemble vote filter、regime transition filter、rolling drawdown filter、turnover pressure、capacity usage、correlation crowding 条件に使えます。
 
 ## Score
 
@@ -287,6 +288,7 @@ rules:
     trailing_stop_bps: 120
     partial_take_profit_bps: 200
     partial_exit_fraction: 0.5
+    min_holding_minutes: 120
     stop_loss_bps_column: atr_stop_bps
     take_profit_bps_column: atr_take_profit_bps
   sizing:
@@ -332,6 +334,7 @@ rules:
 - `exit_on_rebalance_signal` は同じ symbol の explicit rebalance signal で paper exposure を目標値へ近づけます。`rebalance_target_fraction_column` を使うと row ごとに目標 exposure を変えられます。
 - `trailing_stop_bps` は含み益のピークからの戻り幅で仮想 exit します。
 - `partial_take_profit_bps` と `partial_exit_fraction` は、一部利確して残りを horizon / stop / trailing に回します。
+- `min_holding_minutes` は、指定分数に到達するまで stop / take / trailing / partial / close / reduce / add / rebalance / opposite / bracket time stop を paper-only に遅らせます。
 - `bracket.enabled: true` は stop / take profit / time stop / break-even stop を OCO 的に paper 評価します。
 - `*_bps_column` を指定すると、ATR やボラティリティから作った feature column で row ごとに損切・利確幅を変えられます。column 値が空の場合は固定値を fallback にします。
 - `sizing.position_weight` は backtest return に掛ける paper weight です。`position_weight_column` で row ごとの重みも使えます。
@@ -521,6 +524,12 @@ optimizer:
 - 結果は `strategy_backtest_metrics.json` の `summary.optimizer.variants` と `summary.optimizer.best_variant` に出ます。
 - optimizer は任意 Python、任意式、外部API、live order を実行しません。
 
+## Strategy Scorecard
+
+`strategy-author-run --through backtest` は `data/research/strategy_backtest_metrics.json` の `summary.strategy_scorecard` に、使った `derived_features`、side counts、reason code counts、block reason counts、execution block reasons、exit reasons、pass/fail thresholds を集約します。これは「どの feature と制約が strategy の通過・棄却に効いたか」を確認する paper-only explanation artifact です。
+
+`--through paper-preview` では同じ情報が `TrialRecord.metrics.strategy_scorecard` と `PromotionDecision.scorecard_summary` にも残ります。promotion が `promote` されて intent が作られる通常 CLI 経路では、`PaperIntentPreview.scorecard_summary` にも引き継がれます。既定 `hold` では intent は空配列ですが、なぜ止めたかは scorecard と rejection reason で追えます。
+
 ## Cross Sectional Rotation
 
 同一 timestamp の複数 symbol 候補を score で相対順位化し、上位を long、下位を short にできます。relative strength、top-bottom、sector rotation、pairs-like spread signal の最小形です。
@@ -545,9 +554,12 @@ rules:
 
 - `long_top_n` は timestamp 内の score 上位 N 件を `side: long` にします。
 - `short_bottom_n` は timestamp 内の score 下位 N 件を `side: short` にします。
+- `long_top_fraction` / `short_bottom_fraction` は universe size に応じて上位 / 下位 tail を割合で選びます。
+- `group_column` を指定すると sector / theme / asset class ごとの top-bottom rotation にできます。
+- `min_candidates`, `min_long_score`, `max_short_score` で、小さすぎる group や弱い tail を見送れます。
 - 選ばれなかった中間候補は `side: none`、`block_reasons: ["cross_sectional_rank_filter"]` として artifact に残り、backtest からは除外されます。
 - `rank_score` / `percentile_rank` は timestamp 内順位から再計算されます。
-- `optimizer.parameter_sweep` で `rules.cross_sectional.long_top_n` / `rules.cross_sectional.short_bottom_n` を比較できます。
+- `optimizer.parameter_sweep` で `rules.cross_sectional.long_top_n`, `short_bottom_n`, `long_top_fraction`, `short_bottom_fraction`, `min_candidates`, `min_long_score`, `max_short_score` を比較できます。
 
 ## Multi-Leg / Pair Trade
 
@@ -643,15 +655,15 @@ bundle は各 member spec を個別に validate / signal build / backtest し、
 
 現在の authoring DSL で表現しやすい戦略カテゴリです。いずれも live order ではなく paper-only signal / backtest です。
 
-- trend following: `close_above_sma20`, `research_return_1d`, `adx` などを entry に使う。
-- mean reversion: `rsi`, `zscore`, `distance_from_ma` などを entry に使う。
-- breakout: `new_high`, `range_breakout`, `volume_spike` などを entry に使う。
+- trend following: `close_above_sma20`, `research_return_1d`, `adx`, `macd_line` などを entry に使う。
+- mean reversion: `rsi`, `zscore`, `distance_from_ma`, `bollinger_percent_b` などを entry に使う。
+- breakout: `new_high`, `range_breakout`, `donchian_upper`, `volume_spike`, `volume_zscore` などを entry に使う。
 - volatility filter: `vix_level`, `atr_pct`, `realized_vol` を hold または entry に使う。
 - long/short rotation: `side: auto` と `side_column` で方向を feature から選ぶ。
-- pair / hedge style signal: feature panel 側で spread や relative strength を作り、`side: auto` または `cross_sectional` で long / short を切り替える。
+- pair / hedge style signal: `rolling_spread_zscore`, `rolling_corr`, `rolling_beta` で spread normalization や benchmark confirmation を作り、`side: auto` または `cross_sectional` で long / short を切り替える。
 - exclusion / blackout rules: `entry.none`, `hold.none`, `long_entry.none`, `short_entry.none` で「どれにも該当しない時だけ」を直接書く。
 - moving-average cross / adaptive threshold: `value_column` で `fast_ma > slow_ma` や `score > dynamic_threshold` を直接書く。
-- local feature derivation: `derived_features` で spread、ratio、rolling mean、rolling z-score を YAML 内で作る。
+- local feature derivation: `derived_features` で spread、ratio、true range、ATR、Bollinger bands、Donchian channels、Keltner channels、Ichimoku cloud、MACD line、stochastic K/D、ADX、OBV、volume z-score、calendar features、rolling correlation / beta / spread z-score、order-flow imbalance、liquidity depth ratio、spread bps、funding bps、carry-adjusted return、volatility risk premium、put-call skew、liquidity stress、net exchange flow、on-chain activity ratio、sentiment weighted score、event surprise、fundamental value gap、risk-adjusted score、inverse volatility weight、cross-sectional rank、queue position score、latency penalty bps、maker-taker fee edge、borrow cost bps、borrow availability ratio、tax drag bps、rebalance drift、freshness score、staleness bps、data quality blend、ensemble vote count/ratio、regime transition score、drawdown from peak、turnover pressure、capacity usage ratio、correlation crowding score、lag、EMA、RSI、rolling min/max/mean/z-score を YAML 内で作る。
 - explicit pair / hedge: `multi_leg` で anchor signal から long leg と short leg を同時に出す。
 - regime filter: `in` / `not_in` で bull、bear、event day などのカテゴリを entry / hold に使う。
 - regime-specific risk: `regime_overrides` で high volatility 時だけ損切幅、利確幅、weight、slippage を変える。
@@ -661,6 +673,7 @@ bundle は各 member spec を個別に validate / signal build / backtest し、
 - no-overlap / pyramiding cap: `position.max_open_signals_per_symbol` / `max_open_position_weight_per_symbol` で同一銘柄の仮想 open exposure を制限する。
 - dynamic risk: `stop_loss_bps_column` / `take_profit_bps_column` に ATR・volatility 由来の bps を入れる。
 - staged exit: `partial_take_profit_bps` と `partial_exit_fraction` で部分利確を評価する。
+- minimum hold: `min_holding_minutes` で最低保有時間までは早期 exit を抑える。
 - bracket / OCO lifecycle: `bracket.enabled` で stop / take / break-even / time stop を束ねて評価する。
 - trailing stop: `trailing_stop_bps` で利益を伸ばしつつ戻りで抜ける条件を評価する。
 - signal reversal: `exit_on_opposite_signal` で反対売買シグナルによる close / reversal を評価する。

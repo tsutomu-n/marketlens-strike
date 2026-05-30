@@ -79,7 +79,7 @@ StrategyExperimentSpec
 - `evaluate-strategy-lab` は同一 `trial_id` を重複追記しません。default では最新 `ts_signal` の 1 signal を選び、`--candidate-limit 0` で threshold 通過 signal を複数選べます。
 - `evaluate-strategy-lab --rank-thresholds 0.2,0.8` で paper-only の rank threshold sweep を記録できます。
 - `--split-method walk_forward` / `--era-unit` は era 別 signal count metrics を記録します。PnL や live-ready 証明ではありません。
+- `strategy-experiment-run --spec path/to/spec.yaml` は `StrategyExperimentSpec` YAML/JSON を読み、登録済み `generator_id` の build 関数を spec の `strategy_id` / `symbol_bindings` / manifest lineage で実行します。`parameter_grid` は cartesian 展開され、各 variant は `parameter_hash` と `parameter_grid:<hash>` reason code で区別されます。現行 built-in generator は `min_source_confidence`, `max_vix_level` / `vix_gate`, `min_research_return_1d`, `timeframe` を signal 条件または出力 timeframe として消費できます。未登録 generator や `--max-variants` 超過は fail closed で止まります。
 - `strategy-author-*` CLI は `strategy_authoring_spec.v1` YAML を読み、宣言型 rule から Strategy Lab signal artifact と fixed-horizon backtest metrics を作れます。`strategy-author-bundle-run` は `strategy_authoring_bundle.v1` で複数 spec の paper portfolio 比較を作れます。
-- `StrategyExperimentSpec` YAML/JSON を直接読む汎用 runner はありません。登録済み generator flow と authoring YAML flow は別入口です。
 - `promotion-decision --decision promote` は required evidence が揃わないと model validation で止まります。
 - `paper-from-intents` は最新 quote と paper broker で再検証し、expired intent や quote missing を block します。

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -19,6 +20,7 @@ class PromotionDecision(BaseModel):
     observed_evidence: list[str]
     approval_reasons: list[str] = Field(default_factory=list)
     rejection_reasons: list[str] = Field(default_factory=list)
+    scorecard_summary: dict[str, Any] = Field(default_factory=dict)
     paper_ready_claimed: bool = False
     tiny_live_ready_claimed: bool = False
     live_ready_claimed: bool = False

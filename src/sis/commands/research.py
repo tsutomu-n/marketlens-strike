@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable, Literal, cast
 
 import polars as pl
+from pydantic import ValidationError
 import typer
 from loguru import logger
 
@@ -17,7 +18,12 @@ from sis.research.macro_ingest import build_macro_panel
 from sis.research.price_ingest import build_market_panel
 from sis.research.providers import FredMacroProvider
 from sis.research.research_quality import build_research_quality_report
-from sis.research.signal_builder import DEFAULT_GENERATOR_ID, build_signals
+from sis.research.signal_builder import (
+    DEFAULT_GENERATOR_ID,
+    build_signals,
+    build_signals_from_experiment_spec,
+    load_strategy_experiment_spec,
+)
 from sis.research.strategy_lab.candidates import TradeCandidate
 from sis.research.strategy_lab.paper_candidate_pack import PaperCandidatePack
 from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
@@ -122,6 +128,32 @@ def _latest_records_by_trial_id(records: list[TrialRecord]) -> list[TrialRecord]
     for record in records:
         by_id[record.trial_id] = record
     return sorted(by_id.values(), key=lambda item: (item.trial_index, item.trial_id))
+
+
+def _scorecard_summary_from_trial_group(data_dir: Path, trial_group_id: str) -> dict[str, Any]:
+    ledger = TrialLedger(data_dir / "research/trial_ledger.jsonl")
+    records = [record for record in ledger.read_all() if record.trial_group_id == trial_group_id]
+    if not records:
+        return {}
+    latest = _latest_records_by_trial_id(records)[-1]
+    scorecard = latest.metrics.get("strategy_scorecard")
+    if not isinstance(scorecard, dict):
+        return {}
+    keys = (
+        "schema_version",
+        "derived_feature_count",
+        "signal_count",
+        "side_counts",
+        "block_reason_counts",
+        "execution_block_reason_counts",
+        "exit_reason_counts",
+        "passed_thresholds",
+        "failed_thresholds",
+        "backtest_passed",
+        "paper_only",
+        "live_order_submitted",
+    )
+    return {key: scorecard[key] for key in keys if key in scorecard}
 
 
 def _parse_rank_thresholds(value: str) -> list[float | None]:
@@ -345,6 +377,52 @@ def register_research_commands(
             f"- generator_id: {generator_id}\n"
             f"- canonical_artifact: {settings.data_dir / 'research/strategy_signals.parquet'}\n"
             f"- legacy_export: {legacy_path}\n",
+            encoding="utf-8",
+        )
+        typer.echo(f"legacy_export={legacy_path}")
+        typer.echo(f"report_path={report_path}")
+
+    @app.command("strategy-experiment-run")
+    def strategy_experiment_run_cmd(
+        spec_path: Path = typer.Option(
+            ...,
+            "--spec",
+            help="StrategyExperimentSpec YAML/JSON file to run through the registered generator flow.",
+        ),
+        max_variants: int = typer.Option(
+            64,
+            "--max-variants",
+            min=1,
+            help="Maximum cartesian parameter_grid variants to materialize.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            spec = load_strategy_experiment_spec(spec_path)
+            legacy_path = build_signals_from_experiment_spec(
+                settings.data_dir,
+                spec=spec,
+                max_variants=max_variants,
+            )
+        except KeyError as exc:
+            registered = ", ".join(default_signal_generator_registry().registered_ids())
+            typer.echo(f"{exc.args[0]}; registered_generator_ids={registered}")
+            raise typer.Exit(2) from exc
+        except (FileNotFoundError, ValueError, TypeError, ValidationError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        report_path = settings.data_dir / "reports/strategy_experiment_run.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(
+            "# Strategy Experiment Run\n\n"
+            f"- spec_path: {spec_path}\n"
+            f"- strategy_id: {spec.strategy_id}\n"
+            f"- generator_id: {spec.generator_id}\n"
+            f"- max_variants: {max_variants}\n"
+            f"- canonical_artifact: {settings.data_dir / 'research/strategy_signals.parquet'}\n"
+            f"- legacy_export: {legacy_path}\n"
+            "- paper_only: true\n"
+            "- live_order_submitted: false\n",
             encoding="utf-8",
         )
         typer.echo(f"legacy_export={legacy_path}")
@@ -667,6 +745,14 @@ def register_research_commands(
         pack = PaperCandidatePack.model_validate(json.loads(pack_path.read_text(encoding="utf-8")))
         source_pack_id = pack.pack_id
         promotion_run_id = run_id_from_pack_id(source_pack_id)
+        scorecard_summary = (
+            _scorecard_summary_from_trial_group(settings.data_dir, pack.trial_group_id)
+            if pack.trial_group_id
+            else {}
+        )
+        if scorecard_summary:
+            required.append("strategy_scorecard")
+            observed.append("strategy_scorecard")
         promotion = PromotionDecision(
             schema_version="promotion_decision.v1",
             promotion_id=f"promotion-{promotion_run_id}",
@@ -680,6 +766,7 @@ def register_research_commands(
             observed_evidence=observed,
             approval_reasons=["operator_promoted"] if promotion_value == "promote" else [],
             rejection_reasons=[] if promotion_value == "promote" else ["not_promoted"],
+            scorecard_summary=scorecard_summary,
         )
         out = settings.data_dir / "research/promotion_decision.json"
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -747,6 +834,7 @@ def register_research_commands(
                         source_tracking_ts=None,
                         source_feature_ts=None,
                         source_phase_gate_run_id=None,
+                        scorecard_summary=promotion.scorecard_summary,
                     )
                 )
         out = settings.data_dir / "bot/paper_intent_preview.json"
@@ -758,7 +846,10 @@ def register_research_commands(
         report_path = settings.data_dir / "reports/paper_intent_preview.md"
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(
-            f"# Paper Intent Preview\n\n- intents: {len(intents)}\n", encoding="utf-8"
+            "# Paper Intent Preview\n\n"
+            f"- intents: {len(intents)}\n"
+            f"- scorecard_schema_version: {promotion.scorecard_summary.get('schema_version')}\n",
+            encoding="utf-8",
         )
         typer.echo(f"paper_intent_preview={out}")
 

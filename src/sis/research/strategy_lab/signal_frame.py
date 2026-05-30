@@ -79,6 +79,7 @@ def validate_strategy_signal_frame(
             trailing_stop_bps=row.get("trailing_stop_bps"),
             partial_take_profit_bps=row.get("partial_take_profit_bps"),
             partial_exit_fraction=row.get("partial_exit_fraction"),
+            min_holding_minutes=row.get("min_holding_minutes"),
             exit_on_opposite_signal=bool(row.get("exit_on_opposite_signal")),
             exit_on_close_signal=bool(row.get("exit_on_close_signal")),
             exit_on_reduce_signal=bool(row.get("exit_on_reduce_signal")),

@@ -76,13 +76,15 @@ validation:
 
 - これは「何を観測し、どんな条件でsignalを作り、どのsymbolに対応させるか」の契約です。
 - ここには order size、wallet、exchange write、live ready 判断を書かない。
-- `parameter_grid` は研究用の探索範囲であり、運用パラメータの確定値ではない。
+- `parameter_grid` は研究用の探索範囲であり、運用パラメータの確定値ではない。`strategy-experiment-run --spec` では safe cartesian sweep として展開される。
 
 現行制約:
 
 - default generator は `qqq_trend_rates_vix`。
 - registered generator は `qqq_trend_rates_vix`, `sp500_trend_rates_vix`。
-- 現行 CLI は任意 spec を読み込む汎用 runner ではなく、登録済み `generator_id` だけを選べる。
+- `strategy-experiment-run --spec path/to/spec.yaml` は任意の `StrategyExperimentSpec` YAML/JSON を読み、登録済み `generator_id` の build 関数を spec の lineage で実行できる。
+- `parameter_grid` は cartesian 展開され、各 variant の signal には `parameter_hash` と `parameter_grid:<hash>` reason code が付く。`--max-variants` 超過、空の grid value、未登録 generator は fail closed で止まる。
+- 現行 built-in generator は `min_source_confidence`, `max_vix_level` / `vix_gate`, `min_research_return_1d`, `timeframe` を signal 条件または出力 timeframe として消費できる。その他の key は lineage/hash に残るが、built-in generator の条件には使われない。
 
 ## StrategySignalRecord
 
