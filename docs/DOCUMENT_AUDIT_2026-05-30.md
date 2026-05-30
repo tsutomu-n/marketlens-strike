@@ -81,6 +81,7 @@ src/sis/execution/
 | `scripts/check_current_docs.py` | current docs の link / EOF / legacy root path check を追加し、`docs/algo` 直下の現行 strategy prep docs、live-readiness plan、XNYS calendar、plan index を対象化 |
 | `docs/algo/SOURCE_NOTES_INDEX.md` | strict check 対応のため、括弧入り local link を URL encoding で安全化 |
 | `docs/algo/EXPERIMENT_SCORECARD.md`, `docs/algo/STRATEGY_PREP_WORKFLOW.md` | strict check 対応のため、EOF 余分空行を修正 |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/` | `docs/algo/README.md` から通常参照されるため strict check 対象へ昇格。入口文言と EOF を現行 Strategy Lab 前提へ補正 |
 | `docs/DOCUMENT_AUDIT_2026-05-30.md` | 本監査を新規作成 |
 
 ## 更新できる docs
@@ -99,6 +100,7 @@ src/sis/execution/
 | `docs/trade_xyz_bot_beginner_guide.html` | 初心者向けとして有効 | Strategy Lab → paper intent preview の説明を追加できる |
 | `docs/algo/EXPERIMENT_SCORECARD.md` | 戦略候補の比較テンプレートとして有効 | `TrialRecord`, `PromotionDecision`, `PaperIntentPreview` への対応欄を足すとさらに使いやすい |
 | `docs/algo/strategy_factory/SIGNAL_CANDIDATE_TEMPLATE.md` | signal candidate intake として有効 | `Decision Log` を人間レビュー記録として明記し、Strategy Lab artifact と誤読しない注記を足せる |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/` | `docs/algo/README.md` が参照する批判的リライト bundle として有効 | current docs lint 対象。Strategy Lab 実装正本ではなく、戦略設計の参照資料として読む |
 
 ## 古い内容がある docs
 
@@ -177,7 +179,7 @@ Current docs の機械チェックは `docs/DOCS_LINT_POLICY_2026-05-30.md` と 
 uv run python scripts/check_current_docs.py
 ```
 
-検査対象は current read-first docs、`docs/algo` 直下の現行 strategy prep docs、Strategy Lab specs、strategy factory、archive index、live evidence README、beginner guide、live-readiness plan、XNYS calendar、plan index に限定する。`docs/archive/**`, `docs/algo/obsidian_note_copies/**`, `docs/algo/obsidian_note_rewrites_2026-05-28/**`, unchecked 2026-05-29 rewrite snapshots, `plan/archive/**` は通常 lint 対象外。
+検査対象は current read-first docs、`docs/algo` 直下の現行 strategy prep docs、Strategy Lab specs、strategy factory、2026-05-29 rewrite bundle、archive index、live evidence README、beginner guide、live-readiness plan、XNYS calendar、plan index に限定する。`docs/archive/**`, `docs/algo/obsidian_note_copies/**`, `docs/algo/obsidian_note_rewrites_2026-05-28/**`, `plan/archive/**` は通常 lint 対象外。
 
 ## 追加照査メモ
 

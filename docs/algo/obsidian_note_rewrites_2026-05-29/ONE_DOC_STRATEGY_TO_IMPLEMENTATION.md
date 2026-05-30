@@ -81,9 +81,10 @@ run_profile_id=strategy_lab
 
 禁止:
 
-- `profitability_claim=true`
-- `paper_ready_claim=true`
-- `live_ready_claim=true`
+- `profitability_claimed=true`
+- `paper_ready_claimed=true`
+- `tiny_live_ready_claimed=true`
+- `live_ready_claimed=true`
 - wallet / signing / exchange write の指定
 - order quantity の確定
 

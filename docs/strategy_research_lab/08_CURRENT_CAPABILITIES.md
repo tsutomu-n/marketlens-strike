@@ -222,6 +222,6 @@ git diff --check
 - `tests/test_strategy_lab_commands.py`: 15 passed
 - Strategy Lab related targeted suite: 39 passed
 - Research pipeline / CLI smoke: 71 passed
-- `scripts/check_current_docs.py`: checked 45 current docs
+- `scripts/check_current_docs.py`: checked 72 current docs
 - `./scripts/check`: 378 passed, pyrefly 0 errors
 - `git diff --check`: pass

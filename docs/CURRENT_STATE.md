@@ -65,7 +65,7 @@
 - `./scripts/check`: pass
 - `uv run pyrefly check`: pass, 0 errors
 - `uv run pytest -q`: 378 passed via `./scripts/check`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 45 current docs`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 72 current docs`
 
 2026-05-28 runtime artifact snapshot:
 
