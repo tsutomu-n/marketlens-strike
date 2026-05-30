@@ -25,6 +25,8 @@
 10. `../../strategy_research_lab/README.md`
    - 候補を実装済み Strategy Lab schema と artifact chain に落とす時の正本を見る。
 
+読みやすい運用ガイドは [STRATEGY_FACTORY_OPERATOR_GUIDE.html](STRATEGY_FACTORY_OPERATOR_GUIDE.html) です。
+
 ## 状態の考え方
 
 ```text
@@ -33,12 +35,12 @@ idea
   -> data-ready
   -> backtest-ready
   -> backtested
-  -> strategy-lab-candidate
   -> paper-observing
   -> continue | rejected | archived
 ```
 
 各状態は、次のgateを満たさない限り進めません。
+Strategy Lab への接続は状態名ではなく、`backtested -> paper-observing` へ進むための実装ルートとして扱います。
 
 ## Factory Rules
 

@@ -16,6 +16,7 @@
    - 候補戦略を同じ物差しで採点し、優先順位を決める。
 6. [strategy_factory/](strategy_factory/)
    - 戦略候補を安全に量産するため、1戦略1枚の候補シート、reject taxonomy、backlog台帳、状態遷移gateで管理する。
+   - 作戦パーツを候補選別へ使う運用ガイドは [strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html](strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html)。
 7. [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
    - 実装済み Strategy Research Lab の schema、artifact chain、paper-only boundary、古い docs の扱いを確認する。
 8. [../strategy_research_lab/](../strategy_research_lab/)

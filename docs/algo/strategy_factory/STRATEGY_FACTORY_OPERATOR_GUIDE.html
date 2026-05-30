@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Strategy Factory Operator Guide</title>
+    <meta
+      name="description"
+      content="Strategy Parts Catalog と strategy_factory docs を使って、作戦候補を安全に作り、早く落とし、残すべきものだけを Strategy Lab へ送るための運用ガイド。"
+    />
+    <style>
+      :root {
+        --ink: #13171b;
+        --muted: #55616b;
+        --paper: #f3f5f4;
+        --surface: #ffffff;
+        --surface-2: #e9efee;
+        --line: #22272d;
+        --soft-line: #cbd3d3;
+        --accent: #006a67;
+        --accent-2: #a9471b;
+        --danger: #8b1d2c;
+        --ok: #23613e;
+        --mono: ui-monospace, "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
+        --sans:
+          system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif,
+          "Hiragino Sans", "Yu Gothic", "YuGothic", "Noto Sans CJK JP";
+        --max: 1180px;
+        --step-0: clamp(0.98rem, 0.94rem + 0.16vw, 1.06rem);
+        --step-1: clamp(1.18rem, 1.08rem + 0.44vw, 1.42rem);
+        --step-2: clamp(1.52rem, 1.28rem + 0.92vw, 2.05rem);
+        --step-3: clamp(2.14rem, 1.58rem + 2vw, 3.35rem);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-feature-settings: "palt" 1;
+        line-height: 1.76;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      a {
+        color: inherit;
+        text-decoration-color: var(--accent);
+        text-decoration-thickness: 0.08em;
+        text-underline-offset: 0.18em;
+      }
+
+      code,
+      pre {
+        font-family: var(--mono);
+      }
+
+      code {
+        font-size: 0.93em;
+      }
+
+      pre {
+        margin: 0;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .page {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 32px 20px 72px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.36fr) minmax(280px, 0.82fr);
+        gap: 34px;
+        border-bottom: 2px solid var(--line);
+        padding: 28px 0 34px;
+      }
+
+      .kicker,
+      .eyebrow,
+      .mini-label {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.18;
+        letter-spacing: 0;
+        text-wrap: balance;
+      }
+
+      h1 {
+        margin: 12px 0 20px;
+        max-width: 13em;
+        font-size: var(--step-3);
+      }
+
+      h2 {
+        margin: 0 0 18px;
+        font-size: var(--step-2);
+      }
+
+      h3 {
+        margin: 0 0 10px;
+        font-size: var(--step-1);
+      }
+
+      p {
+        margin: 0 0 1em;
+        font-size: var(--step-0);
+      }
+
+      .lead {
+        max-width: 44em;
+        color: #2d363d;
+        font-size: var(--step-1);
+      }
+
+      .hero-aside {
+        align-self: end;
+        border-left: 5px solid var(--accent);
+        padding-left: 18px;
+      }
+
+      .section {
+        padding: 44px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr);
+        gap: 28px;
+        margin-bottom: 24px;
+      }
+
+      .section-head p {
+        max-width: 54em;
+      }
+
+      .status-strip,
+      .step-grid,
+      .gate-grid,
+      .split-grid,
+      .part-grid {
+        display: grid;
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+      }
+
+      .status-strip {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-top: 26px;
+      }
+
+      .status-cell,
+      .step,
+      .gate,
+      .split-grid > div,
+      .part {
+        min-width: 0;
+        background: var(--surface);
+        padding: 18px;
+      }
+
+      .status-cell strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 1.05rem;
+      }
+
+      .step-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .step b {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .step span {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .gate-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .gate {
+        border-top: 5px solid var(--accent);
+      }
+
+      .gate.danger {
+        border-top-color: var(--danger);
+      }
+
+      .gate.warn {
+        border-top-color: var(--accent-2);
+      }
+
+      .part-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .part .plain {
+        color: #2f3940;
+      }
+
+      .doc-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .doc-list li {
+        min-width: 0;
+        border-left: 4px solid var(--accent);
+        background: var(--surface);
+        padding: 13px 15px;
+      }
+
+      .command {
+        border: 1px solid var(--line);
+        background: #1b1f23;
+        color: #f5f8f7;
+        padding: 16px;
+        font-size: 0.9rem;
+        line-height: 1.62;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--surface);
+        border: 1px solid var(--line);
+      }
+
+      th,
+      td {
+        border: 1px solid var(--soft-line);
+        padding: 12px 13px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--surface-2);
+        color: #20262b;
+        font-size: 0.92rem;
+      }
+
+      td:first-child {
+        font-family: var(--mono);
+        font-size: 0.9rem;
+      }
+
+      .split-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+
+      .label {
+        display: inline-block;
+        margin-bottom: 12px;
+        border: 1px solid var(--line);
+        padding: 2px 8px;
+        font-family: var(--mono);
+        font-size: 0.76rem;
+        line-height: 1.4;
+      }
+
+      .label.ok {
+        border-color: var(--ok);
+        color: var(--ok);
+      }
+
+      .label.stop {
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+
+      .label.warn {
+        border-color: var(--accent-2);
+        color: var(--accent-2);
+      }
+
+      .checklist {
+        margin: 0;
+        padding-left: 1.15em;
+      }
+
+      .checklist li {
+        margin: 0.42em 0;
+      }
+
+      .note {
+        margin-top: 20px;
+        border-left: 5px solid var(--accent-2);
+        background: #edf3f1;
+        padding: 14px 16px;
+      }
+
+      .footer {
+        padding-top: 26px;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      @media (max-width: 980px) {
+        .hero,
+        .section-head,
+        .split-grid,
+        .part-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .status-strip,
+        .step-grid,
+        .gate-grid,
+        .doc-list {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 560px) {
+        .page {
+          padding: 18px 14px 46px;
+        }
+
+        .status-strip,
+        .step-grid,
+        .gate-grid,
+        .doc-list {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <div class="kicker">Strategy Factory / Operator Guide</div>
+          <h1 id="page-title">作戦パーツを、実装前の候補選別に使う</h1>
+          <p class="lead">
+            このページは、Strategy Parts Catalog を「眺める資料」ではなく、
+            1作戦1枚の候補シート、重複判定、reject taxonomy、gate review へ流すための運用ガイドです。
+          </p>
+        </div>
+        <aside class="hero-aside" aria-label="このガイドの結論">
+          <p><strong>目的:</strong> 作戦案を増やすことではなく、弱い候補を早く落とすこと。</p>
+          <p><strong>出口:</strong> 残った候補だけを Strategy Lab の paper-only artifact chain に送ること。</p>
+        </aside>
+      </section>
+
+      <section class="section" aria-labelledby="status-title">
+        <div class="section-head">
+          <div class="eyebrow">Position</div>
+          <div>
+            <h2 id="status-title">このガイドの位置づけ</h2>
+            <p>
+              作戦パーツは、直接注文に変えるものではありません。
+              仮説、必要データ、止め方、baseline を揃え、次の gate へ進めるかを判断するために使います。
+            </p>
+          </div>
+        </div>
+        <div class="status-strip" aria-label="運用位置づけ">
+          <div class="status-cell"><span class="mini-label">Input</span><strong>作戦パーツ</strong></div>
+          <div class="status-cell"><span class="mini-label">Work</span><strong>1候補1枚に整理</strong></div>
+          <div class="status-cell"><span class="mini-label">Gate</span><strong>落とす理由を固定</strong></div>
+          <div class="status-cell"><span class="mini-label">Output</span><strong>Strategy Labへ送る候補</strong></div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="docs-title">
+        <div class="section-head">
+          <div class="eyebrow">Source Docs</div>
+          <div>
+            <h2 id="docs-title">使うドキュメントと役割</h2>
+            <p>この順番で使うと、候補の量産と重複、根拠のない実装を避けやすくなります。</p>
+          </div>
+        </div>
+        <ul class="doc-list">
+          <li><a href="../STRATEGY_PARTS_CATALOG.md">STRATEGY_PARTS_CATALOG.md</a><br />部品の入力、出力、失敗モード、検証指標を見る。</li>
+          <li><a href="../STRATEGY_BLUEPRINTS.md">STRATEGY_BLUEPRINTS.md</a><br />部品を組み合わせた候補例を見る。</li>
+          <li><a href="SIGNAL_CANDIDATE_TEMPLATE.md">SIGNAL_CANDIDATE_TEMPLATE.md</a><br />1作戦1枚で候補を書く。</li>
+          <li><a href="ARCHETYPE_REQUIRED_INPUTS.md">ARCHETYPE_REQUIRED_INPUTS.md</a><br />archetypeごとの必須入力と最低検査を見る。</li>
+          <li><a href="DUPLICATE_CONTROL.md">DUPLICATE_CONTROL.md</a><br />似た候補を統合、棄却、variant化する。</li>
+          <li><a href="GATE_REVIEW_CHECKLIST.md">GATE_REVIEW_CHECKLIST.md</a><br />次の状態へ進めてよいかを判定する。</li>
+        </ul>
+      </section>
+
+      <section class="section" aria-labelledby="loop-title">
+        <div class="section-head">
+          <div class="eyebrow">Loop</div>
+          <div>
+            <h2 id="loop-title">最小運用ループ</h2>
+            <p>
+              最初から generator 実装へ行かず、候補シートと gate review を通します。
+              gate に通らない候補は、reject taxonomy code を残して止めます。
+            </p>
+          </div>
+        </div>
+        <div class="step-grid" aria-label="最小運用ループ">
+          <div class="step"><b>1. 部品を選ぶ</b><span>Parts Catalog から必要部品を選ぶ</span></div>
+          <div class="step"><b>2. 1枚に書く</b><span>仮説、trigger、invalidation、baseline を固定</span></div>
+          <div class="step"><b>3. 入力を確認</b><span>archetype別の必須データと時刻を確認</span></div>
+          <div class="step"><b>4. 重複を潰す</b><span>threshold違いは新候補にしない</span></div>
+          <div class="step"><b>5. gate判定</b><span>進めるか、落とすか、保留かを記録</span></div>
+        </div>
+        <p class="note">
+          正本の状態遷移は <a href="FACTORY_WORKFLOW.md">FACTORY_WORKFLOW.md</a> です。
+          このガイドでは新しい状態名を増やしません。
+        </p>
+      </section>
+
+      <section class="section" aria-labelledby="gate-title">
+        <div class="section-head">
+          <div class="eyebrow">Gates</div>
+          <div>
+            <h2 id="gate-title">gate ごとの判断</h2>
+            <p>
+              状態は <code>idea -> specified -> data-ready -> backtest-ready -> backtested -> paper-observing -> continue/rejected/archived</code>
+              で扱います。Strategy Lab への接続は状態名ではなく、paper-observing へ進むための実装ルートです。
+            </p>
+          </div>
+        </div>
+        <div class="gate-grid">
+          <article class="gate">
+            <span class="label ok">idea -> specified</span>
+            <h3>作戦として読めるか</h3>
+            <ul class="checklist">
+              <li>1文の仮説がある。</li>
+              <li>archetypeが1つに決まっている。</li>
+              <li>trigger、invalidation、baselineがある。</li>
+              <li>signalとorderを混ぜていない。</li>
+            </ul>
+          </article>
+          <article class="gate">
+            <span class="label ok">specified -> data-ready</span>
+            <h3>データが取れるか</h3>
+            <ul class="checklist">
+              <li>required inputsが列名かデータ項目で書ける。</li>
+              <li>historical dataまたは安全なpaper collectionで取れる。</li>
+              <li><code>observed_at</code> または利用可能時刻を記録できる。</li>
+              <li>欠損率、遅延、timezoneの扱いが決まっている。</li>
+            </ul>
+          </article>
+          <article class="gate warn">
+            <span class="label warn">data-ready -> backtest-ready</span>
+            <h3>検証前の事故を防ぐ</h3>
+            <ul class="checklist">
+              <li>feature time <= decision time を検査できる。</li>
+              <li>cost/slippage前提がある。</li>
+              <li>no-trade conditionsがある。</li>
+              <li>reject rulesが先に書かれている。</li>
+            </ul>
+          </article>
+          <article class="gate warn">
+            <span class="label warn">backtest-ready -> backtested</span>
+            <h3>結果を盛らない</h3>
+            <ul class="checklist">
+              <li>baseline comparisonがある。</li>
+              <li>cost/slippage込みで見る。</li>
+              <li>trade countが十分。</li>
+              <li>parameter neighborhoodを見る。</li>
+            </ul>
+          </article>
+          <article class="gate">
+            <span class="label ok">backtested -> paper-observing</span>
+            <h3>paper観測へ送れるか</h3>
+            <ul class="checklist">
+              <li>in-sampleだけではない。</li>
+              <li>paperの価格参照が決まっている。</li>
+              <li>expected fillとobserved fillの差を記録できる。</li>
+              <li>live executionなしで観測できる。</li>
+            </ul>
+          </article>
+          <article class="gate danger">
+            <span class="label stop">any -> rejected</span>
+            <h3>早く落とす</h3>
+            <ul class="checklist">
+              <li>invalidationがない。</li>
+              <li>baselineがない。</li>
+              <li>必要データが安全に取れない。</li>
+              <li>live実行しないと基本仮説を検証できない。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="parts-title">
+        <div class="section-head">
+          <div class="eyebrow">Glossary</div>
+          <div>
+            <h2 id="parts-title">作戦パーツの言い換え</h2>
+            <p>repoの用語と、作戦会議で使いやすい言い換えを並べます。</p>
+          </div>
+        </div>
+        <div class="part-grid">
+          <div class="part"><h3>Universe Selector</h3><p class="plain">何を売買対象にするか決める部品。</p></div>
+          <div class="part"><h3>Data Collector</h3><p class="plain">判断材料を集め、時刻つきで保存する部品。</p></div>
+          <div class="part"><h3>Feature Factory</h3><p class="plain">生データを判断に使える数字へ変換する部品。</p></div>
+          <div class="part"><h3>Regime Detector</h3><p class="plain">今が trend, range, panic などどの相場か見る部品。</p></div>
+          <div class="part"><h3>Signal Generator</h3><p class="plain">売買候補を出す部品。注文を出す部品ではない。</p></div>
+          <div class="part"><h3>Participation Filter</h3><p class="plain">良いシグナルでも入らない局面を除外する部品。</p></div>
+          <div class="part"><h3>Position Sizer</h3><p class="plain">勝てそうだから大きく張るのではなく、負けた時の損失からサイズを決める部品。</p></div>
+          <div class="part"><h3>Exit Module</h3><p class="plain">利確、損切り、縮小、時間切れを決める部品。</p></div>
+          <div class="part"><h3>Risk Guard</h3><p class="plain">日次損失、連敗、異常データ、API障害などで止める部品。</p></div>
+          <div class="part"><h3>Evaluation Harness</h3><p class="plain">baseline、cost、walk-forward、stressを同じ物差しで見る部品。</p></div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="example-title">
+        <div class="section-head">
+          <div class="eyebrow">Worked Example</div>
+          <div>
+            <h2 id="example-title">例: Trend + OrderBook Confirmation</h2>
+            <p>Blueprintを候補シートへ落とすと、次のように最低限の判断項目が埋まります。</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>項目</th>
+                <th>記入例</th>
+                <th>見る理由</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>hypothesis</td>
+                <td>長期トレンド方向の押し目だけを、板の厚みが戻った時に入ると、entry直後の逆行が減る。</td>
+                <td>何を改善するかを1文で固定する。</td>
+              </tr>
+              <tr>
+                <td>archetype</td>
+                <td>pullback</td>
+                <td>Required Inputs と duplicate key を決める。</td>
+              </tr>
+              <tr>
+                <td>required_inputs</td>
+                <td>long_ma, ma_slope, distance_to_ma, short_momentum, spread_bps, imbalance</td>
+                <td>取得できないデータに依存していないか見る。</td>
+              </tr>
+              <tr>
+                <td>baseline</td>
+                <td>板フィルタなしの trend pullback</td>
+                <td>板フィルタが本当に改善したか分けて測る。</td>
+              </tr>
+              <tr>
+                <td>invalidation</td>
+                <td>pullback low 割れ、または trend regime 解除</td>
+                <td>負けた時にどこで仮説が壊れるか固定する。</td>
+              </tr>
+              <tr>
+                <td>reject_if</td>
+                <td>trade countがbaselineの30%未満、またはcost込みで改善が消える。</td>
+                <td>後から都合よく採用しないため。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="strategy-lab-title">
+        <div class="section-head">
+          <div class="eyebrow">Strategy Lab Bridge</div>
+          <div>
+            <h2 id="strategy-lab-title">Strategy Lab へ送る時の読み替え</h2>
+            <p>
+              Factory docs は候補設計の入口です。Strategy Lab は、残した候補を paper-only artifact chain に落とす実装ルートです。
+            </p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Factory側</th>
+                <th>Strategy Lab側</th>
+                <th>注意</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Signal Candidate Sheet</td>
+                <td>StrategyExperimentSpec</td>
+                <td>現行CLIは任意spec runnerではない。実装時は registered generator に落とす。</td>
+              </tr>
+              <tr>
+                <td>archetype / family</td>
+                <td>strategy_family</td>
+                <td>検証可能な family 名にする。<code>ai</code> や <code>latest</code> は避ける。</td>
+              </tr>
+              <tr>
+                <td>variant / threshold</td>
+                <td>parameter_hash</td>
+                <td>threshold違いは新戦略ではなく variant として扱う。</td>
+              </tr>
+              <tr>
+                <td>reject taxonomy</td>
+                <td>rejection_reasons / block_reasons</td>
+                <td>自由文だけでなく固定コードを残す。</td>
+              </tr>
+              <tr>
+                <td>paper observing entry</td>
+                <td>PaperIntentPreview</td>
+                <td>paper-only。live order ではない。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="dont-title">
+        <div class="section-head">
+          <div class="eyebrow">Do Not</div>
+          <div>
+            <h2 id="dont-title">やってはいけない使い方</h2>
+            <p>作戦パーツを便利に使うほど、signal と order、研究と実運用を混ぜる危険が増えます。</p>
+          </div>
+        </div>
+        <div class="split-grid">
+          <div>
+            <span class="label ok">安全な読み方</span>
+            <ul class="checklist">
+              <li>作戦は候補シートへ落としてから評価する。</li>
+              <li>baselineとinvalidationがない候補は止める。</li>
+              <li>似た候補は duplicate key でまとめる。</li>
+              <li>reject理由を taxonomy code で残す。</li>
+              <li>paper-only preview は仮注文案として扱う。</li>
+            </ul>
+          </div>
+          <div>
+            <span class="label stop">危険な読み方</span>
+            <ul class="checklist">
+              <li>Signal Generator を order generator と読む。</li>
+              <li>勝率やSNS由来の利益主張を根拠にする。</li>
+              <li>threshold違いを別戦略として量産する。</li>
+              <li>backtestなしで paper に進める。</li>
+              <li>paper artifact を live-ready 証明にする。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="commands-title">
+        <div class="section-head">
+          <div class="eyebrow">Verification</div>
+          <div>
+            <h2 id="commands-title">このガイド追加後の確認コマンド</h2>
+            <p>リンク、HTML構文、repo標準チェックを確認します。</p>
+          </div>
+        </div>
+        <pre class="command"><code>uv run python scripts/check_current_docs.py
+uv run python -c "from html.parser import HTMLParser; from pathlib import Path; HTMLParser().feed(Path('docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html').read_text(encoding='utf-8')); print('html_parse=ok')"
+git diff --check
+./scripts/check</code></pre>
+      </section>
+
+      <footer class="footer">
+        <p>
+          Source docs:
+          <a href="../STRATEGY_PARTS_CATALOG.md">Strategy Parts Catalog</a>,
+          <a href="SIGNAL_CANDIDATE_TEMPLATE.md">Signal Candidate Template</a>,
+          <a href="FACTORY_WORKFLOW.md">Factory Workflow</a>,
+          <a href="../../strategy_research_lab/README.md">Strategy Research Lab</a>.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>
