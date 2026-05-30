@@ -25,7 +25,7 @@ phase-gate-review:
   diagnostics_symbols: SP500, XYZ100, NVDA, AAPL, MSFT
   execution_drift_classification_counts:
     P2_BLOCKER: 0
-    LIVE_READINESS_BLOCKER: 6
+    LIVE_READINESS_BLOCKER: 5
 
 latest quote collection summary:
   venue: trade_xyz
@@ -69,7 +69,7 @@ PR12 fresh read-only smoke:
 | P2 fee mode resolution | DONE | registry / raw quote rows have `fee_mode=standard`, taker `9.0`, maker `3.0`; diagnostics fee unknown 0.0 | fee config drift は regression blocker |
 | P2 tracking mark-only fix | DONE | `mark_real_diff_bps` uses `quote.mark_price` only; missing mark blocks | mid remains venue mid, not mark substitute |
 | P2 Alpaca provider stub removal | DONE | `fetch_alpaca_bars`, `AlpacaProviderUnavailable`, `alpaca-smoke`, unit tests | credentials live API success is unverified |
-| P2 execution drift classification | DONE | `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6` | live readiness requires blocker count 0 |
+| P2 execution drift classification | DONE | `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5` | live readiness requires blocker count 0 |
 | Micro live safety code | PARTIAL / NOT PUBLIC | adapter / policy / canary tests exist | public CLI, signing, wallet, write smoke absent |
 | Production live trading | NOT READY | no public live trading command surface | requires separate safety plan |
 
@@ -222,7 +222,7 @@ Status: not ready.
 
 Reasons:
 
-- `LIVE_READINESS_BLOCKER=6`
+- `LIVE_READINESS_BLOCKER=5`
 - no production live order smoke
 - no signing / wallet / exchange write integration
 - no public micro live execution CLI
@@ -297,7 +297,7 @@ Current docs:
 2. `docs/CODE_STATUS.md`
 3. `docs/OPERATIONS_RUNBOOK.md`
 4. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-5. `docs/DOCUMENT_AUDIT_2026-05-30.md`
+5. `docs/DOCUMENT_AUDIT_2026-05-31.md`
 6. this document
 
 Historical docs:

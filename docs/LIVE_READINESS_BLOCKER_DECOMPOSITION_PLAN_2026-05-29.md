@@ -4,7 +4,7 @@
 
 ## 結論
 
-次にやることは、`LIVE_READINESS_BLOCKER=6` をすぐ消すことではありません。最初にやるべきことは、6 個の blocker が本当に 6 個の独立問題なのか、`execution_snapshot_summary.venues=[]` から派生した 1 系統の live-readiness 未接続なのかを、code path と artifact で固定することです。
+次にやることは、`LIVE_READINESS_BLOCKER=5` をすぐ消すことではありません。最初にやるべきことは、5 個の blocker が本当に 5 個の独立問題なのか、`execution_snapshot_summary.venues=[]` から派生した 1 系統の live-readiness 未接続なのかを、code path と artifact で固定することです。
 
 最良の順序:
 
@@ -21,7 +21,7 @@
 - latest phase gate: `READ_ONLY_GO`
 - `phase2_entry_allowed=true`
 - `P2_BLOCKER=0`
-- `LIVE_READINESS_BLOCKER=6`
+- `LIVE_READINESS_BLOCKER=5`
 - live order submission: 対象外
 - exchange write API: 対象外
 - wallet / signing work: 対象外
@@ -44,7 +44,7 @@
 
 Implication:
 
-`LIVE_READINESS_BLOCKER=6` は、現時点では production live execution が壊れている証拠というより、standard operations artifact に Trade[XYZ] execution venue snapshot が接続されていない状態を phase gate が live-readiness blocker として正しく残している可能性が高い。
+`LIVE_READINESS_BLOCKER=5` は、現時点では production live execution が壊れている証拠というより、standard operations artifact に Trade[XYZ] execution venue snapshot が接続されていない状態を phase gate が live-readiness blocker として正しく残している可能性が高い。
 
 ただし、これはまだ最終結論ではありません。C1-C2 で downstream artifact を確認し、empty snapshot 由来ではない blocker が混ざっていないかを必ず分けます。
 
@@ -84,7 +84,7 @@ Implication:
 
 | risk | bad conclusion | correct handling |
 |---|---|---|
-| `LIVE_READINESS_BLOCKER=6` を 6 独立バグと読む | 不要な collector / adapter 実装を始める | C1-C2 で root signal と derived signal を分ける |
+| `LIVE_READINESS_BLOCKER=5` を 5 独立バグと読む | 不要な collector / adapter 実装を始める | C1-C2 で root signal と derived signal を分ける |
 | `venue_count=0` を regression と断定する | legacy adapter 削除を巻き戻す | current architecture では intentional not-connected surface の可能性を先に検証する |
 | blocker を消すことを目的化する | phase gate 緩和や dummy artifact が混ざる | blocker が正確に説明されることを先に完了条件にする |
 | read-only と write API を混ぜる | secrets / signing / live order risk が出る | Info endpoint 相当の read-only collector と live write path を別 interface にする |
@@ -180,7 +180,7 @@ Expect:
 - `decision=READ_ONLY_GO`
 - `phase2_entry_allowed=True`
 - `P2_BLOCKER=0`
-- `LIVE_READINESS_BLOCKER=6`
+- `LIVE_READINESS_BLOCKER=5`
 
 Stop:
 
@@ -216,7 +216,7 @@ Stop:
 
 Purpose:
 
-`LIVE_READINESS_BLOCKER=6` の upstream root が `execution_snapshot_summary.venues=[]` かどうかを、artifact と code path で確認する。
+`LIVE_READINESS_BLOCKER=5` の upstream root が `execution_snapshot_summary.venues=[]` かどうかを、artifact と code path で確認する。
 
 Read:
 

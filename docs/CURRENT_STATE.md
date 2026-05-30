@@ -77,7 +77,7 @@
 - latest current quote collection summary: `11` Trade[XYZ] active rows in `data/raw/quotes/trade_xyz/2026-05-28.jsonl`
 - latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `next_actions=[]`
 - latest diagnostics show Trade[XYZ] `fee_mode_unknown_rate=0.0` for `SP500`, `XYZ100`, `NVDA`, `AAPL`, `MSFT`
-- latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded. Current classification is `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`; read-only/paper readiness and live execution readiness are separate surfaces.
+- latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded. Current classification is `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5`; read-only/paper readiness and live execution readiness are separate surfaces.
 - latest phase gate remediation order is `none` when only live-readiness blockers remain. Do not run `refresh-operations-artifacts` as a P2 remediation loop for those blockers.
 
 PR-08 専用確認:

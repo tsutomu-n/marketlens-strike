@@ -227,7 +227,7 @@ uv run sis phase-gate-review
 
 - `data/ops/trade_xyz_quote_collection_summary.json`: 11 active Trade[XYZ] rows in the latest refresh
 - `data/ops/phase_gate_review_summary.json`: `phase_gate_decision=READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
-- `data/ops/phase_gate_review_summary.json`: `execution_drift_classification_counts={"P2_BLOCKER":0,"LIVE_READINESS_BLOCKER":6}`
+- `data/ops/phase_gate_review_summary.json`: `execution_drift_classification_counts={"P2_BLOCKER":0,"LIVE_READINESS_BLOCKER":5}`
 
 2026-05-27 の PR12 long-window evidence:
 

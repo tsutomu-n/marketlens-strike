@@ -111,7 +111,7 @@ PR12 read-only smoke evidence:
 - latest observed window: 310 rows / 3673.995702 seconds / `SP500`, `XYZ100`, `NVDA`, `AAPL`, `MSFT`
 - latest phase gate: `READ_ONLY_GO`, `individual_stock_decision=paper_only`, `next_actions=[]`
 - current strict validation: `checked_files=12`, `issues=0`
-- current execution drift classification: `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`
+- current execution drift classification: `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5`
 
 ## Current Boundaries
 

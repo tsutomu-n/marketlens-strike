@@ -2,7 +2,7 @@
 
 この文書は、コードを正本として Strategy Research Lab の現在仕様と既存ドキュメントの扱いを固定するための入口です。
 
-関連する全体 docs audit は `docs/DOCUMENT_AUDIT_2026-05-30.md` を読む。Strategy Lab 詳細仕様は `docs/strategy_research_lab/` に展開済みです。
+関連する全体 docs audit は `docs/DOCUMENT_AUDIT_2026-05-31.md` を読む。Strategy Lab 詳細仕様は `docs/strategy_research_lab/` に展開済みです。
 
 ## 結論
 
@@ -388,7 +388,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 
 ### 更新する docs
 
-2026-05-30時点で、以下は実施済みまたは詳細仕様へ分離済みです。current docs 全体の分類は `docs/DOCUMENT_AUDIT_2026-05-30.md` を正本にします。
+2026-05-30時点で、以下は実施済みまたは詳細仕様へ分離済みです。current docs 全体の分類は `docs/DOCUMENT_AUDIT_2026-05-31.md` を正本にします。
 
 | Path | 理由 | 更新方針 |
 |---|---|---|
