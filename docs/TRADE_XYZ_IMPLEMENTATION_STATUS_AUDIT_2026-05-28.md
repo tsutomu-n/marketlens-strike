@@ -297,14 +297,14 @@ Current docs:
 2. `docs/CODE_STATUS.md`
 3. `docs/OPERATIONS_RUNBOOK.md`
 4. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-5. `docs/DOCUMENT_AUDIT_2026-05-28.md`
+5. `docs/DOCUMENT_AUDIT_2026-05-30.md`
 6. this document
 
 Historical docs:
 
-- `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md`
-- `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md`
-- `docs/DOCUMENT_AUDIT_2026-05-27.md`
+- `docs/archive/2026-05-30-doc-audit/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md`
+- `docs/archive/2026-05-30-doc-audit/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md`
+- `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-27.md`
 
 ## Recheck Commands
 

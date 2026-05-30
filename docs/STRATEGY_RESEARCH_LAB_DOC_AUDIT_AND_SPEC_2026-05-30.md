@@ -415,12 +415,12 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 
 | Path | 扱い |
 |---|---|
-| `docs/DOCUMENT_AUDIT_2026-05-26.md` | historical audit |
-| `docs/DOCUMENT_AUDIT_2026-05-27.md` | historical audit |
-| `docs/DOCUMENT_AUDIT_2026-05-28.md` | historical audit |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | historical Trade[XYZ] audit |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-26.md` | historical audit |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-27.md` | historical audit |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-28.md` | historical audit |
+| `docs/archive/2026-05-30-doc-audit/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | historical Trade[XYZ] audit |
 | `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | historical Trade[XYZ] audit |
-| `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | superseded plan |
+| `docs/archive/2026-05-30-doc-audit/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | superseded plan |
 | `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | live-readiness blocker plan; keep for live readiness only |
 
 `plan/marketlens_strategy_research_lab_migration_pack/` は削除しない。これは実装前の詳細 contract と PR 分割の履歴であり、現行仕様の正本ではない。

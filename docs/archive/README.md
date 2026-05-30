@@ -10,7 +10,7 @@ Current docs:
 - `docs/ARCHITECTURE_AND_PHASES.md`
 - `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
 - `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
-- `docs/DOCUMENT_AUDIT_2026-05-28.md`
+- `docs/DOCUMENT_AUDIT_2026-05-30.md`
 
 Archived on 2026-05-25:
 
@@ -37,6 +37,16 @@ Archived on 2026-05-27:
 
 - local `docs/live_evidence_reports/live_evidence_report_20260526_2245.*` -> `docs/archive/2026-05-26-live-evidence-history/`
 - local `docs/live_evidence_reports/live_evidence_followup_20260526_2245.md` -> `docs/archive/2026-05-26-live-evidence-history/`
+
+Archived on 2026-05-30:
+
+- `docs/DOCUMENT_AUDIT_2026-05-26.md` -> `docs/archive/2026-05-30-doc-audit/`
+- `docs/DOCUMENT_AUDIT_2026-05-27.md` -> `docs/archive/2026-05-30-doc-audit/`
+- `docs/DOCUMENT_AUDIT_2026-05-28.md` -> `docs/archive/2026-05-30-doc-audit/`
+- `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` -> `docs/archive/2026-05-30-doc-audit/`
+- `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` -> `docs/archive/2026-05-30-doc-audit/`
+- `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` -> `docs/archive/2026-05-30-doc-audit/`
+- `plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` -> `plan/archive/`
 
 Archived on 2026-05-28:
 

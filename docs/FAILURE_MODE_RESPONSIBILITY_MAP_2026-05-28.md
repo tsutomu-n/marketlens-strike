@@ -511,14 +511,14 @@ State: `RESOLVED_GUARD`
 
 - current collector surface は `uv run sis collect-trade-xyz-quotes`。
 - legacy docs は履歴 / risk review として読む。
-- current docs の read-first は `CURRENT_STATE.md`, `CODE_STATUS.md`, `OPERATIONS_RUNBOOK.md`, `ARCHITECTURE_AND_PHASES.md`, `DOCUMENT_AUDIT_2026-05-28.md`。
+- current docs の read-first は `CURRENT_STATE.md`, `CODE_STATUS.md`, `OPERATIONS_RUNBOOK.md`, `ARCHITECTURE_AND_PHASES.md`, `DOCUMENT_AUDIT_2026-05-30.md`。
 
 責任 surface:
 
 - `docs/CURRENT_STATE.md`
 - `docs/CODE_STATUS.md`
 - `docs/OPERATIONS_RUNBOOK.md`
-- `docs/DOCUMENT_AUDIT_2026-05-28.md`
+- `docs/DOCUMENT_AUDIT_2026-05-30.md`
 - legacy collector docs and archives
 
 Stop condition:
@@ -633,5 +633,5 @@ uv run sis phase-gate-review
 - `docs/CODE_STATUS.md`: code surface と implementation status。
 - `docs/OPERATIONS_RUNBOOK.md`: 再生成と運用手順。
 - `docs/ARCHITECTURE_AND_PHASES.md`: subsystem / phase の入口。
-- `docs/DOCUMENT_AUDIT_2026-05-28.md`: docs lifecycle と stale-risk の入口。
+- `docs/DOCUMENT_AUDIT_2026-05-30.md`: docs lifecycle と stale-risk の入口。
 - この文書: 壊れ方を基準に、責任境界、stop condition、完了条件を読むための current map。

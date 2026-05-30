@@ -70,6 +70,8 @@ src/sis/execution/
 | `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/04_ARTIFACT_EXAMPLES.md` | 旧 Signal CSV / Decision Log 例を Strategy Lab schema別 artifact例へ全面更新 |
 | `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/05_WORKED_EXAMPLE_TREND_PULLBACK.md` | Trend Pullback例を `StrategyExperimentSpec -> PaperIntentPreview -> paper-from-intents` flow へ全面更新 |
 | `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/09_CHECKLISTS_AND_TEMPLATES.md` | checklistを StrategyExperimentSpec / EvaluationPlan / TrialLedger / Candidate / Promotion / PaperIntentPreview 前提へ全面更新 |
+| `docs/archive/2026-05-30-doc-audit/` | superseded docs 6本を archive move |
+| `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | consumed plan を archive move |
 | `docs/DOCUMENT_AUDIT_2026-05-30.md` | 本監査を新規作成 |
 
 ## 更新できる docs
@@ -90,20 +92,20 @@ src/sis/execution/
 
 | Path | 古い内容 | 現在の扱い |
 |---|---|---|
-| `docs/DOCUMENT_AUDIT_2026-05-26.md` | PR12 前 snapshot | historical audit |
-| `docs/DOCUMENT_AUDIT_2026-05-27.md` | 2026-05-27 values | historical audit |
-| `docs/DOCUMENT_AUDIT_2026-05-28.md` | Strategy Lab 詳細 docs 追加前の audit | historical snapshot。current audit は本ファイル |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | P2 gate restore 前、fee unknown、pre-current facts | historical Trade[XYZ] audit |
-| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | P2 実装前の failure state | historical design reference |
-| `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | 実装済み計画と pre-snapshot | implemented-plan / historical |
-| `plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | PR9a-PR12 消化済み計画と future候補が混在 | historical consumed plan |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-26.md` | PR12 前 snapshot | archived historical audit |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-27.md` | 2026-05-27 values | archived historical audit |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-28.md` | Strategy Lab 詳細 docs 追加前の audit | archived historical snapshot。current audit は本ファイル |
+| `docs/archive/2026-05-30-doc-audit/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | P2 gate restore 前、fee unknown、pre-current facts | archived historical Trade[XYZ] audit |
+| `docs/archive/2026-05-30-doc-audit/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | P2 実装前の failure state | archived historical design reference |
+| `docs/archive/2026-05-30-doc-audit/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | 実装済み計画と pre-snapshot | archived implemented-plan / historical |
+| `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | PR9a-PR12 消化済み計画と future候補が混在 | archived historical consumed plan |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | 薄い初版 rewrite bundle | old rewrite snapshot |
 
 ## 作り直したほうがいい docs
 
 | Path | 推奨 | 理由 |
 |---|---|---|
-| `docs/DOCUMENT_AUDIT_2026-05-28.md` | 作り直し済み: `docs/DOCUMENT_AUDIT_2026-05-30.md` | 2026-05-30 の Strategy Lab docs と appendix 更新を含まない |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-28.md` | 作り直し済み: `docs/DOCUMENT_AUDIT_2026-05-30.md` | 2026-05-30 の Strategy Lab docs と appendix 更新を含まない |
 | `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/04_ARTIFACT_EXAMPLES.md` | 作り直し済み | 旧 Signal CSV / Decision Log 中心だった |
 | `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/05_WORKED_EXAMPLE_TREND_PULLBACK.md` | 作り直し済み | 旧 paper review / signal CSV 前提だった |
 | `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/09_CHECKLISTS_AND_TEMPLATES.md` | 作り直し済み | Strategy Lab schema checklist になっていなかった |
@@ -115,13 +117,13 @@ src/sis/execution/
 
 | Path | 推奨 | 理由 |
 |---|---|---|
-| `docs/DOCUMENT_AUDIT_2026-05-26.md` | archive | current audit ではない |
-| `docs/DOCUMENT_AUDIT_2026-05-27.md` | archive | current audit ではない |
-| `docs/DOCUMENT_AUDIT_2026-05-28.md` | archive after this audit is accepted | 本ファイルに superseded |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | archive | 2026-05-28 audit に superseded |
-| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | archive | 2026-05-28 map に superseded |
-| `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | archive | implemented-planであり、次の実装計画ではない |
-| `plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | `plan/archive/` へ移動候補 | consumed plan |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-26.md` | archived | current audit ではない |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-27.md` | archived | current audit ではない |
+| `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-28.md` | archived | 本ファイルに superseded |
+| `docs/archive/2026-05-30-doc-audit/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | archived | 2026-05-28 audit に superseded |
+| `docs/archive/2026-05-30-doc-audit/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | archived | 2026-05-28 map に superseded |
+| `docs/archive/2026-05-30-doc-audit/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | archived | implemented-planであり、次の実装計画ではない |
+| `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | archived | consumed plan |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | archive | 2026-05-29 rewrite bundle に superseded |
 
 削除しない:
@@ -159,11 +161,11 @@ rg -n "Signal CSV|Decision Log JSONL|Decision Log|ExecutionPlan|DecisionContext|
 - `docs/algo/obsidian_note_rewrites_2026-05-28/**` の `Decision Log` は old rewrite snapshot。現行入口にはしない。
 - `docs/archive/**` の `signals.csv`, `ExecutionPlan`, `DecisionContext` は historical evidence。current docs とは分けて読む。
 
-## Next Cleanup
+## Archive Move Result
 
-次にやるなら、archive move を小さく実行する。
+2026-05-30 に archive move 済み。
 
-候補:
+移動先:
 
 ```text
 docs/archive/2026-05-30-doc-audit/
@@ -175,4 +177,4 @@ docs/archive/2026-05-30-doc-audit/
   NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md
 ```
 
-`plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` は `plan/archive/` へ移動する。ただしリンクが残っていないか確認してから行う。
+`plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` は `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` へ移動済み。
