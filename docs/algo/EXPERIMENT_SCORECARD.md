@@ -100,6 +100,27 @@
 
 - 
 
+## Strategy Lab Artifact Mapping
+
+この scorecard は人間用の比較メモです。実装・検証 artifact に進める時は、次の対応を明示する。
+
+| scorecard section | Strategy Lab artifact | required mapping |
+| --- | --- | --- |
+| Baseline | `TrialRecord.baseline_strategy_id`, `TrialRecord.baseline_delta_metrics` | fair baseline と candidate 差分を残す |
+| Candidate Logic | `StrategyExperimentSpec`, `StrategySignalRecord`, `TradeCandidate` | entry/filter/size/exit/stop を signal と candidate 化の条件へ分解する |
+| Validation | `EvaluationPlan`, `TrialRecord` | train/test/stress/minimum trade count を評価計画と trial record に残す |
+| Metrics | `TrialRecord.metrics`, `TrialRecord.baseline_delta_metrics` | raw result と baseline 差分を分ける |
+| Failure Modes / Rejection Rules | `TrialRecord.rejection_reasons`, `TradeCandidate.block_reasons`, `PaperCandidatePack.rejected_candidate_ids` | なぜ止めたかを次の candidate 生成で再利用できる形にする |
+| Decision Log | `PromotionDecision` | `promote`, `hold`, `reject` と evidence/reason を人間判断 artifact として残す |
+| Paper observation entry | `PaperIntentPreview` | paper runner に渡す仮意図だけを生成する。live order ではない |
+
+guard:
+
+- `TrialRecord.selected_for_next_stage=true` は paper/live ready の証明ではない。
+- `PromotionDecision.decision=promote` は paper observation への許可であり、live trading への許可ではない。
+- `PaperIntentPreview` は `requires_revalidation=true`, `paper_only=true`, `live_conversion_allowed=false` の paper-only preview として扱う。
+- `profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, `live_ready_claimed` は Strategy Lab artifact 上で true にしない。
+
 ## Source Notes
 
 - 
