@@ -42,6 +42,13 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     script = _read("scripts/check_current_docs.py")
 
     assert '"docs/DOCUMENT_AUDIT_2026-05-30.md"' in script
+    assert '"docs/algo/ALGO_STRATEGY_SYSTEM_GUIDE.md"' in script
+    assert '"docs/algo/STRATEGY_PARTS_CATALOG.md"' in script
+    assert '"docs/algo/STRATEGY_BLUEPRINTS.md"' in script
+    assert '"docs/algo/STRATEGY_PREP_WORKFLOW.md"' in script
+    assert '"docs/algo/EXPERIMENT_SCORECARD.md"' in script
+    assert '"docs/algo/RESEARCH_VALIDATION_PLAYBOOK.md"' in script
+    assert '"docs/algo/SOURCE_NOTES_INDEX.md"' in script
     assert '"docs/strategy_research_lab"' in script
     assert '"docs/algo/strategy_factory"' in script
     assert '"docs/archive/"' in script

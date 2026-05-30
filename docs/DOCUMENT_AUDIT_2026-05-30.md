@@ -14,8 +14,9 @@
 6. `docs/OPERATIONS_RUNBOOK.md`
 7. `docs/ARCHITECTURE_AND_PHASES.md`
 8. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-9. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
-10. `docs/algo/strategy_factory/`
+9. `docs/algo/strategy_factory/`
+
+`docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` は有用ですが、2026-05-28 の focused historical audit として読み、current verification の入口にはしません。
 
 `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/04_ARTIFACT_EXAMPLES.md`, `05_WORKED_EXAMPLE_TREND_PULLBACK.md`, `09_CHECKLISTS_AND_TEMPLATES.md` は旧 `signals.csv` / decision log 前提が残っていたため、現行 Strategy Lab artifact chain に全面更新済みです。
 
@@ -73,16 +74,18 @@ src/sis/execution/
 | `docs/archive/2026-05-30-doc-audit/` | superseded docs 6本を archive move |
 | `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | consumed plan を archive move |
 | `docs/DOCS_LINT_POLICY_2026-05-30.md` | current docs だけを strict lint する方針を追加 |
-| `scripts/check_current_docs.py` | current docs の link / EOF / legacy root path check を追加 |
+| `scripts/check_current_docs.py` | current docs の link / EOF / legacy root path check を追加し、`docs/algo` 直下の現行 strategy prep docs 7本を対象化 |
+| `docs/algo/SOURCE_NOTES_INDEX.md` | strict check 対応のため、括弧入り local link を URL encoding で安全化 |
+| `docs/algo/EXPERIMENT_SCORECARD.md`, `docs/algo/STRATEGY_PREP_WORKFLOW.md` | strict check 対応のため、EOF 余分空行を修正 |
 | `docs/DOCUMENT_AUDIT_2026-05-30.md` | 本監査を新規作成 |
 
 ## 更新できる docs
 
 | Path | 理由 | 推奨更新 |
 |---|---|---|
-| `README.md` | 最短入口。現行 flow は入っているが、検証値は snapshot | 次回 full check 後に test count / artifact snapshot を更新 |
-| `docs/CURRENT_STATE.md` | restart 正本として有効だが、2026-05-28 数値を持つ | 2026-05-30 以降の verification snapshot を追記 |
-| `docs/CODE_STATUS.md` | code surface と tests の実装状態を説明 | `StrategyExperimentSpec` 汎用 runner は未実装と明記するとさらに安全 |
+| `README.md` | 最短入口。現行 flow と検証値を掲載 | 2026-05-30 code/docs check へ更新済み |
+| `docs/CURRENT_STATE.md` | restart 正本として有効 | code/docs verification と runtime artifact snapshot を分離済み |
+| `docs/CODE_STATUS.md` | code surface と tests の実装状態を説明 | 2026-05-30 code/docs check へ更新済み。`StrategyExperimentSpec` 汎用 runner は詳細 Strategy Lab docs 側で制約として明記済み |
 | `docs/OPERATIONS_RUNBOOK.md` | operator 手順は current CLI と一致 | `docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md` への誘導を強める |
 | `docs/ARCHITECTURE_AND_PHASES.md` | subsystem 境界は有効 | legacy paper bridge と Strategy Lab 正本の分離をさらに明文化可能 |
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | Strategy Lab 入口として有効 | Docs Audit section を「実施済み」に更新するとよい |
@@ -159,7 +162,7 @@ Current docs の機械チェックは `docs/DOCS_LINT_POLICY_2026-05-30.md` と 
 uv run python scripts/check_current_docs.py
 ```
 
-検査対象は current read-first docs、Strategy Lab specs、strategy factory、archive index、live evidence README、beginner guide に限定する。`docs/archive/**`, `docs/algo/obsidian_note_copies/**`, `docs/algo/obsidian_note_rewrites_2026-05-28/**`, unchecked 2026-05-29 rewrite snapshots, `plan/archive/**` は通常 lint 対象外。
+検査対象は current read-first docs、`docs/algo` 直下の現行 strategy prep docs、Strategy Lab specs、strategy factory、archive index、live evidence README、beginner guide に限定する。`docs/archive/**`, `docs/algo/obsidian_note_copies/**`, `docs/algo/obsidian_note_rewrites_2026-05-28/**`, unchecked 2026-05-29 rewrite snapshots, `plan/archive/**` は通常 lint 対象外。
 
 ## 追加照査メモ
 

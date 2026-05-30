@@ -119,12 +119,14 @@ PR12 read-only smoke evidence:
 
 ## Current Verification
 
-2026-05-28 時点:
+2026-05-30 code/docs check:
 
-- `uv run ruff check .`: pass
-- `uv run pyrefly check`: pass
-- `uv run pytest -q`: 294 passed
-- `./scripts/check`: pass, 294 passed
+- `./scripts/check`: pass, 354 passed
+- `uv run pyrefly check`: pass, 0 errors
+- `uv run python scripts/check_current_docs.py`: pass, `checked 39 current docs`
+
+2026-05-28 runtime artifact snapshot:
+
 - `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
 - `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
 

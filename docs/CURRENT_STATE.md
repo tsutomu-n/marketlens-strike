@@ -59,12 +59,15 @@
 
 ## Verification Status
 
-2026-05-28 時点で確認済み:
+2026-05-30 code/docs check:
 
 - `./scripts/check`: pass
-- `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 294 passed
+- `uv run pytest -q`: 354 passed via `./scripts/check`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 39 current docs`
+
+2026-05-28 runtime artifact snapshot:
+
 - P2 targeted verification: Trade[XYZ] / diagnostics / phase gate / Alpaca / tracking tests pass
 - `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
 - latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows
@@ -101,9 +104,12 @@ PR-08 専用確認:
 7. `docs/OPERATIONS_RUNBOOK.md`
 8. `docs/ARCHITECTURE_AND_PHASES.md`
 9. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-10. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
-11. `docs/trade_xyz_bot_beginner_guide.html`
-12. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+10. `docs/trade_xyz_bot_beginner_guide.html`
+11. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+
+historical focused audit:
+
+1. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
 
 その後、必要に応じて:
 

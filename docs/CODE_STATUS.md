@@ -77,13 +77,17 @@ PR-08:
 
 ## Verification
 
-2026-05-28 current verification:
+2026-05-30 code/docs verification:
 
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 294 passed
-- `./scripts/check`: pass, 294 passed
+- `uv run pytest -q`: 354 passed via `./scripts/check`
+- `./scripts/check`: pass, 354 passed
+- `uv run python scripts/check_current_docs.py`: pass, `checked 39 current docs`
+
+2026-05-28 runtime artifact snapshot:
+
 - targeted P2 tests: Trade[XYZ] / quote diagnostics / phase gate / Alpaca / tracking tests pass
 - latest strict validation: `checked_files=12`, `issues=0`
 - latest phase gate: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`
@@ -96,3 +100,4 @@ PR-08:
 - runtime status: `docs/CURRENT_STATE.md`
 - operator procedure: `docs/OPERATIONS_RUNBOOK.md`
 - architecture and boundaries: `docs/ARCHITECTURE_AND_PHASES.md`
+- historical Trade[XYZ] implementation audit: `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`

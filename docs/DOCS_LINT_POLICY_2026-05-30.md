@@ -24,6 +24,13 @@ docs/ARCHITECTURE_AND_PHASES.md
 docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md
 docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md
 docs/algo/README.md
+docs/algo/ALGO_STRATEGY_SYSTEM_GUIDE.md
+docs/algo/STRATEGY_PARTS_CATALOG.md
+docs/algo/STRATEGY_BLUEPRINTS.md
+docs/algo/STRATEGY_PREP_WORKFLOW.md
+docs/algo/EXPERIMENT_SCORECARD.md
+docs/algo/RESEARCH_VALIDATION_PLAYBOOK.md
+docs/algo/SOURCE_NOTES_INDEX.md
 docs/algo/strategy_factory/**
 docs/strategy_research_lab/**
 docs/live_evidence_reports/README.md
@@ -83,3 +90,4 @@ uv run python scripts/check_current_docs.py
 - current docs を増やす場合は、`scripts/check_current_docs.py` の allowlist に追加する。
 - source snapshot / archive を整形するだけの変更は、current docs 修正と同じ差分に混ぜない。
 - 広域 docs lint を作る場合も、まず current docs lint とは別コマンドにする。
+- `docs/algo/README.md` が正本として案内する docs は、原則 strict check 対象に入れる。

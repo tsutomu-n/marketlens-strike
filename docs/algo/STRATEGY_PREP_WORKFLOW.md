@@ -175,4 +175,3 @@ Meme/Solana系では、`Signal Generator` より前に `Token Safety Filter` を
 - LLMの判断だけで売買。
 - secretを含むノートの生コピー。
 - 勝率主張だけに基づく実装。
-
