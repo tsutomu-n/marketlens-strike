@@ -2,6 +2,8 @@
 
 この文書は、コードを正本として Strategy Research Lab の現在仕様と既存ドキュメントの扱いを固定するための入口です。
 
+関連する全体 docs audit は `docs/DOCUMENT_AUDIT_2026-05-30.md` を読む。Strategy Lab 詳細仕様は `docs/strategy_research_lab/` に展開済みです。
+
 ## 結論
 
 - Strategy Research Lab の主要 schema / Pydantic model / CLI surface は実装済み。
@@ -373,33 +375,39 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 
 ### 更新する docs
 
+2026-05-30時点で、以下は実施済みまたは詳細仕様へ分離済みです。current docs 全体の分類は `docs/DOCUMENT_AUDIT_2026-05-30.md` を正本にします。
+
 | Path | 理由 | 更新方針 |
 |---|---|---|
-| `README.md` | read order が Trade[XYZ] / PR12 中心で Strategy Lab 正本が無い | Strategy Lab doc を read order に追加し、main flow を追記 |
-| `docs/CURRENT_STATE.md` | current state が read-only gate 中心で Strategy Lab 実装済み surface を含まない | Implemented Surfaces / Read Order に Strategy Lab を追加 |
-| `docs/CODE_STATUS.md` | PR-00 to PR-12 軸だけで Strategy Lab 実装済み status が無い | Strategy Lab status table を追加 |
-| `docs/ARCHITECTURE_AND_PHASES.md` | research と paper の間の Strategy Lab artifact chain が抜けている | Strategy Lab subsystem と phase boundary を追加 |
-| `docs/OPERATIONS_RUNBOOK.md` | operator が Strategy Lab -> paper-only path を実行する導線が無い | Strategy Lab workflow と stop condition を追加 |
-| `docs/algo/README.md` | strategy design docs と implemented schema chain の橋が弱い | Strategy Lab doc を read order に追加 |
-| `docs/algo/strategy_factory/README.md` | factory の candidate sheet から StrategyExperimentSpec への接続が無い | implemented artifact chain への移行先を追加 |
+| `README.md` | read order が Trade[XYZ] / PR12 中心で Strategy Lab 正本が無い | 実施済み |
+| `docs/CURRENT_STATE.md` | current state が read-only gate 中心で Strategy Lab 実装済み surface を含まない | 実施済み |
+| `docs/CODE_STATUS.md` | PR-00 to PR-12 軸だけで Strategy Lab 実装済み status が無い | 実施済み |
+| `docs/ARCHITECTURE_AND_PHASES.md` | research と paper の間の Strategy Lab artifact chain が抜けている | 実施済み |
+| `docs/OPERATIONS_RUNBOOK.md` | operator が Strategy Lab -> paper-only path を実行する導線が無い | 実施済み |
+| `docs/algo/README.md` | strategy design docs と implemented schema chain の橋が弱い | 実施済み |
+| `docs/algo/strategy_factory/README.md` | factory の candidate sheet から StrategyExperimentSpec への接続が無い | 実施済み |
 
 ### 古い内容を含む docs
 
 | Path | 古い内容 | 扱い |
 |---|---|---|
-| `docs/algo/obsidian_note_rewrites_2026-05-29/ONE_DOC_STRATEGY_TO_IMPLEMENTATION.md` | `data/research/signals.csv`, `DecisionContext`, `ExecutionPlan` 中心の implementation path | legacy note として先頭に superseded banner を入れる |
-| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/01_PIPELINE_DIAGRAMS.md` | `data/research/signals.csv` を active signal artifact として描く | Strategy Lab diagram ではないと明記 |
-| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/03_REPO_IMPLEMENTATION_MAP.md` | legacy repo map が現行 Strategy Lab schema chain を含まない | historical map として扱い、新 doc へ誘導 |
-| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/02_COMPONENT_CARDS.md` | `ExecutionPlan(action, symbol, quantity, notes)` を中心にする | paper legacy component card として扱う |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/ONE_DOC_STRATEGY_TO_IMPLEMENTATION.md` | `data/research/signals.csv`, `DecisionContext`, `ExecutionPlan` 中心の implementation path | Strategy Lab chain 前提で全面更新済み |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/01_PIPELINE_DIAGRAMS.md` | `data/research/signals.csv` を active signal artifact として描く | Strategy Lab diagram 前提へ更新済み |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/03_REPO_IMPLEMENTATION_MAP.md` | legacy repo map が現行 Strategy Lab schema chain を含まない | Strategy Lab repo map へ更新済み |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/02_COMPONENT_CARDS.md` | `ExecutionPlan(action, symbol, quantity, notes)` を中心にする | Strategy Lab component cards へ更新済み |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/04_ARTIFACT_EXAMPLES.md` | Signal CSV / Decision Log 例が中心 | Strategy Lab artifact examples へ更新済み |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/05_WORKED_EXAMPLE_TREND_PULLBACK.md` | Signal CSV /旧paper review前提 | Strategy Lab worked example へ更新済み |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/09_CHECKLISTS_AND_TEMPLATES.md` | Signal CSV / decision log checklist が中心 | Strategy Lab schema checklist へ更新済み |
 
 ### 作り直したほうがいい docs
 
-- `ONE_DOC_STRATEGY_TO_IMPLEMENTATION.md`
-  - 現行 guide にするなら、StrategyExperimentSpec -> PaperIntentPreview の artifact chain で全面再作成する。
-- `appendix_materials/01_PIPELINE_DIAGRAMS.md`
-  - 現行 diagram にするなら、`strategy_signals.parquet`, `trial_ledger.jsonl`, `paper_candidate_pack.json`, `promotion_decision.json`, `paper_intent_preview.json` を中心に再作成する。
-- `appendix_materials/03_REPO_IMPLEMENTATION_MAP.md`
-  - 現行 repo map にするなら、`src/sis/research/strategy_lab/`, `src/sis/commands/research.py`, `src/sis/commands/paper.py`, `src/sis/paper/runner.py` を中心に再作成する。
+- `ONE_DOC_STRATEGY_TO_IMPLEMENTATION.md`: 更新済み。
+- `appendix_materials/01_PIPELINE_DIAGRAMS.md`: 更新済み。
+- `appendix_materials/02_COMPONENT_CARDS.md`: 更新済み。
+- `appendix_materials/03_REPO_IMPLEMENTATION_MAP.md`: 更新済み。
+- `appendix_materials/04_ARTIFACT_EXAMPLES.md`: 更新済み。
+- `appendix_materials/05_WORKED_EXAMPLE_TREND_PULLBACK.md`: 更新済み。
+- `appendix_materials/09_CHECKLISTS_AND_TEMPLATES.md`: 更新済み。
 
 ### アーカイブしてよい docs
 

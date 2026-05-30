@@ -1,0 +1,178 @@
+# Documentation Audit 2026-05-30
+
+コード、tests、CLI help、schema、現行 docs を正として、tracked docs を再分類した結果です。
+
+## 結論
+
+今の docs は、現行正本、strategy research 詳細仕様、historical snapshot、legacy/archive が混在しています。現行判断では次を正本に寄せます。
+
+1. `README.md`
+2. `docs/CURRENT_STATE.md`
+3. `docs/CODE_STATUS.md`
+4. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+5. `docs/strategy_research_lab/`
+6. `docs/OPERATIONS_RUNBOOK.md`
+7. `docs/ARCHITECTURE_AND_PHASES.md`
+8. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
+9. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
+10. `docs/algo/strategy_factory/`
+
+`docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/04_ARTIFACT_EXAMPLES.md`, `05_WORKED_EXAMPLE_TREND_PULLBACK.md`, `09_CHECKLISTS_AND_TEMPLATES.md` は旧 `signals.csv` / decision log 前提が残っていたため、現行 Strategy Lab artifact chain に全面更新済みです。
+
+## Code Truth
+
+現行 CLI surface:
+
+```text
+strategy-preview
+evaluate-strategy-lab
+build-paper-candidate-pack
+promotion-decision
+build-paper-intent-preview
+paper-from-intents
+bot-preview
+collect-trade-xyz-quotes
+phase-gate-review
+validate-artifacts
+diagnose-quotes
+```
+
+現行 code surface:
+
+```text
+src/sis/research/strategy_lab/
+src/sis/research_protocol/
+src/sis/commands/research.py
+src/sis/commands/paper.py
+src/sis/paper/runner.py
+src/sis/venues/trade_xyz/
+src/sis/real_market/
+src/sis/tracking/
+src/sis/execution/
+```
+
+現行 Strategy Lab boundary:
+
+- `data/research/strategy_signals.parquet` が canonical signal artifact。
+- `data/research/signals.csv` は legacy export。
+- `TradeCandidate` は order ではない。
+- `PaperIntentPreview` は paper-only preview。
+- `paper-from-intents` は latest quote と PaperBroker で再検証する。
+- JSON Schema は thin guard。runtime validation は Pydantic model。
+
+## 更新した docs
+
+| Path | 変更内容 |
+|---|---|
+| `README.md` | Current docs read order に本 audit と Strategy Lab 入口を追加 |
+| `docs/CURRENT_STATE.md` | restart read order と Strategy Lab の現行 boundary を更新 |
+| `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | 予定だった Strategy Lab docs と appendix 更新を実施済みに変更 |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/04_ARTIFACT_EXAMPLES.md` | 旧 Signal CSV / Decision Log 例を Strategy Lab schema別 artifact例へ全面更新 |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/05_WORKED_EXAMPLE_TREND_PULLBACK.md` | Trend Pullback例を `StrategyExperimentSpec -> PaperIntentPreview -> paper-from-intents` flow へ全面更新 |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/09_CHECKLISTS_AND_TEMPLATES.md` | checklistを StrategyExperimentSpec / EvaluationPlan / TrialLedger / Candidate / Promotion / PaperIntentPreview 前提へ全面更新 |
+| `docs/DOCUMENT_AUDIT_2026-05-30.md` | 本監査を新規作成 |
+
+## 更新できる docs
+
+| Path | 理由 | 推奨更新 |
+|---|---|---|
+| `README.md` | 最短入口。現行 flow は入っているが、検証値は snapshot | 次回 full check 後に test count / artifact snapshot を更新 |
+| `docs/CURRENT_STATE.md` | restart 正本として有効だが、2026-05-28 数値を持つ | 2026-05-30 以降の verification snapshot を追記 |
+| `docs/CODE_STATUS.md` | code surface と tests の実装状態を説明 | `StrategyExperimentSpec` 汎用 runner は未実装と明記するとさらに安全 |
+| `docs/OPERATIONS_RUNBOOK.md` | operator 手順は current CLI と一致 | `docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md` への誘導を強める |
+| `docs/ARCHITECTURE_AND_PHASES.md` | subsystem 境界は有効 | legacy paper bridge と Strategy Lab 正本の分離をさらに明文化可能 |
+| `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | Strategy Lab 入口として有効 | Docs Audit section を「実施済み」に更新するとよい |
+| `docs/trade_xyz_bot_beginner_guide.html` | 初心者向けとして有効 | Strategy Lab → paper intent preview の説明を追加できる |
+| `docs/algo/EXPERIMENT_SCORECARD.md` | 戦略候補の比較テンプレートとして有効 | `TrialRecord`, `PromotionDecision`, `PaperIntentPreview` への対応欄を足すとさらに使いやすい |
+| `docs/algo/strategy_factory/SIGNAL_CANDIDATE_TEMPLATE.md` | signal candidate intake として有効 | `Decision Log` を人間レビュー記録として明記し、Strategy Lab artifact と誤読しない注記を足せる |
+
+## 古い内容がある docs
+
+| Path | 古い内容 | 現在の扱い |
+|---|---|---|
+| `docs/DOCUMENT_AUDIT_2026-05-26.md` | PR12 前 snapshot | historical audit |
+| `docs/DOCUMENT_AUDIT_2026-05-27.md` | 2026-05-27 values | historical audit |
+| `docs/DOCUMENT_AUDIT_2026-05-28.md` | Strategy Lab 詳細 docs 追加前の audit | historical snapshot。current audit は本ファイル |
+| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | P2 gate restore 前、fee unknown、pre-current facts | historical Trade[XYZ] audit |
+| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | P2 実装前の failure state | historical design reference |
+| `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | 実装済み計画と pre-snapshot | implemented-plan / historical |
+| `plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | PR9a-PR12 消化済み計画と future候補が混在 | historical consumed plan |
+| `docs/algo/obsidian_note_rewrites_2026-05-28/` | 薄い初版 rewrite bundle | old rewrite snapshot |
+
+## 作り直したほうがいい docs
+
+| Path | 推奨 | 理由 |
+|---|---|---|
+| `docs/DOCUMENT_AUDIT_2026-05-28.md` | 作り直し済み: `docs/DOCUMENT_AUDIT_2026-05-30.md` | 2026-05-30 の Strategy Lab docs と appendix 更新を含まない |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/04_ARTIFACT_EXAMPLES.md` | 作り直し済み | 旧 Signal CSV / Decision Log 中心だった |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/05_WORKED_EXAMPLE_TREND_PULLBACK.md` | 作り直し済み | 旧 paper review / signal CSV 前提だった |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/09_CHECKLISTS_AND_TEMPLATES.md` | 作り直し済み | Strategy Lab schema checklist になっていなかった |
+| `docs/trade_xyz_bot_beginner_guide.html` | 部分再作成候補 | Strategy Lab / PaperIntentPreview の初心者向け説明が薄い |
+
+## 削除・アーカイブしてよい docs
+
+物理削除ではなく、archive move を推奨します。
+
+| Path | 推奨 | 理由 |
+|---|---|---|
+| `docs/DOCUMENT_AUDIT_2026-05-26.md` | archive | current audit ではない |
+| `docs/DOCUMENT_AUDIT_2026-05-27.md` | archive | current audit ではない |
+| `docs/DOCUMENT_AUDIT_2026-05-28.md` | archive after this audit is accepted | 本ファイルに superseded |
+| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | archive | 2026-05-28 audit に superseded |
+| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md` | archive | 2026-05-28 map に superseded |
+| `docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | archive | implemented-planであり、次の実装計画ではない |
+| `plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | `plan/archive/` へ移動候補 | consumed plan |
+| `docs/algo/obsidian_note_rewrites_2026-05-28/` | archive | 2026-05-29 rewrite bundle に superseded |
+
+削除しない:
+
+- `plan/marketlens_strategy_research_lab_migration_pack/`
+  - Strategy Lab の historical implementation contract として有用。
+- `docs/archive/**`
+  - current docs ではないが、過去判断の証跡。
+- `docs/live_evidence_reports/README.md`
+  - generated report 置き場の説明として有効。
+
+## Current Read Rules
+
+- code / tests / schemas を正本にする。
+- `data/` artifact が無いだけで未実装と判断しない。必要なら CLI で再生成する。
+- `READ_ONLY_GO` を live-ready と読まない。
+- `bot-preview` を strategy engine と読まない。
+- `PaperIntentPreview` を live order と読まない。
+- `signals.csv` を Strategy Lab 正本にしない。
+- historical plan から current command を拾わない。
+- `Decision Log` という語があっても、それが人間レビュー記録なのか、旧 paper path の artifact 説明なのかを分ける。
+
+## 追加照査メモ
+
+広域検索:
+
+```text
+rg -n "Signal CSV|Decision Log JSONL|Decision Log|ExecutionPlan|DecisionContext|data/research/signals\\.csv|OrderIntent|strategy_signals\\.parquet|PaperIntentPreview|TradeCandidate" docs -g '*.md'
+```
+
+確認結果:
+
+- `docs/strategy_research_lab/**`, `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`, `docs/OPERATIONS_RUNBOOK.md` の該当語は、現行 boundary または legacy warning として使われている。
+- `docs/algo/EXPERIMENT_SCORECARD.md` と `docs/algo/strategy_factory/SIGNAL_CANDIDATE_TEMPLATE.md` の `Decision Log` は、Strategy Lab artifact ではなく人間レビュー記録テンプレート。
+- `docs/algo/obsidian_note_rewrites_2026-05-28/**` の `Decision Log` は old rewrite snapshot。現行入口にはしない。
+- `docs/archive/**` の `signals.csv`, `ExecutionPlan`, `DecisionContext` は historical evidence。current docs とは分けて読む。
+
+## Next Cleanup
+
+次にやるなら、archive move を小さく実行する。
+
+候補:
+
+```text
+docs/archive/2026-05-30-doc-audit/
+  DOCUMENT_AUDIT_2026-05-26.md
+  DOCUMENT_AUDIT_2026-05-27.md
+  DOCUMENT_AUDIT_2026-05-28.md
+  TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md
+  FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md
+  NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md
+```
+
+`plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md` は `plan/archive/` へ移動する。ただしリンクが残っていないか確認してから行う。
