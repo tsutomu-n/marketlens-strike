@@ -22,6 +22,7 @@
    - 受け入れ条件、停止条件、既存テストが守る契約を確認する。
 8. [08_CURRENT_CAPABILITIES.md](08_CURRENT_CAPABILITIES.md)
    - 現時点で Strategy Research Lab ができること、まだできないこと、確認済み検証を確認する。
+   - わかりやすい HTML 版: [08_CURRENT_CAPABILITIES_EXPLAINED.html](08_CURRENT_CAPABILITIES_EXPLAINED.html)
 
 入口監査仕様は [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md) です。
 

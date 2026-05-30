@@ -4,6 +4,8 @@
 
 正本はコードです。特に `src/sis/commands/research.py`, `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `src/sis/paper/runner.py`, `tests/test_strategy_lab_commands.py` を優先します。
 
+より具体的な説明と専門用語の言い換えは [08_CURRENT_CAPABILITIES_EXPLAINED.html](08_CURRENT_CAPABILITIES_EXPLAINED.html) で読めます。
+
 ## 結論
 
 今の Strategy Research Lab は、登録済み generator から signal artifact を作り、paper-only の trial / candidate / promotion / intent preview まで進められます。
@@ -220,6 +222,6 @@ git diff --check
 - `tests/test_strategy_lab_commands.py`: 15 passed
 - Strategy Lab related targeted suite: 39 passed
 - Research pipeline / CLI smoke: 71 passed
-- `scripts/check_current_docs.py`: checked 40 current docs
+- `scripts/check_current_docs.py`: checked 41 current docs
 - `./scripts/check`: 378 passed, pyrefly 0 errors
 - `git diff --check`: pass

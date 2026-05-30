@@ -53,7 +53,7 @@
 - `data/` は git 管理外。再開時は artifact を再生成する。
 - `bot-preview` の `data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` は実行時生成 artifact。現 checkout に無い場合は `uv run sis bot-preview` で再生成する。
 - Strategy Lab の canonical signal artifact は `data/research/strategy_signals.parquet`。旧 `data/research/signals.csv` は Strategy Lab 正本ではなく legacy export として読む。
-- Strategy Lab で今できることは `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` に記録する。現行では registered generator から signal artifact を作り、threshold sweep、複数 selected signal の candidate 化、paper-only preview まで進められる。
+- Strategy Lab で今できることは `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` に記録する。わかりやすい HTML 版は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html`。現行では registered generator から signal artifact を作り、threshold sweep、複数 selected signal の candidate 化、paper-only preview まで進められる。
 - `PaperIntentPreview` は paper-only の仮注文意図。`live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を守り、live order として扱わない。
 - Alpaca live fetch は credentials が必要。credentials なしでは明示的に unavailable として失敗するため、silent empty data と混同しない。
 - `ostium-python-sdk` は active dependency から削除済み。
@@ -65,7 +65,7 @@
 - `./scripts/check`: pass
 - `uv run pyrefly check`: pass, 0 errors
 - `uv run pytest -q`: 378 passed via `./scripts/check`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 40 current docs`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 41 current docs`
 
 2026-05-28 runtime artifact snapshot:
 

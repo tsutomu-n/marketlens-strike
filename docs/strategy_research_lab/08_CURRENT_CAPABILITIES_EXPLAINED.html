@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Strategy Research Lab で今できること</title>
+    <meta
+      name="description"
+      content="marketlens-strike の Strategy Research Lab で現在できることを、専門用語の言い換えつきで説明するHTML版ドキュメント。"
+    />
+    <style>
+      :root {
+        --ink: #151719;
+        --muted: #555f69;
+        --paper: #f3f5f4;
+        --surface: #ffffff;
+        --line: #22272c;
+        --soft-line: #c9d0d0;
+        --accent: #00696b;
+        --accent-2: #9b3d1f;
+        --ok: #23613d;
+        --warn: #7a4a00;
+        --stop: #8a1f2d;
+        --mono: ui-monospace, "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
+        --sans:
+          system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif,
+          "Hiragino Sans", "Yu Gothic", "YuGothic", "Noto Sans CJK JP";
+        --max: 1180px;
+        --step-0: clamp(0.98rem, 0.94rem + 0.18vw, 1.08rem);
+        --step-1: clamp(1.18rem, 1.08rem + 0.44vw, 1.44rem);
+        --step-2: clamp(1.48rem, 1.28rem + 0.84vw, 1.95rem);
+        --step-3: clamp(2.05rem, 1.6rem + 1.8vw, 3.1rem);
+        --rule: 1px solid var(--line);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-feature-settings: "palt" 1;
+        line-height: 1.75;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      a {
+        color: inherit;
+        text-decoration-thickness: 0.08em;
+        text-underline-offset: 0.18em;
+      }
+
+      code,
+      pre {
+        font-family: var(--mono);
+      }
+
+      code {
+        font-size: 0.93em;
+      }
+
+      pre {
+        margin: 0;
+        overflow-x: auto;
+        white-space: pre;
+      }
+
+      .page {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 30px 20px 64px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+        gap: 32px;
+        border-bottom: var(--rule);
+        padding: 28px 0 32px;
+      }
+
+      .kicker,
+      .eyebrow,
+      .status-label {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.18;
+        letter-spacing: 0;
+        text-wrap: balance;
+      }
+
+      h1 {
+        margin: 12px 0 20px;
+        font-size: var(--step-3);
+        max-width: 13em;
+      }
+
+      h2 {
+        margin: 0 0 18px;
+        font-size: var(--step-2);
+      }
+
+      h3 {
+        margin: 0 0 10px;
+        font-size: var(--step-1);
+      }
+
+      p {
+        margin: 0 0 1em;
+        font-size: var(--step-0);
+      }
+
+      .lead {
+        color: #2f363d;
+        font-size: var(--step-1);
+        max-width: 44em;
+      }
+
+      .hero-summary {
+        border-left: 4px solid var(--accent);
+        padding-left: 18px;
+        align-self: end;
+      }
+
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1px;
+        background: var(--line);
+        border: var(--rule);
+        margin-top: 24px;
+      }
+
+      .status-cell {
+        min-width: 0;
+        background: var(--surface);
+        padding: 16px;
+      }
+
+      .status-cell strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 1.06rem;
+      }
+
+      .section {
+        padding: 42px 0;
+        border-bottom: var(--rule);
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 28px;
+        margin-bottom: 22px;
+      }
+
+      .section-head p {
+        max-width: 52em;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(120px, 1fr));
+        border: var(--rule);
+        background: var(--line);
+        gap: 1px;
+      }
+
+      .flow-step {
+        min-width: 0;
+        background: var(--surface);
+        padding: 14px 12px;
+      }
+
+      .flow-step b {
+        display: block;
+        line-height: 1.32;
+      }
+
+      .flow-step span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.84rem;
+        line-height: 1.55;
+        margin-top: 6px;
+      }
+
+      .capability-list {
+        display: grid;
+        gap: 18px;
+      }
+
+      .capability {
+        display: grid;
+        grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
+        gap: 1px;
+        background: var(--line);
+        border: var(--rule);
+      }
+
+      .capability > div {
+        min-width: 0;
+        background: var(--surface);
+        padding: 20px;
+      }
+
+      .capability .plain {
+        border-left: 6px solid var(--accent);
+      }
+
+      .capability .plain p:last-child,
+      .capability .detail p:last-child {
+        margin-bottom: 0;
+      }
+
+      .label {
+        display: inline-block;
+        border: 1px solid var(--line);
+        padding: 2px 8px;
+        font-family: var(--mono);
+        font-size: 0.76rem;
+        line-height: 1.4;
+        margin-bottom: 12px;
+      }
+
+      .label.ok {
+        border-color: var(--ok);
+        color: var(--ok);
+      }
+
+      .label.warn {
+        border-color: var(--warn);
+        color: var(--warn);
+      }
+
+      .label.stop {
+        border-color: var(--stop);
+        color: var(--stop);
+      }
+
+      .command-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .command {
+        min-width: 0;
+        border: var(--rule);
+        background: var(--surface);
+      }
+
+      .command header {
+        border-bottom: var(--rule);
+        padding: 14px 16px;
+      }
+
+      .command pre {
+        padding: 16px;
+        background: #1b1d20;
+        color: #f4f7f6;
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
+
+      .term-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: var(--rule);
+        background: var(--surface);
+      }
+
+      .term-table th,
+      .term-table td {
+        border: 1px solid var(--soft-line);
+        padding: 13px 14px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .term-table th {
+        background: #e5ebea;
+        color: #202327;
+        font-size: 0.92rem;
+      }
+
+      .term-table td:first-child {
+        font-family: var(--mono);
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 1px;
+        background: var(--line);
+        border: var(--rule);
+      }
+
+      .split > div {
+        min-width: 0;
+        background: var(--surface);
+        padding: 20px;
+      }
+
+      .checklist {
+        margin: 0;
+        padding-left: 1.15em;
+      }
+
+      .checklist li {
+        margin: 0.45em 0;
+      }
+
+      .note {
+        border-left: 4px solid var(--accent-2);
+        padding: 12px 16px;
+        background: #edf3f1;
+      }
+
+      .footer {
+        color: var(--muted);
+        padding-top: 26px;
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 980px) {
+        .hero,
+        .section-head,
+        .capability,
+        .command-grid,
+        .split {
+          grid-template-columns: 1fr;
+        }
+
+        .flow {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .status-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .page {
+          padding: 18px 14px 42px;
+        }
+
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        .term-table {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <div class="kicker">Strategy Research Lab / Current Capabilities</div>
+          <h1 id="page-title">今できることを、専門用語なしでも読める形で整理する</h1>
+          <p class="lead">
+            このページは、Strategy Research Lab が現在どこまで使えるかを具体的に説明するHTML版です。
+            ここで言う「使える」は、売買の作戦案を signal にし、paper-only の候補と仮注文案まで進められる、という意味です。
+          </p>
+        </div>
+        <aside class="hero-summary" aria-label="重要な境界">
+          <p><strong>結論:</strong> 戦略研究から paper-only preview までは進められます。</p>
+          <p><strong>まだ違う:</strong> live trading、実資金注文、収益性の証明ではありません。</p>
+        </aside>
+      </section>
+
+      <section class="section" aria-labelledby="quick-status">
+        <div class="section-head">
+          <div class="eyebrow">Quick Status</div>
+          <div>
+            <h2 id="quick-status">一目で見る現在地</h2>
+            <p>
+              難しい言葉を抜くと、「売買アイデアを候補リストにして、紙上の仮注文案まで作れる」状態です。
+              ただし、勝てるかどうかの証明や実注文はまだ別工程です。
+            </p>
+          </div>
+        </div>
+        <div class="status-grid" aria-label="状態の要約">
+          <div class="status-cell">
+            <span class="status-label">Can Do</span>
+            <strong>売買シグナルの生成と記録</strong>
+          </div>
+          <div class="status-cell">
+            <span class="status-label">Can Do</span>
+            <strong>複数候補の比較と paper 候補化</strong>
+          </div>
+          <div class="status-cell">
+            <span class="status-label">Not Yet</span>
+            <strong>実資金の注文、PnL backtest、live-ready 判定</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="flow-title">
+        <div class="section-head">
+          <div class="eyebrow">Flow</div>
+          <div>
+            <h2 id="flow-title">処理の流れ</h2>
+            <p>
+              各段階はファイルとして残ります。途中で止まった場合も、どこまで進んだか、なぜ止まったかを後から確認できます。
+            </p>
+          </div>
+        </div>
+        <div class="flow" aria-label="Strategy Research Lab の流れ">
+          <div class="flow-step"><b>1. 作戦を選ぶ</b><span>登録済み generator を指定する</span></div>
+          <div class="flow-step"><b>2. signal を作る</b><span>売買方向らしさを行データにする</span></div>
+          <div class="flow-step"><b>3. trial に記録</b><span>候補条件ごとの評価記録を残す</span></div>
+          <div class="flow-step"><b>4. candidate 化</b><span>paper に進める候補を束ねる</span></div>
+          <div class="flow-step"><b>5. 人が判断</b><span>hold / reject / promote を残す</span></div>
+          <div class="flow-step"><b>6. 仮注文案</b><span>paper-only preview を作る</span></div>
+          <div class="flow-step"><b>7. 再検証</b><span>最新 quote で paper runner が確認する</span></div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="capabilities-title">
+        <div class="section-head">
+          <div class="eyebrow">Capabilities</div>
+          <div>
+            <h2 id="capabilities-title">具体的にできること</h2>
+            <p>
+              左側は専門用語を避けた説明、右側は実際のコマンドや生成ファイルです。
+            </p>
+          </div>
+        </div>
+        <div class="capability-list">
+          <article class="capability">
+            <div class="plain">
+              <span class="label ok">できる</span>
+              <h3>登録済みの作戦から売買シグナルを作る</h3>
+              <p>あらかじめ登録された作戦を選び、売買方向・強さ・理由を持つデータを作れます。</p>
+            </div>
+            <div class="detail">
+              <p><strong>コマンド:</strong> <code>uv run sis strategy-preview</code></p>
+              <p><strong>出力:</strong> <code>strategy_signals.parquet</code>, <code>strategy_signal_manifest.json</code></p>
+              <p><strong>補足:</strong> <code>qqq_trend_rates_vix</code> と <code>sp500_trend_rates_vix</code> を選べます。</p>
+            </div>
+          </article>
+
+          <article class="capability">
+            <div class="plain">
+              <span class="label ok">できる</span>
+              <h3>候補条件を変えて比較記録を作る</h3>
+              <p>スコアがどの水準以上なら候補にするかを変えて、複数の試行記録を残せます。</p>
+            </div>
+            <div class="detail">
+              <p><strong>コマンド:</strong> <code>uv run sis evaluate-strategy-lab --rank-thresholds 0.2,0.8</code></p>
+              <p><strong>出力:</strong> <code>trial_ledger.jsonl</code></p>
+              <p><strong>補足:</strong> これは比較記録であり、収益性の証明ではありません。</p>
+            </div>
+          </article>
+
+          <article class="capability">
+            <div class="plain">
+              <span class="label ok">できる</span>
+              <h3>複数のシグナルを paper 候補にする</h3>
+              <p>最新の1件だけでなく、条件を通ったシグナルを複数まとめて候補化できます。</p>
+            </div>
+            <div class="detail">
+              <p><strong>コマンド:</strong> <code>uv run sis evaluate-strategy-lab --candidate-limit 0</code></p>
+              <p><strong>次の操作:</strong> <code>uv run sis build-paper-candidate-pack</code></p>
+              <p><strong>出力:</strong> <code>paper_candidate_pack.json</code></p>
+            </div>
+          </article>
+
+          <article class="capability">
+            <div class="plain">
+              <span class="label ok">できる</span>
+              <h3>時期ごとのシグナル数を記録する</h3>
+              <p>日別・週別・月別などで、どのくらいシグナルが出たかを記録できます。</p>
+            </div>
+            <div class="detail">
+              <p><strong>コマンド:</strong> <code>--split-method walk_forward --era-unit trading_day</code></p>
+              <p><strong>出力:</strong> <code>metrics.era_signal_counts</code>, <code>metrics.era_count</code></p>
+              <p><strong>補足:</strong> まだ本格的な walk-forward backtest ではありません。</p>
+            </div>
+          </article>
+
+          <article class="capability">
+            <div class="plain">
+              <span class="label ok">できる</span>
+              <h3>paper-only の仮注文案まで進める</h3>
+              <p>人間の判断ファイルを経由して、paper runner に渡す仮注文案を作れます。</p>
+            </div>
+            <div class="detail">
+              <p><strong>コマンド:</strong> <code>promotion-decision</code>, <code>build-paper-intent-preview</code></p>
+              <p><strong>出力:</strong> <code>data/bot/paper_intent_preview.json</code></p>
+              <p><strong>守る境界:</strong> <code>paper_only=true</code>, <code>live_conversion_allowed=false</code></p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="commands-title">
+        <div class="section-head">
+          <div class="eyebrow">Commands</div>
+          <div>
+            <h2 id="commands-title">よく使うコマンド</h2>
+            <p>まずは default flow、その後に threshold sweep と複数候補化を使います。</p>
+          </div>
+        </div>
+        <div class="command-grid">
+          <article class="command">
+            <header><h3>最短で candidate pack まで</h3></header>
+            <pre><code>uv run sis strategy-preview
+uv run sis evaluate-strategy-lab
+uv run sis build-paper-candidate-pack</code></pre>
+          </article>
+          <article class="command">
+            <header><h3>SP500 generator を使う</h3></header>
+            <pre><code>uv run sis strategy-preview --generator-id sp500_trend_rates_vix
+uv run sis evaluate-strategy-lab
+uv run sis build-paper-candidate-pack</code></pre>
+          </article>
+          <article class="command">
+            <header><h3>threshold sweep と複数候補</h3></header>
+            <pre><code>uv run sis evaluate-strategy-lab \
+  --rank-thresholds 0.2,0.8 \
+  --candidate-limit 0
+uv run sis build-paper-candidate-pack</code></pre>
+          </article>
+          <article class="command">
+            <header><h3>paper-only preview まで</h3></header>
+            <pre><code>uv run sis promotion-decision --decision hold
+uv run sis build-paper-intent-preview
+uv run sis paper-from-intents \
+  --intents-path data/bot/paper_intent_preview.json</code></pre>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="terms-title">
+        <div class="section-head">
+          <div class="eyebrow">Glossary</div>
+          <div>
+            <h2 id="terms-title">専門用語の言い換え</h2>
+            <p>この repo 内の正確な名前と、普段の説明で使える言い換えを並べます。</p>
+          </div>
+        </div>
+        <table class="term-table">
+          <thead>
+            <tr>
+              <th>用語</th>
+              <th>言い換え</th>
+              <th>この repo での意味</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>generator</td>
+              <td>シグナルを作る作戦部品</td>
+              <td>登録済みの戦略ロジック。例: <code>qqq_trend_rates_vix</code>。</td>
+            </tr>
+            <tr>
+              <td>signal</td>
+              <td>売買の気配、売買候補の元</td>
+              <td>方向、強さ、理由を持つ行データ。まだ注文ではない。</td>
+            </tr>
+            <tr>
+              <td>artifact</td>
+              <td>処理結果として残るファイル</td>
+              <td><code>strategy_signals.parquet</code> や <code>trial_ledger.jsonl</code> など。</td>
+            </tr>
+            <tr>
+              <td>TrialRecord</td>
+              <td>試した条件の記録</td>
+              <td>どの signal artifact を、どの条件で候補化したかを残す履歴。</td>
+            </tr>
+            <tr>
+              <td>rank threshold</td>
+              <td>候補にする最低点</td>
+              <td><code>rank_score</code> がこの値以上の signal を候補として扱う。</td>
+            </tr>
+            <tr>
+              <td>candidate</td>
+              <td>paper に進める売買候補</td>
+              <td>注文ではない。paper intent preview の材料。</td>
+            </tr>
+            <tr>
+              <td>paper-only</td>
+              <td>実資金を使わない紙上運用</td>
+              <td>wallet、署名、exchange write を使わない安全な観測モード。</td>
+            </tr>
+            <tr>
+              <td>PromotionDecision</td>
+              <td>人間の判断メモ</td>
+              <td>candidate pack を hold / reject / promote する判断 artifact。</td>
+            </tr>
+            <tr>
+              <td>PaperIntentPreview</td>
+              <td>paper runner に渡す仮注文案</td>
+              <td>paper-only の意図。live order へ変換してはいけない。</td>
+            </tr>
+            <tr>
+              <td>walk-forward</td>
+              <td>時期を分けて検証する考え方</td>
+              <td>現行 CLI では名前と era count metrics を記録するだけ。backtest engine ではない。</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section" aria-labelledby="boundary-title">
+        <div class="section-head">
+          <div class="eyebrow">Boundary</div>
+          <div>
+            <h2 id="boundary-title">できないことも明確にする</h2>
+            <p>
+              ここを曖昧にすると、paper-only の研究 artifact を live-ready と誤読しやすくなります。
+            </p>
+          </div>
+        </div>
+        <div class="split">
+          <div>
+            <span class="label ok">今できる</span>
+            <ul class="checklist">
+              <li>登録済み generator から signal artifact を作る。</li>
+              <li>threshold を変えて試行記録を残す。</li>
+              <li>複数 signal を paper candidate にする。</li>
+              <li>paper-only preview を生成する。</li>
+              <li>paper runner が最新 quote で再検証する。</li>
+            </ul>
+          </div>
+          <div>
+            <span class="label stop">まだできない</span>
+            <ul class="checklist">
+              <li>任意の YAML / JSON experiment spec を CLI から直接実行する。</li>
+              <li>PnL、drawdown、Sharpe などの backtest 結果を出す。</li>
+              <li>position size や risk budget を自動決定する。</li>
+              <li>実資金注文、wallet signing、exchange write を行う。</li>
+              <li>Strategy Lab artifact だけで live-ready と判断する。</li>
+            </ul>
+          </div>
+        </div>
+        <p class="note">
+          このページの安全な読み方: 「戦略の候補を作って観測に進める準備はできた」。危険な読み方:
+          「このまま実注文できる」「利益が出ると証明された」。
+        </p>
+      </section>
+
+      <footer class="footer">
+        <p>
+          Source of truth: <code>src/sis/commands/research.py</code>,
+          <code>src/sis/research/strategy_lab/</code>,
+          <code>tests/test_strategy_lab_commands.py</code>.
+          Markdown 版: <a href="08_CURRENT_CAPABILITIES.md">08_CURRENT_CAPABILITIES.md</a>.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>
