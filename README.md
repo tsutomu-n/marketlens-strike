@@ -9,10 +9,11 @@
 3. [docs/DOCUMENT_AUDIT_2026-05-30.md](/home/tn/projects/marketlens-strike/docs/DOCUMENT_AUDIT_2026-05-30.md)
 4. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](/home/tn/projects/marketlens-strike/docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
 5. [docs/strategy_research_lab/README.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/README.md)
-6. [docs/OPERATIONS_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/OPERATIONS_RUNBOOK.md)
-7. [docs/ARCHITECTURE_AND_PHASES.md](/home/tn/projects/marketlens-strike/docs/ARCHITECTURE_AND_PHASES.md)
-8. [docs/trade_xyz_bot_beginner_guide.html](/home/tn/projects/marketlens-strike/docs/trade_xyz_bot_beginner_guide.html)
-9. [plan/archive/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/archive/PR-00_to_PR-08_implementation_plan.md) は historical migration contract として読む
+6. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+7. [docs/OPERATIONS_RUNBOOK.md](/home/tn/projects/marketlens-strike/docs/OPERATIONS_RUNBOOK.md)
+8. [docs/ARCHITECTURE_AND_PHASES.md](/home/tn/projects/marketlens-strike/docs/ARCHITECTURE_AND_PHASES.md)
+9. [docs/trade_xyz_bot_beginner_guide.html](/home/tn/projects/marketlens-strike/docs/trade_xyz_bot_beginner_guide.html)
+10. [plan/archive/PR-00_to_PR-08_implementation_plan.md](/home/tn/projects/marketlens-strike/plan/archive/PR-00_to_PR-08_implementation_plan.md) は historical migration contract として読む
 
 ## Setup
 
@@ -77,7 +78,7 @@ uv run sis build-paper-intent-preview
 uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 ```
 
-Strategy Lab の schema / artifact flow / paper-only boundary は [docs/strategy_research_lab/README.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/README.md) を読む。`data/research/strategy_signals.parquet` が canonical signal artifact で、`data/research/signals.csv` は legacy export。
+Strategy Lab の schema / artifact flow / paper-only boundary は [docs/strategy_research_lab/README.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/README.md) を読む。今できることの一覧は [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)。`data/research/strategy_signals.parquet` が canonical signal artifact で、`data/research/signals.csv` は legacy export。
 
 Trade[XYZ] quote refresh:
 
@@ -121,9 +122,9 @@ PR12 read-only smoke evidence:
 
 2026-05-30 code/docs check:
 
-- `./scripts/check`: pass, 354 passed
+- `./scripts/check`: pass, 378 passed
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run python scripts/check_current_docs.py`: pass, `checked 39 current docs`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 40 current docs`
 
 2026-05-28 runtime artifact snapshot:
 

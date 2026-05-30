@@ -20,6 +20,8 @@
    - generator registry、現行 default generator、新規 generator を追加する時の仕様を確認する。
 7. [07_VALIDATION_STOP_CONDITIONS_AND_TEST_MATRIX.md](07_VALIDATION_STOP_CONDITIONS_AND_TEST_MATRIX.md)
    - 受け入れ条件、停止条件、既存テストが守る契約を確認する。
+8. [08_CURRENT_CAPABILITIES.md](08_CURRENT_CAPABILITIES.md)
+   - 現時点で Strategy Research Lab ができること、まだできないこと、確認済み検証を確認する。
 
 入口監査仕様は [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md) です。
 

@@ -53,6 +53,7 @@
 - `data/` は git 管理外。再開時は artifact を再生成する。
 - `bot-preview` の `data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` は実行時生成 artifact。現 checkout に無い場合は `uv run sis bot-preview` で再生成する。
 - Strategy Lab の canonical signal artifact は `data/research/strategy_signals.parquet`。旧 `data/research/signals.csv` は Strategy Lab 正本ではなく legacy export として読む。
+- Strategy Lab で今できることは `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` に記録する。現行では registered generator から signal artifact を作り、threshold sweep、複数 selected signal の candidate 化、paper-only preview まで進められる。
 - `PaperIntentPreview` は paper-only の仮注文意図。`live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を守り、live order として扱わない。
 - Alpaca live fetch は credentials が必要。credentials なしでは明示的に unavailable として失敗するため、silent empty data と混同しない。
 - `ostium-python-sdk` は active dependency から削除済み。
@@ -63,8 +64,8 @@
 
 - `./scripts/check`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 354 passed via `./scripts/check`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 39 current docs`
+- `uv run pytest -q`: 378 passed via `./scripts/check`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 40 current docs`
 
 2026-05-28 runtime artifact snapshot:
 
@@ -100,12 +101,13 @@ PR-08 専用確認:
 3. `docs/DOCUMENT_AUDIT_2026-05-30.md`
 4. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
 5. `docs/strategy_research_lab/README.md`
-6. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
-7. `docs/OPERATIONS_RUNBOOK.md`
-8. `docs/ARCHITECTURE_AND_PHASES.md`
-9. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-10. `docs/trade_xyz_bot_beginner_guide.html`
-11. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+6. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+7. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+8. `docs/OPERATIONS_RUNBOOK.md`
+9. `docs/ARCHITECTURE_AND_PHASES.md`
+10. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
+11. `docs/trade_xyz_bot_beginner_guide.html`
+12. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
 
 historical focused audit:
 
