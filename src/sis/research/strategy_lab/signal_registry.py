@@ -6,6 +6,7 @@ from typing import Any
 import polars as pl
 
 from sis.strategies.qqq_trend_rates_vix import build_qqq_trend_rates_vix_signals
+from sis.strategies.sp500_trend_rates_vix import build_sp500_trend_rates_vix_signals
 
 SignalGenerator = Callable[[pl.DataFrame, Any], pl.DataFrame]
 
@@ -40,5 +41,9 @@ def default_signal_generator_registry() -> SignalGeneratorRegistry:
     registry = SignalGeneratorRegistry()
     registry.register(
         "qqq_trend_rates_vix", lambda frame, _spec: build_qqq_trend_rates_vix_signals(frame)
+    )
+    registry.register(
+        "sp500_trend_rates_vix",
+        lambda frame, _spec: build_sp500_trend_rates_vix_signals(frame),
     )
     return registry

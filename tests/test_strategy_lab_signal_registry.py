@@ -6,7 +6,10 @@ import polars as pl
 import pytest
 
 from sis.research.strategy_lab.signal_frame import validate_strategy_signal_frame
-from sis.research.strategy_lab.signal_registry import SignalGeneratorRegistry
+from sis.research.strategy_lab.signal_registry import (
+    SignalGeneratorRegistry,
+    default_signal_generator_registry,
+)
 from sis.research.strategy_lab.specs import SymbolBinding
 
 
@@ -24,6 +27,12 @@ def test_signal_generator_registry_runs_registered_generator() -> None:
     result = registry.run("demo", pl.DataFrame({"value": [1]}), spec={"id": "demo"})
 
     assert result.get_column("kind").to_list() == ["demo"]
+
+
+def test_default_signal_generator_registry_includes_known_generators() -> None:
+    registry = default_signal_generator_registry()
+
+    assert registry.registered_ids() == ["qqq_trend_rates_vix", "sp500_trend_rates_vix"]
 
 
 def test_strategy_signal_frame_requires_binding_columns() -> None:

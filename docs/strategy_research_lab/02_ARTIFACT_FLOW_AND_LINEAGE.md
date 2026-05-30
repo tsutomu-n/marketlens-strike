@@ -81,7 +81,8 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 Important behavior:
 
 - `strategy-preview` calls `build_signals()`.
-- `build_signals()` currently uses default generator `qqq_trend_rates_vix`.
+- `build_signals()` defaults to generator `qqq_trend_rates_vix`.
+- `build-signals --generator-id sp500_trend_rates_vix` and `strategy-preview --generator-id sp500_trend_rates_vix` select the registered SP500 generator.
 - `build_signals()` writes canonical `data/research/strategy_signals.parquet`, JSONL export, and legacy `signals.csv`.
 - `evaluate-strategy-lab` exits with code 2 if `strategy_signals.parquet` is missing.
 - `build-paper-candidate-pack` reads `trial_ledger.jsonl`.

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import polars as pl
 
 from sis.strategies.qqq_trend_rates_vix import build_qqq_trend_rates_vix_signals
+from sis.strategies.sp500_trend_rates_vix import build_sp500_trend_rates_vix_signals
 
 
 def test_build_qqq_trend_rates_vix_signals_generates_only_qqq_entries() -> None:
@@ -74,4 +75,38 @@ def test_build_qqq_trend_rates_vix_signals_generates_only_qqq_entries() -> None:
     assert signals.height == 1
     assert signals.get_column("canonical_symbol").to_list() == ["QQQ"]
     assert signals.get_column("strategy_name").to_list() == ["qqq_trend_rates_vix"]
+    assert signals.get_column("timeframe").to_list() == ["4h"]
+
+
+def test_build_sp500_trend_rates_vix_signals_generates_only_spy_entries() -> None:
+    frame = pl.DataFrame(
+        [
+            {
+                "ts": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "canonical_symbol": "QQQ",
+                "research_return_1d": 0.02,
+                "close_above_sma20": True,
+                "t10y2y": 1.0,
+                "vix_level": 20.0,
+                "is_event_blackout": False,
+                "trade_allowed": True,
+            },
+            {
+                "ts": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "canonical_symbol": "SPY",
+                "research_return_1d": 0.02,
+                "close_above_sma20": True,
+                "t10y2y": 1.0,
+                "vix_level": 20.0,
+                "is_event_blackout": False,
+                "trade_allowed": True,
+            },
+        ]
+    )
+
+    signals = build_sp500_trend_rates_vix_signals(frame)
+
+    assert signals.height == 1
+    assert signals.get_column("canonical_symbol").to_list() == ["SPY"]
+    assert signals.get_column("strategy_name").to_list() == ["sp500_trend_rates_vix"]
     assert signals.get_column("timeframe").to_list() == ["4h"]

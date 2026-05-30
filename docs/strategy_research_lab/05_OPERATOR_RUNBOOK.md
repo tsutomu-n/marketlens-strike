@@ -35,6 +35,12 @@ uv run sis check-research-quality
 uv run sis strategy-preview
 ```
 
+登録済み generator を明示する場合:
+
+```bash
+uv run sis strategy-preview --generator-id sp500_trend_rates_vix
+```
+
 出力:
 
 - `data/research/strategy_signals.parquet`

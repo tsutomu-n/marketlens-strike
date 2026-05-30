@@ -59,7 +59,8 @@ StrategyExperimentSpec
 
 ## 現行実装の制約
 
-- `build_signals()` は現時点では default generator `qqq_trend_rates_vix` を使います。
-- CLI は任意の `StrategyExperimentSpec` YAML/JSON と任意 parameter sweep を直接読む汎用 runner ではありません。
+- `build_signals()` の default generator は `qqq_trend_rates_vix` です。
+- registered generator として `sp500_trend_rates_vix` も選べます。
+- CLI は任意の `StrategyExperimentSpec` YAML/JSON と任意 parameter sweep を直接読む汎用 runner ではありません。選べるのは登録済み `generator_id` だけです。
 - `promotion-decision --decision promote` は required evidence が揃わないと model validation で止まります。
 - `paper-from-intents` は最新 quote と paper broker で再検証し、expired intent や quote missing を block します。

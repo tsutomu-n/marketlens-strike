@@ -106,7 +106,7 @@ Validation:
 - `forbidden_claims` は `DEFAULT_FORBIDDEN_CLAIMS` をすべて含む。
 - `DEFAULT_FORBIDDEN_CLAIMS` は `profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, `live_ready_claimed`。
 - `profitability_claim`, `paper_ready_claim`, `tiny_live_ready_claim`, `live_ready_claim` という古い claim 名は禁止。使うなら `*_claimed`。
-- 現行 default generator registry の実装済み generator は `qqq_trend_rates_vix`。
+- 現行 default generator は `qqq_trend_rates_vix`。registered generator は `qqq_trend_rates_vix`, `sp500_trend_rates_vix`。
 
 ### StrategySignalRecord
 
@@ -365,7 +365,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 重要:
 
 - `strategy-preview` は `build_signals()` を通じて `data/research/strategy_signals.parquet`, `data/research/strategy_signals.jsonl`, legacy export `data/research/signals.csv`, `data/reports/strategy_signals_preview.md` を出す。
-- `build_signals()` は現時点では default generator `qqq_trend_rates_vix` を使う。arbitrary `StrategyExperimentSpec` / `parameter_grid` を CLI 引数で読み込む汎用 runner ではない。
+- `build_signals()` の default generator は `qqq_trend_rates_vix`。`--generator-id sp500_trend_rates_vix` で登録済み SP500 generator を選べるが、arbitrary `StrategyExperimentSpec` / `parameter_grid` を CLI 引数で読み込む汎用 runner ではない。
 - `evaluate-strategy-lab` は `data/research/strategy_signals.parquet` が無い場合 exit code 2 で止まる。
 - `build-paper-intent-preview` は `PromotionDecision` が無い場合 exit code 2 で止まる。
 - `promotion-decision --decision promote` は required evidence が揃っていないと model validation で止まる。

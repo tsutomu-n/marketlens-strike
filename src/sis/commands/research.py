@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
-from typing import Callable, Literal, cast
+from typing import Any, Callable, Literal, cast
 
 import polars as pl
 import typer
@@ -16,7 +16,7 @@ from sis.research.macro_ingest import build_macro_panel
 from sis.research.price_ingest import build_market_panel
 from sis.research.providers import FredMacroProvider
 from sis.research.research_quality import build_research_quality_report
-from sis.research.signal_builder import build_signals
+from sis.research.signal_builder import DEFAULT_GENERATOR_ID, build_signals
 from sis.research.strategy_lab.candidates import TradeCandidate
 from sis.research.strategy_lab.paper_candidate_pack import PaperCandidatePack
 from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
@@ -34,6 +34,39 @@ def _parse_optional_datetime(value: str | None) -> datetime | None:
         return None
     parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
+def _first_signal_row(frame: pl.DataFrame) -> dict[str, Any]:
+    if frame.is_empty():
+        return {}
+    return frame.sort("ts_signal").to_dicts()[0]
+
+
+def _signal_rows_by_strategy(data_dir: Path) -> dict[str, dict[str, Any]]:
+    signals_path = data_dir / "research/strategy_signals.parquet"
+    if not signals_path.exists():
+        return {}
+    frame = pl.read_parquet(signals_path)
+    rows: dict[str, dict[str, Any]] = {}
+    for row in frame.sort("ts_signal").to_dicts():
+        strategy_id = str(row.get("strategy_id") or "")
+        if strategy_id and strategy_id not in rows:
+            rows[strategy_id] = row
+    return rows
+
+
+def _float_or_none(value: object) -> float | None:
+    return float(value) if isinstance(value, int | float) else None
+
+
+def _tail_bucket_value(
+    value: object, *, selected: bool
+) -> Literal["top", "middle", "bottom", "none"]:
+    fallback = "top" if selected else "none"
+    text = str(value or fallback)
+    if text in {"top", "middle", "bottom", "none"}:
+        return cast(Literal["top", "middle", "bottom", "none"], text)
+    return "none"
 
 
 def register_research_commands(
@@ -93,21 +126,34 @@ def register_research_commands(
             typer.echo(f"recommended_read_order_{index}={item}")
 
     @app.command("build-signals")
-    def build_signals_cmd() -> None:
+    def build_signals_cmd(
+        generator_id: str = typer.Option(
+            DEFAULT_GENERATOR_ID,
+            "--generator-id",
+            help="Registered Strategy Lab signal generator ID.",
+        ),
+    ) -> None:
         settings = get_settings()
-        out = build_signals(settings.data_dir)
+        out = build_signals(settings.data_dir, generator_id=generator_id)
         logger.info("written: {}", out)
         for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
 
     @app.command("strategy-preview")
-    def strategy_preview_cmd() -> None:
+    def strategy_preview_cmd(
+        generator_id: str = typer.Option(
+            DEFAULT_GENERATOR_ID,
+            "--generator-id",
+            help="Registered Strategy Lab signal generator ID.",
+        ),
+    ) -> None:
         settings = get_settings()
-        legacy_path = build_signals(settings.data_dir)
+        legacy_path = build_signals(settings.data_dir, generator_id=generator_id)
         report_path = settings.data_dir / "reports/strategy_signals_preview.md"
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(
             "# Strategy Signals Preview\n\n"
+            f"- generator_id: {generator_id}\n"
             f"- canonical_artifact: {settings.data_dir / 'research/strategy_signals.parquet'}\n"
             f"- legacy_export: {legacy_path}\n",
             encoding="utf-8",
@@ -124,14 +170,15 @@ def register_research_commands(
             raise typer.Exit(2)
         frame = pl.read_parquet(signals_path)
         selected = frame.height > 0
+        first_signal = _first_signal_row(frame)
         record = TrialRecord(
             schema_version="trial_record.v1",
             trial_id="trial-001",
             trial_group_id="trial-group-001",
             trial_index=0,
-            strategy_id="equity_index_momentum_v0",
-            strategy_family="momentum",
-            strategy_version="v0",
+            strategy_id=str(first_signal.get("strategy_id") or "unknown_strategy"),
+            strategy_family=str(first_signal.get("strategy_family") or "unknown"),
+            strategy_version=str(first_signal.get("strategy_version") or "unknown"),
             evaluation_plan_id="initial_walkforward",
             data_snapshot_id="data-snap-current",
             feature_snapshot_id="feature-snap-current",
@@ -178,35 +225,50 @@ def register_research_commands(
         candidates: list[TradeCandidate] = []
         selected_ids: list[str] = []
         rejected_ids: list[str] = []
+        signal_by_strategy = _signal_rows_by_strategy(settings.data_dir)
         for record in records:
             candidate_id = f"candidate-{record.trial_id}"
             status = "candidate" if record.selected_for_next_stage else "blocked"
+            signal = signal_by_strategy.get(record.strategy_id, {})
+            side = str(signal.get("side") or ("long" if record.selected_for_next_stage else "none"))
+            if side not in {"long", "short"}:
+                side = "none"
+            reason_codes = list(signal.get("reason_codes") or [])
+            if record.selected_for_next_stage and not reason_codes:
+                reason_codes = ["trial_selected"]
             candidates.append(
                 TradeCandidate(
                     schema_version="trade_candidate.v1",
                     candidate_id=candidate_id,
                     generated_at=now,
-                    signal_id=None,
+                    signal_id=signal.get("signal_id"),
                     strategy_id=record.strategy_id,
                     trial_id=record.trial_id,
-                    execution_venue="trade_xyz",
-                    execution_symbol="XYZ100",
-                    real_market_symbol="QQQ",
-                    side="long" if record.selected_for_next_stage else "none",
-                    timeframe="4h",
+                    execution_venue=signal.get("execution_venue") or "trade_xyz",
+                    execution_symbol=str(signal.get("execution_symbol") or "XYZ100"),
+                    real_market_symbol=str(signal.get("real_market_symbol") or "QQQ"),
+                    side=side,
+                    timeframe=str(signal.get("timeframe") or "4h"),
                     status=status,
-                    raw_score=None,
-                    rank_score=0.9 if record.selected_for_next_stage else None,
-                    percentile_rank=0.9 if record.selected_for_next_stage else None,
-                    tail_bucket="top" if record.selected_for_next_stage else "none",
-                    confidence=0.8,
-                    entry_reason_codes=["trial_selected"] if record.selected_for_next_stage else [],
+                    raw_score=_float_or_none(signal.get("raw_score")),
+                    rank_score=_float_or_none(signal.get("rank_score"))
+                    if record.selected_for_next_stage
+                    else None,
+                    percentile_rank=_float_or_none(signal.get("percentile_rank"))
+                    if record.selected_for_next_stage
+                    else None,
+                    tail_bucket=_tail_bucket_value(
+                        signal.get("tail_bucket"), selected=record.selected_for_next_stage
+                    ),
+                    confidence=_float_or_none(signal.get("confidence")) or 0.8,
+                    entry_reason_codes=reason_codes if record.selected_for_next_stage else [],
                     block_reasons=[]
                     if record.selected_for_next_stage
                     else record.rejection_reasons,
-                    feature_snapshot_ref=record.feature_snapshot_id,
-                    quote_ref=None,
-                    tracking_ref=None,
+                    feature_snapshot_ref=signal.get("feature_snapshot_ref")
+                    or record.feature_snapshot_id,
+                    quote_ref=signal.get("quote_ref"),
+                    tracking_ref=signal.get("tracking_ref"),
                 )
             )
             (selected_ids if record.selected_for_next_stage else rejected_ids).append(candidate_id)

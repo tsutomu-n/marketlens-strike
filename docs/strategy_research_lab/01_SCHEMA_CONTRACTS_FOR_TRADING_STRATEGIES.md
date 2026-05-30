@@ -80,8 +80,9 @@ validation:
 
 現行制約:
 
-- default generator registry の実装済み generator は `qqq_trend_rates_vix`。
-- 現行 CLI は任意 spec を読み込む汎用 runner ではなく、`build_signals()` は default generator を使う。
+- default generator は `qqq_trend_rates_vix`。
+- registered generator は `qqq_trend_rates_vix`, `sp500_trend_rates_vix`。
+- 現行 CLI は任意 spec を読み込む汎用 runner ではなく、登録済み `generator_id` だけを選べる。
 
 ## StrategySignalRecord
 

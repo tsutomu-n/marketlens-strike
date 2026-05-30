@@ -96,6 +96,7 @@
       font-family: "Yu Mincho", "Hiragino Mincho ProN", "BIZ UDPMincho", serif;
       line-height: 1.16;
       letter-spacing: -0.03em;
+      overflow-wrap: anywhere;
     }
 
     h1 {
@@ -128,6 +129,8 @@
       border-radius: 18px;
       background: rgba(255, 249, 235, 0.84);
       font-weight: 800;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .toc {
@@ -182,6 +185,10 @@
       display: grid;
       grid-template-columns: repeat(12, 1fr);
       gap: 16px;
+    }
+
+    .grid + .flow {
+      margin-top: 16px;
     }
 
     .card {
@@ -382,6 +389,16 @@
     }
 
     @media (max-width: 860px) {
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .section-tag {
+        min-width: 0;
+      }
+
       .warning-strip,
       .flow,
       .roadmap,
@@ -451,6 +468,7 @@
       <a href="#what">これは何？</a>
       <a href="#now">今できること</a>
       <a href="#flow">データの流れ</a>
+      <a href="#strategy-lab">Strategy Lab</a>
       <a href="#outputs">出力の意味</a>
       <a href="#checks">安全確認</a>
       <a href="#missing">足りないもの</a>
@@ -548,15 +566,45 @@ uv run sis build-signals</code></pre>
       </div>
     </section>
 
+    <section id="strategy-lab">
+      <div class="section-head">
+        <h2>5. Strategy Lab と PaperIntentPreview</h2>
+        <span class="section-tag">paper-only research</span>
+      </div>
+      <div class="grid">
+        <article class="card third status-info">
+          <h3>Strategy Lab は研究室</h3>
+          <p>売買アイデアをそのまま注文にせず、signal、trial、candidate、promotion decision の順に分けて確認します。</p>
+        </article>
+        <article class="card third status-warn">
+          <h3>PaperIntentPreview は下書き</h3>
+          <p>paper runner に渡す仮の注文意図です。使う前に最新価格で再確認し、本番注文には変換しません。</p>
+        </article>
+        <article class="card third status-stop">
+          <h3>ここで止める境界</h3>
+          <p>TradeCandidate は候補、PaperCandidatePack は候補の束です。どちらも利益や本番準備完了の証明ではありません。</p>
+        </article>
+      </div>
+      <div class="flow" aria-label="Strategy Lab の流れ">
+        <div class="step"><strong>1. 戦略仮説</strong>何を見て判断するかを書く。</div>
+        <div class="step"><strong>2. signal</strong>見てよさそうな場面を記録する。</div>
+        <div class="step"><strong>3. trial</strong>試した結果と止めた理由を残す。</div>
+        <div class="step"><strong>4. promotion</strong>人間が paper 観測に進めるか決める。</div>
+        <div class="step"><strong>5. paper preview</strong>本物のお金を使わない下書きだけ作る。</div>
+      </div>
+    </section>
+
     <section id="outputs">
       <div class="section-head">
-        <h2>5. 出力ファイルの意味</h2>
+        <h2>6. 出力ファイルの意味</h2>
         <span class="section-tag">files in normal words</span>
       </div>
       <div class="term" role="table" aria-label="出力ファイルの説明">
         <div>registry</div><div>見るべき銘柄のリスト。学校の出席名簿のようなもの。</div>
         <div>raw quotes</div><div>取ってきた価格情報をそのまま保存したメモ。</div>
         <div>normalized quotes</div><div>あとで計算しやすいように整えた価格表。</div>
+        <div>strategy signals</div><div>Strategy Lab が作る「見てよさそう」という研究メモ。注文ではありません。</div>
+        <div>paper intent preview</div><div>仮想取引用の注文下書き。paper専用で、本番発注には使いません。</div>
         <div>readiness</div><div>Botの前に「準備できているか」を見る健康診断。</div>
         <div>phase gate</div><div>次の段階へ進んでよいかを止める関門。</div>
         <div>paper</div><div>本物のお金を使わない練習取引。</div>
@@ -565,7 +613,7 @@ uv run sis build-signals</code></pre>
 
     <section id="checks">
       <div class="section-head">
-        <h2>6. Bot前の安全確認</h2>
+        <h2>7. Bot前の安全確認</h2>
         <span class="section-tag">before bot</span>
       </div>
       <div class="grid">
@@ -580,7 +628,7 @@ uv run sis build-signals</code></pre>
 
     <section id="missing">
       <div class="section-head">
-        <h2>7. Bot化前に足りないもの</h2>
+        <h2>8. Bot化前に足りないもの</h2>
         <span class="section-tag">missing pieces</span>
       </div>
       <div class="grid">
@@ -609,7 +657,7 @@ uv run sis build-signals</code></pre>
 
     <section id="next">
       <div class="section-head">
-        <h2>8. 次に作るもの</h2>
+        <h2>9. 次に作るもの</h2>
         <span class="section-tag">next build</span>
       </div>
       <div class="card full status-warn">
@@ -623,7 +671,7 @@ data/reports/bot_orders_preview.md</code></pre>
 
     <section id="future">
       <div class="section-head">
-        <h2>9. 今後どうするか</h2>
+        <h2>10. 今後どうするか</h2>
         <span class="section-tag">roadmap</span>
       </div>
       <div class="roadmap">
@@ -638,13 +686,15 @@ data/reports/bot_orders_preview.md</code></pre>
 
     <section id="examples">
       <div class="section-head">
-        <h2>10. 想定出力の例</h2>
+        <h2>11. 想定出力の例</h2>
         <span class="section-tag">expected files</span>
       </div>
       <div class="example-list">
         <div class="example-row"><code>data/ops/trade_xyz_quote_collection_summary.json</code><span>価格データの健康診断。新しいか、差が広すぎないか、量が足りるかを見る。</span></div>
         <div class="example-row"><code>data/ops/pr12_fresh_read_only_smoke_summary.json</code><span>60分以上の読み取り専用確認が通ったかをまとめた証跡。</span></div>
         <div class="example-row"><code>data/ops/phase_gate_review_summary.json</code><span>Botを作る前に、準備ができているかをまとめた判定。</span></div>
+        <div class="example-row"><code>data/research/strategy_signals.parquet</code><span>Strategy Labの研究メモ。売買候補の材料で、注文ではない。</span></div>
+        <div class="example-row"><code>data/bot/paper_intent_preview.json</code><span>paper専用の注文下書き。使う前に最新価格で再確認する。</span></div>
         <div class="example-row"><code>data/bot/bot_decision.json</code><span>Botの判断メモ。v1では「今は取引しない」と、その理由を書く。</span></div>
         <div class="example-row"><code>data/reports/bot_orders_preview.md</code><span>注文候補なしの確認ページ。walletや秘密鍵は使わない。</span></div>
       </div>
@@ -652,23 +702,25 @@ data/reports/bot_orders_preview.md</code></pre>
 
     <section id="myths">
       <div class="section-head">
-        <h2>11. よくある誤解</h2>
+        <h2>12. よくある誤解</h2>
         <span class="section-tag">myth check</span>
       </div>
       <div class="grid">
         <article class="card third status-stop"><h3>価格を集めた = Bot完成？</h3><p>違います。価格は材料です。まだ安全判定と注文下書きが必要です。</p></article>
         <article class="card third status-stop"><h3>仮想取引OK = 本番OK？</h3><p>違います。仮想取引は練習です。本番には秘密鍵、wallet、失敗時の停止策が必要です。</p></article>
         <article class="card third status-stop"><h3>micro liveがある = 自動売買OK？</h3><p>違います。micro liveは小さな安全確認用です。普通のBotとして公開されていません。</p></article>
+        <article class="card third status-stop"><h3>PaperIntentPreview = 本番注文？</h3><p>違います。paper専用の下書きです。最新価格で再確認し、本物の発注には変換しません。</p></article>
       </div>
     </section>
 
     <section>
       <div class="big-note">
-        <h2>12. 絶対に誤解しないこと</h2>
+        <h2>13. 絶対に誤解しないこと</h2>
         <ul class="clean">
           <li>この段階では、本物のお金で自動売買しない。</li>
           <li>秘密鍵やwalletは使わない。</li>
           <li>micro live は安全確認用のコードで、普通のBotとして公開されていない。</li>
+          <li>Strategy Lab の出力や PaperIntentPreview を、本番注文や本番準備完了と勘違いしない。</li>
           <li>古い gTrade / Ostium 用の判定を、Trade[XYZ] の準備完了と勘違いしない。</li>
         </ul>
       </div>

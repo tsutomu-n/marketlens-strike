@@ -9,11 +9,16 @@ Code:
 - `src/sis/research/strategy_lab/signal_registry.py`
 - `src/sis/research/signal_builder.py`
 - `src/sis/strategies/qqq_trend_rates_vix.py`
+- `src/sis/strategies/sp500_trend_rates_vix.py`
 
-現行 default registry:
+現行 registered generator:
 
 ```text
-generator_id=qqq_trend_rates_vix
+default_generator_id=qqq_trend_rates_vix
+registered_ids=[
+  qqq_trend_rates_vix,
+  sp500_trend_rates_vix,
+]
 ```
 
 registry behavior:
@@ -25,24 +30,24 @@ registry behavior:
 
 ## 現行 build_signals
 
-`build_signals(data_dir)` は以下を行います。
+`build_signals(data_dir, generator_id=qqq_trend_rates_vix)` は以下を行います。
 
 1. `data/research/feature_panel.parquet` を読む。
-2. default generator registry で `qqq_trend_rates_vix` を実行する。
+2. default generator registry で登録済み `generator_id` を実行する。
 3. generator output を `StrategySignalRecord` rows へ変換する。
 4. `validate_strategy_signal_frame()` で必須列と symbol binding を検証する。
 5. `data/research/strategy_signals.parquet` を書く。
 6. `data/research/strategy_signals.jsonl` を書く。
 7. legacy `data/research/signals.csv` を書く。
 
-現行 default symbol binding:
+現行 generator profile:
 
-```text
-execution_venue=trade_xyz
-execution_symbol=XYZ100
-real_market_symbol=QQQ
-asset_class=basket_index
-```
+| generator_id | strategy_id | execution_symbol | real_market_symbol | asset_class |
+|---|---|---|---|---|
+| `qqq_trend_rates_vix` | `equity_index_momentum_v0` | `XYZ100` | `QQQ` | `basket_index` |
+| `sp500_trend_rates_vix` | `sp500_index_momentum_v0` | `SP500` | `SPY` | `index` |
+
+CLI では `--generator-id` で登録済み generator を選べます。これは任意 spec runner ではなく、固定 profile の選択です。
 
 ## Generator output の最低仕様
 
@@ -87,7 +92,8 @@ Generator は Strategy Lab artifact へ変換できる signal frame を返す必
 7. score の範囲と意味を定義する。
 8. `reason_codes` を固定する。
 9. source confidence / venue quality が無い場合の扱いを決める。
-10. `validate_strategy_signal_frame()` を通る test を追加する。
+10. `SignalBuildProfile` と registry に登録する。
+11. `validate_strategy_signal_frame()` を通る test を追加する。
 
 ## StrategyExperimentSpec に落とす時の粒度
 
@@ -141,7 +147,7 @@ parameter_grid={}
 
 ## Current limitations
 
-- 現行 CLI は arbitrary `StrategyExperimentSpec` file を読む runner ではない。
+- 現行 CLI は arbitrary `StrategyExperimentSpec` file を読む runner ではない。`--generator-id` は登録済み fixed profile の選択だけです。
 - 現行 evaluation は full walk-forward backtester ではなく、artifact chain を成立させる簡易 runner です。
 - 現行 `promotion-decision` は human review artifact を生成するが、review UI ではない。
 - 現行 `build-paper-intent-preview` は selected candidate を simple notional / quantity placeholder で preview 化する。
