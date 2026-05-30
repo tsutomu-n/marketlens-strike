@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from typing import Any
+
 import polars as pl
 
-QUALITY_COLUMN_SCHEMA: dict[str, pl.DataType] = {
+QUALITY_COLUMN_SCHEMA: dict[str, Any] = {
     "source_confidence": pl.Float64,
     "venue_quality_score": pl.Float64,
 }
