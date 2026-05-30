@@ -23,6 +23,10 @@
 8. [08_CURRENT_CAPABILITIES.md](08_CURRENT_CAPABILITIES.md)
    - 現時点で Strategy Research Lab ができること、まだできないこと、確認済み検証を確認する。
    - わかりやすい HTML 版: [08_CURRENT_CAPABILITIES_EXPLAINED.html](08_CURRENT_CAPABILITIES_EXPLAINED.html)
+9. [09_STRATEGY_AUTHOR_GUIDE.md](09_STRATEGY_AUTHOR_GUIDE.md)
+   - ユーザーが YAML で売買ロジックを作り、validate / explain / signals / backtest / paper-preview へ進める手順を確認する。
+10. [10_STRATEGY_AUTHORING_IMPLEMENTATION_SPEC.md](10_STRATEGY_AUTHORING_IMPLEMENTATION_SPEC.md)
+   - `strategy_authoring_spec.v1`、Rule DSL、Strategy Lab signal adapter、paper-only artifact の実装契約を確認する。
 
 入口監査仕様は [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md) です。
 
@@ -33,6 +37,12 @@ Strategy Research Lab は、戦略アイデアを直接 order に変える機構
 ## 現行 artifact chain
 
 ```text
+strategy_authoring_spec.v1 YAML
+  -> StrategySignalRecord rows
+  -> data/research/strategy_signals.parquet
+  -> fixed-horizon backtest metrics
+  -> paper-only preview artifacts
+
 StrategyExperimentSpec
   -> StrategySignalRecord rows
   -> data/research/strategy_signals.parquet
@@ -69,6 +79,7 @@ StrategyExperimentSpec
 - `evaluate-strategy-lab` は同一 `trial_id` を重複追記しません。default では最新 `ts_signal` の 1 signal を選び、`--candidate-limit 0` で threshold 通過 signal を複数選べます。
 - `evaluate-strategy-lab --rank-thresholds 0.2,0.8` で paper-only の rank threshold sweep を記録できます。
 - `--split-method walk_forward` / `--era-unit` は era 別 signal count metrics を記録します。PnL や live-ready 証明ではありません。
-- CLI は任意の `StrategyExperimentSpec` YAML/JSON を直接読む汎用 runner ではありません。選べる generator は登録済み `generator_id` だけです。
+- `strategy-author-*` CLI は `strategy_authoring_spec.v1` YAML を読み、宣言型 rule から Strategy Lab signal artifact と fixed-horizon backtest metrics を作れます。
+- `StrategyExperimentSpec` YAML/JSON を直接読む汎用 runner はありません。登録済み generator flow と authoring YAML flow は別入口です。
 - `promotion-decision --decision promote` は required evidence が揃わないと model validation で止まります。
 - `paper-from-intents` は最新 quote と paper broker で再検証し、expired intent や quote missing を block します。

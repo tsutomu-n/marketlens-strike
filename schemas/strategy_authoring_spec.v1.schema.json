@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_authoring_spec.v1.schema.json",
+  "type": "object",
+  "required": ["schema_version", "experiment", "rules"],
+  "properties": {
+    "schema_version": {"const": "strategy_authoring_spec.v1"},
+    "experiment": {"type": "object"},
+    "data": {"type": "object"},
+    "rules": {"type": "object"},
+    "backtest": {"type": "object"},
+    "promotion": {"type": "object"}
+  },
+  "additionalProperties": false
+}

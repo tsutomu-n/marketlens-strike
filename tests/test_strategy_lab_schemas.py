@@ -8,6 +8,7 @@ def test_strategy_lab_schema_files_exist_and_parse() -> None:
     names = [
         "data_snapshot_manifest.v1.schema.json",
         "feature_snapshot_manifest.v1.schema.json",
+        "strategy_authoring_spec.v1.schema.json",
         "strategy_experiment_spec.v1.schema.json",
         "strategy_signal_manifest.v1.schema.json",
         "strategy_signal.v1.schema.json",

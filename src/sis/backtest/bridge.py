@@ -639,6 +639,33 @@ def run_backtest_bridge_with_decisions(
     return metrics, [], summary
 
 
+def run_backtest_bridge_for_signals(
+    quotes_path: Path,
+    signals: list[ResearchSignal],
+    cost_matrix_path: Path | None = None,
+    exit_model: str = "next_row",
+    holding_horizon_minutes: int | None = None,
+) -> tuple[list[BacktestMetrics], list[DecisionRecord], dict]:
+    if not quotes_path.exists():
+        raise FileNotFoundError(f"Normalized quote parquet not found: {quotes_path}")
+    quotes = pl.read_parquet(quotes_path)
+    if quotes.is_empty():
+        raise ValueError(f"Normalized quote parquet is empty: {quotes_path}")
+
+    required = {"ts_client", "venue", "canonical_symbol", "market_status", "is_tradable"}
+    missing = required.difference(quotes.columns)
+    if missing:
+        raise ValueError(f"Normalized quote parquet missing columns: {sorted(missing)}")
+
+    return _metrics_for_signals(
+        quotes,
+        signals,
+        load_cost_profiles(cost_matrix_path),
+        exit_model=exit_model,
+        holding_horizon_minutes=holding_horizon_minutes,
+    )
+
+
 def run_backtest_bridge(
     quotes_path: Path,
     signals_path: Path | None = None,

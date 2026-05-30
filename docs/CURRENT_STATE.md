@@ -9,6 +9,7 @@
 - PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、最新 phase gate は `READ_ONLY_GO`。
 - Trade[XYZ] の対象銘柄は fee mode / taker fee / maker fee を registry と raw quote row に持つ。`fee_mode_unknown_rate` は current gate blocker ではない。
 - Strategy Research Lab の schema / model / CLI surface は実装済み。`StrategyExperimentSpec` から `PaperIntentPreview` までを研究、候補生成、評価、paper昇格判断として扱う。
+- Strategy authoring YAML flow は実装済み。`strategy_authoring_spec.v1` から rule-based signal、fixed-horizon backtest metrics、paper-only preview artifacts を作れる。
 - `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
 - 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。execution drift は live-readiness blocker として残る。
 
@@ -43,6 +44,7 @@
 - `Trade[XYZ]` micro live safety adapter / policy / canary code path
 - read-only execution surfaces, operations dashboard, remediation chain, daemon loop, notification outbox
 - Strategy Research Lab models and commands: `StrategyExperimentSpec`, `StrategySignalRecord`, `EvaluationPlan`, `TrialRecord`, `TradeCandidate`, `PaperCandidatePack`, `PromotionDecision`, `PaperIntentPreview`
+- Strategy authoring commands: `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`
 - Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/` and `src/sis/research_protocol/`
 
 ## Important Boundaries
@@ -53,7 +55,7 @@
 - `data/` は git 管理外。再開時は artifact を再生成する。
 - `bot-preview` の `data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` は実行時生成 artifact。現 checkout に無い場合は `uv run sis bot-preview` で再生成する。
 - Strategy Lab の canonical signal artifact は `data/research/strategy_signals.parquet`。旧 `data/research/signals.csv` は Strategy Lab 正本ではなく legacy export として読む。
-- Strategy Lab で今できることは `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` に記録する。わかりやすい HTML 版は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html`。現行では registered generator から signal artifact を作り、threshold sweep、複数 selected signal の candidate 化、paper-only preview まで進められる。
+- Strategy Lab で今できることは `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` に記録する。わかりやすい HTML 版は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html`。現行では registered generator から signal artifact を作り、threshold sweep、複数 selected signal の candidate 化、authoring YAML からの fixed-horizon backtest、paper-only preview まで進められる。
 - `PaperIntentPreview` は paper-only の仮注文意図。`live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を守り、live order として扱わない。
 - Alpaca live fetch は credentials が必要。credentials なしでは明示的に unavailable として失敗するため、silent empty data と混同しない。
 - `ostium-python-sdk` は active dependency から削除済み。
@@ -64,8 +66,8 @@
 
 - `./scripts/check`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 378 passed via `./scripts/check`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 72 current docs`
+- `uv run pytest -q`: 384 passed via `./scripts/check`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 74 current docs`
 
 2026-05-28 runtime artifact snapshot:
 

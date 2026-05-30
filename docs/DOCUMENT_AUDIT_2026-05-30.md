@@ -115,7 +115,7 @@ src/sis/execution/
 | `plan/archive/20260526_211746_trade_xyz_quote_collector_cli_plan.md` | PR9a-PR12 消化済み計画と future候補が混在 | archived historical consumed plan |
 | `plan/archive/PR-00_to_PR-08_implementation_plan.md` | PR-00〜PR-08 実装前/実装中の acceptance と micro live canary 計画 | archived historical migration contract。current code status は `docs/CODE_STATUS.md` を先に読む |
 | `plan/archive/PR-00_python_313_migration_plan.md` | Python 3.13 migration の事前計画 | archived historical plan。Python 3.13 migration は現行 `scripts/check` と lockfile を正とする |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | full check `294 passed` と PR12 runtime snapshot | focused historical Trade[XYZ] audit。current code/docs verification は `378 passed` / current-docs lint を使う |
+| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | full check `294 passed` と PR12 runtime snapshot | focused historical Trade[XYZ] audit。current code/docs verification は `384 passed` / current-docs lint を使う |
 | `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | full check `294 passed` を含む 2026-05-28 snapshot | failure-mode design reference として有効。current verification 値として引用しない |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | 薄い初版 rewrite bundle | old rewrite snapshot |
 

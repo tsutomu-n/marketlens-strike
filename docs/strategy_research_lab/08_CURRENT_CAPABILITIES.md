@@ -8,9 +8,9 @@
 
 ## 結論
 
-今の Strategy Research Lab は、登録済み generator から signal artifact を作り、paper-only の trial / candidate / promotion / intent preview まで進められます。
+今の Strategy Research Lab は、登録済み generator から signal artifact を作り、paper-only の trial / candidate / promotion / intent preview まで進められます。加えて、`strategy_authoring_spec.v1` YAML から宣言型 rule を signal artifact / fixed-horizon backtest / paper-preview artifact へ進められます。
 
-ただし、これは live-ready 証明ではありません。現行 evaluation は artifact chain を成立させる簡易 runner であり、PnL 計算、full walk-forward backtest、position sizing、wallet / signing / exchange write は含みません。
+ただし、これは live-ready 証明ではありません。現行 authoring backtest は fixed-horizon の研究用 metrics であり、position sizing、wallet / signing / exchange write は含みません。
 
 ## できるようになったこと
 
@@ -35,6 +35,31 @@ uv run sis strategy-preview --generator-id sp500_trend_rates_vix
 - `data/research/strategy_signals.jsonl`
 - `data/research/signals.csv`
 - `data/reports/strategy_signals_preview.md`
+
+### 1.5. YAML でユーザー定義 rule を作れる
+
+```bash
+uv run sis strategy-author-init --out docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-explain --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+```
+
+できること:
+
+- `strategy_authoring_spec.v1` YAML で entry 条件、side、timeframe、score、backtest horizon を書ける。
+- rule が参照する feature column と symbol binding を validate できる。
+- `data/research/strategy_signals.parquet` を正本として出せる。
+- Strategy Lab signal を直接 backtest bridge に渡し、legacy `signals.csv` を正本にしない。
+- `--through paper-preview` で paper-only の `trial_ledger.jsonl`, `paper_candidate_pack.json`, `promotion_decision.json`, `paper_intent_preview.json` まで出せる。
+
+主要 artifact:
+
+- `data/research/strategy_authoring_run.json`
+- `data/research/strategy_signals.parquet`
+- `data/research/strategy_backtest_metrics.json`
+- `data/reports/strategy_authoring_explain.md`
+- `data/reports/strategy_backtest_report.md`
 
 ### 2. signal artifact を TrialRecord に評価記録できる
 
@@ -222,6 +247,6 @@ git diff --check
 - `tests/test_strategy_lab_commands.py`: 15 passed
 - Strategy Lab related targeted suite: 39 passed
 - Research pipeline / CLI smoke: 71 passed
-- `scripts/check_current_docs.py`: checked 72 current docs
-- `./scripts/check`: 378 passed, pyrefly 0 errors
+- `scripts/check_current_docs.py`: checked 74 current docs
+- `./scripts/check`: 384 passed, pyrefly 0 errors
 - `git diff --check`: pass

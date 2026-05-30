@@ -78,6 +78,15 @@ uv run sis build-paper-intent-preview
 uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 ```
 
+Strategy authoring YAML to paper-only preview:
+
+```bash
+uv run sis strategy-author-init --out docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-explain --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+```
+
 Strategy Lab の schema / artifact flow / paper-only boundary は [docs/strategy_research_lab/README.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/README.md) を読む。作戦を作る入口は [docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html](/home/tn/projects/marketlens-strike/docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html)。今できることの一覧は [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)、わかりやすい HTML 版は [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html](/home/tn/projects/marketlens-strike/docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html)。`data/research/strategy_signals.parquet` が canonical signal artifact で、`data/research/signals.csv` は legacy export。
 
 Trade[XYZ] quote refresh:
@@ -122,9 +131,9 @@ PR12 read-only smoke evidence:
 
 2026-05-30 code/docs check:
 
-- `./scripts/check`: pass, 378 passed
+- `./scripts/check`: pass, 384 passed
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run python scripts/check_current_docs.py`: pass, `checked 72 current docs`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 74 current docs`
 
 2026-05-28 runtime artifact snapshot:
 

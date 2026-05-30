@@ -23,6 +23,10 @@ def test_help_smoke() -> None:
     assert "alpaca-smoke" in result.stdout
     assert "build-feature-panel" in result.stdout
     assert "build-signals" in result.stdout
+    assert "strategy-author-init" in result.stdout
+    assert "strategy-author-validate" in result.stdout
+    assert "strategy-author-explain" in result.stdout
+    assert "strategy-author-run" in result.stdout
     assert "paper-step" in result.stdout
     assert "estimate-order" in result.stdout
     assert "balance-status" in result.stdout
