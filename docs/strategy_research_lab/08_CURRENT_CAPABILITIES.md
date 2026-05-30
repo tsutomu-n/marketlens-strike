@@ -273,5 +273,5 @@ git diff --check
 - Strategy authoring focused suite: 46 passed
 - Research pipeline / CLI smoke: 71 passed
 - `scripts/check_current_docs.py`: checked 74 current docs
-- `./scripts/check`: 425 passed, pyrefly 0 errors
+- `./scripts/check`: 426 passed, pyrefly 0 errors
 - `git diff --check`: pass

@@ -132,7 +132,7 @@ PR12 read-only smoke evidence:
 
 2026-05-30 code/docs check:
 
-- `./scripts/check`: pass, 425 passed
+- `./scripts/check`: pass, 426 passed
 - `uv run pyrefly check`: pass, 0 errors
 - `uv run python scripts/check_current_docs.py`: pass, `checked 74 current docs`
 
