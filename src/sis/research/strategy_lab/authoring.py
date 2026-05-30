@@ -383,6 +383,20 @@ class ExecutionRules(BaseModel):
     min_depth_usd: float | None = None
     depth_column: str | None = "min_side_depth_10bps_usd"
     depth_participation_rate: float = 1.0
+    max_latency_ms: float | None = None
+    latency_column: str | None = "latency_ms"
+    min_queue_position_score: float | None = None
+    queue_position_score_column: str | None = "queue_position_score"
+    min_borrow_availability_ratio: float | None = None
+    borrow_availability_column: str | None = "borrow_availability_ratio"
+    max_borrow_cost_bps: float | None = None
+    borrow_cost_column: str | None = "borrow_cost_bps"
+    max_tax_drag_bps: float | None = None
+    tax_drag_column: str | None = "tax_drag_bps"
+    max_turnover_pressure: float | None = None
+    turnover_pressure_column: str | None = "turnover_pressure"
+    min_fee_edge_bps: float | None = None
+    fee_edge_column: str | None = "maker_taker_fee_edge_bps"
 
     @model_validator(mode="after")
     def validate_execution(self) -> ExecutionRules:
@@ -394,8 +408,77 @@ class ExecutionRules(BaseModel):
             raise ValueError("rules.execution.max_spread_bps must be >= 0")
         if self.min_depth_usd is not None and self.min_depth_usd < 0:
             raise ValueError("rules.execution.min_depth_usd must be >= 0")
+        if self.max_latency_ms is not None and self.max_latency_ms < 0:
+            raise ValueError("rules.execution.max_latency_ms must be >= 0")
+        if self.max_latency_ms is not None and self.latency_column is None:
+            raise ValueError("rules.execution.latency_column is required for max_latency_ms")
+        if (
+            self.min_queue_position_score is not None
+            and not 0.0 <= self.min_queue_position_score <= 1.0
+        ):
+            raise ValueError("rules.execution.min_queue_position_score must be between 0 and 1")
+        if self.min_queue_position_score is not None and self.queue_position_score_column is None:
+            raise ValueError(
+                "rules.execution.queue_position_score_column is required for min_queue_position_score"
+            )
+        if (
+            self.min_borrow_availability_ratio is not None
+            and not 0.0 <= self.min_borrow_availability_ratio <= 1.0
+        ):
+            raise ValueError(
+                "rules.execution.min_borrow_availability_ratio must be between 0 and 1"
+            )
+        if (
+            self.min_borrow_availability_ratio is not None
+            and self.borrow_availability_column is None
+        ):
+            raise ValueError(
+                "rules.execution.borrow_availability_column is required for min_borrow_availability_ratio"
+            )
+        if self.max_borrow_cost_bps is not None and self.max_borrow_cost_bps < 0:
+            raise ValueError("rules.execution.max_borrow_cost_bps must be >= 0")
+        if self.max_borrow_cost_bps is not None and self.borrow_cost_column is None:
+            raise ValueError(
+                "rules.execution.borrow_cost_column is required for max_borrow_cost_bps"
+            )
+        if self.max_tax_drag_bps is not None and self.max_tax_drag_bps < 0:
+            raise ValueError("rules.execution.max_tax_drag_bps must be >= 0")
+        if self.max_tax_drag_bps is not None and self.tax_drag_column is None:
+            raise ValueError("rules.execution.tax_drag_column is required for max_tax_drag_bps")
+        if self.max_turnover_pressure is not None and self.max_turnover_pressure < 0:
+            raise ValueError("rules.execution.max_turnover_pressure must be >= 0")
+        if self.max_turnover_pressure is not None and self.turnover_pressure_column is None:
+            raise ValueError(
+                "rules.execution.turnover_pressure_column is required for max_turnover_pressure"
+            )
+        if self.min_fee_edge_bps is not None and self.fee_edge_column is None:
+            raise ValueError("rules.execution.fee_edge_column is required for min_fee_edge_bps")
         if self.depth_column is not None and not self.depth_column.strip():
             raise ValueError("rules.execution.depth_column must be non-empty when set")
+        if self.latency_column is not None and not self.latency_column.strip():
+            raise ValueError("rules.execution.latency_column must be non-empty when set")
+        if (
+            self.queue_position_score_column is not None
+            and not self.queue_position_score_column.strip()
+        ):
+            raise ValueError(
+                "rules.execution.queue_position_score_column must be non-empty when set"
+            )
+        if (
+            self.borrow_availability_column is not None
+            and not self.borrow_availability_column.strip()
+        ):
+            raise ValueError(
+                "rules.execution.borrow_availability_column must be non-empty when set"
+            )
+        if self.borrow_cost_column is not None and not self.borrow_cost_column.strip():
+            raise ValueError("rules.execution.borrow_cost_column must be non-empty when set")
+        if self.tax_drag_column is not None and not self.tax_drag_column.strip():
+            raise ValueError("rules.execution.tax_drag_column must be non-empty when set")
+        if self.turnover_pressure_column is not None and not self.turnover_pressure_column.strip():
+            raise ValueError("rules.execution.turnover_pressure_column must be non-empty when set")
+        if self.fee_edge_column is not None and not self.fee_edge_column.strip():
+            raise ValueError("rules.execution.fee_edge_column must be non-empty when set")
         if not 0.0 <= self.depth_participation_rate <= 1.0:
             raise ValueError("rules.execution.depth_participation_rate must be between 0 and 1")
         return self
@@ -728,6 +811,13 @@ class RegimeOverride(BaseModel):
     max_spread_bps: float | None = None
     min_depth_usd: float | None = None
     depth_participation_rate: float | None = None
+    max_latency_ms: float | None = None
+    min_queue_position_score: float | None = None
+    min_borrow_availability_ratio: float | None = None
+    max_borrow_cost_bps: float | None = None
+    max_tax_drag_bps: float | None = None
+    max_turnover_pressure: float | None = None
+    min_fee_edge_bps: float | None = None
 
     @model_validator(mode="after")
     def validate_regime_override(self) -> RegimeOverride:
@@ -743,6 +833,10 @@ class RegimeOverride(BaseModel):
             "slippage_bps",
             "max_spread_bps",
             "min_depth_usd",
+            "max_latency_ms",
+            "max_borrow_cost_bps",
+            "max_tax_drag_bps",
+            "max_turnover_pressure",
         ):
             value = getattr(self, field_name)
             if value is not None and value < 0:
@@ -751,6 +845,8 @@ class RegimeOverride(BaseModel):
             "partial_exit_fraction",
             "max_fill_fraction",
             "depth_participation_rate",
+            "min_queue_position_score",
+            "min_borrow_availability_ratio",
         ):
             value = getattr(self, field_name)
             if value is not None and not 0.0 <= value <= 1.0:
@@ -1645,6 +1741,41 @@ def _required_columns(spec: StrategyAuthoringSpec) -> set[str]:
         columns.add(spec.rules.sizing.notional_usd_column)
     if spec.rules.sizing.volatility_column is not None:
         columns.add(spec.rules.sizing.volatility_column)
+    if (
+        spec.rules.execution.max_latency_ms is not None
+        and spec.rules.execution.latency_column is not None
+    ):
+        add_column(spec.rules.execution.latency_column)
+    if (
+        spec.rules.execution.min_queue_position_score is not None
+        and spec.rules.execution.queue_position_score_column is not None
+    ):
+        add_column(spec.rules.execution.queue_position_score_column)
+    if (
+        spec.rules.execution.min_borrow_availability_ratio is not None
+        and spec.rules.execution.borrow_availability_column is not None
+    ):
+        add_column(spec.rules.execution.borrow_availability_column)
+    if (
+        spec.rules.execution.max_borrow_cost_bps is not None
+        and spec.rules.execution.borrow_cost_column is not None
+    ):
+        add_column(spec.rules.execution.borrow_cost_column)
+    if (
+        spec.rules.execution.max_tax_drag_bps is not None
+        and spec.rules.execution.tax_drag_column is not None
+    ):
+        add_column(spec.rules.execution.tax_drag_column)
+    if (
+        spec.rules.execution.max_turnover_pressure is not None
+        and spec.rules.execution.turnover_pressure_column is not None
+    ):
+        add_column(spec.rules.execution.turnover_pressure_column)
+    if (
+        spec.rules.execution.min_fee_edge_bps is not None
+        and spec.rules.execution.fee_edge_column is not None
+    ):
+        add_column(spec.rules.execution.fee_edge_column)
     if spec.rules.portfolio.allocation_volatility_column is not None:
         columns.add(spec.rules.portfolio.allocation_volatility_column)
     if spec.rules.portfolio.group_column is not None:
@@ -2711,6 +2842,14 @@ def _block_trade_row(
     blocked["min_depth_usd"] = None
     blocked["depth_column"] = None
     blocked["depth_participation_rate"] = 0.0
+    blocked["max_latency_ms"] = None
+    blocked["latency_ms"] = None
+    blocked["min_queue_position_score"] = None
+    blocked["queue_position_score"] = None
+    blocked["min_borrow_availability_ratio"] = None
+    blocked["borrow_availability_ratio"] = None
+    blocked["max_borrow_cost_bps"] = None
+    blocked["borrow_cost_bps"] = None
     blocked["position_weight"] = 0.0
     blocked["notional_usd"] = None
     blocked["_cross_sectional_group"] = row.get("_cross_sectional_group")
@@ -3339,6 +3478,20 @@ def _close_signal_row(
         "min_depth_usd": None,
         "depth_column": None,
         "depth_participation_rate": 0.0,
+        "max_latency_ms": None,
+        "latency_ms": None,
+        "min_queue_position_score": None,
+        "queue_position_score": None,
+        "min_borrow_availability_ratio": None,
+        "borrow_availability_ratio": None,
+        "max_borrow_cost_bps": None,
+        "borrow_cost_bps": None,
+        "max_tax_drag_bps": None,
+        "tax_drag_bps": None,
+        "max_turnover_pressure": None,
+        "turnover_pressure": None,
+        "min_fee_edge_bps": None,
+        "fee_edge_bps": None,
         "position_weight": 0.0,
         "notional_usd": None,
         "reason_codes": [spec.rules.close_reason_code],
@@ -3405,6 +3558,20 @@ def _reduce_signal_row(
         "min_depth_usd": None,
         "depth_column": None,
         "depth_participation_rate": 0.0,
+        "max_latency_ms": None,
+        "latency_ms": None,
+        "min_queue_position_score": None,
+        "queue_position_score": None,
+        "min_borrow_availability_ratio": None,
+        "borrow_availability_ratio": None,
+        "max_borrow_cost_bps": None,
+        "borrow_cost_bps": None,
+        "max_tax_drag_bps": None,
+        "tax_drag_bps": None,
+        "max_turnover_pressure": None,
+        "turnover_pressure": None,
+        "min_fee_edge_bps": None,
+        "fee_edge_bps": None,
         "position_weight": 0.0,
         "notional_usd": None,
         "reason_codes": [spec.rules.reduce_reason_code],
@@ -3475,6 +3642,20 @@ def _add_signal_row(
         "min_depth_usd": None,
         "depth_column": None,
         "depth_participation_rate": 0.0,
+        "max_latency_ms": None,
+        "latency_ms": None,
+        "min_queue_position_score": None,
+        "queue_position_score": None,
+        "min_borrow_availability_ratio": None,
+        "borrow_availability_ratio": None,
+        "max_borrow_cost_bps": None,
+        "borrow_cost_bps": None,
+        "max_tax_drag_bps": None,
+        "tax_drag_bps": None,
+        "max_turnover_pressure": None,
+        "turnover_pressure": None,
+        "min_fee_edge_bps": None,
+        "fee_edge_bps": None,
         "position_weight": 0.0,
         "notional_usd": None,
         "reason_codes": [spec.rules.add_reason_code],
@@ -3545,6 +3726,20 @@ def _rebalance_signal_row(
         "min_depth_usd": None,
         "depth_column": None,
         "depth_participation_rate": 0.0,
+        "max_latency_ms": None,
+        "latency_ms": None,
+        "min_queue_position_score": None,
+        "queue_position_score": None,
+        "min_borrow_availability_ratio": None,
+        "borrow_availability_ratio": None,
+        "max_borrow_cost_bps": None,
+        "borrow_cost_bps": None,
+        "max_tax_drag_bps": None,
+        "tax_drag_bps": None,
+        "max_turnover_pressure": None,
+        "turnover_pressure": None,
+        "min_fee_edge_bps": None,
+        "fee_edge_bps": None,
         "position_weight": 0.0,
         "notional_usd": None,
         "reason_codes": [spec.rules.rebalance_reason_code],
@@ -3661,6 +3856,44 @@ def _trade_signal_row(
             "depth_participation_rate",
             spec.rules.execution.depth_participation_rate,
         ),
+        "max_latency_ms": _regime_value(
+            regime, "max_latency_ms", spec.rules.execution.max_latency_ms
+        ),
+        "latency_ms": _optional_float_from_row(row, spec.rules.execution.latency_column),
+        "min_queue_position_score": _regime_value(
+            regime,
+            "min_queue_position_score",
+            spec.rules.execution.min_queue_position_score,
+        ),
+        "queue_position_score": _optional_float_from_row(
+            row, spec.rules.execution.queue_position_score_column
+        ),
+        "min_borrow_availability_ratio": _regime_value(
+            regime,
+            "min_borrow_availability_ratio",
+            spec.rules.execution.min_borrow_availability_ratio,
+        ),
+        "borrow_availability_ratio": _optional_float_from_row(
+            row, spec.rules.execution.borrow_availability_column
+        ),
+        "max_borrow_cost_bps": _regime_value(
+            regime, "max_borrow_cost_bps", spec.rules.execution.max_borrow_cost_bps
+        ),
+        "borrow_cost_bps": _optional_float_from_row(row, spec.rules.execution.borrow_cost_column),
+        "max_tax_drag_bps": _regime_value(
+            regime, "max_tax_drag_bps", spec.rules.execution.max_tax_drag_bps
+        ),
+        "tax_drag_bps": _optional_float_from_row(row, spec.rules.execution.tax_drag_column),
+        "max_turnover_pressure": _regime_value(
+            regime, "max_turnover_pressure", spec.rules.execution.max_turnover_pressure
+        ),
+        "turnover_pressure": _optional_float_from_row(
+            row, spec.rules.execution.turnover_pressure_column
+        ),
+        "min_fee_edge_bps": _regime_value(
+            regime, "min_fee_edge_bps", spec.rules.execution.min_fee_edge_bps
+        ),
+        "fee_edge_bps": _optional_float_from_row(row, spec.rules.execution.fee_edge_column),
         "position_weight": position_weight
         if position_weight is not None
         else _signal_position_weight(row, spec),
@@ -3864,6 +4097,20 @@ def build_authoring_signals(
                     "min_depth_usd": None,
                     "depth_column": None,
                     "depth_participation_rate": 0.0,
+                    "max_latency_ms": None,
+                    "latency_ms": None,
+                    "min_queue_position_score": None,
+                    "queue_position_score": None,
+                    "min_borrow_availability_ratio": None,
+                    "borrow_availability_ratio": None,
+                    "max_borrow_cost_bps": None,
+                    "borrow_cost_bps": None,
+                    "max_tax_drag_bps": None,
+                    "tax_drag_bps": None,
+                    "max_turnover_pressure": None,
+                    "turnover_pressure": None,
+                    "min_fee_edge_bps": None,
+                    "fee_edge_bps": None,
                     "position_weight": 0.0,
                     "notional_usd": None,
                     "reason_codes": [spec.rules.hold_reason_code],
@@ -3928,6 +4175,20 @@ def build_authoring_signals(
                     "min_depth_usd": None,
                     "depth_column": None,
                     "depth_participation_rate": 0.0,
+                    "max_latency_ms": None,
+                    "latency_ms": None,
+                    "min_queue_position_score": None,
+                    "queue_position_score": None,
+                    "min_borrow_availability_ratio": None,
+                    "borrow_availability_ratio": None,
+                    "max_borrow_cost_bps": None,
+                    "borrow_cost_bps": None,
+                    "max_tax_drag_bps": None,
+                    "tax_drag_bps": None,
+                    "max_turnover_pressure": None,
+                    "turnover_pressure": None,
+                    "min_fee_edge_bps": None,
+                    "fee_edge_bps": None,
                     "position_weight": 0.0,
                     "notional_usd": None,
                     "reason_codes": [spec.rules.hold_reason_code],
@@ -4123,6 +4384,20 @@ def strategy_signals_to_research_signals(frame: pl.DataFrame) -> list[ResearchSi
             min_depth_usd=row.get("min_depth_usd"),
             depth_column=row.get("depth_column"),
             depth_participation_rate=row.get("depth_participation_rate") or 1.0,
+            max_latency_ms=row.get("max_latency_ms"),
+            latency_ms=row.get("latency_ms"),
+            min_queue_position_score=row.get("min_queue_position_score"),
+            queue_position_score=row.get("queue_position_score"),
+            min_borrow_availability_ratio=row.get("min_borrow_availability_ratio"),
+            borrow_availability_ratio=row.get("borrow_availability_ratio"),
+            max_borrow_cost_bps=row.get("max_borrow_cost_bps"),
+            borrow_cost_bps=row.get("borrow_cost_bps"),
+            max_tax_drag_bps=row.get("max_tax_drag_bps"),
+            tax_drag_bps=row.get("tax_drag_bps"),
+            max_turnover_pressure=row.get("max_turnover_pressure"),
+            turnover_pressure=row.get("turnover_pressure"),
+            min_fee_edge_bps=row.get("min_fee_edge_bps"),
+            fee_edge_bps=row.get("fee_edge_bps"),
             position_weight=row.get("position_weight") or 1.0,
             notional_usd=row.get("notional_usd"),
         )
@@ -4335,6 +4610,14 @@ def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> st
         f"- min_depth_usd: {spec.rules.execution.min_depth_usd}\n"
         f"- depth_column: {spec.rules.execution.depth_column}\n"
         f"- depth_participation_rate: {spec.rules.execution.depth_participation_rate}\n"
+        f"- max_latency_ms: {spec.rules.execution.max_latency_ms}\n"
+        f"- latency_column: {spec.rules.execution.latency_column}\n"
+        f"- min_queue_position_score: {spec.rules.execution.min_queue_position_score}\n"
+        f"- queue_position_score_column: {spec.rules.execution.queue_position_score_column}\n"
+        f"- min_borrow_availability_ratio: {spec.rules.execution.min_borrow_availability_ratio}\n"
+        f"- borrow_availability_column: {spec.rules.execution.borrow_availability_column}\n"
+        f"- max_borrow_cost_bps: {spec.rules.execution.max_borrow_cost_bps}\n"
+        f"- borrow_cost_column: {spec.rules.execution.borrow_cost_column}\n"
         "\n\n## Portfolio\n\n"
         f"- max_signals_per_timestamp: {spec.rules.portfolio.max_signals_per_timestamp}\n"
         "\n\n## Temporal Controls\n\n"
@@ -5019,6 +5302,26 @@ def write_authoring_paper_preview_outputs(
                 row.get("depth_participation_rate") if selected and row else None,
                 0.0,
             ),
+            max_latency_ms=row.get("max_latency_ms") if selected and row else None,
+            latency_ms=row.get("latency_ms") if selected and row else None,
+            min_queue_position_score=(
+                row.get("min_queue_position_score") if selected and row else None
+            ),
+            queue_position_score=row.get("queue_position_score") if selected and row else None,
+            min_borrow_availability_ratio=(
+                row.get("min_borrow_availability_ratio") if selected and row else None
+            ),
+            borrow_availability_ratio=(
+                row.get("borrow_availability_ratio") if selected and row else None
+            ),
+            max_borrow_cost_bps=row.get("max_borrow_cost_bps") if selected and row else None,
+            borrow_cost_bps=row.get("borrow_cost_bps") if selected and row else None,
+            max_tax_drag_bps=row.get("max_tax_drag_bps") if selected and row else None,
+            tax_drag_bps=row.get("tax_drag_bps") if selected and row else None,
+            max_turnover_pressure=(row.get("max_turnover_pressure") if selected and row else None),
+            turnover_pressure=row.get("turnover_pressure") if selected and row else None,
+            min_fee_edge_bps=row.get("min_fee_edge_bps") if selected and row else None,
+            fee_edge_bps=row.get("fee_edge_bps") if selected and row else None,
             position_weight=row.get("position_weight") if selected and row else None,
             notional_usd=row.get("notional_usd") if selected and row else None,
             feature_snapshot_ref=row.get("feature_snapshot_ref") if row else None,

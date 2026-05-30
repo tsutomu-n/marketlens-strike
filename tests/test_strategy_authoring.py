@@ -3893,6 +3893,256 @@ def test_strategy_authoring_microstructure_depth_scales_fill_fraction(
     assert signals.get_column("depth_participation_rate").to_list() == [0.5]
 
 
+def test_strategy_authoring_microstructure_latency_filter_blocks_trade(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_latency_ms: 100\n    latency_column: observed_latency_ms",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "observed_latency_ms": 250.0} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["microstructure_latency_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_latency_ms").to_list() == [100.0]
+    assert signals.get_column("latency_ms").to_list() == [250.0]
+
+
+def test_strategy_authoring_microstructure_queue_position_filter_blocks_trade(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    min_queue_position_score: 0.6\n    queue_position_score_column: queue_score",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "queue_score": 0.2} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["microstructure_queue_position_too_low"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("min_queue_position_score").to_list() == [0.6]
+    assert signals.get_column("queue_position_score").to_list() == [0.2]
+
+
+def test_strategy_authoring_short_borrow_availability_filter_blocks_short_trade(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("side: long", "side: short")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    min_borrow_availability_ratio: 0.5\n    borrow_availability_column: borrow_available",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "borrow_available": 0.1} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 96.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["short_borrow_availability_too_low"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("min_borrow_availability_ratio").to_list() == [0.5]
+    assert signals.get_column("borrow_availability_ratio").to_list() == [0.1]
+
+
+def test_strategy_authoring_short_borrow_cost_filter_blocks_short_trade(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml()
+        .replace("side: long", "side: short")
+        .replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_borrow_cost_bps: 25\n    borrow_cost_column: borrow_cost",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "borrow_cost": 80.0} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 96.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["short_borrow_cost_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_borrow_cost_bps").to_list() == [25.0]
+    assert signals.get_column("borrow_cost_bps").to_list() == [80.0]
+
+
+def test_strategy_authoring_tax_drag_filter_blocks_trade(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_tax_drag_bps: 20\n    tax_drag_column: tax_drag",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "tax_drag": 45.0} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["tax_drag_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_tax_drag_bps").to_list() == [20.0]
+    assert signals.get_column("tax_drag_bps").to_list() == [45.0]
+
+
+def test_strategy_authoring_turnover_pressure_filter_blocks_trade(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    max_turnover_pressure: 0.4\n    turnover_pressure_column: turnover_pressure",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "turnover_pressure": 0.9} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["turnover_pressure_too_high"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("max_turnover_pressure").to_list() == [0.4]
+    assert signals.get_column("turnover_pressure").to_list() == [0.9]
+
+
+def test_strategy_authoring_fee_edge_filter_blocks_trade(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "sizing:\n    position_weight: 1.0",
+            "sizing:\n    position_weight: 1.0\n  execution:\n    min_fee_edge_bps: 1\n    fee_edge_column: fee_edge",
+        ),
+        encoding="utf-8",
+    )
+    rows = [{**row, "fee_edge": -2.0} for row in _feature_rows()[:1]]
+    pl.DataFrame(rows).write_parquet(data_dir / "research/feature_panel.parquet")
+    start = rows[0]["ts"]
+    pl.DataFrame([_quote(start, 100.0), _quote(start + timedelta(hours=4), 104.0)]).write_parquet(
+        data_dir / "normalized/quotes.parquet"
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["blocked_reason_counts"]["fee_edge_too_low"] == 1
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    signals = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert signals.get_column("min_fee_edge_bps").to_list() == [1.0]
+    assert signals.get_column("fee_edge_bps").to_list() == [-2.0]
+
+
 def test_strategy_authoring_cli_init_validate_explain_and_run_backtest(
     tmp_path, monkeypatch
 ) -> None:

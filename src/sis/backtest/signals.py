@@ -43,6 +43,20 @@ class ResearchSignal:
     min_depth_usd: float | None = None
     depth_column: str | None = None
     depth_participation_rate: float = 1.0
+    max_latency_ms: float | None = None
+    latency_ms: float | None = None
+    min_queue_position_score: float | None = None
+    queue_position_score: float | None = None
+    min_borrow_availability_ratio: float | None = None
+    borrow_availability_ratio: float | None = None
+    max_borrow_cost_bps: float | None = None
+    borrow_cost_bps: float | None = None
+    max_tax_drag_bps: float | None = None
+    tax_drag_bps: float | None = None
+    max_turnover_pressure: float | None = None
+    turnover_pressure: float | None = None
+    min_fee_edge_bps: float | None = None
+    fee_edge_bps: float | None = None
     position_weight: float = 1.0
     notional_usd: float | None = None
 
@@ -97,6 +111,21 @@ def _parse_optional_positive_float(value: object, *, field_name: str) -> float |
         raise ValueError(f"{field_name} must be a number")
     if parsed < 0:
         raise ValueError(f"{field_name} must be >= 0")
+    return parsed
+
+
+def _parse_optional_float(value: object, *, field_name: str) -> float | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, int | float | str):
+        return float(value)
+    raise ValueError(f"{field_name} must be a number")
+
+
+def _parse_optional_unit_float(value: object, *, field_name: str) -> float | None:
+    parsed = _parse_optional_positive_float(value, field_name=field_name)
+    if parsed is not None and not 0.0 <= parsed <= 1.0:
+        raise ValueError(f"{field_name} must be between 0 and 1")
     return parsed
 
 
@@ -243,6 +272,49 @@ def load_research_signals(path: Path) -> list[ResearchSignal]:
                     row.get("depth_participation_rate"), field_name="depth_participation_rate"
                 )
                 or 1.0,
+                max_latency_ms=_parse_optional_positive_float(
+                    row.get("max_latency_ms"), field_name="max_latency_ms"
+                ),
+                latency_ms=_parse_optional_positive_float(
+                    row.get("latency_ms"), field_name="latency_ms"
+                ),
+                min_queue_position_score=_parse_optional_unit_float(
+                    row.get("min_queue_position_score"), field_name="min_queue_position_score"
+                ),
+                queue_position_score=_parse_optional_unit_float(
+                    row.get("queue_position_score"), field_name="queue_position_score"
+                ),
+                min_borrow_availability_ratio=_parse_optional_unit_float(
+                    row.get("min_borrow_availability_ratio"),
+                    field_name="min_borrow_availability_ratio",
+                ),
+                borrow_availability_ratio=_parse_optional_unit_float(
+                    row.get("borrow_availability_ratio"), field_name="borrow_availability_ratio"
+                ),
+                max_borrow_cost_bps=_parse_optional_positive_float(
+                    row.get("max_borrow_cost_bps"), field_name="max_borrow_cost_bps"
+                ),
+                borrow_cost_bps=_parse_optional_positive_float(
+                    row.get("borrow_cost_bps"), field_name="borrow_cost_bps"
+                ),
+                max_tax_drag_bps=_parse_optional_positive_float(
+                    row.get("max_tax_drag_bps"), field_name="max_tax_drag_bps"
+                ),
+                tax_drag_bps=_parse_optional_positive_float(
+                    row.get("tax_drag_bps"), field_name="tax_drag_bps"
+                ),
+                max_turnover_pressure=_parse_optional_positive_float(
+                    row.get("max_turnover_pressure"), field_name="max_turnover_pressure"
+                ),
+                turnover_pressure=_parse_optional_positive_float(
+                    row.get("turnover_pressure"), field_name="turnover_pressure"
+                ),
+                min_fee_edge_bps=_parse_optional_float(
+                    row.get("min_fee_edge_bps"), field_name="min_fee_edge_bps"
+                ),
+                fee_edge_bps=_parse_optional_float(
+                    row.get("fee_edge_bps"), field_name="fee_edge_bps"
+                ),
                 position_weight=_parse_optional_positive_float(
                     row.get("position_weight"), field_name="position_weight"
                 )

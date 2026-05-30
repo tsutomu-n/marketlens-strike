@@ -27,6 +27,8 @@
    - ユーザーが YAML で売買ロジックを作り、validate / explain / signals / backtest / paper-preview へ進める手順を確認する。
 10. [10_STRATEGY_AUTHORING_IMPLEMENTATION_SPEC.md](10_STRATEGY_AUTHORING_IMPLEMENTATION_SPEC.md)
    - `strategy_authoring_spec.v1`、`strategy_authoring_bundle.v1`、Rule DSL、Strategy Lab signal adapter、paper-only artifact の実装契約を確認する。
+11. [11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md](11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md)
+   - ユーザーが YAML で作れる売買ロジック、buy / sell signal、hold、損切、portfolio / execution 制約、未実装領域を一覧で確認する。
 
 入口監査仕様は [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md) です。
 

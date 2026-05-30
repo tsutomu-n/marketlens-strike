@@ -48,6 +48,20 @@ class TradeCandidate(BaseModel):
     min_depth_usd: float | None = None
     depth_column: str | None = None
     depth_participation_rate: float = 1.0
+    max_latency_ms: float | None = None
+    latency_ms: float | None = None
+    min_queue_position_score: float | None = None
+    queue_position_score: float | None = None
+    min_borrow_availability_ratio: float | None = None
+    borrow_availability_ratio: float | None = None
+    max_borrow_cost_bps: float | None = None
+    borrow_cost_bps: float | None = None
+    max_tax_drag_bps: float | None = None
+    tax_drag_bps: float | None = None
+    max_turnover_pressure: float | None = None
+    turnover_pressure: float | None = None
+    min_fee_edge_bps: float | None = None
+    fee_edge_bps: float | None = None
     position_weight: float | None = None
     notional_usd: float | None = None
     feature_snapshot_ref: str | None
@@ -83,6 +97,14 @@ class TradeCandidate(BaseModel):
             "slippage_bps",
             "max_spread_bps",
             "min_depth_usd",
+            "max_latency_ms",
+            "latency_ms",
+            "max_borrow_cost_bps",
+            "borrow_cost_bps",
+            "max_tax_drag_bps",
+            "tax_drag_bps",
+            "max_turnover_pressure",
+            "turnover_pressure",
             "position_weight",
             "notional_usd",
         ):
@@ -99,6 +121,23 @@ class TradeCandidate(BaseModel):
             raise ValueError("depth_column must be non-empty when set")
         if not 0.0 <= self.depth_participation_rate <= 1.0:
             raise ValueError("depth_participation_rate must be between 0 and 1")
+        if (
+            self.min_queue_position_score is not None
+            and not 0.0 <= self.min_queue_position_score <= 1.0
+        ):
+            raise ValueError("min_queue_position_score must be between 0 and 1")
+        if self.queue_position_score is not None and not 0.0 <= self.queue_position_score <= 1.0:
+            raise ValueError("queue_position_score must be between 0 and 1")
+        if (
+            self.min_borrow_availability_ratio is not None
+            and not 0.0 <= self.min_borrow_availability_ratio <= 1.0
+        ):
+            raise ValueError("min_borrow_availability_ratio must be between 0 and 1")
+        if (
+            self.borrow_availability_ratio is not None
+            and not 0.0 <= self.borrow_availability_ratio <= 1.0
+        ):
+            raise ValueError("borrow_availability_ratio must be between 0 and 1")
         self.execution_symbol = self.execution_symbol.strip().upper()
         self.real_market_symbol = self.real_market_symbol.strip().upper()
         return self

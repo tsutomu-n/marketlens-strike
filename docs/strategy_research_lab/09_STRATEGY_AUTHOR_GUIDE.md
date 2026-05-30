@@ -419,7 +419,7 @@ rules:
 
 ## Execution Quality
 
-slippage、partial fill、spread / depth による venue microstructure 条件も paper-only で評価できます。これは約定品質の仮定を backtest に入れるだけで、実注文には変換しません。
+slippage、partial fill、spread / depth / latency / queue-position / short borrow による venue microstructure 条件も paper-only で評価できます。これは約定品質の仮定を backtest に入れるだけで、実注文には変換しません。
 
 ```yaml
 rules:
@@ -430,6 +430,14 @@ rules:
     min_depth_usd: 10000
     depth_column: min_side_depth_10bps_usd
     depth_participation_rate: 0.25
+    max_latency_ms: 100
+    latency_column: observed_latency_ms
+    min_queue_position_score: 0.6
+    queue_position_score_column: queue_score
+    min_borrow_availability_ratio: 0.5
+    borrow_availability_column: borrow_available
+    max_borrow_cost_bps: 25
+    borrow_cost_column: borrow_cost
 ```
 
 - `slippage_bps` は round trip の追加 drag として return から差し引き、`cost_drag_bps` に足します。
@@ -438,6 +446,9 @@ rules:
 - `min_depth_usd` は entry quote の depth column が指定額未満なら約定対象から外します。column が無い場合は `microstructure_depth_missing`、額が足りない場合は `microstructure_depth_too_low` に記録します。
 - `depth_column` は depth 判定に使う quote column です。省略時は `min_side_depth_10bps_usd` を使います。
 - `depth_participation_rate` は depth のうち自分が取れる想定割合です。`notional_usd` がある場合、`depth * depth_participation_rate / notional_usd` で paper exposure をさらに縮小します。
+- `max_latency_ms` は feature panel の latency column が上限を超える場合に約定対象から外し、欠損は `microstructure_latency_missing`、上限超過は `microstructure_latency_too_high` に記録します。
+- `min_queue_position_score` は feature panel の queue score が閾値未満なら約定対象から外し、欠損は `microstructure_queue_position_missing`、閾値未満は `microstructure_queue_position_too_low` に記録します。
+- `min_borrow_availability_ratio` と `max_borrow_cost_bps` は short signal だけに適用します。availability 欠損は `short_borrow_availability_missing`、不足は `short_borrow_availability_too_low`、cost 欠損は `short_borrow_cost_missing`、上限超過は `short_borrow_cost_too_high` に記録します。
 - partial fill と depth-based fill は `position_weight` と掛け合わされます。
 
 ## Temporal / Cadence Controls
@@ -678,7 +689,7 @@ bundle は各 member spec を個別に validate / signal build / backtest し、
 - trailing stop: `trailing_stop_bps` で利益を伸ばしつつ戻りで抜ける条件を評価する。
 - signal reversal: `exit_on_opposite_signal` で反対売買シグナルによる close / reversal を評価する。
 - order style: `order.entry_type` で market / limit / stop-market entry を評価する。
-- execution quality: `execution.slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` で滑り、部分約定、spread gate、depth-based fill を評価する。
+- execution quality: `execution.slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `max_latency_ms` / `min_queue_position_score` / `min_borrow_availability_ratio` / `max_borrow_cost_bps` で滑り、部分約定、spread gate、depth-based fill、latency gate、queue-position gate、short-borrow gate を評価する。
 - risk parity / conviction sizing: `position_weight_column` に volatility inverse や confidence weight を入れる。
 - volatility targeting: `sizing.volatility_target` / `volatility_column` で row ごとの paper exposure を目標ボラへ合わせる。
 - drawdown / loss throttle: `risk_throttle` で drawdown、daily loss、loss streak が悪化した時に新規 entry を止める。

@@ -363,6 +363,41 @@ def _scaled_signal_return(
 def _microstructure_fill_fraction(
     signal: ResearchSignal, entry: dict
 ) -> tuple[float | None, str | None]:
+    if signal.max_latency_ms is not None:
+        if signal.latency_ms is None:
+            return None, "microstructure_latency_missing"
+        if signal.latency_ms > signal.max_latency_ms:
+            return None, "microstructure_latency_too_high"
+    if signal.min_queue_position_score is not None:
+        if signal.queue_position_score is None:
+            return None, "microstructure_queue_position_missing"
+        if signal.queue_position_score < signal.min_queue_position_score:
+            return None, "microstructure_queue_position_too_low"
+    if signal.side == "short" and signal.min_borrow_availability_ratio is not None:
+        if signal.borrow_availability_ratio is None:
+            return None, "short_borrow_availability_missing"
+        if signal.borrow_availability_ratio < signal.min_borrow_availability_ratio:
+            return None, "short_borrow_availability_too_low"
+    if signal.side == "short" and signal.max_borrow_cost_bps is not None:
+        if signal.borrow_cost_bps is None:
+            return None, "short_borrow_cost_missing"
+        if signal.borrow_cost_bps > signal.max_borrow_cost_bps:
+            return None, "short_borrow_cost_too_high"
+    if signal.max_tax_drag_bps is not None:
+        if signal.tax_drag_bps is None:
+            return None, "tax_drag_missing"
+        if signal.tax_drag_bps > signal.max_tax_drag_bps:
+            return None, "tax_drag_too_high"
+    if signal.max_turnover_pressure is not None:
+        if signal.turnover_pressure is None:
+            return None, "turnover_pressure_missing"
+        if signal.turnover_pressure > signal.max_turnover_pressure:
+            return None, "turnover_pressure_too_high"
+    if signal.min_fee_edge_bps is not None:
+        if signal.fee_edge_bps is None:
+            return None, "fee_edge_missing"
+        if signal.fee_edge_bps < signal.min_fee_edge_bps:
+            return None, "fee_edge_too_low"
     spread = entry.get("spread_bps")
     if (
         signal.max_spread_bps is not None

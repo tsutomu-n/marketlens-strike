@@ -83,6 +83,7 @@ src/sis/execution/
 | `docs/algo/EXPERIMENT_SCORECARD.md`, `docs/algo/STRATEGY_PREP_WORKFLOW.md` | strict check 対応のため、EOF 余分空行を修正 |
 | `docs/algo/obsidian_note_rewrites_2026-05-29/` | `docs/algo/README.md` から通常参照されるため strict check 対象へ昇格。入口文言と EOF を現行 Strategy Lab 前提へ補正 |
 | `docs/DOCUMENT_AUDIT_2026-05-30.md` | 本監査を新規作成 |
+| `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md` | ユーザーが YAML で作れる売買ロジック、buy / sell signal、hold、損切、portfolio / execution 制約、paper-only boundary、未実装 microstructure 領域を整理 |
 
 ## 更新できる docs
 

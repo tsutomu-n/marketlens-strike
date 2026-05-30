@@ -103,7 +103,21 @@
             "max_spread_bps": {"type": ["number", "null"], "minimum": 0},
             "min_depth_usd": {"type": ["number", "null"], "minimum": 0},
             "depth_column": {"type": ["string", "null"]},
-            "depth_participation_rate": {"type": "number", "minimum": 0, "maximum": 1}
+            "depth_participation_rate": {"type": "number", "minimum": 0, "maximum": 1},
+            "max_latency_ms": {"type": ["number", "null"], "minimum": 0},
+            "latency_column": {"type": ["string", "null"]},
+            "min_queue_position_score": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "queue_position_score_column": {"type": ["string", "null"]},
+            "min_borrow_availability_ratio": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "borrow_availability_column": {"type": ["string", "null"]},
+            "max_borrow_cost_bps": {"type": ["number", "null"], "minimum": 0},
+            "borrow_cost_column": {"type": ["string", "null"]},
+            "max_tax_drag_bps": {"type": ["number", "null"], "minimum": 0},
+            "tax_drag_column": {"type": ["string", "null"]},
+            "max_turnover_pressure": {"type": ["number", "null"], "minimum": 0},
+            "turnover_pressure_column": {"type": ["string", "null"]},
+            "min_fee_edge_bps": {"type": ["number", "null"]},
+            "fee_edge_column": {"type": ["string", "null"]}
           },
           "additionalProperties": false
         },
@@ -474,7 +488,14 @@
         "max_fill_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
         "max_spread_bps": {"type": ["number", "null"], "minimum": 0},
         "min_depth_usd": {"type": ["number", "null"], "minimum": 0},
-        "depth_participation_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+        "depth_participation_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "max_latency_ms": {"type": ["number", "null"], "minimum": 0},
+        "min_queue_position_score": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "min_borrow_availability_ratio": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "max_borrow_cost_bps": {"type": ["number", "null"], "minimum": 0},
+        "max_tax_drag_bps": {"type": ["number", "null"], "minimum": 0},
+        "max_turnover_pressure": {"type": ["number", "null"], "minimum": 0},
+        "min_fee_edge_bps": {"type": ["number", "null"]}
       },
       "additionalProperties": false
     },

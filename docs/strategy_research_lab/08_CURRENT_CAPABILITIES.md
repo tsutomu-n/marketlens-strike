@@ -6,6 +6,8 @@
 
 より具体的な説明と専門用語の言い換えは [08_CURRENT_CAPABILITIES_EXPLAINED.html](08_CURRENT_CAPABILITIES_EXPLAINED.html) で読めます。
 
+ユーザーが YAML で作れる売買ロジック、buy / sell signal、hold、損切、portfolio / execution 制約、未実装領域の整理は [11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md](11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md) で確認できます。
+
 ## 結論
 
 今の Strategy Research Lab は、登録済み generator または `StrategyExperimentSpec` YAML/JSON から signal artifact を作り、paper-only の trial / candidate / promotion / intent preview まで進められます。加えて、`strategy_authoring_spec.v1` YAML から宣言型 rule を signal artifact / fixed-horizon backtest / paper-preview artifact へ進められます。
@@ -80,7 +82,7 @@ uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/exampl
 - `rules.portfolio.allocation_method` / `target_total_position_weight` で同一 timestamp の採用候補を equal weight、score proportional、inverse volatility に正規化できる。
 - `rules.position.max_open_signals_per_symbol` / `max_open_position_weight_per_symbol` で同一銘柄の仮想 open signal 数と open weight を制限できる。
 - `rules.regime_overrides` で regime ごとに損切、利確、weight、notional、slippage、fill、spread/depth 条件を切り替えられる。
-- `rules.execution.slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_participation_rate` で滑り、部分約定、spread gate、depth-based fill を paper-only に評価できる。
+- `rules.execution.slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_participation_rate` / `max_latency_ms` / `min_queue_position_score` / `min_borrow_availability_ratio` / `max_borrow_cost_bps` で滑り、部分約定、spread gate、depth-based fill、latency gate、queue-position gate、short-borrow gate を paper-only に評価できる。
 - `rules.temporal.allowed_weekdays_utc` / `allowed_hours_utc` / `cooldown_minutes` / `max_signals_per_symbol_per_day` で曜日・時間帯・同一銘柄 cooldown・銘柄別日次上限を評価できる。
 - `rules.event_windows` で event timestamp column の前後だけを許可、または event 前後を blackout し、見送り理由を signal artifact に残せる。
 - `optimizer.parameter_sweep` で許可された spec path の paper-only grid search を行い、best variant と全 variant metrics を記録できる。
@@ -272,7 +274,7 @@ uv run sis evaluate-strategy-lab \
 ## まだできないこと
 
 - 任意式、任意 Python、外部 plugin を実行する full experiment engine。
-- broker 固有 queue position、order book event replay、latency、maker/taker priority を含む full venue microstructure replay。
+- broker 固有 queue priority、order book event replay、maker/taker priority を含む full venue microstructure replay。現行の latency / queue-position は feature snapshot 値による paper gate まで。
 - train/test 再学習を伴う full walk-forward / purged walk-forward engine。
 - 複数戦略をまたぐ本格 portfolio optimizer や live rebalance engine。paper bundle の equal_weight / risk_parity allocation は対応済み。
 - live order, wallet signing, exchange write。
@@ -296,9 +298,9 @@ git diff --check
 確認済み結果:
 
 - `tests/test_strategy_lab_commands.py`: 20 passed
-- `tests/test_strategy_authoring.py`: 74 passed
+- `tests/test_strategy_authoring.py`: 78 passed
 - Strategy Lab focused suite: 45 passed
 - Research pipeline / CLI smoke: 71 passed
-- `scripts/check_current_docs.py`: checked 74 current docs
-- `./scripts/check`: 458 passed, pyrefly 0 errors
+- `scripts/check_current_docs.py`: checked 75 current docs
+- `./scripts/check`: 462 passed, pyrefly 0 errors
 - `git diff --check`: pass
