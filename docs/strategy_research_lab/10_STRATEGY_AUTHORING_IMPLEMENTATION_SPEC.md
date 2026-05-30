@@ -81,8 +81,8 @@ validation は次を stop condition にします。
 - `rules.execution.depth_column` が空文字
 - `rules.execution.depth_participation_rate` が 0.0 から 1.0 の範囲外
 - `rules.portfolio.max_signals_per_timestamp` が 0 以下
-- `rules.portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` が負数
-- `rules.portfolio.max_group_position_weight` があるのに `group_column` が無い、`group_column` が空、または `group_column` があるのに `max_group_position_weight` が無い
+- `rules.portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` / `max_group_abs_net_position_weight` が負数
+- `rules.portfolio.max_group_position_weight` または `max_group_abs_net_position_weight` があるのに `group_column` が無い、`group_column` が空、または `group_column` があるのに group exposure limit が無い
 - `rules.portfolio.allocation_method` が `none`, `equal_weight`, `score_proportional`, `inverse_volatility` 以外
 - `rules.portfolio.allocation_method` が `none` 以外なのに `target_total_position_weight` が無い
 - `rules.portfolio.target_total_position_weight` が負数
@@ -165,7 +165,7 @@ rebalance 判定は close / reduce / add / hold / entry より先に評価しま
 - `slippage_bps` / `max_fill_fraction` / `max_spread_bps` / `min_depth_usd` / `depth_column` / `depth_participation_rate` は `rules.execution` から引き継ぐ。
 - `portfolio.max_signals_per_timestamp` がある場合は、同一 `ts_signal` の trade signal を `rank_score` 降順で上位 N 件に制限する。hold / ambiguous signal は記録として残す。
 - `portfolio.allocation_method=equal_weight` / `score_proportional` / `inverse_volatility` がある場合は、同一 `ts_signal` の採用候補の `position_weight` を `target_total_position_weight` に正規化する。`score_proportional` は正の `raw_score` 比例で配分し、全 score が 0 以下または欠損なら equal weight に fallback する。`inverse_volatility` は `allocation_volatility_column` の正の値の逆数で配分し、全 volatility が 0 以下または欠損なら equal weight に fallback する。
-- `portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` がある場合は、同一 `ts_signal` の trade signal を `rank_score` 降順で採用し、超過候補を `side: none`、`block_reasons` に `portfolio_total_exposure_limit`, `portfolio_long_exposure_limit`, `portfolio_short_exposure_limit`, `portfolio_net_exposure_limit`, `portfolio_symbol_exposure_limit`, `portfolio_group_exposure_limit` のいずれかを残す。`max_abs_net_position_weight` は採用候補全体の long weight minus short weight の絶対値を見て、超過時は過剰側の低 rank 候補から `portfolio_net_exposure_limit` として見送る。group exposure は `group_column` の値で集計し、値が欠損した候補は fail-closed で `portfolio_group_missing` として見送る。
+- `portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` / `max_group_abs_net_position_weight` がある場合は、同一 `ts_signal` の trade signal を `rank_score` 降順で採用し、超過候補を `side: none`、`block_reasons` に `portfolio_total_exposure_limit`, `portfolio_long_exposure_limit`, `portfolio_short_exposure_limit`, `portfolio_net_exposure_limit`, `portfolio_symbol_exposure_limit`, `portfolio_group_exposure_limit`, `portfolio_group_net_exposure_limit` のいずれかを残す。`max_abs_net_position_weight` は採用候補全体の long weight minus short weight の絶対値を見て、超過時は過剰側の低 rank 候補から `portfolio_net_exposure_limit` として見送る。`max_group_abs_net_position_weight` は `group_column` ごとの long weight minus short weight の絶対値を見て、超過時はその group の過剰側の低 rank 候補から `portfolio_group_net_exposure_limit` として見送る。group exposure は `group_column` の値で集計し、値が欠損した候補は fail-closed で `portfolio_group_missing` として見送る。
 
 `rules.cross_sectional` がある場合は、entry 通過後の同一 `ts_signal` 候補を `raw_score` で順位化します。`group_column` がある場合は、同一 `ts_signal` かつ同一 group の中だけで順位化し、sector-neutral / theme-neutral / asset-class-neutral な top-bottom rotation を作れます。
 

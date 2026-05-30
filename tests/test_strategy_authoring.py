@@ -2210,6 +2210,88 @@ backtest:
     assert blocked.get_column("block_reasons").to_list() == [["portfolio_net_exposure_limit"]]
 
 
+def test_authoring_portfolio_group_net_exposure_limit_balances_each_bucket(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "spec.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    ts = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": ts,
+                "canonical_symbol": symbol,
+                "sector_bucket": "technology",
+                "trade_allowed": True,
+                "direction": direction,
+                "research_return_1d": score,
+                "research_return_4h": 0.01,
+            }
+            for symbol, direction, score in [
+                ("AAA", "long", 0.03),
+                ("BBB", "short", 0.02),
+                ("CCC", "long", 0.01),
+            ]
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: group_net_exposure_limited_authoring_v1
+  strategy_family: exposure_limited
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: AAA100
+      real_market_symbol: AAA
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: BBB100
+      real_market_symbol: BBB
+      asset_class: equity
+    - execution_venue: trade_xyz
+      execution_symbol: CCC100
+      real_market_symbol: CCC
+      asset_class: equity
+rules:
+  side_column: direction
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+  sizing:
+    position_weight: 0.6
+  portfolio:
+    max_group_abs_net_position_weight: 0.2
+    group_column: sector_bucket
+  score:
+    weighted_sum:
+      - column: research_return_1d
+        weight: 10
+  reason_code: group_net_exposure_limited_v1
+backtest:
+  label_horizon_minutes: 240
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    live = frame.filter(pl.col("side") != "none").sort("execution_symbol")
+    assert live.select("execution_symbol", "side").rows() == [
+        ("AAA100", "long"),
+        ("BBB100", "short"),
+    ]
+    blocked = frame.filter(pl.col("side") == "none")
+    assert blocked.get_column("execution_symbol").to_list() == ["CCC100"]
+    assert blocked.get_column("block_reasons").to_list() == [["portfolio_group_net_exposure_limit"]]
+
+
 def test_authoring_portfolio_score_proportional_allocation_sets_timestamp_weights(
     tmp_path,
 ) -> None:

@@ -437,9 +437,7 @@ class PortfolioRules(BaseModel):
             self.max_group_position_weight is not None
             or self.max_group_abs_net_position_weight is not None
         ) and self.group_column is None:
-            raise ValueError(
-                "rules.portfolio.group_column is required for group exposure limits"
-            )
+            raise ValueError("rules.portfolio.group_column is required for group exposure limits")
         if self.group_column is not None and not self.group_column.strip():
             raise ValueError("rules.portfolio.group_column must be non-empty when set")
         if (
@@ -2943,9 +2941,13 @@ def _portfolio_exposure_block_reason(
         and symbol_weights.get(symbol, 0.0) + weight > portfolio.max_symbol_position_weight
     ):
         return "portfolio_symbol_exposure_limit"
-    if portfolio.max_group_position_weight is not None:
+    if (
+        portfolio.max_group_position_weight is not None
+        or portfolio.max_group_abs_net_position_weight is not None
+    ):
         if not group:
             return "portfolio_group_missing"
+    if portfolio.max_group_position_weight is not None:
         if group_weights.get(group, 0.0) + weight > portfolio.max_group_position_weight:
             return "portfolio_group_exposure_limit"
     return None
@@ -3006,7 +3008,10 @@ def _apply_portfolio_exposure_limits(
         accepted_rows, net_blocked_rows = _apply_portfolio_net_exposure_limit(
             accepted_rows, portfolio=portfolio, spec=spec
         )
-        selected.extend([*blocked_rows, *net_blocked_rows, *accepted_rows])
+        accepted_rows, group_net_blocked_rows = _apply_portfolio_group_net_exposure_limit(
+            accepted_rows, portfolio=portfolio, spec=spec
+        )
+        selected.extend([*blocked_rows, *net_blocked_rows, *group_net_blocked_rows, *accepted_rows])
     return selected
 
 
@@ -3045,6 +3050,64 @@ def _apply_portfolio_net_exposure_limit(
         )
         blocked.append(
             _block_trade_row(row, spec=spec, block_reason="portfolio_net_exposure_limit")
+        )
+        accepted.pop(remove_index)
+
+
+def _apply_portfolio_group_net_exposure_limit(
+    rows: list[dict[str, Any]], *, portfolio: PortfolioRules, spec: StrategyAuthoringSpec
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if portfolio.max_group_abs_net_position_weight is None:
+        return rows, []
+
+    accepted = [*rows]
+    blocked: list[dict[str, Any]] = []
+    while True:
+        group_rows: dict[str, list[tuple[int, dict[str, Any]]]] = {}
+        for index, row in enumerate(accepted):
+            group = str(row.get("_portfolio_group") or "").strip()
+            if group:
+                group_rows.setdefault(group, []).append((index, row))
+
+        over_limit: tuple[str, float] | None = None
+        for group, indexed_rows in group_rows.items():
+            long_weight = sum(
+                abs(_position_weight_value(row))
+                for _index, row in indexed_rows
+                if row.get("side") == "long"
+            )
+            short_weight = sum(
+                abs(_position_weight_value(row))
+                for _index, row in indexed_rows
+                if row.get("side") == "short"
+            )
+            net_weight = long_weight - short_weight
+            if abs(net_weight) > portfolio.max_group_abs_net_position_weight:
+                over_limit = (group, net_weight)
+                break
+        if over_limit is None:
+            return accepted, blocked
+
+        group, net_weight = over_limit
+        overweight_side = "long" if net_weight > 0 else "short"
+        candidates = [
+            (index, row)
+            for index, row in enumerate(accepted)
+            if row.get("side") == overweight_side
+            and str(row.get("_portfolio_group") or "").strip() == group
+        ]
+        if not candidates:
+            return accepted, blocked
+
+        remove_index, row = min(
+            candidates,
+            key=lambda item: (
+                item[1].get("rank_score") if item[1].get("rank_score") is not None else -1.0,
+                item[0],
+            ),
+        )
+        blocked.append(
+            _block_trade_row(row, spec=spec, block_reason="portfolio_group_net_exposure_limit")
         )
         accepted.pop(remove_index)
 

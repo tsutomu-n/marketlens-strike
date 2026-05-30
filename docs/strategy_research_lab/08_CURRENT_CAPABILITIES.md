@@ -76,7 +76,7 @@ uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/exampl
 - `rules.bracket.enabled` で stop / take profit / break-even / time stop を OCO 的な paper lifecycle として評価できる。
 - `rules.cross_sectional.long_top_fraction` / `short_bottom_fraction` で universe size に応じた上位 / 下位 tail rotation を作れ、`group_column` で sector / theme / asset class などの group ごとの top-bottom rotation、`min_candidates` で小さすぎる group の見送り、`min_long_score` / `max_short_score` で弱い top / bottom の見送りもできる。
 - `rules.sizing.position_weight` / `notional_usd` / `volatility_target`, `rules.risk_throttle`, and `rules.portfolio.max_signals_per_timestamp` で paper backtest weight、想定 notional、同時候補数制限を記録・評価できる。
-- `rules.portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` + `group_column` で同一 timestamp の total / long / short / net / symbol / sector・theme・asset class などの任意 group exposure を制限できる。
+- `rules.portfolio.max_total_position_weight` / `max_long_position_weight` / `max_short_position_weight` / `max_abs_net_position_weight` / `max_symbol_position_weight` / `max_group_position_weight` / `max_group_abs_net_position_weight` + `group_column` で同一 timestamp の total / long / short / net / symbol / sector・theme・asset class などの任意 group exposure と group 内 net exposure を制限できる。
 - `rules.portfolio.allocation_method` / `target_total_position_weight` で同一 timestamp の採用候補を equal weight、score proportional、inverse volatility に正規化できる。
 - `rules.position.max_open_signals_per_symbol` / `max_open_position_weight_per_symbol` で同一銘柄の仮想 open signal 数と open weight を制限できる。
 - `rules.regime_overrides` で regime ごとに損切、利確、weight、notional、slippage、fill、spread/depth 条件を切り替えられる。
@@ -296,9 +296,9 @@ git diff --check
 確認済み結果:
 
 - `tests/test_strategy_lab_commands.py`: 20 passed
-- `tests/test_strategy_authoring.py`: 73 passed
+- `tests/test_strategy_authoring.py`: 74 passed
 - Strategy Lab focused suite: 45 passed
 - Research pipeline / CLI smoke: 71 passed
 - `scripts/check_current_docs.py`: checked 74 current docs
-- `./scripts/check`: 457 passed, pyrefly 0 errors
+- `./scripts/check`: 458 passed, pyrefly 0 errors
 - `git diff --check`: pass

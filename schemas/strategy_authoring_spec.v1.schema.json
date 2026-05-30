@@ -117,6 +117,7 @@
             "max_abs_net_position_weight": {"type": ["number", "null"], "minimum": 0},
             "max_symbol_position_weight": {"type": ["number", "null"], "minimum": 0},
             "max_group_position_weight": {"type": ["number", "null"], "minimum": 0},
+            "max_group_abs_net_position_weight": {"type": ["number", "null"], "minimum": 0},
             "group_column": {"type": ["string", "null"]},
             "allocation_method": {
               "enum": ["none", "equal_weight", "score_proportional", "inverse_volatility"]
