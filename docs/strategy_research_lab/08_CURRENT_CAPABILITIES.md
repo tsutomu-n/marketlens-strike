@@ -300,9 +300,9 @@ git diff --check
 確認済み結果:
 
 - `tests/test_strategy_lab_commands.py`: 20 passed
-- `tests/test_strategy_authoring.py`: 87 passed
+- `tests/test_strategy_authoring.py`: 88 passed
 - Strategy Lab focused suite: 45 passed
 - Research pipeline / CLI smoke: 71 passed
 - `scripts/check_current_docs.py`: checked 76 current docs
-- `./scripts/check`: 471 passed, pyrefly 0 errors
+- `./scripts/check`: 472 passed, pyrefly 0 errors
 - `git diff --check`: pass

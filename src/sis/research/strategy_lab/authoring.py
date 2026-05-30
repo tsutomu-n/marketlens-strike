@@ -944,6 +944,7 @@ class DerivedFeature(BaseModel):
         "rolling_corr",
         "rolling_beta",
         "rolling_spread_zscore",
+        "rolling_autocorr",
         "order_flow_imbalance",
         "liquidity_depth_ratio",
         "spread_bps",
@@ -1033,6 +1034,7 @@ class DerivedFeature(BaseModel):
             "slope",
             "mean_reversion_score",
             "distance_from_ma",
+            "rolling_autocorr",
         }:
             if len(self.columns) != 1:
                 raise ValueError(
@@ -1185,6 +1187,7 @@ class DerivedFeature(BaseModel):
             "rolling_corr",
             "rolling_beta",
             "rolling_spread_zscore",
+            "rolling_autocorr",
             "drawdown_from_peak",
         }:
             if self.window is None or self.window <= 0:
@@ -2467,6 +2470,27 @@ def _derived_expression(feature: DerivedFeature) -> pl.Expr:
                     window_size=feature.window or 1, min_samples=2
                 ).over("canonical_symbol") - (mean_first * mean_first)
                 expr = covariance / _safe_denominator((variance_first * variance_second).sqrt())
+    elif feature.op == "rolling_autocorr":
+        lagged = first.shift(1).over("canonical_symbol")
+        mean_first = first.rolling_mean(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+        mean_lagged = lagged.rolling_mean(window_size=feature.window or 1, min_samples=2).over(
+            "canonical_symbol"
+        )
+        mean_product = (
+            (first * lagged)
+            .rolling_mean(window_size=feature.window or 1, min_samples=2)
+            .over("canonical_symbol")
+        )
+        covariance = mean_product - (mean_first * mean_lagged)
+        variance_first = (first * first).rolling_mean(
+            window_size=feature.window or 1, min_samples=2
+        ).over("canonical_symbol") - (mean_first * mean_first)
+        variance_lagged = (lagged * lagged).rolling_mean(
+            window_size=feature.window or 1, min_samples=2
+        ).over("canonical_symbol") - (mean_lagged * mean_lagged)
+        expr = covariance / _safe_denominator((variance_first * variance_lagged).sqrt())
     elif feature.op == "order_flow_imbalance":
         second = pl.col(feature.columns[1])
         expr = (first - second) / _safe_denominator(first + second)

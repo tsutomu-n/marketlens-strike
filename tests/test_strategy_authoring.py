@@ -715,6 +715,68 @@ rules:
     assert frame.get_column("side").to_list() == ["long"]
 
 
+def test_authoring_derived_features_support_rolling_autocorr_inputs(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "rolling-autocorr.yaml"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": start + timedelta(hours=index),
+                "canonical_symbol": "QQQ",
+                "trade_allowed": True,
+                "research_return_1d": value,
+                "research_return_4h": 0.0,
+            }
+            for index, value in enumerate([0.01, 0.02, 0.03, 0.04])
+        ]
+    ).write_parquet(feature_path)
+    spec_path.write_text(
+        """schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: rolling_autocorr_authoring_v1
+  strategy_family: regime_persistence
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: XYZ100
+      real_market_symbol: QQQ
+      asset_class: equity_index
+data:
+  feature_panel_path: data/research/feature_panel.parquet
+rules:
+  side: long
+  derived_features:
+    - name: return_autocorr
+      op: rolling_autocorr
+      columns: [research_return_1d]
+      window: 3
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+      - column: return_autocorr
+        op: gt
+        value: 0.9
+  reason_code: rolling_autocorr_authoring_v1
+  hold_reason_code: rolling_autocorr_hold_v1
+""",
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+    assert validate_authoring_inputs(spec, data_dir=data_dir) == []
+    frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+
+    assert frame.get_column("ts_signal").to_list() == [
+        start + timedelta(hours=2),
+        start + timedelta(hours=3),
+    ]
+    assert frame.get_column("side").to_list() == ["long", "long"]
+
+
 def test_authoring_derived_features_support_atr_volatility_inputs(tmp_path) -> None:
     data_dir = tmp_path / "data"
     spec_path = tmp_path / "atr-volatility.yaml"

@@ -411,6 +411,7 @@
             "rolling_corr",
             "rolling_beta",
             "rolling_spread_zscore",
+            "rolling_autocorr",
             "order_flow_imbalance",
             "liquidity_depth_ratio",
             "spread_bps",

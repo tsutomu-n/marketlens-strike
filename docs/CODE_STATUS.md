@@ -84,8 +84,8 @@ PR-08:
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 471 passed via `./scripts/check`
-- `./scripts/check`: pass, 471 passed
+- `uv run pytest -q`: 472 passed via `./scripts/check`
+- `./scripts/check`: pass, 472 passed
 - `uv run python scripts/check_current_docs.py`: pass, `checked 76 current docs`
 
 2026-05-28 runtime artifact snapshot:

@@ -4,7 +4,8 @@
 !.env.example
 
 # Local agent/workflow state
-.codex/SP_STATE.md
+.codex/
+.serena/
 .ai_memory/
 .DS_Store
 Thumbs.db
@@ -52,14 +53,11 @@ logs/
 tmp/
 temp/
 .tmp/*
-!.tmp/live_evidence_20260526_2245_cron_once.sh
-!.tmp/live_evidence_20260526_2245_guard.sh
-!.tmp/live_evidence_20260526_2245_status.sh
-!.tmp/live_evidence_20260527_cron_cleanup.sh
-!.tmp/live_evidence_20260527_recovery_watchdog.sh
-!.tmp/live_evidence_current_status_2026-05-26.md
+!.tmp/live_evidence_*.sh
+!.tmp/live_evidence_*.md
 
 # Track compressed legacy venue archives even when a global ignore excludes *.zip.
+*.zip
 !archive/gtrade_ostium_legacy_archive_*.zip
 
 # Generated tracked-doc outputs
