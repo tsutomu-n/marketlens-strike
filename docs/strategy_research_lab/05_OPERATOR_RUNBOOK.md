@@ -68,11 +68,13 @@ uv run sis evaluate-strategy-lab
 止まり方:
 
 - `data/research/strategy_signals.parquet` が無い場合、exit code 2。
+- 1 つの `strategy_signals.parquet` に複数の strategy / symbol identity が混在している場合、exit code 2。
 
 現行の注意:
 
 - 現行 CLI の evaluation は簡易 artifact chain 実装です。
 - `TrialRecord` schema と ledger append の契約は存在しますが、汎用 walk-forward engine ではありません。
+- `trial_id`, `trial_group_id`, `paper_candidate_pack.pack_id`, `promotion_id` は signal artifact content 由来の deterministic `run_id` で作られます。
 
 ## 4. Paper candidate pack を作る
 
@@ -120,6 +122,7 @@ uv run sis promotion-decision --decision promote
 
 - required evidence が揃っていない `promote` は validation で止まる。
 - `promote` は paper observation への許可であり、live-ready ではない。
+- `source_pack_id` は読み込んだ `PaperCandidatePack.pack_id` になります。
 
 ## 6. Paper intent preview を作る
 
@@ -135,6 +138,7 @@ uv run sis build-paper-intent-preview
 止まり方:
 
 - `data/research/promotion_decision.json` が無い場合、exit code 2。
+- `promotion_decision.source_pack_id` と `paper_candidate_pack.pack_id` が一致しない場合、exit code 2。
 
 読み方:
 
@@ -187,7 +191,9 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 ## Operator stop conditions
 
 - `strategy_signals.parquet` が無いのに `evaluate-strategy-lab` を通そうとしない。
+- 複数 generator / strategy / symbol の signal を 1 つの `strategy_signals.parquet` に混ぜて評価しない。
 - `promotion_decision.json` が無いのに `build-paper-intent-preview` を通そうとしない。
+- pack と promotion decision の `source_pack_id` 不一致を迂回しない。
 - `promotion-decision --decision promote` が validation で止まった時に evidence guard を迂回しない。
 - `paper_intent_preview.json` を live adapter に渡さない。
 - `wallet_used`, `exchange_write_used` を true にする変更をしない。

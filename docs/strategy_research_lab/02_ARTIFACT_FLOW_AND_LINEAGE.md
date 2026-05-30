@@ -85,7 +85,11 @@ Important behavior:
 - `build-signals --generator-id sp500_trend_rates_vix` and `strategy-preview --generator-id sp500_trend_rates_vix` select the registered SP500 generator.
 - `build_signals()` writes canonical `data/research/strategy_signals.parquet`, JSONL export, and legacy `signals.csv`.
 - `evaluate-strategy-lab` exits with code 2 if `strategy_signals.parquet` is missing.
+- `evaluate-strategy-lab` exits with code 2 if one `strategy_signals.parquet` mixes multiple `(strategy_id, strategy_family, strategy_version, execution_venue, execution_symbol, real_market_symbol)` identities.
+- v1 lineage IDs are deterministic from the signal artifact content: `trial-{run_id}`, `trial-group-{run_id}`, `paper-pack-{run_id}`, `promotion-{run_id}`.
 - `build-paper-candidate-pack` reads `trial_ledger.jsonl`.
+- `promotion-decision` records the actual `PaperCandidatePack.pack_id` as `source_pack_id`.
+- `build-paper-intent-preview` exits with code 2 if `PromotionDecision.source_pack_id` does not match `PaperCandidatePack.pack_id`.
 - `promotion-decision --decision promote` fails validation unless required evidence is observed.
 - `build-paper-intent-preview` exits with code 2 if `promotion_decision.json` is missing.
 - `paper-from-intents` loads the preview and revalidates against latest quotes.
@@ -130,8 +134,10 @@ Before accepting a Strategy Lab result:
 
 - Confirm `strategy_signals.parquet` exists and contains Strategy Lab columns.
 - Confirm every signal's `execution_symbol` / `real_market_symbol` matches a `SymbolBinding`.
+- Confirm one signal artifact contains only one strategy / symbol identity before evaluation.
 - Confirm `trial_ledger.jsonl` records all trials, including rejected trials.
 - Confirm selected and rejected IDs in `PaperCandidatePack` refer to existing candidates.
+- Confirm `PromotionDecision.source_pack_id` matches `PaperCandidatePack.pack_id`.
 - Confirm `PromotionDecision` exists before preview generation.
 - Confirm `PaperIntentPreview` has `requires_revalidation=true`, `paper_only=true`, `live_conversion_allowed=false`.
 - Confirm paper observation ledger does not show wallet or exchange writes.

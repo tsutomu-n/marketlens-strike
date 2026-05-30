@@ -27,6 +27,7 @@ registry behavior:
 - 同じ generator ID の二重登録は禁止。
 - 未登録 generator は `KeyError` で fail closed。
 - `registered_ids()` は登録済み ID を sorted list で返す。
+- registry は `SignalGeneratorDefinition` を正本にし、generator callable と `strategy_id`, `strategy_family`, `strategy_version`, `SymbolBinding` を同じ定義で管理する。
 
 ## 現行 build_signals
 
@@ -40,7 +41,7 @@ registry behavior:
 6. `data/research/strategy_signals.jsonl` を書く。
 7. legacy `data/research/signals.csv` を書く。
 
-現行 generator profile:
+現行 generator definition:
 
 | generator_id | strategy_id | execution_symbol | real_market_symbol | asset_class |
 |---|---|---|---|---|
@@ -59,8 +60,10 @@ Generator は Strategy Lab artifact へ変換できる signal frame を返す必
 - `timeframe`
 - `signal_strength` or score source
 - `reason`
-- source confidence
-- venue quality score
+- `source_confidence`
+- `venue_quality_score`
+
+`source_confidence` と `venue_quality_score` は optional です。入力 feature に列が存在する場合は generator output へ pass-through し、存在しない場合は Strategy Lab artifact 側で null として扱います。
 
 変換後に必要な Strategy Lab fields:
 
@@ -92,7 +95,7 @@ Generator は Strategy Lab artifact へ変換できる signal frame を返す必
 7. score の範囲と意味を定義する。
 8. `reason_codes` を固定する。
 9. source confidence / venue quality が無い場合の扱いを決める。
-10. `SignalBuildProfile` と registry に登録する。
+10. `SignalGeneratorDefinition` として registry に登録する。
 11. `validate_strategy_signal_frame()` を通る test を追加する。
 
 ## StrategyExperimentSpec に落とす時の粒度
@@ -147,7 +150,7 @@ parameter_grid={}
 
 ## Current limitations
 
-- 現行 CLI は arbitrary `StrategyExperimentSpec` file を読む runner ではない。`--generator-id` は登録済み fixed profile の選択だけです。
+- 現行 CLI は arbitrary `StrategyExperimentSpec` file を読む runner ではない。`--generator-id` は登録済み `SignalGeneratorDefinition` の選択だけです。
 - 現行 evaluation は full walk-forward backtester ではなく、artifact chain を成立させる簡易 runner です。
 - 現行 `promotion-decision` は human review artifact を生成するが、review UI ではない。
 - 現行 `build-paper-intent-preview` は selected candidate を simple notional / quantity placeholder で preview 化する。

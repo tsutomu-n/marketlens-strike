@@ -54,9 +54,9 @@ reason_codes=["close_above_sma20", "vix_not_spiking"]
 Candidate:
 
 ```text
-candidate_id=candidate-trial-001
+candidate_id=candidate-trial-{run_id}
 strategy_id=equity_index_momentum_v0
-trial_id=trial-001
+trial_id=trial-{run_id}
 execution_symbol=XYZ100
 real_market_symbol=QQQ
 side=long

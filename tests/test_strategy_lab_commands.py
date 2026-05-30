@@ -172,9 +172,7 @@ def test_evaluate_strategy_lab_rejects_mixed_signal_artifact(tmp_path, monkeypat
     assert not (data_dir / "research/trial_ledger.jsonl").exists()
 
 
-def test_build_signals_unknown_generator_exits_with_registered_ids(
-    tmp_path, monkeypatch
-) -> None:
+def test_build_signals_unknown_generator_exits_with_registered_ids(tmp_path, monkeypatch) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
     feature_panel_path = data_dir / "research/feature_panel.parquet"

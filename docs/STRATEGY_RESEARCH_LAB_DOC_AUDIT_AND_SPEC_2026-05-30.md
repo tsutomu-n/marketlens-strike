@@ -366,7 +366,11 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 
 - `strategy-preview` は `build_signals()` を通じて `data/research/strategy_signals.parquet`, `data/research/strategy_signals.jsonl`, legacy export `data/research/signals.csv`, `data/reports/strategy_signals_preview.md` を出す。
 - `build_signals()` の default generator は `qqq_trend_rates_vix`。`--generator-id sp500_trend_rates_vix` で登録済み SP500 generator を選べるが、arbitrary `StrategyExperimentSpec` / `parameter_grid` を CLI 引数で読み込む汎用 runner ではない。
-- `evaluate-strategy-lab` は `data/research/strategy_signals.parquet` が無い場合 exit code 2 で止まる。
+- generator metadata は `SignalGeneratorDefinition` を正本にし、callable と `strategy_id`, `strategy_family`, `strategy_version`, `SymbolBinding` を同じ registry entry で管理する。
+- generator は feature に `source_confidence` / `venue_quality_score` が存在する場合、Strategy Lab artifact まで pass-through する。存在しない場合は null として扱う。
+- `evaluate-strategy-lab` は `data/research/strategy_signals.parquet` が無い場合、または 1 artifact 内に複数の strategy / symbol identity が混在する場合、exit code 2 で止まる。
+- `trial_id`, `trial_group_id`, `paper_candidate_pack.pack_id`, `promotion_id` は signal artifact content 由来の deterministic `run_id` で作る。
+- `promotion-decision` は実際の `PaperCandidatePack.pack_id` を `source_pack_id` に保存し、`build-paper-intent-preview` は pack と decision の source mismatch を exit code 2 で止める。
 - `build-paper-intent-preview` は `PromotionDecision` が無い場合 exit code 2 で止まる。
 - `promotion-decision --decision promote` は required evidence が揃っていないと model validation で止まる。
 - `paper-from-intents` は paper runner に渡すだけであり、live adapter には渡さない。
