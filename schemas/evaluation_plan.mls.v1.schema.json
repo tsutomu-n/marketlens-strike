@@ -1,17 +1,48 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "required": [
     "schema_version",
     "evaluation_plan_id",
+    "run_profile",
     "target_venue",
     "split_method",
     "label_horizon_minutes",
     "purge_minutes",
     "embargo_minutes",
-    "era_unit"
+    "era_unit",
+    "quote_data_path",
+    "feature_panel_path",
+    "cost_model_path",
+    "min_trade_count",
+    "primary_metric",
+    "secondary_metrics",
+    "forbidden_claims"
   ],
   "properties": {
     "schema_version": { "const": "evaluation_plan.mls.v1" },
-    "target_venue": { "const": "trade_xyz" }
-  }
+    "evaluation_plan_id": { "type": "string", "minLength": 1 },
+    "run_profile": { "enum": ["strategy_lab", "walkforward_research", "paper_candidate"] },
+    "target_venue": { "const": "trade_xyz" },
+    "split_method": { "enum": ["single_window", "walk_forward", "purged_walk_forward"] },
+    "label_horizon_minutes": { "type": "integer", "minimum": 1 },
+    "purge_minutes": { "type": "integer", "minimum": 1 },
+    "embargo_minutes": { "type": "integer", "minimum": 1 },
+    "era_unit": { "enum": ["session", "trading_day", "week", "month"] },
+    "quote_data_path": { "type": "string", "minLength": 1 },
+    "feature_panel_path": { "type": "string", "minLength": 1 },
+    "tracking_data_path": { "type": ["string", "null"] },
+    "cost_model_path": { "type": "string", "minLength": 1 },
+    "require_tracking_gate": { "type": "boolean" },
+    "require_source_confidence": { "type": "boolean" },
+    "require_venue_quality": { "type": "boolean" },
+    "min_trade_count": { "type": "integer", "minimum": 1 },
+    "max_turnover": { "type": ["number", "null"], "minimum": 0 },
+    "cost_stress_multiplier": { "type": "number", "minimum": 1 },
+    "slippage_stress_multiplier": { "type": "number", "minimum": 1 },
+    "primary_metric": { "type": "string", "minLength": 1 },
+    "secondary_metrics": { "type": "array", "items": { "type": "string" } },
+    "forbidden_claims": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
 }

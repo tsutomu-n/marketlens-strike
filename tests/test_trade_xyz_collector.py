@@ -2,6 +2,8 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import polars as pl
+
 from sis.models import InstrumentSpec
 from sis.storage.jsonl_store import read_jsonl
 from sis.storage.normalize import normalize_quotes
@@ -44,9 +46,13 @@ def test_collector_writes_jsonl_with_raw_hash(tmp_path) -> None:
     rows = list(read_jsonl(out_path))
     assert len(rows) == 1
     assert rows[0]["raw_payload_sha256"]
+    assert rows[0]["raw_payload_ref"].endswith("#row=0")
     assert rows[0]["fee_mode"] == "standard"
     assert rows[0]["taker_fee_bps"] == 9.0
     assert rows[0]["maker_fee_bps"] == 3.0
+    assert rows[0]["exec_buy_price"] == rows[0]["best_ask"]
+    assert rows[0]["exec_sell_price"] == rows[0]["best_bid"]
+    assert rows[0]["fee_source"] == "instrument_registry"
 
 
 def test_collector_enriches_quote_from_meta_and_asset_ctxs(tmp_path) -> None:
@@ -80,6 +86,7 @@ def test_collector_enriches_quote_from_meta_and_asset_ctxs(tmp_path) -> None:
     assert rows[0]["oracle_price"] == 100.1
     assert rows[0]["index_price"] == 100.15
     assert rows[0]["funding_rate"] == -0.00001
+    assert rows[0]["funding_interval_minutes"] == 60
     assert rows[0]["open_interest_usd"] == 1234.0
     assert rows[0]["bid_depth_10bps_usd"] > 0
     assert rows[0]["ask_depth_10bps_usd"] > 0
@@ -103,3 +110,8 @@ def test_normalize_quotes_accepts_trade_xyz_v2(tmp_path) -> None:
     assert count == 1
     assert (tmp_path / "data/normalized/quotes.parquet").exists()
     assert (tmp_path / "data/normalized/sis.duckdb").exists()
+    frame = pl.read_parquet(tmp_path / "data/normalized/quotes.parquet")
+    assert frame.get_column("raw_payload_ref").to_list()[0].endswith("#row=0")
+    assert (
+        frame.get_column("exec_buy_price").to_list()[0] == frame.get_column("best_ask").to_list()[0]
+    )

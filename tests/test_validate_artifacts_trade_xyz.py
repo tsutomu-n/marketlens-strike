@@ -39,19 +39,26 @@ def _write_trade_xyz_artifacts(data_dir: Path, *, omit: str | None = None) -> No
         "best_bid": 100.0,
         "best_ask": 100.1,
         "mid_price": 100.05,
+        "exec_buy_price": 100.1,
+        "exec_sell_price": 100.0,
         "spread_bps": 10.0,
         "bid_depth_10bps_usd": 1000.0,
         "ask_depth_10bps_usd": 1000.0,
         "mark_price": 100.0,
         "oracle_price": 100.0,
         "funding_rate": -0.00001,
+        "funding_interval_minutes": 60,
         "open_interest_usd": 10000.0,
         "fee_mode": "standard",
+        "taker_fee_bps": 9.0,
+        "maker_fee_bps": 3.0,
         "market_status": "open",
         "session_type": "unknown",
         "is_tradable": True,
         "block_reasons": [],
+        "source_confidence": 1.0,
         "venue_quality_score": 1.0,
+        "raw_payload_ref": "data/raw/quotes/trade_xyz/2026-05-27.jsonl#row=0",
     }
     if omit:
         row.pop(omit)
@@ -90,6 +97,16 @@ def test_validate_artifacts_trade_xyz_strict_requires_funding(tmp_path) -> None:
     summary = validate_artifacts(tmp_path / "data", PROJECT_ROOT / "schemas", strict=True)
 
     assert any(issue.message == "TRADE_XYZ_STRICT_FUNDING_MISSING" for issue in summary.issues)
+
+
+def test_validate_artifacts_trade_xyz_strict_requires_raw_payload_ref(tmp_path) -> None:
+    _write_trade_xyz_artifacts(tmp_path / "data", omit="raw_payload_ref")
+
+    summary = validate_artifacts(tmp_path / "data", PROJECT_ROOT / "schemas", strict=True)
+
+    assert any(
+        issue.message == "TRADE_XYZ_STRICT_RAW_PAYLOAD_REF_MISSING" for issue in summary.issues
+    )
 
 
 def test_validate_artifacts_strict_rejects_legacy_only_artifacts(tmp_path) -> None:

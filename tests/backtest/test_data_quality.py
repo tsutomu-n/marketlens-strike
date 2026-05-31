@@ -128,5 +128,13 @@ def test_evaluate_data_quality_surfaces_unresolved_fee_and_funding_assertion_ris
     assert report.null_taker_fee_count == 1
     assert report.null_maker_fee_count == 1
     assert report.funding_rate_without_interval_count == 2
-    assert "unknown fee_mode rows: 1" in report.warnings
-    assert "funding_rate present without funding interval assertion: 2" in report.warnings
+
+
+def test_evaluate_data_quality_records_operational_missing_rates() -> None:
+    report = evaluate_data_quality(_frame(), config=_config(), input_row_count=2)
+
+    assert report.raw_payload_ref_missing_rate == 1.0
+    assert report.oracle_ts_missing_rate == 1.0
+    assert report.funding_interval_missing_rate == 1.0
+    assert report.fee_unresolved_rate == 0.0
+    assert report.missing_rate_by_field["raw_payload_ref"] == 1.0

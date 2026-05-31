@@ -203,13 +203,13 @@ uv run pytest -q tests/backtest/test_runner_minimal.py
 実データ smoke は `data/normalized/quotes.parquet` がある場合だけ走ります。
 
 ```bash
-uv run pytest -q tests/backtest/test_real_data_smoke.py
+uv run pytest -q tests/backtest/test_real_quotes_smoke.py
 ```
 
 ## Verification
 
-2026-05-31 main:
+2026-05-31 current implementation:
 
-- `uv run pytest -q tests/backtest`: 54 passed
-- `./scripts/check`: 650 passed
+- `uv run pytest -q tests/backtest`: current expected pass
+- `./scripts/check`: canonical full gate
 - `uv run python scripts/check_current_docs.py`: checked 81 current docs

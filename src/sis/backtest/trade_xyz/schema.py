@@ -16,12 +16,14 @@ REQUIRED_CANONICAL_COLUMNS = {
 RESERVED_COLUMNS: dict[str, Any] = {
     "source_ts_ms": pl.Int64,
     "recv_ts_ms": pl.Int64,
+    "oracle_ts_ms": pl.Int64,
     "mark_price": pl.Float64,
     "oracle_price": pl.Float64,
     "external_price": pl.Float64,
     "funding_rate": pl.Float64,
     "funding_interval_minutes": pl.Int64,
     "open_interest_usd": pl.Float64,
+    "last_trade_price": pl.Float64,
     "oi_cap_usd": pl.Float64,
     "oi_cap_usage": pl.Float64,
     "discovery_bound_pct": pl.Float64,
@@ -35,6 +37,7 @@ RESERVED_COLUMNS: dict[str, Any] = {
     "taker_fee_bps": pl.Float64,
     "maker_fee_bps": pl.Float64,
     "fee_mode": pl.Utf8,
+    "fee_source": pl.Utf8,
     "best_bid": pl.Float64,
     "best_ask": pl.Float64,
     "bid_price": pl.Float64,
@@ -44,6 +47,7 @@ RESERVED_COLUMNS: dict[str, Any] = {
     "spread_bps": pl.Float64,
     "exec_buy_price": pl.Float64,
     "exec_sell_price": pl.Float64,
+    "raw_payload_ref": pl.Utf8,
 }
 
 

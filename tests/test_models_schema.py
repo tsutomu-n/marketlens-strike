@@ -60,6 +60,51 @@ def test_quote_log_v2_accepts_hip3_fields() -> None:
     validate(data, load_schema("quote_log_v2.schema.json"))
 
 
+def test_trade_xyz_snapshot_schemas_accept_required_operational_fields() -> None:
+    validate(
+        {
+            "schema_version": "funding_event.v1",
+            "funding_event_ts": "2026-05-31T00:00:00+00:00",
+            "canonical_symbol": "SP500",
+            "funding_rate": 0.0001,
+            "funding_interval_minutes": 60,
+            "oracle_price_at_funding": 5300.0,
+            "source_ts_ms": 1770000000000,
+            "recv_ts_ms": 1770000001000,
+            "raw_payload_sha256": "abc",
+            "raw_payload_ref": "data/raw/funding/trade_xyz/2026-05-31.jsonl#row=0",
+        },
+        load_schema("funding_event.v1.schema.json"),
+    )
+    validate(
+        {
+            "schema_version": "fee_snapshot.v1",
+            "snapshot_ts": "2026-05-31T00:00:00+00:00",
+            "canonical_symbol": "SP500",
+            "fee_mode": "standard",
+            "taker_fee_bps": 9.0,
+            "maker_fee_bps": 3.0,
+            "source": "docs.trade.xyz",
+            "source_hash": "abc",
+        },
+        load_schema("fee_snapshot.v1.schema.json"),
+    )
+    validate(
+        {
+            "schema_version": "instrument_registry_snapshot.v1",
+            "snapshot_ts": "2026-05-31T00:00:00+00:00",
+            "canonical_symbol": "SP500",
+            "venue_symbol": "SP500",
+            "dex": "xyz",
+            "coin": "xyz:SP500",
+            "asset_class": "index",
+            "source_url": "https://docs.trade.xyz/consolidated-resources/specification-index",
+            "source_hash": "abc",
+        },
+        load_schema("instrument_registry_snapshot.v1.schema.json"),
+    )
+
+
 def test_quote_log_v2_requires_raw_hash() -> None:
     payload = {
         "ts_client": datetime.now(timezone.utc).isoformat(),

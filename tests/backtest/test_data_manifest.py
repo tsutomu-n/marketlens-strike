@@ -77,3 +77,4 @@ def test_build_data_manifest_records_period_hashes_and_quality_summary() -> None
     assert manifest.symbols == ["SP500"]
     assert manifest.filtered_row_count == 1
     assert manifest.data_quality_summary["status"] == "pass"
+    assert manifest.data_readiness_summary["raw_payload_ref_missing_rate"] == 1.0

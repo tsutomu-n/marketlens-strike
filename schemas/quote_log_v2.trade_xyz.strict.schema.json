@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "TradeXyzQuoteLogV2Strict",
+  "type": "object",
   "allOf": [
     { "$ref": "quote_log_v2.schema.json" },
     {

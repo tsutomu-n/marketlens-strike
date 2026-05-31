@@ -1,14 +1,36 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "required": [
     "schema_version",
     "feature_snapshot_id",
+    "generated_at",
     "input_data_snapshot_id",
     "feature_panel_path",
+    "feature_panel_sha256",
     "feature_version",
-    "feature_build_config_hash"
+    "feature_build_config_hash",
+    "feature_cutoff_policy",
+    "max_feature_source_ts",
+    "leakage_checks",
+    "missing_rate_by_feature"
   ],
   "properties": {
-    "schema_version": { "const": "feature_snapshot_manifest.v1" }
-  }
+    "schema_version": { "const": "feature_snapshot_manifest.v1" },
+    "feature_snapshot_id": { "type": "string", "minLength": 1 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "input_data_snapshot_id": { "type": "string", "minLength": 1 },
+    "feature_panel_path": { "type": "string", "minLength": 1 },
+    "feature_panel_sha256": { "type": ["string", "null"] },
+    "feature_version": { "type": "string", "minLength": 1 },
+    "feature_build_config_hash": { "type": "string", "minLength": 1 },
+    "feature_cutoff_policy": { "type": "string", "minLength": 1 },
+    "max_feature_source_ts": { "type": ["string", "null"], "format": "date-time" },
+    "leakage_checks": { "type": "object" },
+    "missing_rate_by_feature": {
+      "type": "object",
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+    }
+  },
+  "additionalProperties": true
 }

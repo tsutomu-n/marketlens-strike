@@ -102,7 +102,9 @@ def collect_trade_xyz_quotes(
             external_price = quote.index_price or quote.oracle_price
             bound_distance = (
                 abs(quote.mark_price - external_price) / external_price
-                if quote.mark_price is not None and external_price is not None and external_price > 0
+                if quote.mark_price is not None
+                and external_price is not None
+                and external_price > 0
                 else None
             )
             oi_cap_usage = (
@@ -262,17 +264,13 @@ def collect_trade_xyz_quote_window(
         entry["missing_oracle"] += 1 if row.get("oracle_price") is None else 0
         entry["missing_oracle_ts"] += 1 if row.get("oracle_ts_ms") is None else 0
         entry["missing_funding"] += 1 if row.get("funding_rate") is None else 0
-        entry["missing_funding_interval"] += (
-            1 if row.get("funding_interval_minutes") is None else 0
-        )
+        entry["missing_funding_interval"] += 1 if row.get("funding_interval_minutes") is None else 0
         entry["missing_open_interest"] += 1 if row.get("open_interest_usd") is None else 0
         entry["missing_fee_bps"] += (
             1 if row.get("taker_fee_bps") is None or row.get("maker_fee_bps") is None else 0
         )
         entry["missing_oi_cap_usage"] += 1 if row.get("oi_cap_usage") is None else 0
-        entry["missing_discovery_bound"] += (
-            1 if row.get("discovery_bound_pct") is None else 0
-        )
+        entry["missing_discovery_bound"] += 1 if row.get("discovery_bound_pct") is None else 0
         entry["missing_bound_distance"] += 1 if row.get("bound_distance") is None else 0
         entry["missing_raw_payload_ref"] += 1 if row.get("raw_payload_ref") is None else 0
         if isinstance(row.get("spread_bps"), (int, float)):
@@ -298,19 +296,13 @@ def collect_trade_xyz_quote_window(
             "missing_oracle_rate": (raw["missing_oracle"] / n) if n else 0.0,
             "missing_oracle_ts_rate": (raw["missing_oracle_ts"] / n) if n else 0.0,
             "missing_funding_rate": (raw["missing_funding"] / n) if n else 0.0,
-            "missing_funding_interval_rate": (
-                (raw["missing_funding_interval"] / n) if n else 0.0
-            ),
+            "missing_funding_interval_rate": ((raw["missing_funding_interval"] / n) if n else 0.0),
             "missing_open_interest_rate": (raw["missing_open_interest"] / n) if n else 0.0,
             "fee_unresolved_rate": (raw["missing_fee_bps"] / n) if n else 0.0,
             "missing_oi_cap_usage_rate": (raw["missing_oi_cap_usage"] / n) if n else 0.0,
-            "missing_discovery_bound_rate": (
-                (raw["missing_discovery_bound"] / n) if n else 0.0
-            ),
+            "missing_discovery_bound_rate": ((raw["missing_discovery_bound"] / n) if n else 0.0),
             "missing_bound_distance_rate": (raw["missing_bound_distance"] / n) if n else 0.0,
-            "raw_payload_ref_missing_rate": (
-                (raw["missing_raw_payload_ref"] / n) if n else 0.0
-            ),
+            "raw_payload_ref_missing_rate": ((raw["missing_raw_payload_ref"] / n) if n else 0.0),
             "spread_bps_p50": q(raw["spreads"], 0.5),
             "spread_bps_p90": q(raw["spreads"], 0.9),
             "bid_depth_10bps_usd_p50": q(raw["bid_depths"], 0.5),
@@ -356,14 +348,15 @@ def collect_trade_xyz_quote_window(
             "",
             "## Per-symbol Health",
             "",
-            "| symbol | rows | tradable_rate | missing_mark | missing_oracle | missing_funding | missing_oi | spread_p50 | spread_p90 |",
-            "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+            "| symbol | rows | tradable_rate | missing_mark | missing_oracle | missing_funding | missing_fee | missing_raw_ref | spread_p50 | spread_p90 |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
         for symbol, item in per_symbol_summary.items():
             lines.append(
                 f"| {symbol} | {item['row_count']} | {item['tradable_rate']:.4f} | "
                 f"{item['missing_mark_rate']:.4f} | {item['missing_oracle_rate']:.4f} | "
-                f"{item['missing_funding_rate']:.4f} | {item['missing_open_interest_rate']:.4f} | "
+                f"{item['missing_funding_rate']:.4f} | {item['fee_unresolved_rate']:.4f} | "
+                f"{item['raw_payload_ref_missing_rate']:.4f} | "
                 f"{item['spread_bps_p50']} | {item['spread_bps_p90']} |"
             )
         lines.extend(

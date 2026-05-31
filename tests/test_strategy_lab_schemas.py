@@ -20,6 +20,10 @@ def test_strategy_lab_schema_files_exist_and_parse() -> None:
         "paper_intent_preview.v1.schema.json",
         "strategy_authoring_bundle_result.v1.schema.json",
         "strategy_authoring_backtest_result.v1.schema.json",
+        "instrument_registry_snapshot.v1.schema.json",
+        "funding_event.v1.schema.json",
+        "fee_snapshot.v1.schema.json",
+        "quote_log_v2.trade_xyz.strict.schema.json",
     ]
 
     for name in names:

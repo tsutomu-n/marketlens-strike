@@ -41,6 +41,7 @@ def test_prepare_quote_rows_filters_symbol_and_creates_close_from_source() -> No
     assert frame.get_column("close_source").to_list() == ["mid_price", "mid_price"]
 
 
+
 def test_prepare_quote_rows_accepts_symbol_column_without_aliasing_symbols() -> None:
     source = _quotes().rename({"canonical_symbol": "symbol"})
 

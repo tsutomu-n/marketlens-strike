@@ -214,7 +214,9 @@ def quote_from_l2_book(
         fee_mode=fee_mode or "unknown",
         taker_fee_bps=taker_fee_bps,
         maker_fee_bps=maker_fee_bps,
-        fee_source="instrument_registry" if taker_fee_bps is not None and maker_fee_bps is not None else "unresolved",
+        fee_source="instrument_registry"
+        if taker_fee_bps is not None and maker_fee_bps is not None
+        else "unresolved",
         market_status=MarketStatus.OPEN if not block_reasons else MarketStatus.UNKNOWN,
         session_type=SessionType.UNKNOWN,
         is_tradable=not block_reasons,

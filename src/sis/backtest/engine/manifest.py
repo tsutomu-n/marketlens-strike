@@ -36,6 +36,7 @@ class DataManifest(BaseModel):
     evaluation_start_ts: datetime
     evaluation_end_ts: datetime
     data_quality_summary: dict[str, Any] = Field(default_factory=dict)
+    data_readiness_summary: dict[str, Any] = Field(default_factory=dict)
 
 
 def build_data_manifest(
@@ -60,6 +61,7 @@ def build_data_manifest(
     last_ts = raw_last_ts if isinstance(raw_last_ts, datetime) else None
     input_path = Path(input_data_ref)
     input_file_sha256 = _file_sha256(input_path) if input_path.exists() else None
+    quality_payload = data_quality.model_dump(mode="json")
     return DataManifest(
         run_id=config.run_id,
         input_data_ref=input_data_ref,
@@ -79,7 +81,16 @@ def build_data_manifest(
         warmup_start_ts=config.period.warmup_start_ts,
         evaluation_start_ts=config.period.evaluation_start_ts,
         evaluation_end_ts=config.period.evaluation_end_ts,
-        data_quality_summary=data_quality.model_dump(mode="json"),
+        data_quality_summary=quality_payload,
+        data_readiness_summary={
+            "fee_unresolved_rate": quality_payload.get("fee_unresolved_rate"),
+            "funding_interval_missing_rate": quality_payload.get("funding_interval_missing_rate"),
+            "oracle_ts_missing_rate": quality_payload.get("oracle_ts_missing_rate"),
+            "raw_payload_ref_missing_rate": quality_payload.get("raw_payload_ref_missing_rate"),
+            "oi_cap_usage_missing_rate": quality_payload.get("oi_cap_usage_missing_rate"),
+            "discovery_bound_missing_rate": quality_payload.get("discovery_bound_missing_rate"),
+            "bound_distance_missing_rate": quality_payload.get("bound_distance_missing_rate"),
+        },
     )
 
 
