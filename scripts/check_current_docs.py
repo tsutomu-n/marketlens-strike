@@ -13,6 +13,7 @@ CURRENT_DOC_FILES = (
     "docs/CURRENT_STATE.md",
     "docs/CODE_STATUS.md",
     "docs/DOCUMENT_AUDIT_2026-05-31.md",
+    "docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md",
     "docs/DOCS_LINT_POLICY_2026-05-30.md",
     "docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md",
     "docs/OPERATIONS_RUNBOOK.md",
@@ -36,6 +37,7 @@ CURRENT_DOC_FILES = (
 )
 
 CURRENT_DOC_DIRS = (
+    "docs/backtest",
     "docs/strategy_research_lab",
     "docs/algo/strategy_factory",
     "docs/algo/obsidian_note_rewrites_2026-05-29",

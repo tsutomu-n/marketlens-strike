@@ -165,8 +165,8 @@
 最新 full check では、次を確認済みです。
 
 - `./scripts/check`: pass
-- pytest: `596 passed`
+- pytest: `650 passed`
 - pyrefly: `0 errors`
-- current-docs lint: `checked 78 current docs: links, EOF, and legacy roots ok`
+- current-docs lint: `checked 81 current docs: links, EOF, and legacy roots ok`
 
-docs-only 確認でも、`uv run python scripts/check_current_docs.py` が `checked 78 current docs: links, EOF, and legacy roots ok` で通っています。
+docs-only 確認でも、`uv run python scripts/check_current_docs.py` が `checked 81 current docs: links, EOF, and legacy roots ok` で通っています。

@@ -141,6 +141,48 @@ Failure behavior:
 - summary / report / raw payload に credential secret を書かない。
 - `status=pass` は Alpaca provider が live bars を返し、live suitability blocker が無いことを示す。production live trading ready ではない。
 
+## Trade[XYZ] Pure Backtest
+
+Trade[XYZ] pure backtest v0.1 は public CLI ではなく Python API surface です。`uv run sis build-backtest` は既存 bridge 系 command であり、pure backtest の入口ではありません。
+
+docs:
+
+- `docs/backtest/README.md`
+- `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
+
+focused verification:
+
+```bash
+uv run pytest -q tests/backtest
+```
+
+実データ smoke は `data/normalized/quotes.parquet` が存在する場合だけ検査します。
+
+```bash
+uv run pytest -q tests/backtest/test_real_data_smoke.py
+```
+
+主な artifact:
+
+- `backtest_run.json`
+- `orders.parquet`
+- `fills.parquet`
+- `trades.parquet`
+- `equity_curve.parquet`
+- `metrics.json`
+- `data_quality.json`
+- `data_manifest.json`
+- `candidate_result.json`
+- `backtest_report.md`
+- `backtest_report.html`
+
+stop conditions:
+
+- Do not expose a public CLI without a separate scope decision.
+- Do not connect pure backtest artifacts to live order submission.
+- Do not use wallet, signing, or exchange write APIs.
+- Do not treat Strategy Authoring fixed-horizon metrics as the same engine.
+
 ## Paper Operations
 
 paper state を 1 cycle 進める:

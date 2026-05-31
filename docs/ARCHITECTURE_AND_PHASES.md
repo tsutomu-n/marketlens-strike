@@ -8,6 +8,7 @@
 - `src/sis/real_market`: research-side bars, quality, feature builder, provider policy
 - `src/sis/tracking`: real-market vs venue comparison and trade-allowed decisions
 - `src/sis/research/strategy_lab`: strategy experiment specs, strategy signal records, evaluation plans, trial ledger, trade candidates, paper candidate packs, promotion decisions, paper intent previews
+- `src/sis/backtest/engine` and `src/sis/backtest/trade_xyz`: Trade[XYZ] pure backtest v0.1, long-only single-symbol accounting, fill, cost, gate, metrics, report artifacts
 - `src/sis/paper`: venue-gated paper fills, portfolio state, reports
 - `src/sis/execution`: `Trade[XYZ]` micro live safety code and execution read-only surfaces
 - `src/sis/reports`, `src/sis/ops`, `src/sis/state`: operations, dashboards, remediation, daemon, notifications
@@ -31,6 +32,7 @@ current truth:
 - Phase 1 から Phase 6 の code surface は存在する
 - Trade[XYZ] read-only PR12 の generated artifact gate は `READ_ONLY_GO` まで確認済み
 - Strategy Research Lab の schema / model / command surface は存在する
+- Trade[XYZ] pure backtest v0.1 の Python API surface は存在する
 - Phase 7 は未完了
 - operational promotion は generated artifact gate に依存する
 
@@ -46,6 +48,7 @@ current truth:
 - `real_market` data は price truth / feature truth
 - `tracking` はその差分を gate に変換する
 - `strategy_lab` は research signal, trial, candidate, promotion, paper preview を order と分離して管理する
+- `backtest.engine` は pure backtest の accounting / fill / cost / artifact 契約を管理し、live execution や wallet/signing を扱わない
 - `paper` は tracking and quality-gated execution simulation
 - `micro_live` は tiny live safety sequence のみを扱い、strategy promotionは扱わない
 
@@ -73,6 +76,18 @@ StrategyExperimentSpec
 - `PaperIntentPreview` は paper-only の仮注文意図であり、live order へ変換しない。
 - JSON Schema は薄い guard として存在し、詳細な runtime validation は Pydantic model にある。
 - 詳細仕様は `docs/strategy_research_lab/README.md` 以下にある。
+
+## Backtest Boundary
+
+現行 backtest surface は 3 つに分けて読む。
+
+- Trade[XYZ] pure backtest v0.1: `run_backtest()` を入口にする Python API surface。
+- Strategy Authoring fixed-horizon backtest: YAML authoring flow の paper-only 研究評価。
+- Legacy backtest bridge: `uv run sis build-backtest` の互換 command。
+
+Trade[XYZ] pure backtest v0.1 は public CLI を持たない。live order、wallet、signing、exchange write、MT5 / IC Markets / CFD は対象外。
+
+詳細は `docs/backtest/README.md` と `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md` にある。
 
 ## Execution Boundary
 

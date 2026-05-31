@@ -12,14 +12,17 @@ in a fresh checkout until commands are run.
 
 1. [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md)
 2. [docs/CODE_STATUS.md](docs/CODE_STATUS.md)
-3. [docs/DOCUMENT_AUDIT_2026-05-31.md](docs/DOCUMENT_AUDIT_2026-05-31.md)
-4. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
-5. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
-6. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-7. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-8. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-9. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
-10. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
+3. [docs/backtest/README.md](docs/backtest/README.md)
+4. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
+5. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md)
+6. [docs/DOCUMENT_AUDIT_2026-05-31.md](docs/DOCUMENT_AUDIT_2026-05-31.md)
+7. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
+8. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
+9. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+10. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+11. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+12. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+13. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
 
 ## Setup
 
@@ -102,6 +105,16 @@ uv run sis strategy-author-train-model --spec docs/strategy_research_lab/example
 uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
 ```
 
+Trade[XYZ] pure backtest v0.1:
+
+```bash
+uv run pytest -q tests/backtest
+```
+
+The pure backtest engine is currently a Python API surface under
+`src/sis/backtest/engine/` and `src/sis/backtest/trade_xyz/`; it is not exposed
+as a public CLI command. See [docs/backtest/README.md](docs/backtest/README.md).
+
 Strategy Lab details live in [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md).
 The author-facing capability list is
 [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md),
@@ -120,6 +133,8 @@ Strategy idea preparation starts at
 - `check-go-no-go` and `build-evidence-card` are supplemental reports. Use `phase-gate-review` for the current Trade[XYZ] decision.
 - `data/research/strategy_signals.parquet` is the canonical Strategy Lab signal artifact. `data/research/signals.csv` is a legacy export.
 - `PaperIntentPreview` is paper-only. Do not convert it to live orders.
+- Trade[XYZ] pure backtest v0.1 is separate from `build-backtest` and Strategy
+  Authoring fixed-horizon backtest.
 - Strategy Lab runtime validation lives in Pydantic models; tracked JSON Schema files are thin guards for interoperability.
 - wallet secrets, signing, exchange writes, and production live trading remain out of scope.
 - `data/` is git-ignored runtime state.
@@ -128,9 +143,10 @@ Strategy idea preparation starts at
 
 2026-05-31 code/docs check:
 
-- `./scripts/check`: pass, 596 passed
+- `uv run pytest -q tests/backtest`: pass, 54 passed
+- `./scripts/check`: pass, 650 passed
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run python scripts/check_current_docs.py`: pass, `checked 78 current docs`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 81 current docs`
 
 2026-05-28 runtime artifact snapshot:
 

@@ -8,6 +8,7 @@
 - repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
 - PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、最新 phase gate は `READ_ONLY_GO`。
 - Trade[XYZ] の対象銘柄は fee mode / taker fee / maker fee を registry と raw quote row に持つ。`fee_mode_unknown_rate` は current gate blocker ではない。
+- Trade[XYZ] pure backtest v0.1 は `src/sis/backtest/engine/` と `src/sis/backtest/trade_xyz/` に実装済み。入口は Python API の `run_backtest()` で、public CLI は未公開。
 - Strategy Research Lab の schema / model / CLI surface は実装済み。`StrategyExperimentSpec` から `PaperIntentPreview` までを研究、候補生成、評価、paper昇格判断として扱う。
 - Strategy authoring YAML flow は実装済み。`strategy_authoring_spec.v1` から rule-based long / short / hold / close / reduce / add / rebalance signal、derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max、column-to-column and cross/trend/consecutive condition、exclusion-none condition、regime membership filter、regime-specific overrides、paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal、paper-only linear model score / train-model adapter、group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds、opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip、bracket-OCO / partial-profit break-even lifecycle、order-style entry / time-in-force / post-only / reduce-only、execution-profile presets、slippage with row cost、partial-fill with row fill、min-fill gate with row threshold、spread gate、depth-based fill、latency gate、queue-position gate with row threshold、short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate、fixed-horizon backtest metrics、partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics と executed_signal_summary と strategy_scorecard 付き paper-only preview artifacts を作れる。`strategy_authoring_bundle.v1` で複数 spec の paper portfolio 比較もできる。
 - `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
@@ -37,6 +38,7 @@
 - `Trade[XYZ]` quote collection summary / report / strict artifact validation
 - `Trade[XYZ]` diagnostics / strict validation / phase gate cutover for read-only PR12
 - `Trade[XYZ]` fee mode resolution through `configs/fee_model.trade_xyz.yaml`, registry rows, raw quote rows, diagnostics, and phase gate
+- `Trade[XYZ]` pure backtest engine v0.1: long-only / single-symbol / market-like taker fill / next-row fill / fee, slippage, funding v0 / metrics and report artifacts
 - `bot-preview` による read-only HOLD decision / orders preview artifact 生成
 - `real_market` feature builder、Alpaca provider、free-source quality gating
 - `tracking` layer による real-market vs venue 判定
@@ -52,9 +54,11 @@
 - 新規実装の主 venue は `trade_xyz`。legacy venue は `archive/gtrade_ostium_legacy_archive_*.zip` 内の履歴参照として扱う。
 - `micro_live` はコードと tests では存在するが、標準の operator CLI にはまだ exposed していない。
 - `collect-trade-xyz-quotes` は public CLI command として exposed している。
+- `Trade[XYZ]` pure backtest v0.1 は public CLI ではなく Python API surface。`uv run sis build-backtest` は既存 bridge 系 command であり、pure backtest engine の入口ではない。
 - `data/` は git 管理外。再開時は artifact を再生成する。
 - `bot-preview` の `data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` は実行時生成 artifact。現 checkout に無い場合は `uv run sis bot-preview` で再生成する。
 - Strategy Lab の canonical signal artifact は `data/research/strategy_signals.parquet`。旧 `data/research/signals.csv` は Strategy Lab 正本ではなく legacy export として読む。
+- Backtest surface の読み分けは `docs/backtest/README.md` に記録する。Trade[XYZ] pure backtest、Strategy Authoring fixed-horizon backtest、legacy bridge を混同しない。
 - Strategy Lab で今できることは `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` に記録する。わかりやすい HTML 版は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html`。現行では registered generator または `strategy-experiment-run --spec` から signal artifact を作り、threshold sweep、複数 selected signal の candidate 化、authoring YAML からの entry / hold / close / reduce / add / rebalance / long / short / derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max / column-to-column and cross/trend/consecutive condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal / paper-only linear model score / train-model adapter / group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip / bracket-OCO / partial-profit break-even lifecycle / order-style entry / time-in-force / post-only / reduce-only / execution-profile presets / slippage with row cost / partial-fill with row fill / min-fill gate with row threshold / spread gate / depth-based fill / latency gate / queue-position gate with row threshold / short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate / stop-loss / take-profit / stop/target width guard / reward-risk gate / close-signal exit / partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics と executed_signal_summary と strategy_scorecard 付き fixed-horizon backtest、multi-strategy bundle / risk-parity allocation、paper-only preview まで進められる。
 - `PaperIntentPreview` は paper-only の仮注文意図。`live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を守り、live order として扱わない。
 - Alpaca live fetch は credentials が必要。credentials なしでは明示的に unavailable として失敗するため、silent empty data と混同しない。
@@ -79,8 +83,9 @@
 
 - `./scripts/check`: pass
 - `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q`: 596 passed via `./scripts/check`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 78 current docs`
+- `uv run pytest -q tests/backtest`: 54 passed
+- `uv run pytest -q`: 650 passed via `./scripts/check`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 81 current docs`
 
 2026-05-28 runtime artifact snapshot:
 
@@ -113,16 +118,19 @@ PR-08 専用確認:
 
 1. `docs/CURRENT_STATE.md`
 2. `docs/CODE_STATUS.md`
-3. `docs/DOCUMENT_AUDIT_2026-05-31.md`
-4. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-5. `docs/strategy_research_lab/README.md`
-6. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
-7. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
-8. `docs/OPERATIONS_RUNBOOK.md`
-9. `docs/ARCHITECTURE_AND_PHASES.md`
-10. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-11. `docs/trade_xyz_bot_beginner_guide.html`
-12. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+3. `docs/backtest/README.md`
+4. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
+5. `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md`
+6. `docs/DOCUMENT_AUDIT_2026-05-31.md`
+7. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+8. `docs/strategy_research_lab/README.md`
+9. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+10. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+11. `docs/OPERATIONS_RUNBOOK.md`
+12. `docs/ARCHITECTURE_AND_PHASES.md`
+13. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
+14. `docs/trade_xyz_bot_beginner_guide.html`
+15. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
 
 historical focused audit:
 

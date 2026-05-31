@@ -32,12 +32,14 @@
 | Strategy Research Lab schemas/models | DONE | `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `schemas/strategy_authoring_spec.v1.schema.json`, `schemas/strategy_authoring_bundle.v1.schema.json`, `schemas/strategy_authoring_backtest_result.v1.schema.json`, `schemas/strategy_authoring_bundle_result.v1.schema.json`, `schemas/strategy_experiment_spec.v1.schema.json`, `schemas/strategy_signal.v1.schema.json`, `schemas/evaluation_plan.mls.v1.schema.json`, `schemas/trial_record.v1.schema.json`, `schemas/trade_candidate.v1.schema.json`, `schemas/paper_candidate_pack.v1.schema.json`, `schemas/promotion_decision.v1.schema.json`, `schemas/paper_intent_preview.v1.schema.json`, `schemas/data_snapshot_manifest.v1.schema.json`, `schemas/feature_snapshot_manifest.v1.schema.json` |
 | Strategy Lab paper-only workflow | DONE | `strategy-preview`, `strategy-experiment-run --spec`, `evaluate-strategy-lab`, `build-paper-candidate-pack`, `promotion-decision`, `build-paper-intent-preview`, `paper-from-intents` |
 | Strategy authoring YAML workflow | DONE | `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-train-model`, `strategy-author-bundle-run`; entry / hold / close / reduce / add / rebalance / long / short / derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max / column-to-column and cross/trend/consecutive condition / exclusion-none condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal / paper-only linear model score / train-model adapter / group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip / bracket-OCO / partial-profit break-even lifecycle / order-style entry / time-in-force / post-only / reduce-only / execution-profile presets / slippage with row cost / partial-fill with row fill / min-fill gate with row threshold / spread gate / depth-based fill / latency gate / queue-position gate with row threshold / short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate / stop-loss / take-profit / stop/target width guard / reward-risk gate / close-signal exit / partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics / executed_signal_summary / strategy_scorecard / multi-strategy bundle / risk-parity allocation paper backtest; `tests/strategy_authoring/` |
+| Trade[XYZ] pure backtest v0.1 | DONE / CLI not public | `src/sis/backtest/engine/`, `src/sis/backtest/trade_xyz/`, `tests/backtest/`, `docs/backtest/` |
 
 ## Current Operational Interpretation
 
 - migration 実装は完了している。
 - `src/sis/cli.py` は root Typer app registration と `main()` に近い構成へ分割済み。
 - Trade[XYZ] read-only artifacts は strict validation / diagnostics / phase gate に接続済み。
+- Trade[XYZ] pure backtest v0.1 は既存 bridge / Strategy Authoring fixed-horizon backtest と分離した Python API surface として実装済み。
 - Trade[XYZ] fee fields は `configs/fee_model.trade_xyz.yaml` の explicit classification から registry / raw quote row へ伝播する。
 - phase gate は execution drift を `P2_BLOCKER` と `LIVE_READINESS_BLOCKER` に分類する。
 - phase gate は `phase2_entry_allowed=true` かつ `P2_BLOCKER=0` の場合、live-readiness-only drift を P2 remediation order に入れない。
@@ -48,6 +50,7 @@
 - `PaperIntentPreview` は paper-only artifact で、`requires_revalidation=true`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を model validation で守る。
 - tracked JSON Schema は guard / interoperability 用の薄い契約であり、詳細 validation は Pydantic model が正本。claim guard は `*_claimed` 名に統一済み。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
+- Trade[XYZ] pure backtest artifact は live order artifact ではない。`backtest_run.json` は `no_live_order=true`, `wallet_used=false`, `exchange_write_used=false` を記録する。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
 
 ## Verified Acceptance Highlights
@@ -73,6 +76,7 @@ PR-08:
 - production live trading
 - live order preview / 注文候補生成の正式 artifact surface
 - Strategy Lab から micro live への直接昇格 surface
+- Trade[XYZ] pure backtest の public CLI
 - Alpaca credentials ありの API connectivity は確認済み。fresh live `status=pass` は市場時間中の fresh bar 取得で再確認する
 - execution drift の live-readiness blocker 解消
 - side-specific depth は quote field と tracking gate に存在する。read-only phase gate は spread / stale / l2-only / fee unknown を current blocker として見る。
@@ -84,9 +88,10 @@ PR-08:
 - `uv run python -V`: pass
 - `uv run ruff check .`: pass
 - `uv run pyrefly check`: pass
-- `uv run pytest -q`: 596 passed via `./scripts/check`
-- `./scripts/check`: pass, 596 passed
-- `uv run python scripts/check_current_docs.py`: pass, `checked 78 current docs`
+- `uv run pytest -q tests/backtest`: 54 passed
+- `uv run pytest -q`: 650 passed via `./scripts/check`
+- `./scripts/check`: pass, 650 passed
+- `uv run python scripts/check_current_docs.py`: pass, `checked 81 current docs`
 
 2026-05-28 runtime artifact snapshot:
 
@@ -98,6 +103,8 @@ PR-08:
 
 - historical migration contract: `plan/archive/PR-00_to_PR-08_implementation_plan.md`
 - Strategy Lab doc audit and schema spec: `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+- backtest surface guide: `docs/backtest/README.md`
+- Trade[XYZ] pure backtest v0.1: `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
 - Strategy Lab detailed specs: `docs/strategy_research_lab/README.md`
 - runtime status: `docs/CURRENT_STATE.md`
 - operator procedure: `docs/OPERATIONS_RUNBOOK.md`

@@ -6,12 +6,14 @@
 
 現行 docs は、Strategy Authoring 完了後のコードに対して大筋では追従しています。ただし、2026-05-30 audit 以降に Strategy Authoring coverage が完了したため、検証値と audit 正本に古さが残っていました。
 
-今回の current truth:
+追記: Trade[XYZ] pure backtest v0.1 main merge 後の追加監査は `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を読む。この文書の `596 passed` は Strategy Authoring 完了時点の snapshot であり、現行 main の full gate は `650 passed`。
+
+Strategy Authoring 完了時点の audit snapshot:
 
 - additional audit baseline HEAD: `c4b17b1`
 - root CLI: `uv run sis --help` で `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`, `strategy-author-train-model` を確認。
 - docs lint: `uv run python scripts/check_current_docs.py` が current docs `78` 件を検査。
-- full gate: `./scripts/check` は `596 passed` を最新の全体検証値として扱う。
+- full gate: `./scripts/check` は `596 passed`。
 - Strategy Authoring completion evidence: `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md`。
 
 ## Code Truth
@@ -60,11 +62,11 @@ tests/test_strategy_lab_schemas.py
 | Path | 古い内容 | 現在の扱い |
 |---|---|---|
 | `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md` | Strategy Authoring completion 前の audit。`446 passed` / 2026-05-30 前提の表現が残る | archived superseded audit。現行入口は本ファイル |
-| `README.md` | `565 passed`, current docs `76` 件 | 現行では `596 passed` / `78` 件へ修正済み |
+| `README.md` | `565 passed`, current docs `76` 件 | Strategy Authoring 完了時点では `596 passed` / `78` 件へ修正済み。Trade[XYZ] pure backtest v0.1 反映後は `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を読む |
 | `docs/CURRENT_STATE.md` | `565 passed`, current docs `76` 件、authoring command list に `strategy-author-train-model` が無い | 現行では修正済み |
-| `docs/CODE_STATUS.md` | `565 passed`, current docs `76` 件 | 現行では修正済み |
-| `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | `565 passed`, current docs `76` 件 | 現行では修正済み |
-| `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md` | `565 passed`, current docs `76` 件 | 現行では修正済み |
+| `docs/CODE_STATUS.md` | `565 passed`, current docs `76` 件 | Strategy Authoring 完了時点では修正済み。最新値は backtest update audit を読む |
+| `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | `565 passed`, current docs `76` 件 | Strategy Authoring 完了時点では修正済み。最新値は backtest update audit を読む |
+| `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md` | `565 passed`, current docs `76` 件 | Strategy Authoring 完了時点では修正済み。最新値は backtest update audit を読む |
 | `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | `181 passed` / schema tests `2 passed` / full gate `565 passed` の中間 snapshot | historical progress doc として有効。現行では最終 focused gate `214 passed` と full gate `596 passed` へ更新済み |
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | 全体 docs audit の参照先が `docs/DOCUMENT_AUDIT_2026-05-30.md` のまま | 現行では current audit `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
 | `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | `checked 77 current docs` は 05-31 audit 追加前の値 | 現行では `checked 78 current docs` も併記 |

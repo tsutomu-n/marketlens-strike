@@ -310,6 +310,6 @@ git diff --check
 - `tests/strategy_authoring` + `tests/test_strategy_lab_schemas.py`: 214 passed
 - Strategy Lab focused suite: 45 passed
 - Research pipeline / CLI smoke: 71 passed
-- `scripts/check_current_docs.py`: checked 78 current docs
-- `./scripts/check`: 596 passed, pyrefly 0 errors
+- `scripts/check_current_docs.py`: checked 81 current docs
+- `./scripts/check`: 650 passed, pyrefly 0 errors
 - `git diff --check`: pass
