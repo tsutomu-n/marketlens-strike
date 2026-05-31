@@ -51,6 +51,9 @@ def test_quote_log_v2_accepts_hip3_fields() -> None:
         fee_source="instrument_registry",
         source_confidence=1.0,
         venue_quality_score=1.0,
+        oracle_ts_ms=1770000000000,
+        oracle_ts_source="oracleTs",
+        oracle_ts_status="observed",
         source="test",
         raw_payload_sha256="abc123",
         raw_payload_ref="data/raw/example.jsonl",
@@ -102,6 +105,30 @@ def test_trade_xyz_snapshot_schemas_accept_required_operational_fields() -> None
             "source_hash": "abc",
         },
         load_schema("instrument_registry_snapshot.v1.schema.json"),
+    )
+    validate(
+        {
+            "schema_version": "session_calendar_snapshot.v1",
+            "snapshot_ts": "2026-05-31T00:00:00+00:00",
+            "canonical_symbol": "SP500",
+            "venue_symbol": "SP500",
+            "real_market_symbol": "SPY",
+            "asset_class": "index",
+            "timezone": None,
+            "external_session_ref": "nyse_regular",
+            "internal_session_ref": "trade_xyz_internal",
+            "external_session_open": None,
+            "internal_session_open": None,
+            "maintenance_window": None,
+            "holiday_closure": None,
+            "close_only_allowed": True,
+            "source": "data/registry/trade_xyz_instrument_registry.json",
+            "source_hash": "abc",
+            "data_status": "incomplete",
+            "missing_fields": ["maintenance_window", "holiday_closure"],
+            "notes": ["registry_derived_session_refs_only"],
+        },
+        load_schema("session_calendar_snapshot.v1.schema.json"),
     )
 
 

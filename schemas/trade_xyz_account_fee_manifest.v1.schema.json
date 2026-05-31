@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzAccountFeeManifestV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "status",
+    "data_dir",
+    "source",
+    "raw_artifact_path",
+    "user_address_sha256",
+    "payload_field_keys",
+    "available_fields",
+    "missing_fields",
+    "parsed",
+    "not_collected_fields",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": { "const": "trade_xyz_account_fee_manifest.v1" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["pass", "partial"] },
+    "data_dir": { "type": "string", "minLength": 1 },
+    "source": { "const": "hyperliquid_info_userFees" },
+    "source_doc": { "type": "string", "minLength": 1 },
+    "raw_artifact_path": { "type": "string", "minLength": 1 },
+    "user_address_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "payload_field_keys": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "available_fields": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "missing_fields": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "parsed": {
+      "type": "object",
+      "required": [
+        "user_cross_rate",
+        "user_add_rate",
+        "user_taker_fee_bps",
+        "user_maker_fee_bps",
+        "active_referral_discount",
+        "active_staking_discount",
+        "active_staking_bps_of_max_supply",
+        "daily_user_volume_count"
+      ],
+      "properties": {
+        "user_cross_rate": { "type": ["string", "null"] },
+        "user_add_rate": { "type": ["string", "null"] },
+        "user_taker_fee_bps": { "type": ["number", "null"], "minimum": 0 },
+        "user_maker_fee_bps": { "type": ["number", "null"] },
+        "active_referral_discount": { "type": ["number", "null"], "minimum": 0 },
+        "active_staking_discount": { "type": ["number", "null"], "minimum": 0 },
+        "active_staking_bps_of_max_supply": { "type": ["number", "null"], "minimum": 0 },
+        "daily_user_volume_count": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "not_collected_fields": { "type": "object" },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": true
+}

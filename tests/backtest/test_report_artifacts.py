@@ -4,7 +4,12 @@ from sis.backtest.engine.report import render_backtest_html, render_backtest_mar
 
 
 def test_report_renderers_include_required_rev3_sections() -> None:
-    metrics = {"net_return_after_cost": 0.01, "trade_count": 2}
+    metrics = {
+        "net_return_after_cost": 0.01,
+        "trade_count": 2,
+        "fee_source_counts": {"row": 1},
+        "fee_row_resolved_rate": 1.0,
+    }
     artifacts = {"metrics": "metrics.json"}
 
     markdown = render_backtest_markdown(
@@ -46,3 +51,4 @@ def test_report_renderers_include_required_rev3_sections() -> None:
     assert "_v0.1 artifact-backed section._" not in markdown
     assert "`unknown_fee_mode_count`: 1" in markdown
     assert "`scenario_method`: cost_derived_v0" in markdown
+    assert "`fee_source_counts`: {'row': 1}" in markdown

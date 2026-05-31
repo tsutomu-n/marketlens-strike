@@ -30,6 +30,7 @@ def _parser() -> argparse.ArgumentParser:
         description="Run a local Trade[XYZ] real-data backtest smoke without exposing a public CLI."
     )
     parser.add_argument("--input", default="data/normalized/quotes.parquet")
+    parser.add_argument("--funding-events", default="data/normalized/funding_events.parquet")
     parser.add_argument("--symbol", default="SP500")
     parser.add_argument(
         "--timeframe",
@@ -121,6 +122,12 @@ def main() -> int:
     )
     if frame.is_empty():
         raise SystemExit(f"no rows for symbol={args.symbol}")
+    funding_events_path = Path(args.funding_events) if args.funding_events else None
+    funding_events = (
+        load_normalized_quotes(funding_events_path)
+        if funding_events_path is not None and funding_events_path.exists()
+        else None
+    )
 
     entry_lookback = args.entry_lookback
     exit_lookback = args.exit_lookback
@@ -159,6 +166,8 @@ def main() -> int:
     result = run_backtest(
         config=config,
         market_data=frame,
+        funding_events=funding_events,
+        funding_events_ref=str(funding_events_path) if funding_events is not None else None,
         out_dir=Path(args.out),
         input_data_ref=str(input_path),
         breakout=BreakoutParameters(entry_lookback=entry_lookback, exit_lookback=exit_lookback),

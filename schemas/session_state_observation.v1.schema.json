@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzSessionStateObservationV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "observed_ts",
+    "canonical_symbol",
+    "venue_symbol",
+    "calendar",
+    "session_type",
+    "external_session_open",
+    "holiday_closure",
+    "source",
+    "data_status"
+  ],
+  "properties": {
+    "schema_version": { "const": "session_state_observation.v1" },
+    "observed_ts": { "type": "string", "format": "date-time" },
+    "canonical_symbol": { "type": "string", "minLength": 1 },
+    "venue_symbol": { "type": "string", "minLength": 1 },
+    "real_market_symbol": { "type": ["string", "null"] },
+    "asset_class": {
+      "type": "string",
+      "enum": ["equity", "etf", "index", "basket_index", "crypto_beta_equity", "commodity", "unknown"]
+    },
+    "calendar": { "type": ["string", "null"] },
+    "session_type": {
+      "type": "string",
+      "enum": ["regular", "closed", "unknown"]
+    },
+    "external_session_open": { "type": ["boolean", "null"] },
+    "internal_session_open": { "type": ["boolean", "null"] },
+    "maintenance_window": { "type": ["boolean", "null"] },
+    "holiday_closure": { "type": ["boolean", "null"] },
+    "source": { "type": "string", "minLength": 1 },
+    "data_status": {
+      "type": "string",
+      "enum": ["calendar_observed", "spec_derived", "unsupported_symbol", "incomplete"]
+    },
+    "missing_fields": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "raw_payload_ref": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

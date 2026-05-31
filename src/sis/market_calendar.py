@@ -27,6 +27,19 @@ class SessionWindow:
     recommended_end_jst: datetime
 
 
+@dataclass(frozen=True)
+class MarketSessionState:
+    symbol: str
+    venue: str
+    calendar: str | None
+    ts_utc: datetime
+    session_type: str
+    external_session_open: bool | None
+    holiday_closure: bool | None
+    data_status: str
+    notes: list[str]
+
+
 def _ensure_tz(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
@@ -66,18 +79,77 @@ def _next_xnys_window(now_utc: datetime) -> tuple[datetime, datetime, str]:
     raise RuntimeError("Unable to determine next XNYS session within 14 days")
 
 
-def market_session_window(venue: str, symbol: str, now: datetime | None = None) -> SessionWindow:
+def _calendar_for_symbol(venue: str, symbol: str) -> str:
     normalized_venue = venue.strip().lower()
     normalized_symbol = symbol.strip().upper()
     if normalized_venue != "trade_xyz":
         raise ValueError("Only trade_xyz is supported for market session planning.")
+    if normalized_symbol in INDEX_SYMBOLS or normalized_symbol in XNYS_EQUITY_SYMBOLS:
+        return "XNYS"
+    raise ValueError(f"Unsupported symbol for market session planning: {normalized_symbol}")
+
+
+def market_session_state(venue: str, symbol: str, ts: datetime) -> MarketSessionState:
+    normalized_symbol = symbol.strip().upper()
+    normalized_venue = venue.strip().lower()
+    ts_utc = _ensure_tz(ts).astimezone(timezone.utc)
+    try:
+        calendar_name = _calendar_for_symbol(normalized_venue, normalized_symbol)
+    except ValueError:
+        return MarketSessionState(
+            symbol=normalized_symbol,
+            venue=normalized_venue,
+            calendar=None,
+            ts_utc=ts_utc,
+            session_type="unknown",
+            external_session_open=None,
+            holiday_closure=None,
+            data_status="unsupported_symbol",
+            notes=["unsupported_symbol_for_calendar_state"],
+        )
+
+    cal = xcals.get_calendar(calendar_name)
+    local_date = ts_utc.astimezone(EASTERN).date()
+    day_ts = pd.Timestamp(local_date)
+    if not cal.is_session(day_ts):
+        return MarketSessionState(
+            symbol=normalized_symbol,
+            venue=normalized_venue,
+            calendar=calendar_name,
+            ts_utc=ts_utc,
+            session_type="closed",
+            external_session_open=False,
+            holiday_closure=True,
+            data_status="calendar_observed",
+            notes=["exchange_calendar_non_session_day"],
+        )
+
+    session_open = cal.session_open(day_ts).to_pydatetime().astimezone(timezone.utc)
+    session_close = cal.session_close(day_ts).to_pydatetime().astimezone(timezone.utc)
+    is_open = session_open <= ts_utc < session_close
+    return MarketSessionState(
+        symbol=normalized_symbol,
+        venue=normalized_venue,
+        calendar=calendar_name,
+        ts_utc=ts_utc,
+        session_type="regular" if is_open else "closed",
+        external_session_open=is_open,
+        holiday_closure=False,
+        data_status="calendar_observed",
+        notes=["exchange_calendar_session_day"],
+    )
+
+
+def market_session_window(venue: str, symbol: str, now: datetime | None = None) -> SessionWindow:
+    normalized_venue = venue.strip().lower()
+    normalized_symbol = symbol.strip().upper()
 
     now_utc = _resolve_now(now)
-    if normalized_symbol in INDEX_SYMBOLS or normalized_symbol in XNYS_EQUITY_SYMBOLS:
+    calendar = _calendar_for_symbol(normalized_venue, normalized_symbol)
+    if calendar == "XNYS":
         session_open, session_close, status = _next_xnys_window(now_utc)
         recommended_start = session_open + timedelta(minutes=15)
         recommended_end = session_close - timedelta(minutes=30)
-        calendar = "XNYS"
     else:
         raise ValueError(f"Unsupported symbol for market session planning: {normalized_symbol}")
 

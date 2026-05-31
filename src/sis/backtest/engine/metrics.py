@@ -36,6 +36,10 @@ def _value_counts(frame: pl.DataFrame, column: str) -> dict[str, int]:
     return {str(row[column]): int(row["len"]) for row in rows if row[column] is not None}
 
 
+def _count_matching(values: list[str], needles: tuple[str, ...]) -> int:
+    return sum(1 for value in values if any(needle in value for needle in needles))
+
+
 def calculate_metrics(
     *,
     initial_cash_usd: float,
@@ -62,6 +66,15 @@ def calculate_metrics(
         else 0
     )
     fill_count = fills.height
+    fee_sources = (
+        [str(value) for value in fills.get_column("fee_source").drop_nulls().to_list()]
+        if "fee_source" in fills.columns and not fills.is_empty()
+        else []
+    )
+    fee_source_counts = _value_counts(fills, "fee_source")
+    fee_config_fallback_count = _count_matching(fee_sources, ("configs/", ".yaml:"))
+    fee_row_resolved_count = fee_source_counts.get("row", 0)
+    fee_unresolved_count = fee_source_counts.get("unresolved", 0)
     return {
         "net_return_after_cost": ending_equity / initial_cash_usd - 1,
         "total_return": ending_equity / initial_cash_usd - 1,
@@ -78,6 +91,13 @@ def calculate_metrics(
         "end_open_position_count": end_open_position_count,
         "end_unrealized_pnl": end_unrealized_pnl,
         "fee_impact": sum(fee_amounts),
+        "fee_source_counts": fee_source_counts,
+        "fee_row_resolved_count": fee_row_resolved_count,
+        "fee_config_fallback_count": fee_config_fallback_count,
+        "fee_unresolved_count": fee_unresolved_count,
+        "fee_row_resolved_rate": fee_row_resolved_count / fill_count if fill_count else 0.0,
+        "fee_config_fallback_rate": fee_config_fallback_count / fill_count if fill_count else 0.0,
+        "fee_unresolved_rate_runtime": fee_unresolved_count / fill_count if fill_count else 0.0,
         "funding_impact": funding_impact,
         "slippage_impact": sum(slippage_amounts),
         "taker_fill_ratio": taker_fills / fill_count if fill_count else 0.0,

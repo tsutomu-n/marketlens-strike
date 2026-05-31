@@ -1,5 +1,7 @@
 from typer.testing import CliRunner
 from datetime import datetime, timezone
+import os
+import time
 
 import polars as pl
 
@@ -17,6 +19,19 @@ def test_help_smoke() -> None:
     assert result.exit_code == 0
     assert "probe" in result.stdout
     assert "collect-trade-xyz-quotes" in result.stdout
+    assert "build-trade-xyz-quote-coverage" in result.stdout
+    assert "build-trade-xyz-reference-data" in result.stdout
+    assert "collect-trade-xyz-real-market-reference" in result.stdout
+    assert "collect-trade-xyz-signal-candles" in result.stdout
+    assert "collect-trade-xyz-account-fee" in result.stdout
+    assert "build-trade-xyz-session-state" in result.stdout
+    assert "collect-trade-xyz-funding-history" in result.stdout
+    assert "build-trade-xyz-funding-events-from-history" in result.stdout
+    assert "build-trade-xyz-data-readiness" in result.stdout
+    assert "trade-xyz-collection-status" in result.stdout
+    assert "check-trade-xyz-historical-archive-preflight" in result.stdout
+    assert "build-trade-xyz-data-bundle" in result.stdout
+    assert "collect-trade-xyz-data-cycle" in result.stdout
     assert "bot-preview" in result.stdout
     assert "build-backtest" in result.stdout
     assert "ingest-research-data" in result.stdout
@@ -1576,6 +1591,694 @@ def test_collect_trade_xyz_quotes_cli_no_normalize(tmp_path, monkeypatch) -> Non
     assert "quote_count=1" in result.stdout
     assert "normalized_quotes_path=" not in result.stdout
     assert (data_dir / "normalized/quotes.parquet").exists() is False
+
+
+def test_collect_trade_xyz_data_cycle_cli_collects_and_rebuilds_readiness(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    registry = data_dir / "registry/trade_xyz_instrument_registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        (
+            '[{"venue":"trade_xyz","canonical_symbol":"NVDA","venue_symbol":"NVDA","asset_class":"equity",'
+            '"dex":"xyz","coin":"xyz:NVDA","asset_id":130002,"real_market_symbol":"NVDA",'
+            '"fee_mode":"standard","taker_fee_bps":9.0,"maker_fee_bps":3.0,'
+            '"external_session":"xnys_regular","internal_session":"trade_xyz_internal",'
+            '"api_readable":true,"api_orderable":true,"active":true}]'
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeTradeXyzClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def all_mids(self):
+            return {"xyz:NVDA": "1000.0"}
+
+        def meta(self):
+            return {"universe": [{"name": "xyz:NVDA"}]}
+
+        def perp_dexs(self):
+            return ["xyz"]
+
+        def meta_and_asset_ctxs(self):
+            return (
+                {"universe": [{"name": "xyz:NVDA"}]},
+                [
+                    {
+                        "markPx": "1000.0",
+                        "oraclePx": "1000.0",
+                        "oracleTs": "1770000000000",
+                        "funding": "0.00001",
+                        "openInterest": "10000",
+                    }
+                ],
+            )
+
+        def l2_book(self, _coin):
+            return {
+                "levels": [
+                    [{"px": "999.9", "sz": "10"}],
+                    [{"px": "1000.1", "sz": "12"}],
+                ]
+            }
+
+        def funding_history(self, coin, *, start_time_ms, end_time_ms=None):
+            return [
+                {
+                    "coin": coin,
+                    "fundingRate": "0.00001",
+                    "premium": "0.00002",
+                    "time": start_time_ms,
+                }
+            ]
+
+    monkeypatch.setattr("sis.commands.quotes.TradeXyzClient", FakeTradeXyzClient)
+
+    result = runner.invoke(
+        app,
+        [
+            "collect-trade-xyz-data-cycle",
+            "--symbols",
+            "NVDA",
+            "--duration-minutes",
+            "1",
+            "--interval-seconds",
+            "60",
+            "--skip-real-market-reference",
+        ],
+        env=env,
+    )
+
+    assert result.exit_code == 0
+    assert "quote_count=1" in result.stdout
+    assert "bundle_manifest_path=" in result.stdout
+    assert "readiness_decision=NOT_READY" in result.stdout
+    assert (data_dir / "manifests/trade_xyz_data_collection_bundle_manifest.json").exists()
+    assert (data_dir / "manifests/trade_xyz_data_readiness_manifest.json").exists()
+    bundle = read_json(data_dir / "manifests/trade_xyz_data_collection_bundle_manifest.json")
+    assert bundle["status"] == "completed"
+    assert bundle["steps"][0]["name"] == "quote_coverage"
+
+
+def test_collect_trade_xyz_data_cycle_cli_dry_run(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    registry = data_dir / "registry/trade_xyz_instrument_registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        (
+            '[{"venue":"trade_xyz","canonical_symbol":"NVDA","venue_symbol":"NVDA","asset_class":"equity",'
+            '"dex":"xyz","coin":"xyz:NVDA","asset_id":130002,"real_market_symbol":"NVDA",'
+            '"api_readable":true,"api_orderable":true,"active":true}]'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        ["collect-trade-xyz-data-cycle", "--symbols", "NVDA", "--dry-run"],
+        env=env,
+    )
+
+    assert result.exit_code == 0
+    assert "dry_run=true" in result.stdout
+    assert "symbols=NVDA" in result.stdout
+    assert "registry_refresh=enabled" in result.stdout
+    assert "collect_command=uv run sis collect-trade-xyz-quotes" in result.stdout
+    assert (
+        "follow_up_command=uv run sis build-trade-xyz-data-bundle --auto-funding-window"
+        in result.stdout
+    )
+
+
+def test_trade_xyz_collection_status_cli_writes_ops_status(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    (data_dir / "raw/quotes/trade_xyz").mkdir(parents=True)
+    (data_dir / "raw/quotes/trade_xyz/2026-05-31.jsonl").write_text(
+        (
+            '{"ts_client":"2026-05-31T00:00:00+00:00","venue":"trade_xyz",'
+            '"canonical_symbol":"NVDA","venue_symbol":"NVDA","source":"test",'
+            '"raw_payload_sha256":"a","raw_payload_ref":"fixture://row0"}\n'
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "manifests").mkdir(parents=True)
+    (data_dir / "manifests/trade_xyz_quote_coverage_manifest.json").write_text(
+        (
+            '{"schema_version":"trade_xyz_quote_coverage_manifest.v1",'
+            '"coverage_passed":false,"traceable_only":true,"row_count":0,"raw_row_count":0,'
+            '"excluded_missing_raw_payload_ref_count":0,'
+            '"per_symbol":{"NVDA":{"coverage_status":"insufficient","row_count":0,'
+            '"raw_row_count":0,"span_days":0.0,"min_days_required":30.0,'
+            '"insufficient_reasons":["span_days_below_min"],"missing_rates":{}}}}'
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "manifests/trade_xyz_data_readiness_manifest.json").write_text(
+        '{"decision":"NOT_READY","backtest_data_ready":false,"fail_count":1,"known_gap_count":2}',
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["trade-xyz-collection-status"], env=env)
+
+    assert result.exit_code == 0
+    assert "status_path=" in result.stdout
+    assert "decision=COLLECT_MORE_QUOTES" in result.stdout
+    assert "fail_count=" in result.stdout
+    assert "known_gap_count=" in result.stdout
+    assert "failing_requirements=" in result.stdout
+    assert "known_gap_requirements=" in result.stdout
+    assert "funding_events_status=" in result.stdout
+    assert "funding_events_skipped=" in result.stdout
+    assert "oracle_timestamp_provenance_status=" in result.stdout
+    assert "oracle_ts_missing_rate=" in result.stdout
+    assert "signal_candles_status=" in result.stdout
+    assert "signal_candles_missing_symbols=" in result.stdout
+    assert "signal_candles_missing_intervals=" in result.stdout
+    assert "signal_candles_request_error_count=" in result.stdout
+    assert "latest_file_stale=False" in result.stdout
+    assert "cycle_lock_stale=False" in result.stdout
+    assert "supervisor_lock_stale=False" in result.stdout
+    assert "aws_cli_available=" in result.stdout
+    assert "aws_command_source=" in result.stdout
+    assert "lz4_available=" in result.stdout
+    assert "historical_archive_bulk_plan_exists=False" in result.stdout
+    assert "historical_archive_bulk_execution_status=None" in result.stdout
+    assert "historical_archive_bulk_normalization_status=None" in result.stdout
+    assert "account_fee_user_address_configured=False" in result.stdout
+    assert "account_fee_manifest_exists=False" in result.stdout
+    assert "account_fee_manifest_status=None" in result.stdout
+    assert "account_fee_manifest_user_matches_env=None" in result.stdout
+    assert "account_fee_user_taker_fee_bps=None" in result.stdout
+    assert "account_fee_user_maker_fee_bps=None" in result.stdout
+    assert "progress_status=" in result.stdout
+    assert "coverage_completion_ratio_by_span=" in result.stdout
+    assert "next_command=uv run sis collect-trade-xyz-data-cycle" in result.stdout
+    assert "next_action_1_key=collect_trade_xyz_data_cycle" in result.stdout
+    assert "next_action_2_key=historical_archive_backfill" in result.stdout
+    assert "next_action_2_preflight_command=" in result.stdout
+    assert (
+        "next_action_2_dry_run_command=uv run sis execute-trade-xyz-historical-archive-bulk --max-objects 10"
+        in result.stdout
+    )
+    assert (
+        "next_action_2_execute_command=uv run sis execute-trade-xyz-historical-archive-bulk --execute --acknowledge-requester-pays --max-objects 10"
+        in result.stdout
+    )
+    assert (
+        "next_action_2_follow_up_command=uv run sis normalize-trade-xyz-historical-archive-bulk"
+        in result.stdout
+    )
+    payload = read_json(data_dir / "ops/trade_xyz_collection_status.json")
+    assert payload["decision"] == "COLLECT_MORE_QUOTES"
+    assert "readiness_requirement_details" in payload
+    assert payload["account_fee_prerequisites"]["configured"] is False
+    assert payload["account_fee_artifact"]["exists"] is False
+    assert payload["account_fee_artifact"]["status"] is None
+    assert payload["account_fee_artifact"]["matches_configured_user"] is None
+    assert payload["historical_archive_artifacts"]["bulk_plan"]["exists"] is False
+    assert payload["historical_archive_artifacts"]["bulk_execution"]["exists"] is False
+    assert payload["historical_archive_artifacts"]["bulk_normalization"]["exists"] is False
+    assert payload["latest_file_stale"] is False
+    assert payload["raw_quote_inventory"]["latest_file_age_seconds"] is not None
+    assert payload["raw_quote_inventory"]["traceable_row_count"] == 1
+    assert payload["coverage_refresh"]["status"] == "completed"
+    assert payload["readiness_refresh"]["status"] == "completed"
+    assert payload["coverage"]["row_count"] == 1
+    assert (data_dir / "reports/trade_xyz_collection_status.md").exists()
+
+
+def test_collect_trade_xyz_historical_l2_archive_cli_dry_run(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+
+    result = runner.invoke(
+        app,
+        [
+            "collect-trade-xyz-historical-l2-archive",
+            "--coin",
+            "xyz:XYZ100",
+            "--date",
+            "2026-05-01",
+            "--hour",
+            "9",
+        ],
+        env=env,
+    )
+
+    assert result.exit_code == 0
+    assert "status=planned" in result.stdout
+    assert (
+        "s3_uri=s3://hyperliquid-archive/market_data/20260501/9/l2Book/xyz:XYZ100.lz4"
+        in result.stdout
+    )
+    payload = read_json(data_dir / "manifests/trade_xyz_historical_l2_archive_manifest.json")
+    assert payload["dry_run"] is True
+    assert payload["requester_pays_acknowledged"] is False
+
+
+def test_collect_trade_xyz_historical_asset_ctxs_archive_cli_dry_run(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+
+    result = runner.invoke(
+        app,
+        [
+            "collect-trade-xyz-historical-asset-ctxs-archive",
+            "--date",
+            "2026-05-01",
+        ],
+        env=env,
+    )
+
+    assert result.exit_code == 0
+    assert "status=planned" in result.stdout
+    assert "s3_uri=s3://hyperliquid-archive/asset_ctxs/20260501.csv.lz4" in result.stdout
+    payload = read_json(
+        data_dir / "manifests/trade_xyz_historical_asset_ctxs_archive_manifest.json"
+    )
+    assert payload["dry_run"] is True
+    assert payload["requester_pays_acknowledged"] is False
+
+
+def test_normalize_trade_xyz_historical_archive_quotes_cli(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    registry_path = data_dir / "registry/trade_xyz_instrument_registry.json"
+    l2_path = data_dir / "raw/historical_archive/hyperliquid/example.jsonl"
+    ctx_path = data_dir / "raw/historical_archive/hyperliquid/asset_ctxs/20260501.csv"
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    registry_path.write_text(
+        (
+            '[{"venue":"trade_xyz","canonical_symbol":"XYZ100","venue_symbol":"XYZ100",'
+            '"asset_class":"basket_index","dex":"xyz","coin":"xyz:XYZ100","asset_id":100,'
+            '"fee_mode":"standard","taker_fee_bps":9.0,"maker_fee_bps":3.0,"active":true}]'
+        ),
+        encoding="utf-8",
+    )
+    l2_path.parent.mkdir(parents=True, exist_ok=True)
+    l2_path.write_text(
+        (
+            '{"coin":"xyz:XYZ100","time":1770000000000,'
+            '"levels":[[{"px":"99.9","sz":"10"}],[{"px":"100.1","sz":"12"}]]}\n'
+        ),
+        encoding="utf-8",
+    )
+    ctx_path.parent.mkdir(parents=True, exist_ok=True)
+    ctx_path.write_text(
+        "coin,markPx,oraclePx,funding,openInterest,oracleTs\n"
+        "xyz:XYZ100,100.2,100.1,-0.00001,1234,1770000000000\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "normalize-trade-xyz-historical-archive-quotes",
+            "--l2-jsonl-path",
+            str(l2_path),
+            "--asset-ctxs-path",
+            str(ctx_path),
+            "--coin",
+            "xyz:XYZ100",
+        ],
+        env={"SIS_DATA_DIR": str(data_dir)},
+    )
+
+    assert result.exit_code == 0
+    assert "rows_written=1" in result.stdout
+    assert "asset_ctx_matched=True" in result.stdout
+    payload = read_json(
+        data_dir / "manifests/trade_xyz_historical_archive_quote_normalization_manifest.json"
+    )
+    assert payload["rows_written"] == 1
+
+
+def test_plan_trade_xyz_historical_archive_bulk_cli(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+
+    result = runner.invoke(
+        app,
+        [
+            "plan-trade-xyz-historical-archive-bulk",
+            "--coins",
+            "xyz:XYZ100,xyz:SP500",
+            "--start-date",
+            "2026-05-01",
+            "--end-date",
+            "2026-05-02",
+            "--hours",
+            "0,12",
+        ],
+        env={"SIS_DATA_DIR": str(data_dir)},
+    )
+
+    assert result.exit_code == 0
+    assert "estimated_l2_object_count=8" in result.stdout
+    assert "estimated_asset_ctx_object_count=2" in result.stdout
+    assert "requester_pays_ack_required=True" in result.stdout
+    payload = read_json(data_dir / "manifests/trade_xyz_historical_archive_bulk_plan_manifest.json")
+    assert payload["estimated_total_object_count"] == 10
+
+
+def test_execute_trade_xyz_historical_archive_bulk_cli_dry_run(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    plan_dir = data_dir / "manifests"
+    plan_dir.mkdir(parents=True, exist_ok=True)
+    plan_path = plan_dir / "trade_xyz_historical_archive_bulk_plan_manifest.json"
+    plan_path.write_text(
+        (
+            '{"schema_version":"trade_xyz_historical_archive_bulk_plan_manifest.v1",'
+            '"l2_objects":[{"destination":"'
+            + str(data_dir / "raw/historical_archive/example.lz4")
+            + '","download_command":["aws","s3","cp","s3://bucket/key","'
+            + str(data_dir / "raw/historical_archive/example.lz4")
+            + '","--request-payer","requester"]}],'
+            '"asset_ctx_objects":[]}'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "execute-trade-xyz-historical-archive-bulk",
+            "--plan-path",
+            str(plan_path),
+            "--max-objects",
+            "1",
+        ],
+        env={"SIS_DATA_DIR": str(data_dir)},
+    )
+
+    assert result.exit_code == 0
+    assert "status=planned" in result.stdout
+    assert "selected_object_count=1" in result.stdout
+    assert "downloaded_object_count=0" in result.stdout
+
+
+def test_check_trade_xyz_historical_archive_preflight_cli_records_manifest(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+
+    result = runner.invoke(
+        app,
+        ["check-trade-xyz-historical-archive-preflight"],
+        env={"SIS_DATA_DIR": str(data_dir), "SIS_AWS_COMMAND": "false"},
+    )
+
+    assert result.exit_code == 0
+    assert "status=fail" in result.stdout
+    assert "return_code=1" in result.stdout
+    payload = read_json(data_dir / "manifests/trade_xyz_historical_archive_preflight_manifest.json")
+    assert payload["status"] == "fail"
+    assert payload["aws_command_source"] == "SIS_AWS_COMMAND"
+
+
+def test_normalize_trade_xyz_historical_archive_bulk_cli(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    registry_path = data_dir / "registry/trade_xyz_instrument_registry.json"
+    l2_path = (
+        data_dir
+        / "raw/historical_archive/hyperliquid/market_data/20260501/9/l2Book/xyz:XYZ100.jsonl"
+    )
+    ctx_path = data_dir / "raw/historical_archive/hyperliquid/asset_ctxs/20260501.csv"
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    registry_path.write_text(
+        (
+            '[{"venue":"trade_xyz","canonical_symbol":"XYZ100","venue_symbol":"XYZ100",'
+            '"asset_class":"basket_index","dex":"xyz","coin":"xyz:XYZ100","asset_id":100,'
+            '"fee_mode":"standard","taker_fee_bps":9.0,"maker_fee_bps":3.0,"active":true}]'
+        ),
+        encoding="utf-8",
+    )
+    l2_path.parent.mkdir(parents=True, exist_ok=True)
+    l2_path.write_text(
+        (
+            '{"coin":"xyz:XYZ100","time":1770000000000,'
+            '"levels":[[{"px":"99.9","sz":"10"}],[{"px":"100.1","sz":"12"}]]}\n'
+        ),
+        encoding="utf-8",
+    )
+    ctx_path.parent.mkdir(parents=True, exist_ok=True)
+    ctx_path.write_text(
+        "coin,markPx,oraclePx,funding,openInterest,oracleTs\n"
+        "xyz:XYZ100,100.2,100.1,-0.00001,1234,1770000000000\n",
+        encoding="utf-8",
+    )
+    plan_path = data_dir / "manifests/trade_xyz_historical_archive_bulk_plan_manifest.json"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(
+        (
+            '{"schema_version":"trade_xyz_historical_archive_bulk_plan_manifest.v1",'
+            '"l2_objects":[{"date":"2026-05-01","hour":9,"coin":"xyz:XYZ100",'
+            '"decompressed_path":"' + str(l2_path) + '"}],'
+            '"asset_ctx_objects":[{"date":"2026-05-01","decompressed_path":"'
+            + str(ctx_path)
+            + '"}]}'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "normalize-trade-xyz-historical-archive-bulk",
+            "--plan-path",
+            str(plan_path),
+            "--registry-path",
+            str(registry_path),
+        ],
+        env={"SIS_DATA_DIR": str(data_dir)},
+    )
+
+    assert result.exit_code == 0
+    assert "normalized_file_count=1" in result.stdout
+    assert "rows_written=1" in result.stdout
+    payload = read_json(
+        data_dir / "manifests/trade_xyz_historical_archive_bulk_quote_normalization_manifest.json"
+    )
+    assert payload["normalized_file_count"] == 1
+    assert (
+        data_dir / "raw/quotes/trade_xyz/historical_archive_20260501_9_xyz_XYZ100.jsonl"
+    ).exists()
+
+
+def test_trade_xyz_collection_status_cli_can_fail_on_stale(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    raw_path = data_dir / "raw/quotes/trade_xyz/2026-05-31.jsonl"
+    raw_path.parent.mkdir(parents=True)
+    raw_path.write_text(
+        (
+            '{"ts_client":"2026-05-31T00:00:00+00:00","venue":"trade_xyz",'
+            '"canonical_symbol":"NVDA","venue_symbol":"NVDA","source":"test",'
+            '"raw_payload_sha256":"a","raw_payload_ref":"fixture://row0"}\n'
+        ),
+        encoding="utf-8",
+    )
+    old_time = time.time() - 7200
+    os.utime(raw_path, (old_time, old_time))
+
+    result = runner.invoke(
+        app,
+        ["trade-xyz-collection-status", "--stale-after-minutes", "1", "--fail-on-stale"],
+        env=env,
+    )
+
+    assert result.exit_code == 2
+    assert "latest_file_stale=True" in result.stdout
+    payload = read_json(data_dir / "ops/trade_xyz_collection_status.json")
+    assert payload["latest_file_stale"] is True
+
+
+def test_trade_xyz_collection_status_cli_can_fail_on_lock_stale(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    raw_path = data_dir / "raw/quotes/trade_xyz/2026-05-31.jsonl"
+    raw_path.parent.mkdir(parents=True)
+    raw_path.write_text(
+        (
+            '{"ts_client":"2026-05-31T00:00:00+00:00","venue":"trade_xyz",'
+            '"canonical_symbol":"NVDA","venue_symbol":"NVDA","source":"test",'
+            '"raw_payload_sha256":"a","raw_payload_ref":"fixture://row0"}\n'
+        ),
+        encoding="utf-8",
+    )
+    cycle_lock = tmp_path / ".tmp/trade_xyz_data_cycle.lock"
+    cycle_lock.mkdir(parents=True)
+    (cycle_lock / "pid").write_text("99999999\n", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        ["trade-xyz-collection-status", "--fail-on-lock-stale"],
+        env=env,
+    )
+
+    assert result.exit_code == 2
+    assert "cycle_lock_stale=True" in result.stdout
+    payload = read_json(data_dir / "ops/trade_xyz_collection_status.json")
+    assert payload["locks"]["cycle"]["stale"] is True
+
+
+def test_trade_xyz_collection_status_cli_can_fail_on_progress_warning(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    raw_path = data_dir / "raw/quotes/trade_xyz/2026-05-31.jsonl"
+    raw_path.parent.mkdir(parents=True)
+    raw_path.write_text(
+        (
+            '{"ts_client":"2026-05-31T00:00:00+00:00","venue":"trade_xyz",'
+            '"canonical_symbol":"NVDA","venue_symbol":"NVDA","source":"test",'
+            '"raw_payload_sha256":"a","raw_payload_ref":"fixture://row0"}\n'
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "ops").mkdir(parents=True)
+    (data_dir / "ops/trade_xyz_collection_status.json").write_text(
+        (
+            '{"generated_at":"2026-05-31T00:00:00+00:00",'
+            '"raw_quote_inventory":{"row_count":1,"traceable_row_count":1}}'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "trade-xyz-collection-status",
+            "--no-refresh-coverage",
+            "--no-refresh-readiness",
+            "--interval-seconds",
+            "1",
+            "--fail-on-progress-warning",
+        ],
+        env=env,
+    )
+
+    assert result.exit_code == 2
+    assert "progress_status=warning" in result.stdout
+    payload = read_json(data_dir / "ops/trade_xyz_collection_status.json")
+    assert (
+        "no_traceable_row_growth_since_previous_status"
+        in payload["progress_since_previous_status"]["warnings"]
+    )
+
+
+def test_trade_xyz_collection_status_cli_can_fail_on_archive_preflight(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    raw_path = data_dir / "raw/quotes/trade_xyz/2026-05-31.jsonl"
+    raw_path.parent.mkdir(parents=True)
+    raw_path.write_text(
+        (
+            '{"ts_client":"2026-05-31T00:00:00+00:00","venue":"trade_xyz",'
+            '"canonical_symbol":"NVDA","venue_symbol":"NVDA","source":"test",'
+            '"raw_payload_sha256":"a","raw_payload_ref":"fixture://row0"}\n'
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "manifests").mkdir(parents=True, exist_ok=True)
+    (data_dir / "manifests/trade_xyz_historical_archive_preflight_manifest.json").write_text(
+        (
+            '{"schema_version":"trade_xyz_historical_archive_preflight_manifest.v1",'
+            '"status":"fail","return_code":255,"aws_command_source":"fixture"}'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        ["trade-xyz-collection-status", "--fail-on-archive-preflight"],
+        env=env,
+    )
+
+    assert result.exit_code == 2
+    assert "next_action_2_blocked_by=aws_preflight_failed" in result.stdout
+    assert "next_action_2_preflight_status=fail" in result.stdout
+
+
+def test_trade_xyz_collection_status_cli_can_fail_on_account_fee_missing(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    raw_path = data_dir / "raw/quotes/trade_xyz/2026-05-31.jsonl"
+    raw_path.parent.mkdir(parents=True)
+    raw_path.write_text(
+        (
+            '{"ts_client":"2026-05-31T00:00:00+00:00","venue":"trade_xyz",'
+            '"canonical_symbol":"NVDA","venue_symbol":"NVDA","source":"test",'
+            '"raw_payload_sha256":"a","raw_payload_ref":"fixture://row0"}\n'
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "manifests").mkdir(parents=True, exist_ok=True)
+    (data_dir / "manifests/fee_manifest.json").write_text(
+        (
+            '{"schema_version":"fee_manifest.v1","fee_snapshot_count":1,'
+            '"unresolved_symbol_count":0,'
+            '"account_specific_fee_status":"not_collected_no_wallet_or_user_context"}'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        ["trade-xyz-collection-status", "--fail-on-account-fee-missing"],
+        env=env,
+    )
+
+    assert result.exit_code == 2
+    assert "known_gap_requirements=account_specific_fee" in result.stdout
+    assert "account_fee_user_address_configured=False" in result.stdout
+    assert "account_fee_manifest_exists=False" in result.stdout
+
+
+def test_trade_xyz_collection_status_cli_account_fee_flag_checks_artifact_directly(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    raw_path = data_dir / "raw/quotes/trade_xyz/2026-05-31.jsonl"
+    raw_path.parent.mkdir(parents=True)
+    raw_path.write_text(
+        (
+            '{"ts_client":"2026-05-31T00:00:00+00:00","venue":"trade_xyz",'
+            '"canonical_symbol":"NVDA","venue_symbol":"NVDA","source":"test",'
+            '"raw_payload_sha256":"a","raw_payload_ref":"fixture://row0"}\n'
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "manifests").mkdir(parents=True, exist_ok=True)
+    (data_dir / "manifests/trade_xyz_data_readiness_manifest.json").write_text(
+        (
+            '{"decision":"NOT_READY","backtest_data_ready":false,'
+            '"fail_count":1,"known_gap_count":0,'
+            '"requirements":[{"key":"quote_coverage","status":"fail"}]}'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "trade-xyz-collection-status",
+            "--no-refresh-readiness",
+            "--fail-on-account-fee-missing",
+        ],
+        env=env,
+    )
+
+    assert result.exit_code == 2
+    assert "known_gap_requirements=" in result.stdout
+    assert "account_fee_manifest_exists=False" in result.stdout
+    assert "account_fee_manifest_status=None" in result.stdout
 
 
 def test_collect_trade_xyz_quotes_cli_exits_when_registry_missing(tmp_path) -> None:

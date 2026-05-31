@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzRealMarketReferenceManifestV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "status",
+    "provider",
+    "interval",
+    "start",
+    "end",
+    "row_count",
+    "requested_symbols",
+    "returned_symbols",
+    "missing_mapped_symbols",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": { "const": "trade_xyz_real_market_reference_manifest.v1" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["pass", "fail"] },
+    "provider": { "type": "string", "minLength": 1 },
+    "interval": { "type": "string", "minLength": 1 },
+    "start": { "type": "string", "format": "date" },
+    "end": { "type": "string", "format": "date" },
+    "row_count": { "type": "integer", "minimum": 0 },
+    "requested_symbols": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "returned_symbols": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "mapped_symbols": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "missing_mapped_symbols": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "missing_requested_symbols": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["raw_provider_frame", "normalized_reference_bars"],
+      "properties": {
+        "raw_provider_frame": { "type": "string", "minLength": 1 },
+        "normalized_reference_bars": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

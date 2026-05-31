@@ -105,6 +105,27 @@ class TradeXyzClient:
             raise TradeXyzApiError(f"userFillsByTime returned non-list: {type(data).__name__}")
         return [row for row in data if isinstance(row, dict)]
 
+    def user_fees(self, user: str) -> dict[str, Any]:
+        data = self.post_info({"type": "userFees", "user": user})
+        if not isinstance(data, dict):
+            raise TradeXyzApiError(f"userFees returned non-object: {type(data).__name__}")
+        return data
+
+    def funding_history(
+        self, coin: str, *, start_time_ms: int, end_time_ms: int | None = None
+    ) -> list[dict[str, Any]]:
+        payload: dict[str, Any] = {
+            "type": "fundingHistory",
+            "coin": coin,
+            "startTime": start_time_ms,
+        }
+        if end_time_ms is not None:
+            payload["endTime"] = end_time_ms
+        data = self.post_info(payload)
+        if not isinstance(data, list):
+            raise TradeXyzApiError(f"fundingHistory returned non-list: {type(data).__name__}")
+        return [row for row in data if isinstance(row, dict)]
+
     def order_status(
         self, *, user: str, oid: int | None = None, cloid: str | None = None
     ) -> dict[str, Any]:

@@ -281,6 +281,30 @@
         "null"
       ]
     },
+    "oracle_ts_source": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "oracle_ts_status": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "observed",
+        "missing",
+        "invalid",
+        null
+      ]
+    },
+    "oracle_ts_missing_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "source_confidence": {
       "type": [
         "number",

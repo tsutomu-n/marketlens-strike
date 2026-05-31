@@ -96,6 +96,7 @@ def test_minimal_runner_writes_core_artifacts_and_uses_next_row_fill(tmp_path) -
 
     fills = pl.read_parquet(run_dir / "fills.parquet")
     assert fills.height == 2
+    assert fills.get_column("fee_source").to_list() == ["row", "row"]
     assert fills.get_column("event_ts").to_list() == [
         datetime(2026, 1, 1, 3, tzinfo=timezone.utc),
         datetime(2026, 1, 1, 5, tzinfo=timezone.utc),
@@ -160,6 +161,52 @@ def test_runner_applies_fixture_hourly_funding_only_on_funding_event(tmp_path) -
 
     metrics = json.loads((result.run_dir / "metrics.json").read_text(encoding="utf-8"))
     assert metrics["funding_impact"] < 0
+    assert metrics["blocked_reason_counts"] == {}
+
+
+def test_runner_applies_external_funding_events_without_using_quote_row_funding(
+    tmp_path,
+) -> None:
+    config = _config().model_copy(
+        update={
+            "run_id": "external-funding-run",
+            "cost": CostConfig(funding_policy="fixture_hourly_v0"),
+            "execution": ExecutionConfig(force_close_on_end=True),
+        }
+    )
+    frame = _frame().with_columns(
+        [
+            pl.Series("oracle_price", [100.0] * 6),
+            pl.Series("funding_rate", [0.99] * 6),
+            pl.Series("funding_interval_minutes", [60] * 6),
+            pl.Series("is_funding_event", [False] * 6),
+        ]
+    )
+    funding_events = pl.DataFrame(
+        {
+            "funding_event_ts": [datetime(2026, 1, 1, 3, tzinfo=timezone.utc)],
+            "canonical_symbol": ["SP500"],
+            "funding_rate": [0.01],
+            "funding_interval_minutes": [60],
+            "oracle_price_at_funding": [100.0],
+            "raw_payload_ref": ["fixture://funding#row=0"],
+        }
+    )
+
+    result = run_backtest(
+        config=config,
+        market_data=frame,
+        funding_events=funding_events,
+        funding_events_ref="fixture://funding",
+        out_dir=tmp_path,
+        input_data_ref="fixture://sp500",
+        breakout=BreakoutParameters(entry_lookback=2, exit_lookback=2),
+    )
+
+    metrics = json.loads((result.run_dir / "metrics.json").read_text(encoding="utf-8"))
+    assert metrics["funding_event_count"] == 1
+    assert metrics["funding_events_ref"] == "fixture://funding"
+    assert -20 < metrics["funding_impact"] < 0
     assert metrics["blocked_reason_counts"] == {}
 
 

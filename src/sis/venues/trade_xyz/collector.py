@@ -201,6 +201,8 @@ def collect_trade_xyz_quote_window(
             "missing_mark": 0,
             "missing_oracle": 0,
             "missing_oracle_ts": 0,
+            "oracle_ts_status_counts": {},
+            "oracle_ts_missing_reasons": {},
             "missing_funding": 0,
             "missing_funding_interval": 0,
             "missing_open_interest": 0,
@@ -263,6 +265,15 @@ def collect_trade_xyz_quote_window(
         entry["missing_mark"] += 1 if row.get("mark_price") is None else 0
         entry["missing_oracle"] += 1 if row.get("oracle_price") is None else 0
         entry["missing_oracle_ts"] += 1 if row.get("oracle_ts_ms") is None else 0
+        oracle_ts_status = str(row.get("oracle_ts_status") or "unknown")
+        oracle_ts_reason = str(row.get("oracle_ts_missing_reason") or "none")
+        entry["oracle_ts_status_counts"][oracle_ts_status] = (
+            entry["oracle_ts_status_counts"].get(oracle_ts_status, 0) + 1
+        )
+        if row.get("oracle_ts_ms") is None:
+            entry["oracle_ts_missing_reasons"][oracle_ts_reason] = (
+                entry["oracle_ts_missing_reasons"].get(oracle_ts_reason, 0) + 1
+            )
         entry["missing_funding"] += 1 if row.get("funding_rate") is None else 0
         entry["missing_funding_interval"] += 1 if row.get("funding_interval_minutes") is None else 0
         entry["missing_open_interest"] += 1 if row.get("open_interest_usd") is None else 0
@@ -295,6 +306,8 @@ def collect_trade_xyz_quote_window(
             "missing_mark_rate": (raw["missing_mark"] / n) if n else 0.0,
             "missing_oracle_rate": (raw["missing_oracle"] / n) if n else 0.0,
             "missing_oracle_ts_rate": (raw["missing_oracle_ts"] / n) if n else 0.0,
+            "oracle_ts_status_counts": dict(raw["oracle_ts_status_counts"]),
+            "oracle_ts_missing_reasons": dict(raw["oracle_ts_missing_reasons"]),
             "missing_funding_rate": (raw["missing_funding"] / n) if n else 0.0,
             "missing_funding_interval_rate": ((raw["missing_funding_interval"] / n) if n else 0.0),
             "missing_open_interest_rate": (raw["missing_open_interest"] / n) if n else 0.0,
@@ -331,6 +344,19 @@ def collect_trade_xyz_quote_window(
         "normalized_quotes_path": str(normalized_path) if normalize else None,
         "duckdb_path": str(duckdb_path) if normalize else None,
         "per_symbol": per_symbol_summary,
+        "oracle_ts_missing_reasons": {
+            reason: sum(
+                item["oracle_ts_missing_reasons"].get(reason, 0)
+                for item in per_symbol_summary.values()
+            )
+            for reason in sorted(
+                {
+                    reason
+                    for item in per_symbol_summary.values()
+                    for reason in item["oracle_ts_missing_reasons"]
+                }
+            )
+        },
     }
 
     if write_summary:
@@ -348,17 +374,24 @@ def collect_trade_xyz_quote_window(
             "",
             "## Per-symbol Health",
             "",
-            "| symbol | rows | tradable_rate | missing_mark | missing_oracle | missing_funding | missing_fee | missing_raw_ref | spread_p50 | spread_p90 |",
-            "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+            "| symbol | rows | tradable_rate | missing_mark | missing_oracle | missing_oracle_ts | missing_funding | missing_fee | missing_raw_ref | spread_p50 | spread_p90 |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
         for symbol, item in per_symbol_summary.items():
             lines.append(
                 f"| {symbol} | {item['row_count']} | {item['tradable_rate']:.4f} | "
                 f"{item['missing_mark_rate']:.4f} | {item['missing_oracle_rate']:.4f} | "
+                f"{item['missing_oracle_ts_rate']:.4f} | "
                 f"{item['missing_funding_rate']:.4f} | {item['fee_unresolved_rate']:.4f} | "
                 f"{item['raw_payload_ref_missing_rate']:.4f} | "
                 f"{item['spread_bps_p50']} | {item['spread_bps_p90']} |"
             )
+        lines.extend(["", "## Oracle Timestamp Probe", ""])
+        if summary["oracle_ts_missing_reasons"]:
+            for reason, count in summary["oracle_ts_missing_reasons"].items():
+                lines.append(f"- `{reason}`: {count}")
+        else:
+            lines.append("- all rows had oracle_ts_ms")
         lines.extend(
             ["", "## Next Action", "", "- Run `uv run sis diagnose-quotes --venue trade_xyz`."]
         )

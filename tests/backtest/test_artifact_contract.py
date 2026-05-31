@@ -87,6 +87,9 @@ def test_runner_artifacts_satisfy_rev3_metadata_and_quality_contract(tmp_path) -
     assert "blocked_reason_counts" in metrics
     assert "funding_impact" in metrics
     assert "fee_impact" in metrics
+    assert "fee_source_counts" in metrics
+    assert metrics["fee_row_resolved_rate"] == 1.0
+    assert metrics["fee_config_fallback_rate"] == 0.0
     assert "slippage_impact" in metrics
     assert "session_breakdown" in metrics
     assert "market_status_breakdown" in metrics
@@ -102,7 +105,9 @@ def test_runner_artifacts_satisfy_rev3_metadata_and_quality_contract(tmp_path) -
 
     fills = pl.read_parquet(run_dir / "fills.parquet")
     assert fills.get_column("fill_price_source").null_count() == 0
+    assert fills.get_column("fee_source").to_list() == ["row", "row"]
 
     report = (run_dir / "backtest_report.md").read_text(encoding="utf-8")
     assert "blocked_reason_counts" in report
+    assert "fee_source_counts" in report
     assert "best_parameter_is_in_sample_only: true" in report

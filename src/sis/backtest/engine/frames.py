@@ -40,6 +40,7 @@ def fills_to_frame(fills: list[Fill]) -> pl.DataFrame:
         "fill_notional_usd": pl.Float64,
         "fee_bps": pl.Float64,
         "fee_amount": pl.Float64,
+        "fee_source": pl.Utf8,
         "extra_slippage_bps": pl.Float64,
         "extra_slippage_amount": pl.Float64,
         "funding_amount_delta": pl.Float64,

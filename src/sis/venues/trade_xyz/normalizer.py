@@ -119,6 +119,42 @@ def _source_ts_ms(payload: dict[str, Any]) -> int | None:
     return None
 
 
+def _to_int_ms(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value.strip())
+    return None
+
+
+def _oracle_ts_fields(
+    asset_ctx: dict[str, Any] | None,
+) -> tuple[int | None, str | None, str, str | None]:
+    if not asset_ctx:
+        return None, None, "missing", "asset_ctx_missing"
+    for key in (
+        "oracleTs",
+        "oracle_ts",
+        "oracleTsMs",
+        "oracle_ts_ms",
+        "oracleTime",
+        "oracle_time",
+        "oracleTimestamp",
+        "oracle_timestamp",
+    ):
+        if key not in asset_ctx:
+            continue
+        parsed = _to_int_ms(asset_ctx.get(key))
+        if parsed is None:
+            return None, key, "invalid", f"invalid_oracle_ts_field:{key}"
+        return parsed, key, "observed", None
+    return None, None, "missing", "asset_ctx_missing_oracle_timestamp_field"
+
+
 def quote_from_l2_book(
     *,
     canonical_symbol: str,
@@ -147,6 +183,9 @@ def quote_from_l2_book(
     )
     block_reasons = list(dict.fromkeys(metrics.block_reasons + quality_reasons))
     ctx = asset_ctx or {}
+    oracle_ts_ms, oracle_ts_source, oracle_ts_status, oracle_ts_missing_reason = _oracle_ts_fields(
+        asset_ctx
+    )
     mark_price = _to_float(ctx.get("markPx") or ctx.get("mark_price"))
     oracle_price = _to_float(ctx.get("oraclePx") or ctx.get("oracle_price"))
     index_price = _to_float(ctx.get("indexPx") or ctx.get("index_price") or ctx.get("midPx"))
@@ -217,6 +256,10 @@ def quote_from_l2_book(
         fee_source="instrument_registry"
         if taker_fee_bps is not None and maker_fee_bps is not None
         else "unresolved",
+        oracle_ts_ms=oracle_ts_ms,
+        oracle_ts_source=oracle_ts_source,
+        oracle_ts_status=oracle_ts_status,
+        oracle_ts_missing_reason=oracle_ts_missing_reason,
         market_status=MarketStatus.OPEN if not block_reasons else MarketStatus.UNKNOWN,
         session_type=SessionType.UNKNOWN,
         is_tradable=not block_reasons,

@@ -22,6 +22,7 @@ def test_l2_book_to_quote_log_computes_spread_and_depth() -> None:
         fee_mode="standard",
         taker_fee_bps=9.0,
         maker_fee_bps=3.0,
+        asset_ctx={"oraclePx": "100.1", "oracleTs": "1770000000000"},
         now=datetime(2026, 5, 26, 0, 0, tzinfo=timezone.utc),
     )
     assert quote.best_bid == 99.9
@@ -33,6 +34,25 @@ def test_l2_book_to_quote_log_computes_spread_and_depth() -> None:
     assert quote.fee_mode == "standard"
     assert quote.taker_fee_bps == 9.0
     assert quote.maker_fee_bps == 3.0
+    assert quote.oracle_ts_ms == 1770000000000
+    assert quote.oracle_ts_source == "oracleTs"
+    assert quote.oracle_ts_status == "observed"
+    assert quote.oracle_ts_missing_reason is None
+
+
+def test_l2_book_to_quote_log_records_missing_oracle_timestamp_reason() -> None:
+    quote = quote_from_l2_book(
+        canonical_symbol="NVDA",
+        coin="xyz:NVDA",
+        asset_id=130002,
+        real_market_symbol="NVDA",
+        payload=_fixture_payload(),
+        asset_ctx={"oraclePx": "100.1"},
+    )
+
+    assert quote.oracle_ts_ms is None
+    assert quote.oracle_ts_status == "missing"
+    assert quote.oracle_ts_missing_reason == "asset_ctx_missing_oracle_timestamp_field"
 
 
 def test_missing_book_side_sets_not_tradable() -> None:

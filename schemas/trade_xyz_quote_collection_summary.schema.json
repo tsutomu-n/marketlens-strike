@@ -24,6 +24,10 @@
     "collected_symbols": { "type": "array", "items": { "type": "string" } },
     "row_count": { "type": "integer", "minimum": 0 },
     "api_error_count": { "type": "integer", "minimum": 0 },
+    "oracle_ts_missing_reasons": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
     "per_symbol": { "type": "object" }
   },
   "additionalProperties": true

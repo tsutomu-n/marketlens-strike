@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzDataReadinessManifestV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "data_dir",
+    "decision",
+    "backtest_data_ready",
+    "complete_observed_market_truth",
+    "allow_known_gaps",
+    "fail_count",
+    "known_gap_count",
+    "requirements",
+    "next_actions"
+  ],
+  "properties": {
+    "schema_version": { "const": "trade_xyz_data_readiness_manifest.v1" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "data_dir": { "type": "string", "minLength": 1 },
+    "decision": {
+      "type": "string",
+      "enum": ["READY", "READY_WITH_KNOWN_GAPS", "NOT_READY"]
+    },
+    "backtest_data_ready": { "type": "boolean" },
+    "complete_observed_market_truth": { "type": "boolean" },
+    "allow_known_gaps": { "type": "boolean" },
+    "fail_count": { "type": "integer", "minimum": 0 },
+    "known_gap_count": { "type": "integer", "minimum": 0 },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "status", "evidence_path", "details"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["pass", "fail", "known_gap"] },
+          "evidence_path": { "type": ["string", "null"] },
+          "reason": { "type": ["string", "null"] },
+          "details": { "type": "object" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "reason", "command"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1 },
+          "reason": { "type": ["string", "null"] },
+          "command": { "type": "string", "minLength": 1 },
+          "follow_up_command": { "type": ["string", "null"] },
+          "symbols": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "notes": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": true
+}

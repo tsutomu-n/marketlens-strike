@@ -1,0 +1,60 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "TradeXyzSignalCandlesManifestV1",
+    "type": "object",
+    "required": [
+        "schema_version",
+        "generated_at",
+        "data_dir",
+        "registry_path",
+        "source",
+        "start",
+        "end",
+        "period_days",
+        "intervals",
+        "requested_intervals",
+        "requested_symbols",
+        "symbols",
+        "row_count",
+        "new_row_count",
+        "symbol_count",
+        "request_error_count",
+        "request_errors",
+        "artifacts",
+        "notes"
+    ],
+    "properties": {
+        "schema_version": {"const": "trade_xyz_signal_candles_manifest.v1"},
+        "generated_at": {"type": "string", "format": "date-time"},
+        "data_dir": {"type": "string", "minLength": 1},
+        "registry_path": {"type": "string", "minLength": 1},
+        "source": {"const": "hyperliquid_info_candleSnapshot"},
+        "start": {"type": "string", "format": "date-time"},
+        "end": {"type": "string", "format": "date-time"},
+        "period_days": {"type": "integer", "minimum": 1},
+        "intervals": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+        "requested_intervals": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1},
+            "minItems": 1
+        },
+        "requested_symbols": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "symbols": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "row_count": {"type": "integer", "minimum": 0},
+        "new_row_count": {"type": "integer", "minimum": 0},
+        "symbol_count": {"type": "integer", "minimum": 0},
+        "request_error_count": {"type": "integer", "minimum": 0},
+        "request_errors": {"type": "array"},
+        "artifacts": {
+            "type": "object",
+            "required": ["raw_candles_root", "normalized_signal_candles"],
+            "properties": {
+                "raw_candles_root": {"type": "string", "minLength": 1},
+                "normalized_signal_candles": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": true
+        },
+        "notes": {"type": "array", "items": {"type": "string", "minLength": 1}}
+    },
+    "additionalProperties": true
+}

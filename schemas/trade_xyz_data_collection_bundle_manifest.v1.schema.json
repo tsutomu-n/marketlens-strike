@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzDataCollectionBundleManifestV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "data_dir",
+    "raw_quotes_root",
+    "min_days",
+    "max_gap_minutes",
+    "max_oracle_lag_minutes",
+    "status",
+    "failed_step_count",
+    "readiness_decision",
+    "backtest_data_ready",
+    "steps"
+  ],
+  "properties": {
+    "schema_version": { "const": "trade_xyz_data_collection_bundle_manifest.v1" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "data_dir": { "type": "string", "minLength": 1 },
+    "registry_path": { "type": ["string", "null"] },
+    "raw_quotes_root": { "type": "string", "minLength": 1 },
+    "requested_symbols": {
+      "type": ["array", "null"],
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "min_days": { "type": "number", "minimum": 0 },
+    "max_gap_minutes": { "type": "number", "exclusiveMinimum": 0 },
+    "max_oracle_lag_minutes": { "type": "number", "exclusiveMinimum": 0 },
+    "funding_start_time_ms": { "type": ["integer", "null"] },
+    "funding_end_time_ms": { "type": ["integer", "null"] },
+    "auto_funding_window": { "type": "boolean" },
+    "funding_window_source": { "type": ["string", "null"] },
+    "account_fee_user_address_provided": { "type": "boolean" },
+    "collect_real_market_reference_data": { "type": "boolean" },
+    "allow_known_gaps": { "type": "boolean" },
+    "status": { "type": "string", "enum": ["completed", "completed_with_errors"] },
+    "failed_step_count": { "type": "integer", "minimum": 0 },
+    "readiness_decision": {
+      "type": "string",
+      "enum": ["READY", "READY_WITH_KNOWN_GAPS", "NOT_READY"]
+    },
+    "backtest_data_ready": { "type": "boolean" },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status", "manifest_path", "details", "error"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "status": {
+            "type": "string",
+            "enum": ["completed", "failed", "skipped"]
+          },
+          "manifest_path": { "type": ["string", "null"] },
+          "details": { "type": "object" },
+          "error": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

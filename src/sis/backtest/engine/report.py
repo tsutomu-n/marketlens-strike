@@ -128,7 +128,16 @@ def render_backtest_markdown(
             lines.append(f"- `session_breakdown`: {metrics.get('session_breakdown')}")
             lines.append(f"- `market_status_breakdown`: {metrics.get('market_status_breakdown')}")
         elif section == "Cost Breakdown":
-            for key in ("fee_impact", "funding_impact", "slippage_impact", "cost_drag_bps"):
+            for key in (
+                "fee_impact",
+                "fee_source_counts",
+                "fee_row_resolved_rate",
+                "fee_config_fallback_rate",
+                "fee_unresolved_rate_runtime",
+                "funding_impact",
+                "slippage_impact",
+                "cost_drag_bps",
+            ):
                 lines.append(f"- `{key}`: {metrics.get(key)}")
         elif section == "Open Position at End":
             lines.append(f"- `open_position_at_end`: {metrics.get('open_position_at_end')}")

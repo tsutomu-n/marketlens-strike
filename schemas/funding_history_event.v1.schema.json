@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzFundingHistoryEventV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "funding_event_ts",
+    "canonical_symbol",
+    "coin",
+    "funding_rate",
+    "source_time_ms",
+    "source",
+    "raw_payload_sha256",
+    "raw_payload_ref"
+  ],
+  "properties": {
+    "schema_version": { "const": "funding_history_event.v1" },
+    "funding_event_ts": { "type": "string", "format": "date-time" },
+    "canonical_symbol": { "type": "string", "minLength": 1 },
+    "venue_symbol": { "type": ["string", "null"] },
+    "coin": { "type": "string", "minLength": 1 },
+    "funding_rate": { "type": "number" },
+    "premium": { "type": ["number", "null"] },
+    "source_time_ms": { "type": "integer" },
+    "source": { "type": "string", "minLength": 1 },
+    "oracle_price_at_funding": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+    "usable_as_backtest_funding_event": { "type": "boolean" },
+    "raw_payload_sha256": { "type": "string", "minLength": 1 },
+    "raw_payload_ref": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}

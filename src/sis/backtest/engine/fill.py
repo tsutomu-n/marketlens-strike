@@ -33,6 +33,7 @@ class Fill(BaseModel):
     fill_notional_usd: float = Field(gt=0)
     fee_bps: float = Field(ge=0)
     fee_amount: float = Field(ge=0)
+    fee_source: str = "unknown"
     extra_slippage_bps: float = Field(ge=0)
     extra_slippage_amount: float = Field(ge=0)
     funding_amount_delta: float = 0.0

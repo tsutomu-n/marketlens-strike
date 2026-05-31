@@ -7,7 +7,7 @@ import polars as pl
 from sis.models import InstrumentSpec
 from sis.storage.jsonl_store import read_jsonl
 from sis.storage.normalize import normalize_quotes
-from sis.venues.trade_xyz.collector import collect_trade_xyz_quotes
+from sis.venues.trade_xyz.collector import collect_trade_xyz_quote_window, collect_trade_xyz_quotes
 
 
 def _fixture(path: str) -> dict:
@@ -71,6 +71,7 @@ def test_collector_enriches_quote_from_meta_and_asset_ctxs(tmp_path) -> None:
                     "midPx": "100.15",
                     "funding": "-0.00001",
                     "openInterest": "1234",
+                    "oracleTs": "1770000000000",
                     "premium": "-0.1",
                     "prevDayPx": "99.0",
                     "dayNtlVlm": "4567",
@@ -88,6 +89,9 @@ def test_collector_enriches_quote_from_meta_and_asset_ctxs(tmp_path) -> None:
     assert rows[0]["funding_rate"] == -0.00001
     assert rows[0]["funding_interval_minutes"] == 60
     assert rows[0]["open_interest_usd"] == 1234.0
+    assert rows[0]["oracle_ts_ms"] == 1770000000000
+    assert rows[0]["oracle_ts_status"] == "observed"
+    assert rows[0]["oracle_ts_source"] == "oracleTs"
     assert rows[0]["bid_depth_10bps_usd"] > 0
     assert rows[0]["ask_depth_10bps_usd"] > 0
     assert "BLOCK_API_ERROR" not in rows[0]["block_reasons"]
@@ -115,3 +119,43 @@ def test_normalize_quotes_accepts_trade_xyz_v2(tmp_path) -> None:
     assert (
         frame.get_column("exec_buy_price").to_list()[0] == frame.get_column("best_ask").to_list()[0]
     )
+
+
+def test_quote_window_summary_records_oracle_timestamp_probe(tmp_path) -> None:
+    class FakeClient:
+        def all_mids(self):
+            return {"xyz:NVDA": "1000.0"}
+
+        def meta_and_asset_ctxs(self):
+            return (
+                {"universe": [{"name": "xyz:NVDA"}]},
+                [{"oraclePx": "100.1", "funding": "-0.00001", "openInterest": "1234"}],
+            )
+
+        def l2_book(self, _coin):
+            return _fixture("tests/fixtures/trade_xyz_l2_book.sample.json")
+
+        def close(self):
+            return None
+
+    summary = collect_trade_xyz_quote_window(
+        data_dir=tmp_path / "data",
+        instruments=[_active_instrument()],
+        duration_minutes=1,
+        interval_seconds=60,
+        normalize=True,
+        replace=False,
+        write_summary=True,
+        write_report=True,
+        client=FakeClient(),
+        now=datetime(2026, 5, 26, 0, 0, tzinfo=timezone.utc),
+    )
+
+    assert summary["per_symbol"]["NVDA"]["missing_oracle_ts_rate"] == 1.0
+    assert summary["oracle_ts_missing_reasons"] == {"asset_ctx_missing_oracle_timestamp_field": 1}
+    assert (tmp_path / "data/ops/trade_xyz_quote_collection_summary.json").exists()
+    report = (tmp_path / "data/reports/trade_xyz_quote_collection_report.md").read_text(
+        encoding="utf-8"
+    )
+    assert "## Oracle Timestamp Probe" in report
+    assert "asset_ctx_missing_oracle_timestamp_field" in report

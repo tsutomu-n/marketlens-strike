@@ -15,6 +15,7 @@ def test_calculate_metrics_outputs_rev3_core_and_trade_xyz_fields() -> None:
             "extra_slippage_amount": [0.0, 0.0, 0.0, 0.0],
             "funding_amount_delta": [0.0, 0.0, 0.0, 0.0],
             "liquidity_flag": ["taker", "taker", "taker", "taker"],
+            "fee_source": ["row", "row", "configs/fee_model.trade_xyz.yaml:standard", "row"],
         }
     )
     blocked = pl.DataFrame({"reason": ["fee_unresolved", "fee_unresolved", "is_tradable_false"]})
@@ -34,6 +35,13 @@ def test_calculate_metrics_outputs_rev3_core_and_trade_xyz_fields() -> None:
     assert metrics["win_rate"] == 0.5
     assert metrics["profit_factor"] == 4.0
     assert metrics["fee_impact"] == 4.15
+    assert metrics["fee_source_counts"] == {
+        "configs/fee_model.trade_xyz.yaml:standard": 1,
+        "row": 3,
+    }
+    assert metrics["fee_row_resolved_rate"] == 0.75
+    assert metrics["fee_config_fallback_rate"] == 0.25
+    assert metrics["fee_unresolved_rate_runtime"] == 0.0
     assert metrics["maker_fill_ratio"] == 0
     assert metrics["blocked_reason_counts"] == {
         "fee_unresolved": 2,

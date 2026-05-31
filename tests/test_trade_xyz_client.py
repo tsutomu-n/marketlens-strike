@@ -33,6 +33,7 @@ def test_trade_xyz_client_read_only_execution_state_methods() -> None:
             "openOrders": [{"coin": "xyz:SP500", "oid": 1}],
             "userFills": [{"coin": "xyz:SP500", "px": "100"}],
             "userFillsByTime": [{"coin": "xyz:SP500", "px": "101"}],
+            "userFees": {"userCrossRate": "0.000315", "userAddRate": "0.000105"},
             "orderStatus": {"status": "open", "order": {"oid": 1}},
         }
     )
@@ -44,6 +45,10 @@ def test_trade_xyz_client_read_only_execution_state_methods() -> None:
         assert client.user_fills_by_time(
             "0xabc", start_time_ms=1_700_000_000_000, end_time_ms=1_700_000_060_000
         ) == [{"coin": "xyz:SP500", "px": "101"}]
+        assert client.user_fees("0xabc") == {
+            "userCrossRate": "0.000315",
+            "userAddRate": "0.000105",
+        }
         assert client.order_status(user="0xabc", cloid="0xcloid")["status"] == "open"
     finally:
         client.close()
@@ -58,6 +63,7 @@ def test_trade_xyz_client_read_only_execution_state_methods() -> None:
             "startTime": 1_700_000_000_000,
             "endTime": 1_700_000_060_000,
         },
+        {"type": "userFees", "user": "0xabc"},
         {"type": "orderStatus", "user": "0xabc", "oid": "0xcloid"},
     ]
 

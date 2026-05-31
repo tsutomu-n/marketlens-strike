@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 import polars as pl
@@ -75,6 +76,94 @@ def _max_drawdown_from_frame(frame: pl.DataFrame) -> float | None:
     return max_dd
 
 
+def _normalize_funding_events(
+    events: pl.DataFrame | None, *, symbol: str
+) -> list[dict[str, object]]:
+    if events is None or events.is_empty():
+        return []
+    if "funding_event_ts" not in events.columns:
+        raise ValueError("funding_events missing required column: funding_event_ts")
+    symbol_column = "canonical_symbol" if "canonical_symbol" in events.columns else "symbol"
+    if symbol_column not in events.columns:
+        raise ValueError("funding_events missing symbol column: canonical_symbol or symbol")
+    required = {"funding_rate", "oracle_price_at_funding"}
+    missing = sorted(required - set(events.columns))
+    if missing:
+        raise ValueError(f"funding_events missing required columns: {', '.join(missing)}")
+
+    normalized = events.with_columns(
+        [
+            pl.col(symbol_column)
+            .cast(pl.Utf8)
+            .str.strip_chars()
+            .str.to_uppercase()
+            .alias("_symbol"),
+            pl.col("funding_event_ts")
+            .str.to_datetime(time_zone="UTC", strict=False)
+            .alias("event_ts")
+            if events.schema["funding_event_ts"] == pl.Utf8
+            else pl.col("funding_event_ts").alias("event_ts"),
+            pl.col("funding_rate").cast(pl.Float64),
+            pl.col("oracle_price_at_funding").cast(pl.Float64).alias("oracle_price"),
+        ]
+    ).filter(pl.col("_symbol") == symbol.strip().upper())
+    if normalized.is_empty():
+        return []
+    return normalized.sort("event_ts").to_dicts()
+
+
+def _funding_event_ts(row: dict[str, object]) -> datetime | None:
+    value = row.get("event_ts")
+    return value if isinstance(value, datetime) else None
+
+
+def _apply_due_funding_events(
+    *,
+    events: list[dict[str, object]],
+    next_event_index: int,
+    through_ts: datetime | None,
+    config: BacktestConfig,
+    portfolio: Portfolio,
+    blocked: list[BlockedEvent],
+    recorded_funding_warnings: set[str],
+) -> tuple[int, Portfolio]:
+    if through_ts is None:
+        return next_event_index, portfolio
+    while next_event_index < len(events):
+        event = events[next_event_index]
+        event_ts = _funding_event_ts(event)
+        if event_ts is None or event_ts > through_ts:
+            break
+        if portfolio.position_qty <= 0:
+            next_event_index += 1
+            continue
+        funding_amount, funding_warning = calculate_v0_funding_amount(
+            policy=config.cost.funding_policy,
+            position_qty=portfolio.position_qty,
+            oracle_price=optional_float(event.get("oracle_price")),
+            funding_rate=optional_float(event.get("funding_rate")),
+            is_funding_event=True,
+            event_ts=row_event_ts(event),
+        )
+        if funding_amount:
+            portfolio = portfolio.apply_funding(funding_amount)
+        if funding_warning is not None and funding_warning not in recorded_funding_warnings:
+            recorded_funding_warnings.add(funding_warning)
+            blocked.append(
+                BlockedEvent(
+                    event_ts=row_event_ts(event),
+                    symbol=config.symbol,
+                    action="funding",
+                    reason=funding_warning,
+                    strategy_id=config.strategy_id,
+                    signal_id=None,
+                    row_index=next_event_index,
+                )
+            )
+        next_event_index += 1
+    return next_event_index, portfolio
+
+
 def _fill_order(
     *,
     order: Order,
@@ -144,6 +233,7 @@ def _fill_order(
         fee_amount=calculate_market_like_fee(
             fill_notional_usd=notional, taker_fee_bps=effective_taker_fee_bps
         ),
+        fee_source=fee.source,
         extra_slippage_bps=config.execution.extra_slippage_bps,
         extra_slippage_amount=slippage,
         funding_amount_delta=0,
@@ -158,6 +248,8 @@ def run_backtest(
     market_data: pl.DataFrame,
     out_dir: Path,
     input_data_ref: str,
+    funding_events: pl.DataFrame | None = None,
+    funding_events_ref: str | None = None,
     breakout: BreakoutParameters | None = None,
 ) -> BacktestRunResult:
     breakout = breakout or BreakoutParameters()
@@ -185,6 +277,12 @@ def run_backtest(
     )
     filtered = apply_period_filter(normalized, config=config).with_row_index("_row_index")
     rows = filtered.to_dicts()
+    funding_event_rows = [
+        row
+        for row in _normalize_funding_events(funding_events, symbol=config.symbol)
+        if config.period.evaluation_start_ts <= row_event_ts(row) < config.period.evaluation_end_ts
+    ]
+    use_external_funding_events = bool(funding_event_rows)
     portfolio = Portfolio.flat(initial_cash_usd=config.initial_cash_usd)
     orders: list[Order] = []
     fills: list[Fill] = []
@@ -194,6 +292,7 @@ def run_backtest(
     pending_orders: dict[int, Order] = {}
     open_trade: dict[str, object] | None = None
     recorded_funding_warnings: set[str] = set()
+    next_funding_event_index = 0
 
     for index, row in enumerate(rows):
         order = pending_orders.pop(index, None)
@@ -240,6 +339,17 @@ def run_backtest(
                         }
                     )
                     open_trade = None
+
+        if use_external_funding_events:
+            next_funding_event_index, portfolio = _apply_due_funding_events(
+                events=funding_event_rows,
+                next_event_index=next_funding_event_index,
+                through_ts=row_event_ts(row),
+                config=config,
+                portfolio=portfolio,
+                blocked=blocked,
+                recorded_funding_warnings=recorded_funding_warnings,
+            )
 
         signal = signal_kind(rows, index, breakout)
         fill_index = next_fill_row_index(signal_row_index=index, row_count=len(rows))
@@ -318,7 +428,7 @@ def run_backtest(
                         )
                     )
 
-        if portfolio.position_qty > 0:
+        if portfolio.position_qty > 0 and not use_external_funding_events:
             funding_amount, funding_warning = calculate_v0_funding_amount(
                 policy=config.cost.funding_policy,
                 position_qty=portfolio.position_qty,
@@ -366,6 +476,17 @@ def run_backtest(
                 "session_type": str(row.get("session_type") or "unknown"),
                 "market_status": str(row.get("market_status") or "unknown"),
             }
+        )
+
+    if use_external_funding_events:
+        next_funding_event_index, portfolio = _apply_due_funding_events(
+            events=funding_event_rows,
+            next_event_index=next_funding_event_index,
+            through_ts=config.period.evaluation_end_ts,
+            config=config,
+            portfolio=portfolio,
+            blocked=blocked,
+            recorded_funding_warnings=recorded_funding_warnings,
         )
 
     if config.execution.end_position_policy == "error_if_open" and portfolio.position_qty > 0:
@@ -442,6 +563,8 @@ def run_backtest(
     )
     metrics["open_position_at_end"] = portfolio.position_qty > 0
     metrics["end_position_policy"] = config.execution.end_position_policy
+    metrics["funding_events_ref"] = funding_events_ref
+    metrics["funding_event_count"] = len(funding_event_rows)
     benchmark_results, benchmark_equity = run_benchmarks(config=config, frame=normalized)
     base_fee_impact = float(metrics["fee_impact"])
     turnover = float(metrics["turnover"])
