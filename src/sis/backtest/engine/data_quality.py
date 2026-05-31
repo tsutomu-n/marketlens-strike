@@ -36,6 +36,14 @@ class DataQualityReport(BaseModel):
     null_taker_fee_count: int = 0
     null_maker_fee_count: int = 0
     funding_rate_without_interval_count: int = 0
+    missing_rate_by_field: dict[str, float] = Field(default_factory=dict)
+    fee_unresolved_rate: float = 0.0
+    funding_interval_missing_rate: float = 0.0
+    oracle_ts_missing_rate: float = 0.0
+    raw_payload_ref_missing_rate: float = 0.0
+    oi_cap_usage_missing_rate: float = 0.0
+    discovery_bound_missing_rate: float = 0.0
+    bound_distance_missing_rate: float = 0.0
     warnings: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
 
@@ -150,6 +158,12 @@ def _gap_seconds(frame: pl.DataFrame) -> list[float]:
     return [float(value.total_seconds()) for value in values if value.total_seconds() > 0]
 
 
+def _missing_rate(filtered: pl.DataFrame, column: str) -> float:
+    if filtered.is_empty() or column not in filtered.columns:
+        return 1.0
+    return float(filtered.select(pl.col(column).is_null().mean()).item())
+
+
 def evaluate_data_quality(
     frame: pl.DataFrame,
     *,
@@ -233,6 +247,24 @@ def evaluate_data_quality(
             "funding_rate present without funding interval assertion: "
             f"{funding_rate_without_interval_count}"
         )
+    missing_rate_by_field = {
+        column: _missing_rate(filtered, column)
+        for column in (
+            "raw_payload_ref",
+            "oracle_ts_ms",
+            "funding_interval_minutes",
+            "oi_cap_usage",
+            "discovery_bound_pct",
+            "bound_distance",
+            "taker_fee_bps",
+            "maker_fee_bps",
+        )
+    }
+    fee_unresolved_rate = (
+        max(missing_rate_by_field["taker_fee_bps"], missing_rate_by_field["maker_fee_bps"])
+        if not filtered.is_empty()
+        else 1.0
+    )
 
     duplicate_ts_count = (
         filtered.group_by(["symbol", "event_ts"]).len().filter(pl.col("len") > 1).height
@@ -301,6 +333,14 @@ def evaluate_data_quality(
         null_taker_fee_count=null_taker_fee_count,
         null_maker_fee_count=null_maker_fee_count,
         funding_rate_without_interval_count=funding_rate_without_interval_count,
+        missing_rate_by_field=missing_rate_by_field,
+        fee_unresolved_rate=fee_unresolved_rate,
+        funding_interval_missing_rate=missing_rate_by_field["funding_interval_minutes"],
+        oracle_ts_missing_rate=missing_rate_by_field["oracle_ts_ms"],
+        raw_payload_ref_missing_rate=missing_rate_by_field["raw_payload_ref"],
+        oi_cap_usage_missing_rate=missing_rate_by_field["oi_cap_usage"],
+        discovery_bound_missing_rate=missing_rate_by_field["discovery_bound_pct"],
+        bound_distance_missing_rate=missing_rate_by_field["bound_distance"],
         warnings=warnings,
         errors=errors,
     )

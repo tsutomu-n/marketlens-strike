@@ -60,6 +60,11 @@ def collect_trade_xyz_quotes(
 
     try:
         count = 0
+        next_row_index = (
+            sum(1 for line in out_path.read_text(encoding="utf-8").splitlines() if line.strip())
+            if out_path.exists()
+            else 0
+        )
         for instrument in instruments:
             if not instrument.active:
                 continue
@@ -117,6 +122,7 @@ def collect_trade_xyz_quotes(
                         else quote.discovery_bound_pct
                     ),
                     "bound_distance": bound_distance,
+                    "raw_payload_ref": f"{out_path}#row={next_row_index + count}",
                 }
             )
             append_jsonl(out_path, quote.model_dump(mode="json"))
@@ -192,8 +198,15 @@ def collect_trade_xyz_quote_window(
             "tradable_rows": 0,
             "missing_mark": 0,
             "missing_oracle": 0,
+            "missing_oracle_ts": 0,
             "missing_funding": 0,
+            "missing_funding_interval": 0,
             "missing_open_interest": 0,
+            "missing_fee_bps": 0,
+            "missing_oi_cap_usage": 0,
+            "missing_discovery_bound": 0,
+            "missing_bound_distance": 0,
+            "missing_raw_payload_ref": 0,
             "spreads": [],
             "bid_depths": [],
             "ask_depths": [],
@@ -247,8 +260,21 @@ def collect_trade_xyz_quote_window(
         entry["tradable_rows"] += 1 if row.get("is_tradable") is True else 0
         entry["missing_mark"] += 1 if row.get("mark_price") is None else 0
         entry["missing_oracle"] += 1 if row.get("oracle_price") is None else 0
+        entry["missing_oracle_ts"] += 1 if row.get("oracle_ts_ms") is None else 0
         entry["missing_funding"] += 1 if row.get("funding_rate") is None else 0
+        entry["missing_funding_interval"] += (
+            1 if row.get("funding_interval_minutes") is None else 0
+        )
         entry["missing_open_interest"] += 1 if row.get("open_interest_usd") is None else 0
+        entry["missing_fee_bps"] += (
+            1 if row.get("taker_fee_bps") is None or row.get("maker_fee_bps") is None else 0
+        )
+        entry["missing_oi_cap_usage"] += 1 if row.get("oi_cap_usage") is None else 0
+        entry["missing_discovery_bound"] += (
+            1 if row.get("discovery_bound_pct") is None else 0
+        )
+        entry["missing_bound_distance"] += 1 if row.get("bound_distance") is None else 0
+        entry["missing_raw_payload_ref"] += 1 if row.get("raw_payload_ref") is None else 0
         if isinstance(row.get("spread_bps"), (int, float)):
             entry["spreads"].append(float(row["spread_bps"]))
         if isinstance(row.get("bid_depth_10bps_usd"), (int, float)):
@@ -270,8 +296,21 @@ def collect_trade_xyz_quote_window(
             "tradable_rate": (raw["tradable_rows"] / n) if n else 0.0,
             "missing_mark_rate": (raw["missing_mark"] / n) if n else 0.0,
             "missing_oracle_rate": (raw["missing_oracle"] / n) if n else 0.0,
+            "missing_oracle_ts_rate": (raw["missing_oracle_ts"] / n) if n else 0.0,
             "missing_funding_rate": (raw["missing_funding"] / n) if n else 0.0,
+            "missing_funding_interval_rate": (
+                (raw["missing_funding_interval"] / n) if n else 0.0
+            ),
             "missing_open_interest_rate": (raw["missing_open_interest"] / n) if n else 0.0,
+            "fee_unresolved_rate": (raw["missing_fee_bps"] / n) if n else 0.0,
+            "missing_oi_cap_usage_rate": (raw["missing_oi_cap_usage"] / n) if n else 0.0,
+            "missing_discovery_bound_rate": (
+                (raw["missing_discovery_bound"] / n) if n else 0.0
+            ),
+            "missing_bound_distance_rate": (raw["missing_bound_distance"] / n) if n else 0.0,
+            "raw_payload_ref_missing_rate": (
+                (raw["missing_raw_payload_ref"] / n) if n else 0.0
+            ),
             "spread_bps_p50": q(raw["spreads"], 0.5),
             "spread_bps_p90": q(raw["spreads"], 0.9),
             "bid_depth_10bps_usd_p50": q(raw["bid_depths"], 0.5),

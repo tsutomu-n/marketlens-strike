@@ -107,15 +107,23 @@ def _validate_trade_xyz_strict_row(
         "best_bid": "TRADE_XYZ_STRICT_BEST_BID_MISSING",
         "best_ask": "TRADE_XYZ_STRICT_BEST_ASK_MISSING",
         "mid_price": "TRADE_XYZ_STRICT_MID_PRICE_MISSING",
+        "exec_buy_price": "TRADE_XYZ_STRICT_EXEC_BUY_PRICE_MISSING",
+        "exec_sell_price": "TRADE_XYZ_STRICT_EXEC_SELL_PRICE_MISSING",
         "spread_bps": "TRADE_XYZ_STRICT_SPREAD_MISSING",
         "bid_depth_10bps_usd": "TRADE_XYZ_STRICT_SIDE_DEPTH_MISSING",
         "ask_depth_10bps_usd": "TRADE_XYZ_STRICT_SIDE_DEPTH_MISSING",
         "mark_price": "TRADE_XYZ_STRICT_MARK_PRICE_MISSING",
         "oracle_price": "TRADE_XYZ_STRICT_ORACLE_PRICE_MISSING",
         "funding_rate": "TRADE_XYZ_STRICT_FUNDING_MISSING",
+        "funding_interval_minutes": "TRADE_XYZ_STRICT_FUNDING_INTERVAL_MISSING",
         "open_interest_usd": "TRADE_XYZ_STRICT_OPEN_INTEREST_MISSING",
+        "fee_mode": "TRADE_XYZ_STRICT_FEE_MODE_MISSING",
+        "taker_fee_bps": "TRADE_XYZ_STRICT_TAKER_FEE_MISSING",
+        "maker_fee_bps": "TRADE_XYZ_STRICT_MAKER_FEE_MISSING",
         "block_reasons": "TRADE_XYZ_STRICT_BLOCK_REASONS_MISSING",
+        "source_confidence": "TRADE_XYZ_STRICT_SOURCE_CONFIDENCE_MISSING",
         "venue_quality_score": "TRADE_XYZ_STRICT_VENUE_QUALITY_MISSING",
+        "raw_payload_ref": "TRADE_XYZ_STRICT_RAW_PAYLOAD_REF_MISSING",
     }
     for key, reason in required_non_null.items():
         if row.get(key) is None:

@@ -67,6 +67,8 @@ def write_backtest_artifacts(
     write_json(run_dir / "scenario_summary.json", scenario_summary)
     write_json(run_dir / "split_results.json", split_summary)
     write_json(run_dir / "parameter_summary.json", parameter_summary)
+    quality_payload = data_quality.model_dump(mode="json")
+    strategy_blockers = _strategy_selection_blockers(metrics=metrics, data_quality=quality_payload)
     write_json(
         run_dir / "candidate_result.json",
         {
@@ -77,10 +79,8 @@ def write_backtest_artifacts(
             "data_manifest": "data_manifest.json",
             "smoke_only": False,
             "auto_small_lookback_used": False,
-            "usable_for_strategy_selection": not bool(
-                metrics.get("open_position_at_end")
-                or data_quality.model_dump(mode="json").get("insufficient_coverage_for_strategy")
-            ),
+            "usable_for_strategy_selection": not strategy_blockers,
+            "strategy_selection_blockers": strategy_blockers,
         },
     )
     run_meta = {
@@ -160,6 +160,25 @@ def write_backtest_artifacts(
         trades_frame=trades_frame,
         blocked_frame=blocked_frame,
     )
+
+
+def _strategy_selection_blockers(
+    *, metrics: dict[str, Any], data_quality: dict[str, Any]
+) -> list[str]:
+    blockers: list[str] = []
+    if metrics.get("open_position_at_end"):
+        blockers.append("open_position_at_end")
+    if data_quality.get("insufficient_coverage_for_strategy"):
+        blockers.append("insufficient_coverage_for_strategy")
+    for key in (
+        "fee_unresolved_rate",
+        "funding_interval_missing_rate",
+        "raw_payload_ref_missing_rate",
+    ):
+        value = data_quality.get(key)
+        if isinstance(value, int | float) and value > 0:
+            blockers.append(key)
+    return blockers
 
 
 def _write_charts(
