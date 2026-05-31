@@ -10,6 +10,7 @@ from sis.settings import get_settings
 from sis.storage.normalize import normalize_quotes
 from sis.venues.trade_xyz.client import TradeXyzClient
 from sis.venues.trade_xyz.collector import collect_trade_xyz_quote_window
+from sis.venues.trade_xyz.reference_data import build_trade_xyz_reference_datasets
 from sis.venues.trade_xyz.registry import load_trade_xyz_registry
 
 
@@ -131,3 +132,39 @@ def register_quote_commands(
         logger.info("normalized {} quote rows", count)
         for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
+
+    @app.command("build-trade-xyz-reference-data")
+    def build_trade_xyz_reference_data_cmd(
+        registry_path: Path | None = typer.Option(
+            None,
+            "--registry-path",
+            help="Instrument registry JSON written by `uv run sis probe trade-xyz`.",
+        ),
+        raw_quotes_root: Path | None = typer.Option(
+            None,
+            "--raw-quotes-root",
+            help="Raw quotes root containing trade_xyz/*.jsonl.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            manifest = build_trade_xyz_reference_datasets(
+                data_dir=settings.data_dir,
+                registry_path=registry_path,
+                raw_quotes_root=raw_quotes_root,
+            )
+        except FileNotFoundError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(code=2) from exc
+        except ValueError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(code=2) from exc
+
+        typer.echo(
+            "manifest_path="
+            f"{settings.data_dir / 'manifests/trade_xyz_reference_datasets_manifest.json'}"
+        )
+        for name, path in manifest["artifacts"].items():
+            typer.echo(f"{name}_path={path}")
+        for name, count in manifest["row_counts"].items():
+            typer.echo(f"{name}_count={count}")
