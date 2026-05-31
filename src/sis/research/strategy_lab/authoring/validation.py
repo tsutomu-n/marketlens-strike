@@ -4,11 +4,8 @@ from pathlib import Path
 
 import polars as pl
 
-from sis.research.strategy_lab.authoring.contracts import (
-    Condition,
-    ConfirmationPanel,
-    StrategyAuthoringSpec,
-)
+from sis.research.strategy_lab.authoring.contracts.core import Condition, ConfirmationPanel
+from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 
 
 def _resolve_path(raw: str, data_dir: Path) -> Path:

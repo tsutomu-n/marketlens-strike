@@ -2,13 +2,24 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sis.research.strategy_lab.authoring.contracts import StrategyAuthoringSpec
-from sis.research.strategy_lab.authoring.compiler import _format_condition
+from sis.research.strategy_lab.authoring.contracts.core import Condition
+from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.authoring.validation import (
     _required_columns,
     _resolve_path,
     validate_authoring_inputs,
 )
+
+
+def _format_condition(condition: Condition) -> str:
+    target = (
+        f"column:{condition.value_column}"
+        if condition.value_column is not None
+        else repr(condition.value)
+    )
+    if condition.op in {"is_true", "is_false", "rising", "falling"}:
+        return f"{condition.column} {condition.op}"
+    return f"{condition.column} {condition.op} {target}"
 
 
 def explain_authoring_spec(spec: StrategyAuthoringSpec, *, data_dir: Path) -> str:

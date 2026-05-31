@@ -11,8 +11,8 @@ from sis.research.strategy_lab.authoring.backtest import (
     _resolve_selection_direction,
     run_authoring_backtest,
 )
-from sis.research.strategy_lab.authoring.compiler import build_authoring_signals
-from sis.research.strategy_lab.authoring.contracts import StrategyAuthoringBundleSpec
+from sis.research.strategy_lab.authoring.compiler.build import build_authoring_signals
+from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringBundleSpec
 from sis.research.strategy_lab.authoring.io import load_authoring_spec
 
 

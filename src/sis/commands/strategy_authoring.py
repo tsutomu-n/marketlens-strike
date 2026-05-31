@@ -13,13 +13,15 @@ from sis.research.strategy_lab.authoring.bundle import (
     run_authoring_bundle,
     write_authoring_bundle_outputs,
 )
-from sis.research.strategy_lab.authoring.compiler import (
-    build_authoring_signals,
-    write_authoring_paper_preview_outputs,
-    write_authoring_run_summary,
+from sis.research.strategy_lab.authoring.compiler.artifacts import (
     write_authoring_signal_artifacts,
 )
-from sis.research.strategy_lab.authoring.contracts import (
+from sis.research.strategy_lab.authoring.compiler.build import build_authoring_signals
+from sis.research.strategy_lab.authoring.compiler.paper_preview import (
+    write_authoring_paper_preview_outputs,
+    write_authoring_run_summary,
+)
+from sis.research.strategy_lab.authoring.contracts.base import (
     VALID_THROUGH,
     StrategyAuthoringValidationError,
 )

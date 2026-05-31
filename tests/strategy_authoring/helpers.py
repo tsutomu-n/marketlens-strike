@@ -12,12 +12,14 @@ import pytest
 from typer.testing import CliRunner
 
 from sis.cli import app
-from sis.research.strategy_lab.authoring.compiler import (
-    build_authoring_signals,
+from sis.research.strategy_lab.authoring.compiler.artifacts import (
     strategy_signals_to_research_signals,
     write_authoring_signal_artifacts,
 )
-from sis.research.strategy_lab.authoring.contracts import StrategyAuthoringValidationError
+from sis.research.strategy_lab.authoring.compiler.build import (
+    build_authoring_signals,
+)
+from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 from sis.research.strategy_lab.authoring.io import (
     load_authoring_bundle_spec,
     load_authoring_spec,

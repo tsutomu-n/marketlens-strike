@@ -4,10 +4,12 @@ from pathlib import Path
 
 import yaml
 
-from sis.research.strategy_lab.authoring.contracts import (
+from sis.research.strategy_lab.authoring.contracts.base import (
+    StrategyAuthoringValidationError,
+)
+from sis.research.strategy_lab.authoring.contracts.spec import (
     StrategyAuthoringBundleSpec,
     StrategyAuthoringSpec,
-    StrategyAuthoringValidationError,
 )
 
 

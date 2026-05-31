@@ -5,13 +5,13 @@ from typing import Any
 
 import polars as pl
 
-from sis.research.strategy_lab.authoring.contracts import (
-    Condition,
-    DerivedFeature,
-    StrategyAuthoringSpec,
+from sis.research.strategy_lab.authoring.contracts.base import (
     StrategyAuthoringValidationError,
     _stable_digest,
 )
+from sis.research.strategy_lab.authoring.contracts.core import Condition
+from sis.research.strategy_lab.authoring.contracts.derived import DerivedFeature
+from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.authoring.validation import _all_conditions
 
 ADVANCED_CONDITION_OPERATORS = {

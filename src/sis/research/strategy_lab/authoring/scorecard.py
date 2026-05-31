@@ -5,7 +5,7 @@ from typing import Any
 
 import polars as pl
 
-from sis.research.strategy_lab.authoring.contracts import StrategyAuthoringSpec
+from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 
 
 def _metrics_json(

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import polars as pl
 
-from sis.research.strategy_lab.authoring.contracts import StrategyAuthoringSpec
+from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.authoring.validation import _resolve_path
 
 

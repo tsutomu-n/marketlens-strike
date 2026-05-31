@@ -205,10 +205,10 @@ git diff --check
 Observed results:
 
 - `test_strategy_authoring_example_specs_and_bundles_parse`: `1 passed`
-- `tests/strategy_authoring tests/test_strategy_lab_schemas.py`: `211 passed`
+- `tests/strategy_authoring tests/test_strategy_lab_schemas.py`: `214 passed`
 - `scripts/check_current_docs.py`: `checked 77 current docs: links, EOF, and legacy roots ok`; after adding the 2026-05-31 docs audit, current docs lint is `checked 78 current docs: links, EOF, and legacy roots ok`
 - `git diff --check`: no output
-- `./scripts/check`: ruff pass, ruff format pass, docs lint pass, pyrefly `0 errors`, pytest `593 passed`
+- `./scripts/check`: ruff pass, ruff format pass, docs lint pass, pyrefly `0 errors`, pytest `596 passed`
 
 ## Completion Judgment
 

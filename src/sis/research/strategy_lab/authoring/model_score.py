@@ -8,11 +8,9 @@ import polars as pl
 import yaml
 
 from sis.research.strategy_lab.authoring.confirmation import _apply_confirmation_panels
-from sis.research.strategy_lab.authoring.contracts import (
-    StrategyAuthoringSpec,
-    StrategyAuthoringValidationError,
-    _solve_linear_system,
-)
+from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
+from sis.research.strategy_lab.authoring.contracts.linear_algebra import _solve_linear_system
+from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.authoring.features import _apply_derived_features
 from sis.research.strategy_lab.authoring.validation import _resolve_path
 

@@ -9,15 +9,17 @@ from typing import Any, Literal, cast
 import polars as pl
 
 from sis.backtest.bridge import run_backtest_bridge_for_signals
-from sis.research.strategy_lab.authoring.compiler import (
-    build_authoring_signals,
+from sis.research.strategy_lab.authoring.compiler.artifacts import (
     strategy_signals_to_research_signals,
 )
-from sis.research.strategy_lab.authoring.contracts import (
-    StrategyAuthoringBundleSpec,
-    StrategyAuthoringSpec,
+from sis.research.strategy_lab.authoring.compiler.build import build_authoring_signals
+from sis.research.strategy_lab.authoring.contracts.base import (
     StrategyAuthoringValidationError,
     _stable_digest,
+)
+from sis.research.strategy_lab.authoring.contracts.spec import (
+    StrategyAuthoringBundleSpec,
+    StrategyAuthoringSpec,
 )
 from sis.research.strategy_lab.authoring.scorecard import (
     _increment_count,
