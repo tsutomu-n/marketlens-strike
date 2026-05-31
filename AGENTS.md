@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-`marketlens-strike` is a Python 3.13 CLI workspace for Trade[XYZ] research, read-only evidence, strategy lab workflows, paper operations, and safety gates. Core code lives in `src/sis/`; Typer registration is in `src/sis/cli.py`, with commands under `src/sis/commands/`. Domain modules include `venues/trade_xyz`, `research/strategy_lab`, `paper`, `risk`, and `validation`.
+`marketlens-strike` is a Python 3.13 CLI workspace for Trade[XYZ] research, read-only evidence, Strategy Lab workflows, paper operations, and safety gates. Core code lives in `src/sis/`; Typer registration is in `src/sis/cli.py`, with commands under `src/sis/commands/`. Domain modules include `venues/trade_xyz`, `research/strategy_lab`, `paper`, `risk`, and `validation`.
 
 Tests live in `tests/` and follow `test_*.py` naming. Docs are in `docs/`, plans in `plan/`, schemas in `schemas/`, templates in `templates/`, and examples in `configs/`. `data/`, `logs/`, and `.tmp/` are generated.
 
@@ -11,13 +11,15 @@ Tests live in `tests/` and follow `test_*.py` naming. Docs are in `docs/`, plans
 - `uv sync --dev --locked`: install locked dependencies.
 - `uv run python -V`: confirm Python 3.13 is active.
 - `uv run sis --help`: inspect the CLI surface.
-- `./scripts/check` or `just check`: run sync, Ruff lint/format check, docs-current check, Pyrefly, and Pytest.
+- `./scripts/check` or `just check`: run locked sync, Python version check, Ruff lint/format check, docs-current check, Pyrefly, and Pytest.
 - `uv run pytest -q tests/strategy_authoring`: run the Strategy Authoring test slice.
 - `uv run sis phase-gate-review`: review the read-only gate.
 
+CI also runs `bun install --frozen-lockfile` for lockfile integrity. `package.json` is legacy-note-only; normal development is Python/uv-first.
+
 ## Coding Style & Naming Conventions
 
-Use 4-space Python indentation, explicit public type hints, and small modules aligned to domain boundaries. Keep CLI code in `src/sis/commands/`; keep reusable logic outside command wrappers. Keep each Python file at 800 lines or fewer; split by responsibility before exceeding that limit. Ruff targets Python 3.13 with `line-length = 100`.
+Use 4-space Python indentation, explicit public type hints, and small modules aligned to domain boundaries. Keep CLI code in `src/sis/commands/`; keep reusable logic outside command wrappers. New or heavily edited Python files should stay at 800 lines or fewer. Strategy Authoring files enforce this with `tests/strategy_authoring/test_module_boundaries.py`; for older oversized modules, split before expanding their responsibility. Ruff targets Python 3.13 with `line-length = 100`.
 
 ## Tooling & Agent Workflow
 
@@ -35,4 +37,4 @@ Pull requests should include purpose, changed commands or artifacts, verificatio
 
 ## Security & Configuration Tips
 
-Start from `configs/env.example` and keep secrets out of git. Treat `bot-preview` and phase-gate outputs as read-only/paper artifacts unless code and docs explicitly say otherwise.
+Runtime settings are read from `.env`. Start from `configs/env.example` for normal repo settings and `.env.example` when following the Alpaca runbook. Keep secrets out of git. Treat `bot-preview` and phase-gate outputs as read-only/paper artifacts unless code and docs explicitly say otherwise.

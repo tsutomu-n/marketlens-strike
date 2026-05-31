@@ -3,7 +3,8 @@
 .env.*
 !.env.example
 
-# Local agent/workflow state
+# Local agent/workflow state. `.serena/project.yml` and selected `.tmp/live_evidence_*`
+# helpers are tracked intentionally; the broad ignores below keep local caches out.
 .codex/
 .serena/
 .ai_memory/
@@ -53,14 +54,15 @@ logs/
 tmp/
 temp/
 .tmp/*
+# Keep checked-in live-evidence helper scripts and notes available from fresh clones.
 !.tmp/live_evidence_*.sh
 !.tmp/live_evidence_*.md
 
-# Track compressed legacy venue archives even when a global ignore excludes *.zip.
+# Track the compressed legacy venue archive even when a global ignore excludes *.zip.
 *.zip
 !archive/gtrade_ostium_legacy_archive_*.zip
 
-# Generated tracked-doc outputs
+# Generated live-evidence reports are runtime outputs; keep only the directory README.
 docs/live_evidence_reports/live_evidence_report_*.md
 docs/live_evidence_reports/live_evidence_report_*.html
 docs/live_evidence_reports/live_evidence_followup_*.md

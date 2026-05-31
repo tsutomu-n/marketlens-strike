@@ -1,7 +1,7 @@
 [project]
 name = "marketlens-strike"
 version = "0.1.0"
-description = "Trade[XYZ] venue research, paper operations, and Go/No-Go engine"
+description = "Trade[XYZ] research, Strategy Lab authoring, paper operations, and read-only safety gates"
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "typer>=0.12",
