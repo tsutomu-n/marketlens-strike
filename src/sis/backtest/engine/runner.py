@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import polars as pl
 
@@ -22,6 +20,14 @@ from sis.backtest.engine.artifacts import write_backtest_artifacts
 from sis.backtest.engine.manifest import build_data_manifest
 from sis.backtest.engine.metrics import calculate_metrics
 from sis.backtest.engine.parameter_sweep import default_breakout_parameter_grid
+from sis.backtest.engine.run_loop import (
+    BreakoutParameters,
+    as_float_value,
+    optional_float,
+    row_event_ts,
+    row_index,
+    signal_kind,
+)
 from sis.backtest.engine.scenarios import default_scenarios
 from sis.backtest.engine.validation import simple_train_test_split
 from sis.backtest.engine.order import Order
@@ -33,12 +39,6 @@ from sis.backtest.trade_xyz.cost_model import (
 )
 from sis.backtest.trade_xyz.gates import evaluate_entry_gate, evaluate_exit_gate
 from sis.backtest.trade_xyz.schema import normalize_trade_xyz_market_data
-
-
-@dataclass(frozen=True)
-class BreakoutParameters:
-    entry_lookback: int = 20
-    exit_lookback: int = 10
 
 
 @dataclass(frozen=True)
@@ -70,64 +70,6 @@ def _max_drawdown_from_frame(frame: pl.DataFrame) -> float | None:
     return max_dd
 
 
-def _signal_kind(
-    rows: list[dict[str, object]], index: int, breakout: BreakoutParameters
-) -> str | None:
-    close = rows[index].get("close")
-    if not isinstance(close, int | float):
-        return None
-    if index >= breakout.entry_lookback:
-        previous = [
-            row.get("close")
-            for row in rows[index - breakout.entry_lookback : index]
-            if isinstance(row.get("close"), int | float)
-        ]
-        if previous and close > max(previous):
-            return "entry"
-    if index >= breakout.exit_lookback:
-        previous = [
-            row.get("close")
-            for row in rows[index - breakout.exit_lookback : index]
-            if isinstance(row.get("close"), int | float)
-        ]
-        if previous and close < min(previous):
-            return "exit"
-    return None
-
-
-def _row_event_ts(row: dict[str, object]) -> datetime:
-    value = row["event_ts"]
-    if not isinstance(value, datetime):
-        raise ValueError(f"event_ts must be datetime, got {type(value).__name__}")
-    return value
-
-
-def _row_index(row: dict[str, object]) -> int:
-    value = row["_row_index"]
-    if not isinstance(value, int):
-        raise ValueError(f"_row_index must be int, got {type(value).__name__}")
-    return value
-
-
-def _as_float_value(value: Any, *, field_name: str) -> float:
-    if not isinstance(value, int | float):
-        raise ValueError(f"{field_name} must be numeric")
-    return float(value)
-
-
-def _optional_float(value: object) -> float | None:
-    if value is None or value == "":
-        return None
-    if isinstance(value, int | float):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return None
-    return None
-
-
 def _fill_order(
     *,
     order: Order,
@@ -145,14 +87,14 @@ def _fill_order(
     if price is None or source is None or not fee.resolved or fee.taker_fee_bps is None:
         reason = "fill_price_unresolved" if price is None else "fee_unresolved"
         return None, BlockedEvent(
-            event_ts=_row_event_ts(row),
+            event_ts=row_event_ts(row),
             symbol=config.symbol,
             action=order.position_effect,
             reason=reason,
             reason_detail=f"order_id={order.order_id}",
             strategy_id=config.strategy_id,
             signal_id=order.signal_id,
-            row_index=_row_index(row),
+            row_index=row_index(row),
         )
     qty = (
         order.requested_notional_usd / price
@@ -165,7 +107,7 @@ def _fill_order(
     return Fill(
         fill_id=f"fill-{order.order_id}",
         order_id=order.order_id,
-        event_ts=_row_event_ts(row),
+        event_ts=row_event_ts(row),
         symbol=config.symbol,
         side=side,
         position_effect=order.position_effect,
@@ -247,13 +189,13 @@ def run_backtest(
                             "exit_price": fill.fill_price,
                             "gross_pnl": (
                                 fill.fill_price
-                                - _as_float_value(
+                                - as_float_value(
                                     open_trade["entry_price"], field_name="entry_price"
                                 )
                             )
                             * fill.qty,
                             "net_pnl": portfolio.realized_pnl - before.realized_pnl,
-                            "fees_paid": _as_float_value(
+                            "fees_paid": as_float_value(
                                 open_trade["entry_fee"], field_name="entry_fee"
                             )
                             + fill.fee_amount,
@@ -262,7 +204,7 @@ def run_backtest(
                     )
                     open_trade = None
 
-        signal = _signal_kind(rows, index, breakout)
+        signal = signal_kind(rows, index, breakout)
         fill_index = next_fill_row_index(signal_row_index=index, row_count=len(rows))
         actionable_signal_without_fill = (signal == "entry" and portfolio.position_qty == 0) or (
             signal == "exit" and portfolio.position_qty > 0
@@ -270,13 +212,13 @@ def run_backtest(
         if fill_index is None and actionable_signal_without_fill:
             blocked.append(
                 BlockedEvent(
-                    event_ts=_row_event_ts(row),
+                    event_ts=row_event_ts(row),
                     symbol=config.symbol,
                     action=signal,
                     reason="no_future_fill_row",
                     strategy_id=config.strategy_id,
                     signal_id=f"signal-{index}",
-                    row_index=_row_index(row),
+                    row_index=row_index(row),
                 )
             )
         elif fill_index is not None and signal == "exit" and portfolio.position_qty > 0:
@@ -293,7 +235,7 @@ def run_backtest(
             )
             if gate.allowed:
                 order = Order(
-                    created_ts=_row_event_ts(row),
+                    created_ts=row_event_ts(row),
                     symbol=config.symbol,
                     side="sell",
                     position_effect="close",
@@ -314,7 +256,7 @@ def run_backtest(
             gate = evaluate_entry_gate(row, gates=config.gates, fee=fee)
             if gate.allowed:
                 order = Order(
-                    created_ts=_row_event_ts(row),
+                    created_ts=row_event_ts(row),
                     symbol=config.symbol,
                     side="buy",
                     position_effect="open",
@@ -329,13 +271,13 @@ def run_backtest(
                 for reason in gate.reasons:
                     blocked.append(
                         BlockedEvent(
-                            event_ts=_row_event_ts(row),
+                            event_ts=row_event_ts(row),
                             symbol=config.symbol,
                             action="entry",
                             reason=reason,
                             strategy_id=config.strategy_id,
                             signal_id=f"signal-{index}",
-                            row_index=_row_index(row),
+                            row_index=row_index(row),
                         )
                     )
 
@@ -343,10 +285,10 @@ def run_backtest(
             funding_amount, funding_warning = calculate_v0_funding_amount(
                 policy=config.cost.funding_policy,
                 position_qty=portfolio.position_qty,
-                oracle_price=_optional_float(row.get("oracle_price")),
-                funding_rate=_optional_float(row.get("funding_rate")),
+                oracle_price=optional_float(row.get("oracle_price")),
+                funding_rate=optional_float(row.get("funding_rate")),
                 is_funding_event=bool(row.get("is_funding_event")),
-                event_ts=_row_event_ts(row),
+                event_ts=row_event_ts(row),
             )
             if funding_amount:
                 portfolio = portfolio.apply_funding(funding_amount)
@@ -354,13 +296,13 @@ def run_backtest(
                 recorded_funding_warnings.add(funding_warning)
                 blocked.append(
                     BlockedEvent(
-                        event_ts=_row_event_ts(row),
+                        event_ts=row_event_ts(row),
                         symbol=config.symbol,
                         action="funding",
                         reason=funding_warning,
                         strategy_id=config.strategy_id,
                         signal_id=None,
-                        row_index=_row_index(row),
+                        row_index=row_index(row),
                     )
                 )
 
@@ -372,7 +314,7 @@ def run_backtest(
         )
         equity_rows.append(
             {
-                "event_ts": _row_event_ts(row),
+                "event_ts": row_event_ts(row),
                 "cash_usd": portfolio.cash_usd,
                 "position_qty": portfolio.position_qty,
                 "equity": portfolio.cash_usd
@@ -392,7 +334,7 @@ def run_backtest(
     if config.execution.force_close_on_end and portfolio.position_qty > 0 and rows:
         last_row = rows[-1]
         force_order = Order(
-            created_ts=_row_event_ts(last_row),
+            created_ts=row_event_ts(last_row),
             symbol=config.symbol,
             side="sell",
             position_effect="close",
@@ -423,13 +365,11 @@ def run_backtest(
                         "exit_price": fill.fill_price,
                         "gross_pnl": (
                             fill.fill_price
-                            - _as_float_value(open_trade["entry_price"], field_name="entry_price")
+                            - as_float_value(open_trade["entry_price"], field_name="entry_price")
                         )
                         * fill.qty,
                         "net_pnl": portfolio.realized_pnl - before.realized_pnl,
-                        "fees_paid": _as_float_value(
-                            open_trade["entry_fee"], field_name="entry_fee"
-                        )
+                        "fees_paid": as_float_value(open_trade["entry_fee"], field_name="entry_fee")
                         + fill.fee_amount,
                         "exit_reason": "forced_end_close",
                     }
