@@ -109,11 +109,15 @@ def _write_trade_xyz_strict_artifacts(root: Path) -> None:
         '"canonical_symbol":"NVDA","venue_symbol":"NVDA","source":"test",'
         '"raw_payload_sha256":"abc","coin":"xyz:NVDA","asset_id":110002,'
         '"recv_ts_ms":1779840000000,"best_bid":100.0,"best_ask":100.1,'
-        '"mid_price":100.05,"spread_bps":10.0,"bid_depth_10bps_usd":1000.0,'
+        '"mid_price":100.05,"exec_buy_price":100.1,"exec_sell_price":100.0,'
+        '"spread_bps":10.0,"bid_depth_10bps_usd":1000.0,'
         '"ask_depth_10bps_usd":1000.0,"mark_price":100.0,"oracle_price":100.0,'
-        '"funding_rate":0.0,"open_interest_usd":10000.0,"market_status":"open",'
+        '"funding_rate":0.0,"funding_interval_minutes":60,'
+        '"open_interest_usd":10000.0,"fee_mode":"standard","taker_fee_bps":9.0,'
+        '"maker_fee_bps":3.0,"market_status":"open",'
         '"session_type":"unknown","is_tradable":true,"block_reasons":[],'
-        '"venue_quality_score":1.0}\n',
+        '"source_confidence":"high","venue_quality_score":1.0,'
+        '"raw_payload_ref":"data/raw/quotes/trade_xyz/2026-05-27.jsonl#row=0"}\n',
         encoding="utf-8",
     )
     summary = root / "ops/trade_xyz_quote_collection_summary.json"

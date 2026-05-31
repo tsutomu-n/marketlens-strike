@@ -118,6 +118,8 @@ def _write_trade_xyz_phase_gate_artifacts(data_dir: Path) -> None:
                     "best_bid": 100.0,
                     "best_ask": 100.1,
                     "mid_price": 100.05,
+                    "exec_buy_price": 100.1,
+                    "exec_sell_price": 100.0,
                     "spread_bps": 5.0,
                     "bid_depth_10bps_usd": 1000.0,
                     "ask_depth_10bps_usd": 1000.0,
@@ -125,6 +127,7 @@ def _write_trade_xyz_phase_gate_artifacts(data_dir: Path) -> None:
                     "oracle_price": 100.0,
                     "index_price": 100.0,
                     "funding_rate": 0.0,
+                    "funding_interval_minutes": 60,
                     "open_interest_usd": 10000.0,
                     "fee_mode": "standard",
                     "taker_fee_bps": 9.0,
@@ -133,7 +136,11 @@ def _write_trade_xyz_phase_gate_artifacts(data_dir: Path) -> None:
                     "session_type": "unknown",
                     "is_tradable": True,
                     "block_reasons": [],
+                    "source_confidence": "high",
                     "venue_quality_score": 1.0,
+                    "raw_payload_ref": (
+                        f"data/raw/quotes/trade_xyz/2026-05-27.jsonl#row={idx}"
+                    ),
                 }
             )
         )
