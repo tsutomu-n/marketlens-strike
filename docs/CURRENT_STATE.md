@@ -60,6 +60,19 @@
 - Alpaca live fetch は credentials が必要。credentials なしでは明示的に unavailable として失敗するため、silent empty data と混同しない。
 - `ostium-python-sdk` は active dependency から削除済み。
 
+## Repo Entry And Environment State
+
+2026-05-31 の repo-entry cleanup 後の状態:
+
+- `README.md` は repo 相対リンクを使い、詳細な Strategy Authoring capability の列挙は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` へ寄せている。
+- `README.md` は `READ_ONLY_GO` を read-only / paper gate として説明し、production live trading ready とは扱わない。
+- `pyproject.toml` の project description は `Trade[XYZ] research, Strategy Lab authoring, paper operations, and read-only safety gates`。
+- `AGENTS.md` は Python/uv-first を明記し、CI の Bun lockfile integrity check と `package.json` legacy-note-only 境界を記録している。
+- `AGENTS.md` の Python file size rule は、new or heavily edited Python files を 800 lines or fewer に保つ運用。Strategy Authoring 配下は `tests/strategy_authoring/test_module_boundaries.py` で 800 lines or fewer を強制する。既存 oversized modules は拡張前に分割を検討する。
+- `.gitignore` の ignore 動作は変えず、tracked `.tmp/live_evidence_*` helper、legacy archive zip、generated live-evidence reports の意図をコメント化している。
+- `.env.example` は `GTRADE_*` / `OSTIUM_*` live credential keys を持たない。Trade[XYZ] live write credentials も intentionally not defined で、manual micro-live preflight が文書化・承認されるまで local-only secrets として扱う。
+- `.env.example` は Alpaca smoke 用の accepted credential keys を残す。`configs/env.example` は通常 repo settings 用の最小 sample として残す。
+
 ## Verification Status
 
 2026-05-31 code/docs check:
