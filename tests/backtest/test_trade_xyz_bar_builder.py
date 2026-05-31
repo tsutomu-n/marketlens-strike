@@ -42,5 +42,7 @@ def test_build_quote_bars_separates_signal_fields_from_fill_snapshot() -> None:
     assert first["fill_market_status"] == "open"
     assert first["fill_block_reasons"] == []
     assert first["bar_block_reason_union"] == ["HALT"]
-    assert first["exec_buy_price"] == 100.1
-    assert first["exec_sell_price"] == 99.9
+    assert first["exec_buy_price"] is None
+    assert first["exec_sell_price"] is None
+    assert first["fill_best_ask"] == 100.1
+    assert first["fill_best_bid"] == 99.9

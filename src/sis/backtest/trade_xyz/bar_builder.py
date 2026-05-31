@@ -46,6 +46,14 @@ def _first_non_null(row: dict[str, Any], *fields: str) -> float | None:
 
 
 def _exec_buy(row: dict[str, Any]) -> float | None:
+    return _first_non_null(row, "exec_buy_price")
+
+
+def _exec_sell(row: dict[str, Any]) -> float | None:
+    return _first_non_null(row, "exec_sell_price")
+
+
+def _buy_fill_candidate(row: dict[str, Any]) -> float | None:
     direct = _first_non_null(row, "exec_buy_price", "best_ask", "ask_price")
     if direct is not None:
         return direct
@@ -56,7 +64,7 @@ def _exec_buy(row: dict[str, Any]) -> float | None:
     return None
 
 
-def _exec_sell(row: dict[str, Any]) -> float | None:
+def _sell_fill_candidate(row: dict[str, Any]) -> float | None:
     direct = _first_non_null(row, "exec_sell_price", "best_bid", "bid_price")
     if direct is not None:
         return direct
@@ -87,7 +95,7 @@ def _last_non_null(rows: list[dict[str, Any]], field: str) -> Any:
 
 def _first_executable(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for row in rows:
-        if _exec_buy(row) is not None or _exec_sell(row) is not None:
+        if _buy_fill_candidate(row) is not None or _sell_fill_candidate(row) is not None:
             return row
     return rows[0]
 

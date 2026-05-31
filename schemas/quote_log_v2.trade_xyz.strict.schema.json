@@ -32,7 +32,8 @@
         "block_reasons",
         "source_confidence",
         "venue_quality_score",
-        "raw_payload_sha256"
+        "raw_payload_sha256",
+        "raw_payload_ref"
       ],
       "properties": {
         "venue": { "const": "trade_xyz" }

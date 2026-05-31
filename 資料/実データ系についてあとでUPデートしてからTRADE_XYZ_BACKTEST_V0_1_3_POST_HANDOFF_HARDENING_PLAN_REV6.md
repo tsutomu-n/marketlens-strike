@@ -80,6 +80,82 @@ exec_buy_price/exec_sell_price: Null dtype in current snapshot
 block_reasons: List(Null) because all lists are empty in current snapshot
 ```
 
+### 1.4 Current Real Data Contract
+
+この節を `market_data.py` / `bar_builder.py` 実装前の正本とする。
+実データ schema が変わった場合は、実装より先にこの節を更新する。
+古い schema 前提で `market_data.py` / `bar_builder.py` を変更してはいけない。
+
+現在の前提:
+
+```text
+primary normalized input:
+  data/normalized/quotes.parquet
+
+event time candidates:
+  ts_client
+  source_ts_ms
+  recv_ts_ms
+
+signal/feature price fields:
+  mid_price
+  mark_price
+  oracle_price
+  index_price
+
+fill snapshot fields:
+  best_bid
+  best_ask
+  bid_price
+  ask_price
+  exec_buy_price
+  exec_sell_price
+  spread_bps
+
+current observed exec fields:
+  exec_buy_price: nullable / currently null in observed snapshot
+  exec_sell_price: nullable / currently null in observed snapshot
+```
+
+重要な禁止事項:
+
+```text
+bar_builder.py:
+  - raw exec_buy_price / exec_sell_price を best_bid/best_ask/mid/spread から合成しない。
+  - raw exec field が null なら、bar output の exec field も null のまま残す。
+  - fill snapshot の fallback 候補は fill_best_bid / fill_best_ask / fill_mid_price / fill_spread_bps として残す。
+
+fill model:
+  - exec_buy_price / exec_sell_price は raw exec field が存在するときだけ source 名として使う。
+  - fallback fill は fill_best_ask / fill_best_bid / fill_mid_plus_half_spread / fill_mid_minus_half_spread として provenance を残す。
+```
+
+strict artifact contract:
+
+```text
+new strict Trade[XYZ] raw quote artifacts require:
+  exec_buy_price
+  exec_sell_price
+  funding_interval_minutes
+  fee_mode
+  taker_fee_bps
+  maker_fee_bps
+  source_confidence
+  venue_quality_score
+  raw_payload_sha256
+  raw_payload_ref
+
+nullable meaning:
+  JSON Schema required means field presence.
+  Runtime strict validator enforces non-null for operational strict artifacts.
+```
+
+注意:
+
+- `exec_buy_price` / `exec_sell_price` は将来の raw collector が実値を提供するまでは null を許す。
+- backtest の market-like fill は、raw exec が null の場合でも `fill_best_*` または `fill_mid_*` fallback で約定し得る。
+- その場合でも artifact の `fill_price_source` は fallback source を正しく示す必要がある。
+
 1h smoke:
 
 ```text
@@ -723,4 +799,3 @@ blocked_events.parquet
 charts_data/cumulative_costs.json
 charts_data/drawdown.json
 ```
-
