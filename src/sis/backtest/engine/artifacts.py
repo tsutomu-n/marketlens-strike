@@ -9,6 +9,7 @@ import polars as pl
 from pydantic import BaseModel
 
 from sis.backtest.engine.charts import render_line_svg, render_placeholder_svg
+from sis.backtest.engine.charts import render_bar_svg
 from sis.backtest.engine.config import BacktestConfig
 from sis.backtest.engine.hashing import config_hash, input_schema_hash
 from sis.backtest.engine.report import render_backtest_html, render_backtest_markdown
@@ -31,6 +32,8 @@ def write_backtest_artifacts(
     input_data_ref: str,
     data_quality: BaseModel,
     data_manifest: BaseModel,
+    event_time_source: str,
+    close_source: str,
     metrics: dict[str, Any],
     benchmark_results: dict[str, Any],
     scenario_rows: list[dict[str, Any]],
@@ -52,11 +55,14 @@ def write_backtest_artifacts(
     scenario_summary = {
         "scenarios": [row["scenario"] for row in scenario_rows],
         "scenario_method": "cost_derived_v0",
+        "usable_for_strategy_selection": False,
         "base_only_edge_warning": True,
     }
     parameter_summary = {
         "grid_size": len(parameter_rows),
+        "parameter_method": "derived_placeholder_v0",
         "best_parameter_is_in_sample_only": True,
+        "usable_for_strategy_selection": False,
     }
     write_json(run_dir / "scenario_summary.json", scenario_summary)
     write_json(run_dir / "split_results.json", split_summary)
@@ -69,6 +75,12 @@ def write_backtest_artifacts(
             "symbol": config.symbol,
             "metrics": metrics,
             "data_manifest": "data_manifest.json",
+            "smoke_only": False,
+            "auto_small_lookback_used": False,
+            "usable_for_strategy_selection": not bool(
+                metrics.get("open_position_at_end")
+                or data_quality.model_dump(mode="json").get("insufficient_coverage_for_strategy")
+            ),
         },
     )
     run_meta = {
@@ -83,11 +95,14 @@ def write_backtest_artifacts(
         "evaluation_start_ts": config.period.evaluation_start_ts.isoformat(),
         "evaluation_end_ts": config.period.evaluation_end_ts.isoformat(),
         "input_data_ref": input_data_ref,
+        "event_time_source": event_time_source,
+        "close_source": close_source,
         "config_hash": config_hash(config),
         "input_schema_hash": input_schema_hash(normalized),
         "fee_model_ref": config.cost.fee_model_ref,
         "funding_policy": config.cost.funding_policy,
         "fill_model": config.execution.fill_model,
+        "end_position_policy": config.execution.end_position_policy,
         "leverage_mode": config.leverage.mode,
         "no_live_order": True,
         "wallet_used": False,
@@ -127,11 +142,17 @@ def write_backtest_artifacts(
             "v0.1 long-only single-symbol market-like taker fill",
             "best_parameter_is_in_sample_only: true",
             "scenario_results use cost_derived_v0 sensitivity from base run costs",
+            "parameter_results use derived_placeholder_v0 and are not strategy optimization",
         ],
     )
     (run_dir / "backtest_report.md").write_text(markdown, encoding="utf-8")
     (run_dir / "backtest_report.html").write_text(render_backtest_html(markdown), encoding="utf-8")
-    _write_charts(run_dir=run_dir, equity_frame=equity_frame, fills_frame=fills_frame)
+    _write_charts(
+        run_dir=run_dir,
+        equity_frame=equity_frame,
+        fills_frame=fills_frame,
+        blocked_frame=blocked_frame,
+    )
     _write_chart_data(
         run_dir=run_dir,
         run_id=config.run_id,
@@ -141,7 +162,13 @@ def write_backtest_artifacts(
     )
 
 
-def _write_charts(*, run_dir: Path, equity_frame: pl.DataFrame, fills_frame: pl.DataFrame) -> None:
+def _write_charts(
+    *,
+    run_dir: Path,
+    equity_frame: pl.DataFrame,
+    fills_frame: pl.DataFrame,
+    blocked_frame: pl.DataFrame,
+) -> None:
     charts_dir = run_dir / "charts"
     charts_dir.mkdir(exist_ok=True)
     equity_values = [float(value) for value in equity_frame.get_column("equity").to_list()]
@@ -161,8 +188,14 @@ def _write_charts(*, run_dir: Path, equity_frame: pl.DataFrame, fills_frame: pl.
                 for row in fills_frame.to_dicts()
             ],
         ),
-        "blocked_reasons": render_placeholder_svg(title="Blocked Reasons"),
-        "session_breakdown": render_placeholder_svg(title="Session Breakdown"),
+        "blocked_reasons": render_bar_svg(
+            title="Blocked Reasons", values=_value_counts(blocked_frame, "reason")
+        )
+        if not blocked_frame.is_empty()
+        else render_placeholder_svg(title="Blocked Reasons"),
+        "session_breakdown": render_bar_svg(
+            title="Session Breakdown", values=_value_counts(equity_frame, "session_type")
+        ),
     }
     for name, svg in chart_svgs.items():
         (charts_dir / f"{name}.svg").write_text(svg, encoding="utf-8")
@@ -183,6 +216,31 @@ def _write_chart_data(
         "drawdown": {"rows": equity_frame.select(["event_ts", "equity"]).to_dicts()},
         "trades": {"rows": trades_frame.to_dicts()},
         "blocked_reasons": {"rows": blocked_frame.to_dicts()},
+        "session_breakdown": {"rows": _counts_rows(equity_frame, "session_type")},
+        "cumulative_costs": {"rows": _cumulative_cost_rows(trades_frame)},
     }
     for name, payload in charts_payloads.items():
         write_json(charts_data_dir / f"{name}.json", {"name": name, "run_id": run_id, **payload})
+
+
+def _value_counts(frame: pl.DataFrame, column: str) -> dict[str, float]:
+    if frame.is_empty() or column not in frame.columns:
+        return {}
+    return {str(row[column]): float(row["len"]) for row in frame.group_by(column).len().to_dicts()}
+
+
+def _counts_rows(frame: pl.DataFrame, column: str) -> list[dict[str, object]]:
+    if frame.is_empty() or column not in frame.columns:
+        return []
+    return frame.group_by(column).len().sort(column).to_dicts()
+
+
+def _cumulative_cost_rows(frame: pl.DataFrame) -> list[dict[str, object]]:
+    if frame.is_empty():
+        return []
+    running = 0.0
+    rows: list[dict[str, object]] = []
+    for row in frame.to_dicts():
+        running += float(row.get("fees_paid") or 0)
+        rows.append({"event_ts": row.get("exit_ts"), "cumulative_cost": running})
+    return rows

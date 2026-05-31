@@ -65,12 +65,20 @@ def resolve_fee_bps(
     fee_model_path: str | Path,
     fee_scenario: Literal["row_resolved", "standard", "growth"],
 ) -> FeeResolution:
-    taker = _as_float(row.get("taker_fee_bps"))
-    maker = _as_float(row.get("maker_fee_bps"))
+    taker = _as_float(row.get("fill_taker_fee_bps"))
+    maker = _as_float(row.get("fill_maker_fee_bps"))
+    if taker is None:
+        taker = _as_float(row.get("taker_fee_bps"))
+    if maker is None:
+        maker = _as_float(row.get("maker_fee_bps"))
     if taker is not None and maker is not None and fee_scenario == "row_resolved":
         return FeeResolution(taker_fee_bps=taker, maker_fee_bps=maker, source="row")
 
-    mode = fee_scenario if fee_scenario != "row_resolved" else str(row.get("fee_mode") or "")
+    mode = (
+        fee_scenario
+        if fee_scenario != "row_resolved"
+        else str(row.get("fill_fee_mode") or row.get("fee_mode") or "")
+    )
     fallback = _load_fee_fallback(Path(fee_model_path))
     values = fallback.get(mode)
     if values is None:

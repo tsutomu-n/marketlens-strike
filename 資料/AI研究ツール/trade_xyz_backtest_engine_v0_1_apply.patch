@@ -1,0 +1,1063 @@
+diff --git a/src/sis/backtest/engine/__init__.py b/src/sis/backtest/engine/__init__.py
+new file mode 100644
+index 0000000..0512491
+--- /dev/null
++++ b/src/sis/backtest/engine/__init__.py
+@@ -0,0 +1,12 @@
++"""Pure backtest engine contracts.
++
++This package is intentionally separate from the existing Strategy Lab bridge in
++``sis.backtest.bridge``. It does not know about wallets, signing, live exchange
++writes, nonces, or CLOIDs.
++"""
++
++from sis.backtest.engine.order import BacktestOrder
++from sis.backtest.engine.fill import BacktestFill
++from sis.backtest.engine.portfolio import BacktestPortfolio, BacktestPosition
++
++__all__ = ["BacktestOrder", "BacktestFill", "BacktestPortfolio", "BacktestPosition"]
+diff --git a/src/sis/backtest/engine/fill.py b/src/sis/backtest/engine/fill.py
+new file mode 100644
+index 0000000..64786dd
+--- /dev/null
++++ b/src/sis/backtest/engine/fill.py
+@@ -0,0 +1,123 @@
++from __future__ import annotations
++
++from dataclasses import dataclass
++from datetime import datetime
++from typing import Protocol
++
++from sis.backtest.engine.order import BacktestOrder, OrderSide
++
++
++class MarketRowLike(Protocol):
++    ts: datetime
++    symbol: str
++    exec_buy_price: float | None
++    exec_sell_price: float | None
++    best_ask: float | None
++    best_bid: float | None
++    ask_price: float | None
++    bid_price: float | None
++    mid_price: float | None
++    spread_bps: float | None
++
++
++@dataclass(frozen=True)
++class BacktestFill:
++    fill_id: str
++    order_id: str
++    ts: datetime
++    symbol: str
++    side: OrderSide
++    qty: float
++    fill_price: float
++    fee: float
++    slippage: float
++    liquidity_flag: str
++    fill_price_source: str
++
++    @property
++    def notional(self) -> float:
++        return self.qty * self.fill_price
++
++
++@dataclass(frozen=True)
++class FillPrice:
++    price: float
++    source: str
++    slippage: float = 0.0
++
++
++def _positive(value: float | None) -> float | None:
++    if value is None:
++        return None
++    if value <= 0:
++        return None
++    return float(value)
++
++
++def resolve_market_fill_price(row: MarketRowLike, side: OrderSide) -> FillPrice:
++    """Resolve a conservative market-like fill price for one row.
++
++    Long entry / buy side preference:
++    ``exec_buy_price`` -> ``best_ask`` -> ``ask_price`` -> conservative
++    ``mid_price`` plus half spread.
++
++    Long exit / sell side preference:
++    ``exec_sell_price`` -> ``best_bid`` -> ``bid_price`` -> conservative
++    ``mid_price`` minus half spread.
++    """
++
++    if side == "buy":
++        candidates = [
++            (row.exec_buy_price, "exec_buy_price"),
++            (row.best_ask, "best_ask"),
++            (row.ask_price, "ask_price"),
++        ]
++        for value, source in candidates:
++            price = _positive(value)
++            if price is not None:
++                return FillPrice(price=price, source=source)
++        mid = _positive(row.mid_price)
++        if mid is not None:
++            spread_bps = max(float(row.spread_bps or 0.0), 0.0)
++            estimated = mid * (1.0 + spread_bps / 20_000.0)
++            return FillPrice(price=estimated, source="mid_plus_half_spread", slippage=estimated - mid)
++    else:
++        candidates = [
++            (row.exec_sell_price, "exec_sell_price"),
++            (row.best_bid, "best_bid"),
++            (row.bid_price, "bid_price"),
++        ]
++        for value, source in candidates:
++            price = _positive(value)
++            if price is not None:
++                return FillPrice(price=price, source=source)
++        mid = _positive(row.mid_price)
++        if mid is not None:
++            spread_bps = max(float(row.spread_bps or 0.0), 0.0)
++            estimated = mid * (1.0 - spread_bps / 20_000.0)
++            return FillPrice(price=estimated, source="mid_minus_half_spread", slippage=mid - estimated)
++
++    raise ValueError(f"cannot resolve market fill price for {row.symbol} at {row.ts.isoformat()}")
++
++
++def make_fill(
++    *,
++    order: BacktestOrder,
++    row: MarketRowLike,
++    fee: float,
++    fill_sequence: int,
++) -> BacktestFill:
++    fill_price = resolve_market_fill_price(row, order.side)
++    return BacktestFill(
++        fill_id=f"FILL-{fill_sequence:06d}",
++        order_id=order.order_id,
++        ts=row.ts,
++        symbol=order.symbol,
++        side=order.side,
++        qty=order.qty,
++        fill_price=fill_price.price,
++        fee=fee,
++        slippage=fill_price.slippage,
++        liquidity_flag="taker",
++        fill_price_source=fill_price.source,
++    )
+diff --git a/src/sis/backtest/engine/order.py b/src/sis/backtest/engine/order.py
+new file mode 100644
+index 0000000..7238201
+--- /dev/null
++++ b/src/sis/backtest/engine/order.py
+@@ -0,0 +1,33 @@
++from __future__ import annotations
++
++from dataclasses import dataclass
++from datetime import datetime
++from typing import Literal
++
++OrderSide = Literal["buy", "sell"]
++OrderType = Literal["market"]
++
++
++@dataclass(frozen=True)
++class BacktestOrder:
++    """A paper-only order contract for deterministic backtests.
++
++    This is deliberately not the live execution ``OrderIntent`` contract. It has
++    no wallet, signer, nonce, CLOID lifecycle, or exchange write semantics.
++    """
++
++    order_id: str
++    ts: datetime
++    symbol: str
++    side: OrderSide
++    qty: float
++    order_type: OrderType = "market"
++    price: float | None = None
++    reduce_only: bool = False
++    reason: str | None = None
++
++    def __post_init__(self) -> None:
++        if self.qty <= 0:
++            raise ValueError("order qty must be positive")
++        if not self.symbol:
++            raise ValueError("order symbol is required")
+diff --git a/src/sis/backtest/engine/portfolio.py b/src/sis/backtest/engine/portfolio.py
+new file mode 100644
+index 0000000..80e439b
+--- /dev/null
++++ b/src/sis/backtest/engine/portfolio.py
+@@ -0,0 +1,80 @@
++from __future__ import annotations
++
++from dataclasses import dataclass, field
++
++from sis.backtest.engine.fill import BacktestFill
++
++
++@dataclass
++class BacktestPosition:
++    symbol: str
++    qty: float = 0.0
++    avg_price: float = 0.0
++    realized_pnl: float = 0.0
++    unrealized_pnl: float = 0.0
++    funding_pnl: float = 0.0
++    fees_paid: float = 0.0
++
++    def mark_to_market(self, price: float | None) -> None:
++        if price is None or self.qty == 0:
++            self.unrealized_pnl = 0.0
++            return
++        self.unrealized_pnl = (float(price) - self.avg_price) * self.qty
++
++
++@dataclass
++class BacktestPortfolio:
++    initial_cash: float = 100_000.0
++    cash: float = 100_000.0
++    positions: dict[str, BacktestPosition] = field(default_factory=dict)
++
++    @classmethod
++    def with_initial_cash(cls, initial_cash: float) -> "BacktestPortfolio":
++        return cls(initial_cash=initial_cash, cash=initial_cash)
++
++    def position(self, symbol: str) -> BacktestPosition:
++        if symbol not in self.positions:
++            self.positions[symbol] = BacktestPosition(symbol=symbol)
++        return self.positions[symbol]
++
++    def apply_fill(self, fill: BacktestFill) -> BacktestPosition:
++        if fill.qty <= 0:
++            raise ValueError("fill qty must be positive")
++        pos = self.position(fill.symbol)
++        notional = fill.qty * fill.fill_price
++        pos.fees_paid += fill.fee
++
++        if fill.side == "buy":
++            new_qty = pos.qty + fill.qty
++            if new_qty <= 0:
++                raise ValueError("buy fill produced non-positive long quantity")
++            pos.avg_price = ((pos.avg_price * pos.qty) + notional) / new_qty
++            pos.qty = new_qty
++            pos.realized_pnl -= fill.fee
++            self.cash -= notional + fill.fee
++            return pos
++
++        if fill.qty > pos.qty:
++            raise ValueError("sell fill qty exceeds current long position")
++        gross_pnl = (fill.fill_price - pos.avg_price) * fill.qty
++        pos.realized_pnl += gross_pnl - fill.fee
++        pos.qty -= fill.qty
++        self.cash += notional - fill.fee
++        if pos.qty == 0:
++            pos.avg_price = 0.0
++            pos.unrealized_pnl = 0.0
++        return pos
++
++    def apply_funding(self, symbol: str, amount: float) -> BacktestPosition:
++        pos = self.position(symbol)
++        pos.funding_pnl += amount
++        pos.realized_pnl += amount
++        self.cash += amount
++        return pos
++
++    def mark_to_market(self, symbol: str, price: float | None) -> None:
++        self.position(symbol).mark_to_market(price)
++
++    @property
++    def equity(self) -> float:
++        return self.cash + sum(pos.unrealized_pnl for pos in self.positions.values())
+diff --git a/src/sis/backtest/engine/runner.py b/src/sis/backtest/engine/runner.py
+new file mode 100644
+index 0000000..1747a5a
+--- /dev/null
++++ b/src/sis/backtest/engine/runner.py
+@@ -0,0 +1,172 @@
++from __future__ import annotations
++
++from dataclasses import dataclass, field
++from datetime import datetime
++from typing import Literal
++
++from sis.backtest.engine.fill import BacktestFill, make_fill
++from sis.backtest.engine.order import BacktestOrder
++from sis.backtest.engine.portfolio import BacktestPortfolio
++from sis.backtest.trade_xyz.cost_model import TradeXyzCostModel, funding_payment
++from sis.backtest.trade_xyz.schema import TradeXyzMarketRow
++
++SignalAction = Literal["enter_long", "exit_long"]
++
++
++@dataclass(frozen=True)
++class BacktestSignal:
++    ts: datetime
++    symbol: str
++    action: SignalAction
++    reason: str = "signal"
++
++
++@dataclass(frozen=True)
++class BlockedOrder:
++    ts: datetime
++    symbol: str
++    action: SignalAction
++    reason: str
++
++
++@dataclass
++class BacktestRunResult:
++    orders: list[BacktestOrder] = field(default_factory=list)
++    fills: list[BacktestFill] = field(default_factory=list)
++    blocked_orders: list[BlockedOrder] = field(default_factory=list)
++    equity_curve: list[dict[str, object]] = field(default_factory=list)
++    metrics: dict[str, object] = field(default_factory=dict)
++
++
++def _next_executable_row(
++    rows: list[TradeXyzMarketRow],
++    *,
++    symbol: str,
++    after_ts: datetime,
++) -> TradeXyzMarketRow | None:
++    for row in rows:
++        if row.symbol == symbol and row.ts > after_ts:
++            return row
++    return None
++
++
++def run_signal_backtest(
++    *,
++    rows: list[TradeXyzMarketRow],
++    signals: list[BacktestSignal],
++    cost_model: TradeXyzCostModel,
++    qty: float = 1.0,
++    initial_cash: float = 100_000.0,
++) -> BacktestRunResult:
++    """Run a deterministic long-only, market-like signal backtest.
++
++    Signal timestamps are bar-close decisions. Fills occur only on the next row
++    with ``row.ts > signal.ts`` to prevent same-row lookahead.
++    """
++
++    sorted_rows = sorted(rows, key=lambda row: row.ts)
++    sorted_signals = sorted(signals, key=lambda signal: signal.ts)
++    portfolio = BacktestPortfolio.with_initial_cash(initial_cash)
++    result = BacktestRunResult()
++    order_seq = 0
++    fill_seq = 0
++
++    for signal in sorted_signals:
++        row = _next_executable_row(sorted_rows, symbol=signal.symbol, after_ts=signal.ts)
++        if row is None:
++            result.blocked_orders.append(
++                BlockedOrder(
++                    ts=signal.ts,
++                    symbol=signal.symbol,
++                    action=signal.action,
++                    reason="no_future_executable_row",
++                )
++            )
++            continue
++
++        position = portfolio.position(signal.symbol)
++        if signal.action == "enter_long":
++            if position.qty > 0:
++                result.blocked_orders.append(
++                    BlockedOrder(row.ts, signal.symbol, signal.action, "already_long")
++                )
++                continue
++            if not row.entry_allowed_by_market_state:
++                reason = "market_blocked"
++                if row.block_reasons:
++                    reason = "market_blocked:" + ",".join(row.block_reasons)
++                result.blocked_orders.append(BlockedOrder(row.ts, signal.symbol, signal.action, reason))
++                continue
++            if not cost_model.can_enter(row):
++                result.blocked_orders.append(
++                    BlockedOrder(row.ts, signal.symbol, signal.action, "fee_unresolved")
++                )
++                continue
++            side = "buy"
++            reduce_only = False
++            order_qty = qty
++        else:
++            if position.qty <= 0:
++                result.blocked_orders.append(
++                    BlockedOrder(row.ts, signal.symbol, signal.action, "no_long_position")
++                )
++                continue
++            side = "sell"
++            reduce_only = True
++            order_qty = position.qty
++
++        order_seq += 1
++        order = BacktestOrder(
++            order_id=f"ORDER-{order_seq:06d}",
++            ts=row.ts,
++            symbol=signal.symbol,
++            side=side,
++            qty=order_qty,
++            reduce_only=reduce_only,
++            reason=signal.reason,
++        )
++        # fee is calculated from the resolved fill notional. Resolve price once via make_fill with zero
++        # fee, then recalculate the fee and construct the final fill.
++        provisional = make_fill(order=order, row=row, fee=0.0, fill_sequence=fill_seq + 1)
++        fee, _rates = cost_model.fee_for_notional(row=row, notional=provisional.notional)
++        fill_seq += 1
++        fill = make_fill(order=order, row=row, fee=fee, fill_sequence=fill_seq)
++        portfolio.apply_fill(fill)
++        funding = funding_payment(
++            position_qty=portfolio.position(signal.symbol).qty,
++            oracle_price=row.oracle_price,
++            funding_rate=row.funding_rate,
++        )
++        if funding:
++            portfolio.apply_funding(signal.symbol, funding)
++        mark = row.close_or_mark
++        if mark is not None:
++            portfolio.mark_to_market(signal.symbol, mark)
++        result.orders.append(order)
++        result.fills.append(fill)
++        result.equity_curve.append(
++            {
++                "ts": row.ts.isoformat(),
++                "symbol": signal.symbol,
++                "equity": portfolio.equity,
++                "cash": portfolio.cash,
++                "position_qty": portfolio.position(signal.symbol).qty,
++                "realized_pnl": portfolio.position(signal.symbol).realized_pnl,
++            }
++        )
++
++    total_fees = sum(fill.fee for fill in result.fills)
++    position_values = list(portfolio.positions.values())
++    net_pnl = sum(pos.realized_pnl + pos.unrealized_pnl for pos in position_values)
++    result.metrics = {
++        "order_count": len(result.orders),
++        "fill_count": len(result.fills),
++        "blocked_order_count": len(result.blocked_orders),
++        "fees_paid": total_fees,
++        "net_pnl": net_pnl,
++        "final_equity": portfolio.equity,
++        "wallet_used": False,
++        "exchange_write_used": False,
++        "no_live_order": True,
++    }
++    return result
+diff --git a/src/sis/backtest/trade_xyz/__init__.py b/src/sis/backtest/trade_xyz/__init__.py
+new file mode 100644
+index 0000000..c4d4b7a
+--- /dev/null
++++ b/src/sis/backtest/trade_xyz/__init__.py
+@@ -0,0 +1,6 @@
++"""Trade[XYZ]-specific inputs for the pure backtest engine."""
++
++from sis.backtest.trade_xyz.schema import TradeXyzMarketRow, market_row_from_mapping
++from sis.backtest.trade_xyz.cost_model import TradeXyzCostModel, FeeRates
++
++__all__ = ["TradeXyzMarketRow", "market_row_from_mapping", "TradeXyzCostModel", "FeeRates"]
+diff --git a/src/sis/backtest/trade_xyz/cost_model.py b/src/sis/backtest/trade_xyz/cost_model.py
+new file mode 100644
+index 0000000..a31ff87
+--- /dev/null
++++ b/src/sis/backtest/trade_xyz/cost_model.py
+@@ -0,0 +1,103 @@
++from __future__ import annotations
++
++from dataclasses import dataclass
++from pathlib import Path
++from typing import Literal
++
++import yaml
++
++from sis.backtest.trade_xyz.schema import TradeXyzMarketRow
++
++LiquidityFlag = Literal["taker", "maker"]
++
++
++@dataclass(frozen=True)
++class FeeRates:
++    taker_bps: float
++    maker_bps: float
++    mode: str
++    source: str
++
++
++@dataclass(frozen=True)
++class TradeXyzCostModel:
++    fallback_by_mode: dict[str, FeeRates]
++    classification: dict[str, str]
++
++    @classmethod
++    def from_yaml(cls, path: Path) -> "TradeXyzCostModel":
++        payload = yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}
++        trade_xyz = ((payload or {}).get("fee_model") or {}).get("trade_xyz") or {}
++        fallback_payload = trade_xyz.get("fallback") or {}
++        fallback_by_mode: dict[str, FeeRates] = {}
++        for mode, values in fallback_payload.items():
++            if not isinstance(values, dict):
++                continue
++            taker = values.get("taker_bps")
++            maker = values.get("maker_bps")
++            if isinstance(taker, int | float) and isinstance(maker, int | float):
++                fallback_by_mode[str(mode).lower()] = FeeRates(
++                    taker_bps=float(taker),
++                    maker_bps=float(maker),
++                    mode=str(mode).lower(),
++                    source="config_fallback",
++                )
++        classification_payload = trade_xyz.get("classification") or {}
++        classification = {
++            str(symbol).upper(): str(mode).lower()
++            for symbol, mode in classification_payload.items()
++            if isinstance(symbol, str) and isinstance(mode, str)
++        }
++        return cls(fallback_by_mode=fallback_by_mode, classification=classification)
++
++    @classmethod
++    def observed_only(cls) -> "TradeXyzCostModel":
++        return cls(fallback_by_mode={}, classification={})
++
++    def resolve_fee_rates(self, row: TradeXyzMarketRow) -> FeeRates | None:
++        if row.taker_fee_bps is not None and row.maker_fee_bps is not None:
++            return FeeRates(
++                taker_bps=float(row.taker_fee_bps),
++                maker_bps=float(row.maker_fee_bps),
++                mode=row.fee_mode,
++                source="row_resolved_fee",
++            )
++
++        mode = row.fee_mode if row.fee_mode != "unknown" else self.classification.get(row.symbol)
++        if mode is None:
++            return None
++        return self.fallback_by_mode.get(mode)
++
++    def fee_for_notional(
++        self,
++        *,
++        row: TradeXyzMarketRow,
++        notional: float,
++        liquidity: LiquidityFlag = "taker",
++    ) -> tuple[float, FeeRates]:
++        rates = self.resolve_fee_rates(row)
++        if rates is None:
++            raise ValueError(f"fee rate is unresolved for {row.symbol} at {row.ts.isoformat()}")
++        bps = rates.taker_bps if liquidity == "taker" else rates.maker_bps
++        return abs(float(notional)) * bps / 10_000.0, rates
++
++    def can_enter(self, row: TradeXyzMarketRow) -> bool:
++        return row.entry_allowed_by_market_state and self.resolve_fee_rates(row) is not None
++
++
++def funding_payment(
++    *,
++    position_qty: float,
++    oracle_price: float | None,
++    funding_rate: float | None,
++) -> float:
++    """Return funding cashflow for the row if units are explicitly supplied.
++
++    ``funding_rate`` semantics are intentionally not inferred. Tests/fixtures must
++    define it as a direct period rate. ``None`` means no funding impact in MVP.
++    Positive funding is received by the long position; negative funding is paid.
++    """
++
++    if funding_rate is None or oracle_price is None or position_qty == 0:
++        return 0.0
++    return float(position_qty) * float(oracle_price) * float(funding_rate)
+diff --git a/src/sis/backtest/trade_xyz/schema.py b/src/sis/backtest/trade_xyz/schema.py
+new file mode 100644
+index 0000000..027fc2b
+--- /dev/null
++++ b/src/sis/backtest/trade_xyz/schema.py
+@@ -0,0 +1,155 @@
++from __future__ import annotations
++
++from datetime import datetime, timezone
++from typing import Any
++
++from pydantic import BaseModel, ConfigDict, field_validator
++
++
++class TradeXyzMarketRow(BaseModel):
++    """Point-in-time Trade[XYZ] market row used by the pure backtest engine."""
++
++    model_config = ConfigDict(extra="ignore")
++
++    ts: datetime
++    symbol: str
++    open: float | None = None
++    high: float | None = None
++    low: float | None = None
++    close: float | None = None
++    volume: float | None = None
++    mid_price: float | None = None
++    mark_price: float | None = None
++    oracle_price: float | None = None
++    external_price: float | None = None
++    exec_buy_price: float | None = None
++    exec_sell_price: float | None = None
++    best_bid: float | None = None
++    best_ask: float | None = None
++    bid_price: float | None = None
++    ask_price: float | None = None
++    funding_rate: float | None = None
++    funding_interval_minutes: int | None = None
++    spread_bps: float | None = None
++    taker_fee_bps: float | None = None
++    maker_fee_bps: float | None = None
++    fee_mode: str = "unknown"
++    session_type: str = "unknown"
++    discovery_bound_pct: float | None = None
++    oi_cap_usage: float | None = None
++    is_tradable: bool = True
++    block_reasons: list[str] = []
++
++    @field_validator("ts", mode="before")
++    @classmethod
++    def _parse_ts(cls, value: object) -> datetime:
++        if isinstance(value, datetime):
++            dt = value
++        elif isinstance(value, str):
++            dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
++        else:
++            raise ValueError("ts must be datetime or ISO string")
++        if dt.tzinfo is None:
++            return dt.replace(tzinfo=timezone.utc)
++        return dt.astimezone(timezone.utc)
++
++    @field_validator("symbol", mode="before")
++    @classmethod
++    def _normalize_symbol(cls, value: object) -> str:
++        symbol = str(value or "").strip().upper()
++        if not symbol:
++            raise ValueError("symbol is required")
++        return symbol
++
++    @field_validator("fee_mode", mode="before")
++    @classmethod
++    def _normalize_fee_mode(cls, value: object) -> str:
++        mode = str(value or "unknown").strip().lower()
++        return mode or "unknown"
++
++    @field_validator("session_type", mode="before")
++    @classmethod
++    def _normalize_session_type(cls, value: object) -> str:
++        session_type = str(value or "unknown").strip().lower()
++        return session_type or "unknown"
++
++    @field_validator("block_reasons", mode="before")
++    @classmethod
++    def _normalize_block_reasons(cls, value: object) -> list[str]:
++        if value is None:
++            return []
++        if isinstance(value, list):
++            return [str(item) for item in value if item is not None and str(item)]
++        if isinstance(value, tuple):
++            return [str(item) for item in value if item is not None and str(item)]
++        if isinstance(value, str):
++            return [value] if value else []
++        return []
++
++    @property
++    def entry_allowed_by_market_state(self) -> bool:
++        return self.is_tradable and not self.block_reasons
++
++    @property
++    def close_or_mark(self) -> float | None:
++        return _first_float(self.close, self.mark_price, self.mid_price, self.oracle_price, self.external_price)
++
++
++def _first_float(*values: object) -> float | None:
++    for value in values:
++        if value is None or value == "":
++            continue
++        if not isinstance(value, int | float | str):
++            continue
++        try:
++            number = float(value)
++        except ValueError:
++            continue
++        if number > 0:
++            return number
++    return None
++
++
++def _get(row: dict[str, Any], *keys: str) -> Any:
++    for key in keys:
++        if key in row:
++            return row[key]
++    return None
++
++
++def market_row_from_mapping(row: dict[str, Any]) -> TradeXyzMarketRow:
++    """Build a Trade[XYZ] market row from current normalized quote/bar mappings."""
++
++    ts = _get(row, "ts", "ts_client", "timestamp")
++    symbol = _get(row, "symbol", "canonical_symbol", "coin")
++    payload = {
++        "ts": ts,
++        "symbol": symbol,
++        "open": _get(row, "open"),
++        "high": _get(row, "high"),
++        "low": _get(row, "low"),
++        "close": _get(row, "close", "mark_price", "mid_price"),
++        "volume": _get(row, "volume", "day_notional_volume"),
++        "mid_price": _get(row, "mid_price"),
++        "mark_price": _get(row, "mark_price"),
++        "oracle_price": _get(row, "oracle_price"),
++        "external_price": _get(row, "external_price", "index_price"),
++        "exec_buy_price": _get(row, "exec_buy_price"),
++        "exec_sell_price": _get(row, "exec_sell_price"),
++        "best_bid": _get(row, "best_bid"),
++        "best_ask": _get(row, "best_ask"),
++        "bid_price": _get(row, "bid_price"),
++        "ask_price": _get(row, "ask_price"),
++        "funding_rate": _get(row, "funding_rate"),
++        "funding_interval_minutes": _get(row, "funding_interval_minutes"),
++        "spread_bps": _get(row, "spread_bps"),
++        "taker_fee_bps": _get(row, "taker_fee_bps"),
++        "maker_fee_bps": _get(row, "maker_fee_bps"),
++        "fee_mode": _get(row, "fee_mode"),
++        "session_type": _get(row, "session_type"),
++        "discovery_bound_pct": _get(row, "discovery_bound_pct"),
++        "oi_cap_usage": _get(row, "oi_cap_usage"),
++        "is_tradable": bool(_get(row, "is_tradable") if _get(row, "is_tradable") is not None else True),
++        "block_reasons": _get(row, "block_reasons"),
++    }
++    return TradeXyzMarketRow.model_validate(payload)
+diff --git a/tests/backtest/test_fill_model.py b/tests/backtest/test_fill_model.py
+new file mode 100644
+index 0000000..d43f1e9
+--- /dev/null
++++ b/tests/backtest/test_fill_model.py
+@@ -0,0 +1,52 @@
++from __future__ import annotations
++
++from datetime import datetime, timezone
++
++from sis.backtest.engine.fill import resolve_market_fill_price
++from sis.backtest.trade_xyz.schema import TradeXyzMarketRow
++
++
++def _row(**overrides: object) -> TradeXyzMarketRow:
++    base = {
++        "ts": datetime(2026, 5, 31, tzinfo=timezone.utc),
++        "symbol": "SP500",
++        "mid_price": 100.0,
++        "spread_bps": 10.0,
++    }
++    base.update(overrides)
++    return TradeXyzMarketRow.model_validate(base)
++
++
++def test_buy_fill_prefers_exec_buy_price() -> None:
++    price = resolve_market_fill_price(_row(exec_buy_price=101.0, best_ask=102.0), "buy")
++
++    assert price.price == 101.0
++    assert price.source == "exec_buy_price"
++
++
++def test_sell_fill_prefers_exec_sell_price() -> None:
++    price = resolve_market_fill_price(_row(exec_sell_price=99.0, best_bid=98.0), "sell")
++
++    assert price.price == 99.0
++    assert price.source == "exec_sell_price"
++
++
++def test_buy_fill_falls_back_to_best_ask() -> None:
++    price = resolve_market_fill_price(_row(best_ask=100.5), "buy")
++
++    assert price.price == 100.5
++    assert price.source == "best_ask"
++
++
++def test_buy_fill_uses_conservative_mid_plus_half_spread() -> None:
++    price = resolve_market_fill_price(_row(), "buy")
++
++    assert round(price.price, 4) == 100.05
++    assert price.source == "mid_plus_half_spread"
++
++
++def test_sell_fill_uses_conservative_mid_minus_half_spread() -> None:
++    price = resolve_market_fill_price(_row(), "sell")
++
++    assert round(price.price, 4) == 99.95
++    assert price.source == "mid_minus_half_spread"
+diff --git a/tests/backtest/test_no_lookahead.py b/tests/backtest/test_no_lookahead.py
+new file mode 100644
+index 0000000..12417e9
+--- /dev/null
++++ b/tests/backtest/test_no_lookahead.py
+@@ -0,0 +1,79 @@
++from __future__ import annotations
++
++from datetime import datetime, timezone
++from pathlib import Path
++
++from sis.backtest.engine.runner import BacktestSignal, run_signal_backtest
++from sis.backtest.trade_xyz.cost_model import TradeXyzCostModel
++from sis.backtest.trade_xyz.schema import TradeXyzMarketRow
++
++
++def _row(hour: int, price: float, *, tradable: bool = True, fee_mode: str = "standard") -> TradeXyzMarketRow:
++    return TradeXyzMarketRow.model_validate(
++        {
++            "ts": datetime(2026, 5, 31, hour, tzinfo=timezone.utc),
++            "symbol": "SP500",
++            "mid_price": price,
++            "mark_price": price,
++            "oracle_price": price,
++            "best_ask": price,
++            "best_bid": price,
++            "spread_bps": 1.0,
++            "fee_mode": fee_mode,
++            "taker_fee_bps": 9.0 if fee_mode != "unknown" else None,
++            "maker_fee_bps": 3.0 if fee_mode != "unknown" else None,
++            "is_tradable": tradable,
++            "block_reasons": [] if tradable else ["fixture_block"],
++        }
++    )
++
++
++def _model() -> TradeXyzCostModel:
++    return TradeXyzCostModel.from_yaml(Path("configs/fee_model.trade_xyz.yaml"))
++
++
++def test_signal_fills_on_next_row_not_same_row() -> None:
++    rows = [_row(0, 100.0), _row(1, 101.0), _row(2, 9999.0)]
++    signals = [BacktestSignal(ts=rows[0].ts, symbol="SP500", action="enter_long")]
++
++    result = run_signal_backtest(rows=rows, signals=signals, cost_model=_model())
++
++    assert len(result.fills) == 1
++    assert result.fills[0].ts == rows[1].ts
++    assert result.fills[0].fill_price == 101.0
++
++
++def test_changing_future_bar_after_fill_does_not_change_prior_fill() -> None:
++    signals = [BacktestSignal(ts=datetime(2026, 5, 31, 0, tzinfo=timezone.utc), symbol="SP500", action="enter_long")]
++    first = run_signal_backtest(
++        rows=[_row(0, 100.0), _row(1, 101.0), _row(2, 200.0)],
++        signals=signals,
++        cost_model=_model(),
++    )
++    second = run_signal_backtest(
++        rows=[_row(0, 100.0), _row(1, 101.0), _row(2, 9999.0)],
++        signals=signals,
++        cost_model=_model(),
++    )
++
++    assert first.fills[0].fill_price == second.fills[0].fill_price == 101.0
++
++
++def test_blocked_market_row_prevents_new_entry() -> None:
++    rows = [_row(0, 100.0), _row(1, 101.0, tradable=False)]
++    signals = [BacktestSignal(ts=rows[0].ts, symbol="SP500", action="enter_long")]
++
++    result = run_signal_backtest(rows=rows, signals=signals, cost_model=_model())
++
++    assert result.fills == []
++    assert result.blocked_orders[0].reason == "market_blocked:fixture_block"
++
++
++def test_unresolved_fee_prevents_new_entry() -> None:
++    rows = [_row(0, 100.0), _row(1, 101.0, fee_mode="unknown")]
++    signals = [BacktestSignal(ts=rows[0].ts, symbol="SP500", action="enter_long")]
++
++    result = run_signal_backtest(rows=rows, signals=signals, cost_model=TradeXyzCostModel.observed_only())
++
++    assert result.fills == []
++    assert result.blocked_orders[0].reason == "fee_unresolved"
+diff --git a/tests/backtest/test_portfolio_accounting.py b/tests/backtest/test_portfolio_accounting.py
+new file mode 100644
+index 0000000..b89014c
+--- /dev/null
++++ b/tests/backtest/test_portfolio_accounting.py
+@@ -0,0 +1,49 @@
++from __future__ import annotations
++
++from datetime import datetime, timezone
++
++import pytest
++
++from sis.backtest.engine.fill import BacktestFill
++from sis.backtest.engine.portfolio import BacktestPortfolio
++
++
++def _fill(side: str, price: float, fee: float, fill_id: str) -> BacktestFill:
++    return BacktestFill(
++        fill_id=fill_id,
++        order_id=f"ORDER-{fill_id}",
++        ts=datetime(2026, 5, 31, tzinfo=timezone.utc),
++        symbol="SP500",
++        side=side,  # type: ignore[arg-type]
++        qty=1.0,
++        fill_price=price,
++        fee=fee,
++        slippage=0.0,
++        liquidity_flag="taker",
++        fill_price_source="fixture",
++    )
++
++
++def test_long_entry_and_exit_accounting_is_net_of_fees() -> None:
++    portfolio = BacktestPortfolio.with_initial_cash(1_000.0)
++
++    entry = portfolio.apply_fill(_fill("buy", 100.0, 1.0, "ENTRY"))
++
++    assert entry.qty == 1.0
++    assert entry.avg_price == 100.0
++    assert entry.fees_paid == 1.0
++    assert entry.realized_pnl == -1.0
++
++    exit_position = portfolio.apply_fill(_fill("sell", 110.0, 1.0, "EXIT"))
++
++    assert exit_position.qty == 0.0
++    assert exit_position.avg_price == 0.0
++    assert exit_position.fees_paid == 2.0
++    assert exit_position.realized_pnl == 8.0
++
++
++def test_sell_more_than_current_position_is_rejected() -> None:
++    portfolio = BacktestPortfolio.with_initial_cash(1_000.0)
++
++    with pytest.raises(ValueError, match="exceeds current long position"):
++        portfolio.apply_fill(_fill("sell", 110.0, 1.0, "EXIT"))
+diff --git a/tests/backtest/test_trade_xyz_cost_model.py b/tests/backtest/test_trade_xyz_cost_model.py
+new file mode 100644
+index 0000000..e5e2575
+--- /dev/null
++++ b/tests/backtest/test_trade_xyz_cost_model.py
+@@ -0,0 +1,58 @@
++from __future__ import annotations
++
++from pathlib import Path
++
++import pytest
++
++from sis.backtest.trade_xyz.cost_model import TradeXyzCostModel, funding_payment
++from sis.backtest.trade_xyz.schema import market_row_from_mapping
++
++
++def _row(**overrides: object):
++    base = {
++        "ts_client": "2026-05-31T00:00:00+00:00",
++        "canonical_symbol": "SP500",
++        "mid_price": 100.0,
++        "fee_mode": "standard",
++        "taker_fee_bps": None,
++        "maker_fee_bps": None,
++        "is_tradable": True,
++        "block_reasons": [],
++    }
++    base.update(overrides)
++    return market_row_from_mapping(base)
++
++
++def test_cost_model_prefers_row_resolved_fee() -> None:
++    model = TradeXyzCostModel.from_yaml(Path("configs/fee_model.trade_xyz.yaml"))
++    row = _row(taker_fee_bps=8.0, maker_fee_bps=2.0)
++
++    fee, rates = model.fee_for_notional(row=row, notional=10_000.0)
++
++    assert fee == 8.0
++    assert rates.source == "row_resolved_fee"
++
++
++def test_cost_model_uses_config_fallback_for_classified_symbol() -> None:
++    model = TradeXyzCostModel.from_yaml(Path("configs/fee_model.trade_xyz.yaml"))
++    row = _row(fee_mode="unknown", taker_fee_bps=None, maker_fee_bps=None)
++
++    fee, rates = model.fee_for_notional(row=row, notional=10_000.0)
++
++    assert fee == 9.0
++    assert rates.mode == "standard"
++    assert rates.source == "config_fallback"
++
++
++def test_cost_model_rejects_unresolved_fee() -> None:
++    model = TradeXyzCostModel.observed_only()
++    row = _row(fee_mode="unknown", taker_fee_bps=None, maker_fee_bps=None)
++
++    assert model.can_enter(row) is False
++    with pytest.raises(ValueError, match="fee rate is unresolved"):
++        model.fee_for_notional(row=row, notional=10_000.0)
++
++
++def test_funding_payment_is_nullable_and_direct_rate_only() -> None:
++    assert funding_payment(position_qty=1.0, oracle_price=100.0, funding_rate=None) == 0.0
++    assert funding_payment(position_qty=2.0, oracle_price=100.0, funding_rate=-0.001) == -0.2
+diff --git a/tests/backtest/test_trade_xyz_schema.py b/tests/backtest/test_trade_xyz_schema.py
+new file mode 100644
+index 0000000..c74bf1a
+--- /dev/null
++++ b/tests/backtest/test_trade_xyz_schema.py
+@@ -0,0 +1,63 @@
++from __future__ import annotations
++
++from datetime import datetime, timezone
++
++from sis.backtest.trade_xyz.schema import market_row_from_mapping
++
++
++def test_market_row_from_current_normalized_quote_mapping() -> None:
++    row = market_row_from_mapping(
++        {
++            "ts_client": "2026-05-31T00:00:00+00:00",
++            "canonical_symbol": "sp500",
++            "mark_price": 100.0,
++            "mid_price": 100.1,
++            "index_price": 99.9,
++            "best_bid": 100.0,
++            "best_ask": 100.2,
++            "spread_bps": 2.0,
++            "fee_mode": "standard",
++            "taker_fee_bps": 9.0,
++            "maker_fee_bps": 3.0,
++            "is_tradable": True,
++            "block_reasons": [],
++        }
++    )
++
++    assert row.ts == datetime(2026, 5, 31, 0, 0, tzinfo=timezone.utc)
++    assert row.symbol == "SP500"
++    assert row.close == 100.0
++    assert row.external_price == 99.9
++    assert row.entry_allowed_by_market_state is True
++    assert row.block_reasons == []
++
++
++def test_market_row_blocks_entry_when_reasons_present() -> None:
++    row = market_row_from_mapping(
++        {
++            "ts_client": "2026-05-31T00:00:00+00:00",
++            "canonical_symbol": "SP500",
++            "mid_price": 100.0,
++            "fee_mode": "standard",
++            "taker_fee_bps": 9.0,
++            "maker_fee_bps": 3.0,
++            "is_tradable": True,
++            "block_reasons": ["discovery_bound"],
++        }
++    )
++
++    assert row.entry_allowed_by_market_state is False
++    assert row.block_reasons == ["discovery_bound"]
++
++
++def test_market_row_accepts_list_null_artifact_shape_as_empty_reasons() -> None:
++    row = market_row_from_mapping(
++        {
++            "ts_client": "2026-05-31T00:00:00+00:00",
++            "canonical_symbol": "SP500",
++            "mid_price": 100.0,
++            "block_reasons": [None],
++        }
++    )
++
++    assert row.block_reasons == []

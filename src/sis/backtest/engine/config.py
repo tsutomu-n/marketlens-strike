@@ -5,6 +5,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+EndPositionPolicy = Literal[
+    "force_close_if_executable",
+    "mark_to_market_only",
+    "error_if_open",
+]
+
 
 class PeriodConfig(BaseModel):
     warmup_start_ts: datetime | None = None
@@ -32,6 +38,15 @@ class ExecutionConfig(BaseModel):
     fill_model: Literal["market_like_taker_v0"] = "market_like_taker_v0"
     extra_slippage_bps: float = Field(default=0.0, ge=0)
     force_close_on_end: bool = False
+    end_position_policy: EndPositionPolicy | None = None
+
+    @model_validator(mode="after")
+    def validate_end_position_policy(self) -> ExecutionConfig:
+        if self.end_position_policy is None:
+            self.end_position_policy = (
+                "force_close_if_executable" if self.force_close_on_end else "mark_to_market_only"
+            )
+        return self
 
 
 class CostConfig(BaseModel):

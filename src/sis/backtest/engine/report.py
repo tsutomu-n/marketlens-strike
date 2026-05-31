@@ -48,7 +48,15 @@ def render_backtest_markdown(
     for section in REQUIRED_REPORT_SECTIONS:
         lines.extend([f"## {section}", ""])
         if section == "Run Summary":
-            for key in ("run_id", "strategy_id", "symbol", "timeframe"):
+            for key in (
+                "run_id",
+                "strategy_id",
+                "symbol",
+                "timeframe",
+                "close_source",
+                "event_time_source",
+                "input_data_ref",
+            ):
                 if key in run_meta:
                     lines.append(f"- `{key}`: {run_meta[key]}")
         elif section == "Scope and Non-Scope":
@@ -60,7 +68,13 @@ def render_backtest_markdown(
                 ]
             )
         elif section == "Config Summary":
-            for key in ("fee_model_ref", "funding_policy", "fill_model", "leverage_mode"):
+            for key in (
+                "fee_model_ref",
+                "funding_policy",
+                "fill_model",
+                "end_position_policy",
+                "leverage_mode",
+            ):
                 if key in run_meta:
                     lines.append(f"- `{key}`: {run_meta[key]}")
         elif section == "Data Manifest":
@@ -72,6 +86,14 @@ def render_backtest_markdown(
                     "status",
                     "input_row_count",
                     "filtered_row_count",
+                    "bar_count",
+                    "evaluation_bar_count",
+                    "coverage_seconds",
+                    "median_event_gap_seconds",
+                    "max_event_gap_seconds",
+                    "insufficient_coverage_for_strategy",
+                    "required_min_rows",
+                    "required_min_bars",
                     "cadence_gap_count",
                     "unknown_fee_mode_count",
                     "null_taker_fee_count",
@@ -109,6 +131,8 @@ def render_backtest_markdown(
             for key in ("fee_impact", "funding_impact", "slippage_impact", "cost_drag_bps"):
                 lines.append(f"- `{key}`: {metrics.get(key)}")
         elif section == "Open Position at End":
+            lines.append(f"- `open_position_at_end`: {metrics.get('open_position_at_end')}")
+            lines.append(f"- `end_position_policy`: {metrics.get('end_position_policy')}")
             lines.append(f"- `end_open_position_count`: {metrics.get('end_open_position_count')}")
             lines.append(f"- `end_unrealized_pnl`: {metrics.get('end_unrealized_pnl')}")
         elif section == "Warnings / Known Limitations":

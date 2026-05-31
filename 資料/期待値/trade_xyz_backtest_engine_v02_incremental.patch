@@ -1,0 +1,1093 @@
+diff --git a/src/sis/backtest/engine/__init__.py b/src/sis/backtest/engine/__init__.py
+index adb1a76..887f730 100644
+--- a/src/sis/backtest/engine/__init__.py
++++ b/src/sis/backtest/engine/__init__.py
+@@ -6,17 +6,29 @@ surface; this package contains wallet-free, exchange-write-free accounting
+ contracts for deterministic backtests.
+ """
+ 
++from sis.backtest.engine.artifacts import write_backtest_artifacts
+ from sis.backtest.engine.fill import BacktestFill, FillModelError, create_market_fill
+ from sis.backtest.engine.order import BacktestOrder, OrderSide, OrderType
+ from sis.backtest.engine.portfolio import BacktestPortfolio, PositionState
++from sis.backtest.engine.runner import (
++    BacktestRunResult,
++    BreakoutConfig,
++    EquitySnapshot,
++    run_long_breakout_backtest,
++)
+ 
+ __all__ = [
+     "BacktestFill",
+     "BacktestOrder",
+     "BacktestPortfolio",
++    "BacktestRunResult",
++    "BreakoutConfig",
++    "EquitySnapshot",
+     "FillModelError",
+     "OrderSide",
+     "OrderType",
+     "PositionState",
+     "create_market_fill",
++    "run_long_breakout_backtest",
++    "write_backtest_artifacts",
+ ]
+diff --git a/src/sis/backtest/engine/artifacts.py b/src/sis/backtest/engine/artifacts.py
+new file mode 100644
+index 0000000..4985643
+--- /dev/null
++++ b/src/sis/backtest/engine/artifacts.py
+@@ -0,0 +1,256 @@
++from __future__ import annotations
++
++from dataclasses import asdict, is_dataclass
++from datetime import datetime, timezone
++from pathlib import Path
++from typing import Any
++import hashlib
++import json
++import math
++
++import polars as pl
++
++from sis.backtest.engine.runner import BacktestRunResult, BreakoutConfig
++
++
++SCHEMA_VERSION = "trade_xyz_backtest_artifacts.v1"
++
++
++def _json_safe(value: Any) -> Any:
++    if is_dataclass(value):
++        return _json_safe(asdict(value))
++    if isinstance(value, dict):
++        return {str(key): _json_safe(item) for key, item in value.items()}
++    if isinstance(value, list | tuple):
++        return [_json_safe(item) for item in value]
++    if isinstance(value, datetime):
++        return value.isoformat()
++    if isinstance(value, float):
++        if math.isinf(value):
++            return "Infinity" if value > 0 else "-Infinity"
++        if math.isnan(value):
++            return None
++    return value
++
++
++def _write_json(path: Path, payload: dict[str, Any]) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(
++        json.dumps(_json_safe(payload), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
++        encoding="utf-8",
++    )
++
++
++def _hash_payload(payload: dict[str, Any]) -> str:
++    encoded = json.dumps(_json_safe(payload), ensure_ascii=False, sort_keys=True).encode("utf-8")
++    return hashlib.sha256(encoded).hexdigest()
++
++
++def _order_rows(result: BacktestRunResult) -> list[dict[str, Any]]:
++    rows: list[dict[str, Any]] = []
++    for order in result.orders:
++        rows.append(
++            {
++                "order_id": order.order_id,
++                "ts": order.ts,
++                "symbol": order.symbol,
++                "side": order.side.value,
++                "order_type": order.order_type.value,
++                "qty": order.qty,
++                "reduce_only": order.reduce_only,
++                "client_order_id": order.client_order_id,
++            }
++        )
++    return rows
++
++
++def _fill_rows(result: BacktestRunResult) -> list[dict[str, Any]]:
++    rows: list[dict[str, Any]] = []
++    for fill in result.fills:
++        rows.append(
++            {
++                "fill_id": fill.fill_id,
++                "order_id": fill.order_id,
++                "ts": fill.ts,
++                "symbol": fill.symbol,
++                "side": fill.side.value,
++                "qty": fill.qty,
++                "fill_price": fill.fill_price,
++                "notional_usd": fill.notional_usd,
++                "fee_usd": fill.fee_usd,
++                "fee_bps": fill.fee_bps,
++                "slippage_bps": fill.slippage_bps,
++                "liquidity_flag": fill.liquidity_flag,
++                "fill_price_source": fill.fill_price_source,
++                "client_order_id": fill.client_order_id,
++            }
++        )
++    return rows
++
++
++def _equity_rows(result: BacktestRunResult) -> list[dict[str, Any]]:
++    return [_json_safe(snapshot) for snapshot in result.equity_snapshots]
++
++
++def _blocked_rows(result: BacktestRunResult) -> list[dict[str, Any]]:
++    return [
++        {"reason": reason, "count": count}
++        for reason, count in sorted(result.blocked_entries.items())
++    ]
++
++
++def _write_parquet(path: Path, rows: list[dict[str, Any]]) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    pl.DataFrame(rows).write_parquet(path)
++
++
++def _render_report(
++    *,
++    run_id: str,
++    config: BreakoutConfig,
++    result: BacktestRunResult,
++    output_dir: Path,
++) -> str:
++    metrics = result.metrics
++    return "\n".join(
++        [
++            "# Trade[XYZ] Pure Backtest Report",
++            "",
++            f"- run_id: `{run_id}`",
++            f"- symbol: `{config.symbol.upper()}`",
++            "- strategy: `long_breakout_v0`",
++            "- no_live_order: `true`",
++            "- wallet_used: `false`",
++            "- exchange_write_used: `false`",
++            "",
++            "## Metrics",
++            "",
++            f"- total_return: `{metrics.total_return:.6f}`",
++            f"- final_equity: `{metrics.final_equity:.6f}`",
++            f"- net_pnl_usd: `{metrics.net_pnl_usd:.6f}`",
++            f"- max_drawdown: `{metrics.max_drawdown:.6f}`",
++            f"- trade_count: `{metrics.trade_count}`",
++            f"- win_rate: `{metrics.win_rate}`",
++            f"- profit_factor: `{metrics.profit_factor}`",
++            f"- fee_impact_usd: `{metrics.fee_impact_usd:.6f}`",
++            f"- funding_impact_usd: `{metrics.funding_impact_usd:.6f}`",
++            f"- max_abs_mark_oracle_basis_bps: `{metrics.max_abs_mark_oracle_basis_bps}`",
++            "",
++            "## Entry Blocks",
++            "",
++            *(f"- {reason}: {count}" for reason, count in sorted(result.blocked_entries.items())),
++            "",
++            "## Session Breakdown",
++            "",
++            *(f"- {key}: {count}" for key, count in sorted(result.session_breakdown.items())),
++            "",
++            "## Artifacts",
++            "",
++            f"- metrics: `{(output_dir / 'metrics.json').as_posix()}`",
++            f"- fills: `{(output_dir / 'fills.parquet').as_posix()}`",
++            f"- equity_curve: `{(output_dir / 'equity_curve.parquet').as_posix()}`",
++            "",
++        ]
++    )
++
++
++def write_backtest_artifacts(
++    *,
++    result: BacktestRunResult,
++    config: BreakoutConfig,
++    output_dir: Path,
++    input_path: Path | None = None,
++    fee_model_path: Path | None = None,
++    run_id: str | None = None,
++) -> dict[str, Path]:
++    output_dir.mkdir(parents=True, exist_ok=True)
++    resolved_run_id = (
++        run_id
++        or f"trade-xyz-{config.symbol.upper()}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
++    )
++    config_payload = {
++        "schema_version": SCHEMA_VERSION,
++        "strategy_id": "long_breakout_v0",
++        "symbol": config.symbol.upper(),
++        "entry_lookback": config.entry_lookback,
++        "exit_lookback": config.exit_lookback,
++        "qty": config.qty,
++        "initial_cash": config.initial_cash,
++        "fee_model_path": fee_model_path.as_posix() if fee_model_path else None,
++        "funding_policy": "raw_rate_per_event_using_oracle_price",
++        "fill_model": "market_like_taker_next_row",
++    }
++    config_hash = _hash_payload(config_payload)
++    run_payload = {
++        "schema_version": SCHEMA_VERSION,
++        "run_id": resolved_run_id,
++        "created_at": datetime.now(timezone.utc).isoformat(),
++        "strategy_id": "long_breakout_v0",
++        "symbol": config.symbol.upper(),
++        "input_data_ref": input_path.as_posix() if input_path else None,
++        "config_hash": config_hash,
++        "fee_model_ref": fee_model_path.as_posix() if fee_model_path else None,
++        "no_live_order": True,
++        "wallet_used": False,
++        "exchange_write_used": False,
++    }
++    metrics_payload = {
++        "schema_version": SCHEMA_VERSION,
++        "run_id": resolved_run_id,
++        "metrics": asdict(result.metrics),
++        "blocked_reason_counts": result.blocked_entries,
++        "session_breakdown": result.session_breakdown,
++        "market_status_breakdown": result.market_status_breakdown,
++    }
++    paths = {
++        "backtest_run": output_dir / "backtest_run.json",
++        "config_snapshot": output_dir / "config.snapshot.json",
++        "config_hash": output_dir / "config_hash.txt",
++        "orders": output_dir / "orders.parquet",
++        "fills": output_dir / "fills.parquet",
++        "equity_curve": output_dir / "equity_curve.parquet",
++        "blocked_entries": output_dir / "blocked_entries.parquet",
++        "metrics": output_dir / "metrics.json",
++        "candidate_result": output_dir / "candidate_result.json",
++        "data_manifest": output_dir / "data_manifest.json",
++        "report": output_dir / "backtest_report.md",
++    }
++
++    _write_json(paths["backtest_run"], run_payload)
++    _write_json(paths["config_snapshot"], config_payload)
++    paths["config_hash"].write_text(config_hash + "\n", encoding="utf-8")
++    _write_parquet(paths["orders"], _order_rows(result))
++    _write_parquet(paths["fills"], _fill_rows(result))
++    _write_parquet(paths["equity_curve"], _equity_rows(result))
++    _write_parquet(paths["blocked_entries"], _blocked_rows(result))
++    _write_json(paths["metrics"], metrics_payload)
++    _write_json(
++        paths["candidate_result"],
++        {
++            "schema_version": SCHEMA_VERSION,
++            "run_id": resolved_run_id,
++            "candidate_status": "research_only",
++            "paper_candidate": result.metrics.trade_count > 0,
++            "no_live_order": True,
++            "wallet_used": False,
++            "exchange_write_used": False,
++            "metrics_ref": paths["metrics"].as_posix(),
++        },
++    )
++    _write_json(
++        paths["data_manifest"],
++        {
++            "schema_version": SCHEMA_VERSION,
++            "run_id": resolved_run_id,
++            "input_data_ref": input_path.as_posix() if input_path else None,
++            "row_count": len(result.equity_snapshots),
++            "order_count": len(result.orders),
++            "fill_count": len(result.fills),
++            "artifact_files": {key: path.as_posix() for key, path in paths.items()},
++        },
++    )
++    paths["report"].write_text(
++        _render_report(run_id=resolved_run_id, config=config, result=result, output_dir=output_dir),
++        encoding="utf-8",
++    )
++    return paths
+diff --git a/src/sis/backtest/engine/metrics.py b/src/sis/backtest/engine/metrics.py
+index 520c20a..1a711d6 100644
+--- a/src/sis/backtest/engine/metrics.py
++++ b/src/sis/backtest/engine/metrics.py
+@@ -6,12 +6,17 @@ from dataclasses import dataclass
+ @dataclass(frozen=True)
+ class BacktestMetricSummary:
+     total_return: float
++    final_equity: float
++    net_pnl_usd: float
+     max_drawdown: float
+     trade_count: int
+     win_rate: float | None
+     profit_factor: float | None
+     fee_impact_usd: float
+     funding_impact_usd: float = 0.0
++    worst_trade_pnl_usd: float | None = None
++    median_trade_pnl_usd: float | None = None
++    max_abs_mark_oracle_basis_bps: float | None = None
+ 
+ 
+ def max_drawdown(values: list[float]) -> float:
+@@ -26,6 +31,16 @@ def max_drawdown(values: list[float]) -> float:
+     return worst
+ 
+ 
++def _median(values: list[float]) -> float | None:
++    if not values:
++        return None
++    ordered = sorted(values)
++    midpoint = len(ordered) // 2
++    if len(ordered) % 2:
++        return ordered[midpoint]
++    return (ordered[midpoint - 1] + ordered[midpoint]) / 2
++
++
+ def summarize_metrics(
+     *,
+     initial_cash: float,
+@@ -33,6 +48,7 @@ def summarize_metrics(
+     closed_trade_pnls: list[float],
+     fee_impact_usd: float,
+     funding_impact_usd: float = 0.0,
++    mark_oracle_basis_bps: list[float] | None = None,
+ ) -> BacktestMetricSummary:
+     final_equity = equity_curve[-1] if equity_curve else initial_cash
+     wins = [value for value in closed_trade_pnls if value > 0]
+@@ -43,12 +59,18 @@ def summarize_metrics(
+         profit_factor = sum(wins) / abs(sum(losses)) if wins else 0.0
+     elif wins:
+         profit_factor = float("inf")
++    basis_values = [abs(value) for value in (mark_oracle_basis_bps or [])]
+     return BacktestMetricSummary(
+         total_return=final_equity / initial_cash - 1.0,
++        final_equity=final_equity,
++        net_pnl_usd=final_equity - initial_cash,
+         max_drawdown=max_drawdown(equity_curve),
+         trade_count=len(closed_trade_pnls),
+         win_rate=win_rate,
+         profit_factor=profit_factor,
+         fee_impact_usd=fee_impact_usd,
+         funding_impact_usd=funding_impact_usd,
++        worst_trade_pnl_usd=min(closed_trade_pnls) if closed_trade_pnls else None,
++        median_trade_pnl_usd=_median(closed_trade_pnls),
++        max_abs_mark_oracle_basis_bps=max(basis_values) if basis_values else None,
+     )
+diff --git a/src/sis/backtest/engine/portfolio.py b/src/sis/backtest/engine/portfolio.py
+index 221776c..67b12cd 100644
+--- a/src/sis/backtest/engine/portfolio.py
++++ b/src/sis/backtest/engine/portfolio.py
+@@ -14,6 +14,8 @@ class PositionState:
+     realized_pnl: float = 0.0
+     funding_pnl: float = 0.0
+     fees_paid: float = 0.0
++    open_entry_fees: float = 0.0
++    open_funding_pnl: float = 0.0
+ 
+     def market_value(self, mark_price: float | None) -> float:
+         if mark_price is None:
+@@ -57,21 +59,43 @@ class BacktestPortfolio:
+                 (position.avg_price * position.qty) + (fill.fill_price * fill.qty)
+             ) / new_qty
+             position.qty = new_qty
++            position.open_entry_fees += fill.fee_usd
+             self.cash -= notional + fill.fee_usd
+             return position
+ 
+         if fill.qty > position.qty:
+             raise ValueError("sell fill exceeds long position quantity")
++        if position.qty <= 0:
++            raise ValueError("sell fill requires a long position")
++
++        close_fraction = fill.qty / position.qty
++        allocated_entry_fee = position.open_entry_fees * close_fraction
++        allocated_funding = position.open_funding_pnl * close_fraction
+         gross_pnl = (fill.fill_price - position.avg_price) * fill.qty
+-        realized = gross_pnl - fill.fee_usd
++        realized = gross_pnl - allocated_entry_fee - fill.fee_usd + allocated_funding
+         position.realized_pnl += realized
+         position.qty -= fill.qty
++        position.open_entry_fees -= allocated_entry_fee
++        position.open_funding_pnl -= allocated_funding
+         if self.cash is None:
+             raise ValueError("cash is not initialized")
+         self.cash += notional - fill.fee_usd
+         self.closed_trade_pnls.append(realized)
+         if position.qty == 0:
+             position.avg_price = 0.0
++            position.open_entry_fees = 0.0
++            position.open_funding_pnl = 0.0
++        return position
++
++    def apply_funding(self, symbol: str, cashflow_usd: float) -> PositionState:
++        position = self.position(symbol)
++        if position.qty == 0 or cashflow_usd == 0:
++            return position
++        if self.cash is None:
++            raise ValueError("cash is not initialized")
++        self.cash += cashflow_usd
++        position.funding_pnl += cashflow_usd
++        position.open_funding_pnl += cashflow_usd
+         return position
+ 
+     def equity(self, mark_prices: dict[str, float | None] | None = None) -> float:
+@@ -84,3 +108,7 @@ class BacktestPortfolio:
+     @property
+     def fees_paid(self) -> float:
+         return sum(position.fees_paid for position in self.positions.values())
++
++    @property
++    def funding_pnl(self) -> float:
++        return sum(position.funding_pnl for position in self.positions.values())
+diff --git a/src/sis/backtest/engine/runner.py b/src/sis/backtest/engine/runner.py
+index aaf6c33..e377bec 100644
+--- a/src/sis/backtest/engine/runner.py
++++ b/src/sis/backtest/engine/runner.py
+@@ -1,21 +1,46 @@
+ from __future__ import annotations
+ 
+ from dataclasses import dataclass, field
++from datetime import datetime
+ 
+ from sis.backtest.engine.fill import BacktestFill, create_market_fill
+ from sis.backtest.engine.metrics import BacktestMetricSummary, summarize_metrics
+ from sis.backtest.engine.order import BacktestOrder, OrderSide
+ from sis.backtest.engine.portfolio import BacktestPortfolio
+-from sis.backtest.trade_xyz.cost_model import resolve_taker_fee_bps
++from sis.backtest.trade_xyz.cost_model import FeeResolutionError, resolve_taker_fee_bps
++from sis.backtest.trade_xyz.funding import funding_cashflow_usd
+ from sis.backtest.trade_xyz.schema import TradeXyzMarketRow
+ 
+ 
++@dataclass(frozen=True)
++class EquitySnapshot:
++    ts: datetime
++    symbol: str
++    equity: float
++    cash: float
++    position_qty: float
++    avg_price: float
++    valuation_price: float | None
++    valuation_price_source: str | None
++    mark_price: float | None
++    oracle_price: float | None
++    external_price: float | None
++    mark_oracle_basis_bps: float | None
++    funding_pnl: float
++    fees_paid: float
++    session_type: str | None
++    market_status: str | None
++
++
+ @dataclass(frozen=True)
+ class BacktestRunResult:
+     orders: list[BacktestOrder]
+     fills: list[BacktestFill]
+     equity_curve: list[float]
++    equity_snapshots: list[EquitySnapshot]
+     blocked_entries: dict[str, int]
++    session_breakdown: dict[str, int]
++    market_status_breakdown: dict[str, int]
+     metrics: BacktestMetricSummary
+ 
+ 
+@@ -35,6 +60,69 @@ class BreakoutConfig:
+             raise ValueError("qty must be positive")
+ 
+ 
++def _count_key(counter: dict[str, int], value: str | None) -> None:
++    key = value or "unknown"
++    counter[key] = counter.get(key, 0) + 1
++
++
++def _basis_bps(numerator: float | None, denominator: float | None) -> float | None:
++    if numerator is None or denominator is None or denominator <= 0:
++        return None
++    return (numerator / denominator - 1.0) * 10_000
++
++
++def _valuation_price(row: TradeXyzMarketRow) -> tuple[float | None, str | None]:
++    for value, source in (
++        (row.mark_price, "mark_price"),
++        (row.mid_price, "mid_price"),
++        (row.close, "close"),
++        (row.oracle_price, "oracle_price"),
++        (row.index_price, "index_price"),
++    ):
++        if value is not None and value > 0:
++            return value, source
++    return None, None
++
++
++def _snapshot(
++    *, row: TradeXyzMarketRow, portfolio: BacktestPortfolio, symbol: str
++) -> EquitySnapshot:
++    position = portfolio.position(symbol)
++    valuation_price, source = _valuation_price(row)
++    equity = portfolio.equity({symbol: valuation_price})
++    return EquitySnapshot(
++        ts=row.ts,
++        symbol=symbol,
++        equity=equity,
++        cash=portfolio.cash if portfolio.cash is not None else 0.0,
++        position_qty=position.qty,
++        avg_price=position.avg_price,
++        valuation_price=valuation_price,
++        valuation_price_source=source,
++        mark_price=row.mark_price,
++        oracle_price=row.oracle_price,
++        external_price=row.external_price,
++        mark_oracle_basis_bps=_basis_bps(row.mark_price, row.oracle_price),
++        funding_pnl=position.funding_pnl,
++        fees_paid=position.fees_paid,
++        session_type=row.session_type,
++        market_status=row.market_status,
++    )
++
++
++def _try_resolve_entry_fee(
++    row: TradeXyzMarketRow,
++    *,
++    fee_model: dict,
++    blocked_entries: dict[str, int],
++) -> float | None:
++    try:
++        return resolve_taker_fee_bps(row, fee_model=fee_model)
++    except FeeResolutionError:
++        blocked_entries["BLOCK_FEE_UNRESOLVED"] = blocked_entries.get("BLOCK_FEE_UNRESOLVED", 0) + 1
++        return None
++
++
+ def run_long_breakout_backtest(
+     rows: list[TradeXyzMarketRow],
+     *,
+@@ -52,16 +140,25 @@ def run_long_breakout_backtest(
+     portfolio = BacktestPortfolio(initial_cash=config.initial_cash)
+     orders: list[BacktestOrder] = []
+     fills: list[BacktestFill] = []
+-    equity_curve: list[float] = []
++    equity_snapshots: list[EquitySnapshot] = []
+     blocked_entries: dict[str, int] = {}
++    session_breakdown: dict[str, int] = {}
++    market_status_breakdown: dict[str, int] = {}
+     pending_entry = False
+     pending_exit = False
+     order_seq = 0
+ 
+     closes = [row.effective_close for row in filtered]
++    mark_oracle_basis_values: list[float] = []
+     for index, row in enumerate(filtered):
++        _count_key(session_breakdown, row.session_type)
++        _count_key(market_status_breakdown, row.market_status)
+         position = portfolio.position(symbol)
+ 
++        if position.qty > 0:
++            cashflow = funding_cashflow_usd(position_qty=position.qty, row=row)
++            portfolio.apply_funding(symbol, cashflow)
++
+         if pending_entry and position.qty == 0:
+             pending_entry = False
+             reasons = row.entry_block_reasons()
+@@ -69,19 +166,22 @@ def run_long_breakout_backtest(
+                 for reason in reasons:
+                     blocked_entries[reason] = blocked_entries.get(reason, 0) + 1
+             else:
+-                fee_bps = resolve_taker_fee_bps(row, fee_model=config.fee_model)
+-                order_seq += 1
+-                order = BacktestOrder(
+-                    order_id=f"bt-{order_seq}",
+-                    ts=row.ts,
+-                    symbol=symbol,
+-                    side=OrderSide.BUY,
+-                    qty=config.qty,
++                fee_bps = _try_resolve_entry_fee(
++                    row, fee_model=config.fee_model, blocked_entries=blocked_entries
+                 )
+-                fill = create_market_fill(order=order, row=row, fee_bps=fee_bps)
+-                orders.append(order)
+-                fills.append(fill)
+-                portfolio.apply_fill(fill)
++                if fee_bps is not None:
++                    order_seq += 1
++                    order = BacktestOrder(
++                        order_id=f"bt-{order_seq}",
++                        ts=row.ts,
++                        symbol=symbol,
++                        side=OrderSide.BUY,
++                        qty=config.qty,
++                    )
++                    fill = create_market_fill(order=order, row=row, fee_bps=fee_bps)
++                    orders.append(order)
++                    fills.append(fill)
++                    portfolio.apply_fill(fill)
+ 
+         if pending_exit and position.qty > 0:
+             pending_exit = False
+@@ -100,13 +200,16 @@ def run_long_breakout_backtest(
+             fills.append(fill)
+             portfolio.apply_fill(fill)
+ 
+-        mark = row.effective_close
+-        equity_curve.append(portfolio.equity({symbol: mark}))
++        snapshot = _snapshot(row=row, portfolio=portfolio, symbol=symbol)
++        equity_snapshots.append(snapshot)
++        if snapshot.mark_oracle_basis_bps is not None:
++            mark_oracle_basis_values.append(snapshot.mark_oracle_basis_bps)
+ 
+         current_close = closes[index]
+         if current_close is None:
+             continue
+         # Generate signals for the *next* row only.
++        position = portfolio.position(symbol)
+         if position.qty == 0 and index >= config.entry_lookback:
+             prior = [value for value in closes[index - config.entry_lookback : index] if value]
+             if len(prior) == config.entry_lookback and current_close > max(prior):
+@@ -116,16 +219,22 @@ def run_long_breakout_backtest(
+             if len(prior) == config.exit_lookback and current_close < min(prior):
+                 pending_exit = True
+ 
++    equity_curve = [snapshot.equity for snapshot in equity_snapshots]
+     metrics = summarize_metrics(
+         initial_cash=config.initial_cash,
+         equity_curve=equity_curve,
+         closed_trade_pnls=portfolio.closed_trade_pnls,
+         fee_impact_usd=portfolio.fees_paid,
++        funding_impact_usd=portfolio.funding_pnl,
++        mark_oracle_basis_bps=mark_oracle_basis_values,
+     )
+     return BacktestRunResult(
+         orders=orders,
+         fills=fills,
+         equity_curve=equity_curve,
++        equity_snapshots=equity_snapshots,
+         blocked_entries=blocked_entries,
++        session_breakdown=session_breakdown,
++        market_status_breakdown=market_status_breakdown,
+         metrics=metrics,
+     )
+diff --git a/src/sis/backtest/trade_xyz/__init__.py b/src/sis/backtest/trade_xyz/__init__.py
+index d69cf7d..a90708d 100644
+--- a/src/sis/backtest/trade_xyz/__init__.py
++++ b/src/sis/backtest/trade_xyz/__init__.py
+@@ -1,11 +1,14 @@
+ """Trade[XYZ]-specific pure backtest helpers."""
+ 
+ from sis.backtest.trade_xyz.cost_model import FeeResolutionError, resolve_taker_fee_bps
++from sis.backtest.trade_xyz.funding import FundingModelError, funding_cashflow_usd
+ from sis.backtest.trade_xyz.schema import TradeXyzMarketRow, load_market_rows_from_parquet
+ 
+ __all__ = [
+     "FeeResolutionError",
++    "FundingModelError",
+     "TradeXyzMarketRow",
++    "funding_cashflow_usd",
+     "load_market_rows_from_parquet",
+     "resolve_taker_fee_bps",
+ ]
+diff --git a/src/sis/backtest/trade_xyz/funding.py b/src/sis/backtest/trade_xyz/funding.py
+new file mode 100644
+index 0000000..a1748ce
+--- /dev/null
++++ b/src/sis/backtest/trade_xyz/funding.py
+@@ -0,0 +1,27 @@
++from __future__ import annotations
++
++from sis.backtest.trade_xyz.schema import TradeXyzMarketRow
++
++
++class FundingModelError(ValueError):
++    pass
++
++
++def funding_cashflow_usd(*, position_qty: float, row: TradeXyzMarketRow) -> float:
++    """Return funding cashflow for a long position on a Trade[XYZ] row.
++
++    The model intentionally treats ``row.funding_rate`` as an already-resolved
++    funding event rate. It does not annualize, hour-scale, or infer intervals.
++
++    Sign convention:
++    - positive funding_rate: longs pay shorts, so long cashflow is negative.
++    - negative funding_rate: shorts pay longs, so long cashflow is positive.
++    """
++
++    if position_qty == 0 or row.funding_rate is None or row.funding_rate == 0:
++        return 0.0
++    if row.oracle_price is None or row.oracle_price <= 0:
++        raise FundingModelError(
++            f"Cannot apply funding for {row.symbol} at {row.ts}: oracle_price is missing"
++        )
++    return -position_qty * row.oracle_price * row.funding_rate
+diff --git a/src/sis/cli.py b/src/sis/cli.py
+index b0cfdfc..e369a05 100644
+--- a/src/sis/cli.py
++++ b/src/sis/cli.py
+@@ -16,6 +16,7 @@ from sis.commands.quotes import register_quote_commands
+ from sis.commands.remediation import register_remediation_commands
+ from sis.commands.research import register_research_commands
+ from sis.commands.strategy_authoring import register_strategy_authoring_commands
++from sis.commands.trade_xyz_backtest import register_trade_xyz_backtest_commands
+ from sis.commands.execution import register_execution_commands
+ from sis.commands.bot import register_bot_commands
+ from sis.commands.execution_artifacts import (
+@@ -112,6 +113,7 @@ register_probe_commands(app)
+ 
+ register_research_commands(app, _recommended_read_order)
+ register_strategy_authoring_commands(app)
++register_trade_xyz_backtest_commands(app)
+ register_quote_commands(app, _recommended_read_order)
+ register_bot_commands(app, _recommended_read_order)
+ 
+diff --git a/src/sis/commands/trade_xyz_backtest.py b/src/sis/commands/trade_xyz_backtest.py
+new file mode 100644
+index 0000000..0a3e18c
+--- /dev/null
++++ b/src/sis/commands/trade_xyz_backtest.py
+@@ -0,0 +1,105 @@
++from __future__ import annotations
++
++from datetime import datetime, timezone
++from pathlib import Path
++
++import typer
++
++from sis.backtest.engine.artifacts import write_backtest_artifacts
++from sis.backtest.engine.runner import BreakoutConfig, run_long_breakout_backtest
++from sis.backtest.trade_xyz.cost_model import load_fee_model
++from sis.backtest.trade_xyz.schema import TradeXyzMarketRow, load_market_rows_from_parquet
++from sis.settings import get_settings
++
++
++def _parse_datetime(value: str | None) -> datetime | None:
++    if not value:
++        return None
++    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
++    if parsed.tzinfo is None:
++        parsed = parsed.replace(tzinfo=timezone.utc)
++    return parsed
++
++
++def _filter_rows(
++    rows: list[TradeXyzMarketRow], *, start: str | None, end: str | None
++) -> list[TradeXyzMarketRow]:
++    start_dt = _parse_datetime(start)
++    end_dt = _parse_datetime(end)
++    filtered = rows
++    if start_dt is not None:
++        filtered = [row for row in filtered if row.ts >= start_dt]
++    if end_dt is not None:
++        filtered = [row for row in filtered if row.ts <= end_dt]
++    return filtered
++
++
++def register_trade_xyz_backtest_commands(app: typer.Typer) -> None:
++    @app.command("backtest-trade-xyz")
++    def backtest_trade_xyz_cmd(
++        symbol: str = typer.Option("SP500", "--symbol", help="Trade[XYZ] canonical symbol."),
++        input_path: Path | None = typer.Option(
++            None,
++            "--input-path",
++            help="Normalized quote parquet path. Defaults to data/normalized/quotes.parquet.",
++        ),
++        output_dir: Path | None = typer.Option(
++            None,
++            "--out",
++            help="Backtest output directory. Defaults to data/backtests/<symbol>_breakout.",
++        ),
++        fee_model_path: Path | None = typer.Option(
++            None,
++            "--fee-model-path",
++            help="Trade[XYZ] fee model YAML. Defaults to configs/fee_model.trade_xyz.yaml.",
++        ),
++        start: str | None = typer.Option(None, "--from", help="Inclusive ISO-8601 start time."),
++        end: str | None = typer.Option(None, "--to", help="Inclusive ISO-8601 end time."),
++        entry_lookback: int = typer.Option(20, "--entry-lookback"),
++        exit_lookback: int = typer.Option(10, "--exit-lookback"),
++        qty: float = typer.Option(1.0, "--qty"),
++        initial_cash: float = typer.Option(3000.0, "--initial-cash"),
++    ) -> None:
++        settings = get_settings()
++        resolved_input = input_path or (settings.data_dir / "normalized/quotes.parquet")
++        resolved_output = output_dir or (
++            settings.data_dir / "backtests" / f"{symbol.upper()}_long_breakout_v0"
++        )
++        resolved_fee_model = fee_model_path or Path("configs/fee_model.trade_xyz.yaml")
++
++        if not resolved_input.exists():
++            typer.echo(f"input parquet not found: {resolved_input}")
++            raise typer.Exit(code=2)
++        rows = load_market_rows_from_parquet(resolved_input, symbol=symbol)
++        rows = _filter_rows(rows, start=start, end=end)
++        if not rows:
++            typer.echo(f"no rows found for symbol={symbol.upper()}")
++            raise typer.Exit(code=2)
++
++        fee_model = load_fee_model(resolved_fee_model)
++        config = BreakoutConfig(
++            symbol=symbol.upper(),
++            entry_lookback=entry_lookback,
++            exit_lookback=exit_lookback,
++            qty=qty,
++            initial_cash=initial_cash,
++            fee_model=fee_model,
++        )
++        result = run_long_breakout_backtest(rows, config=config)
++        paths = write_backtest_artifacts(
++            result=result,
++            config=config,
++            output_dir=resolved_output,
++            input_path=resolved_input,
++            fee_model_path=resolved_fee_model,
++        )
++
++        typer.echo("status=ok")
++        typer.echo(f"symbol={symbol.upper()}")
++        typer.echo(f"row_count={len(rows)}")
++        typer.echo(f"trade_count={result.metrics.trade_count}")
++        typer.echo(f"net_pnl_usd={result.metrics.net_pnl_usd:.6f}")
++        typer.echo(f"total_return={result.metrics.total_return:.6f}")
++        typer.echo(f"metrics_path={paths['metrics']}")
++        typer.echo(f"report_path={paths['report']}")
++        typer.echo(f"fills_path={paths['fills']}")
+diff --git a/tests/backtest/test_backtest_artifacts.py b/tests/backtest/test_backtest_artifacts.py
+new file mode 100644
+index 0000000..7e75aff
+--- /dev/null
++++ b/tests/backtest/test_backtest_artifacts.py
+@@ -0,0 +1,60 @@
++from __future__ import annotations
++
++from datetime import datetime, timedelta, timezone
++import json
++
++import polars as pl
++
++from sis.backtest.engine.artifacts import write_backtest_artifacts
++from sis.backtest.engine.runner import BreakoutConfig, run_long_breakout_backtest
++from sis.backtest.trade_xyz.schema import TradeXyzMarketRow
++
++
++def _row(index: int, close: float, *, funding_rate: float | None = None) -> TradeXyzMarketRow:
++    return TradeXyzMarketRow(
++        ts=datetime(2026, 5, 31, tzinfo=timezone.utc) + timedelta(hours=index),
++        symbol="SP500",
++        close=close,
++        mid_price=close,
++        mark_price=close + 0.1,
++        oracle_price=close,
++        index_price=close,
++        exec_buy_price=close + 0.2,
++        exec_sell_price=close - 0.2,
++        taker_fee_bps=9.0,
++        fee_mode="standard",
++        session_type="cash",
++        market_status="open",
++        funding_rate=funding_rate,
++        is_tradable=True,
++    )
++
++
++def test_artifact_writer_outputs_json_and_parquet_contracts(tmp_path) -> None:
++    rows = [
++        _row(0, 100),
++        _row(1, 101),
++        _row(2, 103),
++        _row(3, 104, funding_rate=0.001),
++        _row(4, 102, funding_rate=0.001),
++        _row(5, 99, funding_rate=0.001),
++        _row(6, 98),
++    ]
++    config = BreakoutConfig(symbol="SP500", entry_lookback=2, exit_lookback=2, initial_cash=3000)
++    result = run_long_breakout_backtest(rows, config=config)
++
++    paths = write_backtest_artifacts(result=result, config=config, output_dir=tmp_path)
++
++    assert paths["metrics"].exists()
++    assert paths["fills"].exists()
++    assert paths["equity_curve"].exists()
++    assert paths["report"].exists()
++    metrics = json.loads(paths["metrics"].read_text(encoding="utf-8"))
++    assert metrics["schema_version"] == "trade_xyz_backtest_artifacts.v1"
++    assert metrics["metrics"]["funding_impact_usd"] < 0
++    assert metrics["session_breakdown"]["cash"] == len(rows)
++    fills = pl.read_parquet(paths["fills"])
++    assert fills.height == 2
++    equity = pl.read_parquet(paths["equity_curve"])
++    assert "mark_oracle_basis_bps" in equity.columns
++    assert "no_live_order: `true`" in paths["report"].read_text(encoding="utf-8")
+diff --git a/tests/backtest/test_funding_model.py b/tests/backtest/test_funding_model.py
+new file mode 100644
+index 0000000..dc6a63e
+--- /dev/null
++++ b/tests/backtest/test_funding_model.py
+@@ -0,0 +1,75 @@
++from __future__ import annotations
++
++from datetime import datetime, timezone
++
++import pytest
++
++from sis.backtest.engine.portfolio import BacktestPortfolio
++from sis.backtest.trade_xyz.funding import FundingModelError, funding_cashflow_usd
++from sis.backtest.trade_xyz.schema import TradeXyzMarketRow
++
++
++def _row(**kwargs) -> TradeXyzMarketRow:
++    return TradeXyzMarketRow(
++        ts=datetime(2026, 5, 31, tzinfo=timezone.utc),
++        symbol="SP500",
++        **kwargs,
++    )
++
++
++def test_positive_funding_rate_is_cost_for_long() -> None:
++    row = _row(oracle_price=100.0, funding_rate=0.001)
++
++    assert funding_cashflow_usd(position_qty=2.0, row=row) == pytest.approx(-0.2)
++
++
++def test_negative_funding_rate_is_credit_for_long() -> None:
++    row = _row(oracle_price=100.0, funding_rate=-0.001)
++
++    assert funding_cashflow_usd(position_qty=2.0, row=row) == pytest.approx(0.2)
++
++
++def test_funding_requires_oracle_when_rate_present() -> None:
++    row = _row(funding_rate=0.001)
++
++    with pytest.raises(FundingModelError):
++        funding_cashflow_usd(position_qty=1.0, row=row)
++
++
++def test_portfolio_funding_cashflow_affects_cash_and_closed_pnl() -> None:
++    from sis.backtest.engine.fill import BacktestFill
++    from sis.backtest.engine.order import OrderSide
++
++    portfolio = BacktestPortfolio(initial_cash=1_000)
++    ts = datetime(2026, 5, 31, tzinfo=timezone.utc)
++    portfolio.apply_fill(
++        BacktestFill(
++            fill_id="f1",
++            order_id="o1",
++            ts=ts,
++            symbol="SP500",
++            side=OrderSide.BUY,
++            qty=1,
++            fill_price=100,
++            fee_usd=0.1,
++            fee_bps=10,
++        )
++    )
++    portfolio.apply_funding("SP500", -0.2)
++    portfolio.apply_fill(
++        BacktestFill(
++            fill_id="f2",
++            order_id="o2",
++            ts=ts,
++            symbol="SP500",
++            side=OrderSide.SELL,
++            qty=1,
++            fill_price=110,
++            fee_usd=0.1,
++            fee_bps=10,
++        )
++    )
++
++    assert portfolio.funding_pnl == pytest.approx(-0.2)
++    assert portfolio.closed_trade_pnls == [pytest.approx(9.6)]
++    assert portfolio.cash == pytest.approx(1009.6)
+diff --git a/tests/backtest/test_portfolio_accounting.py b/tests/backtest/test_portfolio_accounting.py
+index 5bc21bb..b08ec47 100644
+--- a/tests/backtest/test_portfolio_accounting.py
++++ b/tests/backtest/test_portfolio_accounting.py
+@@ -35,7 +35,7 @@ def test_portfolio_long_entry_and_exit_accounting() -> None:
+     exit_position = portfolio.apply_fill(_fill(OrderSide.SELL, 110.0, 0.099))
+     assert exit_position.qty == 0.0
+     assert exit_position.avg_price == 0.0
+-    assert exit_position.realized_pnl == pytest.approx(9.901)
++    assert exit_position.realized_pnl == pytest.approx(9.811)
+     assert portfolio.cash == pytest.approx(10009.811)
+     assert portfolio.equity({"SP500": 110.0}) == pytest.approx(10009.811)
+     assert portfolio.fees_paid == pytest.approx(0.189)
+diff --git a/tests/backtest/test_trade_xyz_backtest_cli.py b/tests/backtest/test_trade_xyz_backtest_cli.py
+new file mode 100644
+index 0000000..93102f6
+--- /dev/null
++++ b/tests/backtest/test_trade_xyz_backtest_cli.py
+@@ -0,0 +1,90 @@
++from __future__ import annotations
++
++from datetime import datetime, timedelta, timezone
++import json
++
++import polars as pl
++from typer.testing import CliRunner
++
++from sis.cli import app
++
++runner = CliRunner()
++
++
++def _quote_row(index: int, close: float, *, funding_rate: float | None = None) -> dict:
++    ts = datetime(2026, 5, 31, tzinfo=timezone.utc) + timedelta(hours=index)
++    return {
++        "ts_client": ts.isoformat(),
++        "canonical_symbol": "SP500",
++        "close": close,
++        "mid_price": close,
++        "mark_price": close + 0.1,
++        "oracle_price": close,
++        "index_price": close,
++        "exec_buy_price": close + 0.2,
++        "exec_sell_price": close - 0.2,
++        "taker_fee_bps": 9.0,
++        "maker_fee_bps": 3.0,
++        "fee_mode": "standard",
++        "session_type": "cash",
++        "market_status": "open",
++        "funding_rate": funding_rate,
++        "is_tradable": True,
++        "block_reasons": [],
++    }
++
++
++def test_backtest_trade_xyz_cli_writes_artifacts(tmp_path) -> None:
++    input_path = tmp_path / "quotes.parquet"
++    output_dir = tmp_path / "run"
++    rows = [
++        _quote_row(0, 100),
++        _quote_row(1, 101),
++        _quote_row(2, 103),
++        _quote_row(3, 104, funding_rate=0.001),
++        _quote_row(4, 102, funding_rate=0.001),
++        _quote_row(5, 99, funding_rate=0.001),
++        _quote_row(6, 98),
++    ]
++    pl.DataFrame(rows).write_parquet(input_path)
++
++    result = runner.invoke(
++        app,
++        [
++            "backtest-trade-xyz",
++            "--input-path",
++            str(input_path),
++            "--out",
++            str(output_dir),
++            "--symbol",
++            "SP500",
++            "--entry-lookback",
++            "2",
++            "--exit-lookback",
++            "2",
++            "--initial-cash",
++            "3000",
++        ],
++    )
++
++    assert result.exit_code == 0, result.stdout
++    assert "status=ok" in result.stdout
++    assert "metrics_path=" in result.stdout
++    assert (output_dir / "metrics.json").exists()
++    assert (output_dir / "fills.parquet").exists()
++    metrics = json.loads((output_dir / "metrics.json").read_text(encoding="utf-8"))
++    assert metrics["metrics"]["trade_count"] == 1
++
++
++def test_backtest_trade_xyz_cli_rejects_missing_input(tmp_path) -> None:
++    result = runner.invoke(
++        app,
++        [
++            "backtest-trade-xyz",
++            "--input-path",
++            str(tmp_path / "missing.parquet"),
++        ],
++    )
++
++    assert result.exit_code == 2
++    assert "input parquet not found" in result.stdout

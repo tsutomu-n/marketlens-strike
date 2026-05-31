@@ -38,6 +38,7 @@ from sis.backtest.trade_xyz.cost_model import (
     resolve_fee_bps,
 )
 from sis.backtest.trade_xyz.gates import evaluate_entry_gate, evaluate_exit_gate
+from sis.backtest.trade_xyz.gates import evaluate_close_fill_gate, evaluate_open_fill_gate
 from sis.backtest.trade_xyz.schema import normalize_trade_xyz_market_data
 
 
@@ -45,6 +46,10 @@ from sis.backtest.trade_xyz.schema import normalize_trade_xyz_market_data
 class BacktestRunResult:
     run_dir: Path
     metrics: dict[str, object]
+
+
+class BacktestError(RuntimeError):
+    pass
 
 
 def _window_return(frame: pl.DataFrame) -> float | None:
@@ -96,6 +101,27 @@ def _fill_order(
             signal_id=order.signal_id,
             row_index=row_index(row),
         )
+    gate = (
+        evaluate_open_fill_gate(
+            row,
+            gates=config.gates,
+            fee=fee,
+            fill_price_resolved=True,
+        )
+        if order.position_effect == "open"
+        else evaluate_close_fill_gate(row, fee=fee, fill_price_resolved=True)
+    )
+    if not gate.allowed:
+        return None, BlockedEvent(
+            event_ts=row_event_ts(row),
+            symbol=config.symbol,
+            action=order.position_effect,
+            reason=gate.reasons[0],
+            reason_detail=";".join(gate.reasons),
+            strategy_id=config.strategy_id,
+            signal_id=order.signal_id,
+            row_index=row_index(row),
+        )
     qty = (
         order.requested_notional_usd / price
         if order.position_effect == "open"
@@ -136,15 +162,26 @@ def run_backtest(
 ) -> BacktestRunResult:
     breakout = breakout or BreakoutParameters()
     normalized = normalize_trade_xyz_market_data(market_data, symbol=config.symbol)
-    quality = evaluate_data_quality(normalized, config=config, input_row_count=market_data.height)
+    required_min_bars = breakout.entry_lookback + breakout.exit_lookback + 3
+    quality = evaluate_data_quality(
+        normalized,
+        config=config,
+        input_row_count=market_data.height,
+        required_min_bars=required_min_bars,
+    )
     if quality.status == "fail":
         raise ValueError(f"data quality failed: {quality.errors}")
+    event_time_source = _first_string(normalized, "event_time_source") or "event_ts"
+    close_source = _first_string(normalized, "close_source") or "close"
+    bar_builder = _first_string(normalized, "bar_builder")
     manifest = build_data_manifest(
         config=config,
         frame=normalized,
         input_data_ref=input_data_ref,
         data_quality=quality,
-        event_time_source="event_ts",
+        event_time_source=event_time_source,
+        close_source=close_source,
+        bar_builder=bar_builder,
     )
     filtered = apply_period_filter(normalized, config=config).with_row_index("_row_index")
     rows = filtered.to_dicts()
@@ -331,7 +368,14 @@ def run_backtest(
             }
         )
 
-    if config.execution.force_close_on_end and portfolio.position_qty > 0 and rows:
+    if config.execution.end_position_policy == "error_if_open" and portfolio.position_qty > 0:
+        raise BacktestError("open position at end of run")
+
+    if (
+        config.execution.end_position_policy == "force_close_if_executable"
+        and portfolio.position_qty > 0
+        and rows
+    ):
         last_row = rows[-1]
         force_order = Order(
             created_ts=row_event_ts(last_row),
@@ -396,6 +440,8 @@ def run_backtest(
         end_unrealized_pnl=portfolio.unrealized_pnl,
         funding_pnl=portfolio.funding_pnl,
     )
+    metrics["open_position_at_end"] = portfolio.position_qty > 0
+    metrics["end_position_policy"] = config.execution.end_position_policy
     benchmark_results, benchmark_equity = run_benchmarks(config=config, frame=normalized)
     base_fee_impact = float(metrics["fee_impact"])
     turnover = float(metrics["turnover"])
@@ -459,6 +505,8 @@ def run_backtest(
         input_data_ref=input_data_ref,
         data_quality=quality,
         data_manifest=manifest,
+        event_time_source=event_time_source,
+        close_source=close_source,
         metrics=metrics,
         benchmark_results=benchmark_results,
         scenario_rows=scenario_rows,
@@ -472,3 +520,10 @@ def run_backtest(
         benchmark_equity=benchmark_equity,
     )
     return BacktestRunResult(run_dir=run_dir, metrics=metrics)
+
+
+def _first_string(frame: pl.DataFrame, column: str) -> str | None:
+    if column not in frame.columns or frame.is_empty():
+        return None
+    values = frame.get_column(column).drop_nulls().head(1).to_list()
+    return str(values[0]) if values else None

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Literal
 
 import polars as pl
@@ -18,6 +19,7 @@ class DataManifest(BaseModel):
     run_id: str
     input_data_ref: str
     input_data_sha256: str
+    input_file_sha256: str | None = None
     input_schema_hash: str
     config_hash: str
     input_row_count: int
@@ -27,6 +29,9 @@ class DataManifest(BaseModel):
     symbols: list[str] = Field(default_factory=list)
     timeframe: str
     event_time_source: str
+    close_source: str = "close"
+    bar_builder: str | None = None
+    data_is_runtime_artifact: bool = True
     warmup_start_ts: datetime | None = None
     evaluation_start_ts: datetime
     evaluation_end_ts: datetime
@@ -40,6 +45,8 @@ def build_data_manifest(
     input_data_ref: str,
     data_quality: DataQualityReport,
     event_time_source: str,
+    close_source: str = "close",
+    bar_builder: str | None = None,
 ) -> DataManifest:
     filtered = apply_period_filter(frame, config=config)
     symbols = (
@@ -51,10 +58,13 @@ def build_data_manifest(
     raw_last_ts = filtered.get_column("event_ts").max() if not filtered.is_empty() else None
     first_ts = raw_first_ts if isinstance(raw_first_ts, datetime) else None
     last_ts = raw_last_ts if isinstance(raw_last_ts, datetime) else None
+    input_path = Path(input_data_ref)
+    input_file_sha256 = _file_sha256(input_path) if input_path.exists() else None
     return DataManifest(
         run_id=config.run_id,
         input_data_ref=input_data_ref,
         input_data_sha256=frame_sha256(frame),
+        input_file_sha256=input_file_sha256,
         input_schema_hash=input_schema_hash(frame),
         config_hash=config_hash(config),
         input_row_count=frame.height,
@@ -64,8 +74,20 @@ def build_data_manifest(
         symbols=symbols,
         timeframe=config.timeframe,
         event_time_source=event_time_source,
+        close_source=close_source,
+        bar_builder=bar_builder,
         warmup_start_ts=config.period.warmup_start_ts,
         evaluation_start_ts=config.period.evaluation_start_ts,
         evaluation_end_ts=config.period.evaluation_end_ts,
         data_quality_summary=data_quality.model_dump(mode="json"),
     )
+
+
+def _file_sha256(path: Path) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()

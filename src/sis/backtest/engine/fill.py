@@ -10,10 +10,14 @@ FillPriceSource = Literal[
     "exec_sell_price",
     "best_ask",
     "best_bid",
+    "fill_best_ask",
+    "fill_best_bid",
     "ask_price",
     "bid_price",
     "mid_plus_half_spread",
     "mid_minus_half_spread",
+    "fill_mid_plus_half_spread",
+    "fill_mid_minus_half_spread",
 ]
 
 
@@ -69,24 +73,38 @@ def resolve_market_like_fill_price(
     row: dict[str, object], *, side: Literal["buy", "sell"]
 ) -> tuple[float | None, FillPriceSource | None]:
     if side == "buy":
-        for source in ("exec_buy_price", "best_ask", "ask_price"):
+        for source in ("exec_buy_price", "fill_best_ask", "best_ask", "ask_price"):
             price = _positive_float(row.get(source))
             if price is not None:
                 return price, source
-        mid = _positive_float(row.get("mid_price"))
-        spread_bps = _positive_float(row.get("spread_bps"))
+        mid = _positive_float(row.get("fill_mid_price")) or _positive_float(row.get("mid_price"))
+        spread_bps = _positive_float(row.get("fill_spread_bps")) or _positive_float(
+            row.get("spread_bps")
+        )
         if mid is not None and spread_bps is not None:
-            return mid * (1 + spread_bps / 20_000), "mid_plus_half_spread"
+            source = (
+                "fill_mid_plus_half_spread"
+                if row.get("fill_mid_price") is not None
+                else "mid_plus_half_spread"
+            )
+            return mid * (1 + spread_bps / 20_000), source
         return None, None
 
-    for source in ("exec_sell_price", "best_bid", "bid_price"):
+    for source in ("exec_sell_price", "fill_best_bid", "best_bid", "bid_price"):
         price = _positive_float(row.get(source))
         if price is not None:
             return price, source
-    mid = _positive_float(row.get("mid_price"))
-    spread_bps = _positive_float(row.get("spread_bps"))
+    mid = _positive_float(row.get("fill_mid_price")) or _positive_float(row.get("mid_price"))
+    spread_bps = _positive_float(row.get("fill_spread_bps")) or _positive_float(
+        row.get("spread_bps")
+    )
     if mid is not None and spread_bps is not None:
-        return mid * (1 - spread_bps / 20_000), "mid_minus_half_spread"
+        source = (
+            "fill_mid_minus_half_spread"
+            if row.get("fill_mid_price") is not None
+            else "mid_minus_half_spread"
+        )
+        return mid * (1 - spread_bps / 20_000), source
     return None, None
 
 

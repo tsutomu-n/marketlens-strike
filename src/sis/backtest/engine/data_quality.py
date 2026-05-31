@@ -16,11 +16,22 @@ class DataQualityReport(BaseModel):
     first_event_ts: datetime | None = None
     last_event_ts: datetime | None = None
     duplicate_ts_count: int = 0
+    duplicate_event_ts_count: int = 0
     out_of_order_count: int = 0
     critical_null_counts: dict[str, int] = Field(default_factory=dict)
+    null_critical_field_counts: dict[str, int] = Field(default_factory=dict)
     invalid_price_count: int = 0
     bid_ask_cross_count: int = 0
     cadence_gap_count: int = 0
+    symbol_count: int = 0
+    coverage_seconds: float | None = None
+    median_event_gap_seconds: float | None = None
+    max_event_gap_seconds: float | None = None
+    bar_count: int = 0
+    evaluation_bar_count: int = 0
+    insufficient_coverage_for_strategy: bool = False
+    required_min_rows: int = 0
+    required_min_bars: int = 0
     unknown_fee_mode_count: int = 0
     null_taker_fee_count: int = 0
     null_maker_fee_count: int = 0
@@ -126,11 +137,25 @@ def _cadence_gap_count(frame: pl.DataFrame) -> int:
     return sum(1 for value in positive_diffs if value > expected * 1.5)
 
 
+def _gap_seconds(frame: pl.DataFrame) -> list[float]:
+    if frame.height <= 1:
+        return []
+    values = (
+        frame.sort(["symbol", "event_ts"])
+        .with_columns(pl.col("event_ts").diff().over("symbol").alias("_gap"))
+        .get_column("_gap")
+        .drop_nulls()
+        .to_list()
+    )
+    return [float(value.total_seconds()) for value in values if value.total_seconds() > 0]
+
+
 def evaluate_data_quality(
     frame: pl.DataFrame,
     *,
     config: BacktestConfig,
     input_row_count: int | None = None,
+    required_min_bars: int = 0,
 ) -> DataQualityReport:
     errors: list[str] = []
     warnings: list[str] = []
@@ -225,6 +250,27 @@ def evaluate_data_quality(
     raw_last_ts = filtered.get_column("event_ts").max() if not filtered.is_empty() else None
     first_ts = raw_first_ts if isinstance(raw_first_ts, datetime) else None
     last_ts = raw_last_ts if isinstance(raw_last_ts, datetime) else None
+    gap_seconds = _gap_seconds(filtered)
+    coverage_seconds = (
+        (last_ts - first_ts).total_seconds()
+        if first_ts is not None and last_ts is not None
+        else None
+    )
+    unique_symbols = (
+        filtered.get_column("symbol").drop_nulls().unique().to_list()
+        if "symbol" in filtered.columns
+        else []
+    )
+    bar_count = filtered.height
+    evaluation_bar_count = (
+        int(filtered.select((pl.col("event_ts") >= config.period.evaluation_start_ts).sum()).item())
+        if not filtered.is_empty()
+        else 0
+    )
+    required_min_rows = required_min_bars
+    insufficient_coverage = required_min_rows > 0 and filtered.height < required_min_rows
+    if insufficient_coverage:
+        warnings.append("insufficient coverage for strategy evaluation")
     status: Literal["pass", "warn", "fail"] = "fail" if errors else "warn" if warnings else "pass"
     return DataQualityReport(
         status=status,
@@ -233,11 +279,24 @@ def evaluate_data_quality(
         first_event_ts=first_ts,
         last_event_ts=last_ts,
         duplicate_ts_count=duplicate_ts_count,
+        duplicate_event_ts_count=duplicate_ts_count,
         out_of_order_count=out_of_order_count,
         critical_null_counts=critical_null_counts,
+        null_critical_field_counts=critical_null_counts,
         invalid_price_count=invalid_price_count,
         bid_ask_cross_count=bid_ask_cross_count,
         cadence_gap_count=cadence_gap_count,
+        symbol_count=len(unique_symbols),
+        coverage_seconds=coverage_seconds,
+        median_event_gap_seconds=sorted(gap_seconds)[len(gap_seconds) // 2]
+        if gap_seconds
+        else None,
+        max_event_gap_seconds=max(gap_seconds) if gap_seconds else None,
+        bar_count=bar_count,
+        evaluation_bar_count=evaluation_bar_count,
+        insufficient_coverage_for_strategy=insufficient_coverage,
+        required_min_rows=required_min_rows,
+        required_min_bars=required_min_bars,
         unknown_fee_mode_count=unknown_fee_mode_count,
         null_taker_fee_count=null_taker_fee_count,
         null_maker_fee_count=null_maker_fee_count,
