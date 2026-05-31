@@ -116,7 +116,7 @@ def _write_trade_xyz_strict_artifacts(root: Path) -> None:
         '"open_interest_usd":10000.0,"fee_mode":"standard","taker_fee_bps":9.0,'
         '"maker_fee_bps":3.0,"market_status":"open",'
         '"session_type":"unknown","is_tradable":true,"block_reasons":[],'
-        '"source_confidence":"high","venue_quality_score":1.0,'
+        '"source_confidence":1.0,"venue_quality_score":1.0,'
         '"raw_payload_ref":"data/raw/quotes/trade_xyz/2026-05-27.jsonl#row=0"}\n',
         encoding="utf-8",
     )

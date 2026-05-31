@@ -136,11 +136,9 @@ def _write_trade_xyz_phase_gate_artifacts(data_dir: Path) -> None:
                     "session_type": "unknown",
                     "is_tradable": True,
                     "block_reasons": [],
-                    "source_confidence": "high",
+                    "source_confidence": 1.0,
                     "venue_quality_score": 1.0,
-                    "raw_payload_ref": (
-                        f"data/raw/quotes/trade_xyz/2026-05-27.jsonl#row={idx}"
-                    ),
+                    "raw_payload_ref": (f"data/raw/quotes/trade_xyz/2026-05-27.jsonl#row={idx}"),
                 }
             )
         )
