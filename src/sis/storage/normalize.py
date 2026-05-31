@@ -22,8 +22,10 @@ def collect_quote_logs(raw_root: Path) -> list[QuoteLog]:
     logs: list[QuoteLog] = []
     seen: set[tuple[str, str, str, str]] = set()
     for path in sorted(raw_root.glob("*/*.jsonl")):
-        for row in read_jsonl(path):
+        for row_index, row in enumerate(read_jsonl(path)):
             log = QuoteLog.model_validate(row)
+            if log.raw_payload_ref is None:
+                log = log.model_copy(update={"raw_payload_ref": f"{path}#row={row_index}"})
             key = quote_log_identity(log)
             if key in seen:
                 continue

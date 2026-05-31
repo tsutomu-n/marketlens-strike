@@ -94,6 +94,31 @@ def collect_trade_xyz_quotes(
                         ),
                     }
                 )
+            external_price = quote.index_price or quote.oracle_price
+            bound_distance = (
+                abs(quote.mark_price - external_price) / external_price
+                if quote.mark_price is not None and external_price is not None and external_price > 0
+                else None
+            )
+            oi_cap_usage = (
+                quote.open_interest_usd / instrument.oi_cap_usd
+                if quote.open_interest_usd is not None
+                and instrument.oi_cap_usd is not None
+                and instrument.oi_cap_usd > 0
+                else quote.oi_cap_usage
+            )
+            quote = quote.model_copy(
+                update={
+                    "oi_cap_usd": instrument.oi_cap_usd or quote.oi_cap_usd,
+                    "oi_cap_usage": oi_cap_usage,
+                    "discovery_bound_pct": (
+                        instrument.discovery_bound_bps / 10_000
+                        if instrument.discovery_bound_bps is not None
+                        else quote.discovery_bound_pct
+                    ),
+                    "bound_distance": bound_distance,
+                }
+            )
             append_jsonl(out_path, quote.model_dump(mode="json"))
             count += 1
         return count

@@ -117,6 +117,12 @@
         "null"
       ]
     },
+    "last_trade_price": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
     "exec_buy_price": {
       "type": [
         "number",
@@ -195,6 +201,30 @@
         "null"
       ]
     },
+    "oi_cap_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "oi_cap_usage": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "discovery_bound_pct": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "bound_distance": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
     "premium": {
       "type": [
         "number",
@@ -226,6 +256,32 @@
       ]
     },
     "maker_fee_bps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "fee_source": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "row",
+        "fee_snapshot",
+        "instrument_registry",
+        "config_fallback",
+        "unresolved",
+        null
+      ]
+    },
+    "oracle_ts_ms": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "source_confidence": {
       "type": [
         "number",
         "null"
@@ -270,6 +326,30 @@
     },
     "is_tradable": {
       "type": "boolean"
+    },
+    "external_session_open": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "internal_session_open": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "maintenance_window": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "holiday_closure": {
+      "type": [
+        "boolean",
+        "null"
+      ]
     },
     "source": {
       "type": "string"

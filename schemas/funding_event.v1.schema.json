@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzFundingEventV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "funding_event_ts",
+    "canonical_symbol",
+    "funding_rate",
+    "funding_interval_minutes",
+    "oracle_price_at_funding",
+    "source_ts_ms",
+    "recv_ts_ms",
+    "raw_payload_sha256",
+    "raw_payload_ref"
+  ],
+  "properties": {
+    "schema_version": { "const": "funding_event.v1" },
+    "funding_event_ts": { "type": "string", "format": "date-time" },
+    "canonical_symbol": { "type": "string", "minLength": 1 },
+    "venue_symbol": { "type": ["string", "null"] },
+    "funding_rate": { "type": "number" },
+    "funding_interval_minutes": { "type": "integer", "minimum": 1 },
+    "oracle_price_at_funding": { "type": "number", "exclusiveMinimum": 0 },
+    "premium": { "type": ["number", "null"] },
+    "impact_bid_px": { "type": ["number", "null"] },
+    "impact_ask_px": { "type": ["number", "null"] },
+    "impact_notional_usd": { "type": ["number", "null"] },
+    "source_ts_ms": { "type": "integer" },
+    "recv_ts_ms": { "type": "integer" },
+    "raw_payload_sha256": { "type": "string", "minLength": 1 },
+    "raw_payload_ref": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}

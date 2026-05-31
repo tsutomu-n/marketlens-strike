@@ -152,9 +152,11 @@ def quote_from_l2_book(
     index_price = _to_float(ctx.get("indexPx") or ctx.get("index_price") or ctx.get("midPx"))
     funding_rate = _to_float_allow_zero(ctx.get("funding") or ctx.get("funding_rate"))
     open_interest_usd = _to_float(ctx.get("openInterest") or ctx.get("open_interest_usd"))
+    oi_cap_usd = _to_float(ctx.get("openInterestCap") or ctx.get("oi_cap_usd"))
     premium = _to_float(ctx.get("premium"))
     prev_day_price = _to_float(ctx.get("prevDayPx") or ctx.get("prev_day_price"))
     day_notional_volume = _to_float(ctx.get("dayNtlVlm") or ctx.get("day_notional_volume"))
+    last_trade_price = _to_float(ctx.get("lastPx") or ctx.get("last_price") or ctx.get("last"))
     if ctx and mark_price is None:
         block_reasons.append("BLOCK_MARK_PRICE_MISSING")
     if ctx and oracle_price is None:
@@ -179,6 +181,9 @@ def quote_from_l2_book(
         bid_price=metrics.best_bid,
         ask_price=metrics.best_ask,
         mid_price=metrics.mid_price,
+        last_trade_price=last_trade_price,
+        exec_buy_price=metrics.best_ask,
+        exec_sell_price=metrics.best_bid,
         spread_bps=metrics.spread_bps,
         depth_10bps_usd=metrics.depth_10bps_usd,
         depth_25bps_usd=metrics.depth_25bps_usd,
@@ -195,13 +200,21 @@ def quote_from_l2_book(
         oracle_price=oracle_price,
         index_price=index_price,
         funding_rate=funding_rate,
+        funding_interval_minutes=60 if funding_rate is not None else None,
         open_interest_usd=open_interest_usd,
+        oi_cap_usd=oi_cap_usd,
+        oi_cap_usage=(
+            open_interest_usd / oi_cap_usd
+            if open_interest_usd is not None and oi_cap_usd is not None and oi_cap_usd > 0
+            else None
+        ),
         premium=premium,
         prev_day_price=prev_day_price,
         day_notional_volume=day_notional_volume,
         fee_mode=fee_mode or "unknown",
         taker_fee_bps=taker_fee_bps,
         maker_fee_bps=maker_fee_bps,
+        fee_source="instrument_registry" if taker_fee_bps is not None and maker_fee_bps is not None else "unresolved",
         market_status=MarketStatus.OPEN if not block_reasons else MarketStatus.UNKNOWN,
         session_type=SessionType.UNKNOWN,
         is_tradable=not block_reasons,

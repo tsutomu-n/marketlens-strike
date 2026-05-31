@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzInstrumentRegistrySnapshotV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "snapshot_ts",
+    "canonical_symbol",
+    "venue_symbol",
+    "dex",
+    "coin",
+    "asset_class",
+    "source_url",
+    "source_hash"
+  ],
+  "properties": {
+    "schema_version": { "const": "instrument_registry_snapshot.v1" },
+    "snapshot_ts": { "type": "string", "format": "date-time" },
+    "canonical_symbol": { "type": "string", "minLength": 1 },
+    "venue_symbol": { "type": "string", "minLength": 1 },
+    "dex": { "type": "string", "minLength": 1 },
+    "coin": { "type": "string", "minLength": 1 },
+    "asset_id": { "type": ["integer", "null"] },
+    "underlying": { "type": ["string", "null"] },
+    "asset_class": {
+      "type": "string",
+      "enum": ["equity", "etf", "index", "basket_index", "crypto_beta_equity", "commodity", "unknown"]
+    },
+    "max_leverage": { "type": ["number", "null"], "minimum": 0 },
+    "margin_mode": { "type": ["string", "null"] },
+    "discovery_bound_pct": { "type": ["number", "null"], "minimum": 0 },
+    "discovery_bound_bps": { "type": ["number", "null"], "minimum": 0 },
+    "open_interest_cap_usd": { "type": ["number", "null"], "minimum": 0 },
+    "external_session_hours": { "type": ["string", "null"] },
+    "internal_session_hours": { "type": ["string", "null"] },
+    "holiday_calendar_ref": { "type": ["string", "null"] },
+    "fee_mode": { "type": ["string", "null"] },
+    "tick_size": { "type": ["number", "null"], "minimum": 0 },
+    "lot_size": { "type": ["number", "null"], "minimum": 0 },
+    "min_order_size": { "type": ["number", "null"], "minimum": 0 },
+    "min_notional_usd": { "type": ["number", "null"], "minimum": 0 },
+    "source_url": { "type": "string", "minLength": 1 },
+    "source_hash": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}

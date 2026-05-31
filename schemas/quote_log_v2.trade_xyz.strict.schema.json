@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzQuoteLogV2Strict",
+  "allOf": [
+    { "$ref": "quote_log_v2.schema.json" },
+    {
+      "type": "object",
+      "required": [
+        "venue",
+        "canonical_symbol",
+        "venue_symbol",
+        "coin",
+        "asset_id",
+        "recv_ts_ms",
+        "best_bid",
+        "best_ask",
+        "mid_price",
+        "exec_buy_price",
+        "exec_sell_price",
+        "spread_bps",
+        "bid_depth_10bps_usd",
+        "ask_depth_10bps_usd",
+        "mark_price",
+        "oracle_price",
+        "funding_rate",
+        "funding_interval_minutes",
+        "open_interest_usd",
+        "fee_mode",
+        "taker_fee_bps",
+        "maker_fee_bps",
+        "block_reasons",
+        "source_confidence",
+        "venue_quality_score",
+        "raw_payload_sha256"
+      ],
+      "properties": {
+        "venue": { "const": "trade_xyz" }
+      }
+    }
+  ]
+}

@@ -142,6 +142,7 @@ class QuoteLog(BaseModel):
     bid_price: float | None = None
     ask_price: float | None = None
     mid_price: float | None = None
+    last_trade_price: float | None = None
     exec_buy_price: float | None = None
     exec_sell_price: float | None = None
     spread_bps: float | None = None
@@ -155,16 +156,25 @@ class QuoteLog(BaseModel):
     funding_rate: float | None = None
     funding_interval_minutes: int | None = None
     open_interest_usd: float | None = None
+    oi_cap_usd: float | None = None
+    oi_cap_usage: float | None = None
+    discovery_bound_pct: float | None = None
+    bound_distance: float | None = None
     premium: float | None = None
     prev_day_price: float | None = None
     day_notional_volume: float | None = None
     fee_mode: str | None = None
     taker_fee_bps: float | None = None
     maker_fee_bps: float | None = None
+    fee_source: str | None = None
     oracle_ts_ms: int | None = None
 
     market_status: MarketStatus = MarketStatus.UNKNOWN
     session_type: SessionType = SessionType.UNKNOWN
+    external_session_open: bool | None = None
+    internal_session_open: bool | None = None
+    maintenance_window: bool | None = None
+    holiday_closure: bool | None = None
     is_tradable: bool = False
     source_confidence: float | None = None
     venue_quality_score: float | None = None

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TradeXyzFeeSnapshotV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "snapshot_ts",
+    "canonical_symbol",
+    "fee_mode",
+    "taker_fee_bps",
+    "maker_fee_bps",
+    "source",
+    "source_hash"
+  ],
+  "properties": {
+    "schema_version": { "const": "fee_snapshot.v1" },
+    "snapshot_ts": { "type": "string", "format": "date-time" },
+    "canonical_symbol": { "type": "string", "minLength": 1 },
+    "venue_symbol": { "type": ["string", "null"] },
+    "fee_mode": {
+      "type": "string",
+      "enum": ["growth", "standard", "observed", "unknown"]
+    },
+    "fee_tier": { "type": ["string", "integer", "null"] },
+    "taker_fee_bps": { "type": "number", "minimum": 0 },
+    "maker_fee_bps": { "type": "number", "minimum": 0 },
+    "builder_fee_bps": { "type": ["number", "null"], "minimum": 0 },
+    "staking_discount_bps": { "type": ["number", "null"], "minimum": 0 },
+    "source": { "type": "string", "minLength": 1 },
+    "source_hash": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}
