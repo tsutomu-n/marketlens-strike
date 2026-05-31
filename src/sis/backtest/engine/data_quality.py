@@ -21,6 +21,10 @@ class DataQualityReport(BaseModel):
     invalid_price_count: int = 0
     bid_ask_cross_count: int = 0
     cadence_gap_count: int = 0
+    unknown_fee_mode_count: int = 0
+    null_taker_fee_count: int = 0
+    null_maker_fee_count: int = 0
+    funding_rate_without_interval_count: int = 0
     warnings: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
 
@@ -170,6 +174,40 @@ def evaluate_data_quality(
         )
         if negative_count:
             errors.append(f"negative {column} rows: {negative_count}")
+    unknown_fee_mode_count = (
+        int(filtered.select((pl.col("fee_mode") == "unknown").sum()).item())
+        if "fee_mode" in filtered.columns
+        else 0
+    )
+    if unknown_fee_mode_count:
+        warnings.append(f"unknown fee_mode rows: {unknown_fee_mode_count}")
+    null_taker_fee_count = (
+        int(filtered.select(pl.col("taker_fee_bps").is_null().sum()).item())
+        if "taker_fee_bps" in filtered.columns
+        else 0
+    )
+    null_maker_fee_count = (
+        int(filtered.select(pl.col("maker_fee_bps").is_null().sum()).item())
+        if "maker_fee_bps" in filtered.columns
+        else 0
+    )
+    funding_rate_without_interval_count = (
+        int(
+            filtered.select(
+                (
+                    pl.col("funding_rate").is_not_null()
+                    & pl.col("funding_interval_minutes").is_null()
+                ).sum()
+            ).item()
+        )
+        if {"funding_rate", "funding_interval_minutes"}.issubset(filtered.columns)
+        else 0
+    )
+    if funding_rate_without_interval_count:
+        warnings.append(
+            "funding_rate present without funding interval assertion: "
+            f"{funding_rate_without_interval_count}"
+        )
 
     duplicate_ts_count = (
         filtered.group_by(["symbol", "event_ts"]).len().filter(pl.col("len") > 1).height
@@ -200,6 +238,10 @@ def evaluate_data_quality(
         invalid_price_count=invalid_price_count,
         bid_ask_cross_count=bid_ask_cross_count,
         cadence_gap_count=cadence_gap_count,
+        unknown_fee_mode_count=unknown_fee_mode_count,
+        null_taker_fee_count=null_taker_fee_count,
+        null_maker_fee_count=null_maker_fee_count,
+        funding_rate_without_interval_count=funding_rate_without_interval_count,
         warnings=warnings,
         errors=errors,
     )

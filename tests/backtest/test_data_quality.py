@@ -96,3 +96,37 @@ def test_evaluate_data_quality_warns_duplicate_and_gap() -> None:
     assert report.duplicate_ts_count == 1
     assert report.cadence_gap_count == 1
     assert "duplicate event_ts per symbol detected" in report.warnings
+
+
+def test_evaluate_data_quality_surfaces_unresolved_fee_and_funding_assertion_risk() -> None:
+    frame = normalize_trade_xyz_market_data(
+        pl.DataFrame(
+            {
+                "event_ts": [
+                    datetime(2026, 1, 1, 0, tzinfo=timezone.utc),
+                    datetime(2026, 1, 1, 1, tzinfo=timezone.utc),
+                ],
+                "symbol": ["SP500", "SP500"],
+                "mid_price": [100.0, 101.0],
+                "spread_bps": [1.0, 1.0],
+                "fee_mode": ["unknown", "standard"],
+                "taker_fee_bps": [None, 9.0],
+                "maker_fee_bps": [None, 3.0],
+                "funding_rate": [0.001, 0.001],
+                "funding_interval_minutes": [None, None],
+                "is_tradable": [True, True],
+                "block_reasons": [[], []],
+            }
+        ),
+        symbol="SP500",
+    )
+
+    report = evaluate_data_quality(frame, config=_config(), input_row_count=2)
+
+    assert report.status == "warn"
+    assert report.unknown_fee_mode_count == 1
+    assert report.null_taker_fee_count == 1
+    assert report.null_maker_fee_count == 1
+    assert report.funding_rate_without_interval_count == 2
+    assert "unknown fee_mode rows: 1" in report.warnings
+    assert "funding_rate present without funding interval assertion: 2" in report.warnings

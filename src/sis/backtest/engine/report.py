@@ -30,22 +30,95 @@ def render_backtest_markdown(
     *,
     metrics: dict[str, Any],
     artifacts: dict[str, str],
+    data_quality: dict[str, Any] | None = None,
+    benchmark_results: dict[str, Any] | None = None,
+    scenario_summary: dict[str, Any] | None = None,
+    split_summary: dict[str, Any] | None = None,
+    parameter_summary: dict[str, Any] | None = None,
+    run_meta: dict[str, Any] | None = None,
     warnings: list[str] | None = None,
 ) -> str:
     lines = ["# Trade[XYZ] Backtest Report", ""]
+    data_quality = data_quality or {}
+    benchmark_results = benchmark_results or {}
+    scenario_summary = scenario_summary or {}
+    split_summary = split_summary or {}
+    parameter_summary = parameter_summary or {}
+    run_meta = run_meta or {}
     for section in REQUIRED_REPORT_SECTIONS:
         lines.extend([f"## {section}", ""])
-        if section == "Performance Summary":
+        if section == "Run Summary":
+            for key in ("run_id", "strategy_id", "symbol", "timeframe"):
+                if key in run_meta:
+                    lines.append(f"- `{key}`: {run_meta[key]}")
+        elif section == "Scope and Non-Scope":
+            lines.extend(
+                [
+                    "- Trade[XYZ] pure backtest v0.1",
+                    "- no live order, wallet, signing, or exchange write",
+                    "- long-only single-symbol market-like taker fill",
+                ]
+            )
+        elif section == "Config Summary":
+            for key in ("fee_model_ref", "funding_policy", "fill_model", "leverage_mode"):
+                if key in run_meta:
+                    lines.append(f"- `{key}`: {run_meta[key]}")
+        elif section == "Data Manifest":
+            if "data_manifest" in artifacts:
+                lines.append(f"- `data_manifest`: `{artifacts['data_manifest']}`")
+        elif section == "Data Quality":
+            for key, value in sorted(data_quality.items()):
+                if key in {
+                    "status",
+                    "input_row_count",
+                    "filtered_row_count",
+                    "cadence_gap_count",
+                    "unknown_fee_mode_count",
+                    "null_taker_fee_count",
+                    "null_maker_fee_count",
+                    "funding_rate_without_interval_count",
+                    "warnings",
+                    "errors",
+                }:
+                    lines.append(f"- `{key}`: {value}")
+        elif section == "Strategy Summary":
+            lines.append(f"- `strategy_id`: {run_meta.get('strategy_id', 'unknown')}")
+        elif section == "Performance Summary":
             for key, value in sorted(metrics.items()):
                 lines.append(f"- `{key}`: {value}")
+        elif section == "Benchmark Comparison":
+            for key, value in sorted(benchmark_results.items()):
+                lines.append(f"- `{key}`: {value}")
+        elif section == "Scenario Sensitivity":
+            for key, value in sorted(scenario_summary.items()):
+                lines.append(f"- `{key}`: {value}")
+        elif section == "Split Validation":
+            for key, value in sorted(split_summary.items()):
+                lines.append(f"- `{key}`: {value}")
+        elif section == "Parameter Sweep":
+            for key, value in sorted(parameter_summary.items()):
+                lines.append(f"- `{key}`: {value}")
+        elif section == "Trade List Summary":
+            lines.append(f"- `trade_count`: {metrics.get('trade_count')}")
+        elif section == "Blocked Events":
+            lines.append(f"- `blocked_reason_counts`: {metrics.get('blocked_reason_counts')}")
+        elif section == "Session / Market Status Breakdown":
+            lines.append(f"- `session_breakdown`: {metrics.get('session_breakdown')}")
+            lines.append(f"- `market_status_breakdown`: {metrics.get('market_status_breakdown')}")
+        elif section == "Cost Breakdown":
+            for key in ("fee_impact", "funding_impact", "slippage_impact", "cost_drag_bps"):
+                lines.append(f"- `{key}`: {metrics.get(key)}")
+        elif section == "Open Position at End":
+            lines.append(f"- `end_open_position_count`: {metrics.get('end_open_position_count')}")
+            lines.append(f"- `end_unrealized_pnl`: {metrics.get('end_unrealized_pnl')}")
         elif section == "Warnings / Known Limitations":
             for warning in warnings or []:
                 lines.append(f"- {warning}")
         elif section == "Artifact Paths":
             for key, value in sorted(artifacts.items()):
                 lines.append(f"- `{key}`: `{value}`")
-        else:
-            lines.append("_v0.1 artifact-backed section._")
+        if lines[-1] == "":
+            lines.append("- None")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 

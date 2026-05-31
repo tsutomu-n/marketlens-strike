@@ -1,26 +1,28 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
-import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import polars as pl
-from pydantic import BaseModel
 
 from sis.backtest.engine.blocked import BlockedEvent, blocked_events_to_frame
 from sis.backtest.engine.benchmark import run_benchmarks
 from sis.backtest.engine.config import BacktestConfig
 from sis.backtest.engine.data_quality import apply_period_filter, evaluate_data_quality
 from sis.backtest.engine.fill import Fill, next_fill_row_index, resolve_market_like_fill_price
-from sis.backtest.engine.hashing import config_hash, input_schema_hash
+from sis.backtest.engine.frames import (
+    equity_to_frame,
+    fills_to_frame,
+    orders_to_frame,
+    trades_to_frame,
+)
+from sis.backtest.engine.artifacts import write_backtest_artifacts
 from sis.backtest.engine.manifest import build_data_manifest
 from sis.backtest.engine.metrics import calculate_metrics
 from sis.backtest.engine.parameter_sweep import default_breakout_parameter_grid
-from sis.backtest.engine.report import render_backtest_html, render_backtest_markdown
 from sis.backtest.engine.scenarios import default_scenarios
-from sis.backtest.engine.charts import render_line_svg, render_placeholder_svg
 from sis.backtest.engine.validation import simple_train_test_split
 from sis.backtest.engine.order import Order
 from sis.backtest.engine.portfolio import Portfolio
@@ -43,95 +45,6 @@ class BreakoutParameters:
 class BacktestRunResult:
     run_dir: Path
     metrics: dict[str, object]
-
-
-def _write_json(path: Path, payload: BaseModel | dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    data = payload.model_dump(mode="json") if isinstance(payload, BaseModel) else payload
-    path.write_text(
-        json.dumps(data, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
-    )
-
-
-def _orders_to_frame(orders: list[Order]) -> pl.DataFrame:
-    schema = {
-        "order_id": pl.Utf8,
-        "client_order_id": pl.Utf8,
-        "created_ts": pl.Datetime(time_zone="UTC"),
-        "symbol": pl.Utf8,
-        "side": pl.Utf8,
-        "position_effect": pl.Utf8,
-        "order_type": pl.Utf8,
-        "requested_notional_usd": pl.Float64,
-        "requested_qty": pl.Float64,
-        "limit_price": pl.Null,
-        "reduce_only": pl.Boolean,
-        "strategy_id": pl.Utf8,
-        "signal_id": pl.Utf8,
-    }
-    if not orders:
-        return pl.DataFrame(schema=schema)
-    return pl.from_dicts([order.model_dump(mode="python") for order in orders], schema=schema)
-
-
-def _fills_to_frame(fills: list[Fill]) -> pl.DataFrame:
-    schema = {
-        "fill_id": pl.Utf8,
-        "order_id": pl.Utf8,
-        "event_ts": pl.Datetime(time_zone="UTC"),
-        "symbol": pl.Utf8,
-        "side": pl.Utf8,
-        "position_effect": pl.Utf8,
-        "qty": pl.Float64,
-        "fill_price": pl.Float64,
-        "fill_notional_usd": pl.Float64,
-        "fee_bps": pl.Float64,
-        "fee_amount": pl.Float64,
-        "extra_slippage_bps": pl.Float64,
-        "extra_slippage_amount": pl.Float64,
-        "funding_amount_delta": pl.Float64,
-        "liquidity_flag": pl.Utf8,
-        "fill_price_source": pl.Utf8,
-    }
-    if not fills:
-        return pl.DataFrame(schema=schema)
-    return pl.from_dicts([fill.model_dump(mode="python") for fill in fills], schema=schema)
-
-
-def _trades_to_frame(trades: list[dict[str, object]]) -> pl.DataFrame:
-    schema = {
-        "entry_ts": pl.Datetime(time_zone="UTC"),
-        "exit_ts": pl.Datetime(time_zone="UTC"),
-        "symbol": pl.Utf8,
-        "qty": pl.Float64,
-        "entry_price": pl.Float64,
-        "exit_price": pl.Float64,
-        "gross_pnl": pl.Float64,
-        "net_pnl": pl.Float64,
-        "fees_paid": pl.Float64,
-        "exit_reason": pl.Utf8,
-    }
-    if not trades:
-        return pl.DataFrame(schema=schema)
-    return pl.from_dicts(trades, schema=schema)
-
-
-def _equity_to_frame(rows: list[dict[str, object]]) -> pl.DataFrame:
-    schema = {
-        "event_ts": pl.Datetime(time_zone="UTC"),
-        "cash_usd": pl.Float64,
-        "position_qty": pl.Float64,
-        "equity": pl.Float64,
-        "unrealized_pnl": pl.Float64,
-        "funding_pnl": pl.Float64,
-        "is_evaluation": pl.Boolean,
-        "session_type": pl.Utf8,
-        "market_status": pl.Utf8,
-    }
-    if not rows:
-        return pl.DataFrame(schema=schema)
-    return pl.from_dicts(rows, schema=schema)
 
 
 def _window_return(frame: pl.DataFrame) -> float | None:
@@ -247,6 +160,7 @@ def _fill_order(
         else portfolio.position_qty
     )
     notional = qty * price
+    effective_taker_fee_bps = fee.taker_fee_bps * config.cost.fee_multiplier
     slippage = notional * config.execution.extra_slippage_bps / 10_000
     return Fill(
         fill_id=f"fill-{order.order_id}",
@@ -258,9 +172,9 @@ def _fill_order(
         qty=qty,
         fill_price=price,
         fill_notional_usd=notional,
-        fee_bps=fee.taker_fee_bps,
+        fee_bps=effective_taker_fee_bps,
         fee_amount=calculate_market_like_fee(
-            fill_notional_usd=notional, taker_fee_bps=fee.taker_fee_bps
+            fill_notional_usd=notional, taker_fee_bps=effective_taker_fee_bps
         ),
         extra_slippage_bps=config.execution.extra_slippage_bps,
         extra_slippage_amount=slippage,
@@ -300,6 +214,7 @@ def run_backtest(
     trades: list[dict[str, object]] = []
     pending_orders: dict[int, Order] = {}
     open_trade: dict[str, object] | None = None
+    recorded_funding_warnings: set[str] = set()
 
     for index, row in enumerate(rows):
         order = pending_orders.pop(index, None)
@@ -349,7 +264,22 @@ def run_backtest(
 
         signal = _signal_kind(rows, index, breakout)
         fill_index = next_fill_row_index(signal_row_index=index, row_count=len(rows))
-        if fill_index is not None and signal == "exit" and portfolio.position_qty > 0:
+        actionable_signal_without_fill = (signal == "entry" and portfolio.position_qty == 0) or (
+            signal == "exit" and portfolio.position_qty > 0
+        )
+        if fill_index is None and actionable_signal_without_fill:
+            blocked.append(
+                BlockedEvent(
+                    event_ts=_row_event_ts(row),
+                    symbol=config.symbol,
+                    action=signal,
+                    reason="no_future_fill_row",
+                    strategy_id=config.strategy_id,
+                    signal_id=f"signal-{index}",
+                    row_index=_row_index(row),
+                )
+            )
+        elif fill_index is not None and signal == "exit" and portfolio.position_qty > 0:
             fee = resolve_fee_bps(
                 row,
                 fee_model_path=config.cost.fee_model_ref,
@@ -420,7 +350,8 @@ def run_backtest(
             )
             if funding_amount:
                 portfolio = portfolio.apply_funding(funding_amount)
-            if funding_warning is not None and config.cost.funding_policy == "fixture_hourly_v0":
+            if funding_warning is not None and funding_warning not in recorded_funding_warnings:
+                recorded_funding_warnings.add(funding_warning)
                 blocked.append(
                     BlockedEvent(
                         event_ts=_row_event_ts(row),
@@ -510,11 +441,11 @@ def run_backtest(
                 equity_rows[-1]["equity"] = portfolio.equity
                 equity_rows[-1]["unrealized_pnl"] = portfolio.unrealized_pnl
 
-    orders_frame = _orders_to_frame(orders)
-    fills_frame = _fills_to_frame(fills)
-    trades_frame = _trades_to_frame(trades)
+    orders_frame = orders_to_frame(orders)
+    fills_frame = fills_to_frame(fills)
+    trades_frame = trades_to_frame(trades)
     blocked_frame = blocked_events_to_frame(blocked)
-    equity_frame = _equity_to_frame(equity_rows)
+    equity_frame = equity_to_frame(equity_rows)
     metrics = calculate_metrics(
         initial_cash_usd=config.initial_cash_usd,
         equity_curve=equity_frame,
@@ -531,6 +462,7 @@ def run_backtest(
     scenario_rows = [
         {
             "scenario": scenario.name,
+            "scenario_method": "cost_derived_v0",
             "fee_multiplier": scenario.config.cost.fee_multiplier,
             "extra_slippage_bps": scenario.config.execution.extra_slippage_bps,
             "net_return_after_cost": float(metrics["net_return_after_cost"])
@@ -580,127 +512,23 @@ def run_backtest(
     ]
 
     run_dir = out_dir / config.run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
-    _write_json(run_dir / "config.json", config)
-    _write_json(run_dir / "data_quality.json", quality)
-    _write_json(run_dir / "data_manifest.json", manifest)
-    _write_json(run_dir / "metrics.json", metrics)
-    _write_json(run_dir / "benchmark_results.json", benchmark_results)
-    _write_json(
-        run_dir / "scenario_summary.json",
-        {
-            "scenarios": [row["scenario"] for row in scenario_rows],
-            "base_only_edge_warning": True,
-        },
-    )
-    _write_json(run_dir / "split_results.json", split_summary)
-    _write_json(
-        run_dir / "parameter_summary.json",
-        {
-            "grid_size": len(parameter_rows),
-            "best_parameter_is_in_sample_only": True,
-        },
-    )
-    _write_json(
-        run_dir / "candidate_result.json",
-        {
-            "run_id": config.run_id,
-            "strategy_id": config.strategy_id,
-            "symbol": config.symbol,
-            "metrics": metrics,
-            "data_manifest": "data_manifest.json",
-        },
-    )
-    _write_json(
-        run_dir / "backtest_run.json",
-        {
-            "run_id": config.run_id,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "strategy_id": config.strategy_id,
-            "symbol": config.symbol,
-            "timeframe": config.timeframe,
-            "warmup_start_ts": config.period.warmup_start_ts.isoformat()
-            if config.period.warmup_start_ts
-            else None,
-            "evaluation_start_ts": config.period.evaluation_start_ts.isoformat(),
-            "evaluation_end_ts": config.period.evaluation_end_ts.isoformat(),
-            "input_data_ref": input_data_ref,
-            "config_hash": config_hash(config),
-            "input_schema_hash": input_schema_hash(normalized),
-            "fee_model_ref": config.cost.fee_model_ref,
-            "funding_policy": config.cost.funding_policy,
-            "fill_model": config.execution.fill_model,
-            "leverage_mode": config.leverage.mode,
-            "no_live_order": True,
-            "wallet_used": False,
-            "exchange_write_used": False,
-        },
-    )
-    (run_dir / "config_hash.txt").write_text(config_hash(config) + "\n", encoding="utf-8")
-    (run_dir / "input_schema_hash.txt").write_text(
-        input_schema_hash(normalized) + "\n", encoding="utf-8"
-    )
-    orders_frame.write_parquet(run_dir / "orders.parquet")
-    fills_frame.write_parquet(run_dir / "fills.parquet")
-    trades_frame.write_parquet(run_dir / "trades.parquet")
-    blocked_frame.write_parquet(run_dir / "blocked_events.parquet")
-    equity_frame.write_parquet(run_dir / "equity_curve.parquet")
-    benchmark_equity.write_parquet(run_dir / "benchmark_equity_curve.parquet")
-    pl.from_dicts(scenario_rows).write_parquet(run_dir / "scenario_results.parquet")
-    pl.from_dicts(parameter_rows).write_parquet(run_dir / "parameter_results.parquet")
-    artifacts = {
-        "metrics": "metrics.json",
-        "data_manifest": "data_manifest.json",
-        "orders": "orders.parquet",
-        "fills": "fills.parquet",
-        "trades": "trades.parquet",
-        "equity_curve": "equity_curve.parquet",
-    }
-    markdown = render_backtest_markdown(
+    write_backtest_artifacts(
+        run_dir=run_dir,
+        config=config,
+        normalized=normalized,
+        input_data_ref=input_data_ref,
+        data_quality=quality,
+        data_manifest=manifest,
         metrics=metrics,
-        artifacts=artifacts,
-        warnings=[
-            "v0.1 long-only single-symbol market-like taker fill",
-            "best_parameter_is_in_sample_only: true",
-            "scenario_results show fee/slippage sensitivity from base run costs",
-        ],
+        benchmark_results=benchmark_results,
+        scenario_rows=scenario_rows,
+        split_summary=split_summary,
+        parameter_rows=parameter_rows,
+        orders_frame=orders_frame,
+        fills_frame=fills_frame,
+        trades_frame=trades_frame,
+        blocked_frame=blocked_frame,
+        equity_frame=equity_frame,
+        benchmark_equity=benchmark_equity,
     )
-    (run_dir / "backtest_report.md").write_text(markdown, encoding="utf-8")
-    (run_dir / "backtest_report.html").write_text(render_backtest_html(markdown), encoding="utf-8")
-    charts_dir = run_dir / "charts"
-    charts_dir.mkdir(exist_ok=True)
-    equity_values = [float(value) for value in equity_frame.get_column("equity").to_list()]
-    peak = None
-    drawdowns: list[float] = []
-    for value in equity_values:
-        peak = value if peak is None else max(peak, value)
-        drawdowns.append(value / peak - 1 if peak else 0.0)
-    chart_svgs = {
-        "equity_curve": render_line_svg(title="Equity Curve", values=equity_values),
-        "drawdown": render_line_svg(title="Drawdown", values=drawdowns),
-        "trade_pnl_histogram": render_placeholder_svg(title="Trade PnL Histogram"),
-        "cumulative_costs": render_line_svg(
-            title="Cumulative Costs",
-            values=[
-                float(row.get("fee_amount") or 0) + float(row.get("extra_slippage_amount") or 0)
-                for row in fills_frame.to_dicts()
-            ],
-        ),
-        "blocked_reasons": render_placeholder_svg(title="Blocked Reasons"),
-        "session_breakdown": render_placeholder_svg(title="Session Breakdown"),
-    }
-    for name, svg in chart_svgs.items():
-        (charts_dir / f"{name}.svg").write_text(svg, encoding="utf-8")
-    charts_data_dir = run_dir / "charts_data"
-    charts_data_dir.mkdir(exist_ok=True)
-    charts_payloads = {
-        "equity_curve": {"rows": equity_frame.to_dicts()},
-        "drawdown": {"rows": equity_frame.select(["event_ts", "equity"]).to_dicts()},
-        "trades": {"rows": trades_frame.to_dicts()},
-        "blocked_reasons": {"rows": blocked_frame.to_dicts()},
-    }
-    for name, payload in charts_payloads.items():
-        _write_json(
-            charts_data_dir / f"{name}.json", {"name": name, "run_id": config.run_id, **payload}
-        )
     return BacktestRunResult(run_dir=run_dir, metrics=metrics)

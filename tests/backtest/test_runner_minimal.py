@@ -161,3 +161,80 @@ def test_runner_applies_fixture_hourly_funding_only_on_funding_event(tmp_path) -
     metrics = json.loads((result.run_dir / "metrics.json").read_text(encoding="utf-8"))
     assert metrics["funding_impact"] < 0
     assert metrics["blocked_reason_counts"] == {}
+
+
+def test_runner_records_nullable_zero_funding_warning_when_runtime_rate_is_present(
+    tmp_path,
+) -> None:
+    config = _config().model_copy(
+        update={
+            "run_id": "nullable-funding-warning",
+            "execution": ExecutionConfig(force_close_on_end=True),
+        }
+    )
+    frame = _frame().with_columns(
+        [
+            pl.Series("oracle_price", [100.0] * 6),
+            pl.Series("funding_rate", [None, None, None, 0.01, 0.01, 0.01]),
+            pl.Series("funding_interval_minutes", [None] * 6),
+        ]
+    )
+
+    result = run_backtest(
+        config=config,
+        market_data=frame,
+        out_dir=tmp_path,
+        input_data_ref="fixture://sp500",
+        breakout=BreakoutParameters(entry_lookback=2, exit_lookback=2),
+    )
+
+    metrics = json.loads((result.run_dir / "metrics.json").read_text(encoding="utf-8"))
+    assert metrics["funding_impact"] == 0
+    assert metrics["blocked_reason_counts"] == {
+        "funding_rate_present_without_interval_assertion": 1
+    }
+
+
+def test_runner_applies_fee_multiplier_to_real_fills(tmp_path) -> None:
+    base = run_backtest(
+        config=_config().model_copy(update={"run_id": "fee-base"}),
+        market_data=_frame(),
+        out_dir=tmp_path,
+        input_data_ref="fixture://sp500",
+        breakout=BreakoutParameters(entry_lookback=2, exit_lookback=2),
+    )
+    doubled = run_backtest(
+        config=_config().model_copy(
+            update={
+                "run_id": "fee-doubled",
+                "cost": CostConfig(fee_multiplier=2.0),
+            }
+        ),
+        market_data=_frame(),
+        out_dir=tmp_path,
+        input_data_ref="fixture://sp500",
+        breakout=BreakoutParameters(entry_lookback=2, exit_lookback=2),
+    )
+
+    base_fills = pl.read_parquet(base.run_dir / "fills.parquet")
+    doubled_fills = pl.read_parquet(doubled.run_dir / "fills.parquet")
+    assert doubled_fills.get_column("fee_bps").to_list() == [18.0, 18.0]
+    assert (
+        doubled_fills.get_column("fee_amount").sum()
+        == base_fills.get_column("fee_amount").sum() * 2
+    )
+
+
+def test_runner_blocks_last_row_signal_without_future_fill_row(tmp_path) -> None:
+    frame = _frame().with_columns(pl.Series("close", [100.0, 99.0, 98.0, 97.0, 96.0, 120.0]))
+    result = run_backtest(
+        config=_config().model_copy(update={"run_id": "last-row-signal"}),
+        market_data=frame,
+        out_dir=tmp_path,
+        input_data_ref="fixture://sp500",
+        breakout=BreakoutParameters(entry_lookback=2, exit_lookback=2),
+    )
+
+    blocked = pl.read_parquet(result.run_dir / "blocked_events.parquet")
+    assert blocked.get_column("reason").to_list() == ["no_future_fill_row"]
+    assert pl.read_parquet(result.run_dir / "fills.parquet").is_empty()

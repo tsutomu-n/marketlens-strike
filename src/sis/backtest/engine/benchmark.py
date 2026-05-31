@@ -54,10 +54,12 @@ def run_benchmarks(
 
     qty = config.position_sizing.notional_usd / entry_price
     entry_fee = calculate_market_like_fee(
-        fill_notional_usd=qty * entry_price, taker_fee_bps=fee.taker_fee_bps
+        fill_notional_usd=qty * entry_price,
+        taker_fee_bps=fee.taker_fee_bps * config.cost.fee_multiplier,
     )
     exit_fee = calculate_market_like_fee(
-        fill_notional_usd=qty * exit_price, taker_fee_bps=fee.taker_fee_bps
+        fill_notional_usd=qty * exit_price,
+        taker_fee_bps=fee.taker_fee_bps * config.cost.fee_multiplier,
     )
     ending_equity = (
         config.initial_cash_usd - qty * entry_price - entry_fee + qty * exit_price - exit_fee
