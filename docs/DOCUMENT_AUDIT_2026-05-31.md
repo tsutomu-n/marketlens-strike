@@ -11,7 +11,7 @@
 - additional audit baseline HEAD: `c4b17b1`
 - root CLI: `uv run sis --help` で `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`, `strategy-author-train-model` を確認。
 - docs lint: `uv run python scripts/check_current_docs.py` が current docs `78` 件を検査。
-- full gate: `./scripts/check` は `586 passed` を最新の全体検証値として扱う。
+- full gate: `./scripts/check` は `593 passed` を最新の全体検証値として扱う。
 - Strategy Authoring completion evidence: `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md`。
 
 ## Code Truth
@@ -21,14 +21,14 @@
 ```text
 src/sis/cli.py
 src/sis/commands/strategy_authoring.py
-src/sis/research/strategy_lab/authoring.py
+src/sis/research/strategy_lab/authoring/
 src/sis/backtest/bridge.py
 src/sis/backtest/signals.py
 schemas/strategy_authoring_spec.v1.schema.json
 schemas/strategy_authoring_bundle.v1.schema.json
 schemas/strategy_authoring_backtest_result.v1.schema.json
 schemas/strategy_authoring_bundle_result.v1.schema.json
-tests/test_strategy_authoring.py
+tests/strategy_authoring/
 tests/test_strategy_lab_schemas.py
 ```
 
@@ -43,11 +43,11 @@ tests/test_strategy_lab_schemas.py
 
 | Path | 理由 | 推奨更新 |
 |---|---|---|
-| `README.md` | read-first と verification 値の入口 | audit 正本を本ファイルへ差し替え、`586 passed` / current docs `78` 件へ更新 |
+| `README.md` | read-first と verification 値の入口 | audit 正本を本ファイルへ差し替え、`593 passed` / current docs `78` 件へ更新 |
 | `docs/CURRENT_STATE.md` | current truth の入口 | Strategy authoring command list に `strategy-author-train-model` を追加し、検証値を更新 |
-| `docs/CODE_STATUS.md` | 実装状態一覧 | verification を 2026-05-31 / `586 passed` / current docs `78` 件へ更新 |
-| `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | capabilities の current entry | check 結果を `586 passed` / current docs `78` 件へ更新 |
-| `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md` | authoring の現状説明 | check 結果を `586 passed` / current docs `78` 件へ更新 |
+| `docs/CODE_STATUS.md` | 実装状態一覧 | verification を 2026-05-31 / `593 passed` / current docs `78` 件へ更新 |
+| `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | capabilities の current entry | check 結果を `593 passed` / current docs `78` 件へ更新 |
+| `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md` | authoring の現状説明 | check 結果を `593 passed` / current docs `78` 件へ更新 |
 | `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | 進捗まとめ | 最終検証値は 2026-05-31 完了 gate へ更新済み |
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | Strategy Lab audit/spec の入口 | 全体 docs audit の参照先を `docs/DOCUMENT_AUDIT_2026-05-31.md` へ差し替え |
 | `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | completion evidence ledger | 05-31 audit 追加前の current-docs count `77` を、現行 count `78` へ注記更新 |
@@ -60,12 +60,12 @@ tests/test_strategy_lab_schemas.py
 | Path | 古い内容 | 現在の扱い |
 |---|---|---|
 | `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md` | Strategy Authoring completion 前の audit。`446 passed` / 2026-05-30 前提の表現が残る | archived superseded audit。現行入口は本ファイル |
-| `README.md` | `565 passed`, current docs `76` 件 | 現行では `586 passed` / `78` 件へ修正済み |
+| `README.md` | `565 passed`, current docs `76` 件 | 現行では `593 passed` / `78` 件へ修正済み |
 | `docs/CURRENT_STATE.md` | `565 passed`, current docs `76` 件、authoring command list に `strategy-author-train-model` が無い | 現行では修正済み |
 | `docs/CODE_STATUS.md` | `565 passed`, current docs `76` 件 | 現行では修正済み |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | `565 passed`, current docs `76` 件 | 現行では修正済み |
 | `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md` | `565 passed`, current docs `76` 件 | 現行では修正済み |
-| `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | `181 passed` / schema tests `2 passed` / full gate `565 passed` の中間 snapshot | historical progress doc として有効。現行では最終 focused gate `204 passed` と full gate `586 passed` へ更新済み |
+| `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | `181 passed` / schema tests `2 passed` / full gate `565 passed` の中間 snapshot | historical progress doc として有効。現行では最終 focused gate `211 passed` と full gate `593 passed` へ更新済み |
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | 全体 docs audit の参照先が `docs/DOCUMENT_AUDIT_2026-05-30.md` のまま | 現行では current audit `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
 | `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | `checked 77 current docs` は 05-31 audit 追加前の値 | 現行では `checked 78 current docs` も併記 |
 | `README.md`, `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md`, `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | `LIVE_READINESS_BLOCKER=6` が最新 `phase-gate-review` の `5` とズレていた | 現行では `LIVE_READINESS_BLOCKER=5` へ修正済み |
@@ -125,7 +125,7 @@ git rev-parse --short HEAD
 uv run sis --help
 uv run python scripts/check_current_docs.py
 ./scripts/check
-rg -n "565 passed|586 passed|446 passed|294 passed|checked 76|checked 78|strategy-author-|strategy_authoring_backtest_result|strategy_authoring_bundle_result|13_STRATEGY_ARCHETYPE|14_COMPLETION_EVIDENCE" README.md docs/CURRENT_STATE.md docs/CODE_STATUS.md docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md docs/strategy_research_lab docs/algo/README.md docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md -g '*.md' -g '*.html'
+rg -n "565 passed|586 passed|593 passed|446 passed|294 passed|checked 76|checked 78|strategy-author-|strategy_authoring_backtest_result|strategy_authoring_bundle_result|13_STRATEGY_ARCHETYPE|14_COMPLETION_EVIDENCE" README.md docs/CURRENT_STATE.md docs/CODE_STATUS.md docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md docs/strategy_research_lab docs/algo/README.md docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md -g '*.md' -g '*.html'
 rg -n "DOCUMENT_AUDIT_2026-05-30|DOCUMENT_AUDIT_2026-05-31|checked 77|checked 78|c4b17b1" README.md docs plan -g '*.md' -g '*.html'
 rg -n "@app\.command|def register_|strategy_author|strategy-experiment-run|build-paper|promotion|paper-from-intents|bot-preview" src/sis/commands src/sis/cli.py src/sis/research/strategy_lab src/sis/backtest -g '*.py'
 ```
@@ -134,7 +134,7 @@ rg -n "@app\.command|def register_|strategy_author|strategy-experiment-run|build
 
 - additional audit started clean at `c4b17b1`.
 - docs lint passed before edits: `checked 78 current docs: links, EOF, and legacy roots ok`.
-- full gate passed: `586 passed`.
+- full gate passed: `593 passed`.
 - CLI help includes the Strategy Authoring commands and paper-only Strategy Lab commands.
 - stale verification values are now limited to superseded/historical docs or explicitly historical snapshots.
 - additional stale current-doc pointers to `docs/DOCUMENT_AUDIT_2026-05-30.md` were found and corrected in this pass.

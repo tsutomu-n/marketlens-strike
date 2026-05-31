@@ -4,13 +4,13 @@
 
 正本はコードです。特に次を優先します。
 
-- `src/sis/research/strategy_lab/authoring.py`
+- `src/sis/research/strategy_lab/authoring/`
 - `src/sis/backtest/bridge.py`
 - `src/sis/backtest/signals.py`
 - `src/sis/research/strategy_lab/signal_artifact.py`
 - `src/sis/research/strategy_lab/specs.py`
 - `schemas/strategy_authoring_spec.v1.schema.json`
-- `tests/test_strategy_authoring.py`
+- `tests/strategy_authoring/`
 
 ## 結論
 
@@ -165,7 +165,7 @@
 最新 full check では、次を確認済みです。
 
 - `./scripts/check`: pass
-- pytest: `586 passed`
+- pytest: `593 passed`
 - pyrefly: `0 errors`
 - current-docs lint: `checked 78 current docs: links, EOF, and legacy roots ok`
 

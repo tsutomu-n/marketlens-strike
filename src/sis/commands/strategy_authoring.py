@@ -5,25 +5,35 @@ from typing import Literal, cast
 
 import typer
 
-from sis.research.strategy_lab.authoring import (
-    VALID_THROUGH,
-    StrategyAuthoringValidationError,
-    build_authoring_signals,
-    explain_authoring_spec,
-    load_authoring_bundle_spec,
-    load_authoring_spec,
-    run_authoring_bundle,
+from sis.research.strategy_lab.authoring.backtest import (
     run_authoring_backtest,
-    train_authoring_linear_model_score,
-    validate_authoring_inputs,
     write_authoring_backtest_outputs,
+)
+from sis.research.strategy_lab.authoring.bundle import (
+    run_authoring_bundle,
     write_authoring_bundle_outputs,
-    write_authoring_model_score_outputs,
+)
+from sis.research.strategy_lab.authoring.compiler import (
+    build_authoring_signals,
     write_authoring_paper_preview_outputs,
     write_authoring_run_summary,
     write_authoring_signal_artifacts,
+)
+from sis.research.strategy_lab.authoring.contracts import (
+    VALID_THROUGH,
+    StrategyAuthoringValidationError,
+)
+from sis.research.strategy_lab.authoring.explain import explain_authoring_spec
+from sis.research.strategy_lab.authoring.io import (
+    load_authoring_bundle_spec,
+    load_authoring_spec,
     write_template,
 )
+from sis.research.strategy_lab.authoring.model_score import (
+    train_authoring_linear_model_score,
+    write_authoring_model_score_outputs,
+)
+from sis.research.strategy_lab.authoring.validation import validate_authoring_inputs
 from sis.settings import get_settings
 
 

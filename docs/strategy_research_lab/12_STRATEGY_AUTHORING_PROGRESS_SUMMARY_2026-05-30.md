@@ -4,7 +4,7 @@
 
 正本は次です。
 
-- `src/sis/research/strategy_lab/authoring.py`
+- `src/sis/research/strategy_lab/authoring/`
 - `src/sis/backtest/bridge.py`
 - `src/sis/backtest/signals.py`
 - `src/sis/research/strategy_lab/signal_artifact.py`
@@ -14,7 +14,7 @@
 - `schemas/strategy_authoring_spec.v1.schema.json`
 - `schemas/strategy_signal.v1.schema.json`
 - `schemas/trade_candidate.v1.schema.json`
-- `tests/test_strategy_authoring.py`
+- `tests/strategy_authoring/`
 
 ## 結論
 
@@ -115,9 +115,9 @@ uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/exampl
 
 2026-05-31 の最終確認値です。
 
-- `uv run pytest tests/test_strategy_authoring.py tests/test_strategy_lab_schemas.py -q`: `204 passed`
+- `uv run pytest tests/strategy_authoring tests/test_strategy_lab_schemas.py -q`: `211 passed`
 - `uv run python scripts/check_current_docs.py`: `checked 78 current docs: links, EOF, and legacy roots ok`
-- `./scripts/check`: pass, pytest `586 passed`, pyrefly `0 errors`
+- `./scripts/check`: pass, pytest `593 passed`, pyrefly `0 errors`
 
 ## 残る範囲
 

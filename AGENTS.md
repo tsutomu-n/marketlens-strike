@@ -12,7 +12,7 @@ Tests live in `tests/` and follow `test_*.py` naming. Docs are in `docs/`, plans
 - `uv run python -V`: confirm Python 3.13 is active.
 - `uv run sis --help`: inspect the CLI surface.
 - `./scripts/check` or `just check`: run sync, Ruff lint/format check, docs-current check, Pyrefly, and Pytest.
-- `uv run pytest -q tests/test_strategy_authoring.py`: run one test file.
+- `uv run pytest -q tests/strategy_authoring`: run the Strategy Authoring test slice.
 - `uv run sis phase-gate-review`: review the read-only gate.
 
 ## Coding Style & Naming Conventions

@@ -296,7 +296,7 @@ uv run sis evaluate-strategy-lab \
 
 ```bash
 uv run pytest tests/test_strategy_lab_commands.py -q
-uv run pytest tests/test_strategy_authoring.py -q
+uv run pytest tests/strategy_authoring -q
 uv run pytest tests/test_strategies.py tests/test_strategy_lab_signal_registry.py tests/test_research_signals_artifact.py tests/test_strategy_lab_commands.py tests/test_strategy_lab_candidate_pack.py tests/test_strategy_lab_schemas.py -q
 uv run pytest tests/test_research_pipeline.py tests/test_cli_smoke.py -q
 uv run python scripts/check_current_docs.py
@@ -307,9 +307,9 @@ git diff --check
 確認済み結果:
 
 - `tests/test_strategy_lab_commands.py`: 20 passed
-- `tests/test_strategy_authoring.py` + `tests/test_strategy_lab_schemas.py`: 204 passed
+- `tests/strategy_authoring` + `tests/test_strategy_lab_schemas.py`: 211 passed
 - Strategy Lab focused suite: 45 passed
 - Research pipeline / CLI smoke: 71 passed
 - `scripts/check_current_docs.py`: checked 78 current docs
-- `./scripts/check`: 586 passed, pyrefly 0 errors
+- `./scripts/check`: 593 passed, pyrefly 0 errors
 - `git diff --check`: pass

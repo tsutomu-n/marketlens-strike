@@ -83,7 +83,10 @@ uv run python - <<'PY'
 from pathlib import Path
 import re
 matrix = Path('docs/strategy_research_lab/13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md').read_text()
-tests = Path('tests/test_strategy_authoring.py').read_text()
+tests = "\n".join(
+    path.read_text()
+    for path in Path('tests/strategy_authoring').glob('test_*.py')
+)
 missing=[]
 for name in sorted(set(re.findall(r'`(test_[a-zA-Z0-9_]+)`', matrix))):
     if f'def {name}(' not in tests:
@@ -104,7 +107,7 @@ missing_count 0
 
 Primary implementation files:
 
-- `src/sis/research/strategy_lab/authoring.py`
+- `src/sis/research/strategy_lab/authoring/`
 - `src/sis/research/strategy_lab/specs.py`
 - `src/sis/research/strategy_lab/signal_artifact.py`
 - `src/sis/research/strategy_lab/signal_frame.py`
@@ -168,7 +171,7 @@ Examples available under `docs/strategy_research_lab/examples/`:
 
 Example parse guard:
 
-- `tests/test_strategy_authoring.py::test_strategy_authoring_example_specs_and_bundles_parse`
+- `tests/strategy_authoring/test_contracts_validation.py::test_strategy_authoring_example_specs_and_bundles_parse`
 
 This test loads all `*_authoring_spec.yaml` examples, all `*bundle.yaml` examples, and verifies bundle member references exist.
 
@@ -192,8 +195,8 @@ Observed categories:
 Final verification commands passed in the current worktree:
 
 ```bash
-uv run pytest tests/test_strategy_authoring.py::test_strategy_authoring_example_specs_and_bundles_parse -q
-uv run pytest tests/test_strategy_authoring.py tests/test_strategy_lab_schemas.py -q
+uv run pytest tests/strategy_authoring/test_contracts_validation.py::test_strategy_authoring_example_specs_and_bundles_parse -q
+uv run pytest tests/strategy_authoring tests/test_strategy_lab_schemas.py -q
 uv run python scripts/check_current_docs.py
 git diff --check
 ./scripts/check
@@ -202,10 +205,10 @@ git diff --check
 Observed results:
 
 - `test_strategy_authoring_example_specs_and_bundles_parse`: `1 passed`
-- `tests/test_strategy_authoring.py tests/test_strategy_lab_schemas.py`: `204 passed`
+- `tests/strategy_authoring tests/test_strategy_lab_schemas.py`: `211 passed`
 - `scripts/check_current_docs.py`: `checked 77 current docs: links, EOF, and legacy roots ok`; after adding the 2026-05-31 docs audit, current docs lint is `checked 78 current docs: links, EOF, and legacy roots ok`
 - `git diff --check`: no output
-- `./scripts/check`: ruff pass, ruff format pass, docs lint pass, pyrefly `0 errors`, pytest `586 passed`
+- `./scripts/check`: ruff pass, ruff format pass, docs lint pass, pyrefly `0 errors`, pytest `593 passed`
 
 ## Completion Judgment
 
