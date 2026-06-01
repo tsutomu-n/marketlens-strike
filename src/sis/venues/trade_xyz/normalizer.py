@@ -162,22 +162,42 @@ def _oracle_freshness_fields(
     recv_ts_ms: int | None,
 ) -> tuple[int | None, int | None, int | None, str, str]:
     if oracle_price is None:
-        return None, None, None, "missing_oracle_price", (
-            "No oracle freshness proxy is recorded because oracle_price is missing."
+        return (
+            None,
+            None,
+            None,
+            "missing_oracle_price",
+            ("No oracle freshness proxy is recorded because oracle_price is missing."),
         )
     if source_ts_ms is None or recv_ts_ms is None:
-        return source_ts_ms, recv_ts_ms, None, "missing_snapshot_timestamp", (
-            "oracle_freshness_* is a snapshot timing proxy; source_ts_ms and recv_ts_ms "
-            "are both required."
+        return (
+            source_ts_ms,
+            recv_ts_ms,
+            None,
+            "missing_snapshot_timestamp",
+            (
+                "oracle_freshness_* is a snapshot timing proxy; source_ts_ms and recv_ts_ms "
+                "are both required."
+            ),
         )
     lag_ms = recv_ts_ms - source_ts_ms
     if lag_ms < 0:
-        return source_ts_ms, recv_ts_ms, None, "invalid_clock_order", (
-            "source_ts_ms is later than recv_ts_ms; do not treat this as oracle freshness."
+        return (
+            source_ts_ms,
+            recv_ts_ms,
+            None,
+            "invalid_clock_order",
+            ("source_ts_ms is later than recv_ts_ms; do not treat this as oracle freshness."),
         )
-    return source_ts_ms, recv_ts_ms, lag_ms, "observed_snapshot_lag", (
-        "This is not oracle_ts_ms. It measures raw snapshot receive lag for rows with "
-        "oracle_price."
+    return (
+        source_ts_ms,
+        recv_ts_ms,
+        lag_ms,
+        "observed_snapshot_lag",
+        (
+            "This is not oracle_ts_ms. It measures raw snapshot receive lag for rows with "
+            "oracle_price."
+        ),
     )
 
 

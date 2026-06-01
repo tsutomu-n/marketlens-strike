@@ -2,11 +2,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from jsonschema import validate
-from typer.testing import CliRunner
 
-from sis.cli import app
 from sis.storage.jsonl_store import read_json
 from sis.venues.trade_xyz.account_fee import collect_trade_xyz_account_fee_snapshot
+from support.cli import invoke_cli
+from support.cli import normalized_stdout
 
 TEST_USER_ADDRESS = "0x1111111111111111111111111111111111111111"
 
@@ -74,13 +74,9 @@ def test_collect_trade_xyz_account_fee_snapshot_rejects_invalid_address(tmp_path
 
 
 def test_collect_trade_xyz_account_fee_cli_help_includes_read_only_command() -> None:
-    result = CliRunner().invoke(
-        app,
-        ["collect-trade-xyz-account-fee", "--help"],
-        env={"COLUMNS": "120"},
-        terminal_width=120,
-    )
+    result = invoke_cli(["collect-trade-xyz-account-fee", "--help"])
+    stdout = normalized_stdout(result)
 
     assert result.exit_code == 0
-    assert "--user-address" in result.stdout
-    assert "Public Hyperliquid user address" in result.stdout
+    assert "--user-address" in stdout
+    assert "Public Hyperliquid user address" in stdout

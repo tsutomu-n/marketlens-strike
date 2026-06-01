@@ -1,5 +1,31 @@
 # Trade[XYZ] Backtest 実データ定義 2026-05-31
 
+更新注記: 2026-06-01_15:03 JST
+
+現在のstatus snapshotは次を正とする。
+
+```text
+data/ops/trade_xyz_collection_status.json generated_at:
+  2026-06-01T06:03:43.402583+00:00
+
+readiness:
+  NOT_READY
+
+failing_requirements:
+  quote_coverage
+  real_market_reference
+
+known_gap_requirements:
+  oracle_timestamp_provenance
+
+account_specific_fee:
+  pass
+```
+
+この文書は必要データの定義書であり、最新statusの詳細は
+`docs/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md` と
+`docs/TRADE_XYZ_REAL_DATA_COLLECTION_STATUS_APPENDIX_2026-06-01.md` を優先する。
+
 ## 結論
 
 Trade[XYZ]バックテストを円滑に行うために集めるべき実データは、理想的な「全部入り市場データ」ではなく、現コードの `run_backtest()` が誤読せず処理できる実務データである。

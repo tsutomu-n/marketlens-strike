@@ -9,92 +9,95 @@ from sis.cli import app
 from sis.ops.manifest_chain import latest_operation_manifest
 from sis.storage.jsonl_store import read_json
 from sis.storage.jsonl_store import read_jsonl
+from support.cli import invoke_cli
+from support.cli import normalized_stdout
 
 
 runner = CliRunner()
 
 
 def test_help_smoke() -> None:
-    result = runner.invoke(app, ["--help"], env={"COLUMNS": "160"}, terminal_width=160)
+    result = invoke_cli(["--help"])
+    stdout = normalized_stdout(result)
     assert result.exit_code == 0
-    assert "probe" in result.stdout
-    assert "collect-trade-xyz-quotes" in result.stdout
-    assert "build-trade-xyz-quote-coverage" in result.stdout
-    assert "build-trade-xyz-reference-data" in result.stdout
-    assert "collect-trade-xyz-real-market-reference" in result.stdout
-    assert "collect-trade-xyz-signal-candles" in result.stdout
-    assert "collect-trade-xyz-account-fee" in result.stdout
-    assert "build-trade-xyz-session-state" in result.stdout
-    assert "collect-trade-xyz-funding-history" in result.stdout
-    assert "build-trade-xyz-funding-events-from-history" in result.stdout
-    assert "build-trade-xyz-data-readiness" in result.stdout
-    assert "trade-xyz-collection-status" in result.stdout
-    assert "check-trade-xyz-historical-archive-preflight" in result.stdout
-    assert "build-trade-xyz-data-bundle" in result.stdout
-    assert "collect-trade-xyz-data-cycle" in result.stdout
-    assert "bot-preview" in result.stdout
-    assert "build-backtest" in result.stdout
-    assert "ingest-research-data" in result.stdout
-    assert "alpaca-smoke" in result.stdout
-    assert "build-feature-panel" in result.stdout
-    assert "build-signals" in result.stdout
-    assert "strategy-author-init" in result.stdout
-    assert "strategy-author-validate" in result.stdout
-    assert "strategy-author-explain" in result.stdout
-    assert "strategy-author-run" in result.stdout
-    assert "strategy-author-bundle-run" in result.stdout
-    assert "strategy-author-train-model" in result.stdout
-    assert "paper-step" in result.stdout
-    assert "estimate-order" in result.stdout
-    assert "balance-status" in result.stdout
-    assert "fill-status" in result.stdout
-    assert "execution-snapshot" in result.stdout
-    assert "execution-read-only-surfaces" in result.stdout
-    assert "execution-gap-history" in result.stdout
-    assert "execution-state-comparison-history" in result.stdout
-    assert "execution-snapshot-drift-history" in result.stdout
-    assert "execution-drift-overview" in result.stdout
-    assert "order-status" in result.stdout
-    assert "cancel-order" in result.stdout
-    assert "close-position" in result.stdout
-    assert "reconcile-positions" in result.stdout
-    assert "healthcheck" in result.stdout
-    assert "kill-switch" in result.stdout
-    assert "schedule-run" in result.stdout
-    assert "render-alert" in result.stdout
-    assert "notification-outbox" in result.stdout
-    assert "weekly-review" in result.stdout
-    assert "daemon-manifest" in result.stdout
-    assert "daemon-dry-run" in result.stdout
-    assert "daemon-run" in result.stdout
-    assert "export-state" in result.stdout
-    assert "restore-state" in result.stdout
-    assert "lifecycle-report" in result.stdout
-    assert "monitoring-status" in result.stdout
-    assert "comparison-report" in result.stdout
-    assert "ops-review" in result.stdout
-    assert "operations-dashboard" in result.stdout
-    assert "paper-operations-runbook" in result.stdout
-    assert "remediation-planner" in result.stdout
-    assert "remediation-execution-plan" in result.stdout
-    assert "remediation-session" in result.stdout
-    assert "remediation-session-checkpoint" in result.stdout
-    assert "remediation-scoreboard" in result.stdout
-    assert "remediation-evaluator" in result.stdout
-    assert "remediation-evidence" in result.stdout
-    assert "remediation-command-results" in result.stdout
-    assert "remediation-evidence-ingest" in result.stdout
-    assert "paper-cycle-history" in result.stdout
-    assert "operations-bundle" in result.stdout
-    assert "operations-timeline" in result.stdout
-    assert "operations-audit-pack" in result.stdout
-    assert "audit-timeline" in result.stdout
-    assert "audit-dashboard" in result.stdout
-    assert "audit-bundle" in result.stdout
-    assert "audit-bundle-history" in result.stdout
-    assert "phase-gate-review" in result.stdout
-    assert "paper-operations-cycle" in result.stdout
-    assert "refresh-operations-artifacts" in result.stdout
+    assert "probe" in stdout
+    assert "collect-trade-xyz-quotes" in stdout
+    assert "build-trade-xyz-quote-coverage" in stdout
+    assert "build-trade-xyz-reference-data" in stdout
+    assert "collect-trade-xyz-real-market-reference" in stdout
+    assert "collect-trade-xyz-signal-candles" in stdout
+    assert "collect-trade-xyz-account-fee" in stdout
+    assert "build-trade-xyz-session-state" in stdout
+    assert "collect-trade-xyz-funding-history" in stdout
+    assert "build-trade-xyz-funding-events-from-history" in stdout
+    assert "build-trade-xyz-data-readiness" in stdout
+    assert "trade-xyz-collection-status" in stdout
+    assert "check-trade-xyz-historical-archive-preflight" in stdout
+    assert "build-trade-xyz-data-bundle" in stdout
+    assert "collect-trade-xyz-data-cycle" in stdout
+    assert "bot-preview" in stdout
+    assert "build-backtest" in stdout
+    assert "ingest-research-data" in stdout
+    assert "alpaca-smoke" in stdout
+    assert "build-feature-panel" in stdout
+    assert "build-signals" in stdout
+    assert "strategy-author-init" in stdout
+    assert "strategy-author-validate" in stdout
+    assert "strategy-author-explain" in stdout
+    assert "strategy-author-run" in stdout
+    assert "strategy-author-bundle-run" in stdout
+    assert "strategy-author-train-model" in stdout
+    assert "paper-step" in stdout
+    assert "estimate-order" in stdout
+    assert "balance-status" in stdout
+    assert "fill-status" in stdout
+    assert "execution-snapshot" in stdout
+    assert "execution-read-only-surfaces" in stdout
+    assert "execution-gap-history" in stdout
+    assert "execution-state-comparison-history" in stdout
+    assert "execution-snapshot-drift-history" in stdout
+    assert "execution-drift-overview" in stdout
+    assert "order-status" in stdout
+    assert "cancel-order" in stdout
+    assert "close-position" in stdout
+    assert "reconcile-positions" in stdout
+    assert "healthcheck" in stdout
+    assert "kill-switch" in stdout
+    assert "schedule-run" in stdout
+    assert "render-alert" in stdout
+    assert "notification-outbox" in stdout
+    assert "weekly-review" in stdout
+    assert "daemon-manifest" in stdout
+    assert "daemon-dry-run" in stdout
+    assert "daemon-run" in stdout
+    assert "export-state" in stdout
+    assert "restore-state" in stdout
+    assert "lifecycle-report" in stdout
+    assert "monitoring-status" in stdout
+    assert "comparison-report" in stdout
+    assert "ops-review" in stdout
+    assert "operations-dashboard" in stdout
+    assert "paper-operations-runbook" in stdout
+    assert "remediation-planner" in stdout
+    assert "remediation-execution-plan" in stdout
+    assert "remediation-session" in stdout
+    assert "remediation-session-checkpoint" in stdout
+    assert "remediation-scoreboard" in stdout
+    assert "remediation-evaluator" in stdout
+    assert "remediation-evidence" in stdout
+    assert "remediation-command-results" in stdout
+    assert "remediation-evidence-ingest" in stdout
+    assert "paper-cycle-history" in stdout
+    assert "operations-bundle" in stdout
+    assert "operations-timeline" in stdout
+    assert "operations-audit-pack" in stdout
+    assert "audit-timeline" in stdout
+    assert "audit-dashboard" in stdout
+    assert "audit-bundle" in stdout
+    assert "audit-bundle-history" in stdout
+    assert "phase-gate-review" in stdout
+    assert "paper-operations-cycle" in stdout
+    assert "refresh-operations-artifacts" in stdout
 
 
 def test_check_timeframe_cli_blocks_scalping() -> None:

@@ -1210,8 +1210,7 @@ def register_quote_commands(
         typer.echo(f"oracle_timestamp_provenance_status={oracle_details.get('status')}")
         typer.echo(f"oracle_ts_missing_rate={oracle_details.get('oracle_ts_missing_rate')}")
         typer.echo(
-            "oracle_freshness_proxy_observed_rate="
-            f"{oracle_freshness_proxy.get('observed_rate')}"
+            f"oracle_freshness_proxy_observed_rate={oracle_freshness_proxy.get('observed_rate')}"
         )
         typer.echo(f"signal_candles_status={signal_details.get('status')}")
         typer.echo(
