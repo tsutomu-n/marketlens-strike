@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from collections.abc import Sequence
 
 import click
@@ -18,11 +19,12 @@ CLI_TEST_ENV = {
 }
 
 
-def invoke_cli(args: Sequence[str]) -> Result:
+def invoke_cli(args: Sequence[str], env: Mapping[str, str] | None = None) -> Result:
+    merged_env = CLI_TEST_ENV | dict(env or {})
     return CliRunner().invoke(
         app,
         list(args),
-        env=CLI_TEST_ENV,
+        env=merged_env,
         terminal_width=120,
         color=False,
     )
