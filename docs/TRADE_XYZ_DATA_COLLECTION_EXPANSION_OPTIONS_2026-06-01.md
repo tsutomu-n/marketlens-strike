@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_17:24 JST
-更新日: 2026-06-01_17:36 JST
+更新日: 2026-06-01_17:57 JST
 -->
 
 # Trade[XYZ] データ収集範囲を広げる選択肢
@@ -12,6 +12,14 @@ Trade[XYZ]向けデータ収集の選択肢を整理する。
 
 この文書は、理想的なデータ基盤のナラティブではなく、現行コードに接続できる順番を決めるための実務メモである。
 実装判断では、常に `src/`、`tests/`、`schemas/`、`configs/`、CLI helpを正本にする。
+
+実装計画としては、次を優先する。
+
+```text
+plan/TRADE_XYZ_DATA_COLLECTION_EXPANSION_IMPLEMENTATION_PLAN_2026-06-01.md
+```
+
+この文書は選択肢の整理であり、実装時の対象ファイル・schema・tests・完了条件は上記planを正とする。
 
 ## 現在の基本方針
 
@@ -98,6 +106,17 @@ manifests/ws_gap_manifest.json
 Repoに入れるなら、まずは public CLI ではなく、内部module + focused tests から始める。
 既存 `collect-trade-xyz-quotes` のraw quote形式と互換にするか、WS専用raw形式を別にするかは、最初の設計判断になる。
 安全側では、WS専用rawを別保存し、normalized変換時に既存quote schemaへ寄せる。
+
+追加調査後の実装判断:
+
+```text
+1. WS専用rawは data/raw/ws/trade_xyz/ に分離する
+2. subscriptionResponse / pong / error summary は control message として分離する
+3. recv_ts_ms はcollector受信時刻であり、source_ts_msやoracle_ts_msの代替にしない
+4. source_ts_ms は公式payload内に time / t / T 等が存在する場合だけ入れる
+5. activeAssetCtxのctxにsource timestampが無い場合は、known gapとして扱う
+6. WebSocket URL / subscription / heartbeat設定は config または CLI から解決し、コード固定しない
+```
 
 完了条件:
 
