@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-05-31_21:08 JST
-更新日: 2026-06-01_17:15 JST
+更新日: 2026-06-01_20:01 JST
 -->
 
 # Trade[XYZ] Backtest 実データ定義 2026-05-31
 
-更新注記: 2026-06-01_17:15 JST
+更新注記: 2026-06-01_20:01 JST
 
 現在のstatus snapshotは次を正とする。
 
@@ -314,6 +314,179 @@ taker_fee_bps / maker_fee_bps がnull:
 ```
 
 ## 集めるべき正本データ
+
+## 0. 公式WebSocket raw captureの現行契約
+
+2026-06-01_20:01 JST 時点では、公式WebSocket rawは保存・品質確認・REST parity確認の対象であり、まだ `run_backtest()` の直接入力ではない。
+
+保存先:
+
+```text
+data/raw/ws/trade_xyz/
+.tmp/trade_xyz_ws_smoke_*/
+```
+
+既存REST quote rawとは混ぜない。
+
+```text
+REST quote raw:
+  data/raw/quotes/trade_xyz/
+
+WS raw:
+  data/raw/ws/trade_xyz/
+```
+
+共通raw row field:
+
+```text
+schema_version
+source
+source_tier
+dex
+ws_url
+channel
+message_kind
+subscription
+subscription_hash
+connection_id
+sequence
+recv_ts_ms
+recv_monotonic_ns
+source_ts_ms
+source_ts_field
+canonical_symbol
+venue_symbol
+coin
+payload_sha256
+payload
+```
+
+`source_ts_ms` はpayloadに明示時刻がある場合だけ入る。
+`recv_ts_ms` はcollector受信時刻であり、source timestampやoracle timestampではない。
+
+### bbo payload
+
+現時点で確認した主なfield:
+
+```text
+payload.channel:
+  bbo
+
+payload.data:
+  coin
+  time
+  bidPx
+  askPx
+```
+
+用途:
+
+```text
+signal candidate:
+  mid / spread / quote freshness の候補
+
+fill snapshot candidate:
+  best_bid / best_ask 相当の候補
+```
+
+禁止:
+
+```text
+bidPx / askPx をbar全体に先読みで広げない。
+recv_ts_msをbar event timeの正本にしない。
+```
+
+### trades payload
+
+現時点で確認した主なfield:
+
+```text
+payload.channel:
+  trades
+
+payload.data[]:
+  coin
+  side
+  px
+  sz
+  time
+  hash
+  tid
+  users
+```
+
+`payload.data` はlistである。list内の `coin` が単一の場合だけ、WS raw rowの `canonical_symbol` / path partition に反映する。
+複数coinが混在するpayloadは単一symbol rowとして扱わない。
+
+用途:
+
+```text
+trade tape:
+  約定観測、last trade確認、出来高・方向の補助
+
+signal candidate:
+  将来のtrade-derived feature候補
+```
+
+禁止:
+
+```text
+tradesだけでquote coverageが埋まったと扱わない。
+trade timeをoracle timestampとして使わない。
+trade tapeをfill snapshotのbest bid / ask代替にしない。
+```
+
+### activeAssetCtx payload
+
+現時点で確認した主なfield:
+
+```text
+payload.channel:
+  activeAssetCtx
+
+payload.data:
+  coin
+  ctx
+
+payload.data.ctx:
+  markPx
+  oraclePx
+  midPx
+  funding
+  openInterest
+  impactPxs
+```
+
+用途:
+
+```text
+signal candidate:
+  markPx / oraclePx / midPx / funding / openInterest
+
+state candidate:
+  impactPxs / funding / openInterest
+```
+
+禁止:
+
+```text
+activeAssetCtxの同一再送を単独でquality warn/failにしない。
+activeAssetCtxにoracle timestamp fieldが無い場合、recv_ts_msやsource_ts_msをoracle_ts_msに代入しない。
+```
+
+### backtest入力へ昇格する前の条件
+
+WS rawを正規化候補へ昇格する前に、次を満たす必要がある。
+
+```text
+1. 3symbol 60分 capture が pass
+2. 11symbol 60分 capture が pass、またはfail理由がmanifestで説明できる
+3. 3symbol 24時間観測で日付partition、reconnect、gap、保存量を説明できる
+4. bbo / trades / activeAssetCtx のfield inventoryがcurrent recordに残っている
+5. signal fields と fill snapshot fields の分離方針が維持されている
+6. source_ts_msが無いpayloadをevent timeの正本にしない
+7. external referenceをTrade[XYZ]価格穴埋めに使わない
+```
 
 ## 1. Quote Snapshots
 

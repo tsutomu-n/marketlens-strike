@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-01_18:18 JST
+更新日: 2026-06-01_20:54 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-01_18:18 JST
+更新日: 2026-06-01_20:54 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
 
@@ -44,6 +44,270 @@ WS raw:
 ルール:
   WS raw と既存 raw quotes を混ぜない
   recv_ts_ms を source/oracle timestampとして使わない
+```
+
+## 0.1 WS smoke後の追加実装と実測（2026-06-01_19:51 JST）
+
+`plan/TRADE_XYZ_AFTER_WS_SMOKE_DATA_READY_PLAN_2026-06-01.md` の T1 から T4 まで進めた。
+
+実装済み:
+
+```text
+application-level heartbeat:
+  timeout時に WebSocket protocol ping ではなく { "method": "ping" } を送る
+  heartbeat_sent_count は送信した application ping 数
+  pong_count は受信した { "channel": "pong" } row 数
+
+deadline stop:
+  source側にも stop_time_monotonic を渡し、期限後に追加ping待ちで残らないようにした
+
+trades list payload symbol resolution:
+  trades.data[] の coin が単一なら canonical_symbol / coin / path partition に反映する
+  mixed coin payload は単一symbolとして扱わない
+```
+
+近接テスト:
+
+```bash
+uv run pytest -q tests/test_trade_xyz_ws_recorder.py tests/test_trade_xyz_ws_envelope.py tests/test_trade_xyz_ws_quality.py
+uv run ruff check src/sis/venues/trade_xyz/ws_recorder.py src/sis/venues/trade_xyz/ws_envelope.py tests/test_trade_xyz_ws_recorder.py tests/test_trade_xyz_ws_envelope.py
+uv run ruff format --check src/sis/venues/trade_xyz/ws_recorder.py src/sis/venues/trade_xyz/ws_envelope.py tests/test_trade_xyz_ws_recorder.py tests/test_trade_xyz_ws_envelope.py
+```
+
+確認済み:
+
+```text
+pytest:
+  14 passed
+
+ruff check:
+  pass
+
+ruff format --check:
+  pass
+```
+
+heartbeat 実測:
+
+```text
+output:
+  .tmp/trade_xyz_ws_deadline_probe_20260601_1945/
+
+symbols:
+  EWJ
+
+subscriptions:
+  trades
+
+duration:
+  1 minute
+
+capture:
+  row_count: 13
+  reconnect_count: 0
+  error_count: 0
+  heartbeat_sent_count: 11
+  pong_count: 11
+  subscription_response_count: 1
+
+quality:
+  status: pass
+  row_count: 13
+  pong_count: 11
+  gap_count: 0
+  malformed_payload_count: 0
+  unknown_symbol_count: 0
+```
+
+3symbol 1分 smoke:
+
+```text
+output:
+  .tmp/trade_xyz_ws_smoke_multi_symbol_20260601_1920/
+
+symbols:
+  SP500
+  XYZ100
+  NVDA
+
+subscriptions:
+  bbo
+  trades
+  activeAssetCtx
+
+capture:
+  row_count: 807
+  reconnect_count: 0
+  error_count: 0
+  subscription_response_count: 9
+
+quality:
+  status: pass
+  row_count: 807
+  gap_count: 0
+  source_ts_gap_count: 0
+  malformed_payload_count: 0
+  unknown_symbol_count: 0
+  duplicate_payload_count: 39
+
+REST parity:
+  status: pass
+  request_error_count: 0
+  missing_ws_symbols: []
+  missing_rest_symbols: []
+  mismatched_symbols: []
+  known_gap_count: 0
+
+disk usage:
+  836K
+```
+
+3symbol 15分 smoke:
+
+```text
+output:
+  .tmp/trade_xyz_ws_smoke_15m_20260601_1950/
+
+symbols:
+  SP500
+  XYZ100
+  NVDA
+
+subscriptions:
+  bbo
+  trades
+  activeAssetCtx
+
+capture:
+  row_count: 10408
+  bytes_written: 9812449
+  connection_count: 1
+  reconnect_count: 0
+  error_count: 0
+  heartbeat_sent_count: 0
+  pong_count: 0
+  subscription_response_count: 9
+
+quality:
+  status: pass
+  row_count: 10408
+  gap_count: 0
+  source_ts_gap_count: 0
+  malformed_payload_count: 0
+  unknown_symbol_count: 0
+  bbo_bid_ask_inversion_count: 0
+  duplicate_payload_count: 837
+
+REST parity:
+  status: pass
+  request_error_count: 0
+  missing_ws_symbols: []
+  missing_rest_symbols: []
+  mismatched_symbols: []
+  known_gap_count: 0
+
+disk usage:
+  9.5M
+```
+
+3symbol 60分 smoke:
+
+```text
+output:
+  .tmp/trade_xyz_ws_smoke_60m_20260601_2015/
+
+symbols:
+  SP500
+  XYZ100
+  NVDA
+
+subscriptions:
+  bbo
+  trades
+  activeAssetCtx
+
+capture:
+  row_count: 47254
+  bytes_written: 44412326
+  connection_count: 1
+  reconnect_count: 0
+  error_count: 0
+  heartbeat_sent_count: 0
+  pong_count: 0
+  subscription_response_count: 9
+
+quality:
+  status: pass
+  row_count: 47254
+  gap_count: 0
+  source_ts_gap_count: 0
+  malformed_payload_count: 0
+  unknown_symbol_count: 0
+  bbo_bid_ask_inversion_count: 0
+  duplicate_payload_count: 3043
+  subscription_counts:
+    __control__: 9
+    activeAssetCtx: 10524
+    bbo: 32978
+    trades: 3743
+  symbol_counts:
+    NVDA: 14194
+    SP500: 12354
+    XYZ100: 20697
+
+REST parity:
+  status: pass
+  request_error_count: 0
+  missing_ws_symbols: []
+  missing_rest_symbols: []
+  mismatched_symbols: []
+  known_gap_count: 0
+
+disk usage:
+  43M
+```
+
+追加docs:
+
+```text
+runbook:
+  docs/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md
+
+WS raw field inventory:
+  docs/集めるべき実データ0531-2108/README.md
+```
+
+途中で見つかった問題と対処:
+
+```text
+1. 初回の3symbol 1分 smokeでは trades.data[] が list のため symbol=__all__ になり、unknown_symbol_count=50 になった。
+   対処: list内の coin が単一なら symbol 解決に使うよう修正した。
+
+2. 初回の15分 smokeでは期限後の無通信で process が残った。
+   対処: source側で deadline を見て、期限後は追加ping待ちに入らず終了するよう修正した。
+```
+
+まだ完了していないこと:
+
+```text
+3symbol 60分 smoke:
+  完了。2026-06-01_20:54 JST 時点でpass。
+
+11symbol 60分 smoke:
+  未実行
+
+24時間 read-only 観測:
+  未実行
+
+Current Real Data Contract更新:
+  一部完了。WS raw field inventoryとbacktest入力昇格前条件は追記済み。
+  backtest ingestion planへの正式引き継ぎは未完了。
+
+runbook作成:
+  完了。docs/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md を追加済み。
+
+data-ready判定:
+  未完了。まだ backtest_data_ready と呼んではいけない。
 ```
 
 ## 1. 目的

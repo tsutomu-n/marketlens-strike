@@ -61,12 +61,26 @@ def _subscription_request(target: WsSubscriptionTarget) -> dict[str, Any]:
     return {"method": "subscribe", "subscription": subscription}
 
 
+def _payload_coin(payload: dict[str, Any]) -> str | None:
+    data = payload.get("data")
+    if isinstance(data, dict) and isinstance(data.get("coin"), str):
+        return str(data["coin"])
+    if isinstance(data, list) and data:
+        coins = {
+            item.get("coin")
+            for item in data
+            if isinstance(item, dict) and isinstance(item.get("coin"), str)
+        }
+        if len(coins) == 1:
+            return str(next(iter(coins)))
+    return None
+
+
 def _target_for_payload(
     payload: dict[str, Any], targets: list[WsSubscriptionTarget]
 ) -> WsSubscriptionTarget | None:
     channel = payload.get("channel")
-    data = payload.get("data")
-    payload_coin = data.get("coin") if isinstance(data, dict) else None
+    payload_coin = _payload_coin(payload)
     if isinstance(channel, str) and isinstance(payload_coin, str):
         for target in targets:
             if target.subscription == channel and target.coin == payload_coin:
@@ -83,6 +97,8 @@ async def _default_message_source_factory(
     ws_url: str,
     targets: list[WsSubscriptionTarget],
     heartbeat_seconds: int,
+    heartbeat_sent_callback: Callable[[], None] | None = None,
+    stop_time_monotonic: float | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     import websockets
 
@@ -90,11 +106,16 @@ async def _default_message_source_factory(
         for target in targets:
             await conn.send(json.dumps(_subscription_request(target), separators=(",", ":")))
         while True:
+            if stop_time_monotonic is not None and time.monotonic() >= stop_time_monotonic:
+                return
             try:
                 raw = await asyncio.wait_for(conn.recv(), timeout=float(heartbeat_seconds))
             except asyncio.TimeoutError:
-                await conn.ping()
-                yield {"channel": "pong", "data": {"clientHeartbeat": True}}
+                if stop_time_monotonic is not None and time.monotonic() >= stop_time_monotonic:
+                    return
+                await conn.send(json.dumps({"method": "ping"}, separators=(",", ":")))
+                if heartbeat_sent_callback is not None:
+                    heartbeat_sent_callback()
                 continue
             parsed = json.loads(raw)
             if isinstance(parsed, dict):
@@ -157,6 +178,11 @@ async def capture_trade_xyz_ws(
 
     delay = config.reconnect_initial_delay_seconds
     connection_index = 0
+
+    def record_heartbeat_sent() -> None:
+        nonlocal heartbeat_sent_count
+        heartbeat_sent_count += 1
+
     while time.monotonic() < deadline:
         connection_index += 1
         connection_id = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ") + f"-{connection_index:04d}"
@@ -167,6 +193,8 @@ async def capture_trade_xyz_ws(
                 ws_url=config.ws_url,
                 targets=targets,
                 heartbeat_seconds=config.heartbeat_seconds,
+                heartbeat_sent_callback=record_heartbeat_sent,
+                stop_time_monotonic=deadline,
             ):
                 now_mono = time.monotonic()
                 if now_mono >= deadline:
@@ -219,8 +247,6 @@ async def capture_trade_xyz_ws(
                 raw_paths.add(str(path))
                 row_count += 1
                 bytes_written += len(json.dumps(row, ensure_ascii=False, default=str)) + 1
-                if row["message_kind"] == "heartbeat":
-                    heartbeat_sent_count += 1
         except Exception as exc:  # pragma: no cover - exercised via tests with fake source
             reconnect_count += 1
             error_count += 1

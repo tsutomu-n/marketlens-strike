@@ -13,6 +13,17 @@ def stable_sha256(payload: Any) -> str:
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _single_list_field_value(data: Any, key: str) -> Any | None:
+    if not isinstance(data, list) or not data:
+        return None
+    values = {
+        item.get(key) for item in data if isinstance(item, dict) and item.get(key) is not None
+    }
+    if len(values) == 1:
+        return next(iter(values))
+    return None
+
+
 def resolve_source_timestamp(payload: dict[str, Any]) -> tuple[int | None, str | None]:
     candidates = ("time", "t", "T")
     data = payload.get("data")
@@ -21,6 +32,11 @@ def resolve_source_timestamp(payload: dict[str, Any]) -> tuple[int | None, str |
             value = data.get(key)
             if isinstance(value, int):
                 return value, key
+    if isinstance(data, list):
+        for key in candidates:
+            value = _single_list_field_value(data, key)
+            if isinstance(value, int):
+                return value, f"data[].{key}"
     for key in candidates:
         value = payload.get(key)
         if isinstance(value, int):
@@ -60,6 +76,13 @@ def resolve_symbol_fields(
             venue_symbol = coin
         if canonical_symbol is None and isinstance(data.get("coin"), str):
             canonical_symbol = str(data["coin"]).removeprefix("xyz:").upper()
+    elif isinstance(data, list):
+        data_coin = _single_list_field_value(data, "coin")
+        if coin is None and isinstance(data_coin, str):
+            coin = data_coin
+            venue_symbol = coin
+        if canonical_symbol is None and isinstance(data_coin, str):
+            canonical_symbol = data_coin.removeprefix("xyz:").upper()
     if canonical_symbol is None and coin is not None:
         canonical_symbol = coin.removeprefix("xyz:").upper()
     return canonical_symbol, venue_symbol, coin

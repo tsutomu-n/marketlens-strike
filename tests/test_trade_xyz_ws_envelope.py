@@ -58,3 +58,34 @@ def test_build_ws_raw_row_without_source_ts_does_not_fill_from_recv_ts() -> None
     )
     assert "source_ts_ms" not in row
     assert row["recv_ts_ms"] == 1700000010000
+
+
+def test_build_ws_raw_row_resolves_trades_list_symbol_and_source_time() -> None:
+    payload = {
+        "channel": "trades",
+        "data": [
+            {
+                "coin": "xyz:NVDA",
+                "side": "B",
+                "px": "215.29",
+                "sz": "6.193",
+                "time": 1700000000123,
+            }
+        ],
+    }
+    row = build_ws_raw_row(
+        ws_url="wss://api.hyperliquid.xyz/ws",
+        dex="xyz",
+        subscription="trades",
+        requested_symbol="NVDA",
+        requested_coin="xyz:NVDA",
+        connection_id="conn-1",
+        sequence=3,
+        recv_ts_ms=1700000010000,
+        recv_monotonic_ns=789,
+        payload=payload,
+    )
+    assert row["source_ts_ms"] == 1700000000123
+    assert row["source_ts_field"] == "data[].time"
+    assert row["canonical_symbol"] == "NVDA"
+    assert row["coin"] == "xyz:NVDA"
