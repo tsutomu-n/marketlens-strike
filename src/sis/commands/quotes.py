@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 from pathlib import Path
+import subprocess
 import shlex
 from typing import Callable
 
@@ -200,8 +201,17 @@ def register_quote_commands(
             typer.echo(f"output_dir={effective_output_dir}")
             return
         manifest = run_trade_xyz_ws_capture(config=capture_config, targets=targets)
+        git_head = None
+        try:
+            git_head = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                text=True,
+            ).strip()
+        except Exception:
+            git_head = None
         manifest["command"] = "collect-trade-xyz-ws"
         manifest["registry_path"] = str(resolved_registry_path)
+        manifest["git_head"] = git_head
         write_json(
             settings.data_dir / "manifests/trade_xyz_ws_capture_manifest.json",
             manifest,

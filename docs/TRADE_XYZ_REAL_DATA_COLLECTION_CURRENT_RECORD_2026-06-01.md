@@ -1,8 +1,50 @@
+<!--
+作成日: 2026-06-01_15:03 JST
+更新日: 2026-06-01_18:18 JST
+-->
+
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-01_15:03 JST
+更新日: 2026-06-01_18:18 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
+
+## 0. 追加実装（2026-06-01_18:18 JST）
+
+Trade[XYZ] 実データhardening向けに、次を実装済み。
+
+```text
+WebSocket capture:
+  uv run sis collect-trade-xyz-ws
+
+WebSocket quality manifest:
+  uv run sis build-trade-xyz-ws-quality
+
+REST parity manifest:
+  uv run sis build-trade-xyz-rest-parity
+```
+
+生成されるmanifest:
+
+```text
+data/manifests/trade_xyz_ws_capture_manifest.json
+data/manifests/trade_xyz_ws_quality_manifest.json
+data/manifests/trade_xyz_rest_parity_manifest.json
+```
+
+保存境界:
+
+```text
+WS raw:
+  data/raw/ws/trade_xyz/
+
+既存raw quotes:
+  data/raw/quotes/trade_xyz/
+
+ルール:
+  WS raw と既存 raw quotes を混ぜない
+  recv_ts_ms を source/oracle timestampとして使わない
+```
 
 ## 1. 目的
 

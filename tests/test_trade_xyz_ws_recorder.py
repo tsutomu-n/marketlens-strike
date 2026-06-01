@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 
+from jsonschema import validate
 from sis.storage.jsonl_store import read_jsonl
 from sis.venues.trade_xyz.ws_recorder import run_trade_xyz_ws_capture
 from sis.venues.trade_xyz.ws_recorder import WsCaptureConfig
@@ -50,6 +52,10 @@ def test_run_trade_xyz_ws_capture_writes_rows(tmp_path: Path) -> None:
     assert any(row.get("message_kind") == "subscription_response" for row in rows)
     assert any(row.get("message_kind") == "heartbeat" for row in rows)
     assert any(row.get("message_kind") == "data" for row in rows)
+    schema = json.loads(
+        Path("schemas/trade_xyz_ws_capture_manifest.v1.schema.json").read_text(encoding="utf-8")
+    )
+    validate(instance=manifest, schema=schema)
 
 
 def test_run_trade_xyz_ws_capture_dry_run(tmp_path: Path) -> None:

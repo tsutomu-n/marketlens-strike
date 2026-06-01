@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_17:24 JST
-更新日: 2026-06-01_17:57 JST
+更新日: 2026-06-01_18:18 JST
 -->
 
 # Trade[XYZ] データ収集範囲を広げる選択肢
@@ -54,6 +54,9 @@ uv run sis build-trade-xyz-funding-events-from-history
 uv run sis build-trade-xyz-session-state
 uv run sis build-trade-xyz-data-readiness
 uv run sis trade-xyz-collection-status
+uv run sis collect-trade-xyz-ws
+uv run sis build-trade-xyz-ws-quality
+uv run sis build-trade-xyz-rest-parity
 ```
 
 `real_market_reference` は現在、次のfallback chainを持つ。
