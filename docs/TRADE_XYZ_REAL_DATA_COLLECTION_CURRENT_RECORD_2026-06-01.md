@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-01_20:54 JST
+更新日: 2026-06-01_22:57 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-01_20:54 JST
+更新日: 2026-06-01_22:57 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
 
@@ -267,14 +267,1192 @@ disk usage:
   43M
 ```
 
+11symbol 60分 smoke:
+
+```text
+output:
+  .tmp/trade_xyz_ws_smoke_11symbols_60m_20260601_2100/
+
+symbols:
+  SP500
+  XYZ100
+  NVDA
+  AAPL
+  MSFT
+  AMZN
+  GOOGL
+  META
+  TSLA
+  AMD
+  EWJ
+
+subscriptions:
+  bbo
+  trades
+  activeAssetCtx
+
+capture:
+  row_count: 118930
+  bytes_written: 111243093
+  connection_count: 1
+  reconnect_count: 0
+  error_count: 0
+  heartbeat_sent_count: 0
+  pong_count: 0
+  subscription_response_count: 33
+
+quality:
+  status: warn
+  row_count: 118930
+  gap_count: 1
+  max_gap_seconds: 62.655
+  source_ts_gap_count: 1
+  max_source_ts_gap_seconds: 62.456
+  malformed_payload_count: 0
+  unknown_symbol_count: 0
+  bbo_bid_ask_inversion_count: 0
+  duplicate_payload_count: 13174
+  trade_gap_count: 101
+  max_trade_gap_seconds: 658.029
+  trade_source_ts_gap_count: 100
+  max_trade_source_ts_gap_seconds: 657.098
+  subscription_counts:
+    __control__: 33
+    activeAssetCtx: 38478
+    bbo: 74742
+    trades: 5677
+  symbol_counts:
+    AAPL: 5501
+    AMD: 10622
+    AMZN: 6962
+    EWJ: 7573
+    GOOGL: 6737
+    META: 8278
+    MSFT: 14167
+    NVDA: 12533
+    SP500: 14101
+    TSLA: 10460
+    XYZ100: 21963
+
+REST parity:
+  status: pass
+  request_error_count: 0
+  missing_ws_symbols: []
+  missing_rest_symbols: []
+  mismatched_symbols: []
+  known_gap_count: 0
+
+disk usage:
+  107M
+```
+
+11symbol 60分 smokeの判定:
+
+```text
+capture:
+  pass
+
+REST parity:
+  pass
+
+quality:
+  warn
+
+warn理由:
+  bbo AAPL に 62.655秒の receive gap が1件あった。
+  source timestamp gapも同じ箇所で 62.456秒。
+
+trade_gap_count:
+  tradesは低流動により間隔が空くため、品質warn条件から分離し情報値として残す。
+  trade_gap_count=101 は trade tape sparsity として扱い、単独では欠損扱いしない。
+```
+
+3symbol 24時間 read-only 観測:
+
+```text
+status:
+  running
+
+started_at:
+  2026-06-01_22:04 JST
+
+pid:
+  846741
+
+command:
+  uv run sis collect-trade-xyz-ws --registry-path data/registry/trade_xyz_instrument_registry.json --symbols SP500,XYZ100,NVDA --subscriptions bbo,trades,activeAssetCtx --duration-minutes 1440 --output-dir data/raw/ws/trade_xyz --write-control-messages
+
+output:
+  data/raw/ws/trade_xyz/
+
+log:
+  .tmp/trade_xyz_ws_24h_logs/collect_3symbols_20260601_2205.log
+
+completion:
+  未完了。capture/quality/REST parity manifest は24時間run終了後に生成・確認する。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:10 JST
+
+process:
+  pid: 846741
+  elapsed: 00:06:08
+  status: running
+
+disk usage:
+  4.8M
+
+jsonl row counts:
+  total: 5302
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 366
+  activeAssetCtx/SP500: 366
+  activeAssetCtx/XYZ100: 366
+  bbo/NVDA: 999
+  bbo/SP500: 978
+  bbo/XYZ100: 1769
+  trades/NVDA: 188
+  trades/SP500: 133
+  trades/XYZ100: 128
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:12 JST
+
+process:
+  pid: 846741
+  elapsed: 00:08:21
+  status: running
+
+disk usage:
+  8.5M
+
+jsonl row counts:
+  total: 9151
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 491
+  activeAssetCtx/SP500: 491
+  activeAssetCtx/XYZ100: 491
+  bbo/NVDA: 1797
+  bbo/SP500: 1973
+  bbo/XYZ100: 2817
+  trades/NVDA: 292
+  trades/SP500: 364
+  trades/XYZ100: 426
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:14 JST
+
+process:
+  pid: 846741
+  elapsed: 00:10:23
+  status: running
+
+disk usage:
+  12M
+
+jsonl row counts:
+  total: 12598
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 605
+  activeAssetCtx/SP500: 605
+  activeAssetCtx/XYZ100: 605
+  bbo/NVDA: 2477
+  bbo/SP500: 2886
+  bbo/XYZ100: 3878
+  trades/NVDA: 343
+  trades/SP500: 571
+  trades/XYZ100: 619
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:15 JST
+
+process:
+  pid: 846741
+  elapsed: 00:11:19
+  status: running
+
+disk usage:
+  14M
+
+jsonl row counts:
+  total: 14176
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 659
+  activeAssetCtx/SP500: 659
+  activeAssetCtx/XYZ100: 659
+  bbo/NVDA: 2789
+  bbo/SP500: 3355
+  bbo/XYZ100: 4365
+  trades/NVDA: 368
+  trades/SP500: 629
+  trades/XYZ100: 684
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:17 JST
+
+process:
+  pid: 846741
+  elapsed: 00:12:54
+  status: running
+
+disk usage:
+  16M
+
+jsonl row counts:
+  total: 16725
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 751
+  activeAssetCtx/SP500: 751
+  activeAssetCtx/XYZ100: 751
+  bbo/NVDA: 3306
+  bbo/SP500: 4011
+  bbo/XYZ100: 5194
+  trades/NVDA: 423
+  trades/SP500: 725
+  trades/XYZ100: 804
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:19 JST
+
+process:
+  pid: 846741
+  elapsed: 00:15:02
+  status: running
+
+disk usage:
+  18M
+
+jsonl row counts:
+  total: 19439
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 875
+  activeAssetCtx/SP500: 875
+  activeAssetCtx/XYZ100: 875
+  bbo/NVDA: 3762
+  bbo/SP500: 4687
+  bbo/XYZ100: 6195
+  trades/NVDA: 465
+  trades/SP500: 818
+  trades/XYZ100: 878
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:20 JST
+
+process:
+  pid: 846741
+  elapsed: 00:16:15
+  status: running
+
+disk usage:
+  20M
+
+jsonl row counts:
+  total: 21360
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 946
+  activeAssetCtx/SP500: 946
+  activeAssetCtx/XYZ100: 946
+  bbo/NVDA: 4149
+  bbo/SP500: 5217
+  bbo/XYZ100: 6810
+  trades/NVDA: 521
+  trades/SP500: 882
+  trades/XYZ100: 934
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:21 JST
+
+process:
+  pid: 846741
+  elapsed: 00:17:24
+  status: running
+
+disk usage:
+  22M
+
+jsonl row counts:
+  total: 23229
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 1013
+  activeAssetCtx/SP500: 1013
+  activeAssetCtx/XYZ100: 1013
+  bbo/NVDA: 4504
+  bbo/SP500: 5738
+  bbo/XYZ100: 7414
+  trades/NVDA: 563
+  trades/SP500: 953
+  trades/XYZ100: 1009
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:23 JST
+
+process:
+  pid: 846741
+  elapsed: 00:18:59
+  status: running
+
+disk usage:
+  24M
+
+jsonl row counts:
+  total: 25761
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 1104
+  activeAssetCtx/SP500: 1104
+  activeAssetCtx/XYZ100: 1104
+  bbo/NVDA: 5012
+  bbo/SP500: 6425
+  bbo/XYZ100: 8253
+  trades/NVDA: 613
+  trades/SP500: 1027
+  trades/XYZ100: 1110
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:24 JST
+
+process:
+  pid: 846741
+  elapsed: 00:20:24
+  status: running
+
+disk usage:
+  26M
+
+jsonl row counts:
+  total: 28020
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 1187
+  activeAssetCtx/SP500: 1187
+  activeAssetCtx/XYZ100: 1187
+  bbo/NVDA: 5565
+  bbo/SP500: 6997
+  bbo/XYZ100: 8921
+  trades/NVDA: 679
+  trades/SP500: 1105
+  trades/XYZ100: 1183
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:28 JST
+
+process:
+  pid: 846741
+  elapsed: 00:23:55
+  status: running
+
+disk usage:
+  31M
+
+jsonl row counts:
+  total: 33407
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 1392
+  activeAssetCtx/SP500: 1392
+  activeAssetCtx/XYZ100: 1392
+  bbo/NVDA: 6722
+  bbo/SP500: 8215
+  bbo/XYZ100: 10668
+  trades/NVDA: 867
+  trades/SP500: 1359
+  trades/XYZ100: 1391
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:30 JST
+
+process:
+  pid: 846741
+  elapsed: 00:25:58
+  status: running
+
+disk usage:
+  34M
+
+jsonl row counts:
+  total: 36536
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 1510
+  activeAssetCtx/SP500: 1510
+  activeAssetCtx/XYZ100: 1510
+  bbo/NVDA: 7380
+  bbo/SP500: 8915
+  bbo/XYZ100: 11690
+  trades/NVDA: 996
+  trades/SP500: 1473
+  trades/XYZ100: 1543
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:32 JST
+
+process:
+  pid: 846741
+  elapsed: 00:28:04
+  status: running
+
+disk usage:
+  38M
+
+jsonl row counts:
+  total: 41031
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 1632
+  activeAssetCtx/SP500: 1632
+  activeAssetCtx/XYZ100: 1632
+  bbo/NVDA: 8519
+  bbo/SP500: 9950
+  bbo/XYZ100: 12779
+  trades/NVDA: 1372
+  trades/SP500: 1680
+  trades/XYZ100: 1826
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:34 JST
+
+process:
+  pid: 846741
+  elapsed: 00:29:48
+  status: running
+
+disk usage:
+  42M
+
+jsonl row counts:
+  total: 44522
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 1733
+  activeAssetCtx/SP500: 1733
+  activeAssetCtx/XYZ100: 1733
+  bbo/NVDA: 9418
+  bbo/SP500: 10752
+  bbo/XYZ100: 13711
+  trades/NVDA: 1613
+  trades/SP500: 1803
+  trades/XYZ100: 2017
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:36 JST
+
+process:
+  pid: 846741
+  elapsed: 00:32:17
+  status: running
+
+disk usage:
+  46M
+
+jsonl row counts:
+  total: 49553
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 1877
+  activeAssetCtx/SP500: 1877
+  activeAssetCtx/XYZ100: 1877
+  bbo/NVDA: 10799
+  bbo/SP500: 11895
+  bbo/XYZ100: 15060
+  trades/NVDA: 1929
+  trades/SP500: 1972
+  trades/XYZ100: 2258
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:38 JST
+
+process:
+  pid: 846741
+  elapsed: 00:34:02
+  status: running
+
+disk usage:
+  49M
+
+jsonl row counts:
+  total: 52950
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 1980
+  activeAssetCtx/SP500: 1980
+  activeAssetCtx/XYZ100: 1980
+  bbo/NVDA: 11735
+  bbo/SP500: 12640
+  bbo/XYZ100: 16029
+  trades/NVDA: 2118
+  trades/SP500: 2074
+  trades/XYZ100: 2405
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:40 JST
+
+process:
+  pid: 846741
+  elapsed: 00:35:42
+  status: running
+
+disk usage:
+  52M
+
+jsonl row counts:
+  total: 56039
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2076
+  activeAssetCtx/SP500: 2076
+  activeAssetCtx/XYZ100: 2076
+  bbo/NVDA: 12620
+  bbo/SP500: 13267
+  bbo/XYZ100: 16956
+  trades/NVDA: 2292
+  trades/SP500: 2154
+  trades/XYZ100: 2513
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:41 JST
+
+process:
+  pid: 846741
+  elapsed: 00:37:36
+  status: running
+
+disk usage:
+  56M
+
+jsonl row counts:
+  total: 59660
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2186
+  activeAssetCtx/SP500: 2186
+  activeAssetCtx/XYZ100: 2186
+  bbo/NVDA: 13632
+  bbo/SP500: 14047
+  bbo/XYZ100: 17984
+  trades/NVDA: 2473
+  trades/SP500: 2266
+  trades/XYZ100: 2691
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:43 JST
+
+process:
+  pid: 846741
+  elapsed: 00:39:23
+  status: running
+
+disk usage:
+  58M
+
+jsonl row counts:
+  total: 62737
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2289
+  activeAssetCtx/SP500: 2289
+  activeAssetCtx/XYZ100: 2289
+  bbo/NVDA: 14526
+  bbo/SP500: 14678
+  bbo/XYZ100: 18901
+  trades/NVDA: 2574
+  trades/SP500: 2360
+  trades/XYZ100: 2822
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:46 JST
+
+process:
+  pid: 846741
+  elapsed: 00:42:35
+  status: running
+
+disk usage:
+  64M
+
+jsonl row counts:
+  total: 68637
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2476
+  activeAssetCtx/SP500: 2476
+  activeAssetCtx/XYZ100: 2476
+  bbo/NVDA: 16261
+  bbo/SP500: 15951
+  bbo/XYZ100: 20693
+  trades/NVDA: 2774
+  trades/SP500: 2489
+  trades/XYZ100: 3032
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:48 JST
+
+process:
+  pid: 846741
+  elapsed: 00:44:11
+  status: running
+
+disk usage:
+  66M
+
+jsonl row counts:
+  total: 71417
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2568
+  activeAssetCtx/SP500: 2568
+  activeAssetCtx/XYZ100: 2568
+  bbo/NVDA: 17105
+  bbo/SP500: 16531
+  bbo/XYZ100: 21490
+  trades/NVDA: 2853
+  trades/SP500: 2578
+  trades/XYZ100: 3147
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:49 JST
+
+process:
+  pid: 846741
+  elapsed: 00:45:12
+  status: running
+
+disk usage:
+  68M
+
+jsonl row counts:
+  total: 73256
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2628
+  activeAssetCtx/SP500: 2628
+  activeAssetCtx/XYZ100: 2628
+  bbo/NVDA: 17596
+  bbo/SP500: 16932
+  bbo/XYZ100: 22057
+  trades/NVDA: 2928
+  trades/SP500: 2623
+  trades/XYZ100: 3227
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:50 JST
+
+process:
+  pid: 846741
+  elapsed: 00:46:04
+  status: running
+
+disk usage:
+  69M
+
+jsonl row counts:
+  total: 74706
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2678
+  activeAssetCtx/SP500: 2678
+  activeAssetCtx/XYZ100: 2678
+  bbo/NVDA: 17978
+  bbo/SP500: 17244
+  bbo/XYZ100: 22521
+  trades/NVDA: 2987
+  trades/SP500: 2651
+  trades/XYZ100: 3282
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:51 JST
+
+process:
+  pid: 846741
+  elapsed: 00:46:59
+  status: running
+
+disk usage:
+  71M
+
+jsonl row counts:
+  total: 76294
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2730
+  activeAssetCtx/SP500: 2730
+  activeAssetCtx/XYZ100: 2730
+  bbo/NVDA: 18421
+  bbo/SP500: 17583
+  bbo/XYZ100: 22980
+  trades/NVDA: 3066
+  trades/SP500: 2708
+  trades/XYZ100: 3337
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:52 JST
+
+process:
+  pid: 846741
+  elapsed: 00:47:54
+  status: running
+
+disk usage:
+  72M
+
+jsonl row counts:
+  total: 77934
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2784
+  activeAssetCtx/SP500: 2784
+  activeAssetCtx/XYZ100: 2784
+  bbo/NVDA: 18859
+  bbo/SP500: 17918
+  bbo/XYZ100: 23474
+  trades/NVDA: 3130
+  trades/SP500: 2778
+  trades/XYZ100: 3414
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:53 JST
+
+process:
+  pid: 846741
+  elapsed: 00:48:52
+  status: running
+
+disk usage:
+  74M
+
+jsonl row counts:
+  total: 79643
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2839
+  activeAssetCtx/SP500: 2839
+  activeAssetCtx/XYZ100: 2839
+  bbo/NVDA: 19338
+  bbo/SP500: 18295
+  bbo/XYZ100: 23953
+  trades/NVDA: 3216
+  trades/SP500: 2817
+  trades/XYZ100: 3498
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:54 JST
+
+process:
+  pid: 846741
+  elapsed: 00:49:54
+  status: running
+
+disk usage:
+  75M
+
+jsonl row counts:
+  total: 81461
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2899
+  activeAssetCtx/SP500: 2899
+  activeAssetCtx/XYZ100: 2899
+  bbo/NVDA: 19856
+  bbo/SP500: 18725
+  bbo/XYZ100: 24492
+  trades/NVDA: 3271
+  trades/SP500: 2850
+  trades/XYZ100: 3561
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:55 JST
+
+process:
+  pid: 846741
+  elapsed: 00:50:51
+  status: running
+
+disk usage:
+  77M
+
+jsonl row counts:
+  total: 83154
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 2956
+  activeAssetCtx/SP500: 2956
+  activeAssetCtx/XYZ100: 2956
+  bbo/NVDA: 20353
+  bbo/SP500: 19107
+  bbo/XYZ100: 24998
+  trades/NVDA: 3324
+  trades/SP500: 2878
+  trades/XYZ100: 3617
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:56 JST
+
+process:
+  pid: 846741
+  elapsed: 00:51:51
+  status: running
+
+disk usage:
+  78M
+
+jsonl row counts:
+  total: 84887
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 3013
+  activeAssetCtx/SP500: 3013
+  activeAssetCtx/XYZ100: 3013
+  bbo/NVDA: 20817
+  bbo/SP500: 19503
+  bbo/XYZ100: 25524
+  trades/NVDA: 3373
+  trades/SP500: 2932
+  trades/XYZ100: 3690
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
+途中確認:
+
+```text
+checked_at:
+  2026-06-01_22:57 JST
+
+process:
+  pid: 846741
+  elapsed: 00:52:50
+  status: running
+
+disk usage:
+  80M
+
+jsonl row counts:
+  total: 86641
+  __control__/__all__: 9
+  activeAssetCtx/NVDA: 3070
+  activeAssetCtx/SP500: 3070
+  activeAssetCtx/XYZ100: 3070
+  bbo/NVDA: 21321
+  bbo/SP500: 19907
+  bbo/XYZ100: 25946
+  trades/NVDA: 3448
+  trades/SP500: 2971
+  trades/XYZ100: 3829
+
+log:
+  tail -n 40 は空。標準出力/標準エラー上の異常はまだ出ていない。
+
+注意:
+  これは途中snapshotであり、完了判定ではない。
+  data/manifests/trade_xyz_ws_capture_manifest.json はまだこの24時間runの完了manifestではない。
+```
+
 追加docs:
 
 ```text
 runbook:
   docs/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md
 
+finalize helper:
+  scripts/finalize_trade_xyz_ws_observation.sh
+
 WS raw field inventory:
   docs/集めるべき実データ0531-2108/README.md
+
+backtest ingestion handoff:
+  plan/TRADE_XYZ_BACKTEST_REAL_DATA_INGESTION_HANDOFF_2026-06-01.md
 ```
 
 途中で見つかった問題と対処:
@@ -285,6 +1463,9 @@ WS raw field inventory:
 
 2. 初回の15分 smokeでは期限後の無通信で process が残った。
    対処: source側で deadline を見て、期限後は追加ping待ちに入らず終了するよう修正した。
+
+3. 初回の11symbol qualityでは trades の低流動間隔を gap_count に混ぜて status=warn になった。
+   対処: trades gapを trade_gap_count / trade_source_ts_gap_count に分離し、quote/state gapだけを quality warn条件に残した。
 ```
 
 まだ完了していないこと:
@@ -294,14 +1475,15 @@ WS raw field inventory:
   完了。2026-06-01_20:54 JST 時点でpass。
 
 11symbol 60分 smoke:
-  未実行
+  実行済み。capture / REST parity はpass。qualityは AAPL bbo gap 1件でwarn。
 
 24時間 read-only 観測:
-  未実行
+  実行中。2026-06-01_22:04 JST に3symbolで開始。完了後のmanifest確認は未完了。
 
 Current Real Data Contract更新:
   一部完了。WS raw field inventoryとbacktest入力昇格前条件は追記済み。
-  backtest ingestion planへの正式引き継ぎは未完了。
+  backtest ingestion handoff draftは作成済み。
+  ただし、24時間runの最終manifestが未確定のため、実装開始readyではない。
 
 runbook作成:
   完了。docs/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md を追加済み。

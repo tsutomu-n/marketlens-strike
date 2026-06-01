@@ -115,6 +115,112 @@ def test_build_trade_xyz_ws_quality_manifest_warns_on_threshold_gap(tmp_path: Pa
     assert manifest["source_ts_gap_count"] == 1
 
 
+def test_build_trade_xyz_ws_quality_manifest_does_not_gap_across_streams(tmp_path: Path) -> None:
+    data_dir = tmp_path / "data"
+    aapl_path = (
+        data_dir / "raw/ws/trade_xyz/date=2026-06-01/subscription=bbo/symbol=AAPL/part-000001.jsonl"
+    )
+    sp500_path = (
+        data_dir
+        / "raw/ws/trade_xyz/date=2026-06-01/subscription=bbo/symbol=SP500/part-000001.jsonl"
+    )
+    base_row = {
+        "schema_version": "trade_xyz_ws_raw.v1",
+        "source": "hyperliquid_ws",
+        "source_tier": "official_ws",
+        "dex": "xyz",
+        "ws_url": "wss://api.hyperliquid.xyz/ws",
+        "channel": "bbo",
+        "message_kind": "data",
+        "subscription": "bbo",
+        "subscription_hash": "sha256:a",
+        "connection_id": "c1",
+        "recv_monotonic_ns": 1,
+        "payload": {"channel": "bbo", "data": {"bidPx": "99.9", "askPx": "100.1"}},
+    }
+    append_jsonl(
+        aapl_path,
+        {
+            **base_row,
+            "sequence": 1,
+            "recv_ts_ms": 1700000000000,
+            "source_ts_ms": 1700000000000,
+            "canonical_symbol": "AAPL",
+            "payload_sha256": "sha256:aapl",
+        },
+    )
+    append_jsonl(
+        sp500_path,
+        {
+            **base_row,
+            "sequence": 1,
+            "recv_ts_ms": 1700000121000,
+            "source_ts_ms": 1700000121000,
+            "canonical_symbol": "SP500",
+            "payload_sha256": "sha256:sp500",
+        },
+    )
+    manifest = build_trade_xyz_ws_quality_manifest(
+        data_dir=data_dir, raw_ws_root=data_dir / "raw/ws/trade_xyz"
+    )
+    assert manifest["status"] == "pass"
+    assert manifest["gap_count"] == 0
+    assert manifest["source_ts_gap_count"] == 0
+
+
+def test_build_trade_xyz_ws_quality_manifest_keeps_trade_gaps_informational(
+    tmp_path: Path,
+) -> None:
+    data_dir = tmp_path / "data"
+    row_path = (
+        data_dir
+        / "raw/ws/trade_xyz/date=2026-06-01/subscription=trades/symbol=AAPL/part-000001.jsonl"
+    )
+    base_row = {
+        "schema_version": "trade_xyz_ws_raw.v1",
+        "source": "hyperliquid_ws",
+        "source_tier": "official_ws",
+        "dex": "xyz",
+        "ws_url": "wss://api.hyperliquid.xyz/ws",
+        "channel": "trades",
+        "message_kind": "data",
+        "subscription": "trades",
+        "subscription_hash": "sha256:a",
+        "connection_id": "c1",
+        "recv_monotonic_ns": 1,
+        "canonical_symbol": "AAPL",
+        "payload": {"channel": "trades", "data": [{"coin": "xyz:AAPL", "time": 1700000000000}]},
+    }
+    append_jsonl(
+        row_path,
+        {
+            **base_row,
+            "sequence": 1,
+            "recv_ts_ms": 1700000000000,
+            "source_ts_ms": 1700000000000,
+            "payload_sha256": "sha256:t1",
+        },
+    )
+    append_jsonl(
+        row_path,
+        {
+            **base_row,
+            "sequence": 2,
+            "recv_ts_ms": 1700000121000,
+            "source_ts_ms": 1700000121000,
+            "payload_sha256": "sha256:t2",
+        },
+    )
+    manifest = build_trade_xyz_ws_quality_manifest(
+        data_dir=data_dir, raw_ws_root=data_dir / "raw/ws/trade_xyz"
+    )
+    assert manifest["status"] == "pass"
+    assert manifest["gap_count"] == 0
+    assert manifest["source_ts_gap_count"] == 0
+    assert manifest["trade_gap_count"] == 1
+    assert manifest["trade_source_ts_gap_count"] == 1
+
+
 def test_build_trade_xyz_ws_quality_manifest_keeps_duplicate_payloads_informational(
     tmp_path: Path,
 ) -> None:

@@ -7,6 +7,14 @@ from sis.storage.jsonl_store import read_jsonl
 from sis.storage.jsonl_store import write_json
 
 
+def _stream_key(row: dict[str, Any]) -> tuple[str, str]:
+    subscription = str(row.get("subscription") or "__missing__")
+    symbol = row.get("canonical_symbol")
+    if isinstance(symbol, str):
+        return subscription, symbol
+    return subscription, "__control__" if row.get("message_kind") != "data" else "__unknown__"
+
+
 def build_trade_xyz_ws_quality_manifest(
     *,
     data_dir: Path,
@@ -28,17 +36,22 @@ def build_trade_xyz_ws_quality_manifest(
     max_gap_seconds = 0.0
     source_ts_gap_count = 0
     max_source_ts_gap_seconds = 0.0
+    trade_gap_count = 0
+    max_trade_gap_seconds = 0.0
+    trade_source_ts_gap_count = 0
+    max_trade_source_ts_gap_seconds = 0.0
     bbo_bid_ask_inversion_count = 0
     malformed_payload_count = 0
     unknown_symbol_count = 0
     subscription_response_count = 0
     pong_count = 0
-    prev_recv_ts_ms: int | None = None
-    prev_source_ts_ms: int | None = None
+    prev_recv_ts_ms_by_stream: dict[tuple[str, str], int] = {}
+    prev_source_ts_ms_by_stream: dict[tuple[str, str], int] = {}
     for file in files:
         for row in read_jsonl(file):
             row_count += 1
             subscription = str(row.get("subscription") or "__missing__")
+            stream_key = _stream_key(row)
             subscription_counts[subscription] = subscription_counts.get(subscription, 0) + 1
             symbol = row.get("canonical_symbol")
             if isinstance(symbol, str):
@@ -51,21 +64,33 @@ def build_trade_xyz_ws_quality_manifest(
                     duplicate_payload_count += 1
                 seen_payload_sha.add(payload_sha)
             recv_ts_ms = row.get("recv_ts_ms")
+            prev_recv_ts_ms = prev_recv_ts_ms_by_stream.get(stream_key)
             if isinstance(recv_ts_ms, int) and prev_recv_ts_ms is not None:
                 gap_s = max(0.0, (recv_ts_ms - prev_recv_ts_ms) / 1000.0)
                 if gap_s > recv_gap_threshold_seconds:
-                    gap_count += 1
-                    max_gap_seconds = max(max_gap_seconds, gap_s)
+                    if subscription == "trades":
+                        trade_gap_count += 1
+                        max_trade_gap_seconds = max(max_trade_gap_seconds, gap_s)
+                    else:
+                        gap_count += 1
+                        max_gap_seconds = max(max_gap_seconds, gap_s)
             if isinstance(recv_ts_ms, int):
-                prev_recv_ts_ms = recv_ts_ms
+                prev_recv_ts_ms_by_stream[stream_key] = recv_ts_ms
             source_ts_ms = row.get("source_ts_ms")
+            prev_source_ts_ms = prev_source_ts_ms_by_stream.get(stream_key)
             if isinstance(source_ts_ms, int) and prev_source_ts_ms is not None:
                 source_gap_s = max(0.0, (source_ts_ms - prev_source_ts_ms) / 1000.0)
                 if source_gap_s > source_gap_threshold_seconds:
-                    source_ts_gap_count += 1
-                    max_source_ts_gap_seconds = max(max_source_ts_gap_seconds, source_gap_s)
+                    if subscription == "trades":
+                        trade_source_ts_gap_count += 1
+                        max_trade_source_ts_gap_seconds = max(
+                            max_trade_source_ts_gap_seconds, source_gap_s
+                        )
+                    else:
+                        source_ts_gap_count += 1
+                        max_source_ts_gap_seconds = max(max_source_ts_gap_seconds, source_gap_s)
             if isinstance(source_ts_ms, int):
-                prev_source_ts_ms = source_ts_ms
+                prev_source_ts_ms_by_stream[stream_key] = source_ts_ms
             kind = str(row.get("message_kind") or "")
             if kind == "subscription_response":
                 subscription_response_count += 1
@@ -114,6 +139,10 @@ def build_trade_xyz_ws_quality_manifest(
         "max_gap_seconds": max_gap_seconds,
         "source_ts_gap_count": source_ts_gap_count,
         "max_source_ts_gap_seconds": max_source_ts_gap_seconds,
+        "trade_gap_count": trade_gap_count,
+        "max_trade_gap_seconds": max_trade_gap_seconds,
+        "trade_source_ts_gap_count": trade_source_ts_gap_count,
+        "max_trade_source_ts_gap_seconds": max_trade_source_ts_gap_seconds,
         "bbo_bid_ask_inversion_count": bbo_bid_ask_inversion_count,
         "malformed_payload_count": malformed_payload_count,
         "unknown_symbol_count": unknown_symbol_count,
