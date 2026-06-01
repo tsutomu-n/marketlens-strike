@@ -7,11 +7,18 @@ from typing import Any
 import polars as pl
 
 from sis.models import InstrumentSpec
-from sis.research.providers import PriceProvider, ResearchFetchRequest, YahooFinancePriceProvider
+from sis.research.providers import (
+    PriceProvider,
+    ResearchFetchRequest,
+    StooqPriceProvider,
+    YahooFinancePriceProvider,
+    YahooQueryPriceProvider,
+)
 from sis.storage.jsonl_store import write_json
 from sis.venues.trade_xyz.registry import load_trade_xyz_registry
 
 DEFAULT_REGIME_REFERENCE_SYMBOLS = ["^VIX", "UUP", "USDJPY=X", "EURUSD=X"]
+DEFAULT_REAL_MARKET_REFERENCE_PROVIDERS = ("yfinance", "yahooquery", "stooq")
 
 
 def _active_trade_xyz_instruments(
@@ -71,6 +78,133 @@ def _request_symbols(
     mapped = [str(item["real_market_symbol"]) for item in mapping_rows]
     regime = DEFAULT_REGIME_REFERENCE_SYMBOLS if include_regime_symbols else []
     return _unique_ordered([*mapped, *regime, *(extra_symbols or [])])
+
+
+def build_real_market_reference_providers(provider_names: list[str] | None) -> list[PriceProvider]:
+    names = provider_names or list(DEFAULT_REAL_MARKET_REFERENCE_PROVIDERS)
+    providers: list[PriceProvider] = []
+    for name in names:
+        normalized = name.strip().lower().replace("-", "_")
+        if normalized == "yfinance":
+            providers.append(YahooFinancePriceProvider())
+        elif normalized == "yahooquery":
+            providers.append(YahooQueryPriceProvider())
+        elif normalized == "stooq":
+            providers.append(StooqPriceProvider())
+        else:
+            raise ValueError(f"unsupported real-market reference provider: {name}")
+    if not providers:
+        raise ValueError("at least one real-market reference provider is required")
+    return providers
+
+
+def _prepare_provider_frame(
+    frame: pl.DataFrame,
+    *,
+    provider_name: str,
+    interval: str,
+) -> pl.DataFrame:
+    if frame.is_empty():
+        return frame
+    if "symbol" not in frame.columns:
+        raise ValueError(f"{provider_name} output missing symbol column")
+    available = set(frame.columns)
+    expressions = [
+        pl.col("symbol").cast(pl.Utf8).str.to_uppercase().alias("symbol"),
+    ]
+    if "provider" not in available:
+        expressions.append(pl.lit(provider_name).alias("provider"))
+    if "provider_symbol" not in available:
+        expressions.append(pl.col("symbol").cast(pl.Utf8).alias("provider_symbol"))
+    if "interval" not in available:
+        expressions.append(pl.lit(interval).alias("interval"))
+    if "adjustment" not in available:
+        expressions.append(pl.lit("none").alias("adjustment"))
+    return frame.with_columns(*expressions)
+
+
+def _fetch_provider_chain(
+    *,
+    providers: list[PriceProvider],
+    requested_symbols: list[str],
+    start: date,
+    end: date,
+    interval: str,
+) -> tuple[pl.DataFrame, dict[str, Any]]:
+    remaining = list(requested_symbols)
+    frames: list[pl.DataFrame] = []
+    provider_attempts: list[dict[str, Any]] = []
+    missing_after_each_provider: dict[str, list[str]] = {}
+    resolved_by_provider: dict[str, str] = {}
+
+    for provider in providers:
+        if not remaining:
+            break
+        provider_name = provider.name
+        attempted_symbols = list(remaining)
+        try:
+            request = ResearchFetchRequest(
+                symbols=attempted_symbols,
+                start=start,
+                end=end,
+                interval=interval,
+            )
+            frame = _prepare_provider_frame(
+                provider.fetch_ohlcv(request),
+                provider_name=provider_name,
+                interval=interval,
+            )
+            if frame.is_empty():
+                returned_symbols: list[str] = []
+                row_count = 0
+            else:
+                frame = frame.filter(pl.col("symbol").is_in(attempted_symbols))
+                returned_symbols = sorted(
+                    str(item).upper() for item in frame.get_column("symbol").unique()
+                )
+                row_count = frame.height
+                if row_count:
+                    frames.append(frame)
+            returned_set = set(returned_symbols)
+            for symbol in returned_symbols:
+                resolved_by_provider.setdefault(symbol, provider_name)
+            remaining = [symbol for symbol in remaining if symbol not in returned_set]
+            provider_attempts.append(
+                {
+                    "provider": provider_name,
+                    "status": "pass" if returned_symbols else "empty",
+                    "requested_symbols": attempted_symbols,
+                    "returned_symbols": returned_symbols,
+                    "row_count": row_count,
+                    "missing_symbols": list(remaining),
+                }
+            )
+        except Exception as exc:
+            provider_attempts.append(
+                {
+                    "provider": provider_name,
+                    "status": "error",
+                    "requested_symbols": attempted_symbols,
+                    "returned_symbols": [],
+                    "row_count": 0,
+                    "missing_symbols": list(remaining),
+                    "error": str(exc),
+                }
+            )
+        missing_after_each_provider[provider_name] = list(remaining)
+
+    if frames:
+        merged = pl.concat(frames, how="vertical_relaxed")
+    else:
+        merged = pl.DataFrame(schema={"ts": pl.Datetime(time_zone="UTC"), "symbol": pl.Utf8})
+    diagnostics = {
+        "provider_chain": [provider.name for provider in providers],
+        "provider_attempts": provider_attempts,
+        "missing_after_each_provider": missing_after_each_provider,
+        "resolved_by_provider": resolved_by_provider,
+        "unresolved_symbols": sorted(remaining),
+    }
+    return merged, diagnostics
 
 
 def _normalize_reference_frame(
@@ -209,6 +343,8 @@ def collect_trade_xyz_real_market_reference(
     end: date | None = None,
     period_days: int = 365,
     provider: PriceProvider | None = None,
+    provider_chain: list[PriceProvider] | None = None,
+    provider_names: list[str] | None = None,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     if period_days <= 0 and (start is None or end is None):
@@ -230,25 +366,36 @@ def collect_trade_xyz_real_market_reference(
     if effective_start >= effective_end:
         raise ValueError("start must be earlier than end")
 
-    selected_provider = provider or YahooFinancePriceProvider()
-    request = ResearchFetchRequest(
-        symbols=requested_symbols,
+    if provider is not None and (provider_chain is not None or provider_names is not None):
+        raise ValueError("provider cannot be combined with provider_chain or provider_names")
+    if provider_chain is not None and provider_names is not None:
+        raise ValueError("provider_chain cannot be combined with provider_names")
+    selected_providers = (
+        [provider]
+        if provider is not None
+        else provider_chain
+        if provider_chain is not None
+        else build_real_market_reference_providers(provider_names)
+    )
+    if not selected_providers:
+        raise ValueError("at least one real-market reference provider is required")
+    frame, provider_diagnostics = _fetch_provider_chain(
+        providers=selected_providers,
+        requested_symbols=requested_symbols,
         start=effective_start,
         end=effective_end,
         interval=interval,
     )
-    frame = selected_provider.fetch_ohlcv(request)
+    provider_label = ",".join(provider_diagnostics["provider_chain"])
     normalized, summary = _normalize_reference_frame(
         frame,
         mapping_rows=mappings,
         requested_symbols=requested_symbols,
-        provider_name=selected_provider.name,
+        provider_name=provider_label,
         interval=interval,
     )
 
-    raw_path = (
-        data_dir / f"raw/real_market/{selected_provider.name}/trade_xyz_reference_bars.parquet"
-    )
+    raw_path = data_dir / f"raw/real_market/{provider_label}/trade_xyz_reference_bars.parquet"
     normalized_path = data_dir / "normalized/real_market_reference_bars.parquet"
     raw_path.parent.mkdir(parents=True, exist_ok=True)
     normalized_path.parent.mkdir(parents=True, exist_ok=True)
@@ -256,14 +403,21 @@ def collect_trade_xyz_real_market_reference(
     normalized.write_parquet(normalized_path)
 
     row_count = normalized.height
-    status = "pass" if row_count > 0 and not summary["missing_mapped_symbols"] else "fail"
+    status = (
+        "pass"
+        if row_count > 0
+        and not summary["missing_mapped_symbols"]
+        and not summary["missing_requested_symbols"]
+        else "fail"
+    )
     manifest = {
         "schema_version": "trade_xyz_real_market_reference_manifest.v1",
         "generated_at": generated.isoformat(),
         "status": status,
         "data_dir": str(data_dir),
         "registry_path": str(resolved_registry),
-        "provider": selected_provider.name,
+        "provider": provider_label,
+        **provider_diagnostics,
         "interval": interval,
         "start": effective_start.isoformat(),
         "end": effective_end.isoformat(),
@@ -281,8 +435,9 @@ def collect_trade_xyz_real_market_reference(
         **summary,
         "notes": [
             "This is read-only reference-market data for research/backtest context.",
-            "yfinance data is not live-trading grade and must not be treated as execution data.",
+            "External reference data is not live-trading grade and must not be treated as execution data.",
             "Trade[XYZ] execution quotes remain the source for fill simulation.",
+            "External reference providers must not be used to synthesize oracle_ts_ms.",
         ],
     }
     manifest_path = data_dir / "manifests/trade_xyz_real_market_reference_manifest.json"
@@ -290,16 +445,22 @@ def collect_trade_xyz_real_market_reference(
 
     report_path = data_dir / "reports/trade_xyz_real_market_reference.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
+    provider_chain_report = ",".join(str(item) for item in provider_diagnostics["provider_chain"])
+    unresolved_symbols_report = ",".join(
+        str(item) for item in provider_diagnostics["unresolved_symbols"]
+    )
     lines = [
         "# Trade[XYZ] Real Market Reference",
         "",
         f"- status: {manifest['status']}",
         f"- provider: {manifest['provider']}",
+        f"- provider_chain: {provider_chain_report}",
         f"- interval: {manifest['interval']}",
         f"- start: {manifest['start']}",
         f"- end: {manifest['end']}",
         f"- row_count: {manifest['row_count']}",
         f"- missing_mapped_symbols: {','.join(summary['missing_mapped_symbols']) or 'none'}",
+        f"- unresolved_symbols: {unresolved_symbols_report or 'none'}",
         "",
         "## Artifacts",
         "",

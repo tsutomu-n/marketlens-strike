@@ -1,9 +1,11 @@
 real_market_provider_policy:
   primary_for_research:
-    - alpaca
     - yfinance
-  fallback:
+    - yahooquery
     - stooq
+  credentialed_optional:
+    - alpaca
+  fallback: []
   event_sources:
     - sec_edgar
     - fred

@@ -196,6 +196,63 @@ class YahooQueryPriceProvider(PriceProvider):
         return _normalize_price_frame(frame, self.name)
 
 
+class StooqPriceProvider(PriceProvider):
+    name = "stooq"
+
+    def __init__(self, reader: Callable[..., Any] | None = None) -> None:
+        self._reader = reader
+
+    def _reader_fn(self) -> Callable[..., Any]:
+        if self._reader is None:
+            try:
+                from pandas_datareader import data as web
+            except ImportError as exc:
+                raise RuntimeError("pandas-datareader is required for StooqPriceProvider") from exc
+            self._reader = web.DataReader
+        return self._reader
+
+    def fetch_ohlcv(self, request: ResearchFetchRequest) -> pl.DataFrame:
+        if request.interval.lower() not in {"1d", "1day", "daily", "d"}:
+            raise ValueError("StooqPriceProvider only supports 1d interval")
+
+        frames: list[pl.DataFrame] = []
+        reader = self._reader_fn()
+        for symbol in request.symbols:
+            try:
+                raw = reader(symbol, "stooq", request.start, request.end)
+            except Exception:
+                continue
+            if raw is None or getattr(raw, "empty", False):
+                continue
+            pandas_frame = raw.reset_index()
+            renamed = pandas_frame.rename(
+                columns={
+                    "index": "ts",
+                    "Date": "ts",
+                    "date": "ts",
+                    "Open": "open",
+                    "High": "high",
+                    "Low": "low",
+                    "Close": "close",
+                    "Volume": "volume",
+                }
+            )
+            frame = pl.from_pandas(renamed).with_columns(
+                pl.lit(symbol.upper()).alias("symbol"),
+                pl.lit(symbol).alias("provider_symbol"),
+                pl.lit("1d").alias("interval"),
+                pl.lit("none").alias("adjustment"),
+            )
+            frames.append(frame)
+        if not frames:
+            return pl.DataFrame(schema={"ts": pl.Datetime(time_zone="UTC"), "symbol": pl.Utf8})
+        return (
+            _normalize_price_frame(pl.concat(frames, how="vertical_relaxed"), self.name)
+            .filter(pl.col("ts").dt.date() >= request.start, pl.col("ts").dt.date() < request.end)
+            .sort(["symbol", "ts"])
+        )
+
+
 class FredMacroProvider(MacroProvider):
     name = "fredapi"
 

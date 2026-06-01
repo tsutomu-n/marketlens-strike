@@ -21,6 +21,20 @@
     "generated_at": { "type": "string", "format": "date-time" },
     "status": { "type": "string", "enum": ["pass", "fail"] },
     "provider": { "type": "string", "minLength": 1 },
+    "provider_chain": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "provider_attempts": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "missing_after_each_provider": { "type": "object" },
+    "resolved_by_provider": { "type": "object" },
+    "unresolved_symbols": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
     "interval": { "type": "string", "minLength": 1 },
     "start": { "type": "string", "format": "date" },
     "end": { "type": "string", "format": "date" },

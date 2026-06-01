@@ -562,6 +562,11 @@ def register_quote_commands(
         start: str | None = typer.Option(None, "--start", help="YYYY-MM-DD."),
         end: str | None = typer.Option(None, "--end", help="YYYY-MM-DD, exclusive."),
         period_days: int = typer.Option(365, "--period-days"),
+        providers: str = typer.Option(
+            "yfinance,yahooquery,stooq",
+            "--providers",
+            help="Comma-separated provider chain for unresolved symbols.",
+        ),
     ) -> None:
         settings = get_settings()
         requested_symbols = (
@@ -574,6 +579,7 @@ def register_quote_commands(
             if extra_symbols
             else None
         )
+        requested_providers = [item.strip() for item in providers.split(",") if item.strip()]
         try:
             manifest = collect_trade_xyz_real_market_reference(
                 data_dir=settings.data_dir,
@@ -585,6 +591,7 @@ def register_quote_commands(
                 start=date.fromisoformat(start) if start else None,
                 end=date.fromisoformat(end) if end else None,
                 period_days=period_days,
+                provider_names=requested_providers,
             )
         except (FileNotFoundError, ValueError) as exc:
             typer.echo(str(exc))
@@ -595,6 +602,7 @@ def register_quote_commands(
         )
         typer.echo(f"status={manifest['status']}")
         typer.echo(f"provider={manifest['provider']}")
+        typer.echo(f"provider_chain={','.join(str(item) for item in manifest['provider_chain'])}")
         typer.echo(f"interval={manifest['interval']}")
         typer.echo(f"row_count={manifest['row_count']}")
         typer.echo(f"missing_mapped_symbols={','.join(manifest['missing_mapped_symbols'])}")

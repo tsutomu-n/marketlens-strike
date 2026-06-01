@@ -13,6 +13,7 @@ from support.cli import normalized_stdout
 IMPORTANT_HELP_COMMANDS = (
     "collect-trade-xyz-account-fee",
     "collect-trade-xyz-data-cycle",
+    "collect-trade-xyz-real-market-reference",
     "collect-trade-xyz-signal-candles",
     "collect-trade-xyz-historical-l2-archive",
 )
