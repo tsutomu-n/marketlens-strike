@@ -1,6 +1,11 @@
+<!--
+作成日: 2026-05-30_21:32 JST
+更新日: 2026-06-01_14:44 JST
+-->
+
 # Repository Guidelines
 
-Last updated: 2026-05-31_21:45 Asia/Tokyo. Keep this guide at 500 words or fewer.
+Last updated: 2026-06-01_14:44 Asia/Tokyo. Keep this guide concise; no fixed word limit.
 
 ## Source Of Truth
 
@@ -30,6 +35,21 @@ Start with read-only inspection. Use `rg`, `rg --files`, CLI help, tests, schema
 Use 4-space Python indentation, explicit public type hints, and small modules aligned to domain boundaries. Keep reusable logic out of command wrappers when practical. New or heavily edited Python files should stay at 800 lines or fewer. Strategy Authoring enforces this with `tests/strategy_authoring/test_module_boundaries.py`.
 
 Trade[XYZ] pure backtest v0.1 is a Python API surface, not a public CLI. `uv run sis build-backtest` is a separate legacy/bridge command. Micro-live code exists, but standard operator CLI live execution is not exposed. `READ_ONLY_GO` means read-only/paper gate only; it does not prove wallet, signing, exchange write, or production live trading readiness.
+
+## Document Timestamps
+
+For every documentation file created or edited by the agent, add or update a hidden metadata header near the top of the file.
+
+For Markdown files, use exactly:
+
+```markdown
+<!--
+作成日: YYYY-MM-DD_HH:mm JST
+更新日: YYYY-MM-DD_HH:mm JST
+-->
+```
+
+Use Tokyo time. `作成日` is the original document creation time and must not change after first creation. Update `更新日` whenever the document content is materially edited. Place the header at the top of the file, after shebang or frontmatter only if required. Do not add it to generated files, vendored files, lockfiles, binary files, or files where comments are invalid. If a format has no safe comment syntax, do not invent one; use the repository-specific rule.
 
 ## Testing And PRs
 

@@ -15,7 +15,7 @@ runner = CliRunner()
 
 
 def test_help_smoke() -> None:
-    result = runner.invoke(app, ["--help"])
+    result = runner.invoke(app, ["--help"], env={"COLUMNS": "160"}, terminal_width=160)
     assert result.exit_code == 0
     assert "probe" in result.stdout
     assert "collect-trade-xyz-quotes" in result.stdout
@@ -2158,6 +2158,8 @@ def test_trade_xyz_collection_status_cli_can_fail_on_progress_warning(tmp_path) 
             "--no-refresh-readiness",
             "--interval-seconds",
             "1",
+            "--stale-after-minutes",
+            "-1",
             "--fail-on-progress-warning",
         ],
         env=env,
@@ -2166,10 +2168,7 @@ def test_trade_xyz_collection_status_cli_can_fail_on_progress_warning(tmp_path) 
     assert result.exit_code == 2
     assert "progress_status=warning" in result.stdout
     payload = read_json(data_dir / "ops/trade_xyz_collection_status.json")
-    assert (
-        "no_traceable_row_growth_since_previous_status"
-        in payload["progress_since_previous_status"]["warnings"]
-    )
+    assert "latest_file_stale" in payload["progress_since_previous_status"]["warnings"]
 
 
 def test_trade_xyz_collection_status_cli_can_fail_on_archive_preflight(tmp_path) -> None:

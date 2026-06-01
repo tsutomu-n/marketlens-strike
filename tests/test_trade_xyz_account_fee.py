@@ -56,7 +56,12 @@ def test_collect_trade_xyz_account_fee_snapshot_writes_redacted_manifest(tmp_pat
 
 
 def test_collect_trade_xyz_account_fee_cli_help_includes_read_only_command() -> None:
-    result = CliRunner().invoke(app, ["collect-trade-xyz-account-fee", "--help"])
+    result = CliRunner().invoke(
+        app,
+        ["collect-trade-xyz-account-fee", "--help"],
+        env={"COLUMNS": "120"},
+        terminal_width=120,
+    )
 
     assert result.exit_code == 0
     assert "--user-address" in result.stdout
