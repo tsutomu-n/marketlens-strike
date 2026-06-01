@@ -103,6 +103,9 @@ def test_build_trade_xyz_reference_datasets_writes_required_artifacts(tmp_path) 
     assert manifest["fee_source"]["account_specific_missing_field_counts"]["builder_fee_bps"] == 1
     assert manifest["oracle_timestamp"]["oracle_ts_present_count"] == 1
     assert manifest["oracle_timestamp"]["oracle_ts_missing_count"] == 0
+    assert manifest["oracle_timestamp"]["oracle_ts_missing_rate"] == 0.0
+    assert manifest["oracle_timestamp"]["oracle_freshness_proxy"]["observed_count"] == 1
+    assert manifest["oracle_timestamp"]["oracle_freshness_proxy"]["observed_rate"] == 1.0
 
     fee_manifest = read_json(data_dir / "manifests/fee_manifest.json")
     assert fee_manifest["schema_version"] == "fee_manifest.v1"
@@ -234,10 +237,59 @@ def test_build_trade_xyz_reference_data_records_oracle_ts_missing_reason(tmp_pat
     oracle_manifest = read_json(data_dir / "manifests/oracle_timestamp_manifest.json")
 
     assert manifest["oracle_timestamp"]["oracle_ts_missing_count"] == 1
+    assert manifest["oracle_timestamp"]["oracle_ts_missing_rate"] == 1.0
+    assert manifest["oracle_timestamp"]["oracle_freshness_proxy"]["observed_count"] == 1
     assert oracle_manifest["oracle_ts_missing_reasons"] == {
         "asset_ctx_missing_oracle_timestamp_field": 1
     }
+    assert oracle_manifest["oracle_freshness_proxy"]["observed_rate"] == 1.0
     assert "source_ts_ms from l2Book is not reused as oracle_ts_ms" in oracle_manifest["notes"]
+    assert (
+        "oracle_freshness_proxy is a separate snapshot timing proxy and must not be treated as oracle_ts_ms"
+        in oracle_manifest["notes"]
+    )
+
+
+def test_build_trade_xyz_reference_data_derives_oracle_freshness_for_legacy_rows(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    registry_path = data_dir / "registry/trade_xyz_instrument_registry.json"
+    _write_registry(registry_path, [_instrument()])
+    raw_path = data_dir / "raw/quotes/trade_xyz/2026-05-26.jsonl"
+    raw_path.parent.mkdir(parents=True)
+    raw_path.write_text(
+        json.dumps(
+            {
+                "ts_client": "2026-05-26T00:15:00+00:00",
+                "venue": "trade_xyz",
+                "canonical_symbol": "NVDA",
+                "venue_symbol": "NVDA",
+                "source": "test_legacy",
+                "raw_payload_sha256": "legacy-sha",
+                "recv_ts_ms": 1770000001234,
+                "source_ts_ms": 1770000000000,
+                "oracle_price": 100.1,
+                "oracle_ts_status": "missing",
+                "oracle_ts_missing_reason": "asset_ctx_missing_oracle_timestamp_field",
+                "raw_payload_ref": "fixture://legacy#row=0",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    manifest = build_trade_xyz_reference_datasets(
+        data_dir=data_dir,
+        snapshot_ts=datetime(2026, 5, 26, 1, 0, tzinfo=timezone.utc),
+    )
+
+    proxy = manifest["oracle_timestamp"]["oracle_freshness_proxy"]
+    assert proxy["observed_count"] == 1
+    assert proxy["observed_rate"] == 1.0
+    assert proxy["status_counts"] == {"observed_snapshot_lag": 1}
+    assert proxy["lag_ms_min"] == 1234
+    assert proxy["lag_ms_max"] == 1234
 
 
 def test_build_trade_xyz_reference_data_cli_fails_without_raw_quotes(tmp_path) -> None:

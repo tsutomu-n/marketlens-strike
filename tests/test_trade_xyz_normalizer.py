@@ -13,6 +13,7 @@ def _fixture_payload() -> dict:
 
 def test_l2_book_to_quote_log_computes_spread_and_depth() -> None:
     payload = _fixture_payload()
+    now = datetime(2026, 5, 26, 0, 0, tzinfo=timezone.utc)
     quote = quote_from_l2_book(
         canonical_symbol="NVDA",
         coin="xyz:NVDA",
@@ -23,7 +24,7 @@ def test_l2_book_to_quote_log_computes_spread_and_depth() -> None:
         taker_fee_bps=9.0,
         maker_fee_bps=3.0,
         asset_ctx={"oraclePx": "100.1", "oracleTs": "1770000000000"},
-        now=datetime(2026, 5, 26, 0, 0, tzinfo=timezone.utc),
+        now=now,
     )
     assert quote.best_bid == 99.9
     assert quote.best_ask == 100.1
@@ -38,6 +39,11 @@ def test_l2_book_to_quote_log_computes_spread_and_depth() -> None:
     assert quote.oracle_ts_source == "oracleTs"
     assert quote.oracle_ts_status == "observed"
     assert quote.oracle_ts_missing_reason is None
+    assert quote.oracle_freshness_source_ts_ms == payload["time"]
+    assert quote.oracle_freshness_recv_ts_ms == int(now.timestamp() * 1000)
+    assert quote.oracle_freshness_lag_ms == int(now.timestamp() * 1000) - payload["time"]
+    assert quote.oracle_freshness_status == "observed_snapshot_lag"
+    assert "not oracle_ts_ms" in (quote.oracle_freshness_note or "")
 
 
 def test_l2_book_to_quote_log_records_missing_oracle_timestamp_reason() -> None:
@@ -53,6 +59,8 @@ def test_l2_book_to_quote_log_records_missing_oracle_timestamp_reason() -> None:
     assert quote.oracle_ts_ms is None
     assert quote.oracle_ts_status == "missing"
     assert quote.oracle_ts_missing_reason == "asset_ctx_missing_oracle_timestamp_field"
+    assert quote.oracle_freshness_status == "observed_snapshot_lag"
+    assert quote.oracle_freshness_lag_ms is not None
 
 
 def test_missing_book_side_sets_not_tradable() -> None:

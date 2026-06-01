@@ -310,7 +310,7 @@ def test_build_trade_xyz_data_collection_bundle_cli_can_collect_account_fee(
             "--skip-real-market-reference",
             "--skip-signal-candles",
             "--account-fee-user-address",
-            "0xABC",
+            "0x1111111111111111111111111111111111111111",
         ],
         env={"SIS_DATA_DIR": str(data_dir)},
     )
@@ -412,14 +412,14 @@ def test_build_trade_xyz_data_collection_bundle_can_collect_account_fee(
         symbols=["SP500"],
         min_days=0,
         max_gap_minutes=2,
-        account_fee_user_address="0xABC",
+        account_fee_user_address="0x1111111111111111111111111111111111111111",
         account_fee_client=client,  # type: ignore[arg-type]
         real_market_provider=FakePriceProvider(),
         signal_candle_client=client,  # type: ignore[arg-type]
         generated_at=datetime(2026, 5, 31, tzinfo=UTC),
     )
 
-    assert client.user_fee_requests == ["0xabc"]
+    assert client.user_fee_requests == ["0x1111111111111111111111111111111111111111"]
     assert manifest["account_fee_user_address_provided"] is True
     step_status = {item["name"]: item["status"] for item in manifest["steps"]}
     assert step_status["account_fee"] == "completed"

@@ -544,6 +544,7 @@ def _readiness_requirement_details(readiness: dict[str, Any] | None) -> dict[str
             "oracle_ts_missing_rate": item_details.get("oracle_ts_missing_rate"),
             "oracle_ts_present_count": item_details.get("oracle_ts_present_count"),
             "oracle_ts_missing_count": item_details.get("oracle_ts_missing_count"),
+            "oracle_freshness_proxy": item_details.get("oracle_freshness_proxy", {}),
             "skipped": item_details.get("skipped", {}),
             "quote_skipped": item_details.get("quote_skipped", {}),
             "max_oracle_lag_minutes": item_details.get("max_oracle_lag_minutes"),
@@ -951,6 +952,8 @@ def build_trade_xyz_collection_status(
         f"{readiness_details.get('oracle_timestamp_provenance', {}).get('status')}",
         "- oracle_ts_missing_rate: "
         f"{readiness_details.get('oracle_timestamp_provenance', {}).get('oracle_ts_missing_rate')}",
+        "- oracle_freshness_proxy_observed_rate: "
+        f"{(readiness_details.get('oracle_timestamp_provenance', {}).get('oracle_freshness_proxy') or {}).get('observed_rate')}",
         f"- signal_candles_status: {readiness_details.get('signal_candles', {}).get('status')}",
         "- signal_candles_missing_symbols: "
         f"{','.join(readiness_details.get('signal_candles', {}).get('missing_symbols') or [])}",

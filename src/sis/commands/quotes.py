@@ -1203,11 +1203,16 @@ def register_quote_commands(
         readiness_details = manifest["readiness_requirement_details"]
         funding_details = readiness_details.get("funding_events", {})
         oracle_details = readiness_details.get("oracle_timestamp_provenance", {})
+        oracle_freshness_proxy = oracle_details.get("oracle_freshness_proxy") or {}
         signal_details = readiness_details.get("signal_candles", {})
         typer.echo(f"funding_events_status={funding_details.get('status')}")
         typer.echo(f"funding_events_skipped={funding_details.get('skipped')}")
         typer.echo(f"oracle_timestamp_provenance_status={oracle_details.get('status')}")
         typer.echo(f"oracle_ts_missing_rate={oracle_details.get('oracle_ts_missing_rate')}")
+        typer.echo(
+            "oracle_freshness_proxy_observed_rate="
+            f"{oracle_freshness_proxy.get('observed_rate')}"
+        )
         typer.echo(f"signal_candles_status={signal_details.get('status')}")
         typer.echo(
             "signal_candles_missing_symbols="

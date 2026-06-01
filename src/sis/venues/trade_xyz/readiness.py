@@ -530,6 +530,7 @@ def _oracle_requirement(data_dir: Path) -> dict[str, Any]:
             "oracle_ts_missing_count": missing_count,
             "oracle_ts_missing_rate": missing_count / row_count if row_count > 0 else None,
             "oracle_ts_missing_reasons": payload.get("oracle_ts_missing_reasons", {}),
+            "oracle_freshness_proxy": payload.get("oracle_freshness_proxy", {}),
             "notes": payload.get("notes", []),
         },
     )

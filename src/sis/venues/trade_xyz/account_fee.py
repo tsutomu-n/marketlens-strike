@@ -4,10 +4,13 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
 from pathlib import Path
+import re
 from typing import Any
 
 from sis.storage.jsonl_store import write_json
 from sis.venues.trade_xyz.client import TradeXyzClient
+
+_HEX_ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
 
 
 def _utc_now() -> datetime:
@@ -53,8 +56,8 @@ def collect_trade_xyz_account_fee_snapshot(
     client: TradeXyzClient,
     snapshot_ts: datetime | None = None,
 ) -> dict[str, Any]:
-    if not user_address.strip():
-        raise ValueError("user_address is required")
+    if not _HEX_ADDRESS_RE.fullmatch(user_address.strip()):
+        raise ValueError("user_address must be a 42-character 0x-prefixed hexadecimal address")
 
     effective_snapshot_ts = snapshot_ts or _utc_now()
     user_address_normalized = user_address.strip().lower()

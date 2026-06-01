@@ -171,6 +171,11 @@ class QuoteLog(BaseModel):
     oracle_ts_source: str | None = None
     oracle_ts_status: str | None = None
     oracle_ts_missing_reason: str | None = None
+    oracle_freshness_source_ts_ms: int | None = None
+    oracle_freshness_recv_ts_ms: int | None = None
+    oracle_freshness_lag_ms: int | None = None
+    oracle_freshness_status: str | None = None
+    oracle_freshness_note: str | None = None
 
     market_status: MarketStatus = MarketStatus.UNKNOWN
     session_type: SessionType = SessionType.UNKNOWN

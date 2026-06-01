@@ -305,6 +305,44 @@
         "null"
       ]
     },
+    "oracle_freshness_source_ts_ms": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "oracle_freshness_recv_ts_ms": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "oracle_freshness_lag_ms": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "oracle_freshness_status": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "observed_snapshot_lag",
+        "missing_snapshot_timestamp",
+        "missing_oracle_price",
+        "invalid_clock_order",
+        null
+      ]
+    },
+    "oracle_freshness_note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "source_confidence": {
       "type": [
         "number",

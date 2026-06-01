@@ -155,6 +155,32 @@ def _oracle_ts_fields(
     return None, None, "missing", "asset_ctx_missing_oracle_timestamp_field"
 
 
+def _oracle_freshness_fields(
+    *,
+    oracle_price: float | None,
+    source_ts_ms: int | None,
+    recv_ts_ms: int | None,
+) -> tuple[int | None, int | None, int | None, str, str]:
+    if oracle_price is None:
+        return None, None, None, "missing_oracle_price", (
+            "No oracle freshness proxy is recorded because oracle_price is missing."
+        )
+    if source_ts_ms is None or recv_ts_ms is None:
+        return source_ts_ms, recv_ts_ms, None, "missing_snapshot_timestamp", (
+            "oracle_freshness_* is a snapshot timing proxy; source_ts_ms and recv_ts_ms "
+            "are both required."
+        )
+    lag_ms = recv_ts_ms - source_ts_ms
+    if lag_ms < 0:
+        return source_ts_ms, recv_ts_ms, None, "invalid_clock_order", (
+            "source_ts_ms is later than recv_ts_ms; do not treat this as oracle freshness."
+        )
+    return source_ts_ms, recv_ts_ms, lag_ms, "observed_snapshot_lag", (
+        "This is not oracle_ts_ms. It measures raw snapshot receive lag for rows with "
+        "oracle_price."
+    )
+
+
 def quote_from_l2_book(
     *,
     canonical_symbol: str,
@@ -204,6 +230,17 @@ def quote_from_l2_book(
         block_reasons.append("BLOCK_FUNDING_MISSING")
     if ctx and open_interest_usd is None:
         block_reasons.append("BLOCK_OPEN_INTEREST_MISSING")
+    (
+        oracle_freshness_source_ts_ms,
+        oracle_freshness_recv_ts_ms,
+        oracle_freshness_lag_ms,
+        oracle_freshness_status,
+        oracle_freshness_note,
+    ) = _oracle_freshness_fields(
+        oracle_price=oracle_price,
+        source_ts_ms=source_ts_ms,
+        recv_ts_ms=recv_ts_ms,
+    )
     return QuoteLog(
         ts_client=ts,
         venue=Venue.TRADE_XYZ,
@@ -260,6 +297,11 @@ def quote_from_l2_book(
         oracle_ts_source=oracle_ts_source,
         oracle_ts_status=oracle_ts_status,
         oracle_ts_missing_reason=oracle_ts_missing_reason,
+        oracle_freshness_source_ts_ms=oracle_freshness_source_ts_ms,
+        oracle_freshness_recv_ts_ms=oracle_freshness_recv_ts_ms,
+        oracle_freshness_lag_ms=oracle_freshness_lag_ms,
+        oracle_freshness_status=oracle_freshness_status,
+        oracle_freshness_note=oracle_freshness_note,
         market_status=MarketStatus.OPEN if not block_reasons else MarketStatus.UNKNOWN,
         session_type=SessionType.UNKNOWN,
         is_tradable=not block_reasons,

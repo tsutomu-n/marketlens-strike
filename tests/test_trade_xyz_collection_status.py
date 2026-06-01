@@ -73,6 +73,15 @@ def test_trade_xyz_collection_status_surfaces_readiness_next_actions(tmp_path) -
                         "oracle_ts_present_count": 0,
                         "oracle_ts_missing_count": 10,
                         "oracle_ts_missing_rate": 1.0,
+                        "oracle_freshness_proxy": {
+                            "observed_count": 8,
+                            "missing_count": 2,
+                            "observed_rate": 0.8,
+                            "status_counts": {
+                                "observed_snapshot_lag": 8,
+                                "missing_snapshot_timestamp": 2,
+                            },
+                        },
                     },
                 },
                 {
@@ -208,6 +217,7 @@ def test_trade_xyz_collection_status_surfaces_readiness_next_actions(tmp_path) -
     assert "known_gap_requirements: account_specific_fee" in report
     assert "funding_events_status: known_gap" in report
     assert "oracle_ts_missing_rate: 1.0" in report
+    assert "oracle_freshness_proxy_observed_rate: 0.8" in report
     assert "signal_candles_status: pass" in report
     assert "collect_trade_xyz_data_cycle.sh" in report
     assert "plan_command:" in report
@@ -293,6 +303,12 @@ def test_trade_xyz_collection_status_surfaces_readiness_next_actions(tmp_path) -
             "oracle_ts_missing_rate"
         ]
         == 1.0
+    )
+    assert (
+        persisted["readiness_requirement_details"]["oracle_timestamp_provenance"][
+            "oracle_freshness_proxy"
+        ]["observed_rate"]
+        == 0.8
     )
 
 
