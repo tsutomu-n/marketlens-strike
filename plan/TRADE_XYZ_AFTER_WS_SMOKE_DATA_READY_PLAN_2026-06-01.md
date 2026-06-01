@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_18:44 JST
-更新日: 2026-06-01_19:01 JST
+更新日: 2026-06-01_19:04 JST
 -->
 
 # Trade[XYZ] WS Smoke後のData Ready到達計画 2026-06-01
@@ -376,6 +376,501 @@ src/sis/research/strategy_lab/**
 ```
 
 backtest、execution、paper、wallet、signingへ波及する変更が必要になったら、この計画を止める。
+
+## コーダー向けタスク分解
+
+この章を上から順に実行する。
+各タスクは、対象ファイル、作業内容、テスト、完了条件、停止条件を持つ。
+タスクを飛ばして後段へ進まない。
+
+### T0: baseline確認
+
+目的:
+  現在のmainが、WS smoke後の最新状態であることを確認する。
+
+対象ファイル:
+
+```text
+なし
+```
+
+実行:
+
+```bash
+git status --short --branch
+git log -1 --oneline --decorate
+uv run pytest -q tests/test_trade_xyz_ws_quality.py
+uv run python scripts/check_current_docs.py
+```
+
+完了条件:
+
+```text
+1. HEAD が origin/main と一致している
+2. 作業ツリーに意図しない差分がない
+3. test_trade_xyz_ws_quality.py がpass
+4. current docs checkがpass
+```
+
+停止条件:
+
+```text
+1. 未コミット差分がある
+2. HEADが想定外
+3. docs checkがfail
+```
+
+### T1: application-level heartbeat実装
+
+目的:
+  Hyperliquid公式Docsに合わせ、低流動時もserver timeoutを避けられるheartbeatにする。
+
+対象ファイル:
+
+```text
+src/sis/venues/trade_xyz/ws_recorder.py
+tests/test_trade_xyz_ws_recorder.py
+schemas/trade_xyz_ws_capture_manifest.v1.schema.json
+```
+
+作業内容:
+
+```text
+1. timeout時に WebSocket protocol ping ではなく `{ "method": "ping" }` をsendする
+2. 実際に受け取った `{ "channel": "pong" }` をcontrol rowとして保存する
+3. synthetic pongを作る場合は、実pongと区別できるfieldを入れる
+4. heartbeat_sent_count は送信したapplication pingの数として扱う
+5. pong_count は受信したpong rowの数として扱う
+6. manifest schemaにfield追加が必要ならschemaとtestsを同時更新する
+```
+
+テスト:
+
+```bash
+uv run pytest -q tests/test_trade_xyz_ws_recorder.py
+uv run pytest -q tests/test_trade_xyz_ws_cli.py tests/test_cli_help_contract.py
+uv run ruff check src/sis/venues/trade_xyz/ws_recorder.py tests/test_trade_xyz_ws_recorder.py
+uv run ruff format --check src/sis/venues/trade_xyz/ws_recorder.py tests/test_trade_xyz_ws_recorder.py
+```
+
+完了条件:
+
+```text
+1. fake connection testで `{ "method": "ping" }` 送信を検証している
+2. pong受信がcontrol rowとして保存される
+3. heartbeat_sent_count と pong_count の意味がテストで固定されている
+4. websocket protocol pingだけに依存していない
+5. 既存WS recorder testsがpass
+```
+
+停止条件:
+
+```text
+1. websockets clientのtest doubleが複雑になりすぎる
+2. 実pongとsynthetic pongを区別できない
+3. manifest schemaと実manifestがずれる
+```
+
+停止した場合:
+  heartbeatだけの小計画に分離し、CLIやsmokeへ進まない。
+
+### T2: heartbeat smoke
+
+目的:
+  application-level heartbeat実装後に、実WSでpongを観測できるか確認する。
+
+対象ファイル:
+
+```text
+コード変更なし
+生成物:
+  .tmp/trade_xyz_ws_heartbeat_smoke/
+  data/manifests/trade_xyz_ws_capture_manifest.json
+  data/manifests/trade_xyz_ws_quality_manifest.json
+```
+
+実行:
+
+```bash
+uv run sis collect-trade-xyz-ws \
+  --registry-path data/registry/trade_xyz_instrument_registry.json \
+  --symbols SP500 \
+  --subscriptions bbo,trades,activeAssetCtx \
+  --duration-minutes 2 \
+  --heartbeat-seconds 5 \
+  --output-dir .tmp/trade_xyz_ws_heartbeat_smoke \
+  --write-control-messages
+
+uv run sis build-trade-xyz-ws-quality \
+  --raw-ws-root .tmp/trade_xyz_ws_heartbeat_smoke \
+  --recv-gap-threshold-seconds 60 \
+  --source-gap-threshold-seconds 60
+```
+
+確認:
+
+```bash
+jq '{row_count, error_count, reconnect_count, heartbeat_sent_count, pong_count}' \
+  data/manifests/trade_xyz_ws_capture_manifest.json
+jq '{status, row_count, pong_count, gap_count, malformed_payload_count, unknown_symbol_count}' \
+  data/manifests/trade_xyz_ws_quality_manifest.json
+```
+
+完了条件:
+
+```text
+1. commandがexit 0
+2. error_count == 0
+3. reconnect_count == 0
+4. heartbeat_sent_count と pong_count が説明可能
+5. quality status == pass
+```
+
+停止条件:
+
+```text
+1. pongが一度も返らず、低流動時のtimeout対策を確認できない
+2. heartbeat送信後にserver disconnectが起きる
+3. heartbeat rowがschema validationを壊す
+```
+
+### T3: 複数symbol 1分smoke
+
+目的:
+  symbol解決、subscriptionResponse、path partitionを複数symbolで確認する。
+
+対象ファイル:
+
+```text
+コード変更なし
+生成物:
+  .tmp/trade_xyz_ws_smoke_multi_symbol/
+  data/manifests/*.json
+```
+
+実行:
+  Phase 1 のコマンドをそのまま使う。
+
+完了条件:
+
+```text
+1. subscription_response_count >= 9
+2. error_count == 0
+3. reconnect_count == 0
+4. unknown_symbol_count == 0
+5. malformed_payload_count == 0
+6. bbo/trades/activeAssetCtx のsymbol別pathが作られる
+7. REST parity status == pass
+```
+
+停止条件:
+
+```text
+1. どれかのsymbolがREST parityからmissingになる
+2. path partitionがsymbolごとに分かれない
+3. tradesが少ないことを欠損と誤判定している
+```
+
+### T4: 15分smokeと保存量見積もり
+
+目的:
+  長時間前に、row_count、bytes_written、disk usage、duplicate傾向を確認する。
+
+対象ファイル:
+
+```text
+コード変更なし
+生成物:
+  .tmp/trade_xyz_ws_smoke_15m/
+  data/manifests/*.json
+```
+
+実行:
+  Phase 2 のコマンドをそのまま使う。
+
+追加確認:
+
+```bash
+du -sh .tmp/trade_xyz_ws_smoke_15m
+jq '{row_count, bytes_written, connection_count, reconnect_count, error_count, raw_paths}' \
+  data/manifests/trade_xyz_ws_capture_manifest.json
+jq '{status, subscription_counts, symbol_counts, duplicate_payload_count, gap_count, source_ts_gap_count}' \
+  data/manifests/trade_xyz_ws_quality_manifest.json
+```
+
+完了条件:
+
+```text
+1. quality status == pass
+2. reconnect_count == 0
+3. error_count == 0
+4. disk usageが記録されている
+5. 60分runへ進める保存量である
+```
+
+停止条件:
+
+```text
+1. 保存量が想定を大きく超える
+2. activeAssetCtx duplicate以外の重複が大量に出る
+3. gap_count > 0 を説明できない
+4. source_ts_gap_count > 0 を説明できない
+```
+
+### T5: 60分smoke
+
+目的:
+  3symbolの1時間収集で、日常運用の最小単位が成立するか見る。
+
+対象ファイル:
+
+```text
+コード変更なし
+生成物:
+  .tmp/trade_xyz_ws_smoke_60m/
+  data/manifests/*.json
+```
+
+実行:
+
+```bash
+uv run sis collect-trade-xyz-ws \
+  --registry-path data/registry/trade_xyz_instrument_registry.json \
+  --symbols SP500,XYZ100,NVDA \
+  --subscriptions bbo,trades,activeAssetCtx \
+  --duration-minutes 60 \
+  --output-dir .tmp/trade_xyz_ws_smoke_60m \
+  --write-control-messages
+
+uv run sis build-trade-xyz-ws-quality \
+  --raw-ws-root .tmp/trade_xyz_ws_smoke_60m \
+  --recv-gap-threshold-seconds 60 \
+  --source-gap-threshold-seconds 60
+
+uv run sis build-trade-xyz-rest-parity \
+  --symbols SP500,XYZ100,NVDA \
+  --ws-manifest-path data/manifests/trade_xyz_ws_capture_manifest.json \
+  --request-delay-seconds 0.2 \
+  --skip-l2-book
+```
+
+完了条件:
+
+```text
+1. quality status == pass
+2. REST parity status == pass
+3. reconnect_count == 0
+4. error_count == 0
+5. row_count / bytes_written / disk usageを記録している
+```
+
+停止条件:
+
+```text
+1. reconnect_count > 0 かつ欠損区間を説明できない
+2. error_count > 0
+3. REST parityがwarn/fail
+4. 60分時点で保存量が運用不能
+```
+
+### T6: 11symbol 60分smoke
+
+目的:
+  registry上の現行対象11symbolへ広げたときのrate/storage/qualityを確認する。
+
+対象ファイル:
+
+```text
+コード変更なし
+生成物:
+  .tmp/trade_xyz_ws_smoke_11symbols_60m/
+  data/manifests/*.json
+```
+
+実行:
+
+```bash
+uv run sis collect-trade-xyz-ws \
+  --registry-path data/registry/trade_xyz_instrument_registry.json \
+  --symbols SP500,XYZ100,NVDA,AAPL,MSFT,AMZN,GOOGL,META,TSLA,AMD,EWJ \
+  --subscriptions bbo,trades,activeAssetCtx \
+  --duration-minutes 60 \
+  --output-dir .tmp/trade_xyz_ws_smoke_11symbols_60m \
+  --write-control-messages
+```
+
+その後、Phase 5 と同じ quality / REST parity を実行する。
+
+完了条件:
+
+```text
+1. official rate limit内で動く
+2. connection_countが想定内
+3. subscription数が 11 * 3 = 33 と説明できる
+4. quality status == pass、またはfail理由がmanifestで説明できる
+5. REST parity status == pass、またはmissing理由が公式仕様・symbol状態で説明できる
+```
+
+停止条件:
+
+```text
+1. rate limitに接触する
+2. 保存量が運用不能
+3. symbolごとのrow_count偏りを説明できない
+4. unknown_symbol_count > 0
+```
+
+### T7: Current Real Data Contract更新
+
+目的:
+  `market_data.py` / `bar_builder.py` 実装前に、実payloadに合わせて契約を更新する。
+
+対象ファイル:
+
+```text
+plan/TRADE_XYZ_BACKTEST_V0_1_2_REAL_DATA_HARDENING_PLAN_REV5.md
+または後継REV
+docs/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md
+docs/集めるべき実データ0531-2108/README.md
+```
+
+作業内容:
+
+```text
+1. bbo field inventoryを書く
+2. trades field inventoryを書く
+3. activeAssetCtx field inventoryを書く
+4. source_ts_msがある/ないpayloadを分ける
+5. signal fields と fill snapshot fields を分ける
+6. recv_ts_msをsource/oracle timestampとして使わないルールを書く
+7. external referenceをTrade[XYZ]価格穴埋めに使わないルールを書く
+```
+
+テスト:
+
+```bash
+uv run python scripts/check_current_docs.py
+git diff --check
+```
+
+完了条件:
+
+```text
+1. 実payloadに基づくfield inventoryがある
+2. backtest ingestion前の禁止事項が明記されている
+3. no-lookahead観点が書かれている
+4. docs checkがpass
+```
+
+### T8: runbook作成
+
+目的:
+  第三者がread-only収集を再実行できるようにする。
+
+対象ファイル:
+
+```text
+docs/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md
+```
+
+作業内容:
+
+```text
+1. dry-run手順
+2. 1分smoke手順
+3. 15分smoke手順
+4. 60分capture手順
+5. 11symbol capture手順
+6. quality確認手順
+7. REST parity確認手順
+8. disk usage確認手順
+9. fail時の調査順
+10. 停止条件
+11. data-readyにしてはいけない条件
+```
+
+テスト:
+
+```bash
+uv run python scripts/check_current_docs.py
+git diff --check
+```
+
+完了条件:
+
+```text
+1. コマンドがそのままコピー実行できる
+2. 生成artifact pathが明記されている
+3. secret/wallet/signing不要が明記されている
+4. fail時の確認artifactが明記されている
+```
+
+### T9: 24時間read-only観測
+
+目的:
+  日跨ぎ、低流動時間、休場、server disconnectを含む運用確認を行う。
+
+対象ファイル:
+
+```text
+コード変更なし
+生成物:
+  data/raw/ws/trade_xyz/
+  data/manifests/*.json
+  docs/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md
+```
+
+完了条件:
+
+```text
+1. 24時間runのcapture/quality/rest parity manifestがある
+2. 日付partitionが壊れていない
+3. disk usageが記録されている
+4. reconnect/gap/errorが説明できる
+5. current recordに結果が追記されている
+```
+
+停止条件:
+
+```text
+1. reconnect_count > 0 で欠損区間を説明できない
+2. day partitionが壊れる
+3. disk usage増加が運用不能
+4. source timestampとrecv timestampの混同が見つかる
+```
+
+### T10: 実データ取得v0.1完了判定
+
+目的:
+  取得基盤として完了したか、未完了かを明確に宣言する。
+
+対象ファイル:
+
+```text
+docs/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md
+docs/CURRENT_STATE.md
+docs/CODE_STATUS.md
+必要なら plan/ の後継計画
+```
+
+完了条件:
+
+```text
+1. Phase 0.5からPhase 9まで完了
+2. 3symbol 24時間runがpass、またはfail理由が説明可能
+3. 11symbol 60分runがpass、またはfail理由が説明可能
+4. Current Real Data Contract更新済み
+5. runbook作成済み
+6. ./scripts/check がpass
+```
+
+停止条件:
+
+```text
+1. data-ready条件を満たしていないのにreadyと書きそうになった
+2. quote coverage / real market reference / oracle timestamp gapを解決済み扱いしそうになった
+3. backtest engine変更へ作業が逸れた
+```
 
 ## 作業順序
 
@@ -1245,27 +1740,36 @@ uv run pytest -q tests/test_trade_xyz_ws_quality.py
 ./scripts/check
 ```
 
-次に複数symbol 1分smoke。
+次にT1としてapplication-level heartbeatを実装する。
+
+```bash
+uv run pytest -q tests/test_trade_xyz_ws_recorder.py
+uv run pytest -q tests/test_trade_xyz_ws_cli.py tests/test_cli_help_contract.py
+uv run ruff check src/sis/venues/trade_xyz/ws_recorder.py tests/test_trade_xyz_ws_recorder.py
+uv run ruff format --check src/sis/venues/trade_xyz/ws_recorder.py tests/test_trade_xyz_ws_recorder.py
+```
+
+T1が完了したらT2としてheartbeat smokeを実行する。
 
 ```bash
 uv run sis collect-trade-xyz-ws \
   --registry-path data/registry/trade_xyz_instrument_registry.json \
-  --symbols SP500,XYZ100,NVDA \
+  --symbols SP500 \
   --subscriptions bbo,trades,activeAssetCtx \
-  --duration-minutes 1 \
-  --output-dir .tmp/trade_xyz_ws_smoke_multi_symbol \
+  --duration-minutes 2 \
+  --heartbeat-seconds 5 \
+  --output-dir .tmp/trade_xyz_ws_heartbeat_smoke \
   --write-control-messages
 
 uv run sis build-trade-xyz-ws-quality \
-  --raw-ws-root .tmp/trade_xyz_ws_smoke_multi_symbol \
+  --raw-ws-root .tmp/trade_xyz_ws_heartbeat_smoke \
   --recv-gap-threshold-seconds 60 \
   --source-gap-threshold-seconds 60
 
-uv run sis build-trade-xyz-rest-parity \
-  --symbols SP500,XYZ100,NVDA \
-  --ws-manifest-path data/manifests/trade_xyz_ws_capture_manifest.json \
-  --request-delay-seconds 0.2 \
-  --skip-l2-book
+jq '{row_count, error_count, reconnect_count, heartbeat_sent_count, pong_count}' \
+  data/manifests/trade_xyz_ws_capture_manifest.json
+jq '{status, row_count, pong_count, gap_count, malformed_payload_count, unknown_symbol_count}' \
+  data/manifests/trade_xyz_ws_quality_manifest.json
 ```
 
 ## 付録B: readiness判定
@@ -1289,5 +1793,5 @@ REST parity:
   4. real market reference不足は別系統で残る
 ```
 
-この文書のPhase 1からPhase 6を終えるまで、`backtest_data_ready=true` と見なしてはいけない。
+この文書のPhase 1からPhase 11を終えるまで、`backtest_data_ready=true` と見なしてはいけない。
 実データ取得v0.1としても、Phase 10を終えるまで完了扱いにしない。
