@@ -113,3 +113,39 @@ def test_build_trade_xyz_ws_quality_manifest_warns_on_threshold_gap(tmp_path: Pa
     assert manifest["status"] == "warn"
     assert manifest["gap_count"] == 1
     assert manifest["source_ts_gap_count"] == 1
+
+
+def test_build_trade_xyz_ws_quality_manifest_keeps_duplicate_payloads_informational(
+    tmp_path: Path,
+) -> None:
+    data_dir = tmp_path / "data"
+    raw_root = (
+        data_dir / "raw/ws/trade_xyz/date=2026-06-01/subscription=activeAssetCtx/symbol=SP500"
+    )
+    row_path = raw_root / "part-000001.jsonl"
+    base_row = {
+        "schema_version": "trade_xyz_ws_raw.v1",
+        "source": "hyperliquid_ws",
+        "source_tier": "official_ws",
+        "dex": "xyz",
+        "ws_url": "wss://api.hyperliquid.xyz/ws",
+        "channel": "activeAssetCtx",
+        "message_kind": "data",
+        "subscription": "activeAssetCtx",
+        "subscription_hash": "sha256:a",
+        "connection_id": "c1",
+        "recv_monotonic_ns": 1,
+        "canonical_symbol": "SP500",
+        "payload_sha256": "sha256:duplicate",
+        "payload": {
+            "channel": "activeAssetCtx",
+            "data": {"coin": "xyz:SP500", "ctx": {"markPx": "100.0"}},
+        },
+    }
+    append_jsonl(row_path, {**base_row, "sequence": 1, "recv_ts_ms": 1700000000000})
+    append_jsonl(row_path, {**base_row, "sequence": 2, "recv_ts_ms": 1700000001000})
+    manifest = build_trade_xyz_ws_quality_manifest(
+        data_dir=data_dir, raw_ws_root=data_dir / "raw/ws/trade_xyz"
+    )
+    assert manifest["duplicate_payload_count"] == 1
+    assert manifest["status"] == "pass"

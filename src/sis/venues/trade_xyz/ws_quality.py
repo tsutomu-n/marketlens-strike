@@ -97,7 +97,7 @@ def build_trade_xyz_ws_quality_manifest(
         block_reasons.append("bbo_bid_ask_inversion")
     if row_count == 0 or malformed_payload_count > 0 or bbo_bid_ask_inversion_count > 0:
         status = "fail"
-    elif gap_count > 0 or source_ts_gap_count > 0 or duplicate_payload_count > 0:
+    elif gap_count > 0 or source_ts_gap_count > 0:
         status = "warn"
     else:
         status = "pass"
