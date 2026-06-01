@@ -170,6 +170,26 @@ class TradeXyzClient:
             raise TradeXyzApiError(f"allPerpMetas returned non-list: {type(data).__name__}")
         return data
 
+    def perps_at_open_interest_cap(self) -> list[Any]:
+        data = self.post_info({"type": "perpsAtOpenInterestCap"})
+        if not isinstance(data, list):
+            raise TradeXyzApiError(
+                f"perpsAtOpenInterestCap returned non-list: {type(data).__name__}"
+            )
+        return data
+
+    def perp_dex_status(self, *, dex: str | None = None) -> dict[str, Any]:
+        data = self.post_info({"type": "perpDexStatus", "dex": dex or self.config.dex})
+        if not isinstance(data, dict):
+            raise TradeXyzApiError(f"perpDexStatus returned non-object: {type(data).__name__}")
+        return data
+
+    def perp_dex_limits(self, *, dex: str | None = None) -> dict[str, Any]:
+        data = self.post_info({"type": "perpDexLimits", "dex": dex or self.config.dex})
+        if not isinstance(data, dict):
+            raise TradeXyzApiError(f"perpDexLimits returned non-object: {type(data).__name__}")
+        return data
+
     def l2_book(self, coin: str) -> dict[str, Any]:
         data = self.post_info({"type": "l2Book", "coin": coin})
         if not isinstance(data, dict):

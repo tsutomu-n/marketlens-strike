@@ -19,6 +19,7 @@ dependencies = [
   "jsonschema>=4",
   "pyyaml>=6",
   "tenacity>=9",
+  "websockets>=15",
   "yfinance>=0.2",
   "yahooquery>=2.3",
   "fredapi>=0.5",

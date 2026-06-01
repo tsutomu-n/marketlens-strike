@@ -27,6 +27,26 @@ class TradeXyzDataCollectionConfig:
     signal_candle_max_age_hours: float
     archive_coins: tuple[str, ...]
     archive_start_date: str | None
+    ws_enabled: bool
+    ws_url: str
+    ws_default_subscriptions: tuple[str, ...]
+    ws_duration_minutes: int
+    ws_heartbeat_seconds: int
+    ws_server_timeout_seconds: int
+    ws_reconnect_max_attempts: int
+    ws_reconnect_initial_delay_seconds: float
+    ws_reconnect_max_delay_seconds: float
+    ws_output_root: str
+    ws_write_control_messages: bool
+
+
+_ALLOWED_WS_SUBSCRIPTIONS = {
+    "bbo",
+    "trades",
+    "activeAssetCtx",
+    "l2Book",
+    "allMids",
+}
 
 
 def _as_mapping(value: Any, *, name: str) -> dict[str, Any]:
@@ -79,6 +99,20 @@ def load_trade_xyz_data_collection_config(
     reference = _as_mapping(root.get("reference_data"), name="reference_data")
     candles = _as_mapping(root.get("signal_candles"), name="signal_candles")
     archive = _as_mapping(root.get("historical_archive"), name="historical_archive")
+    websocket = _as_mapping(root.get("websocket_collection"), name="websocket_collection")
+    ws_reconnect = _as_mapping(websocket.get("reconnect"), name="websocket_collection.reconnect")
+    ws_subscriptions = _as_str_tuple(
+        websocket.get("default_subscriptions", ["bbo", "trades", "activeAssetCtx"]),
+        name="websocket_collection.default_subscriptions",
+    )
+    invalid_ws_subscriptions = [
+        item for item in ws_subscriptions if item not in _ALLOWED_WS_SUBSCRIPTIONS
+    ]
+    if invalid_ws_subscriptions:
+        raise ValueError(
+            "websocket_collection.default_subscriptions contains unsupported values: "
+            + ",".join(invalid_ws_subscriptions)
+        )
 
     return TradeXyzDataCollectionConfig(
         symbols=tuple(item.upper() for item in _as_str_tuple(root.get("symbols"), name="symbols")),
@@ -119,6 +153,41 @@ def load_trade_xyz_data_collection_config(
             archive.get("coins"), name="historical_archive.coins", required=False
         ),
         archive_start_date=str(archive["start_date"]) if archive.get("start_date") else None,
+        ws_enabled=bool(websocket.get("enabled", False)),
+        ws_url=str(websocket.get("ws_url") or "wss://api.hyperliquid.xyz/ws"),
+        ws_default_subscriptions=ws_subscriptions,
+        ws_duration_minutes=_positive_int(
+            websocket.get("duration_minutes"),
+            name="websocket_collection.duration_minutes",
+            default=60,
+        ),
+        ws_heartbeat_seconds=_positive_int(
+            websocket.get("heartbeat_seconds"),
+            name="websocket_collection.heartbeat_seconds",
+            default=30,
+        ),
+        ws_server_timeout_seconds=_positive_int(
+            websocket.get("server_timeout_seconds"),
+            name="websocket_collection.server_timeout_seconds",
+            default=60,
+        ),
+        ws_reconnect_max_attempts=_positive_int(
+            ws_reconnect.get("max_attempts"),
+            name="websocket_collection.reconnect.max_attempts",
+            default=5,
+        ),
+        ws_reconnect_initial_delay_seconds=_positive_float(
+            ws_reconnect.get("initial_delay_seconds"),
+            name="websocket_collection.reconnect.initial_delay_seconds",
+            default=1.0,
+        ),
+        ws_reconnect_max_delay_seconds=_positive_float(
+            ws_reconnect.get("max_delay_seconds"),
+            name="websocket_collection.reconnect.max_delay_seconds",
+            default=30.0,
+        ),
+        ws_output_root=str(websocket.get("output_root") or "raw/ws/trade_xyz"),
+        ws_write_control_messages=bool(websocket.get("write_control_messages", True)),
     )
 
 

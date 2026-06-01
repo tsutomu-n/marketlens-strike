@@ -35,6 +35,9 @@ def test_trade_xyz_client_read_only_execution_state_methods() -> None:
             "userFillsByTime": [{"coin": "xyz:SP500", "px": "101"}],
             "userFees": {"userCrossRate": "0.000315", "userAddRate": "0.000105"},
             "orderStatus": {"status": "open", "order": {"oid": 1}},
+            "perpsAtOpenInterestCap": [],
+            "perpDexStatus": {"status": "ok"},
+            "perpDexLimits": {"limits": {}},
         }
     )
 
@@ -50,6 +53,9 @@ def test_trade_xyz_client_read_only_execution_state_methods() -> None:
             "userAddRate": "0.000105",
         }
         assert client.order_status(user="0xabc", cloid="0xcloid")["status"] == "open"
+        assert client.perps_at_open_interest_cap() == []
+        assert client.perp_dex_status()["status"] == "ok"
+        assert "limits" in client.perp_dex_limits()
     finally:
         client.close()
 
@@ -65,6 +71,9 @@ def test_trade_xyz_client_read_only_execution_state_methods() -> None:
         },
         {"type": "userFees", "user": "0xabc"},
         {"type": "orderStatus", "user": "0xabc", "oid": "0xcloid"},
+        {"type": "perpsAtOpenInterestCap"},
+        {"type": "perpDexStatus", "dex": "xyz"},
+        {"type": "perpDexLimits", "dex": "xyz"},
     ]
 
 

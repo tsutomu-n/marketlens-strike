@@ -53,3 +53,20 @@ historical_archive:
     - xyz:TSLA
     - xyz:XYZ100
   start_date: "2026-05-31"
+
+websocket_collection:
+  enabled: false
+  ws_url: "wss://api.hyperliquid.xyz/ws"
+  default_subscriptions:
+    - bbo
+    - trades
+    - activeAssetCtx
+  duration_minutes: 60
+  heartbeat_seconds: 30
+  server_timeout_seconds: 60
+  reconnect:
+    max_attempts: 5
+    initial_delay_seconds: 1.0
+    max_delay_seconds: 30.0
+  output_root: "raw/ws/trade_xyz"
+  write_control_messages: true

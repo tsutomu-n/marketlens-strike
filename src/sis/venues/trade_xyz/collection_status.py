@@ -410,6 +410,43 @@ def _historical_archive_artifact_status(data_dir: Path) -> dict[str, Any]:
     }
 
 
+def _ws_artifact_status(data_dir: Path) -> dict[str, Any]:
+    capture_path = data_dir / "manifests/trade_xyz_ws_capture_manifest.json"
+    quality_path = data_dir / "manifests/trade_xyz_ws_quality_manifest.json"
+    parity_path = data_dir / "manifests/trade_xyz_rest_parity_manifest.json"
+    capture = _load_object(capture_path)
+    quality = _load_object(quality_path)
+    parity = _load_object(parity_path)
+    return {
+        "capture": {
+            "path": str(capture_path),
+            "exists": capture is not None,
+            "status": capture.get("status") if capture is not None else None,
+            "row_count": capture.get("row_count") if capture is not None else None,
+            "error_count": capture.get("error_count") if capture is not None else None,
+            "reconnect_count": capture.get("reconnect_count") if capture is not None else None,
+        },
+        "quality": {
+            "path": str(quality_path),
+            "exists": quality is not None,
+            "status": quality.get("status") if quality is not None else None,
+            "row_count": quality.get("row_count") if quality is not None else None,
+            "block_reasons": quality.get("block_reasons", []) if quality is not None else [],
+        },
+        "rest_parity": {
+            "path": str(parity_path),
+            "exists": parity is not None,
+            "status": parity.get("status") if parity is not None else None,
+            "request_error_count": parity.get("request_error_count")
+            if parity is not None
+            else None,
+            "missing_rest_symbols": parity.get("missing_rest_symbols", [])
+            if parity is not None
+            else [],
+        },
+    }
+
+
 def _historical_archive_backfill_action(
     *,
     data_dir: Path,
@@ -786,6 +823,7 @@ def build_trade_xyz_collection_status(
         data_dir, account_fee_prerequisites=account_fee_prerequisites
     )
     historical_archive_artifacts = _historical_archive_artifact_status(data_dir)
+    ws_artifacts = _ws_artifact_status(data_dir)
     locks = {
         "cycle": _lock_status(cycle_lock_dir or data_dir.parent / ".tmp/trade_xyz_data_cycle.lock"),
         "supervisor": _lock_status(
@@ -927,6 +965,7 @@ def build_trade_xyz_collection_status(
             else None,
         },
         "historical_archive_artifacts": historical_archive_artifacts,
+        "ws_artifacts": ws_artifacts,
         "next_actions": next_actions,
         "notes": [
             "This is read-only data collection status; it performs no wallet, signing, or exchange write.",
@@ -991,6 +1030,17 @@ def build_trade_xyz_collection_status(
         f"{status['historical_archive_artifacts']['bulk_normalization']['status']}",
         "- historical_archive_bulk_normalization_normalized_file_count: "
         f"{status['historical_archive_artifacts']['bulk_normalization']['normalized_file_count']}",
+        f"- ws_capture_manifest_exists: {status['ws_artifacts']['capture']['exists']}",
+        f"- ws_capture_row_count: {status['ws_artifacts']['capture']['row_count']}",
+        f"- ws_capture_error_count: {status['ws_artifacts']['capture']['error_count']}",
+        f"- ws_capture_reconnect_count: {status['ws_artifacts']['capture']['reconnect_count']}",
+        f"- ws_quality_manifest_exists: {status['ws_artifacts']['quality']['exists']}",
+        f"- ws_quality_status: {status['ws_artifacts']['quality']['status']}",
+        f"- ws_quality_row_count: {status['ws_artifacts']['quality']['row_count']}",
+        f"- ws_rest_parity_manifest_exists: {status['ws_artifacts']['rest_parity']['exists']}",
+        f"- ws_rest_parity_status: {status['ws_artifacts']['rest_parity']['status']}",
+        "- ws_rest_parity_missing_rest_symbols: "
+        f"{','.join(status['ws_artifacts']['rest_parity']['missing_rest_symbols'])}",
         f"- lz4_available: {status['runtime_prerequisites']['lz4']['available']}",
         f"- account_fee_user_address_configured: {status['account_fee_prerequisites']['configured']}",
         f"- account_fee_manifest_exists: {status['account_fee_artifact']['exists']}",

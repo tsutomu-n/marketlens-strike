@@ -232,6 +232,9 @@ def test_trade_xyz_collection_status_surfaces_readiness_next_actions(tmp_path) -
     assert "historical_archive_bulk_execution_command_error_count: 0" in report
     assert "historical_archive_bulk_normalization_status: completed" in report
     assert "historical_archive_bulk_normalization_normalized_file_count: 1" in report
+    assert "ws_capture_manifest_exists: False" in report
+    assert "ws_quality_manifest_exists: False" in report
+    assert "ws_rest_parity_manifest_exists: False" in report
     assert "account_fee_manifest_exists: True" in report
     assert "account_fee_manifest_status: pass" in report
     assert "account_fee_user_taker_fee_bps: 9.0" in report
@@ -274,6 +277,9 @@ def test_trade_xyz_collection_status_surfaces_readiness_next_actions(tmp_path) -
         persisted["historical_archive_artifacts"]["bulk_normalization"]["normalized_file_count"]
         == 1
     )
+    assert persisted["ws_artifacts"]["capture"]["exists"] is False
+    assert persisted["ws_artifacts"]["quality"]["exists"] is False
+    assert persisted["ws_artifacts"]["rest_parity"]["exists"] is False
     assert persisted["account_fee_prerequisites"]["configured"] is False
     assert persisted["account_fee_artifact"]["exists"] is True
     assert persisted["account_fee_artifact"]["status"] == "pass"

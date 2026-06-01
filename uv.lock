@@ -379,6 +379,7 @@ dependencies = [
     { name = "rich" },
     { name = "tenacity" },
     { name = "typer" },
+    { name = "websockets" },
     { name = "yahooquery" },
     { name = "yfinance" },
 ]
@@ -411,6 +412,7 @@ requires-dist = [
     { name = "rich", specifier = ">=13" },
     { name = "tenacity", specifier = ">=9" },
     { name = "typer", specifier = ">=0.12" },
+    { name = "websockets", specifier = ">=15" },
     { name = "yahooquery", specifier = ">=2.3" },
     { name = "yfinance", specifier = ">=0.2" },
 ]
