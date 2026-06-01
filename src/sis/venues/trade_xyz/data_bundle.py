@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -109,6 +109,7 @@ def build_trade_xyz_data_collection_bundle(
     signal_candle_max_age_hours: float = 24.0,
     signal_candle_client: TradeXyzClient | None = None,
     collect_real_market_reference_data: bool = True,
+    usable_start_date: date | None = None,
     real_market_provider: PriceProvider | None = None,
     allow_known_gaps: bool = True,
     generated_at: datetime | None = None,
@@ -286,6 +287,7 @@ def build_trade_xyz_data_collection_bundle(
                 data_dir=data_dir,
                 registry_path=registry_path,
                 symbols=symbols,
+                start=usable_start_date,
                 provider=real_market_provider,
                 generated_at=generated,
             )
@@ -338,6 +340,11 @@ def build_trade_xyz_data_collection_bundle(
                             registry_path=registry_path,
                             symbols=symbols,
                             intervals=signal_candle_intervals,
+                            start=(
+                                datetime.combine(usable_start_date, datetime.min.time(), tzinfo=UTC)
+                                if usable_start_date is not None
+                                else None
+                            ),
                             period_days=signal_candle_period_days,
                             client=client,
                             generated_at=generated,
@@ -348,6 +355,11 @@ def build_trade_xyz_data_collection_bundle(
                         registry_path=registry_path,
                         symbols=symbols,
                         intervals=signal_candle_intervals,
+                        start=(
+                            datetime.combine(usable_start_date, datetime.min.time(), tzinfo=UTC)
+                            if usable_start_date is not None
+                            else None
+                        ),
                         period_days=signal_candle_period_days,
                         client=effective_signal_candle_client,
                         generated_at=generated,

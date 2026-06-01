@@ -5,7 +5,8 @@ cd "$(dirname "$0")/.."
 
 DURATION_MINUTES="${SIS_TRADE_XYZ_CYCLE_DURATION_MINUTES:-1440}"
 INTERVAL_SECONDS="${SIS_TRADE_XYZ_CYCLE_INTERVAL_SECONDS:-60}"
-SYMBOLS="${SIS_TRADE_XYZ_CYCLE_SYMBOLS:-AAPL,AMD,AMZN,EWJ,GOOGL,META,MSFT,NVDA,SP500,TSLA,XYZ100}"
+COLLECTION_CONFIG="${SIS_TRADE_XYZ_COLLECTION_CONFIG:-configs/trade_xyz_data_collection.yaml}"
+SYMBOLS="${SIS_TRADE_XYZ_CYCLE_SYMBOLS:-}"
 LOG_DIR="${SIS_TRADE_XYZ_CYCLE_LOG_DIR:-logs/trade_xyz_data_cycle}"
 DRY_RUN="${SIS_TRADE_XYZ_CYCLE_DRY_RUN:-0}"
 LOCK_DIR="${SIS_TRADE_XYZ_CYCLE_LOCK_DIR:-.tmp/trade_xyz_data_cycle.lock}"
@@ -14,9 +15,9 @@ ALLOW_KNOWN_GAPS="${SIS_TRADE_XYZ_CYCLE_ALLOW_KNOWN_GAPS:-0}"
 REFRESH_REGISTRY="${SIS_TRADE_XYZ_CYCLE_REFRESH_REGISTRY:-1}"
 REGISTRY_SEED_PATH="${SIS_TRADE_XYZ_CYCLE_REGISTRY_SEED_PATH:-configs/instrument_registry.seed.json}"
 COLLECT_SIGNAL_CANDLES="${SIS_TRADE_XYZ_CYCLE_COLLECT_SIGNAL_CANDLES:-1}"
-SIGNAL_CANDLE_INTERVALS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_INTERVALS:-30m,4h,1d,3d}"
-SIGNAL_CANDLE_PERIOD_DAYS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_PERIOD_DAYS:-365}"
-SIGNAL_CANDLE_MAX_AGE_HOURS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_MAX_AGE_HOURS:-24}"
+SIGNAL_CANDLE_INTERVALS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_INTERVALS:-}"
+SIGNAL_CANDLE_PERIOD_DAYS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_PERIOD_DAYS:-}"
+SIGNAL_CANDLE_MAX_AGE_HOURS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_MAX_AGE_HOURS:-}"
 
 is_positive_int() {
   [[ "$1" =~ ^[1-9][0-9]*$ ]]
@@ -32,12 +33,12 @@ if ! is_positive_int "${INTERVAL_SECONDS}"; then
   exit 2
 fi
 
-if ! is_positive_int "${SIGNAL_CANDLE_PERIOD_DAYS}"; then
+if [[ -n "${SIGNAL_CANDLE_PERIOD_DAYS}" ]] && ! is_positive_int "${SIGNAL_CANDLE_PERIOD_DAYS}"; then
   echo "SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_PERIOD_DAYS must be a positive integer: ${SIGNAL_CANDLE_PERIOD_DAYS}" >&2
   exit 2
 fi
 
-if ! is_positive_int "${SIGNAL_CANDLE_MAX_AGE_HOURS}"; then
+if [[ -n "${SIGNAL_CANDLE_MAX_AGE_HOURS}" ]] && ! is_positive_int "${SIGNAL_CANDLE_MAX_AGE_HOURS}"; then
   echo "SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_MAX_AGE_HOURS must be a positive integer: ${SIGNAL_CANDLE_MAX_AGE_HOURS}" >&2
   exit 2
 fi
@@ -85,14 +86,27 @@ trap 'rm -f "${LOCK_DIR}/pid" 2>/dev/null || true; rmdir "${LOCK_DIR}" 2>/dev/nu
 
 command=(
   uv run sis collect-trade-xyz-data-cycle
+  --collection-config "${COLLECTION_CONFIG}"
   --duration-minutes "${DURATION_MINUTES}"
   --interval-seconds "${INTERVAL_SECONDS}"
-  --symbols "${SYMBOLS}"
   --seed-path "${REGISTRY_SEED_PATH}"
-  --signal-candle-intervals "${SIGNAL_CANDLE_INTERVALS}"
-  --signal-candle-period-days "${SIGNAL_CANDLE_PERIOD_DAYS}"
-  --signal-candle-max-age-hours "${SIGNAL_CANDLE_MAX_AGE_HOURS}"
 )
+
+if [[ -n "${SYMBOLS}" ]]; then
+  command+=(--symbols "${SYMBOLS}")
+fi
+
+if [[ -n "${SIGNAL_CANDLE_INTERVALS}" ]]; then
+  command+=(--signal-candle-intervals "${SIGNAL_CANDLE_INTERVALS}")
+fi
+
+if [[ -n "${SIGNAL_CANDLE_PERIOD_DAYS}" ]]; then
+  command+=(--signal-candle-period-days "${SIGNAL_CANDLE_PERIOD_DAYS}")
+fi
+
+if [[ -n "${SIGNAL_CANDLE_MAX_AGE_HOURS}" ]]; then
+  command+=(--signal-candle-max-age-hours "${SIGNAL_CANDLE_MAX_AGE_HOURS}")
+fi
 
 if [[ "${DRY_RUN}" == "1" ]]; then
   command+=(--dry-run)
@@ -116,7 +130,8 @@ fi
 
 printf 'duration_minutes=%s\n' "${DURATION_MINUTES}"
 printf 'interval_seconds=%s\n' "${INTERVAL_SECONDS}"
-printf 'symbols=%s\n' "${SYMBOLS}"
+printf 'collection_config=%s\n' "${COLLECTION_CONFIG}"
+printf 'symbols=%s\n' "${SYMBOLS:-<collection-config>}"
 printf 'log_path=%s\n' "${log_path}"
 printf 'dry_run=%s\n' "${DRY_RUN}"
 printf 'lock_dir=%s\n' "${LOCK_DIR}"
@@ -125,9 +140,9 @@ printf 'allow_known_gaps=%s\n' "${ALLOW_KNOWN_GAPS}"
 printf 'refresh_registry=%s\n' "${REFRESH_REGISTRY}"
 printf 'registry_seed_path=%s\n' "${REGISTRY_SEED_PATH}"
 printf 'collect_signal_candles=%s\n' "${COLLECT_SIGNAL_CANDLES}"
-printf 'signal_candle_intervals=%s\n' "${SIGNAL_CANDLE_INTERVALS}"
-printf 'signal_candle_period_days=%s\n' "${SIGNAL_CANDLE_PERIOD_DAYS}"
-printf 'signal_candle_max_age_hours=%s\n' "${SIGNAL_CANDLE_MAX_AGE_HOURS}"
+printf 'signal_candle_intervals=%s\n' "${SIGNAL_CANDLE_INTERVALS:-<collection-config>}"
+printf 'signal_candle_period_days=%s\n' "${SIGNAL_CANDLE_PERIOD_DAYS:-<collection-config>}"
+printf 'signal_candle_max_age_hours=%s\n' "${SIGNAL_CANDLE_MAX_AGE_HOURS:-<collection-config>}"
 
 {
   printf '[%s] Trade[XYZ] data cycle starting\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"

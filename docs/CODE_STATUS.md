@@ -37,6 +37,8 @@
 ## Current Operational Interpretation
 
 - migration 実装は完了している。
+- Trade[XYZ]実データ収集の非秘密な対象symbol、quote収集間隔、signal candle interval、readiness閾値、archive対象coinは `configs/trade_xyz_data_collection.yaml` が正本。shell wrapperは空のenv設定時にこのYAMLを読む。
+- 2026-05-30以前の実データは現行Trade[XYZ] backtest/readiness作業では使用禁止。該当artifactは `data/archive/pre_2026_05_31_unusable_real_data/` に移動済み。
 - `src/sis/cli.py` は root Typer app registration と `main()` に近い構成へ分割済み。
 - Trade[XYZ] read-only artifacts は strict validation / diagnostics / phase gate に接続済み。
 - Trade[XYZ] pure backtest v0.1 は既存 bridge / Strategy Authoring fixed-horizon backtest と分離した Python API surface として実装済み。

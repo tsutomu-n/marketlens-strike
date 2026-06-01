@@ -61,3 +61,13 @@ def test_trade_xyz_until_ready_wrapper_propagates_required_data_prereqs() -> Non
         "external prerequisite failures are reported but do not stop organic quote collection"
         in text
     )
+
+
+def test_trade_xyz_data_cycle_wrapper_reads_collection_config_defaults() -> None:
+    text = _read("scripts/collect_trade_xyz_data_cycle.sh")
+
+    assert "SIS_TRADE_XYZ_COLLECTION_CONFIG:-configs/trade_xyz_data_collection.yaml" in text
+    assert '--collection-config "${COLLECTION_CONFIG}"' in text
+    assert 'SYMBOLS="${SIS_TRADE_XYZ_CYCLE_SYMBOLS:-}"' in text
+    assert 'command+=(--symbols "${SYMBOLS}")' in text
+    assert "AAPL,AMD,AMZN,EWJ,GOOGL,META,MSFT,NVDA,SP500,TSLA,XYZ100" not in text

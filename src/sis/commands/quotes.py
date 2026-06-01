@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 import shlex
 from typing import Callable
@@ -14,6 +14,9 @@ from sis.storage.normalize import normalize_quotes
 from sis.venues.trade_xyz.account_fee import collect_trade_xyz_account_fee_snapshot
 from sis.venues.trade_xyz.candles import collect_trade_xyz_signal_candles
 from sis.venues.trade_xyz.client import TradeXyzClient
+from sis.venues.trade_xyz.collection_config import DEFAULT_COLLECTION_CONFIG_PATH
+from sis.venues.trade_xyz.collection_config import join_csv
+from sis.venues.trade_xyz.collection_config import load_trade_xyz_data_collection_config
 from sis.venues.trade_xyz.collection_status import build_trade_xyz_collection_status
 from sis.venues.trade_xyz.collector import collect_trade_xyz_quote_window
 from sis.venues.trade_xyz.coverage import build_trade_xyz_quote_coverage_manifest
@@ -83,6 +86,18 @@ def _refresh_trade_xyz_registry(
     build_result = build_trade_xyz_registry(seed_path, client=client)
     write_trade_xyz_registry(registry_path, build_result)
     return registry_path
+
+
+def _csv_items(value: str | None) -> list[str] | None:
+    if value is None:
+        return None
+    return [item.strip().upper() for item in value.split(",") if item.strip()]
+
+
+def _csv_intervals(value: str | None) -> list[str] | None:
+    if value is None:
+        return None
+    return [item.strip() for item in value.split(",") if item.strip()]
 
 
 def register_quote_commands(
@@ -176,6 +191,11 @@ def register_quote_commands(
 
     @app.command("collect-trade-xyz-data-cycle")
     def collect_trade_xyz_data_cycle_cmd(
+        collection_config: Path = typer.Option(
+            DEFAULT_COLLECTION_CONFIG_PATH,
+            "--collection-config",
+            help="Non-secret Trade[XYZ] data collection defaults.",
+        ),
         seed_path: Path = typer.Option(
             Path("configs/instrument_registry.seed.json"),
             "--seed-path",
@@ -198,15 +218,15 @@ def register_quote_commands(
         ),
         symbols: str | None = typer.Option(None, "--symbols", help="Comma-separated symbols."),
         max_symbols: int | None = typer.Option(None, "--max-symbols"),
-        duration_minutes: int = typer.Option(1440, "--duration-minutes"),
-        interval_seconds: int = typer.Option(60, "--interval-seconds"),
+        duration_minutes: int | None = typer.Option(None, "--duration-minutes"),
+        interval_seconds: int | None = typer.Option(None, "--interval-seconds"),
         replace: bool = typer.Option(False, "--replace/--append"),
         write_summary: bool = typer.Option(True, "--write-summary/--no-write-summary"),
         write_report: bool = typer.Option(True, "--write-report/--no-write-report"),
         output_dir: Path | None = typer.Option(None, "--output-dir"),
-        min_days: float = typer.Option(30.0, "--min-days"),
-        max_gap_minutes: float = typer.Option(10.0, "--max-gap-minutes"),
-        max_oracle_lag_minutes: float = typer.Option(90.0, "--max-oracle-lag-minutes"),
+        min_days: float | None = typer.Option(None, "--min-days"),
+        max_gap_minutes: float | None = typer.Option(None, "--max-gap-minutes"),
+        max_oracle_lag_minutes: float | None = typer.Option(None, "--max-oracle-lag-minutes"),
         traceable_only: bool = typer.Option(
             True,
             "--traceable-only/--include-untraceable",
@@ -227,10 +247,10 @@ def register_quote_commands(
             "--collect-signal-candles/--skip-signal-candles",
             help="Collect historical candleSnapshot OHLCV for signal inputs, separate from fill snapshots.",
         ),
-        signal_candle_intervals: str = typer.Option("30m,4h,1d,3d", "--signal-candle-intervals"),
-        signal_candle_period_days: int = typer.Option(365, "--signal-candle-period-days"),
-        signal_candle_max_age_hours: float = typer.Option(
-            24.0,
+        signal_candle_intervals: str | None = typer.Option(None, "--signal-candle-intervals"),
+        signal_candle_period_days: int | None = typer.Option(None, "--signal-candle-period-days"),
+        signal_candle_max_age_hours: float | None = typer.Option(
+            None,
             "--signal-candle-max-age-hours",
             help="Reuse existing complete signal candle artifact when it is newer than this.",
         ),
@@ -243,6 +263,39 @@ def register_quote_commands(
     ) -> None:
         settings = get_settings()
         out_root = output_dir or settings.data_dir
+        try:
+            config = load_trade_xyz_data_collection_config(collection_config)
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(code=2) from exc
+        effective_symbols = symbols or join_csv(config.symbols)
+        effective_duration_minutes = duration_minutes or config.duration_minutes
+        effective_interval_seconds = interval_seconds or config.interval_seconds
+        effective_min_days = min_days if min_days is not None else config.min_days
+        effective_max_gap_minutes = (
+            max_gap_minutes if max_gap_minutes is not None else config.max_gap_minutes
+        )
+        effective_max_oracle_lag_minutes = (
+            max_oracle_lag_minutes
+            if max_oracle_lag_minutes is not None
+            else config.max_oracle_lag_minutes
+        )
+        effective_signal_candle_intervals = signal_candle_intervals or join_csv(
+            config.signal_candle_intervals
+        )
+        effective_signal_candle_period_days = (
+            signal_candle_period_days
+            if signal_candle_period_days is not None
+            else config.signal_candle_period_days
+        )
+        effective_signal_candle_max_age_hours = (
+            signal_candle_max_age_hours
+            if signal_candle_max_age_hours is not None
+            else config.signal_candle_max_age_hours
+        )
+        effective_usable_start_date = (
+            date.fromisoformat(config.usable_start_date) if config.usable_start_date else None
+        )
         resolved_registry_path = registry_path or (
             settings.data_dir / "registry/trade_xyz_instrument_registry.json"
         )
@@ -269,7 +322,7 @@ def register_quote_commands(
             resolved_registry_path, active_trade_xyz = _resolve_active_trade_xyz_instruments(
                 data_dir=settings.data_dir,
                 registry_path=resolved_registry_path,
-                symbols=symbols,
+                symbols=effective_symbols,
                 max_symbols=max_symbols,
             )
         except FileNotFoundError:
@@ -285,10 +338,10 @@ def register_quote_commands(
             typer.echo(str(exc))
             raise typer.Exit(code=2) from exc
 
-        if duration_minutes <= 0 or interval_seconds <= 0:
+        if effective_duration_minutes <= 0 or effective_interval_seconds <= 0:
             typer.echo("duration-minutes and interval-seconds must be > 0")
             raise typer.Exit(code=2)
-        if duration_minutes * 60 < interval_seconds:
+        if effective_duration_minutes * 60 < effective_interval_seconds:
             typer.echo("duration-minutes * 60 must be >= interval-seconds")
             raise typer.Exit(code=2)
 
@@ -304,7 +357,8 @@ def register_quote_commands(
             typer.echo(
                 "collect_command="
                 "uv run sis collect-trade-xyz-quotes "
-                f"--duration-minutes {duration_minutes} --interval-seconds {interval_seconds} "
+                f"--duration-minutes {effective_duration_minutes} "
+                f"--interval-seconds {effective_interval_seconds} "
                 "--write-summary --write-report "
                 f"--symbols {','.join(requested_symbols)}"
             )
@@ -314,7 +368,8 @@ def register_quote_commands(
             typer.echo(
                 "signal_candles="
                 f"{'enabled' if collect_signal_candles else 'disabled'} "
-                f"intervals={signal_candle_intervals} period_days={signal_candle_period_days}"
+                f"intervals={effective_signal_candle_intervals} "
+                f"period_days={effective_signal_candle_period_days}"
             )
             if account_fee_user_address:
                 typer.echo("account_fee_collection=enabled")
@@ -324,8 +379,8 @@ def register_quote_commands(
             summary = collect_trade_xyz_quote_window(
                 data_dir=settings.data_dir,
                 instruments=active_trade_xyz,
-                duration_minutes=duration_minutes,
-                interval_seconds=interval_seconds,
+                duration_minutes=effective_duration_minutes,
+                interval_seconds=effective_interval_seconds,
                 normalize=normalize,
                 replace=replace,
                 write_summary=write_summary,
@@ -338,22 +393,25 @@ def register_quote_commands(
                 registry_path=resolved_registry_path,
                 raw_quotes_root=out_root / "raw/quotes",
                 symbols=requested_symbols,
-                min_days=min_days,
-                max_gap_minutes=max_gap_minutes,
+                min_days=effective_min_days,
+                max_gap_minutes=effective_max_gap_minutes,
                 traceable_only=traceable_only,
-                max_oracle_lag_minutes=max_oracle_lag_minutes,
+                max_oracle_lag_minutes=effective_max_oracle_lag_minutes,
                 auto_funding_window=True,
                 funding_client=client,
                 account_fee_user_address=account_fee_user_address,
                 account_fee_client=client,
                 collect_signal_candles=collect_signal_candles,
                 signal_candle_intervals=[
-                    item.strip() for item in signal_candle_intervals.split(",") if item.strip()
+                    item.strip()
+                    for item in effective_signal_candle_intervals.split(",")
+                    if item.strip()
                 ],
-                signal_candle_period_days=signal_candle_period_days,
-                signal_candle_max_age_hours=signal_candle_max_age_hours,
+                signal_candle_period_days=effective_signal_candle_period_days,
+                signal_candle_max_age_hours=effective_signal_candle_max_age_hours,
                 signal_candle_client=client,
                 collect_real_market_reference_data=collect_real_market_reference_data,
+                usable_start_date=effective_usable_start_date,
                 allow_known_gaps=allow_known_gaps,
             )
 
@@ -553,6 +611,8 @@ def register_quote_commands(
         ),
         symbols: str | None = typer.Option(None, "--symbols", help="Comma-separated symbols."),
         intervals: str = typer.Option("30m,4h,1d,3d", "--intervals"),
+        start: str | None = typer.Option(None, "--start", help="UTC start date YYYY-MM-DD."),
+        end: str | None = typer.Option(None, "--end", help="UTC end date YYYY-MM-DD."),
         period_days: int = typer.Option(365, "--period-days"),
         request_delay_seconds: float = typer.Option(0.25, "--request-delay-seconds"),
     ) -> None:
@@ -570,6 +630,16 @@ def register_quote_commands(
                     registry_path=registry_path,
                     symbols=requested_symbols,
                     intervals=requested_intervals,
+                    start=(
+                        datetime.combine(date.fromisoformat(start), datetime.min.time(), tzinfo=UTC)
+                        if start
+                        else None
+                    ),
+                    end=(
+                        datetime.combine(date.fromisoformat(end), datetime.min.time(), tzinfo=UTC)
+                        if end
+                        else None
+                    ),
                     period_days=period_days,
                     request_delay_seconds=request_delay_seconds,
                     client=client,
@@ -1281,6 +1351,11 @@ def register_quote_commands(
 
     @app.command("build-trade-xyz-data-bundle")
     def build_trade_xyz_data_bundle_cmd(
+        collection_config: Path = typer.Option(
+            DEFAULT_COLLECTION_CONFIG_PATH,
+            "--collection-config",
+            help="Non-secret Trade[XYZ] data collection defaults.",
+        ),
         registry_path: Path | None = typer.Option(
             None,
             "--registry-path",
@@ -1292,9 +1367,9 @@ def register_quote_commands(
             help="Raw quotes root containing trade_xyz/*.jsonl.",
         ),
         symbols: str | None = typer.Option(None, "--symbols", help="Comma-separated symbols."),
-        min_days: float = typer.Option(30.0, "--min-days"),
-        max_gap_minutes: float = typer.Option(10.0, "--max-gap-minutes"),
-        max_oracle_lag_minutes: float = typer.Option(90.0, "--max-oracle-lag-minutes"),
+        min_days: float | None = typer.Option(None, "--min-days"),
+        max_gap_minutes: float | None = typer.Option(None, "--max-gap-minutes"),
+        max_oracle_lag_minutes: float | None = typer.Option(None, "--max-oracle-lag-minutes"),
         traceable_only: bool = typer.Option(
             True,
             "--traceable-only/--include-untraceable",
@@ -1322,10 +1397,10 @@ def register_quote_commands(
             "--collect-signal-candles/--skip-signal-candles",
             help="Collect historical candleSnapshot OHLCV for signal inputs.",
         ),
-        signal_candle_intervals: str = typer.Option("30m,4h,1d,3d", "--signal-candle-intervals"),
-        signal_candle_period_days: int = typer.Option(365, "--signal-candle-period-days"),
-        signal_candle_max_age_hours: float = typer.Option(
-            24.0,
+        signal_candle_intervals: str | None = typer.Option(None, "--signal-candle-intervals"),
+        signal_candle_period_days: int | None = typer.Option(None, "--signal-candle-period-days"),
+        signal_candle_max_age_hours: float | None = typer.Option(
+            None,
             "--signal-candle-max-age-hours",
             help="Reuse existing complete signal candle artifact when it is newer than this.",
         ),
@@ -1336,10 +1411,36 @@ def register_quote_commands(
         ),
     ) -> None:
         settings = get_settings()
-        requested_symbols = (
-            [item.strip().upper() for item in symbols.split(",") if item.strip()]
-            if symbols
-            else None
+        try:
+            config = load_trade_xyz_data_collection_config(collection_config)
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(code=2) from exc
+        requested_symbols = _csv_items(symbols) or list(config.symbols)
+        effective_min_days = min_days if min_days is not None else config.min_days
+        effective_max_gap_minutes = (
+            max_gap_minutes if max_gap_minutes is not None else config.max_gap_minutes
+        )
+        effective_max_oracle_lag_minutes = (
+            max_oracle_lag_minutes
+            if max_oracle_lag_minutes is not None
+            else config.max_oracle_lag_minutes
+        )
+        effective_signal_candle_intervals = _csv_intervals(signal_candle_intervals) or list(
+            config.signal_candle_intervals
+        )
+        effective_signal_candle_period_days = (
+            signal_candle_period_days
+            if signal_candle_period_days is not None
+            else config.signal_candle_period_days
+        )
+        effective_signal_candle_max_age_hours = (
+            signal_candle_max_age_hours
+            if signal_candle_max_age_hours is not None
+            else config.signal_candle_max_age_hours
+        )
+        effective_usable_start_date = (
+            date.fromisoformat(config.usable_start_date) if config.usable_start_date else None
         )
         if funding_start_time_ms is not None or auto_funding_window:
             with TradeXyzClient() as client:
@@ -1348,10 +1449,10 @@ def register_quote_commands(
                     registry_path=registry_path,
                     raw_quotes_root=raw_quotes_root,
                     symbols=requested_symbols,
-                    min_days=min_days,
-                    max_gap_minutes=max_gap_minutes,
+                    min_days=effective_min_days,
+                    max_gap_minutes=effective_max_gap_minutes,
                     traceable_only=traceable_only,
-                    max_oracle_lag_minutes=max_oracle_lag_minutes,
+                    max_oracle_lag_minutes=effective_max_oracle_lag_minutes,
                     funding_start_time_ms=funding_start_time_ms,
                     funding_end_time_ms=funding_end_time_ms,
                     auto_funding_window=auto_funding_window,
@@ -1359,13 +1460,12 @@ def register_quote_commands(
                     account_fee_user_address=account_fee_user_address,
                     account_fee_client=client,
                     collect_signal_candles=collect_signal_candles,
-                    signal_candle_intervals=[
-                        item.strip() for item in signal_candle_intervals.split(",") if item.strip()
-                    ],
-                    signal_candle_period_days=signal_candle_period_days,
-                    signal_candle_max_age_hours=signal_candle_max_age_hours,
+                    signal_candle_intervals=effective_signal_candle_intervals,
+                    signal_candle_period_days=effective_signal_candle_period_days,
+                    signal_candle_max_age_hours=effective_signal_candle_max_age_hours,
                     signal_candle_client=client,
                     collect_real_market_reference_data=collect_real_market_reference_data,
+                    usable_start_date=effective_usable_start_date,
                     allow_known_gaps=allow_known_gaps,
                 )
         else:
@@ -1374,21 +1474,20 @@ def register_quote_commands(
                 registry_path=registry_path,
                 raw_quotes_root=raw_quotes_root,
                 symbols=requested_symbols,
-                min_days=min_days,
-                max_gap_minutes=max_gap_minutes,
+                min_days=effective_min_days,
+                max_gap_minutes=effective_max_gap_minutes,
                 traceable_only=traceable_only,
-                max_oracle_lag_minutes=max_oracle_lag_minutes,
+                max_oracle_lag_minutes=effective_max_oracle_lag_minutes,
                 funding_start_time_ms=funding_start_time_ms,
                 funding_end_time_ms=funding_end_time_ms,
                 auto_funding_window=auto_funding_window,
                 account_fee_user_address=account_fee_user_address,
                 collect_signal_candles=collect_signal_candles,
-                signal_candle_intervals=[
-                    item.strip() for item in signal_candle_intervals.split(",") if item.strip()
-                ],
-                signal_candle_period_days=signal_candle_period_days,
-                signal_candle_max_age_hours=signal_candle_max_age_hours,
+                signal_candle_intervals=effective_signal_candle_intervals,
+                signal_candle_period_days=effective_signal_candle_period_days,
+                signal_candle_max_age_hours=effective_signal_candle_max_age_hours,
                 collect_real_market_reference_data=collect_real_market_reference_data,
+                usable_start_date=effective_usable_start_date,
                 allow_known_gaps=allow_known_gaps,
             )
         typer.echo(

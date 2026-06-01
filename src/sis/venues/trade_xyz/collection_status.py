@@ -12,6 +12,8 @@ from typing import Any
 from sis.storage.jsonl_store import read_json
 from sis.storage.jsonl_store import read_jsonl
 from sis.storage.jsonl_store import write_json
+from sis.venues.trade_xyz.collection_config import DEFAULT_COLLECTION_CONFIG_PATH
+from sis.venues.trade_xyz.collection_config import load_trade_xyz_data_collection_config
 from sis.venues.trade_xyz.coverage import build_trade_xyz_quote_coverage_manifest
 from sis.venues.trade_xyz.historical_archive import aws_download_command_status
 from sis.venues.trade_xyz.readiness import build_trade_xyz_data_readiness_manifest
@@ -223,6 +225,7 @@ def _progress_since_previous(
 def _cycle_command(symbols: list[str], *, duration_minutes: int, interval_seconds: int) -> str:
     command = (
         "uv run sis collect-trade-xyz-data-cycle "
+        f"--collection-config {DEFAULT_COLLECTION_CONFIG_PATH} "
         f"--duration-minutes {duration_minutes} --interval-seconds {interval_seconds}"
     )
     if symbols:
@@ -418,8 +421,18 @@ def _historical_archive_backfill_action(
 ) -> dict[str, Any] | None:
     if not failing_symbols:
         return None
+    try:
+        config = load_trade_xyz_data_collection_config(DEFAULT_COLLECTION_CONFIG_PATH)
+    except (FileNotFoundError, ValueError):
+        config = None
     end_date = (generated_at - timedelta(days=1)).date()
-    start_date = end_date - timedelta(days=29)
+    start_date = (
+        datetime.fromisoformat(config.archive_start_date).date()
+        if config is not None and config.archive_start_date is not None
+        else end_date - timedelta(days=29)
+    )
+    if start_date > end_date:
+        end_date = start_date
     coins = [
         f"xyz:{symbol}" if not symbol.startswith("xyz:") else symbol for symbol in failing_symbols
     ]
@@ -667,6 +680,18 @@ def build_trade_xyz_collection_status(
 ) -> dict[str, Any]:
     generated = generated_at or datetime.now(UTC)
     effective_raw_quotes_root = raw_quotes_root or data_dir / "raw/quotes"
+    try:
+        config = load_trade_xyz_data_collection_config(DEFAULT_COLLECTION_CONFIG_PATH)
+    except (FileNotFoundError, ValueError):
+        config = None
+    if config is not None:
+        if symbols is None:
+            symbols = list(config.symbols)
+        duration_minutes = duration_minutes or config.duration_minutes
+        interval_seconds = interval_seconds or config.interval_seconds
+        min_days = min_days if min_days is not None else config.min_days
+        max_gap_minutes = max_gap_minutes if max_gap_minutes is not None else config.max_gap_minutes
+        traceable_only = config.traceable_only if traceable_only is True else traceable_only
     coverage_path = data_dir / "manifests/trade_xyz_quote_coverage_manifest.json"
     readiness_path = data_dir / "manifests/trade_xyz_data_readiness_manifest.json"
     bundle_path = data_dir / "manifests/trade_xyz_data_collection_bundle_manifest.json"

@@ -1,0 +1,55 @@
+schema_version: trade_xyz_data_collection_config.v1
+
+data_cutoff:
+  usable_start_date: "2026-05-31"
+
+symbols:
+  - AAPL
+  - AMD
+  - AMZN
+  - EWJ
+  - GOOGL
+  - META
+  - MSFT
+  - NVDA
+  - SP500
+  - TSLA
+  - XYZ100
+
+quote_collection:
+  duration_minutes: 1440
+  interval_seconds: 60
+
+readiness:
+  min_days: 30.0
+  max_gap_minutes: 10.0
+  max_oracle_lag_minutes: 90.0
+  traceable_only: true
+
+reference_data:
+  collect_real_market_reference: true
+
+signal_candles:
+  collect: true
+  intervals:
+    - 30m
+    - 4h
+    - 1d
+    - 3d
+  period_days: 1
+  max_age_hours: 24.0
+
+historical_archive:
+  coins:
+    - xyz:AAPL
+    - xyz:AMD
+    - xyz:AMZN
+    - xyz:EWJ
+    - xyz:GOOGL
+    - xyz:META
+    - xyz:MSFT
+    - xyz:NVDA
+    - xyz:SP500
+    - xyz:TSLA
+    - xyz:XYZ100
+  start_date: "2026-05-31"

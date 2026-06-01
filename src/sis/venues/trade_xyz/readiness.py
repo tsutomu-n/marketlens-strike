@@ -9,6 +9,9 @@ from typing import Any, Literal
 
 from sis.storage.jsonl_store import read_json
 from sis.storage.jsonl_store import write_json
+from sis.venues.trade_xyz.collection_config import DEFAULT_COLLECTION_CONFIG_PATH
+from sis.venues.trade_xyz.collection_config import join_csv
+from sis.venues.trade_xyz.collection_config import load_trade_xyz_data_collection_config
 from sis.venues.trade_xyz.registry import load_trade_xyz_registry
 
 RequirementStatus = Literal["pass", "fail", "known_gap"]
@@ -613,10 +616,20 @@ def _funding_next_action(requirement: dict[str, Any]) -> dict[str, Any] | None:
 def _real_market_reference_next_action(requirement: dict[str, Any]) -> dict[str, Any] | None:
     if requirement["key"] != "real_market_reference" or requirement["status"] != "fail":
         return None
+    command = "uv run sis collect-trade-xyz-real-market-reference --period-days 365 --interval 1d"
+    try:
+        config = load_trade_xyz_data_collection_config(DEFAULT_COLLECTION_CONFIG_PATH)
+        if config.usable_start_date is not None:
+            command = (
+                "uv run sis collect-trade-xyz-real-market-reference "
+                f"--start {config.usable_start_date} --interval 1d"
+            )
+    except (FileNotFoundError, ValueError):
+        pass
     return {
         "key": "collect_real_market_reference",
         "reason": requirement.get("reason"),
-        "command": "uv run sis collect-trade-xyz-real-market-reference --period-days 365 --interval 1d",
+        "command": command,
         "notes": [
             "This collects read-only real-market reference bars from Trade[XYZ] registry real_market_symbol mappings",
             "yfinance output is research/backtest reference data, not live execution data",
@@ -627,12 +640,24 @@ def _real_market_reference_next_action(requirement: dict[str, Any]) -> dict[str,
 def _signal_candles_next_action(requirement: dict[str, Any]) -> dict[str, Any] | None:
     if requirement["key"] != "signal_candles" or requirement["status"] != "fail":
         return None
+    command = (
+        "uv run sis collect-trade-xyz-signal-candles --intervals 30m,4h,1d,3d --period-days 365"
+    )
+    try:
+        config = load_trade_xyz_data_collection_config(DEFAULT_COLLECTION_CONFIG_PATH)
+        command = (
+            "uv run sis collect-trade-xyz-signal-candles "
+            f"--intervals {join_csv(config.signal_candle_intervals)} "
+            f"--period-days {config.signal_candle_period_days}"
+        )
+        if config.usable_start_date is not None:
+            command += f" --start {config.usable_start_date}"
+    except (FileNotFoundError, ValueError):
+        pass
     return {
         "key": "collect_signal_candles",
         "reason": requirement.get("reason"),
-        "command": (
-            "uv run sis collect-trade-xyz-signal-candles --intervals 30m,4h,1d,3d --period-days 365"
-        ),
+        "command": command,
         "follow_up_command": "uv run sis build-trade-xyz-data-readiness",
         "notes": [
             "This collects historical candleSnapshot OHLCV for signal inputs",
