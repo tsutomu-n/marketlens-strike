@@ -9,6 +9,25 @@ from sis.storage.jsonl_store import write_json
 from sis.venues.trade_xyz.client import TradeXyzClient
 
 
+def _ctx_symbols_from_meta(meta: Any, ctxs: list[Any]) -> set[str]:
+    if not isinstance(meta, dict):
+        return set()
+    universe = meta.get("universe")
+    if not isinstance(universe, list):
+        return set()
+    symbols: set[str] = set()
+    for index, ctx in enumerate(ctxs):
+        if not isinstance(ctx, dict) or index >= len(universe):
+            continue
+        item = universe[index]
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if isinstance(name, str) and name.startswith("xyz:"):
+            symbols.add(name.removeprefix("xyz:").upper())
+    return symbols
+
+
 def build_trade_xyz_rest_parity_manifest(
     *,
     data_dir: Path,
@@ -42,9 +61,10 @@ def build_trade_xyz_rest_parity_manifest(
         request_error_count += 1
         block_reasons.append("allMids_request_error")
     try:
-        _meta, ctxs = client.meta_and_asset_ctxs()
+        meta, ctxs = client.meta_and_asset_ctxs()
         request_count += 1
     except Exception:
+        meta = {}
         ctxs = []
         request_error_count += 1
         block_reasons.append("metaAndAssetCtxs_request_error")
@@ -55,7 +75,6 @@ def build_trade_xyz_rest_parity_manifest(
             request_count += 1
         except Exception:
             known_gaps.append(f"{endpoint}_unavailable")
-            request_error_count += 1
 
     if include_l2_book:
         for symbol in symbols[: max(0, l2_max_symbols)]:
@@ -85,6 +104,7 @@ def build_trade_xyz_rest_parity_manifest(
         for item in ctxs
         if isinstance(item, dict) and isinstance(item.get("coin"), str)
     }
+    ctx_symbols |= _ctx_symbols_from_meta(meta, ctxs)
     rest_symbols = mid_symbols | ctx_symbols
     for symbol in sorted(requested_symbols):
         if ws_symbols and symbol not in ws_symbols:
@@ -133,6 +153,7 @@ def build_trade_xyz_rest_parity_manifest(
         "status": status,
         "block_reasons": block_reasons,
         "known_gaps": known_gaps,
+        "known_gap_count": len(known_gaps),
     }
     write_json(data_dir / "manifests/trade_xyz_rest_parity_manifest.json", manifest)
     return manifest

@@ -231,6 +231,18 @@ def register_quote_commands(
             help="WS raw root under data/raw/ws/trade_xyz.",
         ),
         dry_run: bool = typer.Option(False, "--dry-run"),
+        recv_gap_threshold_seconds: float = typer.Option(
+            60.0,
+            "--recv-gap-threshold-seconds",
+            min=0.0,
+            help="Warn only when recv_ts gaps exceed this threshold.",
+        ),
+        source_gap_threshold_seconds: float = typer.Option(
+            60.0,
+            "--source-gap-threshold-seconds",
+            min=0.0,
+            help="Warn only when source_ts gaps exceed this threshold.",
+        ),
     ) -> None:
         settings = get_settings()
         path = raw_ws_root or (settings.data_dir / "raw/ws/trade_xyz")
@@ -240,10 +252,14 @@ def register_quote_commands(
             typer.echo(
                 f"manifest_path={settings.data_dir / 'manifests/trade_xyz_ws_quality_manifest.json'}"
             )
+            typer.echo(f"recv_gap_threshold_seconds={recv_gap_threshold_seconds}")
+            typer.echo(f"source_gap_threshold_seconds={source_gap_threshold_seconds}")
             return
         manifest = build_trade_xyz_ws_quality_manifest(
             data_dir=settings.data_dir,
             raw_ws_root=path,
+            recv_gap_threshold_seconds=recv_gap_threshold_seconds,
+            source_gap_threshold_seconds=source_gap_threshold_seconds,
         )
         typer.echo(
             f"manifest_path={settings.data_dir / 'manifests/trade_xyz_ws_quality_manifest.json'}"

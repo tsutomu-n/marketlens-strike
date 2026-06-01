@@ -11,7 +11,13 @@ def build_trade_xyz_ws_quality_manifest(
     *,
     data_dir: Path,
     raw_ws_root: Path,
+    recv_gap_threshold_seconds: float = 60.0,
+    source_gap_threshold_seconds: float = 60.0,
 ) -> dict[str, Any]:
+    if recv_gap_threshold_seconds < 0:
+        raise ValueError("recv_gap_threshold_seconds must be >= 0")
+    if source_gap_threshold_seconds < 0:
+        raise ValueError("source_gap_threshold_seconds must be >= 0")
     files = sorted(raw_ws_root.rglob("*.jsonl"))
     row_count = 0
     subscription_counts: dict[str, int] = {}
@@ -47,7 +53,7 @@ def build_trade_xyz_ws_quality_manifest(
             recv_ts_ms = row.get("recv_ts_ms")
             if isinstance(recv_ts_ms, int) and prev_recv_ts_ms is not None:
                 gap_s = max(0.0, (recv_ts_ms - prev_recv_ts_ms) / 1000.0)
-                if gap_s > 0:
+                if gap_s > recv_gap_threshold_seconds:
                     gap_count += 1
                     max_gap_seconds = max(max_gap_seconds, gap_s)
             if isinstance(recv_ts_ms, int):
@@ -55,7 +61,7 @@ def build_trade_xyz_ws_quality_manifest(
             source_ts_ms = row.get("source_ts_ms")
             if isinstance(source_ts_ms, int) and prev_source_ts_ms is not None:
                 source_gap_s = max(0.0, (source_ts_ms - prev_source_ts_ms) / 1000.0)
-                if source_gap_s > 0:
+                if source_gap_s > source_gap_threshold_seconds:
                     source_ts_gap_count += 1
                     max_source_ts_gap_seconds = max(max_source_ts_gap_seconds, source_gap_s)
             if isinstance(source_ts_ms, int):
@@ -98,6 +104,8 @@ def build_trade_xyz_ws_quality_manifest(
     manifest = {
         "schema_version": "trade_xyz_ws_quality_manifest.v1",
         "source_manifest_path": str(data_dir / "manifests" / "trade_xyz_ws_capture_manifest.json"),
+        "recv_gap_threshold_seconds": recv_gap_threshold_seconds,
+        "source_gap_threshold_seconds": source_gap_threshold_seconds,
         "row_count": row_count,
         "subscription_counts": subscription_counts,
         "symbol_counts": symbol_counts,

@@ -5,6 +5,8 @@
   "required": [
     "schema_version",
     "source_manifest_path",
+    "recv_gap_threshold_seconds",
+    "source_gap_threshold_seconds",
     "row_count",
     "subscription_counts",
     "symbol_counts",
@@ -24,6 +26,8 @@
   "properties": {
     "schema_version": { "const": "trade_xyz_ws_quality_manifest.v1" },
     "source_manifest_path": { "type": "string" },
+    "recv_gap_threshold_seconds": { "type": "number", "minimum": 0 },
+    "source_gap_threshold_seconds": { "type": "number", "minimum": 0 },
     "row_count": { "type": "integer", "minimum": 0 },
     "subscription_counts": { "type": "object" },
     "symbol_counts": { "type": "object" },

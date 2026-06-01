@@ -19,6 +19,13 @@ async def _fake_source(**_kwargs):
     }
 
 
+async def _fake_source_without_coin(**_kwargs):
+    yield {
+        "channel": "bbo",
+        "data": {"time": 1700000000123, "bidPx": "99.9", "askPx": "100.1"},
+    }
+
+
 def test_run_trade_xyz_ws_capture_writes_rows(tmp_path: Path) -> None:
     output_root = tmp_path / "data/raw/ws/trade_xyz"
     config = WsCaptureConfig(
@@ -56,6 +63,35 @@ def test_run_trade_xyz_ws_capture_writes_rows(tmp_path: Path) -> None:
         Path("schemas/trade_xyz_ws_capture_manifest.v1.schema.json").read_text(encoding="utf-8")
     )
     validate(instance=manifest, schema=schema)
+
+
+def test_run_trade_xyz_ws_capture_uses_single_target_symbol_fallback(tmp_path: Path) -> None:
+    output_root = tmp_path / "data/raw/ws/trade_xyz"
+    config = WsCaptureConfig(
+        ws_url="wss://api.hyperliquid.xyz/ws",
+        dex="xyz",
+        output_root=output_root,
+        duration_seconds=10,
+        heartbeat_seconds=1,
+        reconnect_max_attempts=2,
+        reconnect_initial_delay_seconds=0.01,
+        reconnect_max_delay_seconds=0.02,
+        write_control_messages=True,
+        dry_run=False,
+    )
+    targets = [WsSubscriptionTarget(subscription="bbo", canonical_symbol="SP500", coin="xyz:SP500")]
+    manifest = run_trade_xyz_ws_capture(
+        config=config,
+        targets=targets,
+        message_source_factory=_fake_source_without_coin,
+        recv_clock=lambda: (1700000010000, 123456789),
+    )
+    assert manifest["row_count"] == 1
+    rows = []
+    for file in sorted(output_root.rglob("*.jsonl")):
+        rows.extend(list(read_jsonl(file)))
+    assert rows[0]["canonical_symbol"] == "SP500"
+    assert rows[0]["coin"] == "xyz:SP500"
 
 
 def test_run_trade_xyz_ws_capture_dry_run(tmp_path: Path) -> None:

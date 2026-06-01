@@ -61,6 +61,23 @@ def _subscription_request(target: WsSubscriptionTarget) -> dict[str, Any]:
     return {"method": "subscribe", "subscription": subscription}
 
 
+def _target_for_payload(
+    payload: dict[str, Any], targets: list[WsSubscriptionTarget]
+) -> WsSubscriptionTarget | None:
+    channel = payload.get("channel")
+    data = payload.get("data")
+    payload_coin = data.get("coin") if isinstance(data, dict) else None
+    if isinstance(channel, str) and isinstance(payload_coin, str):
+        for target in targets:
+            if target.subscription == channel and target.coin == payload_coin:
+                return target
+    if isinstance(channel, str):
+        matching_targets = [target for target in targets if target.subscription == channel]
+        if len(matching_targets) == 1:
+            return matching_targets[0]
+    return None
+
+
 async def _default_message_source_factory(
     *,
     ws_url: str,
@@ -157,17 +174,22 @@ async def capture_trade_xyz_ws(
                 seq += 1
                 recv_ts_ms, recv_monotonic_ns = clock()
                 channel = payload.get("channel")
+                matched_target = _target_for_payload(payload, targets)
                 row_subscription = (
                     WS_CONTROL_SUBSCRIPTION
                     if channel in {"subscriptionResponse", "pong"}
-                    else str(channel or "__unknown__")
+                    else (
+                        matched_target.subscription
+                        if matched_target
+                        else str(channel or "__unknown__")
+                    )
                 )
                 row = build_ws_raw_row(
                     ws_url=config.ws_url,
                     dex=config.dex,
                     subscription=row_subscription,
-                    requested_symbol=None,
-                    requested_coin=None,
+                    requested_symbol=matched_target.canonical_symbol if matched_target else None,
+                    requested_coin=matched_target.coin if matched_target else None,
                     connection_id=connection_id,
                     sequence=seq,
                     recv_ts_ms=recv_ts_ms,

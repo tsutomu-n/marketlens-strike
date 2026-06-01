@@ -19,7 +19,9 @@
     "request_error_count",
     "request_count",
     "status",
-    "block_reasons"
+    "block_reasons",
+    "known_gaps",
+    "known_gap_count"
   ],
   "properties": {
     "schema_version": { "const": "trade_xyz_rest_parity_manifest.v1" },
@@ -38,7 +40,9 @@
     "request_error_count": { "type": "integer", "minimum": 0 },
     "request_count": { "type": "integer", "minimum": 0 },
     "status": { "type": "string" },
-    "block_reasons": { "type": "array", "items": { "type": "string" } }
+    "block_reasons": { "type": "array", "items": { "type": "string" } },
+    "known_gaps": { "type": "array", "items": { "type": "string" } },
+    "known_gap_count": { "type": "integer", "minimum": 0 }
   },
   "additionalProperties": true
 }
