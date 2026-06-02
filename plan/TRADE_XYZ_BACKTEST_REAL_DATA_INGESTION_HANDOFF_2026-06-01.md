@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_22:24 JST
-更新日: 2026-06-01_22:28 JST
+更新日: 2026-06-02_17:44 JST
 -->
 
 # Trade[XYZ] Backtest Real Data Ingestion Handoff 2026-06-01
@@ -8,7 +8,7 @@
 ## 結論
 
 この文書は、WS raw collection から backtest ingestion 実装へ渡すための受け渡しdraftである。
-まだ実装開始readyではない。理由は、3symbol 24時間runの最終 `capture / quality / REST parity` manifest が未確定だからである。
+まだ実装開始readyではない。理由は、3symbol 24時間runの最終 `capture / quality / REST parity` manifest は生成済みだが、`reconnect_count=5`、`error_count=5`、`quality status=warn` が残っているからである。
 
 現時点でできるのは、次の境界を固定することだけである。
 
@@ -251,35 +251,35 @@ event_ts:
 ```text
 capture_manifest:
   path: data/manifests/trade_xyz_ws_capture_manifest.json
-  row_count: 未確定
-  bytes_written: 未確定
-  connection_count: 未確定
-  reconnect_count: 未確定
-  error_count: 未確定
-  subscription_response_count: 未確定
+  row_count: 814598
+  bytes_written: 770305139
+  connection_count: 5
+  reconnect_count: 5
+  error_count: 5
+  subscription_response_count: 45
 
 quality_manifest:
   path: data/manifests/trade_xyz_ws_quality_manifest.json
-  status: 未確定
-  gap_count: 未確定
-  source_ts_gap_count: 未確定
-  trade_gap_count: 未確定
-  malformed_payload_count: 未確定
-  unknown_symbol_count: 未確定
-  bbo_bid_ask_inversion_count: 未確定
+  status: warn
+  gap_count: 10
+  source_ts_gap_count: 0
+  trade_gap_count: 7
+  malformed_payload_count: 0
+  unknown_symbol_count: 0
+  bbo_bid_ask_inversion_count: 0
 
 rest_parity_manifest:
   path: data/manifests/trade_xyz_rest_parity_manifest.json
-  status: 未確定
-  missing_ws_symbols: 未確定
-  missing_rest_symbols: 未確定
-  mismatched_symbols: 未確定
+  status: pass
+  missing_ws_symbols: []
+  missing_rest_symbols: []
+  mismatched_symbols: []
 
 disk_usage:
-  data/raw/ws/trade_xyz/: 未確定
+  data/raw/ws/trade_xyz/: 735M
 
 day_partition:
-  status: 未確定
+  status: pass. raw_paths are under data/raw/ws/trade_xyz/date=2026-06-01 and date=2026-06-02 partitions.
 ```
 
 完了後の最小コマンド:
@@ -341,10 +341,10 @@ data-ready禁止:
 
 ```text
 3symbol 24時間run:
-  実行中。最終manifest未生成。
+  完了。最終manifest生成済み。
 
 backtest ingestion code:
-  24時間runのquality/parityが未確定のため、まだ変更しない。
+  reconnect_count=5、error_count=5、quality status=warn のため、まだ変更しない。
 
 data-ready:
   backtest_data_ready=false のまま。

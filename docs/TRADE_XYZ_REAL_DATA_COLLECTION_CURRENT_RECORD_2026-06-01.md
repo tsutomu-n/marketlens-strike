@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-01_22:57 JST
+更新日: 2026-06-02_17:49 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-01_22:57 JST
+更新日: 2026-06-02_17:49 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
 
@@ -1478,7 +1478,10 @@ backtest ingestion handoff:
   実行済み。capture / REST parity はpass。qualityは AAPL bbo gap 1件でwarn。
 
 24時間 read-only 観測:
-  実行中。2026-06-01_22:04 JST に3symbolで開始。完了後のmanifest確認は未完了。
+  完了。2026-06-02_17:44 JST にfinalize helperでmanifestを生成した。
+  captureは row_count=814598、reconnect_count=5、error_count=5。
+  qualityは status=warn、gap_count=10、trade_gap_count=7、trade_source_ts_gap_count=4。
+  REST parityは status=pass。
 
 Current Real Data Contract更新:
   一部完了。WS raw field inventoryとbacktest入力昇格前条件は追記済み。
@@ -1489,7 +1492,90 @@ runbook作成:
   完了。docs/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md を追加済み。
 
 data-ready判定:
-  未完了。まだ backtest_data_ready と呼んではいけない。
+  未完了。reconnect_count > 0、error_count > 0、quality status=warn のため、まだ backtest_data_ready と呼んではいけない。
+```
+
+## 0.4 3symbol 24時間 read-only 観測 final manifest（2026-06-02_17:44 JST）
+
+`scripts/finalize_trade_xyz_ws_observation.sh 846741` で最終manifestを生成した。
+
+```text
+raw root:
+  data/raw/ws/trade_xyz/
+
+disk usage:
+  735M
+
+capture manifest:
+  path: data/manifests/trade_xyz_ws_capture_manifest.json
+  row_count: 814598
+  bytes_written: 770305139
+  connection_count: 5
+  reconnect_count: 5
+  error_count: 5
+  heartbeat_sent_count: 0
+  pong_count: 0
+  subscription_response_count: 45
+
+quality manifest:
+  path: data/manifests/trade_xyz_ws_quality_manifest.json
+  status: warn
+  row_count: 814598
+  gap_count: 10
+  source_ts_gap_count: 0
+  trade_gap_count: 7
+  trade_source_ts_gap_count: 4
+  malformed_payload_count: 0
+  unknown_symbol_count: 0
+  bbo_bid_ask_inversion_count: 0
+  duplicate_payload_count: 31558
+
+REST parity manifest:
+  path: data/manifests/trade_xyz_rest_parity_manifest.json
+  status: pass
+  request_error_count: 0
+  missing_ws_symbols: []
+  missing_rest_symbols: []
+  mismatched_symbols: []
+  known_gap_count: 0
+```
+
+判定:
+
+```text
+T9:
+  final capture / quality / REST parity manifest は生成済み。
+
+T10:
+  未完了。
+  REST parityはpassだが、captureに reconnect_count=5 / error_count=5 があり、qualityは status=warn。
+  欠損区間を説明するまで backtest ingestion 実装開始ready、data-ready、backtest_data_ready=true と呼ばない。
+```
+
+A5 verification:
+
+```text
+command:
+  ./scripts/check
+
+result:
+  pass
+
+format fix before rerun:
+  uv run ruff format src/sis/venues/trade_xyz/client.py
+  1 file reformatted
+
+confirmed:
+  Python 3.13.7
+  ruff check: pass
+  ruff format --check: 376 files already formatted
+  current docs check: 81 current docs ok
+  pyrefly: 0 errors
+  pytest: 791 passed in 22.48s
+
+note:
+  This verifies the repo gate after final manifests/docs updates.
+  It does not change the T10 decision; data-ready remains blocked by reconnect/error/quality warn evidence.
 ```
 
 ## 1. 目的
