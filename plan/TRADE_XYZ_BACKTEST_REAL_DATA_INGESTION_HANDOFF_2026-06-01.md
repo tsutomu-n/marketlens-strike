@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_22:24 JST
-更新日: 2026-06-02_17:44 JST
+更新日: 2026-06-02_19:01 JST
 -->
 
 # Trade[XYZ] Backtest Real Data Ingestion Handoff 2026-06-01
@@ -8,7 +8,10 @@
 ## 結論
 
 この文書は、WS raw collection から backtest ingestion 実装へ渡すための受け渡しdraftである。
-まだ実装開始readyではない。理由は、3symbol 24時間runの最終 `capture / quality / REST parity` manifest は生成済みだが、`reconnect_count=5`、`error_count=5`、`quality status=warn` が残っているからである。
+まだ実装開始readyではない。理由は、3symbol 24時間runのattempt manifestは生成済みだが、runが約13.14時間で停止し24時間完走していないうえ、`reconnect_count=5`、`error_count=5`、`quality status=warn` が残っているからである。
+
+2026-06-02_19:01 JST に、server側の `1000 (OK) Expired` close を expected graceful reconnect として扱う修正を入れた。
+次の24時間runでは、`graceful_reconnect_count` と `unexpected_reconnect_count` を分けて確認する。
 
 現時点でできるのは、次の境界を固定することだけである。
 
@@ -247,10 +250,14 @@ event_ts:
 
 この欄は、`data/raw/ws/trade_xyz/` の24時間runが終了してからだけ埋める。
 途中snapshotで埋めない。
+2026-06-02_18:57 JST の確認では、以下は24時間完走ではなく約13.14時間で停止したattemptの実測値である。
 
 ```text
 capture_manifest:
   path: data/manifests/trade_xyz_ws_capture_manifest.json
+  started_at: 2026-06-01T13:04:23.215004+00:00
+  ended_at: 2026-06-02T02:12:53.110231+00:00
+  duration_seconds: 47309.895227
   row_count: 814598
   bytes_written: 770305139
   connection_count: 5
@@ -316,7 +323,8 @@ pass候補:
   quality status == warn
 
 data-ready禁止:
-  reconnect_count > 0 で欠損区間を説明できない
+  24時間runが完走していない
+  unexpected_reconnect_count > 0 で欠損区間を説明できない
   error_count > 0
   REST parity status != pass
   day partitionが壊れている
@@ -341,10 +349,10 @@ data-ready禁止:
 
 ```text
 3symbol 24時間run:
-  完了。最終manifest生成済み。
+  未完了。attempt manifestは生成済みだが、約13.14時間で停止した。
 
 backtest ingestion code:
-  reconnect_count=5、error_count=5、quality status=warn のため、まだ変更しない。
+  24時間未完走、reconnect_count=5、error_count=5、quality status=warn のため、まだ変更しない。
 
 data-ready:
   backtest_data_ready=false のまま。

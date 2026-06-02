@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-02_17:49 JST
+更新日: 2026-06-02_19:03 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-02_17:49 JST
+更新日: 2026-06-02_19:03 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
 
@@ -1478,7 +1478,7 @@ backtest ingestion handoff:
   実行済み。capture / REST parity はpass。qualityは AAPL bbo gap 1件でwarn。
 
 24時間 read-only 観測:
-  完了。2026-06-02_17:44 JST にfinalize helperでmanifestを生成した。
+  未完了。2026-06-02_17:44 JST にfinalize helperでmanifestを生成したが、run自体は約13.14時間で停止しており24時間完走ではない。
   captureは row_count=814598、reconnect_count=5、error_count=5。
   qualityは status=warn、gap_count=10、trade_gap_count=7、trade_source_ts_gap_count=4。
   REST parityは status=pass。
@@ -1486,7 +1486,7 @@ backtest ingestion handoff:
 Current Real Data Contract更新:
   一部完了。WS raw field inventoryとbacktest入力昇格前条件は追記済み。
   backtest ingestion handoff draftは作成済み。
-  ただし、24時間runの最終manifestが未確定のため、実装開始readyではない。
+  ただし、24時間runが未完走のため、実装開始readyではない。
 
 runbook作成:
   完了。docs/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md を追加済み。
@@ -1495,13 +1495,23 @@ data-ready判定:
   未完了。reconnect_count > 0、error_count > 0、quality status=warn のため、まだ backtest_data_ready と呼んではいけない。
 ```
 
-## 0.4 3symbol 24時間 read-only 観測 final manifest（2026-06-02_17:44 JST）
+## 0.4 3symbol 24時間 read-only 観測 attempt manifest（2026-06-02_17:44 JST）
 
-`scripts/finalize_trade_xyz_ws_observation.sh 846741` で最終manifestを生成した。
+`scripts/finalize_trade_xyz_ws_observation.sh 846741` でmanifestを生成した。
+ただし、これは24時間完走manifestではない。`duration_seconds=47309.895227` で約13.14時間、`reconnect.max_attempts=5` 到達により停止したattemptのmanifestである。
 
 ```text
 raw root:
   data/raw/ws/trade_xyz/
+
+started_at:
+  2026-06-01T13:04:23.215004+00:00
+
+ended_at:
+  2026-06-02T02:12:53.110231+00:00
+
+duration_seconds:
+  47309.895227
 
 disk usage:
   735M
@@ -1540,16 +1550,50 @@ REST parity manifest:
   known_gap_count: 0
 ```
 
+A6 investigation:
+
+```text
+decision:
+  blocks data-ready and blocks T9 completion.
+
+reason:
+  --duration-minutes 1440 was requested, but the run lasted only about 13.14 hours.
+  websocket_collection.reconnect.max_attempts is 5.
+  capture reached reconnect_count=5 and error_count=5, then stopped before 24 hours.
+
+block_reasons:
+  4x received 1000 (OK) Expired; then sent 1000 (OK) Expired
+  1x sent 1011 (internal error) keepalive ping timeout; no close frame received
+
+connection durations:
+  20260601T130423Z-0001: 10063.747s
+  20260601T155208Z-0002: 10592.277s
+  20260601T184842Z-0003: 10002.009s
+  20260601T213528Z-0004: 10468.465s
+  20260602T003005Z-0005: 6137.587s
+
+gap interpretation:
+  non-trade recv gaps: 10
+  non-trade source gaps: 0
+  trade recv gaps: 7
+  trade source gaps: 4
+  control subscription_response gaps account for 4 non-trade recv gaps between reconnects.
+  one final in-connection pause produced about 149-159s recv gaps across bbo/activeAssetCtx/trades.
+  bbo/trades source timestamps around that pause did not show a non-trade source gap, but activeAssetCtx has no source timestamp, so the receive-time hole remains unresolved for state data.
+```
+
 判定:
 
 ```text
 T9:
-  final capture / quality / REST parity manifest は生成済み。
+  未完了。
+  attemptの capture / quality / REST parity manifest は生成済み。
+  ただし24時間完走ではないため、3symbol 24時間read-only観測の完了条件を満たさない。
 
 T10:
   未完了。
-  REST parityはpassだが、captureに reconnect_count=5 / error_count=5 があり、qualityは status=warn。
-  欠損区間を説明するまで backtest ingestion 実装開始ready、data-ready、backtest_data_ready=true と呼ばない。
+  REST parityはpassだが、24時間未完走、captureに reconnect_count=5 / error_count=5、qualityは status=warn。
+  24時間完走または明示的な別基準が決まるまで backtest ingestion 実装開始ready、data-ready、backtest_data_ready=true と呼ばない。
 ```
 
 A5 verification:
@@ -1576,6 +1620,69 @@ confirmed:
 note:
   This verifies the repo gate after final manifests/docs updates.
   It does not change the T10 decision; data-ready remains blocked by reconnect/error/quality warn evidence.
+```
+
+A7 durability fix:
+
+```text
+implemented:
+  src/sis/venues/trade_xyz/ws_recorder.py
+  tests/test_trade_xyz_ws_recorder.py
+
+change:
+  WebSocket server "1000 (OK) Expired" close is now treated as an expected graceful reconnect.
+  It increments reconnect_count and graceful_reconnect_count.
+  It does not increment error_count.
+  It does not consume the unexpected reconnect retry budget.
+
+still counted as error:
+  unexpected reconnects, including keepalive timeout / internal error style failures.
+
+new manifest fields:
+  graceful_reconnect_count
+  unexpected_reconnect_count
+
+focused verification:
+  uv run pytest -q tests/test_trade_xyz_ws_recorder.py tests/test_trade_xyz_ws_quality.py
+  13 passed
+  uv run ruff check src/sis/venues/trade_xyz/ws_recorder.py tests/test_trade_xyz_ws_recorder.py
+  pass
+  uv run ruff format --check src/sis/venues/trade_xyz/ws_recorder.py tests/test_trade_xyz_ws_recorder.py
+  pass
+
+next observation:
+  Run a new 3symbol 24h observation after broad verification.
+  Do not reuse the 13.14h attempt as T9 completion.
+```
+
+A8/A9 verification and relaunch:
+
+```text
+A8:
+  ./scripts/check
+  pass
+  pytest: 793 passed in 22.09s
+
+A9:
+  started_at_jst: 2026-06-02_19:02 JST
+  pid: 1488133
+  raw_root: data/raw/ws/trade_xyz_24h_20260602_1902
+  log_path: .tmp/trade_xyz_ws_24h_logs/collect_3symbols_20260602_1902.log
+  launch_mode: setsid -f
+
+command:
+  uv run sis collect-trade-xyz-ws --registry-path data/registry/trade_xyz_instrument_registry.json --symbols SP500,XYZ100,NVDA --subscriptions bbo,trades,activeAssetCtx --duration-minutes 1440 --output-dir data/raw/ws/trade_xyz_24h_20260602_1902 --write-control-messages
+
+initial_check:
+  process: running
+  jsonl_files: 10
+  row_count: 302
+  disk_usage: 384K
+
+finalize command after PID exits:
+  SIS_TRADE_XYZ_WS_FINALIZE_RAW_ROOT=data/raw/ws/trade_xyz_24h_20260602_1902 \
+  SIS_TRADE_XYZ_WS_FINALIZE_LOG_PATH=.tmp/trade_xyz_ws_24h_logs/collect_3symbols_20260602_1902.log \
+  scripts/finalize_trade_xyz_ws_observation.sh 1488133
 ```
 
 ## 1. 目的

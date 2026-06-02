@@ -13,6 +13,12 @@ from sis.venues.trade_xyz.ws_envelope import build_ws_raw_row
 from sis.venues.trade_xyz.ws_envelope import SUPPORTED_WS_SUBSCRIPTIONS
 
 WS_CONTROL_SUBSCRIPTION = "__control__"
+
+
+def _is_expected_ws_expiry(exc: Exception) -> bool:
+    return "1000 (OK) Expired" in str(exc)
+
+
 WS_CONTROL_SYMBOL = "__all__"
 
 
@@ -146,6 +152,8 @@ async def capture_trade_xyz_ws(
     bytes_written = 0
     connection_count = 0
     reconnect_count = 0
+    graceful_reconnect_count = 0
+    unexpected_reconnect_count = 0
     error_count = 0
     subscription_response_count = 0
     pong_count = 0
@@ -167,6 +175,8 @@ async def capture_trade_xyz_ws(
             "bytes_written": 0,
             "connection_count": 0,
             "reconnect_count": 0,
+            "graceful_reconnect_count": 0,
+            "unexpected_reconnect_count": 0,
             "error_count": 0,
             "subscription_response_count": 0,
             "pong_count": 0,
@@ -248,10 +258,17 @@ async def capture_trade_xyz_ws(
                 row_count += 1
                 bytes_written += len(json.dumps(row, ensure_ascii=False, default=str)) + 1
         except Exception as exc:  # pragma: no cover - exercised via tests with fake source
+            reason = str(exc)
             reconnect_count += 1
+            block_reasons.append(reason)
+            if _is_expected_ws_expiry(exc):
+                graceful_reconnect_count += 1
+                delay = config.reconnect_initial_delay_seconds
+                await asyncio.sleep(min(delay, config.reconnect_max_delay_seconds))
+                continue
+            unexpected_reconnect_count += 1
             error_count += 1
-            block_reasons.append(str(exc))
-            if reconnect_count >= config.reconnect_max_attempts:
+            if unexpected_reconnect_count >= config.reconnect_max_attempts:
                 break
             await asyncio.sleep(min(delay, config.reconnect_max_delay_seconds))
             delay = min(delay * 2, config.reconnect_max_delay_seconds)
@@ -273,6 +290,8 @@ async def capture_trade_xyz_ws(
         "bytes_written": bytes_written,
         "connection_count": connection_count,
         "reconnect_count": reconnect_count,
+        "graceful_reconnect_count": graceful_reconnect_count,
+        "unexpected_reconnect_count": unexpected_reconnect_count,
         "error_count": error_count,
         "subscription_response_count": subscription_response_count,
         "pong_count": pong_count,
