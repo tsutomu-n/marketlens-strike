@@ -60,7 +60,7 @@ def test_trade_xyz_client_read_only_execution_state_methods() -> None:
         client.close()
 
     assert requests == [
-        {"type": "clearinghouseState", "user": "0xabc"},
+        {"type": "clearinghouseState", "user": "0xabc", "dex": "xyz"},
         {"type": "openOrders", "user": "0xabc", "dex": "xyz"},
         {"type": "userFills", "user": "0xabc"},
         {

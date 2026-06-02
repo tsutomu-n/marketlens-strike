@@ -72,8 +72,8 @@ class TradeXyzClient:
             raise TradeXyzApiError(f"allMids returned non-object: {type(data).__name__}")
         return {str(k): str(v) for k, v in data.items()}
 
-    def clearinghouse_state(self, user: str) -> dict[str, Any]:
-        data = self.post_info({"type": "clearinghouseState", "user": user})
+    def clearinghouse_state(self, user: str, *, dex: str | None = None) -> dict[str, Any]:
+        data = self.post_info({"type": "clearinghouseState", "user": user, "dex": dex or self.config.dex})
         if not isinstance(data, dict):
             raise TradeXyzApiError(f"clearinghouseState returned non-object: {type(data).__name__}")
         return data
