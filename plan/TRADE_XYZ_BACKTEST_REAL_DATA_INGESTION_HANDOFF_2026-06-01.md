@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_22:24 JST
-更新日: 2026-06-02_19:01 JST
+更新日: 2026-06-03_19:17 JST
 -->
 
 # Trade[XYZ] Backtest Real Data Ingestion Handoff 2026-06-01
@@ -8,10 +8,10 @@
 ## 結論
 
 この文書は、WS raw collection から backtest ingestion 実装へ渡すための受け渡しdraftである。
-まだ実装開始readyではない。理由は、3symbol 24時間runのattempt manifestは生成済みだが、runが約13.14時間で停止し24時間完走していないうえ、`reconnect_count=5`、`error_count=5`、`quality status=warn` が残っているからである。
+まだ実装開始readyではない。理由は、3symbol 24時間runのmanifestは生成済みで24時間完走したが、`unexpected_reconnect_count=1`、`error_count=1`、`quality status=warn` が残っているからである。
 
 2026-06-02_19:01 JST に、server側の `1000 (OK) Expired` close を expected graceful reconnect として扱う修正を入れた。
-次の24時間runでは、`graceful_reconnect_count` と `unexpected_reconnect_count` を分けて確認する。
+2026-06-03_19:17 JST の24時間runでは、`graceful_reconnect_count=7`、`unexpected_reconnect_count=1` だった。
 
 現時点でできるのは、次の境界を固定することだけである。
 
@@ -248,29 +248,30 @@ event_ts:
 
 ## 24時間run完了後に更新する欄
 
-この欄は、`data/raw/ws/trade_xyz/` の24時間runが終了してからだけ埋める。
+この欄は、`data/raw/ws/trade_xyz_24h_20260602_1902/` の24時間runが終了してからだけ埋める。
 途中snapshotで埋めない。
-2026-06-02_18:57 JST の確認では、以下は24時間完走ではなく約13.14時間で停止したattemptの実測値である。
 
 ```text
 capture_manifest:
   path: data/manifests/trade_xyz_ws_capture_manifest.json
-  started_at: 2026-06-01T13:04:23.215004+00:00
-  ended_at: 2026-06-02T02:12:53.110231+00:00
-  duration_seconds: 47309.895227
-  row_count: 814598
-  bytes_written: 770305139
-  connection_count: 5
-  reconnect_count: 5
-  error_count: 5
-  subscription_response_count: 45
+  started_at: 2026-06-02T10:03:22.093603+00:00
+  ended_at: 2026-06-03T10:03:23.295834+00:00
+  duration_seconds: 86401.202231
+  row_count: 1202996
+  bytes_written: 1133437251
+  connection_count: 9
+  reconnect_count: 8
+  graceful_reconnect_count: 7
+  unexpected_reconnect_count: 1
+  error_count: 1
+  subscription_response_count: 81
 
 quality_manifest:
   path: data/manifests/trade_xyz_ws_quality_manifest.json
   status: warn
-  gap_count: 10
+  gap_count: 8
   source_ts_gap_count: 0
-  trade_gap_count: 7
+  trade_gap_count: 35
   malformed_payload_count: 0
   unknown_symbol_count: 0
   bbo_bid_ask_inversion_count: 0
@@ -283,10 +284,10 @@ rest_parity_manifest:
   mismatched_symbols: []
 
 disk_usage:
-  data/raw/ws/trade_xyz/: 735M
+  data/raw/ws/trade_xyz_24h_20260602_1902/: 1.1G
 
 day_partition:
-  status: pass. raw_paths are under data/raw/ws/trade_xyz/date=2026-06-01 and date=2026-06-02 partitions.
+  status: pass. raw_paths are under data/raw/ws/trade_xyz_24h_20260602_1902/date=2026-06-02 and date=2026-06-03 partitions.
 ```
 
 完了後の最小コマンド:
@@ -323,7 +324,6 @@ pass候補:
   quality status == warn
 
 data-ready禁止:
-  24時間runが完走していない
   unexpected_reconnect_count > 0 で欠損区間を説明できない
   error_count > 0
   REST parity status != pass
@@ -349,10 +349,10 @@ data-ready禁止:
 
 ```text
 3symbol 24時間run:
-  未完了。attempt manifestは生成済みだが、約13.14時間で停止した。
+  完走。final manifest生成済み。
 
 backtest ingestion code:
-  24時間未完走、reconnect_count=5、error_count=5、quality status=warn のため、まだ変更しない。
+  unexpected_reconnect_count=1、error_count=1、quality status=warn のため、まだ変更しない。
 
 data-ready:
   backtest_data_ready=false のまま。

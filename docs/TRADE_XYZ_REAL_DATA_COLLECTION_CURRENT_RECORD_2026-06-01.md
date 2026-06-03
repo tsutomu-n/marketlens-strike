@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-02_19:03 JST
+更新日: 2026-06-03_19:19 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-02_19:03 JST
+更新日: 2026-06-03_19:19 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
 
@@ -1478,21 +1478,21 @@ backtest ingestion handoff:
   実行済み。capture / REST parity はpass。qualityは AAPL bbo gap 1件でwarn。
 
 24時間 read-only 観測:
-  未完了。2026-06-02_17:44 JST にfinalize helperでmanifestを生成したが、run自体は約13.14時間で停止しており24時間完走ではない。
-  captureは row_count=814598、reconnect_count=5、error_count=5。
-  qualityは status=warn、gap_count=10、trade_gap_count=7、trade_source_ts_gap_count=4。
+  完走。2026-06-03_19:17 JST に isolated raw root からmanifestを生成した。
+  captureは duration_seconds=86401.202231、row_count=1202996、reconnect_count=8、graceful_reconnect_count=7、unexpected_reconnect_count=1、error_count=1。
+  qualityは status=warn、gap_count=8、trade_gap_count=35、trade_source_ts_gap_count=35。
   REST parityは status=pass。
 
 Current Real Data Contract更新:
   一部完了。WS raw field inventoryとbacktest入力昇格前条件は追記済み。
   backtest ingestion handoff draftは作成済み。
-  ただし、24時間runが未完走のため、実装開始readyではない。
+  ただし、24時間runに unexpected_reconnect_count=1 / error_count=1 / quality status=warn が残るため、実装開始readyではない。
 
 runbook作成:
   完了。docs/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md を追加済み。
 
 data-ready判定:
-  未完了。reconnect_count > 0、error_count > 0、quality status=warn のため、まだ backtest_data_ready と呼んではいけない。
+  未完了。unexpected_reconnect_count=1、error_count=1、quality status=warn のため、まだ backtest_data_ready と呼んではいけない。
 ```
 
 ## 0.4 3symbol 24時間 read-only 観測 attempt manifest（2026-06-02_17:44 JST）
@@ -1683,6 +1683,96 @@ finalize command after PID exits:
   SIS_TRADE_XYZ_WS_FINALIZE_RAW_ROOT=data/raw/ws/trade_xyz_24h_20260602_1902 \
   SIS_TRADE_XYZ_WS_FINALIZE_LOG_PATH=.tmp/trade_xyz_ws_24h_logs/collect_3symbols_20260602_1902.log \
   scripts/finalize_trade_xyz_ws_observation.sh 1488133
+```
+
+## 0.5 3symbol 24時間 read-only 観測 final manifest（2026-06-03_19:17 JST）
+
+`data/raw/ws/trade_xyz_24h_20260602_1902` を isolated raw root として final manifest を生成した。
+
+```text
+raw root:
+  data/raw/ws/trade_xyz_24h_20260602_1902
+
+started_at:
+  2026-06-02T10:03:22.093603+00:00
+
+ended_at:
+  2026-06-03T10:03:23.295834+00:00
+
+duration_seconds:
+  86401.202231
+
+disk usage:
+  1.1G
+
+capture manifest:
+  path: data/manifests/trade_xyz_ws_capture_manifest.json
+  row_count: 1202996
+  bytes_written: 1133437251
+  connection_count: 9
+  reconnect_count: 8
+  graceful_reconnect_count: 7
+  unexpected_reconnect_count: 1
+  error_count: 1
+  heartbeat_sent_count: 0
+  pong_count: 0
+  subscription_response_count: 81
+
+quality manifest:
+  path: data/manifests/trade_xyz_ws_quality_manifest.json
+  status: warn
+  row_count: 1202996
+  gap_count: 8
+  max_gap_seconds: 10815.29
+  source_ts_gap_count: 0
+  trade_gap_count: 35
+  max_trade_gap_seconds: 102.704
+  trade_source_ts_gap_count: 35
+  max_trade_source_ts_gap_seconds: 102.817
+  malformed_payload_count: 0
+  unknown_symbol_count: 0
+  bbo_bid_ask_inversion_count: 0
+  duplicate_payload_count: 78137
+
+REST parity manifest:
+  path: data/manifests/trade_xyz_rest_parity_manifest.json
+  status: pass
+  request_error_count: 0
+  missing_ws_symbols: []
+  missing_rest_symbols: []
+  mismatched_symbols: []
+  known_gap_count: 0
+```
+
+判定:
+
+```text
+T9:
+  完了。3symbol 24時間runの capture / quality / REST parity manifest は生成済み。
+
+T10:
+  未完了。
+  24時間は完走し、REST parityはpass。
+  ただし capture に unexpected_reconnect_count=1 / error_count=1 があり、quality は status=warn。
+  欠損区間と unexpected reconnect の影響を説明または受容するまで backtest ingestion 実装開始ready、data-ready、backtest_data_ready=true と呼ばない。
+```
+
+A13 verification:
+
+```text
+command:
+  ./scripts/check
+
+result:
+  pass
+
+confirmed:
+  Python 3.13.7
+  ruff check: pass
+  ruff format --check: 376 files already formatted
+  current docs check: 81 current docs ok
+  pyrefly: 0 errors
+  pytest: 793 passed in 21.87s
 ```
 
 ## 1. 目的
