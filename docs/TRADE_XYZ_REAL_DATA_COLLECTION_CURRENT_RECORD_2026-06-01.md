@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-03_19:19 JST
+更新日: 2026-06-03_19:37 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-03_19:19 JST
+更新日: 2026-06-03_19:37 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
 
@@ -1720,10 +1720,10 @@ capture manifest:
 
 quality manifest:
   path: data/manifests/trade_xyz_ws_quality_manifest.json
-  status: warn
+  status: pass
   row_count: 1202996
-  gap_count: 8
-  max_gap_seconds: 10815.29
+  gap_count: 0
+  max_gap_seconds: 0.0
   source_ts_gap_count: 0
   trade_gap_count: 35
   max_trade_gap_seconds: 102.704
@@ -1751,10 +1751,11 @@ T9:
   完了。3symbol 24時間runの capture / quality / REST parity manifest は生成済み。
 
 T10:
-  未完了。
+  完了。
   24時間は完走し、REST parityはpass。
-  ただし capture に unexpected_reconnect_count=1 / error_count=1 があり、quality は status=warn。
-  欠損区間と unexpected reconnect の影響を説明または受容するまで backtest ingestion 実装開始ready、data-ready、backtest_data_ready=true と呼ばない。
+  qualityは control subscriptionResponse gap を市場データgapから除外する修正後にpass。
+  unexpected_reconnect_count=1 / error_count=1 は約1.074秒のtransport reconnectで、60秒超のquote/state gapを作っていないため、3symbol 24時間WS取得基盤としては受容する。
+  ただし、実務バックテスト全体の backtest_data_ready=true ではない。
 ```
 
 A13 verification:
@@ -1773,6 +1774,75 @@ confirmed:
   current docs check: 81 current docs ok
   pyrefly: 0 errors
   pytest: 793 passed in 21.87s
+```
+
+A16 verification:
+
+```text
+command:
+  ./scripts/check
+
+result:
+  pass
+
+confirmed:
+  Python 3.13.7
+  ruff check: pass
+  ruff format --check: 376 files already formatted
+  current docs check: 81 current docs ok
+  pyrefly: 0 errors
+  pytest: 794 passed in 23.37s
+```
+
+A14/A15 investigation:
+
+```text
+question:
+  unexpected_reconnect_count=1 / error_count=1 / quality warn の原因は何か。
+
+unexpected reconnect cause:
+  block_reasons の1件が "no close frame received or sent"。
+  接続 20260602T185051Z-0004 が 5894.381s で終了し、次の接続 20260602T202906Z-0005 が開始した。
+  前後の実recv時刻は 2026-06-02T20:29:05.479+00:00 -> 2026-06-02T20:29:06.553+00:00。
+  再接続そのものの実停止は約1.074sで、60秒超の quote/state recv gap はこの境界では出ていない。
+
+graceful reconnects:
+  残り7件は "received 1000 (OK) Expired; then sent 1000 (OK) Expired"。
+  これは A7 修正後、graceful_reconnect_count に分離済み。
+
+quality warn cause before fix:
+  quality manifest の gap_count=8 は __control__/__control__ の subscriptionResponse 間隔。
+  各connection中は subscriptionResponse が初回だけなので、接続継続時間そのものが control stream の recv gap として数えられている。
+  つまり、quality=warn は bbo / activeAssetCtx の 60秒超 recv gap ではない。
+
+A15 fix:
+  src/sis/venues/trade_xyz/ws_quality.py で __control__ stream を market data gap 判定から除外した。
+  tests/test_trade_xyz_ws_quality.py に control gap が status=pass のまま情報値になる回帰テストを追加した。
+  final quality manifest を data/raw/ws/trade_xyz_24h_20260602_1902 から再生成し、status=pass / gap_count=0 / source_ts_gap_count=0 を確認した。
+
+quote/state gap:
+  non-trade source_ts_gap_count=0。
+  gap_count=8 の内訳は control subscriptionResponse gap のみ。
+  malformed_payload_count=0、unknown_symbol_count=0、bbo_bid_ask_inversion_count=0。
+
+trade gaps:
+  trade_gap_count=35、trade_source_ts_gap_count=35。
+  最大は NVDA trades の 102.704s recv / 102.817s source gap。
+  trades は低流動で自然に間隔が空くため、現行 quality code でも status warn 条件には入れていない。
+
+T10 decision:
+  完了。
+  3symbol 24時間WS取得基盤は v0.1 完了として受容する。
+  理由は、duration_seconds=86401.202231、quality status=pass、REST parity status=pass、malformed/unknown/bbo inversion が0、source_ts_gap_count=0であり、unexpected reconnect 1件は60秒超のquote/state gapを伴わないtransport reconnectとして説明できるため。
+  ただし、backtest_data_ready=false は維持する。account fee、長期quote coverage、oracle timestamp provenanceなどの全体readiness gapは別gateで残る。
+
+A15 verification:
+  uv run pytest -q tests/test_trade_xyz_ws_quality.py: 6 passed
+  uv run ruff check src/sis/venues/trade_xyz/ws_quality.py tests/test_trade_xyz_ws_quality.py: pass
+  uv run ruff format --check src/sis/venues/trade_xyz/ws_quality.py tests/test_trade_xyz_ws_quality.py: pass
+  uv run python scripts/check_current_docs.py: checked 81 current docs
+  git diff --check: pass
+  ./scripts/check: pass, pytest 794 passed in 22.97s
 ```
 
 ## 1. 目的

@@ -15,6 +15,10 @@ def _stream_key(row: dict[str, Any]) -> tuple[str, str]:
     return subscription, "__control__" if row.get("message_kind") != "data" else "__unknown__"
 
 
+def _is_market_data_stream(stream_key: tuple[str, str]) -> bool:
+    return stream_key[0] != "__control__"
+
+
 def build_trade_xyz_ws_quality_manifest(
     *,
     data_dir: Path,
@@ -65,7 +69,11 @@ def build_trade_xyz_ws_quality_manifest(
                 seen_payload_sha.add(payload_sha)
             recv_ts_ms = row.get("recv_ts_ms")
             prev_recv_ts_ms = prev_recv_ts_ms_by_stream.get(stream_key)
-            if isinstance(recv_ts_ms, int) and prev_recv_ts_ms is not None:
+            if (
+                _is_market_data_stream(stream_key)
+                and isinstance(recv_ts_ms, int)
+                and prev_recv_ts_ms is not None
+            ):
                 gap_s = max(0.0, (recv_ts_ms - prev_recv_ts_ms) / 1000.0)
                 if gap_s > recv_gap_threshold_seconds:
                     if subscription == "trades":
@@ -78,7 +86,11 @@ def build_trade_xyz_ws_quality_manifest(
                 prev_recv_ts_ms_by_stream[stream_key] = recv_ts_ms
             source_ts_ms = row.get("source_ts_ms")
             prev_source_ts_ms = prev_source_ts_ms_by_stream.get(stream_key)
-            if isinstance(source_ts_ms, int) and prev_source_ts_ms is not None:
+            if (
+                _is_market_data_stream(stream_key)
+                and isinstance(source_ts_ms, int)
+                and prev_source_ts_ms is not None
+            ):
                 source_gap_s = max(0.0, (source_ts_ms - prev_source_ts_ms) / 1000.0)
                 if source_gap_s > source_gap_threshold_seconds:
                     if subscription == "trades":

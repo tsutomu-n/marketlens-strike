@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_22:24 JST
-更新日: 2026-06-03_19:17 JST
+更新日: 2026-06-04_06:39 JST
 -->
 
 # Trade[XYZ] Backtest Real Data Ingestion Handoff 2026-06-01
@@ -8,10 +8,17 @@
 ## 結論
 
 この文書は、WS raw collection から backtest ingestion 実装へ渡すための受け渡しdraftである。
-まだ実装開始readyではない。理由は、3symbol 24時間runのmanifestは生成済みで24時間完走したが、`unexpected_reconnect_count=1`、`error_count=1`、`quality status=warn` が残っているからである。
+WS取得基盤としては実装開始readyである。3symbol 24時間runは完走し、final quality manifest は `status=pass`、REST parity も `status=pass` である。
+
+ただし、これは `backtest_data_ready=true` ではない。長期quote coverage、real market reference、oracle timestamp provenanceなどの全体readiness gapは別gateで残る。
 
 2026-06-02_19:01 JST に、server側の `1000 (OK) Expired` close を expected graceful reconnect として扱う修正を入れた。
 2026-06-03_19:17 JST の24時間runでは、`graceful_reconnect_count=7`、`unexpected_reconnect_count=1` だった。
+2026-06-03_19:35 JST に、control subscriptionResponse gapをmarket data quality warnから除外してmanifestを再生成した。
+`unexpected_reconnect_count=1` は約1.074秒のtransport reconnectで、60秒超のquote/state gapを作っていないため、T10では受容する。
+2026-06-03_19:37 JST に `./scripts/check` がpassし、pytestは794件passした。
+2026-06-04_06:39 JST に、WS raw rowを `QuoteLog` へ変換する最小adapterを追加した。
+`bbo` は fill snapshot候補、`activeAssetCtx` は signal/state候補として分離し、`recv_ts_ms` を oracle timestamp として使わない回帰テストを追加した。
 
 現時点でできるのは、次の境界を固定することだけである。
 
@@ -23,10 +30,6 @@
   market_data.py / bar_builder.py に渡す前のタスクを列挙する
 
 まだしない:
-  market_data.py 実装変更
-  bar_builder.py 実装変更
-  run_backtest() 入力adapter実装
-  no-lookahead testsの実装
   backtest_data_ready=true 宣言
 ```
 
@@ -229,6 +232,38 @@ event_ts:
   source_ts_ms がない activeAssetCtx は recv_ts_ms を source時刻として使わない
 ```
 
+実装済みadapter:
+
+```text
+src/sis/venues/trade_xyz/normalizer.py:
+  quote_from_ws_bbo_row(row, ...)
+    source: trade_xyz_ws_bbo
+    role: fill snapshot candidate
+    preserves: recv_ts_ms, source_ts_ms, payload_sha256/raw_payload
+    sets: best_bid, best_ask, mid_price, spread_bps, exec_buy_price, exec_sell_price
+
+  quote_from_ws_active_asset_ctx_row(row)
+    source: trade_xyz_ws_activeAssetCtx
+    role: signal/state candidate
+    preserves: recv_ts_ms, payload_sha256/raw_payload
+    sets: mark_price, oracle_price, index_price, mid_price, funding_rate, open_interest_usd
+    does not set: best_bid, best_ask, exec_buy_price, exec_sell_price
+    block_reasons: [BLOCK_NO_BBO_FILL_SNAPSHOT]
+```
+
+adapter境界:
+
+```text
+bbo:
+  fill snapshot 候補として tradable 判定できる
+  oracle_ts_ms は asset_ctx が無いので missing
+
+activeAssetCtx:
+  mark/oracle/funding/openInterest を持つが、fill snapshot ではない
+  source_ts_ms が無いraw rowでは source_ts_ms=None のまま
+  recv_ts_ms を oracle_ts_ms に流用しない
+```
+
 ## Readiness Gate
 
 次を満たすまで backtest ingestion 実装へ進めない。
@@ -268,8 +303,8 @@ capture_manifest:
 
 quality_manifest:
   path: data/manifests/trade_xyz_ws_quality_manifest.json
-  status: warn
-  gap_count: 8
+  status: pass
+  gap_count: 0
   source_ts_gap_count: 0
   trade_gap_count: 35
   malformed_payload_count: 0
@@ -311,21 +346,20 @@ du -sh data/raw/ws/trade_xyz
 
 ```text
 pass候補:
-  reconnect_count == 0
-  error_count == 0
+  unexpected reconnect があっても、60秒超のquote/state gapを作らず、原因と影響範囲が記録されている
   malformed_payload_count == 0
   unknown_symbol_count == 0
   bbo_bid_ask_inversion_count == 0
   REST parity status == pass
 
 説明つき保留:
-  gap_count > 0
+  market data gap_count > 0
   source_ts_gap_count > 0
-  quality status == warn
+  quality status == warn/fail
 
 data-ready禁止:
   unexpected_reconnect_count > 0 で欠損区間を説明できない
-  error_count > 0
+  error_count > 0 で市場データ欠損への影響を説明できない
   REST parity status != pass
   day partitionが壊れている
 ```
@@ -335,12 +369,12 @@ data-ready禁止:
 24時間run完了後にだけ実行する。
 
 ```text
-1. 24時間runのcapture / quality / REST parity manifestを確定する
-2. このhandoffのReadiness Gateを実測値で更新する
-3. WS raw -> normalized quote candidate の最小fixtureを作る
-4. bboをfill snapshot候補へ変換するunit testを書く
-5. activeAssetCtxをsignal/state候補へ変換するunit testを書く
-6. recv_ts_msをoracle timestampにしないno-lookahead / provenance testを書く
+1. DONE: 24時間runのcapture / quality / REST parity manifestを確定する
+2. DONE: このhandoffのReadiness Gateを実測値で更新する
+3. DONE: WS raw -> normalized quote candidate の最小fixtureを作る
+4. DONE: bboをfill snapshot候補へ変換するunit testを書く
+5. DONE: activeAssetCtxをsignal/state候補へ変換するunit testを書く
+6. DONE: recv_ts_msをoracle timestampにしないno-lookahead / provenance testを書く
 7. market_data.py または新adapterの責務を決める
 8. bar_builder.pyへ渡す前にsignal/fill splitを固定する
 ```
@@ -349,10 +383,12 @@ data-ready禁止:
 
 ```text
 3symbol 24時間run:
-  完走。final manifest生成済み。
+  完走。final manifest生成済み。quality / REST parity はpass。
 
 backtest ingestion code:
-  unexpected_reconnect_count=1、error_count=1、quality status=warn のため、まだ変更しない。
+  最小normalizer adapterは実装済み。
+  次工程はWS raw JSONLを読み、bbo/activeAssetCtxを時系列datasetとして出力するbuilderである。
+  ただし、WS raw contractとsignal/fill splitを守り、recv_ts_msをoracle timestampとして使わない。
 
 data-ready:
   backtest_data_ready=false のまま。
