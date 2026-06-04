@@ -60,6 +60,30 @@ class FakeCandleClient:
         return None
 
 
+class ControlledCandleClient(FakeCandleClient):
+    def __init__(
+        self,
+        *,
+        failures_before_success: dict[tuple[str, str], int] | None = None,
+        empty_success_keys: set[tuple[str, str]] | None = None,
+    ) -> None:
+        super().__init__()
+        self.failures_before_success = failures_before_success or {}
+        self.empty_success_keys = empty_success_keys or set()
+        self.call_counts: dict[tuple[str, str], int] = {}
+
+    def candle_snapshot(self, coin: str, interval: str, start_ms: int, end_ms: int):
+        key = (coin, interval)
+        self.call_counts[key] = self.call_counts.get(key, 0) + 1
+        failure_count = self.failures_before_success.get(key, 0)
+        if self.call_counts[key] <= failure_count:
+            raise RuntimeError("TradeXyzApiError: info endpoint failed: 429 null")
+        if key in self.empty_success_keys:
+            self.requests.append((coin, interval, start_ms, end_ms))
+            return []
+        return super().candle_snapshot(coin, interval, start_ms, end_ms)
+
+
 def test_collect_trade_xyz_signal_candles_writes_separate_signal_artifacts(tmp_path) -> None:
     data_dir = tmp_path / "data"
     _write_registry(data_dir / "registry/trade_xyz_instrument_registry.json")
@@ -158,6 +182,111 @@ def test_collect_trade_xyz_signal_candles_subset_rerun_preserves_other_rows(tmp_
     assert manifest["row_count"] == 2
     assert manifest["new_row_count"] == 1
     assert manifest["symbols"] == ["SP500"]
+
+
+def test_collect_trade_xyz_signal_candles_preserves_failed_existing_key(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    _write_registry(data_dir / "registry/trade_xyz_instrument_registry.json")
+    collect_trade_xyz_signal_candles(
+        data_dir=data_dir,
+        symbols=["SP500"],
+        intervals=["30m", "4h"],
+        period_days=1,
+        request_delay_seconds=0,
+        retry_delay_seconds=0,
+        client=FakeCandleClient(),
+        generated_at=datetime(2026, 5, 31, tzinfo=UTC),
+    )
+    raw_4h = data_dir / "raw/candles/trade_xyz/4h/SP500.json"
+    previous_raw_4h = raw_4h.read_text(encoding="utf-8")
+    client = ControlledCandleClient(
+        failures_before_success={("xyz:SP500", "4h"): 2},
+    )
+
+    manifest = collect_trade_xyz_signal_candles(
+        data_dir=data_dir,
+        symbols=["SP500"],
+        intervals=["30m", "4h"],
+        period_days=1,
+        request_delay_seconds=0,
+        retry_delay_seconds=0,
+        client=client,
+        generated_at=datetime(2026, 6, 1, tzinfo=UTC),
+    )
+
+    frame = pl.read_parquet(data_dir / "normalized/trade_xyz_signal_candles.parquet")
+    assert sorted(frame.get_column("interval").to_list()) == ["30m", "4h"]
+    assert raw_4h.read_text(encoding="utf-8") == previous_raw_4h
+    assert manifest["request_error_count"] == 1
+    assert manifest["failed_keys"] == [{"canonical_symbol": "SP500", "interval": "4h"}]
+    assert manifest["preserved_existing_row_count"] == 1
+    assert manifest["replaced_key_count"] == 1
+    assert manifest["artifacts"]["raw_candle_errors_root"].endswith("raw/candles/trade_xyz_errors")
+
+
+def test_collect_trade_xyz_signal_candles_retries_failed_subset(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    _write_registry(data_dir / "registry/trade_xyz_instrument_registry.json")
+    client = ControlledCandleClient(
+        failures_before_success={("xyz:SP500", "30m"): 1},
+    )
+
+    manifest = collect_trade_xyz_signal_candles(
+        data_dir=data_dir,
+        symbols=["SP500"],
+        intervals=["30m"],
+        period_days=1,
+        request_delay_seconds=0,
+        retry_delay_seconds=0,
+        client=client,
+        generated_at=datetime(2026, 5, 31, tzinfo=UTC),
+    )
+
+    assert client.call_counts[("xyz:SP500", "30m")] == 2
+    assert manifest["request_error_count"] == 0
+    assert manifest["retry_attempt_count"] == 1
+    assert manifest["retry_success_count"] == 1
+    assert manifest["successful_request_count"] == 1
+    assert manifest["failed_keys"] == []
+
+
+def test_collect_trade_xyz_signal_candles_empty_success_replaces_existing_key(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    _write_registry(data_dir / "registry/trade_xyz_instrument_registry.json")
+    collect_trade_xyz_signal_candles(
+        data_dir=data_dir,
+        symbols=["SP500"],
+        intervals=["30m"],
+        period_days=1,
+        request_delay_seconds=0,
+        retry_delay_seconds=0,
+        client=FakeCandleClient(),
+        generated_at=datetime(2026, 5, 31, tzinfo=UTC),
+    )
+    client = ControlledCandleClient(empty_success_keys={("xyz:SP500", "30m")})
+
+    manifest = collect_trade_xyz_signal_candles(
+        data_dir=data_dir,
+        symbols=["SP500"],
+        intervals=["30m"],
+        period_days=1,
+        request_delay_seconds=0,
+        retry_delay_seconds=0,
+        client=client,
+        generated_at=datetime(2026, 6, 1, tzinfo=UTC),
+    )
+
+    frame = pl.read_parquet(data_dir / "normalized/trade_xyz_signal_candles.parquet")
+    raw = read_json(data_dir / "raw/candles/trade_xyz/30m/SP500.json")
+    assert frame.is_empty()
+    assert raw["payload"] == []
+    assert manifest["request_error_count"] == 0
+    assert manifest["successful_request_count"] == 1
+    assert manifest["replaced_key_count"] == 1
 
 
 def test_signal_candles_manifest_is_fresh_checks_symbols_intervals_and_age(tmp_path) -> None:

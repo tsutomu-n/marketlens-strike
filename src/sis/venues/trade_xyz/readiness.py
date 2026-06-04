@@ -641,22 +641,53 @@ def _real_market_reference_next_action(requirement: dict[str, Any]) -> dict[str,
 def _signal_candles_next_action(requirement: dict[str, Any]) -> dict[str, Any] | None:
     if requirement["key"] != "signal_candles" or requirement["status"] != "fail":
         return None
-    command = (
-        "uv run sis collect-trade-xyz-signal-candles --intervals 30m,4h,1d,3d "
-        "--period-days 365 --request-delay-seconds 1.5"
-    )
+    details = requirement.get("details") if isinstance(requirement.get("details"), dict) else {}
+    request_errors = details.get("request_errors")
+    failed_symbols: set[str] = set()
+    failed_intervals: set[str] = set()
+    if isinstance(request_errors, list):
+        for item in request_errors:
+            if not isinstance(item, dict):
+                continue
+            symbol = str(item.get("canonical_symbol") or "").strip().upper()
+            interval = str(item.get("interval") or "").strip()
+            if symbol:
+                failed_symbols.add(symbol)
+            if interval:
+                failed_intervals.add(interval)
+
+    request_delay_seconds = 1.5
+    period_days = 365
+    intervals = ("30m", "4h", "1d", "3d")
     try:
         config = load_trade_xyz_data_collection_config(DEFAULT_COLLECTION_CONFIG_PATH)
-        command = (
-            "uv run sis collect-trade-xyz-signal-candles "
-            f"--intervals {join_csv(config.signal_candle_intervals)} "
-            f"--period-days {config.signal_candle_period_days} "
-            "--request-delay-seconds 1.5"
-        )
-        if config.usable_start_date is not None:
-            command += f" --start {config.usable_start_date}"
+        intervals = config.signal_candle_intervals
+        period_days = config.signal_candle_period_days
+        request_delay_seconds = config.signal_candle_request_delay_seconds
     except (FileNotFoundError, ValueError):
-        pass
+        config = None
+
+    retry_delay_seconds = (
+        max(request_delay_seconds * 2, 3.0) if failed_symbols else request_delay_seconds
+    )
+    if failed_intervals:
+        ordered_failed_intervals = [
+            interval for interval in intervals if interval in failed_intervals
+        ]
+        extra_failed_intervals = sorted(failed_intervals - set(ordered_failed_intervals))
+        effective_intervals = tuple([*ordered_failed_intervals, *extra_failed_intervals])
+    else:
+        effective_intervals = intervals
+    command = (
+        "uv run sis collect-trade-xyz-signal-candles "
+        f"--intervals {join_csv(effective_intervals)} "
+        f"--period-days {period_days} "
+        f"--request-delay-seconds {retry_delay_seconds:g}"
+    )
+    if failed_symbols:
+        command += f" --symbols {join_csv(sorted(failed_symbols))}"
+    if config is not None and config.usable_start_date is not None:
+        command += f" --start {config.usable_start_date}"
     return {
         "key": "collect_signal_candles",
         "reason": requirement.get("reason"),

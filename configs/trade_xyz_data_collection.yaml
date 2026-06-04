@@ -38,6 +38,7 @@ signal_candles:
     - 3d
   period_days: 1
   max_age_hours: 24.0
+  request_delay_seconds: 1.5
 
 historical_archive:
   coins:

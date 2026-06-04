@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_22:24 JST
-更新日: 2026-06-04_16:49 JST
+更新日: 2026-06-04_17:16 JST
 -->
 
 # Trade[XYZ] Backtest Real Data Ingestion Handoff 2026-06-01
@@ -27,6 +27,8 @@ WS取得基盤としては実装開始readyである。3symbol 24時間runは完
 残るstrict failは `quote_coverage` だけで、coverageが30日要件に届くまで継続収集が必要である。
 2026-06-04_16:39 JST 時点で、次の24時間read-only data cycleを起動済みである: PID `2484910`、log `logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log`。
 2026-06-04_16:48 JST に、同種の 429 rate limit error を再発させにくくするため、signal candle collectorのdefault delayを `1.5` 秒へ変更し、readiness next action と runbook も同じ値へ更新した。
+2026-06-04_17:10 JST に、さらに partial failure hardening を実装した。signal candle collector は初回失敗 key だけを1回 retryし、最終失敗 key の既存 parquet/raw success artifact を保持し、失敗詳細は `data/raw/candles/trade_xyz_errors/<interval>/<symbol>.json` に分離して保存する。data-cycle / bundle / config / wrapper へ `signal_candle_request_delay_seconds` を伝搬し、manifest には retry count、failed keys、preserved row count、推定 `/info` weight を残す。
+2026-06-04_17:16 JST に `./scripts/check` がpassし、pytestは807件passした。
 
 現時点でできるのは、次の境界を固定することだけである。
 
@@ -508,6 +510,54 @@ uv run sis collect-trade-xyz-signal-candles \
 
 uv run sis build-trade-xyz-data-readiness --strict
 uv run sis trade-xyz-collection-status --no-refresh-coverage --refresh-readiness --strict
+```
+
+2026-06-04_17:10 JST の追加実装:
+
+```text
+src/sis/venues/trade_xyz/candles.py:
+  failed key retry: 1回
+  retry_delay_seconds default: max(request_delay_seconds * 2, 3.0)
+  final failure artifact: data/raw/candles/trade_xyz_errors/<interval>/<symbol>.json
+  final failure behavior: 既存成功 parquet/raw candle JSON を保持
+  successful empty behavior: その key の既存 rows を空へ置換
+
+configs/trade_xyz_data_collection.yaml:
+  signal_candles.request_delay_seconds: 1.5
+
+src/sis/commands/quotes.py:
+  collect-trade-xyz-data-cycle --signal-candle-request-delay-seconds
+  build-trade-xyz-data-bundle --signal-candle-request-delay-seconds
+
+scripts/collect_trade_xyz_data_cycle.sh:
+  SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS
+
+src/sis/venues/trade_xyz/readiness.py:
+  request_errors から failed symbols / intervals を抽出し、該当subsetだけを再取得する next_action を出す
+
+schemas/trade_xyz_signal_candles_manifest.v1.schema.json:
+  retry_delay_seconds / failed_keys / preserved_existing_row_count / estimated_rate_limit_weight などを追加
+```
+
+近接検証:
+
+```text
+bash -n scripts/collect_trade_xyz_data_cycle.sh:
+  pass
+
+jq empty schemas/trade_xyz_signal_candles_manifest.v1.schema.json:
+  pass
+
+focused pytest:
+  15 passed
+
+ruff changed Python files:
+  check pass
+  format --check pass
+
+full gate:
+  ./scripts/check
+  pass; pytest 807 passed in 75.50s
 ```
 
 残るfail:

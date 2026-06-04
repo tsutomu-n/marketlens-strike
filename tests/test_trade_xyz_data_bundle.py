@@ -495,3 +495,29 @@ def test_build_trade_xyz_data_collection_bundle_skips_fresh_signal_candles(
     signal_step = next(item for item in manifest["steps"] if item["name"] == "signal_candles")
     assert signal_step["status"] == "skipped"
     assert signal_step["details"]["reason"] == "signal_candles_fresh"
+
+
+def test_build_trade_xyz_data_collection_bundle_passes_signal_candle_delay(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    _write_registry(data_dir / "registry/trade_xyz_instrument_registry.json")
+    _write_raw_quotes(data_dir / "raw/quotes/trade_xyz/2026-05-26.jsonl")
+    client = FakeFundingClient()
+
+    manifest = build_trade_xyz_data_collection_bundle(
+        data_dir=data_dir,
+        symbols=["SP500"],
+        min_days=0,
+        max_gap_minutes=2,
+        real_market_provider=FakePriceProvider(),
+        signal_candle_client=client,  # type: ignore[arg-type]
+        signal_candle_request_delay_seconds=0,
+        generated_at=datetime(2026, 5, 31, tzinfo=UTC),
+    )
+
+    signal_manifest = read_json(data_dir / "manifests/trade_xyz_signal_candles_manifest.json")
+    signal_step = next(item for item in manifest["steps"] if item["name"] == "signal_candles")
+    assert signal_manifest["request_delay_seconds"] == 0
+    assert signal_step["details"]["request_delay_seconds"] == 0
+    assert manifest["signal_candle_request_delay_seconds"] == 0

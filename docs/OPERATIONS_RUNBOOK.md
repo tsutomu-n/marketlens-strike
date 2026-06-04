@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-04_16:48 JST
+更新日: 2026-06-04_17:10 JST
 -->
 
 # Operations Runbook
@@ -112,7 +112,10 @@ quote ingest:
 - registry refresh はデフォルト有効。固定済みregistryだけで再現したい調査時は `--use-existing-registry`、wrapperでは `SIS_TRADE_XYZ_CYCLE_REFRESH_REGISTRY=0` を使う。
 - `collect-trade-xyz-real-market-reference` は registry の `real_market_symbol` から yfinance reference barsを収集する。これはresearch/backtest参照用で、live execution dataではない。
 - `collect-trade-xyz-signal-candles` は Hyperliquid `/info` の `candleSnapshot` から historical OHLCV を収集する。これは signal input 用で、fill snapshot と混ぜない。
-- `collect-trade-xyz-signal-candles` は連続 `/info` request の 429 を避けるため `--request-delay-seconds` を持つ。デフォルトは `1.5` 秒。`request_error_count` が残った場合は、欠けたsymbolだけを指定してさらにdelayを長めにして再実行する。
+- `collect-trade-xyz-signal-candles` は連続 `/info` request の 429 を避けるため `--request-delay-seconds` を持つ。デフォルトは `1.5` 秒。初回失敗 key は1回だけ retryし、retry delayは既定で `max(request_delay_seconds * 2, 3.0)` 秒。
+- signal candle の最終失敗 key は、既存の成功済み parquet rows と raw candle JSON を上書きしない。失敗詳細は `data/raw/candles/trade_xyz_errors/<interval>/<symbol>.json` に保存し、manifest の `failed_keys` / `preserved_existing_row_count` / `request_errors` を見る。
+- APIが正常に空payloadを返した場合は successful empty として扱う。この場合だけ、その key の既存 rows は空に置き換わる。timeout / 429 / schema mismatch などの例外とは区別する。
+- `collect-trade-xyz-data-cycle` と `build-trade-xyz-data-bundle` は `--signal-candle-request-delay-seconds` を持つ。wrapperでは `SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS` を使う。
 - `collect-trade-xyz-data-cycle` はデフォルトで `30m,4h,1d,3d` の signal candles も確認する。既存artifactが完全で `SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_MAX_AGE_HOURS` より新しければ再取得せず、quote coverage収集を優先する。
 - `collect-trade-xyz-historical-l2-archive` は Hyperliquid historical L2 archive の raw requester-pays S3 download入口。デフォルトは dry-run で、実downloadには `--execute --acknowledge-requester-pays` と `aws` CLI が必要。archiveは月次更新・欠損ありで、通常の30日live quote collectorやreadiness coverageへ自動混入しない。
 - `collect-trade-xyz-historical-asset-ctxs-archive` は同じ requester-pays S3 archive から日次 asset contexts CSV を取得する入口。historical L2 を実務利用する場合は、L2 bookだけでなく asset_ctxs も取得し、mark / oracle / funding context 欠損を別途検証する。
@@ -148,7 +151,7 @@ quote ingest:
 - session state は `session_state_manifest.json` の行数だけで完了扱いにしない。`session_type_counts` が空なら `session_state` は fail。`internal_session_open` / `maintenance_window` の欠損は supported symbol以外で known gap として扱い、open/closed に読み替えない。
 - funding は `funding_history_join_manifest.json` の `row_count` だけで完了扱いにしない。`skipped` に非ゼロ項目がある場合は `funding_events` を known gap とし、oracle quote join漏れを確認する。
 - real-market reference は `row_count` だけで完了扱いにしない。`missing_mapped_symbols` または `missing_requested_symbols` が残る場合は fail。
-- signal candles は `row_count` だけで完了扱いにしない。registryがある場合は active Trade[XYZ] symbols が `symbols` に揃っていること、`requested_intervals` が `intervals` に揃っていること、かつ `request_error_count=0` を確認する。
+- signal candles は `row_count` だけで完了扱いにしない。registryがある場合は active Trade[XYZ] symbols が `symbols` に揃っていること、`requested_intervals` が `intervals` に揃っていること、かつ `request_error_count=0` を確認する。失敗時の再実行は readiness の `collect_signal_candles` next action を優先し、failed symbols / intervals だけを長めのdelayで再取得する。
 - `trade-xyz-collection-status` は collector / supervisor process と lock も確認し、`collector_running` / `collector_process_count` / `cycle_lock_stale` / `supervisor_lock_stale` をreportに出す。coverage未達かつcollectorが止まっている場合は `scripts/collect_trade_xyz_data_cycle.sh` を next action に出す。
 - `trade-xyz-collection-status` は前回statusとの差分も保存し、`progress_status` / `traceable_row_count_delta` をreportに出す。collectorが動いているのに十分な間隔後も traceable row が増えない場合は `progress_status=warning` を調査する。
 - `trade-xyz-collection-status` はデフォルトで現在の raw quote JSONL から quote coverage manifest を再計算し、data readiness manifest も再評価する。古いmanifestをそのまま見たい調査時だけ `--no-refresh-coverage` / `--no-refresh-readiness` を使う。

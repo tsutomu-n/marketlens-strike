@@ -1762,6 +1762,7 @@ def test_collect_trade_xyz_data_cycle_cli_dry_run(tmp_path) -> None:
     assert "symbols=NVDA" in result.stdout
     assert "registry_refresh=enabled" in result.stdout
     assert "collect_command=uv run sis collect-trade-xyz-quotes" in result.stdout
+    assert "request_delay_seconds=1.5" in result.stdout
     assert (
         "follow_up_command=uv run sis build-trade-xyz-data-bundle --auto-funding-window"
         in result.stdout

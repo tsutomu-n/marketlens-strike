@@ -25,6 +25,7 @@ class TradeXyzDataCollectionConfig:
     signal_candle_intervals: tuple[str, ...]
     signal_candle_period_days: int
     signal_candle_max_age_hours: float
+    signal_candle_request_delay_seconds: float
     archive_coins: tuple[str, ...]
     archive_start_date: str | None
     ws_enabled: bool
@@ -148,6 +149,11 @@ def load_trade_xyz_data_collection_config(
         ),
         signal_candle_max_age_hours=_positive_float(
             candles.get("max_age_hours"), name="signal_candles.max_age_hours", default=24.0
+        ),
+        signal_candle_request_delay_seconds=_positive_float(
+            candles.get("request_delay_seconds"),
+            name="signal_candles.request_delay_seconds",
+            default=1.5,
         ),
         archive_coins=_as_str_tuple(
             archive.get("coins"), name="historical_archive.coins", required=False

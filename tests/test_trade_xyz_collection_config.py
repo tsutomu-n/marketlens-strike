@@ -26,6 +26,7 @@ def test_load_trade_xyz_data_collection_config_defaults() -> None:
     assert config.usable_start_date == "2026-05-31"
     assert config.signal_candle_intervals == ("30m", "4h", "1d", "3d")
     assert config.signal_candle_period_days == 1
+    assert config.signal_candle_request_delay_seconds == 1.5
     assert config.archive_start_date == "2026-05-31"
     assert config.ws_enabled is False
     assert config.ws_url == "wss://api.hyperliquid.xyz/ws"
@@ -71,4 +72,22 @@ websocket_collection:
     )
 
     with pytest.raises(ValueError, match="unsupported values"):
+        load_trade_xyz_data_collection_config(path)
+
+
+def test_load_trade_xyz_data_collection_config_rejects_invalid_signal_candle_delay(
+    tmp_path,
+) -> None:
+    path = tmp_path / "collection.yaml"
+    path.write_text(
+        """
+schema_version: trade_xyz_data_collection_config.v1
+symbols: [SP500]
+signal_candles:
+  request_delay_seconds: 0
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="signal_candles.request_delay_seconds"):
         load_trade_xyz_data_collection_config(path)

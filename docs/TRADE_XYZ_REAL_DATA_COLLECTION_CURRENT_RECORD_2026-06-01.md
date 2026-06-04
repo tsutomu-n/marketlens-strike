@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-04_16:49 JST
+更新日: 2026-06-04_17:16 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-04_16:49 JST
+更新日: 2026-06-04_17:16 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
 
@@ -2613,34 +2613,96 @@ tail -80 logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log
 uv run sis trade-xyz-collection-status --no-refresh-coverage --refresh-readiness --strict
 ```
 
-### 9.8 2026-06-04_16:48 JST の再発防止
+### 9.8 2026-06-04_17:10 JST の再発防止実装
 
-`signal_candles_request_error_count=5` と同種の 429 rate limit error を再発させにくくするため、collectorの恒久設定を更新した。
+`signal_candles_request_error_count=5` と同種の 429 rate limit error を再発させにくくし、同じ失敗が出ても既存の成功データを壊さないようにした。
+
+実装済みの境界:
+
+```text
+request pacing:
+  collect-trade-xyz-signal-candles default request_delay_seconds = 1.5
+  configs/trade_xyz_data_collection.yaml signal_candles.request_delay_seconds = 1.5
+  collect-trade-xyz-data-cycle / build-trade-xyz-data-bundle に --signal-candle-request-delay-seconds を追加
+  scripts/collect_trade_xyz_data_cycle.sh は SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS を受け取る
+
+retry:
+  初回失敗 key だけを1回 retryする
+  retry_delay_seconds default = max(request_delay_seconds * 2, 3.0)
+  readiness next_action は request_errors に含まれる failed symbols / intervals だけを再取得するcommandを出す
+
+lossless partial failure:
+  最終失敗 key は既存 parquet rows と既存 raw candle JSON を保持する
+  最終失敗は data/raw/candles/trade_xyz_errors/<interval>/<symbol>.json に分離して保存する
+  成功 key だけ既存 parquet rows を置き換える
+  APIが正常に空payloadを返した場合は successful empty として扱い、その key の既存 rows を空に置き換える
+
+manifest:
+  retry_delay_seconds
+  successful_request_count
+  failed_request_count
+  retry_attempt_count
+  retry_success_count
+  preserved_existing_row_count
+  replaced_key_count
+  failed_keys
+  estimated_rate_limit_weight
+  artifacts.raw_candle_errors_root
+```
 
 変更:
 
 ```text
 src/sis/venues/trade_xyz/candles.py:
-  DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS = 1.5
+  default delay, failed-key retry, partial failure preservation, error artifact, manifest fields
 
 src/sis/commands/quotes.py:
-  collect-trade-xyz-signal-candles の --request-delay-seconds default を 1.5 に変更
+  collect-trade-xyz-data-cycle / build-trade-xyz-data-bundle に --signal-candle-request-delay-seconds を追加
+
+src/sis/venues/trade_xyz/collection_config.py:
+  signal_candles.request_delay_seconds を collection config から読む
+
+src/sis/venues/trade_xyz/data_bundle.py:
+  signal_candle_request_delay_seconds を bundle build へ伝搬
+
+scripts/collect_trade_xyz_data_cycle.sh:
+  SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS を検証してCLIへ渡す
 
 src/sis/venues/trade_xyz/readiness.py:
-  signal candle failure時の next_action command に --request-delay-seconds 1.5 を含める
+  request_errors がある場合、failed symbols / intervals だけを長めのdelayで再取得する next_action を出す
 
 docs/OPERATIONS_RUNBOOK.md:
-  signal candle収集のdefault delayを 1.5 秒として記載
+  delay、retry、partial failure preservation、error artifactを記載
+
+schemas/trade_xyz_signal_candles_manifest.v1.schema.json:
+  新しいmanifest fieldsをschemaへ追加
 ```
 
 確認:
 
 ```text
-uv run sis collect-trade-xyz-signal-candles --help:
-  --request-delay-seconds FLOAT [default: 1.5]
+bash -n scripts/collect_trade_xyz_data_cycle.sh:
+  pass
 
-uv run pytest -q tests/test_trade_xyz_candles.py:
-  5 passed
+jq empty schemas/trade_xyz_signal_candles_manifest.v1.schema.json:
+  pass
+
+uv run sis collect-trade-xyz-data-cycle --symbols SP500 --duration-minutes 1 --interval-seconds 60 --signal-candle-request-delay-seconds 2.5 --dry-run:
+  signal_candles=enabled intervals=30m,4h,1d,3d period_days=1 request_delay_seconds=2.5
+
+focused pytest:
+  uv run pytest -q tests/test_trade_xyz_candles.py tests/test_trade_xyz_collection_config.py tests/test_trade_xyz_data_readiness.py::test_build_trade_xyz_data_readiness_manifest_suggests_signal_candle_failed_subset tests/test_trade_xyz_data_bundle.py::test_build_trade_xyz_data_collection_bundle_passes_signal_candle_delay tests/test_cli_smoke.py::test_collect_trade_xyz_data_cycle_cli_dry_run
+  15 passed
+
+ruff:
+  uv run ruff check <changed python files>
+  pass
+  uv run ruff format --check <changed python files>
+  pass
+
+full gate:
+  ./scripts/check
+  pass; pytest 807 passed in 75.50s
 ```
 
 ## 10. やってはいけないこと

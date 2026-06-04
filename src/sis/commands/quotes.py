@@ -467,6 +467,11 @@ def register_quote_commands(
             "--signal-candle-max-age-hours",
             help="Reuse existing complete signal candle artifact when it is newer than this.",
         ),
+        signal_candle_request_delay_seconds: float | None = typer.Option(
+            None,
+            "--signal-candle-request-delay-seconds",
+            help="Delay between Trade[XYZ] signal candle /info requests.",
+        ),
         account_fee_user_address: str | None = typer.Option(
             None,
             "--account-fee-user-address",
@@ -505,6 +510,11 @@ def register_quote_commands(
             signal_candle_max_age_hours
             if signal_candle_max_age_hours is not None
             else config.signal_candle_max_age_hours
+        )
+        effective_signal_candle_request_delay_seconds = (
+            signal_candle_request_delay_seconds
+            if signal_candle_request_delay_seconds is not None
+            else config.signal_candle_request_delay_seconds
         )
         effective_usable_start_date = (
             date.fromisoformat(config.usable_start_date) if config.usable_start_date else None
@@ -582,7 +592,8 @@ def register_quote_commands(
                 "signal_candles="
                 f"{'enabled' if collect_signal_candles else 'disabled'} "
                 f"intervals={effective_signal_candle_intervals} "
-                f"period_days={effective_signal_candle_period_days}"
+                f"period_days={effective_signal_candle_period_days} "
+                f"request_delay_seconds={effective_signal_candle_request_delay_seconds}"
             )
             if account_fee_user_address:
                 typer.echo("account_fee_collection=enabled")
@@ -622,6 +633,7 @@ def register_quote_commands(
                 ],
                 signal_candle_period_days=effective_signal_candle_period_days,
                 signal_candle_max_age_hours=effective_signal_candle_max_age_hours,
+                signal_candle_request_delay_seconds=effective_signal_candle_request_delay_seconds,
                 signal_candle_client=client,
                 collect_real_market_reference_data=collect_real_market_reference_data,
                 usable_start_date=effective_usable_start_date,
@@ -1717,6 +1729,11 @@ def register_quote_commands(
             "--signal-candle-max-age-hours",
             help="Reuse existing complete signal candle artifact when it is newer than this.",
         ),
+        signal_candle_request_delay_seconds: float | None = typer.Option(
+            None,
+            "--signal-candle-request-delay-seconds",
+            help="Delay between Trade[XYZ] signal candle /info requests.",
+        ),
         account_fee_user_address: str | None = typer.Option(
             None,
             "--account-fee-user-address",
@@ -1752,6 +1769,11 @@ def register_quote_commands(
             if signal_candle_max_age_hours is not None
             else config.signal_candle_max_age_hours
         )
+        effective_signal_candle_request_delay_seconds = (
+            signal_candle_request_delay_seconds
+            if signal_candle_request_delay_seconds is not None
+            else config.signal_candle_request_delay_seconds
+        )
         effective_usable_start_date = (
             date.fromisoformat(config.usable_start_date) if config.usable_start_date else None
         )
@@ -1776,6 +1798,7 @@ def register_quote_commands(
                     signal_candle_intervals=effective_signal_candle_intervals,
                     signal_candle_period_days=effective_signal_candle_period_days,
                     signal_candle_max_age_hours=effective_signal_candle_max_age_hours,
+                    signal_candle_request_delay_seconds=effective_signal_candle_request_delay_seconds,
                     signal_candle_client=client,
                     collect_real_market_reference_data=collect_real_market_reference_data,
                     usable_start_date=effective_usable_start_date,
@@ -1799,6 +1822,7 @@ def register_quote_commands(
                 signal_candle_intervals=effective_signal_candle_intervals,
                 signal_candle_period_days=effective_signal_candle_period_days,
                 signal_candle_max_age_hours=effective_signal_candle_max_age_hours,
+                signal_candle_request_delay_seconds=effective_signal_candle_request_delay_seconds,
                 collect_real_market_reference_data=collect_real_market_reference_data,
                 usable_start_date=effective_usable_start_date,
                 allow_known_gaps=allow_known_gaps,

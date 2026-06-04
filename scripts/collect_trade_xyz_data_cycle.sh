@@ -18,6 +18,7 @@ COLLECT_SIGNAL_CANDLES="${SIS_TRADE_XYZ_CYCLE_COLLECT_SIGNAL_CANDLES:-1}"
 SIGNAL_CANDLE_INTERVALS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_INTERVALS:-}"
 SIGNAL_CANDLE_PERIOD_DAYS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_PERIOD_DAYS:-}"
 SIGNAL_CANDLE_MAX_AGE_HOURS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_MAX_AGE_HOURS:-}"
+SIGNAL_CANDLE_REQUEST_DELAY_SECONDS="${SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS:-}"
 
 is_positive_int() {
   [[ "$1" =~ ^[1-9][0-9]*$ ]]
@@ -40,6 +41,11 @@ fi
 
 if [[ -n "${SIGNAL_CANDLE_MAX_AGE_HOURS}" ]] && ! is_positive_int "${SIGNAL_CANDLE_MAX_AGE_HOURS}"; then
   echo "SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_MAX_AGE_HOURS must be a positive integer: ${SIGNAL_CANDLE_MAX_AGE_HOURS}" >&2
+  exit 2
+fi
+
+if [[ -n "${SIGNAL_CANDLE_REQUEST_DELAY_SECONDS}" ]] && ! [[ "${SIGNAL_CANDLE_REQUEST_DELAY_SECONDS}" =~ ^([1-9][0-9]*|0)(\.[0-9]+)?$ ]]; then
+  echo "SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS must be a non-negative number: ${SIGNAL_CANDLE_REQUEST_DELAY_SECONDS}" >&2
   exit 2
 fi
 
@@ -108,6 +114,10 @@ if [[ -n "${SIGNAL_CANDLE_MAX_AGE_HOURS}" ]]; then
   command+=(--signal-candle-max-age-hours "${SIGNAL_CANDLE_MAX_AGE_HOURS}")
 fi
 
+if [[ -n "${SIGNAL_CANDLE_REQUEST_DELAY_SECONDS}" ]]; then
+  command+=(--signal-candle-request-delay-seconds "${SIGNAL_CANDLE_REQUEST_DELAY_SECONDS}")
+fi
+
 if [[ "${DRY_RUN}" == "1" ]]; then
   command+=(--dry-run)
 fi
@@ -143,6 +153,7 @@ printf 'collect_signal_candles=%s\n' "${COLLECT_SIGNAL_CANDLES}"
 printf 'signal_candle_intervals=%s\n' "${SIGNAL_CANDLE_INTERVALS:-<collection-config>}"
 printf 'signal_candle_period_days=%s\n' "${SIGNAL_CANDLE_PERIOD_DAYS:-<collection-config>}"
 printf 'signal_candle_max_age_hours=%s\n' "${SIGNAL_CANDLE_MAX_AGE_HOURS:-<collection-config>}"
+printf 'signal_candle_request_delay_seconds=%s\n' "${SIGNAL_CANDLE_REQUEST_DELAY_SECONDS:-<collection-config>}"
 
 {
   printf '[%s] Trade[XYZ] data cycle starting\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"

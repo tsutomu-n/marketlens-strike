@@ -9,6 +9,7 @@ from sis.storage.jsonl_store import write_json
 from sis.storage.normalize import collect_quote_logs
 from sis.venues.trade_xyz.account_fee import collect_trade_xyz_account_fee_snapshot
 from sis.venues.trade_xyz.candles import collect_trade_xyz_signal_candles
+from sis.venues.trade_xyz.candles import DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS
 from sis.venues.trade_xyz.candles import signal_candles_manifest_is_fresh
 from sis.venues.trade_xyz.client import TradeXyzClient
 from sis.venues.trade_xyz.coverage import build_trade_xyz_quote_coverage_manifest
@@ -107,6 +108,7 @@ def build_trade_xyz_data_collection_bundle(
     signal_candle_intervals: list[str] | None = None,
     signal_candle_period_days: int = 365,
     signal_candle_max_age_hours: float = 24.0,
+    signal_candle_request_delay_seconds: float = DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS,
     signal_candle_client: TradeXyzClient | None = None,
     collect_real_market_reference_data: bool = True,
     usable_start_date: date | None = None,
@@ -346,6 +348,7 @@ def build_trade_xyz_data_collection_bundle(
                                 else None
                             ),
                             period_days=signal_candle_period_days,
+                            request_delay_seconds=signal_candle_request_delay_seconds,
                             client=client,
                             generated_at=generated,
                         )
@@ -361,6 +364,7 @@ def build_trade_xyz_data_collection_bundle(
                             else None
                         ),
                         period_days=signal_candle_period_days,
+                        request_delay_seconds=signal_candle_request_delay_seconds,
                         client=effective_signal_candle_client,
                         generated_at=generated,
                     )
@@ -374,6 +378,7 @@ def build_trade_xyz_data_collection_bundle(
                         "symbol_count": manifest["symbol_count"],
                         "intervals": manifest["intervals"],
                         "request_error_count": manifest["request_error_count"],
+                        "request_delay_seconds": manifest["request_delay_seconds"],
                         "freshness": freshness,
                     },
                 )
@@ -467,6 +472,7 @@ def build_trade_xyz_data_collection_bundle(
         "signal_candle_intervals": signal_candle_intervals or ["30m", "4h", "1d", "3d"],
         "signal_candle_period_days": signal_candle_period_days,
         "signal_candle_max_age_hours": signal_candle_max_age_hours,
+        "signal_candle_request_delay_seconds": signal_candle_request_delay_seconds,
         "collect_real_market_reference_data": collect_real_market_reference_data,
         "allow_known_gaps": allow_known_gaps,
         "status": "completed_with_errors" if failed_steps else "completed",

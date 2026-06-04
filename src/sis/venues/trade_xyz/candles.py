@@ -16,6 +16,7 @@ from sis.venues.trade_xyz.client import TradeXyzClient
 from sis.venues.trade_xyz.registry import load_trade_xyz_registry
 
 DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS = 1.5
+DEFAULT_SIGNAL_CANDLE_RETRY_DELAY_SECONDS = 3.0
 
 SIGNAL_CANDLE_SCHEMA = {
     "schema_version": pl.Utf8,
@@ -79,6 +80,22 @@ def _payload_hash(payload: Any) -> str:
         "utf-8"
     )
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _candle_snapshot_weight(payload: list[dict[str, Any]] | None) -> int:
+    if payload is None:
+        return 20
+    return 20 + ((len(payload) + 59) // 60)
+
+
+def _key_frame(keys: set[tuple[str, str]]) -> pl.DataFrame:
+    ordered = sorted(keys)
+    return pl.DataFrame(
+        {
+            "canonical_symbol": [symbol for symbol, _interval in ordered],
+            "interval": [interval for _symbol, interval in ordered],
+        }
+    )
 
 
 def _normalize_candle_row(
@@ -227,6 +244,7 @@ def collect_trade_xyz_signal_candles(
     end: datetime | None = None,
     period_days: int = 365,
     request_delay_seconds: float = DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS,
+    retry_delay_seconds: float | None = None,
     client: TradeXyzClient | None = None,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
@@ -234,6 +252,13 @@ def collect_trade_xyz_signal_candles(
         raise ValueError("period_days must be > 0")
     if request_delay_seconds < 0:
         raise ValueError("request_delay_seconds must be >= 0")
+    effective_retry_delay_seconds = (
+        retry_delay_seconds
+        if retry_delay_seconds is not None
+        else max(request_delay_seconds * 2, DEFAULT_SIGNAL_CANDLE_RETRY_DELAY_SECONDS)
+    )
+    if effective_retry_delay_seconds < 0:
+        raise ValueError("retry_delay_seconds must be >= 0")
     requested_intervals = intervals or ["30m", "4h", "1d", "3d"]
     if not requested_intervals:
         raise ValueError("at least one interval is required")
@@ -250,60 +275,124 @@ def collect_trade_xyz_signal_candles(
     instruments = _active_instruments(effective_registry_path, symbols=symbols)
     if not instruments:
         raise ValueError("no active trade_xyz instruments found for candle collection")
+    requested_symbols = {item.canonical_symbol for item in instruments}
 
     own_client = client is None
     created_client = client or TradeXyzClient()
     rows: list[dict[str, Any]] = []
+    initial_errors: list[tuple[InstrumentSpec, str, str, str]] = []
     request_errors: list[dict[str, Any]] = []
+    successful_keys: set[tuple[str, str]] = set()
+    failed_keys: set[tuple[str, str]] = set()
+    estimated_rate_limit_weight = 0
+    retry_attempt_count = 0
+    retry_success_count = 0
     raw_dir = data_dir / "raw/candles/trade_xyz"
+    raw_error_dir = data_dir / "raw/candles/trade_xyz_errors"
     normalized_path = data_dir / "normalized/trade_xyz_signal_candles.parquet"
+
+    def record_success(
+        *, instrument: InstrumentSpec, coin: str, interval: str, payload: list[dict[str, Any]]
+    ) -> None:
+        key = (instrument.canonical_symbol, interval)
+        successful_keys.add(key)
+        raw_path = raw_dir / interval / f"{instrument.canonical_symbol}.json"
+        raw_artifact = {
+            "schema_version": "trade_xyz_signal_candle_raw.v1",
+            "generated_at": generated.isoformat(),
+            "canonical_symbol": instrument.canonical_symbol,
+            "coin": coin,
+            "interval": interval,
+            "start_time_ms": _ms(effective_start),
+            "end_time_ms": _ms(effective_end),
+            "source": "hyperliquid_info_candleSnapshot",
+            "payload": payload,
+        }
+        write_json(raw_path, raw_artifact)
+        for index, item in enumerate(payload):
+            if not isinstance(item, dict):
+                continue
+            rows.append(
+                _normalize_candle_row(
+                    instrument=instrument,
+                    interval=interval,
+                    row=item,
+                    raw_payload_ref=f"{raw_path}#payload[{index}]",
+                )
+            )
+
+    def request_payload(
+        *, instrument: InstrumentSpec, coin: str, interval: str
+    ) -> list[dict[str, Any]]:
+        nonlocal estimated_rate_limit_weight
+        payload = created_client.candle_snapshot(
+            coin,
+            interval,
+            _ms(effective_start),
+            _ms(effective_end),
+        )
+        estimated_rate_limit_weight += _candle_snapshot_weight(payload)
+        return payload
+
     try:
         for instrument in instruments:
             coin = instrument.coin or f"xyz:{instrument.canonical_symbol}"
             for interval in requested_intervals:
                 try:
-                    payload = created_client.candle_snapshot(
-                        coin,
-                        interval,
-                        _ms(effective_start),
-                        _ms(effective_end),
-                    )
+                    payload = request_payload(instrument=instrument, coin=coin, interval=interval)
                 except Exception as exc:
-                    request_errors.append(
-                        {
-                            "canonical_symbol": instrument.canonical_symbol,
-                            "coin": coin,
-                            "interval": interval,
-                            "error": f"{type(exc).__name__}: {exc}",
-                        }
+                    estimated_rate_limit_weight += _candle_snapshot_weight(None)
+                    initial_errors.append(
+                        (instrument, coin, interval, f"{type(exc).__name__}: {exc}")
                     )
-                    payload = []
+                else:
+                    record_success(
+                        instrument=instrument, coin=coin, interval=interval, payload=payload
+                    )
                 if request_delay_seconds > 0:
                     time.sleep(request_delay_seconds)
-                raw_path = raw_dir / interval / f"{instrument.canonical_symbol}.json"
-                raw_artifact = {
-                    "schema_version": "trade_xyz_signal_candle_raw.v1",
-                    "generated_at": generated.isoformat(),
-                    "canonical_symbol": instrument.canonical_symbol,
-                    "coin": coin,
-                    "interval": interval,
-                    "start_time_ms": _ms(effective_start),
-                    "end_time_ms": _ms(effective_end),
-                    "source": "hyperliquid_info_candleSnapshot",
-                    "payload": payload,
-                }
-                write_json(raw_path, raw_artifact)
-                for index, item in enumerate(payload):
-                    if not isinstance(item, dict):
-                        continue
-                    rows.append(
-                        _normalize_candle_row(
-                            instrument=instrument,
-                            interval=interval,
-                            row=item,
-                            raw_payload_ref=f"{raw_path}#payload[{index}]",
-                        )
-                    )
+        for instrument, coin, interval, first_error in initial_errors:
+            retry_attempt_count += 1
+            if effective_retry_delay_seconds > 0:
+                time.sleep(effective_retry_delay_seconds)
+            try:
+                payload = request_payload(instrument=instrument, coin=coin, interval=interval)
+            except Exception as exc:
+                estimated_rate_limit_weight += _candle_snapshot_weight(None)
+                error_artifact_path = (
+                    raw_error_dir / interval / f"{instrument.canonical_symbol}.json"
+                )
+                final_error = f"{type(exc).__name__}: {exc}"
+                write_json(
+                    error_artifact_path,
+                    {
+                        "schema_version": "trade_xyz_signal_candle_error.v1",
+                        "generated_at": generated.isoformat(),
+                        "canonical_symbol": instrument.canonical_symbol,
+                        "coin": coin,
+                        "interval": interval,
+                        "start_time_ms": _ms(effective_start),
+                        "end_time_ms": _ms(effective_end),
+                        "source": "hyperliquid_info_candleSnapshot",
+                        "first_error": first_error,
+                        "final_error": final_error,
+                    },
+                )
+                failed_keys.add((instrument.canonical_symbol, interval))
+                request_errors.append(
+                    {
+                        "canonical_symbol": instrument.canonical_symbol,
+                        "coin": coin,
+                        "interval": interval,
+                        "first_error": first_error,
+                        "error": final_error,
+                        "attempt_count": 2,
+                        "error_artifact": str(error_artifact_path),
+                    }
+                )
+            else:
+                retry_success_count += 1
+                record_success(instrument=instrument, coin=coin, interval=interval, payload=payload)
     finally:
         if own_client:
             created_client.close()
@@ -314,16 +403,20 @@ def collect_trade_xyz_signal_candles(
         else pl.DataFrame(schema=SIGNAL_CANDLE_SCHEMA)
     )
     frame = new_frame
-    requested_symbols = {item.canonical_symbol for item in instruments}
-    requested_interval_set = set(requested_intervals)
+    preserved_existing_row_count = 0
     if normalized_path.exists():
         existing = pl.read_parquet(normalized_path)
         if not existing.is_empty() and {"canonical_symbol", "interval"} <= set(existing.columns):
-            kept = existing.filter(
-                ~(
-                    pl.col("canonical_symbol").is_in(sorted(requested_symbols))
-                    & pl.col("interval").is_in(sorted(requested_interval_set))
+            if failed_keys:
+                preserved_existing_row_count = existing.join(
+                    _key_frame(failed_keys), on=["canonical_symbol", "interval"], how="semi"
+                ).height
+            kept = (
+                existing.join(
+                    _key_frame(successful_keys), on=["canonical_symbol", "interval"], how="anti"
                 )
+                if successful_keys
+                else existing
             )
             frame = pl.concat([kept, new_frame], how="diagonal_relaxed") if rows else kept
     normalized_path.parent.mkdir(parents=True, exist_ok=True)
@@ -349,6 +442,7 @@ def collect_trade_xyz_signal_candles(
         "end": effective_end.isoformat(),
         "period_days": period_days,
         "request_delay_seconds": request_delay_seconds,
+        "retry_delay_seconds": effective_retry_delay_seconds,
         "intervals": artifact_intervals,
         "requested_intervals": requested_intervals,
         "symbols": artifact_symbols,
@@ -358,8 +452,24 @@ def collect_trade_xyz_signal_candles(
         "symbol_count": len(artifact_symbols),
         "request_error_count": len(request_errors),
         "request_errors": request_errors,
+        "successful_request_count": len(successful_keys),
+        "failed_request_count": len(request_errors),
+        "retry_attempt_count": retry_attempt_count,
+        "retry_success_count": retry_success_count,
+        "preserved_existing_row_count": preserved_existing_row_count,
+        "replaced_key_count": len(successful_keys),
+        "failed_keys": [
+            {"canonical_symbol": symbol, "interval": interval}
+            for symbol, interval in sorted(failed_keys)
+        ],
+        "estimated_rate_limit_weight": estimated_rate_limit_weight,
+        "estimated_rate_limit_weight_policy": (
+            "Minimum estimate: candleSnapshot base info weight 20 plus one additional "
+            "weight per 60 returned rows. Failed high-level calls are counted as base 20."
+        ),
         "artifacts": {
             "raw_candles_root": str(raw_dir),
+            "raw_candle_errors_root": str(raw_error_dir),
             "normalized_signal_candles": str(normalized_path),
         },
         "notes": [

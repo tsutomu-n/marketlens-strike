@@ -461,6 +461,54 @@ def test_build_trade_xyz_data_readiness_manifest_fails_partial_signal_candles(
     assert any(item["key"] == "collect_signal_candles" for item in manifest["next_actions"])
 
 
+def test_build_trade_xyz_data_readiness_manifest_suggests_signal_candle_failed_subset(
+    tmp_path,
+) -> None:
+    data_dir = tmp_path / "data"
+    _write_ready_inputs(data_dir)
+    _write_json(
+        data_dir / "manifests/trade_xyz_signal_candles_manifest.json",
+        {
+            "schema_version": "trade_xyz_signal_candles_manifest.v1",
+            "source": "hyperliquid_info_candleSnapshot",
+            "row_count": 10,
+            "symbol_count": 2,
+            "symbols": ["SP500", "NVDA"],
+            "requested_symbols": ["SP500", "NVDA"],
+            "intervals": ["30m", "4h", "1d", "3d"],
+            "requested_intervals": ["30m", "4h", "1d", "3d"],
+            "request_error_count": 2,
+            "request_errors": [
+                {
+                    "canonical_symbol": "SP500",
+                    "coin": "xyz:SP500",
+                    "interval": "30m",
+                    "error": "TradeXyzApiError: info endpoint failed: 429 null",
+                },
+                {
+                    "canonical_symbol": "NVDA",
+                    "coin": "xyz:NVDA",
+                    "interval": "4h",
+                    "error": "TradeXyzApiError: info endpoint failed: 429 null",
+                },
+            ],
+            "artifacts": {},
+        },
+    )
+
+    manifest = build_trade_xyz_data_readiness_manifest(
+        data_dir=data_dir,
+        generated_at=datetime(2026, 5, 31, tzinfo=UTC),
+    )
+
+    action = next(
+        item for item in manifest["next_actions"] if item["key"] == "collect_signal_candles"
+    )
+    assert "--symbols NVDA,SP500" in action["command"]
+    assert "--intervals 30m,4h" in action["command"]
+    assert "--request-delay-seconds 3" in action["command"]
+
+
 def test_build_trade_xyz_data_readiness_manifest_checks_signal_candles_against_registry(
     tmp_path,
 ) -> None:
