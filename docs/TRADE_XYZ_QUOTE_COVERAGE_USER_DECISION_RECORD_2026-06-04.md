@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-04_20:20 JST
-更新日: 2026-06-04_22:37 JST
+更新日: 2026-06-05_07:40 JST
 -->
 
 # Trade[XYZ] Quote Coverage User Decision Record 2026-06-04
 
-この文書は、Trade[XYZ] の quote coverage 収集について、ユーザーが「今どう判断すればよいか」を短く確認するための記録である。実装者向けの詳細は [TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md) を読む。
+この文書は、Trade[XYZ] の quote coverage 収集について、ユーザーが「今どう判断すればよいか」を短く確認するための記録である。実装者向けの詳細は [TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md) を読む。PID `2484910` の自然終了条件は [TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md](TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md) を読む。
 
 ## 結論
 
@@ -51,7 +51,7 @@ log:
 
 ```text
 row count と mtime は収集中なので変わり続ける。
-2026-06-05_09:00 JST 以降は UTC 日付が変わるため、data/raw/quotes/trade_xyz/2026-06-05.jsonl も見る。
+今回の data-cycle は起動時のUTC日付で raw path を固定するため、まず data/raw/quotes/trade_xyz/2026-06-04.jsonl を見る。
 log が開始行だけでも、raw file が増えていればそれだけで停止扱いしない。
 ```
 

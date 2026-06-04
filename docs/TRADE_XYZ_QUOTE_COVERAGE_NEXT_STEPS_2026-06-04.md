@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-06-04_17:47 JST
-更新日: 2026-06-04_22:37 JST
+更新日: 2026-06-05_07:40 JST
 -->
 
 # Trade[XYZ] Quote Coverage And 24h Backtest Smoke Next Steps 2026-06-04
 
 この文書は、30日quote coverageを待つ間に、24時間WS artifactで先に進める作業を固定するための運用計画である。
 
-ユーザー向けの短い判断記録は [TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md) に分離している。
+ユーザー向けの短い判断記録は [TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md) に分離している。PID `2484910` の自然終了条件は [TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md](TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md) を読む。
 
 ## 結論
 
@@ -170,8 +170,8 @@ log:
 
 raw quote file:
   data/raw/quotes/trade_xyz/2026-06-04.jsonl
-  2026-06-05_09:00 JST 以降は UTC日付が変わるため、
-  data/raw/quotes/trade_xyz/2026-06-05.jsonl にも書かれる可能性がある
+  今回の data-cycle は起動時のUTC日付で raw path を固定するため、
+  JSTで 2026-06-05_09:00 を過ぎても基本的には 2026-06-04.jsonl に書き続ける
 
 2026-06-04_22:04 JST 時点:
   process alive
@@ -558,9 +558,9 @@ process / lock / latest raw file / network error を確認する。
 注意:
 
 ```text
-このcycleは UTC日付をまたぐ。
-2026-06-05_09:00 JST 以降に 2026-06-04.jsonl の行数が止まっても、
-2026-06-05.jsonl が増えているなら正常な可能性が高い。
+今回のcycleは UTC日付をまたぐが、現在の collect_trade_xyz_quote_window() は起動時のUTC日付で raw path を固定する。
+したがって、まず data/raw/quotes/trade_xyz/2026-06-04.jsonl の mtime と行数を見る。
+将来の別collectorや実装変更では日付分割が変わり得るため、その場合は起動logとコードを優先する。
 ```
 
 やらないこと:
@@ -1266,7 +1266,7 @@ collector 重複起動は禁止
 
 ```text
 collector が途中停止した場合、status更新前に次cycleを起動すると原因が見えにくくなる
-2026-06-05_09:00 JST 以降はUTC日付が変わるため、2026-06-04.jsonlだけを見ると収集停止と誤認する
+今回の data-cycle は起動時のUTC日付で raw path を固定するため、逆に 2026-06-05.jsonl が増えないことを停止と誤認しない
 古い data/ops/trade_xyz_collection_status.json をそのまま読むと collector process 状態を誤認する
 until-ready supervisor を使わず手動cycleだけを繰り返すと、非 quote_coverage の fail を見落としやすい
 起動中 collector がある間に until-ready supervisor も起動すると、監視logとlockが増えて状態把握が紛らわしくなる
