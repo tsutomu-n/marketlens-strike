@@ -22,6 +22,7 @@ def test_help_smoke() -> None:
     assert result.exit_code == 0
     assert "probe" in stdout
     assert "collect-trade-xyz-quotes" in stdout
+    assert "normalize-trade-xyz-ws-quotes" in stdout
     assert "build-trade-xyz-quote-coverage" in stdout
     assert "build-trade-xyz-reference-data" in stdout
     assert "collect-trade-xyz-real-market-reference" in stdout
@@ -1594,6 +1595,51 @@ def test_collect_trade_xyz_quotes_cli_no_normalize(tmp_path, monkeypatch) -> Non
     assert "quote_count=1" in result.stdout
     assert "normalized_quotes_path=" not in result.stdout
     assert (data_dir / "normalized/quotes.parquet").exists() is False
+
+
+def test_normalize_trade_xyz_ws_quotes_cli(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+    registry = data_dir / "registry/trade_xyz_instrument_registry.json"
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        (
+            '[{"venue":"trade_xyz","canonical_symbol":"NVDA","venue_symbol":"xyz:NVDA",'
+            '"asset_class":"equity","dex":"xyz","coin":"xyz:NVDA","asset_id":130002,'
+            '"real_market_symbol":"NVDA","fee_mode":"standard","taker_fee_bps":9.0,'
+            '"maker_fee_bps":3.0,"api_readable":true,"api_orderable":true,"active":true}]'
+        ),
+        encoding="utf-8",
+    )
+    raw_root = data_dir / "raw/ws/trade_xyz"
+    bbo_path = raw_root / "date=2026-06-02/subscription=bbo/symbol=NVDA/part-000001.jsonl"
+    bbo_path.parent.mkdir(parents=True, exist_ok=True)
+    bbo_path.write_text(
+        (
+            '{"subscription":"bbo","channel":"bbo","message_kind":"data",'
+            '"recv_ts_ms":1780394603762,"source_ts_ms":1780394603466,'
+            '"canonical_symbol":"NVDA","venue_symbol":"xyz:NVDA","coin":"xyz:NVDA",'
+            '"payload_sha256":"sha256:bbo","payload":{"channel":"bbo","data":'
+            '{"coin":"xyz:NVDA","time":1780394603466,"bbo":'
+            '[{"px":"100.0","sz":"1.5"},{"px":"100.2","sz":"2.0"}]}}}\n'
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["normalize-trade-xyz-ws-quotes"], env=env)
+
+    assert result.exit_code == 0
+    assert "quote_count=1" in result.stdout
+    assert "normalized_ws_quotes_path=" in result.stdout
+    assert "duckdb_path=" in result.stdout
+    assert "manifest_path=" in result.stdout
+    frame = pl.read_parquet(data_dir / "normalized/trade_xyz_ws_quotes.parquet")
+    assert frame.get_column("source").to_list() == ["trade_xyz_ws_bbo"]
+    assert frame.get_column("taker_fee_bps").to_list() == [9.0]
+    manifest = read_json(data_dir / "normalized/trade_xyz_ws_quotes.manifest.json")
+    assert isinstance(manifest, dict)
+    assert manifest["quote_count_written"] == 1
+    assert manifest["bbo_quote_count"] == 1
 
 
 def test_collect_trade_xyz_data_cycle_cli_collects_and_rebuilds_readiness(

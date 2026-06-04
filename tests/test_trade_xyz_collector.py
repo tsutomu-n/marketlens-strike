@@ -7,6 +7,7 @@ import polars as pl
 from sis.models import InstrumentSpec
 from sis.storage.jsonl_store import read_jsonl
 from sis.storage.normalize import normalize_quotes
+from sis.storage.normalize import normalize_trade_xyz_ws_quotes
 from sis.venues.trade_xyz.collector import collect_trade_xyz_quote_window, collect_trade_xyz_quotes
 
 
@@ -119,6 +120,133 @@ def test_normalize_quotes_accepts_trade_xyz_v2(tmp_path) -> None:
     assert (
         frame.get_column("exec_buy_price").to_list()[0] == frame.get_column("best_ask").to_list()[0]
     )
+
+
+def test_normalize_trade_xyz_ws_quotes_builds_quote_log_dataset(tmp_path) -> None:
+    raw_root = tmp_path / "data/raw/ws/trade_xyz"
+    bbo_path = raw_root / "date=2026-06-02/subscription=bbo/symbol=NVDA/part-000001.jsonl"
+    ctx_path = (
+        raw_root / "date=2026-06-02/subscription=activeAssetCtx/symbol=NVDA/part-000001.jsonl"
+    )
+    trades_path = raw_root / "date=2026-06-02/subscription=trades/symbol=NVDA/part-000001.jsonl"
+    control_path = (
+        raw_root / "date=2026-06-02/subscription=__control__/symbol=__all__/part-000001.jsonl"
+    )
+    bbo_path.parent.mkdir(parents=True)
+    ctx_path.parent.mkdir(parents=True)
+    trades_path.parent.mkdir(parents=True)
+    control_path.parent.mkdir(parents=True)
+    bbo_row = {
+        "subscription": "bbo",
+        "channel": "bbo",
+        "message_kind": "data",
+        "recv_ts_ms": 1780394603762,
+        "source_ts_ms": 1780394603466,
+        "canonical_symbol": "NVDA",
+        "venue_symbol": "xyz:NVDA",
+        "coin": "xyz:NVDA",
+        "payload_sha256": "sha256:bbo",
+        "payload": {
+            "channel": "bbo",
+            "data": {
+                "coin": "xyz:NVDA",
+                "time": 1780394603466,
+                "bbo": [
+                    {"px": "100.0", "sz": "1.5"},
+                    {"px": "100.2", "sz": "2.0"},
+                ],
+            },
+        },
+    }
+    bbo_path.write_text(
+        json.dumps(bbo_row) + "\n" + json.dumps(bbo_row) + "\n",
+        encoding="utf-8",
+    )
+    ctx_path.write_text(
+        json.dumps(
+            {
+                "subscription": "activeAssetCtx",
+                "channel": "activeAssetCtx",
+                "message_kind": "data",
+                "recv_ts_ms": 1780394604000,
+                "canonical_symbol": "NVDA",
+                "venue_symbol": "xyz:NVDA",
+                "coin": "xyz:NVDA",
+                "payload_sha256": "sha256:ctx",
+                "payload": {
+                    "channel": "activeAssetCtx",
+                    "data": {
+                        "coin": "xyz:NVDA",
+                        "ctx": {
+                            "oraclePx": "100.3",
+                            "markPx": "100.1",
+                            "midPx": "100.15",
+                            "funding": "0.00001",
+                            "openInterest": "1234",
+                        },
+                    },
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    trades_path.write_text(
+        json.dumps({"subscription": "trades", "channel": "trades", "message_kind": "data"}) + "\n",
+        encoding="utf-8",
+    )
+    control_path.write_text(
+        json.dumps(
+            {
+                "subscription": "__control__",
+                "channel": "subscriptionResponse",
+                "message_kind": "control",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    count = normalize_trade_xyz_ws_quotes(
+        raw_root,
+        tmp_path / "data/normalized/trade_xyz_ws_quotes.parquet",
+        tmp_path / "data/normalized/sis.duckdb",
+        instruments=[_active_instrument()],
+        manifest_path=tmp_path / "data/normalized/trade_xyz_ws_quotes.manifest.json",
+        quality_manifest_path=Path("data/manifests/trade_xyz_ws_quality_manifest.json"),
+        rest_parity_manifest_path=Path("data/manifests/trade_xyz_rest_parity_manifest.json"),
+    )
+
+    assert count == 2
+    frame = pl.read_parquet(tmp_path / "data/normalized/trade_xyz_ws_quotes.parquet")
+    assert frame.get_column("source").to_list() == [
+        "trade_xyz_ws_activeAssetCtx",
+        "trade_xyz_ws_bbo",
+    ]
+    bbo = frame.filter(pl.col("source") == "trade_xyz_ws_bbo").row(0, named=True)
+    assert bbo["asset_id"] == 130002
+    assert bbo["taker_fee_bps"] == 9.0
+    assert bbo["exec_buy_price"] == 100.2
+    assert bbo["raw_payload_ref"].endswith("#row=0")
+    ctx = frame.filter(pl.col("source") == "trade_xyz_ws_activeAssetCtx").row(0, named=True)
+    assert ctx["is_tradable"] is False
+    assert ctx["oracle_ts_ms"] is None
+    manifest = json.loads(
+        (tmp_path / "data/normalized/trade_xyz_ws_quotes.manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["schema_version"] == "trade_xyz_ws_backtest_artifact_manifest.v1"
+    assert manifest["raw_ws_root"] == str(raw_root)
+    assert manifest["quality_manifest_path"] == "data/manifests/trade_xyz_ws_quality_manifest.json"
+    assert manifest["rest_parity_manifest_path"] == (
+        "data/manifests/trade_xyz_rest_parity_manifest.json"
+    )
+    assert manifest["quote_count_written"] == 2
+    assert manifest["bbo_quote_count"] == 1
+    assert manifest["active_asset_ctx_quote_count"] == 1
+    assert manifest["trade_row_count_skipped"] == 1
+    assert manifest["control_row_count_skipped"] == 1
+    assert manifest["duplicate_count_skipped"] == 1
+    assert "Do not derive oracle_ts_ms" in manifest["oracle_timestamp_policy"]
 
 
 def test_quote_window_summary_records_oracle_timestamp_probe(tmp_path) -> None:

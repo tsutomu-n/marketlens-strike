@@ -372,7 +372,12 @@ def quote_from_ws_bbo_row(
     )
 
 
-def quote_from_ws_active_asset_ctx_row(row: dict[str, Any]) -> QuoteLog:
+def quote_from_ws_active_asset_ctx_row(
+    row: dict[str, Any],
+    *,
+    asset_id: int | None = None,
+    real_market_symbol: str | None = None,
+) -> QuoteLog:
     data = _row_payload_data(row)
     ctx = data.get("ctx")
     ctx = ctx if isinstance(ctx, dict) else {}
@@ -410,6 +415,8 @@ def quote_from_ws_active_asset_ctx_row(row: dict[str, Any]) -> QuoteLog:
         venue_symbol=venue_symbol,
         dex="xyz",
         coin=coin,
+        asset_id=asset_id,
+        real_market_symbol=real_market_symbol,
         recv_ts_ms=recv_ts_ms,
         source_ts_ms=source_ts_ms,
         mark_price=mark_price,

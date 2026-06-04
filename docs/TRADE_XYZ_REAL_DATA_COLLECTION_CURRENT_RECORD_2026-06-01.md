@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-03_19:37 JST
+更新日: 2026-06-04_06:58 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-03_19:37 JST
+更新日: 2026-06-04_06:58 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
 
@@ -1843,6 +1843,182 @@ A15 verification:
   uv run python scripts/check_current_docs.py: checked 81 current docs
   git diff --check: pass
   ./scripts/check: pass, pytest 794 passed in 22.97s
+```
+
+## 0.6 WS raw ingestion adapter v0.1（2026-06-04_06:47 JST）
+
+24時間run完了後の次工程として、WS raw rowを `QuoteLog` へ変換する最小adapterを追加した。
+
+実装済み:
+
+```text
+src/sis/venues/trade_xyz/normalizer.py:
+  quote_from_ws_bbo_row(row, ...)
+  quote_from_ws_active_asset_ctx_row(row)
+
+src/sis/storage/normalize.py:
+  normalize_trade_xyz_ws_quotes(raw_ws_root, parquet_path, duckdb_path, ...)
+
+src/sis/commands/quotes.py:
+  uv run sis normalize-trade-xyz-ws-quotes
+
+src/sis/backtest/trade_xyz/ws_ingestion.py:
+  build_bbo_bars_with_active_asset_state(frame, ...)
+
+tests/test_trade_xyz_normalizer.py:
+  test_ws_bbo_row_to_quote_log_builds_fill_snapshot_candidate
+  test_ws_active_asset_ctx_row_to_quote_log_builds_signal_state_candidate
+  test_ws_active_asset_ctx_does_not_reuse_recv_timestamp_as_oracle_timestamp
+
+tests/test_trade_xyz_collector.py:
+  test_normalize_trade_xyz_ws_quotes_builds_quote_log_dataset
+
+tests/test_cli_smoke.py:
+  test_normalize_trade_xyz_ws_quotes_cli
+
+tests/backtest/test_trade_xyz_ws_ingestion.py:
+  test_build_bbo_bars_with_active_asset_state_uses_no_future_state
+  test_ws_bbo_bar_fixture_runs_minimal_backtest
+```
+
+境界:
+
+```text
+bbo:
+  fill snapshot candidate
+  best_bid / best_ask / mid_price / spread_bps / exec_buy_price / exec_sell_price を設定する
+  source_ts_ms は row.source_ts_ms または payload.data.time
+  oracle_ts_ms は asset_ctx が無いため missing
+
+activeAssetCtx:
+  signal/state candidate
+  mark_price / oracle_price / index_price / mid_price / funding_rate / open_interest_usd を設定する
+  best_bid / best_ask / exec price は設定しない
+  is_tradable=false
+  block_reasons=[BLOCK_NO_BBO_FILL_SNAPSHOT]
+  recv_ts_ms を oracle_ts_ms として使わない
+```
+
+近接検証:
+
+```text
+uv run pytest -q tests/test_trade_xyz_normalizer.py tests/test_trade_xyz_ws_quality.py:
+  13 passed
+
+uv run pytest -q tests/test_trade_xyz_normalizer.py tests/test_trade_xyz_collector.py tests/test_cli_smoke.py:
+  98 passed
+
+uv run ruff check src/sis/venues/trade_xyz/normalizer.py tests/test_trade_xyz_normalizer.py:
+  pass
+
+uv run ruff format --check src/sis/venues/trade_xyz/normalizer.py tests/test_trade_xyz_normalizer.py:
+  pass
+```
+
+実データ確認:
+
+```text
+command:
+  uv run sis normalize-trade-xyz-ws-quotes --raw-ws-root data/raw/ws/trade_xyz_24h_20260602_1902 --parquet-path .tmp/trade_xyz_ws_quotes_24h.parquet --duckdb-path .tmp/trade_xyz_ws_quotes_24h.duckdb --manifest-path .tmp/trade_xyz_ws_quotes_24h.manifest.json --quality-manifest-path data/manifests/trade_xyz_ws_quality_manifest.json --rest-parity-manifest-path data/manifests/trade_xyz_rest_parity_manifest.json --registry-path data/registry/trade_xyz_instrument_registry.json --symbols SP500,XYZ100,NVDA
+
+result:
+  pass
+
+quote_count:
+  1113529
+
+source_counts:
+  trade_xyz_ws_activeAssetCtx: 251670
+  trade_xyz_ws_bbo: 861859
+
+symbol_counts:
+  NVDA: 351870
+  SP500: 298738
+  XYZ100: 462921
+
+oracle_ts_non_null:
+  0
+
+active_tradable_rows:
+  0
+
+bbo_missing_bid:
+  0
+
+bbo_missing_ask:
+  0
+
+output:
+  .tmp/trade_xyz_ws_quotes_24h.parquet: 140M
+  .tmp/trade_xyz_ws_quotes_24h.duckdb: 273M
+  .tmp/trade_xyz_ws_quotes_24h.manifest.json: 1.6K
+
+performance:
+  elapsed: 50.88s
+  max_rss: 2458468 KB
+
+manifest:
+  schema_version: trade_xyz_ws_backtest_artifact_manifest.v1
+  row_count_raw_seen: 1202996
+  quote_count_written: 1113529
+  bbo_quote_count: 861859
+  active_asset_ctx_quote_count: 251670
+  trade_row_count_skipped: 89383
+  control_row_count_skipped: 81
+  duplicate_count_skipped: 3
+  malformed_count: 0
+  other_row_count_skipped: 0
+  subscriptions_included: [activeAssetCtx, bbo]
+  subscriptions_excluded: [__control__, trades]
+```
+
+backtest接続確認:
+
+```text
+normalize_trade_xyz_market_data:
+  SP500 bbo sample 1000 rows pass
+
+prepare_quote_rows_for_backtest:
+  event_time_source=source_ts_ms, close_source=mid_price pass
+
+build_quote_bars:
+  SP500 bbo sample 10000 rows -> 1h bars 2 rows
+  exec_buy_price / exec_sell_price / fill_best_bid / fill_best_ask nullなし
+
+build_bbo_bars_with_active_asset_state:
+  SP500 sample 20000 rows -> 1h bars 3 rows
+  state_mark_price / state_observed_ts_ms / fill_best_bid / fill_best_ask nullなし
+
+run_backtest:
+  BBO-only small fixture pass
+  backtest_run.json と fills.parquet を生成
+```
+
+broad verification:
+
+```text
+command:
+  ./scripts/check
+
+result:
+  pass
+
+confirmed:
+  Python 3.13.7
+  ruff check: pass
+  ruff format --check: 378 files already formatted
+  current docs check: 81 current docs ok
+  pyrefly: 0 errors
+  pytest: 801 passed in 21.93s
+```
+
+まだ未完了:
+
+```text
+長期 quote coverage
+real market reference
+oracle timestamp provenance
+backtest_data_ready=true 判定
 ```
 
 ## 1. 目的

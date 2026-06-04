@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_22:24 JST
-更新日: 2026-06-04_06:39 JST
+更新日: 2026-06-04_06:58 JST
 -->
 
 # Trade[XYZ] Backtest Real Data Ingestion Handoff 2026-06-01
@@ -19,6 +19,9 @@ WS取得基盤としては実装開始readyである。3symbol 24時間runは完
 2026-06-03_19:37 JST に `./scripts/check` がpassし、pytestは794件passした。
 2026-06-04_06:39 JST に、WS raw rowを `QuoteLog` へ変換する最小adapterを追加した。
 `bbo` は fill snapshot候補、`activeAssetCtx` は signal/state候補として分離し、`recv_ts_ms` を oracle timestamp として使わない回帰テストを追加した。
+2026-06-04_06:47 JST に、WS raw JSONL から normalized parquet / DuckDB を出力するCLIを追加し、24時間runの isolated raw root で 1,113,529 行の正規化を確認した。
+2026-06-04_06:56 JST に、artifact manifest出力、BBO barへのactiveAssetCtx no-lookahead asof join、run_backtest最小smokeを追加した。
+2026-06-04_06:58 JST に `./scripts/check` がpassし、pytestは801件passした。
 
 現時点でできるのは、次の境界を固定することだけである。
 
@@ -251,6 +254,88 @@ src/sis/venues/trade_xyz/normalizer.py:
     block_reasons: [BLOCK_NO_BBO_FILL_SNAPSHOT]
 ```
 
+実装済みdataset builder:
+
+```text
+src/sis/storage/normalize.py:
+  normalize_trade_xyz_ws_quotes(raw_ws_root, parquet_path, duckdb_path, ...)
+
+src/sis/commands/quotes.py:
+  uv run sis normalize-trade-xyz-ws-quotes \
+    --raw-ws-root data/raw/ws/trade_xyz_24h_20260602_1902 \
+    --parquet-path .tmp/trade_xyz_ws_quotes_24h.parquet \
+    --duckdb-path .tmp/trade_xyz_ws_quotes_24h.duckdb \
+    --manifest-path .tmp/trade_xyz_ws_quotes_24h.manifest.json \
+    --quality-manifest-path data/manifests/trade_xyz_ws_quality_manifest.json \
+    --rest-parity-manifest-path data/manifests/trade_xyz_rest_parity_manifest.json \
+    --registry-path data/registry/trade_xyz_instrument_registry.json \
+    --symbols SP500,XYZ100,NVDA
+
+src/sis/backtest/trade_xyz/ws_ingestion.py:
+  build_bbo_bars_with_active_asset_state(frame, ...)
+```
+
+実データ確認:
+
+```text
+normalized_rows: 1113529
+sources:
+  trade_xyz_ws_activeAssetCtx: 251670
+  trade_xyz_ws_bbo: 861859
+symbols:
+  NVDA: 351870
+  SP500: 298738
+  XYZ100: 462921
+oracle_ts_non_null: 0
+active_tradable_rows: 0
+bbo_missing_bid: 0
+bbo_missing_ask: 0
+output:
+  .tmp/trade_xyz_ws_quotes_24h.parquet: 140M
+  .tmp/trade_xyz_ws_quotes_24h.duckdb: 273M
+  .tmp/trade_xyz_ws_quotes_24h.manifest.json: 1.6K
+max_rss: 2458468 KB
+elapsed: 50.88s
+manifest:
+  row_count_raw_seen: 1202996
+  quote_count_written: 1113529
+  bbo_quote_count: 861859
+  active_asset_ctx_quote_count: 251670
+  trade_row_count_skipped: 89383
+  control_row_count_skipped: 81
+  duplicate_count_skipped: 3
+  malformed_count: 0
+```
+
+backtest接続確認:
+
+```text
+normalize_trade_xyz_market_data:
+  SP500 bbo sample 1000 rows pass
+
+prepare_quote_rows_for_backtest:
+  event_time_source=source_ts_ms, close_source=mid_price pass
+
+build_quote_bars:
+  SP500 bbo sample 10000 rows -> 1h bars 2 rows
+  exec_buy_price / exec_sell_price / fill_best_bid / fill_best_ask nullなし
+
+build_bbo_bars_with_active_asset_state:
+  SP500 sample 20000 rows -> 1h bars 3 rows
+  state_mark_price / state_observed_ts_ms / fill_best_bid / fill_best_ask nullなし
+
+run_backtest:
+  BBO-only fixture pass
+```
+
+broad verification:
+
+```text
+./scripts/check:
+  pass
+  pytest: 801 passed in 21.93s
+```
+
 adapter境界:
 
 ```text
@@ -375,8 +460,8 @@ data-ready禁止:
 4. DONE: bboをfill snapshot候補へ変換するunit testを書く
 5. DONE: activeAssetCtxをsignal/state候補へ変換するunit testを書く
 6. DONE: recv_ts_msをoracle timestampにしないno-lookahead / provenance testを書く
-7. market_data.py または新adapterの責務を決める
-8. bar_builder.pyへ渡す前にsignal/fill splitを固定する
+7. DONE: market_data.py または新adapterの責務を決める
+8. DONE: bar_builder.pyへ渡す前にsignal/fill splitを固定する
 ```
 
 ## 未完了理由
@@ -386,8 +471,8 @@ data-ready禁止:
   完走。final manifest生成済み。quality / REST parity はpass。
 
 backtest ingestion code:
-  最小normalizer adapterは実装済み。
-  次工程はWS raw JSONLを読み、bbo/activeAssetCtxを時系列datasetとして出力するbuilderである。
+  最小normalizer adapterとWS raw JSONL -> normalized parquet/DuckDB builderは実装済み。
+  market_data.py / bar_builder.py への最小接続も確認済み。
   ただし、WS raw contractとsignal/fill splitを守り、recv_ts_msをoracle timestampとして使わない。
 
 data-ready:
