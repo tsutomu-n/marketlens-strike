@@ -15,6 +15,8 @@ from sis.storage.jsonl_store import write_json
 from sis.venues.trade_xyz.client import TradeXyzClient
 from sis.venues.trade_xyz.registry import load_trade_xyz_registry
 
+DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS = 1.5
+
 SIGNAL_CANDLE_SCHEMA = {
     "schema_version": pl.Utf8,
     "ts_open": pl.Utf8,
@@ -224,7 +226,7 @@ def collect_trade_xyz_signal_candles(
     start: datetime | None = None,
     end: datetime | None = None,
     period_days: int = 365,
-    request_delay_seconds: float = 0.25,
+    request_delay_seconds: float = DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS,
     client: TradeXyzClient | None = None,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:

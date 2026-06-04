@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-04_06:58 JST
+更新日: 2026-06-04_16:49 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-04_06:58 JST
+更新日: 2026-06-04_16:49 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
 
@@ -2016,7 +2016,6 @@ confirmed:
 
 ```text
 長期 quote coverage
-real market reference
 oracle timestamp provenance
 backtest_data_ready=true 判定
 ```
@@ -2054,14 +2053,49 @@ L2 replay
 decision: COLLECT_MORE_QUOTES
 backtest_data_ready: false
 readiness_decision: NOT_READY
-fail_count: 2
+fail_count: 1
 known_gap_count: 1
 failing_requirements:
   - quote_coverage
-  - real_market_reference
 known_gap_requirements:
   - oracle_timestamp_provenance
 ```
+
+2026-06-04_16:49 JST の修正:
+
+```text
+status_artifact:
+  data/ops/trade_xyz_collection_status.json
+  generated_at: 2026-06-04T07:38:04.720674+00:00
+
+readiness_manifest:
+  data/manifests/trade_xyz_data_readiness_manifest.json
+  generated_at: 2026-06-04T07:38:04.720674+00:00
+
+decision:
+  COLLECT_MORE_QUOTES
+
+backtest_data_ready:
+  false
+
+readiness_decision:
+  NOT_READY
+
+fail_count:
+  1
+
+known_gap_count:
+  1
+
+failing_requirements:
+  - quote_coverage
+
+known_gap_requirements:
+  - oracle_timestamp_provenance
+```
+
+`real_market_reference` は現在の readiness manifest では `pass` である。
+以前の「real_market_reference が残る」という説明は古い。
 
 account-specific fee は解決済みである。
 
@@ -2174,20 +2208,22 @@ API key
 
 ## 5. 現在の実行状態
 
-collector と supervisor は動いている。
+24時間 read-only data cycle の wrapper は動いている。
+ただし `trade_xyz_collection_status.json` の `collector_process` は `uv run sis ...` の子プロセス検出であり、bash wrapper PIDを常に collector_running として数えるとは限らない。
 
 ```text
-collector_running: true
-collector_process_count: 4
-supervisor_running: true
-supervisor_process_count: 2
-progress_status: collecting_ok
-latest_file_stale: false
-cycle_lock_stale: false
-supervisor_lock_stale: false
+wrapper_pid: 2484910
+wrapper_command: bash scripts/collect_trade_xyz_data_cycle.sh
+log_path: logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log
+started_log_line: [2026-06-04T07:39:32Z] Trade[XYZ] data cycle starting
+
+status_artifact_collector_process:
+  running: false
+  process_count: 0
 ```
 
-quote収集は止まっていない。理由なくcollectorを止める必要はない。
+再開時は `ps -fp 2484910` と log tail を見る。
+理由なくcollectorを止める必要はない。
 
 ## 6. 現在使えるもの
 
@@ -2199,6 +2235,7 @@ quote収集は止まっていない。理由なくcollectorを止める必要は
 | fee snapshots | pass | symbol-level fee snapshotsあり |
 | account-specific fee | pass | userFees由来、taker `4.5bps`, maker `1.5bps` |
 | session / reference dataset生成 | 実装済み | readiness artifactに接続済み |
+| real market reference | pass | `data/manifests/trade_xyz_real_market_reference_manifest.json` |
 | collection config | 実装済み | `configs/trade_xyz_data_collection.yaml` |
 | archive manifest | 作成済み | 5/30以前の実データ75件をarchive |
 
@@ -2208,7 +2245,6 @@ quote収集は止まっていない。理由なくcollectorを止める必要は
 |---|---|---|
 | 実務BT全体 | NOT_READY | `backtest_data_ready=false` |
 | quote coverage | fail | 30日相当に達していない |
-| real market reference | fail | 2026-05-31以降の取得で多くの株式/ETF/index proxyが欠損 |
 | oracle timestamp provenance | known gap | source payloadにoracle timestamp fieldが無い |
 | historical archive backfill | blocked | AWS credentialsが無く preflight fail。downloadは未実行 |
 
@@ -2252,34 +2288,21 @@ estimated_max_collection_days_required:
 
 ### 8.2 real market reference
 
-2026-05-30以前のreference dataをarchiveしたため、`--start 2026-05-31 --end 2026-06-03` で再取得した。
-
-しかし provider は株式/ETF/index proxyの多くを返さず、現在 `real_market_reference` は fail である。
+現在の readiness manifest では `real_market_reference` は pass である。
+以前の「2026-05-31以降の取得で多くの株式/ETF/index proxyが欠損し fail」という記述は古い。
 
 ```text
 status:
-  fail
-
-provider:
-  yfinance
-
-interval:
-  1d
+  pass
 
 row_count:
-  2
+  3782
 
-returned_symbols:
-  EURUSD=X, USDJPY=X
-
-missing_mapped_symbols:
-  AAPL, AMD, AMZN, EWJ, GOOGL, META, MSFT, NVDA, QQQ, SPY, TSLA
-
-missing_requested_symbols:
-  AAPL, AMD, AMZN, EWJ, GOOGL, META, MSFT, NVDA, QQQ, SPY, TSLA, UUP, ^VIX
+manifest:
+  data/manifests/trade_xyz_real_market_reference_manifest.json
 ```
 
-古いreference dataをarchiveから戻してfailを消してはいけない。
+古いreference dataをarchiveから戻してready判定に使ってはいけない、という禁止は維持する。
 
 ### 8.3 account-specific fee
 
@@ -2317,19 +2340,19 @@ oracle_timestamp_provenance_status:
   known_gap
 
 row_count:
-  10318
+  16654
 
 oracle_ts_present_count:
   0
 
 oracle_ts_missing_count:
-  10318
+  16654
 
 oracle_ts_missing_rate:
   1.0
 
 oracle_ts_missing_reasons:
-  asset_ctx_missing_oracle_timestamp_field: 10318
+  asset_ctx_missing_oracle_timestamp_field: 16654
 ```
 
 Repoの方針:
@@ -2379,22 +2402,52 @@ requester-pays download は未実行である。費用承認なしに `--execute
 
 ## 9. 正しい次の手順
 
-### 9.1 まずstatus確認
+### 9.1 起動中24時間cycleを確認する
+
+まず、すでに起動済みの quote coverage 用 data cycle を確認する。
+同じ目的のcollectorを重複起動しない。
+
+```bash
+ps -fp 2484910
+tail -80 logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log
+```
+
+### 9.2 cycle完了後にstatusを再判定する
+
+PID `2484910` が終了したら、coverage と readiness を再生成する。
 
 ```bash
 SIS_TRADE_XYZ_ACCOUNT_FEE_USER_ADDRESS=<public-user-address> \
-  uv run sis trade-xyz-collection-status --refresh-coverage --refresh-readiness
+  uv run sis trade-xyz-collection-status --refresh-coverage --refresh-readiness --strict
 ```
 
-### 9.2 collector継続
+期待する判定:
 
-collectorが止まっている場合だけ起動する。
+```text
+quote_coverage:
+  span_days が増える
 
-```bash
-scripts/collect_trade_xyz_data_until_ready.sh
+real_market_reference:
+  pass のまま
+
+oracle_timestamp_provenance:
+  known_gap のままなら偽装せず維持
+
+backtest_data_ready:
+  quote_coverage が fail の間は false
 ```
 
-外部前提なしでquote coverageだけ伸ばす場合:
+### 9.3 coverageがまだ不足なら24時間cycleを繰り返す
+
+現 artifact 上の追加日数見込み:
+
+```text
+estimated_max_collection_days_required: 29
+symbols: AAPL,AMD,AMZN,EWJ,GOOGL,META,MSFT,NVDA,SP500,TSLA,XYZ100
+insufficient_reason: span_days_below_min
+```
+
+次のcycleを起動するのは、現在の PID が終了し、status再判定でまだ `quote_coverage=fail` の時だけ。
 
 ```bash
 SIS_TRADE_XYZ_REQUIRE_ARCHIVE_PREFLIGHT=0 \
@@ -2402,7 +2455,16 @@ SIS_TRADE_XYZ_REQUIRE_ACCOUNT_FEE=0 \
 scripts/collect_trade_xyz_data_until_ready.sh
 ```
 
-### 9.3 historical archiveを使う場合
+Better案:
+
+```text
+1. 毎日1回だけ cycle 完了確認と status 再判定を行う
+2. `trade-xyz-collection-status` の next_actions を正本にする
+3. coverageが30日へ近づくまで、real_market_referenceを再収集対象に戻さない
+4. signal candles は既に request_error_count=0 なので、起動中cycleでは --skip-signal-candles を維持する
+```
+
+### 9.4 historical archiveを使う場合
 
 まずAWS credentialsを設定し、preflightを通す。
 
@@ -2420,26 +2482,166 @@ uv run sis execute-trade-xyz-historical-archive-bulk \
   --max-objects 10
 ```
 
-### 9.4 real market referenceを再取得する場合
+historical archive は quote coverage を短縮できる可能性があるが、AWS credentials、requester-pays費用、対象object承認が必要である。
+承認なしに実行しない。
 
-市場営業日を含む期間で再取得する。
+### 9.5 oracle timestamp provenanceを扱う
+
+oracle timestamp は、現payloadに明示fieldが無いため `known_gap` である。
+これは quote coverage とは別の判定で、次を守る。
 
 ```bash
-uv run sis collect-trade-xyz-real-market-reference \
-  --start 2026-05-31 \
-  --end 2026-06-03 \
-  --interval 1d
+uv run sis build-trade-xyz-reference-data
+uv run sis build-trade-xyz-data-readiness --strict
 ```
 
-ただし、2026-05-30以前のreference dataを戻してはいけない。
+```text
+してはいけない:
+  recv_ts_ms を oracle_ts_ms にする
+  source_ts_ms を oracle_ts_ms にする
+  oracle_freshness_proxy を oracle timestamp の代替にする
+```
 
-### 9.5 完了判定
+### 9.6 完了判定
 
 ```bash
 uv run sis trade-xyz-collection-status --strict --fail-on-not-ready
 ```
 
 このコマンドが exit 0 になるまで、全データ収集は完了ではない。
+
+known gap を許容する運用判定を別途使う場合:
+
+```bash
+uv run sis build-trade-xyz-data-readiness --allow-known-gaps
+```
+
+ただし、その場合も「strict ready」ではなく、oracle timestamp provenance gap を明記した `READY_WITH_KNOWN_GAPS` として扱う。
+
+### 9.7 2026-06-04_16:39 JST のエラー潰し結果
+
+2026-06-04_16:39 JST に、残っていた `trade_xyz_signal_candles_manifest.json` の `request_error_count=5` を再確認した。
+原因は Hyperliquid info endpoint の一時的な `429 null` で、対象は次の5件だった。
+
+```text
+META 1d
+TSLA 30m
+TSLA 1d
+TSLA 3d
+AMD 30m
+```
+
+次の read-only 再収集を実行し、signal candle artifactを現行manifest shapeへ更新した。
+
+```bash
+uv run sis collect-trade-xyz-signal-candles \
+  --registry-path data/registry/trade_xyz_instrument_registry.json \
+  --intervals 30m,4h,1d,3d \
+  --period-days 365 \
+  --request-delay-seconds 1.5
+```
+
+結果:
+
+```text
+manifest_path: data/manifests/trade_xyz_signal_candles_manifest.json
+row_count: 67765
+new_row_count: 67765
+symbol_count: 11
+symbols: AAPL, AMD, AMZN, EWJ, GOOGL, META, MSFT, NVDA, SP500, TSLA, XYZ100
+requested_intervals: 30m, 4h, 1d, 3d
+request_error_count: 0
+request_errors: []
+```
+
+その後、readiness/statusを再生成した。
+
+```bash
+uv run sis build-trade-xyz-data-readiness --strict
+uv run sis trade-xyz-collection-status --no-refresh-coverage --refresh-readiness --strict
+```
+
+現在のstrict結果:
+
+```text
+decision: COLLECT_MORE_QUOTES
+backtest_data_ready: False
+readiness_decision: NOT_READY
+fail_count: 1
+known_gap_count: 1
+failing_requirements: quote_coverage
+known_gap_requirements: oracle_timestamp_provenance
+signal_candles_status: pass
+signal_candles_request_error_count: 0
+estimated_max_collection_days_required: 29
+coverage_completion_ratio_by_span: 0.03528847867939815
+```
+
+つまり、すぐ潰せる `signal_candles` のAPI request errorは解消済み。
+残るstrict failは、quote coverageが約1.06日分しかなく30日要件に届かないこと。
+これは即時の再実行だけでは完了せず、collector継続または承認済みhistorical archive backfillが必要である。
+
+quote coverageを伸ばすため、次の24時間read-only data cycleを起動した。
+
+```text
+lock_pid: 2484910
+command:
+  scripts/collect_trade_xyz_data_cycle.sh
+
+effective sis command:
+  uv run sis collect-trade-xyz-data-cycle \
+    --collection-config configs/trade_xyz_data_collection.yaml \
+    --duration-minutes 1440 \
+    --interval-seconds 60 \
+    --seed-path configs/instrument_registry.seed.json \
+    --symbols AAPL,AMD,AMZN,EWJ,GOOGL,META,MSFT,NVDA,SP500,TSLA,XYZ100 \
+    --strict \
+    --skip-signal-candles
+
+log_path:
+  logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log
+
+launcher_log:
+  .tmp/launchers/trade_xyz_data_cycle_20260604_073932.setsid.log
+```
+
+再開時の確認:
+
+```bash
+ps -fp 2484910
+tail -80 logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log
+uv run sis trade-xyz-collection-status --no-refresh-coverage --refresh-readiness --strict
+```
+
+### 9.8 2026-06-04_16:48 JST の再発防止
+
+`signal_candles_request_error_count=5` と同種の 429 rate limit error を再発させにくくするため、collectorの恒久設定を更新した。
+
+変更:
+
+```text
+src/sis/venues/trade_xyz/candles.py:
+  DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS = 1.5
+
+src/sis/commands/quotes.py:
+  collect-trade-xyz-signal-candles の --request-delay-seconds default を 1.5 に変更
+
+src/sis/venues/trade_xyz/readiness.py:
+  signal candle failure時の next_action command に --request-delay-seconds 1.5 を含める
+
+docs/OPERATIONS_RUNBOOK.md:
+  signal candle収集のdefault delayを 1.5 秒として記載
+```
+
+確認:
+
+```text
+uv run sis collect-trade-xyz-signal-candles --help:
+  --request-delay-seconds FLOAT [default: 1.5]
+
+uv run pytest -q tests/test_trade_xyz_candles.py:
+  5 passed
+```
 
 ## 10. やってはいけないこと
 
@@ -2449,7 +2651,7 @@ archive配下のデータを現行data/へ手動コピーする
 source_ts_ms / recv_ts_ms / client timestampをoracle_ts_msとして偽装する
 oracle_freshness_proxyをoracle_ts_msの代替として扱う
 signal candlesとfill snapshot quotesを同じbar入力に混ぜる
-real market referenceの欠損を古いデータで埋める
+real market referenceを古いarchive dataで上書きする
 collector/supervisorを理由なくkillする
 requester-pays downloadを費用承認なしに実行する
 live/paper/wallet/signing/exchange writeへ進む
@@ -2459,6 +2661,6 @@ live/paper/wallet/signing/exchange writeへ進む
 
 このRepoは、Trade[XYZ]実データ収集の仕組み自体は揃ってきている。collector、readiness、coverage、signal candles、funding、archive preflight、account fee collection、status reportは実装済みである。
 
-しかし、現在はまだ `NOT_READY` である。主な理由は、30日quote coverage不足、2026-05-31以降だけに制限したreal market referenceの欠損、oracle timestamp provenanceのsource欠損である。
+しかし、現在はまだ `NOT_READY` である。主な理由は、30日quote coverage不足と oracle timestamp provenance のsource欠損である。`real_market_reference` は現在の readiness manifest では pass である。
 
-次の担当者は、まず `configs/trade_xyz_data_collection.yaml` と `trade-xyz-collection-status` を見る。5/30以前のデータは使わず、AWS/requester-paysやreal-market referenceの外部前提を埋めてから、strict readiness gateを通す。
+次の担当者は、まず `ps -fp 2484910`、`logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log`、`trade-xyz-collection-status` を見る。5/30以前のデータは使わず、AWS/requester-paysを使う場合は費用と対象objectを承認してから、strict readiness gateを通す。

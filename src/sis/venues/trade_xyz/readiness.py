@@ -642,14 +642,16 @@ def _signal_candles_next_action(requirement: dict[str, Any]) -> dict[str, Any] |
     if requirement["key"] != "signal_candles" or requirement["status"] != "fail":
         return None
     command = (
-        "uv run sis collect-trade-xyz-signal-candles --intervals 30m,4h,1d,3d --period-days 365"
+        "uv run sis collect-trade-xyz-signal-candles --intervals 30m,4h,1d,3d "
+        "--period-days 365 --request-delay-seconds 1.5"
     )
     try:
         config = load_trade_xyz_data_collection_config(DEFAULT_COLLECTION_CONFIG_PATH)
         command = (
             "uv run sis collect-trade-xyz-signal-candles "
             f"--intervals {join_csv(config.signal_candle_intervals)} "
-            f"--period-days {config.signal_candle_period_days}"
+            f"--period-days {config.signal_candle_period_days} "
+            "--request-delay-seconds 1.5"
         )
         if config.usable_start_date is not None:
             command += f" --start {config.usable_start_date}"

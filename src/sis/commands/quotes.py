@@ -15,6 +15,7 @@ from sis.storage.jsonl_store import write_json
 from sis.storage.normalize import normalize_quotes
 from sis.storage.normalize import normalize_trade_xyz_ws_quotes
 from sis.venues.trade_xyz.account_fee import collect_trade_xyz_account_fee_snapshot
+from sis.venues.trade_xyz.candles import DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS
 from sis.venues.trade_xyz.candles import collect_trade_xyz_signal_candles
 from sis.venues.trade_xyz.client import TradeXyzClient
 from sis.venues.trade_xyz.collection_config import DEFAULT_COLLECTION_CONFIG_PATH
@@ -920,7 +921,9 @@ def register_quote_commands(
         start: str | None = typer.Option(None, "--start", help="UTC start date YYYY-MM-DD."),
         end: str | None = typer.Option(None, "--end", help="UTC end date YYYY-MM-DD."),
         period_days: int = typer.Option(365, "--period-days"),
-        request_delay_seconds: float = typer.Option(0.25, "--request-delay-seconds"),
+        request_delay_seconds: float = typer.Option(
+            DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS, "--request-delay-seconds"
+        ),
     ) -> None:
         settings = get_settings()
         requested_symbols = (

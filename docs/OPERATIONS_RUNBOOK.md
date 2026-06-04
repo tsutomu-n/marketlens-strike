@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-06-04_16:48 JST
+更新日: 2026-06-04_16:48 JST
+-->
+
 # Operations Runbook
 
 この runbook は current repo を再開・再検証・再生成するための最短手順です。`data/` は git 管理外なので、artifact は必要に応じて作り直します。
@@ -107,7 +112,7 @@ quote ingest:
 - registry refresh はデフォルト有効。固定済みregistryだけで再現したい調査時は `--use-existing-registry`、wrapperでは `SIS_TRADE_XYZ_CYCLE_REFRESH_REGISTRY=0` を使う。
 - `collect-trade-xyz-real-market-reference` は registry の `real_market_symbol` から yfinance reference barsを収集する。これはresearch/backtest参照用で、live execution dataではない。
 - `collect-trade-xyz-signal-candles` は Hyperliquid `/info` の `candleSnapshot` から historical OHLCV を収集する。これは signal input 用で、fill snapshot と混ぜない。
-- `collect-trade-xyz-signal-candles` は連続 `/info` request の 429 を避けるため `--request-delay-seconds` を持つ。デフォルトは `0.25` 秒。`request_error_count` が残った場合は、欠けたsymbolだけを指定して delayを長めにして再実行する。
+- `collect-trade-xyz-signal-candles` は連続 `/info` request の 429 を避けるため `--request-delay-seconds` を持つ。デフォルトは `1.5` 秒。`request_error_count` が残った場合は、欠けたsymbolだけを指定してさらにdelayを長めにして再実行する。
 - `collect-trade-xyz-data-cycle` はデフォルトで `30m,4h,1d,3d` の signal candles も確認する。既存artifactが完全で `SIS_TRADE_XYZ_CYCLE_SIGNAL_CANDLE_MAX_AGE_HOURS` より新しければ再取得せず、quote coverage収集を優先する。
 - `collect-trade-xyz-historical-l2-archive` は Hyperliquid historical L2 archive の raw requester-pays S3 download入口。デフォルトは dry-run で、実downloadには `--execute --acknowledge-requester-pays` と `aws` CLI が必要。archiveは月次更新・欠損ありで、通常の30日live quote collectorやreadiness coverageへ自動混入しない。
 - `collect-trade-xyz-historical-asset-ctxs-archive` は同じ requester-pays S3 archive から日次 asset contexts CSV を取得する入口。historical L2 を実務利用する場合は、L2 bookだけでなく asset_ctxs も取得し、mark / oracle / funding context 欠損を別途検証する。

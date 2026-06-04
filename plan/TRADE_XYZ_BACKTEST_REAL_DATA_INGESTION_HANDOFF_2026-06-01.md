@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_22:24 JST
-更新日: 2026-06-04_06:58 JST
+更新日: 2026-06-04_16:49 JST
 -->
 
 # Trade[XYZ] Backtest Real Data Ingestion Handoff 2026-06-01
@@ -10,7 +10,7 @@
 この文書は、WS raw collection から backtest ingestion 実装へ渡すための受け渡しdraftである。
 WS取得基盤としては実装開始readyである。3symbol 24時間runは完走し、final quality manifest は `status=pass`、REST parity も `status=pass` である。
 
-ただし、これは `backtest_data_ready=true` ではない。長期quote coverage、real market reference、oracle timestamp provenanceなどの全体readiness gapは別gateで残る。
+ただし、これは `backtest_data_ready=true` ではない。現在の strict fail は長期quote coverageで、oracle timestamp provenance は known gap として別gateに残る。`real_market_reference` は現在の readiness manifest では pass である。
 
 2026-06-02_19:01 JST に、server側の `1000 (OK) Expired` close を expected graceful reconnect として扱う修正を入れた。
 2026-06-03_19:17 JST の24時間runでは、`graceful_reconnect_count=7`、`unexpected_reconnect_count=1` だった。
@@ -22,6 +22,11 @@ WS取得基盤としては実装開始readyである。3symbol 24時間runは完
 2026-06-04_06:47 JST に、WS raw JSONL から normalized parquet / DuckDB を出力するCLIを追加し、24時間runの isolated raw root で 1,113,529 行の正規化を確認した。
 2026-06-04_06:56 JST に、artifact manifest出力、BBO barへのactiveAssetCtx no-lookahead asof join、run_backtest最小smokeを追加した。
 2026-06-04_06:58 JST に `./scripts/check` がpassし、pytestは801件passした。
+2026-06-04_16:39 JST に、signal candle manifest の `request_error_count=5` を read-only 再収集で解消した。
+`trade_xyz_signal_candles_manifest.json` は `row_count=67765`、`symbol_count=11`、`request_error_count=0` で、collection status上も `signal_candles_status=pass` になった。
+残るstrict failは `quote_coverage` だけで、coverageが30日要件に届くまで継続収集が必要である。
+2026-06-04_16:39 JST 時点で、次の24時間read-only data cycleを起動済みである: PID `2484910`、log `logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log`。
+2026-06-04_16:48 JST に、同種の 429 rate limit error を再発させにくくするため、signal candle collectorのdefault delayを `1.5` 秒へ変更し、readiness next action と runbook も同じ値へ更新した。
 
 現時点でできるのは、次の境界を固定することだけである。
 
@@ -477,4 +482,73 @@ backtest ingestion code:
 
 data-ready:
   backtest_data_ready=false のまま。
+```
+
+## 2026-06-04_16:39 JST の broader readiness 状態
+
+すぐ潰せるエラー:
+
+```text
+signal_candles_request_error_count:
+  before: 5
+  after: 0
+
+signal_candles_status:
+  pass
+```
+
+実行したコマンド:
+
+```bash
+uv run sis collect-trade-xyz-signal-candles \
+  --registry-path data/registry/trade_xyz_instrument_registry.json \
+  --intervals 30m,4h,1d,3d \
+  --period-days 365 \
+  --request-delay-seconds 1.5
+
+uv run sis build-trade-xyz-data-readiness --strict
+uv run sis trade-xyz-collection-status --no-refresh-coverage --refresh-readiness --strict
+```
+
+残るfail:
+
+```text
+failing_requirements: quote_coverage
+known_gap_requirements: oracle_timestamp_provenance
+estimated_max_collection_days_required: 29
+backtest_data_ready: False
+```
+
+起動中collector:
+
+```text
+pid: 2484910
+duration_minutes: 1440
+interval_seconds: 60
+symbols: AAPL,AMD,AMZN,EWJ,GOOGL,META,MSFT,NVDA,SP500,TSLA,XYZ100
+skip_signal_candles: true
+log_path: logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log
+launcher_log: .tmp/launchers/trade_xyz_data_cycle_20260604_073932.setsid.log
+```
+
+再開時の確認:
+
+```bash
+ps -fp 2484910
+tail -80 logs/trade_xyz_data_cycle/trade_xyz_data_cycle_20260604_073932.log
+uv run sis trade-xyz-collection-status --no-refresh-coverage --refresh-readiness --strict
+```
+
+再発防止:
+
+```text
+collect-trade-xyz-signal-candles default --request-delay-seconds:
+  1.5
+
+readiness next_action:
+  includes --request-delay-seconds 1.5
+
+focused verification:
+  uv run pytest -q tests/test_trade_xyz_candles.py
+  5 passed
 ```
