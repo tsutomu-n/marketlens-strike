@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-04_17:10 JST
+更新日: 2026-06-04_17:47 JST
 -->
 
 # Operations Runbook
@@ -62,6 +62,9 @@ scripts/collect_trade_xyz_data_cycle.sh
 scripts/collect_trade_xyz_data_until_ready.sh
 setsid -f scripts/collect_trade_xyz_data_until_ready.sh >/tmp/trade_xyz_until_ready.nohup 2>&1 < /dev/null
 ```
+
+2026-06-04_16:39 JST 起動の24時間 quote coverage cycle 後にやることは、
+[TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md) を見る。
 
 wrapper env:
 

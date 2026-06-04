@@ -21,6 +21,7 @@ from sis.backtest.trade_xyz.market_data import (
     load_normalized_quotes,
     prepare_quote_rows_for_backtest,
 )
+from sis.backtest.trade_xyz.ws_ingestion import build_bbo_bars_with_active_asset_state
 
 SmokeTimeframe = Literal["raw_quote_rows", "30m", "1h", "4h", "1d"]
 
@@ -64,6 +65,11 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Smoke-only: lower entry/exit lookbacks to 2 when local data is too small.",
     )
+    parser.add_argument(
+        "--ws-bbo-state",
+        action="store_true",
+        help="Smoke-only: build bars from WS BBO rows and no-lookahead activeAssetCtx state.",
+    )
     return parser
 
 
@@ -74,8 +80,17 @@ def _frame_for_smoke(
     timeframe: SmokeTimeframe,
     close_source: CloseSource,
     event_time_source: EventTimeSource,
+    ws_bbo_state: bool,
 ):
     raw = load_normalized_quotes(input_path)
+    if ws_bbo_state:
+        if timeframe == "raw_quote_rows":
+            raise ValueError("--ws-bbo-state requires a bar timeframe")
+        return build_bbo_bars_with_active_asset_state(
+            raw,
+            symbol=symbol,
+            timeframe=timeframe,  # type: ignore[arg-type]
+        )
     if timeframe == "raw_quote_rows":
         return prepare_quote_rows_for_backtest(
             raw,
@@ -119,6 +134,7 @@ def main() -> int:
         timeframe=args.timeframe,
         close_source=args.close_source,
         event_time_source=args.event_time_source,
+        ws_bbo_state=args.ws_bbo_state,
     )
     if frame.is_empty():
         raise SystemExit(f"no rows for symbol={args.symbol}")
@@ -146,6 +162,8 @@ def main() -> int:
         f"trade-xyz-smoke-{args.symbol.strip().upper()}-"
         f"{args.timeframe}-{args.close_source}-{args.event_time_source}"
     )
+    if args.ws_bbo_state:
+        run_id += "-ws_bbo_state"
     config = BacktestConfig(
         run_id=run_id,
         strategy_id="sp500_breakout_v0",
