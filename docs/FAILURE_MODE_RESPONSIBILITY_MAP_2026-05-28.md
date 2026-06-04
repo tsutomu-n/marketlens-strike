@@ -1,6 +1,11 @@
+<!--
+作成日: 2026-05-28_15:54 JST
+更新日: 2026-06-05_07:57 JST
+-->
+
 # Failure Mode Responsibility Map 2026-05-28
 
-コード、runtime artifact、直近の docs audit を正として、`marketlens-strike` の責任境界を機能単位ではなく失敗モード単位で切るための current map。
+この文書は 2026-05-28 時点の failure-mode map である。失敗モードの考え方は参考になるが、`294 passed` などの snapshot 値は現在状態として引用しない。現在状態は `README.md`、`docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、および生成済み manifest を優先する。
 
 ## 結論
 

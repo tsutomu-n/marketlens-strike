@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-05_07:40 JST
-更新日: 2026-06-05_07:40 JST
+更新日: 2026-06-05_07:55 JST
 -->
 
 # Trade[XYZ] Data Cycle Natural Exit Conditions 2026-06-05
@@ -381,6 +381,9 @@ backtest_data_ready を誤って宣言しない
 
 運用runbook:
   docs/OPERATIONS_RUNBOOK.md
+
+汎用長時間script運用:
+  docs/LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md
 
 再開正本:
   .ai_memory/HANDOFF.md

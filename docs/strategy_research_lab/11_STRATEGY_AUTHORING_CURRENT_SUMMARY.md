@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_20:56 JST
+更新日: 2026-06-05_07:57 JST
+-->
+
 # Strategy Authoring Current Summary
 
 この文書は、2026-05-30 時点の `strategy_authoring_spec.v1` でユーザーが作れる売買ロジックを、コードを正として整理したものです。
@@ -164,9 +169,7 @@
 
 最新 full check では、次を確認済みです。
 
-- `./scripts/check`: pass
-- pytest: `650 passed`
-- pyrefly: `0 errors`
-- current-docs lint: `checked 81 current docs: links, EOF, and legacy roots ok`
+- latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
+- current-docs lint: `checked 85 current docs: links, EOF, and legacy roots ok`
 
-docs-only 確認でも、`uv run python scripts/check_current_docs.py` が `checked 81 current docs: links, EOF, and legacy roots ok` で通っています。
+docs-only 確認でも、`uv run python scripts/check_current_docs.py` が `checked 85 current docs: links, EOF, and legacy roots ok` で通っています。

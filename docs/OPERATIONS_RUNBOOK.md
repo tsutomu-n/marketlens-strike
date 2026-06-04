@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-05_07:40 JST
+更新日: 2026-06-05_07:57 JST
 -->
 
 # Operations Runbook
@@ -69,6 +69,8 @@ setsid -f scripts/collect_trade_xyz_data_until_ready.sh >/tmp/trade_xyz_until_re
 [TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md) を見る。
 PID 2484910 の自然終了条件は
 [TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md](TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md) を見る。
+今後同様の長時間 script / wrapper / supervisor を回すときの汎用運用は
+[LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md](LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md) を見る。
 
 wrapper env:
 
@@ -156,7 +158,7 @@ quote ingest:
 - until-ready supervisorは `.tmp/trade_xyz_data_until_ready.lock` で重複起動を止める。pid付きstale lockは起動時に回復する。既存collectorが動いている場合は新しいcycleを重複起動せず、poll sleepに戻る。
 - wrapperは実行後に `trade-xyz-collection-status` を呼び、最新status artifactを更新する。
 - `trade-xyz-collection-status` は `data/ops/trade_xyz_collection_status.json` と `data/reports/trade_xyz_collection_status.md` を生成し、traceable rows、coverage残日数、`coverage_min_span_days`、`coverage_max_remaining_days_exact`、`coverage_completion_ratio_by_span`、最新raw file age、次のcycle commandを出す。
-- readinessの残項目は `fail_count` / `known_gap_count` / `failing_requirements` / `known_gap_requirements` で確認する。通常の長期収集中は `failing_requirements=quote_coverage`、public user address未指定なら `known_gap_requirements=account_specific_fee` が残る。
+- readinessの残項目は `fail_count` / `known_gap_count` / `failing_requirements` / `known_gap_requirements` で確認する。通常の長期収集中は `failing_requirements=quote_coverage` が残る。account-specific fee は manifest が pass なら readiness 上は pass になり得るが、`SIS_TRADE_XYZ_ACCOUNT_FEE_USER_ADDRESS` 未設定時は `matches_configured_user=null` なので、最終運用前に同一user照合を別途確認する。
 - `trade-xyz-collection-status` は readiness の key別 details も出す。特に `funding_events_status` / `funding_events_skipped`、`oracle_timestamp_provenance_status` / `oracle_ts_missing_rate`、`signal_candles_status` / `signal_candles_request_error_count` を見る。
 - account fee は `account_fee_user_address_configured` だけで判断しない。`account_fee_manifest_exists` / `account_fee_manifest_status` / `account_fee_manifest_user_matches_env` / `account_fee_user_taker_fee_bps` / `account_fee_user_maker_fee_bps` を合わせて確認し、envと古いmanifestの不一致やpartial manifestを見落とさない。
 - oracle timestamp は `oracle_timestamp_manifest.json` の行数だけで完了扱いにしない。`oracle_ts_missing_count > 0` または `oracle_ts_present_count = 0` の場合、readinessは `oracle_timestamp_provenance` を known gap として扱う。`source_ts_ms`、受信時刻、client時刻で `oracle_ts_ms` を埋めない。
@@ -403,11 +405,12 @@ uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
 ```
 
-2026-05-28 の current artifact:
+2026-06-05 の current artifact:
 
-- `data/ops/trade_xyz_quote_collection_summary.json`: 11 active Trade[XYZ] rows in the latest refresh
 - `data/ops/phase_gate_review_summary.json`: `phase_gate_decision=READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
 - `data/ops/phase_gate_review_summary.json`: `execution_drift_classification_counts={"P2_BLOCKER":0,"LIVE_READINESS_BLOCKER":5}`
+- `data/manifests/trade_xyz_data_readiness_manifest.json`: `decision=NOT_READY`, `backtest_data_ready=false`, fail=`quote_coverage`, known gap=`oracle_timestamp_provenance`
+- `data/manifests/trade_xyz_data_readiness_manifest.json`: `real_market_reference` and `account_specific_fee` are pass
 
 2026-05-27 の PR12 long-window evidence:
 

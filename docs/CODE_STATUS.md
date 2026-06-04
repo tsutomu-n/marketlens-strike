@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-22_11:36 JST
+更新日: 2026-06-05_07:57 JST
+-->
+
 # Code Status
 
 この文書は current codebase を PR-00 から PR-08 の migration 軸で読むための要約です。実装の正本はコードと tests です。
@@ -85,21 +90,18 @@ PR-08:
 
 ## Verification
 
-2026-05-31 code/docs verification:
+2026-06-05 docs/runtime verification:
 
-- `uv run python -V`: pass
-- `uv run ruff check .`: pass
-- `uv run pyrefly check`: pass
-- `uv run pytest -q tests/backtest`: 54 passed
-- `uv run pytest -q`: 650 passed via `./scripts/check`
-- `./scripts/check`: pass, 650 passed
-- `uv run python scripts/check_current_docs.py`: pass, `checked 81 current docs`
+- `uv run python -V`: `Python 3.13.7`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 85 current docs`
+- latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
 
-2026-05-28 runtime artifact snapshot:
+2026-06-05 runtime artifact snapshot:
 
 - targeted P2 tests: Trade[XYZ] / quote diagnostics / phase gate / Alpaca / tracking tests pass
 - latest strict validation: `checked_files=12`, `issues=0`
 - latest phase gate: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5`
+- latest data readiness: `NOT_READY`, fail=`quote_coverage`, known gap=`oracle_timestamp_provenance`; `real_market_reference` and `account_specific_fee` are pass.
 
 ## Reading Pointers
 

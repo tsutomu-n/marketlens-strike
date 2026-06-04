@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-22_09:50 JST
+更新日: 2026-06-05_07:57 JST
+-->
+
 # marketlens-strike
 
 `marketlens-strike` is a Python 3.13 CLI workspace for Trade[XYZ] research,
@@ -141,18 +146,18 @@ Strategy idea preparation starts at
 
 ## Current Verification
 
-2026-05-31 code/docs check:
+2026-06-05 docs/runtime check:
 
-- `uv run pytest -q tests/backtest`: pass, 54 passed
-- `./scripts/check`: pass, 650 passed
-- `uv run pyrefly check`: pass, 0 errors
-- `uv run python scripts/check_current_docs.py`: pass, `checked 81 current docs`
+- `uv run python -V`: `Python 3.13.7`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 85 current docs`
+- latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
 
-2026-05-28 runtime artifact snapshot:
+2026-06-05 runtime artifact snapshot:
 
 - `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
 - `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
 - current execution drift classification: `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5`
+- `trade_xyz_data_readiness_manifest.json`: `NOT_READY`, `backtest_data_ready=false`, fail=`quote_coverage`, known gap=`oracle_timestamp_provenance`
 
 `READ_ONLY_GO` means the read-only / paper gate is clear. It does not mean
 production live trading is ready.

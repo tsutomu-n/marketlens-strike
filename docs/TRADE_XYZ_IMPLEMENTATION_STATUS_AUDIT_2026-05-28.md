@@ -1,12 +1,17 @@
+<!--
+作成日: 2026-05-28_17:22 JST
+更新日: 2026-06-05_07:57 JST
+-->
+
 # Trade[XYZ] Implementation Status Audit 2026-05-28
 
-コード、tests、設定、runtime artifact を正として、Trade[XYZ] 実装状態を current status として棚卸しする。2026-05-27 版は pre-P2 gate restore の historical audit として残し、現在状態の根拠にはしない。
+この文書は 2026-05-28 時点の historical audit である。現在状態の根拠にはしない。現在状態は `README.md`、`docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、および生成済み manifest を優先する。
 
 ## 結論
 
-Trade[XYZ] の PR9a-PR12 read-only evidence chain と P2 gate restore は完了済み。現時点の repo は P2 へスムーズに進める状態で、最新 phase gate は `READ_ONLY_GO`、strict validation は `checked_files=12`, `issues=0`、full check は `294 passed`。
+Trade[XYZ] の PR9a-PR12 read-only evidence chain と P2 gate restore は 2026-05-28 時点で完了済みだった。この文書中の `294 passed` などの数値は当時の snapshot であり、現在の full gate として引用しない。
 
-ただし、これは production live trading ready ではない。execution drift は live-readiness blocker として 6 件残っており、Alpaca credentials ありの API connectivity は確認済みだが fresh live `status=pass`、wallet/signing、exchange write integration、public micro live CLI はまだ未完了または意図的に未公開である。
+ただし、これは production live trading ready ではない。現在の phase gate summary では `LIVE_READINESS_BLOCKER=5` であり、wallet/signing、exchange write integration、public micro live CLI はまだ未完了または意図的に未公開である。
 
 Current snapshot:
 
@@ -120,7 +125,7 @@ strict_validation_issue_count: 0
 diagnostics_symbols: SP500, XYZ100, NVDA, AAPL, MSFT
 execution_drift_classification_counts:
   P2_BLOCKER: 0
-  LIVE_READINESS_BLOCKER: 6
+  LIVE_READINESS_BLOCKER: 5
 ```
 
 Live-readiness blockers:

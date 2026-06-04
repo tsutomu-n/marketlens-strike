@@ -1,6 +1,9 @@
-# Trade[XYZ] Docs Code-Truth Audit
+<!--
+作成日: 2026-06-01_14:13 JST
+更新日: 2026-06-05_07:57 JST
+-->
 
-作成日: 2026-06-01 JST
+# Trade[XYZ] Docs Code-Truth Audit
 
 この文書は、現在のコードと生成済みartifactを正として、Trade[XYZ]実データ収集と純粋バックテスト周辺のドキュメントを分類する。
 
@@ -95,15 +98,16 @@ backtest_data_ready: false
 readiness_decision: NOT_READY
 failing_requirements:
   - quote_coverage
-  - real_market_reference
 known_gap_requirements:
-  - account_specific_fee
   - oracle_timestamp_provenance
+pass_requirements:
+  - real_market_reference
+  - account_specific_fee
 signal_candles: pass
 funding_events: pass
 ```
 
-real market referenceは `--start 2026-05-31` で再取得したが、2026-05-31が市場休場に当たるため、多くの株式/ETF/index proxyが欠損し、現在はfailである。
+real market reference と account-specific fee は現在の readiness manifest では pass である。残る fail は quote coverage、known gap は oracle timestamp provenance である。
 
 ## 次に更新するなら
 

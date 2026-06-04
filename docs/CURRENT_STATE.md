@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-25_19:45 JST
+更新日: 2026-06-05_07:57 JST
+-->
+
 # Current State
 
 この文書は `marketlens-strike` の tracked docs 側の current truth を短く読むための入口です。最終的な正本はコード、設定、tests、生成 artifact です。
@@ -7,6 +12,7 @@
 - `plan/archive/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
 - repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
 - PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、最新 phase gate は `READ_ONLY_GO`。
+- Trade[XYZ] 実データ readiness はまだ `NOT_READY`。現在の fail は `quote_coverage` だけで、known gap は `oracle_timestamp_provenance` だけである。
 - Trade[XYZ] の対象銘柄は fee mode / taker fee / maker fee を registry と raw quote row に持つ。`fee_mode_unknown_rate` は current gate blocker ではない。
 - Trade[XYZ] pure backtest v0.1 は `src/sis/backtest/engine/` と `src/sis/backtest/trade_xyz/` に実装済み。入口は Python API の `run_backtest()` で、public CLI は未公開。
 - Strategy Research Lab の schema / model / CLI surface は実装済み。`StrategyExperimentSpec` から `PaperIntentPreview` までを研究、候補生成、評価、paper昇格判断として扱う。
@@ -79,24 +85,20 @@
 
 ## Verification Status
 
-2026-05-31 code/docs check:
+2026-06-05 docs/runtime check:
 
-- `./scripts/check`: pass
-- `uv run pyrefly check`: pass, 0 errors
-- `uv run pytest -q tests/backtest`: 54 passed
-- `uv run pytest -q`: 650 passed via `./scripts/check`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 81 current docs`
+- `uv run python -V`: `Python 3.13.7`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 85 current docs`
+- latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
 
-2026-05-28 runtime artifact snapshot:
+2026-06-05 runtime artifact snapshot:
 
 - P2 targeted verification: Trade[XYZ] / diagnostics / phase gate / Alpaca / tracking tests pass
 - `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
-- latest PR12 smoke: `310` raw rows, `3673.995702` observed seconds, 5 symbols x 62 rows
-- latest current quote collection summary: `11` Trade[XYZ] active rows in `data/raw/quotes/trade_xyz/2026-05-28.jsonl`
 - latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `next_actions=[]`
-- latest diagnostics show Trade[XYZ] `fee_mode_unknown_rate=0.0` for `SP500`, `XYZ100`, `NVDA`, `AAPL`, `MSFT`
 - latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded. Current classification is `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5`; read-only/paper readiness and live execution readiness are separate surfaces.
 - latest phase gate remediation order is `none` when only live-readiness blockers remain. Do not run `refresh-operations-artifacts` as a P2 remediation loop for those blockers.
+- latest Trade[XYZ] data readiness: `decision=NOT_READY`, `backtest_data_ready=false`, `fail_count=1`, `known_gap_count=1`, fail=`quote_coverage`, known gap=`oracle_timestamp_provenance`; `real_market_reference` and `account_specific_fee` are pass.
 
 PR-08 専用確認:
 

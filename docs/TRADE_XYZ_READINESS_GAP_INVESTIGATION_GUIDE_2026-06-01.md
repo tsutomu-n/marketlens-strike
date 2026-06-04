@@ -1,10 +1,13 @@
+<!--
+作成日: 2026-06-01_14:53 JST
+更新日: 2026-06-05_07:57 JST
+-->
+
 # Trade[XYZ] Readiness Gap Investigation Guide
 
-更新日: 2026-06-01_15:03 JST
+この文書は、現在 `quote_coverage` が fail、`oracle_timestamp_provenance` が known gap になっている理由を、第三者が調査できる粒度で分解する。
 
-この文書は、現在 `quote_coverage` と `real_market_reference` が fail、`oracle_timestamp_provenance` が known gap になっている理由を、第三者が調査できる粒度で分解する。
-
-`account_specific_fee` は 2026-06-01_14:58 JST 時点で解決済みである。古い文書に account fee が known gap と書かれている場合は、この文書と生成済みmanifestを優先する。
+`real_market_reference` と `account_specific_fee` は現在の readiness manifest では pass である。古い文書にこれらが fail / known gap と書かれている場合は、この文書と生成済みmanifestを優先する。
 
 コードと生成済みartifactを正とする。目的は戦略最適化ではなく、Trade[XYZ]実データを誤読せずに `run_backtest()` へ流すための不足調査である。
 
@@ -26,12 +29,11 @@ SIS_TRADE_XYZ_ACCOUNT_FEE_USER_ADDRESS=<public-user-address> \
 decision: COLLECT_MORE_QUOTES
 backtest_data_ready: false
 readiness_decision: NOT_READY
-fail_count: 2
+fail_count: 1
 known_gap_count: 1
 
 failing_requirements:
   - quote_coverage
-  - real_market_reference
 
 known_gap_requirements:
   - oracle_timestamp_provenance
@@ -182,11 +184,13 @@ data/manifests/trade_xyz_quote_coverage_manifest.json:
   per_symbol.*.max_gap_seconds <= 600
 ```
 
-## 4. 問題2: real_market_reference fail
+## 4. 解決済み: real_market_reference pass
 
 ### 4.1 何が問題か
 
 `real_market_reference` は、Trade[XYZ]商品を検証するための外部参照系列である。これはlive execution dataではなく、research/backtest用の参照データである。
+
+2026-06-05 時点の readiness manifest では `real_market_reference` は pass である。以下の fail 説明は 2026-06-01 時点の調査履歴として読む。
 
 現状:
 

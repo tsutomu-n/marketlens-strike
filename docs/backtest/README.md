@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-31_17:20 JST
+更新日: 2026-06-05_07:57 JST
+-->
+
 # Backtest Docs
 
 この directory は、現行 repo の backtest surface をコード基準で分けて読む入口です。
@@ -54,8 +59,8 @@
 
 ## Verification
 
-2026-05-31 main:
+2026-06-05 docs/runtime check:
 
-- `uv run pytest -q tests/backtest`: 54 passed
-- `./scripts/check`: 650 passed
-- `uv run python scripts/check_current_docs.py`: checked 81 current docs
+- `uv run python -V`: `Python 3.13.7`
+- `uv run python scripts/check_current_docs.py`: checked 85 current docs
+- latest recorded `./scripts/check`: 830 passed in 2026-06-04 quote coverage docs

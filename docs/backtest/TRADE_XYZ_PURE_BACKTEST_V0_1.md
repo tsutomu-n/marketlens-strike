@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-31_17:20 JST
+更新日: 2026-06-05_07:57 JST
+-->
+
 # Trade[XYZ] Pure Backtest v0.1
 
 この文書は、現行コードに実装済みの Trade[XYZ] 専用バックテスト基盤を説明します。正本はコードと tests です。
@@ -208,8 +213,9 @@ uv run pytest -q tests/backtest/test_real_quotes_smoke.py
 
 ## Verification
 
-2026-05-31 current implementation:
+2026-06-05 docs/runtime check:
 
 - `uv run pytest -q tests/backtest`: current expected pass
 - `./scripts/check`: canonical full gate
-- `uv run python scripts/check_current_docs.py`: checked 81 current docs
+- `uv run python scripts/check_current_docs.py`: checked 85 current docs
+- latest recorded `./scripts/check`: 830 passed in 2026-06-04 quote coverage docs
