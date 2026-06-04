@@ -1,12 +1,19 @@
+<!--
+作成日: 2026-05-31_07:54 JST
+更新日: 2026-06-05_08:05 JST
+-->
+
 # Documentation Audit 2026-05-31
 
 コード、tests、CLI help、schemas、current docs lint を正として、現行ドキュメントを再分類した結果です。
+
+この文書の検証値は 2026-05-31 時点の audit snapshot です。現在の検証値は `README.md`、`docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、および `uv run python scripts/check_current_docs.py` の実行結果を優先します。
 
 ## 結論
 
 現行 docs は、Strategy Authoring 完了後のコードに対して大筋では追従しています。ただし、2026-05-30 audit 以降に Strategy Authoring coverage が完了したため、検証値と audit 正本に古さが残っていました。
 
-追記: Trade[XYZ] pure backtest v0.1 main merge 後の追加監査は `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を読む。この文書の `596 passed` は Strategy Authoring 完了時点の snapshot であり、現行 main の full gate は `650 passed`。
+追記: Trade[XYZ] pure backtest v0.1 main merge 後の追加監査は `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を読む。この文書の `596 passed` は Strategy Authoring 完了時点の snapshot であり、`650 passed` は 2026-05-31 backtest update 時点の snapshot である。どちらも現在の full gate として引用しない。
 
 Strategy Authoring 完了時点の audit snapshot:
 

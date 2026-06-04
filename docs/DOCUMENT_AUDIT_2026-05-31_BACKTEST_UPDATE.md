@@ -1,6 +1,13 @@
+<!--
+作成日: 2026-05-31_17:20 JST
+更新日: 2026-06-05_08:05 JST
+-->
+
 # Documentation Audit 2026-05-31 Backtest Update
 
 コード、tests、CLI help、current docs lint を正として、Trade[XYZ] pure backtest v0.1 の main merge 後に必要な docs 更新を整理した。
+
+この文書の verification は 2026-05-31 時点の backtest update snapshot です。現在の検証値は `README.md`、`docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、および `uv run python scripts/check_current_docs.py` の実行結果を優先します。
 
 ## 結論
 
@@ -48,7 +55,7 @@ Trade[XYZ] pure backtest v0.1 は main に実装済み。既存 current docs は
 
 ## Verification
 
-2026-05-31 main:
+2026-05-31 main snapshot:
 
 - `uv run pytest -q tests/backtest`: 54 passed
 - `./scripts/check`: 650 passed

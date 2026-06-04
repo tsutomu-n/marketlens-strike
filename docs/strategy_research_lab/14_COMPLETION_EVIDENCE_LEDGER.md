@@ -1,6 +1,13 @@
+<!--
+作成日: 2026-05-31_07:20 JST
+更新日: 2026-06-05_08:05 JST
+-->
+
 # Strategy Authoring Completion Evidence Ledger
 
 この文書は、active goal「生成しうるストラテジーについて考えうるすべてに対応させて。」に対する completion evidence ledger です。
+
+この ledger の observed results は completion 当時の snapshot です。現在の検証値は `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md`、`README.md`、`docs/CURRENT_STATE.md`、および `uv run python scripts/check_current_docs.py` を優先します。
 
 結論: 現行 repo では、Strategy Authoring が対象にする paper-only の strategy generation / signal generation / fixed-horizon backtest / paper-preview / multi-strategy bundle comparison について、考えうる主要 archetype は `13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` に列挙され、コード・schema・test・docs・example で確認済みです。
 
@@ -202,7 +209,7 @@ git diff --check
 ./scripts/check
 ```
 
-Observed results:
+Observed results at completion snapshot:
 
 - `test_strategy_authoring_example_specs_and_bundles_parse`: `1 passed`
 - `tests/strategy_authoring tests/test_strategy_lab_schemas.py`: `214 passed`

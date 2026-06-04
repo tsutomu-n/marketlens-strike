@@ -1,6 +1,13 @@
+<!--
+作成日: 2026-05-30_21:09 JST
+更新日: 2026-06-05_08:05 JST
+-->
+
 # Strategy Authoring Progress Summary 2026-05-30
 
 この文書は、2026-05-30 時点で進めた Strategy Authoring 周りの調査・実装・ドキュメント更新を、コードを正として整理したものです。
+
+この文書の検証値は 2026-05-31 時点の progress snapshot です。現在の検証値は `docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md`、`README.md`、`docs/CURRENT_STATE.md`、および `uv run python scripts/check_current_docs.py` を優先します。
 
 正本は次です。
 
@@ -113,7 +120,7 @@ uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/exampl
 
 ## 検証済み
 
-2026-05-31 の最終確認値です。
+2026-05-31 の snapshot 確認値です。
 
 - `uv run pytest tests/strategy_authoring tests/test_strategy_lab_schemas.py -q`: `214 passed`
 - `uv run python scripts/check_current_docs.py`: `checked 81 current docs: links, EOF, and legacy roots ok`

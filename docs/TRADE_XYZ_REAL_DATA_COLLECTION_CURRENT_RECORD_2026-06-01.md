@@ -1,13 +1,15 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-04_17:16 JST
+更新日: 2026-06-05_08:05 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-04_17:16 JST
+更新日: 2026-06-05_08:05 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
+
+この文書は追記型の履歴記録でもある。古い節にある pytest 件数、current-docs count、row count、fail list はその節の timestamp 時点の snapshot として読み、現在判断は最新節、`README.md`、`docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、および生成済み manifest を優先する。
 
 ## 0. 追加実装（2026-06-01_18:18 JST）
 
