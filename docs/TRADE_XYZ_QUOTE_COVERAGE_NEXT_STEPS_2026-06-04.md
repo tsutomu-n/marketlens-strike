@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_17:47 JST
-更新日: 2026-06-04_22:04 JST
+更新日: 2026-06-04_22:37 JST
 -->
 
 # Trade[XYZ] Quote Coverage And 24h Backtest Smoke Next Steps 2026-06-04
@@ -414,6 +414,37 @@ known gap。
 recv_ts_ms / source_ts_ms / client timestamp で埋めない。
 ```
 
+2026-06-04_22:17 JST 追加確認:
+
+```text
+DONE: uv run sis build-trade-xyz-reference-data を実行した
+DONE: uv run sis build-trade-xyz-data-readiness を実行した
+quote_logs_read_count: 20339
+oracle_ts_present_count: 0
+oracle_ts_missing_count: 20339
+oracle_ts_missing_rate: 1.0
+oracle_ts_missing_reason: asset_ctx_missing_oracle_timestamp_field
+readiness_decision: NOT_READY
+判断: oracle timestamp provenance は現raw payloadでは引き続き known gap。source_ts_ms / recv_ts_ms / oracle_freshness_proxy で穴埋めしない。
+```
+
+### account-specific fee
+
+2026-06-04_22:19 JST 追加確認:
+
+```text
+data/manifests/trade_xyz_account_fee_manifest.json は存在する。
+status: pass
+generated_at: 2026-06-01T05:58:23.242752+00:00
+source: hyperliquid_info_userFees
+user_taker_fee_bps: 4.5
+user_maker_fee_bps: 1.5
+missing_fields: []
+SIS_TRADE_XYZ_ACCOUNT_FEE_USER_ADDRESS: 未設定
+matches_configured_user: null
+判断: account-specific fee artifact は pass。ただし現在のenvに公開user addressが無いため、最終ready時に同一user照合はできていない。
+```
+
 ## 実行計画
 
 ### Phase 0: ループ治具の扱い
@@ -666,6 +697,14 @@ T20:
   DONE: --no-refresh-coverage --no-refresh-readiness の status で collector_running=true / progress_status=collecting_ok を確認した
   DONE: raw inventory total 20194 rows、traceable 20194、malformed 0、missing symbol 0 を確認した
   DONE: 11 symbols は AAPL/AMD/AMZN/EWJ/GOOGL/META/MSFT/NVDA/SP500 が 1836 rows、TSLA/XYZ100 が 1835 rows で、収集中の大きな銘柄欠落は見えていない
+
+2026-06-04_22:11 JST archive preflight 追加確認:
+  DONE: uv run sis check-trade-xyz-historical-archive-preflight を実行した
+  status: fail
+  return_code: 255
+  aws_command_source: uv_awscli_fallback
+  reason: Unable to locate credentials
+  判断: historical archive backfill は AWS credentials 未設定で進めない。現collectorを継続し、次cycle/supervisorは起動しない
 
 停止条件:
   smoke_only=true / usable_for_strategy_selection=false / no_live_order=true が崩れたら止める
@@ -1006,6 +1045,72 @@ scripts/collect_trade_xyz_data_until_ready.sh で次の24h cycle を回す。
 次cycleを増やす前に raw inventory と coverage_refresh の失敗原因を見る。
 ```
 
+historical archive backfill の現状:
+
+```text
+2026-06-04_22:11 JST に archive preflight を再確認した。
+status=fail / return_code=255。
+stderr は Unable to locate credentials。
+AWS credentials がないため historical archive backfill は今は使わない。
+このfailは現collector停止理由にしない。
+```
+
+account-specific fee の現状:
+
+```text
+2026-06-04_22:19 JST に artifact を確認した。
+data/manifests/trade_xyz_account_fee_manifest.json は status=pass。
+user_taker_fee_bps=4.5 / user_maker_fee_bps=1.5。
+ただし SIS_TRADE_XYZ_ACCOUNT_FEE_USER_ADDRESS は未設定なので、現在のenvと同一userかは matches_configured_user=null。
+この状態は quote coverage collector を止める理由ではない。
+```
+
+readiness requirement 直接確認:
+
+```text
+2026-06-04_22:23 JST に data/manifests/trade_xyz_data_readiness_manifest.json を確認した。
+decision: NOT_READY
+backtest_data_ready: false
+fail_count: 1
+known_gap_count: 1
+fail: quote_coverage
+known_gap: oracle_timestamp_provenance
+pass:
+  - reference_datasets
+  - funding_events
+  - real_market_reference
+  - signal_candles
+  - fee_snapshots
+  - account_specific_fee
+  - session_state
+判断: 30日 coverage を待たずに確認できる readiness requirement は棚卸し済み。残る実行対象は collector 自然終了後の status refresh と quote coverage 継続判断。
+```
+
+phase-gate-review 追加確認:
+
+```text
+2026-06-04_22:28 JST に uv run sis phase-gate-review を再実行した。
+初回は90秒timeoutで無出力だった。
+原因切り分けでは jsonschema._keywords.items 内の strict artifact validation が重いことを確認した。
+src/sis/validation/artifacts.py で JSON schema validator を行ごとに作り直さず、schemaごとに一度だけcompileして使うようにした。
+近接テスト: uv run pytest -q tests/test_artifact_validation.py tests/test_phase_gate_review.py
+結果: 11 passed
+追加した退行テスト: JSONL validation で validator が行ごとではなくファイルごとに1回だけ作られることを固定
+標準検証: ./scripts/check
+結果: 830 passed
+strict validation CLI: timeout 30 uv run sis validate-artifacts --strict
+結果: checked_files=12 / issues=0
+再実行結果:
+  decision: READ_ONLY_GO
+  strict_validation_passed: True
+  strict_validation_issue_count: 0
+  phase2_entry_allowed: True
+  read_only_collector_gate_passed: True
+  execution_drift_classification_counts.P2_BLOCKER: 0
+  execution_drift_classification_counts.LIVE_READINESS_BLOCKER: 5
+判断: read-only/paper gate は回る状態に戻った。ただし live readiness blocker は残る。これは30日 quote coverageや backtest_data_ready=true の代替ではない。
+```
+
 ### signal_candles が fail
 
 行動:
@@ -1053,6 +1158,8 @@ uv run sis trade-xyz-collection-status --strict
 
 ```text
 known gap として扱う。
+2026-06-04_22:17 JST に reference data と readiness を再生成済み。
+現raw quote 20339 rows では oracle_ts_ms は 0 件。
 ```
 
 禁止:

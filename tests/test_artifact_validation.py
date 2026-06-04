@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from sis.validation import artifacts
 from sis.validation.artifacts import validate_artifacts
 
 
@@ -183,3 +184,25 @@ def test_validate_artifacts_strict_passes_with_execution_summaries(tmp_path) -> 
 
     assert summary.issues == []
     assert summary.checked_files == 11
+
+
+def test_validate_jsonl_reuses_validator_for_all_rows(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "rows.jsonl"
+    path.write_text('{"a":1}\n{"a":2}\n{"a":3}\n', encoding="utf-8")
+    schema = {"type": "object"}
+    calls = 0
+    original = artifacts.validators.validator_for
+
+    def counting_validator_for(schema_arg, *args, **kwargs):
+        nonlocal calls
+        if schema_arg is schema:
+            calls += 1
+        return original(schema_arg, *args, **kwargs)
+
+    monkeypatch.setattr(artifacts.validators, "validator_for", counting_validator_for)
+    issues: list[artifacts.ValidationIssue] = []
+
+    artifacts._validate_jsonl(path, schema, issues)
+
+    assert issues == []
+    assert calls == 1

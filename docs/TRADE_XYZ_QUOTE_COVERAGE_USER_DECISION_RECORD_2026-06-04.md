@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_20:20 JST
-更新日: 2026-06-04_22:04 JST
+更新日: 2026-06-04_22:37 JST
 -->
 
 # Trade[XYZ] Quote Coverage User Decision Record 2026-06-04
@@ -139,6 +139,82 @@ failing_requirements は quote_coverage だけ。
 known_gap_requirements は oracle_timestamp_provenance だけ。
 ```
 
+2026-06-04_22:11 JST の archive preflight 確認結果:
+
+```text
+uv run sis check-trade-xyz-historical-archive-preflight を実行。
+status は fail。
+return_code は 255。
+理由は Unable to locate credentials。
+historical archive backfill は AWS credentials 未設定のため今は使わない。
+このfailは起動中 collector を止める理由にしない。
+```
+
+2026-06-04_22:17 JST の oracle timestamp 確認結果:
+
+```text
+uv run sis build-trade-xyz-reference-data を実行。
+uv run sis build-trade-xyz-data-readiness を実行。
+quote_logs_read_count は 20339。
+oracle_ts_present_count は 0。
+oracle_ts_missing_count は 20339。
+oracle_ts_missing_rate は 1.0。
+理由は asset_ctx_missing_oracle_timestamp_field。
+readiness は NOT_READY のまま。
+判断: 30日 quote coverage を待たずに確認できる oracle timestamp provenance は再確認済み。ただし解消はしていない。
+```
+
+2026-06-04_22:19 JST の account-specific fee 確認結果:
+
+```text
+data/manifests/trade_xyz_account_fee_manifest.json は存在する。
+status は pass。
+user_taker_fee_bps は 4.5。
+user_maker_fee_bps は 1.5。
+missing_fields は空。
+ただし SIS_TRADE_XYZ_ACCOUNT_FEE_USER_ADDRESS は未設定。
+そのため、現在の環境変数と同じuserのfeeかどうかは matches_configured_user=null。
+判断: fee artifact はある。最終ready前に公開user addressを設定して同一user照合する余地だけが残る。
+```
+
+2026-06-04_22:23 JST の readiness 棚卸し:
+
+```text
+pass:
+  reference_datasets
+  funding_events
+  real_market_reference
+  signal_candles
+  fee_snapshots
+  account_specific_fee
+  session_state
+
+fail:
+  quote_coverage
+
+known_gap:
+  oracle_timestamp_provenance
+
+判断: 30日 quote coverage を待たずに確認できる readiness requirement は、現時点では確認済み。collector が生きている間に追加cycleやsupervisorは起動しない。
+```
+
+2026-06-04_22:28 JST の phase-gate-review 確認結果:
+
+```text
+uv run sis phase-gate-review は再実行後に完了。
+decision は READ_ONLY_GO。
+strict_validation_passed は True。
+strict_validation_issue_count は 0。
+phase2_entry_allowed は True。
+read_only_collector_gate_passed は True。
+execution_drift_classification_counts.P2_BLOCKER は 0。
+execution_drift_classification_counts.LIVE_READINESS_BLOCKER は 5。
+./scripts/check は 830 passed。
+timeout 30 uv run sis validate-artifacts --strict は checked_files=12 / issues=0。
+近接テストは 11 passed。JSONL validation が validator を行ごとに作らないことも固定済み。
+判断: read-only/paper gate は通る。ただし live readiness blocker は残る。30日 quote coverage や backtest_data_ready=true の代替ではない。
+```
+
 ## まだやらないこと
 
 ```text
@@ -190,7 +266,8 @@ quote_coverage 以外の fail は自動ループさせない。
 ```text
 quote coverage はまだ30日要件に届いていない。
 oracle timestamp provenance は known gap のまま。
-account-specific fee / archive preflight は最終ready前に別途確認が必要。
+account-specific fee artifact は 2026-06-04_22:19 JST に確認済みで status=pass。ただし現在のenvに公開user addressが無いため同一user照合は未確認。
+archive preflight は 2026-06-04_22:11 JST に確認済みで、AWS credentials 未設定により fail。
 row count と mtime は時間で変わるため、この文書の数値は 2026-06-04_22:04 JST のsnapshotである。
 ```
 

@@ -4,8 +4,9 @@ import glob
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
-from jsonschema import ValidationError, validate
+from jsonschema import ValidationError, validators
 
 from sis.storage.jsonl_store import read_json, read_jsonl
 
@@ -51,8 +52,14 @@ class ValidationSummary:
     issues: list[ValidationIssue]
 
 
-def _load_schema(schema_root: Path, name: str) -> dict:
+def _load_schema(schema_root: Path, name: str) -> dict[str, Any]:
     return json.loads((schema_root / name).read_text(encoding="utf-8"))
+
+
+def _build_validator(schema: dict[str, Any]) -> validators.Validator:
+    validator_cls = validators.validator_for(schema)
+    validator_cls.check_schema(schema)
+    return validator_cls(schema)
 
 
 def _iter_files(path_pattern: str) -> list[Path]:
@@ -78,19 +85,20 @@ def _is_json_dict(path: Path) -> bool:
     return isinstance(payload, dict)
 
 
-def _validate_json(path: Path, schema: dict, issues: list[ValidationIssue]) -> None:
+def _validate_json(path: Path, schema: dict[str, Any], issues: list[ValidationIssue]) -> None:
     try:
-        payload = read_json(path)
-        validate(payload, schema)
+        payload = cast(Any, read_json(path))
+        _build_validator(schema).validate(payload)
     except (json.JSONDecodeError, ValidationError) as exc:
         issues.append(ValidationIssue(path=str(path), message=str(exc)))
 
 
-def _validate_jsonl(path: Path, schema: dict, issues: list[ValidationIssue]) -> None:
+def _validate_jsonl(path: Path, schema: dict[str, Any], issues: list[ValidationIssue]) -> None:
     idx = -1
+    validator = _build_validator(schema)
     try:
         for idx, row in enumerate(read_jsonl(path)):
-            validate(row, schema)
+            validator.validate(row)
     except (json.JSONDecodeError, ValidationError) as exc:
         issues.append(ValidationIssue(path=f"{path}#row={idx}", message=str(exc)))
 
