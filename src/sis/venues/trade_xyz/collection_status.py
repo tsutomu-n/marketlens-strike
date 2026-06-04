@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 import hashlib
 import os
@@ -10,7 +11,6 @@ import subprocess
 from typing import Any
 
 from sis.storage.jsonl_store import read_json
-from sis.storage.jsonl_store import read_jsonl
 from sis.storage.jsonl_store import write_json
 from sis.venues.trade_xyz.collection_config import DEFAULT_COLLECTION_CONFIG_PATH
 from sis.venues.trade_xyz.collection_config import load_trade_xyz_data_collection_config
@@ -32,18 +32,58 @@ def _raw_quote_inventory(raw_quotes_root: Path, *, generated_at: datetime) -> di
     total_rows = 0
     traceable_rows = 0
     untraceable_rows = 0
+    malformed_rows = 0
+    missing_symbol_rows = 0
+    symbol_counts: dict[str, int] = {}
+    source_counts: dict[str, int] = {}
     latest_path: Path | None = None
     latest_mtime: float | None = None
     per_file: list[dict[str, Any]] = []
     for path in files:
         row_count = 0
         traceable_count = 0
-        for row in read_jsonl(path):
+        file_malformed_rows = 0
+        file_missing_symbol_rows = 0
+        file_symbol_counts: dict[str, int] = {}
+        file_source_counts: dict[str, int] = {}
+        with path.open("r", encoding="utf-8") as handle:
+            lines = [line for line in handle if line.strip()]
+        for line in lines:
             row_count += 1
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                malformed_rows += 1
+                file_malformed_rows += 1
+                continue
+            if not isinstance(row, dict):
+                malformed_rows += 1
+                file_malformed_rows += 1
+                continue
             if row.get("raw_payload_ref") is None:
                 untraceable_rows += 1
             else:
                 traceable_count += 1
+            symbol = (
+                row.get("canonical_symbol")
+                or row.get("symbol")
+                or row.get("asset_symbol")
+                or row.get("coin")
+            )
+            if isinstance(symbol, str) and symbol.strip():
+                symbol_key = symbol.strip().upper()
+            else:
+                symbol_key = "<missing>"
+                missing_symbol_rows += 1
+                file_missing_symbol_rows += 1
+            source = row.get("source")
+            source_key = (
+                source.strip() if isinstance(source, str) and source.strip() else "<missing>"
+            )
+            symbol_counts[symbol_key] = symbol_counts.get(symbol_key, 0) + 1
+            file_symbol_counts[symbol_key] = file_symbol_counts.get(symbol_key, 0) + 1
+            source_counts[source_key] = source_counts.get(source_key, 0) + 1
+            file_source_counts[source_key] = file_source_counts.get(source_key, 0) + 1
         total_rows += row_count
         traceable_rows += traceable_count
         stat = path.stat()
@@ -56,6 +96,10 @@ def _raw_quote_inventory(raw_quotes_root: Path, *, generated_at: datetime) -> di
                 "row_count": row_count,
                 "traceable_row_count": traceable_count,
                 "untraceable_row_count": row_count - traceable_count,
+                "malformed_row_count": file_malformed_rows,
+                "missing_symbol_row_count": file_missing_symbol_rows,
+                "symbol_counts": dict(sorted(file_symbol_counts.items())),
+                "source_counts": dict(sorted(file_source_counts.items())),
                 "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat(),
             }
         )
@@ -67,12 +111,17 @@ def _raw_quote_inventory(raw_quotes_root: Path, *, generated_at: datetime) -> di
         if latest_file_modified_at is not None
         else None
     )
+    untraceable_rows = total_rows - traceable_rows
     return {
         "raw_quotes_root": str(raw_quotes_root),
         "file_count": len(files),
         "row_count": total_rows,
         "traceable_row_count": traceable_rows,
         "untraceable_row_count": untraceable_rows,
+        "malformed_row_count": malformed_rows,
+        "missing_symbol_row_count": missing_symbol_rows,
+        "symbol_counts": dict(sorted(symbol_counts.items())),
+        "source_counts": dict(sorted(source_counts.items())),
         "latest_file": str(latest_path) if latest_path is not None else None,
         "latest_file_modified_at": latest_file_modified_at.isoformat()
         if latest_file_modified_at is not None
@@ -80,6 +129,10 @@ def _raw_quote_inventory(raw_quotes_root: Path, *, generated_at: datetime) -> di
         "latest_file_age_seconds": latest_file_age_seconds,
         "files": per_file,
     }
+
+
+def _format_counts(counts: dict[str, int]) -> str:
+    return ",".join(f"{key}:{value}" for key, value in sorted(counts.items()))
 
 
 def _coverage_progress(coverage: dict[str, Any] | None) -> dict[str, Any]:
@@ -1054,6 +1107,10 @@ def build_trade_xyz_collection_status(
         f"- latest_file_age_seconds: {status['raw_quote_inventory']['latest_file_age_seconds']}",
         f"- traceable_rows: {status['raw_quote_inventory']['traceable_row_count']}",
         f"- untraceable_rows: {status['raw_quote_inventory']['untraceable_row_count']}",
+        f"- malformed_rows: {status['raw_quote_inventory']['malformed_row_count']}",
+        f"- missing_symbol_rows: {status['raw_quote_inventory']['missing_symbol_row_count']}",
+        f"- raw_symbol_counts: {_format_counts(status['raw_quote_inventory']['symbol_counts'])}",
+        f"- raw_source_counts: {_format_counts(status['raw_quote_inventory']['source_counts'])}",
         f"- coverage_min_span_days: {progress['min_span_days']}",
         f"- coverage_max_remaining_days_exact: {progress['max_remaining_days_exact']}",
         f"- coverage_completion_ratio_by_span: {progress['completion_ratio_by_span']}",

@@ -11,6 +11,59 @@ def _write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def test_trade_xyz_collection_status_reports_raw_inventory_breakdown(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    raw_path = data_dir / "raw/quotes/trade_xyz/2026-05-31.jsonl"
+    raw_path.parent.mkdir(parents=True)
+    raw_path.write_text(
+        "\n".join(
+            [
+                (
+                    '{"ts_client":"2026-05-31T00:00:00+00:00","venue":"trade_xyz",'
+                    '"canonical_symbol":"NVDA","venue_symbol":"NVDA",'
+                    '"source":"trade_xyz_l2Book","raw_payload_ref":"fixture://row0"}'
+                ),
+                (
+                    '{"ts_client":"2026-05-31T00:01:00+00:00","venue":"trade_xyz",'
+                    '"symbol":"sp500","source":"trade_xyz_l2Book"}'
+                ),
+                (
+                    '{"ts_client":"2026-05-31T00:02:00+00:00","venue":"trade_xyz",'
+                    '"source":"trade_xyz_l2Book"}'
+                ),
+                "not-json",
+                "[]",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    status = build_trade_xyz_collection_status(
+        data_dir=data_dir,
+        refresh_coverage=False,
+        refresh_readiness=False,
+        generated_at=datetime(2026, 5, 31, 0, 3, tzinfo=UTC),
+    )
+
+    inventory = status["raw_quote_inventory"]
+    assert inventory["row_count"] == 5
+    assert inventory["traceable_row_count"] == 1
+    assert inventory["untraceable_row_count"] == 4
+    assert inventory["malformed_row_count"] == 2
+    assert inventory["missing_symbol_row_count"] == 1
+    assert inventory["symbol_counts"] == {"<missing>": 1, "NVDA": 1, "SP500": 1}
+    assert inventory["source_counts"] == {"trade_xyz_l2Book": 3}
+    assert inventory["files"][0]["symbol_counts"] == {"<missing>": 1, "NVDA": 1, "SP500": 1}
+    assert inventory["files"][0]["malformed_row_count"] == 2
+
+    report = (data_dir / "reports/trade_xyz_collection_status.md").read_text(encoding="utf-8")
+    assert "malformed_rows: 2" in report
+    assert "missing_symbol_rows: 1" in report
+    assert "raw_symbol_counts: <missing>:1,NVDA:1,SP500:1" in report
+    assert "raw_source_counts: trade_xyz_l2Book:3" in report
+
+
 def test_trade_xyz_collection_status_surfaces_readiness_next_actions(tmp_path) -> None:
     data_dir = tmp_path / "data"
     raw_path = data_dir / "raw/quotes/trade_xyz/2026-05-31.jsonl"

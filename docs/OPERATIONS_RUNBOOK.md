@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-04_18:45 JST
+更新日: 2026-06-04_22:04 JST
 -->
 
 # Operations Runbook
@@ -65,6 +65,8 @@ setsid -f scripts/collect_trade_xyz_data_until_ready.sh >/tmp/trade_xyz_until_re
 
 2026-06-04_16:39 JST 起動の24時間 quote coverage cycle 後にやることは、
 [TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md) を見る。
+ユーザー向けの短い判断記録は
+[TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md) を見る。
 
 wrapper env:
 
@@ -88,6 +90,7 @@ SIS_TRADE_XYZ_UNTIL_READY_POLL_SECONDS=300
 SIS_TRADE_XYZ_UNTIL_READY_MAX_CYCLES=0
 SIS_TRADE_XYZ_UNTIL_READY_LOG_DIR=logs/trade_xyz_data_cycle
 SIS_TRADE_XYZ_UNTIL_READY_LOCK_DIR=.tmp/trade_xyz_data_until_ready.lock
+SIS_TRADE_XYZ_UNTIL_READY_STATE_PATH=data/ops/trade_xyz_until_ready_supervisor_state.json
 SIS_TRADE_XYZ_UNTIL_READY_STALE_AFTER_MINUTES=180
 SIS_TRADE_XYZ_UNTIL_READY_FAIL_ON_RUNNING_STALE=1
 SIS_TRADE_XYZ_UNTIL_READY_FAIL_ON_LOCK_STALE=1
@@ -140,7 +143,11 @@ quote ingest:
 - wrapper / until-ready はデフォルトで strict readiness を使い、account-specific fee などの known gap が残る状態を完了扱いしない。研究用途で known gap を許す場合だけ `SIS_TRADE_XYZ_CYCLE_ALLOW_KNOWN_GAPS=1` / `SIS_TRADE_XYZ_UNTIL_READY_ALLOW_KNOWN_GAPS=1` を使う。
 - builder fee approval は `builder` address が必要なので、この通常runbookでは取得しない。builder codeを使う別scopeが決まるまで `builder_fee_bps` を0扱いしない。
 - `scripts/collect_trade_xyz_data_cycle.sh` は同じcycle commandをログ付きで実行する長時間運用入口。cron/systemdから呼ぶ場合もこのwrapperを使う。
-- `scripts/collect_trade_xyz_data_until_ready.sh` は `trade-xyz-collection-status` をpollし、collectorが止まっていて `backtest_data_ready=false` の場合だけ `collect_trade_xyz_data_cycle.sh` を再起動する。30日coverage完了までtmux/systemd等で走らせる入口。`SIS_TRADE_XYZ_REQUIRE_ARCHIVE_PREFLIGHT=1` / `SIS_TRADE_XYZ_REQUIRE_ACCOUNT_FEE=1` の場合でも、collector稼働中は外部前提の失敗を理由に organic quote collection を止めない。collectorが止まっていて次cycleを起動する前だけ `--fail-on-archive-preflight` / `--fail-on-account-fee-missing` 付きstatusを実行し、AWS資格情報やaccount fee未設定を起動前gateとして扱う。
+- `scripts/collect_trade_xyz_data_until_ready.sh` は `trade-xyz-collection-status` をpollし、collectorが止まっていて `backtest_data_ready=false` の場合だけ `collect_trade_xyz_data_cycle.sh` を再起動する。30日coverage完了までtmux/systemd等で走らせる入口。collector稼働中のpollは `--no-refresh-coverage --no-refresh-readiness` を使い、重いcoverage/readiness再計算を毎回走らせない。collectorが止まった後だけ full refresh でcoverage/readinessを再評価する。
+- until-ready supervisor は、full refresh 後に `backtest_data_ready=true` なら正常終了する。`backtest_data_ready=false` かつ `failing_requirements=quote_coverage` だけの場合だけ次cycleを起動する。`quote_coverage` 以外の fail が混じる場合は exit 7 で止まり、非coverage問題を自動ループで隠さない。
+- until-ready supervisor は `data/ops/trade_xyz_until_ready_supervisor_state.json` に現在判断を保存する。主なfieldは `event`、`decision`、`backtest_data_ready`、`failing_requirements`、`known_gap_requirements`、`collector_running`、`collector_process_count`、`latest_file_stale`、`latest_file_age_seconds`、`cycle_lock_stale`、`supervisor_lock_stale`、`progress_status`、`cycle_count`、`log_path`。
+- `trade-xyz-collection-status` の raw inventory は `raw_quote_inventory.symbol_counts` / `source_counts` / `malformed_row_count` / `missing_symbol_row_count` を出す。収集中に quote coverage を再計算しない軽量監視でも、銘柄偏り、source偏り、壊れたJSONL、symbol欠落を確認できる。
+- `SIS_TRADE_XYZ_REQUIRE_ARCHIVE_PREFLIGHT=1` / `SIS_TRADE_XYZ_REQUIRE_ACCOUNT_FEE=1` の場合でも、collector稼働中は外部前提の失敗を理由に organic quote collection を止めない。collectorが止まっていて次cycleを起動する前だけ `--fail-on-archive-preflight` / `--fail-on-account-fee-missing` 付きstatusを実行し、AWS資格情報やaccount fee未設定を起動前gateとして扱う。
 - until-ready supervisor は collector稼働中に最新raw fileが stale になった場合、または supervisor lock / 稼働中collectorのcycle lockが stale になった場合に異常終了する。`SIS_TRADE_XYZ_UNTIL_READY_FAIL_ON_RUNNING_STALE=0` / `SIS_TRADE_XYZ_UNTIL_READY_FAIL_ON_LOCK_STALE=0` で無効化できる。
 - shell終了後も継続させる場合は `setsid -f ... >/tmp/trade_xyz_until_ready.nohup 2>&1 < /dev/null` のようにdetachする。通常のforeground実行はterminal/session終了で止まる前提で扱う。
 - wrapperは `.tmp/trade_xyz_data_cycle.lock` で重複起動を止める。pid付きstale lockは起動時に回復し、pid無しの空lock directoryも回復する。非空lockや実processが残る場合は、既存processとlogを確認する。

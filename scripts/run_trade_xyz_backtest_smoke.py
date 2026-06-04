@@ -26,6 +26,27 @@ from sis.backtest.trade_xyz.ws_ingestion import build_bbo_bars_with_active_asset
 SmokeTimeframe = Literal["raw_quote_rows", "30m", "1h", "4h", "1d"]
 
 
+def _normalized_symbol(symbol: str) -> str:
+    normalized = symbol.strip().upper()
+    if not normalized:
+        raise ValueError("symbol must not be empty")
+    return normalized
+
+
+def _strategy_id(symbol: str) -> str:
+    return f"{_normalized_symbol(symbol).lower()}_breakout_v0"
+
+
+def _positive_int(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be an integer") from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+    return parsed
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run a local Trade[XYZ] real-data backtest smoke without exposing a public CLI."
@@ -49,8 +70,8 @@ def _parser() -> argparse.ArgumentParser:
         choices=["ts_client", "source_ts_ms", "recv_ts_ms"],
     )
     parser.add_argument("--out", default="data/backtests")
-    parser.add_argument("--entry-lookback", type=int, default=20)
-    parser.add_argument("--exit-lookback", type=int, default=10)
+    parser.add_argument("--entry-lookback", type=_positive_int, default=20)
+    parser.add_argument("--exit-lookback", type=_positive_int, default=10)
     parser.add_argument("--initial-cash-usd", type=float, default=10_000)
     parser.add_argument("--notional-usd", type=float, default=1_000)
     parser.add_argument("--max-spread-bps", type=float, default=None)
@@ -86,6 +107,10 @@ def _frame_for_smoke(
     if ws_bbo_state:
         if timeframe == "raw_quote_rows":
             raise ValueError("--ws-bbo-state requires a bar timeframe")
+        if close_source != "mid_price":
+            raise ValueError("--ws-bbo-state requires --close-source mid_price")
+        if event_time_source != "source_ts_ms":
+            raise ValueError("--ws-bbo-state requires --event-time-source source_ts_ms")
         return build_bbo_bars_with_active_asset_state(
             raw,
             symbol=symbol,
@@ -127,17 +152,18 @@ def _mark_smoke_artifacts(
 
 def main() -> int:
     args = _parser().parse_args()
+    symbol = _normalized_symbol(args.symbol)
     input_path = Path(args.input)
     frame = _frame_for_smoke(
         input_path=input_path,
-        symbol=args.symbol,
+        symbol=symbol,
         timeframe=args.timeframe,
         close_source=args.close_source,
         event_time_source=args.event_time_source,
         ws_bbo_state=args.ws_bbo_state,
     )
     if frame.is_empty():
-        raise SystemExit(f"no rows for symbol={args.symbol}")
+        raise SystemExit(f"no rows for symbol={symbol}")
     funding_events_path = Path(args.funding_events) if args.funding_events else None
     funding_events = (
         load_normalized_quotes(funding_events_path)
@@ -159,15 +185,14 @@ def main() -> int:
         raise SystemExit("event_ts is empty")
 
     run_id = (
-        f"trade-xyz-smoke-{args.symbol.strip().upper()}-"
-        f"{args.timeframe}-{args.close_source}-{args.event_time_source}"
+        f"trade-xyz-smoke-{symbol}-{args.timeframe}-{args.close_source}-{args.event_time_source}"
     )
     if args.ws_bbo_state:
         run_id += "-ws_bbo_state"
     config = BacktestConfig(
         run_id=run_id,
-        strategy_id="sp500_breakout_v0",
-        symbol=args.symbol,
+        strategy_id=_strategy_id(symbol),
+        symbol=symbol,
         timeframe=args.timeframe,
         period=PeriodConfig(
             evaluation_start_ts=first_ts,

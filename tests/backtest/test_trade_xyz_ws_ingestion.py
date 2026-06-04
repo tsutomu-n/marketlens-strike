@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import polars as pl
+import pytest
 
 from sis.backtest.engine.config import BacktestConfig, PeriodConfig, PositionSizingConfig
 from sis.backtest.engine.runner import BreakoutParameters, run_backtest
@@ -13,11 +14,11 @@ def _ms(hour: int, minute: int = 0) -> int:
     return int(datetime(2026, 6, 2, hour, minute, tzinfo=timezone.utc).timestamp() * 1000)
 
 
-def _bbo_row(hour: int, price: float) -> dict:
+def _bbo_row(hour: int, price: float, *, symbol: str = "SP500") -> dict:
     return {
         "ts_client": datetime(2026, 6, 2, hour, tzinfo=timezone.utc).isoformat(),
         "source": "trade_xyz_ws_bbo",
-        "canonical_symbol": "SP500",
+        "canonical_symbol": symbol,
         "source_ts_ms": _ms(hour),
         "recv_ts_ms": _ms(hour, 0) + 100,
         "mid_price": price,
@@ -35,11 +36,11 @@ def _bbo_row(hour: int, price: float) -> dict:
     }
 
 
-def _state_row(hour: int, minute: int, mark_price: float) -> dict:
+def _state_row(hour: int, minute: int, mark_price: float, *, symbol: str = "SP500") -> dict:
     return {
         "ts_client": datetime(2026, 6, 2, hour, minute, tzinfo=timezone.utc).isoformat(),
         "source": "trade_xyz_ws_activeAssetCtx",
-        "canonical_symbol": "SP500",
+        "canonical_symbol": symbol,
         "recv_ts_ms": _ms(hour, minute),
         "mark_price": mark_price,
         "oracle_price": mark_price + 0.2,
@@ -51,6 +52,28 @@ def _state_row(hour: int, minute: int, mark_price: float) -> dict:
         "market_status": "unknown",
         "is_tradable": False,
         "block_reasons": ["BLOCK_NO_BBO_FILL_SNAPSHOT"],
+    }
+
+
+def _trade_row(hour: int, price: float, *, symbol: str = "SP500") -> dict:
+    return {
+        "ts_client": datetime(2026, 6, 2, hour, tzinfo=timezone.utc).isoformat(),
+        "source": "trade_xyz_ws_trades",
+        "canonical_symbol": symbol,
+        "source_ts_ms": _ms(hour),
+        "recv_ts_ms": _ms(hour) + 100,
+        "mid_price": price,
+        "best_bid": price - 0.1,
+        "best_ask": price + 0.1,
+        "exec_buy_price": price + 0.1,
+        "exec_sell_price": price - 0.1,
+        "spread_bps": 2.0,
+        "taker_fee_bps": 9.0,
+        "maker_fee_bps": 3.0,
+        "fee_mode": "standard",
+        "market_status": "open",
+        "is_tradable": True,
+        "block_reasons": [],
     }
 
 
@@ -79,6 +102,154 @@ def test_build_bbo_bars_with_active_asset_state_uses_no_future_state() -> None:
     assert second["event_ts"] == datetime(2026, 6, 2, 2, tzinfo=timezone.utc)
     assert second["state_mark_price"] == 999.0
     assert second["state_observed_ts_ms"] == _ms(1, 1)
+
+
+def test_build_bbo_bars_with_active_asset_state_ignores_trade_rows_for_fill() -> None:
+    frame = pl.DataFrame(
+        [
+            _bbo_row(0, 100.0),
+            _trade_row(0, 999.0),
+        ]
+    )
+
+    bars = build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+    first = bars.row(0, named=True)
+    assert first["close"] == 100.0
+    assert first["fill_mid_price"] == 100.0
+    assert first["exec_buy_price"] == 100.1
+    assert first["exec_sell_price"] == 99.9
+
+
+def test_build_bbo_bars_with_active_asset_state_ignores_other_symbol_state() -> None:
+    frame = pl.DataFrame(
+        [
+            _bbo_row(0, 100.0, symbol="SP500"),
+            _bbo_row(1, 101.0, symbol="SP500"),
+            _state_row(0, 30, 999.0, symbol="NVDA"),
+            _state_row(1, 1, 100.5, symbol="SP500"),
+        ]
+    )
+
+    bars = build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+    first = bars.row(0, named=True)
+    second = bars.row(1, named=True)
+    assert first["event_ts"] == datetime(2026, 6, 2, 1, tzinfo=timezone.utc)
+    assert first["state_mark_price"] is None
+    assert first["state_observed_ts_ms"] is None
+    assert second["event_ts"] == datetime(2026, 6, 2, 2, tzinfo=timezone.utc)
+    assert second["state_mark_price"] == 100.5
+    assert second["state_observed_ts_ms"] == _ms(1, 1)
+
+
+def test_build_bbo_bars_with_active_asset_state_accepts_symbol_column_alias() -> None:
+    frame = pl.DataFrame(
+        [
+            _bbo_row(0, 100.0, symbol="sp500"),
+            _bbo_row(1, 101.0, symbol="sp500"),
+            _state_row(0, 30, 100.5, symbol="sp500"),
+        ]
+    ).rename({"canonical_symbol": "symbol"})
+
+    bars = build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+    first = bars.row(0, named=True)
+    assert first["symbol"] == "SP500"
+    assert first["state_mark_price"] == 100.5
+    assert first["state_observed_ts_ms"] == _ms(0, 30)
+
+
+def test_build_bbo_bars_with_active_asset_state_allows_missing_optional_state_columns() -> None:
+    frame = pl.DataFrame(
+        [
+            _bbo_row(0, 100.0),
+            _bbo_row(1, 101.0),
+            _state_row(0, 30, 100.5),
+        ]
+    ).drop(["funding_rate", "open_interest_usd"])
+
+    bars = build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+    first = bars.row(0, named=True)
+    assert first["state_mark_price"] == 100.5
+    assert first["state_funding_rate"] is None
+    assert first["state_open_interest_usd"] is None
+
+
+def test_build_bbo_bars_with_active_asset_state_skips_state_without_recv_ts_ms() -> None:
+    frame = pl.DataFrame(
+        [
+            _bbo_row(0, 100.0),
+            _bbo_row(1, 101.0),
+            _state_row(0, 30, 100.5),
+        ]
+    ).drop("recv_ts_ms")
+
+    bars = build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+    first = bars.row(0, named=True)
+    assert first["close"] == 100.0
+    assert first["state_mark_price"] is None
+    assert first["state_observed_ts_ms"] is None
+
+
+def test_build_bbo_bars_with_active_asset_state_rejects_missing_bbo_rows() -> None:
+    frame = pl.DataFrame([_state_row(0, 30, 100.5)])
+
+    with pytest.raises(ValueError, match="no bbo rows for fill snapshots"):
+        build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+
+def test_build_bbo_bars_with_active_asset_state_rejects_missing_source_column() -> None:
+    frame = pl.DataFrame([_bbo_row(0, 100.0)]).drop("source")
+
+    with pytest.raises(ValueError, match="missing source column"):
+        build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+
+def test_build_bbo_bars_with_active_asset_state_rejects_missing_bbo_symbol_column() -> None:
+    frame = pl.DataFrame([_bbo_row(0, 100.0)]).drop("canonical_symbol")
+
+    with pytest.raises(ValueError, match="WS BBO rows missing symbol column"):
+        build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+
+def test_build_bbo_bars_with_active_asset_state_rejects_missing_bbo_source_ts_ms() -> None:
+    frame = pl.DataFrame([{**_bbo_row(0, 100.0), "source_ts_ms": None}])
+
+    with pytest.raises(ValueError, match="BBO rows missing source_ts_ms"):
+        build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+
+def test_build_bbo_bars_with_active_asset_state_ignores_other_symbol_bbo_source_ts_gap() -> None:
+    frame = pl.DataFrame(
+        [
+            _bbo_row(0, 100.0, symbol="SP500"),
+            _bbo_row(1, 101.0, symbol="SP500"),
+            {**_bbo_row(0, 999.0, symbol="NVDA"), "source_ts_ms": None},
+        ]
+    )
+
+    bars = build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+    assert bars.height == 2
+    assert bars.get_column("symbol").to_list() == ["SP500", "SP500"]
+    assert bars.get_column("close").to_list() == [100.0, 101.0]
+
+
+def test_build_bbo_bars_with_active_asset_state_rejects_missing_target_bbo_rows() -> None:
+    frame = pl.DataFrame([_bbo_row(0, 100.0, symbol="NVDA")])
+
+    with pytest.raises(ValueError, match="no bbo rows for symbol: SP500"):
+        build_bbo_bars_with_active_asset_state(frame, symbol="SP500", timeframe="1h")
+
+
+def test_build_bbo_bars_with_active_asset_state_rejects_empty_symbol() -> None:
+    frame = pl.DataFrame([_bbo_row(0, 100.0)])
+
+    with pytest.raises(ValueError, match="symbol must not be empty"):
+        build_bbo_bars_with_active_asset_state(frame, symbol=" ", timeframe="1h")
 
 
 def test_ws_bbo_bar_fixture_runs_minimal_backtest(tmp_path) -> None:

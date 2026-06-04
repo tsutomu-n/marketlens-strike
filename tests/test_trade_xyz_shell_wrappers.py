@@ -52,14 +52,23 @@ def test_trade_xyz_until_ready_wrapper_propagates_required_data_prereqs() -> Non
 
     assert "SIS_TRADE_XYZ_REQUIRE_ARCHIVE_PREFLIGHT:-1" in text
     assert "SIS_TRADE_XYZ_REQUIRE_ACCOUNT_FEE:-1" in text
+    assert "SIS_TRADE_XYZ_UNTIL_READY_STATE_PATH" in text
+    assert "trade_xyz_until_ready_supervisor_state.json" in text
     assert "require_archive_preflight=%s" in text
     assert "require_account_fee=%s" in text
+    assert "state_path=%s" in text
+    assert "schema_version" in text
+    assert "trade_xyz_until_ready_supervisor_state.v1" in text
+    assert "--no-refresh-coverage" in text
+    assert "--no-refresh-readiness" in text
     assert "prerequisite_status_command+=(--fail-on-archive-preflight)" in text
     assert "prerequisite_status_command+=(--fail-on-account-fee-missing)" in text
-    assert 'if [[ "${collector_running}" != "true" ]]; then' in text
+    assert 'if [[ "${collector_running}" == "true" ]]; then' in text
+    assert 'if [[ "${failing_requirements}" != "quote_coverage" ]]; then' in text
+    assert "blocked_non_quote_failure" in text
+    assert "exit 7" in text
     assert (
-        "external prerequisite failures are reported but do not stop organic quote collection"
-        in text
+        "external prerequisites do not stop organic quote collection during monitor polling" in text
     )
 
 
