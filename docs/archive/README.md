@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-06_07:27 JST
 -->
 
 # Documentation Archive
@@ -14,6 +14,7 @@ Current docs:
 - `docs/OPERATIONS_RUNBOOK.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
 - `docs/DOCUMENT_AUDIT_2026-05-31.md`
+- `docs/DOCUMENT_AUDIT_2026-06-06_CODE_TRUTH_REFRESH.md`
 
 Archived on 2026-05-25:
 
