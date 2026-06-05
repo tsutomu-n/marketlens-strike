@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-05_22:12 JST
-更新日: 2026-06-05_22:12 JST
+更新日: 2026-06-05_22:48 JST
 -->
 
 # Backtest-First Venue-Neutral Pivot Plan 2026-06-05
@@ -33,10 +33,34 @@
 
 新主経路:
   Backtest-first
+  -> existing Strategy Authoring baseline inventory
+  -> first reproducible backtest run
   -> venue-neutral signal / candidate / paper intent contract
-  -> Strategy Authoring backtest loop
-  -> optional CEX demo adapter
+  -> optional CEX demo adapter, mock-first
   -> paper/demo order lifecycle verification
+```
+
+2026-06-05_22:48 JST の追加レビューで、実装順を次に修正する。
+
+```text
+M0:
+  Trade[XYZ] collector を主経路から外す。
+
+M1:
+  既存 Strategy Authoring example の入力データを棚卸しし、最短 backtest を1本通す。
+  ここが「バックテストに取り組める」の最初の完了点。
+
+M2:
+  trade_xyz 固定の schema / model / compiler cast を、最小 enum へ広げる。
+
+M3:
+  bitget_demo は fixture / mock / paper-only でまず通す。
+
+M4:
+  Bitget API は classic demo v2 か UTA v3 かを公式 docs で選定してから adapter 化する。
+
+M5:
+  demo write API は最後。credential と明示許可がない限り実行しない。
 ```
 
 ## 現在の確認済み事実
@@ -44,7 +68,7 @@
 確認時刻:
 
 ```text
-2026-06-05_22:12 JST
+2026-06-05_22:48 JST
 ```
 
 コードと docs から確認した事実:
@@ -58,6 +82,7 @@ Trade[XYZ] pure backtest:
 Strategy Authoring fixed-horizon backtest:
   public CLI あり。
   uv run sis strategy-author-run --spec <path> --through backtest
+  ただし example spec の validate は現時点で data/research/feature_panel.parquet 不在により失敗する。
 
 TradeCandidate:
   src/sis/research/strategy_lab/candidates.py で execution_venue が Literal["trade_xyz"]。
@@ -67,9 +92,19 @@ PaperIntentPreview:
 
 StrategyExperimentSpec / StrategySignalRecord:
   src/sis/research/strategy_lab/specs.py で SymbolBinding と StrategySignalRecord が trade_xyz 固定。
+  同じ specs.py の PROXY_REQUIREMENTS は XYZ100->QQQ, SP500->SPY を強制している。
+  この制約は Trade[XYZ] proxy symbol 向けであり、bitget_demo の crypto symbol にそのまま適用してはいけない。
 
 strategy_signal schema:
   schemas/strategy_signal.v1.schema.json で execution_venue が const trade_xyz。
+
+trade_candidate / paper_intent_preview schema:
+  schemas/trade_candidate.v1.schema.json と schemas/paper_intent_preview.v1.schema.json は execution_venue を required にしている。
+  ただし schema 上の enum / const は未定義。
+  現状は Pydantic model だけが trade_xyz に制限しており、schema/model parity が崩れている。
+
+paper preview compiler:
+  src/sis/research/strategy_lab/authoring/compiler/paper_preview.py に Literal["trade_xyz"] cast が残っている。
 
 ExecutionAdapter:
   src/sis/execution/base.py に汎用 Protocol がある。
@@ -81,17 +116,25 @@ Trade[XYZ] collector:
 Bitget 公式 docs から確認した事実:
 
 ```text
+確認時刻:
+  2026-06-05_22:48 JST
+
 Bitget demo trading:
   Demo API Key が必要。
   REST demo trading では request header に paptrading: 1 を付ける。
-  WebSocket demo trading は demo 用 public/private endpoint を使う。
+  Classic WebSocket demo trading は demo 用 public/private endpoint を使う。
   docs には KYC が必要と記載されている。
+
+Bitget UTA:
+  v3 API / UTA docs は 2026年5月にも変更が入っている。
+  adapter 実装前に classic demo v2 と UTA v3 のどちらを最初の対象にするか決める必要がある。
 ```
 
 参照:
 
 - <https://www.bitget.com/api-doc/classic/demotrading/restapi>
 - <https://www.bitget.com/api-doc/classic/demotrading/websocket>
+- <https://www.bitget.com/api-doc/uta/changelog>
 
 ## 目的
 
@@ -185,6 +228,8 @@ uv run sis strategy-author-run --spec <spec.yaml> --through backtest
 
 これは Trade[XYZ] pure backtest とは別 surface だが、最短で戦略評価ループを回すにはこちらが実務的である。
 
+ただし、2026-06-05_22:48 JST 時点では example spec の validation が `data/research/feature_panel.parquet` 不在で失敗する。したがって最初の実装タスクは Bitget 接続ではなく、既存 backtest 入力の棚卸しと、欠けている最小 fixture / 既存生成手順の確定である。
+
 Trade[XYZ] pure backtest は、後で engine 汎用化または public CLI 化を検討する。
 
 ### 3. venue-neutral 化は最小範囲から行う
@@ -220,6 +265,58 @@ OrderIntent / PaperIntentPreview 相当
 
 最初の目的は収益性検証ではない。注文 lifecycle と状態同期の検証である。
 
+Bitget adapter 実装前に、次を必ず決める。
+
+```text
+first lane:
+  classic demo v2
+  UTA v3 demo
+  spot
+  USDT futures
+
+決め方:
+  1. ユーザーが実際に作れる Demo API Key / account type を確認する。
+  2. 実装直前に公式 docs を再確認する。
+  3. endpoint / path / permission / rate limit / request header を lane ごとに1枚の docs に残す。
+  4. その後に mock-first adapter を実装する。
+```
+
+## データ方針
+
+backtest-first で使うデータの優先順位:
+
+```text
+1. 既存 local artifact:
+   data/research/feature_panel.parquet
+   data/normalized/quotes.parquet
+   data/research/venue_cost_matrix.csv
+
+2. 既存 generator / ingestion command:
+   repo内の既存 CLI / scripts で再生成できるなら、それを使う。
+
+3. deterministic fixture:
+   既存 generator が重い、または外部 credential が必要なら、最小 fixture を tests / docs example 用に作る。
+
+4. external exchange API:
+   Bitget や Trade[XYZ] の外部 API から新規取得するのは最後。
+```
+
+現時点の確認:
+
+```text
+存在する:
+  data/normalized/quotes.parquet
+  docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+
+見つかっていない:
+  data/research/feature_panel.parquet
+  data/research/venue_cost_matrix.csv
+
+実行結果:
+  uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+  -> feature_panel_path not found: data/research/feature_panel.parquet
+```
+
 ## 対象ファイル
 
 ### docs / handoff
@@ -238,7 +335,11 @@ src/sis/research/strategy_lab/specs.py
 src/sis/research/strategy_lab/candidates.py
 src/sis/research/strategy_lab/paper_intent_preview.py
 src/sis/research/strategy_lab/signal_registry.py
+src/sis/research/strategy_lab/evaluation_plan.py
+src/sis/research/strategy_lab/authoring/contracts/spec.py
+src/sis/research/strategy_lab/authoring/io.py
 src/sis/research/strategy_lab/authoring/compiler/paper_preview.py
+src/sis/venues/ids.py
 schemas/strategy_signal.v1.schema.json
 schemas/trade_candidate.v1.schema.json
 schemas/paper_intent_preview.v1.schema.json
@@ -330,6 +431,79 @@ notes:
 ```text
 実行中process停止を含むため medium。
 データ削除はしない。
+停止前に必ず process / lock / log を再読込する。
+SIGKILL は使わず、まず supervisor と cycle process に SIGTERM を送る。
+lock は process が消え、log で停止状態を確認してから扱う。
+stale lock を削除する場合も、対応 PID が存在しないことを確認してから行う。
+```
+
+### T1a: Backtest baseline の入力棚卸しと最初の validate を通す
+
+goal:
+
+```text
+Bitget / Trade[XYZ] 追加収集に進む前に、既存 Strategy Authoring example を使って backtest 入力の欠けを確定し、最小の再現入力を用意する。
+```
+
+target_files:
+
+```text
+docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md
+docs/backtest/README.md
+docs/OPERATIONS_RUNBOOK.md
+docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+data/research/feature_panel.parquet
+data/research/venue_cost_matrix.csv
+data/normalized/quotes.parquet
+tests/strategy_authoring/
+```
+
+out_of_scope:
+
+```text
+Bitget API 接続
+Trade[XYZ] 追加収集
+Strategy Authoring の設計変更
+production live order
+```
+
+implementation notes:
+
+```text
+最初に確認するもの:
+  1. example spec が参照する feature_panel_path / quote_data_path / cost_model_path。
+  2. それらを生成する既存 CLI / scripts の有無。
+  3. 既存 generator がない、または外部 credential を要求する場合の deterministic fixture 方針。
+
+2026-06-05_22:48 JST の確認:
+  quote_data_path は存在する。
+  feature_panel_path は存在しない。
+  cost_model_path は存在しない。
+  strategy-author-validate は feature_panel_path not found で exit 2。
+```
+
+acceptance:
+
+```text
+1. `uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml` が通る。
+2. 入力 artifact の出所が docs に明記される。
+3. fixture を作る場合は deterministic で、外部 API / credential に依存しない。
+4. backtest を通すためだけに Bitget API や Trade[XYZ] collector を使わない。
+```
+
+verification:
+
+```bash
+find data/research data/normalized docs/strategy_research_lab/examples -maxdepth 2 -type f \( -name 'feature_panel.parquet' -o -name 'quotes.parquet' -o -name 'venue_cost_matrix.csv' -o -name '*authoring_spec*.yaml' \) -print | sort
+uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run pytest -q tests/strategy_authoring/test_contracts_validation.py
+uv run python scripts/check_current_docs.py
+```
+
+destructive_level:
+
+```text
+low
 ```
 
 ### T1: Backtest-first の最短実行経路を固定する
@@ -337,7 +511,7 @@ notes:
 goal:
 
 ```text
-Trade[XYZ] readiness を待たず、既存 public CLI で Strategy Authoring backtest を1回通す再現手順を固定する。
+Trade[XYZ] readiness を待たず、既存 public CLI で Strategy Authoring backtest を1回通す再現手順と artifact を固定する。
 ```
 
 target_files:
@@ -346,8 +520,12 @@ target_files:
 docs/backtest/README.md
 docs/OPERATIONS_RUNBOOK.md
 docs/strategy_research_lab/examples/
+data/research/strategy_signals.parquet
+data/research/strategy_signals.jsonl
+data/research/strategy_signal_manifest.json
 data/reports/strategy_backtest_report.md
 data/research/strategy_backtest_metrics.json
+data/research/strategy_authoring_run.json
 ```
 
 out_of_scope:
@@ -365,6 +543,8 @@ acceptance:
 2. 出力 artifact が明記されている。
 3. 失敗時に見る validation error / missing input が明記されている。
 4. backtest は paper-only で live ready ではないと明記されている。
+5. `data/research/strategy_authoring_run.json` の `through` が `backtest` である。
+6. `data/research/strategy_backtest_metrics.json` と `data/reports/strategy_backtest_report.md` が生成される。
 ```
 
 verification:
@@ -395,6 +575,11 @@ target_files:
 src/sis/research/strategy_lab/specs.py
 src/sis/research/strategy_lab/candidates.py
 src/sis/research/strategy_lab/paper_intent_preview.py
+src/sis/research/strategy_lab/evaluation_plan.py
+src/sis/research/strategy_lab/authoring/contracts/spec.py
+src/sis/research/strategy_lab/authoring/io.py
+src/sis/research/strategy_lab/authoring/compiler/paper_preview.py
+src/sis/venues/ids.py
 schemas/strategy_signal.v1.schema.json
 schemas/trade_candidate.v1.schema.json
 schemas/paper_intent_preview.v1.schema.json
@@ -419,6 +604,24 @@ implementation notes:
   過度な抽象化を避ける。
   既存 tests の trade_xyz 期待は残す。
   bitget_demo は demo execution 用で、本番 bitget live と混同しない。
+
+必ず修正対象に含めるもの:
+  src/sis/research/strategy_lab/specs.py の SymbolBinding / StrategySignalRecord。
+  src/sis/research/strategy_lab/candidates.py の TradeCandidate。
+  src/sis/research/strategy_lab/paper_intent_preview.py の PaperIntentPreview。
+  src/sis/research/strategy_lab/authoring/compiler/paper_preview.py の Literal["trade_xyz"] cast。
+  src/sis/research/strategy_lab/evaluation_plan.py の target_venue。
+  schemas/strategy_signal.v1.schema.json の execution_venue const。
+  schemas/trade_candidate.v1.schema.json / schemas/paper_intent_preview.v1.schema.json の execution_venue schema。
+
+PROXY_REQUIREMENTS:
+  XYZ100->QQQ, SP500->SPY は Trade[XYZ] proxy symbol だけに適用する。
+  bitget_demo の BTCUSDT などには適用しない。
+  ただし proxy validation を削除して既存 Trade[XYZ] guard を弱めない。
+
+schema/model parity:
+  Pydantic model と JSON Schema で許可 venue を揃える。
+  片方だけ bitget_demo を許す状態を残さない。
 ```
 
 acceptance:
@@ -428,6 +631,8 @@ acceptance:
 2. bitget_demo の最小 fixture が validation を通る。
 3. schema と Pydantic model の許容 venue が一致する。
 4. PaperIntentPreview の安全フラグは維持される。
+5. Trade[XYZ] proxy symbol validation は trade_xyz では維持され、bitget_demo では誤適用されない。
+6. `paper_preview.py` に trade_xyz 固定 cast が残っていない。
 ```
 
 verification:
@@ -482,6 +687,9 @@ implementation notes:
   fee model lookup を venue 別にする。
   venue が bitget_demo の場合も paper-only fill / block ができるようにする。
   quote schema は最低限 venue, canonical_symbol, ts_client, bid/ask/mid/mark, market_status, is_tradable を使う。
+  paper-from-intents は intent.execution_venue と intent.execution_symbol / canonical_symbol に合う quote が必要。
+  bitget_demo の最初の検証では alias 解決を増やさず、fixture quote 側に bitget_demo の venue と symbol を持たせる。
+  alias / symbol mapping は必要になった時に別タスクで追加する。
 ```
 
 acceptance:
@@ -491,6 +699,7 @@ acceptance:
 2. bitget_demo intent + fixture quote で paper order / fill / observation ledger が生成される。
 3. live_order_submitted=false, wallet_used=false, exchange_write_used=false が維持される。
 4. quote missing 時は LATEST_QUOTE_MISSING で block される。
+5. quote alias の暗黙フォールバックで別 venue の価格を拾わない。
 ```
 
 verification:
@@ -499,6 +708,81 @@ verification:
 uv run pytest -q tests/test_paper_from_intents_venue_neutral.py
 uv run sis paper-from-intents --intents-path <fixture-or-generated-intents>
 uv run pytest -q tests/strategy_authoring
+```
+
+destructive_level:
+
+```text
+low
+```
+
+### T4a: Bitget API lane を実装前に決める
+
+goal:
+
+```text
+Bitget adapter 実装前に、最初に接続する API lane を1つだけ選び、公式 docs から endpoint / auth / permission / rate limit / account type を固定する。
+```
+
+target_files:
+
+```text
+docs/OPERATIONS_RUNBOOK.md
+docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md
+configs/env.example
+.env.example
+```
+
+out_of_scope:
+
+```text
+adapter 実装
+credential 作成
+外部 API 実行
+demo order submit
+```
+
+implementation notes:
+
+```text
+選択肢:
+  classic demo v2 spot
+  classic demo v2 futures
+  UTA v3 spot
+  UTA v3 USDT futures
+
+2026-06-05_22:48 JST の公式 docs 確認:
+  classic demo REST は Demo API Key と paptrading: 1 header が必要。
+  classic demo WebSocket は wss://wspap.bitget.com/v2/ws/public と wss://wspap.bitget.com/v2/ws/private。
+  UTA v3 は 2026年5月にも changelog 更新があり、classic demo v2 と混ぜて設計しない。
+
+決定時に残す情報:
+  lane name
+  product type
+  REST base/path
+  WebSocket endpoint
+  required headers
+  credential names
+  read-only endpoint
+  write endpoint
+  rate limit
+  docs URL
+  docs checked timestamp
+```
+
+acceptance:
+
+```text
+1. first lane が1つだけ選ばれている。
+2. docs checked timestamp と公式 docs URL が残っている。
+3. adapter 実装で使う endpoint / header / permission が lane ごとに分かる。
+4. classic v2 と UTA v3 の endpoint / permission が混ざっていない。
+```
+
+verification:
+
+```bash
+uv run python scripts/check_current_docs.py
 ```
 
 destructive_level:
@@ -538,13 +822,16 @@ credential を repo に保存すること
 implementation notes:
 
 ```text
-Bitget demo REST:
-  Demo API Key を使う。
-  request header に paptrading: 1 を付ける。
+前提:
+  T4a で選んだ API lane だけを対象にする。
+  endpoint / header / path は T4a の docs checked timestamp に紐づける。
+  実装中に公式 docs が変わっていた場合は、adapter ではなく T4a の docs を先に更新する。
 
-Bitget demo WS:
-  public: wss://wspap.bitget.com/v2/ws/public
-  private: wss://wspap.bitget.com/v2/ws/private
+classic demo v2 を選んだ場合の確認済み前提:
+  Demo API Key を使う。
+  REST request header に paptrading: 1 を付ける。
+  WebSocket public は wss://wspap.bitget.com/v2/ws/public。
+  WebSocket private は wss://wspap.bitget.com/v2/ws/private。
 
 最初の adapter:
   read_balance
