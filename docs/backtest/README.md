@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-05_22:12 JST
 -->
 
 # Backtest Docs
@@ -18,6 +18,9 @@
 | Legacy backtest bridge | `uv run sis build-backtest` | 互換維持 | Strategy Lab / historical bridge系の簡易評価 |
 
 最初に読むべき詳細は [TRADE_XYZ_PURE_BACKTEST_V0_1.md](TRADE_XYZ_PURE_BACKTEST_V0_1.md) です。
+Trade[XYZ] を当面の注文口にせず、バックテスト優先へ切り替える計画は
+[BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md](BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md)
+を見ます。
 
 ## Trade[XYZ] Pure Backtest v0.1
 

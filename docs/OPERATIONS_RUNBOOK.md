@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-05_20:25 JST
+更新日: 2026-06-05_22:12 JST
 -->
 
 # Operations Runbook
@@ -284,6 +284,8 @@ Failure behavior:
 ## Trade[XYZ] Pure Backtest
 
 Trade[XYZ] pure backtest v0.1 は public CLI ではなく Python API surface です。`uv run sis build-backtest` は既存 bridge 系 command であり、pure backtest の入口ではありません。
+Trade[XYZ] を当面の注文口にせず、backtest-first / venue-neutral に切り替える計画は
+[BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md](backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md) を見る。
 
 docs:
 
