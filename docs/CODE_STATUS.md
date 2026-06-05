@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-05_20:25 JST
 -->
 
 # Code Status
@@ -101,7 +101,7 @@ PR-08:
 - targeted P2 tests: Trade[XYZ] / quote diagnostics / phase gate / Alpaca / tracking tests pass
 - latest strict validation: `checked_files=12`, `issues=0`
 - latest phase gate: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5`
-- latest data readiness: `NOT_READY`, fail=`quote_coverage`, known gap=`oracle_timestamp_provenance`; `real_market_reference` and `account_specific_fee` are pass.
+- latest data readiness: `NOT_READY`, fail=`quote_coverage`, known gaps=`funding_events`,`oracle_timestamp_provenance`; `real_market_reference`, `signal_candles`, and `account_specific_fee` are pass. `funding_events_from_history` is usable but partial: `row_count=605`, `skipped.missing_oracle_quote_within_lag=671`.
 
 ## Reading Pointers
 

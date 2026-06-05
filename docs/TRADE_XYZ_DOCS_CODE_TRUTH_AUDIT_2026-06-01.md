@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_14:13 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-05_20:25 JST
 -->
 
 # Trade[XYZ] Docs Code-Truth Audit
@@ -99,15 +99,16 @@ readiness_decision: NOT_READY
 failing_requirements:
   - quote_coverage
 known_gap_requirements:
+  - funding_events
   - oracle_timestamp_provenance
 pass_requirements:
   - real_market_reference
   - account_specific_fee
 signal_candles: pass
-funding_events: pass
+funding_events: known_gap
 ```
 
-real market reference と account-specific fee は現在の readiness manifest では pass である。残る fail は quote coverage、known gap は oracle timestamp provenance である。
+real market reference、signal candles、account-specific fee は現在の readiness manifest では pass である。残る fail は quote coverage、known gap は funding events と oracle timestamp provenance である。funding history join は `usable_as_backtest_funding_event=true` まで進んだが、`skipped.missing_oracle_quote_within_lag=671` が残るため、完了扱いしない。
 
 ## 次に更新するなら
 

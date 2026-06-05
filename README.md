@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-05_20:25 JST
 -->
 
 # marketlens-strike
@@ -157,7 +157,7 @@ Strategy idea preparation starts at
 - `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
 - `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
 - current execution drift classification: `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5`
-- `trade_xyz_data_readiness_manifest.json`: `NOT_READY`, `backtest_data_ready=false`, fail=`quote_coverage`, known gap=`oracle_timestamp_provenance`
+- `trade_xyz_data_readiness_manifest.json`: `NOT_READY`, `backtest_data_ready=false`, fail=`quote_coverage`, known gaps=`funding_events`,`oracle_timestamp_provenance`
 
 `READ_ONLY_GO` means the read-only / paper gate is clear. It does not mean
 production live trading is ready.

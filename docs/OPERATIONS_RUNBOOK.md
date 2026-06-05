@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-05_07:57 JST
+更新日: 2026-06-05_20:25 JST
 -->
 
 # Operations Runbook
@@ -409,8 +409,9 @@ uv run sis phase-gate-review
 
 - `data/ops/phase_gate_review_summary.json`: `phase_gate_decision=READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
 - `data/ops/phase_gate_review_summary.json`: `execution_drift_classification_counts={"P2_BLOCKER":0,"LIVE_READINESS_BLOCKER":5}`
-- `data/manifests/trade_xyz_data_readiness_manifest.json`: `decision=NOT_READY`, `backtest_data_ready=false`, fail=`quote_coverage`, known gap=`oracle_timestamp_provenance`
-- `data/manifests/trade_xyz_data_readiness_manifest.json`: `real_market_reference` and `account_specific_fee` are pass
+- `data/manifests/trade_xyz_data_readiness_manifest.json`: `decision=NOT_READY`, `backtest_data_ready=false`, fail=`quote_coverage`, known gaps=`funding_events`,`oracle_timestamp_provenance`
+- `data/manifests/trade_xyz_data_readiness_manifest.json`: `real_market_reference`, `signal_candles`, and `account_specific_fee` are pass
+- `data/manifests/funding_history_join_manifest.json`: `row_count=605`, `usable_as_backtest_funding_event=true`, `skipped.missing_oracle_quote_within_lag=671`
 
 2026-05-27 の PR12 long-window evidence:
 

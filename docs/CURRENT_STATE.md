@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-05_20:25 JST
 -->
 
 # Current State
@@ -12,7 +12,7 @@
 - `plan/archive/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
 - repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
 - PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、最新 phase gate は `READ_ONLY_GO`。
-- Trade[XYZ] 実データ readiness はまだ `NOT_READY`。現在の fail は `quote_coverage` だけで、known gap は `oracle_timestamp_provenance` だけである。
+- Trade[XYZ] 実データ readiness はまだ `NOT_READY`。現在の fail は `quote_coverage` だけで、known gap は `funding_events` と `oracle_timestamp_provenance` である。
 - Trade[XYZ] の対象銘柄は fee mode / taker fee / maker fee を registry と raw quote row に持つ。`fee_mode_unknown_rate` は current gate blocker ではない。
 - Trade[XYZ] pure backtest v0.1 は `src/sis/backtest/engine/` と `src/sis/backtest/trade_xyz/` に実装済み。入口は Python API の `run_backtest()` で、public CLI は未公開。
 - Strategy Research Lab の schema / model / CLI surface は実装済み。`StrategyExperimentSpec` から `PaperIntentPreview` までを研究、候補生成、評価、paper昇格判断として扱う。
@@ -98,7 +98,7 @@
 - latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `next_actions=[]`
 - latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded. Current classification is `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5`; read-only/paper readiness and live execution readiness are separate surfaces.
 - latest phase gate remediation order is `none` when only live-readiness blockers remain. Do not run `refresh-operations-artifacts` as a P2 remediation loop for those blockers.
-- latest Trade[XYZ] data readiness: `decision=NOT_READY`, `backtest_data_ready=false`, `fail_count=1`, `known_gap_count=1`, fail=`quote_coverage`, known gap=`oracle_timestamp_provenance`; `real_market_reference` and `account_specific_fee` are pass.
+- latest Trade[XYZ] data readiness: `decision=NOT_READY`, `backtest_data_ready=false`, `fail_count=1`, `known_gap_count=2`, fail=`quote_coverage`, known gaps=`funding_events`,`oracle_timestamp_provenance`; `real_market_reference`, `signal_candles`, and `account_specific_fee` are pass. `funding_events_from_history` is usable but partial: `row_count=605`, `skipped.missing_oracle_quote_within_lag=671`.
 
 PR-08 専用確認:
 
