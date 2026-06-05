@@ -24,6 +24,7 @@ from sis.reports.execution_adapter_status import (
 from sis.settings import get_settings
 from sis.state.reconciliation import reconcile_positions
 from sis.state.store import StateStore
+from sis.storage.jsonl_store import write_json
 
 
 class _StateStoreFactory(Protocol):
@@ -193,6 +194,72 @@ def register_execution_commands(
             typer.echo(f"{key}={balance[key]}")
         for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
             typer.echo(f"recommended_read_order_{index}={item}")
+
+    @app.command("bitget-demo-smoke")
+    def bitget_demo_smoke_cmd() -> None:
+        settings = get_settings()
+        adapter = adapter_for_venue_fn(settings.data_dir, "bitget_demo")
+        healthcheck = adapter.healthcheck()
+        status = "configured" if healthcheck.get("available") else "blocked"
+        generated_at = datetime.now(timezone.utc).isoformat()
+        summary = {
+            "schema_version": "bitget_demo_smoke_summary.v1",
+            "generated_at": generated_at,
+            "status": status,
+            "venue": "bitget_demo",
+            "available": bool(healthcheck.get("available")),
+            "credential_status": healthcheck.get("credential_status"),
+            "missing_env": healthcheck.get("missing_env", []),
+            "rest_base_url": healthcheck.get("rest_base_url"),
+            "ws_public_endpoint": healthcheck.get("ws_public_endpoint"),
+            "ws_private_endpoint": healthcheck.get("ws_private_endpoint"),
+            "paptrading_header": healthcheck.get("paptrading_header"),
+            "external_write_enabled": False,
+            "exchange_write_used": False,
+            "read_only_network_probe": healthcheck.get("read_only_network_probe"),
+        }
+        summary_path = settings.data_dir / "ops/bitget_demo_smoke_summary.json"
+        report_path = settings.data_dir / "reports/bitget_demo_smoke.md"
+        write_json(summary_path, summary)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(
+            "\n".join(
+                [
+                    "# Bitget Demo Smoke",
+                    "",
+                    f"generated_at: {generated_at}",
+                    f"status: {status}",
+                    "venue: bitget_demo",
+                    f"available: {summary['available']}",
+                    f"credential_status: {summary['credential_status']}",
+                    f"missing_env: {','.join(summary['missing_env'])}",
+                    f"rest_base_url: {summary['rest_base_url']}",
+                    f"ws_public_endpoint: {summary['ws_public_endpoint']}",
+                    f"ws_private_endpoint: {summary['ws_private_endpoint']}",
+                    f"paptrading_header: {summary['paptrading_header']}",
+                    "external_write_enabled: False",
+                    "exchange_write_used: False",
+                    f"read_only_network_probe: {summary['read_only_network_probe']}",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        typer.echo(f"status={status}")
+        typer.echo(f"venue={summary['venue']}")
+        typer.echo(f"available={summary['available']}")
+        typer.echo(f"credential_status={summary['credential_status']}")
+        typer.echo(f"missing_env={','.join(summary['missing_env'])}")
+        typer.echo(f"paptrading_header={summary['paptrading_header']}")
+        typer.echo(f"external_write_enabled={summary['external_write_enabled']}")
+        typer.echo(f"exchange_write_used={summary['exchange_write_used']}")
+        typer.echo(f"read_only_network_probe={summary['read_only_network_probe']}")
+        typer.echo(f"summary_path={summary_path}")
+        typer.echo(f"report_path={report_path}")
+        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
+            typer.echo(f"recommended_read_order_{index}={item}")
+        if status != "configured":
+            raise typer.Exit(2)
 
     @app.command("fill-status")
     def fill_status_cmd(

@@ -123,6 +123,22 @@ def _load_paper_intents(path: Path) -> list[PaperIntentPreview]:
     return [PaperIntentPreview.model_validate(row) for row in rows]
 
 
+def _load_fee_model_for_intents(intents: list[PaperIntentPreview]) -> dict:
+    venues = {"trade_xyz", *(intent.execution_venue for intent in intents)}
+    merged: dict = {"fee_model": {}}
+    for venue in sorted(venues):
+        fee_model_path = Path(f"configs/fee_model.{venue}.yaml")
+        if not fee_model_path.exists():
+            continue
+        payload = yaml.safe_load(fee_model_path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            continue
+        fee_model = payload.get("fee_model")
+        if isinstance(fee_model, dict):
+            merged["fee_model"].update(fee_model)
+    return merged
+
+
 def _action_for_intent(intent: PaperIntentPreview) -> str:
     if intent.action == "skip" or intent.side == "none":
         return "skip"
@@ -155,12 +171,7 @@ def run_paper_from_intents(
     latest_quotes = _latest_quote_by_symbol(quotes)
     intents = _load_paper_intents(intents_path)
     halt_policy = load_halt_policy(Path("configs/halt_policy.yaml"))
-    fee_model_path = Path("configs/fee_model.trade_xyz.yaml")
-    fee_model = (
-        yaml.safe_load(fee_model_path.read_text(encoding="utf-8"))
-        if fee_model_path.exists()
-        else {}
-    )
+    fee_model = _load_fee_model_for_intents(intents)
     broker = PaperBroker(
         halt_policy=halt_policy, fee_model=fee_model if isinstance(fee_model, dict) else {}
     )

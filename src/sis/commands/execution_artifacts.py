@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 import typer
 
+from sis.execution.bitget_demo_adapter import BitgetDemoAdapter
 from sis.reports.execution_adapter_status import build_execution_read_only_surfaces_report
 from sis.reports.execution_snapshot import build_execution_snapshot_report
 from sis.reports.execution_venue_comparison import build_execution_venue_comparison_report
@@ -12,6 +13,10 @@ from sis.reports.execution_venue_diagnostics import build_execution_venue_diagno
 
 
 def _adapter_for_venue(settings_data_dir: Path, venue: str):
+    del settings_data_dir
+    normalized = venue.strip().lower()
+    if normalized == "bitget_demo":
+        return BitgetDemoAdapter.from_env()
     raise typer.BadParameter(
         f"Unsupported venue: {venue}. Legacy gTrade/Ostium adapters were zipped and removed; "
         "Trade[XYZ] live execution is exposed through the micro-live safety path, not this "
@@ -39,6 +44,30 @@ def _trade_xyz_read_only_surface(settings_data_dir: Path) -> dict[str, object]:
     }
 
 
+def _bitget_demo_read_only_surface() -> dict[str, object]:
+    healthcheck = BitgetDemoAdapter.from_env().healthcheck()
+    return {
+        "venue": "bitget_demo",
+        "registry_exists": False,
+        "balance_snapshot_exists": False,
+        "positions_snapshot_exists": False,
+        "fills_snapshot_exists": False,
+        "order_status_snapshot_exists": False,
+        "positions_count": 0,
+        "fills_count": 0,
+        "order_status_count": 0,
+        "collector_status": "not_connected",
+        "collector_reason": "bitget_demo_read_only_network_probe_not_executed",
+        "collector_root_source": "bitget_demo_adapter.healthcheck",
+        "read_only_endpoint_scope": "local_healthcheck_only",
+        "credential_status": healthcheck["credential_status"],
+        "missing_env": healthcheck["missing_env"],
+        "external_write_enabled": False,
+        "paptrading_header": healthcheck["paptrading_header"],
+        "next_action": "set_bitget_demo_credentials_then_run_bitget_demo_smoke",
+    }
+
+
 def _write_execution_snapshot(
     settings_data_dir: Path,
     *,
@@ -49,7 +78,10 @@ def _write_execution_snapshot(
     out = settings_data_dir / "reports/execution_snapshot.md"
     summary_out = settings_data_dir / "ops/execution_snapshot_summary.json"
     text = build_execution_snapshot_report(
-        venue_snapshots=[_trade_xyz_read_only_surface(settings_data_dir)],
+        venue_snapshots=[
+            _trade_xyz_read_only_surface(settings_data_dir),
+            _bitget_demo_read_only_surface(),
+        ],
         out_path=out,
         summary_path=summary_out,
     )
@@ -155,7 +187,10 @@ def _write_execution_read_only_surfaces(
     out = settings_data_dir / "reports/execution_read_only_surfaces.md"
     summary_out = settings_data_dir / "ops/execution_read_only_surfaces_summary.json"
     text = build_execution_read_only_surfaces_report(
-        venue_surfaces=[_trade_xyz_read_only_surface(settings_data_dir)],
+        venue_surfaces=[
+            _trade_xyz_read_only_surface(settings_data_dir),
+            _bitget_demo_read_only_surface(),
+        ],
         out_path=out,
         summary_path=summary_out,
     )

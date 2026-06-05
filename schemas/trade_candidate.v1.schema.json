@@ -11,6 +11,7 @@
   ],
   "properties": {
     "schema_version": { "const": "trade_candidate.v1" },
+    "execution_venue": { "enum": ["trade_xyz", "bitget_demo"] },
     "live_order_submitted": { "const": false },
     "stop_loss_bps": { "type": ["number", "null"], "minimum": 0 },
     "min_stop_loss_bps": { "type": ["number", "null"], "minimum": 0 },

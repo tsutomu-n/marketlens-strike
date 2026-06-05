@@ -13,9 +13,9 @@ experiment:
       currency: USD
   run_profile_id: strategy_lab_research_only
 data:
-  feature_panel_path: data/research/feature_panel.parquet
-  quote_data_path: data/normalized/quotes.parquet
-  cost_model_path: data/research/venue_cost_matrix.csv
+  feature_panel_path: data/research/strategy_authoring_baseline_feature_panel.parquet
+  quote_data_path: data/research/strategy_authoring_baseline_quotes.parquet
+  cost_model_path: data/research/strategy_authoring_baseline_venue_cost_matrix.csv
 rules:
   side: long
   timeframe: 4h

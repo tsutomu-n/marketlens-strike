@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-05_22:12 JST
+更新日: 2026-06-05_23:17 JST
 -->
 
 # Operations Runbook
@@ -231,6 +231,48 @@ stop conditions:
 - Do not treat `PaperIntentPreview` as `OrderIntent` or live order.
 - Do not override `live_conversion_allowed=false`, `wallet_used=false`, or `exchange_write_used=false`.
 - Use `profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, and `live_ready_claimed` for forbidden claim names. Legacy `*_claim` names are not the current Strategy Lab claim names.
+
+backtest-first baseline path:
+
+```bash
+uv run python scripts/seed_strategy_authoring_baseline_data.py
+uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+```
+
+baseline artifacts:
+
+- `data/research/strategy_authoring_baseline_feature_panel.parquet`
+- `data/research/strategy_authoring_baseline_quotes.parquet`
+- `data/research/strategy_authoring_baseline_venue_cost_matrix.csv`
+- `data/research/strategy_signals.parquet`
+- `data/research/strategy_backtest_metrics.json`
+- `data/research/strategy_authoring_run.json`
+- `data/reports/strategy_backtest_report.md`
+
+Bitget demo local smoke:
+
+```bash
+uv run sis bitget-demo-smoke --help
+uv run sis bitget-demo-smoke
+```
+
+Bitget demo env names:
+
+```text
+BITGET_DEMO_API_KEY=
+BITGET_DEMO_API_SECRET=
+BITGET_DEMO_PASSPHRASE=
+```
+
+Bitget demo boundaries:
+
+- `bitget-demo-smoke` without credentials exits 2 with `status=blocked`.
+- With the three env values present, it exits 0 with `status=configured`.
+- `status=configured` only means local credentials are present; it does not prove Bitget network connectivity, account read, order submit, or fill sync.
+- Current local smoke writes `data/ops/bitget_demo_smoke_summary.json` and `data/reports/bitget_demo_smoke.md`.
+- Current local smoke always keeps `read_only_network_probe=not_executed`, `external_write_enabled=false`, and `exchange_write_used=false`.
+- Credentialed read-only network smoke and demo order lifecycle are future explicit opt-in tasks. Do not run external Bitget API calls or write APIs unless the user gives credentials and explicitly authorizes that step.
 
 Alpaca provider:
 

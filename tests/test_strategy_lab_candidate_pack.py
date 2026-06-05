@@ -44,6 +44,20 @@ def test_trade_candidate_is_not_live_order() -> None:
     assert candidate.real_market_symbol == "QQQ"
 
 
+def test_trade_candidate_accepts_bitget_demo_venue() -> None:
+    candidate = TradeCandidate(
+        **{
+            **_candidate("candidate-bitget-001").model_dump(),
+            "execution_venue": "bitget_demo",
+            "execution_symbol": "BTCUSDT",
+            "real_market_symbol": "BTCUSDT",
+        }
+    )
+
+    assert candidate.execution_venue == "bitget_demo"
+    assert candidate.live_order_submitted is False
+
+
 def test_trade_candidate_rejects_live_order_claim() -> None:
     with pytest.raises(ValidationError, match="live_order_submitted"):
         TradeCandidate(**{**_candidate("candidate-001").model_dump(), "live_order_submitted": True})

@@ -46,6 +46,18 @@ def test_paper_intent_preview_is_paper_only_and_requires_revalidation() -> None:
     assert intent.exchange_write_used is False
 
 
+def test_paper_intent_preview_accepts_bitget_demo_venue() -> None:
+    intent = _intent(
+        execution_venue="bitget_demo",
+        execution_symbol="BTCUSDT",
+        real_market_symbol="BTCUSDT",
+    )
+
+    assert intent.execution_venue == "bitget_demo"
+    assert intent.paper_only is True
+    assert intent.exchange_write_used is False
+
+
 def test_paper_intent_preview_rejects_live_conversion() -> None:
     with pytest.raises(ValidationError, match="live_conversion_allowed"):
         _intent(live_conversion_allowed=True)

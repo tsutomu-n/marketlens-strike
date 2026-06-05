@@ -35,6 +35,19 @@ def test_symbol_binding_requires_explicit_proxy_for_xyz100() -> None:
         )
 
 
+def test_symbol_binding_allows_bitget_demo_without_trade_xyz_proxy() -> None:
+    binding = SymbolBinding(
+        execution_venue="bitget_demo",
+        execution_symbol="BTCUSDT",
+        real_market_symbol="BTCUSDT",
+        asset_class="crypto",
+    )
+
+    assert binding.execution_venue == "bitget_demo"
+    assert binding.execution_symbol == "BTCUSDT"
+    assert binding.real_market_symbol == "BTCUSDT"
+
+
 def test_strategy_experiment_spec_rejects_live_claims() -> None:
     with pytest.raises(ValidationError, match="legacy claim names"):
         StrategyExperimentSpec(
@@ -117,3 +130,36 @@ def test_strategy_signal_record_requires_symbol_binding_fields() -> None:
 
     assert signal.execution_symbol == "XYZ100"
     assert signal.real_market_symbol == "QQQ"
+
+
+def test_strategy_signal_record_accepts_bitget_demo_venue() -> None:
+    signal = StrategySignalRecord(
+        schema_version="strategy_signal.v1",
+        signal_id="sig-bitget-001",
+        generated_at=datetime.now(timezone.utc),
+        strategy_id="crypto_momentum_v0",
+        strategy_family="momentum",
+        strategy_version="v0",
+        trial_id=None,
+        parameter_hash=None,
+        ts_signal=datetime.now(timezone.utc),
+        timeframe="4h",
+        execution_venue="bitget_demo",
+        execution_symbol="BTCUSDT",
+        real_market_symbol="BTCUSDT",
+        side="long",
+        raw_score=1.0,
+        rank_score=0.9,
+        percentile_rank=0.9,
+        tail_bucket="top",
+        confidence=0.8,
+        source_confidence=0.75,
+        venue_quality_score=0.82,
+        feature_snapshot_ref="feature_snapshot:demo",
+        quote_ref="quote:demo",
+        tracking_ref="tracking:demo",
+        reason_codes=["fixture"],
+        block_reasons=[],
+    )
+
+    assert signal.execution_venue == "bitget_demo"

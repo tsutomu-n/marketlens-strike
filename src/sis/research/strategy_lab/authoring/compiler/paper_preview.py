@@ -17,6 +17,7 @@ from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
 from sis.research.strategy_lab.promotion_decision import PromotionDecision
 from sis.research.strategy_lab.signal_artifact import signal_artifact_run_id
 from sis.research.strategy_lab.trial_ledger import TrialLedger, TrialRecord
+from sis.venues.ids import VenueId
 
 
 def write_authoring_paper_preview_outputs(
@@ -86,7 +87,7 @@ def write_authoring_paper_preview_outputs(
         status = "candidate" if selected else ("no_signal" if not row else "hold")
         binding = spec.experiment.symbol_bindings[0]
         execution_venue = cast(
-            Literal["trade_xyz"], row.get("execution_venue") if row else binding.execution_venue
+            VenueId, row.get("execution_venue") if row else binding.execution_venue
         )
         side = cast(
             Literal["long", "short", "none"], row.get("side") if selected and row else "none"

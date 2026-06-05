@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from sis.venues.ids import VenueId
+
 ALLOWED_EXIT_PRIORITY_ITEMS = {
     "break_even_stop",
     "stop_loss",
@@ -25,7 +27,7 @@ class TradeCandidate(BaseModel):
     signal_id: str | None
     strategy_id: str
     trial_id: str | None
-    execution_venue: Literal["trade_xyz"]
+    execution_venue: VenueId
     execution_symbol: str
     real_market_symbol: str
     side: Literal["long", "short", "none"]

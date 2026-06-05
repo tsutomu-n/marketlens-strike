@@ -14,6 +14,7 @@
   ],
   "properties": {
     "schema_version": { "const": "paper_intent_preview.v1" },
+    "execution_venue": { "enum": ["trade_xyz", "bitget_demo"] },
     "scorecard_summary": { "type": "object" },
     "requires_revalidation": { "const": true },
     "paper_only": { "const": true },

@@ -1,0 +1,12 @@
+fee_model:
+  bitget_demo:
+    mode: configured_demo_fallback
+    fallback:
+      standard:
+        taker_bps: 5.0
+        maker_bps: 2.0
+    classification:
+      BTCUSDT: standard
+    notes:
+      - Demo fallback for paper-only fixture validation.
+      - Do not treat this as production Bitget live fee evidence.

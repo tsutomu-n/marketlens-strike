@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from sis.venues.ids import VenueId
+
 
 class PaperIntentPreview(BaseModel):
     schema_version: Literal["paper_intent_preview.v1"]
@@ -15,7 +17,7 @@ class PaperIntentPreview(BaseModel):
     source_pack_id: str
     candidate_id: str
     strategy_id: str
-    execution_venue: Literal["trade_xyz"]
+    execution_venue: VenueId
     execution_symbol: str
     real_market_symbol: str
     action: Literal["enter", "exit", "reduce", "skip"]

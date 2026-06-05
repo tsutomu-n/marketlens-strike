@@ -13,7 +13,7 @@
   ],
   "properties": {
     "schema_version": { "const": "strategy_signal.v1" },
-    "execution_venue": { "const": "trade_xyz" },
+    "execution_venue": { "enum": ["trade_xyz", "bitget_demo"] },
     "multi_leg_group_id": { "type": ["string", "null"] },
     "multi_leg_leg_index": { "type": ["integer", "null"], "minimum": 1 },
     "multi_leg_leg_count": { "type": ["integer", "null"], "minimum": 1 },

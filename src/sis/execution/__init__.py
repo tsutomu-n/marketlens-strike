@@ -7,6 +7,17 @@ from sis.execution.base import (
     ExecutionAdapter,
     OrderIntent,
 )
+from sis.execution.bitget_demo_adapter import (
+    BITGET_DEMO_PAPER_HEADER,
+    BITGET_DEMO_PAPER_HEADER_VALUE,
+    BitgetDemoAdapter,
+    BitgetDemoCredentials,
+    build_bitget_demo_headers,
+    missing_bitget_demo_env,
+    parse_bitget_demo_fill,
+    parse_bitget_demo_order_status,
+    sign_bitget_demo_request,
+)
 from sis.execution.live_order_policy import (
     MicroLiveGateInput,
     MicroLivePolicy,
@@ -26,6 +37,10 @@ __all__ = [
     "AdapterPositionSnapshot",
     "AdapterActionResult",
     "AdapterFillSnapshot",
+    "BITGET_DEMO_PAPER_HEADER",
+    "BITGET_DEMO_PAPER_HEADER_VALUE",
+    "BitgetDemoAdapter",
+    "BitgetDemoCredentials",
     "ExecutionAdapter",
     "MicroLiveCanaryRequest",
     "MicroLiveCanaryResult",
@@ -34,7 +49,12 @@ __all__ = [
     "OrderIntent",
     "TradeXyzOrderIntent",
     "TradeXyzSafetyAdapter",
+    "build_bitget_demo_headers",
     "evaluate_micro_live_gates",
     "load_micro_live_policy",
+    "missing_bitget_demo_env",
+    "parse_bitget_demo_fill",
+    "parse_bitget_demo_order_status",
     "run_micro_live_canary",
+    "sign_bitget_demo_request",
 ]

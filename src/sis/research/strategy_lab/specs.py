@@ -6,6 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
 from sis.research.strategy_lab.run_profile import DEFAULT_FORBIDDEN_CLAIMS, LEGACY_FORBIDDEN_CLAIMS
+from sis.venues.ids import VenueId
 
 PROXY_REQUIREMENTS = {
     "XYZ100": {"QQQ"},
@@ -25,7 +26,7 @@ DEFAULT_EXIT_PRIORITY = (
 
 
 class SymbolBinding(BaseModel):
-    execution_venue: Literal["trade_xyz"]
+    execution_venue: VenueId
     execution_symbol: str
     real_market_symbol: str
     asset_class: str
@@ -40,7 +41,11 @@ class SymbolBinding(BaseModel):
             raise ValueError("execution_symbol must be non-empty")
         if not real_market_symbol:
             raise ValueError("real_market_symbol must be non-empty")
-        expected = PROXY_REQUIREMENTS.get(execution_symbol)
+        expected = (
+            PROXY_REQUIREMENTS.get(execution_symbol)
+            if self.execution_venue == "trade_xyz"
+            else None
+        )
         if expected is not None and real_market_symbol not in expected:
             raise ValueError(
                 f"{execution_symbol} requires real_market_symbol in {sorted(expected)}"
@@ -94,7 +99,7 @@ class StrategySignalRecord(BaseModel):
     parameter_hash: str | None
     ts_signal: datetime
     timeframe: str
-    execution_venue: Literal["trade_xyz"]
+    execution_venue: VenueId
     execution_symbol: str
     real_market_symbol: str
     multi_leg_group_id: str | None = None

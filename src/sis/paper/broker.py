@@ -55,9 +55,8 @@ def _round_trip_cost_bps(
 ) -> tuple[str | None, float | None]:
     mode = quote_row.get("fee_mode")
     fee_mode = mode if isinstance(mode, str) else None
-    trade_cfg = (
-        fee_model.get("fee_model", {}).get("trade_xyz", {}) if isinstance(fee_model, dict) else {}
-    )
+    venue = str(quote_row.get("venue") or "trade_xyz").strip().lower()
+    trade_cfg = fee_model.get("fee_model", {}).get(venue, {}) if isinstance(fee_model, dict) else {}
     fallback = trade_cfg.get("fallback", {}) if isinstance(trade_cfg, dict) else {}
     fallback_cfg = fallback.get(fee_mode or "standard", fallback.get("standard", {}))
     taker = _as_float(quote_row.get("taker_fee_bps"))

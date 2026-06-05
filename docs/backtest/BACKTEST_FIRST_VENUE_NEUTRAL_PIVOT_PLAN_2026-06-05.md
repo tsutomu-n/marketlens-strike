@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-05_22:12 JST
-更新日: 2026-06-05_22:48 JST
+更新日: 2026-06-05_23:23 JST
 -->
 
 # Backtest-First Venue-Neutral Pivot Plan 2026-06-05
@@ -60,6 +60,9 @@ M4:
   Bitget API は classic demo v2 か UTA v3 かを公式 docs で選定してから adapter 化する。
 
 M5:
+  credential がある場合だけ Bitget read-only smoke を行う。
+
+M6:
   demo write API は最後。credential と明示許可がない限り実行しない。
 ```
 
@@ -111,6 +114,178 @@ ExecutionAdapter:
 
 Trade[XYZ] collector:
   2026-06-05_22:12 JST 時点でまだ until-ready / data-cycle が稼働中。
+```
+
+## 実行記録
+
+2026-06-05_22:55 JST:
+
+```text
+T0 status:
+  完了。
+
+実行内容:
+  active supervisor / cycle / uv / python PIDs を再確認した。
+  PID 3075198, 3075207, 3075627, 3075635, 3075638, 3075641 に SIGTERM を送った。
+  データ削除はしていない。
+
+確認結果:
+  collector_running=False
+  collector_process_count=0
+  supervisor_running=False
+  supervisor_process_count=0
+  cycle_lock_stale=False
+  supervisor_lock_stale=False
+  .tmp/trade_xyz_data_until_ready.lock は absent
+  .tmp/trade_xyz_data_cycle.lock は absent
+
+status command:
+  uv run sis trade-xyz-collection-status --no-refresh-coverage --no-refresh-readiness --strict
+
+重要:
+  decision=COLLECT_MORE_QUOTES と backtest_data_ready=False は維持。
+  T0 は Trade[XYZ] collector を主経路から外しただけで、Trade[XYZ] backtest readiness を満たしたわけではない。
+```
+
+2026-06-05_23:17 JST:
+
+```text
+T1a / T1 status:
+  完了。
+
+実行内容:
+  既存 ingest-research-data は FRED CSV timeout で macro panel 生成に失敗した。
+  build-cost-matrix は通ったが、build-feature-panel は macro_panel.parquet 不在で失敗した。
+  そのため、外部 API に依存しない baseline 専用 seed script を追加した。
+
+追加:
+  scripts/seed_strategy_authoring_baseline_data.py
+
+生成 artifact:
+  data/research/strategy_authoring_baseline_feature_panel.parquet
+  data/research/strategy_authoring_baseline_quotes.parquet
+  data/research/strategy_authoring_baseline_venue_cost_matrix.csv
+
+spec 更新:
+  docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+  上記 baseline 専用 artifact を参照する。
+
+確認:
+  uv run python scripts/seed_strategy_authoring_baseline_data.py
+  uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+  uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+
+結果:
+  strategy_authoring_spec=valid
+  signal_count=7
+  executed_count=7
+  trade_count=7
+  backtest_passed=True
+  blocked_reason_counts={}
+  live_order_submitted=False
+  paper_only=True
+
+重要:
+  これは baseline fixture による Strategy Authoring backtest 開通であり、Trade[XYZ] の backtest_data_ready=true ではない。
+```
+
+```text
+T2 status:
+  完了。
+
+実行内容:
+  src/sis/venues/ids.py を追加し、VenueId = Literal["trade_xyz", "bitget_demo"] を定義した。
+  StrategySignalRecord / SymbolBinding / TradeCandidate / PaperIntentPreview / EvaluationPlan を VenueId に合わせた。
+  paper_preview.py の trade_xyz 固定 cast を VenueId cast に変更した。
+  PROXY_REQUIREMENTS は execution_venue == "trade_xyz" の時だけ適用するようにした。
+  strategy_signal / trade_candidate / paper_intent_preview schema の execution_venue enum を trade_xyz, bitget_demo に揃えた。
+
+確認:
+  uv run pytest -q tests/test_strategy_lab_specs.py tests/test_strategy_lab_candidate_pack.py tests/test_strategy_lab_paper_intent_preview.py tests/test_strategy_lab_schemas.py
+
+結果:
+  21 passed
+```
+
+```text
+T3 status:
+  完了。
+
+実行内容:
+  paper runner / broker の fee model lookup を venue 別にした。
+  configs/fee_model.bitget_demo.yaml を追加した。
+  bitget_demo intent + bitget_demo quote fixture で paper fill が作れることを確認した。
+  bitget_demo intent が trade_xyz quote を暗黙 fallback で拾わず、LATEST_QUOTE_MISSING で block されることを確認した。
+
+確認:
+  uv run pytest -q tests/test_paper_from_intents.py
+
+結果:
+  4 passed
+```
+
+```text
+T4a / T4 / T5a status:
+  完了。
+
+T4a 決定:
+  最初の lane は Bitget classic demo v2 の API boundary とする。
+  REST demo では paptrading: 1 header を必須境界として固定する。
+  demo WebSocket endpoint は wss://wspap.bitget.com/v2/ws/public と wss://wspap.bitget.com/v2/ws/private を記録する。
+  ただし、この実装では外部 network probe / account read はまだ行わない。
+
+公式 docs 確認:
+  https://www.bitget.com/api-doc/classic/demotrading/restapi
+  https://www.bitget.com/api-doc/classic/demotrading/websocket
+  https://www.bitget.com/api-doc/classic/quickStart/intro
+
+実行内容:
+  src/sis/execution/bitget_demo_adapter.py を追加した。
+  request header construction に paptrading: 1 を固定した。
+  HMAC SHA256 + base64 signature helper を追加した。
+  mock-first の estimate/status/fill/cancel/close/healthcheck contract を追加した。
+  cancel/close は external_write_disabled で fail-closed にした。
+  src/sis/commands/execution_artifacts.py の adapter factory に bitget_demo だけ追加した。
+  uv run sis bitget-demo-smoke を追加した。
+  bitget-demo-smoke は data/ops/bitget_demo_smoke_summary.json と data/reports/bitget_demo_smoke.md を書く。
+  credential 未設定時は status=blocked で exit 2。
+  credential が揃う時は status=configured で exit 0。ただし read_only_network_probe=not_executed。
+
+追加 env:
+  BITGET_DEMO_API_KEY
+  BITGET_DEMO_API_SECRET
+  BITGET_DEMO_PASSPHRASE
+
+確認:
+  uv run pytest -q tests/test_bitget_demo_adapter.py tests/test_bitget_demo_cli.py tests/test_cli_smoke.py::test_help_smoke
+  uv run ruff check src/sis/commands/execution.py tests/test_bitget_demo_cli.py
+
+結果:
+  9 passed
+  ruff check pass
+
+重要:
+  status=configured は「credential 形式が揃った」だけを意味する。
+  Bitget に接続できた、account read が成功した、demo order が出せる、という意味ではない。
+  exchange_write_used=False と external_write_enabled=False を維持する。
+```
+
+2026-06-05_23:23 JST:
+
+```text
+final local verification:
+  ./scripts/check
+
+結果:
+  Python 3.13.7
+  Ruff check pass
+  Ruff format check pass
+  current docs checked 84
+  Pyrefly 0 errors
+  Pytest 845 passed in 76.38s
+
+重要:
+  この full check は local tests / docs / type / lint の確認であり、Bitget 外部 API 接続、Bitget account read、demo order submit、Trade[XYZ] backtest_data_ready を確認したものではない。
 ```
 
 Bitget 公式 docs から確認した事実:
@@ -869,12 +1044,12 @@ destructive_level:
 low
 ```
 
-### T5: Bitget demo の最小 smoke を opt-in で追加する
+### T5a: Bitget demo の local smoke を追加する
 
 goal:
 
 ```text
-ユーザーが Demo API Key を用意した後だけ、Bitget demo の read-only smoke を実行できるようにする。
+Bitget demo の credential / header / endpoint 境界を、外部 API に接続せず local smoke で確認できるようにする。
 ```
 
 target_files:
@@ -885,6 +1060,7 @@ src/sis/execution/bitget_demo_adapter.py
 configs/env.example
 docs/OPERATIONS_RUNBOOK.md
 tests/test_cli_smoke.py
+tests/test_bitget_demo_cli.py
 ```
 
 out_of_scope:
@@ -893,6 +1069,8 @@ out_of_scope:
 自動 live/demo order submit
 credential 自動生成
 KYC 代行
+外部 network probe
+account read
 ```
 
 acceptance:
@@ -900,15 +1078,76 @@ acceptance:
 ```text
 1. `uv run sis bitget-demo-smoke --help` が出る。
 2. credential 未設定なら exit 2 で明示理由を出す。
-3. read-only endpoint の healthcheck / account read だけを行う。
-4. order submit は別 flag なしでは実行できない。
+3. credential が揃っている場合も status=configured とし、接続成功と誤読させない。
+4. read_only_network_probe=not_executed を artifact に残す。
+5. order submit は実行できない。
+6. external_write_enabled=false, exchange_write_used=false を artifact に残す。
 ```
 
 verification:
 
 ```bash
 uv run sis bitget-demo-smoke --help
-uv run pytest -q tests/test_cli_smoke.py tests/test_bitget_demo_adapter.py
+uv run pytest -q tests/test_bitget_demo_adapter.py tests/test_bitget_demo_cli.py tests/test_cli_smoke.py::test_help_smoke
+```
+
+destructive_level:
+
+```text
+low
+```
+
+notes:
+
+```text
+この task は外部 API 接続を含まない。
+credential が揃っても取引所接続は行わず、local health / artifact generation だけで止める。
+```
+
+### T5b: Bitget demo の credentialed read-only network smoke を追加する
+
+goal:
+
+```text
+ユーザーが Demo API Key を用意し、外部 API 実行を明示許可した後だけ、Bitget demo の read-only endpoint に接続する。
+```
+
+target_files:
+
+```text
+src/sis/execution/bitget_demo_adapter.py
+src/sis/commands/execution.py
+docs/OPERATIONS_RUNBOOK.md
+tests/test_bitget_demo_adapter.py
+tests/test_bitget_demo_cli.py
+```
+
+out_of_scope:
+
+```text
+demo order submit
+production Bitget live
+write permission 前提の検証
+credential を git に入れること
+```
+
+acceptance:
+
+```text
+1. 明示 flag なしに network probe しない。
+2. credential 未設定なら exit 2。
+3. credential が設定され、明示 flag がある時だけ read-only account/status endpoint を叩く。
+4. request header に paptrading: 1 が入る。
+5. secret / passphrase / raw credential は stdout / report / summary に出ない。
+6. rate limit / HTTP error / auth error は分類して artifact に残す。
+7. 成功しても demo_write_ready / live_ready とは扱わない。
+```
+
+verification:
+
+```bash
+uv run pytest -q tests/test_bitget_demo_adapter.py tests/test_bitget_demo_cli.py
+uv run sis bitget-demo-smoke --execute-read-only
 ```
 
 destructive_level:
@@ -920,8 +1159,9 @@ medium
 notes:
 
 ```text
-外部 API 接続を含むため medium。
-write API はこの task では使わない。
+外部 read-only API 接続を含むため medium。
+この task は credential とユーザーの明示許可がなければ実行しない。
+write API はこの task でも使わない。
 ```
 
 ### T6: demo order lifecycle を paper と分離して検証する
@@ -987,12 +1227,15 @@ demo でも外部 write API を使うため high。
 
 ```text
 1. T0: Trade[XYZ] collector を停止または自然終了待ちに切り替える。
-2. T1: Strategy Authoring backtest の最短実行を固定する。
-3. T2: execution_venue の最小 enum 化。
-4. T3: paper intent / paper runner の venue-neutral 化。
-5. T4: Bitget demo adapter を mock-first で作る。
-6. T5: Bitget demo read-only smoke を opt-in 追加する。
-7. T6: demo order lifecycle を explicit opt-in で検証する。
+2. T1a: Strategy Authoring example の入力棚卸しと validate を通す。
+3. T1: Strategy Authoring backtest の最短実行を固定する。
+4. T2: execution_venue の最小 enum 化。
+5. T3: paper intent / paper runner の venue-neutral 化。
+6. T4a: Bitget API lane を1つだけ選ぶ。
+7. T4: Bitget demo adapter を mock-first で作る。
+8. T5a: Bitget demo local smoke を追加する。
+9. T5b: credentialed read-only network smoke を explicit opt-in で追加する。
+10. T6: demo order lifecycle を explicit opt-in で検証する。
 ```
 
 やってはいけない順:
@@ -1003,6 +1246,45 @@ demo でも外部 write API を使うため high。
 3. trade_xyz 固定を場当たり的に string 置換する。
 4. paper intent を OrderIntent や live order と同一視する。
 5. Trade[XYZ] collector を回し続けながら主目的を backtest-first と書く。
+6. `feature_panel.parquet` 不在を無視して venue-neutral 化や Bitget adapter へ進む。
+7. classic demo v2 と UTA v3 の Bitget API を混ぜて adapter を作る。
+```
+
+## ユーザーから見た進捗
+
+各 milestone が終わった時に、ユーザーにとって何ができるか:
+
+```text
+M0 完了:
+  Trade[XYZ] collector の待ち・監視から解放される。
+  新しい主目的が backtest-first に固定される。
+
+M1 完了:
+  local CLI で backtest を1回再現できる。
+  ここで初めて「バックテスト作業に入れる」と言える。
+
+M2 完了:
+  trade_xyz 以外の venue 名を schema / model が正しく受け付ける。
+  ただし、まだ外部取引所に接続する段階ではない。
+
+M3 完了:
+  bitget_demo の paper-only fixture が通る。
+  外部 API なしで paper/demo intent の流れをテストできる。
+
+M4 完了:
+  Bitget 接続仕様が1 lane に決まる。
+  credential を用意すべきか、どの account type が必要かが分かる。
+
+M5 完了:
+  credential 形式と paptrading header 境界を local smoke で確認できる。
+  ただし外部 Bitget 接続はまだ確認していない。
+
+M5b 完了:
+  credential がある場合だけ read-only network smoke を試せる。
+
+M6 完了:
+  demo order lifecycle を明示許可付きで検証できる。
+  それでも production live ready ではない。
 ```
 
 ## テスト方針
@@ -1021,7 +1303,8 @@ uv run python scripts/check_current_docs.py
 ```bash
 uv run pytest -q tests/test_trade_xyz_live_order_policy.py tests/test_trade_xyz_adapter_safety.py tests/test_micro_live_canary.py
 uv run pytest -q tests/test_bitget_demo_adapter.py
-uv run pytest -q tests/test_paper_from_intents_venue_neutral.py
+uv run pytest -q tests/test_bitget_demo_cli.py
+uv run pytest -q tests/test_paper_from_intents.py
 ```
 
 全体確認:
@@ -1044,14 +1327,20 @@ uv run pytest -q tests/test_paper_from_intents_venue_neutral.py
 ```text
 1. Trade[XYZ] を当面の注文口にしない方針が handoff / docs に残っている。
 2. Trade[XYZ] collector が主経路から外れている。
-3. `strategy-author-run --through backtest` が最短 backtest 入口として使える。
-4. execution_venue が trade_xyz 固定から最小 venue enum へ広がっている。
-5. trade_xyz 既存挙動が壊れていない。
-6. bitget_demo の paper/demo intent fixture が validation を通る。
-7. Bitget demo adapter は credential 未設定で fail-closed する。
-8. demo order lifecycle は explicit opt-in なしに外部 write しない。
-9. backtest / paper / demo / live の境界が artifact と docs で分かる。
-10. `backtest_data_ready` や `live_ready` を未検証のまま true 扱いしない。
+3. Strategy Authoring example の入力 artifact が揃い、validate が通る。
+4. `strategy-author-run --through backtest` が最短 backtest 入口として使える。
+5. backtest artifact の出所と出力先が明記されている。
+6. execution_venue が trade_xyz 固定から最小 venue enum へ広がっている。
+7. schema/model parity が維持される。
+8. trade_xyz 既存挙動と proxy validation が壊れていない。
+9. bitget_demo の paper/demo intent fixture が validation を通る。
+10. Bitget API lane が1つに決まり、docs checked timestamp が残っている。
+11. Bitget demo adapter は credential 未設定で fail-closed する。
+12. Bitget demo local smoke は configured と network-connected を混同しない。
+13. credentialed read-only network smoke は explicit opt-in なしに実行されない。
+14. demo order lifecycle は explicit opt-in なしに外部 write しない。
+15. backtest / paper / demo / live の境界が artifact と docs で分かる。
+16. `backtest_data_ready` や `live_ready` を未検証のまま true 扱いしない。
 ```
 
 ## 未決事項
@@ -1065,8 +1354,11 @@ uv run pytest -q tests/test_paper_from_intents_venue_neutral.py
 2. 最初の backtest 対象 strategy spec をどれにするか。
    推奨: 既存 template / example を使い、まず1本だけ通す。
 
-3. Bitget demo の対象 product を spot demo にするか futures demo にするか。
-   推奨: 最初は order lifecycle が単純な product を選ぶ。詳細は Demo API Key 作成後に公式 docs と account type で確認する。
+3. `data/research/feature_panel.parquet` と `data/research/venue_cost_matrix.csv` を既存 generator で作るか、deterministic fixture にするか。
+   推奨: 既存 generator が軽く credential 不要なら generator。そうでなければ fixture。
+
+4. Bitget demo の credentialed read-only endpoint を classic demo v2 spot / futures / common account のどれで最初に叩くか。
+   推奨: ユーザーの Demo API Key / account type が確認できるまでは local smoke に留める。
 ```
 
 ## 現実的な Better 案
@@ -1075,11 +1367,12 @@ uv run pytest -q tests/test_paper_from_intents_venue_neutral.py
 
 ```text
 1. Trade[XYZ] collector を止める。
-2. その日のうちに Strategy Authoring backtest を1本通す。
-3. venue-neutral 化は schema / model / tests の最小範囲にする。
-4. Bitget demo は mock-first にして、credential 前でも開発できるようにする。
-5. 実 API smoke は read-only から始める。
-6. demo order submit は最後に explicit opt-in で追加する。
+2. example spec の入力棚卸しをして、validate failure を先に潰す。
+3. Strategy Authoring backtest を1本通す。
+4. venue-neutral 化は schema / model / tests / compiler cast の最小範囲にする。
+5. Bitget demo は API lane を決めてから mock-first にする。
+6. 実 API smoke は read-only から始める。
+7. demo order submit は最後に explicit opt-in で追加する。
 ```
 
 採用しない案:
@@ -1089,6 +1382,7 @@ uv run pytest -q tests/test_paper_from_intents_venue_neutral.py
 2. Bitget demo order submit から始める。
 3. 全取引所対応の巨大 plugin system を先に作る。
 4. 既存 Trade[XYZ] pure backtest をいきなり汎用化して CLI 公開する。
+5. `feature_panel.parquet` 不在を放置して adapter 実装に進む。
 ```
 
 理由:
@@ -1099,24 +1393,23 @@ uv run pytest -q tests/test_paper_from_intents_venue_neutral.py
 
 ## 次の一手
 
-実行するなら次は T0。
+2026-06-05_23:17 JST 時点で T0 / T1a / T1 / T2 / T3 / T4a / T4 / T5a は実装済み。
+次は full verification と docs/handoff 更新を完了する。
 
-推奨 command は、実行直前に process / lock を再確認してから決める。
-
-事前確認:
-
-```bash
-pgrep -af '[c]ollect_trade_xyz_data_until_ready|[c]ollect_trade_xyz_data_cycle|[c]ollect-trade-xyz-data-cycle|[c]ollect-trade-xyz-quotes' || true
-cat .tmp/trade_xyz_data_until_ready.lock/pid 2>/dev/null || true
-cat .tmp/trade_xyz_data_cycle.lock/pid 2>/dev/null || true
-```
-
-停止後確認:
+再開時の最初の確認:
 
 ```bash
+git status --short --branch --untracked-files=all
 pgrep -af '[c]ollect_trade_xyz_data_until_ready|[c]ollect_trade_xyz_data_cycle|[c]ollect-trade-xyz-data-cycle|[c]ollect-trade-xyz-quotes' || true
-test ! -e .tmp/trade_xyz_data_until_ready.lock && echo supervisor_lock=absent || true
-test ! -e .tmp/trade_xyz_data_cycle.lock && echo cycle_lock=absent || true
+uv run sis bitget-demo-smoke --help
+uv run pytest -q tests/test_bitget_demo_adapter.py tests/test_bitget_demo_cli.py tests/test_paper_from_intents.py tests/test_strategy_lab_specs.py tests/test_strategy_lab_candidate_pack.py tests/test_strategy_lab_paper_intent_preview.py tests/test_strategy_lab_schemas.py
 ```
 
-停止が完了したら、T1 に進む。
+credentialed read-only network smoke は次の条件を満たすまで実行しない。
+
+```text
+1. ユーザーが Bitget Demo API Key / secret / passphrase を local env に用意した。
+2. 実装側が read-only endpoint/path を公式 docs で再確認した。
+3. ユーザーが外部 API read-only 実行を明示許可した。
+4. write API を使わないことを command option / tests / artifact で固定した。
+```

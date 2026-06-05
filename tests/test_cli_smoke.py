@@ -51,6 +51,7 @@ def test_help_smoke() -> None:
     assert "paper-step" in stdout
     assert "estimate-order" in stdout
     assert "balance-status" in stdout
+    assert "bitget-demo-smoke" in stdout
     assert "fill-status" in stdout
     assert "execution-snapshot" in stdout
     assert "execution-read-only-surfaces" in stdout

@@ -94,3 +94,18 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
     assert "executed_signal_summary" in summary_properties
     assert "strategy_scorecard" in summary_properties
     assert "multi_leg_group_metrics" in summary_properties
+
+
+def test_execution_venue_schema_enum_matches_strategy_contract_scope() -> None:
+    expected = ["trade_xyz", "bitget_demo"]
+    signal = json.loads(Path("schemas/strategy_signal.v1.schema.json").read_text(encoding="utf-8"))
+    candidate = json.loads(
+        Path("schemas/trade_candidate.v1.schema.json").read_text(encoding="utf-8")
+    )
+    preview = json.loads(
+        Path("schemas/paper_intent_preview.v1.schema.json").read_text(encoding="utf-8")
+    )
+
+    assert signal["properties"]["execution_venue"]["enum"] == expected
+    assert candidate["properties"]["execution_venue"]["enum"] == expected
+    assert preview["properties"]["execution_venue"]["enum"] == expected

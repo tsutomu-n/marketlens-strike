@@ -5,13 +5,14 @@ from typing import Literal
 from pydantic import BaseModel, model_validator
 
 from sis.research.strategy_lab.run_profile import DEFAULT_FORBIDDEN_CLAIMS
+from sis.venues.ids import VenueId
 
 
 class EvaluationPlan(BaseModel):
     schema_version: Literal["evaluation_plan.mls.v1"]
     evaluation_plan_id: str
     run_profile: Literal["strategy_lab", "walkforward_research", "paper_candidate"]
-    target_venue: Literal["trade_xyz"]
+    target_venue: VenueId
     split_method: Literal["single_window", "walk_forward", "purged_walk_forward"]
     label_horizon_minutes: int
     purge_minutes: int
