@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_11:09 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Paper Promotion And Intent Spec
 
 この文書は、Strategy Lab の候補を paper-only の仮注文意図へ進める時の仕様です。

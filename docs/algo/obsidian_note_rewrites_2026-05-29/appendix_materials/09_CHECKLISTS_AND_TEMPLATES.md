@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Checklists And Templates
 
 戦略検討時にそのまま使う作業用テンプレートです。現行 Strategy Research Lab の schema と artifact chain に合わせています。

@@ -1,10 +1,15 @@
+<!--
+作成日: 2026-05-26_19:07 JST
+更新日: 2026-06-05_18:12 JST
+-->
+
 # marketlens-strike implementation planning docs
 
 ## 結論
 
-この `plan/` は、PR-00〜PR-08 migration の historical planning record です。
+この `plan/` は、historical planning record と implementation handoff を残す場所です。
 
-現行コードでは PR-00〜PR-08 の migration code/test surface は完了済みです。この directory は、当時の実装順序、判断、acceptance を確認するために残します。current status は `docs/CURRENT_STATE.md` と `docs/CODE_STATUS.md` を先に読んでください。
+現行コードでは PR-00〜PR-08 の migration code/test surface は完了済みです。Trade[XYZ] real data / backtest 関連の top-level plan も、実装順序、判断、acceptance、handoff を確認するための履歴資料です。current status は `docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、生成済み manifest を先に読んでください。
 
 ## Historical read order
 
@@ -19,6 +24,17 @@
 9. ZIP handoff の `04_ACCEPTANCE_MATRIX.md`
 10. ZIP handoff の `06_FILE_BY_FILE_IMPLEMENTATION_MAP.md`
 11. ZIP handoff の `pr_specs/PR-00_*.md` から順番に読む
+
+## Trade[XYZ] historical plans
+
+Top-level Trade[XYZ] plan docs are not current truth. Use them only for implementation history and handoff context.
+
+- `plan/TRADE_XYZ_BACKTEST_V0_1_2_REAL_DATA_HARDENING_PLAN_REV5.md`
+- `plan/TRADE_XYZ_DATA_COLLECTION_EXPANSION_IMPLEMENTATION_PLAN_2026-06-01.md`
+- `plan/TRADE_XYZ_AFTER_WS_SMOKE_DATA_READY_PLAN_2026-06-01.md`
+- `plan/TRADE_XYZ_BACKTEST_REAL_DATA_INGESTION_HANDOFF_2026-06-01.md`
+- `plan/TRADE_XYZ_WS_TO_BACKTEST_INGESTION_FINAL_PLAN_2026-06-04.md`
+- `plan/archive/TRADE_XYZ_BACKTEST_V0_1_1_REAL_DATA_STABILIZATION_PLAN_REV4.md`
 
 ## Source inputs
 

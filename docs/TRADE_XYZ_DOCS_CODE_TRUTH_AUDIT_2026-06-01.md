@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-01_14:13 JST
-更新日: 2026-06-05_07:57 JST
+更新日: 2026-06-05_18:12 JST
 -->
 
 # Trade[XYZ] Docs Code-Truth Audit
@@ -66,9 +66,9 @@ secret / credential:
 
 | Path | 古い理由 | 扱い |
 |---|---|---|
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | 5/28時点の監査で、現在のcollection config、5/30以前archive、readiness状態を反映していない | historical auditとして残す。current docsとして読む場合は注意書きが必要 |
-| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | 収集コマンド例が古く、5/30以前データ使用禁止とconfig正本を反映していない | archive候補または冒頭にhistorical扱いを明記 |
-| `plan/TRADE_XYZ_BACKTEST_V0_1_1_REAL_DATA_STABILIZATION_PLAN_REV4.md` | REV5以降と実装後のコードに追い越されている | 背景資料として残す |
+| `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | 5/28時点の監査で、現在のcollection config、5/30以前archive、readiness状態を反映していない | historical auditとしてarchive済み |
+| `docs/archive/2026-06-05-doc-cleanup/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | 収集コマンド例が古く、5/30以前データ使用禁止とconfig正本を反映していない | historical failure-mode mapとしてarchive済み |
+| `plan/archive/TRADE_XYZ_BACKTEST_V0_1_1_REAL_DATA_STABILIZATION_PLAN_REV4.md` | REV5以降と実装後のコードに追い越されている | historical planとしてarchive済み |
 | `plan/TRADE_XYZ_BACKTEST_V0_1_2_REAL_DATA_HARDENING_PLAN_REV5.md` | 実装計画としては有用だが、現在のarchive/config実装後の運用正本ではない | 背景資料として残す。運用手順の正本にはしない |
 
 ## 作り直したほうがいいドキュメント
@@ -85,9 +85,9 @@ secret / credential:
 
 | Path | 推奨 |
 |---|---|
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | `docs/archive/` へ移動候補 |
-| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | `docs/archive/` へ移動候補 |
-| `plan/TRADE_XYZ_BACKTEST_V0_1_1_REAL_DATA_STABILIZATION_PLAN_REV4.md` | `plan/archive/` へ移動候補 |
+| `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | archive済み |
+| `docs/archive/2026-06-05-doc-cleanup/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | archive済み |
+| `plan/archive/TRADE_XYZ_BACKTEST_V0_1_1_REAL_DATA_STABILIZATION_PLAN_REV4.md` | archive済み |
 
 ## 現在のreadinessへの影響
 

@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_15:19 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Strategy Authoring Implementation Spec
 
 `strategy_authoring_spec.v1` は、ユーザーが宣言型 YAML で Strategy Lab signal を作るための interface です。

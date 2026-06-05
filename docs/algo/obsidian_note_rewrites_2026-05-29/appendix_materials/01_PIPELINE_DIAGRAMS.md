@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Pipeline Diagrams
 
 この付録は、現行 Strategy Research Lab の artifact chain を図として読むための資料です。旧 `data/research/signals.csv` 中心の図は legacy paper path であり、現行 Strategy Lab の正本ではありません。

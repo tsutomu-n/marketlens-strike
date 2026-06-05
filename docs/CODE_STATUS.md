@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-05_07:57 JST
+更新日: 2026-06-05_18:12 JST
 -->
 
 # Code Status
@@ -93,7 +93,7 @@ PR-08:
 2026-06-05 docs/runtime verification:
 
 - `uv run python -V`: `Python 3.13.7`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 85 current docs`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 83 current docs`
 - latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
 
 2026-06-05 runtime artifact snapshot:
@@ -113,4 +113,4 @@ PR-08:
 - runtime status: `docs/CURRENT_STATE.md`
 - operator procedure: `docs/OPERATIONS_RUNBOOK.md`
 - architecture and boundaries: `docs/ARCHITECTURE_AND_PHASES.md`
-- historical Trade[XYZ] implementation audit: `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
+- historical Trade[XYZ] implementation audit: `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`

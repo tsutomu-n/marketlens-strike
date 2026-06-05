@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_11:09 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Schema Contracts For Trading Strategies
 
 この文書は、Strategy Research Lab が売買に関わる戦略を扱う時の schema 契約です。JSON Schema は外部 artifact guard と interoperability 用の薄い契約で、詳細な runtime validation は Pydantic model が正本です。

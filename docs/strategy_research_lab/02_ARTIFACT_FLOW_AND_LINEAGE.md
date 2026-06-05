@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_11:09 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Artifact Flow And Lineage
 
 この文書は、Strategy Research Lab の artifact がどの順番で生成され、どの ID でつながるかを固定します。

@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-28_20:41 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Strategy Blueprints
 
 この文書は、[STRATEGY_PARTS_CATALOG.md](STRATEGY_PARTS_CATALOG.md) の部品を組み合わせた実験候補です。完成戦略ではなく、検証可能な仮説として扱います。

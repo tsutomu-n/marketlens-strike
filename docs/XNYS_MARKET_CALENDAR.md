@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-26_08:55 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # XNYS Market Calendar
 
 この文書は、`real_market` と `tracking` で使う米国 regular session 判定の前提を短くまとめる。

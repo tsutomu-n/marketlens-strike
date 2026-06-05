@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # One Doc: Strategy To Implementation
 
 この文書は、戦略部品から Strategy Research Lab の artifact chain までを一気通貫で読むための現行版です。旧版の `data/research/signals.csv`, `DecisionContext`, `ExecutionPlan` 中心の説明は legacy paper path として扱い、現行 Strategy Lab の正本にはしません。

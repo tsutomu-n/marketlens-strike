@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-28_20:41 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Algo Strategy System Guide
 
 調査元: `/home/tn/Docs/algo/obsidian-vault`  

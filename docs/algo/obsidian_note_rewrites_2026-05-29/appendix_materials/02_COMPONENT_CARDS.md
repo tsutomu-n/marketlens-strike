@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Component Cards
 
 この付録は、戦略部品を Strategy Research Lab の実装済み component に対応させるカードです。旧 `ExecutionPlan(action, symbol, quantity, notes)` 中心の説明は legacy paper runner 内部 bridge として扱い、Strategy Lab の設計入口にはしません。

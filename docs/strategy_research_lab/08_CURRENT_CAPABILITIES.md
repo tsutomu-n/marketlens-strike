@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_14:13 JST
-更新日: 2026-06-05_07:57 JST
+更新日: 2026-06-05_18:12 JST
 -->
 
 # Current Capabilities
@@ -315,6 +315,6 @@ git diff --check
 - `tests/strategy_authoring` + `tests/test_strategy_lab_schemas.py`: 214 passed
 - Strategy Lab focused suite: 45 passed
 - Research pipeline / CLI smoke: 71 passed
-- `scripts/check_current_docs.py`: checked 85 current docs
+- `scripts/check_current_docs.py`: checked 83 current docs
 - latest recorded `./scripts/check`: 830 passed in 2026-06-04 quote coverage docs
 - `git diff --check`: pass

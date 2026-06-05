@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_08:14 JST
+更新日: 2026-06-05_18:12 JST
+-->
+
 # Strategy Research Lab Doc Audit And Spec 2026-05-30
 
 この文書は、コードを正本として Strategy Research Lab の現在仕様と既存ドキュメントの扱いを固定するための入口です。
@@ -432,7 +437,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 | `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-27.md` | historical audit |
 | `docs/archive/2026-05-30-doc-audit/DOCUMENT_AUDIT_2026-05-28.md` | historical audit |
 | `docs/archive/2026-05-30-doc-audit/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | historical Trade[XYZ] audit |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | historical Trade[XYZ] audit |
+| `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | historical Trade[XYZ] audit |
 | `docs/archive/2026-05-30-doc-audit/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | superseded plan |
 | `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | live-readiness blocker plan; keep for live readiness only |
 

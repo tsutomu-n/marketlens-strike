@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_11:09 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Validation Stop Conditions And Test Matrix
 
 この文書は、Strategy Research Lab の停止条件と既存テストが守る契約をまとめます。

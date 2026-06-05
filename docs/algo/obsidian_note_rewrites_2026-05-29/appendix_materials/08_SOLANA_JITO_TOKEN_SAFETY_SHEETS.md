@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Solana, Jito, Token Safety Sheets
 
 Solana/Meme token/Jito系ノートを、自動購入ではなく安全観測と除外条件へ変換する資料です。

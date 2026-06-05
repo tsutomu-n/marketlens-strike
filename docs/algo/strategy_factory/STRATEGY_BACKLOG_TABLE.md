@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_22:07 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Strategy Backlog Table
 
 戦略候補の台帳です。新しい候補は、`SIGNAL_CANDIDATE_TEMPLATE.md` を埋めてからここに追加します。

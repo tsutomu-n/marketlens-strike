@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_07:54 JST
-更新日: 2026-06-05_08:05 JST
+更新日: 2026-06-05_18:12 JST
 -->
 
 # Documentation Audit 2026-05-31
@@ -78,9 +78,9 @@ tests/test_strategy_lab_schemas.py
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | 全体 docs audit の参照先が `docs/DOCUMENT_AUDIT_2026-05-30.md` のまま | 現行では current audit `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
 | `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | `checked 77 current docs` は 05-31 audit 追加前の値 | 現行では `checked 78 current docs` も併記 |
 | `README.md`, `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md`, `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | `LIVE_READINESS_BLOCKER=6` が最新 `phase-gate-review` の `5` とズレていた | 現行では `LIVE_READINESS_BLOCKER=5` へ修正済み |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | `294 passed` と 2026-05-28 runtime snapshot | focused historical audit。Trade[XYZ] read-only 証跡として読む。current full gate として引用しない |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | What To Read が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | 現行では `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
-| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | `294 passed` を含む 2026-05-28 failure-mode snapshot。read-first が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | design reference。current verification 値として引用しない。read-first 参照は現行では `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
+| `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | `294 passed` と 2026-05-28 runtime snapshot | focused historical audit。Trade[XYZ] read-only 証跡として読む。current full gate として引用しない |
+| `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | What To Read が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | 現行では `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
+| `docs/archive/2026-06-05-doc-cleanup/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | `294 passed` を含む 2026-05-28 failure-mode snapshot。read-first が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | design reference。current verification 値として引用しない。read-first 参照は現行では `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | 2026-05-29 rewrite bundle より古い初版 rewrite | historical snapshot。current入口にしない |
 | `plan/archive/**` | 実装前/実装中の計画 | historical migration contract。現行状態は `docs/CURRENT_STATE.md` と code を優先 |
 | `data/reports/*.md`, `data/research/*.md` | runtime 生成時点の snapshot | 必要なら CLI で再生成。tracked docs の current truth とは分ける |
@@ -90,8 +90,8 @@ tests/test_strategy_lab_schemas.py
 | Path | 推奨 | 理由 |
 |---|---|---|
 | `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md` | 作り直し済み: `docs/DOCUMENT_AUDIT_2026-05-31.md` | Strategy Authoring completion evidence と最新 gate を含まない |
-| `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | 必要なら `current Trade[XYZ] status audit` と `historical PR12 audit` に分離 | 2026-05-28 runtime evidence と current full gate を混同しやすい |
-| `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | 必要なら current blocker map だけの短い新版を作る | failure-mode catalog と古い検証 snapshot が同居している |
+| `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | 2026-06-05 に archive 済み | 2026-05-28 runtime evidence と current full gate を混同しやすかった |
+| `docs/archive/2026-06-05-doc-cleanup/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | 2026-06-05 に archive 済み | failure-mode catalog と古い検証 snapshot が同居していた |
 | `docs/trade_xyz_bot_beginner_guide.html` | 部分再作成候補 | Strategy Authoring / PaperIntentPreview の初心者向け導線をさらに厚くできる |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | 作り直すより archive 扱いを継続 | 2026-05-29 bundle に superseded |
 

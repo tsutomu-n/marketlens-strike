@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Worked Example: Trend Pullback
 
 Trend Pullback を Strategy Research Lab の現行 artifact chain に沿って、仮説から paper-only preview まで通す例です。

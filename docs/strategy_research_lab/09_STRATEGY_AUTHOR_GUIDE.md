@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_15:19 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Strategy Author Guide
 
 この guide は、ユーザーが Strategy Lab で売買ロジックを作るための最短導線です。対象は paper-only research です。ライブ発注、ウォレット操作、取引所書き込みは行いません。

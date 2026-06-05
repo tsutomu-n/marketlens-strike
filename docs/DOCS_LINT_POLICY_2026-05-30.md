@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_11:55 JST
+更新日: 2026-06-05_18:12 JST
+-->
+
 # Docs Lint Policy 2026-05-30
 
 この文書は、repo 内の Markdown / HTML を「どこまで機械チェックするか」を固定するための方針です。
@@ -21,8 +26,6 @@ docs/DOCS_LINT_POLICY_2026-05-30.md
 docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md
 docs/OPERATIONS_RUNBOOK.md
 docs/ARCHITECTURE_AND_PHASES.md
-docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md
-docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md
 docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md
 docs/XNYS_MARKET_CALENDAR.md
 docs/algo/README.md
@@ -59,6 +62,7 @@ plan/archive/**
 
 - 対象ファイルが存在する。
 - UTF-8 で読める。
+- Markdown current docs は `作成日` / `更新日` metadata header を持つ。
 - final newline がある。
 - EOF に余分な空行がない。
 - Markdown local link と HTML `href` local link が存在する。

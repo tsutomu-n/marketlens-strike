@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-25_19:45 JST
+更新日: 2026-06-05_18:12 JST
+-->
+
 # Documentation Archive
 
 この archive は、現行コードとズレた古い handoff、phase、audit、todo 文書を保存する場所です。
@@ -8,8 +13,6 @@ Current docs:
 - `docs/CODE_STATUS.md`
 - `docs/OPERATIONS_RUNBOOK.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
-- `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-- `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
 - `docs/DOCUMENT_AUDIT_2026-05-31.md`
 
 Archived on 2026-05-25:
@@ -51,6 +54,11 @@ Archived on 2026-05-30:
 Archived on 2026-05-31:
 
 - `docs/DOCUMENT_AUDIT_2026-05-30.md` -> `docs/archive/2026-05-31-doc-audit/`
+
+Archived on 2026-06-05:
+
+- `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` -> `docs/archive/2026-06-05-doc-cleanup/`
+- `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` -> `docs/archive/2026-06-05-doc-cleanup/`
 
 Archived on 2026-05-28:
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-05_07:57 JST
+更新日: 2026-06-05_18:12 JST
 -->
 
 # Backtest Docs
@@ -62,5 +62,5 @@
 2026-06-05 docs/runtime check:
 
 - `uv run python -V`: `Python 3.13.7`
-- `uv run python scripts/check_current_docs.py`: checked 85 current docs
+- `uv run python scripts/check_current_docs.py`: checked 83 current docs
 - latest recorded `./scripts/check`: 830 passed in 2026-06-04 quote coverage docs

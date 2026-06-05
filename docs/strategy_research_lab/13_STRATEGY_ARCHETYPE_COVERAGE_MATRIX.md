@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-31_07:20 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Strategy Archetype Coverage Matrix
 
 この文書は、`strategy_authoring_spec.v1` で生成しうる戦略タイプを「コードを正」として棚卸しするための coverage matrix です。

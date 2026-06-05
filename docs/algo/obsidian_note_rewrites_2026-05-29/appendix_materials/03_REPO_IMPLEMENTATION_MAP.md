@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Repo Implementation Map
 
 この付録は、Strategy Research Lab の現行実装を repo path で辿るための map です。旧 legacy paper path ではなく、`StrategyExperimentSpec -> PaperIntentPreview -> paper-from-intents` を中心に読む。

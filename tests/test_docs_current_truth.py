@@ -56,6 +56,8 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert '"docs/algo/obsidian_note_copies/"' in script
     assert '"docs/algo/obsidian_note_rewrites_2026-05-28/"' in script
     assert '"plan/archive/"' in script
+    assert "MARKDOWN_METADATA_RE" in script
+    assert "missing or invalid metadata header" in script
 
 
 def test_current_docs_checker_passes() -> None:

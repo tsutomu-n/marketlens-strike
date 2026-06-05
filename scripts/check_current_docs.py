@@ -22,8 +22,6 @@ CURRENT_DOC_FILES = (
     "docs/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md",
     "docs/LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md",
     "docs/ARCHITECTURE_AND_PHASES.md",
-    "docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md",
-    "docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md",
     "docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md",
     "docs/XNYS_MARKET_CALENDAR.md",
     "docs/algo/README.md",
@@ -74,6 +72,12 @@ ALLOW_LEGACY_ROOT_PATH_TEXT = {
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)")
 HTML_HREF_RE = re.compile(r"""href=["']([^"']+)["']""")
 SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
+MARKDOWN_METADATA_RE = re.compile(
+    r"^<!--\n"
+    r"作成日: \d{4}-\d{2}-\d{2}_\d{2}:\d{2} JST\n"
+    r"更新日: \d{4}-\d{2}-\d{2}_\d{2}:\d{2} JST\n"
+    r"-->\n"
+)
 
 
 def _repo_relative(path: Path) -> str:
@@ -149,6 +153,9 @@ def _check_path(path: Path) -> list[str]:
     except UnicodeDecodeError as exc:
         return [f"{rel}: not valid UTF-8: {exc}"]
 
+    if path.suffix == ".md" and not MARKDOWN_METADATA_RE.match(text):
+        errors.append(f"{rel}: missing or invalid metadata header")
+
     if rel not in ALLOW_LEGACY_ROOT_PATH_TEXT:
         for legacy_path in LEGACY_ROOT_PATHS:
             if legacy_path in text:
@@ -181,7 +188,7 @@ def main() -> int:
         print("\n".join(errors))
         return 1
     checked_count = len(_iter_current_docs())
-    print(f"checked {checked_count} current docs: links, EOF, and legacy roots ok")
+    print(f"checked {checked_count} current docs: metadata, links, EOF, and legacy roots ok")
     return 0
 
 

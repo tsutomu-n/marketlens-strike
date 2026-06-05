@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_11:09 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Generator And Experiment Spec
 
 この文書は、Strategy Research Lab の generator と experiment 定義をどう扱うかを固定します。

@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-25_19:45 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Live Evidence Reports
 
 このディレクトリは live evidence runner が生成する markdown / HTML report の置き場です。

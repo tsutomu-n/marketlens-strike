@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Model And Feature Risk Sheets
 
 ML、時系列モデル、高速backtest、Polars feature処理を、理想的ナラティブではなく検査対象として扱うための資料です。

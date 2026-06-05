@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_11:09 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Operator Runbook
 
 この runbook は Strategy Research Lab を paper-only preview まで動かすための手順です。

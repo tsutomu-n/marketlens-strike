@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-30_11:09 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Strategy Research Lab
 
 このフォルダーは、Strategy Research Lab を使って売買に関わる戦略を安全に研究し、paper-only の仮注文意図まで落とすための実務仕様です。

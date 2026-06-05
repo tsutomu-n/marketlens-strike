@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-05_07:57 JST
+更新日: 2026-06-05_18:12 JST
 -->
 
 # Current State
@@ -88,7 +88,7 @@
 2026-06-05 docs/runtime check:
 
 - `uv run python -V`: `Python 3.13.7`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 85 current docs`
+- `uv run python scripts/check_current_docs.py`: pass, `checked 83 current docs`
 - latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
 
 2026-06-05 runtime artifact snapshot:
@@ -130,13 +130,13 @@ PR-08 専用確認:
 10. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
 11. `docs/OPERATIONS_RUNBOOK.md`
 12. `docs/ARCHITECTURE_AND_PHASES.md`
-13. `docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
-14. `docs/trade_xyz_bot_beginner_guide.html`
-15. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+13. `docs/trade_xyz_bot_beginner_guide.html`
+14. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
 
 historical focused audit:
 
-1. `docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
+1. `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md`
+2. `docs/archive/2026-06-05-doc-cleanup/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md`
 
 その後、必要に応じて:
 

@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-25_19:45 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Architecture And Phases
 
 この文書は current codebase を migration 後の構成として読むための要約です。

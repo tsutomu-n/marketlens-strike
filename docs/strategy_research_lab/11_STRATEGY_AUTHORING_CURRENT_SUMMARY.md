@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_20:56 JST
-更新日: 2026-06-05_07:57 JST
+更新日: 2026-06-05_18:12 JST
 -->
 
 # Strategy Authoring Current Summary
@@ -170,6 +170,6 @@
 最新 full check では、次を確認済みです。
 
 - latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
-- current-docs lint: `checked 85 current docs: links, EOF, and legacy roots ok`
+- current-docs lint: `checked 83 current docs: metadata, links, EOF, and legacy roots ok`
 
-docs-only 確認でも、`uv run python scripts/check_current_docs.py` が `checked 85 current docs: links, EOF, and legacy roots ok` で通っています。
+docs-only 確認でも、`uv run python scripts/check_current_docs.py` が `checked 83 current docs: metadata, links, EOF, and legacy roots ok` で通っています。

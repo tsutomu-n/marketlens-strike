@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Complete Rewrite Of Obsidian Algo Notes
 
 このドキュメントは、`../obsidian_note_copies/` の24本を、原本を読まなくても戦略準備に使える形へ再構成したものです。

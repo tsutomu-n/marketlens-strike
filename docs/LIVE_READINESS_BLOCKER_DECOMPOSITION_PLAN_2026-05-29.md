@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_10:40 JST
+更新日: 2026-06-05_08:11 JST
+-->
+
 # Live Readiness Blocker Decomposition Plan 2026-05-29
 
 この文書は `./.ai_memory/HANDOFF.md` の A5 後に実行する詳細計画です。古い chat transcript や archive docs は前提にしません。判断の正本は current code、tests、`data/ops/`、`data/reports/`、tracked current docs です。
