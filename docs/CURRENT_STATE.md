@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-05_20:25 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Current State
@@ -10,8 +10,11 @@
 ## 結論
 
 - `plan/archive/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
-- repo の主軸は `Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` へ移っている。
-- PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、最新 phase gate は `READ_ONLY_GO`。
+- 現在の開発主軸は backtest-first / venue-neutral。Trade[XYZ] は実装済みの主要 venue で、将来の注文口候補として残すが、当面の注文口前提にはしない。
+- `VenueId` は `trade_xyz` と `bitget_demo` を許可する。Strategy Lab の signal / candidate / paper intent schema も同じ enum に揃っている。
+- Strategy Authoring baseline は外部 API なしの fixture seed で backtest まで通せる。
+- Bitget demo local smoke は実装済み。ただし `status=configured` は local credential env が揃った意味だけで、Bitget network/account/order readiness ではない。
+- PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、phase gate は `READ_ONLY_GO` になり得る。
 - Trade[XYZ] 実データ readiness はまだ `NOT_READY`。現在の fail は `quote_coverage` だけで、known gap は `funding_events` と `oracle_timestamp_provenance` である。
 - Trade[XYZ] の対象銘柄は fee mode / taker fee / maker fee を registry と raw quote row に持つ。`fee_mode_unknown_rate` は current gate blocker ではない。
 - Trade[XYZ] pure backtest v0.1 は `src/sis/backtest/engine/` と `src/sis/backtest/trade_xyz/` に実装済み。入口は Python API の `run_backtest()` で、public CLI は未公開。
@@ -39,6 +42,8 @@
 - Python 3.13 前提の runtime / lock / CI
 - root CLI split: `src/sis/cli.py` は command registration と `main()` が中心で、command 実装は `src/sis/commands/` に分割済み
 - legacy `gtrade` / `ostium` の ZIP archive 化と active file tree からの削除
+- venue id contract: `src/sis/venues/ids.py` の `VenueId = Literal["trade_xyz", "bitget_demo"]`
+- Strategy Authoring baseline seed: `scripts/seed_strategy_authoring_baseline_data.py`
 - `Trade[XYZ]` registry builder, universe report, quote collector, quote normalizer
 - `Trade[XYZ]` `perpDexs` fallback による HIP-3 `asset_id` 解決
 - `Trade[XYZ]` quote collection summary / report / strict artifact validation
@@ -50,6 +55,7 @@
 - `tracking` layer による real-market vs venue 判定
 - venue quality gate 付き paper fill / fee model / paper report
 - `Trade[XYZ]` micro live safety adapter / policy / canary code path
+- Bitget demo local/mock-first adapter and smoke: `src/sis/execution/bitget_demo_adapter.py`, `uv run sis bitget-demo-smoke`
 - read-only execution surfaces, operations dashboard, remediation chain, daemon loop, notification outbox
 - Strategy Research Lab models and commands: `StrategyExperimentSpec`, `StrategySignalRecord`, `EvaluationPlan`, `TrialRecord`, `TradeCandidate`, `PaperCandidatePack`, `PromotionDecision`, `PaperIntentPreview`
 - Strategy authoring commands: `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`, `strategy-author-train-model`
@@ -57,7 +63,10 @@
 
 ## Important Boundaries
 
-- 新規実装の主 venue は `trade_xyz`。legacy venue は `archive/gtrade_ostium_legacy_archive_*.zip` 内の履歴参照として扱う。
+- 新規戦略評価の主経路は backtest-first / venue-neutral。`trade_xyz` は実装済み主要 venue だが、現時点の注文口主軸ではない。
+- `bitget_demo` は demo execution 検証用の venue id。production Bitget live とは分ける。
+- `status=configured` は Bitget demo local credential env が揃った状態。network接続、account read、demo order submit、fill sync 成功とは読まない。
+- legacy venue は `archive/gtrade_ostium_legacy_archive_*.zip` 内の履歴参照として扱う。
 - `micro_live` はコードと tests では存在するが、標準の operator CLI にはまだ exposed していない。
 - `collect-trade-xyz-quotes` は public CLI command として exposed している。
 - `Trade[XYZ]` pure backtest v0.1 は public CLI ではなく Python API surface。`uv run sis build-backtest` は既存 bridge 系 command であり、pure backtest engine の入口ではない。
@@ -85,11 +94,18 @@
 
 ## Verification Status
 
-2026-06-05 docs/runtime check:
+current verification は固定の pass count ではなく、作業時点で次を再実行して確認する:
 
-- `uv run python -V`: `Python 3.13.7`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 83 current docs`
-- latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
+```bash
+uv run python -V
+uv run sis --help
+uv run python scripts/check_current_docs.py
+./scripts/check
+```
+
+2026-06-06 docs-only spot check:
+
+- `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully
 
 2026-06-05 runtime artifact snapshot:
 
@@ -113,6 +129,8 @@ PR-08 専用確認:
 - production live order smoke
 - signing / wallet / exchange write integration
 - live order preview / 注文候補生成の正式 command surface
+- Bitget credentialed read-only network smoke
+- Bitget demo order lifecycle
 - Alpaca credentials ありの API connectivity smoke。historical IEX bar で `provider_connectivity_status=pass`, `data_availability_status=pass` は確認済み。fresh 15m は `BLOCK_ALPACA_NO_BARS` で blocked になり得るため、live `status=pass` は市場時間中の fresh bar 取得で再確認する
 - `check-go-no-go` / `build-evidence-card` は補助reportであり、Bot前の現行判定正本は `phase-gate-review`
 
@@ -121,17 +139,16 @@ PR-08 専用確認:
 1. `docs/CURRENT_STATE.md`
 2. `docs/CODE_STATUS.md`
 3. `docs/backtest/README.md`
-4. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
-5. `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md`
-6. `docs/DOCUMENT_AUDIT_2026-05-31.md`
-7. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-8. `docs/strategy_research_lab/README.md`
-9. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
-10. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
-11. `docs/OPERATIONS_RUNBOOK.md`
-12. `docs/ARCHITECTURE_AND_PHASES.md`
-13. `docs/trade_xyz_bot_beginner_guide.html`
-14. `plan/archive/PR-00_to_PR-08_implementation_plan.md` を historical migration contract として読む
+4. `docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md`
+5. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
+6. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+7. `docs/strategy_research_lab/README.md`
+8. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+9. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+10. `docs/OPERATIONS_RUNBOOK.md`
+11. `docs/ARCHITECTURE_AND_PHASES.md`
+12. `docs/trade_xyz_bot_beginner_guide.html`
+13. `plan/README.md`
 
 historical focused audit:
 

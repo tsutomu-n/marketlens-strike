@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-05_20:25 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Code Status
@@ -38,10 +38,17 @@
 | Strategy Lab paper-only workflow | DONE | `strategy-preview`, `strategy-experiment-run --spec`, `evaluate-strategy-lab`, `build-paper-candidate-pack`, `promotion-decision`, `build-paper-intent-preview`, `paper-from-intents` |
 | Strategy authoring YAML workflow | DONE | `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-train-model`, `strategy-author-bundle-run`; entry / hold / close / reduce / add / rebalance / long / short / derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max / column-to-column and cross/trend/consecutive condition / exclusion-none condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal / paper-only linear model score / train-model adapter / group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip / bracket-OCO / partial-profit break-even lifecycle / order-style entry / time-in-force / post-only / reduce-only / execution-profile presets / slippage with row cost / partial-fill with row fill / min-fill gate with row threshold / spread gate / depth-based fill / latency gate / queue-position gate with row threshold / short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate / stop-loss / take-profit / stop/target width guard / reward-risk gate / close-signal exit / partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics / executed_signal_summary / strategy_scorecard / multi-strategy bundle / risk-parity allocation paper backtest; `tests/strategy_authoring/` |
 | Trade[XYZ] pure backtest v0.1 | DONE / CLI not public | `src/sis/backtest/engine/`, `src/sis/backtest/trade_xyz/`, `tests/backtest/`, `docs/backtest/` |
+| Backtest-first baseline seed | DONE | `scripts/seed_strategy_authoring_baseline_data.py`, `docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml`, `strategy-author-run --through backtest` |
+| Venue-neutral Strategy Lab contract | DONE | `src/sis/venues/ids.py`, `src/sis/research/strategy_lab/specs.py`, `schemas/strategy_signal.v1.schema.json`, `schemas/trade_candidate.v1.schema.json`, `schemas/paper_intent_preview.v1.schema.json` |
+| Bitget demo local smoke | DONE / external network not proven | `src/sis/execution/bitget_demo_adapter.py`, `tests/test_bitget_demo_adapter.py`, `tests/test_bitget_demo_cli.py`, `uv run sis bitget-demo-smoke` |
+| Venue-specific paper fee lookup | DONE | `src/sis/paper/broker.py`, `src/sis/paper/runner.py`, `configs/fee_model.bitget_demo.yaml`, `tests/test_paper_from_intents.py` |
 
 ## Current Operational Interpretation
 
 - migration 実装は完了している。
+- current development path は backtest-first / venue-neutral。Trade[XYZ] は実装済み主要 venue だが、現時点の注文口主軸ではない。
+- `VenueId` は `trade_xyz` と `bitget_demo`。`bitget_demo` は demo execution 検証用で、production Bitget live とは分ける。
+- Strategy Authoring baseline fixture は local seed で作れる。これは Trade[XYZ] `backtest_data_ready=true` ではない。
 - Trade[XYZ]実データ収集の非秘密な対象symbol、quote収集間隔、signal candle interval、readiness閾値、archive対象coinは `configs/trade_xyz_data_collection.yaml` が正本。shell wrapperは空のenv設定時にこのYAMLを読む。
 - 2026-05-30以前の実データは現行Trade[XYZ] backtest/readiness作業では使用禁止。該当artifactは `data/archive/pre_2026_05_31_unusable_real_data/` に移動済み。
 - `src/sis/cli.py` は root Typer app registration と `main()` に近い構成へ分割済み。
@@ -55,6 +62,7 @@
 - Strategy Research Lab は strategy definition / signal / evaluation / trial ledger / candidate pack / promotion decision / paper intent preview の code surface を持つ。
 - Strategy authoring は `strategy_authoring_spec.v1` YAML から rule-based long / short / hold / close / reduce / add / rebalance signal、derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max、column-to-column and cross/trend/consecutive condition、exclusion-none condition、regime membership filter、regime-specific overrides、paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal、paper-only linear model score / train-model adapter、group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds、opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip、bracket-OCO / partial-profit break-even lifecycle、order-style entry / time-in-force / post-only / reduce-only、execution-profile presets、slippage with row cost、partial-fill with row fill、min-fill gate with row threshold、spread gate、depth-based fill、latency gate、queue-position gate with row threshold、short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate、fixed-horizon backtest metrics、partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics と executed_signal_summary と strategy_scorecard 付き paper-only preview artifacts を作れる。`strategy_authoring_bundle.v1` は複数 spec の paper portfolio 比較を作る。
 - `PaperIntentPreview` は paper-only artifact で、`requires_revalidation=true`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を model validation で守る。
+- `bitget-demo-smoke` の `status=configured` は local credential env が揃った意味だけであり、Bitget network connectivity / account read / demo order submit / fill sync を証明しない。
 - tracked JSON Schema は guard / interoperability 用の薄い契約であり、詳細 validation は Pydantic model が正本。claim guard は `*_claimed` 名に統一済み。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - Trade[XYZ] pure backtest artifact は live order artifact ではない。`backtest_run.json` は `no_live_order=true`, `wallet_used=false`, `exchange_write_used=false` を記録する。
@@ -84,17 +92,26 @@ PR-08:
 - live order preview / 注文候補生成の正式 artifact surface
 - Strategy Lab から micro live への直接昇格 surface
 - Trade[XYZ] pure backtest の public CLI
-- Alpaca credentials ありの API connectivity は確認済み。fresh live `status=pass` は市場時間中の fresh bar 取得で再確認する
+- Bitget credentialed read-only network smoke
+- Bitget demo order lifecycle
+- Alpaca historical connectivity smoke は確認済み。fresh live `status=pass` は市場時間中の fresh bar 取得で再確認する
 - execution drift の live-readiness blocker 解消
 - side-specific depth は quote field と tracking gate に存在する。read-only phase gate は spread / stale / l2-only / fee unknown を current blocker として見る。
 
 ## Verification
 
-2026-06-05 docs/runtime verification:
+current verification は固定の pass count ではなく、作業時点で次を再実行して確認する:
 
-- `uv run python -V`: `Python 3.13.7`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 83 current docs`
-- latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
+```bash
+uv run python -V
+uv run sis --help
+uv run python scripts/check_current_docs.py
+./scripts/check
+```
+
+2026-06-06 docs-only spot check:
+
+- `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully
 
 2026-06-05 runtime artifact snapshot:
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-05_22:12 JST
-更新日: 2026-06-05_23:23 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Backtest-First Venue-Neutral Pivot Plan 2026-06-05
@@ -66,7 +66,42 @@ M6:
   demo write API は最後。credential と明示許可がない限り実行しない。
 ```
 
-## 現在の確認済み事実
+## 2026-06-06 Current Summary
+
+この文書は計画、実装前調査、実行記録、残タスクを同じファイルに残している。現在の読み方は次。
+
+```text
+実装済み:
+  T0:
+    Trade[XYZ] collector を主経路から外した。
+  T1a / T1:
+    scripts/seed_strategy_authoring_baseline_data.py で local baseline fixture を作り、
+    strategy-author-run --through backtest を通せる。
+  T2:
+    VenueId は trade_xyz, bitget_demo。
+    Strategy Lab model/schema/compiler は venue-neutral 最小 enum に揃っている。
+  T3:
+    paper runner / broker は venue-specific fee lookup を使う。
+    bitget_demo fixture quote で paper fill / block を検証できる。
+  T4a / T4 / T5a:
+    Bitget classic demo v2 を最初の API lane として記録した。
+    bitget-demo-smoke は local/mock-first で追加済み。
+
+未実行:
+  T5b:
+    Bitget credentialed read-only network smoke。
+  T6:
+    Bitget demo order lifecycle。
+
+境界:
+  status=configured は local credential env が揃っただけ。
+  Bitget network connectivity、account read、demo order submit、fill sync は未証明。
+  Strategy Authoring baseline は Trade[XYZ] backtest_data_ready=true ではない。
+```
+
+## 実装前の確認済み事実（historical）
+
+この section は 2026-06-05_22:48 JST の実装前調査であり、現在の model/schema contract ではない。`Literal["trade_xyz"]` や schema の不足は、後段の T2 実行記録で修正済み。
 
 確認時刻:
 
@@ -476,7 +511,7 @@ backtest-first で使うデータの優先順位:
    Bitget や Trade[XYZ] の外部 API から新規取得するのは最後。
 ```
 
-現時点の確認:
+T1a 実装前の確認:
 
 ```text
 存在する:
@@ -491,6 +526,8 @@ backtest-first で使うデータの優先順位:
   uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
   -> feature_panel_path not found: data/research/feature_panel.parquet
 ```
+
+現在は `scripts/seed_strategy_authoring_baseline_data.py` により、外部 API なしの baseline artifact を生成して `strategy-author-run --through backtest` まで通せる。
 
 ## 対象ファイル
 

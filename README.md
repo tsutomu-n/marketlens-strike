@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-05_20:25 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # marketlens-strike
 
-`marketlens-strike` is a Python 3.13 CLI workspace for Trade[XYZ] research,
-read-only evidence collection, Strategy Research Lab workflows, paper operations,
-and safety gates.
+`marketlens-strike` is a Python 3.13 CLI workspace for backtest-first strategy
+research, Strategy Research Lab workflows, paper operations, venue-neutral
+execution contracts, Trade[XYZ] read-only evidence collection, and safety gates.
 
 The code is the source of truth. Current docs summarize the implemented surfaces
 and the latest verified snapshots; generated files under `data/` may be absent
@@ -130,9 +130,12 @@ Strategy idea preparation starts at
 
 ## Current Boundaries
 
-- `trade_xyz`, `real_market`, `tracking`, `paper`, and `micro_live` code surfaces exist.
+- Current development is backtest-first and venue-neutral. Trade[XYZ] is an implemented venue and future order-entry candidate, not the current order-entry bottleneck.
+- `VenueId` currently allows `trade_xyz` and `bitget_demo`.
+- `trade_xyz`, `bitget_demo`, `real_market`, `tracking`, `paper`, and `micro_live` code surfaces exist.
 - `src/sis/cli.py` builds the root Typer app; command implementations live under `src/sis/commands/`.
 - `collect-trade-xyz-quotes` is a public CLI command.
+- `bitget-demo-smoke` is a local/mock-first smoke. `status=configured` means the three local Bitget demo env values are present; it does not prove network connectivity, account readiness, order submit readiness, or fill sync.
 - micro live is a code/test safety surface, not a public operator command.
 - `bot-preview` writes read-only HOLD preview artifacts when run; it does not use wallet secrets, signing, or exchange writes.
 - `check-go-no-go` and `build-evidence-card` are supplemental reports. Use `phase-gate-review` for the current Trade[XYZ] decision.
@@ -146,11 +149,18 @@ Strategy idea preparation starts at
 
 ## Current Verification
 
-2026-06-05 docs/runtime check:
+Run these commands for current verification instead of copying old pass counts from generated or historical docs:
 
-- `uv run python -V`: `Python 3.13.7`
-- `uv run python scripts/check_current_docs.py`: pass, `checked 83 current docs`
-- latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
+```bash
+uv run python -V
+uv run sis --help
+uv run python scripts/check_current_docs.py
+./scripts/check
+```
+
+2026-06-06 docs-only spot check:
+
+- `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully
 
 2026-06-05 runtime artifact snapshot:
 
@@ -166,4 +176,6 @@ production live trading is ready.
 
 gTrade / Ostium source, sidecars, raw data, registry files, and dedicated tests
 were compressed into `archive/gtrade_ostium_legacy_archive_*.zip`. The active
-repo tree now uses Trade[XYZ] as the main venue path.
+repo tree keeps Trade[XYZ] as an implemented read-only / research venue. Current
+strategy work should start from backtest-first and venue-neutral docs before
+returning to Trade[XYZ] readiness work.

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Architecture And Phases
@@ -15,7 +15,7 @@
 - `src/sis/research/strategy_lab`: strategy experiment specs, strategy signal records, evaluation plans, trial ledger, trade candidates, paper candidate packs, promotion decisions, paper intent previews
 - `src/sis/backtest/engine` and `src/sis/backtest/trade_xyz`: Trade[XYZ] pure backtest v0.1, long-only single-symbol accounting, fill, cost, gate, metrics, report artifacts
 - `src/sis/paper`: venue-gated paper fills, portfolio state, reports
-- `src/sis/execution`: `Trade[XYZ]` micro live safety code and execution read-only surfaces
+- `src/sis/execution`: `Trade[XYZ]` micro live safety code, `bitget_demo` local/mock-first adapter, and execution read-only surfaces
 - `src/sis/reports`, `src/sis/ops`, `src/sis/state`: operations, dashboards, remediation, daemon, notifications
 - `src/sis/cli.py` and `src/sis/commands/`: root Typer app registration plus feature-specific command modules
 - `archive/gtrade_ostium_legacy_archive_*.zip`: legacy gTrade/Ostium source and sidecar history
@@ -43,7 +43,9 @@ current truth:
 
 ## Migration Boundary
 
-- 新規コードの主軸は `trade_xyz`
+- 現在の新規戦略評価の主軸は backtest-first / venue-neutral
+- `trade_xyz` は実装済み主要 venue だが、当面の注文口主軸ではない
+- `bitget_demo` は demo execution 検証用の venue id。production Bitget live とは分ける
 - `gtrade` / `ostium` は active implementation tree ではなく archive zip と historical artifacts として残る
 - `ostium-python-sdk` は active dependency ではない
 
@@ -96,10 +98,11 @@ Trade[XYZ] pure backtest v0.1 は public CLI を持たない。live order、wall
 
 ## Execution Boundary
 
-`src/sis/execution` には 2 系統ある:
+`src/sis/execution` には 3 系統ある:
 
 - execution read-only observation / reporting surfaces
 - `Trade[XYZ]` micro live safety surface: policy, adapter, canary
+- `bitget_demo` local/mock-first surface: demo API header/signature boundary and fail-closed local smoke
 
 micro live の current boundary:
 
@@ -116,6 +119,8 @@ micro live の current boundary:
 - wallet / exchange secrets
 - public micro live operator surface
 - bot decision / live order preview の正式 surface
+- Bitget credentialed read-only network smoke
+- Bitget demo order lifecycle
 - production live trading
 
 ## Ops Boundary

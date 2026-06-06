@@ -1,3 +1,8 @@
+<!--
+作成日: 2026-05-29_21:42 JST
+更新日: 2026-06-06_10:28 JST
+-->
+
 # marketlens_strategy_research_lab_migration_pack
 
 この資料パックは、`marketlens-strike` を **Trade[XYZ] read-only / paper 前段基盤** から、戦略研究・候補生成・評価・paper昇格に強い **Strategy Research Lab** 構造へ移行するための実装契約です。
@@ -6,7 +11,9 @@
 
 ## Current Truth Note
 
-この migration pack は historical implementation contract です。現行正本は `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `schemas/`, `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` です。
+この migration pack は historical implementation contract です。現行正本は `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `schemas/`, `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`、および tracked JSON Schema です。
+
+この pack 内の `execution_venue: Literal["trade_xyz"]` や `target_venue: Literal["trade_xyz"]` は当時の移行契約です。現在の contract は `src/sis/venues/ids.py` の `VenueId = Literal["trade_xyz", "bitget_demo"]` と、`schemas/strategy_signal.v1.schema.json` / `schemas/trade_candidate.v1.schema.json` / `schemas/paper_intent_preview.v1.schema.json` の enum です。
 
 `templates/` 配下は copy-safe に保つため、現行 Strategy Lab の claim guard 名へ更新済みです。`profitability_claim`, `paper_ready_claim`, `tiny_live_ready_claim`, `live_ready_claim` のような旧 `*_claim` 名は使わず、`profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, `live_ready_claimed` を使います。PR docs / roadmap / historical prose に残る古い表現は履歴として読みます。
 

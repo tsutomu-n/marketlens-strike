@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-06_07:27 JST
-更新日: 2026-06-06_07:27 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Document Cleanup Execution Plan 2026-06-06
@@ -36,6 +36,48 @@ P4:
   current docs が trade_xyz only venue contract のように見える。
   current docs が Bitget status=configured を network/account/order ready と読ませる。
   current docs が Trade[XYZ] quote coverage を今の主経路 next action と読ませる。
+```
+
+## 2026-06-06_10:28 実装結果
+
+実装済み:
+
+```text
+P1:
+  README.md / CURRENT_STATE / CODE_STATUS / backtest README / ARCHITECTURE / OPERATIONS_RUNBOOK / Strategy docs を更新。
+  stale pass count を current truth として読ませない形に変更。
+  backtest-first / venue-neutral / bitget_demo local smoke 境界を current docs へ反映。
+
+P2:
+  pivot plan 冒頭に current summary を追加。
+  実装前の Literal["trade_xyz"] 調査を historical と明示。
+  Strategy Authoring baseline seed の実行入口を backtest docs と Strategy docs に追加。
+
+P3:
+  plan/README.md と migration pack README に historical / superseded 表示を追加。
+  Trade[XYZ] quote coverage NEXT_STEPS / USER_DECISION_RECORD を current main next action ではない historical / operational record と明示。
+```
+
+意図的に未実施:
+
+```text
+archive 移動:
+  今回は実施しない。まず label で誤読を止めた。
+
+新規 current backtest status doc:
+  今回は作らない。`docs/backtest/README.md` と pivot plan current summary で足りる。
+
+full `./scripts/check`:
+  docs-only cleanup なので最終確認は current-doc checker と whitespace check を優先する。
+  code/schema/CLI の挙動は変更していない。
+```
+
+検証注意:
+
+```text
+README.md docs plan 全体への broad `rg` を合否判定にしない。
+audit / execution plan / historical docs が古い語を説明目的で引用するため、false positive になる。
+critical current docs だけを scoped scan し、historical label 付きの引用は許容する。
 ```
 
 ## 現行正本
@@ -227,7 +269,7 @@ acceptance:
 verification:
 
 ```bash
-rg -n "checked 83|830 passed|Literal\\[\"trade_xyz\"\\]|status=ready|network.*ready|account.*ready" README.md docs -g '*.md' -g '*.html'
+rg -n 'checked 83|830 passed|repo の主軸|main venue path|execution_venue: Literal\["trade_xyz"\]' README.md docs/CURRENT_STATE.md docs/CODE_STATUS.md docs/backtest/README.md docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md docs/ARCHITECTURE_AND_PHASES.md
 uv run python scripts/check_current_docs.py
 git diff --check
 ```
@@ -350,9 +392,12 @@ verification:
 
 ```bash
 uv run python scripts/check_current_docs.py
-rg -n "Literal\\[\"trade_xyz\"\\]|current next action|今の主経路|checked 83|830 passed" README.md docs plan -g '*.md' -g '*.html'
+rg -n 'checked 83|830 passed|repo の主軸|main venue path|execution_venue: Literal\["trade_xyz"\]' README.md docs/CURRENT_STATE.md docs/CODE_STATUS.md docs/backtest/README.md docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md docs/ARCHITECTURE_AND_PHASES.md
+rg -n 'execution_venue: Literal\["trade_xyz"\]' plan/README.md plan/marketlens_strategy_research_lab_migration_pack/README.md
 git diff --check
 ```
+
+2本目の `rg` は no-hit ではなく、historical / superseded label の説明行だけに限定されることを確認する。
 
 ## Phase P4: Final Verification
 

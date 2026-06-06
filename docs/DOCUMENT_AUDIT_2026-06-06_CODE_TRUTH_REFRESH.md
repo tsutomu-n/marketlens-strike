@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-06_07:27 JST
-更新日: 2026-06-06_07:27 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Code-Truth Documentation Audit 2026-06-06
@@ -37,7 +37,7 @@ worktree:
   調査開始時点では clean。
 
 current docs checker:
-  checked 84 current docs: metadata, links, EOF, and legacy roots ok
+  2026-06-06_10:28 JST の再確認では checked 86 current docs: metadata, links, EOF, and legacy roots ok
 
 root CLI:
   bitget-demo-smoke が存在する。
@@ -59,13 +59,52 @@ Bitget demo:
   credential が揃っても status=configured であり、network/account/order readiness ではない。
 ```
 
+## 2026-06-06_10:28 実装追記
+
+この audit から作った cleanup 計画は、まず archive 移動ではなく current docs の誤読停止として実装した。
+
+実装済み:
+
+```text
+README.md:
+  backtest-first / venue-neutral / bitget_demo local smoke boundary を反映。
+
+docs/CURRENT_STATE.md:
+  Trade[XYZ] 注文口主軸表現をやめ、VenueId / baseline seed / Bitget demo local smoke を追加。
+
+docs/CODE_STATUS.md:
+  post-pivot rows と known gaps を追加。
+
+docs/backtest/README.md:
+  Strategy Authoring baseline seed を最短 backtest 入口として追加。
+
+docs/ARCHITECTURE_AND_PHASES.md:
+  Migration Boundary と Execution Boundary を更新。
+
+docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md:
+  current summary を追加し、実装前調査を historical と明示。
+
+plan/README.md / migration pack README:
+  historical / superseded 表示を追加。
+
+Trade[XYZ] quote coverage decision docs:
+  current main next action ではない historical / operational record と明示。
+```
+
+検証上の補正:
+
+```text
+`checked 83` / `830 passed` / `Literal["trade_xyz"]` を README.md docs plan 全体へ broad rg すると、audit / plan / historical docs の説明引用まで拾う。
+したがって acceptance は critical current docs の scoped scan と docs checker を使う。
+```
+
 ## 更新できるドキュメント
 
 優先度高:
 
 | Path | 理由 | 更新内容 |
 |---|---|---|
-| `README.md` | verification が `checked 83` / `830 passed` のまま。Bitget demo local smoke と backtest-first pivot が Current Boundaries にない。末尾の "active repo tree now uses Trade[XYZ] as the main venue path" は現在の開発判断とズレやすい。 | verification を `checked 84` / latest local full check 記録へ更新。`bitget-demo-smoke` は local/configured smoke で外部接続なし、と追記。Trade[XYZ] は実装済み主要 venue だが当面の注文口主軸ではない、と修正。 |
+| `README.md` | verification が `checked 83` / `830 passed` のまま。Bitget demo local smoke と backtest-first pivot が Current Boundaries にない。末尾の "active repo tree now uses Trade[XYZ] as the main venue path" は現在の開発判断とズレやすい。 | verification は固定数値ではなく command 参照へ寄せる。`bitget-demo-smoke` は local/configured smoke で外部接続なし、と追記。Trade[XYZ] は実装済み主要 venue だが当面の注文口主軸ではない、と修正。 |
 | `docs/CURRENT_STATE.md` | `repo の主軸は Trade[XYZ] / real market / tracking / venue-gated paper / micro live canary` が、backtest-first pivot と bitget_demo local smoke 後の状態を反映していない。verification も古い。 | 結論を「backtest-first / venue-neutral pivot が現在の開発主軸、Trade[XYZ] は実装済み主要 venue かつ将来候補」と更新。Implemented Surfaces に `bitget_demo` local smoke と `VenueId` を追加。 |
 | `docs/CODE_STATUS.md` | PR-00 to PR-08 と post-PR12 の表に、venue-neutral contract / Bitget demo local smoke / baseline seed backtest が入っていない。verification が古い。 | Post-PR08 / post-pivot rows を追加。Known Gaps に credentialed Bitget read-only network smoke / demo order lifecycle を追加。 |
 | `docs/backtest/README.md` | pivot doc へのリンクはあるが、最初に読むべき詳細が Trade[XYZ] pure backtest に寄りすぎている。verification が古い。 | backtest-first の最初の実行経路として `scripts/seed_strategy_authoring_baseline_data.py` と `strategy-author-run --through backtest` を追記。Trade[XYZ] pure backtest は専用 surface として残す。 |

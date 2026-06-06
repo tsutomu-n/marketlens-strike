@@ -1,13 +1,15 @@
 <!--
 作成日: 2026-06-01_15:03 JST
-更新日: 2026-06-05_08:05 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Trade[XYZ] Real Data Collection Current Record
 
-更新日: 2026-06-05_08:05 JST
+更新日: 2026-06-06_10:28 JST
 
 この文書は、第三者が `marketlens-strike` の現在状態を引き継ぐための記録である。コード、設定、生成済みartifactを正として書く。
+
+現在の開発主経路 next action ではなく、Trade[XYZ] real data collection を主目的にしていた時点の historical / operational record として読む。現在の主経路は backtest-first / venue-neutral であり、入口は `docs/CURRENT_STATE.md`、`docs/backtest/README.md`、`docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md` を優先する。
 
 この文書は追記型の履歴記録でもある。古い節にある pytest 件数、current-docs count、row count、fail list はその節の timestamp 時点の snapshot として読み、現在判断は最新節、`README.md`、`docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、および生成済み manifest を優先する。
 

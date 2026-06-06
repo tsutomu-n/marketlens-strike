@@ -1,11 +1,13 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-05_23:17 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Operations Runbook
 
 この runbook は current repo を再開・再検証・再生成するための最短手順です。`data/` は git 管理外なので、artifact は必要に応じて作り直します。
+
+現在の開発主経路は backtest-first / venue-neutral です。Trade[XYZ] collection 手順は再利用可能な運用手順として残しますが、Trade[XYZ] quote coverage を現在の主経路 next action とは扱いません。
 
 ## Restart
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -10,6 +10,8 @@
 この `plan/` は、historical planning record と implementation handoff を残す場所です。
 
 現行コードでは PR-00〜PR-08 の migration code/test surface は完了済みです。Trade[XYZ] real data / backtest 関連の top-level plan も、実装順序、判断、acceptance、handoff を確認するための履歴資料です。current status は `docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、生成済み manifest を先に読んでください。
+
+重要: `plan/marketlens_strategy_research_lab_migration_pack/` は historical migration contract です。`execution_venue: Literal["trade_xyz"]` のような記述は当時の実装前契約であり、現在の contract ではありません。現在の venue contract は code/schema の `trade_xyz`, `bitget_demo` です。
 
 ## Historical read order
 

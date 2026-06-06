@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-05-30_20:56 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Strategy Authoring Current Summary
 
-この文書は、2026-05-30 時点の `strategy_authoring_spec.v1` でユーザーが作れる売買ロジックを、コードを正として整理したものです。
+この文書は、2026-06-06 時点の `strategy_authoring_spec.v1` でユーザーが作れる売買ロジックを、コードを正として整理したものです。
 
 正本はコードです。特に次を優先します。
 
@@ -22,6 +22,8 @@
 ユーザーは YAML だけで、entry、long / short 分岐、hold、close、reduce、add、rebalance、損切、利確、部分利確、stop/target width guard、reward/risk gate with row threshold、トレーリングストップ、最低保有時間、OCO 的 bracket、fixed-or-row-level entry type / offset / time-in-force / timeout / post-only and reduce-only paper order constraint、position sizing、portfolio exposure、turnover budget、data guard presets / row thresholds、risk throttle profiles / row thresholds / cooldown、時間帯 filter、event filter、cross-sectional rotation、multi-leg / pair trade with fixed-or-row-level leg-specific exits, order, and execution overrides、parameter sweep、paper backtest、paper-preview まで作れます。
 
 ただし、これは paper-only research / preview flow です。live order、wallet signing、exchange write、broker queue priority、order book event replay を含む full venue microstructure replay はまだできません。
+
+current `execution_venue` は `trade_xyz` と `bitget_demo` を許可します。`bitget_demo` は demo execution 検証用で、Bitget production live や外部 API 接続成功を意味しません。
 
 ## 作れる戦略タイプ
 
@@ -165,11 +167,25 @@
 5. strategy archetype ごとの coverage と paper-only 境界は [13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md](13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md) を見る。
 6. 実装差分を判断する時は tests と schema を確認し、docs だけで実装済み判定しない。
 
+外部 API なしで最初の baseline backtest を通す場合:
+
+```bash
+uv run python scripts/seed_strategy_authoring_baseline_data.py
+uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+```
+
 ## 検証済みの現状
 
-最新 full check では、次を確認済みです。
+current verification は固定の pass count ではなく、作業時点で次を再実行して確認します。
 
-- latest recorded `./scripts/check`: pass, 830 passed in 2026-06-04 quote coverage docs
-- current-docs lint: `checked 83 current docs: metadata, links, EOF, and legacy roots ok`
+```bash
+uv run python scripts/seed_strategy_authoring_baseline_data.py
+uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+uv run pytest -q tests/strategy_authoring
+uv run python scripts/check_current_docs.py
+```
 
-docs-only 確認でも、`uv run python scripts/check_current_docs.py` が `checked 83 current docs: metadata, links, EOF, and legacy roots ok` で通っています。
+2026-06-06 docs-only spot check:
+
+- `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully

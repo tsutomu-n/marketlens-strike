@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-05-30_14:13 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Current Capabilities
 
-この文書は、2026-05-30 時点の Strategy Research Lab で実際にできることを記録します。
+この文書は、2026-06-06 時点の Strategy Research Lab で実際にできることを記録します。
 
 正本はコードです。特に `src/sis/commands/research.py`, `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `src/sis/paper/runner.py`, `tests/test_strategy_lab_commands.py` を優先します。
 
@@ -20,6 +20,8 @@
 ## 結論
 
 今の Strategy Research Lab は、登録済み generator または `StrategyExperimentSpec` YAML/JSON から signal artifact を作り、paper-only の trial / candidate / promotion / intent preview まで進められます。加えて、`strategy_authoring_spec.v1` YAML から宣言型 rule を signal artifact / fixed-horizon backtest / paper-preview artifact へ進められます。
+
+`execution_venue` は current contract では `trade_xyz` と `bitget_demo` を許可します。`bitget_demo` は demo execution 検証用であり、Bitget production live や外部 API 接続成功を意味しません。最短の backtest-first 入口は local baseline seed です。
 
 ただし、これは live-ready 証明ではありません。現行 authoring backtest は fixed-horizon の研究用 metrics であり、paper weight / notional は扱えますが、wallet / signing / exchange write は含みません。
 
@@ -71,6 +73,14 @@ uv run sis strategy-author-explain --spec docs/strategy_research_lab/examples/tr
 uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
 uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
 uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/notional_pair_hedge_bundle.yaml
+```
+
+外部 API なしで最初の baseline backtest を通す場合:
+
+```bash
+uv run python scripts/seed_strategy_authoring_baseline_data.py
+uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
 ```
 
 できること:
@@ -297,7 +307,7 @@ uv run sis evaluate-strategy-lab \
 
 ## 受け入れ済みの検証
 
-2026-05-30 時点で、次を確認済みです。
+current verification は固定の pass count ではなく、作業時点で次を再実行して確認します。
 
 ```bash
 uv run pytest tests/test_strategy_lab_commands.py -q
@@ -309,12 +319,6 @@ uv run python scripts/check_current_docs.py
 git diff --check
 ```
 
-確認済み結果:
+2026-06-06 docs-only spot check:
 
-- `tests/test_strategy_lab_commands.py`: 20 passed
-- `tests/strategy_authoring` + `tests/test_strategy_lab_schemas.py`: 214 passed
-- Strategy Lab focused suite: 45 passed
-- Research pipeline / CLI smoke: 71 passed
-- `scripts/check_current_docs.py`: checked 83 current docs
-- latest recorded `./scripts/check`: 830 passed in 2026-06-04 quote coverage docs
-- `git diff --check`: pass
+- `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully

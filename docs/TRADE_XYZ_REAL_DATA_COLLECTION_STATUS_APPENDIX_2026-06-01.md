@@ -1,11 +1,13 @@
 <!--
 作成日: 2026-06-01_14:13 JST
-更新日: 2026-06-05_07:57 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Trade[XYZ] Real Data Collection Status Appendix
 
-この付録は、Trade[XYZ] の純粋バックテストに必要な実データ収集の現在地を、現在のRepoと生成済みmanifestを正として整理する。戦略最適化や live/paper/wallet/signing/exchange write の計画ではない。
+この付録は、Trade[XYZ] の純粋バックテストに必要な実データ収集の当時の現在地を、Repoと生成済みmanifestを正として整理した historical / operational record である。戦略最適化や live/paper/wallet/signing/exchange write の計画ではない。
+
+現在の開発主経路 next action ではない。現在の主経路は backtest-first / venue-neutral であり、入口は `docs/CURRENT_STATE.md`、`docs/backtest/README.md`、`docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md` を優先する。
 
 ## 2026-05-30以前の実データ禁止
 

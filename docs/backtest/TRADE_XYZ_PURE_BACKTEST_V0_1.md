@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Trade[XYZ] Pure Backtest v0.1
@@ -10,6 +10,7 @@
 ## 結論
 
 Trade[XYZ] pure backtest v0.1 は実装済みです。ただし public CLI はまだありません。現在の入口は Python API の `run_backtest()` です。
+現在の backtest-first 開発の最短入口は Strategy Authoring baseline であり、この文書の pure backtest は Trade[XYZ] 専用 surface として分けて読みます。
 
 ```python
 from sis.backtest.engine.runner import run_backtest
@@ -213,9 +214,8 @@ uv run pytest -q tests/backtest/test_real_quotes_smoke.py
 
 ## Verification
 
-2026-06-05 docs/runtime check:
+current verification は固定の pass count ではなく、作業時点で次を再実行して確認する:
 
 - `uv run pytest -q tests/backtest`: current expected pass
 - `./scripts/check`: canonical full gate
-- `uv run python scripts/check_current_docs.py`: checked 83 current docs
-- latest recorded `./scripts/check`: 830 passed in 2026-06-04 quote coverage docs
+- `uv run python scripts/check_current_docs.py`: current docs lint

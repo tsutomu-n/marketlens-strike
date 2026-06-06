@@ -1,11 +1,13 @@
 <!--
 作成日: 2026-06-04_20:20 JST
-更新日: 2026-06-05_07:40 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Trade[XYZ] Quote Coverage User Decision Record 2026-06-04
 
 この文書は、Trade[XYZ] の quote coverage 収集について、ユーザーが「今どう判断すればよいか」を短く確認するための記録である。実装者向けの詳細は [TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md) を読む。PID `2484910` の自然終了条件は [TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md](TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md) を読む。
+
+現在の主経路 next action ではなく、Trade[XYZ] quote coverage 収集を主目的にしていた時点の historical / operational record として読む。現在の開発主経路は backtest-first / venue-neutral である。
 
 ## 結論
 

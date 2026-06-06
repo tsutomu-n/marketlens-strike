@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-05_22:12 JST
+更新日: 2026-06-06_10:28 JST
 -->
 
 # Backtest Docs
@@ -14,13 +14,34 @@
 | Surface | Entry | Status | 用途 |
 |---|---|---|---|
 | Trade[XYZ] pure backtest v0.1 | `sis.backtest.engine.runner.run_backtest()` | 実装済み、CLI未公開 | Trade[XYZ] 単一銘柄 long-only の純粋BT |
-| Strategy Authoring fixed-horizon backtest | `uv run sis strategy-author-run --through backtest` | 実装済み | YAML戦略のpaper-only研究評価 |
+| Strategy Authoring fixed-horizon backtest | `uv run sis strategy-author-run --through backtest` | 実装済み、baseline seedあり | YAML戦略のpaper-only研究評価 |
 | Legacy backtest bridge | `uv run sis build-backtest` | 互換維持 | Strategy Lab / historical bridge系の簡易評価 |
 
-最初に読むべき詳細は [TRADE_XYZ_PURE_BACKTEST_V0_1.md](TRADE_XYZ_PURE_BACKTEST_V0_1.md) です。
+バックテストへ最短で入る入口は Strategy Authoring baseline です。
 Trade[XYZ] を当面の注文口にせず、バックテスト優先へ切り替える計画は
 [BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md](BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md)
 を見ます。
+
+## Backtest-First Baseline
+
+外部 API や Trade[XYZ] 30日 quote coverage を待たず、まずこの local fixture で Strategy Authoring backtest を通します。
+
+```bash
+uv run python scripts/seed_strategy_authoring_baseline_data.py
+uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+```
+
+主な出力:
+
+- `data/research/strategy_authoring_baseline_feature_panel.parquet`
+- `data/research/strategy_authoring_baseline_quotes.parquet`
+- `data/research/strategy_authoring_baseline_venue_cost_matrix.csv`
+- `data/research/strategy_signals.parquet`
+- `data/research/strategy_backtest_metrics.json`
+- `data/reports/strategy_backtest_report.md`
+
+これは Strategy Authoring の paper-only 研究評価です。Trade[XYZ] `backtest_data_ready=true`、Bitget 接続、demo order submit、live readiness の証明ではありません。
 
 ## Trade[XYZ] Pure Backtest v0.1
 
@@ -62,8 +83,11 @@ Trade[XYZ] を当面の注文口にせず、バックテスト優先へ切り替
 
 ## Verification
 
-2026-06-05 docs/runtime check:
+current verification は固定の pass count ではなく、作業時点で次を再実行して確認する:
 
-- `uv run python -V`: `Python 3.13.7`
-- `uv run python scripts/check_current_docs.py`: checked 83 current docs
-- latest recorded `./scripts/check`: 830 passed in 2026-06-04 quote coverage docs
+```bash
+uv run python scripts/seed_strategy_authoring_baseline_data.py
+uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+uv run pytest -q tests/backtest
+uv run python scripts/check_current_docs.py
+```
