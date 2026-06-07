@@ -386,18 +386,18 @@ def _planner_entries(
 
 
 def _planner_entry_diffs(
-    previous_entries: object, current_entries: list[dict]
+    previous_entries: object, current_entries: list[dict[str, Any]]
 ) -> dict[str, dict[str, object]]:
     previous_list = previous_entries if isinstance(previous_entries, list) else []
     previous = {
-        _entry_key(item): item
+        _entry_key(cast(dict[str, Any], item)): cast(dict[str, Any], item)
         for item in previous_list
-        if isinstance(item, dict) and _entry_key(item)
+        if isinstance(item, dict) and _entry_key(cast(dict[str, Any], item))
     }
     current = {
         _entry_key(item): item
         for item in current_entries
-        if isinstance(item, dict) and _entry_key(item)
+        if _entry_key(item)
     }
     diffs: dict[str, dict[str, object]] = {}
     for key in sorted(set(previous) | set(current)):
@@ -405,13 +405,17 @@ def _planner_entry_diffs(
         current_entry = current.get(key, {})
         previous_status = previous_entry.get("status")
         current_status = current_entry.get("status")
+        previous_commands_value = previous_entry.get("commands")
         previous_commands = (
-            previous_entry.get("commands")
-            if isinstance(previous_entry.get("commands"), list)
+            cast(list[object], previous_commands_value)
+            if isinstance(previous_commands_value, list)
             else []
         )
+        current_commands_value = current_entry.get("commands")
         current_commands = (
-            current_entry.get("commands") if isinstance(current_entry.get("commands"), list) else []
+            cast(list[object], current_commands_value)
+            if isinstance(current_commands_value, list)
+            else []
         )
         if not previous_entry:
             trend = "new"
@@ -649,9 +653,10 @@ def build_remediation_planner(
         "related_reports": related_reports,
         "remediation_planner_report_path": str(out_path) if out_path is not None else None,
     }
+    command_chain_diff_value = planner_rerun_diff.get("command_chain_diff")
     command_chain_diff = (
-        planner_rerun_diff.get("command_chain_diff")
-        if isinstance(planner_rerun_diff.get("command_chain_diff"), dict)
+        cast(dict[str, Any], command_chain_diff_value)
+        if isinstance(command_chain_diff_value, dict)
         else {}
     )
     chain_trend = command_chain_diff.get("trend")
