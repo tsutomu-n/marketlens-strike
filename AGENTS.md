@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-05-30_21:32 JST
-更新日: 2026-06-07_21:30 JST
+更新日: 2026-06-07_21:33 JST
 -->
 
 # Repository Guidelines
 
-Last updated: 2026-06-07_21:30 Asia/Tokyo. Keep this guide concise; no fixed word limit.
+Last updated: 2026-06-07_21:33 Asia/Tokyo. Keep this guide concise; no fixed word limit.
 
 ## Codex Loading
 
@@ -23,9 +23,9 @@ Code, tests, schemas, config, lockfiles, CI, and CLI help are authoritative. Pre
 
 Tests live in `tests/` with focused slices under `tests/backtest/` and `tests/strategy_authoring/`. Docs are in `docs/`, plans in `plan/`, schemas in `schemas/`, templates in `templates/`, and examples/config in `configs/`. `data/`, `logs/`, and `.tmp/` are runtime/generated state.
 
-## Current Priority
+## Default Scope Bias
 
-The current development priority is research/backtest-first and venue-neutral. Prefer the NDX Layer 2.2 DAG foundation for NDX research tasks, and prefer Strategy Lab authoring or backtest-first workflows when a task does not explicitly require venue-specific work.
+When the user does not specify a scope, prefer research/backtest-first and venue-neutral work. Use the NDX Layer 2.2 DAG foundation for NDX research tasks. Prefer Strategy Lab authoring or backtest-first workflows when a task does not explicitly require venue-specific work.
 
 Trade[XYZ] remains implemented code and historical/read-only venue context, but it is no longer the default product axis, primary execution path, or primary next action. Do not introduce new Trade[XYZ] assumptions, collectors, readiness claims, or order-path work unless the user explicitly scopes the task to Trade[XYZ].
 
