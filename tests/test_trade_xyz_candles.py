@@ -8,7 +8,6 @@ from typer.testing import CliRunner
 
 from sis.cli import app
 from sis.storage.jsonl_store import read_json
-from sis.venues.trade_xyz.candles import DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS
 from sis.venues.trade_xyz.candles import SIGNAL_CANDLE_SCHEMA
 from sis.venues.trade_xyz.candles import collect_trade_xyz_signal_candles
 from sis.venues.trade_xyz.candles import signal_candles_manifest_is_fresh
@@ -94,6 +93,7 @@ def test_collect_trade_xyz_signal_candles_writes_separate_signal_artifacts(tmp_p
         symbols=["SP500"],
         intervals=["30m", "4h"],
         period_days=1,
+        request_delay_seconds=0,
         client=client,
         generated_at=datetime(2026, 5, 31, tzinfo=UTC),
     )
@@ -102,7 +102,7 @@ def test_collect_trade_xyz_signal_candles_writes_separate_signal_artifacts(tmp_p
     assert manifest["symbol_count"] == 1
     assert manifest["symbols"] == ["SP500"]
     assert manifest["request_error_count"] == 0
-    assert manifest["request_delay_seconds"] == DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS
+    assert manifest["request_delay_seconds"] == 0
     assert manifest["intervals"] == ["30m", "4h"]
     assert len(client.requests) == 2
     assert (data_dir / "manifests/trade_xyz_signal_candles_manifest.json").exists()
@@ -140,6 +140,8 @@ def test_collect_trade_xyz_signal_candles_cli_writes_manifest(tmp_path, monkeypa
             "30m",
             "--period-days",
             "1",
+            "--request-delay-seconds",
+            "0",
         ],
         env={"SIS_DATA_DIR": str(data_dir)},
     )
@@ -148,7 +150,7 @@ def test_collect_trade_xyz_signal_candles_cli_writes_manifest(tmp_path, monkeypa
     assert "manifest_path=" in result.stdout
     assert "row_count=1" in result.stdout
     manifest = read_json(data_dir / "manifests/trade_xyz_signal_candles_manifest.json")
-    assert manifest["request_delay_seconds"] == DEFAULT_SIGNAL_CANDLE_REQUEST_DELAY_SECONDS
+    assert manifest["request_delay_seconds"] == 0
     assert manifest["notes"] == [
         "Signal candles are historical OHLCV inputs for strategy signals.",
         "Do not use these candles as fill snapshots; fill modeling uses quote snapshots.",
@@ -165,6 +167,7 @@ def test_collect_trade_xyz_signal_candles_subset_rerun_preserves_other_rows(tmp_
         symbols=["SP500"],
         intervals=["30m", "4h"],
         period_days=1,
+        request_delay_seconds=0,
         client=client,
         generated_at=datetime(2026, 5, 31, tzinfo=UTC),
     )
@@ -173,6 +176,7 @@ def test_collect_trade_xyz_signal_candles_subset_rerun_preserves_other_rows(tmp_
         symbols=["SP500"],
         intervals=["4h"],
         period_days=1,
+        request_delay_seconds=0,
         client=client,
         generated_at=datetime(2026, 6, 1, tzinfo=UTC),
     )
@@ -298,6 +302,7 @@ def test_signal_candles_manifest_is_fresh_checks_symbols_intervals_and_age(tmp_p
         symbols=["SP500"],
         intervals=["30m", "4h"],
         period_days=1,
+        request_delay_seconds=0,
         client=client,
         generated_at=datetime(2026, 5, 31, tzinfo=UTC),
     )
