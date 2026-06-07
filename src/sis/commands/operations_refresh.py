@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import typer
 from loguru import logger
 
 from sis.settings import get_settings
 from sis.storage.jsonl_store import read_json
+
+
+def _read_json_dict(path: Path) -> dict[str, Any]:
+    payload = read_json(path)
+    return cast(dict[str, Any], payload) if isinstance(payload, dict) else {}
 
 
 def register_operations_refresh_commands(
@@ -213,7 +218,7 @@ def register_operations_refresh_commands(
         audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(
             settings.data_dir
         )
-        bundle_payload = read_json(bundle_manifest_out)
+        bundle_payload = _read_json_dict(bundle_manifest_out)
         bundle_chain_out = _append_operations_snapshot_manifest(
             settings.data_dir,
             manifest_path=bundle_manifest_out,
@@ -224,7 +229,7 @@ def register_operations_refresh_commands(
             if isinstance(bundle_payload, dict)
             else None,
         )
-        audit_payload = read_json(audit_manifest_out)
+        audit_payload = _read_json_dict(audit_manifest_out)
         audit_chain_out = _append_operations_audit_snapshot_manifest(
             settings.data_dir,
             manifest_path=audit_manifest_out,
@@ -235,7 +240,7 @@ def register_operations_refresh_commands(
             if isinstance(audit_payload, dict)
             else None,
         )
-        audit_bundle_payload = read_json(audit_bundle_manifest_out)
+        audit_bundle_payload = _read_json_dict(audit_bundle_manifest_out)
         audit_bundle_chain_out = _append_audit_bundle_snapshot_manifest(
             settings.data_dir,
             manifest_path=audit_bundle_manifest_out,
@@ -246,7 +251,7 @@ def register_operations_refresh_commands(
             if isinstance(audit_bundle_payload, dict)
             else None,
         )
-        remediation_planner_payload = read_json(remediation_planner_summary_out)
+        remediation_planner_payload = _read_json_dict(remediation_planner_summary_out)
         remediation_planner_chain_out = _append_remediation_planner_manifest(
             settings.data_dir,
             summary_path=remediation_planner_summary_out,
@@ -273,7 +278,7 @@ def register_operations_refresh_commands(
             if isinstance(remediation_planner_payload, dict)
             else None,
         )
-        remediation_execution_plan_payload = read_json(remediation_execution_plan_summary_out)
+        remediation_execution_plan_payload = _read_json_dict(remediation_execution_plan_summary_out)
         remediation_execution_plan_chain_out = _append_remediation_execution_plan_manifest(
             settings.data_dir,
             summary_path=remediation_execution_plan_summary_out,
@@ -302,7 +307,7 @@ def register_operations_refresh_commands(
                 else None
             ),
         )
-        remediation_session_payload = read_json(remediation_session_summary_out)
+        remediation_session_payload = _read_json_dict(remediation_session_summary_out)
         remediation_session_chain_out = _append_remediation_session_manifest(
             settings.data_dir,
             summary_path=remediation_session_summary_out,
@@ -332,7 +337,7 @@ def register_operations_refresh_commands(
                 else None
             ),
         )
-        remediation_session_checkpoint_payload = read_json(
+        remediation_session_checkpoint_payload = _read_json_dict(
             remediation_session_checkpoint_summary_out
         )
         remediation_session_checkpoint_chain_out = _append_remediation_session_checkpoint_manifest(
@@ -373,7 +378,7 @@ def register_operations_refresh_commands(
                 else None
             ),
         )
-        remediation_scoreboard_payload = read_json(remediation_scoreboard_summary_out)
+        remediation_scoreboard_payload = _read_json_dict(remediation_scoreboard_summary_out)
         remediation_scoreboard_chain_out = _append_remediation_scoreboard_manifest(
             settings.data_dir,
             summary_path=remediation_scoreboard_summary_out,
@@ -412,7 +417,7 @@ def register_operations_refresh_commands(
                 else None
             ),
         )
-        remediation_evaluator_payload = read_json(remediation_evaluator_summary_out)
+        remediation_evaluator_payload = _read_json_dict(remediation_evaluator_summary_out)
         remediation_evaluator_chain_out = _append_remediation_evaluator_manifest(
             settings.data_dir,
             summary_path=remediation_evaluator_summary_out,
@@ -432,7 +437,7 @@ def register_operations_refresh_commands(
                 else None
             ),
         )
-        remediation_evidence_payload = read_json(remediation_evidence_summary_out)
+        remediation_evidence_payload = _read_json_dict(remediation_evidence_summary_out)
         remediation_evidence_chain_out = _append_remediation_evidence_manifest(
             settings.data_dir,
             summary_path=remediation_evidence_summary_out,
@@ -452,7 +457,7 @@ def register_operations_refresh_commands(
                 else None
             ),
         )
-        remediation_command_results_payload = read_json(remediation_command_results_summary_out)
+        remediation_command_results_payload = _read_json_dict(remediation_command_results_summary_out)
         remediation_command_results_chain_out = _append_remediation_command_results_manifest(
             settings.data_dir,
             summary_path=remediation_command_results_summary_out,

@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Any, Callable, Protocol, cast
 
 import typer
 from loguru import logger
 
 from sis.settings import get_settings
 from sis.storage.jsonl_store import read_json
+
+
+def _read_json_dict(path: Path) -> dict[str, Any]:
+    payload = read_json(path)
+    return cast(dict[str, Any], payload) if isinstance(payload, dict) else {}
 
 
 class _SummaryReportWriter(Protocol):
@@ -40,7 +45,7 @@ def register_remediation_commands(
     def remediation_planner_cmd() -> None:
         settings = get_settings()
         out, summary_out, text = write_remediation_planner_fn(settings.data_dir)
-        payload = read_json(summary_out)
+        payload = _read_json_dict(summary_out)
         chain_out = append_remediation_planner_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
@@ -75,7 +80,7 @@ def register_remediation_commands(
     def remediation_execution_plan_cmd() -> None:
         settings = get_settings()
         out, summary_out, text = write_remediation_execution_plan_fn(settings.data_dir)
-        payload = read_json(summary_out)
+        payload = _read_json_dict(summary_out)
         chain_out = append_remediation_execution_plan_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
@@ -107,7 +112,7 @@ def register_remediation_commands(
     def remediation_session_cmd() -> None:
         settings = get_settings()
         out, summary_out, text = write_remediation_session_fn(settings.data_dir)
-        payload = read_json(summary_out)
+        payload = _read_json_dict(summary_out)
         chain_out = append_remediation_session_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
@@ -185,7 +190,7 @@ def register_remediation_commands(
             stderr_summary=stderr_summary,
             exit_code=exit_code,
         )
-        payload = read_json(summary_out)
+        payload = _read_json_dict(summary_out)
         chain_out = append_remediation_session_checkpoint_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
@@ -276,7 +281,7 @@ def register_remediation_commands(
         command_results_out, command_results_summary_out, command_results_text = (
             write_remediation_command_results_fn(settings.data_dir)
         )
-        checkpoint_payload = read_json(checkpoint_summary_out)
+        checkpoint_payload = _read_json_dict(checkpoint_summary_out)
         chain_out = append_remediation_evidence_ingest_manifest_fn(
             settings.data_dir,
             checkpoint_summary_path=checkpoint_summary_out,
@@ -303,7 +308,7 @@ def register_remediation_commands(
     def remediation_scoreboard_cmd() -> None:
         settings = get_settings()
         out, summary_out, text = write_remediation_scoreboard_fn(settings.data_dir)
-        payload = read_json(summary_out)
+        payload = _read_json_dict(summary_out)
         chain_out = append_remediation_scoreboard_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
@@ -344,7 +349,7 @@ def register_remediation_commands(
     def remediation_evaluator_cmd() -> None:
         settings = get_settings()
         out, summary_out, text = write_remediation_evaluator_fn(settings.data_dir)
-        payload = read_json(summary_out)
+        payload = _read_json_dict(summary_out)
         chain_out = append_remediation_evaluator_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
@@ -363,7 +368,7 @@ def register_remediation_commands(
     def remediation_evidence_cmd() -> None:
         settings = get_settings()
         out, summary_out, text = write_remediation_evidence_fn(settings.data_dir)
-        payload = read_json(summary_out)
+        payload = _read_json_dict(summary_out)
         chain_out = append_remediation_evidence_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
@@ -386,7 +391,7 @@ def register_remediation_commands(
     def remediation_command_results_cmd() -> None:
         settings = get_settings()
         out, summary_out, text = write_remediation_command_results_fn(settings.data_dir)
-        payload = read_json(summary_out)
+        payload = _read_json_dict(summary_out)
         chain_out = append_remediation_command_results_manifest_fn(
             settings.data_dir,
             summary_path=summary_out,
