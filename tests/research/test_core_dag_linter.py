@@ -42,9 +42,11 @@ def test_core_dag_linter_rejects_outcome_to_observed_proxy_or_modeled_latent() -
 
     issues = lint_core_dag(dag)
 
-    assert [
-        issue.rule_id for issue in issues if issue.severity == "error"
-    ] == ["no_outcome_to_treatment", "no_outcome_to_treatment"]
+    assert [issue.rule_id for issue in issues if issue.severity == "error"] == [
+        "no_outcome_to_treatment",
+        "no_outcome_to_treatment",
+        "no_model_output_to_input",
+    ]
 
 
 def test_core_dag_linter_rejects_future_to_signal_edge_and_warns_missing_counter_dag() -> None:
@@ -77,7 +79,7 @@ def test_core_dag_linter_rejects_future_to_signal_edge_and_warns_missing_counter
     assert "missing_counter_dag" in {issue.rule_id for issue in issues}
 
 
-def test_core_dag_linter_warns_when_optional_provider_source_is_required() -> None:
+def test_core_dag_linter_warns_when_provider_dependent_source_is_required() -> None:
     dag = CoreDag.model_validate(
         {
             "schema_version": "core_dag.v1",
@@ -109,7 +111,12 @@ def test_core_dag_linter_warns_when_optional_provider_source_is_required() -> No
                     "description": "futures price discovery proxy",
                     "source_tier": "optional_provider_dependent",
                     "default_proxy_for": ["nq_overnight_move_optional"],
-                }
+                },
+                "NDX": {
+                    "description": "deferred index methodology source",
+                    "source_tier": "deferred",
+                    "default_proxy_for": ["ndx_index_methodology_deferred"],
+                },
             },
         }
     )
@@ -117,3 +124,14 @@ def test_core_dag_linter_warns_when_optional_provider_source_is_required() -> No
     issues = lint_core_dag(dag, data_sources=data_sources)
 
     assert "optional_provider_required" in {issue.rule_id for issue in issues}
+
+
+def test_core_dag_linter_warns_for_initial_graph_size_limits() -> None:
+    payload = core_dag_payload()
+    payload["nodes"] = [{"id": f"n{i}", "role": "confounder"} for i in range(16)]
+    payload["edges"] = [{"from": f"n{i}", "to": f"n{i + 1}"} for i in range(15)]
+    dag = CoreDag.model_validate(payload)
+
+    issues = lint_core_dag(dag)
+
+    assert "too_many_nodes" in {issue.rule_id for issue in issues}

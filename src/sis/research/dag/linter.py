@@ -29,6 +29,22 @@ def lint_core_dag(
     issues: list[DagLintIssue] = []
     role_by_id = dag.role_by_node_id()
     forbidden_edge_keys = {edge.key for edge in dag.forbidden_edges}
+    if len(dag.nodes) > 15:
+        issues.append(
+            DagLintIssue(
+                severity="warning",
+                rule_id="too_many_nodes",
+                message=f"initial core DAG should stay at 15 nodes or fewer: {len(dag.nodes)}",
+            )
+        )
+    if len(dag.edges) > 20:
+        issues.append(
+            DagLintIssue(
+                severity="warning",
+                rule_id="too_many_edges",
+                message=f"initial core DAG should stay at 20 edges or fewer: {len(dag.edges)}",
+            )
+        )
 
     for edge in dag.edges:
         from_role = role_by_id.get(edge.from_node)
@@ -46,6 +62,14 @@ def lint_core_dag(
                         "outcome must not point to signal-side variables: "
                         f"{edge.from_node}->{edge.to}"
                     ),
+                )
+            )
+        if from_role == "outcome" and to_role == "modeled_latent":
+            issues.append(
+                DagLintIssue(
+                    severity="error",
+                    rule_id="no_model_output_to_input",
+                    message=f"outcome must not feed modeled_latent input: {edge.from_node}->{edge.to}",
                 )
             )
         if edge.key in forbidden_edge_keys:
@@ -82,17 +106,16 @@ def lint_core_dag(
     if data_sources is not None:
         for requirement in dag.data_requirements:
             source_tier = data_sources.tier_for_symbol(requirement.source_symbol)
-            if (
-                source_tier == "optional_provider_dependent"
-                and requirement.requirement_tier == "required"
+            if source_tier in {"optional_provider_dependent", "deferred"} and (
+                requirement.requirement_tier == "required"
             ):
                 issues.append(
                     DagLintIssue(
                         severity="warning",
                         rule_id="optional_provider_required",
                         message=(
-                            "optional provider-dependent source is marked required: "
-                            f"{requirement.variable_id}"
+                            "provider-dependent or deferred source is marked required: "
+                            f"{requirement.variable_id} ({source_tier})"
                         ),
                     )
                 )

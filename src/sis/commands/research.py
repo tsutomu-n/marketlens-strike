@@ -827,6 +827,7 @@ def register_research_commands(
                 )
                 if side not in {"long", "short"}:
                     side = "none"
+                candidate_side = cast(Literal["long", "short", "none"], side)
                 reason_codes = list(signal.get("reason_codes") or [])
                 if record.selected_for_next_stage and not reason_codes:
                     reason_codes = ["trial_selected"]
@@ -861,7 +862,7 @@ def register_research_commands(
                         execution_venue=execution_venue,
                         execution_symbol=execution_symbol,
                         real_market_symbol=real_market_symbol,
-                        side=side,
+                        side=candidate_side,
                         timeframe=timeframe,
                         status=status,
                         raw_score=_float_or_none(signal.get("raw_score")),
