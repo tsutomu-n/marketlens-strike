@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.storage.jsonl_store import write_json
@@ -81,30 +82,26 @@ def _action_sort_key(item: dict) -> tuple[int, int, int, int, int, int, str, str
 
 
 def _feedback_maps(
-    command_results_summary: dict, evaluator_summary: dict
+    command_results_summary: dict[str, Any], evaluator_summary: dict[str, Any]
 ) -> tuple[dict[str, str], dict[str, str]]:
-    entries = (
-        command_results_summary.get("entries")
-        if isinstance(command_results_summary.get("entries"), list)
-        else []
-    )
+    entries_value = command_results_summary.get("entries")
+    entries = cast(list[object], entries_value) if isinstance(entries_value, list) else []
     observation_status_by_action: dict[str, str] = {}
     for item in entries:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         action_key = item.get("action_key")
         observation_status = item.get("observation_status")
         if isinstance(action_key, str) and isinstance(observation_status, str):
             observation_status_by_action[action_key] = observation_status
-    actions = (
-        evaluator_summary.get("actions")
-        if isinstance(evaluator_summary.get("actions"), list)
-        else []
-    )
+    actions_value = evaluator_summary.get("actions")
+    actions = cast(list[object], actions_value) if isinstance(actions_value, list) else []
     evaluation_result_by_action: dict[str, str] = {}
     for item in actions:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         action_key = item.get("action_key")
         evaluation_result = item.get("evaluation_result")
         if isinstance(action_key, str) and isinstance(evaluation_result, str):
@@ -160,17 +157,16 @@ def build_remediation_session(
         command_results_summary,
         evaluator_summary,
     )
-    actions = (
-        execution_plan.get("actions") if isinstance(execution_plan.get("actions"), list) else []
-    )
-    entries = (
-        execution_plan.get("entries") if isinstance(execution_plan.get("entries"), list) else []
-    )
+    actions_value = execution_plan.get("actions")
+    actions = cast(list[object], actions_value) if isinstance(actions_value, list) else []
+    entries_value = execution_plan.get("entries")
+    entries = cast(list[object], entries_value) if isinstance(entries_value, list) else []
 
     session_actions: list[dict] = []
     for item in actions:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         verification = (
             item.get("verification") if isinstance(item.get("verification"), list) else []
         )

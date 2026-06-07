@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any, cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.storage.jsonl_store import read_jsonl, write_json
@@ -95,6 +96,7 @@ def _issue_preview_values(value: object) -> list[str]:
     if isinstance(value, list):
         for item in value:
             if isinstance(item, dict):
+                item = cast(dict[str, Any], item)
                 path = item.get("path")
                 message = item.get("message")
                 if path is not None and message is not None:
@@ -1180,12 +1182,14 @@ def build_remediation_evaluator(
     )
     dashboard_bundle_paths = _dashboard_bundle_summary_paths(planner)
     timeline_paths = _timeline_summary_paths(planner)
-    actions = checkpoint.get("actions") if isinstance(checkpoint.get("actions"), list) else []
+    actions_value = checkpoint.get("actions")
+    actions = cast(list[object], actions_value) if isinstance(actions_value, list) else []
     evaluated_actions: list[dict[str, object]] = []
     action_results: list[str] = []
     for item in actions:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         source = str(item.get("source") or "")
         summary = source_summaries.get(source, {})
         verification = (
@@ -1393,11 +1397,14 @@ def build_remediation_evaluator(
             lines.append(f"  - evaluation_result: {item['evaluation_result']}")
             lines.append("  - signal_evaluations:")
             signal_evaluations = (
-                item["signal_evaluations"]
+                cast(list[object], item["signal_evaluations"])
                 if isinstance(item.get("signal_evaluations"), list)
                 else []
             )
             for signal in signal_evaluations:
+                if not isinstance(signal, dict):
+                    continue
+                signal = cast(dict[str, Any], signal)
                 lines.append(
                     "    - signal={signal} status={status} expected={expected} observed={observed} observed_source={observed_source}".format(
                         signal=signal.get("signal"),
