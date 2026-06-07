@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 import polars as pl
 
 from sis.storage.jsonl_store import read_json, read_jsonl, write_json
 
 
-BASE_ROWS = [
+BASE_ROWS: list[dict[str, Any]] = [
     {
         "venue": "gtrade",
         "symbol": "SPY",
@@ -157,7 +158,9 @@ def _as_float(value: object) -> float | None:
     return None
 
 
-def _gtrade_holding_bps(pair: dict, snapshot: dict, hours: float) -> float | None:
+def _gtrade_holding_bps(
+    pair: dict[str, Any], snapshot: dict[str, Any], hours: float
+) -> float | None:
     pair_index = pair.get("pair_index")
     if pair_index is None:
         return None
@@ -168,7 +171,8 @@ def _gtrade_holding_bps(pair: dict, snapshot: dict, hours: float) -> float | Non
         if isinstance(value, list) and index < len(value):
             return value[index]
         if isinstance(value, dict):
-            return value.get(str(index)) or value.get(index)
+            value_by_key = cast(dict[object, object], value)
+            return value_by_key.get(str(index)) or value_by_key.get(index)
         return None
 
     for collateral in snapshot.get("raw", {}).get("collaterals", []):
@@ -184,7 +188,8 @@ def _gtrade_holding_bps(pair: dict, snapshot: dict, hours: float) -> float | Non
 
         borrow_bps = 0.0
         if isinstance(borrow_item, dict):
-            raw_rate = _as_float(borrow_item.get("borrowingRatePerSecondP"))
+            borrow_item_dict = cast(dict[str, Any], borrow_item)
+            raw_rate = _as_float(borrow_item_dict.get("borrowingRatePerSecondP"))
             if raw_rate is not None:
                 # SDK borrowing v2 precision: raw / 1e10 is percentage per second.
                 borrow_bps = raw_rate / 1e10 * seconds * 100
@@ -193,9 +198,10 @@ def _gtrade_holding_bps(pair: dict, snapshot: dict, hours: float) -> float | Non
         if (
             isinstance(funding_item, dict)
             and isinstance(funding_param, dict)
-            and funding_param.get("fundingFeesEnabled") is True
+            and cast(dict[str, Any], funding_param).get("fundingFeesEnabled") is True
         ):
-            funding_rate = _as_float(funding_item.get("lastFundingRatePerSecondP"))
+            funding_item_dict = cast(dict[str, Any], funding_item)
+            funding_rate = _as_float(funding_item_dict.get("lastFundingRatePerSecondP"))
             if funding_rate is not None:
                 # SDK funding precision: raw / 1e18 is fractional rate per second.
                 funding_bps = abs(funding_rate / 1e18) * seconds * 10_000
@@ -209,16 +215,19 @@ def _metadata_rows(
     *,
     gtrade_sidecar_root: Path | None = None,
     ostium_registry_path: Path | None = None,
-) -> list[dict]:
-    rows = [dict(row) for row in BASE_ROWS]
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = [dict(row) for row in BASE_ROWS]
     by_key = {(row["venue"], row["symbol"]): row for row in rows}
 
     sidecar_path = _latest_gtrade_sidecar(gtrade_sidecar_root)
     if sidecar_path is not None:
         snapshots = list(read_jsonl(sidecar_path))
         if snapshots:
-            snapshot = snapshots[-1]
+            snapshot = cast(dict[str, Any], snapshots[-1])
             for pair in snapshot.get("pairs", []):
+                if not isinstance(pair, dict):
+                    continue
+                pair = cast(dict[str, Any], pair)
                 symbol = pair.get("canonical_symbol")
                 row = by_key.get(("gtrade", symbol))
                 if row is None:
@@ -244,7 +253,10 @@ def _metadata_rows(
         registry = read_json(ostium_registry_path)
         if isinstance(registry, list):
             for item in registry:
-                if not isinstance(item, dict) or item.get("venue") != "ostium":
+                if not isinstance(item, dict):
+                    continue
+                item = cast(dict[str, Any], item)
+                if item.get("venue") != "ostium":
                     continue
                 row = by_key.get(("ostium", item.get("canonical_symbol")))
                 if row is None:
