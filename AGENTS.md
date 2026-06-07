@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-05-30_21:32 JST
-更新日: 2026-06-01_14:44 JST
+更新日: 2026-06-07_20:56 JST
 -->
 
 # Repository Guidelines
 
-Last updated: 2026-06-01_14:44 Asia/Tokyo. Keep this guide concise; no fixed word limit.
+Last updated: 2026-06-07_20:56 Asia/Tokyo. Keep this guide concise; no fixed word limit.
 
 ## Source Of Truth
 
@@ -13,9 +13,15 @@ Code, tests, schemas, config, lockfiles, CI, and CLI help are authoritative. Pre
 
 ## Project Structure
 
-`marketlens-strike` is a Python 3.13 CLI workspace for Trade[XYZ] research, read-only evidence, Strategy Lab workflows, paper operations, and safety gates. Core code lives in `src/sis/`. `src/sis/cli.py` builds the Typer root app; command implementations live under `src/sis/commands/`. Domain code includes `venues/trade_xyz`, `backtest`, `research/strategy_lab`, `research_protocol`, `paper`, `execution`, `risk`, `tracking`, and `validation`.
+`marketlens-strike` is a Python 3.13 CLI workspace for research, read-only evidence, Strategy Lab workflows, paper operations, and safety gates. Core code lives in `src/sis/`. `src/sis/cli.py` builds the Typer root app; command implementations live under `src/sis/commands/`. Domain code includes `venues/trade_xyz`, `backtest`, `research/strategy_lab`, `research_protocol`, `paper`, `execution`, `risk`, `tracking`, and `validation`.
 
 Tests live in `tests/` with focused slices under `tests/backtest/` and `tests/strategy_authoring/`. Docs are in `docs/`, plans in `plan/`, schemas in `schemas/`, templates in `templates/`, and examples/config in `configs/`. `data/`, `logs/`, and `.tmp/` are runtime/generated state.
+
+## Current Priority
+
+The current development priority is research-first and venue-neutral. Prefer the NDX Layer 2.2 DAG foundation, Strategy Lab authoring, and backtest-first workflows when a task does not explicitly require venue-specific work.
+
+Trade[XYZ] remains implemented code and historical/read-only venue context, but it is no longer the default product axis, main order mouth, or primary next action. Do not introduce new Trade[XYZ] assumptions, collectors, readiness claims, or order-path work unless the user explicitly scopes the task to Trade[XYZ].
 
 ## Commands
 
@@ -34,7 +40,7 @@ Start with read-only inspection. Use `rg`, `rg --files`, CLI help, tests, schema
 
 Use 4-space Python indentation, explicit public type hints, and small modules aligned to domain boundaries. Keep reusable logic out of command wrappers when practical. New or heavily edited Python files should stay at 800 lines or fewer. Strategy Authoring enforces this with `tests/strategy_authoring/test_module_boundaries.py`.
 
-Trade[XYZ] pure backtest v0.1 is a Python API surface, not a public CLI. `uv run sis build-backtest` is a separate legacy/bridge command. Micro-live code exists, but standard operator CLI live execution is not exposed. `READ_ONLY_GO` means read-only/paper gate only; it does not prove wallet, signing, exchange write, or production live trading readiness.
+Trade[XYZ] pure backtest v0.1 is a Python API surface, not a public CLI, and should be treated as an isolated venue-specific surface. `uv run sis build-backtest` is a separate legacy/bridge command. Micro-live code exists, but standard operator CLI live execution is not exposed. `READ_ONLY_GO` means read-only/paper gate only; it does not prove wallet, signing, exchange write, or production live trading readiness.
 
 ## Document Timestamps
 
