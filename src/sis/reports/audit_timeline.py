@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from sis.reports.summary_normalizers import (
     latest_execution_lineage_from_notes,
@@ -62,7 +63,7 @@ def _note_counts(items: list[dict[str, object]], prefix: str) -> dict[str, int]:
         notes = item.get("notes", [])
         if not isinstance(notes, list):
             continue
-        value = _note_value(notes, prefix)
+        value = _note_value(cast(list[object], notes), prefix)
         if value is None:
             continue
         counts[value] = counts.get(value, 0) + 1
@@ -90,7 +91,7 @@ def _latest_note_from_operation(
 ) -> str | None:
     latest = _latest_operation_entry(items, operation)
     notes = latest.get("notes", []) if isinstance(latest, dict) else []
-    return _note_value(notes, prefix) if isinstance(notes, list) else None
+    return _note_value(cast(list[object], notes), prefix) if isinstance(notes, list) else None
 
 
 def build_audit_timeline_report(

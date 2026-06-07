@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.storage.jsonl_store import write_json
@@ -119,20 +120,28 @@ def _feedback_summary_maps(
     evaluator = safe_read_json_dict(remediation_evaluator_summary_path)
     observation_status_by_action: dict[str, str] = {}
     entries = (
-        command_results.get("entries") if isinstance(command_results.get("entries"), list) else []
+        cast(list[object], command_results.get("entries"))
+        if isinstance(command_results.get("entries"), list)
+        else []
     )
     for item in entries:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, object], item)
         action_key = item.get("action_key")
         observation_status = item.get("observation_status")
         if isinstance(action_key, str) and isinstance(observation_status, str):
             observation_status_by_action[action_key] = observation_status
     evaluation_result_by_action: dict[str, str] = {}
-    actions = evaluator.get("actions") if isinstance(evaluator.get("actions"), list) else []
+    actions = (
+        cast(list[object], evaluator.get("actions"))
+        if isinstance(evaluator.get("actions"), list)
+        else []
+    )
     for item in actions:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, object], item)
         action_key = item.get("action_key")
         evaluation_result = item.get("evaluation_result")
         if isinstance(action_key, str) and isinstance(evaluation_result, str):
@@ -239,7 +248,11 @@ def build_remediation_scoreboard(
     summary_path: Path | None = None,
 ) -> str:
     checkpoint = safe_read_json_dict(remediation_session_checkpoint_summary_path)
-    base_actions = checkpoint.get("actions") if isinstance(checkpoint.get("actions"), list) else []
+    base_actions = (
+        cast(list[object], checkpoint.get("actions"))
+        if isinstance(checkpoint.get("actions"), list)
+        else []
+    )
     observation_status_by_action, evaluation_result_by_action = _feedback_summary_maps(
         remediation_command_results_summary_path,
         remediation_evaluator_summary_path,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.reports.summary_normalizers import source_confidence_for_observed_sources
@@ -42,18 +43,26 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
     }
 
 
-def _source_summaries(planner_summary: dict) -> dict[str, dict]:
+def _source_summaries(planner_summary: dict[str, object]) -> dict[str, dict[str, object]]:
     path_map = {
         "phase_gate_review": planner_summary.get("phase_gate_summary_path"),
         "paper_operations_runbook": planner_summary.get("runbook_summary_path"),
     }
-    summaries: dict[str, dict] = {}
+    summaries: dict[str, dict[str, object]] = {}
     for source, raw_path in path_map.items():
         if isinstance(raw_path, str):
             summaries[source] = safe_read_json_dict(Path(raw_path))
         else:
             summaries[source] = {}
     return summaries
+
+
+def _reason_values(source_summary: dict[str, object], field: str, reason: str) -> list[object]:
+    values_by_reason = source_summary.get(field)
+    if not isinstance(values_by_reason, dict):
+        return []
+    values = cast(dict[str, object], values_by_reason).get(reason)
+    return cast(list[object], values) if isinstance(values, list) else []
 
 
 def _flatten_observed_sources(value: object) -> list[str]:
@@ -75,11 +84,12 @@ def _flatten_observed_sources(value: object) -> list[str]:
 def _verification_confidence(signal_observed_sources: object, verification: list[str]) -> str:
     if not isinstance(signal_observed_sources, dict) or not verification:
         return "unknown"
+    signal_sources = cast(dict[str, object], signal_observed_sources)
     flattened: list[str] = []
     for signal in verification:
         if not isinstance(signal, str):
             continue
-        flattened.extend(_flatten_observed_sources(signal_observed_sources.get(signal)))
+        flattened.extend(_flatten_observed_sources(signal_sources.get(signal)))
     values = [str(source) for source in flattened if isinstance(source, str)]
     if not values:
         return "unknown"
@@ -169,7 +179,9 @@ def build_remediation_execution_plan(
     planner_summary = safe_read_json_dict(remediation_planner_summary_path)
     source_summaries = _source_summaries(planner_summary)
     planner_entries = (
-        planner_summary.get("entries") if isinstance(planner_summary.get("entries"), list) else []
+        cast(list[object], planner_summary.get("entries"))
+        if isinstance(planner_summary.get("entries"), list)
+        else []
     )
     planner_entry_diffs = (
         planner_summary.get("planner_entry_diffs")
@@ -182,47 +194,45 @@ def build_remediation_execution_plan(
     for item in planner_entries:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, object], item)
         source = str(item.get("source") or "")
         reason = str(item.get("reason") or "")
         if not source or not reason:
             continue
         source_summary = source_summaries.get(source, {})
-        preflight_commands = (
-            source_summary.get("remediation_preflight_commands", {}).get(reason, [])
-            if isinstance(source_summary.get("remediation_preflight_commands"), dict)
+        preflight_commands = _reason_values(
+            source_summary, "remediation_preflight_commands", reason
+        )
+        execute_commands = (
+            cast(list[object], item.get("commands"))
+            if isinstance(item.get("commands"), list)
             else []
         )
-        execute_commands = item.get("commands") if isinstance(item.get("commands"), list) else []
-        postcheck_commands = (
-            source_summary.get("remediation_postcheck_commands", {}).get(reason, [])
-            if isinstance(source_summary.get("remediation_postcheck_commands"), dict)
-            else []
+        postcheck_commands = _reason_values(
+            source_summary, "remediation_postcheck_commands", reason
         )
-        preflight_expected_outputs = (
-            source_summary.get("remediation_preflight_expected_outputs", {}).get(reason, [])
-            if isinstance(source_summary.get("remediation_preflight_expected_outputs"), dict)
-            else []
+        preflight_expected_outputs = _reason_values(
+            source_summary, "remediation_preflight_expected_outputs", reason
         )
-        execute_expected_outputs = (
-            source_summary.get("remediation_execute_expected_outputs", {}).get(reason, [])
-            if isinstance(source_summary.get("remediation_execute_expected_outputs"), dict)
-            else []
+        execute_expected_outputs = _reason_values(
+            source_summary, "remediation_execute_expected_outputs", reason
         )
-        postcheck_pass_signals = (
-            source_summary.get("remediation_postcheck_pass_signals", {}).get(reason, [])
-            if isinstance(source_summary.get("remediation_postcheck_pass_signals"), dict)
-            else []
+        postcheck_pass_signals = _reason_values(
+            source_summary, "remediation_postcheck_pass_signals", reason
         )
         diff_key = f"{source}:{reason}"
         entry_diff = (
-            planner_entry_diffs.get(diff_key, {}) if isinstance(planner_entry_diffs, dict) else {}
+            cast(dict[str, object], planner_entry_diffs).get(diff_key, {})
+            if isinstance(planner_entry_diffs, dict)
+            else {}
         )
+        entry_diff = cast(dict[str, object], entry_diff) if isinstance(entry_diff, dict) else {}
         recommendation_status = item.get("status")
         entry_trend = entry_diff.get("trend")
         source_confidence = item.get("source_confidence")
         feedback_priority_reason = item.get("feedback_priority_reason")
         signal_observed_sources = (
-            item.get("signal_observed_sources")
+            cast(dict[str, object], item.get("signal_observed_sources"))
             if isinstance(item.get("signal_observed_sources"), dict)
             else {}
         )

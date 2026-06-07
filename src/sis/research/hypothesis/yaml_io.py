@@ -6,6 +6,7 @@ from typing import Any
 import yaml
 from yaml.constructor import ConstructorError
 from yaml.nodes import MappingNode
+from yaml.resolver import BaseResolver
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -33,7 +34,7 @@ def _construct_mapping(
 
 
 UniqueKeyLoader.add_constructor(
-    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    BaseResolver.DEFAULT_MAPPING_TAG,
     _construct_mapping,
 )
 

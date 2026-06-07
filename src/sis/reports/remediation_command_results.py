@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.storage.jsonl_store import write_json
@@ -79,16 +80,23 @@ def build_remediation_command_results(
     summary_path: Path | None = None,
 ) -> str:
     checkpoint = safe_read_json_dict(remediation_session_checkpoint_summary_path)
-    actions = checkpoint.get("actions") if isinstance(checkpoint.get("actions"), list) else []
+    actions = (
+        cast(list[object], checkpoint.get("actions"))
+        if isinstance(checkpoint.get("actions"), list)
+        else []
+    )
     entries: list[dict[str, object]] = []
     for action in actions:
         if not isinstance(action, dict):
             continue
+        action = cast(dict[str, object], action)
         evidence_paths = (
-            action.get("evidence_paths") if isinstance(action.get("evidence_paths"), list) else []
+            cast(list[object], action.get("evidence_paths"))
+            if isinstance(action.get("evidence_paths"), list)
+            else []
         )
         observed_signals = (
-            action.get("observed_signals")
+            cast(list[object], action.get("observed_signals"))
             if isinstance(action.get("observed_signals"), list)
             else []
         )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from sis.reports.doc_paths import recommended_read_order
 from sis.storage.jsonl_store import write_json
@@ -91,7 +92,11 @@ def build_daemon_manifest_report(
         "related_reports": _related_reports(out_path),
     }
     notes = summary.get("notes")
-    detail_notes = ",".join(notes) if isinstance(notes, list) else str(notes)
+    detail_notes = (
+        ",".join(str(note) for note in cast(list[object], notes))
+        if isinstance(notes, list)
+        else str(notes)
+    )
     return _write_report(
         title="Daemon Manifest",
         summary=summary,
@@ -118,7 +123,9 @@ def build_daemon_loop_report(
     summary_path: Path | None = None,
 ) -> str:
     latest_event = (
-        snapshot.get("latest_event") if isinstance(snapshot.get("latest_event"), dict) else {}
+        cast(dict[str, object], snapshot.get("latest_event"))
+        if isinstance(snapshot.get("latest_event"), dict)
+        else {}
     )
     summary: dict[str, object] = {
         "run_id": snapshot.get("run_id"),

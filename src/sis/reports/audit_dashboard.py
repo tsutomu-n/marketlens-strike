@@ -40,9 +40,10 @@ def _report_path_for_summary(path: Path | None, report_name: str) -> str | None:
 
 
 def _quick_navigation(summary: dict[str, object]) -> dict[str, str]:
+    phase_gate_summary_path_value = summary.get("phase_gate_summary_path")
     phase_gate_summary_path = (
-        Path(summary["phase_gate_summary_path"])
-        if isinstance(summary.get("phase_gate_summary_path"), str)
+        Path(phase_gate_summary_path_value)
+        if isinstance(phase_gate_summary_path_value, str)
         else None
     )
     items = (
@@ -69,9 +70,10 @@ def _quick_navigation(summary: dict[str, object]) -> dict[str, str]:
 
 
 def _related_reports(summary: dict[str, object]) -> dict[str, str]:
+    phase_gate_summary_path_value = summary.get("phase_gate_summary_path")
     phase_gate_summary_path = (
-        Path(summary["phase_gate_summary_path"])
-        if isinstance(summary.get("phase_gate_summary_path"), str)
+        Path(phase_gate_summary_path_value)
+        if isinstance(phase_gate_summary_path_value, str)
         else None
     )
     items = (

@@ -1192,11 +1192,15 @@ def build_remediation_evaluator(
         item = cast(dict[str, Any], item)
         source = str(item.get("source") or "")
         summary = source_summaries.get(source, {})
+        verification_value = item.get("verification")
         verification = (
-            item.get("verification") if isinstance(item.get("verification"), list) else []
+            cast(list[object], verification_value) if isinstance(verification_value, list) else []
         )
+        observed_signals_value = item.get("observed_signals")
         observed_signals = (
-            item.get("observed_signals") if isinstance(item.get("observed_signals"), list) else []
+            cast(list[object], observed_signals_value)
+            if isinstance(observed_signals_value, list)
+            else []
         )
         normalized_observed_signals = [
             value for value in observed_signals if isinstance(value, str)

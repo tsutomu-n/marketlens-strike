@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import polars as pl
 import typer
@@ -108,7 +108,11 @@ def register_paper_commands(
         paper_last_run = StateStore(settings.data_dir / "state/marketlens.sqlite").get_json(
             "paper_last_run"
         )
-        audit_summary = paper_last_run.get("audit") if isinstance(paper_last_run, dict) else None
+        audit_summary = (
+            cast(dict[str, object], paper_last_run).get("audit")
+            if isinstance(paper_last_run, dict)
+            else None
+        )
         if not isinstance(audit_summary, dict):
             audit_summary = _read_audit_schedule_summary(settings.data_dir)
         latest_execution_payload = _paper_last_run_latest_execution_payload(settings.data_dir)

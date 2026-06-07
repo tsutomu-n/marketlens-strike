@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.reports.summary_normalizers import (
@@ -34,6 +35,7 @@ def _quick_navigation(
     if out_path is None:
         return {}
     reports_dir = out_path.parent
+    live_evidence_report_path = payload.get("live_evidence_report_path")
     items: list[tuple[str, str | None]] = [
         ("strategy_lifecycle_report", str(out_path)),
         ("weekly_review_report", str(reports_dir / "weekly_strategy_review.md")),
@@ -44,9 +46,7 @@ def _quick_navigation(
         ("paper_operations_runbook_report", str(reports_dir / "paper_operations_runbook.md")),
         (
             "live_evidence_report",
-            payload.get("live_evidence_report_path")
-            if isinstance(payload.get("live_evidence_report_path"), str)
-            else None,
+            live_evidence_report_path if isinstance(live_evidence_report_path, str) else None,
         ),
     ]
     return {key: value for key, value in items if isinstance(value, str) and value}
@@ -58,7 +58,7 @@ def _nested_report_path(payload: dict[str, object], section: str, flat_key: str)
         return value
     nested = payload.get(section)
     if isinstance(nested, dict):
-        nested_value = nested.get("report_path")
+        nested_value = cast(dict[str, object], nested).get("report_path")
         if isinstance(nested_value, str) and nested_value:
             return nested_value
     return None
@@ -68,6 +68,7 @@ def _related_reports(out_path: Path | None, payload: dict[str, object]) -> dict[
     if out_path is None:
         return {}
     reports_dir = out_path.parent
+    live_evidence_report_path = payload.get("live_evidence_report_path")
     items: list[tuple[str, str | None]] = [
         ("strategy_lifecycle_report", str(out_path)),
         ("weekly_review_report", str(reports_dir / "weekly_strategy_review.md")),
@@ -92,9 +93,7 @@ def _related_reports(out_path: Path | None, payload: dict[str, object]) -> dict[
         ),
         (
             "live_evidence_report",
-            payload.get("live_evidence_report_path")
-            if isinstance(payload.get("live_evidence_report_path"), str)
-            else None,
+            live_evidence_report_path if isinstance(live_evidence_report_path, str) else None,
         ),
     ]
     return {key: value for key, value in items if isinstance(value, str) and value}

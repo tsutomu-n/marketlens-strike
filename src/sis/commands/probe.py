@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import typer
 
@@ -54,7 +55,7 @@ def register_probe_commands(app: typer.Typer) -> None:
             build_result = build_trade_xyz_registry(
                 seed_path,
                 all_mids_payload={str(k): str(v) for k, v in all_mids_payload.items()},
-                meta_payload=meta_payload,
+                meta_payload=cast(dict[str, Any], meta_payload),
                 perp_dexs_payload=perp_dexs_payload,
             )
         else:

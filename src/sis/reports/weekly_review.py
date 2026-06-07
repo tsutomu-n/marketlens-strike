@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import polars as pl
 from sis.reports.loaders import safe_read_json_dict, safe_read_json_dict_list
@@ -48,6 +49,7 @@ def _quick_navigation(
     if out_path is None:
         return {}
     reports_dir = out_path.parent
+    live_evidence_report_path = row.get("live_evidence_report_path")
     items: list[tuple[str, str | None]] = [
         ("weekly_review_report", str(out_path)),
         ("operations_dashboard_report", str(reports_dir / "operations_dashboard.md")),
@@ -58,9 +60,7 @@ def _quick_navigation(
         ("strategy_lifecycle_report", str(reports_dir / "strategy_lifecycle_report.md")),
         (
             "live_evidence_report",
-            row.get("live_evidence_report_path")
-            if isinstance(row.get("live_evidence_report_path"), str)
-            else None,
+            live_evidence_report_path if isinstance(live_evidence_report_path, str) else None,
         ),
     ]
     return {key: value for key, value in items if isinstance(value, str) and value}
@@ -72,7 +72,7 @@ def _nested_report_path(row: dict[str, object], section: str, flat_key: str) -> 
         return value
     nested = row.get(section)
     if isinstance(nested, dict):
-        nested_value = nested.get("report_path")
+        nested_value = cast(dict[str, object], nested).get("report_path")
         if isinstance(nested_value, str) and nested_value:
             return nested_value
     return None
@@ -82,6 +82,7 @@ def _related_reports(out_path: Path | None, row: dict[str, object]) -> dict[str,
     if out_path is None:
         return {}
     reports_dir = out_path.parent
+    live_evidence_report_path = row.get("live_evidence_report_path")
     items: list[tuple[str, str | None]] = [
         ("weekly_review_report", str(out_path)),
         ("operations_dashboard_report", str(reports_dir / "operations_dashboard.md")),
@@ -150,9 +151,7 @@ def _related_reports(out_path: Path | None, row: dict[str, object]) -> dict[str,
         ),
         (
             "live_evidence_report",
-            row.get("live_evidence_report_path")
-            if isinstance(row.get("live_evidence_report_path"), str)
-            else None,
+            live_evidence_report_path if isinstance(live_evidence_report_path, str) else None,
         ),
     ]
     return {key: value for key, value in items if isinstance(value, str) and value}

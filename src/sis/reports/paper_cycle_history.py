@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from sis.reports.summary_normalizers import (
     latest_execution_lineage_from_notes,
@@ -60,7 +61,7 @@ def _note_counts(items: list[dict[str, object]], prefix: str) -> dict[str, int]:
         notes = item.get("notes", [])
         if not isinstance(notes, list):
             continue
-        value = _note_value(notes, prefix)
+        value = _note_value(cast(list[object], notes), prefix)
         if value is None:
             continue
         counts[value] = counts.get(value, 0) + 1

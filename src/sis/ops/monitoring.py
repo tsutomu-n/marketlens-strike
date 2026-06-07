@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
 import polars as pl
 
@@ -32,7 +32,7 @@ from sis.storage.jsonl_store import read_jsonl, write_json
 
 
 def _as_mapping(value: object) -> Mapping[str, Any] | None:
-    return value if isinstance(value, Mapping) else None
+    return cast(Mapping[str, Any], value) if isinstance(value, Mapping) else None
 
 
 def build_monitoring_snapshot(
