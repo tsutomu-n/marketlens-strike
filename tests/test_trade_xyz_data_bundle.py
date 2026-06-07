@@ -186,6 +186,7 @@ def test_build_trade_xyz_data_collection_bundle_generates_derived_manifests(
         max_gap_minutes=2,
         real_market_provider=FakePriceProvider(),
         signal_candle_client=client,  # type: ignore[arg-type]
+        signal_candle_request_delay_seconds=0,
         generated_at=datetime(2026, 5, 31, tzinfo=UTC),
     )
 
@@ -385,6 +386,7 @@ def test_build_trade_xyz_data_collection_bundle_can_collect_and_join_funding_his
         funding_client=client,
         real_market_provider=FakePriceProvider(),
         signal_candle_client=client,  # type: ignore[arg-type]
+        signal_candle_request_delay_seconds=0,
         generated_at=datetime(2026, 5, 31, tzinfo=UTC),
     )
 
@@ -416,6 +418,7 @@ def test_build_trade_xyz_data_collection_bundle_can_collect_account_fee(
         account_fee_client=client,  # type: ignore[arg-type]
         real_market_provider=FakePriceProvider(),
         signal_candle_client=client,  # type: ignore[arg-type]
+        signal_candle_request_delay_seconds=0,
         generated_at=datetime(2026, 5, 31, tzinfo=UTC),
     )
 
@@ -447,6 +450,7 @@ def test_build_trade_xyz_data_collection_bundle_can_infer_funding_window_from_qu
         funding_client=client,
         real_market_provider=FakePriceProvider(),
         signal_candle_client=client,  # type: ignore[arg-type]
+        signal_candle_request_delay_seconds=0,
         generated_at=datetime(2026, 5, 31, tzinfo=UTC),
     )
 
@@ -476,6 +480,7 @@ def test_build_trade_xyz_data_collection_bundle_skips_fresh_signal_candles(
         max_gap_minutes=2,
         real_market_provider=FakePriceProvider(),
         signal_candle_client=first_client,  # type: ignore[arg-type]
+        signal_candle_request_delay_seconds=0,
         generated_at=datetime(2026, 5, 31, tzinfo=UTC),
     )
     second_client = FakeFundingClient()
@@ -487,6 +492,7 @@ def test_build_trade_xyz_data_collection_bundle_skips_fresh_signal_candles(
         max_gap_minutes=2,
         real_market_provider=FakePriceProvider(),
         signal_candle_client=second_client,  # type: ignore[arg-type]
+        signal_candle_request_delay_seconds=0,
         generated_at=datetime(2026, 5, 31, 1, tzinfo=UTC),
     )
 

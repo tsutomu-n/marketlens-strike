@@ -1710,6 +1710,22 @@ def test_collect_trade_xyz_data_cycle_cli_collects_and_rebuilds_readiness(
                 }
             ]
 
+        def candle_snapshot(self, coin, interval, start_ms, end_ms):
+            return [
+                {
+                    "t": start_ms,
+                    "T": start_ms + 1_799_999,
+                    "s": coin,
+                    "i": interval,
+                    "o": "1000.0",
+                    "h": "1001.0",
+                    "l": "999.0",
+                    "c": "1000.5",
+                    "v": "10.0",
+                    "n": 1,
+                }
+            ]
+
     monkeypatch.setattr("sis.commands.quotes.TradeXyzClient", FakeTradeXyzClient)
 
     result = runner.invoke(
@@ -1723,6 +1739,8 @@ def test_collect_trade_xyz_data_cycle_cli_collects_and_rebuilds_readiness(
             "--interval-seconds",
             "60",
             "--skip-real-market-reference",
+            "--signal-candle-request-delay-seconds",
+            "0",
         ],
         env=env,
     )
