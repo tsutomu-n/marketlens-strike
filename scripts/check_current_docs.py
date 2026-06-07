@@ -9,6 +9,7 @@ from urllib.parse import unquote
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 CURRENT_DOC_FILES = (
+    "AGENTS.md",
     "README.md",
     "docs/CURRENT_STATE.md",
     "docs/CODE_STATUS.md",

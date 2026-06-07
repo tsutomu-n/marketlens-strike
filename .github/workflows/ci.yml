@@ -22,7 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - uses: oven-sh/setup-bun@v1
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - uses: oven-sh/setup-bun@v2
       - name: Set up Python
         run: uv python install "$(cat .python-version)"
       - name: Verify Bun lockfile

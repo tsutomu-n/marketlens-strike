@@ -3,11 +3,16 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+run_step() {
+  echo "==> $*"
+  "$@"
+}
+
 uv sync --dev --locked
-uv run python -V
-uv run ruff check .
-uv run ruff format --check .
-uv run python scripts/check_current_docs.py
-uv run pyrefly check
-uv run ty check src --python-version 3.13 --output-format concise
-uv run pytest -q
+run_step uv run python -V
+run_step uv run ruff check .
+run_step uv run ruff format --check .
+run_step uv run python scripts/check_current_docs.py
+run_step uv run pyrefly check
+run_step uv run ty check src --python-version 3.13 --output-format concise
+run_step uv run pytest -q

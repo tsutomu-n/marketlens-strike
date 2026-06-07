@@ -1,11 +1,17 @@
 <!--
 作成日: 2026-05-30_21:32 JST
-更新日: 2026-06-07_21:12 JST
+更新日: 2026-06-07_21:30 JST
 -->
 
 # Repository Guidelines
 
-Last updated: 2026-06-07_21:12 Asia/Tokyo. Keep this guide concise; no fixed word limit.
+Last updated: 2026-06-07_21:30 Asia/Tokyo. Keep this guide concise; no fixed word limit.
+
+## Codex Loading
+
+Codex reads this file when a new run or TUI session starts. Restart Codex or start a fresh session after materially editing this file.
+
+If `./.ai_memory/HANDOFF.md` exists, read it first for restart state before choosing the next action. Treat it as the restart artifact only; code, tests, schemas, config, lockfiles, CI, and CLI help remain the implementation source of truth.
 
 ## Source Of Truth
 
@@ -19,9 +25,9 @@ Tests live in `tests/` with focused slices under `tests/backtest/` and `tests/st
 
 ## Current Priority
 
-The current development priority is research-first and venue-neutral. Prefer the NDX Layer 2.2 DAG foundation, Strategy Lab authoring, and backtest-first workflows when a task does not explicitly require venue-specific work.
+The current development priority is research/backtest-first and venue-neutral. Prefer the NDX Layer 2.2 DAG foundation for NDX research tasks, and prefer Strategy Lab authoring or backtest-first workflows when a task does not explicitly require venue-specific work.
 
-Trade[XYZ] remains implemented code and historical/read-only venue context, but it is no longer the default product axis, main order mouth, or primary next action. Do not introduce new Trade[XYZ] assumptions, collectors, readiness claims, or order-path work unless the user explicitly scopes the task to Trade[XYZ].
+Trade[XYZ] remains implemented code and historical/read-only venue context, but it is no longer the default product axis, primary execution path, or primary next action. Do not introduce new Trade[XYZ] assumptions, collectors, readiness claims, or order-path work unless the user explicitly scopes the task to Trade[XYZ].
 
 ## Commands
 
@@ -30,6 +36,8 @@ Trade[XYZ] remains implemented code and historical/read-only venue context, but 
 - `uv run sis --help`: inspect the actual public CLI surface.
 - `./scripts/check` or `just check`: run locked sync, Python version, Ruff lint/format check, current-docs check, Pyrefly, ty, and Pytest.
 - `uv run python scripts/check_current_docs.py`: verify current-doc links, EOF, and legacy-root references.
+- `uv run sis research-layer22-validate --root configs/research_layer_2_2/ndx`: validate the local-only NDX Layer 2.2 DAG foundation.
+- `uv run sis research-layer22-export --root configs/research_layer_2_2/ndx --out data/research/ndx`: export Layer 2.2 DAG artifacts without fetching data.
 - `uv run sis phase-gate-review`: review the read-only/paper gate.
 
 CI also runs `bun install --frozen-lockfile` for lockfile integrity. Normal development is Python/uv-first; `package.json` is not the main app entrypoint.
