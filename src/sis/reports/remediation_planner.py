@@ -153,17 +153,21 @@ def _evaluator_provenance_map(summary: dict[str, Any]) -> dict[str, dict[str, An
                 "supporting_action_keys": [],
             }
             mapped[key] = dict(entry)
-        observed_sources = entry.get("observed_sources")
-        if not isinstance(observed_sources, list):
-            observed_sources: list[str] = []
+        observed_sources_value = entry.get("observed_sources")
+        if isinstance(observed_sources_value, list):
+            observed_sources = cast(list[str], observed_sources_value)
+        else:
+            observed_sources = []
             entry["observed_sources"] = observed_sources
         signal_observed_sources = entry.get("signal_observed_sources")
         if not isinstance(signal_observed_sources, dict):
             signal_observed_sources = {}
             entry["signal_observed_sources"] = signal_observed_sources
-        supporting_action_keys = entry.get("supporting_action_keys")
-        if not isinstance(supporting_action_keys, list):
-            supporting_action_keys: list[str] = []
+        supporting_action_keys_value = entry.get("supporting_action_keys")
+        if isinstance(supporting_action_keys_value, list):
+            supporting_action_keys = cast(list[str], supporting_action_keys_value)
+        else:
+            supporting_action_keys = []
             entry["supporting_action_keys"] = supporting_action_keys
         action_key = item.get("action_key")
         if isinstance(action_key, str) and action_key not in supporting_action_keys:
