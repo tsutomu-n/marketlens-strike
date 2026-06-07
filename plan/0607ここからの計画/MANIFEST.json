@@ -1,0 +1,23 @@
+{
+  "created_at_jst": "2026-06-07_19:17 JST",
+  "title": "marketlens-strike Layer 2.2 implementation plan",
+  "root_path": "plan/0607ここからの計画",
+  "purpose": "Coder-ready implementation plan for Layer 2.2 DAG Compiler foundation and minimal pre-2.2 contracts.",
+  "files": [
+    "plan/0607ここからの計画/01_GOAL.md",
+    "plan/0607ここからの計画/02_SCOPE_AND_BOUNDARIES.md",
+    "plan/0607ここからの計画/03_TASKS.md",
+    "plan/0607ここからの計画/04_ACCEPTANCE.md",
+    "plan/0607ここからの計画/05_EXTERNAL_API_POLICY.md",
+    "plan/0607ここからの計画/06_OPEN_QUESTIONS.md",
+    "plan/0607ここからの計画/07_TARGET_FILE_MAP.md",
+    "plan/0607ここからの計画/08_TEST_PLAN.md",
+    "plan/0607ここからの計画/09_SCHEMA_AND_CONFIG_SKETCHES.md",
+    "plan/0607ここからの計画/10_IMPLEMENTER_CHECKLIST.md",
+    "plan/0607ここからの計画/README.md",
+    "plan/0607ここからの計画/appendices/A_CORE_DAG_EXAMPLE.yaml",
+    "plan/0607ここからの計画/appendices/B_MINIMAL_JSON_SCHEMA_CORE_DAG.json",
+    "plan/0607ここからの計画/appendices/C_CODER_HANDOFF_PROMPT.md",
+    "plan/0607ここからの計画/appendices/D_RISK_REGISTER.md"
+  ]
+}

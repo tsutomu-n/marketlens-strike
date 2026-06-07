@@ -1,0 +1,58 @@
+schema_version: core_dag.v1
+dag_id: HYP-NDX-001
+name: ndx_open_gap_residual
+scope_id: NDX_SCOPE_V1
+
+nodes:
+  - id: spy_gap
+    role: confounder
+  - id: smh_gap
+    role: confounder
+  - id: dgs10_delta
+    role: confounder
+  - id: vix_change
+    role: moderator
+  - id: mega_cap_basket_gap
+    role: confounder
+  - id: expected_ndx_move
+    role: modeled_latent
+  - id: qqq_open_gap
+    role: observed_proxy
+  - id: open_gap_residual
+    role: treatment_candidate
+  - id: qqq_open_to_close_return
+    role: outcome
+
+edges:
+  - from: spy_gap
+    to: expected_ndx_move
+  - from: smh_gap
+    to: expected_ndx_move
+  - from: dgs10_delta
+    to: expected_ndx_move
+  - from: vix_change
+    to: expected_ndx_move
+  - from: mega_cap_basket_gap
+    to: expected_ndx_move
+  - from: expected_ndx_move
+    to: open_gap_residual
+  - from: qqq_open_gap
+    to: open_gap_residual
+  - from: open_gap_residual
+    to: qqq_open_to_close_return
+
+forbidden_edges:
+  - from: qqq_open_to_close_return
+    to: open_gap_residual
+    reason: future_to_signal_leakage
+  - from: qqq_open_to_close_return
+    to: expected_ndx_move
+    reason: outcome_to_model_input
+
+counter_dag_refs:
+  - BroadMarketOnlyDAG
+  - RatesOnlyDAG
+  - SOXOnlyDAG
+  - MegaCapOnlyDAG
+  - VolRegimeOnlyDAG
+  - SelectionBiasDAG
