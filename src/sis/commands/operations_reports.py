@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Any, Callable, Protocol, cast
 
 import typer
 from loguru import logger
 
 from sis.settings import get_settings
 from sis.storage.jsonl_store import read_json
+
+
+def _read_json_dict(path: Path) -> dict[str, Any]:
+    payload = read_json(path)
+    return cast(dict[str, Any], payload) if isinstance(payload, dict) else {}
 
 
 class _SimpleReportWriter(Protocol):
@@ -158,7 +163,7 @@ def register_operations_report_commands(
     def operations_bundle_cmd() -> None:
         settings = get_settings()
         out, manifest_out, text = write_operations_bundle_fn(settings.data_dir)
-        payload = read_json(manifest_out)
+        payload = _read_json_dict(manifest_out)
         chain_out = append_operations_snapshot_manifest_fn(
             settings.data_dir,
             manifest_path=manifest_out,
@@ -186,7 +191,7 @@ def register_operations_report_commands(
     def operations_audit_pack_cmd() -> None:
         settings = get_settings()
         out, manifest_out, text = write_operations_audit_pack_fn(settings.data_dir)
-        payload = read_json(manifest_out)
+        payload = _read_json_dict(manifest_out)
         chain_out = append_operations_audit_snapshot_manifest_fn(
             settings.data_dir,
             manifest_path=manifest_out,
@@ -226,7 +231,7 @@ def register_operations_report_commands(
     def audit_bundle_cmd() -> None:
         settings = get_settings()
         out, manifest_out, text = write_audit_bundle_fn(settings.data_dir)
-        payload = read_json(manifest_out)
+        payload = _read_json_dict(manifest_out)
         chain_out = append_audit_bundle_snapshot_manifest_fn(
             settings.data_dir,
             manifest_path=manifest_out,

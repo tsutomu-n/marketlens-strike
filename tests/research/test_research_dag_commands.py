@@ -14,6 +14,8 @@ def test_research_dag_validate_cli_accepts_ndx_config() -> None:
     assert result.exit_code == 0
     assert "status=pass" in stdout
     assert "dag_id=HYP-NDX-001" in stdout
+    assert "lint_errors=0" in stdout
+    assert "counter_dag_count=" in stdout
 
 
 def test_research_layer22_validate_alias_accepts_ndx_root() -> None:

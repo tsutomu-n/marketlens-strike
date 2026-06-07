@@ -16,9 +16,35 @@ def test_core_dag_linter_rejects_outcome_to_treatment_and_configured_forbidden_e
     issues = lint_core_dag(dag)
 
     assert {issue.rule_id for issue in issues if issue.severity == "error"} == {
-        "outcome_to_treatment",
-        "configured_forbidden_edge",
+        "no_outcome_to_treatment",
+        "no_forbidden_edge_in_edges",
     }
+
+
+def test_core_dag_linter_rejects_outcome_to_observed_proxy_or_modeled_latent() -> None:
+    dag = CoreDag.model_validate(
+        {
+            "schema_version": "core_dag.v1",
+            "dag_id": "T",
+            "name": "outcome_backflow",
+            "scope_id": "S",
+            "nodes": [
+                {"id": "outcome", "role": "outcome"},
+                {"id": "observed", "role": "observed_proxy"},
+                {"id": "model", "role": "modeled_latent"},
+            ],
+            "edges": [
+                {"from": "outcome", "to": "observed"},
+                {"from": "outcome", "to": "model"},
+            ],
+        }
+    )
+
+    issues = lint_core_dag(dag)
+
+    assert [
+        issue.rule_id for issue in issues if issue.severity == "error"
+    ] == ["no_outcome_to_treatment", "no_outcome_to_treatment"]
 
 
 def test_core_dag_linter_rejects_future_to_signal_edge_and_warns_missing_counter_dag() -> None:
@@ -47,7 +73,7 @@ def test_core_dag_linter_rejects_future_to_signal_edge_and_warns_missing_counter
 
     issues = lint_core_dag(dag, temporal=temporal)
 
-    assert "future_to_signal" in {issue.rule_id for issue in issues}
+    assert "no_future_to_signal" in {issue.rule_id for issue in issues}
     assert "missing_counter_dag" in {issue.rule_id for issue in issues}
 
 

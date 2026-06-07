@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable, cast
 
 import typer
 
@@ -46,6 +46,11 @@ from sis.state.store import StateStore
 from sis.storage.jsonl_store import read_json, write_json
 
 
+def _read_json_dict(path: Path) -> dict[str, object]:
+    payload = read_json(path)
+    return cast(dict[str, object], payload) if isinstance(payload, dict) else {}
+
+
 def _state_store(settings_data_dir: Path, state_path: Path | None) -> StateStore:
     return StateStore(state_path or (settings_data_dir / "state/marketlens.sqlite"))
 
@@ -69,6 +74,7 @@ def _write_daemon_manifest_artifacts(settings_data_dir: Path) -> tuple[Path, Pat
     payload = read_json(manifest_path)
     if not isinstance(payload, dict):
         return None
+    payload = cast(dict[str, object], payload)
     out = settings_data_dir / "reports/daemon_manifest.md"
     summary_out = settings_data_dir / "ops/daemon_manifest_summary.json"
     text = build_daemon_manifest_report(
@@ -91,6 +97,7 @@ def _write_state_export_artifacts(
     payload = read_json(snapshot_path)
     if not isinstance(payload, dict):
         return None
+    payload = cast(dict[str, object], payload)
     out = settings_data_dir / "reports/state_export.md"
     summary_out = settings_data_dir / "ops/state_export_summary.json"
     text = build_state_export_report(
@@ -115,6 +122,7 @@ def _write_state_restore_artifacts(
     payload = read_json(snapshot_path)
     if not isinstance(payload, dict):
         return None
+    payload = cast(dict[str, object], payload)
     out = settings_data_dir / "reports/state_restore.md"
     summary_out = settings_data_dir / "ops/state_restore_summary.json"
     text = build_state_restore_report(
@@ -635,14 +643,14 @@ def _recommended_read_order(settings_data_dir: Path) -> list[str]:
     if bundle_manifest_path.exists():
         payload = read_json(bundle_manifest_path)
         if isinstance(payload, dict):
-            order = payload.get("recommended_read_order")
+            order = cast(dict[str, Any], payload).get("recommended_read_order")
             if isinstance(order, list):
                 return [str(item) for item in order]
     dashboard_summary_path = settings_data_dir / "ops/operations_dashboard_summary.json"
     if dashboard_summary_path.exists():
         payload = read_json(dashboard_summary_path)
         if isinstance(payload, dict):
-            order = payload.get("recommended_read_order")
+            order = cast(dict[str, Any], payload).get("recommended_read_order")
             if isinstance(order, list):
                 return [str(item) for item in order]
     return recommended_read_order(

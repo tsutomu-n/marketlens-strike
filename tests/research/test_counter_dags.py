@@ -35,3 +35,26 @@ def test_counter_dag_refs_are_required_for_validated_core_dag() -> None:
         assert "requires counter_dag_refs" in str(exc)
     else:
         raise AssertionError("expected missing counter_dag_refs to fail")
+
+
+def test_hyp_ndx_001_requires_at_least_eight_counter_dag_refs() -> None:
+    registry = load_counter_dag_registry(CONFIG_DIR / "counter_dags.yaml")
+    payload = core_dag_payload()
+    payload["dag_id"] = "HYP-NDX-001"
+    payload["counter_dag_refs"] = [
+        "BroadMarketOnlyDAG",
+        "RatesOnlyDAG",
+        "SOXOnlyDAG",
+        "MegaCapOnlyDAG",
+        "VolRegimeOnlyDAG",
+        "SelectionBiasDAG",
+        "ETFTrackingNoiseDAG",
+    ]
+    dag = CoreDag.model_validate(payload)
+
+    try:
+        validate_counter_dag_refs(dag, registry)
+    except ValueError as exc:
+        assert "requires at least 8 counter DAG refs" in str(exc)
+    else:
+        raise AssertionError("expected insufficient counter DAG refs to fail")

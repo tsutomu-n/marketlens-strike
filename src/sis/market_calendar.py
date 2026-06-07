@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import exchange_calendars as xcals
-import pandas as pd
 
 EASTERN = ZoneInfo("America/New_York")
 JST = ZoneInfo("Asia/Tokyo")
@@ -57,12 +56,11 @@ def _next_xnys_window(now_utc: datetime) -> tuple[datetime, datetime, str]:
 
     for offset in range(0, 14):
         day = now_date + timedelta(days=offset)
-        day_ts = pd.Timestamp(day)
-        if not cal.is_session(day_ts):
+        if not cal.is_session(day):
             continue
 
-        open_et = cal.session_open(day_ts).to_pydatetime().astimezone(EASTERN)
-        close_et = cal.session_close(day_ts).to_pydatetime().astimezone(EASTERN)
+        open_et = cal.session_open(day).to_pydatetime().astimezone(EASTERN)
+        close_et = cal.session_close(day).to_pydatetime().astimezone(EASTERN)
 
         if offset == 0:
             if now_et < open_et:
@@ -110,8 +108,7 @@ def market_session_state(venue: str, symbol: str, ts: datetime) -> MarketSession
 
     cal = xcals.get_calendar(calendar_name)
     local_date = ts_utc.astimezone(EASTERN).date()
-    day_ts = pd.Timestamp(local_date)
-    if not cal.is_session(day_ts):
+    if not cal.is_session(local_date):
         return MarketSessionState(
             symbol=normalized_symbol,
             venue=normalized_venue,
@@ -124,8 +121,8 @@ def market_session_state(venue: str, symbol: str, ts: datetime) -> MarketSession
             notes=["exchange_calendar_non_session_day"],
         )
 
-    session_open = cal.session_open(day_ts).to_pydatetime().astimezone(timezone.utc)
-    session_close = cal.session_close(day_ts).to_pydatetime().astimezone(timezone.utc)
+    session_open = cal.session_open(local_date).to_pydatetime().astimezone(timezone.utc)
+    session_close = cal.session_close(local_date).to_pydatetime().astimezone(timezone.utc)
     is_open = session_open <= ts_utc < session_close
     return MarketSessionState(
         symbol=normalized_symbol,
