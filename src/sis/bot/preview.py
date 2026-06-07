@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from sis.storage.jsonl_store import read_json, write_json
 
@@ -30,7 +30,7 @@ def _safe_read_json_dict(path: Path) -> dict[str, Any]:
         payload = read_json(path)
     except Exception:
         return {}
-    return payload if isinstance(payload, dict) else {}
+    return cast(dict[str, Any], payload) if isinstance(payload, dict) else {}
 
 
 def _latest_quote_path(data_dir: Path) -> Path | None:

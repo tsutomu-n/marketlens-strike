@@ -70,9 +70,9 @@ def _latest_file(paths: list[Path]) -> list[Path]:
     return paths[-1:] if paths else []
 
 
-def _read_json_list(path: Path) -> list[dict]:
+def _read_json_list(path: Path) -> list[dict[str, Any]]:
     payload = read_json(path)
-    return payload if isinstance(payload, list) else []
+    return cast(list[dict[str, Any]], payload) if isinstance(payload, list) else []
 
 
 def _is_json_list(path: Path) -> bool:

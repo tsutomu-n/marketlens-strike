@@ -5,7 +5,7 @@ import hashlib
 import math
 import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from sis.storage.jsonl_store import read_json
 from sis.storage.jsonl_store import write_json
@@ -23,7 +23,11 @@ def _load_manifest(path: Path) -> tuple[dict[str, Any] | None, str | None]:
     payload = read_json(path)
     if not isinstance(payload, dict):
         return None, f"manifest is not an object: {path}"
-    return payload, None
+    return cast(dict[str, Any], payload), None
+
+
+def _dict_or_empty(value: object) -> dict[str, Any]:
+    return cast(dict[str, Any], value) if isinstance(value, dict) else {}
 
 
 def _requirement(
@@ -96,7 +100,7 @@ def _reference_requirement(data_dir: Path) -> dict[str, Any]:
             evidence_path=path,
             reason=error,
         )
-    row_counts = payload.get("row_counts") if isinstance(payload.get("row_counts"), dict) else {}
+    row_counts = _dict_or_empty(payload.get("row_counts"))
     required_counts = {
         "instrument_registry_snapshots": row_counts.get("instrument_registry_snapshots", 0),
         "fee_snapshots": row_counts.get("fee_snapshots", 0),
@@ -378,11 +382,7 @@ def _fee_requirement(data_dir: Path) -> list[dict[str, Any]]:
             if manifest_user_hash is not None and configured_user_hash is not None
             else None
         )
-        parsed = (
-            account_fee_payload.get("parsed")
-            if isinstance(account_fee_payload.get("parsed"), dict)
-            else {}
-        )
+        parsed = _dict_or_empty(account_fee_payload.get("parsed"))
         has_effective_rates = (
             parsed.get("user_taker_fee_bps") is not None
             and parsed.get("user_maker_fee_bps") is not None
@@ -444,16 +444,8 @@ def _session_requirement(data_dir: Path) -> list[dict[str, Any]]:
             )
         ]
     row_count = int(payload.get("row_count") or 0)
-    missing_counts = (
-        payload.get("missing_field_counts")
-        if isinstance(payload.get("missing_field_counts"), dict)
-        else {}
-    )
-    session_type_counts = (
-        payload.get("session_type_counts")
-        if isinstance(payload.get("session_type_counts"), dict)
-        else {}
-    )
+    missing_counts = _dict_or_empty(payload.get("missing_field_counts"))
+    session_type_counts = _dict_or_empty(payload.get("session_type_counts"))
     has_session_classification = bool(session_type_counts) and any(
         int(value or 0) > 0 for value in session_type_counts.values()
     )
@@ -539,8 +531,8 @@ def _oracle_requirement(data_dir: Path) -> dict[str, Any]:
 def _quote_coverage_next_action(requirement: dict[str, Any]) -> dict[str, Any] | None:
     if requirement["key"] != "quote_coverage" or requirement["status"] != "fail":
         return None
-    details = requirement.get("details") if isinstance(requirement.get("details"), dict) else {}
-    per_symbol = details.get("per_symbol") if isinstance(details.get("per_symbol"), dict) else {}
+    details = _dict_or_empty(requirement.get("details"))
+    per_symbol = _dict_or_empty(details.get("per_symbol"))
     failing_symbols = [
         symbol
         for symbol, item in sorted(per_symbol.items())
@@ -551,10 +543,8 @@ def _quote_coverage_next_action(requirement: dict[str, Any]) -> dict[str, Any] |
     additional_days_required: dict[str, float] = {}
     estimated_collection_days_required: dict[str, int] = {}
     traceable_only = bool(details.get("traceable_only"))
-    excluded_missing_raw_payload_ref_by_symbol = (
+    excluded_missing_raw_payload_ref_by_symbol = _dict_or_empty(
         details.get("excluded_missing_raw_payload_ref_by_symbol")
-        if isinstance(details.get("excluded_missing_raw_payload_ref_by_symbol"), dict)
-        else {}
     )
     for symbol in failing_symbols:
         item = per_symbol.get(symbol, {})
@@ -641,7 +631,7 @@ def _real_market_reference_next_action(requirement: dict[str, Any]) -> dict[str,
 def _signal_candles_next_action(requirement: dict[str, Any]) -> dict[str, Any] | None:
     if requirement["key"] != "signal_candles" or requirement["status"] != "fail":
         return None
-    details = requirement.get("details") if isinstance(requirement.get("details"), dict) else {}
+    details = _dict_or_empty(requirement.get("details"))
     request_errors = details.get("request_errors")
     failed_symbols: set[str] = set()
     failed_intervals: set[str] = set()
