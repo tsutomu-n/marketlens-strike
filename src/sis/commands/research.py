@@ -12,15 +12,27 @@ import typer
 from loguru import logger
 
 from sis.reports.cost_matrix import build_cost_matrix_from_quotes, build_cost_matrix_report
-from sis.research.dag.counter import load_counter_dag_registry, validate_counter_dag_refs
+from sis.research.dag.contracts import CoreDag
+from sis.research.dag.counter import (
+    CounterDagRegistry,
+    load_counter_dag_registry,
+    validate_counter_dag_refs,
+)
 from sis.research.dag.errors import CoreDagLintError, CoreDagValidationError
 from sis.research.dag.export import export_core_dag_artifacts
+from sis.research.dag.linter import DagLintIssue
 from sis.research.dag.linter import lint_core_dag, raise_for_lint_errors
 from sis.research.dag.loader import load_core_dag
-from sis.research.dag.validator import validate_core_dag
+from sis.research.dag.validator import (
+    validate_core_dag,
+    validate_core_dag_against_research_context,
+)
 from sis.research.event_calendar import build_event_calendar
 from sis.research.feature_panel import build_feature_panel
+from sis.research.hypothesis.role_contracts import CausalRoleRegistry
+from sis.research.hypothesis.role_validator import validate_roles_against_inventory
 from sis.research.hypothesis.temporal_contracts import TemporalAvailability
+from sis.research.hypothesis.variable_contracts import VariableInventory
 from sis.research.hypothesis.variable_loader import load_variable_inventory
 from sis.research.hypothesis.yaml_io import load_yaml_mapping
 from sis.research.macro_ingest import build_macro_panel
@@ -62,11 +74,50 @@ def _parse_optional_datetime(value: str | None) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _load_temporal_availability_if_present(config_path: Path) -> TemporalAvailability | None:
-    temporal_path = config_path.parent / "temporal_availability.yaml"
-    if not temporal_path.exists():
-        return None
-    return TemporalAvailability.model_validate(load_yaml_mapping(temporal_path))
+def _required_companion_config(config_path: Path, name: str) -> Path:
+    path = config_path.parent / name
+    if not path.exists():
+        raise FileNotFoundError(f"required companion config missing: {path}")
+    return path
+
+
+def _load_temporal_availability(config_path: Path) -> TemporalAvailability:
+    return TemporalAvailability.model_validate(
+        load_yaml_mapping(_required_companion_config(config_path, "temporal_availability.yaml"))
+    )
+
+
+def _load_causal_roles(config_path: Path) -> CausalRoleRegistry:
+    return CausalRoleRegistry.model_validate(
+        load_yaml_mapping(_required_companion_config(config_path, "causal_roles.yaml"))
+    )
+
+
+def _validate_research_dag_config(
+    config_path: Path,
+) -> tuple[CoreDag, VariableInventory, CounterDagRegistry, list[DagLintIssue]]:
+    dag = load_core_dag(config_path)
+    inventory = load_variable_inventory(
+        _required_companion_config(config_path, "variable_inventory.yaml")
+    )
+    roles = _load_causal_roles(config_path)
+    temporal = _load_temporal_availability(config_path)
+    counter_dags = load_counter_dag_registry(
+        _required_companion_config(config_path, "counter_dags.yaml")
+    )
+
+    validate_roles_against_inventory(roles, inventory)
+    validate_core_dag(dag)
+    validate_core_dag_against_research_context(
+        dag,
+        inventory=inventory,
+        roles=roles,
+        temporal=temporal,
+    )
+    lint_issues = lint_core_dag(dag, temporal=temporal)
+    raise_for_lint_errors(lint_issues)
+    validate_counter_dag_refs(dag, counter_dags)
+    return dag, inventory, counter_dags, lint_issues
 
 
 def _report_path_for_dag_export(out_dir: Path) -> Path:
@@ -325,16 +376,14 @@ def register_research_commands(
         ),
     ) -> None:
         try:
-            dag = load_core_dag(config)
-            validate_core_dag(dag)
-            temporal = _load_temporal_availability_if_present(config)
-            lint_issues = lint_core_dag(dag, temporal=temporal)
-            raise_for_lint_errors(lint_issues)
-            counter_path = config.parent / "counter_dags.yaml"
-            if counter_path.exists():
-                counter_dags = load_counter_dag_registry(counter_path)
-                validate_counter_dag_refs(dag, counter_dags)
-        except (CoreDagValidationError, CoreDagLintError, ValidationError, ValueError) as exc:
+            dag, _, _, lint_issues = _validate_research_dag_config(config)
+        except (
+            CoreDagValidationError,
+            CoreDagLintError,
+            FileNotFoundError,
+            ValidationError,
+            ValueError,
+        ) as exc:
             typer.echo("status=fail")
             typer.echo(f"error={exc}")
             raise typer.Exit(2) from exc
@@ -365,14 +414,7 @@ def register_research_commands(
         ),
     ) -> None:
         try:
-            dag = load_core_dag(config)
-            validate_core_dag(dag)
-            temporal = _load_temporal_availability_if_present(config)
-            lint_issues = lint_core_dag(dag, temporal=temporal)
-            raise_for_lint_errors(lint_issues)
-            inventory = load_variable_inventory(config.parent / "variable_inventory.yaml")
-            counter_dags = load_counter_dag_registry(config.parent / "counter_dags.yaml")
-            validate_counter_dag_refs(dag, counter_dags)
+            dag, inventory, counter_dags, lint_issues = _validate_research_dag_config(config)
             result = export_core_dag_artifacts(
                 dag,
                 inventory=inventory,
@@ -381,7 +423,13 @@ def register_research_commands(
                 out_dir=out,
                 report_path=_report_path_for_dag_export(out),
             )
-        except (CoreDagValidationError, CoreDagLintError, ValidationError, ValueError) as exc:
+        except (
+            CoreDagValidationError,
+            CoreDagLintError,
+            FileNotFoundError,
+            ValidationError,
+            ValueError,
+        ) as exc:
             typer.echo("status=fail")
             typer.echo(f"error={exc}")
             raise typer.Exit(2) from exc

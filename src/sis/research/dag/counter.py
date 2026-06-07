@@ -48,6 +48,8 @@ def load_counter_dag_registry(path: Path) -> CounterDagRegistry:
 def validate_counter_dag_refs(dag: CoreDag, registry: CounterDagRegistry) -> None:
     if dag.dag_id != registry.dag_id:
         raise ValueError(f"counter DAG registry dag_id mismatch: {registry.dag_id} != {dag.dag_id}")
+    if not dag.counter_dag_refs:
+        raise ValueError("core DAG requires counter_dag_refs")
     registered = set(registry.by_id())
     missing = sorted(set(dag.counter_dag_refs) - registered)
     if missing:

@@ -31,3 +31,29 @@ def test_causal_roles_reject_unknown_role_and_unknown_variable() -> None:
     )
     with pytest.raises(ValueError):
         validate_roles_against_inventory(roles, inventory)
+
+
+def test_causal_roles_reject_missing_assignments_and_candidate_mismatch() -> None:
+    inventory = load_variable_inventory(CONFIG_DIR / "variable_inventory.yaml")
+    missing_assignments = CausalRoleRegistry.model_validate(
+        {
+            "schema_version": "research_causal_roles.v1",
+            "roles": {"qqq_open_gap": "observed_proxy"},
+        }
+    )
+    with pytest.raises(ValueError, match="variables missing causal role assignments"):
+        validate_roles_against_inventory(missing_assignments, inventory)
+
+    mismatched = CausalRoleRegistry.model_validate(
+        {
+            "schema_version": "research_causal_roles.v1",
+            "roles": {
+                variable_id: (
+                    "outcome" if variable_id == "open_gap_residual" else role.role_candidates[0]
+                )
+                for variable_id, role in inventory.variables.items()
+            },
+        }
+    )
+    with pytest.raises(ValueError, match="roles not listed in variable role candidates"):
+        validate_roles_against_inventory(mismatched, inventory)

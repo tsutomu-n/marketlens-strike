@@ -28,6 +28,33 @@ def test_variable_inventory_rejects_missing_lineage_and_unknown_temporal_class()
                 },
             }
         )
+
+
+def test_variable_inventory_loader_rejects_duplicate_yaml_variable_id(tmp_path) -> None:
+    path = tmp_path / "variable_inventory.yaml"
+    path.write_text(
+        "\n".join(
+            [
+                "schema_version: research_variable_inventory.v1",
+                "variables:",
+                "  x:",
+                "    source_symbol: QQQ",
+                "    temporal_class: t_after_open",
+                "    role_candidates:",
+                "      - observed_proxy",
+                "  x:",
+                "    source_symbol: SPY",
+                "    temporal_class: t_after_open",
+                "    role_candidates:",
+                "      - observed_proxy",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="duplicate key"):
+        load_variable_inventory(path)
     with pytest.raises(ValidationError):
         VariableInventory.model_validate(
             {

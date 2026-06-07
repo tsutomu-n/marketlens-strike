@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-07_19:37 JST
-更新日: 2026-06-07_19:37 JST
+更新日: 2026-06-07_19:58 JST
 -->
 
 # Layer 2.2 Implementation Boundary
@@ -21,3 +21,5 @@
 追加CLI:
 - `uv run sis research-dag-validate --config configs/research_layer_2_2/ndx/core_dag.yaml`
 - `uv run sis research-dag-export --config configs/research_layer_2_2/ndx/core_dag.yaml --out data/research/ndx`
+
+`research-dag-validate` は core DAG 単体ではなく、同じ directory の `variable_inventory.yaml`、`causal_roles.yaml`、`temporal_availability.yaml`、`counter_dags.yaml` も必須 companion config として検証する。

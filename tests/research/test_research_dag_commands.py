@@ -17,7 +17,9 @@ def test_research_dag_validate_cli_accepts_ndx_config() -> None:
 
 
 def test_research_dag_validate_cli_returns_exit_2_for_invalid_config(tmp_path) -> None:
-    invalid_config = tmp_path / "invalid_core_dag.yaml"
+    config_dir = tmp_path / "cfg"
+    config_dir.mkdir()
+    invalid_config = config_dir / "invalid_core_dag.yaml"
     invalid_config.write_text(
         "\n".join(
             [
@@ -41,6 +43,35 @@ def test_research_dag_validate_cli_returns_exit_2_for_invalid_config(tmp_path) -
 
     assert result.exit_code == 2
     assert "status=fail" in normalized_stdout(result)
+
+
+def test_research_dag_validate_cli_requires_companion_configs(tmp_path) -> None:
+    config_dir = tmp_path / "cfg"
+    config_dir.mkdir()
+    core_config = config_dir / "core_dag.yaml"
+    core_config.write_text(
+        "\n".join(
+            [
+                "schema_version: core_dag.v1",
+                "dag_id: MISSING-COMPANIONS",
+                "name: missing_companions",
+                "scope_id: S",
+                "nodes:",
+                "  - id: a",
+                "    role: confounder",
+                "edges:",
+                "  - from: a",
+                "    to: a",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = invoke_cli(["research-dag-validate", "--config", str(core_config)])
+
+    assert result.exit_code == 2
+    assert "required companion config missing" in normalized_stdout(result)
 
 
 def test_research_dag_export_cli_writes_expected_artifacts(tmp_path) -> None:
