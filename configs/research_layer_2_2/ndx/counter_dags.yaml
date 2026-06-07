@@ -5,23 +5,83 @@ counter_dags:
   - id: BroadMarketOnlyDAG
     description: SPY broad market factor explains both QQQ open gap and O2C behavior.
     changed_assumption: open_gap_residual is an SPY beta artifact.
+    risk: broad market beta is under-modeled.
+    proxy: SPY
+    refutation_test_hint: Neutralize with SPY gap and compare residual stability.
 
   - id: RatesOnlyDAG
     description: US rate shock explains the apparent residual.
     changed_assumption: dgs10_delta is insufficiently modeled.
+    risk: rates duration shock drives the apparent residual.
+    proxy: DGS10
+    refutation_test_hint: Stratify by DGS10 delta regime.
 
   - id: SOXOnlyDAG
     description: Semiconductor shock explains the apparent residual.
     changed_assumption: SMH/SOX proxy underfits semiconductor factor.
+    risk: semiconductor factor is the true driver.
+    proxy: SMH
+    refutation_test_hint: Neutralize with SMH gap before evaluating residual.
 
   - id: MegaCapOnlyDAG
     description: Mega-cap basket explains the apparent residual.
     changed_assumption: top-name concentration is the true driver.
+    risk: mega-cap concentration creates the gap behavior.
+    proxy: mega_cap_basket_gap
+    refutation_test_hint: Replace broad QQQ proxy with mega-cap basket residual.
 
   - id: VolRegimeOnlyDAG
     description: VIX/VXN regime explains gap behavior.
     changed_assumption: residual effect is regime-only.
+    risk: volatility regime flips the residual sign.
+    proxy: VIX
+    refutation_test_hint: Evaluate residual separately by volatility regime.
 
   - id: SelectionBiasDAG
     description: Large gap day selection creates apparent effect.
     changed_assumption: candidate selection is a collider or selection mechanism.
+    risk: selected open gap days are not representative.
+    proxy: gap_size_bucket
+    refutation_test_hint: Compare selected and non-selected day distributions.
+
+  - id: ETFTrackingNoiseDAG
+    description: QQQ ETF tracking noise explains the apparent residual.
+    changed_assumption: ETF premium or discount is the true residual source.
+    risk: ETF microstructure noise is mistaken for NDX signal.
+    proxy: qqq_premium_discount_optional
+    refutation_test_hint: Test whether ETF tracking noise absorbs residual effect.
+
+  - id: FuturesPriceDiscoveryDAG
+    description: NQ futures price discovery explains the QQQ open gap.
+    changed_assumption: overnight futures move is the missing driver.
+    risk: futures information arrives before QQQ open observation.
+    proxy: nq_overnight_move_optional
+    refutation_test_hint: Add NQ overnight proxy and compare residual shrinkage.
+
+  - id: IndexRebalanceDAG
+    description: Nasdaq-100 rebalance or methodology flow explains the residual.
+    changed_assumption: index methodology event timing drives the apparent effect.
+    risk: index construction flow is omitted.
+    proxy: ndx_index_methodology_deferred
+    refutation_test_hint: Exclude rebalance windows and compare residual behavior.
+
+  - id: MacroEventDAG
+    description: Macro event timing explains the residual.
+    changed_assumption: scheduled macro event risk is the omitted driver.
+    risk: event calendar creates a confounded open gap.
+    proxy: event_risk_flag_deferred
+    refutation_test_hint: Evaluate event and non-event days separately.
+
+  - id: CalendarEffectDAG
+    description: Calendar timing explains the residual.
+    changed_assumption: day-of-week or month-end effect is the omitted driver.
+    risk: calendar seasonality is mistaken for residual effect.
+    proxy: calendar_bucket
+    refutation_test_hint: Include calendar fixed effects before residual evaluation.
+
+  - id: DataSourceLagDAG
+    description: Data source timing lag explains apparent availability.
+    changed_assumption: provider timing makes a variable unavailable at signal time.
+    risk: provider lag causes temporal leakage.
+    proxy: provider_timestamp
+    refutation_test_hint: Validate provider timestamps before allowing signal-time use.

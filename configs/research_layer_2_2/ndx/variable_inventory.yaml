@@ -5,7 +5,7 @@ variables:
     description: QQQ open gap from previous close.
     source_symbol: QQQ
     formula: log(open / prev_close)
-    temporal_class: t_after_open
+    temporal_class: t_open_observed
     role_candidates:
       - observed_proxy
 
@@ -21,7 +21,7 @@ variables:
     description: SPY open gap from previous close.
     source_symbol: SPY
     formula: log(open / prev_close)
-    temporal_class: t_after_open
+    temporal_class: t_open_observed
     role_candidates:
       - confounder
 
@@ -29,7 +29,7 @@ variables:
     description: SMH open gap from previous close.
     source_symbol: SMH
     formula: log(open / prev_close)
-    temporal_class: t_after_open
+    temporal_class: t_open_observed
     role_candidates:
       - confounder
 
@@ -61,21 +61,36 @@ variables:
     description: Weighted mega-cap basket open gap.
     source_symbol: AAPL_MSFT_NVDA_AMZN_META_GOOGL_AVGO
     formula: weighted_mean(log(open / prev_close))
-    temporal_class: t_after_open
+    temporal_class: t_open_observed
     role_candidates:
       - confounder
 
   expected_ndx_move:
     description: Modeled expected QQQ open gap from known factors.
     formula: modeled_from_known_factors
-    temporal_class: t_after_open
+    temporal_class: t_open_plus_buffer
     role_candidates:
       - modeled_latent
 
   open_gap_residual:
     description: Actual QQQ open gap minus expected NDX open move.
     formula: qqq_open_gap - expected_ndx_move
-    temporal_class: t_after_open
+    temporal_class: t_open_plus_buffer
     role_candidates:
       - treatment_candidate
 
+  nq_overnight_move_optional:
+    description: Optional NQ futures overnight move proxy for price discovery.
+    source_symbol: NQ
+    formula: provider_dependent_futures_overnight_move
+    temporal_class: provider_dependent
+    role_candidates:
+      - observed_proxy
+
+  qqq_premium_discount_optional:
+    description: Optional QQQ ETF premium or discount proxy for tracking noise.
+    source_symbol: QQQ
+    formula: provider_dependent_etf_tracking_noise
+    temporal_class: provider_dependent
+    role_candidates:
+      - data_quality

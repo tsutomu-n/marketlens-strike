@@ -1,0 +1,39 @@
+{
+  "created_at_jst": "2026-06-07_20:25 JST",
+  "title": "Layer 2.2 Research DAG Compiler v2 implementation plan",
+  "root_path": "feature_expansion_plan_20260607",
+  "purpose": "Implement the minimum Layer 0 to 2.2 contract and DAG compiler foundation for HYP-NDX-001 without external APIs or order paths.",
+  "repo_assumption": {
+    "repo": "marketlens-strike",
+    "branch": "main",
+    "base_head": "unknown; plan generated from uploaded repository snapshot and current conversation context"
+  },
+  "safety": {
+    "external_api": "not_required",
+    "credentials": "not_required",
+    "paper_live_order": "not_touched",
+    "db_schema": "not_touched",
+    "dependency_change": "none"
+  },
+  "files": [
+    "feature_expansion_plan_20260607/README.md",
+    "feature_expansion_plan_20260607/MANIFEST.json",
+    "feature_expansion_plan_20260607/01_GOAL.md",
+    "feature_expansion_plan_20260607/02_SCOPE_AND_BOUNDARIES.md",
+    "feature_expansion_plan_20260607/03_CURRENT_REPO_CONTEXT.md",
+    "feature_expansion_plan_20260607/04_TASKS.md",
+    "feature_expansion_plan_20260607/05_ACCEPTANCE.md",
+    "feature_expansion_plan_20260607/06_TARGET_FILE_MAP.md",
+    "feature_expansion_plan_20260607/07_TEST_PLAN.md",
+    "feature_expansion_plan_20260607/08_RISK_AND_STOP_CONDITIONS.md",
+    "feature_expansion_plan_20260607/09_OPEN_QUESTIONS.md",
+    "feature_expansion_plan_20260607/10_IMPLEMENTER_CHECKLIST.md",
+    "feature_expansion_plan_20260607/appendices/A_SCHEMA_SKETCHES.md",
+    "feature_expansion_plan_20260607/appendices/B_CONFIG_EXAMPLES.md",
+    "feature_expansion_plan_20260607/appendices/C_CODER_HANDOFF_PROMPT.md",
+    "feature_expansion_plan_20260607/appendices/D_DESIGN_REVIEW_FINDINGS.md",
+    "feature_expansion_plan_20260607/appendices/E_LINTER_RULES_V2.md",
+    "feature_expansion_plan_20260607/appendices/F_COUNTER_DAG_CATALOG.md",
+    "feature_expansion_plan_20260607/appendices/G_REFERENCE_NOTES.md"
+  ]
+}

@@ -11,7 +11,10 @@ TemporalClass = Literal[
     "t_pre_open",
     "t_open",
     "t_after_open",
+    "t_open_observed",
+    "t_open_plus_buffer",
     "t_after_close",
+    "provider_dependent",
 ]
 
 

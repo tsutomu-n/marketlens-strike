@@ -9,7 +9,7 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 from sis.models import InstrumentSpec
 from sis.storage.jsonl_store import append_jsonl
@@ -199,6 +199,7 @@ def _historical_archive_preflight_status(data_dir: Path) -> dict[str, Any]:
             "return_code": None,
             "aws_command_source": None,
         }
+    payload = cast(dict[str, Any], payload)
     return {
         "path": str(path),
         "exists": True,
@@ -614,6 +615,7 @@ def execute_hyperliquid_historical_archive_bulk_plan(
     plan = read_json(effective_plan_path)
     if not isinstance(plan, dict):
         raise ValueError(f"historical archive bulk plan is not an object: {effective_plan_path}")
+    plan = cast(dict[str, Any], plan)
     if not dry_run and not acknowledge_requester_pays:
         raise ValueError(
             "historical archive bulk execution is requester-pays; pass "
@@ -631,13 +633,17 @@ def execute_hyperliquid_historical_archive_bulk_plan(
 
     candidates: list[dict[str, Any]] = []
     if include_asset_ctxs:
-        for item in plan.get("asset_ctx_objects", []):
+        asset_ctx_objects = plan.get("asset_ctx_objects")
+        for item in (
+            cast(list[object], asset_ctx_objects) if isinstance(asset_ctx_objects, list) else []
+        ):
             if isinstance(item, dict):
-                candidates.append({"kind": "asset_ctxs", **item})
+                candidates.append({"kind": "asset_ctxs", **cast(dict[str, Any], item)})
     if include_l2:
-        for item in plan.get("l2_objects", []):
+        l2_objects = plan.get("l2_objects")
+        for item in cast(list[object], l2_objects) if isinstance(l2_objects, list) else []:
             if isinstance(item, dict):
-                candidates.append({"kind": "l2", **item})
+                candidates.append({"kind": "l2", **cast(dict[str, Any], item)})
     selected: list[dict[str, Any]] = []
     skipped_existing = 0
     for item in candidates:
@@ -926,11 +932,16 @@ def normalize_historical_archive_bulk_to_trade_xyz_quotes(
     plan = read_json(effective_plan_path)
     if not isinstance(plan, dict):
         raise ValueError(f"historical archive bulk plan is not an object: {effective_plan_path}")
+    plan = cast(dict[str, Any], plan)
 
     asset_ctx_by_date: dict[str, Path] = {}
-    for item in plan.get("asset_ctx_objects", []):
+    asset_ctx_objects = plan.get("asset_ctx_objects")
+    for item in (
+        cast(list[object], asset_ctx_objects) if isinstance(asset_ctx_objects, list) else []
+    ):
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         archive_date = str(item.get("date") or "")
         decompressed_path = item.get("decompressed_path")
         if archive_date and isinstance(decompressed_path, str):
@@ -946,9 +957,11 @@ def normalize_historical_archive_bulk_to_trade_xyz_quotes(
         "raw_quote_output_exists": 0,
     }
     errors: list[dict[str, Any]] = []
-    for item in plan.get("l2_objects", []):
+    l2_objects = plan.get("l2_objects")
+    for item in cast(list[object], l2_objects) if isinstance(l2_objects, list) else []:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         l2_path_value = item.get("decompressed_path")
         if not isinstance(l2_path_value, str):
             skipped["missing_l2_jsonl"] += 1

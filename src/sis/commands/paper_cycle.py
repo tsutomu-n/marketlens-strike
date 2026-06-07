@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import typer
 from loguru import logger
@@ -22,6 +22,11 @@ from sis.reports.summary_normalizers import (
     readiness_flat_fields,
 )
 from sis.storage.jsonl_store import write_json
+
+
+def _read_json_dict(path: Path) -> dict[str, Any]:
+    payload = read_json(path)
+    return cast(dict[str, Any], payload) if isinstance(payload, dict) else {}
 
 
 def register_paper_cycle_commands(
@@ -146,9 +151,7 @@ def register_paper_cycle_commands(
             settings.data_dir
         )
         readiness_summary = _read_readiness_schedule_summary(settings.data_dir)
-        dashboard_summary_payload = read_json(dashboard_summary_out)
-        if not isinstance(dashboard_summary_payload, dict):
-            dashboard_summary_payload = {}
+        dashboard_summary_payload = _read_json_dict(dashboard_summary_out)
         latest_execution_lineage = defaulted_all_latest_execution_lineage_fields(
             dashboard_summary_payload
         )
@@ -286,7 +289,7 @@ def register_paper_cycle_commands(
         audit_bundle_out, audit_bundle_manifest_out, _audit_bundle_text = _write_audit_bundle(
             settings.data_dir
         )
-        bundle_payload = read_json(bundle_manifest_out)
+        bundle_payload = _read_json_dict(bundle_manifest_out)
         bundle_chain_out = _append_operations_snapshot_manifest(
             settings.data_dir,
             manifest_path=bundle_manifest_out,
@@ -297,7 +300,7 @@ def register_paper_cycle_commands(
             if isinstance(bundle_payload, dict)
             else None,
         )
-        audit_payload = read_json(audit_manifest_out)
+        audit_payload = _read_json_dict(audit_manifest_out)
         audit_chain_out = _append_operations_audit_snapshot_manifest(
             settings.data_dir,
             manifest_path=audit_manifest_out,
@@ -308,7 +311,7 @@ def register_paper_cycle_commands(
             if isinstance(audit_payload, dict)
             else None,
         )
-        audit_bundle_payload = read_json(audit_bundle_manifest_out)
+        audit_bundle_payload = _read_json_dict(audit_bundle_manifest_out)
         audit_bundle_chain_out = _append_audit_bundle_snapshot_manifest(
             settings.data_dir,
             manifest_path=audit_bundle_manifest_out,

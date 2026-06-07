@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TypedDict
+from typing import Any, TypedDict, cast
 
 from sis.reports.doc_paths import CODE_STATUS_DOC, recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
@@ -248,7 +248,7 @@ def _as_str_list(value: object) -> list[str]:
 def _as_dict_list(value: object) -> list[dict[str, object]]:
     if not isinstance(value, list):
         return []
-    return [item for item in value if isinstance(item, dict)]
+    return [cast(dict[str, object], item) for item in value if isinstance(item, dict)]
 
 
 def _execution_drift_classifications(summary: dict[str, object]) -> list[dict[str, object]]:
@@ -420,7 +420,7 @@ def _remediation_order(
         )
     classification_counts = summary.get("execution_drift_classification_counts")
     p2_blocker_count = (
-        _as_int(classification_counts.get("P2_BLOCKER"))
+        _as_int(cast(dict[str, object], classification_counts).get("P2_BLOCKER"))
         if isinstance(classification_counts, dict)
         else 0
     ) or 0
@@ -948,9 +948,10 @@ def build_phase_gate_review(
         item["reason"]: _remediation_signal_snapshot_target(str(item["reason"]))
         for item in remediation_order
     }
+    previous_signal_snapshots_value = prior_summary.get("remediation_signal_snapshots_before")
     previous_signal_snapshots = (
-        prior_summary.get("remediation_signal_snapshots_before")
-        if isinstance(prior_summary.get("remediation_signal_snapshots_before"), dict)
+        cast(dict[str, Any], previous_signal_snapshots_value)
+        if isinstance(previous_signal_snapshots_value, dict)
         else {}
     )
     remediation_signal_snapshot_diffs = {
@@ -961,19 +962,26 @@ def build_phase_gate_review(
         )
         for item in remediation_order
     }
+    previous_recommendations_value = prior_summary.get("remediation_recommendations")
     previous_recommendations = (
-        prior_summary.get("remediation_recommendations")
-        if isinstance(prior_summary.get("remediation_recommendations"), dict)
+        cast(dict[str, Any], previous_recommendations_value)
+        if isinstance(previous_recommendations_value, dict)
         else {}
     )
     current_planner_summary = safe_read_json_dict(remediation_planner_summary_path)
     current_evaluator_summary = safe_read_json_dict(remediation_evaluator_summary_path)
+    current_planner_entries_value = current_planner_summary.get("entries")
+    current_planner_entries = (
+        cast(list[object], current_planner_entries_value)
+        if isinstance(current_planner_entries_value, list)
+        else []
+    )
     current_provenance_hints = {
-        str(item.get("reason")): item
-        for item in current_planner_summary.get("entries", [])
+        str(cast(dict[str, Any], item).get("reason")): cast(dict[str, Any], item)
+        for item in current_planner_entries
         if isinstance(item, dict)
-        and item.get("source") == "phase_gate_review"
-        and item.get("reason")
+        and cast(dict[str, Any], item).get("source") == "phase_gate_review"
+        and cast(dict[str, Any], item).get("reason")
     }
     current_signal_provenance_hints = signal_observed_sources_by_reason(
         current_evaluator_summary,

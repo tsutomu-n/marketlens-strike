@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import polars as pl
 from sis.reports.loaders import safe_read_json_dict, safe_read_json_dict_list
@@ -26,6 +27,10 @@ from sis.reports.summary_normalizers import (
     phase_gate_flat_fields,
     readiness_flat_fields,
 )
+
+
+def _dict_or_empty(value: object) -> dict[str, Any]:
+    return cast(dict[str, Any], value) if isinstance(value, dict) else {}
 
 
 def _quick_navigation(
@@ -54,7 +59,7 @@ def _related_reports(
     phase_gate_report_path = None
     if isinstance(phase_gate, dict):
         phase_gate_report_path = phase_gate_flat_fields(
-            normalize_phase_gate_summary(phase_gate)
+            normalize_phase_gate_summary(_dict_or_empty(phase_gate))
         ).get("phase_gate_review_report_path")
     items = (
         ("paper_vs_backtest_comparison_report", str(out_path)),
@@ -70,7 +75,7 @@ def _related_reports(
             (
                 "execution_snapshot_report",
                 execution_snapshot_flat_fields(
-                    normalize_execution_snapshot_summary(execution_summary)
+                    normalize_execution_snapshot_summary(_dict_or_empty(execution_summary))
                 ).get("execution_report_path"),
             ),
         )
@@ -80,7 +85,7 @@ def _related_reports(
             (
                 "execution_venue_comparison_report",
                 execution_comparison_flat_fields(
-                    normalize_execution_comparison_summary(execution_comparison)
+                    normalize_execution_comparison_summary(_dict_or_empty(execution_comparison))
                 ).get("execution_comparison_report_path"),
             ),
         )
@@ -90,7 +95,7 @@ def _related_reports(
             (
                 "execution_venue_diagnostics_report",
                 execution_diagnostics_flat_fields(
-                    normalize_execution_diagnostics_summary(execution_diagnostics)
+                    normalize_execution_diagnostics_summary(_dict_or_empty(execution_diagnostics))
                 ).get("execution_diagnostics_report_path"),
             ),
         )
@@ -100,7 +105,7 @@ def _related_reports(
             (
                 "execution_gap_history_report",
                 execution_gap_history_flat_fields(
-                    normalize_execution_gap_history_summary(execution_gap_history)
+                    normalize_execution_gap_history_summary(_dict_or_empty(execution_gap_history))
                 ).get("execution_gap_history_report_path"),
             ),
         )
@@ -110,7 +115,9 @@ def _related_reports(
             (
                 "execution_state_comparison_report",
                 execution_state_comparison_flat_fields(
-                    normalize_execution_state_comparison_summary(execution_state_comparison)
+                    normalize_execution_state_comparison_summary(
+                        _dict_or_empty(execution_state_comparison)
+                    )
                 ).get("execution_state_comparison_report_path"),
             ),
         )
@@ -120,7 +127,9 @@ def _related_reports(
             (
                 "execution_snapshot_drift_report",
                 execution_snapshot_drift_flat_fields(
-                    normalize_execution_snapshot_drift_summary(execution_snapshot_drift)
+                    normalize_execution_snapshot_drift_summary(
+                        _dict_or_empty(execution_snapshot_drift)
+                    )
                 ).get("execution_snapshot_drift_report_path"),
             ),
         )
@@ -130,7 +139,9 @@ def _related_reports(
             (
                 "execution_drift_overview_report",
                 execution_drift_overview_flat_fields(
-                    normalize_execution_drift_overview_summary(execution_drift_overview)
+                    normalize_execution_drift_overview_summary(
+                        _dict_or_empty(execution_drift_overview)
+                    )
                 ).get("execution_drift_overview_report_path"),
             ),
         )

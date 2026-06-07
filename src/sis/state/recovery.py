@@ -36,7 +36,9 @@ def _paper_last_run_dict(paper_last_run: dict[str, Any], key: str) -> dict[str, 
 
 def export_state_snapshot(store: StateStore, out_path: Path) -> Path:
     paper_last_run = store.get_json("paper_last_run")
-    paper_last_run_dict = cast(dict[str, Any], paper_last_run) if isinstance(paper_last_run, dict) else {}
+    paper_last_run_dict = (
+        cast(dict[str, Any], paper_last_run) if isinstance(paper_last_run, dict) else {}
+    )
     normalized_audit_summary = audit_summary_fields(
         _paper_last_run_dict(paper_last_run_dict, "audit"),
         _paper_last_run_dict(paper_last_run_dict, "audit"),
@@ -154,8 +156,7 @@ def export_state_snapshot(store: StateStore, out_path: Path) -> Path:
             "execution_drift_overview_diagnostics_alignment_match"
         )
     elif (
-        paper_last_run_dict.get("execution_drift_overview_diagnostics_alignment_match")
-        is not None
+        paper_last_run_dict.get("execution_drift_overview_diagnostics_alignment_match") is not None
     ):
         snapshot["execution_drift_overview_diagnostics_alignment_match"] = paper_last_run_dict.get(
             "execution_drift_overview_diagnostics_alignment_match"

@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import time
-from typing import Any
+from typing import Any, cast
 
 import polars as pl
 
@@ -146,7 +146,8 @@ def _active_instruments(
 
 
 def _manifest_parquet_path(data_dir: Path, payload: dict[str, Any]) -> Path:
-    artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), dict) else {}
+    artifacts_value = payload.get("artifacts")
+    artifacts = cast(dict[str, Any], artifacts_value) if isinstance(artifacts_value, dict) else {}
     value = artifacts.get("normalized_signal_candles")
     if isinstance(value, str) and value:
         path = Path(value)
@@ -180,6 +181,7 @@ def signal_candles_manifest_is_fresh(
     payload = read_json(manifest_path)
     if not isinstance(payload, dict):
         return False, {"reason": "invalid_signal_candles_manifest"}
+    payload = cast(dict[str, Any], payload)
     if int(payload.get("request_error_count") or 0) > 0:
         return False, {"reason": "signal_candle_request_errors_present"}
     if int(payload.get("row_count") or 0) <= 0:
@@ -194,7 +196,12 @@ def signal_candles_manifest_is_fresh(
     requested_symbols = {item.strip().upper() for item in symbols or [] if item.strip()}
     if requested_symbols:
         available_symbols = artifact_symbols or {
-            str(item).strip().upper() for item in payload.get("symbols", [])
+            str(item).strip().upper()
+            for item in (
+                cast(list[object], payload.get("symbols"))
+                if isinstance(payload.get("symbols"), list)
+                else []
+            )
         }
         missing_symbols = sorted(requested_symbols - available_symbols)
         if missing_symbols:
@@ -203,7 +210,12 @@ def signal_candles_manifest_is_fresh(
     requested_intervals = {item.strip() for item in intervals or [] if item.strip()}
     if requested_intervals:
         available_intervals = artifact_intervals or {
-            str(item).strip() for item in payload.get("intervals", [])
+            str(item).strip()
+            for item in (
+                cast(list[object], payload.get("intervals"))
+                if isinstance(payload.get("intervals"), list)
+                else []
+            )
         }
         missing_intervals = sorted(requested_intervals - available_intervals)
         if missing_intervals:
@@ -229,8 +241,18 @@ def signal_candles_manifest_is_fresh(
         "age_hours": age_hours,
         "row_count": payload.get("row_count"),
         "symbol_count": payload.get("symbol_count"),
-        "symbols": sorted(artifact_symbols) or payload.get("symbols", []),
-        "intervals": sorted(artifact_intervals) or payload.get("intervals", []),
+        "symbols": sorted(artifact_symbols)
+        or (
+            cast(list[object], payload.get("symbols"))
+            if isinstance(payload.get("symbols"), list)
+            else []
+        ),
+        "intervals": sorted(artifact_intervals)
+        or (
+            cast(list[object], payload.get("intervals"))
+            if isinstance(payload.get("intervals"), list)
+            else []
+        ),
     }
 
 

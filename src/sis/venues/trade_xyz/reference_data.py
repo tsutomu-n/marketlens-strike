@@ -279,7 +279,7 @@ def _funding_event_rows(logs: list[QuoteLog]) -> tuple[list[dict[str, Any]], dic
         if event_ms is None:
             continue
         bucket = _hour_bucket(event_ms)
-        row = {
+        row: dict[str, Any] = {
             "schema_version": "funding_event.v1",
             "funding_event_ts": _iso_from_ms(bucket),
             "canonical_symbol": log.canonical_symbol,

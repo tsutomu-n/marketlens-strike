@@ -16,6 +16,9 @@ class CounterDag(BaseModel):
     id: str = Field(min_length=1)
     description: str = Field(min_length=1)
     changed_assumption: str = Field(min_length=1)
+    risk: str = Field(min_length=1)
+    proxy: str = Field(min_length=1)
+    refutation_test_hint: str = Field(min_length=1)
 
 
 class CounterDagRegistry(BaseModel):

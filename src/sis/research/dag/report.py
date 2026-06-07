@@ -4,6 +4,7 @@ from sis.research.dag.contracts import CoreDag
 from sis.research.dag.counter import CounterDagRegistry
 from sis.research.dag.data_requirements import build_data_requirements
 from sis.research.dag.linter import DagLintIssue
+from sis.research.hypothesis.data_source_contracts import DataSourceRegistry
 from sis.research.hypothesis.variable_contracts import VariableInventory
 
 
@@ -13,8 +14,9 @@ def render_core_dag_report(
     inventory: VariableInventory,
     counter_dags: CounterDagRegistry,
     lint_issues: list[DagLintIssue],
+    data_sources: DataSourceRegistry | None = None,
 ) -> str:
-    data_requirements = build_data_requirements(dag, inventory)
+    data_requirements = build_data_requirements(dag, inventory, data_sources=data_sources)
     lines = [
         "# NDX Core DAG Report",
         "",
@@ -38,7 +40,10 @@ def render_core_dag_report(
     for item in data_requirements:
         source = item.source_symbol or "derived"
         providers = ",".join(item.provider_candidates) if item.provider_candidates else "none"
-        lines.append(f"- {item.variable_id}: source={source}; providers={providers}")
+        lines.append(
+            f"- {item.variable_id}: source={source}; tier={item.requirement_tier}; "
+            f"providers={providers}"
+        )
     lines.extend(["", "## Counter DAGs", ""])
     for item in counter_dags.counter_dags:
         lines.append(f"- {item.id}: {item.changed_assumption}")

@@ -11,6 +11,7 @@ from sis.research.dag.counter import CounterDagRegistry
 from sis.research.dag.data_requirements import build_data_requirements
 from sis.research.dag.linter import DagLintIssue
 from sis.research.dag.report import render_core_dag_report
+from sis.research.hypothesis.data_source_contracts import DataSourceRegistry
 from sis.research.hypothesis.variable_contracts import VariableInventory
 
 
@@ -31,6 +32,7 @@ def export_core_dag_artifacts(
     lint_issues: list[DagLintIssue],
     out_dir: Path,
     report_path: Path,
+    data_sources: DataSourceRegistry | None = None,
 ) -> CoreDagExportResult:
     out_dir.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -39,7 +41,7 @@ def export_core_dag_artifacts(
     counter_dags_path = out_dir / "counter_dags.md"
     data_requirements_path = out_dir / "data_requirements.yaml"
 
-    data_requirements = build_data_requirements(dag, inventory)
+    data_requirements = build_data_requirements(dag, inventory, data_sources=data_sources)
     dag_payload = dag.model_copy(update={"data_requirements": data_requirements})
     json_path.write_text(
         json.dumps(dag_payload.model_dump(mode="json", by_alias=True), indent=2) + "\n",
@@ -61,6 +63,7 @@ def export_core_dag_artifacts(
             inventory=inventory,
             counter_dags=counter_dags,
             lint_issues=lint_issues,
+            data_sources=data_sources,
         ),
         encoding="utf-8",
     )
@@ -92,6 +95,9 @@ def render_counter_dags(registry: CounterDagRegistry) -> str:
                 item.description,
                 "",
                 f"Changed assumption: {item.changed_assumption}",
+                f"Risk: {item.risk}",
+                f"Proxy: {item.proxy}",
+                f"Refutation test hint: {item.refutation_test_hint}",
                 "",
             ]
         )

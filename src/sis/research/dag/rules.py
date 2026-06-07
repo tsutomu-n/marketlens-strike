@@ -6,7 +6,10 @@ TEMPORAL_ORDER = {
     "t_pre_open": 1,
     "t_open": 2,
     "t_after_open": 3,
-    "t_after_close": 4,
+    "t_open_observed": 3,
+    "t_open_plus_buffer": 4,
+    "provider_dependent": 4,
+    "t_after_close": 5,
 }
 
 

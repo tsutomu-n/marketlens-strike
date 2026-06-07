@@ -8,6 +8,8 @@ included:
     - QQQ
   future_optional:
     - NQ
+    - VXN
+    - SOX
   known_factors:
     - SPY
     - SMH
@@ -24,6 +26,7 @@ excluded:
   - Bitget_demo_network
   - paper_order
   - live_trading
+  - backtest_data_ready
   - wallet
   - signing
   - exchange_write
@@ -32,4 +35,3 @@ policy:
   external_api_allowed: false
   strategy_lab_export_allowed: false
   paper_preview_allowed: false
-

@@ -457,7 +457,9 @@ def register_operations_refresh_commands(
                 else None
             ),
         )
-        remediation_command_results_payload = _read_json_dict(remediation_command_results_summary_out)
+        remediation_command_results_payload = _read_json_dict(
+            remediation_command_results_summary_out
+        )
         remediation_command_results_chain_out = _append_remediation_command_results_manifest(
             settings.data_dir,
             summary_path=remediation_command_results_summary_out,

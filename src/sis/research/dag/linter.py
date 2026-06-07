@@ -6,6 +6,7 @@ from typing import Literal
 from sis.research.dag.contracts import CoreDag
 from sis.research.dag.errors import CoreDagLintError
 from sis.research.dag.rules import is_future_to_signal_edge
+from sis.research.hypothesis.data_source_contracts import DataSourceRegistry
 from sis.research.hypothesis.temporal_contracts import TemporalAvailability
 
 
@@ -23,6 +24,7 @@ def lint_core_dag(
     dag: CoreDag,
     *,
     temporal: TemporalAvailability | None = None,
+    data_sources: DataSourceRegistry | None = None,
 ) -> list[DagLintIssue]:
     issues: list[DagLintIssue] = []
     role_by_id = dag.role_by_node_id()
@@ -70,6 +72,23 @@ def lint_core_dag(
                 message="core DAG should reference at least one counter DAG.",
             )
         )
+    if data_sources is not None:
+        for requirement in dag.data_requirements:
+            source_tier = data_sources.tier_for_symbol(requirement.source_symbol)
+            if (
+                source_tier == "optional_provider_dependent"
+                and requirement.requirement_tier == "required"
+            ):
+                issues.append(
+                    DagLintIssue(
+                        severity="warning",
+                        rule_id="optional_provider_required",
+                        message=(
+                            "optional provider-dependent source is marked required: "
+                            f"{requirement.variable_id}"
+                        ),
+                    )
+                )
     return issues
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -23,6 +23,7 @@ def load_trade_xyz_seed(seed_path: Path) -> list[InstrumentSpec]:
     payload = read_json(seed_path)
     if not isinstance(payload, dict):
         raise ValueError("seed payload must be an object")
+    payload = cast(dict[str, Any], payload)
     venues = payload.get("venues", {})
     if not isinstance(venues, dict):
         raise ValueError("seed payload missing venues object")

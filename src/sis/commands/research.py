@@ -18,6 +18,7 @@ from sis.research.dag.counter import (
     load_counter_dag_registry,
     validate_counter_dag_refs,
 )
+from sis.research.dag.data_requirements import build_data_requirements
 from sis.research.dag.errors import CoreDagLintError, CoreDagValidationError
 from sis.research.dag.export import export_core_dag_artifacts
 from sis.research.dag.linter import DagLintIssue
@@ -31,6 +32,8 @@ from sis.research.event_calendar import build_event_calendar
 from sis.research.feature_panel import build_feature_panel
 from sis.research.hypothesis.role_contracts import CausalRoleRegistry
 from sis.research.hypothesis.role_validator import validate_roles_against_inventory
+from sis.research.hypothesis.data_source_contracts import DataSourceRegistry
+from sis.research.hypothesis.data_source_loader import load_data_source_registry
 from sis.research.hypothesis.temporal_contracts import TemporalAvailability
 from sis.research.hypothesis.variable_contracts import VariableInventory
 from sis.research.hypothesis.variable_loader import load_variable_inventory
@@ -93,9 +96,13 @@ def _load_causal_roles(config_path: Path) -> CausalRoleRegistry:
     )
 
 
+def _load_data_sources(config_path: Path) -> DataSourceRegistry:
+    return load_data_source_registry(_required_companion_config(config_path, "data_sources.yaml"))
+
+
 def _validate_research_dag_config(
     config_path: Path,
-) -> tuple[CoreDag, VariableInventory, CounterDagRegistry, list[DagLintIssue]]:
+) -> tuple[CoreDag, VariableInventory, CounterDagRegistry, DataSourceRegistry, list[DagLintIssue]]:
     dag = load_core_dag(config_path)
     inventory = load_variable_inventory(
         _required_companion_config(config_path, "variable_inventory.yaml")
@@ -105,6 +112,7 @@ def _validate_research_dag_config(
     counter_dags = load_counter_dag_registry(
         _required_companion_config(config_path, "counter_dags.yaml")
     )
+    data_sources = _load_data_sources(config_path)
 
     validate_roles_against_inventory(roles, inventory)
     validate_core_dag(dag)
@@ -114,10 +122,17 @@ def _validate_research_dag_config(
         roles=roles,
         temporal=temporal,
     )
-    lint_issues = lint_core_dag(dag, temporal=temporal)
+    dag_with_requirements = dag.model_copy(
+        update={"data_requirements": build_data_requirements(dag, inventory, data_sources)}
+    )
+    lint_issues = lint_core_dag(
+        dag_with_requirements,
+        temporal=temporal,
+        data_sources=data_sources,
+    )
     raise_for_lint_errors(lint_issues)
     validate_counter_dag_refs(dag, counter_dags)
-    return dag, inventory, counter_dags, lint_issues
+    return dag, inventory, counter_dags, data_sources, lint_issues
 
 
 def _report_path_for_dag_export(out_dir: Path) -> Path:
@@ -376,7 +391,7 @@ def register_research_commands(
         ),
     ) -> None:
         try:
-            dag, _, _, lint_issues = _validate_research_dag_config(config)
+            dag, _, _, _, lint_issues = _validate_research_dag_config(config)
         except (
             CoreDagValidationError,
             CoreDagLintError,
@@ -414,7 +429,9 @@ def register_research_commands(
         ),
     ) -> None:
         try:
-            dag, inventory, counter_dags, lint_issues = _validate_research_dag_config(config)
+            dag, inventory, counter_dags, data_sources, lint_issues = _validate_research_dag_config(
+                config
+            )
             result = export_core_dag_artifacts(
                 dag,
                 inventory=inventory,
@@ -422,6 +439,7 @@ def register_research_commands(
                 lint_issues=lint_issues,
                 out_dir=out,
                 report_path=_report_path_for_dag_export(out),
+                data_sources=data_sources,
             )
         except (
             CoreDagValidationError,
@@ -440,6 +458,36 @@ def register_research_commands(
         typer.echo(f"counter_dags_report={result.counter_dags_path}")
         typer.echo(f"data_requirements={result.data_requirements_path}")
         typer.echo(f"report={result.report_path}")
+
+    @app.command("research-layer22-validate")
+    def research_layer22_validate_cmd(
+        root: Path = typer.Option(
+            ...,
+            "--root",
+            exists=True,
+            file_okay=False,
+            help="Layer 2.2 research config root directory.",
+        ),
+    ) -> None:
+        research_dag_validate_cmd(root / "core_dag.yaml")
+
+    @app.command("research-layer22-export")
+    def research_layer22_export_cmd(
+        root: Path = typer.Option(
+            ...,
+            "--root",
+            exists=True,
+            file_okay=False,
+            help="Layer 2.2 research config root directory.",
+        ),
+        out: Path = typer.Option(
+            ...,
+            "--out",
+            file_okay=False,
+            help="Output directory for DAG artifacts.",
+        ),
+    ) -> None:
+        research_dag_export_cmd(root / "core_dag.yaml", out)
 
     @app.command("build-cost-matrix")
     def build_cost_matrix() -> None:

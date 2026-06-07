@@ -1,0 +1,67 @@
+schema_version: research_data_sources.v1
+
+sources:
+  QQQ:
+    description: Initial observed ETF proxy for NDX open gap and open-to-close outcome.
+    source_tier: defined
+    provider_name: local_fixture_or_future_market_data_provider
+    responsibility: observed ETF proxy, not the NDX index methodology source of truth.
+    default_proxy_for:
+      - actual_open_gap
+      - open_to_close_outcome
+
+  SPY:
+    description: Broad US equity market proxy used as a confounder input.
+    source_tier: defined
+    provider_name: local_fixture_or_future_market_data_provider
+    responsibility: broad market proxy.
+    default_proxy_for:
+      - broad_market_gap
+
+  SMH:
+    description: Semiconductor ETF proxy used when direct SOX data is unavailable.
+    source_tier: defined
+    provider_name: local_fixture_or_future_market_data_provider
+    responsibility: semiconductor proxy.
+    default_proxy_for:
+      - semiconductor_gap
+
+  DGS10:
+    description: US 10Y Treasury rate proxy.
+    source_tier: defined
+    provider_name: future_fred_provider
+    responsibility: rates duration proxy; same-day t_open availability is not assumed.
+    default_proxy_for:
+      - rates_delta
+
+  VIX:
+    description: Default volatility regime proxy when VXN is unavailable.
+    source_tier: defined
+    provider_name: local_fixture_or_future_market_data_provider
+    responsibility: volatility regime proxy.
+    default_proxy_for:
+      - vol_regime
+
+  VXN:
+    description: Nasdaq volatility proxy that depends on a future provider decision.
+    source_tier: optional_provider_dependent
+    provider_name: future_provider_dependent
+    responsibility: optional Nasdaq-specific volatility proxy.
+    default_proxy_for:
+      - nasdaq_vol_regime_optional
+
+  NQ:
+    description: Nasdaq-100 futures price discovery proxy.
+    source_tier: optional_provider_dependent
+    provider_name: future_provider_dependent
+    responsibility: optional futures price discovery proxy, not the same artifact as QQQ ETF price.
+    default_proxy_for:
+      - nq_overnight_move_optional
+
+  NDX:
+    description: Nasdaq-100 index level and methodology source.
+    source_tier: deferred
+    provider_name: future_index_methodology_provider
+    responsibility: index methodology and index-level reference, not initial observable trading proxy.
+    default_proxy_for:
+      - ndx_index_methodology_deferred

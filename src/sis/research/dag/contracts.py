@@ -8,6 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sis.research.hypothesis.role_contracts import CausalRoleName
 
 
+RequirementTier = Literal["required", "optional", "deferred"]
+
+
 class DagNode(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -35,6 +38,7 @@ class DataRequirement(BaseModel):
     formula: str | None = None
     temporal_class: str
     provider_candidates: list[str] = Field(default_factory=list)
+    requirement_tier: RequirementTier = "required"
 
 
 class CoreDag(BaseModel):

@@ -55,5 +55,10 @@ counter_dag_refs:
   - SOXOnlyDAG
   - MegaCapOnlyDAG
   - VolRegimeOnlyDAG
+  - ETFTrackingNoiseDAG
+  - FuturesPriceDiscoveryDAG
+  - IndexRebalanceDAG
+  - MacroEventDAG
+  - CalendarEffectDAG
   - SelectionBiasDAG
-
+  - DataSourceLagDAG

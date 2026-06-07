@@ -15,8 +15,9 @@ def test_temporal_availability_loads_forbidden_future_to_signal_rule() -> None:
     )
 
     assert temporal.layer_for_variable("qqq_open_to_close_return") == "t_after_close"
-    assert temporal.layer_for_variable("open_gap_residual") == "t_after_open"
-    assert ("t_after_close", "t_after_open") in forbidden_layer_edge_pairs(temporal)
+    assert temporal.layer_for_variable("open_gap_residual") == "t_open_plus_buffer"
+    assert temporal.layer_for_variable("nq_overnight_move_optional") == "provider_dependent"
+    assert ("t_after_close", "t_open_plus_buffer") in forbidden_layer_edge_pairs(temporal)
 
 
 def test_temporal_availability_rejects_unknown_layer_and_duplicate_variable() -> None:
@@ -31,7 +32,7 @@ def test_temporal_availability_rejects_unknown_layer_and_duplicate_variable() ->
                 "schema_version": "research_temporal_availability.v1",
                 "layers": {
                     "t_pre_open": ["x"],
-                    "t_after_open": ["x"],
+                    "t_open_plus_buffer": ["x"],
                 },
             }
         )

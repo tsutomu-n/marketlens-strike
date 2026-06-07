@@ -3,6 +3,8 @@ schema_version: research_causal_roles.v1
 roles:
   qqq_open_gap: observed_proxy
   qqq_open_to_close_return: outcome
+  nq_overnight_move_optional: observed_proxy
+  qqq_premium_discount_optional: data_quality
   spy_gap: confounder
   smh_gap: confounder
   dgs10_delta: confounder
@@ -11,4 +13,3 @@ roles:
   mega_cap_basket_gap: confounder
   expected_ndx_move: modeled_latent
   open_gap_residual: treatment_candidate
-

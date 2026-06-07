@@ -7,13 +7,19 @@ from research.helpers import CONFIG_DIR
 from research.helpers import core_dag_payload
 
 
-def test_counter_dag_registry_has_required_six_counter_dags() -> None:
+def test_counter_dag_registry_has_required_v2_counter_dags() -> None:
     dag = load_core_dag(CONFIG_DIR / "core_dag.yaml")
     registry = load_counter_dag_registry(CONFIG_DIR / "counter_dags.yaml")
 
     validate_counter_dag_refs(dag, registry)
 
-    assert len(registry.counter_dags) >= 6
+    assert len(registry.counter_dags) >= 8
+    assert {
+        "ETFTrackingNoiseDAG",
+        "FuturesPriceDiscoveryDAG",
+        "IndexRebalanceDAG",
+        "DataSourceLagDAG",
+    } <= set(registry.by_id())
     assert set(dag.counter_dag_refs) <= set(registry.by_id())
 
 

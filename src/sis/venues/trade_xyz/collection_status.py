@@ -8,7 +8,7 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
-from typing import Any
+from typing import Any, cast
 
 from sis.storage.jsonl_store import read_json
 from sis.storage.jsonl_store import write_json
@@ -23,7 +23,7 @@ def _load_object(path: Path) -> dict[str, Any] | None:
     if not path.exists():
         return None
     payload = read_json(path)
-    return payload if isinstance(payload, dict) else None
+    return cast(dict[str, Any], payload) if isinstance(payload, dict) else None
 
 
 def _raw_quote_inventory(raw_quotes_root: Path, *, generated_at: datetime) -> dict[str, Any]:
@@ -148,7 +148,10 @@ def _coverage_progress(coverage: dict[str, Any] | None) -> dict[str, Any]:
             "completion_ratio_by_span": None,
             "slowest_symbols": [],
         }
-    per_symbol = coverage.get("per_symbol") if isinstance(coverage.get("per_symbol"), dict) else {}
+    per_symbol_value = coverage.get("per_symbol")
+    per_symbol = (
+        cast(dict[str, Any], per_symbol_value) if isinstance(per_symbol_value, dict) else {}
+    )
     symbols: dict[str, Any] = {}
     max_days = 0
     min_span_days: float | None = None
@@ -237,9 +240,10 @@ def _progress_since_previous(
             "warnings": [],
         }
     previous_generated_at = _parse_generated_at(previous_status.get("generated_at"))
+    previous_inventory_value = previous_status.get("raw_quote_inventory")
     previous_inventory = (
-        previous_status.get("raw_quote_inventory")
-        if isinstance(previous_status.get("raw_quote_inventory"), dict)
+        cast(dict[str, Any], previous_inventory_value)
+        if isinstance(previous_inventory_value, dict)
         else {}
     )
     previous_rows = int(previous_inventory.get("row_count") or 0)
@@ -587,8 +591,9 @@ def _readiness_requirement_summary(readiness: dict[str, Any] | None) -> dict[str
             "known_gap": [],
             "unknown": [],
         }
+    requirements_value = readiness.get("requirements")
     requirements = (
-        readiness.get("requirements") if isinstance(readiness.get("requirements"), list) else []
+        cast(list[object], requirements_value) if isinstance(requirements_value, list) else []
     )
     summary: dict[str, list[str]] = {
         "pass": [],
@@ -599,6 +604,7 @@ def _readiness_requirement_summary(readiness: dict[str, Any] | None) -> dict[str
     for item in requirements:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         key = str(item.get("key") or "")
         if not key:
             continue
@@ -610,19 +616,22 @@ def _readiness_requirement_summary(readiness: dict[str, Any] | None) -> dict[str
 
 
 def _readiness_requirement_details(readiness: dict[str, Any] | None) -> dict[str, Any]:
+    requirements_value = readiness.get("requirements") if readiness is not None else None
     requirements = (
-        readiness.get("requirements")
-        if readiness is not None and isinstance(readiness.get("requirements"), list)
-        else []
+        cast(list[object], requirements_value) if isinstance(requirements_value, list) else []
     )
     details: dict[str, Any] = {}
     for item in requirements:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         key = str(item.get("key") or "")
         if not key:
             continue
-        item_details = item.get("details") if isinstance(item.get("details"), dict) else {}
+        item_details_value = item.get("details")
+        item_details = (
+            cast(dict[str, Any], item_details_value) if isinstance(item_details_value, dict) else {}
+        )
         details[key] = {
             "status": item.get("status"),
             "reason": item.get("reason"),

@@ -398,11 +398,7 @@ def _planner_entry_diffs(
         for item in previous_list
         if isinstance(item, dict) and _entry_key(cast(dict[str, Any], item))
     }
-    current = {
-        _entry_key(item): item
-        for item in current_entries
-        if _entry_key(item)
-    }
+    current = {_entry_key(item): item for item in current_entries if _entry_key(item)}
     diffs: dict[str, dict[str, object]] = {}
     for key in sorted(set(previous) | set(current)):
         previous_entry = previous.get(key, {})

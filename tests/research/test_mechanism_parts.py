@@ -10,8 +10,17 @@ from research.helpers import CONFIG_DIR
 
 def test_mechanism_parts_load_initial_library() -> None:
     registry = load_mechanism_parts(CONFIG_DIR / "mechanism_parts.yaml")
+    part_ids = {part.part_id for part in registry.parts}
 
-    assert len(registry.parts) == 10
+    assert len(registry.parts) >= 17
+    assert {
+        "NDX_INDEX_METHODOLOGY",
+        "NDX_WEIGHT_CAP_PRESSURE",
+        "NDX_FAST_ENTRY_FLOW",
+        "NDX_REBALANCE_FLOW",
+        "QQQ_ETF_TRACKING_NOISE",
+        "NQ_FUTURES_PRICE_DISCOVERY",
+    } <= part_ids
     assert registry.parts[0].role_hint == "confounder"
 
 

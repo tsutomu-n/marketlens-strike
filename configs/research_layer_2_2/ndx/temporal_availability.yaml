@@ -11,19 +11,27 @@ layers:
     - vix_level
     - vix_change
 
-  t_after_open:
+  t_open_observed:
     - qqq_open_gap
     - spy_gap
     - smh_gap
     - mega_cap_basket_gap
+
+  t_open_plus_buffer:
     - expected_ndx_move
     - open_gap_residual
 
   t_after_close:
     - qqq_open_to_close_return
 
+  provider_dependent:
+    - nq_overnight_move_optional
+    - qqq_premium_discount_optional
+
 forbidden_layer_edges:
   - from: t_after_close
-    to: t_after_open
+    to: t_open_plus_buffer
     reason: future_to_signal_leakage
-
+  - from: t_after_close
+    to: t_open_observed
+    reason: future_to_signal_leakage

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TypedDict
+from typing import Any, TypedDict, cast
 
 from sis.reports.doc_paths import CODE_STATUS_DOC
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
@@ -43,14 +43,16 @@ def _report_path_for_summary(path: Path | None, report_name: str) -> str | None:
 
 
 def _related_reports(summary: dict[str, object]) -> dict[str, str]:
+    readiness_summary_path_value = summary.get("readiness_summary_path")
     readiness_summary_path = (
-        Path(summary["readiness_summary_path"])
-        if isinstance(summary.get("readiness_summary_path"), str)
+        Path(readiness_summary_path_value)
+        if isinstance(readiness_summary_path_value, str)
         else None
     )
+    ops_dashboard_summary_path_value = summary.get("ops_dashboard_summary_path")
     ops_dashboard_summary_path = (
-        Path(summary["ops_dashboard_summary_path"])
-        if isinstance(summary.get("ops_dashboard_summary_path"), str)
+        Path(ops_dashboard_summary_path_value)
+        if isinstance(ops_dashboard_summary_path_value, str)
         else None
     )
     ordered_items = (
@@ -107,9 +109,12 @@ def _related_reports(summary: dict[str, object]) -> dict[str, str]:
 
 
 def _quick_navigation(summary: dict[str, object]) -> dict[str, str]:
-    related_reports = summary.get("related_reports")
-    if not isinstance(related_reports, dict):
-        related_reports = {}
+    related_reports_value = summary.get("related_reports")
+    related_reports = (
+        cast(dict[str, object], related_reports_value)
+        if isinstance(related_reports_value, dict)
+        else {}
+    )
     items = (
         (
             "paper_operations_runbook_report",
@@ -650,9 +655,10 @@ def build_paper_operations_runbook(
         item["reason"]: _remediation_signal_snapshot_target(str(item["reason"]))
         for item in remediation_order
     }
+    previous_signal_snapshots_value = prior_summary.get("remediation_signal_snapshots_before")
     previous_signal_snapshots = (
-        prior_summary.get("remediation_signal_snapshots_before")
-        if isinstance(prior_summary.get("remediation_signal_snapshots_before"), dict)
+        cast(dict[str, Any], previous_signal_snapshots_value)
+        if isinstance(previous_signal_snapshots_value, dict)
         else {}
     )
     remediation_signal_snapshot_diffs = {
@@ -663,19 +669,26 @@ def build_paper_operations_runbook(
         )
         for item in remediation_order
     }
+    previous_recommendations_value = prior_summary.get("remediation_recommendations")
     previous_recommendations = (
-        prior_summary.get("remediation_recommendations")
-        if isinstance(prior_summary.get("remediation_recommendations"), dict)
+        cast(dict[str, Any], previous_recommendations_value)
+        if isinstance(previous_recommendations_value, dict)
         else {}
     )
     current_planner_summary = safe_read_json_dict(remediation_planner_summary_path)
     current_evaluator_summary = safe_read_json_dict(remediation_evaluator_summary_path)
+    current_planner_entries_value = current_planner_summary.get("entries")
+    current_planner_entries = (
+        cast(list[object], current_planner_entries_value)
+        if isinstance(current_planner_entries_value, list)
+        else []
+    )
     current_provenance_hints = {
-        str(item.get("reason")): item
-        for item in current_planner_summary.get("entries", [])
+        str(cast(dict[str, Any], item).get("reason")): cast(dict[str, Any], item)
+        for item in current_planner_entries
         if isinstance(item, dict)
-        and item.get("source") == "paper_operations_runbook"
-        and item.get("reason")
+        and cast(dict[str, Any], item).get("source") == "paper_operations_runbook"
+        and cast(dict[str, Any], item).get("reason")
     }
     current_signal_provenance_hints = signal_observed_sources_by_reason(
         current_evaluator_summary,

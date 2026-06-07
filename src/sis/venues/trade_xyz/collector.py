@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 from time import sleep
-from typing import Any
+from typing import Any, cast
 
 from sis.models import InstrumentSpec
 from sis.storage.jsonl_store import append_jsonl, write_json
@@ -25,6 +25,7 @@ def _ctx_by_symbol(
             break
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         name = item.get("name")
         if isinstance(name, str):
             result[name.removeprefix("xyz:").upper()] = ctxs[idx]

@@ -33,6 +33,48 @@ parts:
     proxies:
       - mega_cap_basket_gap
 
+  - part_id: NDX_INDEX_METHODOLOGY
+    name: Nasdaq-100 Index Methodology
+    role_hint: data_quality
+    proxies:
+      - ndx_index_methodology_deferred
+
+  - part_id: NDX_WEIGHT_CAP_PRESSURE
+    name: Nasdaq-100 Weight Cap Pressure
+    role_hint: selection_mechanism
+    proxies:
+      - mega_cap_basket_gap
+
+  - part_id: NDX_FAST_ENTRY_FLOW
+    name: Nasdaq-100 Fast Entry Flow
+    role_hint: selection_mechanism
+    proxies:
+      - ndx_index_methodology_deferred
+
+  - part_id: NDX_REBALANCE_FLOW
+    name: Nasdaq-100 Rebalance Flow
+    role_hint: selection_mechanism
+    proxies:
+      - ndx_index_methodology_deferred
+
+  - part_id: QQQ_ETF_TRACKING_NOISE
+    name: QQQ ETF Tracking Noise
+    role_hint: data_quality
+    proxies:
+      - qqq_premium_discount_optional
+
+  - part_id: NQ_FUTURES_PRICE_DISCOVERY
+    name: NQ Futures Price Discovery
+    role_hint: observed_proxy
+    proxies:
+      - nq_overnight_move_optional
+
+  - part_id: CALENDAR_EVENT_RISK
+    name: Calendar Event Risk
+    role_hint: moderator
+    proxies:
+      - event_risk_flag_deferred
+
   - part_id: BREADTH_FRAGILITY
     name: Breadth Fragility
     role_hint: selection_mechanism
@@ -62,4 +104,3 @@ parts:
     role_hint: moderator
     proxies:
       - vix_change
-

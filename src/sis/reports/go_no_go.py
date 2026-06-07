@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from sis.models import Decision, GoNoGoCriterion, GoNoGoReport, VenueDecision
 from sis.reports.loaders import safe_read_json_dict_list
@@ -139,8 +140,8 @@ def _ostium_registry_resolved(path: Path) -> bool:
         return False
     return all(
         isinstance(item, dict)
-        and item.get("active") is True
-        and item.get("venue_symbol") != "requires_probe"
+        and cast(dict[str, Any], item).get("active") is True
+        and cast(dict[str, Any], item).get("venue_symbol") != "requires_probe"
         for item in data
     )
 
@@ -152,7 +153,9 @@ def _ostium_fees_oi_complete(path: Path) -> bool:
     if not isinstance(data, list):
         return False
     target_rows = [
-        item for item in data if isinstance(item, dict) and item.get("venue") == "ostium"
+        cast(dict[str, Any], item)
+        for item in data
+        if isinstance(item, dict) and cast(dict[str, Any], item).get("venue") == "ostium"
     ]
     return bool(target_rows) and all(
         item.get("opening_fee_bps") is not None
@@ -199,6 +202,8 @@ def _threshold_result(
     for row in rows:
         value = row.get(column)
         if value in {None, ""}:
+            return "MISSING"
+        if value is None:
             return "MISSING"
         values.append(float(value))
     if not values:
@@ -252,6 +257,7 @@ def _trade_xyz_summary_row_count(path: Path) -> int:
     payload = read_json(path)
     if not isinstance(payload, dict):
         return 0
+    payload = cast(dict[str, Any], payload)
     try:
         return int(payload.get("row_count") or 0)
     except (TypeError, ValueError):

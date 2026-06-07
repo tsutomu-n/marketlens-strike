@@ -16,6 +16,15 @@ def test_research_dag_validate_cli_accepts_ndx_config() -> None:
     assert "dag_id=HYP-NDX-001" in stdout
 
 
+def test_research_layer22_validate_alias_accepts_ndx_root() -> None:
+    result = invoke_cli(["research-layer22-validate", "--root", str(CONFIG_DIR)])
+    stdout = normalized_stdout(result)
+
+    assert result.exit_code == 0
+    assert "status=pass" in stdout
+    assert "dag_id=HYP-NDX-001" in stdout
+
+
 def test_research_dag_validate_cli_returns_exit_2_for_invalid_config(tmp_path) -> None:
     config_dir = tmp_path / "cfg"
     config_dir.mkdir()
