@@ -31,4 +31,3 @@ def _validate_edges(
         if edge.key in seen:
             issues.append(f"{label} duplicate edge: {edge.from_node}->{edge.to}")
         seen.add(edge.key)
-

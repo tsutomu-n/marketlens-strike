@@ -50,6 +50,7 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert '"docs/algo/RESEARCH_VALIDATION_PLAYBOOK.md"' in script
     assert '"docs/algo/SOURCE_NOTES_INDEX.md"' in script
     assert '"docs/strategy_research_lab"' in script
+    assert '"docs/research/ndx"' in script
     assert '"docs/algo/strategy_factory"' in script
     assert '"docs/algo/obsidian_note_rewrites_2026-05-29"' in script
     assert '"docs/archive/"' in script

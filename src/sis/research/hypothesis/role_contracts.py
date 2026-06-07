@@ -24,4 +24,3 @@ class CausalRoleRegistry(BaseModel):
 
     schema_version: Literal["research_causal_roles.v1"]
     roles: dict[str, CausalRoleName] = Field(min_length=1)
-

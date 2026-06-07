@@ -52,4 +52,3 @@ def validate_counter_dag_refs(dag: CoreDag, registry: CounterDagRegistry) -> Non
     missing = sorted(set(dag.counter_dag_refs) - registered)
     if missing:
         raise ValueError("core DAG references unknown counter DAGs: " + ", ".join(missing))
-

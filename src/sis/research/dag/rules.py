@@ -14,4 +14,3 @@ def is_future_to_signal_edge(from_layer: str | None, to_layer: str | None) -> bo
     if from_layer is None or to_layer is None:
         return False
     return TEMPORAL_ORDER[from_layer] > TEMPORAL_ORDER[to_layer]
-

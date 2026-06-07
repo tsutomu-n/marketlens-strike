@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Research Variable Inventory v1",
+  "type": "object",
+  "required": ["schema_version", "variables"],
+  "properties": {
+    "schema_version": { "const": "research_variable_inventory.v1" },
+    "variables": { "type": "object", "minProperties": 1 }
+  },
+  "additionalProperties": false
+}
+

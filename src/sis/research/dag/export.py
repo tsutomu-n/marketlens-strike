@@ -76,7 +76,7 @@ def export_core_dag_artifacts(
 def render_mermaid(dag: CoreDag) -> str:
     lines = ["flowchart TD"]
     for node in dag.nodes:
-        lines.append(f"  {node.id}[\"{node.id}\\n{node.role}\"]")
+        lines.append(f'  {node.id}["{node.id}\\n{node.role}"]')
     for edge in dag.edges:
         lines.append(f"  {edge.from_node} --> {edge.to}")
     return "\n".join(lines) + "\n"

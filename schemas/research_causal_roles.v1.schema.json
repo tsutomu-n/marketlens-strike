@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Research Causal Roles v1",
+  "type": "object",
+  "required": ["schema_version", "roles"],
+  "properties": {
+    "schema_version": { "const": "research_causal_roles.v1" },
+    "roles": { "type": "object", "minProperties": 1 }
+  },
+  "additionalProperties": false
+}
+

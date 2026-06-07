@@ -49,4 +49,3 @@ class TemporalAvailability(BaseModel):
             if variable_id in variables:
                 return layer
         return None
-

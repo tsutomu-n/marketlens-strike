@@ -31,4 +31,3 @@ class VariableInventory(BaseModel):
 
     schema_version: Literal["research_variable_inventory.v1"]
     variables: dict[str, VariableDefinition] = Field(min_length=1)
-

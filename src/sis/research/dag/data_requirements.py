@@ -32,4 +32,3 @@ def _provider_candidates(source_symbol: str | None) -> list[str]:
     if source_symbol == "DGS10":
         return ["fred"]
     return ["local_fixture", "market_data_provider"]
-

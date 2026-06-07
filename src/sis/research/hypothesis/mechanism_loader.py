@@ -8,4 +8,3 @@ from sis.research.hypothesis.yaml_io import load_yaml_mapping
 
 def load_mechanism_parts(path: Path) -> MechanismPartsRegistry:
     return MechanismPartsRegistry.model_validate(load_yaml_mapping(path))
-

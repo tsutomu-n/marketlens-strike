@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Research Mechanism Parts v1",
+  "type": "object",
+  "required": ["schema_version", "parts"],
+  "properties": {
+    "schema_version": { "const": "research_mechanism_parts.v1" },
+    "parts": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}
+

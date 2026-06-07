@@ -41,4 +41,3 @@ class ResearchScope(BaseModel):
         if self.policy.paper_preview_allowed:
             raise ValueError("Layer 2.2 scope must not allow paper preview.")
         return self
-

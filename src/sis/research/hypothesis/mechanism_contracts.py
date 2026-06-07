@@ -34,4 +34,3 @@ class MechanismPartsRegistry(BaseModel):
         if duplicates:
             raise ValueError(f"duplicate part_id values: {', '.join(duplicates)}")
         return self
-

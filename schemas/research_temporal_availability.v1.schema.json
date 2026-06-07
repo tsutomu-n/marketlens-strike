@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Research Temporal Availability v1",
+  "type": "object",
+  "required": ["schema_version", "layers"],
+  "properties": {
+    "schema_version": { "const": "research_temporal_availability.v1" },
+    "layers": { "type": "object", "minProperties": 1 },
+    "forbidden_layer_edges": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}
+

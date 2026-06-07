@@ -37,4 +37,3 @@ class SeedRegistry(BaseModel):
         if duplicates:
             raise ValueError(f"duplicate seed_id values: {', '.join(duplicates)}")
         return self
-

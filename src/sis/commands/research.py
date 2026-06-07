@@ -12,8 +12,17 @@ import typer
 from loguru import logger
 
 from sis.reports.cost_matrix import build_cost_matrix_from_quotes, build_cost_matrix_report
+from sis.research.dag.counter import load_counter_dag_registry, validate_counter_dag_refs
+from sis.research.dag.errors import CoreDagLintError, CoreDagValidationError
+from sis.research.dag.export import export_core_dag_artifacts
+from sis.research.dag.linter import lint_core_dag, raise_for_lint_errors
+from sis.research.dag.loader import load_core_dag
+from sis.research.dag.validator import validate_core_dag
 from sis.research.event_calendar import build_event_calendar
 from sis.research.feature_panel import build_feature_panel
+from sis.research.hypothesis.temporal_contracts import TemporalAvailability
+from sis.research.hypothesis.variable_loader import load_variable_inventory
+from sis.research.hypothesis.yaml_io import load_yaml_mapping
 from sis.research.macro_ingest import build_macro_panel
 from sis.research.price_ingest import build_market_panel
 from sis.research.providers import FredMacroProvider
@@ -51,6 +60,17 @@ def _parse_optional_datetime(value: str | None) -> datetime | None:
         return None
     parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
+def _load_temporal_availability_if_present(config_path: Path) -> TemporalAvailability | None:
+    temporal_path = config_path.parent / "temporal_availability.yaml"
+    if not temporal_path.exists():
+        return None
+    return TemporalAvailability.model_validate(load_yaml_mapping(temporal_path))
+
+
+def _report_path_for_dag_export(out_dir: Path) -> Path:
+    return out_dir.parent.parent / "reports/ndx_core_dag_report.md"
 
 
 def _build_signals_or_exit(data_dir: Path, *, generator_id: str) -> Path:
@@ -294,6 +314,85 @@ def register_research_commands(
     app: typer.Typer,
     recommended_read_order_fn: Callable[[Path], list[str]],
 ) -> None:
+    @app.command("research-dag-validate")
+    def research_dag_validate_cmd(
+        config: Path = typer.Option(
+            ...,
+            "--config",
+            exists=True,
+            dir_okay=False,
+            help="Core DAG YAML config path.",
+        ),
+    ) -> None:
+        try:
+            dag = load_core_dag(config)
+            validate_core_dag(dag)
+            temporal = _load_temporal_availability_if_present(config)
+            lint_issues = lint_core_dag(dag, temporal=temporal)
+            raise_for_lint_errors(lint_issues)
+            counter_path = config.parent / "counter_dags.yaml"
+            if counter_path.exists():
+                counter_dags = load_counter_dag_registry(counter_path)
+                validate_counter_dag_refs(dag, counter_dags)
+        except (CoreDagValidationError, CoreDagLintError, ValidationError, ValueError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("status=pass")
+        typer.echo(f"dag_id={dag.dag_id}")
+        typer.echo(f"node_count={len(dag.nodes)}")
+        typer.echo(f"edge_count={len(dag.edges)}")
+        warnings = [issue for issue in lint_issues if issue.severity == "warning"]
+        typer.echo(f"warning_count={len(warnings)}")
+        for issue in warnings:
+            typer.echo(f"warning={issue.rule_id}:{issue.message}")
+
+    @app.command("research-dag-export")
+    def research_dag_export_cmd(
+        config: Path = typer.Option(
+            ...,
+            "--config",
+            exists=True,
+            dir_okay=False,
+            help="Core DAG YAML config path.",
+        ),
+        out: Path = typer.Option(
+            ...,
+            "--out",
+            file_okay=False,
+            help="Output directory for DAG artifacts.",
+        ),
+    ) -> None:
+        try:
+            dag = load_core_dag(config)
+            validate_core_dag(dag)
+            temporal = _load_temporal_availability_if_present(config)
+            lint_issues = lint_core_dag(dag, temporal=temporal)
+            raise_for_lint_errors(lint_issues)
+            inventory = load_variable_inventory(config.parent / "variable_inventory.yaml")
+            counter_dags = load_counter_dag_registry(config.parent / "counter_dags.yaml")
+            validate_counter_dag_refs(dag, counter_dags)
+            result = export_core_dag_artifacts(
+                dag,
+                inventory=inventory,
+                counter_dags=counter_dags,
+                lint_issues=lint_issues,
+                out_dir=out,
+                report_path=_report_path_for_dag_export(out),
+            )
+        except (CoreDagValidationError, CoreDagLintError, ValidationError, ValueError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("status=pass")
+        typer.echo(f"core_dag_json={result.json_path}")
+        typer.echo(f"core_dag_mermaid={result.mermaid_path}")
+        typer.echo(f"counter_dags_report={result.counter_dags_path}")
+        typer.echo(f"data_requirements={result.data_requirements_path}")
+        typer.echo(f"report={result.report_path}")
+
     @app.command("build-cost-matrix")
     def build_cost_matrix() -> None:
         settings = get_settings()

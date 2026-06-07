@@ -43,4 +43,3 @@ def render_core_dag_report(
     for item in counter_dags.counter_dags:
         lines.append(f"- {item.id}: {item.changed_assumption}")
     return "\n".join(lines) + "\n"
-

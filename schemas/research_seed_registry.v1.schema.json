@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Research Seed Registry v1",
+  "type": "object",
+  "required": ["schema_version", "seeds"],
+  "properties": {
+    "schema_version": { "const": "research_seed_registry.v1" },
+    "seeds": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}
+

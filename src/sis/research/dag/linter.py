@@ -77,4 +77,3 @@ def raise_for_lint_errors(issues: list[DagLintIssue]) -> None:
     errors = [issue.message for issue in issues if issue.severity == "error"]
     if errors:
         raise CoreDagLintError(errors)
-

@@ -12,7 +12,9 @@ class UniqueKeyLoader(yaml.SafeLoader):
     """YAML loader that rejects duplicate mapping keys."""
 
 
-def _construct_mapping(loader: UniqueKeyLoader, node: MappingNode, deep: bool = False) -> dict[Any, Any]:
+def _construct_mapping(
+    loader: UniqueKeyLoader, node: MappingNode, deep: bool = False
+) -> dict[Any, Any]:
     loader.flatten_mapping(node)
     pairs: list[tuple[Any, Any]] = []
     seen: set[Any] = set()
@@ -37,8 +39,10 @@ UniqueKeyLoader.add_constructor(
 
 
 def load_yaml_mapping(path: Path) -> dict[str, Any]:
-    payload = yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
+    try:
+        payload = yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Invalid YAML document: {path}: {exc}") from exc
     if not isinstance(payload, dict):
         raise ValueError(f"YAML document must be a mapping: {path}")
     return payload
-

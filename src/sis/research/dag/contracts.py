@@ -67,4 +67,3 @@ class CoreDag(BaseModel):
 
     def node_ids(self) -> set[str]:
         return {node.id for node in self.nodes}
-
