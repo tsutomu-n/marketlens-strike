@@ -1,0 +1,35 @@
+schema_version: research_scope.v1
+scope_id: NDX_SCOPE_V1
+name: ndx_research_scope
+
+included:
+  primary:
+    - NDX
+    - QQQ
+  future_optional:
+    - NQ
+  known_factors:
+    - SPY
+    - SMH
+    - VIX
+    - DGS10
+    - mega_cap_basket
+
+excluded:
+  - Nikkei
+  - TOPIX
+  - Japan_equities
+  - USDJPY_as_primary
+  - TradeXYZ_order_execution
+  - Bitget_demo_network
+  - paper_order
+  - live_trading
+  - wallet
+  - signing
+  - exchange_write
+
+policy:
+  external_api_allowed: false
+  strategy_lab_export_allowed: false
+  paper_preview_allowed: false
+

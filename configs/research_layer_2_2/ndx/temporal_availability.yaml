@@ -1,0 +1,29 @@
+schema_version: research_temporal_availability.v1
+
+layers:
+  t_prev_close:
+    - qqq_prev_close
+    - spy_prev_close
+    - smh_prev_close
+
+  t_pre_open:
+    - dgs10_delta
+    - vix_level
+    - vix_change
+
+  t_after_open:
+    - qqq_open_gap
+    - spy_gap
+    - smh_gap
+    - mega_cap_basket_gap
+    - expected_ndx_move
+    - open_gap_residual
+
+  t_after_close:
+    - qqq_open_to_close_return
+
+forbidden_layer_edges:
+  - from: t_after_close
+    to: t_after_open
+    reason: future_to_signal_leakage
+

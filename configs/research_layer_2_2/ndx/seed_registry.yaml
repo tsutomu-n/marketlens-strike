@@ -1,0 +1,54 @@
+schema_version: research_seed_registry.v1
+
+seeds:
+  - seed_id: NDX-SEED-001
+    name: ndx_open_gap_residual
+    status: seed_only
+    scope: NDX_SCOPE_V1
+    intuition: >
+      Known factor expected move and actual QQQ open gap may leave a residual
+      that carries information for open-to-close return.
+    candidate_known_factors:
+      - spy_gap
+      - smh_gap
+      - dgs10_delta
+      - vix_change
+      - mega_cap_basket_gap
+    candidate_treatment:
+      - open_gap_residual
+    candidate_outcome:
+      - qqq_open_to_close_return
+    next_layer: layer_2_0_variable_inventory
+
+  - seed_id: NDX-SEED-002
+    name: qqq_vs_equal_weight_breadth_fragility
+    status: seed_only
+    scope: NDX_SCOPE_V1
+    intuition: >
+      QQQ may diverge from equal-weight breadth when concentration masks
+      fragile participation.
+    candidate_known_factors:
+      - mega_cap_basket_gap
+      - breadth_fragility
+    candidate_treatment:
+      - breadth_fragility
+    candidate_outcome:
+      - qqq_open_to_close_return
+    next_layer: layer_2_0_variable_inventory
+
+  - seed_id: NDX-SEED-003
+    name: vxn_regime_sign_flip
+    status: seed_only
+    scope: NDX_SCOPE_V1
+    intuition: >
+      Nasdaq volatility regime may flip the sign of an open gap residual
+      response.
+    candidate_known_factors:
+      - vix_level
+      - vix_change
+    candidate_treatment:
+      - open_gap_residual
+    candidate_outcome:
+      - qqq_open_to_close_return
+    next_layer: layer_2_0_variable_inventory
+

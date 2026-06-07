@@ -1,0 +1,65 @@
+schema_version: research_mechanism_parts.v1
+
+parts:
+  - part_id: SPX_BETA
+    name: Broad Market Beta
+    role_hint: confounder
+    proxies:
+      - spy_gap
+      - spy_return
+
+  - part_id: RATES_DURATION
+    name: Growth Duration Shock
+    role_hint: confounder
+    proxies:
+      - dgs10_delta
+
+  - part_id: SOX_SEMI
+    name: Semiconductor Shock
+    role_hint: confounder
+    proxies:
+      - smh_gap
+
+  - part_id: VIX_VXN_REGIME
+    name: Nasdaq Volatility Regime
+    role_hint: moderator
+    proxies:
+      - vix_level
+      - vix_change
+
+  - part_id: MEGA_CAP_CONCENTRATION
+    name: Mega-cap Concentration
+    role_hint: confounder
+    proxies:
+      - mega_cap_basket_gap
+
+  - part_id: BREADTH_FRAGILITY
+    name: Breadth Fragility
+    role_hint: selection_mechanism
+    proxies:
+      - breadth_fragility
+
+  - part_id: NQ_PRICE_DISCOVERY
+    name: NQ Price Discovery
+    role_hint: observed_proxy
+    proxies:
+      - nq_implied_open
+
+  - part_id: OPEN_GAP_RESIDUAL
+    name: Open Gap Residual
+    role_hint: treatment_candidate
+    proxies:
+      - open_gap_residual
+
+  - part_id: KNOWN_FACTOR_MIRAGE
+    name: Known Factor Mirage
+    role_hint: data_quality
+    proxies:
+      - expected_ndx_move
+
+  - part_id: REGIME_SIGN_FLIP
+    name: Regime Sign Flip
+    role_hint: moderator
+    proxies:
+      - vix_change
+

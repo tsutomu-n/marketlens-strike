@@ -1,0 +1,27 @@
+schema_version: counter_dag_registry.v1
+dag_id: HYP-NDX-001
+
+counter_dags:
+  - id: BroadMarketOnlyDAG
+    description: SPY broad market factor explains both QQQ open gap and O2C behavior.
+    changed_assumption: open_gap_residual is an SPY beta artifact.
+
+  - id: RatesOnlyDAG
+    description: US rate shock explains the apparent residual.
+    changed_assumption: dgs10_delta is insufficiently modeled.
+
+  - id: SOXOnlyDAG
+    description: Semiconductor shock explains the apparent residual.
+    changed_assumption: SMH/SOX proxy underfits semiconductor factor.
+
+  - id: MegaCapOnlyDAG
+    description: Mega-cap basket explains the apparent residual.
+    changed_assumption: top-name concentration is the true driver.
+
+  - id: VolRegimeOnlyDAG
+    description: VIX/VXN regime explains gap behavior.
+    changed_assumption: residual effect is regime-only.
+
+  - id: SelectionBiasDAG
+    description: Large gap day selection creates apparent effect.
+    changed_assumption: candidate selection is a collider or selection mechanism.

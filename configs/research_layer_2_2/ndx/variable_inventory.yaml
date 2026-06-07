@@ -1,0 +1,81 @@
+schema_version: research_variable_inventory.v1
+
+variables:
+  qqq_open_gap:
+    description: QQQ open gap from previous close.
+    source_symbol: QQQ
+    formula: log(open / prev_close)
+    temporal_class: t_after_open
+    role_candidates:
+      - observed_proxy
+
+  qqq_open_to_close_return:
+    description: Same-day QQQ open-to-close return.
+    source_symbol: QQQ
+    formula: log(close / open)
+    temporal_class: t_after_close
+    role_candidates:
+      - outcome
+
+  spy_gap:
+    description: SPY open gap from previous close.
+    source_symbol: SPY
+    formula: log(open / prev_close)
+    temporal_class: t_after_open
+    role_candidates:
+      - confounder
+
+  smh_gap:
+    description: SMH open gap from previous close.
+    source_symbol: SMH
+    formula: log(open / prev_close)
+    temporal_class: t_after_open
+    role_candidates:
+      - confounder
+
+  dgs10_delta:
+    description: Prior available daily change in US 10Y rate.
+    source_symbol: DGS10
+    formula: value_t_minus_1 - value_t_minus_2
+    temporal_class: t_pre_open
+    role_candidates:
+      - confounder
+
+  vix_level:
+    description: Prior available volatility level proxy.
+    source_symbol: VIX
+    formula: value_t_minus_1
+    temporal_class: t_pre_open
+    role_candidates:
+      - moderator
+
+  vix_change:
+    description: Prior available volatility change proxy.
+    source_symbol: VIX
+    formula: value_t_minus_1 - value_t_minus_2
+    temporal_class: t_pre_open
+    role_candidates:
+      - moderator
+
+  mega_cap_basket_gap:
+    description: Weighted mega-cap basket open gap.
+    source_symbol: AAPL_MSFT_NVDA_AMZN_META_GOOGL_AVGO
+    formula: weighted_mean(log(open / prev_close))
+    temporal_class: t_after_open
+    role_candidates:
+      - confounder
+
+  expected_ndx_move:
+    description: Modeled expected QQQ open gap from known factors.
+    formula: modeled_from_known_factors
+    temporal_class: t_after_open
+    role_candidates:
+      - modeled_latent
+
+  open_gap_residual:
+    description: Actual QQQ open gap minus expected NDX open move.
+    formula: qqq_open_gap - expected_ndx_move
+    temporal_class: t_after_open
+    role_candidates:
+      - treatment_candidate
+
