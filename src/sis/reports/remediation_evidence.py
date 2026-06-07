@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.storage.jsonl_store import write_json
@@ -128,9 +129,10 @@ def _source_contexts(checkpoint: dict) -> dict[str, dict[str, object]]:
             value = summary.get("phase_gate_review_report_path")
             explicit_report_path = value if isinstance(value, str) else None
         report_path = explicit_report_path or _derived_report_path(source, path)
+        required_artifact_paths_value = summary.get("required_artifact_paths")
         required_artifact_paths = (
-            summary.get("required_artifact_paths")
-            if isinstance(summary.get("required_artifact_paths"), dict)
+            cast(dict[str, Any], required_artifact_paths_value)
+            if isinstance(required_artifact_paths_value, dict)
             else {}
         )
         candidate_artifact_paths: list[str] = []
@@ -186,32 +188,38 @@ def build_remediation_evidence(
     checkpoint = safe_read_json_dict(remediation_session_checkpoint_summary_path)
     evaluator = safe_read_json_dict(remediation_evaluator_summary_path)
     source_contexts = _source_contexts(checkpoint)
-    actions = evaluator.get("actions") if isinstance(evaluator.get("actions"), list) else []
+    actions_value = evaluator.get("actions")
+    actions = cast(list[object], actions_value) if isinstance(actions_value, list) else []
+    checkpoint_actions_value = checkpoint.get("actions")
     checkpoint_actions = (
-        checkpoint.get("actions") if isinstance(checkpoint.get("actions"), list) else []
+        cast(list[object], checkpoint_actions_value)
+        if isinstance(checkpoint_actions_value, list)
+        else []
     )
     checkpoint_actions_by_key = {
-        str(item.get("action_key")): item
+        str(cast(dict[str, Any], item).get("action_key")): cast(dict[str, Any], item)
         for item in checkpoint_actions
-        if isinstance(item, dict) and isinstance(item.get("action_key"), str)
+        if isinstance(item, dict) and isinstance(cast(dict[str, Any], item).get("action_key"), str)
     }
 
     evidence_entries: list[dict[str, object]] = []
     for action in actions:
         if not isinstance(action, dict) or not _needs_evidence(action):
             continue
+        action = cast(dict[str, Any], action)
         checkpoint_action = checkpoint_actions_by_key.get(str(action.get("action_key")), {})
         source = str(action.get("source") or "")
         context = source_contexts.get(source, {})
+        signal_evaluations_value = action.get("signal_evaluations")
         signal_evaluations = (
-            action.get("signal_evaluations")
-            if isinstance(action.get("signal_evaluations"), list)
+            cast(list[object], signal_evaluations_value)
+            if isinstance(signal_evaluations_value, list)
             else []
         )
         unresolved_signals = [
-            item
+            cast(dict[str, Any], item)
             for item in signal_evaluations
-            if isinstance(item, dict) and str(item.get("status")) != "pass"
+            if isinstance(item, dict) and str(cast(dict[str, Any], item).get("status")) != "pass"
         ]
         unsupported_signal_count = sum(
             1
@@ -356,13 +364,14 @@ def build_remediation_evidence(
             )
             lines.append("  - unresolved_signals:")
             unresolved_signals = (
-                item["unresolved_signals"]
+                cast(list[object], item["unresolved_signals"])
                 if isinstance(item.get("unresolved_signals"), list)
                 else []
             )
             for signal in unresolved_signals:
                 if not isinstance(signal, dict):
                     continue
+                signal = cast(dict[str, Any], signal)
                 lines.append(
                     "    - signal={signal} status={status} expected={expected} observed={observed}".format(
                         signal=signal.get("signal"),
@@ -373,7 +382,7 @@ def build_remediation_evidence(
                 )
             lines.append("  - candidate_artifact_paths:")
             candidate_artifact_paths = (
-                item["candidate_artifact_paths"]
+                cast(list[object], item["candidate_artifact_paths"])
                 if isinstance(item.get("candidate_artifact_paths"), list)
                 else []
             )

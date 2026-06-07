@@ -10,6 +10,11 @@ from sis.research.dag.contracts import CoreDag
 from sis.research.hypothesis.yaml_io import load_yaml_mapping
 
 
+MIN_COUNTER_DAG_REFS_BY_DAG_ID = {
+    "HYP-NDX-001": 8,
+}
+
+
 class CounterDag(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -57,3 +62,9 @@ def validate_counter_dag_refs(dag: CoreDag, registry: CounterDagRegistry) -> Non
     missing = sorted(set(dag.counter_dag_refs) - registered)
     if missing:
         raise ValueError("core DAG references unknown counter DAGs: " + ", ".join(missing))
+    minimum_refs = MIN_COUNTER_DAG_REFS_BY_DAG_ID.get(dag.dag_id)
+    if minimum_refs is not None and len(set(dag.counter_dag_refs)) < minimum_refs:
+        raise ValueError(
+            f"{dag.dag_id} requires at least {minimum_refs} counter DAG refs: "
+            f"{len(set(dag.counter_dag_refs))}"
+        )

@@ -391,7 +391,7 @@ def register_research_commands(
         ),
     ) -> None:
         try:
-            dag, _, _, _, lint_issues = _validate_research_dag_config(config)
+            dag, _, counter_dags, _, lint_issues = _validate_research_dag_config(config)
         except (
             CoreDagValidationError,
             CoreDagLintError,
@@ -407,6 +407,9 @@ def register_research_commands(
         typer.echo(f"dag_id={dag.dag_id}")
         typer.echo(f"node_count={len(dag.nodes)}")
         typer.echo(f"edge_count={len(dag.edges)}")
+        typer.echo(f"counter_dag_count={len(counter_dags.counter_dags)}")
+        lint_errors = [issue for issue in lint_issues if issue.severity == "error"]
+        typer.echo(f"lint_errors={len(lint_errors)}")
         warnings = [issue for issue in lint_issues if issue.severity == "warning"]
         typer.echo(f"warning_count={len(warnings)}")
         for issue in warnings:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shlex
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Any, Callable, Protocol, cast
 
 import typer
 from loguru import logger
@@ -31,6 +31,10 @@ from sis.settings import get_settings
 from sis.storage.jsonl_store import read_json
 from sis.state.recovery import export_state_snapshot, restore_state_snapshot
 from sis.state.store import StateStore
+
+
+def _dict_or_empty(value: object) -> dict[str, Any]:
+    return cast(dict[str, Any], value) if isinstance(value, dict) else {}
 
 
 class _StateStoreFactory(Protocol):
@@ -317,7 +321,7 @@ def register_ops_commands(
         daemon_loop_report = settings.data_dir / "reports/daemon_loop.md"
         daemon_loop_summary = settings.data_dir / "ops/daemon_loop_summary.json"
         snapshot_payload = read_json(result.loop_snapshot_path)
-        snapshot_dict = snapshot_payload if isinstance(snapshot_payload, dict) else {}
+        snapshot_dict = _dict_or_empty(snapshot_payload)
         build_daemon_loop_report(
             snapshot=snapshot_dict,
             snapshot_path=str(result.loop_snapshot_path),
@@ -358,6 +362,7 @@ def register_ops_commands(
         typer.echo(str(out))
         payload = read_json(out)
         if isinstance(payload, dict):
+            payload = _dict_or_empty(payload)
             write_state_export_artifacts_fn(settings.data_dir, state_store_path=store.path)
             audit = payload.get("audit_summary")
             if isinstance(audit, dict):
@@ -390,6 +395,7 @@ def register_ops_commands(
             )
         typer.echo("restored=true")
         if isinstance(payload, dict):
+            payload = _dict_or_empty(payload)
             audit = payload.get("audit_summary")
             if isinstance(audit, dict):
                 echo_audit_summary_fn(audit)

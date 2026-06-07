@@ -33,19 +33,26 @@ def lint_core_dag(
     for edge in dag.edges:
         from_role = role_by_id.get(edge.from_node)
         to_role = role_by_id.get(edge.to)
-        if from_role == "outcome" and to_role == "treatment_candidate":
+        if from_role == "outcome" and to_role in {
+            "treatment_candidate",
+            "observed_proxy",
+            "modeled_latent",
+        }:
             issues.append(
                 DagLintIssue(
                     severity="error",
-                    rule_id="outcome_to_treatment",
-                    message=f"outcome must not point to treatment_candidate: {edge.from_node}->{edge.to}",
+                    rule_id="no_outcome_to_treatment",
+                    message=(
+                        "outcome must not point to signal-side variables: "
+                        f"{edge.from_node}->{edge.to}"
+                    ),
                 )
             )
         if edge.key in forbidden_edge_keys:
             issues.append(
                 DagLintIssue(
                     severity="error",
-                    rule_id="configured_forbidden_edge",
+                    rule_id="no_forbidden_edge_in_edges",
                     message=f"edge is listed as forbidden: {edge.from_node}->{edge.to}",
                 )
             )
@@ -56,7 +63,7 @@ def lint_core_dag(
                 issues.append(
                     DagLintIssue(
                         severity="error",
-                        rule_id="future_to_signal",
+                        rule_id="no_future_to_signal",
                         message=(
                             "future temporal layer must not point to earlier signal layer: "
                             f"{edge.from_node}->{edge.to}"
