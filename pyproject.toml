@@ -39,6 +39,7 @@ dev = [
   "pytest>=8",
   "pytest-httpx>=0.36.2",
   "ruff>=0.11",
+  "ty>=0.0.44",
   "vcrpy>=8.1.1",
 ]
 

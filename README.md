@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-06_10:28 JST
+更新日: 2026-06-07_21:12 JST
 -->
 
 # marketlens-strike
@@ -51,7 +51,7 @@ Run the aggregate local gate:
 ```
 
 `./scripts/check` runs locked sync, Python version check, Ruff lint and format
-check, current-docs lint, Pyrefly, and Pytest.
+check, current-docs lint, Pyrefly, ty, and Pytest.
 
 ## Main Flows
 

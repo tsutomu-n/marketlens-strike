@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-05-30_21:32 JST
-更新日: 2026-06-07_20:56 JST
+更新日: 2026-06-07_21:12 JST
 -->
 
 # Repository Guidelines
 
-Last updated: 2026-06-07_20:56 Asia/Tokyo. Keep this guide concise; no fixed word limit.
+Last updated: 2026-06-07_21:12 Asia/Tokyo. Keep this guide concise; no fixed word limit.
 
 ## Source Of Truth
 
@@ -28,7 +28,7 @@ Trade[XYZ] remains implemented code and historical/read-only venue context, but 
 - `uv sync --dev --locked`: install locked dependencies.
 - `uv run python -V`: confirm Python 3.13.
 - `uv run sis --help`: inspect the actual public CLI surface.
-- `./scripts/check` or `just check`: run locked sync, Python version, Ruff lint/format check, current-docs check, Pyrefly, and Pytest.
+- `./scripts/check` or `just check`: run locked sync, Python version, Ruff lint/format check, current-docs check, Pyrefly, ty, and Pytest.
 - `uv run python scripts/check_current_docs.py`: verify current-doc links, EOF, and legacy-root references.
 - `uv run sis phase-gate-review`: review the read-only/paper gate.
 

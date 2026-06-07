@@ -9,4 +9,5 @@ uv run ruff check .
 uv run ruff format --check .
 uv run python scripts/check_current_docs.py
 uv run pyrefly check
+uv run ty check src --python-version 3.13
 uv run pytest -q
