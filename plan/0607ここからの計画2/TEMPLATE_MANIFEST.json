@@ -1,0 +1,46 @@
+{
+  "created_at_jst": "YYYY-MM-DD_HH:mm JST",
+  "title": "marketlens-strike feature expansion plan",
+  "root_path": "feature_expansion_plan_<yyyymmdd>",
+  "purpose": "Describe the feature expansion in one sentence.",
+  "repo_assumption": {
+    "repo": "marketlens-strike",
+    "branch": "main",
+    "base_head": null
+  },
+  "safety": {
+    "external_api": "not_required",
+    "credentials": "not_required",
+    "paper_live_order": "not_touched",
+    "db_schema": "not_touched",
+    "dependency_change": "none"
+  },
+  "expected_read_order": [
+    "README.md",
+    "01_GOAL.md",
+    "02_SCOPE_AND_BOUNDARIES.md",
+    "03_CURRENT_REPO_CONTEXT.md",
+    "04_TASKS.md",
+    "05_ACCEPTANCE.md",
+    "06_TARGET_FILE_MAP.md",
+    "07_TEST_PLAN.md",
+    "08_RISK_AND_STOP_CONDITIONS.md",
+    "09_OPEN_QUESTIONS.md",
+    "10_IMPLEMENTER_CHECKLIST.md",
+    "appendices/"
+  ],
+  "files": [
+    "feature_expansion_plan_<yyyymmdd>/README.md",
+    "feature_expansion_plan_<yyyymmdd>/MANIFEST.json",
+    "feature_expansion_plan_<yyyymmdd>/01_GOAL.md",
+    "feature_expansion_plan_<yyyymmdd>/02_SCOPE_AND_BOUNDARIES.md",
+    "feature_expansion_plan_<yyyymmdd>/03_CURRENT_REPO_CONTEXT.md",
+    "feature_expansion_plan_<yyyymmdd>/04_TASKS.md",
+    "feature_expansion_plan_<yyyymmdd>/05_ACCEPTANCE.md",
+    "feature_expansion_plan_<yyyymmdd>/06_TARGET_FILE_MAP.md",
+    "feature_expansion_plan_<yyyymmdd>/07_TEST_PLAN.md",
+    "feature_expansion_plan_<yyyymmdd>/08_RISK_AND_STOP_CONDITIONS.md",
+    "feature_expansion_plan_<yyyymmdd>/09_OPEN_QUESTIONS.md",
+    "feature_expansion_plan_<yyyymmdd>/10_IMPLEMENTER_CHECKLIST.md"
+  ]
+}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
@@ -28,14 +29,14 @@ from sis.state.store import StateStore
 from sis.storage.jsonl_store import read_json, write_json
 
 
-def _paper_last_run_dict(paper_last_run: dict, key: str) -> dict:
+def _paper_last_run_dict(paper_last_run: dict[str, Any], key: str) -> dict[str, Any]:
     summary = paper_last_run.get(key) if isinstance(paper_last_run, dict) else None
-    return summary if isinstance(summary, dict) else {}
+    return cast(dict[str, Any], summary) if isinstance(summary, dict) else {}
 
 
 def export_state_snapshot(store: StateStore, out_path: Path) -> Path:
     paper_last_run = store.get_json("paper_last_run")
-    paper_last_run_dict = paper_last_run if isinstance(paper_last_run, dict) else {}
+    paper_last_run_dict = cast(dict[str, Any], paper_last_run) if isinstance(paper_last_run, dict) else {}
     normalized_audit_summary = audit_summary_fields(
         _paper_last_run_dict(paper_last_run_dict, "audit"),
         _paper_last_run_dict(paper_last_run_dict, "audit"),
@@ -132,29 +133,20 @@ def export_state_snapshot(store: StateStore, out_path: Path) -> Path:
         snapshot["readiness_next_phase_candidate"] = readiness_flat.get(
             "readiness_next_phase_candidate"
         )
-    elif (
-        isinstance(paper_last_run, dict)
-        and paper_last_run.get("readiness_next_phase_candidate") is not None
-    ):
-        snapshot["readiness_next_phase_candidate"] = paper_last_run.get(
+    elif paper_last_run_dict.get("readiness_next_phase_candidate") is not None:
+        snapshot["readiness_next_phase_candidate"] = paper_last_run_dict.get(
             "readiness_next_phase_candidate"
         )
     if readiness_flat.get("readiness_execution_ready") is not None:
         snapshot["readiness_execution_ready"] = readiness_flat.get("readiness_execution_ready")
-    elif (
-        isinstance(paper_last_run, dict)
-        and paper_last_run.get("readiness_execution_ready") is not None
-    ):
-        snapshot["readiness_execution_ready"] = paper_last_run.get("readiness_execution_ready")
+    elif paper_last_run_dict.get("readiness_execution_ready") is not None:
+        snapshot["readiness_execution_ready"] = paper_last_run_dict.get("readiness_execution_ready")
     if execution_drift_flat.get("execution_drift_overview_status") is not None:
         snapshot["execution_drift_overview_status"] = execution_drift_flat.get(
             "execution_drift_overview_status"
         )
-    elif (
-        isinstance(paper_last_run, dict)
-        and paper_last_run.get("execution_drift_overview_status") is not None
-    ):
-        snapshot["execution_drift_overview_status"] = paper_last_run.get(
+    elif paper_last_run_dict.get("execution_drift_overview_status") is not None:
+        snapshot["execution_drift_overview_status"] = paper_last_run_dict.get(
             "execution_drift_overview_status"
         )
     if execution_drift_flat.get("execution_drift_overview_diagnostics_alignment_match") is not None:
@@ -162,10 +154,10 @@ def export_state_snapshot(store: StateStore, out_path: Path) -> Path:
             "execution_drift_overview_diagnostics_alignment_match"
         )
     elif (
-        isinstance(paper_last_run, dict)
-        and paper_last_run.get("execution_drift_overview_diagnostics_alignment_match") is not None
+        paper_last_run_dict.get("execution_drift_overview_diagnostics_alignment_match")
+        is not None
     ):
-        snapshot["execution_drift_overview_diagnostics_alignment_match"] = paper_last_run.get(
+        snapshot["execution_drift_overview_diagnostics_alignment_match"] = paper_last_run_dict.get(
             "execution_drift_overview_diagnostics_alignment_match"
         )
     if (
@@ -176,12 +168,11 @@ def export_state_snapshot(store: StateStore, out_path: Path) -> Path:
             execution_drift_flat.get("execution_drift_overview_state_comparison_mismatching_count")
         )
     elif (
-        isinstance(paper_last_run, dict)
-        and paper_last_run.get("execution_drift_overview_state_comparison_mismatching_count")
+        paper_last_run_dict.get("execution_drift_overview_state_comparison_mismatching_count")
         is not None
     ):
         snapshot["execution_drift_overview_state_comparison_mismatching_count"] = (
-            paper_last_run.get("execution_drift_overview_state_comparison_mismatching_count")
+            paper_last_run_dict.get("execution_drift_overview_state_comparison_mismatching_count")
         )
     if (
         execution_drift_flat.get(
@@ -195,12 +186,15 @@ def export_state_snapshot(store: StateStore, out_path: Path) -> Path:
             )
         )
     elif (
-        isinstance(paper_last_run, dict)
-        and paper_last_run.get("execution_drift_overview_snapshot_drift_mismatching_snapshot_count")
+        paper_last_run_dict.get(
+            "execution_drift_overview_snapshot_drift_mismatching_snapshot_count"
+        )
         is not None
     ):
         snapshot["execution_drift_overview_snapshot_drift_mismatching_snapshot_count"] = (
-            paper_last_run.get("execution_drift_overview_snapshot_drift_mismatching_snapshot_count")
+            paper_last_run_dict.get(
+                "execution_drift_overview_snapshot_drift_mismatching_snapshot_count"
+            )
         )
     write_json(out_path, snapshot)
     return out_path
@@ -210,6 +204,7 @@ def restore_state_snapshot(store: StateStore, snapshot_path: Path) -> None:
     payload = read_json(snapshot_path)
     if not isinstance(payload, dict):
         raise ValueError("State snapshot payload must be an object")
+    payload = cast(dict[str, Any], payload)
     if "paper_positions" in payload:
         store.set_json("paper_positions", payload["paper_positions"])
     if "paper_last_run" in payload:

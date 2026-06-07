@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.storage.jsonl_store import write_json
@@ -42,7 +43,7 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
     }
 
 
-def _action_observed_sources(item: dict) -> list[str]:
+def _action_observed_sources(item: dict[str, Any]) -> list[str]:
     values = item.get("observed_sources")
     if not isinstance(values, list):
         return []
@@ -66,7 +67,7 @@ def _stage_rank(value: object) -> int:
     }.get(str(value or ""), 99)
 
 
-def _action_priority_key(item: dict) -> tuple[int, int, int, int, int, str, str]:
+def _action_priority_key(item: dict[str, Any]) -> tuple[int, int, int, int, int, str, str]:
     effective_priority = _as_int(item.get("effective_priority"))
     priority = _as_int(item.get("priority"))
     sequence = _as_int(item.get("sequence")) or 0
@@ -101,7 +102,7 @@ def _as_int(value: object) -> int | None:
     return None
 
 
-def _observed_source_counts(actions: list[dict]) -> dict[str, int]:
+def _observed_source_counts(actions: list[dict[str, Any]]) -> dict[str, int]:
     counts: dict[str, int] = {}
     for item in actions:
         if not isinstance(item, dict):
@@ -118,21 +119,25 @@ def _feedback_summary_maps(
     command_results = safe_read_json_dict(remediation_command_results_summary_path)
     evaluator = safe_read_json_dict(remediation_evaluator_summary_path)
     observation_status_by_action: dict[str, str] = {}
-    entries = (
-        command_results.get("entries") if isinstance(command_results.get("entries"), list) else []
-    )
+    entries = cast(list[object], command_results.get("entries", []))
+    if not isinstance(entries, list):
+        entries = []
     for item in entries:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         action_key = item.get("action_key")
         observation_status = item.get("observation_status")
         if isinstance(action_key, str) and isinstance(observation_status, str):
             observation_status_by_action[action_key] = observation_status
     evaluation_result_by_action: dict[str, str] = {}
-    actions = evaluator.get("actions") if isinstance(evaluator.get("actions"), list) else []
+    actions = cast(list[object], evaluator.get("actions", []))
+    if not isinstance(actions, list):
+        actions = []
     for item in actions:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         action_key = item.get("action_key")
         evaluation_result = item.get("evaluation_result")
         if isinstance(action_key, str) and isinstance(evaluation_result, str):
@@ -156,7 +161,7 @@ def _feedback_priority_reason(evaluation_result: object, observation_status: obj
     return "no_feedback"
 
 
-def _feedback_priority_rank(item: dict) -> int:
+def _feedback_priority_rank(item: dict[str, Any]) -> int:
     return {
         "evaluation_failed": 0,
         "manual_review_pending": 1,
@@ -168,11 +173,11 @@ def _feedback_priority_rank(item: dict) -> int:
 
 
 def _enrich_actions_with_feedback(
-    actions: list[dict],
+    actions: list[dict[str, Any]],
     observation_status_by_action: dict[str, str],
     evaluation_result_by_action: dict[str, str],
-) -> list[dict]:
-    enriched: list[dict] = []
+) -> list[dict[str, Any]]:
+    enriched: list[dict[str, Any]] = []
     for item in actions:
         if not isinstance(item, dict):
             continue
@@ -194,7 +199,7 @@ def _enrich_actions_with_feedback(
     return enriched
 
 
-def _next_action(actions: list[dict]) -> dict | None:
+def _next_action(actions: list[dict[str, Any]]) -> dict[str, Any] | None:
     candidates = [
         item
         for item in actions
@@ -225,18 +230,19 @@ def _merge_actions(
     stdout_summary: str | None = None,
     stderr_summary: str | None = None,
     exit_code: int | None = None,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     current = session_actions if isinstance(session_actions, list) else []
     previous_list = previous_actions if isinstance(previous_actions, list) else []
     previous = {
-        str(item.get("action_key")): item
+        str(cast(dict[str, Any], item).get("action_key")): cast(dict[str, Any], item)
         for item in previous_list
-        if isinstance(item, dict) and item.get("action_key")
+        if isinstance(item, dict) and cast(dict[str, Any], item).get("action_key")
     }
-    merged: list[dict] = []
+    merged: list[dict[str, Any]] = []
     for item in current:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         key = str(item.get("action_key") or "")
         previous_item = previous.get(key, {})
         checkpoint_status = previous_item.get("checkpoint_status") or "pending"
@@ -251,30 +257,34 @@ def _merge_actions(
             evidence_status = "evidence_recorded"
         elif checkpoint_status in {"fail", "retry"}:
             evidence_status = "needs_review"
-        operator_notes = (
-            previous_item.get("operator_notes")
-            if isinstance(previous_item.get("operator_notes"), list)
+        operator_notes_value = previous_item.get("operator_notes")
+        operator_notes: list[object] = (
+            cast(list[object], operator_notes_value)
+            if isinstance(operator_notes_value, list)
             else []
         )
         if key == action_key and note:
             operator_notes = [*operator_notes, note]
-        evidence_paths = (
-            previous_item.get("evidence_paths")
-            if isinstance(previous_item.get("evidence_paths"), list)
+        evidence_paths_value = previous_item.get("evidence_paths")
+        evidence_paths: list[object] = (
+            cast(list[object], evidence_paths_value)
+            if isinstance(evidence_paths_value, list)
             else []
         )
         if key == action_key and evidence_path:
             evidence_paths = [*evidence_paths, evidence_path]
-        observed_signals = (
-            previous_item.get("observed_signals")
-            if isinstance(previous_item.get("observed_signals"), list)
+        observed_signals_value = previous_item.get("observed_signals")
+        observed_signals: list[object] = (
+            cast(list[object], observed_signals_value)
+            if isinstance(observed_signals_value, list)
             else []
         )
         if key == action_key and observed_signal:
             observed_signals = [*observed_signals, observed_signal]
-        command_result_records = (
-            previous_item.get("command_result_records")
-            if isinstance(previous_item.get("command_result_records"), list)
+        command_result_records_value = previous_item.get("command_result_records")
+        command_result_records: list[object] = (
+            cast(list[object], command_result_records_value)
+            if isinstance(command_result_records_value, list)
             else []
         )
         latest_exit_code = previous_item.get("latest_exit_code")
@@ -327,7 +337,7 @@ def _merge_actions(
     return merged
 
 
-def _checkpoint_summary_status(actions: list[dict]) -> str:
+def _checkpoint_summary_status(actions: list[dict[str, Any]]) -> str:
     if not actions:
         return "no_actions"
     statuses = [str(item.get("checkpoint_status")) for item in actions]
