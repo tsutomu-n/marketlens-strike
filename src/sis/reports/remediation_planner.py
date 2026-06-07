@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from sis.storage.jsonl_store import read_jsonl
 from sis.reports.loaders import safe_read_json_dict
@@ -42,7 +43,7 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
     }
 
 
-def _entry_key(entry: dict) -> str:
+def _entry_key(entry: dict[str, Any]) -> str:
     return f"{entry.get('source')}:{entry.get('reason')}"
 
 
@@ -88,13 +89,13 @@ def _note_map(notes: object) -> dict[str, str]:
     return mapped
 
 
-def _latest_planner_manifest(operation_chain_path: Path | None) -> dict:
+def _latest_planner_manifest(operation_chain_path: Path | None) -> dict[str, Any]:
     if operation_chain_path is None or not operation_chain_path.exists():
         return {}
-    latest: dict = {}
+    latest: dict[str, Any] = {}
     for item in read_jsonl(operation_chain_path):
         if isinstance(item, dict) and item.get("operation") == "remediation_planner_dry_run":
-            latest = item
+            latest = cast(dict[str, Any], item)
     return latest
 
 
@@ -132,14 +133,15 @@ def _as_int(value: object) -> int | None:
     return None
 
 
-def _evaluator_provenance_map(summary: dict) -> dict[str, dict[str, object]]:
+def _evaluator_provenance_map(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
     actions = summary.get("actions")
     if not isinstance(actions, list):
         return {}
-    mapped: dict[str, dict[str, object]] = {}
+    mapped: dict[str, dict[str, Any]] = {}
     for item in actions:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         key = _source_reason_key(item.get("source"), item.get("reason"))
         if key == ":":
             continue
@@ -153,7 +155,7 @@ def _evaluator_provenance_map(summary: dict) -> dict[str, dict[str, object]]:
             mapped[key] = dict(entry)
         observed_sources = entry.get("observed_sources")
         if not isinstance(observed_sources, list):
-            observed_sources = []
+            observed_sources: list[str] = []
             entry["observed_sources"] = observed_sources
         signal_observed_sources = entry.get("signal_observed_sources")
         if not isinstance(signal_observed_sources, dict):
@@ -161,7 +163,7 @@ def _evaluator_provenance_map(summary: dict) -> dict[str, dict[str, object]]:
             entry["signal_observed_sources"] = signal_observed_sources
         supporting_action_keys = entry.get("supporting_action_keys")
         if not isinstance(supporting_action_keys, list):
-            supporting_action_keys = []
+            supporting_action_keys: list[str] = []
             entry["supporting_action_keys"] = supporting_action_keys
         action_key = item.get("action_key")
         if isinstance(action_key, str) and action_key not in supporting_action_keys:
@@ -225,21 +227,25 @@ def _source_policy(confidence: str) -> str:
     return "verify_before_execute_missing_source"
 
 
-def _feedback_maps(summary: dict) -> tuple[dict[str, str], dict[str, str]]:
-    entries = summary.get("entries") if isinstance(summary.get("entries"), list) else []
+def _feedback_maps(summary: dict[str, Any]) -> tuple[dict[str, str], dict[str, str]]:
+    entries_value = summary.get("entries")
+    entries = cast(list[object], entries_value) if isinstance(entries_value, list) else []
     observation_status_by_action: dict[str, str] = {}
     for item in entries:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         action_key = item.get("action_key")
         observation_status = item.get("observation_status")
         if isinstance(action_key, str) and isinstance(observation_status, str):
             observation_status_by_action[action_key] = observation_status
-    actions = summary.get("actions") if isinstance(summary.get("actions"), list) else []
+    actions_value = summary.get("actions")
+    actions = cast(list[object], actions_value) if isinstance(actions_value, list) else []
     evaluation_result_by_action: dict[str, str] = {}
     for item in actions:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         action_key = item.get("action_key")
         evaluation_result = item.get("evaluation_result")
         if isinstance(action_key, str) and isinstance(evaluation_result, str):
@@ -287,38 +293,43 @@ def _feedback_priority_rank(reason: object) -> int:
 
 
 def _planner_entries(
-    summary: dict,
+    summary: dict[str, Any],
     *,
     source: str,
-    provenance_map: dict[str, dict[str, object]],
+    provenance_map: dict[str, dict[str, Any]],
     observation_status_by_action: dict[str, str],
     evaluation_result_by_action: dict[str, str],
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     order = summary.get("remediation_order")
     recommendations = summary.get("remediation_recommendations")
     if not isinstance(order, list) or not isinstance(recommendations, dict):
         return []
-    entries: list[dict] = []
+    recommendations = cast(dict[str, Any], recommendations)
+    entries: list[dict[str, Any]] = []
     for item in order:
         if not isinstance(item, dict):
             continue
+        item = cast(dict[str, Any], item)
         reason = str(item.get("reason") or "")
         if not reason:
             continue
         recommendation = recommendations.get(reason)
         if not isinstance(recommendation, dict):
             recommendation = {}
+        recommendation = cast(dict[str, Any], recommendation)
         commands = recommendation.get("commands")
         provenance = provenance_map.get(_source_reason_key(source, reason), {})
+        observed_sources_value = provenance.get("observed_sources")
         observed_sources = (
-            provenance.get("observed_sources")
-            if isinstance(provenance.get("observed_sources"), list)
+            cast(list[str], observed_sources_value)
+            if isinstance(observed_sources_value, list)
             else []
         )
         source_confidence = _source_confidence(observed_sources)
+        supporting_action_keys_value = provenance.get("supporting_action_keys")
         supporting_action_keys = (
-            provenance.get("supporting_action_keys")
-            if isinstance(provenance.get("supporting_action_keys"), list)
+            cast(list[str], supporting_action_keys_value)
+            if isinstance(supporting_action_keys_value, list)
             else []
         )
         feedback_priority_reason = _feedback_priority_reason(
