@@ -1,0 +1,44 @@
+{
+  "created_at_jst": "2026-06-07_21:35 JST",
+  "title": "Layer 2.2 Exit Gate Review Harness v3 Minimal",
+  "root_path": "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal",
+  "purpose": "Add a realistic manual LLM-assisted exit gate for completed Layer 2.2 DAG artifacts without external API, credentials, Strategy Lab export, backtest, paper, or live order integration.",
+  "repo_assumption": {
+    "repo": "marketlens-strike",
+    "branch": "main",
+    "base_head": "unknown"
+  },
+  "safety": {
+    "external_api": "not_required",
+    "credentials": "not_required",
+    "paper_live_order": "not_touched",
+    "db_schema": "not_touched",
+    "dependency_change": "none"
+  },
+  "completion_target": {
+    "phase": "Layer 2.2 Exit Gate only",
+    "standard_review_count": 1,
+    "second_review": "conditional",
+    "downstream": "not implemented"
+  },
+  "files": [
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/README.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/01_GOAL.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/02_SCOPE_AND_BOUNDARIES.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/03_CURRENT_REPO_CONTEXT.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/04_TASKS.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/05_ACCEPTANCE.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/06_TARGET_FILE_MAP.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/07_TEST_PLAN.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/08_RISK_AND_STOP_CONDITIONS.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/09_OPEN_QUESTIONS.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/10_IMPLEMENTER_CHECKLIST.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/appendices/A_SCHEMA_SKETCHES.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/appendices/B_CONFIG_EXAMPLES.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/appendices/C_CODER_HANDOFF_PROMPT.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/appendices/D_DESIGN_REVIEW_FINDINGS.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/appendices/E_REFERENCE_NOTES.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/appendices/F_TASK_TICKETS.md",
+    "feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/MANIFEST.json"
+  ]
+}

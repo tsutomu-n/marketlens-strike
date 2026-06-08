@@ -1,1 +1,1 @@
-"""Core DAG contracts and tooling for research hypotheses."""
+"""Core DAG contracts, local review gates, and tooling for research hypotheses."""

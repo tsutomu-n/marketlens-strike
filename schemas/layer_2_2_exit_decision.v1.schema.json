@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketlens-strike.local/schemas/layer_2_2_exit_decision.v1.schema.json",
+  "title": "Layer 2.2 Exit Decision v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "dag_id",
+    "decision",
+    "pack_hash",
+    "review_ids",
+    "unresolved_human_decisions",
+    "blocker_count",
+    "high_count",
+    "second_review_required",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "layer_2_2_exit_decision.v1" },
+    "dag_id": { "type": "string", "minLength": 1 },
+    "decision": { "enum": ["APPROVE_2_3", "REVISE_2_2", "REJECT_SEED"] },
+    "pack_hash": { "type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$" },
+    "review_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "unresolved_human_decisions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "blocker_count": { "type": "integer", "minimum": 0 },
+    "high_count": { "type": "integer", "minimum": 0 },
+    "second_review_required": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}

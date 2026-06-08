@@ -24,6 +24,9 @@ from sis.research.dag.export import export_core_dag_artifacts
 from sis.research.dag.linter import DagLintIssue
 from sis.research.dag.linter import lint_core_dag, raise_for_lint_errors
 from sis.research.dag.loader import load_core_dag
+from sis.research.dag.exit_gate import ExitGateError, run_exit_gate
+from sis.research.dag.review_import import ReviewImportError, import_review_result
+from sis.research.dag.review_pack import ReviewPackPrecheckError, build_review_pack
 from sis.research.dag.validator import (
     validate_core_dag,
     validate_core_dag_against_research_context,
@@ -491,6 +494,135 @@ def register_research_commands(
         ),
     ) -> None:
         research_dag_export_cmd(root / "core_dag.yaml", out)
+
+    @app.command("research-layer22-review-pack")
+    def research_layer22_review_pack_cmd(
+        root: Path = typer.Option(
+            ...,
+            "--root",
+            exists=True,
+            file_okay=False,
+            help="Layer 2.2 research config root directory.",
+        ),
+        out: Path = typer.Option(
+            ...,
+            "--out",
+            file_okay=False,
+            help="Output directory for manual LLM review pack artifacts.",
+        ),
+    ) -> None:
+        try:
+            result = build_review_pack(root=root, out_dir=out)
+        except ReviewPackPrecheckError as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(3) from exc
+        except (FileNotFoundError, ValidationError, ValueError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("status=pass")
+        typer.echo(f"pack_hash={result.pack_hash}")
+        typer.echo(f"review_pack={result.pack_path}")
+        typer.echo(f"review_input={result.input_path}")
+        typer.echo(f"review_prompt={result.prompt_path}")
+
+    @app.command("research-layer22-review-import")
+    def research_layer22_review_import_cmd(
+        pack: Path = typer.Option(
+            ...,
+            "--pack",
+            exists=True,
+            dir_okay=False,
+            help="llm_review_input.json path.",
+        ),
+        result: Path = typer.Option(
+            ...,
+            "--result",
+            exists=True,
+            dir_okay=False,
+            help="Manual LLM review JSON result path.",
+        ),
+    ) -> None:
+        try:
+            imported = import_review_result(pack_path=pack, result_path=result)
+        except ReviewImportError as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("status=pass")
+        typer.echo(f"review_id={imported.review.review_id}")
+        typer.echo(f"normalized_review={imported.normalized_path}")
+        typer.echo(f"report={imported.report_path}")
+
+    @app.command("research-layer22-exit-gate")
+    def research_layer22_exit_gate_cmd(
+        root: Path = typer.Option(
+            ...,
+            "--root",
+            exists=True,
+            file_okay=False,
+            help="Layer 2.2 research config root directory.",
+        ),
+        pack: Path = typer.Option(
+            ...,
+            "--pack",
+            exists=True,
+            dir_okay=False,
+            help="llm_review_input.json path.",
+        ),
+        review: Path = typer.Option(
+            ...,
+            "--review",
+            exists=True,
+            dir_okay=False,
+            help="normalized_review.json path.",
+        ),
+        out: Path = typer.Option(
+            ...,
+            "--out",
+            file_okay=False,
+            help="Output directory for exit decision artifacts.",
+        ),
+        human_resolutions: Path | None = typer.Option(
+            None,
+            "--human-resolutions",
+            exists=True,
+            dir_okay=False,
+            help="Optional layer_2_2_human_resolutions.json path.",
+        ),
+        require_second_review: bool = typer.Option(
+            False,
+            "--require-second-review",
+            help="Force the exit gate to require a second manual review before approval.",
+        ),
+    ) -> None:
+        try:
+            gate = run_exit_gate(
+                root=root,
+                pack_path=pack,
+                review_path=review,
+                out_dir=out,
+                human_resolutions_path=human_resolutions,
+                require_second_review=require_second_review,
+            )
+        except ExitGateError as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("status=pass")
+        typer.echo(f"decision={gate.decision.decision}")
+        typer.echo(f"decision_path={gate.decision_path}")
+        if gate.freeze_manifest_path is not None:
+            typer.echo(f"freeze_manifest={gate.freeze_manifest_path}")
+        typer.echo(f"report={gate.report_path}")
+        if gate.decision.decision == "REVISE_2_2":
+            raise typer.Exit(3)
+        if gate.decision.decision == "REJECT_SEED":
+            raise typer.Exit(4)
 
     @app.command("build-cost-matrix")
     def build_cost_matrix() -> None:

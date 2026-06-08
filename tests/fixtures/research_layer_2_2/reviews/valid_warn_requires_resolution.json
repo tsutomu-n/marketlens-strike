@@ -1,0 +1,54 @@
+{
+  "schema_version": "llm_dag_review.v1",
+  "review_id": "review.fixture.high",
+  "dag_id": "HYP-NDX-001",
+  "pack_hash": "sha256:PACK_HASH_PLACEHOLDER",
+  "prompt_contract_version": "llm_dag_review_prompt.v1",
+  "prompt_hash": null,
+  "review_mode": "standard",
+  "reviewer": {
+    "provider": "manual",
+    "model": "unspecified",
+    "model_version": "unspecified",
+    "invocation": "manual_paste",
+    "temperature": 0
+  },
+  "overall_decision": "APPROVE_WITH_WARNINGS",
+  "coverage": {
+    "causal_structure": "ok",
+    "temporal_leakage": "ok",
+    "market_structure": "concern",
+    "counter_dag_coverage": "ok",
+    "repo_boundary": "ok"
+  },
+  "severity_counts": {
+    "BLOCKER": 0,
+    "HIGH": 1,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 0
+  },
+  "findings": [
+    {
+      "finding_id": "F001",
+      "severity": "HIGH",
+      "category": "market_structure_confusion",
+      "claim": "ETF tracking noise could dominate the observed QQQ open gap.",
+      "why_it_matters": "A high-risk market-structure ambiguity should not silently pass to 2.3.",
+      "evidence_refs": ["CAT.COUNTER.ETFTrackingNoiseDAG"],
+      "target_refs": ["CAT.NODE.qqq_open_gap"],
+      "suggested_actions": ["Record a human decision before proceeding."],
+      "requires_human_decision": true,
+      "human_decision_id": "HD001"
+    }
+  ],
+  "required_human_decisions": [
+    {
+      "decision_id": "HD001",
+      "question": "Can ETF tracking noise be accepted as a tracked Layer 2.2 risk?",
+      "options": ["accept_risk", "revise_dag"],
+      "recommended_option": "revise_dag",
+      "evidence_refs": ["CAT.COUNTER.ETFTrackingNoiseDAG"]
+    }
+  ]
+}

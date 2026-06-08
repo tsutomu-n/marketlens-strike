@@ -1,0 +1,54 @@
+{
+  "schema_version": "llm_dag_review.v1",
+  "review_id": "review.fixture.reject",
+  "dag_id": "HYP-NDX-001",
+  "pack_hash": "sha256:PACK_HASH_PLACEHOLDER",
+  "prompt_contract_version": "llm_dag_review_prompt.v1",
+  "prompt_hash": null,
+  "review_mode": "standard",
+  "reviewer": {
+    "provider": "manual",
+    "model": "unspecified",
+    "model_version": "unspecified",
+    "invocation": "manual_paste",
+    "temperature": 0
+  },
+  "overall_decision": "REJECT_SEED",
+  "coverage": {
+    "causal_structure": "concern",
+    "temporal_leakage": "ok",
+    "market_structure": "ok",
+    "counter_dag_coverage": "ok",
+    "repo_boundary": "ok"
+  },
+  "severity_counts": {
+    "BLOCKER": 0,
+    "HIGH": 1,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 0
+  },
+  "findings": [
+    {
+      "finding_id": "F001",
+      "severity": "HIGH",
+      "category": "causal_misspecification",
+      "claim": "The seed mechanism is likely misspecified.",
+      "why_it_matters": "Rejecting the seed prevents promoting a broken causal framing.",
+      "evidence_refs": ["CAT.NODE.open_gap_residual"],
+      "target_refs": ["CAT.NODE.open_gap_residual"],
+      "suggested_actions": ["Reject this seed after operator confirmation."],
+      "requires_human_decision": true,
+      "human_decision_id": "HD_REJECT"
+    }
+  ],
+  "required_human_decisions": [
+    {
+      "decision_id": "HD_REJECT",
+      "question": "Confirm rejecting the Layer 2.2 seed?",
+      "options": ["reject_seed", "revise_dag"],
+      "recommended_option": "reject_seed",
+      "evidence_refs": ["CAT.NODE.open_gap_residual"]
+    }
+  ]
+}

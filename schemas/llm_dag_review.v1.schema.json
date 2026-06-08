@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketlens-strike.local/schemas/llm_dag_review.v1.schema.json",
+  "title": "LLM DAG Review v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_id",
+    "dag_id",
+    "pack_hash",
+    "prompt_contract_version",
+    "prompt_hash",
+    "review_mode",
+    "reviewer",
+    "overall_decision",
+    "coverage",
+    "severity_counts",
+    "findings",
+    "required_human_decisions"
+  ],
+  "properties": {
+    "schema_version": { "const": "llm_dag_review.v1" },
+    "review_id": { "type": "string", "minLength": 1 },
+    "dag_id": { "type": "string", "minLength": 1 },
+    "pack_hash": { "type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$" },
+    "prompt_contract_version": { "const": "llm_dag_review_prompt.v1" },
+    "prompt_hash": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "review_mode": { "enum": ["standard", "adversarial"] },
+    "reviewer": { "$ref": "#/$defs/reviewer" },
+    "overall_decision": {
+      "enum": [
+        "APPROVE",
+        "APPROVE_WITH_WARNINGS",
+        "REVISE_REQUIRED",
+        "REJECT_SEED",
+        "INSUFFICIENT_EVIDENCE"
+      ]
+    },
+    "coverage": { "$ref": "#/$defs/coverage" },
+    "severity_counts": { "$ref": "#/$defs/severity_counts" },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "required_human_decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/required_human_decision" }
+    }
+  },
+  "$defs": {
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "model_version", "invocation", "temperature"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 },
+        "model_version": { "type": "string", "minLength": 1 },
+        "invocation": { "type": "string", "minLength": 1 },
+        "temperature": { "type": "number" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "causal_structure",
+        "temporal_leakage",
+        "market_structure",
+        "counter_dag_coverage",
+        "repo_boundary"
+      ],
+      "properties": {
+        "causal_structure": { "$ref": "#/$defs/coverage_status" },
+        "temporal_leakage": { "$ref": "#/$defs/coverage_status" },
+        "market_structure": { "$ref": "#/$defs/coverage_status" },
+        "counter_dag_coverage": { "$ref": "#/$defs/coverage_status" },
+        "repo_boundary": { "$ref": "#/$defs/coverage_status" }
+      }
+    },
+    "coverage_status": {
+      "enum": ["ok", "concern", "gap", "not_reviewed"]
+    },
+    "severity_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["BLOCKER", "HIGH", "MEDIUM", "LOW", "INFO"],
+      "properties": {
+        "BLOCKER": { "type": "integer", "minimum": 0 },
+        "HIGH": { "type": "integer", "minimum": 0 },
+        "MEDIUM": { "type": "integer", "minimum": 0 },
+        "LOW": { "type": "integer", "minimum": 0 },
+        "INFO": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_id",
+        "severity",
+        "category",
+        "claim",
+        "why_it_matters",
+        "evidence_refs",
+        "target_refs",
+        "suggested_actions",
+        "requires_human_decision",
+        "human_decision_id"
+      ],
+      "properties": {
+        "finding_id": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["BLOCKER", "HIGH", "MEDIUM", "LOW", "INFO"] },
+        "category": { "type": "string", "minLength": 1 },
+        "claim": { "type": "string", "minLength": 1 },
+        "why_it_matters": { "type": "string", "minLength": 1 },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^CAT\\." }
+        },
+        "target_refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "suggested_actions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requires_human_decision": { "type": "boolean" },
+        "human_decision_id": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "required_human_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_id", "question", "options", "recommended_option", "evidence_refs"],
+      "properties": {
+        "decision_id": { "type": "string", "minLength": 1 },
+        "question": { "type": "string", "minLength": 1 },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "recommended_option": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^CAT\\." }
+        }
+      }
+    }
+  }
+}

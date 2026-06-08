@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketlens-strike.local/schemas/layer_2_2_human_resolutions.v1.schema.json",
+  "title": "Layer 2.2 Human Resolutions v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "dag_id", "pack_hash", "resolutions"],
+  "properties": {
+    "schema_version": { "const": "layer_2_2_human_resolutions.v1" },
+    "dag_id": { "type": "string", "minLength": 1 },
+    "pack_hash": { "type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$" },
+    "resolutions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision_id", "selected_option", "reason", "resolved_by", "resolved_at"],
+        "properties": {
+          "decision_id": { "type": "string", "minLength": 1 },
+          "selected_option": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "resolved_by": { "type": "string", "minLength": 1 },
+          "resolved_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

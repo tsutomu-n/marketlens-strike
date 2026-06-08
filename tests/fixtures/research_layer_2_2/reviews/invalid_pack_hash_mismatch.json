@@ -1,0 +1,33 @@
+{
+  "schema_version": "llm_dag_review.v1",
+  "review_id": "review.fixture.mismatch",
+  "dag_id": "HYP-NDX-001",
+  "pack_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "prompt_contract_version": "llm_dag_review_prompt.v1",
+  "prompt_hash": null,
+  "review_mode": "standard",
+  "reviewer": {
+    "provider": "manual",
+    "model": "unspecified",
+    "model_version": "unspecified",
+    "invocation": "manual_paste",
+    "temperature": 0
+  },
+  "overall_decision": "APPROVE",
+  "coverage": {
+    "causal_structure": "ok",
+    "temporal_leakage": "ok",
+    "market_structure": "ok",
+    "counter_dag_coverage": "ok",
+    "repo_boundary": "ok"
+  },
+  "severity_counts": {
+    "BLOCKER": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 0
+  },
+  "findings": [],
+  "required_human_decisions": []
+}
