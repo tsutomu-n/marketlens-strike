@@ -34,5 +34,22 @@
     "high_count": { "type": "integer", "minimum": 0 },
     "second_review_required": { "type": "boolean" },
     "created_at": { "type": "string", "format": "date-time" }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": { "const": "APPROVE_2_3" }
+        },
+        "required": ["decision"]
+      },
+      "then": {
+        "properties": {
+          "unresolved_human_decisions": { "maxItems": 0 },
+          "blocker_count": { "const": 0 },
+          "second_review_required": { "const": false }
+        }
+      }
+    }
+  ]
 }

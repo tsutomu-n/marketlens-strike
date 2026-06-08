@@ -187,6 +187,18 @@ class Layer22ExitDecision(BaseModel):
     second_review_required: bool
     created_at: datetime
 
+    @model_validator(mode="after")
+    def validate_approve_invariants(self) -> Self:
+        if self.decision != "APPROVE_2_3":
+            return self
+        if self.second_review_required:
+            raise ValueError("APPROVE_2_3 requires second_review_required=false")
+        if self.unresolved_human_decisions:
+            raise ValueError("APPROVE_2_3 requires unresolved_human_decisions=[]")
+        if self.blocker_count != 0:
+            raise ValueError("APPROVE_2_3 requires blocker_count=0")
+        return self
+
 
 class Layer22FreezeManifest(BaseModel):
     model_config = ConfigDict(extra="forbid")

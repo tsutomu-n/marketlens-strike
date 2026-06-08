@@ -1,0 +1,46 @@
+{
+  "schema_version": "llm_dag_review.v1",
+  "review_id": "review.fixture.high_without_human_decision",
+  "dag_id": "HYP-NDX-001",
+  "pack_hash": "sha256:PACK_HASH_PLACEHOLDER",
+  "prompt_contract_version": "llm_dag_review_prompt.v1",
+  "prompt_hash": null,
+  "review_mode": "standard",
+  "reviewer": {
+    "provider": "manual",
+    "model": "unspecified",
+    "model_version": "unspecified",
+    "invocation": "manual_paste",
+    "temperature": 0
+  },
+  "overall_decision": "APPROVE_WITH_WARNINGS",
+  "coverage": {
+    "causal_structure": "ok",
+    "temporal_leakage": "ok",
+    "market_structure": "concern",
+    "counter_dag_coverage": "ok",
+    "repo_boundary": "ok"
+  },
+  "severity_counts": {
+    "BLOCKER": 0,
+    "HIGH": 1,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 0
+  },
+  "findings": [
+    {
+      "finding_id": "F001",
+      "severity": "HIGH",
+      "category": "market_structure_confusion",
+      "claim": "ETF tracking noise could dominate the observed QQQ open gap.",
+      "why_it_matters": "A high-risk ambiguity without an operator decision path should not pass to 2.3.",
+      "evidence_refs": ["CAT.COUNTER.ETFTrackingNoiseDAG"],
+      "target_refs": ["CAT.NODE.qqq_open_gap"],
+      "suggested_actions": ["Revise the review or DAG before proceeding."],
+      "requires_human_decision": false,
+      "human_decision_id": null
+    }
+  ],
+  "required_human_decisions": []
+}

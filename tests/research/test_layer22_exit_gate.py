@@ -83,6 +83,8 @@ def test_exit_gate_approves_clean_review_and_writes_freeze_manifest(tmp_path) ->
     )
 
     assert result.decision.decision == "APPROVE_2_3"
+    assert result.decision.second_review_required is False
+    assert result.decision.unresolved_human_decisions == []
     assert result.decision_path.exists()
     assert result.freeze_manifest_path is not None
     assert result.freeze_manifest_path.exists()
@@ -118,6 +120,62 @@ def test_exit_gate_revises_for_unresolved_required_human_decision(tmp_path) -> N
     assert result.decision.decision == "REVISE_2_2"
     assert result.decision.unresolved_human_decisions == ["HD001"]
     assert result.decision.second_review_required is True
+    assert result.freeze_manifest_path is None
+
+
+def test_exit_gate_revises_for_high_finding_without_human_decision(tmp_path) -> None:
+    pack = _export_and_pack(tmp_path)
+    review_path = _normalized_review(pack, "high_without_human_decision.json")
+
+    result = run_exit_gate(
+        root=CONFIG_DIR,
+        pack_path=pack.input_path,
+        review_path=review_path,
+        out_dir=pack.input_path.parent,
+    )
+
+    assert result.decision.decision == "REVISE_2_2"
+    assert result.decision.second_review_required is True
+    assert result.freeze_manifest_path is None
+
+
+def test_exit_gate_approves_resolved_high_human_decision(tmp_path) -> None:
+    pack = _export_and_pack(tmp_path)
+    review_path = _normalized_review(pack, "valid_warn_requires_resolution.json")
+    resolutions_path = _write_resolutions(pack, "HD001")
+
+    result = run_exit_gate(
+        root=CONFIG_DIR,
+        pack_path=pack.input_path,
+        review_path=review_path,
+        out_dir=pack.input_path.parent,
+        human_resolutions_path=resolutions_path,
+    )
+
+    assert result.decision.decision == "APPROVE_2_3"
+    assert result.decision.unresolved_human_decisions == []
+    assert result.decision.second_review_required is False
+    assert result.freeze_manifest_path is not None
+    assert result.freeze_manifest_path.exists()
+
+
+def test_exit_gate_revises_for_blocker_even_with_human_resolution(tmp_path) -> None:
+    pack = _export_and_pack(tmp_path)
+    review_path = _normalized_review(pack, "blocker_with_human_decision.json")
+    resolutions_path = _write_resolutions(pack, "HD_BLOCKER")
+
+    result = run_exit_gate(
+        root=CONFIG_DIR,
+        pack_path=pack.input_path,
+        review_path=review_path,
+        out_dir=pack.input_path.parent,
+        human_resolutions_path=resolutions_path,
+    )
+
+    assert result.decision.decision == "REVISE_2_2"
+    assert result.decision.blocker_count == 1
+    assert result.decision.second_review_required is True
+    assert result.freeze_manifest_path is None
 
 
 def test_exit_gate_rejects_seed_when_operator_confirms_rejection(tmp_path) -> None:

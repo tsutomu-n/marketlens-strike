@@ -63,17 +63,22 @@ def run_exit_gate(
         if finding.severity == "HIGH" and finding.human_decision_id is not None
     }
     unresolved = sorted((required_ids | high_resolution_ids) - resolved_ids)
+    high_without_decision = _has_high_without_human_decision(review)
     blocker_count = review.severity_counts.BLOCKER
     high_count = review.severity_counts.HIGH
     second_review_required = _second_review_required(
         review=review,
+        unresolved=unresolved,
         require_second_review=require_second_review,
+        high_without_decision=high_without_decision,
+        resolved_ids=resolved_ids,
     )
     decision_value = _decision_value(
         review=review,
         unresolved=unresolved,
         require_second_review=require_second_review,
         resolved_ids=resolved_ids,
+        high_without_decision=high_without_decision,
     )
     decision = Layer22ExitDecision(
         schema_version="layer_2_2_exit_decision.v1",
@@ -142,12 +147,15 @@ def _decision_value(
     unresolved: list[str],
     require_second_review: bool,
     resolved_ids: set[str],
+    high_without_decision: bool,
 ) -> ExitGateDecision:
     if require_second_review:
         return "REVISE_2_2"
     if _is_confirmed_reject_seed(review, resolved_ids):
         return "REJECT_SEED"
     if review.severity_counts.BLOCKER > 0:
+        return "REVISE_2_2"
+    if high_without_decision:
         return "REVISE_2_2"
     if unresolved:
         return "REVISE_2_2"
@@ -156,6 +164,13 @@ def _decision_value(
     if review.overall_decision == "REJECT_SEED":
         return "REVISE_2_2"
     return "APPROVE_2_3"
+
+
+def _has_high_without_human_decision(review: LlmDagReview) -> bool:
+    return any(
+        finding.severity == "HIGH" and finding.human_decision_id is None
+        for finding in review.findings
+    )
 
 
 def _is_confirmed_reject_seed(review: LlmDagReview, resolved_ids: set[str]) -> bool:
@@ -168,13 +183,25 @@ def _is_confirmed_reject_seed(review: LlmDagReview, resolved_ids: set[str]) -> b
     return False
 
 
-def _second_review_required(*, review: LlmDagReview, require_second_review: bool) -> bool:
+def _second_review_required(
+    *,
+    review: LlmDagReview,
+    unresolved: list[str],
+    require_second_review: bool,
+    high_without_decision: bool,
+    resolved_ids: set[str],
+) -> bool:
+    reject_seed_requires_revision = (
+        review.overall_decision == "REJECT_SEED"
+        and not _is_confirmed_reject_seed(review, resolved_ids)
+    )
     return (
         require_second_review
         or review.severity_counts.BLOCKER > 0
-        or review.severity_counts.HIGH > 0
-        or review.overall_decision in {"REVISE_REQUIRED", "REJECT_SEED"}
-        or bool(review.required_human_decisions)
+        or high_without_decision
+        or bool(unresolved)
+        or review.overall_decision in {"REVISE_REQUIRED", "INSUFFICIENT_EVIDENCE"}
+        or reject_seed_requires_revision
     )
 
 

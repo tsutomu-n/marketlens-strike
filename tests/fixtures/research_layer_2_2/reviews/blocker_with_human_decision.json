@@ -1,0 +1,54 @@
+{
+  "schema_version": "llm_dag_review.v1",
+  "review_id": "review.fixture.blocker_with_human_decision",
+  "dag_id": "HYP-NDX-001",
+  "pack_hash": "sha256:PACK_HASH_PLACEHOLDER",
+  "prompt_contract_version": "llm_dag_review_prompt.v1",
+  "prompt_hash": null,
+  "review_mode": "standard",
+  "reviewer": {
+    "provider": "manual",
+    "model": "unspecified",
+    "model_version": "unspecified",
+    "invocation": "manual_paste",
+    "temperature": 0
+  },
+  "overall_decision": "REVISE_REQUIRED",
+  "coverage": {
+    "causal_structure": "concern",
+    "temporal_leakage": "concern",
+    "market_structure": "ok",
+    "counter_dag_coverage": "ok",
+    "repo_boundary": "ok"
+  },
+  "severity_counts": {
+    "BLOCKER": 1,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0,
+    "INFO": 0
+  },
+  "findings": [
+    {
+      "finding_id": "F001",
+      "severity": "BLOCKER",
+      "category": "temporal_leakage",
+      "claim": "A future-observed outcome appears to affect a signal-side variable.",
+      "why_it_matters": "Temporal leakage blocks a Layer 2.2 exit even when acknowledged.",
+      "evidence_refs": ["CAT.PRECHECK.temporal_monotonic_matrix"],
+      "target_refs": ["CAT.EDGE.open_gap_residual__qqq_open_to_close_return"],
+      "suggested_actions": ["Revise the DAG before Layer 2.3."],
+      "requires_human_decision": true,
+      "human_decision_id": "HD_BLOCKER"
+    }
+  ],
+  "required_human_decisions": [
+    {
+      "decision_id": "HD_BLOCKER",
+      "question": "Can the temporal leakage blocker be accepted as a tracked risk?",
+      "options": ["accept_risk", "revise_dag"],
+      "recommended_option": "revise_dag",
+      "evidence_refs": ["CAT.PRECHECK.temporal_monotonic_matrix"]
+    }
+  ]
+}

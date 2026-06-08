@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-07_20:09 JST
-更新日: 2026-06-08_18:01 JST
+更新日: 2026-06-08_19:44 JST
 -->
 
 # Layer 2.2 Implementation Record
@@ -8,6 +8,8 @@
 ## 結論
 
 Layer 2.2 DAG Compiler foundation は `HYP-NDX-001` の local-only 研究 artifact 基盤として実装済みである。2026-06-08 時点では、DAG foundation に加えて Exit Gate Review Harness v3 Minimal も実装済みである。
+
+2026-06-08 の追加作業は新規 Layer 2.2 実装ではなく、既存実装の受入監査と Exit Gate 意味論のハードニングである。対象計画は `plan/0608ここからの計画/feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/`。旧 v2/v5 ZIP は historical design background であり、新規実装指示ではない。
 
 完成扱い:
 - NDX / QQQ の research scope、seed、mechanism parts、variable inventory、causal roles、temporal availability を YAML と Pydantic contract で読める。
@@ -70,6 +72,16 @@ uv run sis research-layer22-exit-gate --root configs/research_layer_2_2/ndx --pa
 - temporal availability と variable temporal class の不一致
 - `counter_dag_refs` 欠落
 - YAML duplicate key
+
+Exit Gate の受入監査で、次の不変条件を code、schema、tests に固定した。
+
+- `APPROVE_2_3` は `second_review_required=false` の時だけ成立する。
+- `APPROVE_2_3` は `unresolved_human_decisions=[]` の時だけ成立する。
+- `APPROVE_2_3` は `blocker_count=0` の時だけ成立する。
+- `APPROVE_2_3` の時だけ freeze manifest を生成する。
+- `REVISE_2_2` と `REJECT_SEED` では freeze manifest を生成しない。
+- HIGH finding は、対応する human decision が解決済みの場合だけ `APPROVE_2_3` に進める。
+- human decision がない HIGH finding、未解決 HIGH finding、BLOCKER は `REVISE_2_2` にする。
 
 ## 明示的にやっていないこと
 

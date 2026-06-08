@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-08_06:45 JST
-更新日: 2026-06-08_06:45 JST
+更新日: 2026-06-08_19:44 JST
 -->
 
 # Layer 2.2 LLM Review Gate
@@ -8,6 +8,8 @@
 ## 目的
 
 この gate は Layer 2.2 の DAG artifact を手動レビューし、Layer 2.3 へ進めるかを判定するためのローカル harness である。外部 LLM API、credentials、feature panel、residual calculation、Strategy Lab export、backtest、paper/live order には接続しない。
+
+現在の正本は repo の code、tests、schemas、config、CLI help である。旧 v2/v5 ZIP は historical design background であり、新規実装指示として扱わない。2026-06-08 の受入監査は `plan/0608ここからの計画/feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/` を対象にした。
 
 ## 1. 前提 artifact を作る
 
@@ -103,6 +105,19 @@ data/reports/ndx_layer_2_2_exit_gate_report.md
 ```text
 data/research/ndx/review/layer_2_2_freeze_manifest.json
 ```
+
+Exit gate の不変条件:
+
+```text
+APPROVE_2_3 => second_review_required=false
+APPROVE_2_3 => unresolved_human_decisions=[]
+APPROVE_2_3 => blocker_count=0
+APPROVE_2_3 => freeze manifestあり
+REVISE_2_2 => freeze manifestなし
+REJECT_SEED => freeze manifestなし
+```
+
+`second_review_required=true`、未解決の human decision、または BLOCKER がある場合は Layer 2.3 へ進まない。HIGH finding は、対応する human decision があり、その decision が解決済みの場合だけ `APPROVE_2_3` に進める。human decision がない HIGH finding、または未解決 HIGH finding は `REVISE_2_2` にする。
 
 ## Human resolution
 

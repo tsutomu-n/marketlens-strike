@@ -1,0 +1,46 @@
+{
+  "created_at_jst": "2026-06-08_19:23 JST",
+  "title": "Layer 2.2 acceptance audit and exit-gate semantics hardening",
+  "root_path": "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1",
+  "purpose": "Use the current implemented marketlens-strike Layer 2.2 code as source of truth, audit acceptance, harden exit-gate semantics, and decide whether Layer 2.2 can be frozen before Layer 2.3.",
+  "repo_assumption": {
+    "repo": "marketlens-strike",
+    "branch": "main",
+    "base_head": "unknown; verify with git rev-parse --short HEAD before implementation",
+    "current_status": "Layer 2.2 DAG foundation and Exit Gate Review Harness already implemented in the uploaded 2026-06-08 repo dump"
+  },
+  "safety": {
+    "external_api": "not_required",
+    "credentials": "not_required",
+    "paper_live_order": "not_touched",
+    "db_schema": "not_touched",
+    "dependency_change": "none",
+    "strategy_lab_export": "not_touched",
+    "feature_panel": "not_touched",
+    "residual_calculation": "not_touched"
+  },
+  "completion_target": {
+    "phase": "Layer 2.2 acceptance and exit-gate hardening only",
+    "main_decision": "Do not re-implement v2/v5 from scratch; treat those packs as historical design background.",
+    "done_when": "research-layer22 commands pass, exit-gate semantics are unambiguous, freeze manifest is emitted only when advance is allowed, and ./scripts/check passes."
+  },
+  "files": [
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/01_GOAL.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/02_SCOPE_AND_BOUNDARIES.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/03_CURRENT_REPO_CONTEXT.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/04_FINDINGS_AND_DECISIONS.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/05_TASKS.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/06_ACCEPTANCE.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/07_TARGET_FILE_MAP.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/08_TEST_PLAN.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/09_RISK_AND_STOP_CONDITIONS.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/10_IMPLEMENTER_CHECKLIST.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/MANIFEST.json",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/README.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/appendices/A_EXIT_GATE_DECISION_MATRIX.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/appendices/B_TEST_FIXTURE_PLAN.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/appendices/C_CODER_HANDOFF_PROMPT.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/appendices/D_PREVIOUS_ZIP_ROUTING.md",
+    "feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/appendices/E_NEXT_PHASE_AFTER_APPROVAL.md"
+  ]
+}
