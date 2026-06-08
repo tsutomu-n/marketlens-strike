@@ -182,6 +182,7 @@ uv run python scripts/check_current_docs.py
 2026-06-08 Layer 2.2 review harness snapshot:
 
 - `research-layer22-review-pack`, `research-layer22-review-import`, and `research-layer22-exit-gate` are registered CLI commands.
+- `uv run python scripts/check_current_docs.py`: `checked 100 current docs`
 - Latest local smoke decision artifact was `APPROVE_2_3` with pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`.
 - Full local gate was observed passing with `910 passed`; rerun `./scripts/check` for current proof.
 

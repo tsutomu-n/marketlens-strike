@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-05-30_21:32 JST
-更新日: 2026-06-07_21:33 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # Repository Guidelines
 
-Last updated: 2026-06-07_21:33 Asia/Tokyo. Keep this guide concise; no fixed word limit.
+Last updated: 2026-06-08_18:01 Asia/Tokyo. Keep this guide concise; no fixed word limit.
 
 ## Codex Loading
 
@@ -27,6 +27,8 @@ Tests live in `tests/` with focused slices under `tests/backtest/` and `tests/st
 
 When the user does not specify a scope, prefer research/backtest-first and venue-neutral work. Use the NDX Layer 2.2 DAG foundation for NDX research tasks. Prefer Strategy Lab authoring or backtest-first workflows when a task does not explicitly require venue-specific work.
 
+The Layer 2.2 review harness is local/manual review plumbing only. It does not prove alpha, feature-panel readiness, residual correctness, Strategy Lab export readiness, backtest readiness, paper readiness, live readiness, account readiness, wallet readiness, or exchange-write readiness.
+
 Trade[XYZ] remains implemented code and historical/read-only venue context, but it is no longer the default product axis, primary execution path, or primary next action. Do not introduce new Trade[XYZ] assumptions, collectors, readiness claims, or order-path work unless the user explicitly scopes the task to Trade[XYZ].
 
 ## Commands
@@ -38,6 +40,9 @@ Trade[XYZ] remains implemented code and historical/read-only venue context, but 
 - `uv run python scripts/check_current_docs.py`: verify current-doc links, EOF, and legacy-root references.
 - `uv run sis research-layer22-validate --root configs/research_layer_2_2/ndx`: validate the local-only NDX Layer 2.2 DAG foundation.
 - `uv run sis research-layer22-export --root configs/research_layer_2_2/ndx --out data/research/ndx`: export Layer 2.2 DAG artifacts without fetching data.
+- `uv run sis research-layer22-review-pack --root configs/research_layer_2_2/ndx --out data/research/ndx/review`: build the local/manual Layer 2.2 review pack.
+- `uv run sis research-layer22-review-import --pack data/research/ndx/review/llm_review_input.json --result data/research/ndx/review/llm_review_result.json`: validate and normalize a manual review JSON result.
+- `uv run sis research-layer22-exit-gate --root configs/research_layer_2_2/ndx --pack data/research/ndx/review/llm_review_input.json --review data/research/ndx/review/normalized_review.json --out data/research/ndx/review`: decide whether Layer 2.2 can advance to Layer 2.3.
 - `uv run sis phase-gate-review`: review the read-only/paper gate.
 
 CI also runs `bun install --frozen-lockfile` for lockfile integrity. Normal development is Python/uv-first; `package.json` is not the main app entrypoint.
