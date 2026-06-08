@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-08_06:45 JST
-更新日: 2026-06-08_19:44 JST
+更新日: 2026-06-08_19:51 JST
 -->
 
 # Layer 2.2 LLM Review Gate
@@ -118,6 +118,8 @@ REJECT_SEED => freeze manifestなし
 ```
 
 `second_review_required=true`、未解決の human decision、または BLOCKER がある場合は Layer 2.3 へ進まない。HIGH finding は、対応する human decision があり、その decision が解決済みの場合だけ `APPROVE_2_3` に進める。human decision がない HIGH finding、または未解決 HIGH finding は `REVISE_2_2` にする。
+
+同じ `--out` directory で以前に `APPROVE_2_3` を出していた場合でも、次の実行が `REVISE_2_2` または `REJECT_SEED` なら古い `layer_2_2_freeze_manifest.json` は削除される。
 
 ## Human resolution
 

@@ -178,6 +178,33 @@ def test_exit_gate_revises_for_blocker_even_with_human_resolution(tmp_path) -> N
     assert result.freeze_manifest_path is None
 
 
+def test_exit_gate_removes_stale_freeze_manifest_when_revising(tmp_path) -> None:
+    pack = _export_and_pack(tmp_path)
+    approve_review_path = _normalized_review(pack, "valid_approve.json")
+
+    approve_result = run_exit_gate(
+        root=CONFIG_DIR,
+        pack_path=pack.input_path,
+        review_path=approve_review_path,
+        out_dir=pack.input_path.parent,
+    )
+    assert approve_result.freeze_manifest_path is not None
+    assert approve_result.freeze_manifest_path.exists()
+
+    revise_review_path = _normalized_review(pack, "blocker_temporal_leakage.json")
+
+    revise_result = run_exit_gate(
+        root=CONFIG_DIR,
+        pack_path=pack.input_path,
+        review_path=revise_review_path,
+        out_dir=pack.input_path.parent,
+    )
+
+    assert revise_result.decision.decision == "REVISE_2_2"
+    assert revise_result.freeze_manifest_path is None
+    assert not (pack.input_path.parent / "layer_2_2_freeze_manifest.json").exists()
+
+
 def test_exit_gate_rejects_seed_when_operator_confirms_rejection(tmp_path) -> None:
     pack = _export_and_pack(tmp_path)
     review_path = _normalized_review(pack, "reject_seed.json")
@@ -192,6 +219,23 @@ def test_exit_gate_rejects_seed_when_operator_confirms_rejection(tmp_path) -> No
     )
 
     assert result.decision.decision == "REJECT_SEED"
+    assert result.freeze_manifest_path is None
+
+
+def test_exit_gate_revises_reject_seed_without_operator_confirmation(tmp_path) -> None:
+    pack = _export_and_pack(tmp_path)
+    review_path = _normalized_review(pack, "reject_seed.json")
+
+    result = run_exit_gate(
+        root=CONFIG_DIR,
+        pack_path=pack.input_path,
+        review_path=review_path,
+        out_dir=pack.input_path.parent,
+    )
+
+    assert result.decision.decision == "REVISE_2_2"
+    assert result.decision.unresolved_human_decisions == ["HD_REJECT"]
+    assert result.decision.second_review_required is True
     assert result.freeze_manifest_path is None
 
 

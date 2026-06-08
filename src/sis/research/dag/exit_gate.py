@@ -98,15 +98,18 @@ def run_exit_gate(
         json.dumps(decision.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    candidate_freeze_manifest_path = out_dir / "layer_2_2_freeze_manifest.json"
     freeze_manifest_path: Path | None = None
     if decision.decision == "APPROVE_2_3":
-        freeze_manifest_path = out_dir / "layer_2_2_freeze_manifest.json"
+        freeze_manifest_path = candidate_freeze_manifest_path
         write_freeze_manifest(
             root=root,
             artifact_dir=Path(pack.artifact_dir),
             decision=decision,
             out_path=freeze_manifest_path,
         )
+    elif candidate_freeze_manifest_path.exists():
+        candidate_freeze_manifest_path.unlink()
     report_path = reports_dir_for_review_dir(out_dir) / "ndx_layer_2_2_exit_gate_report.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(_render_exit_gate_report(decision), encoding="utf-8")

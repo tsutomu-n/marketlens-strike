@@ -67,6 +67,52 @@ def test_exit_decision_contract_rejects_approve_with_second_review_required() ->
     assert errors
 
 
+def test_exit_decision_contract_rejects_approve_with_unresolved_human_decision() -> None:
+    payload = {
+        "schema_version": "layer_2_2_exit_decision.v1",
+        "dag_id": "HYP-NDX-001",
+        "decision": "APPROVE_2_3",
+        "pack_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "review_ids": ["review.fixture.approve"],
+        "unresolved_human_decisions": ["HD001"],
+        "blocker_count": 0,
+        "high_count": 1,
+        "second_review_required": False,
+        "created_at": "2026-06-08T10:00:00+00:00",
+    }
+
+    with pytest.raises(ValidationError, match=r"unresolved_human_decisions=\[\]"):
+        Layer22ExitDecision.model_validate(payload)
+
+    schema = json.loads(Path("schemas/layer_2_2_exit_decision.v1.schema.json").read_text())
+    errors = list(Draft202012Validator(schema).iter_errors(payload))
+
+    assert errors
+
+
+def test_exit_decision_contract_rejects_approve_with_blocker_count() -> None:
+    payload = {
+        "schema_version": "layer_2_2_exit_decision.v1",
+        "dag_id": "HYP-NDX-001",
+        "decision": "APPROVE_2_3",
+        "pack_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "review_ids": ["review.fixture.approve"],
+        "unresolved_human_decisions": [],
+        "blocker_count": 1,
+        "high_count": 0,
+        "second_review_required": False,
+        "created_at": "2026-06-08T10:00:00+00:00",
+    }
+
+    with pytest.raises(ValidationError, match="blocker_count=0"):
+        Layer22ExitDecision.model_validate(payload)
+
+    schema = json.loads(Path("schemas/layer_2_2_exit_decision.v1.schema.json").read_text())
+    errors = list(Draft202012Validator(schema).iter_errors(payload))
+
+    assert errors
+
+
 def test_llm_review_contract_rejects_extra_property() -> None:
     payload = _review_payload("valid_approve.json")
     payload["unexpected"] = "nope"

@@ -157,3 +157,78 @@ def test_research_layer22_exit_gate_cli_uses_revise_exit_code(tmp_path) -> None:
 
     assert result.exit_code == 3
     assert "decision=REVISE_2_2" in normalized_stdout(result)
+
+
+def test_research_layer22_exit_gate_cli_removes_stale_freeze_manifest_on_revise(
+    tmp_path,
+) -> None:
+    data_dir = _export_layer22(tmp_path)
+    review_dir = data_dir / "review"
+    assert (
+        invoke_cli(
+            ["research-layer22-review-pack", "--root", str(CONFIG_DIR), "--out", str(review_dir)]
+        ).exit_code
+        == 0
+    )
+    approve_result_path = _write_review_result(review_dir, "valid_approve.json")
+    assert (
+        invoke_cli(
+            [
+                "research-layer22-review-import",
+                "--pack",
+                str(review_dir / "llm_review_input.json"),
+                "--result",
+                str(approve_result_path),
+            ]
+        ).exit_code
+        == 0
+    )
+    assert (
+        invoke_cli(
+            [
+                "research-layer22-exit-gate",
+                "--root",
+                str(CONFIG_DIR),
+                "--pack",
+                str(review_dir / "llm_review_input.json"),
+                "--review",
+                str(review_dir / "normalized_review.json"),
+                "--out",
+                str(review_dir),
+            ]
+        ).exit_code
+        == 0
+    )
+    assert (review_dir / "layer_2_2_freeze_manifest.json").exists()
+
+    revise_result_path = _write_review_result(review_dir, "blocker_temporal_leakage.json")
+    assert (
+        invoke_cli(
+            [
+                "research-layer22-review-import",
+                "--pack",
+                str(review_dir / "llm_review_input.json"),
+                "--result",
+                str(revise_result_path),
+            ]
+        ).exit_code
+        == 0
+    )
+
+    result = invoke_cli(
+        [
+            "research-layer22-exit-gate",
+            "--root",
+            str(CONFIG_DIR),
+            "--pack",
+            str(review_dir / "llm_review_input.json"),
+            "--review",
+            str(review_dir / "normalized_review.json"),
+            "--out",
+            str(review_dir),
+        ]
+    )
+
+    assert result.exit_code == 3
+    assert "decision=REVISE_2_2" in normalized_stdout(result)
+    assert not (review_dir / "layer_2_2_freeze_manifest.json").exists()
