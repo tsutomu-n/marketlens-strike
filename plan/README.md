@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-06_10:28 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -9,7 +9,7 @@
 
 この `plan/` は、historical planning record と implementation handoff を残す場所です。
 
-現行コードでは PR-00〜PR-08 の migration code/test surface は完了済みです。Trade[XYZ] real data / backtest 関連の top-level plan も、実装順序、判断、acceptance、handoff を確認するための履歴資料です。current status は `docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、生成済み manifest を先に読んでください。
+現行コードでは PR-00〜PR-08 の migration code/test surface は完了済みです。Trade[XYZ] real data / backtest 関連の top-level plan と、2026-06-07 の Layer 2.2 plan pack は、実装順序、判断、acceptance、handoff を確認するための履歴資料です。current status は `docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/research/ndx/README.md`、`docs/OPERATIONS_RUNBOOK.md`、生成済み manifest を先に読んでください。
 
 重要: `plan/marketlens_strategy_research_lab_migration_pack/` は historical migration contract です。`execution_venue: Literal["trade_xyz"]` のような記述は当時の実装前契約であり、現在の contract ではありません。現在の venue contract は code/schema の `trade_xyz`, `bitget_demo` です。
 
@@ -31,12 +31,21 @@
 
 Top-level Trade[XYZ] plan docs are not current truth. Use them only for implementation history and handoff context.
 
-- `plan/TRADE_XYZ_BACKTEST_V0_1_2_REAL_DATA_HARDENING_PLAN_REV5.md`
-- `plan/TRADE_XYZ_DATA_COLLECTION_EXPANSION_IMPLEMENTATION_PLAN_2026-06-01.md`
-- `plan/TRADE_XYZ_AFTER_WS_SMOKE_DATA_READY_PLAN_2026-06-01.md`
-- `plan/TRADE_XYZ_BACKTEST_REAL_DATA_INGESTION_HANDOFF_2026-06-01.md`
-- `plan/TRADE_XYZ_WS_TO_BACKTEST_INGESTION_FINAL_PLAN_2026-06-04.md`
+- `plan/archive/2026-06-08-plan-routing/TRADE_XYZ_BACKTEST_V0_1_2_REAL_DATA_HARDENING_PLAN_REV5.md`
+- `plan/archive/2026-06-08-plan-routing/TRADE_XYZ_DATA_COLLECTION_EXPANSION_IMPLEMENTATION_PLAN_2026-06-01.md`
+- `plan/archive/2026-06-08-plan-routing/TRADE_XYZ_AFTER_WS_SMOKE_DATA_READY_PLAN_2026-06-01.md`
+- `plan/archive/2026-06-08-plan-routing/TRADE_XYZ_BACKTEST_REAL_DATA_INGESTION_HANDOFF_2026-06-01.md`
+- `plan/archive/2026-06-08-plan-routing/TRADE_XYZ_WS_TO_BACKTEST_INGESTION_FINAL_PLAN_2026-06-04.md`
 - `plan/archive/TRADE_XYZ_BACKTEST_V0_1_1_REAL_DATA_STABILIZATION_PLAN_REV4.md`
+
+## Layer 2.2 historical plans
+
+2026-06-07 Layer 2.2 plan packs are implemented historical contracts. Use code, configs, schemas, tests, CLI help, and `docs/research/ndx/README.md` for current status.
+
+- `plan/archive/2026-06-08-plan-routing/0607ここからの計画/`
+- `plan/archive/2026-06-08-plan-routing/0607ここからの計画2/feature_expansion_plan_20260607/`
+- `plan/archive/2026-06-08-plan-routing/0607ここからの計画2/feature_expansion_plan_20260607_layer_2_2_exit_gate_v3_minimal/`
+- `plan/archive/2026-06-08-plan-routing/marketlens_strategy_research_lab_migration_pack/`
 
 ## Source inputs
 

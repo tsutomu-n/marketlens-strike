@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-06_10:28 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # Architecture And Phases
@@ -13,6 +13,7 @@
 - `src/sis/real_market`: research-side bars, quality, feature builder, provider policy
 - `src/sis/tracking`: real-market vs venue comparison and trade-allowed decisions
 - `src/sis/research/strategy_lab`: strategy experiment specs, strategy signal records, evaluation plans, trial ledger, trade candidates, paper candidate packs, promotion decisions, paper intent previews
+- `src/sis/research/dag`: NDX Layer 2.2 DAG config validation, lint, export, manual review pack/import, and exit gate decision contracts
 - `src/sis/backtest/engine` and `src/sis/backtest/trade_xyz`: Trade[XYZ] pure backtest v0.1, long-only single-symbol accounting, fill, cost, gate, metrics, report artifacts
 - `src/sis/paper`: venue-gated paper fills, portfolio state, reports
 - `src/sis/execution`: `Trade[XYZ]` micro live safety code, `bitget_demo` local/mock-first adapter, and execution read-only surfaces
@@ -37,6 +38,7 @@ current truth:
 - Phase 1 から Phase 6 の code surface は存在する
 - Trade[XYZ] read-only PR12 の generated artifact gate は `READ_ONLY_GO` まで確認済み
 - Strategy Research Lab の schema / model / command surface は存在する
+- NDX Layer 2.2 DAG foundation と Exit Gate Review Harness v3 Minimal の local/manual review surface は存在する
 - Trade[XYZ] pure backtest v0.1 の Python API surface は存在する
 - Phase 7 は未完了
 - operational promotion は generated artifact gate に依存する
@@ -55,6 +57,7 @@ current truth:
 - `real_market` data は price truth / feature truth
 - `tracking` はその差分を gate に変換する
 - `strategy_lab` は research signal, trial, candidate, promotion, paper preview を order と分離して管理する
+- `research.dag` は DAG artifact、counter DAG、temporal availability、manual review gate を管理し、feature panel、residual calculation、backtest、paper/live order を扱わない
 - `backtest.engine` は pure backtest の accounting / fill / cost / artifact 契約を管理し、live execution や wallet/signing を扱わない
 - `paper` は tracking and quality-gated execution simulation
 - `micro_live` は tiny live safety sequence のみを扱い、strategy promotionは扱わない
@@ -83,6 +86,31 @@ StrategyExperimentSpec
 - `PaperIntentPreview` は paper-only の仮注文意図であり、live order へ変換しない。
 - JSON Schema は薄い guard として存在し、詳細な runtime validation は Pydantic model にある。
 - 詳細仕様は `docs/strategy_research_lab/README.md` 以下にある。
+
+## NDX Layer 2.2 Boundary
+
+現行 Layer 2.2 の流れ:
+
+```text
+configs/research_layer_2_2/ndx
+  -> research-layer22-validate
+  -> research-layer22-export
+  -> research-layer22-review-pack
+  -> manual review JSON
+  -> research-layer22-review-import
+  -> research-layer22-exit-gate
+```
+
+境界:
+
+- `research-layer22-*` は local-only の research artifact harness。
+- `review-pack` は inert artifact と evidence catalog を生成する。
+- `review-import` は schema、pack hash、evidence refs、severity counts を検証する。
+- `exit-gate` は `APPROVE_2_3` / `REVISE_2_2` / `REJECT_SEED` を出す。
+- `APPROVE_2_3` の時だけ freeze manifest を生成する。
+- external API、credentials、feature panel、residual calculation、neutralization、Strategy Lab export、backtest、paper/live order は対象外。
+
+詳細は `docs/research/ndx/README.md` と `docs/research/ndx/09_LLM_REVIEW_GATE.md` にある。
 
 ## Backtest Boundary
 

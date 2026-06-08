@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-06_10:28 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # Operations Runbook
@@ -25,6 +25,38 @@ uv run sis phase-gate-review
 4. `data/reports/readiness_snapshot.md`
 5. `data/reports/phase_gate_review.md`
 6. `data/reports/operations_dashboard.md`
+
+## NDX Layer 2.2 Review Gate
+
+Layer 2.2 DAG foundation と manual review gate を再生成・再確認する手順:
+
+```bash
+uv run sis research-layer22-validate --root configs/research_layer_2_2/ndx
+uv run sis research-layer22-export --root configs/research_layer_2_2/ndx --out data/research/ndx
+uv run sis research-layer22-review-pack --root configs/research_layer_2_2/ndx --out data/research/ndx/review
+```
+
+手動 review JSON を `data/research/ndx/review/llm_review_result.json` に置いた後:
+
+```bash
+uv run sis research-layer22-review-import \
+  --pack data/research/ndx/review/llm_review_input.json \
+  --result data/research/ndx/review/llm_review_result.json
+
+uv run sis research-layer22-exit-gate \
+  --root configs/research_layer_2_2/ndx \
+  --pack data/research/ndx/review/llm_review_input.json \
+  --review data/research/ndx/review/normalized_review.json \
+  --out data/research/ndx/review
+```
+
+生成物は `data/research/ndx/` と `data/reports/` 以下の git-ignored runtime artifact。fresh checkout では再生成する。
+
+stop conditions:
+
+- external API、credentials、provider SDK、dependency追加が必要になった
+- feature panel、residual calculation、neutralization、Strategy Lab export、backtest、PaperIntentPreview、paper/live/order path が必要になった
+- Trade[XYZ] integration や live readiness claim へ話が広がった
 
 ## Trade[XYZ] Migration Surfaces
 

@@ -67,6 +67,17 @@ LEGACY_ROOT_PATHS = (
     "plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md",
 )
 
+LAYER22_DOC_PREFIX = "docs/research/ndx/"
+LAYER22_SEMANTIC_DRIFT_MARKERS = (
+    ("research-dag-", "old Layer 2.2 CLI prefix; use research-layer22-*"),
+    ("checked 96 current docs", "old current-doc count snapshot"),
+    ("875 passed", "old full-gate pass snapshot"),
+    ("ff42f535", "old Layer 2.2 foundation-only HEAD"),
+    ("t_after_open", "old temporal layer; use t_open_plus_buffer"),
+    ("actual_open_gap", "old QQQ proxy label; use qqq_open_gap"),
+    ("open_to_close_outcome", "old QQQ proxy label; use qqq_open_to_close_return"),
+)
+
 ALLOW_LEGACY_ROOT_PATH_TEXT = {
     "docs/DOCUMENT_AUDIT_2026-05-31.md",
     "docs/DOCS_LINT_POLICY_2026-05-30.md",
@@ -164,6 +175,11 @@ def _check_path(path: Path) -> list[str]:
         for legacy_path in LEGACY_ROOT_PATHS:
             if legacy_path in text:
                 errors.append(f"{rel}: references legacy root path {legacy_path}")
+
+    if rel.startswith(LAYER22_DOC_PREFIX):
+        for marker, reason in LAYER22_SEMANTIC_DRIFT_MARKERS:
+            if marker in text:
+                errors.append(f"{rel}: Layer 2.2 semantic drift marker {marker!r}: {reason}")
 
     for kind, raw_target in _local_link_targets(path, text):
         target = _normalize_link_target(raw_target)

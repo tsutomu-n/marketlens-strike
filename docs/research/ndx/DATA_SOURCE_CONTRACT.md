@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-07_20:21 JST
-更新日: 2026-06-07_20:21 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # NDX Data Source Contract
@@ -26,7 +26,8 @@ deferred:
 
 ```text
 QQQ:
-  初期 observed ETF proxy。actual_open_gap と open_to_close_outcome の proxy。
+  初期 observed ETF proxy。core DAG では qqq_open_gap と
+  qqq_open_to_close_return の proxy。
 
 NDX:
   Nasdaq-100 index concept と methodology の参照先。初期の売買可能価格 proxy ではない。

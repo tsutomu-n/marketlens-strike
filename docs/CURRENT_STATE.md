@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-06_10:28 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # Current State
@@ -20,6 +20,8 @@
 - Trade[XYZ] pure backtest v0.1 は `src/sis/backtest/engine/` と `src/sis/backtest/trade_xyz/` に実装済み。入口は Python API の `run_backtest()` で、public CLI は未公開。
 - Strategy Research Lab の schema / model / CLI surface は実装済み。`StrategyExperimentSpec` から `PaperIntentPreview` までを研究、候補生成、評価、paper昇格判断として扱う。
 - Strategy authoring YAML flow は実装済み。`strategy_authoring_spec.v1` から rule-based long / short / hold / close / reduce / add / rebalance signal、derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max、column-to-column and cross/trend/consecutive condition、exclusion-none condition、regime membership filter、regime-specific overrides、paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal、paper-only linear model score / train-model adapter、group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds、opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip、bracket-OCO / partial-profit break-even lifecycle、order-style entry / time-in-force / post-only / reduce-only、execution-profile presets、slippage with row cost、partial-fill with row fill、min-fill gate with row threshold、spread gate、depth-based fill、latency gate、queue-position gate with row threshold、short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate、fixed-horizon backtest metrics、partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics と executed_signal_summary と strategy_scorecard 付き paper-only preview artifacts を作れる。`strategy_authoring_bundle.v1` で複数 spec の paper portfolio 比較もできる。
+- NDX Layer 2.2 DAG foundation は `configs/research_layer_2_2/ndx/`、`src/sis/research/dag/`、`tests/research/` に実装済み。`research-layer22-validate` / `research-layer22-export` で local-only DAG artifact を検証・生成できる。
+- Layer 2.2 Exit Gate Review Harness v3 Minimal は実装済み。`research-layer22-review-pack`、`research-layer22-review-import`、`research-layer22-exit-gate` で手動 review JSON を local import し、Layer 2.3 へ進めるかを判定する。これは external LLM API、feature panel、residual calculation、Strategy Lab export、backtest、paper/live order には接続しない。
 - `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
 - 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。execution drift は live-readiness blocker として残る。
 
@@ -60,6 +62,7 @@
 - Strategy Research Lab models and commands: `StrategyExperimentSpec`, `StrategySignalRecord`, `EvaluationPlan`, `TrialRecord`, `TradeCandidate`, `PaperCandidatePack`, `PromotionDecision`, `PaperIntentPreview`
 - Strategy authoring commands: `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`, `strategy-author-train-model`
 - Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/` and `src/sis/research_protocol/`
+- NDX Layer 2.2 DAG/review gate schemas: `schemas/research_*.schema.json`, `schemas/core_dag.v1.schema.json`, `schemas/counter_dag.v1.schema.json`, `schemas/llm_dag_review.v1.schema.json`, `schemas/layer_2_2_human_resolutions.v1.schema.json`, `schemas/layer_2_2_exit_decision.v1.schema.json`, `schemas/layer_2_2_freeze_manifest.v1.schema.json`
 
 ## Important Boundaries
 
@@ -71,6 +74,7 @@
 - `collect-trade-xyz-quotes` は public CLI command として exposed している。
 - `Trade[XYZ]` pure backtest v0.1 は public CLI ではなく Python API surface。`uv run sis build-backtest` は既存 bridge 系 command であり、pure backtest engine の入口ではない。
 - `data/` は git 管理外。再開時は artifact を再生成する。
+- NDX Layer 2.2 review artifacts under `data/research/ndx/` are git-ignored runtime outputs. Fresh checkout では `research-layer22-export` と `research-layer22-review-pack` から作り直す。
 - `bot-preview` の `data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` は実行時生成 artifact。現 checkout に無い場合は `uv run sis bot-preview` で再生成する。
 - Strategy Lab の canonical signal artifact は `data/research/strategy_signals.parquet`。旧 `data/research/signals.csv` は Strategy Lab 正本ではなく legacy export として読む。
 - Backtest surface の読み分けは `docs/backtest/README.md` に記録する。Trade[XYZ] pure backtest、Strategy Authoring fixed-horizon backtest、legacy bridge を混同しない。
@@ -107,6 +111,12 @@ uv run python scripts/check_current_docs.py
 
 - `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully
 
+2026-06-08 Layer 2.2 review harness snapshot:
+
+- `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate` registered
+- latest local exit decision artifact: `APPROVE_2_3`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
+- latest full local gate observed in handoff: Python 3.13.7, docs checker `99 current docs`, pyrefly 0 errors, ty passed, `910 passed`
+
 2026-06-05 runtime artifact snapshot:
 
 - P2 targeted verification: Trade[XYZ] / diagnostics / phase gate / Alpaca / tracking tests pass
@@ -138,17 +148,19 @@ PR-08 専用確認:
 
 1. `docs/CURRENT_STATE.md`
 2. `docs/CODE_STATUS.md`
-3. `docs/backtest/README.md`
-4. `docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md`
-5. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
-6. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-7. `docs/strategy_research_lab/README.md`
-8. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
-9. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
-10. `docs/OPERATIONS_RUNBOOK.md`
-11. `docs/ARCHITECTURE_AND_PHASES.md`
-12. `docs/trade_xyz_bot_beginner_guide.html`
-13. `plan/README.md`
+3. `docs/research/ndx/README.md`
+4. `docs/research/ndx/09_LLM_REVIEW_GATE.md`
+5. `docs/backtest/README.md`
+6. `docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md`
+7. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
+8. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+9. `docs/strategy_research_lab/README.md`
+10. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+11. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+12. `docs/OPERATIONS_RUNBOOK.md`
+13. `docs/ARCHITECTURE_AND_PHASES.md`
+14. `docs/trade_xyz_bot_beginner_guide.html`
+15. `plan/README.md`
 
 historical focused audit:
 

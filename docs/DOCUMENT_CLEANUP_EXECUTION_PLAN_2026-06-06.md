@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-06_07:27 JST
-更新日: 2026-06-06_10:28 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # Document Cleanup Execution Plan 2026-06-06
@@ -351,11 +351,11 @@ docs/archive/README.md
 scripts/check_current_docs.py
 docs/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md
 docs/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md
-docs/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md
-docs/TRADE_XYZ_REAL_DATA_COLLECTION_STATUS_APPENDIX_2026-06-01.md
-docs/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md
+docs/archive/2026-06-08-doc-routing/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md
+docs/archive/2026-06-08-doc-routing/TRADE_XYZ_REAL_DATA_COLLECTION_STATUS_APPENDIX_2026-06-01.md
+docs/archive/2026-06-08-doc-routing/TRADE_XYZ_WS_COLLECTION_RUNBOOK_2026-06-01.md
 plan/TRADE_XYZ_*.md
-plan/marketlens_strategy_research_lab_migration_pack/
+plan/archive/2026-06-08-plan-routing/marketlens_strategy_research_lab_migration_pack/
 ```
 
 tasks:
@@ -370,7 +370,7 @@ P3-2 top-level plan archive:
   移動するなら link update と archive index update を同時に行う。
 
 P3-3 migration pack:
-  `plan/marketlens_strategy_research_lab_migration_pack/` は current VenueId とズレる。
+  `plan/archive/2026-06-08-plan-routing/marketlens_strategy_research_lab_migration_pack/` は current VenueId とズレる。
   まず README に superseded banner を入れる。
   必要なら次の小タスクで `plan/archive/` へ移す。
 
@@ -393,7 +393,7 @@ verification:
 ```bash
 uv run python scripts/check_current_docs.py
 rg -n 'checked 83|830 passed|repo の主軸|main venue path|execution_venue: Literal\["trade_xyz"\]' README.md docs/CURRENT_STATE.md docs/CODE_STATUS.md docs/backtest/README.md docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md docs/strategy_research_lab/11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md docs/ARCHITECTURE_AND_PHASES.md
-rg -n 'execution_venue: Literal\["trade_xyz"\]' plan/README.md plan/marketlens_strategy_research_lab_migration_pack/README.md
+rg -n 'execution_venue: Literal\["trade_xyz"\]' plan/README.md plan/archive/2026-06-08-plan-routing/marketlens_strategy_research_lab_migration_pack/README.md
 git diff --check
 ```
 

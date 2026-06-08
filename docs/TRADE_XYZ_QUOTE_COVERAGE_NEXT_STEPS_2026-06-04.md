@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_17:47 JST
-更新日: 2026-06-06_10:28 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # Trade[XYZ] Quote Coverage And 24h Backtest Smoke Next Steps 2026-06-04
@@ -1026,7 +1026,7 @@ printf 'latest_log=%s\n' "${latest_log}"
 tail -40 "${latest_log}"
 ```
 
-起動したら、PID、log path、起動時刻を `docs/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md` と `.ai_memory/HANDOFF.md` に残す。
+起動したら、PID、log path、起動時刻を `docs/archive/2026-06-08-doc-routing/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md` と `.ai_memory/HANDOFF.md` に残す。
 
 supervisor を使った場合は、あわせて次も見る。
 
@@ -1198,8 +1198,8 @@ oracle timestamp provenance の方針を変えた
 更新先:
 
 ```text
-docs/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md
-plan/TRADE_XYZ_BACKTEST_REAL_DATA_INGESTION_HANDOFF_2026-06-01.md
+docs/archive/2026-06-08-doc-routing/TRADE_XYZ_REAL_DATA_COLLECTION_CURRENT_RECORD_2026-06-01.md
+plan/archive/2026-06-08-plan-routing/TRADE_XYZ_BACKTEST_REAL_DATA_INGESTION_HANDOFF_2026-06-01.md
 docs/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md
 .ai_memory/HANDOFF.md
 ```

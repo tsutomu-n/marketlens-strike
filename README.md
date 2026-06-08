@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-07_21:12 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # marketlens-strike
@@ -17,17 +17,19 @@ in a fresh checkout until commands are run.
 
 1. [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md)
 2. [docs/CODE_STATUS.md](docs/CODE_STATUS.md)
-3. [docs/backtest/README.md](docs/backtest/README.md)
-4. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
-5. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md)
-6. [docs/DOCUMENT_AUDIT_2026-05-31.md](docs/DOCUMENT_AUDIT_2026-05-31.md)
-7. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
-8. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
-9. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-10. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-11. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-12. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
-13. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
+3. [docs/research/ndx/README.md](docs/research/ndx/README.md)
+4. [docs/research/ndx/09_LLM_REVIEW_GATE.md](docs/research/ndx/09_LLM_REVIEW_GATE.md)
+5. [docs/backtest/README.md](docs/backtest/README.md)
+6. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
+7. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md)
+8. [docs/DOCUMENT_AUDIT_2026-05-31.md](docs/DOCUMENT_AUDIT_2026-05-31.md)
+9. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
+10. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
+11. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+12. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+13. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+14. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+15. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
 
 ## Setup
 
@@ -110,6 +112,20 @@ uv run sis strategy-author-train-model --spec docs/strategy_research_lab/example
 uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
 ```
 
+NDX Layer 2.2 local DAG foundation and review gate:
+
+```bash
+uv run sis research-layer22-validate --root configs/research_layer_2_2/ndx
+uv run sis research-layer22-export --root configs/research_layer_2_2/ndx --out data/research/ndx
+uv run sis research-layer22-review-pack --root configs/research_layer_2_2/ndx --out data/research/ndx/review
+uv run sis research-layer22-review-import --pack data/research/ndx/review/llm_review_input.json --result data/research/ndx/review/llm_review_result.json
+uv run sis research-layer22-exit-gate --root configs/research_layer_2_2/ndx --pack data/research/ndx/review/llm_review_input.json --review data/research/ndx/review/normalized_review.json --out data/research/ndx/review
+```
+
+This Layer 2.2 gate is local/manual review plumbing only. It does not fetch
+market data, calculate residuals, export Strategy Lab artifacts, backtest, or
+connect paper/live order paths.
+
 Trade[XYZ] pure backtest v0.1:
 
 ```bash
@@ -140,6 +156,7 @@ Strategy idea preparation starts at
 - `bot-preview` writes read-only HOLD preview artifacts when run; it does not use wallet secrets, signing, or exchange writes.
 - `check-go-no-go` and `build-evidence-card` are supplemental reports. Use `phase-gate-review` for the current Trade[XYZ] decision.
 - `data/research/strategy_signals.parquet` is the canonical Strategy Lab signal artifact. `data/research/signals.csv` is a legacy export.
+- NDX Layer 2.2 DAG and manual review gate code lives under `configs/research_layer_2_2/ndx/`, `src/sis/research/dag/`, `schemas/layer_2_2_*.schema.json`, and `schemas/llm_dag_review.v1.schema.json`.
 - `PaperIntentPreview` is paper-only. Do not convert it to live orders.
 - Trade[XYZ] pure backtest v0.1 is separate from `build-backtest` and Strategy
   Authoring fixed-horizon backtest.
@@ -161,6 +178,12 @@ uv run python scripts/check_current_docs.py
 2026-06-06 docs-only spot check:
 
 - `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully
+
+2026-06-08 Layer 2.2 review harness snapshot:
+
+- `research-layer22-review-pack`, `research-layer22-review-import`, and `research-layer22-exit-gate` are registered CLI commands.
+- Latest local smoke decision artifact was `APPROVE_2_3` with pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`.
+- Full local gate was observed passing with `910 passed`; rerun `./scripts/check` for current proof.
 
 2026-06-05 runtime artifact snapshot:
 

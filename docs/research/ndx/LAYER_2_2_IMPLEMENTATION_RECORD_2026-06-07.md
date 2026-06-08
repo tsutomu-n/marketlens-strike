@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-06-07_20:09 JST
-更新日: 2026-06-07_20:09 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # Layer 2.2 Implementation Record
 
 ## 結論
 
-Layer 2.2 DAG Compiler foundation は `HYP-NDX-001` の local-only 研究 artifact 基盤として実装済みである。
+Layer 2.2 DAG Compiler foundation は `HYP-NDX-001` の local-only 研究 artifact 基盤として実装済みである。2026-06-08 時点では、DAG foundation に加えて Exit Gate Review Harness v3 Minimal も実装済みである。
 
 完成扱い:
 - NDX / QQQ の research scope、seed、mechanism parts、variable inventory、causal roles、temporal availability を YAML と Pydantic contract で読める。
@@ -15,6 +15,7 @@ Layer 2.2 DAG Compiler foundation は `HYP-NDX-001` の local-only 研究 artifa
 - forbidden edge、future-to-signal、outcome-to-treatment を拒否できる。
 - counter DAG refs と counter DAG registry を必須 artifact として検証できる。
 - JSON / Mermaid / counter DAG Markdown / data requirements / Markdown report を生成できる。
+- review pack、manual review import、exit gate decision、approve-only freeze manifest を local-only で生成できる。
 
 ## 実装範囲
 
@@ -24,6 +25,10 @@ Layer 2.2 DAG Compiler foundation は `HYP-NDX-001` の local-only 研究 artifa
 - `schemas/research_*.schema.json`
 - `schemas/core_dag.v1.schema.json`
 - `schemas/counter_dag.v1.schema.json`
+- `schemas/llm_dag_review.v1.schema.json`
+- `schemas/layer_2_2_human_resolutions.v1.schema.json`
+- `schemas/layer_2_2_exit_decision.v1.schema.json`
+- `schemas/layer_2_2_freeze_manifest.v1.schema.json`
 - `src/sis/research/hypothesis/`
 - `src/sis/research/dag/`
 - `tests/research/`
@@ -38,11 +43,14 @@ Layer 2.2 DAG Compiler foundation は `HYP-NDX-001` の local-only 研究 artifa
 利用できる CLI:
 
 ```bash
-uv run sis research-dag-validate --config configs/research_layer_2_2/ndx/core_dag.yaml
-uv run sis research-dag-export --config configs/research_layer_2_2/ndx/core_dag.yaml --out data/research/ndx
+uv run sis research-layer22-validate --root configs/research_layer_2_2/ndx
+uv run sis research-layer22-export --root configs/research_layer_2_2/ndx --out data/research/ndx
+uv run sis research-layer22-review-pack --root configs/research_layer_2_2/ndx --out data/research/ndx/review
+uv run sis research-layer22-review-import --pack data/research/ndx/review/llm_review_input.json --result data/research/ndx/review/llm_review_result.json
+uv run sis research-layer22-exit-gate --root configs/research_layer_2_2/ndx --pack data/research/ndx/review/llm_review_input.json --review data/research/ndx/review/normalized_review.json --out data/research/ndx/review
 ```
 
-`research-dag-validate` は core DAG 単体ではなく、同じ directory にある次の companion config も必須として検証する。
+`research-layer22-validate` は core DAG 単体ではなく、同じ directory にある次の companion config も必須として検証する。
 
 - `variable_inventory.yaml`
 - `causal_roles.yaml`
@@ -82,15 +90,15 @@ uv run sis research-dag-export --config configs/research_layer_2_2/ndx/core_dag.
 確認済み:
 
 ```text
-HEAD: ff42f5356097924e3c6e420ff2c1c5bc04465f58
-uv run sis research-dag-validate --config configs/research_layer_2_2/ndx/core_dag.yaml
+HEAD: f4fbb6b Add research-layer22-review-pack/review-import/exit-gate CLI commands to research.py
+uv run sis research-layer22-validate --root configs/research_layer_2_2/ndx
   status=pass
   dag_id=HYP-NDX-001
   node_count=9
   edge_count=8
   warning_count=0
 
-uv run sis research-dag-export --config configs/research_layer_2_2/ndx/core_dag.yaml --out data/research/ndx
+uv run sis research-layer22-export --root configs/research_layer_2_2/ndx --out data/research/ndx
   status=pass
   core_dag_json=data/research/ndx/core_dag.json
   core_dag_mermaid=data/research/ndx/core_dag.mmd
@@ -98,14 +106,15 @@ uv run sis research-dag-export --config configs/research_layer_2_2/ndx/core_dag.
   data_requirements=data/research/ndx/data_requirements.yaml
   report=data/reports/ndx_core_dag_report.md
 
-uv run pytest -q tests/research
-  30 passed
+latest local exit decision artifact
+  decision=APPROVE_2_3
+  pack_hash=sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a
 
 uv run python scripts/check_current_docs.py
-  checked 96 current docs: metadata, links, EOF, and legacy roots ok
+  checked 99 current docs: metadata, links, EOF, and legacy roots ok
 
 ./scripts/check
-  875 passed
+  910 passed
 ```
 
 Generated artifacts under `data/` are runtime outputs and are gitignored.

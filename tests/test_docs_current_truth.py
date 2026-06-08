@@ -60,6 +60,8 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert '"plan/archive/"' in script
     assert "MARKDOWN_METADATA_RE" in script
     assert "missing or invalid metadata header" in script
+    assert "LAYER22_SEMANTIC_DRIFT_MARKERS" in script
+    assert "research-dag-" in script
 
 
 def test_current_docs_checker_passes() -> None:

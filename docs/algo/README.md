@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-28_20:41 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # Algo Strategy Docs
@@ -39,9 +39,9 @@
 - 現行正本: このディレクトリ直下の `ALGO_*`, `STRATEGY_*`, `RESEARCH_*`, `SOURCE_*` docs と [strategy_factory/](strategy_factory/)。
 - 実装済み Strategy Lab 正本: [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md) と `src/sis/research/strategy_lab/`。
 - Strategy Lab 詳細仕様: [../strategy_research_lab/](../strategy_research_lab/)。
-- 一次参照: [obsidian_note_copies/](obsidian_note_copies/) にある実ノートコピー。
+- 一次参照: [../archive/2026-06-08-doc-routing/algo/obsidian_note_copies/](../archive/2026-06-08-doc-routing/algo/obsidian_note_copies/) にある実ノートコピー。
 - 再構成参照: [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/) にある原ノートの批判的リライト。
-- 旧再構成: [obsidian_note_rewrites_2026-05-28/](obsidian_note_rewrites_2026-05-28/) は薄い初版として残すが、通常は使わない。
+- 旧再構成: [../archive/2026-06-08-doc-routing/algo/obsidian_note_rewrites_2026-05-28/](../archive/2026-06-08-doc-routing/algo/obsidian_note_rewrites_2026-05-28/) は薄い初版として残すが、通常は使わない。
 - 旧docs: [../archive/2026-05-28-algo-doc-refresh/](../archive/2026-05-28-algo-doc-refresh/) に退避済み。
 
 旧 `OBSIDIAN_*` docs は調査ログとして残しますが、今後の戦略検討ではこの新docs群を正本にします。

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-06_07:27 JST
+更新日: 2026-06-08_18:01 JST
 -->
 
 # Documentation Archive
@@ -67,5 +67,12 @@ Archived on 2026-05-28:
 - `docs/LIVE_EVIDENCE_READ_ONLY_COLLECTORS.md` -> `docs/archive/legacy_read_only_collectors_2026-05-28/`
 - `docs/READ_ONLY_COLLECTOR_IMPLEMENTATION_PLAN.md` -> `docs/archive/legacy_read_only_collectors_2026-05-28/`
 - `docs/READ_ONLY_COLLECTOR_RISK_REVIEW.md` -> `docs/archive/legacy_read_only_collectors_2026-05-28/`
+
+Archived on 2026-06-08:
+
+- root Trade[XYZ] data-collection expansion/status/audit docs from 2026-06-01 -> `docs/archive/2026-06-08-doc-routing/`
+- `docs/集めるべき実データ0531-2108/` -> `docs/archive/2026-06-08-doc-routing/`
+- `docs/algo/obsidian_note_copies/` -> `docs/archive/2026-06-08-doc-routing/algo/`
+- `docs/algo/obsidian_note_rewrites_2026-05-28/` -> `docs/archive/2026-06-08-doc-routing/algo/`
 
 Do not treat archived documents as current requirements.
