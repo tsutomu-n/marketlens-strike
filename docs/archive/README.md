@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-08_18:01 JST
+更新日: 2026-06-08_18:21 JST
 -->
 
 # Documentation Archive
@@ -14,8 +14,7 @@ Current docs:
 - `docs/OPERATIONS_RUNBOOK.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
 - `docs/DOCUMENT_AUDIT_2026-05-31.md`
-- `docs/DOCUMENT_AUDIT_2026-06-06_CODE_TRUTH_REFRESH.md`
-- `docs/DOCUMENT_CLEANUP_EXECUTION_PLAN_2026-06-06.md`
+- `docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md`
 
 Archived on 2026-05-25:
 
@@ -72,6 +71,8 @@ Archived on 2026-06-08:
 
 - root Trade[XYZ] data-collection expansion/status/audit docs from 2026-06-01 -> `docs/archive/2026-06-08-doc-routing/`
 - `docs/集めるべき実データ0531-2108/` -> `docs/archive/2026-06-08-doc-routing/`
+- `docs/DOCUMENT_AUDIT_2026-06-06_CODE_TRUTH_REFRESH.md` -> `docs/archive/2026-06-08-doc-routing/`
+- `docs/DOCUMENT_CLEANUP_EXECUTION_PLAN_2026-06-06.md` -> `docs/archive/2026-06-08-doc-routing/`
 - `docs/algo/obsidian_note_copies/` -> `docs/archive/2026-06-08-doc-routing/algo/`
 - `docs/algo/obsidian_note_rewrites_2026-05-28/` -> `docs/archive/2026-06-08-doc-routing/algo/`
 

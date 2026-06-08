@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-08_18:19 JST
+更新日: 2026-06-08_18:21 JST
 -->
 
 # marketlens-strike
@@ -21,14 +21,14 @@ in a fresh checkout until commands are run.
 4. [docs/research/ndx/09_LLM_REVIEW_GATE.md](docs/research/ndx/09_LLM_REVIEW_GATE.md)
 5. [docs/backtest/README.md](docs/backtest/README.md)
 6. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
-7. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md)
-8. [docs/DOCUMENT_AUDIT_2026-05-31.md](docs/DOCUMENT_AUDIT_2026-05-31.md)
-9. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
-10. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
-11. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-12. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-13. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-14. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+7. [docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md](docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md)
+8. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
+9. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
+10. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+11. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+12. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+13. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+14. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md) is a historical backtest update audit.
 15. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
 
 ## Setup
@@ -182,7 +182,7 @@ uv run python scripts/check_current_docs.py
 2026-06-08 Layer 2.2 review harness snapshot:
 
 - `research-layer22-review-pack`, `research-layer22-review-import`, and `research-layer22-exit-gate` are registered CLI commands.
-- `uv run python scripts/check_current_docs.py`: `checked 100 current docs`
+- `uv run python scripts/check_current_docs.py`: `checked 99 current docs`
 - Latest local smoke decision artifact was `APPROVE_2_3` with pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`.
 - Full local gate was observed passing with `910 passed`; rerun `./scripts/check` for current proof.
 
