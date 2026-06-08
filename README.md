@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-08_18:01 JST
+更新日: 2026-06-08_18:19 JST
 -->
 
 # marketlens-strike
 
 `marketlens-strike` is a Python 3.13 CLI workspace for backtest-first strategy
-research, Strategy Research Lab workflows, paper operations, venue-neutral
-execution contracts, Trade[XYZ] read-only evidence collection, and safety gates.
+research, NDX Layer 2.2 DAG review, Strategy Research Lab workflows, paper
+operations, venue-neutral execution contracts, and safety gates.
 
 The code is the source of truth. Current docs summarize the implemented surfaces
 and the latest verified snapshots; generated files under `data/` may be absent
