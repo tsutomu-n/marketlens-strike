@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-08_18:01 JST
+更新日: 2026-06-08_20:05 JST
 -->
 
 # Current State
@@ -21,7 +21,7 @@
 - Strategy Research Lab の schema / model / CLI surface は実装済み。`StrategyExperimentSpec` から `PaperIntentPreview` までを研究、候補生成、評価、paper昇格判断として扱う。
 - Strategy authoring YAML flow は実装済み。`strategy_authoring_spec.v1` から rule-based long / short / hold / close / reduce / add / rebalance signal、derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max、column-to-column and cross/trend/consecutive condition、exclusion-none condition、regime membership filter、regime-specific overrides、paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal、paper-only linear model score / train-model adapter、group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds、opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip、bracket-OCO / partial-profit break-even lifecycle、order-style entry / time-in-force / post-only / reduce-only、execution-profile presets、slippage with row cost、partial-fill with row fill、min-fill gate with row threshold、spread gate、depth-based fill、latency gate、queue-position gate with row threshold、short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate、fixed-horizon backtest metrics、partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics と executed_signal_summary と strategy_scorecard 付き paper-only preview artifacts を作れる。`strategy_authoring_bundle.v1` で複数 spec の paper portfolio 比較もできる。
 - NDX Layer 2.2 DAG foundation は `configs/research_layer_2_2/ndx/`、`src/sis/research/dag/`、`tests/research/` に実装済み。`research-layer22-validate` / `research-layer22-export` で local-only DAG artifact を検証・生成できる。
-- Layer 2.2 Exit Gate Review Harness v3 Minimal は実装済み。`research-layer22-review-pack`、`research-layer22-review-import`、`research-layer22-exit-gate` で手動 review JSON を local import し、Layer 2.3 へ進めるかを判定する。これは external LLM API、feature panel、residual calculation、Strategy Lab export、backtest、paper/live order には接続しない。
+- Layer 2.2 Exit Gate Review Harness は受入監査済み。`research-layer22-review-pack`、`research-layer22-review-import`、`research-layer22-exit-gate` で手動 review JSON を local import し、Layer 2.3 へ進めるかを判定する。`APPROVE_2_3` は `second_review_required=false`、未解決 human decision なし、BLOCKER なしの場合だけ成立し、非APPROVE時は同じ出力先の古い freeze manifest も削除する。これは external LLM API、feature panel、residual calculation、Strategy Lab export、backtest、paper/live order には接続しない。
 - `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
 - 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。execution drift は live-readiness blocker として残る。
 
@@ -114,8 +114,8 @@ uv run python scripts/check_current_docs.py
 2026-06-08 Layer 2.2 review harness snapshot:
 
 - `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate` registered
-- latest local exit decision artifact: `APPROVE_2_3`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
-- latest full local gate observed in handoff: Python 3.13.7, docs checker `99 current docs`, pyrefly 0 errors, ty passed, `910 passed`
+- latest local exit decision artifact: `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
+- latest full local gate observed in handoff: Python 3.13.7, docs checker `99 current docs`, pyrefly 0 errors, ty passed, `919 passed`
 
 2026-06-05 runtime artifact snapshot:
 

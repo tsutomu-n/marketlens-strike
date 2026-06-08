@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-08_18:01 JST
+更新日: 2026-06-08_20:05 JST
 -->
 
 # Architecture And Phases
@@ -107,7 +107,7 @@ configs/research_layer_2_2/ndx
 - `review-pack` は inert artifact と evidence catalog を生成する。
 - `review-import` は schema、pack hash、evidence refs、severity counts を検証する。
 - `exit-gate` は `APPROVE_2_3` / `REVISE_2_2` / `REJECT_SEED` を出す。
-- `APPROVE_2_3` の時だけ freeze manifest を生成する。
+- `APPROVE_2_3` の時だけ freeze manifest を生成し、`REVISE_2_2` / `REJECT_SEED` では同じ出力先の古い freeze manifest も削除する。
 - external API、credentials、feature panel、residual calculation、neutralization、Strategy Lab export、backtest、paper/live order は対象外。
 
 詳細は `docs/research/ndx/README.md` と `docs/research/ndx/09_LLM_REVIEW_GATE.md` にある。

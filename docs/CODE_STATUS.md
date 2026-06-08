@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-08_18:01 JST
+更新日: 2026-06-08_20:05 JST
 -->
 
 # Code Status
@@ -43,7 +43,7 @@
 | Bitget demo local smoke | DONE / external network not proven | `src/sis/execution/bitget_demo_adapter.py`, `tests/test_bitget_demo_adapter.py`, `tests/test_bitget_demo_cli.py`, `uv run sis bitget-demo-smoke` |
 | Venue-specific paper fee lookup | DONE | `src/sis/paper/broker.py`, `src/sis/paper/runner.py`, `configs/fee_model.bitget_demo.yaml`, `tests/test_paper_from_intents.py` |
 | NDX Layer 2.2 DAG foundation | DONE / local-only | `configs/research_layer_2_2/ndx/`, `src/sis/research/dag/`, `tests/research/`, `research-layer22-validate`, `research-layer22-export` |
-| Layer 2.2 Exit Gate Review Harness v3 Minimal | DONE / manual local review only | `schemas/llm_dag_review.v1.schema.json`, `schemas/layer_2_2_*.schema.json`, `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `docs/research/ndx/09_LLM_REVIEW_GATE.md` |
+| Layer 2.2 Exit Gate Review Harness | DONE / acceptance-hardened / manual local review only | `schemas/llm_dag_review.v1.schema.json`, `schemas/layer_2_2_*.schema.json`, `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `docs/research/ndx/09_LLM_REVIEW_GATE.md`; `APPROVE_2_3` requires no second review, no unresolved human decisions, no blockers, and non-approve runs remove stale freeze manifests |
 
 ## Current Operational Interpretation
 
@@ -66,7 +66,7 @@
 - `PaperIntentPreview` は paper-only artifact で、`requires_revalidation=true`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を model validation で守る。
 - `bitget-demo-smoke` の `status=configured` は local credential env が揃った意味だけであり、Bitget network connectivity / account read / demo order submit / fill sync を証明しない。
 - tracked JSON Schema は guard / interoperability 用の薄い契約であり、詳細 validation は Pydantic model が正本。claim guard は `*_claimed` 名に統一済み。
-- NDX Layer 2.2 review gate は手動 review JSON を local import する harness。外部 LLM API、credentials、feature panel、residual calculation、neutralization、Strategy Lab export、backtest、paper/live connection は実装範囲外。
+- NDX Layer 2.2 review gate は手動 review JSON を local import する harness。`APPROVE_2_3` は `second_review_required=false`、未解決 human decision なし、BLOCKER なしの場合だけ成立し、`REVISE_2_2` / `REJECT_SEED` では freeze manifest を残さない。外部 LLM API、credentials、feature panel、residual calculation、neutralization、Strategy Lab export、backtest、paper/live connection は実装範囲外。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - Trade[XYZ] pure backtest artifact は live order artifact ではない。`backtest_run.json` は `no_live_order=true`, `wallet_used=false`, `exchange_write_used=false` を記録する。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
@@ -119,8 +119,8 @@ uv run python scripts/check_current_docs.py
 2026-06-08 Layer 2.2 review harness snapshot:
 
 - `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate` registered
-- latest local exit decision artifact: `APPROVE_2_3`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
-- latest full local gate observed in handoff: Python 3.13.7, docs checker `99 current docs`, pyrefly 0 errors, ty passed, `910 passed`
+- latest local exit decision artifact: `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
+- latest full local gate observed in handoff: Python 3.13.7, docs checker `99 current docs`, pyrefly 0 errors, ty passed, `919 passed`
 
 2026-06-05 runtime artifact snapshot:
 

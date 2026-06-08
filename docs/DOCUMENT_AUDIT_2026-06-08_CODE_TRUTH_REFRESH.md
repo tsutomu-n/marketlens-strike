@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-08_18:21 JST
-更新日: 2026-06-08_18:21 JST
+更新日: 2026-06-08_20:05 JST
 -->
 
 # Code-Truth Documentation Audit 2026-06-08
 
-この文書は 2026-06-08_18:21 JST 時点のコード、CLI、config、schema、tests、current-doc checker を正として、更新できるドキュメント、古い内容があるドキュメント、作り直したほうがよいドキュメント、削除・archive 候補を分類する。
+この文書は 2026-06-08_20:05 JST 時点のコード、CLI、config、schema、tests、current-doc checker を正として、更新できるドキュメント、古い内容があるドキュメント、作り直したほうがよいドキュメント、削除・archive 候補を分類する。
 
 ## 確認した正本
 
@@ -15,6 +15,7 @@
 git status --short --branch --untracked-files=no
 uv run sis --help
 uv run python scripts/check_current_docs.py
+./scripts/check
 ```
 
 確認した実装面:
@@ -50,7 +51,12 @@ default scope:
 
 Layer 2.2 review harness:
   local/manual review plumbing only。
+  APPROVE_2_3 は second_review_required=false、unresolved_human_decisions=[]、blocker_count=0 の時だけ成立。
+  REVISE_2_2 / REJECT_SEED では freeze manifest を生成せず、同じ output directory の古い freeze manifest も削除する。
   external API、credentials、feature panel、residual calculation、neutralization、Strategy Lab export、backtest、paper/live order は対象外。
+
+latest verification snapshot:
+  ./scripts/check passed; Python 3.13.7; docs checker checked 99 current docs; pyrefly 0 errors; ty passed; 919 passed.
 ```
 
 ## 実施済みの整理
@@ -81,9 +87,13 @@ plan/archive/2026-06-08-plan-routing/
 | `docs/CURRENT_STATE.md` | current state と capability list が混在し、長くなっている。 | 直近では Layer 2.2 v3 Minimal と archive routing を反映済み。次は capability 列挙を Strategy docs へ逃がして短くする。 |
 | `docs/CODE_STATUS.md` | PR migration status、post-PR status、runtime readiness が混在している。 | 実装済み surface 表へ寄せ、runtime/data readiness は `CURRENT_STATE` または dedicated readiness doc へ逃がす。 |
 | `docs/OPERATIONS_RUNBOOK.md` | Trade[XYZ] collection と NDX Layer 2.2 review gate が同居している。 | root runbook は入口だけにし、NDX / Trade[XYZ] / Strategy Lab / paper ops を分割候補にする。 |
+| `docs/ARCHITECTURE_AND_PHASES.md` | subsystem boundary の入口。 | Exit Gate が non-approve 時に stale freeze manifest を削除する boundary を反映する。 |
 | `docs/research/ndx/README.md` | NDX docs の新入口。 | 現状維持。次に Layer 2.3 が始まる時だけ read order と boundary を更新する。 |
+| `docs/research/ndx/09_LLM_REVIEW_GATE.md` | Exit Gate operator guide。 | `APPROVE_2_3` invariants と stale freeze manifest cleanup を明記する。 |
+| `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` | Layer 2.2 実装記録。 | acceptance hardening と最新 verification snapshot を追記する。filename は古いが implementation record としては維持可能。 |
 | `docs/DOCS_LINT_POLICY_2026-05-30.md` | strict check 対象一覧が 2026-06-08 の allowlist とズレていた。 | この監査で更新対象。current docs checker の実リストに合わせる。 |
 | `docs/archive/README.md` | archive routing の索引。 | この監査で 2026-06-08 の追加 archive を追記する。 |
+| `plan/README.md` | historical/current implementation contract の入口。 | 0608 acceptance hardening plan は直近の実装契約だが current proof ではない、と明記する。 |
 
 ## 古い内容があるドキュメント
 
@@ -94,7 +104,10 @@ plan/archive/2026-06-08-plan-routing/
 | `docs/DOCUMENT_AUDIT_2026-05-31.md` | 2026-05-31 時点の audit。古い pass count を説明として含む。 | historical value はあるが current read order 先頭には置かない。 |
 | `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` | 2026-05-31 backtest update 時点の audit。 | historical backtest update record として残す。 |
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | Strategy Lab audit/spec として有用だが、全体 docs audit の正本ではない。 | Strategy Lab 専用入口として残し、全体 audit は本書へ寄せる。 |
-| `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` | filename は 2026-06-07 だが、2026-06-08 の v3 Minimal も追記済み。 | current docs としては許容。次の大きな変更時は新しい record に分ける。 |
+| `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` | filename は 2026-06-07 だが、2026-06-08 の review harness と acceptance hardening も追記されている。 | current docs としては許容。次の大きな変更時は新しい record に分ける。 |
+| `README.md`, `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md` | `910 passed` など古い verification snapshot が残っていた。 | 2026-06-08_20:05 JST の更新で `919 passed` と Exit Gate invariants へ更新済み。 |
+| `docs/ARCHITECTURE_AND_PHASES.md` | `APPROVE_2_3` 時だけ生成、の説明だけでは stale freeze manifest 残存リスクを表現できない。 | 2026-06-08_20:05 JST の更新で non-approve cleanup を反映済み。 |
+| `plan/README.md` | 0608 acceptance hardening plan の扱いが未記載だった。 | 直近の実装契約だが current proof ではない、と更新済み。 |
 | `pyproject.toml` | project description が `Trade[XYZ] research...` を先頭に置く。これは docs ではなく package metadata だが、README 冒頭とはズレる。 | dependency 変更なしで直せる別 scope の metadata 更新候補。 |
 
 ## 作り直したほうがいいドキュメント
@@ -106,6 +119,7 @@ plan/archive/2026-06-08-plan-routing/
 | `docs/OPERATIONS_RUNBOOK.md` | 1本に operations / Trade[XYZ] collection / NDX review / Strategy Lab / Bitget demo が入っている。 | root runbook + domain runbooks に分割する。 |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | capability list が長く、schema / tests との drift risk が高い。 | human summary + generated/source-map appendix へ分ける。 |
 | `docs/trade_xyz_bot_beginner_guide.html` | useful guide だが current product axis ではない。 | current boundary banner を追加するか、Trade[XYZ] guide index へ分離する。 |
+| `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` | 実装記録として追記が続き、日付と内容のズレが大きくなり始めている。 | 次回 Layer 2.2 / 2.3 変更時は `LAYER_2_2_ACCEPTANCE_HARDENING_RECORD_2026-06-08.md` のように分離する。 |
 
 ## 削除・archive してもよいドキュメント
 
@@ -118,6 +132,7 @@ plan/archive/2026-06-08-plan-routing/
 | `docs/archive/2026-06-08-doc-routing/algo/obsidian_note_copies/` | archive 維持 | source snapshot。current docs lint 対象にしない。 |
 | `docs/archive/2026-06-08-doc-routing/algo/obsidian_note_rewrites_2026-05-28/` | archive 維持 | 旧 rewrite。2026-05-29 rewrite を current reference とする。 |
 | `plan/archive/2026-06-08-plan-routing/0607ここからの計画*/` | archive 維持 | Layer 2.2 実装済み plan pack。current status は code/docs/research/ndx を使う。 |
+| `plan/0608ここからの計画/feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/` | 実装完了後は archive 候補 | 直近の実装契約としては有用だが、current proof は code/tests/schema/docs。commit 後に `plan/archive/2026-06-08-plan-routing/` へ移す候補。 |
 | `plan/archive/2026-06-08-plan-routing/TRADE_XYZ_*.md` | archive 維持 | Trade[XYZ] plan history。default next action ではない。 |
 | `plan/archive/2026-06-08-plan-routing/marketlens_strategy_research_lab_migration_pack/` | archive 維持 | migration contract。current venue/schema contract として読ませない。 |
 
@@ -131,6 +146,7 @@ plan/archive/2026-06-08-plan-routing/
 3. current-doc checker の allowlist を本書へ切り替え。
 4. docs lint policy と README read order を最新化。
 5. Layer 2.2 semantic drift marker を checker に残し、旧 CLI / 旧 temporal label の再混入を防止。
+6. 2026-06-08 acceptance hardening 後の追加監査で、README / CURRENT_STATE / CODE_STATUS / ARCHITECTURE_AND_PHASES / Layer 2.2 record / plan README に残った古い verification snapshot と stale freeze manifest 説明漏れを更新した。
 ```
 
 ## 残リスク
@@ -140,4 +156,5 @@ plan/archive/2026-06-08-plan-routing/
 2. CURRENT_STATE / CODE_STATUS / OPERATIONS_RUNBOOK はまだ作り直し候補で、短文化までは未実施。
 3. Strategy Lab capability docs は厚く、今後 schema/tests 由来の source-map 化が望ましい。
 4. `research-dag-validate` / `research-dag-export` は CLI に残る。これは旧専用入口ではなく general DAG command として扱う。
+5. `plan/0608ここからの計画/feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/` は直近契約として残している。commit 後に archive へ移すなら `plan/README.md` と checker 対象外であることを同時確認する。
 ```
