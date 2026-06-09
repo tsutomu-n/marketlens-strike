@@ -8,7 +8,11 @@ import polars as pl
 import pytest
 
 from research.helpers import CONFIG_DIR
-from sis.research.ndx.feature_panel import MODEL_FACTOR_COLUMNS, build_ndx_feature_panel
+from sis.research.ndx.feature_panel import (
+    MODEL_FACTOR_COLUMNS,
+    SOURCE_TIMESTAMP_COLUMNS,
+    build_ndx_feature_panel,
+)
 from sis.research.ndx.leakage import NdxLeakageError, validate_feature_panel
 from sis.research.ndx.residual_model import build_open_gap_residuals
 from sis.research.ndx.source_resolution import build_source_resolution
@@ -127,7 +131,13 @@ def test_feature_panel_uses_fixture_sources_and_blocks_leaky_model_inputs(tmp_pa
     frame = pl.read_parquet(result.panel_path)
     assert result.row_count == 12
     assert "qqq_open_to_close_return" in frame.columns
+    assert set(SOURCE_TIMESTAMP_COLUMNS).issubset(frame.columns)
     assert all(frame["source_ts_max"] <= frame["feature_ts"])
+    for column in SOURCE_TIMESTAMP_COLUMNS:
+        assert all(frame[column] <= frame["feature_ts"])
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    assert manifest["source_timestamp_columns"] == SOURCE_TIMESTAMP_COLUMNS
+    assert manifest["leakage_checks"]["per_source_ts_lte_feature_ts"] is True
     assert set(MODEL_FACTOR_COLUMNS).issubset(frame.columns)
     with pytest.raises(NdxLeakageError):
         validate_feature_panel(frame, model_input_columns=[*MODEL_FACTOR_COLUMNS, "qqq_close"])

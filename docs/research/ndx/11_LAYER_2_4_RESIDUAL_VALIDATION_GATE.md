@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_06:36 JST
-更新日: 2026-06-09_06:36 JST
+更新日: 2026-06-09_10:06 JST
 -->
 
 # Layer 2.4 NDX Residual Validation Gate
@@ -35,6 +35,9 @@ uv run sis research-ndx-residual-validate \
 
 ## Practical Boundary
 
-Current Layer 2.3 preserves aggregate `source_ts_max`, but not per-source timestamp columns for
-VIX and DGS10. Layer 2.4 therefore fails closed with `SOURCE_TIMESTAMP_AUDIT_MISSING` until
-Layer 2.3 records per-source availability timestamps or an equivalent audit artifact.
+Current Layer 2.3 preserves per-source timestamp columns and aggregate `source_ts_max`. Layer 2.4
+checks both the per-source values and the aggregate value against `feature_ts`, verifies
+`source_ts_max` matches the row-wise maximum source timestamp, and checks Parquet row lineage against
+the JSON manifests. The default fixture sample is still intentionally too small for approval, so the
+current expected decision is `REVISE_2_3` for validation sample and era insufficiency, not a Strategy
+Lab export approval.

@@ -16,7 +16,7 @@ from sis.research.ndx.artifacts import (
     utc_now_iso,
     write_json,
 )
-from sis.research.ndx.feature_panel import MODEL_FACTOR_COLUMNS
+from sis.research.ndx.feature_panel import MODEL_FACTOR_COLUMNS, SOURCE_TIMESTAMP_COLUMNS
 from sis.research.ndx.leakage import ISO_TS_FORMAT, BANNED_MODEL_INPUT_COLUMNS
 from sis.research.ndx.start_conditions import require_layer23_start_conditions
 
@@ -137,6 +137,7 @@ def run_residual_validation_gate(
         neutralized=checks["neutralized"],
     )
     counter_dags = _counter_dag_statuses(metrics=metrics, artifact_checks=checks["artifact_checks"])
+    reason_codes.extend(_artifact_reason_codes(checks["artifact_checks"]))
     reason_codes.extend(_metric_reason_codes(metrics, effective_thresholds))
     reason_codes.extend(
         status["reason_code"] for status in counter_dags.values() if status["status"] == "blocked"
@@ -183,9 +184,15 @@ def _load_and_check_artifacts(paths: dict[str, Path]) -> dict[str, Any]:
     dag_hashes = {str(item.get("dag_artifact_hash")) for item in json_artifacts}
     if len(dag_hashes) != 1 or "" in dag_hashes:
         raise ValueError("REVISE_2_2_DAG_ARTIFACT_HASH_MISMATCH")
+    dag_hash = next(iter(dag_hashes))
     feature_manifest_hash = str(feature_manifest.get("feature_manifest_hash", ""))
     if not feature_manifest_hash:
         raise ValueError("REVISE_2_3_FEATURE_MANIFEST_HASH_MISSING")
+    expected_feature_manifest_hash = sha256_json(
+        {key: value for key, value in feature_manifest.items() if key != "feature_manifest_hash"}
+    )
+    if feature_manifest_hash != expected_feature_manifest_hash:
+        raise ValueError("REVISE_2_3_FEATURE_MANIFEST_HASH_MISMATCH")
     for payload in (residual_manifest, diagnostics):
         if str(payload.get("feature_manifest_hash")) != feature_manifest_hash:
             raise ValueError("REVISE_2_3_FEATURE_MANIFEST_HASH_MISMATCH")
@@ -198,8 +205,28 @@ def _load_and_check_artifacts(paths: dict[str, Path]) -> dict[str, Any]:
     artifact_checks = {
         "lineage": "pass",
         "dag_id": DAG_ID,
-        "dag_artifact_hash": next(iter(dag_hashes)),
+        "dag_artifact_hash": dag_hash,
         "feature_manifest_hash": feature_manifest_hash,
+        "feature_panel_lineage": _frame_lineage_status(
+            feature_panel,
+            dag_hash=dag_hash,
+            reason_code="FEATURE_PANEL_LINEAGE_MISMATCH",
+        ),
+        "residual_lineage": _frame_lineage_status(
+            residuals,
+            dag_hash=dag_hash,
+            feature_manifest_hash=feature_manifest_hash,
+            reason_code="RESIDUAL_LINEAGE_MISMATCH",
+        ),
+        "neutralized_lineage": _frame_lineage_status(
+            neutralized,
+            dag_hash=dag_hash,
+            feature_manifest_hash=feature_manifest_hash,
+            reason_code="NEUTRALIZED_LINEAGE_MISMATCH",
+        ),
+        "residual_neutralized_alignment": _residual_neutralized_alignment_status(
+            residuals, neutralized
+        ),
         "source_timestamp_audit": _source_timestamp_audit_status(feature_panel),
         "leakage": _feature_panel_leakage_status(feature_panel),
         "residual_training_window": _residual_training_window_status(residuals),
@@ -216,25 +243,94 @@ def _load_and_check_artifacts(paths: dict[str, Path]) -> dict[str, Any]:
     }
 
 
+def _frame_lineage_status(
+    frame: pl.DataFrame,
+    *,
+    dag_hash: str,
+    reason_code: str,
+    feature_manifest_hash: str | None = None,
+) -> dict[str, Any]:
+    required = {"dag_id", "dag_artifact_hash"}
+    if feature_manifest_hash is not None:
+        required.add("feature_manifest_hash")
+    missing = sorted(required - set(frame.columns))
+    if missing:
+        return {
+            "status": "fail",
+            "reason_code": reason_code,
+            "missing_columns": missing,
+            "mismatch_count": frame.height,
+        }
+    mismatch = frame.filter(
+        (pl.col("dag_id") != DAG_ID)
+        | (pl.col("dag_artifact_hash") != dag_hash)
+        | (
+            pl.lit(False)
+            if feature_manifest_hash is None
+            else pl.col("feature_manifest_hash") != feature_manifest_hash
+        )
+    ).height
+    return {
+        "status": "pass" if mismatch == 0 else "fail",
+        "reason_code": "ok" if mismatch == 0 else reason_code,
+        "missing_columns": [],
+        "mismatch_count": mismatch,
+    }
+
+
+def _residual_neutralized_alignment_status(
+    residuals: pl.DataFrame, neutralized: pl.DataFrame
+) -> dict[str, Any]:
+    if "date" not in residuals.columns or "date" not in neutralized.columns:
+        return {
+            "status": "fail",
+            "reason_code": "RESIDUAL_NEUTRALIZED_ALIGNMENT_MISSING_DATE",
+            "residual_row_count": residuals.height,
+            "neutralized_row_count": neutralized.height,
+        }
+    residual_dates = [str(value) for value in residuals.sort("date")["date"].to_list()]
+    neutralized_dates = [str(value) for value in neutralized.sort("date")["date"].to_list()]
+    aligned = residual_dates == neutralized_dates
+    return {
+        "status": "pass" if aligned else "fail",
+        "reason_code": "ok" if aligned else "RESIDUAL_NEUTRALIZED_ALIGNMENT_MISMATCH",
+        "residual_row_count": residuals.height,
+        "neutralized_row_count": neutralized.height,
+    }
+
+
 def _source_timestamp_audit_status(feature_panel: pl.DataFrame) -> dict[str, Any]:
-    required_source_columns = [
-        "vix_source_ts",
-        "dgs10_source_ts",
-        "qqq_source_ts",
-        "spy_source_ts",
-        "smh_source_ts",
-        "mega_cap_basket_source_ts",
-    ]
     missing_source_columns = [
-        column for column in required_source_columns if column not in feature_panel.columns
+        column for column in SOURCE_TIMESTAMP_COLUMNS if column not in feature_panel.columns
     ]
-    aggregate_late = _late_source_count(feature_panel)
-    status = "pass" if not missing_source_columns and aggregate_late == 0 else "fail"
+    aggregate_late = _late_or_invalid_timestamp_count(feature_panel, "source_ts_max")
+    per_source_late_counts = {
+        column: _late_or_invalid_timestamp_count(feature_panel, column)
+        for column in SOURCE_TIMESTAMP_COLUMNS
+        if column in feature_panel.columns
+    }
+    source_ts_max_mismatch_count = (
+        0
+        if missing_source_columns
+        else _source_ts_max_mismatch_count(feature_panel, SOURCE_TIMESTAMP_COLUMNS)
+    )
+    status = (
+        "pass"
+        if not missing_source_columns
+        and aggregate_late == 0
+        and all(count == 0 for count in per_source_late_counts.values())
+        and source_ts_max_mismatch_count == 0
+        else "fail"
+    )
     reason = (
         "SOURCE_TIMESTAMP_AUDIT_MISSING"
         if missing_source_columns
+        else "SOURCE_TIMESTAMP_EXCEEDS_FEATURE_TS"
+        if any(count > 0 for count in per_source_late_counts.values())
         else "SOURCE_TIMESTAMP_MAX_EXCEEDS_FEATURE_TS"
         if aggregate_late
+        else "SOURCE_TIMESTAMP_MAX_MISMATCH"
+        if source_ts_max_mismatch_count
         else "ok"
     )
     return {
@@ -242,15 +338,47 @@ def _source_timestamp_audit_status(feature_panel: pl.DataFrame) -> dict[str, Any
         "reason_code": reason,
         "missing_source_columns": missing_source_columns,
         "source_ts_max_late_count": aggregate_late,
+        "per_source_late_counts": per_source_late_counts,
+        "source_ts_max_mismatch_count": source_ts_max_mismatch_count,
     }
 
 
-def _late_source_count(feature_panel: pl.DataFrame) -> int:
-    if not {"source_ts_max", "feature_ts"}.issubset(feature_panel.columns):
+def _late_or_invalid_timestamp_count(feature_panel: pl.DataFrame, source_column: str) -> int:
+    if not {source_column, "feature_ts"}.issubset(feature_panel.columns):
         return feature_panel.height
-    return feature_panel.filter(
-        pl.col("source_ts_max").str.to_datetime(ISO_TS_FORMAT)
-        > pl.col("feature_ts").str.to_datetime(ISO_TS_FORMAT)
+    parsed = feature_panel.select(
+        [
+            pl.col(source_column).str.to_datetime(ISO_TS_FORMAT, strict=False).alias("__source_ts"),
+            pl.col("feature_ts").str.to_datetime(ISO_TS_FORMAT, strict=False).alias("__feature_ts"),
+        ]
+    )
+    return parsed.filter(
+        pl.col("__source_ts").is_null()
+        | pl.col("__feature_ts").is_null()
+        | (pl.col("__source_ts") > pl.col("__feature_ts"))
+    ).height
+
+
+def _source_ts_max_mismatch_count(feature_panel: pl.DataFrame, source_columns: list[str]) -> int:
+    if not {"source_ts_max", *source_columns}.issubset(feature_panel.columns):
+        return feature_panel.height
+    parsed = feature_panel.select(
+        [
+            pl.col("source_ts_max")
+            .str.to_datetime(ISO_TS_FORMAT, strict=False)
+            .alias("__source_ts_max"),
+            pl.max_horizontal(
+                [
+                    pl.col(column).str.to_datetime(ISO_TS_FORMAT, strict=False)
+                    for column in source_columns
+                ]
+            ).alias("__computed_source_ts_max"),
+        ]
+    )
+    return parsed.filter(
+        pl.col("__source_ts_max").is_null()
+        | pl.col("__computed_source_ts_max").is_null()
+        | (pl.col("__source_ts_max") != pl.col("__computed_source_ts_max"))
     ).height
 
 
@@ -260,10 +388,13 @@ def _feature_panel_leakage_status(feature_panel: pl.DataFrame) -> dict[str, Any]
         for column in ("feature_ts", "source_ts_max", "source_tier", "dag_id", "dag_artifact_hash")
         if column not in feature_panel.columns
     ]
+    late_or_invalid = (
+        0 if missing else _late_or_invalid_timestamp_count(feature_panel, "source_ts_max")
+    )
     return {
-        "status": "pass" if not missing and _late_source_count(feature_panel) == 0 else "fail",
+        "status": "pass" if not missing and late_or_invalid == 0 else "fail",
         "reason_code": "ok"
-        if not missing and _late_source_count(feature_panel) == 0
+        if not missing and late_or_invalid == 0
         else "FEATURE_PANEL_LEAKAGE_CHECK_FAILED",
         "missing_columns": missing,
     }
@@ -364,6 +495,19 @@ def _metric_reason_codes(metrics: dict[str, Any], thresholds: dict[str, float]) 
     return reason_codes
 
 
+def _artifact_reason_codes(artifact_checks: dict[str, Any]) -> list[str]:
+    reason_codes: list[str] = []
+    for value in artifact_checks.values():
+        if not isinstance(value, dict):
+            continue
+        if value.get("status") != "fail":
+            continue
+        reason = str(value.get("reason_code", "")).strip()
+        if reason and reason != "ok":
+            reason_codes.append(reason)
+    return reason_codes
+
+
 def _decision_from_metrics(
     reason_codes: list[str],
     metrics: dict[str, Any],
@@ -373,6 +517,13 @@ def _decision_from_metrics(
     revise_codes = {
         "SOURCE_TIMESTAMP_AUDIT_MISSING",
         "SOURCE_TIMESTAMP_MAX_EXCEEDS_FEATURE_TS",
+        "SOURCE_TIMESTAMP_EXCEEDS_FEATURE_TS",
+        "SOURCE_TIMESTAMP_MAX_MISMATCH",
+        "FEATURE_PANEL_LINEAGE_MISMATCH",
+        "RESIDUAL_LINEAGE_MISMATCH",
+        "NEUTRALIZED_LINEAGE_MISMATCH",
+        "RESIDUAL_NEUTRALIZED_ALIGNMENT_MISSING_DATE",
+        "RESIDUAL_NEUTRALIZED_ALIGNMENT_MISMATCH",
         "FEATURE_PANEL_LEAKAGE_CHECK_FAILED",
         "RESIDUAL_TRAINING_WINDOW_NOT_STRICTLY_PRIOR",
         "RESIDUAL_TRAINING_WINDOW_MISSING",
@@ -423,7 +574,7 @@ def _counter_dag_statuses(
             and artifact_checks["source_timestamp_audit"]["status"] != "pass"
         ):
             status = "blocked"
-            reason_code = "SOURCE_TIMESTAMP_AUDIT_MISSING"
+            reason_code = str(artifact_checks["source_timestamp_audit"]["reason_code"])
         if (
             counter_dag_id
             in {

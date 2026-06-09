@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ndx_residual_validation_decision.v1.schema.json",
   "type": "object",
-  "required": ["schema_version", "dag_id", "decision_id", "decision", "reason_codes", "permits_strategy_lab_research_only_export", "permits_backtest", "permits_paper_candidate", "permits_paper_intent_preview", "permits_live_order"],
+  "required": ["schema_version", "dag_id", "decision_id", "decision", "reason_codes", "summary_path", "created_at", "permits_strategy_lab_research_only_export", "permits_backtest", "permits_paper_candidate", "permits_paper_intent_preview", "permits_live_order"],
   "properties": {
     "schema_version": {"const": "ndx_residual_validation_decision.v1"},
     "dag_id": {"const": "HYP-NDX-001"},
@@ -11,6 +11,8 @@
       "enum": ["APPROVE_STRATEGY_LAB_EXPORT", "REVISE_2_3", "REVISE_2_2", "REJECT_RESIDUAL"]
     },
     "reason_codes": {"type": "array", "items": {"type": "string"}},
+    "summary_path": {"type": "string"},
+    "created_at": {"type": "string"},
     "permits_strategy_lab_research_only_export": {"type": "boolean"},
     "permits_backtest": {"const": false},
     "permits_paper_candidate": {"const": false},
@@ -19,4 +21,3 @@
   },
   "additionalProperties": true
 }
-

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ndx_residual_validation_summary.v1.schema.json",
   "type": "object",
-  "required": ["schema_version", "dag_id", "decision", "reason_codes", "thresholds", "scope"],
+  "required": ["schema_version", "dag_id", "decision", "reason_codes", "thresholds", "artifact_checks", "scope"],
   "properties": {
     "schema_version": {"const": "ndx_residual_validation_summary.v1"},
     "dag_id": {"const": "HYP-NDX-001"},
@@ -11,10 +11,12 @@
     },
     "reason_codes": {"type": "array", "items": {"type": "string"}},
     "thresholds": {"type": "object"},
+    "artifact_checks": {"type": "object"},
     "scope": {
       "type": "object",
-      "required": ["strategy_signals_written", "backtest_run", "paper_candidate_written", "paper_intent_preview_written", "live_order_written"],
+      "required": ["strategy_lab_export_written", "strategy_signals_written", "backtest_run", "paper_candidate_written", "paper_intent_preview_written", "live_order_written"],
       "properties": {
+        "strategy_lab_export_written": {"const": false},
         "strategy_signals_written": {"const": false},
         "backtest_run": {"const": false},
         "paper_candidate_written": {"const": false},
@@ -26,4 +28,3 @@
   },
   "additionalProperties": true
 }
-

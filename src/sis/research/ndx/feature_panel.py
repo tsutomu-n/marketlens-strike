@@ -21,6 +21,14 @@ from sis.research.ndx.start_conditions import require_layer23_start_conditions
 
 
 MODEL_FACTOR_COLUMNS = ["spy_gap", "smh_gap", "vix_change", "dgs10_delta", "mega_cap_basket_gap"]
+SOURCE_TIMESTAMP_COLUMNS = [
+    "qqq_source_ts",
+    "spy_source_ts",
+    "smh_source_ts",
+    "mega_cap_basket_source_ts",
+    "vix_source_ts",
+    "dgs10_source_ts",
+]
 FEATURE_COLUMNS = [
     "date",
     "qqq_open",
@@ -35,6 +43,7 @@ FEATURE_COLUMNS = [
     "dgs10_delta",
     "mega_cap_basket_gap",
     "feature_ts",
+    *SOURCE_TIMESTAMP_COLUMNS,
     "source_ts_max",
     "source_tier",
     "dag_id",
@@ -77,9 +86,11 @@ def build_ndx_feature_panel(
         "row_count": frame.height,
         "feature_columns": FEATURE_COLUMNS,
         "model_factor_columns": MODEL_FACTOR_COLUMNS,
+        "source_timestamp_columns": SOURCE_TIMESTAMP_COLUMNS,
         "outcome_columns": ["qqq_open_to_close_return"],
         "leakage_checks": {
             "source_ts_max_lte_feature_ts": True,
+            "per_source_ts_lte_feature_ts": True,
             "outcome_not_model_input": True,
             "same_day_close_not_model_input": True,
             "source_tier_required": True,
@@ -113,7 +124,14 @@ def build_feature_frame(*, input_root: Path, dag_hash: str) -> pl.DataFrame:
     frame = qqq.join(spy, on="date", how="inner")
     for other in (smh, mega, vix, dgs10):
         frame = frame.join(other, on="date", how="inner")
-    source_columns = [column for column in frame.columns if column.endswith("_source_ts")]
+    missing_source_columns = [
+        column for column in SOURCE_TIMESTAMP_COLUMNS if column not in frame.columns
+    ]
+    if missing_source_columns:
+        raise ValueError(
+            "NDX feature panel missing source timestamp columns: "
+            + ", ".join(missing_source_columns)
+        )
     if frame.height == 0:
         raise ValueError("NDX feature panel has no joined fixture rows.")
     required_count = min(source.height for source in (qqq, spy, smh, mega, vix, dgs10))
@@ -143,7 +161,10 @@ def build_feature_frame(*, input_root: Path, dag_hash: str) -> pl.DataFrame:
                 ).alias("mega_cap_basket_gap"),
                 (pl.col("date").cast(pl.Utf8) + pl.lit("T14:31:00+00:00")).alias("feature_ts"),
                 pl.max_horizontal(
-                    [pl.col(column).str.to_datetime(ISO_TS_FORMAT) for column in source_columns]
+                    [
+                        pl.col(column).str.to_datetime(ISO_TS_FORMAT)
+                        for column in SOURCE_TIMESTAMP_COLUMNS
+                    ]
                 )
                 .dt.to_string("%Y-%m-%dT%H:%M:%S%:z")
                 .alias("source_ts_max"),
@@ -166,6 +187,7 @@ def _write_report(path: Path, *, row_count: int, dag_hash: str, manifest_hash: s
         f"- row_count: {row_count}\n"
         f"- feature_manifest_hash: {manifest_hash}\n"
         f"- model_factor_columns: {json.dumps(MODEL_FACTOR_COLUMNS)}\n"
+        f"- source_timestamp_columns: {json.dumps(SOURCE_TIMESTAMP_COLUMNS)}\n"
         "- leakage_checks: pass\n",
         encoding="utf-8",
     )

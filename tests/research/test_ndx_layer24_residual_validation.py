@@ -139,7 +139,7 @@ def _build_layer23_artifacts(artifact_dir: Path, reports_dir: Path) -> None:
     )
 
 
-def test_layer24_current_layer23_artifacts_fail_closed_for_timestamp_audit(tmp_path) -> None:
+def test_layer24_current_layer23_artifacts_fail_closed_for_sample_size(tmp_path) -> None:
     artifact_dir = _prepare_layer22_approval(tmp_path)
     reports_dir = tmp_path / "data/reports"
     _build_layer23_artifacts(artifact_dir, reports_dir)
@@ -153,8 +153,9 @@ def test_layer24_current_layer23_artifacts_fail_closed_for_timestamp_audit(tmp_p
 
     decision = json.loads(result.decision_path.read_text(encoding="utf-8"))
     assert result.decision == "REVISE_2_3"
-    assert "SOURCE_TIMESTAMP_AUDIT_MISSING" in result.reason_codes
+    assert "SOURCE_TIMESTAMP_AUDIT_MISSING" not in result.reason_codes
     assert "INSUFFICIENT_VALIDATION_SAMPLE" in result.reason_codes
+    assert "INSUFFICIENT_VALIDATION_ERAS" in result.reason_codes
     assert decision["permits_strategy_lab_research_only_export"] is False
     assert decision["permits_backtest"] is False
 
@@ -215,6 +216,106 @@ def test_layer24_revises_2_2_for_dag_hash_mismatch(tmp_path) -> None:
 
     assert result.decision == "REVISE_2_2"
     assert "REVISE_2_2_DAG_ARTIFACT_HASH_MISMATCH" in result.reason_codes
+
+
+def test_layer24_revises_2_3_for_feature_manifest_self_hash_mismatch(tmp_path) -> None:
+    artifact_dir = _prepare_layer22_approval(tmp_path)
+    reports_dir = tmp_path / "data/reports"
+    _write_synthetic_layer23_artifacts(artifact_dir, reports_dir, row_count=90, mode="approve")
+    manifest_path = artifact_dir / "ndx_feature_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["row_count"] = manifest["row_count"] + 1
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+    result = run_residual_validation_gate(
+        root=CONFIG_DIR,
+        artifact_dir=artifact_dir,
+        reports_dir=reports_dir,
+        out_dir=artifact_dir,
+    )
+
+    assert result.decision == "REVISE_2_3"
+    assert "REVISE_2_3_FEATURE_MANIFEST_HASH_MISMATCH" in result.reason_codes
+
+
+def test_layer24_revises_2_3_for_late_per_source_timestamp(tmp_path) -> None:
+    artifact_dir = _prepare_layer22_approval(tmp_path)
+    reports_dir = tmp_path / "data/reports"
+    _write_synthetic_layer23_artifacts(artifact_dir, reports_dir, row_count=90, mode="approve")
+    feature_panel_path = artifact_dir / "ndx_feature_panel.parquet"
+    frame = pl.read_parquet(feature_panel_path)
+    late_ts = "2026-01-01T14:32:00+00:00"
+    frame.with_columns(
+        [
+            pl.when(pl.col("date") == date(2026, 1, 1))
+            .then(pl.lit(late_ts))
+            .otherwise(pl.col("vix_source_ts"))
+            .alias("vix_source_ts"),
+            pl.when(pl.col("date") == date(2026, 1, 1))
+            .then(pl.lit(late_ts))
+            .otherwise(pl.col("source_ts_max"))
+            .alias("source_ts_max"),
+        ]
+    ).write_parquet(feature_panel_path)
+    _refresh_feature_manifest_lineage(artifact_dir=artifact_dir, reports_dir=reports_dir)
+
+    result = run_residual_validation_gate(
+        root=CONFIG_DIR,
+        artifact_dir=artifact_dir,
+        reports_dir=reports_dir,
+        out_dir=artifact_dir,
+    )
+
+    assert result.decision == "REVISE_2_3"
+    assert "SOURCE_TIMESTAMP_EXCEEDS_FEATURE_TS" in result.reason_codes
+
+
+def test_layer24_revises_2_3_for_invalid_residual_factor_columns(tmp_path) -> None:
+    artifact_dir = _prepare_layer22_approval(tmp_path)
+    reports_dir = tmp_path / "data/reports"
+    _write_synthetic_layer23_artifacts(artifact_dir, reports_dir, row_count=90, mode="approve")
+    residual_manifest_path = artifact_dir / "open_gap_residual_manifest.json"
+    residual_manifest = json.loads(residual_manifest_path.read_text(encoding="utf-8"))
+    residual_manifest["factor_columns"] = [*residual_manifest["factor_columns"], "qqq_close"]
+    residual_manifest_path.write_text(
+        json.dumps(residual_manifest, indent=2) + "\n", encoding="utf-8"
+    )
+
+    result = run_residual_validation_gate(
+        root=CONFIG_DIR,
+        artifact_dir=artifact_dir,
+        reports_dir=reports_dir,
+        out_dir=artifact_dir,
+    )
+
+    assert result.decision == "REVISE_2_3"
+    assert "MODEL_FACTOR_COLUMNS_INVALID" in result.reason_codes
+
+
+def test_layer24_revises_2_3_for_residual_frame_lineage_mismatch(tmp_path) -> None:
+    artifact_dir = _prepare_layer22_approval(tmp_path)
+    reports_dir = tmp_path / "data/reports"
+    _write_synthetic_layer23_artifacts(artifact_dir, reports_dir, row_count=90, mode="approve")
+    residuals_path = artifact_dir / "open_gap_residuals.parquet"
+    pl.read_parquet(residuals_path).with_columns(
+        pl.lit("HYP-NDX-OTHER").alias("dag_id")
+    ).write_parquet(residuals_path)
+    residual_manifest_path = artifact_dir / "open_gap_residual_manifest.json"
+    residual_manifest = json.loads(residual_manifest_path.read_text(encoding="utf-8"))
+    residual_manifest["residuals_hash"] = sha256_file(residuals_path)
+    residual_manifest_path.write_text(
+        json.dumps(residual_manifest, indent=2) + "\n", encoding="utf-8"
+    )
+
+    result = run_residual_validation_gate(
+        root=CONFIG_DIR,
+        artifact_dir=artifact_dir,
+        reports_dir=reports_dir,
+        out_dir=artifact_dir,
+    )
+
+    assert result.decision == "REVISE_2_3"
+    assert "RESIDUAL_LINEAGE_MISMATCH" in result.reason_codes
 
 
 def test_layer24_approves_sufficient_synthetic_residual_sample(tmp_path) -> None:
@@ -354,6 +455,42 @@ def _write_synthetic_layer23_artifacts(
     (reports_dir / "ndx_counter_dag_refutation_skeleton.md").write_text(
         "synthetic\n", encoding="utf-8"
     )
+
+
+def _refresh_feature_manifest_lineage(*, artifact_dir: Path, reports_dir: Path) -> None:
+    feature_manifest_path = artifact_dir / "ndx_feature_manifest.json"
+    feature_manifest = json.loads(feature_manifest_path.read_text(encoding="utf-8"))
+    feature_manifest["feature_panel_hash"] = sha256_file(artifact_dir / "ndx_feature_panel.parquet")
+    feature_manifest_without_self = {
+        key: value for key, value in feature_manifest.items() if key != "feature_manifest_hash"
+    }
+    feature_manifest["feature_manifest_hash"] = sha256_json(feature_manifest_without_self)
+    feature_manifest_path.write_text(
+        json.dumps(feature_manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    new_feature_hash = str(feature_manifest["feature_manifest_hash"])
+
+    residuals_path = artifact_dir / "open_gap_residuals.parquet"
+    pl.read_parquet(residuals_path).with_columns(
+        pl.lit(new_feature_hash).alias("feature_manifest_hash")
+    ).write_parquet(residuals_path)
+    residual_manifest_path = artifact_dir / "open_gap_residual_manifest.json"
+    residual_manifest = json.loads(residual_manifest_path.read_text(encoding="utf-8"))
+    residual_manifest["feature_manifest_hash"] = new_feature_hash
+    residual_manifest["residuals_hash"] = sha256_file(residuals_path)
+    residual_manifest_path.write_text(
+        json.dumps(residual_manifest, indent=2) + "\n", encoding="utf-8"
+    )
+
+    neutralized_path = reports_dir / "neutralized_residuals.parquet"
+    pl.read_parquet(neutralized_path).with_columns(
+        pl.lit(new_feature_hash).alias("feature_manifest_hash")
+    ).write_parquet(neutralized_path)
+    diagnostics_path = reports_dir / "ndx_residual_diagnostics.json"
+    diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"))
+    diagnostics["feature_manifest_hash"] = new_feature_hash
+    diagnostics["neutralized_residuals_hash"] = sha256_file(neutralized_path)
+    diagnostics_path.write_text(json.dumps(diagnostics, indent=2) + "\n", encoding="utf-8")
 
 
 def _feature_panel_frame(*, dates: list[date], dag_hash: str) -> pl.DataFrame:

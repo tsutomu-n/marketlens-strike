@@ -41,12 +41,18 @@ def validate_feature_panel(frame: pl.DataFrame, *, model_input_columns: list[str
         raise NdxLeakageError(
             "model input contains suspicious future/close columns: " + ", ".join(suspicious)
         )
-    late = frame.filter(
-        pl.col("source_ts_max").str.to_datetime(ISO_TS_FORMAT)
-        > pl.col("feature_ts").str.to_datetime(ISO_TS_FORMAT)
-    )
-    if late.height:
-        raise NdxLeakageError("source_ts_max exceeds feature_ts.")
+    if _late_or_invalid_timestamp_count(frame, "source_ts_max"):
+        raise NdxLeakageError("source_ts_max is invalid or exceeds feature_ts.")
+    late_source_columns = [
+        column
+        for column in _source_timestamp_columns(frame)
+        if _late_or_invalid_timestamp_count(frame, column)
+    ]
+    if late_source_columns:
+        raise NdxLeakageError(
+            "source timestamp columns are invalid or exceed feature_ts: "
+            + ", ".join(late_source_columns)
+        )
 
 
 def validate_residual_training_columns(*, factor_columns: list[str], target_column: str) -> None:
@@ -62,3 +68,27 @@ def validate_residual_training_columns(*, factor_columns: list[str], target_colu
         ),
         model_input_columns=factor_columns,
     )
+
+
+def _source_timestamp_columns(frame: pl.DataFrame) -> list[str]:
+    return sorted(
+        column
+        for column in frame.columns
+        if column.endswith("_source_ts") and column != "source_ts_max"
+    )
+
+
+def _late_or_invalid_timestamp_count(frame: pl.DataFrame, source_column: str) -> int:
+    if source_column not in frame.columns or "feature_ts" not in frame.columns:
+        return frame.height
+    parsed = frame.select(
+        [
+            pl.col(source_column).str.to_datetime(ISO_TS_FORMAT, strict=False).alias("__source_ts"),
+            pl.col("feature_ts").str.to_datetime(ISO_TS_FORMAT, strict=False).alias("__feature_ts"),
+        ]
+    )
+    return parsed.filter(
+        pl.col("__source_ts").is_null()
+        | pl.col("__feature_ts").is_null()
+        | (pl.col("__source_ts") > pl.col("__feature_ts"))
+    ).height
