@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-09_16:33 JST
 -->
 
 # marketlens-strike
@@ -216,7 +216,7 @@ uv run python scripts/check_current_docs.py
 - Latest local Layer 2.2 exit decision artifact was `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, with pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`.
 - Non-approve exit-gate runs remove stale `layer_2_2_freeze_manifest.json` from the same output directory.
 - Current Layer 2.4 validation emits `REVISE_2_3` with `INSUFFICIENT_VALIDATION_ERAS` and `INSUFFICIENT_VALIDATION_SAMPLE`; this is not a Strategy Lab export approval.
-- Full local gate after NDX/QQQ venue-suitability hardening was observed passing with Python 3.13.7, current-docs check, pyrefly, ty, and `946 passed`; rerun `./scripts/check` for current proof.
+- 2026-06-09 docs refresh verification: `./scripts/check` passed with Python 3.13.7, current-docs check, pyrefly, ty, and `946 passed`.
 
 2026-06-05 runtime artifact snapshot:
 

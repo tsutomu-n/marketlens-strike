@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_16:13 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-09_16:33 JST
 -->
 
 # Document Audit 2026-06-09 NDX/QQQ Venue Suitability Refresh
@@ -64,3 +64,17 @@
 - `data/research/signals.csv` を Strategy Lab 正本と誤読させない。
 - `PaperIntentPreview` を live order と誤読させない。
 - legacy `paper-step` が NDX/QQQ family を止めることを運用 docs から追える。
+
+## Verification
+
+2026-06-09_16:33 JST に確認済み:
+
+```bash
+uv run python scripts/check_current_docs.py
+./scripts/check
+```
+
+結果:
+
+- current-docs check passed: metadata, links, EOF, and legacy roots ok
+- `./scripts/check` passed: Python 3.13.7, Ruff check/format, current-docs, pyrefly, ty, and `946 passed`
