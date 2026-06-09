@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-05-30_14:13 JST
-更新日: 2026-06-06_10:28 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Current Capabilities
 
-この文書は、2026-06-06 時点の Strategy Research Lab で実際にできることを記録します。
+この文書は、2026-06-09 時点の Strategy Research Lab で実際にできることを記録します。
 
 正本はコードです。特に `src/sis/commands/research.py`, `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `src/sis/paper/runner.py`, `tests/test_strategy_lab_commands.py` を優先します。
 
@@ -22,6 +22,8 @@
 今の Strategy Research Lab は、登録済み generator または `StrategyExperimentSpec` YAML/JSON から signal artifact を作り、paper-only の trial / candidate / promotion / intent preview まで進められます。加えて、`strategy_authoring_spec.v1` YAML から宣言型 rule を signal artifact / fixed-horizon backtest / paper-preview artifact へ進められます。
 
 `execution_venue` は current contract では `trade_xyz` と `bitget_demo` を許可します。`bitget_demo` は demo execution 検証用であり、Bitget production live や外部 API 接続成功を意味しません。最短の backtest-first 入口は local baseline seed です。
+
+NDX/QQQ family は research/backtest artifact として保持できますが、現行 paper path では venue suitability gate により selected candidate、paper intent、raw `paper-from-intents` JSON、legacy `paper-step` order generation で止まります。これは Strategy Lab export や alpha 否定ではなく、paper routing 不許可の境界です。
 
 ただし、これは live-ready 証明ではありません。現行 authoring backtest は fixed-horizon の研究用 metrics であり、paper weight / notional は扱えますが、wallet / signing / exchange write は含みません。
 
@@ -220,10 +222,12 @@ uv run sis build-paper-intent-preview
 できること:
 
 - `PaperCandidatePack` から `PromotionDecision` を作れる。
+- `PaperCandidatePack.selected_candidate_ids` は `status="candidate"`、空の `block_reasons`、venue-suitable の候補だけに制限される。
 - `hold` / `reject` / `promote` の判断 artifact を残せる。
 - required evidence が揃わない `promote` は validation で止まる。
 - `PromotionDecision.source_pack_id` と `PaperCandidatePack.pack_id` の不一致を exit code 2 で止められる。
 - `PaperIntentPreview` は `paper_only=true`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` のまま出せる。
+- NDX/QQQ family の `trade_xyz` / `bitget_demo` paper intent は現行 suitability guard で拒否される。
 
 主要 artifact:
 
@@ -241,6 +245,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 できること:
 
 - `PaperIntentPreview` を最新 quote と paper broker state で再検証できる。
+- raw JSON で直接渡された `PaperIntentPreview` も Pydantic model で再検証し、venue-unsuitable な NDX/QQQ family を拒否できる。
 - expired intent, latest quote missing, paper broker block を stop reason として残せる。
 - paper order / fill / position artifact と observation ledger を書ける。
 - observation ledger は `live_order_submitted=false`, `wallet_used=false`, `exchange_write_used=false` を明示する。

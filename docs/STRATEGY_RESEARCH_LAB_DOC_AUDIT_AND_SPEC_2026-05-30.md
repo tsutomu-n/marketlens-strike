@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_08:14 JST
-更新日: 2026-06-09_14:23 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Strategy Research Lab Doc Audit And Spec 2026-05-30
@@ -15,6 +15,7 @@
 - ただし tracked JSON Schema は full contract ではなく、最低限の required / const guard を置く薄い契約である。詳細な runtime validation の正本は `src/sis/research/strategy_lab/` と `src/sis/research_protocol/` の Pydantic model。
 - `data/research/signals.csv` / `ResearchSignalStrategy` / `DecisionContext` / `ExecutionPlan` 中心の文書は legacy paper path の説明であり、Strategy Research Lab の現行正本として読まない。
 - `PaperIntentPreview` は paper-only の仮注文意図であり、live order へ変換してはいけない。`paper-from-intents` でも最新データで再検証される。
+- NDX/QQQ family は research/backtest artifact として保持できるが、現行 paper path では `selected_candidate_ids`、`PaperIntentPreview`、raw intent JSON、legacy `paper-step` order generation の各境界で fail closed する。
 
 ## Code Truth
 
@@ -25,8 +26,9 @@
 3. `src/sis/commands/paper.py`
 4. `src/sis/paper/runner.py`
 5. `src/sis/research_protocol/`
-6. `schemas/*.v1.schema.json`
-7. `plan/marketlens_strategy_research_lab_migration_pack/` は historical implementation contract として読む
+6. `src/sis/venues/suitability.py`
+7. `schemas/*.v1.schema.json`
+8. `plan/marketlens_strategy_research_lab_migration_pack/` は historical implementation contract として読む
 
 主要 model:
 
@@ -40,6 +42,7 @@
 | PaperCandidatePack | `src/sis/research/strategy_lab/paper_candidate_pack.py` | `schemas/paper_candidate_pack.v1.schema.json` |
 | PromotionDecision | `src/sis/research/strategy_lab/promotion_decision.py` | `schemas/promotion_decision.v1.schema.json` |
 | PaperIntentPreview | `src/sis/research/strategy_lab/paper_intent_preview.py` | `schemas/paper_intent_preview.v1.schema.json` |
+| Venue suitability | `src/sis/venues/suitability.py` | runtime policy only; Strategy Lab schemas still allow only current `VenueId` values |
 | DataSnapshotManifest | `src/sis/research_protocol/data_snapshot.py` | `schemas/data_snapshot_manifest.v1.schema.json` |
 | FeatureSnapshotManifest | `src/sis/research_protocol/feature_snapshot.py` | `schemas/feature_snapshot_manifest.v1.schema.json` |
 
@@ -63,9 +66,9 @@ StrategyExperimentSpec
 重要な分離:
 
 - `TradeCandidate` は売買候補であり、paper order でも live order でもない。
-- `PaperCandidatePack` は paper に送る候補束であり、`selected_candidate_ids` と `rejected_candidate_ids` を持つ。top-level の `blocked_candidate_ids` は現行コードには無い。blocked は `TradeCandidate.status="blocked"`、candidate の `block_reasons`、pack の `block_reasons` で表す。
+- `PaperCandidatePack` は paper に送る候補束であり、`selected_candidate_ids` と `rejected_candidate_ids` を持つ。top-level の `blocked_candidate_ids` は現行コードには無い。blocked は `TradeCandidate.status="blocked"`、candidate の `block_reasons`、pack の `block_reasons` で表す。selected candidate は `status="candidate"`、空の `block_reasons`、venue-suitable でなければならない。
 - `PromotionDecision` は人間判断 artifact。`decision="promote"` の場合は `required_evidence` がすべて `observed_evidence` に含まれ、`approval_reasons` が必要。
-- `PaperIntentPreview` は paper 専用。`requires_revalidation=true`, `paper_only=true`, `live_conversion_allowed=false`, `live_order_submitted=false`, `wallet_used=false`, `exchange_write_used=false` が guard。
+- `PaperIntentPreview` は paper 専用。`requires_revalidation=true`, `paper_only=true`, `live_conversion_allowed=false`, `live_order_submitted=false`, `wallet_used=false`, `exchange_write_used=false` が guard。venue suitability は preview model と `paper-from-intents` の raw JSON 再検証で掛かる。
 
 ## Schema Spec
 
@@ -75,7 +78,7 @@ StrategyExperimentSpec
 
 Fields:
 
-- `execution_venue`: `trade_xyz`
+- `execution_venue`: current Strategy Lab signal/candidate/intent schemas accept `trade_xyz` and `bitget_demo`; `bitget_futures` and `hyperliquid_perp` are not schema values in this slice.
 - `execution_symbol`: Trade[XYZ] 側の取引シンボル。空文字は禁止。保存時は大文字化。
 - `real_market_symbol`: feature / tracking 側の実市場シンボル。空文字は禁止。保存時は大文字化。
 - `asset_class`
@@ -250,6 +253,8 @@ Fields:
 Validation:
 
 - selected / rejected ID は `candidates` 内に存在する必要がある。
+- selected / rejected ID と candidate ID は重複禁止。selected / rejected の重複も禁止。
+- selected candidate は `status="candidate"`、空の `block_reasons`、venue-suitable でなければならない。
 - claim / live / wallet / exchange flags は false のまま。
 - 現行 code には top-level `blocked_candidate_ids` は無い。blocked は candidate status と reason fields で表す。
 
@@ -311,7 +316,8 @@ Validation:
 - identity fields は空文字禁止。
 - `requires_revalidation` と `paper_only` は true。
 - live / wallet / exchange flags は false。
-- `paper-from-intents` はこの preview をそのまま信用せず、最新 quote / tracking / risk context で再検証する。
+- venue suitability は `paper_intent` stage で再検査される。
+- `paper-from-intents` はこの preview をそのまま信用せず、raw JSON を `PaperIntentPreview` model で再検証し、最新 quote / tracking / risk context でも再検証する。
 
 ### DataSnapshotManifest / FeatureSnapshotManifest
 

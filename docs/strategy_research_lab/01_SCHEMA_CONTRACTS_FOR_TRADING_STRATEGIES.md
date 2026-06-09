@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Schema Contracts For Trading Strategies
@@ -10,9 +10,10 @@
 ## 正本の読み順
 
 1. `src/sis/research/strategy_lab/`
-2. `src/sis/research_protocol/`
-3. `schemas/*.v1.schema.json`
-4. `tests/test_strategy_lab_*.py`, `tests/test_strategy_run_profile.py`, `tests/test_paper_from_intents.py`
+2. `src/sis/venues/suitability.py`
+3. `src/sis/research_protocol/`
+4. `schemas/*.v1.schema.json`
+5. `tests/test_strategy_lab_*.py`, `tests/test_strategy_run_profile.py`, `tests/test_paper_from_intents.py`, `tests/test_paper_runner.py`, `tests/test_venue_suitability.py`
 
 ## Claim guard
 
@@ -33,7 +34,7 @@ live_ready_claimed
 
 主要 field:
 
-- `execution_venue`: 現行は `trade_xyz`。
+- `execution_venue`: 現行 schema は `trade_xyz` と `bitget_demo`。
 - `execution_symbol`: Trade[XYZ] 側で扱う取引シンボル。空文字禁止。保存時に大文字化。
 - `real_market_symbol`: feature / tracking 側で使う実市場シンボル。空文字禁止。保存時に大文字化。
 - `asset_class`: `basket_index`, `index`, `equity` など。
@@ -50,6 +51,27 @@ proxy rule:
 - `execution_symbol` は paper intent や execution-side quote lookup に使われる。
 - `real_market_symbol` は特徴量、外部市場データ、tracking で使われる。
 - ここを曖昧にすると、QQQ由来のsignalをXYZ100で執行するのか、XYZ100自体の時系列で予測したのかが混ざる。
+
+## Venue Suitability
+
+目的: schema enum だけでは表現できない、stage 別の venue 使用可否を fail closed で判定する。
+
+正本:
+
+- `src/sis/venues/suitability.py`
+
+現行 catalog:
+
+- `trade_xyz`: research では NDX proxy を保持できるが、NDX/QQQ family の paper candidate / paper intent / live は `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION` で止める。
+- `bitget_demo`: crypto demo fixture 用。NDX/QQQ family は asset universe mismatch として止める。
+- `bitget_futures`: catalog-only。現行 `VenueId` / Strategy Lab schema には入れない。
+- `hyperliquid_perp`: catalog-only。現行 `VenueId` / Strategy Lab schema には入れない。
+
+売買上の意味:
+
+- `TradeCandidate` 自体は監査 artifact なので NDX/QQQ family でも作れる。
+- `selected_candidate_ids`、`PaperIntentPreview`、raw intent JSON、legacy `paper-step` order generation は別の境界で止める。
+- `VenueId` を広げることと、venue suitability catalog に将来候補を置くことは別物です。
 
 ## StrategyExperimentSpec
 
@@ -266,6 +288,8 @@ validation:
 
 - selected / rejected ID は `candidates` 内に存在する。
 - candidate ID、selected ID、rejected ID は重複禁止。
+- selected / rejected ID は互いに重複禁止。
+- selected candidate は `status="candidate"`、空の `block_reasons`、venue-suitable でなければならない。
 - `profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, `live_ready_claimed` は false。
 - `live_order_submitted`, `wallet_used`, `exchange_write_used` は false。
 
@@ -273,6 +297,7 @@ validation:
 
 - pack は paper 観測に進める候補の束であり、注文束ではない。
 - `selected_candidate_ids` は paper intent preview の候補ソースになる。
+- 現行の NDX/QQQ `trade_xyz` proxy は research/backtest record として残せるが、selected candidate には入らない。
 - `rejected_candidate_ids` と candidate-level `block_reasons` は、量産時の重複失敗を減らすための学習材料です。
 - 現行 CLI は latest trial group を default で pack 化し、TrialRecord の `metrics.selected_signal_ids` から candidate を作る。
 - default evaluation では最新 `ts_signal` の 1 signal だけを選ぶ。`--candidate-limit 0` を使うと threshold 通過 signal を複数 candidate 化できる。
@@ -346,11 +371,13 @@ validation:
 - `paper_only` は true。
 - `live_conversion_allowed`, `live_order_submitted`, `wallet_used`, `exchange_write_used` は false。
 - symbol は大文字化。
+- venue suitability は `paper_intent` stage で再検査される。NDX/QQQ family の `trade_xyz` / `bitget_demo` paper intent は現行では拒否される。
 
 売買上の意味:
 
 - ここで初めて `action` が出るが、これは paper runner へ渡す仮意図です。
 - `paper-from-intents` は最新 quote、expiry、paper broker validation で再検証する。
+- `paper-from-intents` は raw JSON を `PaperIntentPreview` model で再検証するため、CLI artifact chain を迂回して直接 JSON を置いても同じ suitability guard に掛かる。
 - `notional_usd` は現行 paper runner の quantity 計算に直結していない。現行 runner は `quantity` が無ければ `1.0` を使うため、実運用仕様として誤読しない。
 
 ## StrategyAuthoringBundleResult

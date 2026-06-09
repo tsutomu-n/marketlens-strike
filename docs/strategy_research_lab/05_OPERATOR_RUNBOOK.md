@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Operator Runbook
@@ -104,6 +104,7 @@ uv run sis build-paper-candidate-pack
 - selected candidate は `selected_candidate_ids`。
 - rejected candidate は `rejected_candidate_ids`。
 - blocked candidate は candidate-level `status` と `block_reasons` で見る。
+- selected candidate は `status="candidate"`、空の `block_reasons`、venue-suitable のものだけ。NDX/QQQ family は現行 paper candidate では拒否される。
 
 任意 ledger:
 
@@ -118,6 +119,8 @@ uv run sis build-paper-candidate-pack --trial-group-id trial-group-<run_id>
 ```
 
 現行 CLI は default で ledger 内の latest trial group だけを pack 化します。selected candidate は `TrialRecord.metrics.selected_signal_ids` から作ります。default evaluation では最新 `ts_signal` の 1 signal ですが、`evaluate-strategy-lab --candidate-limit 0` で複数 selected signal を candidate 化できます。
+
+NDX/QQQ family の `trade_xyz` proxy row は research/backtest artifact として残せますが、`build-paper-candidate-pack` では suitability block reason を付けて rejected に回します。この状態で手作業で `selected_candidate_ids` に戻すと `PaperCandidatePack` validation が fail closed します。
 
 ## 5. Promotion decision を作る
 
