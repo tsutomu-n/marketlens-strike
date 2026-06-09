@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ndx_open_gap_residual_manifest.v1.schema.json",
+  "type": "object",
+  "required": ["schema_version", "dag_id", "dag_artifact_hash", "feature_manifest_hash", "residuals_path", "residuals_hash", "row_count", "target_column", "factor_columns", "training_policy"],
+  "properties": {
+    "schema_version": {"const": "ndx_open_gap_residual_manifest.v1"},
+    "dag_id": {"const": "HYP-NDX-001"},
+    "dag_artifact_hash": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "residuals_hash": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "row_count": {"type": "integer", "minimum": 1},
+    "target_column": {"const": "qqq_gap"},
+    "factor_columns": {"type": "array", "items": {"type": "string"}},
+    "training_policy": {"const": "strictly_before_prediction_date"}
+  },
+  "additionalProperties": true
+}
+

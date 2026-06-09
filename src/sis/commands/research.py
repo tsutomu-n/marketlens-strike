@@ -33,6 +33,12 @@ from sis.research.dag.validator import (
 )
 from sis.research.event_calendar import build_event_calendar
 from sis.research.feature_panel import build_feature_panel
+from sis.research.ndx.diagnostics import build_ndx_diagnostics
+from sis.research.ndx.feature_panel import build_ndx_feature_panel
+from sis.research.ndx.residual_model import build_open_gap_residuals
+from sis.research.ndx.residual_validation import run_residual_validation_gate
+from sis.research.ndx.source_resolution import build_source_resolution
+from sis.research.ndx.start_conditions import Layer23StartConditionError
 from sis.research.hypothesis.role_contracts import CausalRoleRegistry
 from sis.research.hypothesis.role_validator import validate_roles_against_inventory
 from sis.research.hypothesis.data_source_contracts import DataSourceRegistry
@@ -623,6 +629,219 @@ def register_research_commands(
             raise typer.Exit(3)
         if gate.decision.decision == "REJECT_SEED":
             raise typer.Exit(4)
+
+    @app.command("research-ndx-source-resolve")
+    def research_ndx_source_resolve_cmd(
+        root: Path = typer.Option(
+            Path("configs/research_layer_2_2/ndx"),
+            "--root",
+            exists=True,
+            file_okay=False,
+            help="Layer 2.2 NDX config root used for start-condition verification.",
+        ),
+        artifact_dir: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--artifact-dir",
+            file_okay=False,
+            help="Layer 2.2 NDX artifact directory.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--out",
+            file_okay=False,
+            help="Output directory for NDX Layer 2.3 artifacts.",
+        ),
+    ) -> None:
+        try:
+            result = build_source_resolution(root=root, artifact_dir=artifact_dir, out_dir=out)
+        except (Layer23StartConditionError, FileNotFoundError, ValueError, ValidationError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"data_source_resolution={result.artifact_path}")
+        typer.echo(f"report={result.report_path}")
+        typer.echo(f"resolved_count={result.resolved_count}")
+        typer.echo(f"deferred_count={result.deferred_count}")
+
+    @app.command("research-ndx-feature-panel")
+    def research_ndx_feature_panel_cmd(
+        root: Path = typer.Option(
+            Path("configs/research_layer_2_2/ndx"),
+            "--root",
+            exists=True,
+            file_okay=False,
+            help="Layer 2.2 NDX config root used for start-condition verification.",
+        ),
+        artifact_dir: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--artifact-dir",
+            file_okay=False,
+            help="Layer 2.2 NDX artifact directory.",
+        ),
+        input_root: Path = typer.Option(
+            ...,
+            "--input-root",
+            exists=True,
+            file_okay=False,
+            help="Directory containing fixture-first NDX source CSV files.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--out",
+            file_okay=False,
+            help="Output directory for NDX feature panel artifacts.",
+        ),
+    ) -> None:
+        try:
+            result = build_ndx_feature_panel(
+                root=root,
+                artifact_dir=artifact_dir,
+                input_root=input_root,
+                out_dir=out,
+            )
+        except (Layer23StartConditionError, FileNotFoundError, ValueError, ValidationError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"feature_panel={result.panel_path}")
+        typer.echo(f"feature_manifest={result.manifest_path}")
+        typer.echo(f"report={result.report_path}")
+        typer.echo(f"row_count={result.row_count}")
+
+    @app.command("research-ndx-residual")
+    def research_ndx_residual_cmd(
+        feature_panel: Path = typer.Option(
+            ...,
+            "--feature-panel",
+            exists=True,
+            dir_okay=False,
+            help="NDX feature panel parquet path.",
+        ),
+        feature_manifest: Path = typer.Option(
+            Path("data/research/ndx/ndx_feature_manifest.json"),
+            "--feature-manifest",
+            exists=True,
+            dir_okay=False,
+            help="NDX feature manifest JSON path.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--out",
+            file_okay=False,
+            help="Output directory for NDX residual artifacts.",
+        ),
+        min_window: int = typer.Option(
+            6,
+            "--min-window",
+            min=6,
+            help="Minimum strictly prior rows for rolling OLS.",
+        ),
+    ) -> None:
+        try:
+            result = build_open_gap_residuals(
+                feature_panel_path=feature_panel,
+                feature_manifest_path=feature_manifest,
+                out_dir=out,
+                min_window=min_window,
+            )
+        except (FileNotFoundError, ValueError, ValidationError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"open_gap_residuals={result.residuals_path}")
+        typer.echo(f"residual_manifest={result.manifest_path}")
+        typer.echo(f"report={result.report_path}")
+        typer.echo(f"row_count={result.row_count}")
+
+    @app.command("research-ndx-diagnostics")
+    def research_ndx_diagnostics_cmd(
+        residuals: Path = typer.Option(
+            ...,
+            "--residuals",
+            exists=True,
+            dir_okay=False,
+            help="NDX open gap residual parquet path.",
+        ),
+        residual_manifest: Path = typer.Option(
+            Path("data/research/ndx/open_gap_residual_manifest.json"),
+            "--residual-manifest",
+            exists=True,
+            dir_okay=False,
+            help="NDX open gap residual manifest JSON path.",
+        ),
+        out: Path = typer.Option(
+            Path("data/reports"),
+            "--out",
+            file_okay=False,
+            help="Output directory for NDX diagnostics and pre-reports.",
+        ),
+    ) -> None:
+        try:
+            result = build_ndx_diagnostics(
+                residuals_path=residuals,
+                residual_manifest_path=residual_manifest,
+                out_dir=out,
+            )
+        except (FileNotFoundError, ValueError, ValidationError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"diagnostics={result.diagnostics_path}")
+        typer.echo(f"neutralized_residuals={result.neutralized_path}")
+        typer.echo(f"neutralization_report={result.neutralization_report_path}")
+        typer.echo(f"refutation_report={result.refutation_report_path}")
+        typer.echo(f"row_count={result.row_count}")
+
+    @app.command("research-ndx-residual-validate")
+    def research_ndx_residual_validate_cmd(
+        root: Path = typer.Option(
+            Path("configs/research_layer_2_2/ndx"),
+            "--root",
+            exists=True,
+            file_okay=False,
+            help="Layer 2.2 NDX config root used for start-condition verification.",
+        ),
+        artifact_dir: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--artifact-dir",
+            file_okay=False,
+            help="Layer 2.3 NDX artifact directory.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            file_okay=False,
+            help="Directory containing Layer 2.3 NDX diagnostic reports.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--out",
+            file_okay=False,
+            help="Output directory for NDX Layer 2.4 residual validation artifacts.",
+        ),
+    ) -> None:
+        try:
+            result = run_residual_validation_gate(
+                root=root,
+                artifact_dir=artifact_dir,
+                reports_dir=reports_dir,
+                out_dir=out,
+            )
+        except (FileNotFoundError, ValueError, ValidationError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"decision={result.decision}")
+        typer.echo(f"reason_codes={','.join(result.reason_codes)}")
+        typer.echo(f"residual_validation_summary={result.summary_path}")
+        typer.echo(f"residual_validation_decision={result.decision_path}")
+        typer.echo(f"report={result.report_path}")
+        typer.echo(f"counter_dag_refutation_report={result.counter_dag_report_path}")
 
     @app.command("build-cost-matrix")
     def build_cost_matrix() -> None:

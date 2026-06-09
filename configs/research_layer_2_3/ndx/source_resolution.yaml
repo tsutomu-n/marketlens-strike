@@ -1,0 +1,8 @@
+schema_version: ndx_layer_2_3_source_resolution_config.v1
+dag_id: HYP-NDX-001
+policy:
+  fixture_first: true
+  external_api_allowed: false
+  credentials_allowed: false
+  dependency_addition_allowed: false
+

@@ -1,0 +1,13 @@
+schema_version: ndx_layer_2_3_residual_model_config.v1
+dag_id: HYP-NDX-001
+target_column: qqq_gap
+factor_columns:
+  - spy_gap
+  - smh_gap
+  - vix_change
+  - dgs10_delta
+  - mega_cap_basket_gap
+min_window: 6
+training_policy: strictly_before_prediction_date
+model: rolling_ols_no_regularization
+

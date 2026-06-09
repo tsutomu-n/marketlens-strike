@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ndx_source_resolution.v1.schema.json",
+  "type": "object",
+  "required": ["schema_version", "dag_id", "dag_artifact_hash", "resolved_sources", "deferred_sources"],
+  "properties": {
+    "schema_version": {"const": "ndx_source_resolution.v1"},
+    "dag_id": {"const": "HYP-NDX-001"},
+    "dag_artifact_hash": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "resolved_sources": {"type": "array", "minItems": 1},
+    "deferred_sources": {"type": "array"}
+  },
+  "additionalProperties": true
+}
+

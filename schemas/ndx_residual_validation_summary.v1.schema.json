@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ndx_residual_validation_summary.v1.schema.json",
+  "type": "object",
+  "required": ["schema_version", "dag_id", "decision", "reason_codes", "thresholds", "scope"],
+  "properties": {
+    "schema_version": {"const": "ndx_residual_validation_summary.v1"},
+    "dag_id": {"const": "HYP-NDX-001"},
+    "decision": {
+      "enum": ["APPROVE_STRATEGY_LAB_EXPORT", "REVISE_2_3", "REVISE_2_2", "REJECT_RESIDUAL"]
+    },
+    "reason_codes": {"type": "array", "items": {"type": "string"}},
+    "thresholds": {"type": "object"},
+    "scope": {
+      "type": "object",
+      "required": ["strategy_signals_written", "backtest_run", "paper_candidate_written", "paper_intent_preview_written", "live_order_written"],
+      "properties": {
+        "strategy_signals_written": {"const": false},
+        "backtest_run": {"const": false},
+        "paper_candidate_written": {"const": false},
+        "paper_intent_preview_written": {"const": false},
+        "live_order_written": {"const": false}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
+

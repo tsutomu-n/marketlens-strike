@@ -1,0 +1,45 @@
+{
+  "created_at_jst": "2026-06-08_20:18 JST",
+  "title": "Layer 2.3 NDX Preflight / Feature Panel / Open Gap Residual Plan v1",
+  "root_path": "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1",
+  "purpose": "現RepoのLayer 2.2承認済みDAGを入力に、NDX feature panelとopen gap residual artifactをfixture-firstで実装する計画。",
+  "repo_assumption": {
+    "repo": "marketlens-strike",
+    "branch": "main",
+    "base_head": "unknown",
+    "observed_context": "2026-06-08 uploaded repository snapshot"
+  },
+  "safety": {
+    "external_api": "not_required",
+    "credentials": "not_required",
+    "paper_live_order": "not_touched",
+    "db_schema": "not_touched",
+    "dependency_change": "none",
+    "strategy_lab_export": "not_touched",
+    "feature_panel": "created_fixture_first",
+    "residual_calculation": "created_research_only"
+  },
+  "files": [
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/README.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/01_GOAL.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/02_SCOPE_AND_BOUNDARIES.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/03_CURRENT_REPO_CONTEXT.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/04_START_CONDITIONS.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/05_TASKS.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/06_DATA_SOURCE_RESOLUTION.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/07_FEATURE_PANEL_SPEC.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/08_RESIDUAL_MODEL_SPEC.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/09_DIAGNOSTICS_AND_REFUTATION.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/10_ACCEPTANCE.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/11_TARGET_FILE_MAP.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/12_TEST_PLAN.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/13_RISK_AND_STOP_CONDITIONS.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/14_IMPLEMENTER_CHECKLIST.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/15_CODER_HANDOFF_PROMPT.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/appendices/A_SCHEMA_SKETCHES.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/appendices/B_CONFIG_EXAMPLES.yaml",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/appendices/C_TASK_TICKETS.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/appendices/D_DECISION_MATRIX.md",
+    "feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/appendices/E_AFTER_THIS.md"
+  ]
+}

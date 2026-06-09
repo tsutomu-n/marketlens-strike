@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ndx_feature_manifest.v1.schema.json",
+  "type": "object",
+  "required": ["schema_version", "dag_id", "dag_artifact_hash", "feature_panel_path", "feature_panel_hash", "row_count", "model_factor_columns", "leakage_checks"],
+  "properties": {
+    "schema_version": {"const": "ndx_feature_manifest.v1"},
+    "dag_id": {"const": "HYP-NDX-001"},
+    "dag_artifact_hash": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "feature_panel_hash": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "row_count": {"type": "integer", "minimum": 1},
+    "model_factor_columns": {"type": "array", "items": {"type": "string"}},
+    "leakage_checks": {"type": "object"}
+  },
+  "additionalProperties": true
+}
+

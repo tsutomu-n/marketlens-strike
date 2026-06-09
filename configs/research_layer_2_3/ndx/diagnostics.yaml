@@ -1,0 +1,21 @@
+schema_version: ndx_layer_2_3_diagnostics_config.v1
+dag_id: HYP-NDX-001
+diagnostics:
+  - row_count
+  - missing_rate
+  - residual_mean
+  - residual_std
+  - residual_autocorr_lag1
+  - correlation_with_outcome
+  - correlation_with_factors
+  - sign_stability
+  - regime_split_by_vix
+counter_dag_skeletons_enabled:
+  - BroadMarketOnly
+  - RatesOnly
+  - SOXOnlyUsingSMHProxy
+  - MegaCapOnly
+  - VolRegimeOnly
+  - SelectionBias
+  - DataSourceLag
+

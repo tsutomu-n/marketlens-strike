@@ -1,0 +1,70 @@
+# 作成日: 2026-06-08_20:18 JST
+# 更新日: 2026-06-08_20:18 JST
+
+# configs/research_layer_2_3/ndx/source_resolution.yaml
+schema_version: ndx_source_resolution_config.v1
+dag_id: HYP-NDX-001
+required_sources:
+  - QQQ
+  - SPY
+  - SMH
+  - VIX
+  - DGS10
+  - mega_cap_basket
+optional_sources:
+  - NDX
+  - NQ
+  - VXN
+  - SOX
+  - qqq_premium_discount
+deferred_sources:
+  - options_gamma
+  - opex_calendar
+  - macro_event_calendar
+provider_mode: fixture_first
+external_api_allowed: false
+credentials_required: false
+
+---
+# configs/research_layer_2_3/ndx/feature_panel.yaml
+schema_version: ndx_feature_panel_config.v1
+dag_id: HYP-NDX-001
+input_mode: fixture
+date_column: date
+feature_ts_policy: market_open_plus_buffer
+outcome_columns:
+  - qqq_open_to_close_return
+model_input_columns:
+  - spy_gap
+  - smh_gap
+  - vix_change
+  - dgs10_delta
+  - mega_cap_basket_gap
+required_columns:
+  QQQ:
+    - date
+    - open
+    - close
+    - prev_close
+    - source_ts
+  SPY:
+    - date
+    - open
+    - prev_close
+    - source_ts
+
+---
+# configs/research_layer_2_3/ndx/residual_model.yaml
+schema_version: ndx_residual_model_config.v1
+model_id: ndx_open_gap_residual_rolling_ols_v1
+dag_id: HYP-NDX-001
+target_column: qqq_gap
+outcome_column: qqq_open_to_close_return
+factor_columns:
+  - spy_gap
+  - smh_gap
+  - vix_change
+  - dgs10_delta
+  - mega_cap_basket_gap
+min_window: 60
+model_type: rolling_ols
