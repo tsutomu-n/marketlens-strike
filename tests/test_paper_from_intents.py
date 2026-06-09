@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 import json
 
 import polars as pl
+import pytest
+from pydantic import ValidationError
 
 from sis.paper.runner import run_paper_from_intents
 from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
@@ -153,3 +155,17 @@ def test_run_paper_from_intents_blocks_expired_intent(tmp_path) -> None:
     assert summary.fills_count == 0
     assert summary.blocked_count == 1
     assert "INTENT_EXPIRED" in summary.observation_ledger_path.read_text(encoding="utf-8")
+
+
+def test_run_paper_from_intents_revalidates_raw_ndx_qqq_intent_json(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    _write_quotes(data_dir, symbol="XYZ100")
+    intents_path = data_dir / "bot/paper_intent_preview.json"
+    intents_path.parent.mkdir(parents=True)
+    payload = _intent(datetime.now(timezone.utc) + timedelta(minutes=15)).model_dump(mode="json")
+    payload["execution_symbol"] = "XYZ100"
+    payload["real_market_symbol"] = "QQQ"
+    intents_path.write_text(json.dumps([payload]), encoding="utf-8")
+
+    with pytest.raises(ValidationError, match="VENUE_REQUIRES_RESIDUAL_VALIDATION"):
+        run_paper_from_intents(data_dir, intents_path=intents_path)

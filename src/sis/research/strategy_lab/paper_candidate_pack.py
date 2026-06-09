@@ -59,6 +59,19 @@ class PaperCandidatePack(BaseModel):
         if unknown_rejected:
             raise ValueError(f"rejected_candidate_ids unknown: {sorted(unknown_rejected)}")
         candidates_by_id = {candidate.candidate_id: candidate for candidate in self.candidates}
+        invalid_selected = {
+            candidate_id: {
+                "status": candidates_by_id[candidate_id].status,
+                "block_reasons": candidates_by_id[candidate_id].block_reasons,
+            }
+            for candidate_id in self.selected_candidate_ids
+            if candidates_by_id[candidate_id].status != "candidate"
+            or candidates_by_id[candidate_id].block_reasons
+        }
+        if invalid_selected:
+            raise ValueError(
+                f"selected_candidate_ids contain non-candidate candidates: {invalid_selected}"
+            )
         unsuitable_selected = {
             candidate_id: block_reasons
             for candidate_id in self.selected_candidate_ids
