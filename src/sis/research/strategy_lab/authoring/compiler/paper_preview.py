@@ -18,6 +18,7 @@ from sis.research.strategy_lab.promotion_decision import PromotionDecision
 from sis.research.strategy_lab.signal_artifact import signal_artifact_run_id
 from sis.research.strategy_lab.trial_ledger import TrialLedger, TrialRecord
 from sis.venues.ids import VenueId
+from sis.venues.suitability import venue_suitability_block_reasons
 
 
 def write_authoring_paper_preview_outputs(
@@ -101,6 +102,22 @@ def write_authoring_paper_preview_outputs(
             row.get("tail_bucket") if selected and row else "none",
         )
         confidence = _float_or_default(row.get("confidence") if selected and row else None, 0.0)
+        candidate_block_reasons = [] if selected else list(record.rejection_reasons)
+        if selected:
+            candidate_block_reasons.extend(
+                venue_suitability_block_reasons(
+                    venue_id=str(execution_venue),
+                    execution_symbol=str(row.get("execution_symbol") or binding.execution_symbol),
+                    real_market_symbol=str(
+                        row.get("real_market_symbol") or binding.real_market_symbol
+                    ),
+                    stage="paper_candidate",
+                )
+            )
+            candidate_block_reasons = list(dict.fromkeys(candidate_block_reasons))
+        candidate_selected = selected and not candidate_block_reasons
+        if selected and candidate_block_reasons:
+            status = "blocked"
         candidate = TradeCandidate(
             schema_version="trade_candidate.v1",
             candidate_id=candidate_id,
@@ -120,7 +137,7 @@ def write_authoring_paper_preview_outputs(
             tail_bucket=tail_bucket,
             confidence=confidence,
             entry_reason_codes=list(row.get("reason_codes") or []) if selected and row else [],
-            block_reasons=[] if selected else record.rejection_reasons,
+            block_reasons=candidate_block_reasons,
             stop_loss_bps=row.get("stop_loss_bps") if selected and row else None,
             min_stop_loss_bps=row.get("min_stop_loss_bps") if selected and row else None,
             max_stop_loss_bps=row.get("max_stop_loss_bps") if selected and row else None,
@@ -224,7 +241,9 @@ def write_authoring_paper_preview_outputs(
             tracking_ref=row.get("tracking_ref") if row else None,
         )
         candidates.append(candidate)
-        (selected_candidate_ids if selected else rejected_candidate_ids).append(candidate_id)
+        (selected_candidate_ids if candidate_selected else rejected_candidate_ids).append(
+            candidate_id
+        )
 
     pack = PaperCandidatePack(
         schema_version="paper_candidate_pack.v1",

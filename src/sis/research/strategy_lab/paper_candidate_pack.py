@@ -6,6 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
 from sis.research.strategy_lab.candidates import TradeCandidate
+from sis.venues.suitability import venue_suitability_block_reasons
 
 
 class PaperCandidatePack(BaseModel):
@@ -57,6 +58,23 @@ class PaperCandidatePack(BaseModel):
         unknown_rejected = set(self.rejected_candidate_ids).difference(candidate_ids)
         if unknown_rejected:
             raise ValueError(f"rejected_candidate_ids unknown: {sorted(unknown_rejected)}")
+        candidates_by_id = {candidate.candidate_id: candidate for candidate in self.candidates}
+        unsuitable_selected = {
+            candidate_id: block_reasons
+            for candidate_id in self.selected_candidate_ids
+            if (
+                block_reasons := venue_suitability_block_reasons(
+                    venue_id=str(candidates_by_id[candidate_id].execution_venue),
+                    execution_symbol=candidates_by_id[candidate_id].execution_symbol,
+                    real_market_symbol=candidates_by_id[candidate_id].real_market_symbol,
+                    stage="paper_candidate",
+                )
+            )
+        }
+        if unsuitable_selected:
+            raise ValueError(
+                f"selected_candidate_ids contain venue-unsuitable candidates: {unsuitable_selected}"
+            )
         if self.profitability_claimed:
             raise ValueError("profitability_claimed must remain false for PaperCandidatePack")
         if self.paper_ready_claimed:

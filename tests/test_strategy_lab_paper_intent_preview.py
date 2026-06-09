@@ -18,8 +18,8 @@ def _intent(**overrides) -> PaperIntentPreview:
         "candidate_id": "candidate-001",
         "strategy_id": "equity_index_momentum_v0",
         "execution_venue": "trade_xyz",
-        "execution_symbol": "XYZ100",
-        "real_market_symbol": "QQQ",
+        "execution_symbol": "SP500",
+        "real_market_symbol": "SPY",
         "action": "enter",
         "side": "long",
         "order_style": "paper_taker",
@@ -56,6 +56,20 @@ def test_paper_intent_preview_accepts_bitget_demo_venue() -> None:
     assert intent.execution_venue == "bitget_demo"
     assert intent.paper_only is True
     assert intent.exchange_write_used is False
+
+
+def test_paper_intent_preview_rejects_trade_xyz_ndx_qqq_proxy() -> None:
+    with pytest.raises(ValidationError, match="VENUE_REQUIRES_RESIDUAL_VALIDATION"):
+        _intent(execution_symbol="XYZ100", real_market_symbol="QQQ")
+
+
+def test_paper_intent_preview_rejects_bitget_demo_ndx_qqq_symbol() -> None:
+    with pytest.raises(ValidationError, match="VENUE_ASSET_UNIVERSE_MISMATCH"):
+        _intent(
+            execution_venue="bitget_demo",
+            execution_symbol="XYZ100",
+            real_market_symbol="QQQ",
+        )
 
 
 def test_paper_intent_preview_rejects_live_conversion() -> None:

@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from sis.venues.ids import VENUE_IDS
+from sis.venues.suitability import VENUE_SUITABILITY_CATALOG
+
 
 def test_strategy_lab_schema_files_exist_and_parse() -> None:
     names = [
@@ -109,3 +112,8 @@ def test_execution_venue_schema_enum_matches_strategy_contract_scope() -> None:
     assert signal["properties"]["execution_venue"]["enum"] == expected
     assert candidate["properties"]["execution_venue"]["enum"] == expected
     assert preview["properties"]["execution_venue"]["enum"] == expected
+    assert list(VENUE_IDS) == expected
+    assert "bitget_futures" in VENUE_SUITABILITY_CATALOG
+    assert "hyperliquid_perp" in VENUE_SUITABILITY_CATALOG
+    assert "bitget_futures" not in expected
+    assert "hyperliquid_perp" not in expected

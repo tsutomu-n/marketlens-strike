@@ -74,6 +74,7 @@ from sis.research.strategy_lab.signal_registry import default_signal_generator_r
 from sis.research.strategy_lab.trial_ledger import TrialLedger, TrialRecord
 from sis.real_market.alpaca_smoke import run_alpaca_live_smoke
 from sis.settings import get_settings
+from sis.venues.suitability import venue_suitability_block_reasons
 
 
 def _parse_optional_datetime(value: str | None) -> datetime | None:
@@ -1202,45 +1203,58 @@ def register_research_commands(
                         "Strategy signal manifest not found for blocked/no-signal candidate."
                     )
                     raise typer.Exit(2)
-                candidates.append(
-                    TradeCandidate(
-                        schema_version="trade_candidate.v1",
-                        candidate_id=candidate_id,
-                        generated_at=now,
-                        signal_id=signal_id,
-                        strategy_id=record.strategy_id,
-                        trial_id=record.trial_id,
-                        execution_venue=execution_venue,
-                        execution_symbol=execution_symbol,
-                        real_market_symbol=real_market_symbol,
-                        side=candidate_side,
-                        timeframe=timeframe,
-                        status=status,
-                        raw_score=_float_or_none(signal.get("raw_score")),
-                        rank_score=_float_or_none(signal.get("rank_score"))
-                        if record.selected_for_next_stage
-                        else None,
-                        percentile_rank=_float_or_none(signal.get("percentile_rank"))
-                        if record.selected_for_next_stage
-                        else None,
-                        tail_bucket=_tail_bucket_value(
-                            signal.get("tail_bucket"), selected=record.selected_for_next_stage
-                        ),
-                        confidence=(_float_or_none(signal.get("confidence")) or 0.8)
-                        if record.selected_for_next_stage
-                        else 0.0,
-                        entry_reason_codes=reason_codes if record.selected_for_next_stage else [],
-                        block_reasons=[]
-                        if record.selected_for_next_stage
-                        else record.rejection_reasons,
-                        feature_snapshot_ref=feature_snapshot_ref,
-                        quote_ref=signal.get("quote_ref"),
-                        tracking_ref=signal.get("tracking_ref"),
+                block_reasons = (
+                    [] if record.selected_for_next_stage else list(record.rejection_reasons)
+                )
+                if record.selected_for_next_stage:
+                    block_reasons.extend(
+                        venue_suitability_block_reasons(
+                            venue_id=str(execution_venue),
+                            execution_symbol=execution_symbol,
+                            real_market_symbol=real_market_symbol,
+                            stage="paper_candidate",
+                        )
                     )
+                    block_reasons = list(dict.fromkeys(block_reasons))
+                    if block_reasons:
+                        status = "blocked"
+                candidate = TradeCandidate(
+                    schema_version="trade_candidate.v1",
+                    candidate_id=candidate_id,
+                    generated_at=now,
+                    signal_id=signal_id,
+                    strategy_id=record.strategy_id,
+                    trial_id=record.trial_id,
+                    execution_venue=execution_venue,
+                    execution_symbol=execution_symbol,
+                    real_market_symbol=real_market_symbol,
+                    side=candidate_side,
+                    timeframe=timeframe,
+                    status=status,
+                    raw_score=_float_or_none(signal.get("raw_score")),
+                    rank_score=_float_or_none(signal.get("rank_score"))
+                    if record.selected_for_next_stage
+                    else None,
+                    percentile_rank=_float_or_none(signal.get("percentile_rank"))
+                    if record.selected_for_next_stage
+                    else None,
+                    tail_bucket=_tail_bucket_value(
+                        signal.get("tail_bucket"), selected=record.selected_for_next_stage
+                    ),
+                    confidence=(_float_or_none(signal.get("confidence")) or 0.8)
+                    if record.selected_for_next_stage
+                    else 0.0,
+                    entry_reason_codes=reason_codes if record.selected_for_next_stage else [],
+                    block_reasons=block_reasons,
+                    feature_snapshot_ref=feature_snapshot_ref,
+                    quote_ref=signal.get("quote_ref"),
+                    tracking_ref=signal.get("tracking_ref"),
                 )
-                (selected_ids if record.selected_for_next_stage else rejected_ids).append(
-                    candidate_id
-                )
+                candidates.append(candidate)
+                if record.selected_for_next_stage and not block_reasons:
+                    selected_ids.append(candidate_id)
+                else:
+                    rejected_ids.append(candidate_id)
         pack_run_id = run_id_from_trial_group(selected_group_id)
         pack = PaperCandidatePack(
             schema_version="paper_candidate_pack.v1",
@@ -1269,7 +1283,8 @@ def register_research_commands(
         report_path.write_text(
             "# Paper Candidate Pack\n\n"
             f"- candidates: {len(candidates)}\n"
-            f"- selected: {len(selected_ids)}\n",
+            f"- selected: {len(selected_ids)}\n"
+            f"- rejected: {len(rejected_ids)}\n",
             encoding="utf-8",
         )
         typer.echo(f"paper_candidate_pack={out}")

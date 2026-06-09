@@ -9,7 +9,7 @@ from sis.paper.runner import run_paper_from_intents
 from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
 
 
-def _write_quotes(data_dir, *, venue: str = "trade_xyz", symbol: str = "XYZ100") -> None:
+def _write_quotes(data_dir, *, venue: str = "trade_xyz", symbol: str = "SP500") -> None:
     (data_dir / "normalized").mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc)
     pl.DataFrame(
@@ -46,8 +46,8 @@ def _intent(
     valid_until: datetime,
     *,
     venue: str = "trade_xyz",
-    symbol: str = "XYZ100",
-    real_symbol: str = "QQQ",
+    symbol: str = "SP500",
+    real_symbol: str = "SPY",
 ) -> PaperIntentPreview:
     now = datetime.now(timezone.utc)
     return PaperIntentPreview(

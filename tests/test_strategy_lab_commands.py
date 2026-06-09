@@ -108,6 +108,13 @@ def test_strategy_lab_cli_artifact_chain(tmp_path, monkeypatch) -> None:
     assert pack["pack_id"] == f"paper-pack-{run_id}"
     assert pack["candidates"][0]["candidate_id"] == f"candidate-trial-{run_id}-sig-001"
     assert pack["candidates"][0]["signal_id"] == "sig-001"
+    assert pack["candidates"][0]["status"] == "blocked"
+    assert pack["selected_candidate_ids"] == []
+    assert pack["rejected_candidate_ids"] == [pack["candidates"][0]["candidate_id"]]
+    assert (
+        "VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION"
+        in pack["candidates"][0]["block_reasons"]
+    )
 
     result = runner.invoke(app, ["promotion-decision", "--decision", "promote"])
     assert result.exit_code == 0
@@ -124,10 +131,7 @@ def test_strategy_lab_cli_artifact_chain(tmp_path, monkeypatch) -> None:
     intent_path = data_dir / "bot/paper_intent_preview.json"
     assert intent_path.exists()
     intents = json.loads(intent_path.read_text(encoding="utf-8"))
-    assert intents[0]["paper_only"] is True
-    assert intents[0]["live_conversion_allowed"] is False
-    assert intents[0]["source_pack_id"] == pack["pack_id"]
-    assert intents[0]["scorecard_summary"]["schema_version"] == "strategy_authoring_scorecard.v1"
+    assert intents == []
 
 
 def test_strategy_lab_cli_preserves_sp500_signal_lineage(tmp_path, monkeypatch) -> None:
@@ -572,6 +576,9 @@ def test_build_paper_candidate_pack_uses_latest_signal_row(tmp_path, monkeypatch
     assert len(pack["candidates"]) == 1
     assert pack["candidates"][0]["signal_id"] == "sig-new"
     assert pack["candidates"][0]["candidate_id"].endswith("-sig-new")
+    assert pack["candidates"][0]["status"] == "blocked"
+    assert pack["selected_candidate_ids"] == []
+    assert pack["rejected_candidate_ids"] == [pack["candidates"][0]["candidate_id"]]
 
 
 def test_build_paper_candidate_pack_can_select_multiple_signal_rows(tmp_path, monkeypatch) -> None:
@@ -615,7 +622,9 @@ def test_build_paper_candidate_pack_can_select_multiple_signal_rows(tmp_path, mo
         "sig-new",
         "sig-old",
     ]
-    assert len(pack["selected_candidate_ids"]) == 2
+    assert pack["selected_candidate_ids"] == []
+    assert len(pack["rejected_candidate_ids"]) == 2
+    assert all(candidate["status"] == "blocked" for candidate in pack["candidates"])
 
 
 def test_evaluate_strategy_lab_rejects_duplicate_signal_ids(tmp_path, monkeypatch) -> None:

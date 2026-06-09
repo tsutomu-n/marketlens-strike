@@ -9,7 +9,14 @@ from sis.research.strategy_lab.candidates import TradeCandidate
 from sis.research.strategy_lab.paper_candidate_pack import PaperCandidatePack
 
 
-def _candidate(candidate_id: str, *, status: str = "candidate") -> TradeCandidate:
+def _candidate(
+    candidate_id: str,
+    *,
+    status: str = "candidate",
+    venue: str = "trade_xyz",
+    execution_symbol: str = "XYZ100",
+    real_market_symbol: str = "QQQ",
+) -> TradeCandidate:
     return TradeCandidate(
         schema_version="trade_candidate.v1",
         candidate_id=candidate_id,
@@ -17,9 +24,9 @@ def _candidate(candidate_id: str, *, status: str = "candidate") -> TradeCandidat
         signal_id="sig-001",
         strategy_id="equity_index_momentum_v0",
         trial_id="trial-001",
-        execution_venue="trade_xyz",
-        execution_symbol="XYZ100",
-        real_market_symbol="QQQ",
+        execution_venue=venue,
+        execution_symbol=execution_symbol,
+        real_market_symbol=real_market_symbol,
         side="long",
         timeframe="4h",
         status=status,
@@ -73,7 +80,11 @@ def test_paper_candidate_pack_preserves_selected_rejected_and_blocked() -> None:
         feature_snapshot_id="feature-snap-001",
         trial_group_id="group-001",
         candidates=[
-            _candidate("candidate-001"),
+            _candidate(
+                "candidate-001",
+                execution_symbol="SP500",
+                real_market_symbol="SPY",
+            ),
             _candidate("candidate-002", status="blocked"),
         ],
         selected_candidate_ids=["candidate-001"],
@@ -91,6 +102,25 @@ def test_paper_candidate_pack_preserves_selected_rejected_and_blocked() -> None:
     assert pack.wallet_used is False
     assert pack.exchange_write_used is False
     assert pack.paper_ready_claimed is False
+
+
+def test_paper_candidate_pack_rejects_selected_ndx_qqq_candidate() -> None:
+    with pytest.raises(ValidationError, match="venue-unsuitable"):
+        PaperCandidatePack(
+            schema_version="paper_candidate_pack.v1",
+            pack_id="pack-001",
+            generated_at=datetime.now(timezone.utc),
+            evaluation_plan_id="initial_walkforward",
+            data_snapshot_id="data-snap-001",
+            feature_snapshot_id="feature-snap-001",
+            trial_group_id="group-001",
+            candidates=[_candidate("candidate-001")],
+            selected_candidate_ids=["candidate-001"],
+            rejected_candidate_ids=[],
+            selection_policy={},
+            reason_codes=[],
+            block_reasons=[],
+        )
 
 
 def test_paper_candidate_pack_rejects_unknown_selected_id() -> None:

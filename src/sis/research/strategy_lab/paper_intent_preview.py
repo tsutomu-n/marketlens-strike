@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 from sis.venues.ids import VenueId
+from sis.venues.suitability import venue_suitability_block_reasons
 
 
 class PaperIntentPreview(BaseModel):
@@ -64,4 +65,12 @@ class PaperIntentPreview(BaseModel):
             raise ValueError("exchange_write_used must remain false for PaperIntentPreview")
         self.execution_symbol = self.execution_symbol.strip().upper()
         self.real_market_symbol = self.real_market_symbol.strip().upper()
+        block_reasons = venue_suitability_block_reasons(
+            venue_id=str(self.execution_venue),
+            execution_symbol=self.execution_symbol,
+            real_market_symbol=self.real_market_symbol,
+            stage="paper_intent",
+        )
+        if block_reasons:
+            raise ValueError(f"PaperIntentPreview venue unsuitable: {block_reasons}")
         return self

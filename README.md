@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-09_14:23 JST
+更新日: 2026-06-09_15:07 JST
 -->
 
 # marketlens-strike
@@ -173,16 +173,19 @@ Strategy idea preparation starts at
 
 - Current development is backtest-first and venue-neutral. Trade[XYZ] is an implemented venue and future order-entry candidate, not the current order-entry bottleneck.
 - `VenueId` currently allows `trade_xyz` and `bitget_demo`.
+- `bitget_futures` and `hyperliquid_perp` are suitability-catalog entries only; they are not current `VenueId` values and are not accepted by Strategy Lab artifact schemas.
 - `trade_xyz`, `bitget_demo`, `real_market`, `tracking`, `paper`, and `micro_live` code surfaces exist.
 - `src/sis/cli.py` builds the root Typer app; command implementations live under `src/sis/commands/`.
 - `collect-trade-xyz-quotes` is a public CLI command.
 - `bitget-demo-smoke` is a local/mock-first smoke. `status=configured` means the three local Bitget demo env values are present; it does not prove network connectivity, account readiness, order submit readiness, or fill sync.
+- `bitget_demo` is a crypto fixture/demo paper surface. It is not an NDX/QQQ execution venue.
 - micro live is a code/test safety surface, not a public operator command.
 - `bot-preview` writes read-only HOLD preview artifacts when run; it does not use wallet secrets, signing, or exchange writes.
 - `check-go-no-go` and `build-evidence-card` are supplemental reports. Use `phase-gate-review` for the current Trade[XYZ] decision.
 - `data/research/strategy_signals.parquet` is the canonical Strategy Lab signal artifact. `data/research/signals.csv` is a legacy export.
 - NDX Layer 2.2 DAG and manual review gate code lives under `configs/research_layer_2_2/ndx/`, `src/sis/research/dag/`, `schemas/layer_2_2_*.schema.json`, and `schemas/llm_dag_review.v1.schema.json`.
 - NDX Layer 2.3/2.4 local preflight, residual, diagnostics, and validation gate code lives under `src/sis/research/ndx/`, `src/sis/commands/research.py`, `configs/research_layer_2_3/ndx/`, `configs/research_layer_2_4/ndx/`, `schemas/ndx_*.schema.json`, and `tests/research/`.
+- NDX/QQQ `trade_xyz` proxy candidates may be retained as research records, but they are blocked from `selected_candidate_ids` and `PaperIntentPreview` until residual validation, venue suitability, and operator promotion are implemented for that path.
 - `PaperIntentPreview` is paper-only. Do not convert it to live orders.
 - Trade[XYZ] pure backtest v0.1 is separate from `build-backtest` and Strategy
   Authoring fixed-horizon backtest.
