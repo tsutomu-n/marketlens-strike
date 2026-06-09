@@ -15,8 +15,8 @@ def _write_inputs(data_dir) -> None:
             {
                 "ts_client": datetime(2026, 5, 22, 0, 0, tzinfo=timezone.utc),
                 "venue": "gtrade",
-                "canonical_symbol": "QQQ",
-                "venue_symbol": "QQQ/USD",
+                "canonical_symbol": "SPY",
+                "venue_symbol": "SPY/USD",
                 "exec_buy_price": 100.0,
                 "exec_sell_price": 99.9,
                 "best_bid": 99.9,
@@ -41,8 +41,8 @@ def _write_inputs(data_dir) -> None:
             {
                 "ts_client": datetime(2026, 5, 22, 4, 0, tzinfo=timezone.utc),
                 "venue": "gtrade",
-                "canonical_symbol": "QQQ",
-                "venue_symbol": "QQQ/USD",
+                "canonical_symbol": "SPY",
+                "venue_symbol": "SPY/USD",
                 "exec_buy_price": 101.0,
                 "exec_sell_price": 100.9,
                 "best_bid": 100.9,
@@ -67,6 +67,27 @@ def _write_inputs(data_dir) -> None:
         ]
     ).write_parquet(data_dir / "normalized/quotes.parquet")
     (data_dir / "research").mkdir(parents=True, exist_ok=True)
+    (data_dir / "research/signals.csv").write_text(
+        "ts_signal,canonical_symbol,side,timeframe,signal_strength,strategy_name,reason\n"
+        "2026-05-22T00:00:00+00:00,SPY,long,4h,1.0,spy_trend_rates_vix,test\n",
+        encoding="utf-8",
+    )
+    (data_dir / "research/venue_cost_matrix.csv").write_text(
+        "venue,symbol,open_fee_bps,close_fee_bps,spread_p50_bps,holding_cost_4h_bps\n"
+        "gtrade,SPY,5,5,2,1\n",
+        encoding="utf-8",
+    )
+
+
+def _write_ndx_inputs(data_dir) -> None:
+    _write_inputs(data_dir)
+    quotes = pl.read_parquet(data_dir / "normalized/quotes.parquet").with_columns(
+        [
+            pl.lit("QQQ").alias("canonical_symbol"),
+            pl.lit("QQQ/USD").alias("venue_symbol"),
+        ]
+    )
+    quotes.write_parquet(data_dir / "normalized/quotes.parquet")
     (data_dir / "research/signals.csv").write_text(
         "ts_signal,canonical_symbol,side,timeframe,signal_strength,strategy_name,reason\n"
         "2026-05-22T00:00:00+00:00,QQQ,long,4h,1.0,qqq_trend_rates_vix,test\n",
@@ -311,7 +332,7 @@ def test_run_paper_step_restores_existing_positions(tmp_path) -> None:
         [
             {
                 "venue": "gtrade",
-                "canonical_symbol": "QQQ",
+                "canonical_symbol": "SPY",
                 "side": "long",
                 "quantity": 1.0,
                 "avg_entry_price": 99.0,
@@ -328,3 +349,20 @@ def test_run_paper_step_restores_existing_positions(tmp_path) -> None:
     positions = pl.read_parquet(summary.positions_path)
     assert positions.height == 1
     assert positions["quantity"][0] == 2.0
+
+
+def test_run_paper_step_blocks_legacy_ndx_qqq_signal(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    _write_ndx_inputs(data_dir)
+    state_path = data_dir / "state/marketlens.sqlite"
+
+    summary = run_paper_step(data_dir, state_path=state_path)
+
+    assert summary.orders_count == 0
+    assert summary.fills_count == 0
+    payload = StateStore(state_path).get_json("paper_last_run")
+    assert isinstance(payload, dict)
+    assert payload["legacy_paper_blocked_count"] == 1
+    assert payload["legacy_paper_blocked_reason_counts"] == {
+        "VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION": 1
+    }

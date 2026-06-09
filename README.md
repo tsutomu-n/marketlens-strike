@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-09_15:07 JST
+更新日: 2026-06-09_15:54 JST
 -->
 
 # marketlens-strike
@@ -185,7 +185,7 @@ Strategy idea preparation starts at
 - `data/research/strategy_signals.parquet` is the canonical Strategy Lab signal artifact. `data/research/signals.csv` is a legacy export.
 - NDX Layer 2.2 DAG and manual review gate code lives under `configs/research_layer_2_2/ndx/`, `src/sis/research/dag/`, `schemas/layer_2_2_*.schema.json`, and `schemas/llm_dag_review.v1.schema.json`.
 - NDX Layer 2.3/2.4 local preflight, residual, diagnostics, and validation gate code lives under `src/sis/research/ndx/`, `src/sis/commands/research.py`, `configs/research_layer_2_3/ndx/`, `configs/research_layer_2_4/ndx/`, `schemas/ndx_*.schema.json`, and `tests/research/`.
-- NDX/QQQ `trade_xyz` proxy candidates may be retained as research records, but they are blocked from `selected_candidate_ids` and `PaperIntentPreview` until residual validation, venue suitability, and operator promotion are implemented for that path.
+- NDX/QQQ records may be retained for research and backtests, but they are blocked from `selected_candidate_ids`, `PaperIntentPreview`, and legacy `paper-step` order generation until residual validation, venue suitability, and operator promotion are implemented for that path.
 - `PaperIntentPreview` is paper-only. Do not convert it to live orders.
 - Trade[XYZ] pure backtest v0.1 is separate from `build-backtest` and Strategy
   Authoring fixed-horizon backtest.
