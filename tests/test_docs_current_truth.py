@@ -43,7 +43,7 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
 
     assert '"AGENTS.md"' in script
     assert '"docs/DOCUMENT_AUDIT_2026-05-31.md"' in script
-    assert '"docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md"' in script
+    assert '"docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"' in script
     assert '"docs/DOCUMENT_AUDIT_2026-06-06_CODE_TRUTH_REFRESH.md"' not in script
     assert '"docs/algo/ALGO_STRATEGY_SYSTEM_GUIDE.md"' in script
     assert '"docs/algo/STRATEGY_PARTS_CATALOG.md"' in script

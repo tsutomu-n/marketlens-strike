@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-08_18:21 JST
+更新日: 2026-06-09_14:23 JST
 -->
 
 # Documentation Archive
@@ -14,7 +14,7 @@ Current docs:
 - `docs/OPERATIONS_RUNBOOK.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
 - `docs/DOCUMENT_AUDIT_2026-05-31.md`
-- `docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md`
+- `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`
 
 Archived on 2026-05-25:
 
@@ -75,5 +75,9 @@ Archived on 2026-06-08:
 - `docs/DOCUMENT_CLEANUP_EXECUTION_PLAN_2026-06-06.md` -> `docs/archive/2026-06-08-doc-routing/`
 - `docs/algo/obsidian_note_copies/` -> `docs/archive/2026-06-08-doc-routing/algo/`
 - `docs/algo/obsidian_note_rewrites_2026-05-28/` -> `docs/archive/2026-06-08-doc-routing/algo/`
+
+Archived on 2026-06-09:
+
+- `docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md` -> `docs/archive/2026-06-09-ndx-doc-refresh/`
 
 Do not treat archived documents as current requirements.

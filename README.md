@@ -1,13 +1,14 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-08_20:05 JST
+更新日: 2026-06-09_14:23 JST
 -->
 
 # marketlens-strike
 
 `marketlens-strike` is a Python 3.13 CLI workspace for backtest-first strategy
-research, NDX Layer 2.2 DAG review, Strategy Research Lab workflows, paper
-operations, venue-neutral execution contracts, and safety gates.
+research, NDX Layer 2.2/2.3/2.4 local research gates, Strategy Research Lab
+workflows, paper operations, venue-neutral execution contracts, and safety
+gates.
 
 The code is the source of truth. Current docs summarize the implemented surfaces
 and the latest verified snapshots; generated files under `data/` may be absent
@@ -19,17 +20,19 @@ in a fresh checkout until commands are run.
 2. [docs/CODE_STATUS.md](docs/CODE_STATUS.md)
 3. [docs/research/ndx/README.md](docs/research/ndx/README.md)
 4. [docs/research/ndx/09_LLM_REVIEW_GATE.md](docs/research/ndx/09_LLM_REVIEW_GATE.md)
-5. [docs/backtest/README.md](docs/backtest/README.md)
-6. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
-7. [docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md](docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md)
-8. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
-9. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
-10. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-11. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-12. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-13. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
-14. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md) is a historical backtest update audit.
-15. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
+5. [docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md](docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md)
+6. [docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md](docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md)
+7. [docs/backtest/README.md](docs/backtest/README.md)
+8. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
+9. [docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md](docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md)
+10. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
+11. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
+12. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+13. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+14. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+15. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+16. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md) is a historical backtest update audit.
+17. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
 
 ## Setup
 
@@ -126,6 +129,28 @@ This Layer 2.2 gate is local/manual review plumbing only. It does not fetch
 market data, calculate residuals, export Strategy Lab artifacts, backtest, or
 connect paper/live order paths.
 
+NDX Layer 2.3 fixture-first preflight and residual artifacts:
+
+```bash
+uv run sis research-ndx-source-resolve --root configs/research_layer_2_2/ndx --out data/research/ndx
+uv run sis research-ndx-feature-panel --root configs/research_layer_2_2/ndx --input-root tests/fixtures/ndx --out data/research/ndx
+uv run sis research-ndx-residual --feature-panel data/research/ndx/ndx_feature_panel.parquet --out data/research/ndx
+uv run sis research-ndx-diagnostics --residuals data/research/ndx/open_gap_residuals.parquet --out data/reports
+```
+
+NDX Layer 2.4 residual validation gate:
+
+```bash
+uv run sis research-ndx-residual-validate --root configs/research_layer_2_2/ndx --artifact-dir data/research/ndx --reports-dir data/reports --out data/research/ndx
+```
+
+Layer 2.3/2.4 are also local research gates. They do not export
+`data/research/strategy_signals.parquet`, run backtests, create paper
+candidates, create `PaperIntentPreview`, call external APIs, use credentials, or
+connect paper/live order paths. The current default fixture artifacts are
+expected to stop at `REVISE_2_3` in Layer 2.4 because the validation sample and
+era count are insufficient.
+
 Trade[XYZ] pure backtest v0.1:
 
 ```bash
@@ -157,6 +182,7 @@ Strategy idea preparation starts at
 - `check-go-no-go` and `build-evidence-card` are supplemental reports. Use `phase-gate-review` for the current Trade[XYZ] decision.
 - `data/research/strategy_signals.parquet` is the canonical Strategy Lab signal artifact. `data/research/signals.csv` is a legacy export.
 - NDX Layer 2.2 DAG and manual review gate code lives under `configs/research_layer_2_2/ndx/`, `src/sis/research/dag/`, `schemas/layer_2_2_*.schema.json`, and `schemas/llm_dag_review.v1.schema.json`.
+- NDX Layer 2.3/2.4 local preflight, residual, diagnostics, and validation gate code lives under `src/sis/research/ndx/`, `src/sis/commands/research.py`, `configs/research_layer_2_3/ndx/`, `configs/research_layer_2_4/ndx/`, `schemas/ndx_*.schema.json`, and `tests/research/`.
 - `PaperIntentPreview` is paper-only. Do not convert it to live orders.
 - Trade[XYZ] pure backtest v0.1 is separate from `build-backtest` and Strategy
   Authoring fixed-horizon backtest.
@@ -179,13 +205,14 @@ uv run python scripts/check_current_docs.py
 
 - `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully
 
-2026-06-08 Layer 2.2 review harness snapshot:
+2026-06-09 NDX Layer 2.2/2.3/2.4 local research gate snapshot:
 
-- `research-layer22-review-pack`, `research-layer22-review-import`, and `research-layer22-exit-gate` are registered CLI commands.
-- `uv run python scripts/check_current_docs.py`: `checked 99 current docs`
-- Latest local smoke decision artifact was `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, with pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`.
+- `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, and `research-ndx-residual-validate` are registered CLI commands.
+- `uv run python scripts/check_current_docs.py`: `checked 101 current docs`
+- Latest local Layer 2.2 exit decision artifact was `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, with pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`.
 - Non-approve exit-gate runs remove stale `layer_2_2_freeze_manifest.json` from the same output directory.
-- Full local gate was observed passing with `919 passed`; rerun `./scripts/check` for current proof.
+- Current Layer 2.4 validation emits `REVISE_2_3` with `INSUFFICIENT_VALIDATION_ERAS` and `INSUFFICIENT_VALIDATION_SAMPLE`; this is not a Strategy Lab export approval.
+- Full local gate was observed passing with docs checker `101 current docs` and `936 passed`; rerun `./scripts/check` for current proof.
 
 2026-06-05 runtime artifact snapshot:
 

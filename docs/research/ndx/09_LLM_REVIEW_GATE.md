@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-08_06:45 JST
-更新日: 2026-06-08_19:51 JST
+更新日: 2026-06-09_14:23 JST
 -->
 
 # Layer 2.2 LLM Review Gate
@@ -9,7 +9,7 @@
 
 この gate は Layer 2.2 の DAG artifact を手動レビューし、Layer 2.3 へ進めるかを判定するためのローカル harness である。外部 LLM API、credentials、feature panel、residual calculation、Strategy Lab export、backtest、paper/live order には接続しない。
 
-現在の正本は repo の code、tests、schemas、config、CLI help である。旧 v2/v5 ZIP は historical design background であり、新規実装指示として扱わない。2026-06-08 の受入監査は `plan/0608ここからの計画/feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/` を対象にした。
+現在の正本は repo の code、tests、schemas、config、CLI help である。旧 v2/v5 ZIP は historical design background であり、新規実装指示として扱わない。2026-06-08 の受入監査は archived plan `plan/archive/2026-06-09-ndx-plan-routing/feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/` を履歴契約として読む。
 
 ## 1. 前提 artifact を作る
 
