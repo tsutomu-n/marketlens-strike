@@ -44,6 +44,10 @@ from sis.reports.summary_normalizers import (
 )
 from sis.state.store import StateStore
 from sis.storage.jsonl_store import read_json
+from sis.venues.suitability import (
+    VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION,
+    is_ndx_qqq_family,
+)
 
 
 @dataclass(frozen=True)
@@ -460,9 +464,26 @@ def run_paper_step(
     orders: list[PaperOrder] = []
     fills: list[PaperFill] = []
     realized_pnl = 0.0
+    legacy_paper_blocked_count = 0
+    legacy_paper_blocked_reason_counts: dict[str, int] = {}
 
     for record in records:
         execution_plan = record.execution_plan
+        if is_ndx_qqq_family(
+            execution_symbol=record.context.canonical_symbol,
+            real_market_symbol=record.context.canonical_symbol,
+        ):
+            legacy_paper_blocked_count += 1
+            legacy_paper_blocked_reason_counts[
+                VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION
+            ] = (
+                legacy_paper_blocked_reason_counts.get(
+                    VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION,
+                    0,
+                )
+                + 1
+            )
+            continue
         order = PaperOrder(
             ts_order=record.context.decision_ts,
             venue=record.context.venue,
@@ -531,6 +552,8 @@ def run_paper_step(
             "fills_count": len(fills),
             "open_positions": len(positions),
             "realized_pnl": realized_pnl,
+            "legacy_paper_blocked_count": legacy_paper_blocked_count,
+            "legacy_paper_blocked_reason_counts": legacy_paper_blocked_reason_counts,
             "audit": audit_summary,
             "audit_summary": audit_summary,
             **latest_execution_lineage,
