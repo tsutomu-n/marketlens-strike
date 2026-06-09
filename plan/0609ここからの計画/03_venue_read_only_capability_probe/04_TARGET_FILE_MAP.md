@@ -47,6 +47,16 @@
   - only if `docs/venues` is not already included; current code already
     includes it
 
+## Do Not Modify In This Slice
+
+- `src/sis/commands/execution_artifacts.py`
+  - Do not add future venues to `execution-read-only-surfaces` yet. Many current
+    execution lineage tests and artifacts assume the existing operational
+    execution surface count. Keep this slice as an independent probe artifact.
+- `src/sis/reports/execution_snapshot.py`
+- `src/sis/reports/execution_venue_comparison.py`
+- `src/sis/reports/execution_venue_diagnostics.py`
+
 ## Must Not Modify
 
 - `src/sis/venues/ids.py`
@@ -61,4 +71,3 @@
 - `src/sis/paper/runner.py`
 - `pyproject.toml`
 - `uv.lock`
-

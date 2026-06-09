@@ -114,43 +114,7 @@ Verification:
 
 Destructive level: low local writes under `data/ops` and `data/reports`.
 
-## Task 4: Integrate With Existing Read-Only Surface Report
-
-Goal: make future venue probe status visible in read-only execution surface
-reports without claiming readiness.
-
-Target files:
-
-- modify `src/sis/commands/execution_artifacts.py`
-- modify `tests/test_execution_snapshot_report.py` or add focused tests
-- modify `tests/test_execution_venue_comparison_report.py` only if needed
-
-Implementation details:
-
-- Keep existing `trade_xyz` and `bitget_demo` behavior.
-- Add future venue rows to `execution-read-only-surfaces` only as
-  `collector_status=not_connected` or equivalent.
-- Include:
-  - `collector_reason=venue_read_only_probe_blocked_by_capability`
-  - `read_only_endpoint_scope=none`
-  - `external_write_enabled=False`
-  - `exchange_write_used=False`
-  - `next_action=implement_fixture_to_network_read_only_probe_gate`
-- Do not make execution snapshot `overall_status=ok` because future venues are
-  listed.
-
-Acceptance:
-
-- read-only surface report includes future venues as blocked, not connected
-- existing Trade[XYZ] and Bitget demo assertions still pass
-
-Verification:
-
-- `uv run pytest -q tests/test_execution_snapshot_report.py tests/test_execution_venue_comparison_report.py tests/test_execution_venue_diagnostics_report.py`
-
-Destructive level: low local report writes.
-
-## Task 5: Update Docs
+## Task 4: Update Docs
 
 Goal: make the new artifact discoverable and prevent operator misread.
 
@@ -181,7 +145,7 @@ Verification:
 
 Destructive level: docs only.
 
-## Task 6: Final Guard Verification
+## Task 5: Final Guard Verification
 
 Goal: prove this slice did not widen trading scope.
 
@@ -201,4 +165,3 @@ Acceptance:
 - `./scripts/check` passes
 
 Destructive level: none, except local generated reports if CLI was run.
-

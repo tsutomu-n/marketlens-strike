@@ -18,6 +18,8 @@ The implementation is complete only when all conditions are true.
 - CLI command `venue-read-only-probe` writes JSON and Markdown artifacts.
 - The default CLI path does not read credentials, call external APIs, sign
   requests, or perform exchange writes.
+- Existing `execution-read-only-surfaces` and execution lineage reports are not
+  widened in this slice.
 
 ## Schema Acceptance
 
@@ -51,4 +53,3 @@ Expected:
 - focused tests pass
 - current-doc checker passes
 - full gate passes
-

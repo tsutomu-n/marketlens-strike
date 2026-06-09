@@ -27,12 +27,6 @@ uv run pytest -q tests/test_venue_read_only_probe_cli.py
 uv run pytest -q tests/test_venue_capabilities.py tests/test_venue_suitability.py tests/test_strategy_lab_schemas.py
 ```
 
-Run after CLI/report integration:
-
-```bash
-uv run pytest -q tests/test_execution_snapshot_report.py tests/test_execution_venue_comparison_report.py tests/test_execution_venue_diagnostics_report.py
-```
-
 Run before completion:
 
 ```bash
@@ -67,4 +61,3 @@ Expected:
 - writes `data/ops/venue_read_only_probe_summary.json`
 - writes `data/reports/venue_read_only_probe.md`
 - reports future venues as blocked, not ready
-
