@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-09_14:23 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Architecture And Phases
@@ -13,6 +13,7 @@
 - `src/sis/real_market`: research-side bars, quality, feature builder, provider policy
 - `src/sis/tracking`: real-market vs venue comparison and trade-allowed decisions
 - `src/sis/research/strategy_lab`: strategy experiment specs, strategy signal records, evaluation plans, trial ledger, trade candidates, paper candidate packs, promotion decisions, paper intent previews
+- `src/sis/venues/suitability`: venue suitability catalog and fail-closed stage checks for research, paper candidate, paper intent, and live boundaries
 - `src/sis/research/dag`: NDX Layer 2.2 DAG config validation, lint, export, manual review pack/import, and exit gate decision contracts
 - `src/sis/research/ndx`: NDX Layer 2.3/2.4 fixture-first source resolution, feature panel, open-gap residual, diagnostics, neutralization pre-report, artifact lineage checks, and residual validation gate
 - `src/sis/backtest/engine` and `src/sis/backtest/trade_xyz`: Trade[XYZ] pure backtest v0.1, long-only single-symbol accounting, fill, cost, gate, metrics, report artifacts
@@ -86,8 +87,10 @@ StrategyExperimentSpec
 
 - `StrategyExperimentSpec` は戦略実験定義であり、売買候補ではない。
 - `TradeCandidate` は売買候補であり、paper/live order ではない。
+- `PaperCandidatePack.selected_candidate_ids` は `status="candidate"`、空の `block_reasons`、venue-suitable の候補だけを受け入れる。
 - `PromotionDecision` は paper へ進める人間判断 artifact。
 - `PaperIntentPreview` は paper-only の仮注文意図であり、live order へ変換しない。
+- NDX/QQQ family は research/backtest record としては残せるが、現行 paper path では selected candidate、paper intent、raw intent JSON、legacy `paper-step` order generation の各境界で止める。
 - JSON Schema は薄い guard として存在し、詳細な runtime validation は Pydantic model にある。
 - 詳細仕様は `docs/strategy_research_lab/README.md` 以下にある。
 
