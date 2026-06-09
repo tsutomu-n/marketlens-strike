@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-09_14:23 JST
+更新日: 2026-06-09_21:11 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -12,6 +12,15 @@
 現行コードでは PR-00〜PR-08 の migration code/test surface は完了済みです。Trade[XYZ] real data / backtest 関連の top-level plan、2026-06-07 の Layer 2.2 plan pack、2026-06-08 の Layer 2.2 acceptance hardening plan、2026-06-08 の Layer 2.3 NDX preflight / feature residual plan は、実装順序、判断、acceptance、handoff を確認するための履歴資料です。current status の正本ではありません。current status は `docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/research/ndx/README.md`、`docs/OPERATIONS_RUNBOOK.md`、生成済み manifest を先に読んでください。
 
 重要: `plan/marketlens_strategy_research_lab_migration_pack/` は historical migration contract です。`execution_venue: Literal["trade_xyz"]` のような記述は当時の実装前契約であり、現在の contract ではありません。現在の venue contract は code/schema の `trade_xyz`, `bitget_demo` です。
+
+## Current 2026-06-09 venue plans
+
+These are current implementation handoff plans until their code slices are
+implemented and reflected in `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md`.
+
+- `plan/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`
+- `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`
+- `plan/0609ここからの計画/03_venue_read_only_capability_probe/`
 
 ## Historical read order
 
