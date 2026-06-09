@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_15:07 JST
-更新日: 2026-06-09_15:07 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Implementation Tasks
@@ -29,6 +29,8 @@
 
 5. Add selected-candidate guard in `PaperCandidatePack`.
    - Compute suitability for each selected candidate at `paper_candidate` stage.
+   - Reject selected candidates whose `status` is not `candidate`.
+   - Reject selected candidates with non-empty `block_reasons`.
    - If blocked, raise with text containing:
      `selected_candidate_ids contain venue-unsuitable candidates`.
 
@@ -48,7 +50,19 @@
    - Keep candidate rows as evidence with explicit block reasons.
    - Report selected/rejected counts accurately.
 
-9. Update README Current Boundaries.
+9. Harden raw intent JSON execution.
+   - Ensure `paper-from-intents` validates every raw JSON row through
+     `PaperIntentPreview.model_validate`.
+   - Direct NDX/QQQ family JSON must fail with the same paper-intent suitability
+     reason as generated artifacts.
+
+10. Harden legacy `paper-step`.
+    - Keep `data/research/signals.csv` as legacy research/backtest export.
+    - Do not generate paper orders or fills for NDX/QQQ family rows.
+    - Record `legacy_paper_blocked_count`.
+    - Record `legacy_paper_blocked_reason_counts`.
+
+11. Update README Current Boundaries.
    - State Bitget/Hyperliquid direct are not NDX/QQQ execution venues.
    - State `bitget_demo` is fixture/demo, not NDX/QQQ paper/live.
    - State `trade_xyz` NDX proxy cannot advance to paper/live before later gates.

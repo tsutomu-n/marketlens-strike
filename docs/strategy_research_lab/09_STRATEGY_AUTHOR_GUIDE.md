@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_15:19 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Strategy Author Guide
@@ -89,6 +89,8 @@ uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_
 - `data/reports/paper_intent_preview.md`
 
 既定の `promotion.default_decision` は `hold` です。そのため `paper_intent_preview.json` は空配列になります。これは意図した安全側 default です。
+
+promotion を `promote` にしても、selected candidate が venue suitability gate で止まる場合は paper intent は作られません。現行では NDX/QQQ family の `trade_xyz` proxy や `bitget_demo` paper intent はこの境界で拒否されます。research/backtest artifact としての保存と、paper routing 可否は分けて読んでください。
 
 ## Rule DSL
 
@@ -636,7 +638,7 @@ optimizer:
 
 `strategy-author-run --through backtest` は `data/research/strategy_backtest_metrics.json` の `summary.strategy_scorecard` に、使った `derived_features`、side counts、reason code counts、block reason counts、execution block reasons、exit reasons、pass/fail thresholds、multi-leg の compact group metrics を集約します。これは「どの feature と制約が strategy の通過・棄却に効いたか」を確認する paper-only explanation artifact です。実行済み signal の詳細診断が必要な場合は `summary.executed_signal_results` を使えますが、通常の結果確認は `summary.executed_signal_summary` の compact counts / returns / notional を優先します。
 
-`--through paper-preview` では同じ情報が `TrialRecord.metrics.strategy_scorecard` と `PromotionDecision.scorecard_summary` にも残ります。multi-leg の場合、`scorecard_summary.multi_leg_group_metrics` には `groups[]` を除いた compact summary として group 数、complete / incomplete group 数、expected / executed leg 数、total return、average group return、win rate、worst group return、max drawdown、profit factor、average leg return imbalance、cost drag が入ります。profit factor は loss group が無い場合は JSON-safe に `null` です。promotion が `promote` されて intent が作られる通常 CLI 経路では、`PaperIntentPreview.scorecard_summary` にも引き継がれます。既定 `hold` では intent は空配列ですが、なぜ止めたかは scorecard と rejection reason で追えます。
+`--through paper-preview` では同じ情報が `TrialRecord.metrics.strategy_scorecard` と `PromotionDecision.scorecard_summary` にも残ります。multi-leg の場合、`scorecard_summary.multi_leg_group_metrics` には `groups[]` を除いた compact summary として group 数、complete / incomplete group 数、expected / executed leg 数、total return、average group return、win rate、worst group return、max drawdown、profit factor、average leg return imbalance、cost drag が入ります。profit factor は loss group が無い場合は JSON-safe に `null` です。promotion が `promote` され、かつ selected candidate が venue-suitable な通常 CLI 経路では、`PaperIntentPreview.scorecard_summary` にも引き継がれます。既定 `hold` や venue suitability block では intent は空配列ですが、なぜ止めたかは scorecard、rejection reason、candidate-level `block_reasons` で追えます。
 
 ## Cross Sectional Rotation
 

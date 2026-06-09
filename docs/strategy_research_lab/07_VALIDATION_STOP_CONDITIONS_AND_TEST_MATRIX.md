@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Validation Stop Conditions And Test Matrix
@@ -16,6 +16,7 @@
 - JSON Schema だけで full validation 済みと扱ったら停止。
 - `READ_ONLY_GO` を live-ready と読んだら停止。
 - `wallet_used=true` または `exchange_write_used=true` を Strategy Lab path で許容しようとしたら停止。
+- NDX/QQQ family を現行 paper candidate、`PaperIntentPreview`、raw `paper-from-intents` JSON、legacy `paper-step` へ通そうとしたら停止。
 
 ## Schema guard matrix
 
@@ -29,9 +30,9 @@
 | `EvaluationPlan` | positive horizon / purge / embargo / min trade count; stress multipliers >= 1.0 |
 | `TrialRecord` | non-negative counts; parameter count > 0; claim flags false |
 | `TradeCandidate` | identity fields non-empty; live order flag false; score ranges |
-| `PaperCandidatePack` | selected / rejected IDs must exist and be unique; candidate IDs unique; claim/live/wallet/exchange flags false |
+| `PaperCandidatePack` | selected / rejected IDs must exist and be unique; candidate IDs unique; selected/rejected overlap rejected; selected candidates must be candidate status, have no block reasons, and be venue-suitable; claim/live/wallet/exchange flags false |
 | `PromotionDecision` | promote requires evidence and approval reason; hold/reject require rejection reason |
-| `PaperIntentPreview` | revalidation required; paper-only; live conversion/wallet/exchange false |
+| `PaperIntentPreview` | revalidation required; paper-only; live conversion/wallet/exchange false; venue suitability checked at paper-intent stage |
 | `DataSnapshotManifest` | data paths and non-empty symbols/venues; min_ts <= max_ts |
 | `FeatureSnapshotManifest` | required identity/path fields; missing rates 0.0 to 1.0 |
 
@@ -44,12 +45,14 @@
 | `tests/test_strategy_lab_signal_registry.py` | generator registry fail-closed behavior; signal frame required columns and symbol binding |
 | `tests/test_strategy_lab_evaluation_plan.py` | EvaluationPlan required profile, positive values, forbidden claim guard |
 | `tests/test_strategy_lab_trial_ledger.py` | TrialRecord guard, JSONL append/read, EvaluationRunner appends records |
-| `tests/test_strategy_lab_candidate_pack.py` | TradeCandidate and PaperCandidatePack selected/rejected ID validation and live flag guard |
+| `tests/test_strategy_lab_candidate_pack.py` | TradeCandidate and PaperCandidatePack selected/rejected ID validation, selected non-candidate rejection, venue suitability rejection, and live flag guard |
 | `tests/test_strategy_lab_promotion_decision.py` | PromotionDecision promote/reject/hold validation and live guard |
 | `tests/test_strategy_lab_paper_intent_preview.py` | PaperIntentPreview paper-only and live conversion guard |
 | `tests/test_strategy_lab_schemas.py` | tracked JSON Schema files, including signal manifest, authoring backtest result, and bundle result, exist and paper-only const guards match |
 | `tests/test_strategy_lab_commands.py` | CLI artifact chain, idempotent evaluation, rank threshold sweep, multi-signal candidate selection, and missing-pack stops |
-| `tests/test_paper_from_intents.py` | paper-from-intents revalidates, writes paper artifacts, blocks expired intent |
+| `tests/test_paper_from_intents.py` | paper-from-intents revalidates raw JSON, writes paper artifacts, blocks expired intent, and rejects NDX/QQQ venue-unsuitable intents |
+| `tests/test_venue_suitability.py` | suitability catalog, NDX/QQQ family detection, and catalog-only future venue guards |
+| `tests/test_paper_runner.py` | legacy `paper-step` skips NDX/QQQ family rows and records `legacy_paper_blocked_*` metrics |
 
 ## Verification commands
 
@@ -57,6 +60,7 @@ Targeted:
 
 ```bash
 uv run pytest tests/test_strategy_lab_*.py tests/test_strategy_run_profile.py tests/test_paper_from_intents.py
+uv run pytest tests/test_venue_suitability.py tests/test_paper_runner.py tests/test_strategy_lab_candidate_pack.py tests/test_paper_from_intents.py tests/test_strategy_lab_commands.py
 ```
 
 Docs guard:
@@ -80,5 +84,6 @@ Docs are acceptable when:
 - every trading-related schema has purpose, key fields, validation, and forbidden interpretation;
 - `signals.csv` is consistently described as legacy export;
 - `PaperIntentPreview` is consistently described as paper-only preview;
+- NDX/QQQ paper-path blocking is described as a venue suitability boundary, not as an alpha or Strategy Lab export conclusion;
 - legacy docs no longer teach `DecisionContext` / `ExecutionPlan` as the Strategy Lab design entry point;
 - no document claims production live trading readiness.

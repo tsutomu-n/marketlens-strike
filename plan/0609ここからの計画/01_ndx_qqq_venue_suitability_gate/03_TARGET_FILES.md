@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_15:07 JST
-更新日: 2026-06-09_15:07 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Target Files
@@ -16,9 +16,12 @@ Modify:
 - `src/sis/research/strategy_lab/paper_intent_preview.py`
 - `src/sis/research/strategy_lab/authoring/compiler/paper_preview.py`
 - `src/sis/commands/research.py`
+- `src/sis/paper/runner.py`
 - `tests/test_strategy_lab_candidate_pack.py`
 - `tests/test_strategy_lab_paper_intent_preview.py`
 - `tests/test_strategy_lab_commands.py`
+- `tests/test_paper_from_intents.py`
+- `tests/test_paper_runner.py`
 - `tests/strategy_authoring/test_cli_bundle.py`
 - `tests/test_strategy_lab_schemas.py`
 - `README.md`

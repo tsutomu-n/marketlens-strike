@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_15:07 JST
-更新日: 2026-06-09_15:07 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Goal
@@ -16,5 +16,6 @@ The implementation must separate two concepts:
   for which asset universe and stage.
 
 The gate must preserve blocked candidate records. A blocked `TradeCandidate` is
-evidence and must remain serializable. The gate should stop selection and paper
-intent creation, not candidate recording.
+evidence and must remain serializable. The gate should stop selection, paper
+intent creation, raw paper intent execution, and legacy paper-step order
+generation, not candidate recording or research/backtest artifacts.

@@ -131,7 +131,7 @@ uv run python scripts/check_current_docs.py
 - `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, `research-ndx-residual-validate` registered
 - latest local exit decision artifact: `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
 - latest Layer 2.4 decision artifact: `REVISE_2_3` with `INSUFFICIENT_VALIDATION_ERAS` and `INSUFFICIENT_VALIDATION_SAMPLE`; no Strategy Lab export approval
-- latest full local gate observed in handoff: Python 3.13.7, docs checker `101 current docs`, pyrefly 0 errors, ty passed, `936 passed`
+- latest full local gate observed before this docs refresh: Python 3.13.7, current-docs check passed, pyrefly 0 errors, ty passed, `946 passed`
 
 2026-06-05 runtime artifact snapshot:
 

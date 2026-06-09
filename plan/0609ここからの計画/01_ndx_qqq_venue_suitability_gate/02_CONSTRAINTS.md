@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_15:07 JST
-更新日: 2026-06-09_15:07 JST
+更新日: 2026-06-09_16:13 JST
 -->
 
 # Constraints
@@ -23,6 +23,7 @@ Do not:
 Allowed:
 
 - add a pure suitability catalog and helper functions
-- add fail-closed guards for selected candidates and paper intents
+- add fail-closed guards for selected candidates, paper intents, raw
+  `paper-from-intents` JSON, and legacy `paper-step` order generation
 - update tests and README boundary wording
 - create this plan package

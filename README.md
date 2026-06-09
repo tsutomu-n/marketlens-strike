@@ -212,7 +212,7 @@ uv run python scripts/check_current_docs.py
 2026-06-09 NDX Layer 2.2/2.3/2.4 local research gate snapshot:
 
 - `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, and `research-ndx-residual-validate` are registered CLI commands.
-- `uv run python scripts/check_current_docs.py`: `checked 101 current docs`
+- `uv run python scripts/check_current_docs.py`: current-docs check passed; rerun for the current checked-doc count
 - Latest local Layer 2.2 exit decision artifact was `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, with pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`.
 - Non-approve exit-gate runs remove stale `layer_2_2_freeze_manifest.json` from the same output directory.
 - Current Layer 2.4 validation emits `REVISE_2_3` with `INSUFFICIENT_VALIDATION_ERAS` and `INSUFFICIENT_VALIDATION_SAMPLE`; this is not a Strategy Lab export approval.
