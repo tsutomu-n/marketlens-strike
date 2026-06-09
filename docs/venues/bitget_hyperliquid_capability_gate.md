@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_19:10 JST
-更新日: 2026-06-09_19:10 JST
+更新日: 2026-06-09_20:47 JST
 -->
 
 # Bitget / Hyperliquid Capability Gate
@@ -13,6 +13,10 @@ The code source of truth is `src/sis/venues/capabilities.py`.
 ## Current Decision
 
 - `VenueId` remains `trade_xyz`, `bitget_demo`.
+- `strategy_signal`, `trade_candidate`, and `paper_intent_preview` execution
+  venue schemas remain `trade_xyz`, `bitget_demo`.
+- `evaluation_plan.mls.v1` remains `target_venue=trade_xyz`; `bitget_demo` is
+  not enabled for evaluation-plan target venue.
 - `bitget_futures` is capability-known but schema-disabled.
 - `hyperliquid_perp` is capability-known but schema-disabled.
 - `bitget_demo` remains demo/local fixture and paper-only. It is not production
@@ -22,12 +26,12 @@ The code source of truth is `src/sis/venues/capabilities.py`.
 
 ## Current Capability Matrix
 
-| Venue | Schema enabled | Paper enabled | Read-only network enabled | Live enabled | Meaning |
-|---|---:|---:|---:|---:|---|
-| `trade_xyz` | yes | yes | yes | no | implemented proxy/research/read-only surface |
-| `bitget_demo` | yes | yes | no | no | demo fixture surface; local credentials only do not prove network readiness |
-| `bitget_futures` | no | no | no | no | future Bitget futures venue |
-| `hyperliquid_perp` | no | no | no | no | future direct Hyperliquid perp venue |
+| Venue | Execution-venue schema | Evaluation-plan target | Paper enabled | Read-only network enabled | Live enabled | Meaning |
+|---|---:|---:|---:|---:|---:|---|
+| `trade_xyz` | yes | yes | yes | yes | no | implemented proxy/research/read-only surface |
+| `bitget_demo` | yes | no | yes | no | no | demo fixture surface; local credentials only do not prove network readiness |
+| `bitget_futures` | no | no | no | no | no | future Bitget futures venue |
+| `hyperliquid_perp` | no | no | no | no | no | future direct Hyperliquid perp venue |
 
 ## Why This Gate Exists
 
@@ -39,6 +43,7 @@ accept it. Widening only `VenueId` is also insufficient because
 The capability gate makes those states explicit:
 
 - known but schema-disabled
+- execution-venue schema enabled but evaluation-plan disabled
 - schema-enabled but network-disabled
 - paper-enabled but live-disabled
 - default external API disabled

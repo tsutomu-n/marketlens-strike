@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_19:10 JST
-更新日: 2026-06-09_19:10 JST
+更新日: 2026-06-09_20:47 JST
 -->
 
 # Schema And Artifact Contract
@@ -13,6 +13,11 @@ Current schemas:
 - `trade_candidate.v1.schema.json`: `execution_venue` allows `trade_xyz`, `bitget_demo`
 - `paper_intent_preview.v1.schema.json`: `execution_venue` allows `trade_xyz`, `bitget_demo`
 - `evaluation_plan.mls.v1.schema.json`: `target_venue` is fixed to `trade_xyz`
+
+Therefore, `schema_enabled=true` in the capability gate only means the
+execution-venue artifact schemas accept the venue. It does not mean the venue is
+enabled as an `evaluation_plan.mls.v1` `target_venue`. Track that separately as
+`strategy_lab_evaluation_plan_enabled`.
 
 ## Required Future Widening
 
@@ -37,6 +42,7 @@ Any future venue-readiness artifact must include:
 - `venue_id`
 - `venue_family`
 - `schema_enabled`
+- `strategy_lab_evaluation_plan_enabled`
 - `read_only_network_probe`
 - `credential_status`
 - `external_write_enabled=false`

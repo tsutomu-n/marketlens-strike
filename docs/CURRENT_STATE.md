@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-09_19:10 JST
+更新日: 2026-06-09_20:47 JST
 -->
 
 # Current State
@@ -13,7 +13,7 @@
 - 現在の開発主軸は backtest-first / venue-neutral。Trade[XYZ] は実装済みの主要 venue で、将来の注文口候補として残すが、当面の注文口前提にはしない。
 - `VenueId` は `trade_xyz` と `bitget_demo` を許可する。Strategy Lab の signal / candidate / paper intent schema も同じ enum に揃っている。
 - `VENUE_SUITABILITY_CATALOG` は `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp` を持つが、`bitget_futures` と `hyperliquid_perp` は catalog-only で、現行 `VenueId` や Strategy Lab artifact schema には入らない。
-- `src/sis/venues/capabilities.py` は `bitget_futures` と `hyperliquid_perp` を known but schema-disabled / paper-disabled / network-disabled / live-disabled として固定する。
+- `src/sis/venues/capabilities.py` は `bitget_futures` と `hyperliquid_perp` を known but schema-disabled / paper-disabled / network-disabled / live-disabled として固定する。`bitget_demo` は execution-venue schema では許可されるが、`evaluation_plan.mls.v1` の `target_venue` としてはまだ disabled。
 - Strategy Authoring baseline は外部 API なしの fixture seed で backtest まで通せる。
 - Bitget demo local smoke は実装済み。ただし `status=configured` は local credential env が揃った意味だけで、Bitget network/account/order readiness ではない。
 - PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、phase gate は `READ_ONLY_GO` になり得る。
@@ -68,7 +68,7 @@
 - Strategy authoring commands: `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`, `strategy-author-train-model`
 - Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/` and `src/sis/research_protocol/`
 - venue suitability policy: `src/sis/venues/suitability.py` with `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp`; current schemas still accept only `trade_xyz` and `bitget_demo`
-- venue capability contract: `src/sis/venues/capabilities.py`; `bitget_futures` and `hyperliquid_perp` are known future venues but disabled for schema, paper, network, and live
+- venue capability contract: `src/sis/venues/capabilities.py`; `bitget_futures` and `hyperliquid_perp` are known future venues but disabled for schema, paper, network, and live; `bitget_demo` is disabled for `evaluation_plan.mls.v1` target venue
 - NDX Layer 2.2 DAG/review gate schemas: `schemas/research_*.schema.json`, `schemas/core_dag.v1.schema.json`, `schemas/counter_dag.v1.schema.json`, `schemas/llm_dag_review.v1.schema.json`, `schemas/layer_2_2_human_resolutions.v1.schema.json`, `schemas/layer_2_2_exit_decision.v1.schema.json`, `schemas/layer_2_2_freeze_manifest.v1.schema.json`
 - NDX Layer 2.3/2.4 schemas: `schemas/ndx_data_source_resolution.v1.schema.json`, `schemas/ndx_feature_manifest.v1.schema.json`, `schemas/ndx_open_gap_residual_manifest.v1.schema.json`, `schemas/ndx_residual_validation_decision.v1.schema.json`, `schemas/ndx_residual_validation_summary.v1.schema.json`
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_19:10 JST
-更新日: 2026-06-09_19:10 JST
+更新日: 2026-06-09_20:47 JST
 -->
 
 # Implementation Tasks
@@ -16,6 +16,7 @@ Minimum model:
 - `asset_universe`
 - `schema_enabled`
 - `strategy_lab_signal_enabled`
+- `strategy_lab_evaluation_plan_enabled`
 - `paper_candidate_enabled`
 - `paper_intent_enabled`
 - `read_only_network_enabled`
@@ -31,7 +32,8 @@ Minimum model:
 Initial values:
 
 - `trade_xyz`: current implemented proxy/read-only surface
-- `bitget_demo`: current schema-enabled demo fixture, no external write
+- `bitget_demo`: current execution-venue schema-enabled demo fixture, no
+  external write, `strategy_lab_evaluation_plan_enabled=false`
 - `bitget_futures`: disabled, catalog-only
 - `hyperliquid_perp`: disabled, catalog-only
 

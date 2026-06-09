@@ -6,6 +6,7 @@ from dataclasses import dataclass
 VENUE_CAPABILITY_UNKNOWN = "VENUE_CAPABILITY_UNKNOWN"
 VENUE_CAPABILITY_SCHEMA_DISABLED = "VENUE_CAPABILITY_SCHEMA_DISABLED"
 VENUE_CAPABILITY_STRATEGY_LAB_SIGNAL_DISABLED = "VENUE_CAPABILITY_STRATEGY_LAB_SIGNAL_DISABLED"
+VENUE_CAPABILITY_EVALUATION_PLAN_DISABLED = "VENUE_CAPABILITY_EVALUATION_PLAN_DISABLED"
 VENUE_CAPABILITY_PAPER_CANDIDATE_DISABLED = "VENUE_CAPABILITY_PAPER_CANDIDATE_DISABLED"
 VENUE_CAPABILITY_PAPER_INTENT_DISABLED = "VENUE_CAPABILITY_PAPER_INTENT_DISABLED"
 VENUE_CAPABILITY_READ_ONLY_NETWORK_DISABLED = "VENUE_CAPABILITY_READ_ONLY_NETWORK_DISABLED"
@@ -20,6 +21,7 @@ class VenueCapability:
     asset_universe: str
     schema_enabled: bool
     strategy_lab_signal_enabled: bool
+    strategy_lab_evaluation_plan_enabled: bool
     paper_candidate_enabled: bool
     paper_intent_enabled: bool
     read_only_network_enabled: bool
@@ -40,6 +42,7 @@ VENUE_CAPABILITY_CATALOG: dict[str, VenueCapability] = {
         asset_universe="proxy_index_and_equity_like_perp",
         schema_enabled=True,
         strategy_lab_signal_enabled=True,
+        strategy_lab_evaluation_plan_enabled=True,
         paper_candidate_enabled=True,
         paper_intent_enabled=True,
         read_only_network_enabled=True,
@@ -61,6 +64,7 @@ VENUE_CAPABILITY_CATALOG: dict[str, VenueCapability] = {
         asset_universe="crypto_perp_fixture",
         schema_enabled=True,
         strategy_lab_signal_enabled=True,
+        strategy_lab_evaluation_plan_enabled=False,
         paper_candidate_enabled=True,
         paper_intent_enabled=True,
         read_only_network_enabled=False,
@@ -76,6 +80,7 @@ VENUE_CAPABILITY_CATALOG: dict[str, VenueCapability] = {
             "Production Bitget futures must use a separate venue id.",
         ),
         block_reasons=(
+            VENUE_CAPABILITY_EVALUATION_PLAN_DISABLED,
             VENUE_CAPABILITY_READ_ONLY_NETWORK_DISABLED,
             VENUE_CAPABILITY_LIVE_EXECUTION_DISABLED,
         ),
@@ -86,6 +91,7 @@ VENUE_CAPABILITY_CATALOG: dict[str, VenueCapability] = {
         asset_universe="crypto_perp",
         schema_enabled=False,
         strategy_lab_signal_enabled=False,
+        strategy_lab_evaluation_plan_enabled=False,
         paper_candidate_enabled=False,
         paper_intent_enabled=False,
         read_only_network_enabled=False,
@@ -102,6 +108,7 @@ VENUE_CAPABILITY_CATALOG: dict[str, VenueCapability] = {
         block_reasons=(
             VENUE_CAPABILITY_SCHEMA_DISABLED,
             VENUE_CAPABILITY_STRATEGY_LAB_SIGNAL_DISABLED,
+            VENUE_CAPABILITY_EVALUATION_PLAN_DISABLED,
             VENUE_CAPABILITY_PAPER_CANDIDATE_DISABLED,
             VENUE_CAPABILITY_PAPER_INTENT_DISABLED,
             VENUE_CAPABILITY_READ_ONLY_NETWORK_DISABLED,
@@ -115,6 +122,7 @@ VENUE_CAPABILITY_CATALOG: dict[str, VenueCapability] = {
         asset_universe="crypto_perp",
         schema_enabled=False,
         strategy_lab_signal_enabled=False,
+        strategy_lab_evaluation_plan_enabled=False,
         paper_candidate_enabled=False,
         paper_intent_enabled=False,
         read_only_network_enabled=False,
@@ -131,6 +139,7 @@ VENUE_CAPABILITY_CATALOG: dict[str, VenueCapability] = {
         block_reasons=(
             VENUE_CAPABILITY_SCHEMA_DISABLED,
             VENUE_CAPABILITY_STRATEGY_LAB_SIGNAL_DISABLED,
+            VENUE_CAPABILITY_EVALUATION_PLAN_DISABLED,
             VENUE_CAPABILITY_PAPER_CANDIDATE_DISABLED,
             VENUE_CAPABILITY_PAPER_INTENT_DISABLED,
             VENUE_CAPABILITY_READ_ONLY_NETWORK_DISABLED,
@@ -157,4 +166,12 @@ def schema_enabled_venue_ids() -> tuple[str, ...]:
         venue_id
         for venue_id, capability in VENUE_CAPABILITY_CATALOG.items()
         if capability.schema_enabled
+    )
+
+
+def evaluation_plan_enabled_venue_ids() -> tuple[str, ...]:
+    return tuple(
+        venue_id
+        for venue_id, capability in VENUE_CAPABILITY_CATALOG.items()
+        if capability.strategy_lab_evaluation_plan_enabled
     )

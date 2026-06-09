@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_19:10 JST
-更新日: 2026-06-09_19:10 JST
+更新日: 2026-06-09_20:47 JST
 -->
 
 # Acceptance
@@ -15,6 +15,8 @@ The design gate is complete when:
 - Strategy Lab schemas remain unchanged in this design-gate slice
 - `evaluation_plan.mls.v1` fixed `target_venue=trade_xyz` is documented as a
   blocker for venue widening
+- `bitget_demo` is recorded as execution-venue schema-enabled but
+  `strategy_lab_evaluation_plan_enabled=false`
 - Bitget demo is clearly separated from production Bitget futures
 - Hyperliquid direct perp is clearly separated from Trade[XYZ]
 - NDX/QQQ paper-path blocking remains intact

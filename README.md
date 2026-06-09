@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-09_19:10 JST
+更新日: 2026-06-09_20:47 JST
 -->
 
 # marketlens-strike
@@ -175,8 +175,9 @@ Strategy idea preparation starts at
 
 - Current development is backtest-first and venue-neutral. Trade[XYZ] is an implemented venue and future order-entry candidate, not the current order-entry bottleneck.
 - `VenueId` currently allows `trade_xyz` and `bitget_demo`.
-- `bitget_futures` and `hyperliquid_perp` are suitability-catalog entries only; they are not current `VenueId` values and are not accepted by Strategy Lab artifact schemas.
+- `bitget_futures` and `hyperliquid_perp` are suitability/capability catalog entries only; they are not current `VenueId` values and are not accepted by Strategy Lab artifact schemas.
 - `src/sis/venues/capabilities.py` records venue capability state. It makes `bitget_futures` and `hyperliquid_perp` known but schema-disabled, paper-disabled, network-disabled, and live-disabled.
+- `bitget_demo` is accepted by execution-venue schemas, but `evaluation_plan.mls.v1` still fixes `target_venue` to `trade_xyz`; do not treat `bitget_demo` as a complete Strategy Lab evaluation target.
 - `trade_xyz`, `bitget_demo`, `real_market`, `tracking`, `paper`, and `micro_live` code surfaces exist.
 - `src/sis/cli.py` builds the root Typer app; command implementations live under `src/sis/commands/`.
 - `collect-trade-xyz-quotes` is a public CLI command.
