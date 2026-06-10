@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_11:21 JST
-更新日: 2026-06-10_11:21 JST
+更新日: 2026-06-10_11:31 JST
 -->
 
 # Implementation Tasks
@@ -24,12 +24,14 @@ Files:
 - `06_IMPLEMENTATION_TASKS.md`
 - `07_ACCEPTANCE_AND_VERIFICATION.md`
 - `08_CODER_HANDOFF_PROMPT.md`
+- `09_SOURCE_EVIDENCE_LEDGER.md`
 
 Acceptance:
 
 - all files have metadata headers
 - the source Grok transcript is named
 - the package states that code/schema/dependency changes are out of scope
+- the package records local and external evidence used for the adoption decision
 
 ## Task 2: Add Plan Index Link
 
@@ -72,4 +74,3 @@ Optional full gate:
 ```
 
 Run the full gate if a final repo-wide confidence check is desired.
-

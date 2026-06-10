@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_11:21 JST
-更新日: 2026-06-10_11:21 JST
+更新日: 2026-06-10_11:31 JST
 -->
 
 # Coder Handoff Prompt
@@ -15,8 +15,9 @@ Read:
 1. plan/0610ここからの計画/01_grok_architecture_adoption_review/README.md
 2. plan/0610ここからの計画/01_grok_architecture_adoption_review/03_ADOPTION_MATRIX.md
 3. plan/0610ここからの計画/01_grok_architecture_adoption_review/05_DECISION.md
-4. docs/CURRENT_STATE.md
-5. docs/ARCHITECTURE_AND_PHASES.md
+4. plan/0610ここからの計画/01_grok_architecture_adoption_review/09_SOURCE_EVIDENCE_LEDGER.md
+5. docs/CURRENT_STATE.md
+6. docs/ARCHITECTURE_AND_PHASES.md
 
 Task:
 
@@ -43,4 +44,3 @@ Before reporting complete, run:
 git diff -- src schemas pyproject.toml uv.lock tests
 uv run python scripts/check_current_docs.py
 ```
-

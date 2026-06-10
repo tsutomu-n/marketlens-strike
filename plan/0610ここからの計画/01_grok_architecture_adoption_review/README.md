@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_11:21 JST
-更新日: 2026-06-10_11:21 JST
+更新日: 2026-06-10_11:31 JST
 -->
 
 # Grok Architecture Adoption Review Plan
@@ -22,6 +22,7 @@ Read in order:
 6. `06_IMPLEMENTATION_TASKS.md`
 7. `07_ACCEPTANCE_AND_VERIFICATION.md`
 8. `08_CODER_HANDOFF_PROMPT.md`
+9. `09_SOURCE_EVIDENCE_LEDGER.md`
 
 Readiness verdict: ready for docs-only review implementation.
 
@@ -35,4 +36,3 @@ Decision summary:
   adapter decision.
 - Prefer the existing Strategy Lab, NDX research gate, and backtest contracts
   as the implementation basis.
-

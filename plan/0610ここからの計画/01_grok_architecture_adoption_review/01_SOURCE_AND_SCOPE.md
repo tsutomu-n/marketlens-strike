@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_11:21 JST
-更新日: 2026-06-10_11:21 JST
+更新日: 2026-06-10_11:31 JST
 -->
 
 # Source And Scope
@@ -48,5 +48,5 @@ Use this priority order:
 2. Current docs under `docs/`
 3. Current implementation plans under `plan/`
 4. External primary sources
-5. The Grok transcript as proposal text only
-
+5. `09_SOURCE_EVIDENCE_LEDGER.md`
+6. The Grok transcript as proposal text only
