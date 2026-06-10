@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-10_17:36 JST
 -->
 
 # Architecture And Phases
@@ -15,7 +15,7 @@
 - `src/sis/research/strategy_lab`: strategy experiment specs, strategy signal records, evaluation plans, trial ledger, trade candidates, paper candidate packs, promotion decisions, paper intent previews
 - `src/sis/venues/suitability`: venue suitability catalog and fail-closed stage checks for research, paper candidate, paper intent, and live boundaries
 - `src/sis/research/dag`: NDX Layer 2.2 DAG config validation, lint, export, manual review pack/import, and exit gate decision contracts
-- `src/sis/research/ndx`: NDX Layer 2.3/2.4 fixture-first source resolution, feature panel, open-gap residual, diagnostics, neutralization pre-report, artifact lineage checks, and residual validation gate
+- `src/sis/research/ndx`: NDX Layer 2.3/2.4/2.5 fixture-first source resolution, feature panel, open-gap residual, diagnostics, neutralization pre-report, artifact lineage checks, residual validation gate, and research-only Strategy Lab export bridge
 - `src/sis/backtest/engine` and `src/sis/backtest/trade_xyz`: Trade[XYZ] pure backtest v0.1, long-only single-symbol accounting, fill, cost, gate, metrics, report artifacts
 - `src/sis/paper`: venue-gated paper fills, portfolio state, reports
 - `src/sis/execution`: `Trade[XYZ]` micro live safety code, `bitget_demo` local/mock-first adapter, and execution read-only surfaces
@@ -42,7 +42,7 @@ current truth:
 - Strategy Research Lab の schema / model / command surface は存在する
 - NDX Layer 2.2 DAG foundation と Exit Gate Review Harness v3 Minimal の local/manual review surface は存在する
 - NDX Layer 2.3 Preflight / Feature Panel / Open Gap Residual の local fixture-first surface は存在する
-- NDX Layer 2.4 Residual Validation Gate の local validation surface は存在する。現在の default artifacts は `REVISE_2_3` で止まり、Strategy Lab export approval ではない
+- NDX Layer 2.4 Residual Validation Gate の local validation surface は存在する。現在の default artifacts は `APPROVE_STRATEGY_LAB_EXPORT` まで進み、Layer 2.5 の research-only Strategy Lab export bridge を許可する
 - Trade[XYZ] pure backtest v0.1 の Python API surface は存在する
 - Phase 7 は未完了
 - operational promotion は generated artifact gate に依存する
@@ -62,7 +62,7 @@ current truth:
 - `tracking` はその差分を gate に変換する
 - `strategy_lab` は research signal, trial, candidate, promotion, paper preview を order と分離して管理する
 - `research.dag` は DAG artifact、counter DAG、temporal availability、manual review gate を管理し、feature panel、residual calculation、backtest、paper/live order を扱わない
-- `research.ndx` は NDX Layer 2.3/2.4 の local source resolution、feature panel、residual、diagnostics、neutralization pre-report、residual validation を管理し、Strategy Lab export、backtest、paper/live order を扱わない
+- `research.ndx` は NDX Layer 2.3/2.4/2.5 の local source resolution、feature panel、residual、diagnostics、neutralization pre-report、residual validation、research-only Strategy Lab export bridge を管理し、backtest、paper/live order を扱わない
 - `backtest.engine` は pure backtest の accounting / fill / cost / artifact 契約を管理し、live execution や wallet/signing を扱わない
 - `paper` は tracking and quality-gated execution simulation
 - `micro_live` は tiny live safety sequence のみを扱い、strategy promotionは扱わない
@@ -126,16 +126,18 @@ layer_2_2_freeze_manifest.json
   -> research-ndx-residual
   -> research-ndx-diagnostics
   -> research-ndx-residual-validate
+  -> research-ndx-strategy-lab-export
 ```
 
 境界:
 
 - Layer 2.3 は fixture-first source resolution、feature panel、open-gap residual、diagnostics / neutralization pre-report、counter-DAG refutation skeleton を生成する。
 - Layer 2.4 は feature/residual artifacts の lineage、timestamp、neutralization、counter-DAG refutation を検査し、`APPROVE_STRATEGY_LAB_EXPORT` / `REVISE_2_3` / `REVISE_2_2` / `REJECT_RESIDUAL` を出す。
-- 現在の default fixture artifacts は sample / era不足で `REVISE_2_3` になる。これは正常な fail-closed 境界で、Strategy Lab export approval ではない。
-- Layer 2.3/2.4 は `strategy_signals.parquet`、Strategy Lab export、backtest、paper candidate、`PaperIntentPreview`、paper/live order、external API、credentials、dependency追加、NQ / VXN / SOX direct / options / gamma input を扱わない。
+- 現在の default fixture artifacts は `APPROVE_STRATEGY_LAB_EXPORT` になり、Layer 2.5 research-only export bridge を許可する。
+- Layer 2.5 は approved residual から `strategy_signals.parquet` と manifest を生成するが、research-only block reason を付け、既存 Strategy Lab artifact は `--replace-existing` なしでは上書きしない。
+- Layer 2.3/2.4/2.5 は backtest、paper candidate approval、`PaperIntentPreview` 通過、paper/live order、external API、credentials、dependency追加、NQ / VXN / SOX direct / options / gamma input を扱わない。
 
-詳細は `docs/research/ndx/README.md`、`docs/research/ndx/09_LLM_REVIEW_GATE.md`、`docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md`、`docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md` にある。
+詳細は `docs/research/ndx/README.md`、`docs/research/ndx/09_LLM_REVIEW_GATE.md`、`docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md`、`docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`、`docs/research/ndx/12_LAYER_2_5_STRATEGY_LAB_RESEARCH_EXPORT.md` にある。
 
 ## Backtest Boundary
 

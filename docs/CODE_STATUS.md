@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-09_20:47 JST
+更新日: 2026-06-10_17:36 JST
 -->
 
 # Code Status
@@ -47,7 +47,8 @@
 | NDX Layer 2.2 DAG foundation | DONE / local-only | `configs/research_layer_2_2/ndx/`, `src/sis/research/dag/`, `tests/research/`, `research-layer22-validate`, `research-layer22-export` |
 | Layer 2.2 Exit Gate Review Harness | DONE / acceptance-hardened / manual local review only | `schemas/llm_dag_review.v1.schema.json`, `schemas/layer_2_2_*.schema.json`, `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `docs/research/ndx/09_LLM_REVIEW_GATE.md`; `APPROVE_2_3` requires no second review, no unresolved human decisions, no blockers, and non-approve runs remove stale freeze manifests |
 | NDX Layer 2.3 Preflight / Feature Panel / Open Gap Residual | DONE / local fixture-first / no Strategy Lab export | `src/sis/research/ndx/`, `configs/research_layer_2_3/ndx/`, `schemas/ndx_data_source_resolution.v1.schema.json`, `schemas/ndx_feature_manifest.v1.schema.json`, `schemas/ndx_open_gap_residual_manifest.v1.schema.json`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, `tests/research/test_ndx_layer23.py`, `docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md` |
-| NDX Layer 2.4 Residual Validation Gate | DONE / current default artifacts revise 2.3 | `configs/research_layer_2_4/ndx/`, `schemas/ndx_residual_validation_decision.v1.schema.json`, `schemas/ndx_residual_validation_summary.v1.schema.json`, `research-ndx-residual-validate`, `tests/research/test_ndx_layer24_residual_validation.py`, `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`; current default decision is `REVISE_2_3` for sample and era insufficiency |
+| NDX Layer 2.4 Residual Validation Gate | DONE / current default artifacts approve research export | `configs/research_layer_2_4/ndx/`, `schemas/ndx_residual_validation_decision.v1.schema.json`, `schemas/ndx_residual_validation_summary.v1.schema.json`, `research-ndx-residual-validate`, `tests/research/test_ndx_layer24_residual_validation.py`, `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`; current default decision is `APPROVE_STRATEGY_LAB_EXPORT` |
+| NDX Layer 2.5 Strategy Lab research-only export | DONE / paper path fail-closed | `src/sis/research/ndx/strategy_lab_export.py`, `schemas/ndx_strategy_lab_research_export_manifest.v1.schema.json`, `research-ndx-strategy-lab-export`, `tests/research/test_ndx_layer25_strategy_lab_export.py`, `docs/research/ndx/12_LAYER_2_5_STRATEGY_LAB_RESEARCH_EXPORT.md`; writes research-only `strategy_signals.parquet` and preserves overwrite guard |
 
 ## Current Operational Interpretation
 
@@ -74,8 +75,9 @@
 - `bitget-demo-smoke` の `status=configured` は local credential env が揃った意味だけであり、Bitget network connectivity / account read / demo order submit / fill sync を証明しない。
 - tracked JSON Schema は guard / interoperability 用の薄い契約であり、詳細 validation は Pydantic model が正本。claim guard は `*_claimed` 名に統一済み。
 - NDX Layer 2.2 review gate は手動 review JSON を local import する harness。`APPROVE_2_3` は `second_review_required=false`、未解決 human decision なし、BLOCKER なしの場合だけ成立し、`REVISE_2_2` / `REJECT_SEED` では freeze manifest を残さない。外部 LLM API、credentials、feature panel、residual calculation、neutralization、Strategy Lab export、backtest、paper/live connection は実装範囲外。
-- NDX Layer 2.3/2.4 は Layer 2.2 approval/freeze 後の local research gates。feature panel、open-gap residual、diagnostics、residual validation を扱うが、`strategy_signals.parquet`、Strategy Lab export、backtest、paper candidate、`PaperIntentPreview`、paper/live order、external API、credentials、dependency追加には接続しない。
-- 現在の NDX Layer 2.4 default artifact 判断は `REVISE_2_3`。これは sample / era不足の fail-closed であり、`APPROVE_STRATEGY_LAB_EXPORT` ではない。
+- NDX Layer 2.3/2.4/2.5 は Layer 2.2 approval/freeze 後の local research gates。feature panel、open-gap residual、diagnostics、residual validation、research-only Strategy Lab export を扱うが、backtest、paper candidate approval、`PaperIntentPreview` 通過、paper/live order、external API、credentials、dependency追加には接続しない。
+- 現在の NDX Layer 2.4 default artifact 判断は `APPROVE_STRATEGY_LAB_EXPORT`。これは Layer 2.5 research-only export bridge の許可であり、alpha、backtest、paper/live readiness ではない。
+- NDX Layer 2.5 export 由来の Strategy Lab signal は `RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` を持つため、paper candidate selection と `PaperIntentPreview` は fail closed する。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - Trade[XYZ] pure backtest artifact は live order artifact ではない。`backtest_run.json` は `no_live_order=true`, `wallet_used=false`, `exchange_write_used=false` を記録する。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
@@ -105,8 +107,8 @@ PR-08:
 - Strategy Lab から micro live への直接昇格 surface
 - Trade[XYZ] pure backtest の public CLI
 - NDX/QQQ family の paper candidate / paper intent / legacy paper-step 通過
-- NDX Layer 2.4 の `APPROVE_STRATEGY_LAB_EXPORT`
-- NDX Layer 2.5 Strategy Lab research-only export and `data/research/strategy_signals.parquet` generation from NDX residuals
+- NDX Layer 2.6 backtest acceptance gate for NDX residual-derived Strategy Lab signals
+- NDX residual-derived signals の operator promotion path
 - Bitget credentialed read-only network smoke
 - Bitget demo order lifecycle
 - Alpaca historical connectivity smoke は確認済み。fresh live `status=pass` は市場時間中の fresh bar 取得で再確認する
@@ -128,12 +130,14 @@ uv run python scripts/check_current_docs.py
 
 - `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully
 
-2026-06-09 NDX Layer 2.2/2.3/2.4 local research gate snapshot:
+2026-06-10 NDX Layer 2.2/2.3/2.4/2.5 local research gate snapshot:
 
-- `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, `research-ndx-residual-validate` registered
+- `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, `research-ndx-residual-validate`, `research-ndx-strategy-lab-export` registered
 - latest local exit decision artifact: `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
-- latest Layer 2.4 decision artifact: `REVISE_2_3` with `INSUFFICIENT_VALIDATION_ERAS` and `INSUFFICIENT_VALIDATION_SAMPLE`; no Strategy Lab export approval
-- 2026-06-09 docs refresh verification: `./scripts/check` passed with Python 3.13.7, current-docs check, pyrefly 0 errors, ty passed, `946 passed`
+- latest Layer 2.4 decision artifact: `APPROVE_STRATEGY_LAB_EXPORT`, `reason_codes=[]`, `permits_strategy_lab_research_only_export=true`
+- latest Layer 2.5 export artifact: `export_id=sha256:6e205549d2bc81ae8a99f316b29a3c1b496272f30b417cff71e2404e21f3465d`, `signal_count=84`, `replace_existing=true`, previous signal hash `sha256:8eb8fde20b1decf3e473d5122213e9cca3c31c6b00ebb343ee41b26d360d83e7`
+- latest paper candidate check after NDX Layer 2.5 export: `selected_candidate_ids=[]`; first candidate is blocked by `RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` and `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION`
+- latest `PaperIntentPreview` after promotion decision: empty list, `intent_count=0`
 
 2026-06-05 runtime artifact snapshot:
 

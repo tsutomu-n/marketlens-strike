@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-08_18:01 JST
-更新日: 2026-06-10_15:55 JST
+更新日: 2026-06-10_17:36 JST
 -->
 
 # NDX Research Docs
@@ -42,6 +42,6 @@ Layer 2.2 は local/manual review artifact harness である。external API、cr
 
 Layer 2.3 は `APPROVE_2_3`、freeze manifest、`second_review_required=false`、未解決 human decision なしを前提に、fixture-first data source resolution、feature panel、open-gap residual、diagnostics / neutralization pre-report、counter-DAG refutation skeleton を作る local research gate である。
 
-Layer 2.4 は Layer 2.3 artifact の lineage、timestamp、neutralization、counter-DAG refutation を検査し、将来の Strategy Lab research-only export へ進めるかを判定する gate である。現在の default fixture sample は小さいため、期待される実artifact判断は `REVISE_2_3` with `INSUFFICIENT_VALIDATION_ERAS` and `INSUFFICIENT_VALIDATION_SAMPLE` であり、`APPROVE_STRATEGY_LAB_EXPORT` ではない。
+Layer 2.4 は Layer 2.3 artifact の lineage、timestamp、neutralization、counter-DAG refutation を検査し、将来の Strategy Lab research-only export へ進めるかを判定する gate である。現在の default fixture は 90 feature rows / 84 residual rows を持ち、期待される実artifact判断は `APPROVE_STRATEGY_LAB_EXPORT` である。ただし、これは alpha、backtest、paper candidate、`PaperIntentPreview`、paper/live readiness の証明ではない。
 
 Layer 2.5 は Layer 2.4 の `APPROVE_STRATEGY_LAB_EXPORT` と `permits_strategy_lab_research_only_export=true` を前提に、Strategy Lab research-only signal artifact を書く export bridge である。既存 `strategy_signals.parquet` / `strategy_signal_manifest.json` がある場合は、`--replace-existing` がない限り上書きしない。Layer 2.5 も backtest、paper candidate、`PaperIntentPreview`、paper/live order、external API、credentials、dependency追加、NQ / VXN / SOX direct / options / gamma input を扱わない。

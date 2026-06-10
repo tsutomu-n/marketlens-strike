@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-10_17:36 JST
 -->
 
 # Operations Runbook
@@ -103,7 +103,7 @@ uv run sis research-ndx-residual-validate \
 - `data/reports/ndx_residual_validation_report.md`
 - `data/reports/ndx_counter_dag_refutation_report.md`
 
-現在の default fixture artifact は sample / era不足で `REVISE_2_3` になる。これは Strategy Lab export approval ではない。
+現在の default fixture artifact は 90 feature rows / 84 residual rows で `APPROVE_STRATEGY_LAB_EXPORT` になる。これは Layer 2.5 research-only export bridge の許可であり、alpha、backtest、paper candidate、`PaperIntentPreview`、paper/live readiness の証明ではない。
 
 stop conditions:
 

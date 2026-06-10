@@ -129,7 +129,7 @@ def test_feature_panel_uses_fixture_sources_and_blocks_leaky_model_inputs(tmp_pa
     )
 
     frame = pl.read_parquet(result.panel_path)
-    assert result.row_count == 12
+    assert result.row_count == 90
     assert "qqq_open_to_close_return" in frame.columns
     assert set(SOURCE_TIMESTAMP_COLUMNS).issubset(frame.columns)
     assert all(frame["source_ts_max"] <= frame["feature_ts"])
@@ -160,7 +160,7 @@ def test_open_gap_residual_trains_only_on_strict_prior_rows(tmp_path) -> None:
     )
 
     frame = pl.read_parquet(result.residuals_path)
-    assert frame.height == 6
+    assert frame.height == 84
     for row in frame.to_dicts():
         assert row["model_window_end"] < row["date"]
         assert row["model_training_row_count"] >= 6

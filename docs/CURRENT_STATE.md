@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-09_20:47 JST
+更新日: 2026-06-10_17:36 JST
 -->
 
 # Current State
@@ -26,7 +26,8 @@
 - NDX Layer 2.2 DAG foundation は `configs/research_layer_2_2/ndx/`、`src/sis/research/dag/`、`tests/research/` に実装済み。`research-layer22-validate` / `research-layer22-export` で local-only DAG artifact を検証・生成できる。
 - Layer 2.2 Exit Gate Review Harness は受入監査済み。`research-layer22-review-pack`、`research-layer22-review-import`、`research-layer22-exit-gate` で手動 review JSON を local import し、Layer 2.3 へ進めるかを判定する。`APPROVE_2_3` は `second_review_required=false`、未解決 human decision なし、BLOCKER なしの場合だけ成立し、非APPROVE時は同じ出力先の古い freeze manifest も削除する。これは external LLM API、feature panel、residual calculation、Strategy Lab export、backtest、paper/live order には接続しない。
 - NDX Layer 2.3 Preflight / Feature Panel / Open Gap Residual は `src/sis/research/ndx/` と `research-ndx-source-resolve` / `research-ndx-feature-panel` / `research-ndx-residual` / `research-ndx-diagnostics` に実装済み。fixture-first artifact を作り、same-day close leakage、per-source timestamp、`source_ts_max <= feature_ts`、DAG lineage を検査する。
-- NDX Layer 2.4 Residual Validation Gate は `research-ndx-residual-validate` に実装済み。Layer 2.3 artifact の lineage、timestamp、neutralization、counter-DAG refutation を検査する。現在の default fixture artifact は validation sample と era が不足するため `REVISE_2_3` で止まり、Strategy Lab export approval ではない。
+- NDX Layer 2.4 Residual Validation Gate は `research-ndx-residual-validate` に実装済み。Layer 2.3 artifact の lineage、timestamp、neutralization、counter-DAG refutation を検査する。現在の default fixture artifact は `APPROVE_STRATEGY_LAB_EXPORT` まで進み、Layer 2.5 の research-only Strategy Lab export bridge を許可する。
+- NDX Layer 2.5 Strategy Lab research-only export は `research-ndx-strategy-lab-export` に実装済み。approved residual から `data/research/strategy_signals.parquet` と manifest を生成するが、research-only block reason を付け、既存 artifact は `--replace-existing` なしでは上書きしない。
 - `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
 - 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。execution drift は live-readiness blocker として残る。
 
@@ -82,9 +83,10 @@
 - `collect-trade-xyz-quotes` は public CLI command として exposed している。
 - `Trade[XYZ]` pure backtest v0.1 は public CLI ではなく Python API surface。`uv run sis build-backtest` は既存 bridge 系 command であり、pure backtest engine の入口ではない。
 - `data/` は git 管理外。再開時は artifact を再生成する。
-- NDX Layer 2.2/2.3/2.4 research artifacts under `data/research/ndx/` and `data/reports/` are git-ignored runtime outputs. Fresh checkout では `research-layer22-export`、`research-layer22-review-pack`、`research-ndx-source-resolve`、`research-ndx-feature-panel`、`research-ndx-residual`、`research-ndx-diagnostics`、`research-ndx-residual-validate` から作り直す。
+- NDX Layer 2.2/2.3/2.4/2.5 research artifacts under `data/research/ndx/`, `data/research/`, and `data/reports/` are git-ignored runtime outputs. Fresh checkout では `research-layer22-export`、`research-layer22-review-pack`、`research-ndx-source-resolve`、`research-ndx-feature-panel`、`research-ndx-residual`、`research-ndx-diagnostics`、`research-ndx-residual-validate`、`research-ndx-strategy-lab-export` から作り直す。
 - `bot-preview` の `data/bot/bot_decision.json` と `data/reports/bot_orders_preview.md` は実行時生成 artifact。現 checkout に無い場合は `uv run sis bot-preview` で再生成する。
 - Strategy Lab の canonical signal artifact は `data/research/strategy_signals.parquet`。旧 `data/research/signals.csv` は Strategy Lab 正本ではなく legacy export として読む。
+- NDX Layer 2.5 export 由来の `strategy_signals.parquet` は research-only artifact。`evaluate-strategy-lab` と `build-paper-candidate-pack` には渡せるが、`RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` と venue suitability gate により paper candidate selection / `PaperIntentPreview` では fail closed する。
 - `PaperCandidatePack.selected_candidate_ids` は `status="candidate"`、空の `block_reasons`、venue-suitable の候補だけを受け入れる。NDX/QQQ の `trade_xyz` proxy は `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION` で止まり、`bitget_demo` / future catalog venues では `VENUE_ASSET_UNIVERSE_MISMATCH` または operator-disabled 理由で止まる。
 - Backtest surface の読み分けは `docs/backtest/README.md` に記録する。Trade[XYZ] pure backtest、Strategy Authoring fixed-horizon backtest、legacy bridge を混同しない。
 - Strategy Lab で今できることは `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` に記録する。わかりやすい HTML 版は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html`。現行では registered generator または `strategy-experiment-run --spec` から signal artifact を作り、threshold sweep、複数 selected signal の candidate 化、authoring YAML からの entry / hold / close / reduce / add / rebalance / long / short / derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max / column-to-column and cross/trend/consecutive condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal / paper-only linear model score / train-model adapter / group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip / bracket-OCO / partial-profit break-even lifecycle / order-style entry / time-in-force / post-only / reduce-only / execution-profile presets / slippage with row cost / partial-fill with row fill / min-fill gate with row threshold / spread gate / depth-based fill / latency gate / queue-position gate with row threshold / short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate / stop-loss / take-profit / stop/target width guard / reward-risk gate / close-signal exit / partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics と executed_signal_summary と strategy_scorecard 付き fixed-horizon backtest、multi-strategy bundle / risk-parity allocation、paper-only preview まで進められる。
@@ -121,12 +123,14 @@ uv run python scripts/check_current_docs.py
 
 - `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully
 
-2026-06-09 NDX Layer 2.2/2.3/2.4 local research gate snapshot:
+2026-06-10 NDX Layer 2.2/2.3/2.4/2.5 local research gate snapshot:
 
-- `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, `research-ndx-residual-validate` registered
+- `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, `research-ndx-residual-validate`, `research-ndx-strategy-lab-export` registered
 - latest local exit decision artifact: `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
-- latest Layer 2.4 decision artifact: `REVISE_2_3` with `INSUFFICIENT_VALIDATION_ERAS` and `INSUFFICIENT_VALIDATION_SAMPLE`; no Strategy Lab export approval
-- 2026-06-09 docs refresh verification: `./scripts/check` passed with Python 3.13.7, current-docs check, pyrefly 0 errors, ty passed, `946 passed`
+- latest Layer 2.4 decision artifact: `APPROVE_STRATEGY_LAB_EXPORT`, `reason_codes=[]`, `permits_strategy_lab_research_only_export=true`
+- latest Layer 2.5 export artifact: `export_id=sha256:6e205549d2bc81ae8a99f316b29a3c1b496272f30b417cff71e2404e21f3465d`, `signal_count=84`, `replace_existing=true`, previous signal hash `sha256:8eb8fde20b1decf3e473d5122213e9cca3c31c6b00ebb343ee41b26d360d83e7`
+- latest paper candidate check after NDX Layer 2.5 export: `selected_candidate_ids=[]`; first candidate is blocked by `RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` and `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION`
+- latest `PaperIntentPreview` after promotion decision: empty list, `intent_count=0`
 
 2026-06-09 NDX/QQQ venue suitability paper-path snapshot:
 

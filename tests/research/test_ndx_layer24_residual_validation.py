@@ -139,7 +139,7 @@ def _build_layer23_artifacts(artifact_dir: Path, reports_dir: Path) -> None:
     )
 
 
-def test_layer24_current_layer23_artifacts_fail_closed_for_sample_size(tmp_path) -> None:
+def test_layer24_current_layer23_artifacts_approve_research_export(tmp_path) -> None:
     artifact_dir = _prepare_layer22_approval(tmp_path)
     reports_dir = tmp_path / "data/reports"
     _build_layer23_artifacts(artifact_dir, reports_dir)
@@ -152,11 +152,10 @@ def test_layer24_current_layer23_artifacts_fail_closed_for_sample_size(tmp_path)
     )
 
     decision = json.loads(result.decision_path.read_text(encoding="utf-8"))
-    assert result.decision == "REVISE_2_3"
+    assert result.decision == "APPROVE_STRATEGY_LAB_EXPORT"
     assert "SOURCE_TIMESTAMP_AUDIT_MISSING" not in result.reason_codes
-    assert "INSUFFICIENT_VALIDATION_SAMPLE" in result.reason_codes
-    assert "INSUFFICIENT_VALIDATION_ERAS" in result.reason_codes
-    assert decision["permits_strategy_lab_research_only_export"] is False
+    assert result.reason_codes == []
+    assert decision["permits_strategy_lab_research_only_export"] is True
     assert decision["permits_backtest"] is False
 
 
@@ -181,7 +180,7 @@ def test_layer24_cli_writes_decision_and_reports_without_strategy_signals(tmp_pa
 
     assert result.exit_code == 0, result.stdout
     assert "status=pass" in normalized_stdout(result)
-    assert "decision=REVISE_2_3" in normalized_stdout(result)
+    assert "decision=APPROVE_STRATEGY_LAB_EXPORT" in normalized_stdout(result)
     assert (artifact_dir / "residual_validation_summary.json").exists()
     assert (artifact_dir / "residual_validation_decision.json").exists()
     assert (reports_dir / "ndx_residual_validation_report.md").exists()
