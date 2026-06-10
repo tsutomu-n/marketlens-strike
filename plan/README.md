@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-10_11:21 JST
+更新日: 2026-06-10_12:02 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -28,6 +28,14 @@ These are docs-only review or adoption plans. They do not authorize code,
 schema, dependency, paper, or live-execution changes by themselves.
 
 - [plan/0610ここからの計画/01_grok_architecture_adoption_review/README.md](0610ここからの計画/01_grok_architecture_adoption_review/README.md)
+
+## Current 2026-06-10 implementation plans
+
+These are implementation handoff plans. They require code, schema, tests, CLI
+help, and docs to be changed and verified before they become current project
+truth.
+
+- [plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/README.md](0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/README.md)
 
 ## Historical read order
 
