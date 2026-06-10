@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-09_21:11 JST
+更新日: 2026-06-10_11:21 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -21,6 +21,13 @@ implemented and reflected in `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md`.
 - `plan/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`
 - `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`
 - `plan/0609ここからの計画/03_venue_read_only_capability_probe/`
+
+## Current 2026-06-10 review plans
+
+These are docs-only review or adoption plans. They do not authorize code,
+schema, dependency, paper, or live-execution changes by themselves.
+
+- [plan/0610ここからの計画/01_grok_architecture_adoption_review/README.md](0610ここからの計画/01_grok_architecture_adoption_review/README.md)
 
 ## Historical read order
 
