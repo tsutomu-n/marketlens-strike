@@ -39,6 +39,7 @@ from sis.research.ndx.residual_model import build_open_gap_residuals
 from sis.research.ndx.residual_validation import run_residual_validation_gate
 from sis.research.ndx.source_resolution import build_source_resolution
 from sis.research.ndx.start_conditions import Layer23StartConditionError
+from sis.research.ndx.strategy_lab_export import export_ndx_strategy_lab_research_artifact
 from sis.research.hypothesis.role_contracts import CausalRoleRegistry
 from sis.research.hypothesis.role_validator import validate_roles_against_inventory
 from sis.research.hypothesis.data_source_contracts import DataSourceRegistry
@@ -844,6 +845,53 @@ def register_research_commands(
         typer.echo(f"report={result.report_path}")
         typer.echo(f"counter_dag_refutation_report={result.counter_dag_report_path}")
 
+    @app.command("research-ndx-strategy-lab-export")
+    def research_ndx_strategy_lab_export_cmd(
+        data_dir: Path | None = typer.Option(
+            None,
+            "--data-dir",
+            file_okay=False,
+            help="Runtime data root. Defaults to SIS_DATA_DIR/settings data_dir.",
+        ),
+        artifact_dir: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--artifact-dir",
+            file_okay=False,
+            help="NDX Layer 2.3/2.4 artifact directory.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            file_okay=False,
+            help="Directory containing NDX residual diagnostic reports.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing",
+            help="Overwrite existing Strategy Lab signal artifacts and record previous hashes.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        effective_data_dir = data_dir or settings.data_dir
+        try:
+            result = export_ndx_strategy_lab_research_artifact(
+                data_dir=effective_data_dir,
+                artifact_dir=artifact_dir,
+                reports_dir=reports_dir,
+                replace_existing=replace_existing,
+            )
+        except (FileNotFoundError, ValueError, TypeError, ValidationError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"export_id={result.export_id}")
+        typer.echo(f"signal_count={result.signal_count}")
+        typer.echo(f"strategy_signals={result.signals_path}")
+        typer.echo(f"strategy_signal_manifest={result.signal_manifest_path}")
+        typer.echo(f"export_manifest={result.export_manifest_path}")
+        typer.echo(f"report={result.report_path}")
+
     @app.command("build-cost-matrix")
     def build_cost_matrix() -> None:
         settings = get_settings()
@@ -1204,7 +1252,9 @@ def register_research_commands(
                     )
                     raise typer.Exit(2)
                 block_reasons = (
-                    [] if record.selected_for_next_stage else list(record.rejection_reasons)
+                    list(signal.get("block_reasons") or [])
+                    if record.selected_for_next_stage
+                    else list(record.rejection_reasons)
                 )
                 if record.selected_for_next_stage:
                     block_reasons.extend(

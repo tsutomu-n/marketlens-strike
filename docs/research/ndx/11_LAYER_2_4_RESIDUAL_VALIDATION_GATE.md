@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_06:36 JST
-更新日: 2026-06-09_10:06 JST
+更新日: 2026-06-10_15:55 JST
 -->
 
 # Layer 2.4 NDX Residual Validation Gate
@@ -28,7 +28,7 @@ uv run sis research-ndx-residual-validate \
 
 ## Decisions
 
-- `APPROVE_STRATEGY_LAB_EXPORT`: future Layer 2.5 may build research-only Strategy Lab export.
+- `APPROVE_STRATEGY_LAB_EXPORT`: Layer 2.5 may build research-only Strategy Lab export.
 - `REVISE_2_3`: Layer 2.3 feature/residual artifacts need correction or more validation sample.
 - `REVISE_2_2`: Layer 2.2 DAG/freeze lineage needs correction.
 - `REJECT_RESIDUAL`: residual survives lineage checks but is explained away by known-factor neutralization.
@@ -41,3 +41,5 @@ checks both the per-source values and the aggregate value against `feature_ts`, 
 the JSON manifests. The default fixture sample is still intentionally too small for approval, so the
 current expected decision is `REVISE_2_3` for validation sample and era insufficiency, not a Strategy
 Lab export approval.
+
+Layer 2.4 approval is not alpha proof. It only permits the Layer 2.5 research-only export command to write Strategy Lab signal artifacts, and it does not permit backtest, paper candidate, PaperIntentPreview, paper/live orders, external API use, credentials, wallet use, or venue writes.

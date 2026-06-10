@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_12:02 JST
-更新日: 2026-06-10_15:06 JST
+更新日: 2026-06-10_15:55 JST
 -->
 
 # Artifact contract
@@ -19,6 +19,7 @@ Options:
 - `--data-dir`: project runtime data root. Default from settings, normally `data`.
 - `--artifact-dir`: NDX Layer 2.3 / 2.4 artifact directory. Default `data/research/ndx`.
 - `--reports-dir`: NDX residual reports directory. Default `data/reports`.
+- `--replace-existing`: allow overwriting existing canonical Strategy Lab signal artifacts. Default false.
 
 ## Required inputs
 
@@ -73,6 +74,10 @@ Required fields:
 - `side_policy: "residual_sign_directional_research_only"`
 - `rank_policy`
 - `hash_excludes`
+- `replace_existing`
+- `replaced_existing_artifact`
+- `previous_strategy_signals_hash`
+- `previous_strategy_signal_manifest_hash`
 - `research_only: true`
 - `permits_backtest: false`
 - `permits_paper_candidate: false`
@@ -116,6 +121,12 @@ The same input artifacts must produce the same signal identity, `signal_artifact
 `export_id` must be computed from a stable payload that excludes `created_at`, `strategy_signal_manifest_hash`, and timestamp fields in the Strategy Lab manifest. The export manifest must record these exclusions in `hash_excludes`.
 
 The physical manifest file hashes may differ across runs when timestamp-bearing companion manifests are rewritten; that is acceptable only when `export_id` remains stable and all source artifact hashes match.
+
+## Existing artifact guard
+
+If `data-dir/research/strategy_signals.parquet` or `data-dir/research/strategy_signal_manifest.json` already exists, the command must fail without overwriting unless `--replace-existing` is passed.
+
+When `--replace-existing` is passed, the export manifest must record `replace_existing: true`, `replaced_existing_artifact: true`, and the previous artifact hashes before overwrite. If no prior artifact existed, `replaced_existing_artifact` is false and previous hashes are null.
 
 ## Downstream propagation requirement
 

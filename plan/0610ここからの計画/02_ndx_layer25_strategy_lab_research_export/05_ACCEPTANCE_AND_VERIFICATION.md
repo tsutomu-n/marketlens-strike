@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_12:02 JST
-更新日: 2026-06-10_15:06 JST
+更新日: 2026-06-10_15:55 JST
 -->
 
 # Acceptance and verification
@@ -12,6 +12,8 @@ The implementation is complete only when all of these are true:
 - `uv run sis research-ndx-strategy-lab-export --help` shows the new command and options.
 - The command defaults to `data_dir/research` for canonical Strategy Lab artifacts and `data/reports` for residual diagnostics.
 - Approved synthetic Layer 2.4 artifacts produce canonical Strategy Lab signal artifact and manifest.
+- Existing Strategy Lab signal artifacts cause fail-closed behavior unless `--replace-existing` is passed.
+- `--replace-existing` overwrites only after recording previous Strategy Lab artifact hashes in the export manifest.
 - Rejected or non-approved Layer 2.4 artifacts produce no Strategy Lab signal artifact.
 - Missing or hash-mismatched inputs produce no Strategy Lab signal artifact.
 - Layer 2.5 export manifest validates against `schemas/ndx_strategy_lab_research_export_manifest.v1.schema.json`.
