@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_12:02 JST
-更新日: 2026-06-10_12:02 JST
+更新日: 2026-06-10_15:06 JST
 -->
 
 # Code truth and risk audit
@@ -15,6 +15,8 @@
 - Existing `StrategySignalRecord` accepts `execution_venue` values from `VenueId`, currently including `trade_xyz` and `bitget_demo`.
 - Existing `SymbolBinding` permits `trade_xyz` / `XYZ100` only when `real_market_symbol` is `QQQ`.
 - Existing paper candidate flow blocks `trade_xyz` / `XYZ100` / `QQQ` at paper candidate stage with `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION`.
+- Existing paper candidate flow does not currently propagate selected signal `block_reasons` into `TradeCandidate.block_reasons`; it builds selected candidate block reasons from venue suitability.
+- Current NDX docs use `--reports-dir data/reports` for Layer 2.4, not `data/research/ndx/reports`.
 
 ## Main risks
 
@@ -22,7 +24,7 @@
    - Mitigation: export manifest must say `research_only: true` and all paper/live permissions false.
 
 2. Artifact escalation risk: writing canonical `strategy_signals.parquet` makes downstream Strategy Lab commands able to see NDX signals.
-   - Mitigation: preserve existing venue suitability block, add tests proving candidate pack remains blocked and PaperIntentPreview remains empty even after operator promotion.
+   - Mitigation: preserve existing venue suitability block, propagate selected signal `block_reasons`, and add tests proving candidate pack remains blocked and PaperIntentPreview remains empty even after operator promotion.
 
 3. Trading-intent risk: mapping residual sign to `long` / `short` can look like a deployable strategy.
    - Mitigation: emitted rows must include `reason_codes` and `block_reasons` that mark the export as research-only and not operator-promoted. Any future paper/live promotion must be a separate plan.
@@ -36,7 +38,10 @@
 6. Schema drift risk: Strategy Lab signal frame has many optional fields and a strict canonical schema.
    - Mitigation: build rows through `StrategySignalRecord`, cast through `STRATEGY_SIGNAL_SCHEMA`, then call `validate_strategy_signal_frame`.
 
-7. Test optimism risk: only testing an approved fixture hides fail-closed behavior.
+7. Determinism risk: export manifest hashes can change across identical inputs if timestamp fields are included in stable ids.
+   - Mitigation: define `export_id` from a timestamp-excluded payload and record `hash_excludes`.
+
+8. Test optimism risk: only testing an approved fixture hides fail-closed behavior.
    - Mitigation: include rejection, missing artifact, hash mismatch, and downstream paper/live non-permission tests.
 
 ## Deliberate non-goals

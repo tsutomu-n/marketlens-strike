@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_12:02 JST
-更新日: 2026-06-10_12:02 JST
+更新日: 2026-06-10_15:06 JST
 -->
 
 # Implementation tasks
@@ -16,11 +16,13 @@ Add fixture helpers adapted from `tests/research/test_ndx_layer24_residual_valid
 Required failing tests:
 
 - approved Layer 2.4 artifacts write Strategy Lab signal artifact, Strategy Lab manifest, Layer 2.5 export manifest, and report.
+- the command default reads `reports-dir=data/reports` and writes canonical artifacts under `data_dir/research/`.
 - non-approved Layer 2.4 decision exits non-zero and writes no Strategy Lab signal artifact.
 - missing required input exits non-zero and writes no Strategy Lab signal artifact.
 - hash mismatch exits non-zero and writes no Strategy Lab signal artifact.
 - emitted signal frame passes `validate_strategy_signal_frame`.
 - emitted rows use `feature_ts` as `ts_signal` and preserve NDX lineage in `feature_snapshot_ref`.
+- repeated export on identical source artifacts produces the same `export_id`.
 
 ## Task 2: RED tests for downstream safety boundary
 
@@ -32,6 +34,7 @@ Files:
 Required failing tests:
 
 - after Layer 2.5 export, `evaluate-strategy-lab` can read the canonical artifact.
+- selected signal `block_reasons` propagate into `TradeCandidate.block_reasons`.
 - after `evaluate-strategy-lab`, `build-paper-candidate-pack` blocks NDX/QQQ candidate with venue suitability and/or research-only block reason.
 - after a manual `promotion-decision --decision promote`, `build-paper-intent-preview` writes an empty intent list for NDX/QQQ.
 
@@ -52,10 +55,24 @@ Responsibilities:
 - validate with `validate_strategy_signal_frame`;
 - write canonical Strategy Lab artifact and manifest with existing `write_strategy_signal_manifest`;
 - write Layer 2.5 export manifest and report.
+- compute `export_id` from a timestamp-excluded stable payload and record `hash_excludes`.
 
 Do not put this logic in the command wrapper.
 
-## Task 4: add schema
+## Task 4: propagate selected signal block reasons into candidate pack
+
+Files:
+
+- `src/sis/commands/research.py`
+- `tests/research/test_ndx_layer25_strategy_lab_export.py`
+
+Responsibilities:
+
+- for selected signal rows, merge `signal.get("block_reasons")` into candidate block reasons before selected/rejected ids are decided;
+- preserve existing venue suitability block behavior;
+- preserve existing behavior for blocked/no-signal trial records.
+
+## Task 5: add schema
 
 Files:
 
@@ -64,7 +81,7 @@ Files:
 
 The schema must encode research-only booleans as constants where possible.
 
-## Task 5: add CLI command
+## Task 6: add CLI command
 
 Files:
 
@@ -76,7 +93,7 @@ Add command:
 
 The command should call the pure module and use Typer exit code 2 for fail-closed validation errors.
 
-## Task 6: docs after code passes
+## Task 7: docs after code passes
 
 Files:
 
@@ -92,7 +109,7 @@ Docs must say:
 
 Update hidden metadata timestamps on edited Markdown files.
 
-## Task 7: final verification
+## Task 8: final verification
 
 Run targeted tests first, then full check:
 

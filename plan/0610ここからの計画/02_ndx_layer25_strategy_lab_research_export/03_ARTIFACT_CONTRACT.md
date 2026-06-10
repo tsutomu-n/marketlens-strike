@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_12:02 JST
-更新日: 2026-06-10_12:02 JST
+更新日: 2026-06-10_15:06 JST
 -->
 
 # Artifact contract
@@ -9,16 +9,16 @@
 
 ```bash
 uv run sis research-ndx-strategy-lab-export \
+  --data-dir data \
   --artifact-dir data/research/ndx \
-  --reports-dir data/research/ndx/reports \
-  --out data/research
+  --reports-dir data/reports
 ```
 
 Options:
 
+- `--data-dir`: project runtime data root. Default from settings, normally `data`.
 - `--artifact-dir`: NDX Layer 2.3 / 2.4 artifact directory. Default `data/research/ndx`.
-- `--reports-dir`: NDX residual reports directory. Default `data/research/ndx/reports`.
-- `--out`: Strategy Lab research artifact directory. Default `data/research`.
+- `--reports-dir`: NDX residual reports directory. Default `data/reports`.
 
 ## Required inputs
 
@@ -33,12 +33,10 @@ Options:
 
 ## Outputs on approval
 
-- `out/strategy_signals.parquet`
-- `out/strategy_signal_manifest.json`
+- `data-dir/research/strategy_signals.parquet`
+- `data-dir/research/strategy_signal_manifest.json`
 - `artifact-dir/strategy_lab_research_export_manifest.json`
-- `out/../reports/ndx_strategy_lab_research_export_report.md`
-
-`out` is normally `data/research`, so the report resolves to `data/reports/ndx_strategy_lab_research_export_report.md`.
+- `data-dir/reports/ndx_strategy_lab_research_export_report.md`
 
 ## Manifest schema
 
@@ -50,9 +48,12 @@ Required fields:
 - `dag_id: "HYP-NDX-001"`
 - `export_id: "sha256:<64 hex>"`
 - `created_at`
+- `source_decision`
 - `source_decision_id`
 - `source_decision_path`
 - `source_summary_path`
+- `source_reason_codes`
+- `source_thresholds`
 - `feature_panel_path`
 - `feature_panel_hash`
 - `residuals_path`
@@ -68,6 +69,10 @@ Required fields:
 - `strategy_family`
 - `strategy_version`
 - `generator_id`
+- `tested_variant_count: 1`
+- `side_policy: "residual_sign_directional_research_only"`
+- `rank_policy`
+- `hash_excludes`
 - `research_only: true`
 - `permits_backtest: false`
 - `permits_paper_candidate: false`
@@ -90,6 +95,7 @@ Use one Strategy Lab row per joined residual date.
 - `rank_score`: `abs(raw_score)` percentile rank within the export frame.
 - `tail_bucket`: `top` for `percentile_rank >= 0.8`, `bottom` for `percentile_rank <= 0.2`, otherwise `middle`.
 - `side`: `long` when `raw_score > 0`, `short` when `raw_score < 0`, `none` when exactly zero.
+- `side_policy`: `residual_sign_directional_research_only`. This is a research label, not a paper/live order instruction.
 - `confidence`: bounded `abs(raw_score) / max(abs(raw_score))`, with zero frame producing `0.0`.
 - `timeframe`: `1d`.
 - `execution_venue`: `trade_xyz`.
@@ -105,4 +111,12 @@ Use one Strategy Lab row per joined residual date.
 
 ## Determinism
 
-The same input artifacts must produce the same signal identity, `signal_artifact_run_id`, export manifest `export_id`, and hashes except for timestamp fields explicitly excluded by existing Strategy Lab run-id logic.
+The same input artifacts must produce the same signal identity, `signal_artifact_run_id`, and export manifest `export_id`.
+
+`export_id` must be computed from a stable payload that excludes `created_at`, `strategy_signal_manifest_hash`, and timestamp fields in the Strategy Lab manifest. The export manifest must record these exclusions in `hash_excludes`.
+
+The physical manifest file hashes may differ across runs when timestamp-bearing companion manifests are rewritten; that is acceptable only when `export_id` remains stable and all source artifact hashes match.
+
+## Downstream propagation requirement
+
+Selected signal `block_reasons` must be merged into `TradeCandidate.block_reasons` before candidate selection. Venue suitability block reasons are still required, but they are not a substitute for preserving the research-only signal block reason.
