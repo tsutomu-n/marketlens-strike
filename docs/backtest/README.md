@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-06_10:28 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # Backtest Docs
@@ -30,6 +30,7 @@ Trade[XYZ] を当面の注文口にせず、バックテスト優先へ切り替
 uv run python scripts/seed_strategy_authoring_baseline_data.py
 uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
 uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports
 ```
 
 主な出力:
@@ -39,9 +40,11 @@ uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_
 - `data/research/strategy_authoring_baseline_venue_cost_matrix.csv`
 - `data/research/strategy_signals.parquet`
 - `data/research/strategy_backtest_metrics.json`
+- `data/research/strategy_lifecycle/backtest_acceptance_decision.json`
 - `data/reports/strategy_backtest_report.md`
+- `data/reports/strategy_backtest_acceptance_report.md`
 
-これは Strategy Authoring の paper-only 研究評価です。Trade[XYZ] `backtest_data_ready=true`、Bitget 接続、demo order submit、live readiness の証明ではありません。
+これは Strategy Authoring の paper-only 研究評価です。`strategy-backtest-acceptance` は backtest artifact の pass/fail/boundary 判定を固定しますが、Trade[XYZ] `backtest_data_ready=true`、Bitget 接続、demo order submit、live readiness の証明ではありません。
 
 ## Trade[XYZ] Pure Backtest v0.1
 

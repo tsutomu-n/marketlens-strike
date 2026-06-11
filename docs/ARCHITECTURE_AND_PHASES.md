@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-10_17:36 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # Architecture And Phases
@@ -16,6 +16,7 @@
 - `src/sis/venues/suitability`: venue suitability catalog and fail-closed stage checks for research, paper candidate, paper intent, and live boundaries
 - `src/sis/research/dag`: NDX Layer 2.2 DAG config validation, lint, export, manual review pack/import, and exit gate decision contracts
 - `src/sis/research/ndx`: NDX Layer 2.3/2.4/2.5 fixture-first source resolution, feature panel, open-gap residual, diagnostics, neutralization pre-report, artifact lineage checks, residual validation gate, and research-only Strategy Lab export bridge
+- `src/sis/research/strategy_lifecycle`: Strategy Authoring backtest acceptance and integrated lifecycle review over backtest, paper observation, and phase gate artifacts
 - `src/sis/backtest/engine` and `src/sis/backtest/trade_xyz`: Trade[XYZ] pure backtest v0.1, long-only single-symbol accounting, fill, cost, gate, metrics, report artifacts
 - `src/sis/paper`: venue-gated paper fills, portfolio state, reports
 - `src/sis/execution`: `Trade[XYZ]` micro live safety code, `bitget_demo` local/mock-first adapter, and execution read-only surfaces
@@ -64,6 +65,7 @@ current truth:
 - `research.dag` は DAG artifact、counter DAG、temporal availability、manual review gate を管理し、feature panel、residual calculation、backtest、paper/live order を扱わない
 - `research.ndx` は NDX Layer 2.3/2.4/2.5 の local source resolution、feature panel、residual、diagnostics、neutralization pre-report、residual validation、research-only Strategy Lab export bridge を管理し、backtest、paper/live order を扱わない
 - `backtest.engine` は pure backtest の accounting / fill / cost / artifact 契約を管理し、live execution や wallet/signing を扱わない
+- `strategy_lifecycle` は backtest acceptance、paper observation review、phase gate summary を統合するが、live order、wallet/signing、exchange write を扱わない
 - `paper` は tracking and quality-gated execution simulation
 - `micro_live` は tiny live safety sequence のみを扱い、strategy promotionは扱わない
 

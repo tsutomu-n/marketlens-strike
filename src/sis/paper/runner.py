@@ -161,6 +161,62 @@ def _write_observation(path: Path, payload: dict) -> None:
         handle.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
 
 
+def _quote_age_ms(now: datetime, quote_ts: datetime | None) -> int | None:
+    if quote_ts is None:
+        return None
+    return int((now - quote_ts).total_seconds() * 1000)
+
+
+def _paper_observation_payload(
+    *,
+    intent: PaperIntentPreview,
+    status: str,
+    now: datetime,
+    block_reasons: list[str],
+    quote: dict | None = None,
+    quote_ts: datetime | None = None,
+    order: PaperOrder | None = None,
+    fill: PaperFill | None = None,
+) -> dict:
+    quantity = float(intent.quantity or 1.0)
+    notional = intent.notional_usd
+    if notional is None and fill is not None:
+        notional = float(fill.price) * quantity
+    return {
+        "created_at": now.isoformat(),
+        "intent_id": intent.intent_id,
+        "candidate_id": intent.candidate_id,
+        "venue": intent.execution_venue,
+        "execution_symbol": intent.execution_symbol,
+        "real_market_symbol": intent.real_market_symbol,
+        "status": status,
+        "block_reasons": block_reasons,
+        "quote_ts": quote_ts.isoformat() if quote_ts is not None else None,
+        "quote_age_ms": _quote_age_ms(now, quote_ts),
+        "market_status": str(quote.get("market_status", "unknown")) if quote else None,
+        "is_tradable": bool(quote.get("is_tradable")) if quote else None,
+        "spread_bps": float(quote["spread_bps"])
+        if quote and quote.get("spread_bps") is not None
+        else None,
+        "source_confidence": float(quote["source_confidence"])
+        if quote and quote.get("source_confidence") is not None
+        else None,
+        "venue_quality_score": float(quote["venue_quality_score"])
+        if quote and quote.get("venue_quality_score") is not None
+        else None,
+        "notional_usd": notional,
+        "quantity": quantity,
+        "order_id": order.order_id if order else None,
+        "fill_id": fill.fill_id if fill else None,
+        "source_operator_promotion_path": intent.operator_promotion_path,
+        "source_operator_promotion_hash": intent.operator_promotion_hash,
+        "live_order_submitted": False,
+        "wallet_used": False,
+        "exchange_write_used": False,
+        "venue_write_used": False,
+    }
+
+
 def run_paper_from_intents(
     data_dir: Path,
     *,
@@ -198,14 +254,13 @@ def run_paper_from_intents(
             blocked_count += 1
             _write_observation(
                 observation_ledger_path,
-                {
-                    "intent_id": intent.intent_id,
-                    "status": "blocked",
-                    "block_reasons": block_reasons,
-                    "live_order_submitted": False,
-                    "wallet_used": False,
-                    "exchange_write_used": False,
-                },
+                _paper_observation_payload(
+                    intent=intent,
+                    status="blocked",
+                    now=now,
+                    block_reasons=block_reasons,
+                    quote=quote,
+                ),
             )
             continue
 
@@ -266,14 +321,14 @@ def run_paper_from_intents(
             blocked_count += 1
             _write_observation(
                 observation_ledger_path,
-                {
-                    "intent_id": intent.intent_id,
-                    "status": "blocked",
-                    "block_reasons": ["PAPER_BROKER_REVALIDATION_BLOCKED"],
-                    "live_order_submitted": False,
-                    "wallet_used": False,
-                    "exchange_write_used": False,
-                },
+                _paper_observation_payload(
+                    intent=intent,
+                    status="blocked",
+                    now=now,
+                    block_reasons=["PAPER_BROKER_REVALIDATION_BLOCKED"],
+                    quote=quote,
+                    quote_ts=quote_ts,
+                ),
             )
             continue
         orders.append(order)
@@ -281,15 +336,16 @@ def run_paper_from_intents(
         portfolio.apply_fill(fill)
         _write_observation(
             observation_ledger_path,
-            {
-                "intent_id": intent.intent_id,
-                "status": "paper_filled",
-                "order_id": order.order_id,
-                "fill_id": fill.fill_id,
-                "live_order_submitted": False,
-                "wallet_used": False,
-                "exchange_write_used": False,
-            },
+            _paper_observation_payload(
+                intent=intent,
+                status="paper_filled",
+                now=now,
+                block_reasons=[],
+                quote=quote,
+                quote_ts=quote_ts,
+                order=order,
+                fill=fill,
+            ),
         )
 
     positions = portfolio.positions()

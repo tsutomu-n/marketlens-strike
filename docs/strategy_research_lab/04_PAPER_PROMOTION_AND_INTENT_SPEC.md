@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-11_14:29 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # Paper Promotion And Intent Spec
@@ -164,7 +164,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 5. `DecisionContext` / `ExecutionPlan` へ paper runner 内部で bridge する。
 6. `PaperBroker` で fee / halt policy / paper validation を通す。
 7. paper order / fill / position を書く。
-8. observation ledger に結果を書く。
+8. observation ledger に `created_at`, quote context, notional, quantity, promotion evidence, and paper-only boundary flags を含めて結果を書く。
 
 block reason:
 
@@ -180,6 +180,28 @@ NDX/QQQ family の raw JSON を直接 `--intents-path` に置いても、手順 
 - `data/paper/fills.parquet`
 - `data/paper/positions.parquet`
 - `data/paper/paper_observation_ledger.jsonl`
+
+ledger の主要 field:
+
+- `created_at`
+- `intent_id`
+- `candidate_id`
+- `venue`
+- `execution_symbol`
+- `real_market_symbol`
+- `quote_ts`
+- `quote_age_ms`
+- `spread_bps`
+- `source_confidence`
+- `venue_quality_score`
+- `notional_usd`
+- `quantity`
+- `source_operator_promotion_path`
+- `source_operator_promotion_hash`
+- `live_order_submitted=false`
+- `wallet_used=false`
+- `exchange_write_used=false`
+- `venue_write_used=false`
 
 ## Internal legacy bridge
 
@@ -210,4 +232,5 @@ Preview 生成後:
 - `live_conversion_allowed=false`。
 - `wallet_used=false`。
 - `exchange_write_used=false`。
+- `venue_write_used=false`。
 - paper observation ledger に live write が記録されていない。

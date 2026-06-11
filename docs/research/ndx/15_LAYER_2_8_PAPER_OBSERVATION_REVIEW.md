@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_19:06 JST
-更新日: 2026-06-11_19:06 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # NDX Layer 2.8 Paper Observation Review
@@ -19,8 +19,10 @@ uv run sis research-ndx-paper-observation-review \
 Default thresholds:
 
 - `--min-fills-for-pass 20`
+- `--min-trading-days-for-pass 10`
 - `--max-blocked-rate 0.5`
 - `--max-consecutive-blocked 3`
+- `--max-open-position-age-hours 0.0`
 - `--paper-notional-usd 1000.0`
 
 For a short local fixture check, lower the fill threshold explicitly:
@@ -30,7 +32,8 @@ uv run sis research-ndx-paper-observation-review \
   --data-dir data \
   --artifact-dir data/research/ndx \
   --reports-dir data/reports \
-  --min-fills-for-pass 1
+  --min-fills-for-pass 1 \
+  --min-trading-days-for-pass 1
 ```
 
 ## Inputs
@@ -53,17 +56,18 @@ Schema:
 
 ## Decisions
 
-- `PASS_PAPER_OBSERVATION_REVIEW`: fill threshold met with no review blocker.
-- `NEEDS_MORE_PAPER_OBSERVATION`: no blocker, but fill threshold is not met.
+- `PASS_PAPER_OBSERVATION_REVIEW`: fill and trading-day thresholds met with no review blocker and complete timestamps.
+- `NEEDS_MORE_PAPER_OBSERVATION`: no blocker, but fill threshold, trading-day threshold, or timestamp completeness is not met.
 - `STOP_PAPER_OBSERVATION`: boundary or operational stop condition was hit.
 
 Stop conditions:
 
-- any ledger entry has `live_order_submitted`, `wallet_used`, or `exchange_write_used` not exactly `false`
+- any ledger entry has `live_order_submitted`, `wallet_used`, `venue_write_used`, or `exchange_write_used` not exactly `false`
 - unknown ledger status
 - blocked rate is greater than `--max-blocked-rate`
 - consecutive blocked entries reach `--max-consecutive-blocked`
 - required paper artifacts are missing
+- open position age is greater than `--max-open-position-age-hours` when that option is greater than zero
 
 ## Boundary
 

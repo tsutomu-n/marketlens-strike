@@ -94,6 +94,20 @@ def test_run_paper_from_intents_revalidates_and_writes_paper_artifacts(tmp_path)
     assert summary.observation_ledger_path.exists()
     text = summary.observation_ledger_path.read_text(encoding="utf-8")
     assert '"exchange_write_used": false' in text
+    ledger = json.loads(text.splitlines()[0])
+    assert ledger["created_at"]
+    assert ledger["candidate_id"] == "candidate-001"
+    assert ledger["venue"] == "trade_xyz"
+    assert ledger["execution_symbol"] == "SP500"
+    assert ledger["real_market_symbol"] == "SPY"
+    assert ledger["quote_ts"]
+    assert ledger["quote_age_ms"] >= 0
+    assert ledger["spread_bps"] == 2.0
+    assert ledger["source_confidence"] == 0.95
+    assert ledger["venue_quality_score"] == 0.95
+    assert ledger["notional_usd"] == 1000.0
+    assert ledger["quantity"] == 1.0
+    assert ledger["venue_write_used"] is False
 
 
 def test_run_paper_from_intents_accepts_bitget_demo_fixture_quote(tmp_path) -> None:
@@ -154,7 +168,10 @@ def test_run_paper_from_intents_blocks_expired_intent(tmp_path) -> None:
     assert summary.orders_count == 0
     assert summary.fills_count == 0
     assert summary.blocked_count == 1
-    assert "INTENT_EXPIRED" in summary.observation_ledger_path.read_text(encoding="utf-8")
+    ledger = json.loads(summary.observation_ledger_path.read_text(encoding="utf-8").splitlines()[0])
+    assert "INTENT_EXPIRED" in ledger["block_reasons"]
+    assert ledger["created_at"]
+    assert ledger["venue_write_used"] is False
 
 
 def test_run_paper_from_intents_revalidates_raw_ndx_qqq_intent_json(tmp_path) -> None:

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_14:13 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # Current Capabilities
@@ -73,6 +73,7 @@ uv run sis strategy-author-init --out docs/strategy_research_lab/examples/trend_
 uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
 uv run sis strategy-author-explain --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
 uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports
 uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
 uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/notional_pair_hedge_bundle.yaml
 ```
@@ -88,6 +89,7 @@ uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_
 できること:
 
 - `strategy_authoring_spec.v1` YAML で entry 条件、hold 条件、explicit close / reduce / add / rebalance 条件、side、`side: auto`、timeframe、score、paper-only 線形 `model_score` / train-model adapter、temporal / cadence control、event-window calendar filters、bracket-OCO lifecycle with row-level break-even/time-stop、backtest horizon を書ける。
+- `strategy-backtest-acceptance` で `strategy_backtest_metrics.json` の `backtest_passed`、min trade count、threshold、paper-only boundary を local artifact として判定できる。
 - `rules.side_column`, `long_entry`, `short_entry`, `close`, `reduce`, `add`, `rebalance` で row ごとの long / short / hold / close / reduce / add / rebalance marker を出せる。
 - condition DSL は固定値比較、列同士の比較、`between`、`in` / `not_in`、`none` exclusion group に対応し、moving average cross、adaptive threshold、regime filter を直接書ける。
 - `rules.derived_features` で spread、ratio、true range、ATR、Bollinger bands、Donchian channels、Keltner channels、Ichimoku cloud、MACD line、stochastic K/D、ADX、OBV、volume z-score、calendar features、rolling correlation / beta / spread z-score / tracking error / information ratio、Kelly fraction、historical VaR、expected shortfall、order-flow imbalance、liquidity depth ratio、spread bps、funding bps、carry-adjusted return、volatility risk premium、put-call skew、liquidity stress、net exchange flow、on-chain activity ratio、sentiment weighted score、event surprise、fundamental value gap、risk-adjusted score、inverse volatility weight、cross-sectional rank、cross-sectional z-score / demean、group cross-sectional rank / z-score / demean、queue position score、latency penalty bps、maker-taker fee edge、borrow cost bps、borrow availability ratio、tax drag bps、rebalance drift、freshness score、staleness bps、data quality blend、ensemble vote count/ratio、regime transition score、drawdown from peak、rolling max drawdown、drawdown duration、turnover pressure、capacity usage ratio、correlation crowding score、lag、EMA、RSI、rolling min/max/mean/std/z-score/percentile-rank/skew/kurtosis などの strategy-local feature を YAML 内で作れ、EMA crossover / MACD trend-following / stochastic oscillator / ADX trend-strength / RSI mean-reversion / Kelly sizing / VaR filter / expected shortfall filter / Ichimoku cloud breakout / Donchian breakout / Keltner envelope / Bollinger band reversal / band breakout / volume-confirmed breakout / cross-asset confirmation / benchmark-relative strength / pair spread normalization / tracking-error budget / information-ratio filter / order-flow continuation / thin-liquidity exclusion / funding-carry filter / volatility risk premium / skew hedge / on-chain flow filter / sentiment confirmation / event surprise / fundamental value gap / factor ranking / group-aware factor normalization / queue-position filter / latency-cost filter / maker-taker fee edge / borrow availability and cost / tax drag filter / rebalance drift / data freshness filter / source-quality blend / ensemble vote filter / regime transition filter / rolling drawdown filter / max-drawdown-duration filter / turnover pressure / capacity usage / correlation crowding / seasonality filter / intraday session filter / volatility compression / volatility breakout / percentile-rank exhaustion / tail-shape regime filter / channel / momentum 条件を任意 Python なしで表現できる。

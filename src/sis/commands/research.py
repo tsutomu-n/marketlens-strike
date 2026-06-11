@@ -43,6 +43,8 @@ from sis.research.ndx.residual_validation import run_residual_validation_gate
 from sis.research.ndx.source_resolution import build_source_resolution
 from sis.research.ndx.start_conditions import Layer23StartConditionError
 from sis.research.ndx.strategy_lab_export import export_ndx_strategy_lab_research_artifact
+from sis.research.strategy_lifecycle.backtest_acceptance import run_backtest_acceptance
+from sis.research.strategy_lifecycle.review import run_strategy_lifecycle_review
 from sis.research.hypothesis.role_contracts import CausalRoleRegistry
 from sis.research.hypothesis.role_validator import validate_roles_against_inventory
 from sis.research.hypothesis.data_source_contracts import DataSourceRegistry
@@ -1035,8 +1037,12 @@ def register_research_commands(
             help="Optional paper observation ledger path. Defaults to data/paper/paper_observation_ledger.jsonl.",
         ),
         min_fills_for_pass: int = typer.Option(20, "--min-fills-for-pass", min=1),
+        min_trading_days_for_pass: int = typer.Option(10, "--min-trading-days-for-pass", min=1),
         max_blocked_rate: float = typer.Option(0.5, "--max-blocked-rate", min=0.0, max=1.0),
         max_consecutive_blocked: int = typer.Option(3, "--max-consecutive-blocked", min=1),
+        max_open_position_age_hours: float = typer.Option(
+            0.0, "--max-open-position-age-hours", min=0.0
+        ),
         paper_notional_usd: float = typer.Option(1000.0, "--paper-notional-usd", min=0.01),
     ) -> None:
         settings = get_settings()
@@ -1048,8 +1054,10 @@ def register_research_commands(
                 reports_dir=reports_dir,
                 ledger_path=ledger_path,
                 min_fills_for_pass=min_fills_for_pass,
+                min_trading_days_for_pass=min_trading_days_for_pass,
                 max_blocked_rate=max_blocked_rate,
                 max_consecutive_blocked=max_consecutive_blocked,
+                max_open_position_age_hours=max_open_position_age_hours,
                 paper_notional_usd=paper_notional_usd,
             )
         except (
@@ -1066,6 +1074,103 @@ def register_research_commands(
         typer.echo(f"decision={result.decision}")
         typer.echo(f"review_id={result.review_id}")
         typer.echo(f"paper_observation_review_decision={result.decision_path}")
+        typer.echo(f"report={result.report_path}")
+
+    @app.command("strategy-backtest-acceptance")
+    def strategy_backtest_acceptance_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            dir_okay=False,
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        out_dir: Path = typer.Option(
+            Path("data/research/strategy_lifecycle"),
+            "--out",
+            file_okay=False,
+            help="Output strategy lifecycle artifact directory.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            file_okay=False,
+            help="Output report directory.",
+        ),
+    ) -> None:
+        try:
+            result = run_backtest_acceptance(
+                metrics_path=metrics_path,
+                out_dir=out_dir,
+                reports_dir=reports_dir,
+            )
+        except (ValueError, TypeError, json.JSONDecodeError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"decision={result.decision}")
+        typer.echo(f"acceptance_id={result.acceptance_id}")
+        typer.echo(f"backtest_acceptance_decision={result.decision_path}")
+        typer.echo(f"report={result.report_path}")
+
+    @app.command("strategy-lifecycle-review")
+    def strategy_lifecycle_review_cmd(
+        data_dir: Path | None = typer.Option(
+            None,
+            "--data-dir",
+            file_okay=False,
+            help="Runtime data root. Defaults to SIS_DATA_DIR/settings data_dir.",
+        ),
+        backtest_decision_path: Path | None = typer.Option(
+            None,
+            "--backtest-decision-path",
+            dir_okay=False,
+            help="Optional strategy backtest acceptance decision path.",
+        ),
+        paper_review_path: Path | None = typer.Option(
+            None,
+            "--paper-review-path",
+            dir_okay=False,
+            help="Optional paper observation review decision path.",
+        ),
+        phase_gate_path: Path | None = typer.Option(
+            None,
+            "--phase-gate-path",
+            dir_okay=False,
+            help="Optional phase gate summary path.",
+        ),
+        out_dir: Path = typer.Option(
+            Path("data/research/strategy_lifecycle"),
+            "--out",
+            file_okay=False,
+            help="Output strategy lifecycle artifact directory.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            file_okay=False,
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        effective_data_dir = data_dir or settings.data_dir
+        try:
+            result = run_strategy_lifecycle_review(
+                data_dir=effective_data_dir,
+                out_dir=out_dir,
+                reports_dir=reports_dir,
+                backtest_decision_path=backtest_decision_path,
+                paper_review_path=paper_review_path,
+                phase_gate_path=phase_gate_path,
+            )
+        except (ValueError, TypeError, json.JSONDecodeError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"decision={result.decision}")
+        typer.echo(f"review_id={result.review_id}")
+        typer.echo(f"strategy_lifecycle_review={result.decision_path}")
         typer.echo(f"report={result.report_path}")
 
     @app.command("build-cost-matrix")

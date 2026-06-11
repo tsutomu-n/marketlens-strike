@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-11_19:06 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # Operator Runbook
@@ -193,6 +193,8 @@ block reason:
 - `LATEST_QUOTE_MISSING`
 - `PAPER_BROKER_REVALIDATION_BLOCKED`
 
+ledger には `created_at`, quote freshness, market status, spread, source confidence, venue quality, notional, quantity, operator promotion hash, and paper-only boundary flags が残る。
+
 ## 8. Paper observation review を行う
 
 ```bash
@@ -210,8 +212,18 @@ uv run sis research-ndx-paper-observation-review \
 読み方:
 
 - `PASS_PAPER_OBSERVATION_REVIEW` は paper observation review の通過であり、live-ready ではない。
-- `NEEDS_MORE_PAPER_OBSERVATION` は blocker なしだが default の `20` fills に届いていない状態。
+- `NEEDS_MORE_PAPER_OBSERVATION` は blocker なしだが default の `20` fills または `10` trading days に届いていない状態。
 - `STOP_PAPER_OBSERVATION` は ledger boundary violation、過大な blocked rate、連続 blocked、必要 artifact 欠損などで止める状態。
+
+## 9. Strategy lifecycle review を行う
+
+```bash
+uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports
+uv run sis phase-gate-review
+uv run sis strategy-lifecycle-review --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
+```
+
+`ELIGIBLE_FOR_LIVE_CANARY_PLAN` は live order 許可ではない。live canary は別計画で credential、wallet/signing、exchange write、kill switch、operator approval を定義する。
 
 ## 最短再生成
 

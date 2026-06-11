@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_lifecycle_review.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "review_id",
+    "created_at",
+    "decision",
+    "decision_reasons",
+    "next_actions",
+    "source_backtest_acceptance_path",
+    "source_backtest_acceptance_hash",
+    "source_paper_review_path",
+    "source_paper_review_hash",
+    "source_phase_gate_path",
+    "source_phase_gate_hash",
+    "input_status",
+    "blocker_counts",
+    "boundary_flags",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "venue_write_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_lifecycle_review.v1"},
+    "review_id": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "created_at": {"type": "string"},
+    "decision": {
+      "enum": [
+        "REJECT_OR_REVISE",
+        "CONTINUE_RESEARCH",
+        "BACKTEST_ACCEPTED",
+        "CONTINUE_PAPER_OBSERVATION",
+        "CONTINUE_EXECUTION_READINESS",
+        "ELIGIBLE_FOR_LIVE_CANARY_PLAN",
+        "BLOCKED_BOUNDARY_VIOLATION"
+      ]
+    },
+    "decision_reasons": {"type": "array", "items": {"type": "string"}},
+    "next_actions": {"type": "array", "items": {"type": "string"}},
+    "source_backtest_acceptance_path": {"type": "string"},
+    "source_backtest_acceptance_hash": {
+      "type": "string",
+      "pattern": "^(|sha256:[a-fA-F0-9]{64})$"
+    },
+    "source_paper_review_path": {"type": "string"},
+    "source_paper_review_hash": {
+      "type": "string",
+      "pattern": "^(|sha256:[a-fA-F0-9]{64})$"
+    },
+    "source_phase_gate_path": {"type": "string"},
+    "source_phase_gate_hash": {
+      "type": "string",
+      "pattern": "^(|sha256:[a-fA-F0-9]{64})$"
+    },
+    "input_status": {
+      "type": "object",
+      "required": [
+        "backtest_acceptance_present",
+        "paper_review_present",
+        "phase_gate_present"
+      ]
+    },
+    "blocker_counts": {
+      "type": "object",
+      "required": ["P2_BLOCKER", "LIVE_READINESS_BLOCKER"]
+    },
+    "boundary_flags": {"type": "object"},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "venue_write_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": true
+}

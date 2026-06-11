@@ -28,6 +28,8 @@ def test_layer28_passes_completed_paper_observation_review(tmp_path, monkeypatch
             str(reports_dir),
             "--min-fills-for-pass",
             "1",
+            "--min-trading-days-for-pass",
+            "1",
         ]
     )
 
@@ -36,6 +38,8 @@ def test_layer28_passes_completed_paper_observation_review(tmp_path, monkeypatch
     payload = json.loads(review_path.read_text(encoding="utf-8"))
     assert payload["decision"] == "PASS_PAPER_OBSERVATION_REVIEW"
     assert payload["metrics"]["fills_count"] == 1
+    assert payload["metrics"]["trading_day_count"] == 1
+    assert payload["metrics"]["timestamp_quality"] == "complete"
     assert payload["metrics"]["blocked_count"] == 0
     assert payload["permits_live_order"] is False
     assert payload["live_conversion_allowed"] is False
@@ -67,8 +71,37 @@ def test_layer28_needs_more_observation_before_min_fill_threshold(tmp_path, monk
         (artifact_dir / "paper_observation_review_decision.json").read_text(encoding="utf-8")
     )
     assert payload["decision"] == "NEEDS_MORE_PAPER_OBSERVATION"
-    assert payload["reason_codes"] == ["INSUFFICIENT_PAPER_FILLS"]
+    assert "INSUFFICIENT_PAPER_FILLS" in payload["reason_codes"]
+    assert "INSUFFICIENT_TRADING_DAYS" in payload["reason_codes"]
     assert payload["block_reasons"] == []
+
+
+def test_layer28_needs_more_observation_before_min_trading_days(tmp_path, monkeypatch) -> None:
+    data_dir, artifact_dir, reports_dir = _run_layer27_paper_observation(tmp_path, monkeypatch)
+
+    result = invoke_cli(
+        [
+            "research-ndx-paper-observation-review",
+            "--data-dir",
+            str(data_dir),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--reports-dir",
+            str(reports_dir),
+            "--min-fills-for-pass",
+            "1",
+            "--min-trading-days-for-pass",
+            "2",
+        ]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(
+        (artifact_dir / "paper_observation_review_decision.json").read_text(encoding="utf-8")
+    )
+    assert payload["decision"] == "NEEDS_MORE_PAPER_OBSERVATION"
+    assert payload["metrics"]["trading_day_count"] == 1
+    assert "INSUFFICIENT_TRADING_DAYS" in payload["reason_codes"]
 
 
 def test_layer28_stops_on_paper_boundary_violation(tmp_path, monkeypatch) -> None:
@@ -98,6 +131,8 @@ def test_layer28_stops_on_paper_boundary_violation(tmp_path, monkeypatch) -> Non
             "--reports-dir",
             str(reports_dir),
             "--min-fills-for-pass",
+            "1",
+            "--min-trading-days-for-pass",
             "1",
         ]
     )

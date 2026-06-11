@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_acceptance_decision.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "acceptance_id",
+    "created_at",
+    "decision",
+    "source_metrics_path",
+    "source_metrics_hash",
+    "decision_reasons",
+    "summary_checks",
+    "era_summary",
+    "boundary_flags",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "venue_write_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_acceptance_decision.v1"},
+    "acceptance_id": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "created_at": {"type": "string"},
+    "decision": {
+      "enum": [
+        "PASS_BACKTEST_ACCEPTANCE",
+        "FAIL_BACKTEST_ACCEPTANCE",
+        "NEEDS_BACKTEST",
+        "BLOCK_BACKTEST_BOUNDARY"
+      ]
+    },
+    "source_metrics_path": {"type": "string"},
+    "source_metrics_hash": {
+      "type": "string",
+      "pattern": "^(|sha256:[a-fA-F0-9]{64})$"
+    },
+    "decision_reasons": {"type": "array", "items": {"type": "string"}},
+    "summary_checks": {
+      "type": "object",
+      "required": ["backtest_passed", "pass_min_trade_count", "pass_all_thresholds"]
+    },
+    "era_summary": {
+      "type": "object",
+      "required": ["era_count", "era_pass_count", "era_fail_count", "eras_present"]
+    },
+    "boundary_flags": {"type": "object"},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "venue_write_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": true
+}

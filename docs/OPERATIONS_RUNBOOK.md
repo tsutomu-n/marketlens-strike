@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-10_17:36 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # Operations Runbook
@@ -15,6 +15,7 @@
 uv run sis implementation-status --write
 uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
+uv run sis strategy-lifecycle-review --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
 ```
 
 読む順番:
@@ -331,6 +332,7 @@ backtest-first baseline path:
 uv run python scripts/seed_strategy_authoring_baseline_data.py
 uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
 uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports
 ```
 
 baseline artifacts:
@@ -340,8 +342,10 @@ baseline artifacts:
 - `data/research/strategy_authoring_baseline_venue_cost_matrix.csv`
 - `data/research/strategy_signals.parquet`
 - `data/research/strategy_backtest_metrics.json`
+- `data/research/strategy_lifecycle/backtest_acceptance_decision.json`
 - `data/research/strategy_authoring_run.json`
 - `data/reports/strategy_backtest_report.md`
+- `data/reports/strategy_backtest_acceptance_report.md`
 
 Bitget demo local smoke:
 

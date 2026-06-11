@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-08_18:01 JST
-更新日: 2026-06-11_19:06 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # NDX Research Docs
 
-この directory は NDX Layer 2.2 DAG foundation、Layer 2.3 preflight / feature panel / residual、Layer 2.4 residual validation gate、Layer 2.5 Strategy Lab research-only export、Layer 2.6 paper-observation gate、Layer 2.7 operator promotion、Layer 2.8 paper observation review の current docs 入口である。正本は `configs/research_layer_2_2/ndx/`、`configs/research_layer_2_3/ndx/`、`configs/research_layer_2_4/ndx/`、`src/sis/research/dag/`、`src/sis/research/ndx/`、`schemas/`、`tests/research/`、CLI help。
+この directory は NDX Layer 2.2 DAG foundation、Layer 2.3 preflight / feature panel / residual、Layer 2.4 residual validation gate、Layer 2.5 Strategy Lab research-only export、Layer 2.6 paper-observation gate、Layer 2.7 operator promotion、Layer 2.8 paper observation review の current docs 入口である。Strategy lifecycle 全体の統合判定は `docs/strategy_lifecycle/` を読む。正本は `configs/research_layer_2_2/ndx/`、`configs/research_layer_2_3/ndx/`、`configs/research_layer_2_4/ndx/`、`src/sis/research/dag/`、`src/sis/research/ndx/`、`src/sis/research/strategy_lifecycle/`、`schemas/`、`tests/research/`、CLI help。
 
 ## Current Read Order
 
@@ -40,6 +40,7 @@ uv run sis research-ndx-strategy-lab-export --data-dir data --artifact-dir data/
 uv run sis research-ndx-paper-observation-gate --data-dir data --artifact-dir data/research/ndx --reports-dir data/reports --quotes-path data/normalized/quotes.parquet
 uv run sis research-ndx-operator-promotion --data-dir data --artifact-dir data/research/ndx --decision promote_to_paper_observation --reviewer local_operator --approval-reason paper_observation_gate_reviewed
 uv run sis research-ndx-paper-observation-review --data-dir data --artifact-dir data/research/ndx --reports-dir data/reports
+uv run sis strategy-lifecycle-review --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
 ```
 
 ## Boundary
@@ -56,4 +57,6 @@ Layer 2.6 は Layer 2.5 export、current Strategy Lab signal artifact hash、loc
 
 Layer 2.7 は Layer 2.6 approval と明示的な operator approval reason を前提に、NDX/QQQ の paper candidate / `PaperIntentPreview` を paper observation に限って unlock する。`PaperIntentPreview` は引き続き `paper_only=true`、`requires_revalidation=true`、`live_conversion_allowed=false`、`wallet_used=false`、`exchange_write_used=false` で、`paper-from-intents` が local quotes と paper broker state で再検証する。Layer 2.7 は live readiness ではない。
 
-Layer 2.8 は Layer 2.7 後の `paper_observation_ledger.jsonl` と paper artifacts を集計し、paper observation を pass / needs-more / stop に分類する review gate である。live order、wallet、exchange write は許可しない。
+Layer 2.8 は Layer 2.7 後の `paper_observation_ledger.jsonl` と paper artifacts を集計し、fills、観測日数、block rate、連続 block、artifact completeness、boundary violation から paper observation を pass / needs-more / stop に分類する review gate である。live order、wallet、exchange write は許可しない。
+
+Strategy Lifecycle は Layer 2.8 と Strategy Authoring backtest acceptance と phase gate を統合する別 surface である。`ELIGIBLE_FOR_LIVE_CANARY_PLAN` は live order 許可ではなく、別計画として live canary plan を書ける候補に限る。

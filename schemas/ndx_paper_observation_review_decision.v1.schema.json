@@ -24,7 +24,8 @@
     "external_api_used",
     "credentials_used",
     "wallet_used",
-    "venue_write_used"
+    "venue_write_used",
+    "exchange_write_used"
   ],
   "properties": {
     "schema_version": {"const": "ndx_paper_observation_review_decision.v1"},
@@ -60,7 +61,13 @@
     "paper_notional_usd": {"type": "number", "exclusiveMinimum": 0},
     "observation_thresholds": {
       "type": "object",
-      "required": ["min_fills_for_pass", "max_blocked_rate", "max_consecutive_blocked"]
+      "required": [
+        "min_fills_for_pass",
+        "min_trading_days_for_pass",
+        "max_blocked_rate",
+        "max_consecutive_blocked",
+        "max_open_position_age_hours"
+      ]
     },
     "metrics": {
       "type": "object",
@@ -70,6 +77,10 @@
         "blocked_count",
         "blocked_rate",
         "max_consecutive_blocked",
+        "trading_day_count",
+        "trading_days",
+        "missing_timestamp_count",
+        "timestamp_quality",
         "status_counts",
         "block_reason_counts",
         "live_boundary_violations",
@@ -83,7 +94,8 @@
     "external_api_used": {"const": false},
     "credentials_used": {"const": false},
     "wallet_used": {"const": false},
-    "venue_write_used": {"const": false}
+    "venue_write_used": {"const": false},
+    "exchange_write_used": {"const": false}
   },
   "additionalProperties": true
 }

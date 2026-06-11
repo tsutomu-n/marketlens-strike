@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-11_19:06 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # Current State
@@ -15,6 +15,7 @@
 - `VENUE_SUITABILITY_CATALOG` は `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp` を持つが、`bitget_futures` と `hyperliquid_perp` は catalog-only で、現行 `VenueId` や Strategy Lab artifact schema には入らない。
 - `src/sis/venues/capabilities.py` は `bitget_futures` と `hyperliquid_perp` を known but schema-disabled / paper-disabled / network-disabled / live-disabled として固定する。`bitget_demo` は execution-venue schema では許可されるが、`evaluation_plan.mls.v1` の `target_venue` としてはまだ disabled。
 - Strategy Authoring baseline は外部 API なしの fixture seed で backtest まで通せる。
+- Strategy Lifecycle control plane は `strategy-backtest-acceptance` と `strategy-lifecycle-review` に実装済み。Backtest acceptance、NDX paper observation review、phase gate summary を local artifact で統合し、`REJECT_OR_REVISE` / `CONTINUE_RESEARCH` / `BACKTEST_ACCEPTED` / `CONTINUE_PAPER_OBSERVATION` / `CONTINUE_EXECUTION_READINESS` / `ELIGIBLE_FOR_LIVE_CANARY_PLAN` / `BLOCKED_BOUNDARY_VIOLATION` を出す。これは live order、wallet、exchange write を許可しない。
 - Bitget demo local smoke は実装済み。ただし `status=configured` は local credential env が揃った意味だけで、Bitget network/account/order readiness ではない。
 - PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、phase gate は `READ_ONLY_GO` になり得る。
 - Trade[XYZ] 実データ readiness はまだ `NOT_READY`。現在の fail は `quote_coverage` だけで、known gap は `funding_events` と `oracle_timestamp_provenance` である。
@@ -30,7 +31,7 @@
 - NDX Layer 2.5 Strategy Lab research-only export は `research-ndx-strategy-lab-export` に実装済み。approved residual から `data/research/strategy_signals.parquet` と manifest を生成するが、research-only block reason を付け、既存 artifact は `--replace-existing` なしでは上書きしない。
 - NDX Layer 2.6 paper-observation gate は `research-ndx-paper-observation-gate` に実装済み。Layer 2.5 export hash、Strategy Lab signal hash、local `trade_xyz` / `XYZ100` quote evidence を検査し、operator promotion review 可否を記録する。これは alpha proof や robust out-of-sample proof ではない。
 - NDX Layer 2.7 operator promotion は `research-ndx-operator-promotion` に実装済み。valid な Layer 2.6 gate hash と operator approval reason がある場合だけ、NDX/QQQ paper candidate / `PaperIntentPreview` を paper observation に限って unlock する。live order、wallet、exchange write は引き続き許可しない。
-- NDX Layer 2.8 paper observation review は `research-ndx-paper-observation-review` に実装済み。Layer 2.7 promotion と `paper_observation_ledger.jsonl` / paper artifacts を照合し、`PASS_PAPER_OBSERVATION_REVIEW`、`NEEDS_MORE_PAPER_OBSERVATION`、`STOP_PAPER_OBSERVATION` を出す。live order、wallet、exchange write は引き続き許可しない。
+- NDX Layer 2.8 paper observation review は `research-ndx-paper-observation-review` に実装済み。Layer 2.7 promotion と `paper_observation_ledger.jsonl` / paper artifacts を照合し、fills、観測日数、block rate、連続 block、artifact completeness、boundary violation を見て `PASS_PAPER_OBSERVATION_REVIEW`、`NEEDS_MORE_PAPER_OBSERVATION`、`STOP_PAPER_OBSERVATION` を出す。live order、wallet、exchange write は引き続き許可しない。
 - `gtrade` / `ostium` の legacy source, sidecar, raw data, registry, 専用テストは ZIP 化済みで、展開済み file tree は active repo から削除済み。
 - 実 live order integration はまだ opt-in safety surface 止まりで、現行の public CLI surface には micro live 実行コマンドを出していない。execution drift は live-readiness blocker として残る。
 

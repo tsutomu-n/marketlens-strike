@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 from typing import Any
+
+import polars as pl
 
 from sis.research.ndx.artifacts import read_json, sha256_file, sha256_json, utc_now_iso, write_json
 
@@ -29,16 +32,22 @@ def run_paper_observation_review(
     reports_dir: Path,
     ledger_path: Path | None = None,
     min_fills_for_pass: int = 20,
+    min_trading_days_for_pass: int = 10,
     max_blocked_rate: float = 0.5,
     max_consecutive_blocked: int = 3,
+    max_open_position_age_hours: float = 0.0,
     paper_notional_usd: float = 1000.0,
 ) -> PaperObservationReviewResult:
     if min_fills_for_pass < 1:
         raise ValueError("min_fills_for_pass must be >= 1")
+    if min_trading_days_for_pass < 1:
+        raise ValueError("min_trading_days_for_pass must be >= 1")
     if not 0.0 <= max_blocked_rate <= 1.0:
         raise ValueError("max_blocked_rate must be between 0.0 and 1.0")
     if max_consecutive_blocked < 1:
         raise ValueError("max_consecutive_blocked must be >= 1")
+    if max_open_position_age_hours < 0:
+        raise ValueError("max_open_position_age_hours must be >= 0")
     if paper_notional_usd <= 0:
         raise ValueError("paper_notional_usd must be positive")
 
@@ -52,6 +61,7 @@ def run_paper_observation_review(
     entries = _read_ledger_entries(selected_ledger_path)
     artifact_hashes = _paper_artifact_hashes(data_dir)
     metrics = _ledger_metrics(entries)
+    metrics.update(_paper_position_metrics(data_dir, max_open_position_age_hours))
     block_reasons = _review_block_reasons(
         metrics=metrics,
         paper_artifact_hashes=artifact_hashes,
@@ -60,14 +70,23 @@ def run_paper_observation_review(
     )
     if block_reasons:
         decision = STOP
-    elif metrics["fills_count"] >= min_fills_for_pass:
+    elif (
+        metrics["fills_count"] >= min_fills_for_pass
+        and metrics["trading_day_count"] >= min_trading_days_for_pass
+        and metrics["timestamp_quality"] == "complete"
+    ):
         decision = PASS
     else:
         decision = NEEDS_MORE
 
     reason_codes: list[str] = []
     if decision == NEEDS_MORE:
-        reason_codes.append("INSUFFICIENT_PAPER_FILLS")
+        if metrics["fills_count"] < min_fills_for_pass:
+            reason_codes.append("INSUFFICIENT_PAPER_FILLS")
+        if metrics["trading_day_count"] < min_trading_days_for_pass:
+            reason_codes.append("INSUFFICIENT_TRADING_DAYS")
+        if metrics["timestamp_quality"] != "complete":
+            reason_codes.append("PAPER_OBSERVATION_TIMESTAMPS_INCOMPLETE")
 
     stable_payload = {
         "schema_version": "ndx_paper_observation_review_decision.v1",
@@ -84,8 +103,10 @@ def run_paper_observation_review(
         "paper_notional_usd": paper_notional_usd,
         "observation_thresholds": {
             "min_fills_for_pass": min_fills_for_pass,
+            "min_trading_days_for_pass": min_trading_days_for_pass,
             "max_blocked_rate": max_blocked_rate,
             "max_consecutive_blocked": max_consecutive_blocked,
+            "max_open_position_age_hours": max_open_position_age_hours,
         },
         "metrics": metrics,
         "reason_codes": reason_codes,
@@ -96,6 +117,7 @@ def run_paper_observation_review(
         "credentials_used": False,
         "wallet_used": False,
         "venue_write_used": False,
+        "exchange_write_used": False,
     }
     review_id = sha256_json(stable_payload)
     payload = {**stable_payload, "review_id": review_id, "created_at": utc_now_iso()}
@@ -167,6 +189,8 @@ def _ledger_metrics(entries: list[dict[str, Any]]) -> dict[str, Any]:
     unknown_statuses: list[str] = []
     consecutive_blocked = 0
     max_consecutive_blocked = 0
+    trading_days: set[str] = set()
+    missing_timestamps = 0
     for entry in entries:
         status = str(entry.get("status") or "")
         if status not in LEDGER_STATUSES and status not in unknown_statuses:
@@ -178,25 +202,87 @@ def _ledger_metrics(entries: list[dict[str, Any]]) -> dict[str, Any]:
             consecutive_blocked = 0
         for reason in entry.get("block_reasons") or []:
             block_reason_counts[str(reason)] += 1
-        if (
-            entry.get("live_order_submitted") is not False
-            or entry.get("wallet_used") is not False
-            or entry.get("exchange_write_used") is not False
+        if any(
+            key in entry and entry.get(key) is not False
+            for key in (
+                "live_order_submitted",
+                "wallet_used",
+                "exchange_write_used",
+                "venue_write_used",
+            )
         ):
             live_boundary_violations += 1
+        timestamp = _entry_timestamp(entry)
+        if timestamp is None:
+            missing_timestamps += 1
+        else:
+            trading_days.add(timestamp.date().isoformat())
     ledger_entry_count = len(entries)
     blocked_count = int(status_counts.get("blocked", 0))
     fills_count = int(status_counts.get("paper_filled", 0))
+    timestamp_quality = "complete" if missing_timestamps == 0 else "missing_or_partial"
     return {
         "ledger_entry_count": ledger_entry_count,
         "fills_count": fills_count,
         "blocked_count": blocked_count,
         "blocked_rate": blocked_count / ledger_entry_count,
         "max_consecutive_blocked": max_consecutive_blocked,
+        "trading_day_count": len(trading_days),
+        "trading_days": sorted(trading_days),
+        "missing_timestamp_count": missing_timestamps,
+        "timestamp_quality": timestamp_quality,
         "status_counts": dict(status_counts),
         "block_reason_counts": dict(block_reason_counts),
         "live_boundary_violations": live_boundary_violations,
         "unknown_statuses": unknown_statuses,
+    }
+
+
+def _entry_timestamp(entry: dict[str, Any]) -> datetime | None:
+    for key in ("created_at", "ts_fill", "fill_ts", "ts_order", "order_ts", "quote_ts"):
+        value = entry.get(key)
+        if value is None:
+            continue
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+    return None
+
+
+def _paper_position_metrics(
+    data_dir: Path,
+    max_open_position_age_hours: float,
+) -> dict[str, Any]:
+    positions_path = data_dir / "paper/positions.parquet"
+    if not positions_path.exists():
+        return {
+            "open_position_count": 0,
+            "max_open_position_age_hours": None,
+            "open_position_age_threshold_hours": max_open_position_age_hours,
+        }
+    positions = pl.read_parquet(positions_path)
+    if positions.is_empty() or "opened_at" not in positions.columns:
+        return {
+            "open_position_count": positions.height,
+            "max_open_position_age_hours": None,
+            "open_position_age_threshold_hours": max_open_position_age_hours,
+        }
+    now = datetime.now(timezone.utc)
+    max_age: float | None = None
+    for value in positions.get_column("opened_at").to_list():
+        if value is None:
+            continue
+        opened_at = value if isinstance(value, datetime) else datetime.fromisoformat(str(value))
+        if opened_at.tzinfo is None:
+            opened_at = opened_at.replace(tzinfo=timezone.utc)
+        age_hours = (now - opened_at).total_seconds() / 3600
+        max_age = age_hours if max_age is None else max(max_age, age_hours)
+    return {
+        "open_position_count": positions.height,
+        "max_open_position_age_hours": max_age,
+        "open_position_age_threshold_hours": max_open_position_age_hours,
     }
 
 
@@ -216,6 +302,10 @@ def _review_block_reasons(
         block_reasons.append("BLOCKED_RATE_TOO_HIGH")
     if metrics["max_consecutive_blocked"] >= max_consecutive_blocked:
         block_reasons.append("CONSECUTIVE_BLOCKED_RUNS")
+    threshold = metrics.get("open_position_age_threshold_hours")
+    max_age = metrics.get("max_open_position_age_hours")
+    if threshold and max_age is not None and max_age > threshold:
+        block_reasons.append("OPEN_POSITION_TOO_OLD")
     missing = [name for name, artifact in paper_artifact_hashes.items() if not artifact["exists"]]
     if missing:
         block_reasons.append("PAPER_ARTIFACT_MISSING")

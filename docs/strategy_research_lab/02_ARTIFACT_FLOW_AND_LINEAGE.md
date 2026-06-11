@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-11_21:34 JST
 -->
 
 # Artifact Flow And Lineage
@@ -28,6 +28,8 @@ research feature data
   -> data/bot/paper_intent_preview.json
   -> paper-from-intents revalidation
   -> paper orders/fills/positions
+  -> paper observation review
+  -> strategy lifecycle review
 ```
 
 ## Artifact table
@@ -42,7 +44,9 @@ research feature data
 | candidate pack | `data/research/paper_candidate_pack.json` | `uv run sis build-paper-candidate-pack` | `promotion-decision`, `build-paper-intent-preview` | `pack_id`, `candidate_id` |
 | promotion decision | `data/research/promotion_decision.json` | `uv run sis promotion-decision` / `strategy-author-run --through paper-preview` | `build-paper-intent-preview`, review | `promotion_id`, `source_pack_id`, `scorecard_summary` |
 | paper preview | `data/bot/paper_intent_preview.json` | `uv run sis build-paper-intent-preview` | `paper-from-intents` | `intent_id`, `candidate_id`, `source_pack_id`, `scorecard_summary` |
-| paper observation | `data/paper/*`, `data/paper/paper_observation_ledger.jsonl` | `uv run sis paper-from-intents` | reports / review | `order_id`, `fill_id`, `intent_id` |
+| paper observation | `data/paper/*`, `data/paper/paper_observation_ledger.jsonl` | `uv run sis paper-from-intents` | reports / review | `order_id`, `fill_id`, `intent_id`, `quote_ts`, `quote_age_ms` |
+| backtest acceptance | `data/research/strategy_lifecycle/backtest_acceptance_decision.json` | `uv run sis strategy-backtest-acceptance` | `strategy-lifecycle-review` | `acceptance_id`, `source_metrics_hash` |
+| lifecycle review | `data/research/strategy_lifecycle/strategy_lifecycle_review.json` | `uv run sis strategy-lifecycle-review` | operator review | `review_id`, source artifact hashes |
 
 ## Lineage keys
 
@@ -84,6 +88,8 @@ uv run sis build-paper-candidate-pack
 uv run sis promotion-decision --decision hold
 uv run sis build-paper-intent-preview
 uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
+uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports
+uv run sis strategy-lifecycle-review --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
 ```
 
 Important behavior:
