@@ -111,6 +111,13 @@ def test_check_timeframe_cli_blocks_scalping() -> None:
     assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
 
 
+def test_paper_from_intents_help_exposes_observation_ledger_path() -> None:
+    result = invoke_cli(["paper-from-intents", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "--observation-ledger-path" in stdout
+
+
 def test_implementation_status_reports_complete_scope() -> None:
     result = runner.invoke(app, ["implementation-status"])
     assert result.exit_code == 0

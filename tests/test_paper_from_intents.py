@@ -134,6 +134,28 @@ def test_run_paper_from_intents_accepts_bitget_demo_fixture_quote(tmp_path) -> N
     assert '"exchange_write_used": false' in text
 
 
+def test_run_paper_from_intents_can_write_isolated_observation_ledger(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    _write_quotes(data_dir)
+    intents_path = data_dir / "bot/paper_intent_preview.json"
+    intents_path.parent.mkdir(parents=True)
+    intent = _intent(datetime.now(timezone.utc) + timedelta(minutes=15))
+    intents_path.write_text(json.dumps([intent.model_dump(mode="json")]), encoding="utf-8")
+    ledger_path = data_dir / "paper/observations/session-001.jsonl"
+
+    summary = run_paper_from_intents(
+        data_dir,
+        intents_path=intents_path,
+        observation_ledger_path=ledger_path,
+    )
+
+    assert summary.orders_count == 1
+    assert summary.fills_count == 1
+    assert summary.observation_ledger_path == ledger_path
+    assert ledger_path.exists()
+    assert not (data_dir / "paper/paper_observation_ledger.jsonl").exists()
+
+
 def test_run_paper_from_intents_does_not_fallback_across_venues(tmp_path) -> None:
     data_dir = tmp_path / "data"
     _write_quotes(data_dir, venue="trade_xyz", symbol="BTCUSDT")

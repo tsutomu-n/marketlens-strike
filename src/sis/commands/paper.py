@@ -73,12 +73,22 @@ def register_paper_commands(
             "--state-path",
             help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
         ),
+        observation_ledger_path: Path | None = typer.Option(
+            None,
+            "--observation-ledger-path",
+            dir_okay=False,
+            help=(
+                "Optional paper observation ledger path. "
+                "Defaults to data/paper/paper_observation_ledger.jsonl."
+            ),
+        ),
     ) -> None:
         settings = get_settings()
         summary = run_paper_from_intents(
             settings.data_dir,
             intents_path=intents_path,
             state_path=state_path,
+            observation_ledger_path=observation_ledger_path,
         )
         logger.info("written: {}", summary.orders_path)
         logger.info("written: {}", summary.fills_path)

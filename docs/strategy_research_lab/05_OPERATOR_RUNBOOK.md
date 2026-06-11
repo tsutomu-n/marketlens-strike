@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-11_21:34 JST
+更新日: 2026-06-11_23:42 JST
 -->
 
 # Operator Runbook
@@ -173,7 +173,9 @@ uv run sis build-paper-intent-preview
 ## 7. Paper runner で再検証する
 
 ```bash
-uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
+uv run sis paper-from-intents \
+  --intents-path data/bot/paper_intent_preview.json \
+  --observation-ledger-path data/paper/observations/<session>.jsonl
 ```
 
 必要 artifact:
@@ -186,6 +188,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 - `data/paper/fills.parquet`
 - `data/paper/positions.parquet`
 - `data/paper/paper_observation_ledger.jsonl`
+- `data/paper/observations/<session>.jsonl` when `--observation-ledger-path` is used
 
 block reason:
 
@@ -201,7 +204,8 @@ ledger には `created_at`, quote freshness, market status, spread, source confi
 uv run sis research-ndx-paper-observation-review \
   --data-dir data \
   --artifact-dir data/research/ndx \
-  --reports-dir data/reports
+  --reports-dir data/reports \
+  --ledger-path data/paper/observations/<session>.jsonl
 ```
 
 出力:

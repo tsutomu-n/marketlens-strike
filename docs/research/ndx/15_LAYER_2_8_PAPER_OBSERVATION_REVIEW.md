@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_19:06 JST
-更新日: 2026-06-11_21:34 JST
+更新日: 2026-06-11_23:42 JST
 -->
 
 # NDX Layer 2.8 Paper Observation Review
@@ -13,7 +13,8 @@ Layer 2.8 aggregates the local paper observation ledger after Layer 2.7 operator
 uv run sis research-ndx-paper-observation-review \
   --data-dir data \
   --artifact-dir data/research/ndx \
-  --reports-dir data/reports
+  --reports-dir data/reports \
+  --ledger-path data/paper/observations/<session>.jsonl
 ```
 
 Default thresholds:
@@ -41,6 +42,7 @@ uv run sis research-ndx-paper-observation-review \
 - `data/research/ndx/operator_promotion_decision.json`
 - `data/research/ndx/paper_observation_gate_decision.json`
 - `data/paper/paper_observation_ledger.jsonl`
+- or an explicit ledger created by `paper-from-intents --observation-ledger-path`
 - `data/paper/orders.parquet`
 - `data/paper/fills.parquet`
 - `data/paper/positions.parquet`

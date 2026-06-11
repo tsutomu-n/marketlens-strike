@@ -223,6 +223,7 @@ def run_paper_from_intents(
     intents_path: Path,
     quotes_path: Path | None = None,
     state_path: Path | None = None,
+    observation_ledger_path: Path | None = None,
 ) -> PaperFromIntentsSummary:
     selected_quotes_path = quotes_path or (data_dir / "normalized/quotes.parquet")
     if not selected_quotes_path.exists():
@@ -237,7 +238,9 @@ def run_paper_from_intents(
     )
     store = StateStore(state_path or (data_dir / "state/marketlens.sqlite"))
     portfolio = _load_portfolio(store)
-    observation_ledger_path = data_dir / "paper/paper_observation_ledger.jsonl"
+    selected_observation_ledger_path = observation_ledger_path or (
+        data_dir / "paper/paper_observation_ledger.jsonl"
+    )
     orders: list[PaperOrder] = []
     fills: list[PaperFill] = []
     blocked_count = 0
@@ -253,7 +256,7 @@ def run_paper_from_intents(
         if block_reasons or quote is None:
             blocked_count += 1
             _write_observation(
-                observation_ledger_path,
+                selected_observation_ledger_path,
                 _paper_observation_payload(
                     intent=intent,
                     status="blocked",
@@ -320,7 +323,7 @@ def run_paper_from_intents(
         if fill is None:
             blocked_count += 1
             _write_observation(
-                observation_ledger_path,
+                selected_observation_ledger_path,
                 _paper_observation_payload(
                     intent=intent,
                     status="blocked",
@@ -335,7 +338,7 @@ def run_paper_from_intents(
         fills.append(fill)
         portfolio.apply_fill(fill)
         _write_observation(
-            observation_ledger_path,
+            selected_observation_ledger_path,
             _paper_observation_payload(
                 intent=intent,
                 status="paper_filled",
@@ -363,7 +366,7 @@ def run_paper_from_intents(
         orders_path=orders_path,
         fills_path=fills_path,
         positions_path=positions_path,
-        observation_ledger_path=observation_ledger_path,
+        observation_ledger_path=selected_observation_ledger_path,
     )
 
 
