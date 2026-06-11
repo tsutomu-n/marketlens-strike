@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ndx_operator_promotion_decision.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "promotion_id",
+    "created_at",
+    "decision",
+    "source_paper_observation_gate_decision_id",
+    "source_paper_observation_gate_path",
+    "source_paper_observation_gate_hash",
+    "source_layer25_export_id",
+    "source_layer25_export_manifest_path",
+    "source_layer25_export_manifest_hash",
+    "strategy_signals_hash",
+    "required_evidence",
+    "observed_evidence",
+    "permits_paper_candidate",
+    "permits_paper_intent_preview",
+    "permits_paper_observation",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "external_api_used",
+    "credentials_used",
+    "wallet_used",
+    "venue_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "ndx_operator_promotion_decision.v1"},
+    "promotion_id": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "created_at": {"type": "string"},
+    "decision": {"enum": ["promote_to_paper_observation", "hold", "reject"]},
+    "reviewer": {"type": ["string", "null"]},
+    "approval_reasons": {"type": "array", "items": {"type": "string"}},
+    "rejection_reasons": {"type": "array", "items": {"type": "string"}},
+    "source_paper_observation_gate_decision_id": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "source_paper_observation_gate_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "source_layer25_export_id": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "source_layer25_export_manifest_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "strategy_signals_hash": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "required_evidence": {"type": "array", "items": {"type": "string"}},
+    "observed_evidence": {"type": "array", "items": {"type": "string"}},
+    "permits_paper_candidate": {"type": "boolean"},
+    "permits_paper_intent_preview": {"type": "boolean"},
+    "permits_paper_observation": {"type": "boolean"},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "external_api_used": {"const": false},
+    "credentials_used": {"const": false},
+    "wallet_used": {"const": false},
+    "venue_write_used": {"const": false}
+  },
+  "additionalProperties": true
+}

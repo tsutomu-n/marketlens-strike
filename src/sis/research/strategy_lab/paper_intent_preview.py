@@ -38,6 +38,8 @@ class PaperIntentPreview(BaseModel):
     live_order_submitted: bool = False
     wallet_used: bool = False
     exchange_write_used: bool = False
+    operator_promotion_path: str | None = None
+    operator_promotion_hash: str | None = None
 
     @model_validator(mode="after")
     def validate_preview(self) -> PaperIntentPreview:
@@ -70,6 +72,10 @@ class PaperIntentPreview(BaseModel):
             execution_symbol=self.execution_symbol,
             real_market_symbol=self.real_market_symbol,
             stage="paper_intent",
+            operator_promotion_evidence={
+                "operator_promotion_path": self.operator_promotion_path,
+                "operator_promotion_hash": self.operator_promotion_hash,
+            },
         )
         if block_reasons:
             raise ValueError(f"PaperIntentPreview venue unsuitable: {block_reasons}")

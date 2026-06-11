@@ -35,6 +35,8 @@ from sis.research.event_calendar import build_event_calendar
 from sis.research.feature_panel import build_feature_panel
 from sis.research.ndx.diagnostics import build_ndx_diagnostics
 from sis.research.ndx.feature_panel import build_ndx_feature_panel
+from sis.research.ndx.operator_promotion import run_operator_promotion
+from sis.research.ndx.paper_observation_gate import run_paper_observation_gate
 from sis.research.ndx.residual_model import build_open_gap_residuals
 from sis.research.ndx.residual_validation import run_residual_validation_gate
 from sis.research.ndx.source_resolution import build_source_resolution
@@ -162,6 +164,22 @@ def _build_signals_or_exit(data_dir: Path, *, generator_id: str) -> Path:
 def _read_signal_manifest(data_dir: Path) -> StrategySignalManifest | None:
     path = strategy_signal_manifest_path(data_dir)
     return read_strategy_signal_manifest(path) if path.exists() else None
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return f"sha256:{digest.hexdigest()}"
+
+
+def _ndx_operator_promotion_evidence(data_dir: Path) -> dict[str, str | None]:
+    path = data_dir / "research/ndx/operator_promotion_decision.json"
+    return {
+        "operator_promotion_path": path.as_posix() if path.exists() else None,
+        "operator_promotion_hash": _sha256_file(path) if path.exists() else None,
+    }
 
 
 def _require_unique_signal_ids(frame: pl.DataFrame) -> None:
@@ -892,6 +910,103 @@ def register_research_commands(
         typer.echo(f"export_manifest={result.export_manifest_path}")
         typer.echo(f"report={result.report_path}")
 
+    @app.command("research-ndx-paper-observation-gate")
+    def research_ndx_paper_observation_gate_cmd(
+        data_dir: Path | None = typer.Option(
+            None,
+            "--data-dir",
+            file_okay=False,
+            help="Runtime data root. Defaults to SIS_DATA_DIR/settings data_dir.",
+        ),
+        artifact_dir: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--artifact-dir",
+            file_okay=False,
+            help="NDX Layer 2.5 artifact directory.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            file_okay=False,
+            help="Output report directory.",
+        ),
+        quotes_path: Path = typer.Option(
+            Path("data/normalized/quotes.parquet"),
+            "--quotes-path",
+            dir_okay=False,
+            help="Local normalized quote parquet for paper revalidation evidence.",
+        ),
+        min_era_count: int = typer.Option(3, "--min-era-count", min=1),
+        min_signal_count: int = typer.Option(30, "--min-signal-count", min=1),
+        max_tested_variant_count: int = typer.Option(1, "--max-tested-variant-count", min=1),
+        fixture_evidence_policy: str = typer.Option("warn", "--fixture-evidence-policy"),
+    ) -> None:
+        settings = get_settings()
+        effective_data_dir = data_dir or settings.data_dir
+        try:
+            result = run_paper_observation_gate(
+                data_dir=effective_data_dir,
+                artifact_dir=artifact_dir,
+                reports_dir=reports_dir,
+                quotes_path=quotes_path,
+                min_era_count=min_era_count,
+                min_signal_count=min_signal_count,
+                max_tested_variant_count=max_tested_variant_count,
+                fixture_evidence_policy=fixture_evidence_policy,
+            )
+        except (FileNotFoundError, ValueError, TypeError, ValidationError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"decision={result.decision}")
+        typer.echo(f"decision_id={result.decision_id}")
+        typer.echo(f"paper_observation_gate_decision={result.decision_path}")
+        typer.echo(f"report={result.report_path}")
+
+    @app.command("research-ndx-operator-promotion")
+    def research_ndx_operator_promotion_cmd(
+        data_dir: Path | None = typer.Option(
+            None,
+            "--data-dir",
+            file_okay=False,
+            help="Runtime data root. Defaults to SIS_DATA_DIR/settings data_dir.",
+        ),
+        artifact_dir: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--artifact-dir",
+            file_okay=False,
+            help="NDX Layer 2.6 artifact directory.",
+        ),
+        decision: str = typer.Option("hold", "--decision"),
+        reviewer: str | None = typer.Option(None, "--reviewer"),
+        approval_reason: list[str] | None = typer.Option(None, "--approval-reason"),
+        rejection_reason: list[str] | None = typer.Option(None, "--rejection-reason"),
+    ) -> None:
+        if decision not in {"promote_to_paper_observation", "hold", "reject"}:
+            typer.echo("decision must be one of: promote_to_paper_observation, hold, reject")
+            raise typer.Exit(2)
+        settings = get_settings()
+        effective_data_dir = data_dir or settings.data_dir
+        try:
+            result = run_operator_promotion(
+                data_dir=effective_data_dir,
+                artifact_dir=artifact_dir,
+                decision=cast(Literal["promote_to_paper_observation", "hold", "reject"], decision),
+                reviewer=reviewer,
+                approval_reasons=list(approval_reason or []),
+                rejection_reasons=list(rejection_reason or []),
+            )
+        except (FileNotFoundError, ValueError, TypeError, ValidationError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"decision={result.decision}")
+        typer.echo(f"promotion_id={result.promotion_id}")
+        typer.echo(f"operator_promotion_decision={result.promotion_path}")
+        typer.echo(f"report={result.report_path}")
+
     @app.command("build-cost-matrix")
     def build_cost_matrix() -> None:
         settings = get_settings()
@@ -1192,6 +1307,7 @@ def register_research_commands(
                 typer.echo(str(exc))
                 raise typer.Exit(2) from exc
         now = datetime.now(timezone.utc)
+        operator_promotion_evidence = _ndx_operator_promotion_evidence(settings.data_dir)
         candidates: list[TradeCandidate] = []
         selected_ids: list[str] = []
         rejected_ids: list[str] = []
@@ -1257,14 +1373,20 @@ def register_research_commands(
                     else list(record.rejection_reasons)
                 )
                 if record.selected_for_next_stage:
-                    block_reasons.extend(
-                        venue_suitability_block_reasons(
-                            venue_id=str(execution_venue),
-                            execution_symbol=execution_symbol,
-                            real_market_symbol=real_market_symbol,
-                            stage="paper_candidate",
-                        )
+                    venue_reasons = venue_suitability_block_reasons(
+                        venue_id=str(execution_venue),
+                        execution_symbol=execution_symbol,
+                        real_market_symbol=real_market_symbol,
+                        stage="paper_candidate",
+                        operator_promotion_evidence=operator_promotion_evidence,
                     )
+                    if not venue_reasons:
+                        block_reasons = [
+                            reason
+                            for reason in block_reasons
+                            if reason != "RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED"
+                        ]
+                    block_reasons.extend(venue_reasons)
                     block_reasons = list(dict.fromkeys(block_reasons))
                     if block_reasons:
                         status = "blocked"
@@ -1324,6 +1446,8 @@ def register_research_commands(
             },
             reason_codes=["from_trial_ledger"],
             block_reasons=[],
+            operator_promotion_path=operator_promotion_evidence["operator_promotion_path"],
+            operator_promotion_hash=operator_promotion_evidence["operator_promotion_hash"],
         )
         out = settings.data_dir / "research/paper_candidate_pack.json"
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -1450,6 +1574,8 @@ def register_research_commands(
                         source_feature_ts=None,
                         source_phase_gate_run_id=None,
                         scorecard_summary=promotion.scorecard_summary,
+                        operator_promotion_path=pack.operator_promotion_path,
+                        operator_promotion_hash=pack.operator_promotion_hash,
                     )
                 )
         out = settings.data_dir / "bot/paper_intent_preview.json"

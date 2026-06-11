@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ndx_paper_observation_gate_decision.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "decision",
+    "decision_id",
+    "created_at",
+    "source_layer25_export_id",
+    "source_layer25_export_manifest_path",
+    "source_layer25_export_manifest_hash",
+    "strategy_signals_path",
+    "strategy_signals_hash",
+    "strategy_signal_manifest_path",
+    "strategy_signal_manifest_hash",
+    "signal_count",
+    "era_count",
+    "sample_scope",
+    "evidence_tier",
+    "quotes_path",
+    "quotes_hash",
+    "paper_quote_available",
+    "paper_observation_dry_run_ready",
+    "tested_variant_count",
+    "acceptance_thresholds",
+    "metrics",
+    "reason_codes",
+    "block_reasons",
+    "permits_operator_promotion_review",
+    "permits_paper_observation_review",
+    "permits_paper_candidate",
+    "permits_paper_intent_preview",
+    "permits_live_order",
+    "external_api_used",
+    "credentials_used",
+    "wallet_used",
+    "venue_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "ndx_paper_observation_gate_decision.v1"},
+    "decision": {
+      "enum": [
+        "APPROVE_PAPER_OBSERVATION_REVIEW",
+        "REVISE_2_5",
+        "REJECT_PAPER_OBSERVATION_GATE"
+      ]
+    },
+    "decision_id": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "created_at": {"type": "string"},
+    "source_layer25_export_id": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "source_layer25_export_manifest_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "strategy_signals_hash": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "strategy_signal_manifest_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "signal_count": {"type": "integer", "minimum": 0},
+    "era_count": {"type": "integer", "minimum": 0},
+    "evidence_tier": {
+      "enum": ["fixture_only", "historical_local", "paper_observation_dry_run"]
+    },
+    "quotes_hash": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "paper_quote_available": {"type": "boolean"},
+    "paper_observation_dry_run_ready": {"type": "boolean"},
+    "tested_variant_count": {"type": "integer", "minimum": 0},
+    "acceptance_thresholds": {"type": "object"},
+    "metrics": {"type": "object"},
+    "reason_codes": {"type": "array", "items": {"type": "string"}},
+    "block_reasons": {"type": "array", "items": {"type": "string"}},
+    "permits_operator_promotion_review": {"type": "boolean"},
+    "permits_paper_observation_review": {"type": "boolean"},
+    "permits_paper_candidate": {"const": false},
+    "permits_paper_intent_preview": {"const": false},
+    "permits_live_order": {"const": false},
+    "external_api_used": {"const": false},
+    "credentials_used": {"const": false},
+    "wallet_used": {"const": false},
+    "venue_write_used": {"const": false}
+  },
+  "additionalProperties": true
+}

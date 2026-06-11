@@ -30,6 +30,8 @@ class PaperCandidatePack(BaseModel):
     live_order_submitted: bool = False
     wallet_used: bool = False
     exchange_write_used: bool = False
+    operator_promotion_path: str | None = None
+    operator_promotion_hash: str | None = None
 
     @model_validator(mode="after")
     def validate_pack(self) -> PaperCandidatePack:
@@ -81,6 +83,10 @@ class PaperCandidatePack(BaseModel):
                     execution_symbol=candidates_by_id[candidate_id].execution_symbol,
                     real_market_symbol=candidates_by_id[candidate_id].real_market_symbol,
                     stage="paper_candidate",
+                    operator_promotion_evidence={
+                        "operator_promotion_path": self.operator_promotion_path,
+                        "operator_promotion_hash": self.operator_promotion_hash,
+                    },
                 )
             )
         }

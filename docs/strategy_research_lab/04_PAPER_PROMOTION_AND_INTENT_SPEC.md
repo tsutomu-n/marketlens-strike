@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-11_14:29 JST
 -->
 
 # Paper Promotion And Intent Spec
@@ -47,7 +47,7 @@ PaperCandidatePack
 - `selected_candidate_ids` と `rejected_candidate_ids` は `candidates` 内の ID だけを参照する。
 - candidate ID、selected ID、rejected ID は重複できない。selected / rejected の同時指定も拒否される。
 - selected candidate は `status="candidate"`、空の `block_reasons`、venue-suitable でなければならない。
-- NDX/QQQ family の `trade_xyz` proxy は research/backtest artifact として残せるが、現行 paper candidate には選べない。
+- NDX/QQQ family の `trade_xyz` proxy は research/backtest artifact として残せる。現行 paper candidate へ選べるのは、valid な NDX Layer 2.7 `operator_promotion_decision.json` が pack に記録され、source Layer 2.6 gate hash まで検証できる場合だけである。
 
 ## PromotionDecision
 
@@ -102,7 +102,7 @@ exchange_write_used=false
 venue suitability guard:
 
 - `PaperIntentPreview` は `paper_intent` stage の suitability を model validation で再確認する。
-- NDX/QQQ family の `trade_xyz` paper intent は `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION` で拒否される。
+- NDX/QQQ family の `trade_xyz` paper intent は、valid な NDX Layer 2.7 operator promotion evidence がない限り `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION` で拒否される。
 - NDX/QQQ family の `bitget_demo` paper intent は asset universe mismatch で拒否される。
 - `bitget_futures` と `hyperliquid_perp` は current `VenueId` ではなく、この artifact schema にも入れない。
 
