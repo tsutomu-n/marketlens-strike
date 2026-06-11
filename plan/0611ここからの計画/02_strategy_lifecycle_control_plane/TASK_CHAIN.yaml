@@ -1,0 +1,252 @@
+version: 1
+created_at_jst: "2026-06-11_21:15 JST"
+updated_at_jst: "2026-06-11_21:15 JST"
+objective: >
+  Build a local artifact-based strategy lifecycle control plane that separates
+  research, backtest acceptance, paper observation, execution-readiness review,
+  and live-canary planning eligibility without enabling live orders.
+
+global_constraints:
+  - Do not add external API calls, credentials, wallet/signing, exchange write, or live order execution.
+  - Do not add DB migrations, daemons, schedulers, deploy changes, CI secrets, or new dependencies.
+  - Keep pyproject.toml and uv.lock unchanged unless a later explicit plan approves dependency work.
+  - Keep existing lifecycle-report as an operations/recovery report; do not reuse its command name.
+  - Treat READ_ONLY_GO as read-only/paper gate only, not live readiness.
+  - Treat generated data under data/ as runtime output, not source-controlled truth.
+  - Use code, tests, schemas, config, lockfiles, CI, and CLI help as source of truth.
+
+tasks:
+  - id: T0
+    goal: "Document the target operating model and live boundary."
+    target_files:
+      - "docs/strategy_lifecycle/README.md"
+      - "docs/strategy_lifecycle/TARGET_OPERATING_MODEL.md"
+      - "docs/strategy_lifecycle/LIVE_CANARY_PLAN_GATE.md"
+    out_of_scope:
+      - "Code implementation"
+      - "Live order execution"
+      - "External API or credential handling"
+    acceptance:
+      - "Decision ladder is documented."
+      - "ELIGIBLE_FOR_LIVE_CANARY_PLAN is explicitly not live-order permission."
+      - "Existing lifecycle-report is documented as separate operations/recovery report."
+      - "Markdown metadata timestamps are present and current."
+    verification:
+      - "uv run python scripts/check_current_docs.py"
+    destructive_level: "low"
+
+  - id: T1
+    goal: "Add Strategy Authoring backtest acceptance gate."
+    dependencies:
+      - T0
+    target_files:
+      - "src/sis/research/strategy_lifecycle/__init__.py"
+      - "src/sis/research/strategy_lifecycle/backtest_acceptance.py"
+      - "src/sis/commands/research.py"
+      - "schemas/strategy_backtest_acceptance_decision.v1.schema.json"
+      - "tests/research/test_strategy_lifecycle_backtest_acceptance.py"
+    out_of_scope:
+      - "Changing Strategy Authoring backtest engine"
+      - "Changing optimizer semantics"
+      - "Adding live or paper order behavior"
+    acceptance:
+      - "strategy-backtest-acceptance CLI exists."
+      - "PASS_BACKTEST_ACCEPTANCE, FAIL_BACKTEST_ACCEPTANCE, NEEDS_BACKTEST, and BLOCK_BACKTEST_BOUNDARY decisions are implemented."
+      - "summary.backtest_passed, summary.pass_min_trade_count, and summary.pass_all_thresholds are all required for pass."
+      - "Boundary flags or false readiness claims produce BLOCK_BACKTEST_BOUNDARY."
+      - "Decision artifact validates against strategy_backtest_acceptance_decision.v1 schema."
+    verification:
+      - "uv run sis strategy-backtest-acceptance --help"
+      - "uv run pytest tests/research/test_strategy_lifecycle_backtest_acceptance.py -q"
+    destructive_level: "low"
+
+  - id: T2
+    goal: "Harden paper-from-intents ledger for practical paper observation review."
+    dependencies:
+      - T1
+    target_files:
+      - "src/sis/paper/runner.py"
+      - "tests/test_paper_from_intents.py"
+      - "docs/strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md"
+      - "docs/strategy_research_lab/04_PAPER_PROMOTION_AND_INTENT_SPEC.md"
+    out_of_scope:
+      - "Changing broker accounting semantics"
+      - "Changing live execution adapters"
+      - "Making old ledger entries invalid to read"
+    acceptance:
+      - "Filled and blocked ledger rows include created_at, venue/symbol, quote context, notional, quantity, source promotion evidence, and paper-only boundary flags."
+      - "Old ledger entries remain readable by review code."
+      - "Boundary fields remain false for paper execution."
+    verification:
+      - "uv run pytest tests/test_paper_from_intents.py -q"
+    destructive_level: "low"
+
+  - id: T3
+    goal: "Strengthen NDX Layer 2.8 paper observation review."
+    dependencies:
+      - T2
+    target_files:
+      - "src/sis/research/ndx/paper_observation_review.py"
+      - "src/sis/commands/research.py"
+      - "schemas/ndx_paper_observation_review_decision.v1.schema.json"
+      - "tests/research/test_ndx_layer28_paper_observation_review.py"
+      - "docs/research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md"
+    out_of_scope:
+      - "Changing Layer 2.6 or 2.7 promotion rules unless required for compatibility"
+      - "Claiming alpha or live readiness"
+    acceptance:
+      - "min-trading-days-for-pass option exists with default 10."
+      - "max-open-position-age-hours option exists and is disabled when 0."
+      - "Paper review considers fills, trading days, block rate, consecutive blocks, artifact completeness, and boundary violations."
+      - "Missing timestamp quality prevents pass but does not crash old ledgers."
+      - "Live/wallet/write boundary violations stop paper observation."
+    verification:
+      - "uv run sis research-ndx-paper-observation-review --help"
+      - "uv run pytest tests/research/test_ndx_layer28_paper_observation_review.py -q"
+    destructive_level: "low"
+
+  - id: T4
+    goal: "Add integrated strategy lifecycle review."
+    dependencies:
+      - T1
+      - T3
+    target_files:
+      - "src/sis/research/strategy_lifecycle/review.py"
+      - "src/sis/commands/research.py"
+      - "schemas/strategy_lifecycle_review.v1.schema.json"
+      - "tests/research/test_strategy_lifecycle_review.py"
+    out_of_scope:
+      - "Submitting live orders"
+      - "Creating live canary implementation"
+      - "Changing phase-gate-review semantics"
+    acceptance:
+      - "strategy-lifecycle-review CLI exists."
+      - "Decision ladder emits REJECT_OR_REVISE, CONTINUE_RESEARCH, BACKTEST_ACCEPTED, CONTINUE_PAPER_OBSERVATION, CONTINUE_EXECUTION_READINESS, ELIGIBLE_FOR_LIVE_CANARY_PLAN, or BLOCKED_BOUNDARY_VIOLATION."
+      - "Any live/wallet/write true flag produces BLOCKED_BOUNDARY_VIOLATION."
+      - "Paper pass with remaining P2 or LIVE_READINESS blockers produces CONTINUE_EXECUTION_READINESS."
+      - "ELIGIBLE_FOR_LIVE_CANARY_PLAN still emits permits_live_order=false."
+      - "Decision artifact validates against strategy_lifecycle_review.v1 schema."
+    verification:
+      - "uv run sis strategy-lifecycle-review --help"
+      - "uv run pytest tests/research/test_strategy_lifecycle_review.py -q"
+    destructive_level: "low"
+
+  - id: T5
+    goal: "Update current docs and operator runbooks."
+    dependencies:
+      - T4
+    target_files:
+      - "docs/CURRENT_STATE.md"
+      - "docs/CODE_STATUS.md"
+      - "docs/ARCHITECTURE_AND_PHASES.md"
+      - "docs/OPERATIONS_RUNBOOK.md"
+      - "docs/backtest/README.md"
+      - "docs/research/ndx/README.md"
+      - "docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md"
+      - "docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md"
+    out_of_scope:
+      - "Historical archive rewrite"
+      - "Changing implementation plans into current truth before code passes"
+    acceptance:
+      - "Docs describe strategy-backtest-acceptance and strategy-lifecycle-review."
+      - "Docs keep READ_ONLY_GO separate from live readiness."
+      - "Docs state paper observation and Layer 2.8 are not alpha proof."
+      - "Markdown metadata timestamps are updated."
+    verification:
+      - "uv run python scripts/check_current_docs.py"
+    destructive_level: "low"
+
+  - id: T6
+    goal: "Update CLI smoke and schema validation tests."
+    dependencies:
+      - T4
+    target_files:
+      - "tests/test_cli_smoke.py"
+      - "schemas/strategy_backtest_acceptance_decision.v1.schema.json"
+      - "schemas/strategy_lifecycle_review.v1.schema.json"
+    out_of_scope:
+      - "Removing lifecycle-report"
+      - "Relaxing existing CLI smoke coverage"
+    acceptance:
+      - "Root help includes strategy-backtest-acceptance."
+      - "Root help includes strategy-lifecycle-review."
+      - "Root help still includes lifecycle-report."
+      - "New schemas are valid JSON Schema Draft 2020-12."
+    verification:
+      - "uv run pytest tests/test_cli_smoke.py tests/research/test_strategy_lifecycle_backtest_acceptance.py tests/research/test_strategy_lifecycle_review.py -q"
+    destructive_level: "low"
+
+  - id: T7
+    goal: "Keep live canary as a plan gate only."
+    dependencies:
+      - T4
+      - T5
+    target_files:
+      - "docs/strategy_lifecycle/LIVE_CANARY_PLAN_GATE.md"
+      - "tests/research/test_strategy_lifecycle_review.py"
+    out_of_scope:
+      - "Live canary order implementation"
+      - "Credential or wallet configuration"
+      - "Exchange write probes"
+    acceptance:
+      - "ELIGIBLE_FOR_LIVE_CANARY_PLAN does not permit live orders."
+      - "Reports explain that a separate plan is required before live canary work."
+      - "Tests assert live permission fields remain false for every lifecycle decision."
+    verification:
+      - "uv run pytest tests/research/test_strategy_lifecycle_review.py -q"
+    destructive_level: "low"
+
+  - id: T8
+    goal: "Run full verification and inspect diffs."
+    dependencies:
+      - T1
+      - T2
+      - T3
+      - T4
+      - T5
+      - T6
+      - T7
+    target_files:
+      - "scripts/check"
+      - "src/sis/research/strategy_lifecycle"
+      - "src/sis/commands/research.py"
+      - "src/sis/paper/runner.py"
+      - "src/sis/research/ndx/paper_observation_review.py"
+      - "schemas"
+      - "tests"
+      - "docs"
+    out_of_scope:
+      - "Committing unrelated dirty worktree changes"
+      - "Adding generated data artifacts to git"
+    acceptance:
+      - "Targeted CLI help commands pass."
+      - "Targeted pytest suite passes."
+      - "Current docs checker passes."
+      - "Full scripts/check passes."
+      - "No unwanted dependency, lockfile, CI, or generated data diff is included."
+    verification:
+      - "uv run sis strategy-backtest-acceptance --help"
+      - "uv run sis strategy-lifecycle-review --help"
+      - "uv run python scripts/seed_strategy_authoring_baseline_data.py"
+      - "uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest"
+      - "uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports"
+      - "uv run sis research-ndx-paper-observation-review --data-dir data --artifact-dir data/research/ndx --reports-dir data/reports"
+      - "uv run sis phase-gate-review"
+      - "uv run sis strategy-lifecycle-review --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports"
+      - "uv run pytest tests/research/test_strategy_lifecycle_backtest_acceptance.py tests/research/test_strategy_lifecycle_review.py tests/research/test_ndx_layer28_paper_observation_review.py tests/test_paper_from_intents.py tests/test_cli_smoke.py -q"
+      - "uv run python scripts/check_current_docs.py"
+      - "./scripts/check"
+      - "git diff -- pyproject.toml uv.lock .github/workflows/ci.yml"
+      - "git status --short --branch --untracked-files=all"
+    destructive_level: "low"
+
+completion_conditions:
+  - "All T0 through T8 acceptance items are satisfied."
+  - "strategy-backtest-acceptance and strategy-lifecycle-review are implemented and tested."
+  - "Backtest, paper observation, phase gate, and lifecycle review artifacts validate against schemas."
+  - "Every lifecycle output keeps permits_live_order=false, live_conversion_allowed=false, wallet_used=false, venue_write_used=false, and exchange_write_used=false."
+  - "docs/CURRENT_STATE.md, docs/CODE_STATUS.md, docs/OPERATIONS_RUNBOOK.md, docs/research/ndx/README.md, and docs/strategy_lifecycle/ describe the implemented state."
+  - "uv run python scripts/check_current_docs.py passes."
+  - "./scripts/check passes."
+  - "No dependency, lockfile, CI, live-execution, credential, wallet, signing, or exchange-write diff is present."
+
