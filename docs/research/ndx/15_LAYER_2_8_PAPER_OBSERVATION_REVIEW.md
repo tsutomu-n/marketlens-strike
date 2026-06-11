@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_19:06 JST
-更新日: 2026-06-11_23:42 JST
+更新日: 2026-06-12_01:16 JST
 -->
 
 # NDX Layer 2.8 Paper Observation Review
@@ -15,6 +15,16 @@ uv run sis research-ndx-paper-observation-review \
   --artifact-dir data/research/ndx \
   --reports-dir data/reports \
   --ledger-path data/paper/observations/<session>.jsonl
+```
+
+Session manifest input:
+
+```bash
+uv run sis research-ndx-paper-observation-review \
+  --data-dir data \
+  --artifact-dir data/research/ndx \
+  --reports-dir data/reports \
+  --session-manifest data/paper/observations/<session_id>/paper_observation_session_manifest.json
 ```
 
 Default thresholds:
@@ -43,6 +53,7 @@ uv run sis research-ndx-paper-observation-review \
 - `data/research/ndx/paper_observation_gate_decision.json`
 - `data/paper/paper_observation_ledger.jsonl`
 - or an explicit ledger created by `paper-from-intents --observation-ledger-path`
+- or a session manifest created by `strategy-paper-observation-cycle`
 - `data/paper/orders.parquet`
 - `data/paper/fills.parquet`
 - `data/paper/positions.parquet`
@@ -74,3 +85,5 @@ Stop conditions:
 ## Boundary
 
 Layer 2.8 is paper-only review. It verifies local paper artifacts and records hashes, but it is not alpha proof, robust out-of-sample proof, exchange connectivity proof, account readiness, wallet readiness, or live readiness. A passing Layer 2.8 decision still keeps `permits_live_order=false` and `live_conversion_allowed=false`.
+
+When `--session-manifest` is used, the manifest's ledger path and thresholds are used. The decision artifact records `source_paper_observation_session_manifest_path` and `source_paper_observation_session_manifest_hash`. Manifest / ledger / operator-promotion hash mismatch fails closed.

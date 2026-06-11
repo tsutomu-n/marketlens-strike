@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-11_21:15 JST
+更新日: 2026-06-11_23:57 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -46,6 +46,7 @@ truth.
 
 - [plan/0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/README.md](0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/README.md)
 - [plan/0611ここからの計画/02_strategy_lifecycle_control_plane/README.md](0611ここからの計画/02_strategy_lifecycle_control_plane/README.md)
+- [plan/0611ここからの計画/03_paper_observation_cycle_completion/README.md](0611ここからの計画/03_paper_observation_cycle_completion/README.md)
 
 ## Historical read order
 

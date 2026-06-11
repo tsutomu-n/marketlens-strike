@@ -11,6 +11,8 @@
     "source_operator_promotion_path",
     "source_operator_promotion_hash",
     "source_paper_observation_gate_decision_id",
+    "source_paper_observation_session_manifest_path",
+    "source_paper_observation_session_manifest_hash",
     "paper_observation_ledger_path",
     "paper_observation_ledger_hash",
     "paper_artifacts",
@@ -49,6 +51,11 @@
     "source_paper_observation_gate_decision_id": {
       "type": "string",
       "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "source_paper_observation_session_manifest_path": {"type": "string"},
+    "source_paper_observation_session_manifest_hash": {
+      "type": "string",
+      "pattern": "^(|sha256:[a-fA-F0-9]{64})$"
     },
     "paper_observation_ledger_hash": {
       "type": "string",

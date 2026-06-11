@@ -50,6 +50,7 @@ def test_help_smoke() -> None:
     assert "strategy-author-train-model" in stdout
     assert "strategy-backtest-acceptance" in stdout
     assert "strategy-lifecycle-review" in stdout
+    assert "strategy-paper-observation-cycle" in stdout
     assert "paper-step" in stdout
     assert "estimate-order" in stdout
     assert "balance-status" in stdout
@@ -116,6 +117,14 @@ def test_paper_from_intents_help_exposes_observation_ledger_path() -> None:
     stdout = normalized_stdout(result)
     assert result.exit_code == 0
     assert "--observation-ledger-path" in stdout
+
+
+def test_strategy_paper_observation_cycle_help_smoke() -> None:
+    result = invoke_cli(["strategy-paper-observation-cycle", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "--session-id" in stdout
+    assert "--smoke" in stdout
 
 
 def test_implementation_status_reports_complete_scope() -> None:

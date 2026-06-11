@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-11_23:42 JST
+更新日: 2026-06-12_01:16 JST
 -->
 
 # Operator Runbook
@@ -218,6 +218,38 @@ uv run sis research-ndx-paper-observation-review \
 - `PASS_PAPER_OBSERVATION_REVIEW` は paper observation review の通過であり、live-ready ではない。
 - `NEEDS_MORE_PAPER_OBSERVATION` は blocker なしだが default の `20` fills または `10` trading days に届いていない状態。
 - `STOP_PAPER_OBSERVATION` は ledger boundary violation、過大な blocked rate、連続 blocked、必要 artifact 欠損などで止める状態。
+
+## 9. Strategy paper observation cycle を使う
+
+`strategy-backtest-acceptance` と NDX Layer 2.7 operator promotion まで揃っている場合、手動の intent / paper runner / review の代わりに cycle command を使えます。
+
+```bash
+uv run sis strategy-paper-observation-cycle \
+  --data-dir data \
+  --artifact-dir data/research/ndx \
+  --reports-dir data/reports
+```
+
+出力:
+
+- `data/paper/observations/<session_id>/paper_observation_session_manifest.json`
+- `data/paper/observations/<session_id>/paper_observation_ledger.jsonl`
+- `data/paper/observations/<session_id>/paper_observation_review_decision.json`
+- `data/research/ndx/paper_observation_review_decision.json`
+- `data/research/strategy_lifecycle/strategy_lifecycle_review.json`
+
+local fixture smoke:
+
+```bash
+uv run sis strategy-paper-observation-cycle \
+  --data-dir data \
+  --artifact-dir data/research/ndx \
+  --reports-dir data/reports \
+  --session-id local-smoke \
+  --smoke
+```
+
+`--smoke` は短縮閾値の検証用です。smoke pass を production paper pass として扱わないでください。
 
 ## 9. Strategy lifecycle review を行う
 

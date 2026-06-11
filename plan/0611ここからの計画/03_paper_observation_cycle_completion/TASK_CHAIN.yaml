@@ -1,0 +1,244 @@
+version: 1
+created_at_jst: "2026-06-11_23:57 JST"
+updated_at_jst: "2026-06-11_23:57 JST"
+objective: >
+  Complete the paper observation operating loop so Strategy Lifecycle can
+  generate fresh paper intents, write isolated session ledgers, review those
+  sessions, and hand the result to lifecycle review without enabling live
+  trading.
+
+global_constraints:
+  - Do not add external API calls, credentials, wallet/signing, exchange write, or live order execution.
+  - Do not add DB migrations, daemons, schedulers, deploy changes, CI secrets, or new dependencies.
+  - Keep pyproject.toml, uv.lock, and .github/workflows/ci.yml unchanged unless a later explicit plan approves it.
+  - Do not use stale paper_intent_preview.json as execution evidence.
+  - Do not backfill old ledger timestamps to manufacture trading days.
+  - Do not treat READ_ONLY_GO, paper pass, or ELIGIBLE_FOR_LIVE_CANARY_PLAN as live-order permission.
+  - Keep generated data/ artifacts out of git.
+  - Use code, tests, schemas, config, lockfiles, CI, and CLI help as source of truth.
+
+tasks:
+  - id: T0
+    goal: "Confirm current CLI, artifact, and lifecycle boundaries before edits."
+    target_files: []
+    out_of_scope:
+      - "File edits"
+      - "Implementation"
+      - "Generated artifact rewriting"
+    acceptance:
+      - "Current git status is known."
+      - "paper-from-intents help is inspected for observation ledger support."
+      - "paper review and lifecycle review help are inspected."
+      - "Current paper review and lifecycle artifacts are inspected if present."
+      - "If strategy-lifecycle-review is missing, plan 02 is completed before continuing T3 or later."
+    verification:
+      - "git status --short --branch --untracked-files=all"
+      - "uv run sis paper-from-intents --help"
+      - "uv run sis research-ndx-paper-observation-review --help"
+      - "uv run sis strategy-lifecycle-review --help"
+      - "jq '.decision, .metrics, .reason_codes' data/research/ndx/paper_observation_review_decision.json"
+      - "jq '.decision, .blocker_counts, .boundary_flags' data/research/strategy_lifecycle/strategy_lifecycle_review.json"
+    destructive_level: "none"
+
+  - id: T1
+    goal: "Add isolated observation ledger path support to paper-from-intents."
+    dependencies:
+      - T0
+    target_files:
+      - "src/sis/paper/runner.py"
+      - "src/sis/commands/paper.py"
+      - "tests/test_paper_from_intents.py"
+      - "tests/test_cli_smoke.py"
+    out_of_scope:
+      - "Changing paper broker accounting semantics"
+      - "Changing orders/fills/positions parquet default locations"
+      - "Live execution behavior"
+    acceptance:
+      - "run_paper_from_intents accepts observation_ledger_path: Path | None."
+      - "paper-from-intents exposes --observation-ledger-path."
+      - "Default ledger behavior remains backward compatible when the option is omitted."
+      - "Custom ledger path writes only to that custom path."
+      - "Parent directories are created when needed."
+    verification:
+      - "uv run sis paper-from-intents --help"
+      - "uv run pytest tests/test_paper_from_intents.py tests/test_cli_smoke.py -q"
+    destructive_level: "low"
+
+  - id: T2
+    goal: "Create paper observation session manifest support."
+    dependencies:
+      - T1
+    target_files:
+      - "src/sis/paper/observation_session.py"
+      - "schemas/paper_observation_session_manifest.v1.schema.json"
+      - "tests/paper/test_observation_session.py"
+    out_of_scope:
+      - "Database-backed session registry"
+      - "Scheduler or daemon"
+      - "Credential or live venue settings"
+    acceptance:
+      - "Manifest includes session_id, created_at, paths, source artifact hashes, thresholds, and paper-only boundary flags."
+      - "Manifest validates against paper_observation_session_manifest.v1 schema."
+      - "Missing required source artifacts fail closed."
+      - "Live/wallet/write fields are always false in generated manifests."
+    verification:
+      - "uv run pytest tests/paper/test_observation_session.py -q"
+    destructive_level: "low"
+
+  - id: T3
+    goal: "Add strategy-paper-observation-cycle orchestration CLI."
+    dependencies:
+      - T1
+      - T2
+    target_files:
+      - "src/sis/research/strategy_lifecycle/paper_observation_cycle.py"
+      - "src/sis/commands/research.py"
+      - "tests/research/test_strategy_paper_observation_cycle.py"
+      - "tests/test_cli_smoke.py"
+    out_of_scope:
+      - "Calling uv run sis subprocesses from inside the CLI"
+      - "Submitting live orders"
+      - "Reusing expired intent previews"
+    acceptance:
+      - "strategy-paper-observation-cycle help is available."
+      - "The cycle requires PASS_BACKTEST_ACCEPTANCE before paper execution."
+      - "The cycle creates a fresh paper intent preview rather than reusing an expired one."
+      - "The cycle creates a session manifest and session ledger under data/paper/observations/<session_id>/."
+      - "The cycle runs paper review and lifecycle review through reusable helpers."
+      - "All outputs keep live/wallet/write permissions false."
+    verification:
+      - "uv run sis strategy-paper-observation-cycle --help"
+      - "uv run pytest tests/research/test_strategy_paper_observation_cycle.py tests/test_cli_smoke.py -q"
+    destructive_level: "low"
+
+  - id: T4
+    goal: "Allow NDX paper observation review to consume a session manifest."
+    dependencies:
+      - T2
+      - T3
+    target_files:
+      - "src/sis/research/ndx/paper_observation_review.py"
+      - "src/sis/commands/research.py"
+      - "schemas/ndx_paper_observation_review_decision.v1.schema.json"
+      - "tests/research/test_ndx_layer28_paper_observation_review.py"
+      - "docs/research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md"
+    out_of_scope:
+      - "Removing existing --ledger-path support"
+      - "Lowering production thresholds to force pass"
+      - "Claiming alpha or live readiness"
+    acceptance:
+      - "research-ndx-paper-observation-review exposes --session-manifest."
+      - "Manifest thresholds and ledger path are used for review when provided."
+      - "Decision artifacts record source manifest path and sha256."
+      - "Manifest/ledger mismatch fails closed."
+      - "Old timestamp-incomplete ledgers do not pass."
+      - "Live/wallet/write boundary violations stop paper observation."
+    verification:
+      - "uv run sis research-ndx-paper-observation-review --help"
+      - "uv run pytest tests/research/test_ndx_layer28_paper_observation_review.py -q"
+    destructive_level: "low"
+
+  - id: T5
+    goal: "Document and enforce session ledger as the observation-window truth."
+    dependencies:
+      - T3
+      - T4
+    target_files:
+      - "src/sis/paper/runner.py"
+      - "docs/strategy_lifecycle/PAPER_OBSERVATION_CYCLE.md"
+      - "docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md"
+      - "tests/test_paper_from_intents.py"
+      - "tests/research/test_ndx_layer28_paper_observation_review.py"
+    out_of_scope:
+      - "Append-only parquet redesign"
+      - "Changing current paper state snapshot files into cumulative ledgers"
+    acceptance:
+      - "Docs state session ledger is the observation-window source of truth."
+      - "Orders/fills/positions parquet files are documented as current paper state snapshots."
+      - "Paper review computes fills and trading days from the session ledger."
+      - "Ledger rows contain enough ids and source fields for audit."
+    verification:
+      - "uv run pytest tests/test_paper_from_intents.py tests/research/test_ndx_layer28_paper_observation_review.py -q"
+      - "uv run python scripts/check_current_docs.py"
+    destructive_level: "low"
+
+  - id: T6
+    goal: "Update current docs and operator runbooks."
+    dependencies:
+      - T3
+      - T4
+      - T5
+    target_files:
+      - "docs/strategy_lifecycle/README.md"
+      - "docs/strategy_lifecycle/TARGET_OPERATING_MODEL.md"
+      - "docs/strategy_lifecycle/PAPER_OBSERVATION_CYCLE.md"
+      - "docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md"
+      - "docs/research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md"
+      - "docs/CURRENT_STATE.md"
+      - "docs/CODE_STATUS.md"
+    out_of_scope:
+      - "Historical archive rewrite"
+      - "Docs claiming live readiness"
+    acceptance:
+      - "Operator runbook includes the paper observation cycle command."
+      - "Docs explain --smoke and forbid treating smoke pass as production paper pass."
+      - "Docs explain session manifest and expired preview handling."
+      - "Docs keep paper pass separate from live permission."
+      - "Markdown metadata timestamps are updated."
+    verification:
+      - "uv run python scripts/check_current_docs.py"
+    destructive_level: "low"
+
+  - id: T7
+    goal: "Run verification and inspect scope."
+    dependencies:
+      - T1
+      - T2
+      - T3
+      - T4
+      - T5
+      - T6
+    target_files:
+      - "scripts/check"
+      - "src/sis/commands/paper.py"
+      - "src/sis/commands/research.py"
+      - "src/sis/paper"
+      - "src/sis/research/ndx"
+      - "src/sis/research/strategy_lifecycle"
+      - "schemas"
+      - "tests"
+      - "docs"
+    out_of_scope:
+      - "Committing unrelated changes"
+      - "Adding generated data artifacts to git"
+      - "Dependency, lockfile, CI, credential, wallet, signing, or exchange-write changes"
+    acceptance:
+      - "Targeted CLI help commands pass."
+      - "Targeted pytest suite passes."
+      - "Current docs checker passes."
+      - "Full scripts/check passes."
+      - "No unwanted dependency, lockfile, CI, live execution, credential, wallet, signing, exchange-write, or generated data diff is included."
+    verification:
+      - "uv run sis paper-from-intents --help"
+      - "uv run sis research-ndx-paper-observation-review --help"
+      - "uv run sis strategy-paper-observation-cycle --help"
+      - "uv run sis strategy-lifecycle-review --help"
+      - "uv run pytest tests/test_paper_from_intents.py tests/paper/test_observation_session.py tests/research/test_strategy_paper_observation_cycle.py tests/research/test_ndx_layer28_paper_observation_review.py tests/research/test_strategy_lifecycle_review.py tests/test_cli_smoke.py -q"
+      - "uv run python scripts/check_current_docs.py"
+      - "./scripts/check"
+      - "git diff -- pyproject.toml uv.lock .github/workflows/ci.yml"
+      - "git status --short --branch --untracked-files=all"
+    destructive_level: "low"
+
+completion_conditions:
+  - "paper-from-intents supports isolated observation ledger paths."
+  - "Paper observation session manifests are generated and schema-validated."
+  - "strategy-paper-observation-cycle runs fresh intent generation, paper execution, session review, and lifecycle review without live permissions."
+  - "research-ndx-paper-observation-review can consume session manifests."
+  - "Session ledger is the observation-window truth for fills, trading days, blocked rate, timestamp completeness, and boundary violations."
+  - "Insufficient real observations produce CONTINUE_PAPER_OBSERVATION instead of a manufactured pass."
+  - "Paper pass with remaining readiness blockers produces CONTINUE_EXECUTION_READINESS instead of live permission."
+  - "Docs and operator runbooks match implemented CLI and artifact contracts."
+  - "Targeted tests, docs checker, and ./scripts/check pass."
+  - "No dependency, lockfile, CI, live execution, credential, wallet, signing, exchange-write, or generated data diff is included."
+

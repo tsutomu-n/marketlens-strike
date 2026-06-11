@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "paper_observation_session_manifest.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "session_id",
+    "created_at",
+    "data_dir",
+    "session_dir",
+    "observation_ledger_path",
+    "paper_orders_path",
+    "paper_fills_path",
+    "paper_positions_path",
+    "source_backtest_acceptance_path",
+    "source_backtest_acceptance_sha256",
+    "source_operator_promotion_path",
+    "source_operator_promotion_sha256",
+    "source_intent_preview_path",
+    "source_intent_preview_sha256",
+    "thresholds",
+    "permits_live_order",
+    "wallet_used",
+    "venue_write_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "paper_observation_session_manifest.v1"},
+    "session_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string"},
+    "data_dir": {"type": "string", "minLength": 1},
+    "session_dir": {"type": "string", "minLength": 1},
+    "observation_ledger_path": {"type": "string", "minLength": 1},
+    "paper_orders_path": {"type": "string", "minLength": 1},
+    "paper_fills_path": {"type": "string", "minLength": 1},
+    "paper_positions_path": {"type": "string", "minLength": 1},
+    "source_backtest_acceptance_path": {"type": "string", "minLength": 1},
+    "source_backtest_acceptance_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "source_operator_promotion_path": {"type": "string", "minLength": 1},
+    "source_operator_promotion_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "source_intent_preview_path": {"type": "string", "minLength": 1},
+    "source_intent_preview_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "thresholds": {
+      "type": "object",
+      "required": [
+        "min_fills_for_pass",
+        "min_trading_days_for_pass",
+        "max_blocked_rate",
+        "max_consecutive_blocked",
+        "max_open_position_age_hours"
+      ],
+      "properties": {
+        "min_fills_for_pass": {"type": "integer", "minimum": 1},
+        "min_trading_days_for_pass": {"type": "integer", "minimum": 1},
+        "max_blocked_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "max_consecutive_blocked": {"type": "integer", "minimum": 1},
+        "max_open_position_age_hours": {"type": "number", "minimum": 0}
+      },
+      "additionalProperties": true
+    },
+    "smoke": {"type": "boolean"},
+    "external_api_used": {"const": false},
+    "credentials_used": {"const": false},
+    "permits_live_order": {"const": false},
+    "wallet_used": {"const": false},
+    "venue_write_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": true
+}

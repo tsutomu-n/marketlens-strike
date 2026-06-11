@@ -31,6 +31,7 @@ def run_paper_observation_review(
     artifact_dir: Path,
     reports_dir: Path,
     ledger_path: Path | None = None,
+    session_manifest_path: Path | None = None,
     min_fills_for_pass: int = 20,
     min_trading_days_for_pass: int = 10,
     max_blocked_rate: float = 0.5,
@@ -38,6 +39,30 @@ def run_paper_observation_review(
     max_open_position_age_hours: float = 0.0,
     paper_notional_usd: float = 1000.0,
 ) -> PaperObservationReviewResult:
+    session_manifest = _read_session_manifest(
+        session_manifest_path=session_manifest_path,
+        explicit_ledger_path=ledger_path,
+        promotion_path=artifact_dir / "operator_promotion_decision.json",
+    )
+    if session_manifest is not None:
+        ledger_path = Path(str(session_manifest["observation_ledger_path"]))
+        thresholds = session_manifest.get("thresholds")
+        if isinstance(thresholds, dict):
+            min_fills_for_pass = int(thresholds.get("min_fills_for_pass", min_fills_for_pass))
+            min_trading_days_for_pass = int(
+                thresholds.get("min_trading_days_for_pass", min_trading_days_for_pass)
+            )
+            max_blocked_rate = float(thresholds.get("max_blocked_rate", max_blocked_rate))
+            max_consecutive_blocked = int(
+                thresholds.get("max_consecutive_blocked", max_consecutive_blocked)
+            )
+            max_open_position_age_hours = float(
+                thresholds.get(
+                    "max_open_position_age_hours",
+                    max_open_position_age_hours,
+                )
+            )
+
     if min_fills_for_pass < 1:
         raise ValueError("min_fills_for_pass must be >= 1")
     if min_trading_days_for_pass < 1:
@@ -97,6 +122,12 @@ def run_paper_observation_review(
         "source_paper_observation_gate_decision_id": promotion[
             "source_paper_observation_gate_decision_id"
         ],
+        "source_paper_observation_session_manifest_path": (
+            session_manifest_path.as_posix() if session_manifest_path else ""
+        ),
+        "source_paper_observation_session_manifest_hash": (
+            sha256_file(session_manifest_path) if session_manifest_path else ""
+        ),
         "paper_observation_ledger_path": selected_ledger_path.as_posix(),
         "paper_observation_ledger_hash": sha256_file(selected_ledger_path),
         "paper_artifacts": artifact_hashes,
@@ -131,6 +162,43 @@ def run_paper_observation_review(
         decision=decision,
         review_id=review_id,
     )
+
+
+def _read_session_manifest(
+    *,
+    session_manifest_path: Path | None,
+    explicit_ledger_path: Path | None,
+    promotion_path: Path,
+) -> dict[str, Any] | None:
+    if session_manifest_path is None:
+        return None
+    if not session_manifest_path.exists():
+        raise FileNotFoundError(
+            f"paper observation session manifest missing: {session_manifest_path}"
+        )
+    manifest = read_json(session_manifest_path)
+    if manifest.get("schema_version") != "paper_observation_session_manifest.v1":
+        raise ValueError("paper observation session manifest schema_version mismatch.")
+    raw_ledger_path = manifest.get("observation_ledger_path")
+    if not isinstance(raw_ledger_path, str) or not raw_ledger_path.strip():
+        raise ValueError("paper observation session manifest missing observation_ledger_path.")
+    manifest_ledger_path = Path(raw_ledger_path)
+    if explicit_ledger_path is not None and explicit_ledger_path != manifest_ledger_path:
+        raise ValueError("paper observation session manifest ledger path mismatch.")
+    raw_promotion_path = manifest.get("source_operator_promotion_path")
+    if not isinstance(raw_promotion_path, str) or not raw_promotion_path.strip():
+        raise ValueError("paper observation session manifest missing operator promotion path.")
+    manifest_promotion_path = Path(raw_promotion_path)
+    expected_promotion_hash = str(manifest.get("source_operator_promotion_sha256") or "")
+    if manifest_promotion_path != promotion_path:
+        raise ValueError("paper observation session manifest operator promotion path mismatch.")
+    if not manifest_promotion_path.exists():
+        raise FileNotFoundError(
+            f"paper observation session source promotion missing: {manifest_promotion_path}"
+        )
+    if sha256_file(manifest_promotion_path) != expected_promotion_hash:
+        raise ValueError("paper observation session operator promotion hash mismatch.")
+    return manifest
 
 
 def _validate_operator_promotion(promotion: dict[str, Any], promotion_path: Path) -> None:

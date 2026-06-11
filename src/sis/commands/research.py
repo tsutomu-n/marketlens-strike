@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
@@ -44,6 +44,10 @@ from sis.research.ndx.source_resolution import build_source_resolution
 from sis.research.ndx.start_conditions import Layer23StartConditionError
 from sis.research.ndx.strategy_lab_export import export_ndx_strategy_lab_research_artifact
 from sis.research.strategy_lifecycle.backtest_acceptance import run_backtest_acceptance
+from sis.research.strategy_lifecycle.paper_observation_cycle import (
+    build_fresh_paper_intent_preview,
+    run_strategy_paper_observation_cycle,
+)
 from sis.research.strategy_lifecycle.review import run_strategy_lifecycle_review
 from sis.research.hypothesis.role_contracts import CausalRoleRegistry
 from sis.research.hypothesis.role_validator import validate_roles_against_inventory
@@ -65,7 +69,6 @@ from sis.research.signal_builder import (
 )
 from sis.research.strategy_lab.candidates import TradeCandidate
 from sis.research.strategy_lab.paper_candidate_pack import PaperCandidatePack
-from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
 from sis.research.strategy_lab.promotion_decision import PromotionDecision
 from sis.research.strategy_lab.signal_artifact import (
     StrategySignalManifest,
@@ -1036,6 +1039,12 @@ def register_research_commands(
             dir_okay=False,
             help="Optional paper observation ledger path. Defaults to data/paper/paper_observation_ledger.jsonl.",
         ),
+        session_manifest_path: Path | None = typer.Option(
+            None,
+            "--session-manifest",
+            dir_okay=False,
+            help="Optional paper observation session manifest path.",
+        ),
         min_fills_for_pass: int = typer.Option(20, "--min-fills-for-pass", min=1),
         min_trading_days_for_pass: int = typer.Option(10, "--min-trading-days-for-pass", min=1),
         max_blocked_rate: float = typer.Option(0.5, "--max-blocked-rate", min=0.0, max=1.0),
@@ -1053,6 +1062,7 @@ def register_research_commands(
                 artifact_dir=artifact_dir,
                 reports_dir=reports_dir,
                 ledger_path=ledger_path,
+                session_manifest_path=session_manifest_path,
                 min_fills_for_pass=min_fills_for_pass,
                 min_trading_days_for_pass=min_trading_days_for_pass,
                 max_blocked_rate=max_blocked_rate,
@@ -1171,6 +1181,103 @@ def register_research_commands(
         typer.echo(f"decision={result.decision}")
         typer.echo(f"review_id={result.review_id}")
         typer.echo(f"strategy_lifecycle_review={result.decision_path}")
+        typer.echo(f"report={result.report_path}")
+
+    @app.command("strategy-paper-observation-cycle")
+    def strategy_paper_observation_cycle_cmd(
+        data_dir: Path | None = typer.Option(
+            None,
+            "--data-dir",
+            file_okay=False,
+            help="Runtime data root. Defaults to SIS_DATA_DIR/settings data_dir.",
+        ),
+        artifact_dir: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--artifact-dir",
+            file_okay=False,
+            help="NDX paper observation artifact directory.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            file_okay=False,
+            help="Output report directory.",
+        ),
+        session_id: str | None = typer.Option(None, "--session-id"),
+        backtest_acceptance_path: Path | None = typer.Option(
+            None,
+            "--backtest-acceptance-path",
+            dir_okay=False,
+            help="Optional strategy backtest acceptance decision path.",
+        ),
+        source_pack_path: Path | None = typer.Option(
+            None,
+            "--source-pack",
+            dir_okay=False,
+            help="Optional PaperCandidatePack path.",
+        ),
+        promotion_decision_path: Path | None = typer.Option(
+            None,
+            "--promotion-decision",
+            dir_okay=False,
+            help="Optional PromotionDecision path.",
+        ),
+        operator_promotion_path: Path | None = typer.Option(
+            None,
+            "--operator-promotion-path",
+            dir_okay=False,
+            help="Optional NDX operator promotion decision path.",
+        ),
+        min_fills_for_pass: int = typer.Option(20, "--min-fills-for-pass", min=1),
+        min_trading_days_for_pass: int = typer.Option(10, "--min-trading-days-for-pass", min=1),
+        max_blocked_rate: float = typer.Option(0.5, "--max-blocked-rate", min=0.0, max=1.0),
+        max_consecutive_blocked: int = typer.Option(3, "--max-consecutive-blocked", min=1),
+        max_open_position_age_hours: float = typer.Option(
+            0.0, "--max-open-position-age-hours", min=0.0
+        ),
+        paper_notional_usd: float = typer.Option(1000.0, "--paper-notional-usd", min=0.01),
+        smoke: bool = typer.Option(
+            False,
+            "--smoke",
+            help="Use smoke thresholds for local verification; not production paper pass evidence.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        effective_data_dir = data_dir or settings.data_dir
+        try:
+            result = run_strategy_paper_observation_cycle(
+                data_dir=effective_data_dir,
+                artifact_dir=artifact_dir,
+                reports_dir=reports_dir,
+                session_id=session_id,
+                backtest_acceptance_path=backtest_acceptance_path,
+                source_pack_path=source_pack_path,
+                promotion_decision_path=promotion_decision_path,
+                operator_promotion_path=operator_promotion_path,
+                min_fills_for_pass=min_fills_for_pass,
+                min_trading_days_for_pass=min_trading_days_for_pass,
+                max_blocked_rate=max_blocked_rate,
+                max_consecutive_blocked=max_consecutive_blocked,
+                max_open_position_age_hours=max_open_position_age_hours,
+                paper_notional_usd=paper_notional_usd,
+                smoke=smoke,
+            )
+        except (
+            FileNotFoundError,
+            ValueError,
+            TypeError,
+            ValidationError,
+            json.JSONDecodeError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"session_id={result.session.session_id}")
+        typer.echo(f"session_manifest={result.session.manifest_path}")
+        typer.echo(f"observation_ledger={result.session.observation_ledger_path}")
+        typer.echo(f"paper_review_decision={result.paper_review.decision}")
+        typer.echo(f"lifecycle_decision={result.lifecycle_review.decision}")
         typer.echo(f"report={result.report_path}")
 
     @app.command("build-cost-matrix")
@@ -1693,72 +1800,17 @@ def register_research_commands(
         decision_path = promotion_decision or (
             settings.data_dir / "research/promotion_decision.json"
         )
-        if not decision_path.exists():
-            typer.echo(f"PromotionDecision not found: {decision_path}")
-            raise typer.Exit(2)
-        if not pack_path.exists():
-            typer.echo(f"PaperCandidatePack not found: {pack_path}")
-            raise typer.Exit(2)
-        pack = PaperCandidatePack.model_validate(json.loads(pack_path.read_text(encoding="utf-8")))
-        promotion = PromotionDecision.model_validate(
-            json.loads(decision_path.read_text(encoding="utf-8"))
-        )
-        if promotion.source_pack_id != pack.pack_id:
-            typer.echo(
-                "PromotionDecision source_pack_id does not match PaperCandidatePack pack_id: "
-                f"{promotion.source_pack_id} != {pack.pack_id}"
+        try:
+            result = build_fresh_paper_intent_preview(
+                data_dir=settings.data_dir,
+                source_pack_path=pack_path,
+                promotion_decision_path=decision_path,
+                reports_dir=settings.data_dir / "reports",
             )
-            raise typer.Exit(2)
-        intents: list[PaperIntentPreview] = []
-        if promotion.decision == "promote":
-            selected = {
-                candidate.candidate_id: candidate
-                for candidate in pack.candidates
-                if candidate.candidate_id in pack.selected_candidate_ids
-            }
-            for candidate_id, candidate in selected.items():
-                intents.append(
-                    PaperIntentPreview(
-                        schema_version="paper_intent_preview.v1",
-                        intent_id=f"intent-{candidate_id}",
-                        generated_at=datetime.now(timezone.utc),
-                        valid_until=datetime.now(timezone.utc) + timedelta(minutes=15),
-                        source_pack_id=pack.pack_id,
-                        candidate_id=candidate_id,
-                        strategy_id=candidate.strategy_id,
-                        execution_venue=candidate.execution_venue,
-                        execution_symbol=candidate.execution_symbol,
-                        real_market_symbol=candidate.real_market_symbol,
-                        action="enter" if candidate.side in {"long", "short"} else "skip",
-                        side=candidate.side,
-                        order_style="paper_taker" if candidate.side != "none" else "skip",
-                        price_reference="mark",
-                        notional_usd=1000.0 if candidate.side != "none" else None,
-                        quantity=None,
-                        source_quote_ts=None,
-                        source_tracking_ts=None,
-                        source_feature_ts=None,
-                        source_phase_gate_run_id=None,
-                        scorecard_summary=promotion.scorecard_summary,
-                        operator_promotion_path=pack.operator_promotion_path,
-                        operator_promotion_hash=pack.operator_promotion_hash,
-                    )
-                )
-        out = settings.data_dir / "bot/paper_intent_preview.json"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(
-            json.dumps([intent.model_dump(mode="json") for intent in intents], indent=2),
-            encoding="utf-8",
-        )
-        report_path = settings.data_dir / "reports/paper_intent_preview.md"
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(
-            "# Paper Intent Preview\n\n"
-            f"- intents: {len(intents)}\n"
-            f"- scorecard_schema_version: {promotion.scorecard_summary.get('schema_version')}\n",
-            encoding="utf-8",
-        )
-        typer.echo(f"paper_intent_preview={out}")
+        except (FileNotFoundError, ValueError, TypeError, ValidationError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"paper_intent_preview={result.intents_path}")
 
     @app.command("check-research-quality")
     def check_research_quality_cmd() -> None:
