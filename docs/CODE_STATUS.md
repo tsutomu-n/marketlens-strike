@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-11_14:29 JST
+更新日: 2026-06-11_19:06 JST
 -->
 
 # Code Status
@@ -50,6 +50,7 @@
 | NDX Layer 2.4 Residual Validation Gate | DONE / current default artifacts approve research export | `configs/research_layer_2_4/ndx/`, `schemas/ndx_residual_validation_decision.v1.schema.json`, `schemas/ndx_residual_validation_summary.v1.schema.json`, `research-ndx-residual-validate`, `tests/research/test_ndx_layer24_residual_validation.py`, `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`; current default decision is `APPROVE_STRATEGY_LAB_EXPORT` |
 | NDX Layer 2.5 Strategy Lab research-only export | DONE / paper path fail-closed | `src/sis/research/ndx/strategy_lab_export.py`, `schemas/ndx_strategy_lab_research_export_manifest.v1.schema.json`, `research-ndx-strategy-lab-export`, `tests/research/test_ndx_layer25_strategy_lab_export.py`, `docs/research/ndx/12_LAYER_2_5_STRATEGY_LAB_RESEARCH_EXPORT.md`; writes research-only `strategy_signals.parquet` and preserves overwrite guard |
 | NDX Layer 2.6/2.7 paper observation gate and operator promotion | DONE / paper-only unlock with evidence | `src/sis/research/ndx/paper_observation_gate.py`, `src/sis/research/ndx/operator_promotion.py`, `schemas/ndx_paper_observation_gate_decision.v1.schema.json`, `schemas/ndx_operator_promotion_decision.v1.schema.json`, `research-ndx-paper-observation-gate`, `research-ndx-operator-promotion`, `tests/research/test_ndx_layer26_paper_observation_gate.py`, `tests/research/test_ndx_layer27_operator_promotion.py`, `docs/research/ndx/13_LAYER_2_6_PAPER_OBSERVATION_GATE.md`, `docs/research/ndx/14_LAYER_2_7_OPERATOR_PROMOTION.md`; unlocks NDX/QQQ paper observation only when evidence hashes match and keeps live disabled |
+| NDX Layer 2.8 paper observation review | DONE / paper-only review gate | `src/sis/research/ndx/paper_observation_review.py`, `schemas/ndx_paper_observation_review_decision.v1.schema.json`, `research-ndx-paper-observation-review`, `tests/research/test_ndx_layer28_paper_observation_review.py`, `docs/research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md`; aggregates `paper_observation_ledger.jsonl`, stops on paper boundary violations, and keeps live disabled |
 
 ## Current Operational Interpretation
 

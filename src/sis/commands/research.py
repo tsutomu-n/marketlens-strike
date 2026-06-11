@@ -37,6 +37,7 @@ from sis.research.ndx.diagnostics import build_ndx_diagnostics
 from sis.research.ndx.feature_panel import build_ndx_feature_panel
 from sis.research.ndx.operator_promotion import run_operator_promotion
 from sis.research.ndx.paper_observation_gate import run_paper_observation_gate
+from sis.research.ndx.paper_observation_review import run_paper_observation_review
 from sis.research.ndx.residual_model import build_open_gap_residuals
 from sis.research.ndx.residual_validation import run_residual_validation_gate
 from sis.research.ndx.source_resolution import build_source_resolution
@@ -1005,6 +1006,66 @@ def register_research_commands(
         typer.echo(f"decision={result.decision}")
         typer.echo(f"promotion_id={result.promotion_id}")
         typer.echo(f"operator_promotion_decision={result.promotion_path}")
+        typer.echo(f"report={result.report_path}")
+
+    @app.command("research-ndx-paper-observation-review")
+    def research_ndx_paper_observation_review_cmd(
+        data_dir: Path | None = typer.Option(
+            None,
+            "--data-dir",
+            file_okay=False,
+            help="Runtime data root. Defaults to SIS_DATA_DIR/settings data_dir.",
+        ),
+        artifact_dir: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--artifact-dir",
+            file_okay=False,
+            help="NDX Layer 2.7 artifact directory.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            file_okay=False,
+            help="Output report directory.",
+        ),
+        ledger_path: Path | None = typer.Option(
+            None,
+            "--ledger-path",
+            dir_okay=False,
+            help="Optional paper observation ledger path. Defaults to data/paper/paper_observation_ledger.jsonl.",
+        ),
+        min_fills_for_pass: int = typer.Option(20, "--min-fills-for-pass", min=1),
+        max_blocked_rate: float = typer.Option(0.5, "--max-blocked-rate", min=0.0, max=1.0),
+        max_consecutive_blocked: int = typer.Option(3, "--max-consecutive-blocked", min=1),
+        paper_notional_usd: float = typer.Option(1000.0, "--paper-notional-usd", min=0.01),
+    ) -> None:
+        settings = get_settings()
+        effective_data_dir = data_dir or settings.data_dir
+        try:
+            result = run_paper_observation_review(
+                data_dir=effective_data_dir,
+                artifact_dir=artifact_dir,
+                reports_dir=reports_dir,
+                ledger_path=ledger_path,
+                min_fills_for_pass=min_fills_for_pass,
+                max_blocked_rate=max_blocked_rate,
+                max_consecutive_blocked=max_consecutive_blocked,
+                paper_notional_usd=paper_notional_usd,
+            )
+        except (
+            FileNotFoundError,
+            ValueError,
+            TypeError,
+            ValidationError,
+            json.JSONDecodeError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"decision={result.decision}")
+        typer.echo(f"review_id={result.review_id}")
+        typer.echo(f"paper_observation_review_decision={result.decision_path}")
         typer.echo(f"report={result.report_path}")
 
     @app.command("build-cost-matrix")

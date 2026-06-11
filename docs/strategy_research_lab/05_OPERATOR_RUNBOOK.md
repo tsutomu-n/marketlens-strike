@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-11_19:06 JST
 -->
 
 # Operator Runbook
@@ -104,7 +104,7 @@ uv run sis build-paper-candidate-pack
 - selected candidate は `selected_candidate_ids`。
 - rejected candidate は `rejected_candidate_ids`。
 - blocked candidate は candidate-level `status` と `block_reasons` で見る。
-- selected candidate は `status="candidate"`、空の `block_reasons`、venue-suitable のものだけ。NDX/QQQ family は現行 paper candidate では拒否される。
+- selected candidate は `status="candidate"`、空の `block_reasons`、venue-suitable のものだけ。NDX/QQQ family は valid な NDX Layer 2.6/2.7 evidence が無い限り paper candidate では拒否される。
 
 任意 ledger:
 
@@ -120,7 +120,7 @@ uv run sis build-paper-candidate-pack --trial-group-id trial-group-<run_id>
 
 現行 CLI は default で ledger 内の latest trial group だけを pack 化します。selected candidate は `TrialRecord.metrics.selected_signal_ids` から作ります。default evaluation では最新 `ts_signal` の 1 signal ですが、`evaluate-strategy-lab --candidate-limit 0` で複数 selected signal を candidate 化できます。
 
-NDX/QQQ family の `trade_xyz` proxy row は research/backtest artifact として残せますが、`build-paper-candidate-pack` では suitability block reason を付けて rejected に回します。この状態で手作業で `selected_candidate_ids` に戻すと `PaperCandidatePack` validation が fail closed します。
+NDX/QQQ family の `trade_xyz` proxy row は research/backtest artifact として残せますが、valid な NDX Layer 2.6/2.7 evidence が無い場合、`build-paper-candidate-pack` では suitability block reason を付けて rejected に回します。この状態で手作業で `selected_candidate_ids` に戻すと `PaperCandidatePack` validation が fail closed します。valid evidence がある場合も許可されるのは paper observation までで、live-ready ではありません。
 
 ## 5. Promotion decision を作る
 
@@ -193,6 +193,26 @@ block reason:
 - `LATEST_QUOTE_MISSING`
 - `PAPER_BROKER_REVALIDATION_BLOCKED`
 
+## 8. Paper observation review を行う
+
+```bash
+uv run sis research-ndx-paper-observation-review \
+  --data-dir data \
+  --artifact-dir data/research/ndx \
+  --reports-dir data/reports
+```
+
+出力:
+
+- `data/research/ndx/paper_observation_review_decision.json`
+- `data/reports/ndx_paper_observation_review_report.md`
+
+読み方:
+
+- `PASS_PAPER_OBSERVATION_REVIEW` は paper observation review の通過であり、live-ready ではない。
+- `NEEDS_MORE_PAPER_OBSERVATION` は blocker なしだが default の `20` fills に届いていない状態。
+- `STOP_PAPER_OBSERVATION` は ledger boundary violation、過大な blocked rate、連続 blocked、必要 artifact 欠損などで止める状態。
+
 ## 最短再生成
 
 ```bash
@@ -210,6 +230,7 @@ paper まで進めるには quote artifact も必要です。
 ```bash
 uv run sis collect-trade-xyz-quotes --write-summary --write-report
 uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
+uv run sis research-ndx-paper-observation-review --data-dir data --artifact-dir data/research/ndx --reports-dir data/reports
 ```
 
 ## Operator stop conditions
@@ -224,6 +245,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 - `promotion-decision --decision promote` が validation で止まった時に evidence guard を迂回しない。
 - `paper_intent_preview.json` を live adapter に渡さない。
 - `wallet_used`, `exchange_write_used` を true にする変更をしない。
+- `paper_observation_ledger.jsonl` を review せずに paper observation 通過扱いにしない。
 - `signals.csv` だけを見て Strategy Lab 評価済みと判断しない。
 
 ## Review command

@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ndx_paper_observation_review_decision.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "review_id",
+    "created_at",
+    "decision",
+    "source_operator_promotion_decision_id",
+    "source_operator_promotion_path",
+    "source_operator_promotion_hash",
+    "source_paper_observation_gate_decision_id",
+    "paper_observation_ledger_path",
+    "paper_observation_ledger_hash",
+    "paper_artifacts",
+    "paper_notional_usd",
+    "observation_thresholds",
+    "metrics",
+    "reason_codes",
+    "block_reasons",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "external_api_used",
+    "credentials_used",
+    "wallet_used",
+    "venue_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "ndx_paper_observation_review_decision.v1"},
+    "review_id": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "created_at": {"type": "string"},
+    "decision": {
+      "enum": [
+        "PASS_PAPER_OBSERVATION_REVIEW",
+        "NEEDS_MORE_PAPER_OBSERVATION",
+        "STOP_PAPER_OBSERVATION"
+      ]
+    },
+    "source_operator_promotion_decision_id": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "source_operator_promotion_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "source_paper_observation_gate_decision_id": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "paper_observation_ledger_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "paper_artifacts": {
+      "type": "object",
+      "required": ["orders", "fills", "positions"]
+    },
+    "paper_notional_usd": {"type": "number", "exclusiveMinimum": 0},
+    "observation_thresholds": {
+      "type": "object",
+      "required": ["min_fills_for_pass", "max_blocked_rate", "max_consecutive_blocked"]
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "ledger_entry_count",
+        "fills_count",
+        "blocked_count",
+        "blocked_rate",
+        "max_consecutive_blocked",
+        "status_counts",
+        "block_reason_counts",
+        "live_boundary_violations",
+        "unknown_statuses"
+      ]
+    },
+    "reason_codes": {"type": "array", "items": {"type": "string"}},
+    "block_reasons": {"type": "array", "items": {"type": "string"}},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "external_api_used": {"const": false},
+    "credentials_used": {"const": false},
+    "wallet_used": {"const": false},
+    "venue_write_used": {"const": false}
+  },
+  "additionalProperties": true
+}
