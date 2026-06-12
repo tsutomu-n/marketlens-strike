@@ -80,5 +80,21 @@ def test_create_paper_observation_session_fails_closed_for_missing_source(tmp_pa
         )
 
 
+def test_create_paper_observation_session_rejects_path_like_session_id(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    backtest = _write_source(data_dir / "research/strategy_lifecycle/backtest.json", {"ok": True})
+    promotion = _write_source(data_dir / "research/ndx/operator_promotion.json", {"ok": True})
+    intent_preview = _write_source(data_dir / "bot/paper_intent_preview.json", [{"ok": True}])
+
+    with pytest.raises(ValueError, match="single path segment"):
+        create_paper_observation_session(
+            data_dir=data_dir,
+            source_backtest_acceptance_path=backtest,
+            source_operator_promotion_path=promotion,
+            source_intent_preview_path=intent_preview,
+            session_id="../escape",
+        )
+
+
 def test_paper_observation_session_manifest_schema_is_valid() -> None:
     Draft202012Validator.check_schema(_schema())

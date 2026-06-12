@@ -183,22 +183,57 @@ def _read_session_manifest(
     if not isinstance(raw_ledger_path, str) or not raw_ledger_path.strip():
         raise ValueError("paper observation session manifest missing observation_ledger_path.")
     manifest_ledger_path = Path(raw_ledger_path)
-    if explicit_ledger_path is not None and explicit_ledger_path != manifest_ledger_path:
+    if explicit_ledger_path is not None and not _same_path(
+        explicit_ledger_path, manifest_ledger_path
+    ):
         raise ValueError("paper observation session manifest ledger path mismatch.")
+    _validate_manifest_source_hash(
+        manifest,
+        path_key="source_backtest_acceptance_path",
+        hash_key="source_backtest_acceptance_sha256",
+        label="backtest acceptance",
+    )
     raw_promotion_path = manifest.get("source_operator_promotion_path")
     if not isinstance(raw_promotion_path, str) or not raw_promotion_path.strip():
         raise ValueError("paper observation session manifest missing operator promotion path.")
     manifest_promotion_path = Path(raw_promotion_path)
-    expected_promotion_hash = str(manifest.get("source_operator_promotion_sha256") or "")
-    if manifest_promotion_path != promotion_path:
+    if not _same_path(manifest_promotion_path, promotion_path):
         raise ValueError("paper observation session manifest operator promotion path mismatch.")
-    if not manifest_promotion_path.exists():
-        raise FileNotFoundError(
-            f"paper observation session source promotion missing: {manifest_promotion_path}"
-        )
-    if sha256_file(manifest_promotion_path) != expected_promotion_hash:
-        raise ValueError("paper observation session operator promotion hash mismatch.")
+    _validate_manifest_source_hash(
+        manifest,
+        path_key="source_operator_promotion_path",
+        hash_key="source_operator_promotion_sha256",
+        label="operator promotion",
+    )
+    _validate_manifest_source_hash(
+        manifest,
+        path_key="source_intent_preview_path",
+        hash_key="source_intent_preview_sha256",
+        label="intent preview",
+    )
     return manifest
+
+
+def _validate_manifest_source_hash(
+    manifest: dict[str, Any],
+    *,
+    path_key: str,
+    hash_key: str,
+    label: str,
+) -> None:
+    raw_path = manifest.get(path_key)
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        raise ValueError(f"paper observation session manifest missing {label} path.")
+    source_path = Path(raw_path)
+    if not source_path.exists():
+        raise FileNotFoundError(f"paper observation session source {label} missing: {source_path}")
+    expected_hash = str(manifest.get(hash_key) or "")
+    if sha256_file(source_path) != expected_hash:
+        raise ValueError(f"paper observation session {label} hash mismatch.")
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    return left.resolve(strict=False) == right.resolve(strict=False)
 
 
 def _validate_operator_promotion(promotion: dict[str, Any], promotion_path: Path) -> None:

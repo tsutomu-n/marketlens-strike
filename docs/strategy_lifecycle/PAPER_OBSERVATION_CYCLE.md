@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-12_01:16 JST
-更新日: 2026-06-12_01:16 JST
+更新日: 2026-06-12_08:56 JST
 -->
 
 # Paper Observation Cycle
@@ -32,6 +32,8 @@ uv run sis strategy-paper-observation-cycle \
 ```
 
 `--smoke` は `min_fills_for_pass=1` と `min_trading_days_for_pass=1` を使う local verification 用です。smoke pass は production paper pass ではありません。
+
+`--session-id` を指定する場合は、`local-smoke` のような単一 path segment だけを使います。`/`、`..`、absolute path は拒否されます。
 
 ## Inputs
 
@@ -79,4 +81,3 @@ uv run sis research-ndx-paper-observation-review \
 - session manifest source hash does not match current source artifact
 - paper ledger has live / wallet / venue-write / exchange-write boundary violation
 - review thresholds are not met, in which case lifecycle should remain `CONTINUE_PAPER_OBSERVATION`
-

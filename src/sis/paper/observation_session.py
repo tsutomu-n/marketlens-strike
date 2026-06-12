@@ -38,7 +38,7 @@ def create_paper_observation_session(
     thresholds: PaperObservationThresholds | None = None,
     smoke: bool = False,
 ) -> PaperObservationSession:
-    selected_session_id = session_id or _default_session_id()
+    selected_session_id = _validate_session_id(session_id or _default_session_id())
     selected_thresholds = thresholds or PaperObservationThresholds()
     for path in (
         source_backtest_acceptance_path,
@@ -93,5 +93,15 @@ def create_paper_observation_session(
 
 
 def _default_session_id() -> str:
-    value = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    value = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     return f"paper-observation-{value}"
+
+
+def _validate_session_id(value: str) -> str:
+    selected = value.strip()
+    if not selected:
+        raise ValueError("paper observation session_id must be non-empty.")
+    path = Path(selected)
+    if path.is_absolute() or len(path.parts) != 1 or selected in {".", ".."}:
+        raise ValueError("paper observation session_id must be a single path segment.")
+    return selected
