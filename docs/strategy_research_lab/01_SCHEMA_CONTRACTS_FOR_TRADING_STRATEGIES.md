@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-12_20:55 JST
 -->
 
 # Schema Contracts For Trading Strategies
@@ -299,7 +299,7 @@ validation:
 - `selected_candidate_ids` は paper intent preview の候補ソースになる。
 - 現行の NDX/QQQ `trade_xyz` proxy は research/backtest record として残せるが、selected candidate には入らない。
 - `rejected_candidate_ids` と candidate-level `block_reasons` は、量産時の重複失敗を減らすための学習材料です。
-- 現行 CLI は latest trial group を default で pack 化し、TrialRecord の `metrics.selected_signal_ids` から candidate を作る。
+- 現行 CLI は現在の signal artifact run_id と一致する latest trial group を default で pack 化し、TrialRecord の `metrics.selected_signal_ids` から candidate を作る。一致する trial group が無い場合は exit code 2 で止まる。
 - default evaluation では最新 `ts_signal` の 1 signal だけを選ぶ。`--candidate-limit 0` を使うと threshold 通過 signal を複数 candidate 化できる。
 
 ## PromotionDecision

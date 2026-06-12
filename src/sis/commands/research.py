@@ -244,6 +244,19 @@ def _record_run_id(record: TrialRecord) -> str:
     return run_id_from_trial_group(record.trial_group_id)
 
 
+def _default_trial_group_id_for_current_signal(
+    records: list[TrialRecord], *, current_run_id: str
+) -> str:
+    if not current_run_id:
+        return records[-1].trial_group_id
+    matching_records = [record for record in records if _record_run_id(record) == current_run_id]
+    if not matching_records:
+        raise ValueError(
+            f"No trial group matches current strategy signal artifact run_id: {current_run_id}"
+        )
+    return matching_records[-1].trial_group_id
+
+
 def _latest_records_by_trial_id(records: list[TrialRecord]) -> list[TrialRecord]:
     by_id: dict[str, TrialRecord] = {}
     for record in records:
@@ -1553,7 +1566,10 @@ def register_research_commands(
         trial_group_id: str | None = typer.Option(
             None,
             "--trial-group-id",
-            help="Optional trial_group_id. Defaults to the latest group in the ledger.",
+            help=(
+                "Optional trial_group_id. Defaults to the latest ledger group matching "
+                "the current strategy signal artifact run_id."
+            ),
         ),
     ) -> None:
         settings = get_settings()
@@ -1562,23 +1578,33 @@ def register_research_commands(
         if not records:
             typer.echo(f"Trial ledger has no records: {ledger_path}")
             raise typer.Exit(2)
-        selected_group_id = trial_group_id or records[-1].trial_group_id
-        group_records = [record for record in records if record.trial_group_id == selected_group_id]
-        if not group_records:
-            typer.echo(f"Trial group not found in ledger: {selected_group_id}")
-            raise typer.Exit(2)
-        records_for_pack = _latest_records_by_trial_id(group_records)
+        signal_context_error: FileNotFoundError | ValueError | None = None
         try:
             signal_frame, signal_manifest, current_run_id = _current_signal_context(
                 settings.data_dir
             )
         except (FileNotFoundError, ValueError) as exc:
+            signal_context_error = exc
             signal_frame = pl.DataFrame()
             signal_manifest = _read_signal_manifest(settings.data_dir)
             current_run_id = signal_manifest.signal_artifact_run_id if signal_manifest else ""
+        try:
+            selected_group_id = trial_group_id or _default_trial_group_id_for_current_signal(
+                records,
+                current_run_id=current_run_id,
+            )
+        except ValueError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        group_records = [record for record in records if record.trial_group_id == selected_group_id]
+        if not group_records:
+            typer.echo(f"Trial group not found in ledger: {selected_group_id}")
+            raise typer.Exit(2)
+        records_for_pack = _latest_records_by_trial_id(group_records)
+        if signal_context_error is not None:
             if any(record.selected_for_next_stage for record in records_for_pack):
-                typer.echo(str(exc))
-                raise typer.Exit(2) from exc
+                typer.echo(str(signal_context_error))
+                raise typer.Exit(2) from signal_context_error
         now = datetime.now(timezone.utc)
         operator_promotion_evidence = _ndx_operator_promotion_evidence(settings.data_dir)
         candidates: list[TradeCandidate] = []

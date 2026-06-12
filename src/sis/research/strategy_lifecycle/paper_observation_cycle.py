@@ -136,6 +136,8 @@ def run_strategy_paper_observation_cycle(
         source_backtest_acceptance_path=selected_backtest_path,
         source_operator_promotion_path=selected_operator_promotion_path,
         source_intent_preview_path=intents.intents_path,
+        source_paper_candidate_pack_path=selected_source_pack_path,
+        source_promotion_decision_path=selected_promotion_path,
         session_id=session_id,
         thresholds=PaperObservationThresholds(
             min_fills_for_pass=effective_min_fills,

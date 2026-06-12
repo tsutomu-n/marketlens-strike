@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-12_01:16 JST
+更新日: 2026-06-12_20:55 JST
 -->
 
 # Operator Runbook
@@ -118,7 +118,7 @@ uv run sis build-paper-candidate-pack --trial-ledger data/research/trial_ledger.
 uv run sis build-paper-candidate-pack --trial-group-id trial-group-<run_id>
 ```
 
-現行 CLI は default で ledger 内の latest trial group だけを pack 化します。selected candidate は `TrialRecord.metrics.selected_signal_ids` から作ります。default evaluation では最新 `ts_signal` の 1 signal ですが、`evaluate-strategy-lab --candidate-limit 0` で複数 selected signal を candidate 化できます。
+現行 CLI は default で現在の `strategy_signals.parquet` / `strategy_signal_manifest.json` の `signal_artifact_run_id` と一致する latest trial group を pack 化します。一致する trial group が無い場合は exit code 2 で止まります。selected candidate は `TrialRecord.metrics.selected_signal_ids` から作ります。default evaluation では最新 `ts_signal` の 1 signal ですが、`evaluate-strategy-lab --candidate-limit 0` で複数 selected signal を candidate 化できます。
 
 NDX/QQQ family の `trade_xyz` proxy row は research/backtest artifact として残せますが、valid な NDX Layer 2.6/2.7 evidence が無い場合、`build-paper-candidate-pack` では suitability block reason を付けて rejected に回します。この状態で手作業で `selected_candidate_ids` に戻すと `PaperCandidatePack` validation が fail closed します。valid evidence がある場合も許可されるのは paper observation までで、live-ready ではありません。
 

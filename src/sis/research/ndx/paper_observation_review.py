@@ -211,7 +211,36 @@ def _read_session_manifest(
         hash_key="source_intent_preview_sha256",
         label="intent preview",
     )
+    _validate_optional_manifest_source_hash(
+        manifest,
+        path_key="source_paper_candidate_pack_path",
+        hash_key="source_paper_candidate_pack_sha256",
+        label="paper candidate pack",
+    )
+    _validate_optional_manifest_source_hash(
+        manifest,
+        path_key="source_promotion_decision_path",
+        hash_key="source_promotion_decision_sha256",
+        label="promotion decision",
+    )
     return manifest
+
+
+def _validate_optional_manifest_source_hash(
+    manifest: dict[str, Any],
+    *,
+    path_key: str,
+    hash_key: str,
+    label: str,
+) -> None:
+    if path_key not in manifest and hash_key not in manifest:
+        return
+    _validate_manifest_source_hash(
+        manifest,
+        path_key=path_key,
+        hash_key=hash_key,
+        label=label,
+    )
 
 
 def _validate_manifest_source_hash(

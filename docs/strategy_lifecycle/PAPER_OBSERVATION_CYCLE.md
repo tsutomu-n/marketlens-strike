@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-12_01:16 JST
-更新日: 2026-06-12_08:56 JST
+更新日: 2026-06-12_21:07 JST
 -->
 
 # Paper Observation Cycle
@@ -63,7 +63,7 @@ The session ledger is the observation-window source of truth. It is the artifact
 
 `data/paper/orders.parquet`, `data/paper/fills.parquet`, and `data/paper/positions.parquet` are current paper state snapshots. They are checked for existence and hashes, but they are not the cumulative observation-window truth.
 
-The session manifest records source artifact paths, source hashes, thresholds, `smoke`, and paper-only boundary flags. Use it when rerunning review:
+The session manifest records source artifact paths, source hashes, thresholds, `smoke`, and paper-only boundary flags. The recorded sources include backtest acceptance, operator promotion, fresh intent preview, `PaperCandidatePack`, and `PromotionDecision`. Use it when rerunning review:
 
 ```bash
 uv run sis research-ndx-paper-observation-review \

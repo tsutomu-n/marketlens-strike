@@ -52,6 +52,16 @@
       "type": "string",
       "pattern": "^sha256:[a-fA-F0-9]{64}$"
     },
+    "source_paper_candidate_pack_path": {"type": "string", "minLength": 1},
+    "source_paper_candidate_pack_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "source_promotion_decision_path": {"type": "string", "minLength": 1},
+    "source_promotion_decision_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
     "thresholds": {
       "type": "object",
       "required": [

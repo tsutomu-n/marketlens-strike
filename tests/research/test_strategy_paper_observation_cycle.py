@@ -68,6 +68,16 @@ def test_strategy_paper_observation_cycle_creates_fresh_session_and_reviews(
     assert manifest["thresholds"]["min_fills_for_pass"] == 1
     assert manifest["thresholds"]["min_trading_days_for_pass"] == 1
     assert manifest["observation_ledger_path"] == ledger_path.as_posix()
+    assert (
+        manifest["source_paper_candidate_pack_path"]
+        == (data_dir / "research/paper_candidate_pack.json").as_posix()
+    )
+    assert manifest["source_paper_candidate_pack_sha256"].startswith("sha256:")
+    assert (
+        manifest["source_promotion_decision_path"]
+        == (data_dir / "research/promotion_decision.json").as_posix()
+    )
+    assert manifest["source_promotion_decision_sha256"].startswith("sha256:")
     assert manifest["permits_live_order"] is False
     assert manifest["wallet_used"] is False
     assert "stale-intent" not in stale_preview.read_text(encoding="utf-8")

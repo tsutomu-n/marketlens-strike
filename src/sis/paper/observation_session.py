@@ -34,6 +34,8 @@ def create_paper_observation_session(
     source_backtest_acceptance_path: Path,
     source_operator_promotion_path: Path,
     source_intent_preview_path: Path,
+    source_paper_candidate_pack_path: Path | None = None,
+    source_promotion_decision_path: Path | None = None,
     session_id: str | None = None,
     thresholds: PaperObservationThresholds | None = None,
     smoke: bool = False,
@@ -44,6 +46,11 @@ def create_paper_observation_session(
         source_backtest_acceptance_path,
         source_operator_promotion_path,
         source_intent_preview_path,
+        *(
+            path
+            for path in (source_paper_candidate_pack_path, source_promotion_decision_path)
+            if path is not None
+        ),
     ):
         if not path.exists():
             raise FileNotFoundError(f"paper observation session source artifact missing: {path}")
@@ -82,6 +89,14 @@ def create_paper_observation_session(
         "venue_write_used": False,
         "exchange_write_used": False,
     }
+    if source_paper_candidate_pack_path is not None:
+        payload["source_paper_candidate_pack_path"] = source_paper_candidate_pack_path.as_posix()
+        payload["source_paper_candidate_pack_sha256"] = sha256_file(
+            source_paper_candidate_pack_path
+        )
+    if source_promotion_decision_path is not None:
+        payload["source_promotion_decision_path"] = source_promotion_decision_path.as_posix()
+        payload["source_promotion_decision_sha256"] = sha256_file(source_promotion_decision_path)
     write_json(manifest_path, payload)
     return PaperObservationSession(
         session_id=selected_session_id,

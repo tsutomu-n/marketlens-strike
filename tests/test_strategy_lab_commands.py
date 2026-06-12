@@ -717,11 +717,16 @@ def test_evaluate_strategy_lab_rank_threshold_sweep_records_multiple_trials(
     assert records[1]["metrics"]["era_count"] == 1
 
 
-def test_build_paper_candidate_pack_defaults_to_latest_trial_group(tmp_path, monkeypatch) -> None:
+def test_build_paper_candidate_pack_defaults_to_current_signal_trial_group(
+    tmp_path, monkeypatch
+) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
     _write_strategy_signals(data_dir, signal_id="sig-old")
     assert runner.invoke(app, ["evaluate-strategy-lab"]).exit_code == 0
+    old_group_id = json.loads((data_dir / "research/trial_ledger.jsonl").read_text())[
+        "trial_group_id"
+    ]
     _write_strategy_signals(
         data_dir,
         signal_id="sig-new",
@@ -730,14 +735,31 @@ def test_build_paper_candidate_pack_defaults_to_latest_trial_group(tmp_path, mon
         real_market_symbol="SPY",
     )
     assert runner.invoke(app, ["evaluate-strategy-lab"]).exit_code == 0
+    _write_strategy_signals(data_dir, signal_id="sig-old")
 
     result = runner.invoke(app, ["build-paper-candidate-pack"])
 
     assert result.exit_code == 0
     pack = json.loads((data_dir / "research/paper_candidate_pack.json").read_text())
     assert len(pack["candidates"]) == 1
-    assert pack["candidates"][0]["signal_id"] == "sig-new"
-    assert pack["candidates"][0]["execution_symbol"] == "SP500"
+    assert pack["trial_group_id"] == old_group_id
+    assert pack["candidates"][0]["signal_id"] == "sig-old"
+    assert pack["candidates"][0]["execution_symbol"] == "XYZ100"
+
+
+def test_build_paper_candidate_pack_default_fails_without_current_run_trial_group(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_strategy_signals(data_dir, signal_id="sig-old")
+    assert runner.invoke(app, ["evaluate-strategy-lab"]).exit_code == 0
+    _write_strategy_signals(data_dir, signal_id="sig-new")
+
+    result = runner.invoke(app, ["build-paper-candidate-pack"])
+
+    assert result.exit_code == 2
+    assert "No trial group matches current strategy signal artifact run_id" in result.stdout
 
 
 def test_build_paper_candidate_pack_can_select_trial_group(tmp_path, monkeypatch) -> None:

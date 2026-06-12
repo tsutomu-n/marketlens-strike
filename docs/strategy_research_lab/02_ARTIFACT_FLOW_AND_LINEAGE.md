@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-11_21:34 JST
+更新日: 2026-06-12_20:55 JST
 -->
 
 # Artifact Flow And Lineage
@@ -107,7 +107,7 @@ Important behavior:
 - `evaluate-strategy-lab --candidate-limit 0` records every threshold-passing selected signal ID; the default selects only the latest `ts_signal` row.
 - `--split-method` and `--era-unit` record era signal count metrics only. They do not turn the CLI into a full walk-forward backtester.
 - v1 lineage IDs are deterministic from the signal artifact content: `trial-{run_id}`, `trial-group-{run_id}`, `paper-pack-{run_id}`, `promotion-{run_id}`.
-- `build-paper-candidate-pack` reads the latest trial group by default, or a specific group via `--trial-group-id`.
+- `build-paper-candidate-pack` reads the latest trial group matching the current signal artifact run_id by default, or a specific group via `--trial-group-id`.
 - selected paper candidates are built from `TrialRecord.metrics.selected_signal_ids`; default evaluation records the latest `ts_signal` row only.
 - `promotion-decision` records the actual `PaperCandidatePack.pack_id` as `source_pack_id`.
 - `promotion-decision` copies `TrialRecord.metrics.strategy_scorecard` into `PromotionDecision.scorecard_summary` when the source trial group has one.

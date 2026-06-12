@@ -284,6 +284,74 @@ def test_layer28_fails_on_session_manifest_intent_hash_mismatch(tmp_path, monkey
     assert "intent preview hash mismatch" in result.stdout
 
 
+def test_layer28_fails_on_session_manifest_candidate_pack_hash_mismatch(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir, artifact_dir, reports_dir = _run_layer27_paper_observation(tmp_path, monkeypatch)
+    manifest = _paper_session_manifest(
+        data_dir=data_dir,
+        artifact_dir=artifact_dir,
+        session_id="session-001",
+    )
+    session_ledger = data_dir / "paper/observations/session-001/paper_observation_ledger.jsonl"
+    session_ledger.write_text(
+        (data_dir / "paper/paper_observation_ledger.jsonl").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (data_dir / "research/paper_candidate_pack.json").write_text("{}\n", encoding="utf-8")
+
+    result = invoke_cli(
+        [
+            "research-ndx-paper-observation-review",
+            "--data-dir",
+            str(data_dir),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--reports-dir",
+            str(reports_dir),
+            "--session-manifest",
+            str(manifest.manifest_path),
+        ]
+    )
+
+    assert result.exit_code == 2
+    assert "paper candidate pack hash mismatch" in result.stdout
+
+
+def test_layer28_fails_on_session_manifest_promotion_decision_hash_mismatch(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir, artifact_dir, reports_dir = _run_layer27_paper_observation(tmp_path, monkeypatch)
+    manifest = _paper_session_manifest(
+        data_dir=data_dir,
+        artifact_dir=artifact_dir,
+        session_id="session-001",
+    )
+    session_ledger = data_dir / "paper/observations/session-001/paper_observation_ledger.jsonl"
+    session_ledger.write_text(
+        (data_dir / "paper/paper_observation_ledger.jsonl").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (data_dir / "research/promotion_decision.json").write_text("{}\n", encoding="utf-8")
+
+    result = invoke_cli(
+        [
+            "research-ndx-paper-observation-review",
+            "--data-dir",
+            str(data_dir),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--reports-dir",
+            str(reports_dir),
+            "--session-manifest",
+            str(manifest.manifest_path),
+        ]
+    )
+
+    assert result.exit_code == 2
+    assert "promotion decision hash mismatch" in result.stdout
+
+
 def test_layer28_schema_is_valid() -> None:
     Draft202012Validator.check_schema(
         json.loads(
@@ -364,6 +432,8 @@ def _paper_session_manifest(data_dir: Path, artifact_dir: Path, session_id: str)
         source_backtest_acceptance_path=backtest,
         source_operator_promotion_path=artifact_dir / "operator_promotion_decision.json",
         source_intent_preview_path=data_dir / "bot/paper_intent_preview.json",
+        source_paper_candidate_pack_path=data_dir / "research/paper_candidate_pack.json",
+        source_promotion_decision_path=data_dir / "research/promotion_decision.json",
         session_id=session_id,
         thresholds=PaperObservationThresholds(
             min_fills_for_pass=1,
