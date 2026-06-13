@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_21:24 JST
+更新日: 2026-06-13_21:28 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -503,7 +503,7 @@ uv run sis strategy-backtest-benchmark-relative
 - `data/research/backtest_benchmark_relative/strategy_backtest_benchmark_relative.json`
 - `data/reports/strategy_backtest_benchmark_relative_report.md`
 
-既定では `benchmark_return` 列が executed signal row にあればそれを使い、無ければ `--benchmark-series-path` の明示 external benchmark series、さらに無ければ `data/research/strategy_authoring_baseline_quotes.parquet` の `mid_price` から `--horizon-minutes` の benchmark return を計算する。external benchmark series は `parquet`, `csv`, `jsonl`, `ndjson`, `json` を受け取り、`source_row_index`、`signal_id`、または `ts_signal + venue + canonical_symbol` で executed signal row と対応付ける。標準 pack では spec の `quote_data_path` と `backtest.label_horizon_minutes` を使う。artifact は strategy total return、benchmark total return、active total return、tracking error、information ratio、row-level active return、benchmark series source path/hash を記録する。これは paper-only 比較であり、外部 framework、dependency 追加、live order、wallet、exchange write は使わない。
+既定では `benchmark_return` 列が executed signal row にあればそれを使い、無ければ `--benchmark-series-path` の明示 external benchmark series、さらに無ければ `data/research/strategy_authoring_baseline_quotes.parquet` の `mid_price` から `--horizon-minutes` の benchmark return を計算する。external benchmark series は `parquet`, `csv`, `jsonl`, `ndjson`, `json` を受け取り、`source_row_index`、`signal_id`、または `ts_signal + venue + canonical_symbol` で executed signal row と対応付ける。コピー用 CSV は `docs/strategy_research_lab/examples/external_benchmark_series.csv` にある。標準 pack では spec の `quote_data_path` と `backtest.label_horizon_minutes` を使う。artifact は strategy total return、benchmark total return、active total return、tracking error、information ratio、row-level active return、benchmark series source path/hash を記録する。これは paper-only 比較であり、外部 framework、dependency 追加、live order、wallet、exchange write は使わない。
 
 ## Backtest Pack
 

@@ -1,0 +1,4 @@
+source_row_index,signal_id,ts_signal,venue,canonical_symbol,benchmark_return
+0,sig-a,2026-01-05T14:00:00+00:00,trade_xyz,XYZ100,0.0012
+1,sig-b,2026-01-05T15:00:00+00:00,trade_xyz,XYZ100,-0.0004
+2,sig-c,2026-01-05T16:00:00+00:00,trade_xyz,XYZ100,0.0008

@@ -56,6 +56,18 @@ def test_strategy_authoring_example_specs_and_bundles_parse() -> None:
         assert suite.schema_version == "strategy_backtest_suite.v1"
         for member in suite.members:
             assert (suite_path.parent / member.spec_path).exists()
+    benchmark_series_path = examples_dir / "external_benchmark_series.csv"
+    assert benchmark_series_path.exists()
+    benchmark_series = pl.read_csv(benchmark_series_path)
+    assert {
+        "source_row_index",
+        "signal_id",
+        "ts_signal",
+        "venue",
+        "canonical_symbol",
+        "benchmark_return",
+    }.issubset(set(benchmark_series.columns))
+    assert benchmark_series.height >= 1
 
 
 def _feature_rows() -> list[dict]:
