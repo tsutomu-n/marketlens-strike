@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_20:36 JST
-更新日: 2026-06-13_20:42 JST
+更新日: 2026-06-13_20:51 JST
 -->
 
 # Optional Backtest Framework Adoption Review
@@ -9,13 +9,13 @@
 
 `bt` は portfolio allocation / rebalance comparison 用の optional extra として採用済みである。通常 dependency には入れず、`uv sync --dev --extra bt --locked` または `uv run --extra bt ...` で使う。
 
-`vectorbt`, `empyrical-reloaded`, `quantstats`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` は現時点では `pyproject.toml` / `uv.lock` に追加しない。
+`vectorbt`, `empyrical-reloaded`, `quantstats`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` は現時点では `pyproject.toml` / `uv.lock` に追加しない。特に `vectorbt` は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) により、Commons Clause を理由に明示承認まで採用しない。
 
 正式 optional extra の第一候補は、用途で分ける。
 
 | 用途 | 第一候補 | 判断 |
 |---|---|---|
-| 高速 signal runner / parameter sweep | `vectorbt` | 条件付き候補。Python 3.13 対応と一時 smoke はよいが、Commons Clause 付き license の review が終わるまで lock しない。 |
+| 高速 signal runner / parameter sweep | `vectorbt` | 未採用。Python 3.13 対応と一時 smoke はよいが、Commons Clause 付き license のため、legal / owner approval なしで lock しない。 |
 | portfolio allocation / rebalance comparison | `bt` | optional extra 採用済み。MIT、Python 3.13 wheel、現行 adapter surface との役割一致がある。 |
 | metrics normalization | `empyrical-reloaded` | engine ではなく metrics extra 候補。Apache 系で比較的進めやすい。 |
 | report / tear sheet | `quantstats` | engine ではなく report extra 候補。Apache-2.0 だが、HTML / plot dependency と artifact 再現性を先に確認する。 |
@@ -40,12 +40,13 @@ Local repo:
 - `data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json`: locked env では4候補すべて `not_installed`、`dependency_added=false`。
 - `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`: selected 4件、deferred 5件、全件 `dependency_added=false`, `permits_live_order=false`。
 - `data/research/backtest_external/strategy_backtest_external_result.json`: locked env では外部 engine は実行されず、各 framework は `skipped/not_installed_in_current_env`。
-- `docs/backtest/VECTORBT_ADOPTION_PLAN_2026-06-13.md`: `vectorbt` は optional adapter 計画済みだが正式採用前 review が必要。
+- `docs/backtest/VECTORBT_ADOPTION_PLAN_2026-06-13.md`: `vectorbt` は optional adapter 計画済みだが、license decision により明示承認まで採用しない。
 - `docs/backtest/OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md`: 役割別候補分類の既存計画。
 
 External primary sources:
 
-- PyPI `vectorbt`: latest `1.0.0`, released 2026-04-22, `Requires-Python >=3.10`, Python 3.13 classifier, license text says `Apache 2.0 with Commons Clause`.
+- PyPI `vectorbt`: latest `1.0.0`, released 2026-04-22, `Requires-Python >=3.10`, Python 3.13 classifier, machine-readable license metadata は空。
+- vectorbt official license / GitHub license: `Apache 2.0 with Commons Clause`。GitHub API の repository license は `NOASSERTION` / `Other`。
 - PyPI `bt`: latest `1.2.0`, `Requires-Python >=3.9`, MIT classifier, Python 3.13 classifier and CPython 3.13 wheels.
 - PyPI `quantstats`: latest `0.0.81`, `Requires-Python >=3.10`, SPDX `Apache-2.0`, Python 3.13 classifier.
 - PyPI `empyrical-reloaded`: latest `0.5.12`, `Requires-Python >=3.9`, Apache Software License, Python 3.13 classifier.
@@ -59,7 +60,7 @@ External primary sources:
 
 | Candidate | Repo role | Current package signal | 採用判断 | 次の実装単位 |
 |---|---|---|---|---|
-| `vectorbt` | `high_speed_signal_runner` | `1.0.0`, Python 3.13 classifier, Commons Clause | 条件付き。license review なしで lock しない。 | license decision memo の後、`[project.optional-dependencies].vectorbt` と `dependency_source=optional_extra` を追加。 |
+| `vectorbt` | `high_speed_signal_runner` | `1.0.0`, Python 3.13 classifier, official license is Apache 2.0 with Commons Clause | 未採用。明示承認なしで lock しない。 | approval が出た場合だけ、`[project.optional-dependencies].vectorbt` と `dependency_source=optional_extra` を追加。 |
 | `bt` | `portfolio_allocation_rebalance` | `1.2.0`, MIT, Python 3.13 wheel | optional extra 採用済み。 | `uv sync --dev --extra bt --locked`、`uv run --extra bt sis strategy-backtest-portfolio-compare`、portfolio comparison real smoke。 |
 | `empyrical-reloaded` | `metrics_normalization` | `0.5.12`, Apache系, Python 3.13 classifier | metrics extra 候補。engine ではない。 | `metrics = ["empyrical-reloaded==0.5.12"]` か `reports` extra に含める。 |
 | `quantstats` | `report_tearsheet` | `0.0.81`, Apache-2.0, Python 3.13 classifier | report extra 候補。engine ではない。 | HTML report artifact の再現性と optional plot deps を確認してから lock。 |
@@ -75,7 +76,7 @@ External primary sources:
 
 1. `strategy-backtest-pack` / `strategy-backtest-pack-validate` で通常 env と `--extra bt` env の読み分けを維持する。
 2. `empyrical-reloaded` と `quantstats` は `reports` extra として一括にするか、`metrics` / `reports` に分けるかを決める。
-3. `vectorbt` は license review が通った場合だけ `vectorbt` extra として追加する。
+3. `vectorbt` は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) の通り、legal / owner approval が出た場合だけ `vectorbt` extra として追加する。
 
 ## 受入条件
 
@@ -91,7 +92,8 @@ External primary sources:
 
 `vectorbt` optional extra 採用の追加受入条件:
 
-- Commons Clause を含む license review 結果を docs に残す。
+- Commons Clause を含む license review 結果を docs に残す。現時点の結果は「未採用、明示承認まで保留」。
+- legal / owner approval を decision record に残す。
 - `vectorbt[full]`, `vectorbt[rust]`, `vectorbt[all]` は初回採用に含めない。
 - `src/sis/backtest/vectorbt_adapter.py` の入出力を source hash 付き artifact に閉じ込める。
 - `strategy_authoring_native` を標準 engine として維持する。
@@ -118,7 +120,8 @@ External primary sources:
 ## Sources
 
 - https://pypi.org/project/vectorbt/
-- https://github.com/polakowo/vectorbt/blob/main/LICENSE.md
+- https://vectorbt.dev/terms/license/
+- https://github.com/polakowo/vectorbt/blob/master/LICENSE.md
 - https://pypi.org/project/bt/
 - https://pypi.org/project/quantstats/
 - https://pypi.org/project/empyrical-reloaded/

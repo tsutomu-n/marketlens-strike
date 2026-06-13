@@ -1,13 +1,15 @@
 <!--
 作成日: 2026-06-13_16:04 JST
-更新日: 2026-06-13_18:25 JST
+更新日: 2026-06-13_20:51 JST
 -->
 
 # vectorbt Adoption Plan
 
 ## 結論
 
-`vectorbt` は採用候補であり、現行 repo にはすでに一時実行 surface がある。ただし、正式採用はまだしない。正式採用する場合は、`Strategy Authoring native` を標準 engine として残したまま、`vectorbt` を optional extra として入れ、外部 engine 比較の高速化と parameter sweep 補助に限定する。
+`vectorbt` は採用候補であり、現行 repo にはすでに一時実行 surface がある。ただし、正式採用はまだしない。2026-06-13_20:51 JST 時点の license decision では、`Apache 2.0 with Commons Clause` を理由に、明示的な legal / owner approval なしでは `vectorbt` を repo optional extra や lockfile に追加しない。
+
+採用判断の正本は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) とする。将来正式採用する場合も、`Strategy Authoring native` を標準 engine として残したまま、`vectorbt` を optional adapter として入れ、外部 engine 比較の高速化と parameter sweep 補助に限定する。
 
 この計画では `VectorBot` という呼び名は使わず、Python package 名の `vectorbt` に統一する。
 
@@ -26,7 +28,8 @@
 
 - PyPI の `vectorbt 1.0.0` は 2026-04-22 release、`Requires-Python >=3.10`、Python 3.13 classifier を持つ。
 - PyPI の説明では、pandas / NumPy / Numba を中心に、大量設定を高速に評価する backtesting / analysis library とされている。
-- PyPI の license section は `Apache 2.0 with Commons Clause` と説明している。これは通常の Apache-2.0 単体とは扱いが違うため、正式採用前に license review を必須にする。
+- 公式 license page と GitHub license file は `Apache 2.0 with Commons Clause` を示す。これは通常の Apache-2.0 単体とは扱いが違うため、正式採用前に legal / owner approval を必須にする。
+- PyPI metadata は `License=None`, `License-Expression=None` で、machine-readable license 判定だけでは採用可否を決められない。
 - optional dependencies はより制限的な license を含む可能性があるため、初回採用では `vectorbt[full]` や `vectorbt[rust]` は使わない。
 
 参照:
@@ -88,6 +91,13 @@ uv run sis strategy-backtest-compare
 
 - license review 結果を docs に残す。
 - `vectorbt` を採用するか、temporary `uv --with` のままにするかを明記する。
+
+2026-06-13_20:51 JST の結果:
+
+- [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) を作成済み。
+- `vectorbt` は採用しない。
+- temporary `uv --with vectorbt` smoke と existing adapter surface に留める。
+- `pyproject.toml` / `uv.lock` に `vectorbt` を追加しない。
 
 ## Phase 1: optional extra と lockfile
 
@@ -202,13 +212,13 @@ uv run sis strategy-backtest-compare
 
 ## 最小実装順
 
-1. license review 結果を追記する。
-2. `pyproject.toml` に optional extra を追加する。
-3. `uv.lock` を更新する。
-4. `strategy-backtest-external-run` の artifact に optional extra 採用後の `dependency_source` を追加する。
-5. `strategy-backtest-pack-validate` の policy を optional extra 採用後の状態へ更新する。
-6. focused tests を追加する。
-7. `./scripts/check` を通す。
+1. license review 結果を追記する。これは完了済み。
+2. legal / owner approval が出た場合だけ `pyproject.toml` に optional extra を追加する。
+3. approval 後だけ `uv.lock` を更新する。
+4. approval 後だけ `strategy-backtest-external-run` の artifact に optional extra 採用後の `dependency_source` を追加する。
+5. approval 後だけ `strategy-backtest-pack-validate` の policy を optional extra 採用後の状態へ更新する。
+6. approval 後だけ focused tests を追加する。
+7. approval 後だけ `./scripts/check` を通す。
 
 実装済みの前倒し項目:
 

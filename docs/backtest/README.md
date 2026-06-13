@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_20:42 JST
+更新日: 2026-06-13_20:51 JST
 -->
 
 # Backtest Docs
@@ -26,6 +26,9 @@
 `vectorbt` を一時 smoke から optional extra 採用へ進める場合の計画は
 [VECTORBT_ADOPTION_PLAN_2026-06-13.md](VECTORBT_ADOPTION_PLAN_2026-06-13.md)
 を見ます。
+`vectorbt` の license 採用判断は
+[VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md)
+を見ます。現時点では `Apache 2.0 with Commons Clause` を理由に、明示承認なしで `vectorbt` を optional extra / lockfile に追加しません。
 正式 optional dependency としてどの OSS を先に採用するかの review は
 [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md)
 を見ます。

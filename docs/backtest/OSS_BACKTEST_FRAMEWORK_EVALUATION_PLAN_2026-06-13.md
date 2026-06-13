@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_16:12 JST
-更新日: 2026-06-13_19:23 JST
+更新日: 2026-06-13_20:51 JST
 -->
 
 # OSS Backtest Framework Evaluation Plan
@@ -13,8 +13,8 @@
 
 | Tier | 候補 | 役割 | 判断 |
 |---|---|---|---|
-| Tier 1 | `vectorbt` | 高速 vectorized research / parameter sweep | optional adapter 候補 |
-| Tier 1 | `bt` | portfolio / allocation / rebalance 型の比較 | optional adapter 候補 |
+| Tier 1 | `vectorbt` | 高速 vectorized research / parameter sweep | license decision により明示承認まで未採用 |
+| Tier 1 | `bt` | portfolio / allocation / rebalance 型の比較 | optional extra 採用済み |
 | Tier 2 | `backtesting.py` | 小型 OHLC strategy prototype | license review 後の spike 候補 |
 | Tier 2 | `zipline-reloaded` | event-driven equity / calendar / pipeline 系 | 重いが大型比較候補 |
 | Tier 3 | `backtrader` | indicator-heavy / event-driven 比較 | GPL/live 機能分離が重く、別環境候補 |
@@ -55,17 +55,19 @@
 - `strategy-backtest-external-run` で `vectorbt.Portfolio.from_signals` の一時 smoke 済み。
 - 実行処理は `src/sis/backtest/vectorbt_adapter.py` に分離済みで、external result と comparison result に `framework_version` と `runner_mode` を残す。
 - PyPI の `vectorbt 1.0.0` は Python `>=3.10`、Python 3.13 classifier を持つ。
-- license は `Apache 2.0 with Commons Clause` と説明されており、通常 Apache-2.0 単体ではない。
+- 公式 license は `Apache 2.0 with Commons Clause` で、通常 Apache-2.0 単体ではない。
+- [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) により、legal / owner approval なしでは repo optional extra にしない。
 
 判断:
 
-- 最初の optional adapter 候補。
+- 技術的には optional adapter 候補だが、現時点では採用しない。
 - `vectorbt[full]` / `vectorbt[rust]` は初回採用に含めない。
 
 参照:
 
 - https://pypi.org/project/vectorbt/
 - https://vectorbt.dev/
+- https://vectorbt.dev/terms/license/
 
 #### bt
 
@@ -85,7 +87,7 @@
 
 判断:
 
-- `vectorbt` と並ぶ Tier 1 候補。
+- `bt==1.2.0` は optional extra 採用済み。
 - 最初は engine 置換ではなく、portfolio allocation comparison adapter として見る。
 
 参照:
