@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_21:35 JST
+更新日: 2026-06-13_21:41 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -426,7 +426,7 @@ uv run sis strategy-backtest-report-extension
 - `data/research/backtest_report_extension/strategy_backtest_quantstats_report.html`
 - `data/reports/strategy_backtest_report_extension_report.md`
 
-既定では `data/research/strategy_backtest_metrics.json` を読み、`summary.executed_signal_results[].signal_return` から report 用 returns series JSONL を作る。通常 locked env で `quantstats` が未インストールなら `report_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env`, `engine_run=false` を記録する。`quantstats` がインストール済みなら `src/sis/backtest/report_extension.py` が `quantstats.reports.html` と `quantstats.reports.metrics` を呼び、HTML report path/hash と metrics table row count を `strategy_backtest_report_extension.v1` に記録する。artifact は `source_backtest_metrics_hash`, `returns_series_hash`, `quantstats_html_hash`, `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。
+既定では `data/research/strategy_backtest_metrics.json` を読み、`summary.executed_signal_results[].signal_return` から report 用 returns series JSONL を作る。通常 locked env で `quantstats` が未インストールなら `report_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env`, `engine_run=false` を記録する。`quantstats` がインストール済みなら `src/sis/backtest/report_extension.py` が `quantstats.reports.html` と `quantstats.reports.metrics` を呼び、HTML report path/hash、metrics table row count、`framework_warning_count`、`framework_warnings` を `strategy_backtest_report_extension.v1` に記録する。既定では optional framework warning を捕捉して表示を抑え、CLI で表示したい場合は `--show-framework-warnings` を使う。artifact は `source_backtest_metrics_hash`, `returns_series_hash`, `quantstats_html_hash`, `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。
 
 一時環境で `quantstats` を使う場合:
 

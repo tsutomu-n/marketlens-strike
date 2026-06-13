@@ -24,6 +24,8 @@
     "risk_free_rate",
     "periods_per_year",
     "return_count",
+    "framework_warning_count",
+    "framework_warnings",
     "metrics_table_row_count",
     "permits_live_order",
     "live_conversion_allowed",
@@ -67,6 +69,19 @@
     "risk_free_rate": {"type": "number"},
     "periods_per_year": {"type": "integer", "minimum": 1},
     "return_count": {"type": "integer", "minimum": 0},
+    "framework_warning_count": {"type": "integer", "minimum": 0},
+    "framework_warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "message"],
+        "properties": {
+          "category": {"type": "string"},
+          "message": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
     "metrics_table_row_count": {"type": ["integer", "null"], "minimum": 0},
     "permits_live_order": {"const": false},
     "live_conversion_allowed": {"const": false},

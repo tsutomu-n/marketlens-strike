@@ -511,6 +511,11 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--risk-free-rate",
             help="Risk-free rate passed to optional quantstats report generation.",
         ),
+        show_framework_warnings: bool = typer.Option(
+            False,
+            "--show-framework-warnings",
+            help="Show warnings emitted by optional quantstats report generation.",
+        ),
         out: Path = typer.Option(
             Path("data/research/backtest_report_extension"),
             "--out",
@@ -534,6 +539,7 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 metrics_path=selected_metrics_path,
                 frequency=frequency,
                 risk_free_rate=risk_free_rate,
+                suppress_framework_warnings=not show_framework_warnings,
                 out_dir=selected_out,
                 reports_dir=selected_reports,
             )

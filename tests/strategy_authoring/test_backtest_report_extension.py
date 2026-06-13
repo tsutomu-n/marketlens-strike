@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
+import warnings
 
 from jsonschema import validate
 from typer.testing import CliRunner
@@ -93,6 +94,8 @@ def test_build_strategy_backtest_report_extension_skips_when_quantstats_missing(
     assert payload["engine_run"] is False
     assert payload["dependency_added"] is False
     assert payload["return_count"] == 3
+    assert payload["framework_warning_count"] == 0
+    assert payload["framework_warnings"] == []
     assert payload["quantstats_html_path"] is None
     assert payload["returns_series_hash"].startswith("sha256:")
     assert result.returns_series_path.exists()
@@ -129,6 +132,7 @@ def test_build_strategy_backtest_report_extension_runs_quantstats_when_installed
 
     def fake_metrics(returns, **_kwargs):
         calls.append(("metrics", len(returns)))
+        warnings.warn("demo quantstats warning", RuntimeWarning, stacklevel=1)
         return FakeDataFrame()
 
     fake_quantstats = SimpleNamespace(reports=SimpleNamespace(html=fake_html, metrics=fake_metrics))
@@ -160,10 +164,71 @@ def test_build_strategy_backtest_report_extension_runs_quantstats_when_installed
     assert payload["dependency_source"] == "optional_extra_available"
     assert payload["report_status"] == "completed"
     assert payload["engine_run"] is True
+    assert payload["framework_warning_count"] == 1
+    assert payload["framework_warnings"] == [
+        {"category": "RuntimeWarning", "message": "demo quantstats warning"}
+    ]
     assert payload["metrics_table_row_count"] == 12
     assert payload["quantstats_html_hash"].startswith("sha256:")
     assert result.quantstats_html_path is not None
     assert result.quantstats_html_path.exists()
+
+
+def test_build_strategy_backtest_report_extension_can_show_framework_warnings(
+    tmp_path, monkeypatch
+) -> None:
+    metrics_path = tmp_path / "data/research/strategy_backtest_metrics.json"
+    _write_metrics(metrics_path)
+    shown: list[tuple[str, str]] = []
+
+    class FakeDataFrame:
+        shape = (12, 1)
+
+    class FakePandas:
+        @staticmethod
+        def Series(values, index=None, dtype=None):  # noqa: N802
+            return list(values)
+
+        @staticmethod
+        def to_datetime(values, **_kwargs):
+            return list(values)
+
+    def fake_html(_returns, **kwargs):
+        Path(kwargs["output"]).write_text("<html>quantstats</html>\n", encoding="utf-8")
+
+    def fake_metrics(_returns, **_kwargs):
+        warnings.warn("shown quantstats warning", RuntimeWarning, stacklevel=1)
+        return FakeDataFrame()
+
+    def fake_showwarning(message, category, *_args):
+        shown.append((category.__name__, str(message)))
+
+    fake_quantstats = SimpleNamespace(reports=SimpleNamespace(html=fake_html, metrics=fake_metrics))
+    monkeypatch.setitem(sys.modules, "quantstats", fake_quantstats)
+    monkeypatch.setitem(sys.modules, "pandas", FakePandas)
+    monkeypatch.setattr("warnings.showwarning", fake_showwarning)
+    monkeypatch.setattr(
+        "sis.backtest.report_extension.framework_adapter_status",
+        lambda: [
+            {
+                "framework_id": "quantstats",
+                "adapter_role": "report_only_candidate",
+                "status": "installed",
+                "version": "0.0.81",
+            }
+        ],
+    )
+
+    result = build_strategy_backtest_report_extension(
+        metrics_path=metrics_path,
+        frequency="daily",
+        suppress_framework_warnings=False,
+        out_dir=tmp_path / "data/research/backtest_report_extension",
+        reports_dir=tmp_path / "data/reports",
+    )
+
+    assert shown == [("RuntimeWarning", "shown quantstats warning")]
+    assert result.payload["framework_warning_count"] == 1
 
 
 def test_strategy_backtest_report_extension_cli(tmp_path, monkeypatch) -> None:
@@ -181,3 +246,17 @@ def test_strategy_backtest_report_extension_cli(tmp_path, monkeypatch) -> None:
         data_dir / "research/backtest_report_extension/strategy_backtest_report_extension.json"
     ).exists()
     assert (data_dir / "reports/strategy_backtest_report_extension_report.md").exists()
+
+
+def test_strategy_backtest_report_extension_cli_accepts_show_framework_warnings(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    monkeypatch.setattr("sis.backtest.report_extension.framework_adapter_status", lambda: [])
+    _write_metrics(data_dir / "research/strategy_backtest_metrics.json")
+
+    result = runner.invoke(app, ["strategy-backtest-report-extension", "--show-framework-warnings"])
+
+    assert result.exit_code == 0, result.stdout
+    assert "backtest_report_extension=" in result.stdout

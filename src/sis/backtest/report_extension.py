@@ -8,6 +8,7 @@ import json
 import math
 from pathlib import Path
 from typing import Any
+import warnings
 
 from sis.backtest.frameworks import framework_adapter_status
 from sis.backtest.optional_dependencies import optional_dependency_source
@@ -130,6 +131,36 @@ def _metrics_row_count(metrics_table: Any) -> int | None:
         return None
 
 
+def _framework_warning_rows(
+    captured_warnings: list[warnings.WarningMessage],
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for captured in captured_warnings:
+        row = {
+            "category": captured.category.__name__,
+            "message": str(captured.message),
+        }
+        key = (row["category"], row["message"])
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append(row)
+    return rows
+
+
+def _show_captured_warnings(captured_warnings: list[warnings.WarningMessage]) -> None:
+    for captured in captured_warnings:
+        warnings.showwarning(
+            captured.message,
+            captured.category,
+            captured.filename,
+            captured.lineno,
+            captured.file,
+            captured.line,
+        )
+
+
 def _returns_series(rows: list[dict[str, Any]], returns: list[float], pandas: Any) -> Any:
     timestamps = [row.get("ts_signal") for row in rows]
     index = None
@@ -164,8 +195,10 @@ def _base_payload(
     engine_run: bool,
     runner_mode: str,
     dependency_source: str,
+    framework_warnings: list[dict[str, str]] | None = None,
     metrics_table_row_count: int | None = None,
 ) -> dict[str, Any]:
+    selected_warnings = framework_warnings or []
     return {
         "schema_version": "strategy_backtest_report_extension.v1",
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -192,6 +225,8 @@ def _base_payload(
         "risk_free_rate": risk_free_rate,
         "periods_per_year": _periods_per_year(frequency),
         "return_count": return_count,
+        "framework_warning_count": len(selected_warnings),
+        "framework_warnings": selected_warnings,
         "metrics_table_row_count": metrics_table_row_count,
         "permits_live_order": False,
         "live_conversion_allowed": False,
@@ -210,28 +245,37 @@ def _run_quantstats_payload(
     returns: list[float],
     frequency: str,
     risk_free_rate: float,
+    suppress_framework_warnings: bool,
 ) -> dict[str, Any]:
+    captured_warnings: list[warnings.WarningMessage] = []
     try:
-        quantstats = importlib.import_module("quantstats")
-        pandas = importlib.import_module("pandas")
-        series = _returns_series(rows, returns, pandas)
-        periods_per_year = _periods_per_year(frequency)
-        quantstats_html_path.parent.mkdir(parents=True, exist_ok=True)
-        quantstats.reports.html(
-            series,
-            rf=risk_free_rate,
-            output=str(quantstats_html_path),
-            title="Strategy Backtest QuantStats Report",
-            periods_per_year=periods_per_year,
-        )
-        metrics_table = quantstats.reports.metrics(
-            series,
-            rf=risk_free_rate,
-            display=False,
-            mode="basic",
-            periods_per_year=periods_per_year,
-        )
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            try:
+                quantstats = importlib.import_module("quantstats")
+                pandas = importlib.import_module("pandas")
+                series = _returns_series(rows, returns, pandas)
+                periods_per_year = _periods_per_year(frequency)
+                quantstats_html_path.parent.mkdir(parents=True, exist_ok=True)
+                quantstats.reports.html(
+                    series,
+                    rf=risk_free_rate,
+                    output=str(quantstats_html_path),
+                    title="Strategy Backtest QuantStats Report",
+                    periods_per_year=periods_per_year,
+                )
+                metrics_table = quantstats.reports.metrics(
+                    series,
+                    rf=risk_free_rate,
+                    display=False,
+                    mode="basic",
+                    periods_per_year=periods_per_year,
+                )
+            finally:
+                captured_warnings = list(caught)
     except Exception:
+        if not suppress_framework_warnings:
+            _show_captured_warnings(captured_warnings)
         return _base_payload(
             candidate=candidate,
             metrics_path=metrics_path,
@@ -245,7 +289,10 @@ def _run_quantstats_payload(
             engine_run=False,
             runner_mode="temporary_or_optional_import",
             dependency_source=_dependency_source(candidate),
+            framework_warnings=_framework_warning_rows(captured_warnings),
         )
+    if not suppress_framework_warnings:
+        _show_captured_warnings(captured_warnings)
     return _base_payload(
         candidate=candidate,
         metrics_path=metrics_path,
@@ -259,6 +306,7 @@ def _run_quantstats_payload(
         engine_run=True,
         runner_mode="temporary_or_optional_import",
         dependency_source=_dependency_source(candidate),
+        framework_warnings=_framework_warning_rows(captured_warnings),
         metrics_table_row_count=_metrics_row_count(metrics_table),
     )
 
@@ -279,6 +327,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         f"- frequency: {payload['frequency']}",
         f"- periods_per_year: {payload['periods_per_year']}",
         f"- return_count: {payload['return_count']}",
+        f"- framework_warning_count: {payload['framework_warning_count']}",
         f"- metrics_table_row_count: {payload['metrics_table_row_count']}",
         "- dependency_added: false",
         "- permits_live_order: false",
@@ -297,6 +346,7 @@ def build_strategy_backtest_report_extension(
     reports_dir: Path,
     frequency: str = "daily",
     risk_free_rate: float = 0.0,
+    suppress_framework_warnings: bool = True,
 ) -> BacktestReportExtensionResult:
     if not metrics_path.exists():
         raise FileNotFoundError(f"strategy backtest metrics missing: {metrics_path}")
@@ -321,6 +371,7 @@ def build_strategy_backtest_report_extension(
             frequency=frequency,
             risk_free_rate=risk_free_rate,
             return_count=0,
+            framework_warnings=[],
             report_status="skipped",
             reason_codes=["no_returns_series"],
             engine_run=False,
@@ -339,6 +390,7 @@ def build_strategy_backtest_report_extension(
             frequency=frequency,
             risk_free_rate=risk_free_rate,
             return_count=len(returns),
+            framework_warnings=[],
             report_status="skipped",
             reason_codes=["not_installed_in_current_env"],
             engine_run=False,
@@ -356,6 +408,7 @@ def build_strategy_backtest_report_extension(
             returns=returns,
             frequency=frequency,
             risk_free_rate=risk_free_rate,
+            suppress_framework_warnings=suppress_framework_warnings,
         )
         selected_html_path = quantstats_html_path if quantstats_html_path.exists() else None
     out_dir.mkdir(parents=True, exist_ok=True)
