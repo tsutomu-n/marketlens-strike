@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-11_21:34 JST
+更新日: 2026-06-13_08:41 JST
 -->
 
 # Operations Runbook
@@ -315,14 +315,14 @@ artifact boundary:
 - `data/research/paper_candidate_pack.json` contains candidates and selected/rejected IDs.
 - `data/research/promotion_decision.json` is the human decision artifact required before paper intent preview.
 - `data/bot/paper_intent_preview.json` is paper-only and must be revalidated before paper execution.
-- NDX/QQQ family records can remain in research/backtest artifacts, but current paper promotion gates reject them before selected candidate, paper intent, or legacy paper order/fill generation.
+- NDX/QQQ family records can remain in research/backtest artifacts. Without valid Layer 2.6/2.7 paper-observation evidence, paper promotion gates reject them before selected candidate, paper intent, or legacy paper order/fill generation. With valid evidence, they may proceed only to paper observation and still cannot become live orders.
 
 stop conditions:
 
 - Do not treat `data/research/signals.csv` as the Strategy Lab source of truth.
 - Do not build `PaperIntentPreview` without `PromotionDecision`.
 - Do not treat `PaperIntentPreview` as `OrderIntent` or live order.
-- Do not manually force NDX/QQQ family rows into `selected_candidate_ids`, raw `PaperIntentPreview` JSON, or legacy `paper-step` output. The expected fail-closed reason for `trade_xyz` proxy rows is `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION`.
+- Do not manually force NDX/QQQ family rows into `selected_candidate_ids`, raw `PaperIntentPreview` JSON, or legacy `paper-step` output. Without valid Layer 2.6/2.7 paper-observation evidence, the expected fail-closed reason for `trade_xyz` proxy rows is `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION`.
 - Do not override `live_conversion_allowed=false`, `wallet_used=false`, or `exchange_write_used=false`.
 - Use `profitability_claimed`, `paper_ready_claimed`, `tiny_live_ready_claimed`, and `live_ready_claimed` for forbidden claim names. Legacy `*_claim` names are not the current Strategy Lab claim names.
 

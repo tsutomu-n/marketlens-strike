@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-12_01:16 JST
+更新日: 2026-06-13_08:41 JST
 -->
 
 # Code Status
@@ -41,7 +41,7 @@
 | Backtest-first baseline seed | DONE | `scripts/seed_strategy_authoring_baseline_data.py`, `docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml`, `strategy-author-run --through backtest` |
 | Strategy lifecycle control plane | DONE / local artifact review only | `src/sis/research/strategy_lifecycle/`, `schemas/strategy_backtest_acceptance_decision.v1.schema.json`, `schemas/strategy_lifecycle_review.v1.schema.json`, `schemas/paper_observation_session_manifest.v1.schema.json`, `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review`, `tests/research/test_strategy_lifecycle_backtest_acceptance.py`, `tests/research/test_strategy_paper_observation_cycle.py`, `tests/research/test_strategy_lifecycle_review.py`, `docs/strategy_lifecycle/`; keeps live order, wallet, and exchange write disabled |
 | Venue-neutral Strategy Lab contract | DONE | `src/sis/venues/ids.py`, `src/sis/research/strategy_lab/specs.py`, `schemas/strategy_signal.v1.schema.json`, `schemas/trade_candidate.v1.schema.json`, `schemas/paper_intent_preview.v1.schema.json` |
-| NDX/QQQ venue suitability paper-path gate | DONE / fail-closed | `src/sis/venues/suitability.py`, `src/sis/research/strategy_lab/paper_candidate_pack.py`, `src/sis/research/strategy_lab/paper_intent_preview.py`, `src/sis/paper/runner.py`, `tests/test_venue_suitability.py`, `tests/test_strategy_lab_candidate_pack.py`, `tests/test_paper_from_intents.py`, `tests/test_paper_runner.py` |
+| NDX/QQQ venue suitability paper-path gate | DONE / evidence-gated | `src/sis/venues/suitability.py`, `src/sis/research/strategy_lab/paper_candidate_pack.py`, `src/sis/research/strategy_lab/paper_intent_preview.py`, `src/sis/paper/runner.py`, `tests/test_venue_suitability.py`, `tests/test_strategy_lab_candidate_pack.py`, `tests/test_paper_from_intents.py`, `tests/test_paper_runner.py`; fail closed unless valid Layer 2.6/2.7 paper-observation evidence is present |
 | Bitget / Hyperliquid venue capability gate | DONE / fixture-first capability contract with evaluation-plan split | `src/sis/venues/capabilities.py`, `tests/test_venue_capabilities.py`, `docs/venues/bitget_hyperliquid_capability_gate.md` |
 | Bitget demo local smoke | DONE / external network not proven | `src/sis/execution/bitget_demo_adapter.py`, `tests/test_bitget_demo_adapter.py`, `tests/test_bitget_demo_cli.py`, `uv run sis bitget-demo-smoke` |
 | Venue-specific paper fee lookup | DONE | `src/sis/paper/broker.py`, `src/sis/paper/runner.py`, `configs/fee_model.bitget_demo.yaml`, `tests/test_paper_from_intents.py` |
@@ -72,7 +72,7 @@
 - Strategy Research Lab は strategy definition / signal / evaluation / trial ledger / candidate pack / promotion decision / paper intent preview の code surface を持つ。
 - Venue suitability は `src/sis/venues/suitability.py` が正本。catalog には `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp` があるが、現行 `VenueId` と Strategy Lab schema は `trade_xyz` / `bitget_demo` のまま。
 - Venue capability は `src/sis/venues/capabilities.py` が正本。`bitget_futures` と `hyperliquid_perp` は known future venues だが、現行では schema / paper / network / live が disabled。`bitget_demo` は execution-venue schema では enabled だが、`evaluation_plan.mls.v1` の `target_venue` では disabled。
-- NDX/QQQ family は research/backtest record として保持できるが、`PaperCandidatePack.selected_candidate_ids`、`PaperIntentPreview`、raw JSON の `paper-from-intents`、legacy `paper-step` order generation では fail closed する。
+- NDX/QQQ family は research/backtest record として保持できる。valid な Layer 2.6/2.7 paper-observation evidence がない場合、`PaperCandidatePack.selected_candidate_ids`、`PaperIntentPreview`、raw JSON の `paper-from-intents`、legacy `paper-step` order generation では fail closed する。
 - Strategy authoring は `strategy_authoring_spec.v1` YAML から rule-based long / short / hold / close / reduce / add / rebalance signal、derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max、column-to-column and cross/trend/consecutive condition、exclusion-none condition、regime membership filter、regime-specific overrides、paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal、paper-only linear model score / train-model adapter、group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds、opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip、bracket-OCO / partial-profit break-even lifecycle、order-style entry / time-in-force / post-only / reduce-only、execution-profile presets、slippage with row cost、partial-fill with row fill、min-fill gate with row threshold、spread gate、depth-based fill、latency gate、queue-position gate with row threshold、short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate、fixed-horizon backtest metrics、partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics と executed_signal_summary と strategy_scorecard 付き paper-only preview artifacts を作れる。`strategy_authoring_bundle.v1` は複数 spec の paper portfolio 比較を作る。
 - `PaperIntentPreview` は paper-only artifact で、`requires_revalidation=true`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を model validation で守る。
 - `bitget-demo-smoke` の `status=configured` は local credential env が揃った意味だけであり、Bitget network connectivity / account read / demo order submit / fill sync を証明しない。
@@ -80,7 +80,7 @@
 - NDX Layer 2.2 review gate は手動 review JSON を local import する harness。`APPROVE_2_3` は `second_review_required=false`、未解決 human decision なし、BLOCKER なしの場合だけ成立し、`REVISE_2_2` / `REJECT_SEED` では freeze manifest を残さない。外部 LLM API、credentials、feature panel、residual calculation、neutralization、Strategy Lab export、backtest、paper/live connection は実装範囲外。
 - NDX Layer 2.3/2.4/2.5 は Layer 2.2 approval/freeze 後の local research gates。feature panel、open-gap residual、diagnostics、residual validation、research-only Strategy Lab export を扱うが、backtest、paper candidate approval、`PaperIntentPreview` 通過、paper/live order、external API、credentials、dependency追加には接続しない。
 - 現在の NDX Layer 2.4 default artifact 判断は `APPROVE_STRATEGY_LAB_EXPORT`。これは Layer 2.5 research-only export bridge の許可であり、alpha、backtest、paper/live readiness ではない。
-- NDX Layer 2.5 export 由来の Strategy Lab signal は `RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` を持つため、paper candidate selection と `PaperIntentPreview` は fail closed する。
+- NDX Layer 2.5 export 由来の Strategy Lab signal は `RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` を持つため、valid な Layer 2.6/2.7 paper-observation evidence がない場合は paper candidate selection と `PaperIntentPreview` で fail closed する。
 - production live trading は未接続なので、"read-only gate complete" と "live trading ready" は分けて扱う。
 - Trade[XYZ] pure backtest artifact は live order artifact ではない。`backtest_run.json` は `no_live_order=true`, `wallet_used=false`, `exchange_write_used=false` を記録する。
 - `probe trade-xyz` は live `perpDexs` から `asset_id` を解決できる。解決不能時は従来どおり `api_orderable=false` で fail-closed。
@@ -109,9 +109,8 @@ PR-08:
 - live order preview / 注文候補生成の正式 artifact surface
 - Strategy Lab から micro live への直接昇格 surface
 - Trade[XYZ] pure backtest の public CLI
-- NDX/QQQ family の paper candidate / paper intent / legacy paper-step 通過
+- NDX/QQQ family の legacy paper-step 通過
 - NDX Layer 2.6 backtest acceptance gate for NDX residual-derived Strategy Lab signals
-- NDX residual-derived signals の operator promotion path
 - Bitget credentialed read-only network smoke
 - Bitget demo order lifecycle
 - Alpaca historical connectivity smoke は確認済み。fresh live `status=pass` は市場時間中の fresh bar 取得で再確認する
@@ -133,14 +132,16 @@ uv run python scripts/check_current_docs.py
 
 - `uv run python scripts/check_current_docs.py`: pass, current-doc allowlist checked successfully
 
-2026-06-10 NDX Layer 2.2/2.3/2.4/2.5 local research gate snapshot:
+2026-06-13 NDX Layer 2.2/2.3/2.4/2.5/2.6/2.7 local paper-observation snapshot:
 
 - `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, `research-ndx-residual-validate`, `research-ndx-strategy-lab-export` registered
 - latest local exit decision artifact: `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
 - latest Layer 2.4 decision artifact: `APPROVE_STRATEGY_LAB_EXPORT`, `reason_codes=[]`, `permits_strategy_lab_research_only_export=true`
-- latest Layer 2.5 export artifact: `export_id=sha256:6e205549d2bc81ae8a99f316b29a3c1b496272f30b417cff71e2404e21f3465d`, `signal_count=84`, `replace_existing=true`, previous signal hash `sha256:8eb8fde20b1decf3e473d5122213e9cca3c31c6b00ebb343ee41b26d360d83e7`
-- latest paper candidate check after NDX Layer 2.5 export: `selected_candidate_ids=[]`; first candidate is blocked by `RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` and `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION`
-- latest `PaperIntentPreview` after promotion decision: empty list, `intent_count=0`
+- latest Layer 2.5 export artifact: `export_id=sha256:6e205549d2bc81ae8a99f316b29a3c1b496272f30b417cff71e2404e21f3465d`, `signal_count=84`, `replace_existing=true`, previous signal hash `sha256:2790ee50d92d871031401691803a86ea32c9f3fab77c7fa03a93008f99528e6b`
+- latest Layer 2.6 paper-observation gate artifact: `decision=APPROVE_PAPER_OBSERVATION_REVIEW`, `decision_id=sha256:69418c3e6367cd9e0617241d7c76bd226b65885b915f3a05b13618618ca6c9f4`, `permits_operator_promotion_review=true`, `permits_live_order=false`
+- latest Layer 2.7 operator promotion artifact: `decision=promote_to_paper_observation`, `promotion_id=sha256:815887dea65134ffcc92a94f67ec0956577f53a6dc7643032d857e4da8d41d90`, `permits_paper_candidate=true`, `permits_paper_intent_preview=true`, `permits_paper_observation=true`, `permits_live_order=false`
+- latest paper candidate check after valid Layer 2.7 promotion: `selected_candidate_ids=["candidate-trial-d4cd44be5491-dce21eb2f5461d85"]`, `candidate_count=1`, first candidate block reasons `[]`
+- latest `PaperIntentPreview` after valid Layer 2.7 promotion: `intent_count=1`, `paper_only=true`, `requires_revalidation=true`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false`
 
 2026-06-05 runtime artifact snapshot:
 

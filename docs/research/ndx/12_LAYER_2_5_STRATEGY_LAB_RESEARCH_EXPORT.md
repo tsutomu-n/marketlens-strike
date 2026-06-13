@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-10_15:55 JST
-更新日: 2026-06-10_15:55 JST
+更新日: 2026-06-13_08:41 JST
 -->
 
 # Layer 2.5 NDX Strategy Lab Research Export
@@ -40,4 +40,4 @@ Use `--replace-existing` only when intentionally replacing `data/research/strate
 
 Layer 2.5 requires `APPROVE_STRATEGY_LAB_EXPORT` and `permits_strategy_lab_research_only_export=true`. It keeps backtest, paper candidate, PaperIntentPreview, live order, external API, credentials, wallet, and venue-write permissions false.
 
-Signal rows include `RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` in `block_reasons`, and selected signal block reasons are propagated into paper candidate block reasons. NDX/QQQ remains blocked from paper intent generation under the current venue suitability gate.
+Signal rows include `RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` in `block_reasons`, and selected signal block reasons are propagated into paper candidate block reasons. NDX/QQQ remains blocked from paper intent generation until valid Layer 2.6 paper-observation gate evidence and Layer 2.7 operator promotion evidence are present.
