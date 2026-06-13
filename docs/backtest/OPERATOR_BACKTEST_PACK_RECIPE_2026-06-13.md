@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_21:35 JST
-更新日: 2026-06-13_21:48 JST
+更新日: 2026-06-13_21:51 JST
 -->
 
 # Operator Backtest Pack Recipe
@@ -99,15 +99,25 @@ uv run sis strategy-backtest-artifact-summary
 
 通常 locked env で `bt`、`empyrical-reloaded`、`quantstats` が入っていない場合、該当 adapter は `skipped/not_installed_in_current_env` として comparison / pack に残る。これは標準 pack の失敗ではない。
 
-optional extra を明示して追加検証する場合:
+optional extra を明示して追加検証する場合は、pack manifest の artifact hash と実ファイルをずらさないため、pack 自体を extras 環境で再実行する。
 
 ```bash
 uv sync --dev --extra bt --extra metrics --extra reports --locked
-uv run --extra bt sis strategy-backtest-portfolio-compare
-uv run --extra metrics sis strategy-backtest-metric-extension
-uv run --extra reports sis strategy-backtest-report-extension
-uv run sis strategy-backtest-compare
-uv run sis strategy-backtest-pack-validate
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack-validate
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-artifact-summary
 ```
+
+確認 field:
+
+- `pack.artifacts.portfolio_comparison.sha256`
+- `pack.artifacts.metric_extension.sha256`
+- `pack.artifacts.report_extension.sha256`
+- `metric_extension.dependency_source`
+- `metric_extension.metric_status`
+- `report_extension.dependency_source`
+- `report_extension.report_status`
+- `report_extension.framework_warning_count`
+- `pack_validation.decision`
 
 `vectorbt` は license decision により、明示承認なしでは optional extra / lockfile に追加しない。

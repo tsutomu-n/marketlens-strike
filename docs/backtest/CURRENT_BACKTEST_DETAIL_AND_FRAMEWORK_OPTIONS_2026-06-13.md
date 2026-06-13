@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_21:48 JST
+更新日: 2026-06-13_21:51 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -535,6 +535,15 @@ uv run sis strategy-backtest-artifact-summary
 ```
 
 この command は artifact を新規生成せず、既存 JSON を読み、pack の paper-only / no-live field、suite method count、external framework policy、benchmark-relative active return / source benchmark path、metric extension status、report extension status / warning count、validation decision / failed count を JSON で stdout に出す。欠損 artifact は失敗にせず `exists=false` として表示し、壊れた JSON は exit code 2 で止める。
+
+`bt`、`metrics`、`reports` optional extra をまとめて smoke し、pack manifest の artifact hash も揃える場合は、個別 extension だけを後から上書きせず、pack 自体を extras 環境で再実行する。
+
+```bash
+uv sync --dev --extra bt --extra metrics --extra reports --locked
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack-validate
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-artifact-summary
+```
 
 現行依存:
 

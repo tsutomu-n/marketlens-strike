@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_21:48 JST
+更新日: 2026-06-13_21:51 JST
 -->
 
 # Backtest Docs
@@ -142,6 +142,15 @@ uv run sis strategy-backtest-compare
 uv sync --dev --extra reports --locked
 uv run --extra reports sis strategy-backtest-report-extension
 uv run sis strategy-backtest-compare
+```
+
+pack manifest の artifact hash と optional extra で生成した artifact を揃える場合は、個別 extension を後から上書きせず、pack 自体を extras 環境で再実行します。
+
+```bash
+uv sync --dev --extra bt --extra metrics --extra reports --locked
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack-validate
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-artifact-summary
 ```
 
 一時 `uv --with ...` smoke では `pyproject.toml` / `uv.lock` を変更しません。`--extra metrics` / `--extra reports` は locked optional extra を使う経路です。
