@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-13_20:23 JST
+更新日: 2026-06-13_20:36 JST
 -->
 
 # Current State
@@ -71,7 +71,7 @@
 - read-only execution surfaces, operations dashboard, remediation chain, daemon loop, notification outbox
 - Strategy Research Lab models and commands: `StrategyExperimentSpec`, `StrategySignalRecord`, `EvaluationPlan`, `TrialRecord`, `TradeCandidate`, `PaperCandidatePack`, `PromotionDecision`, `PaperIntentPreview`
 - Strategy authoring commands: `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`, `strategy-author-train-model`
-- Strategy backtest comparison, suite, adapter spike, external result, portfolio comparison, metric extension, report extension, stress, regime split, rolling stability, benchmark relative, pack, and pack validation commands: `strategy-backtest-compare`, `strategy-backtest-suite`, `strategy-backtest-adapter-spike`, `strategy-backtest-external-run`, `strategy-backtest-portfolio-compare`, `strategy-backtest-metric-extension`, `strategy-backtest-report-extension`, `strategy-backtest-stress`, `strategy-backtest-regime-split`, `strategy-backtest-rolling-stability`, `strategy-backtest-benchmark-relative`, `strategy-backtest-pack`, `strategy-backtest-pack-validate`
+- Strategy backtest comparison, suite, adapter spike, optional framework adoption review, external result, portfolio comparison, metric extension, report extension, stress, regime split, rolling stability, benchmark relative, pack, and pack validation commands/docs: `strategy-backtest-compare`, `strategy-backtest-suite`, `strategy-backtest-adapter-spike`, `docs/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md`, `strategy-backtest-external-run`, `strategy-backtest-portfolio-compare`, `strategy-backtest-metric-extension`, `strategy-backtest-report-extension`, `strategy-backtest-stress`, `strategy-backtest-regime-split`, `strategy-backtest-rolling-stability`, `strategy-backtest-benchmark-relative`, `strategy-backtest-pack`, `strategy-backtest-pack-validate`
 - Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/` and `src/sis/research_protocol/`
 - venue suitability policy: `src/sis/venues/suitability.py` with `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp`; current schemas still accept only `trade_xyz` and `bitget_demo`
 - venue capability contract: `src/sis/venues/capabilities.py`; `bitget_futures` and `hyperliquid_perp` are known future venues but disabled for schema, paper, network, and live; `bitget_demo` is disabled for `evaluation_plan.mls.v1` target venue

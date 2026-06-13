@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_20:23 JST
+更新日: 2026-06-13_20:36 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -11,7 +11,7 @@
 
 いま実務で使う主入口は `Strategy Authoring fixed-horizon backtest` である。YAML で戦略を記述し、`strategy-author-run --through backtest` で signal 生成から paper-only backtest metrics まで出す。これは live readiness ではなく、研究用の backtest artifact である。
 
-今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` だが、現時点で正式採用している外部 framework はない。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` は一時 `uv --with ...` で実行確認済みだが、依存追加前に Python 3.13 / uv lock / license / artifact contract の review が必要である。
+今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` だが、現時点で正式採用している外部 framework はない。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` は一時 `uv --with ...` で実行確認済みだが、依存追加前に Python 3.13 / uv lock / license / artifact contract の review が必要である。正式 optional dependency の採用判断は [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md) を正とし、現時点では `bt` を最初の低リスク optional extra 候補、`vectorbt` を Commons Clause review 後の条件付き候補として扱う。
 
 ## 現行 Backtest Surface
 
