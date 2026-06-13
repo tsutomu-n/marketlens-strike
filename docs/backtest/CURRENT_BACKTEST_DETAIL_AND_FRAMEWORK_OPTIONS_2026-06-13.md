@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_20:36 JST
+更新日: 2026-06-13_20:42 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -11,7 +11,7 @@
 
 いま実務で使う主入口は `Strategy Authoring fixed-horizon backtest` である。YAML で戦略を記述し、`strategy-author-run --through backtest` で signal 生成から paper-only backtest metrics まで出す。これは live readiness ではなく、研究用の backtest artifact である。
 
-今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` だが、現時点で正式採用している外部 framework はない。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` は一時 `uv --with ...` で実行確認済みだが、依存追加前に Python 3.13 / uv lock / license / artifact contract の review が必要である。正式 optional dependency の採用判断は [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md) を正とし、現時点では `bt` を最初の低リスク optional extra 候補、`vectorbt` を Commons Clause review 後の条件付き候補として扱う。
+今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` である。正式 optional dependency の採用判断は [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md) を正とし、現時点では `bt` を optional extra 採用済み、`vectorbt` を Commons Clause review 後の条件付き候補として扱う。
 
 ## 現行 Backtest Surface
 
@@ -366,17 +366,17 @@ uv run sis strategy-backtest-portfolio-compare
 - `data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json`
 - `data/reports/strategy_backtest_portfolio_comparison_report.md`
 
-既定では `data/research/strategy_authoring_bundle_result.json` と `data/research/strategy_authoring_baseline_quotes.parquet` を読む。通常 locked env で `bt` が未インストールなら `run_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env`, `engine_run=false` を記録する。`bt` がインストール済みなら `src/sis/backtest/portfolio_comparison.py` が `bt.Strategy`, `bt.Backtest`, `bt.run()` を呼び、`portfolio_return`, `max_drawdown`, `turnover`, `rebalance_count` を `strategy_backtest_portfolio_comparison.v1` に記録する。artifact は `source_bundle_hash`, `price_frame_hash`, `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。
+既定では `data/research/strategy_authoring_bundle_result.json` と `data/research/strategy_authoring_baseline_quotes.parquet` を読む。通常 locked env で `bt` が未インストールなら `run_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env`, `dependency_source=not_installed_in_current_env`, `engine_run=false` を記録する。`uv run --extra bt` で `bt` がインストール済みなら `src/sis/backtest/portfolio_comparison.py` が `bt.Strategy`, `bt.Backtest`, `bt.run()` を呼び、`dependency_source=optional_extra_available`, `portfolio_return`, `max_drawdown`, `turnover`, `rebalance_count` を `strategy_backtest_portfolio_comparison.v1` に記録する。artifact は `source_bundle_hash`, `price_frame_hash`, `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。
 
-一時環境で `bt` を使う場合:
+`bt` optional extra を使う場合:
 
 ```bash
 uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
-uv run --with bt sis strategy-backtest-portfolio-compare
+uv run --extra bt sis strategy-backtest-portfolio-compare
 uv run sis strategy-backtest-compare
 ```
 
-2026-06-13_18:40 JST 時点の smoke では、`uv run --with bt` で `bt=1.2.0` を import でき、`strategy-backtest-portfolio-compare` は `bt` result を `framework_version=1.2.0`, `runner_mode=temporary_or_optional_import`, `run_status=completed`, `engine_run=true`, `portfolio_return=0.005833333333333801`, `max_drawdown=0.0`, `turnover=1.0`, `rebalance_count=1` として記録した。この smoke は repo dependency / lockfile 採用ではない。
+2026-06-13_20:42 JST 時点の optional extra smoke では、`uv run --extra bt` で `bt=1.2.0` を importでき、`strategy-backtest-portfolio-compare` は `bt` result を `framework_version=1.2.0`, `runner_mode=temporary_or_optional_import`, `dependency_source=optional_extra_available`, `run_status=completed`, `engine_run=true`, `portfolio_return=0.005833333333333801`, `max_drawdown=0.0`, `turnover=1.0`, `rebalance_count=1` として記録した。
 
 ## Backtest Metric Extension
 
@@ -502,7 +502,7 @@ uv run sis strategy-backtest-pack
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/reports/strategy_backtest_pack_report.md`
 
-pack も `paper_only=true`, `live_order_submitted=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。外部 framework dependency は追加せず、通常 locked env では外部 framework が未インストールなら `external_results`、`portfolio_comparison`、`metric_extension`、`report_extension` は skipped として comparison に残る。`external_framework_policy.policy_id` は `native_primary_external_evaluation_only.v1` で、標準 engine は `strategy_authoring_native`、標準完成線は `complete_without_locked_external_dependency`、`locked_dependency_added=false`、`external_adapters_required_for_completion=false` である。一時実行許可は `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` に限定する。外部 OSS を正式採用する場合は、license、Python 3.13 / uv lock、CI、schema boundary review を先に通す。
+pack も `paper_only=true`, `live_order_submitted=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。`bt` は optional extra として lock 済みだが、標準 pack 完成には要求しない。通常 locked env で外部 framework が未インストールなら `external_results`、`portfolio_comparison`、`metric_extension`、`report_extension` は skipped として comparison に残る。`external_framework_policy.policy_id` は `native_primary_external_evaluation_only.v1` で、標準 engine は `strategy_authoring_native`、標準完成線は `complete_without_locked_external_dependency`、`locked_dependency_added=false`、`external_adapters_required_for_completion=false` である。一時実行許可は `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` に限定する。追加の外部 OSS を正式採用する場合は、license、Python 3.13 / uv lock、CI、schema boundary review を先に通す。
 
 生成済み pack を検査する場合は `strategy-backtest-pack-validate` を使う。
 
@@ -640,7 +640,7 @@ Backtest Expansion Scope 1: Framework Adapter Spike
 ## 抜け、漏れ、誤謬リスク
 
 - 外部 OSS の Python 3.13 実互換は未検証。公式 PyPI の `Requires-Python` は導入成功や全テスト成功を保証しない。
-- `vectorbt` / `bt` / `backtesting.py` / `zipline-reloaded` / `backtrader` / `quantstats` / `empyrical-reloaded` / `pyfolio-reloaded` / `qstrader` は現行 lockfile に入っていない。採用には依存追加と CI 検証が必要。
+- `bt` は optional extra として現行 lockfile に入っている。`vectorbt` / `backtesting.py` / `zipline-reloaded` / `backtrader` / `quantstats` / `empyrical-reloaded` / `pyfolio-reloaded` / `qstrader` は現行 lockfile に入っていない。採用には依存追加と CI 検証が必要。
 - `backtesting.py` は PyPI 上で AGPLv3+ と表示されるため、利用形態によっては license review が必要。
 - external framework が持つ live trading 機能は、採用しても repo では無効化・隔離する必要がある。
 - 現行 NDX Layer 2.5 は `permits_backtest=false` の research-only export であり、NDX residual validation 自体が backtest 許可を出しているわけではない。

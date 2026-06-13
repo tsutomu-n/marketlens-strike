@@ -378,6 +378,7 @@ def _write_portfolio_comparison(path: Path) -> None:
                 "adapter_role": "portfolio_allocation_candidate",
                 "framework_version": None,
                 "runner_mode": "not_installed_in_current_env",
+                "dependency_source": "not_installed_in_current_env",
                 "run_status": "skipped",
                 "reason_codes": ["not_installed_in_current_env"],
                 "dependency_added": False,
@@ -900,6 +901,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["external_results"][0]["reason_codes"] == ["not_installed_in_current_env"]
     assert payload["portfolio_comparison"]["framework_id"] == "bt"
     assert payload["portfolio_comparison"]["run_status"] == "skipped"
+    assert payload["portfolio_comparison"]["dependency_source"] == "not_installed_in_current_env"
     assert payload["portfolio_comparison"]["rebalance_count"] == 0
     assert payload["metric_extension"]["framework_id"] == "empyrical_reloaded"
     assert payload["metric_extension"]["metric_status"] == "skipped"

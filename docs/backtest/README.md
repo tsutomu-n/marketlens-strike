@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_20:36 JST
+更新日: 2026-06-13_20:42 JST
 -->
 
 # Backtest Docs
@@ -35,7 +35,7 @@
 `strategy-backtest-adapter-selection` は adapter spike と framework smoke の artifact から Phase C の初期選定を artifact 化します。現時点では `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を selected、`backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` を deferred とします。repo dependency は追加しません。
 `strategy-backtest-adapter-contract` は selected adapter の入力、出力、provenance、受入条件を artifact 化します。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` の contract を作りますが、repo dependency は追加しません。
 `strategy-backtest-external-run` は外部 framework 候補の実行結果用 artifact を作ります。`vectorbt` がインストール済みで signals / quotes 入力がある場合は `src/sis/backtest/vectorbt_adapter.py` 経由で `vectorbt.Portfolio.from_signals` を呼び、未インストールなら `skipped/not_installed_in_current_env` として記録します。artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes`、framework ごとの `framework_version` と `runner_mode` を残します。依存追加や live order は行いません。
-`strategy-backtest-portfolio-compare` は `bt` 用の portfolio allocation / rebalance comparison artifact を作ります。通常環境で `bt` が未インストールなら `skipped/not_installed_in_current_env`、一時 `uv --with bt` 環境では `bt.run()` の結果を `strategy_backtest_portfolio_comparison.v1` に記録します。依存追加や live order は行いません。
+`strategy-backtest-portfolio-compare` は `bt` 用の portfolio allocation / rebalance comparison artifact を作ります。通常環境で `bt` が未インストールなら `skipped/not_installed_in_current_env`、`uv run --extra bt` 環境では `bt.run()` の結果を `strategy_backtest_portfolio_comparison.v1` に記録します。live order は行いません。
 `strategy-backtest-metric-extension` は `empyrical-reloaded` 用の metrics normalization artifact を作ります。通常環境で `empyrical` が未インストールなら `skipped/not_installed_in_current_env`、一時 `uv --with empyrical-reloaded` 環境では `empyrical` の Sharpe / drawdown / annual return / annual volatility 系 metric を `strategy_backtest_metric_extension.v1` に記録します。依存追加や live order は行いません。
 `strategy-backtest-report-extension` は `quantstats` 用の report / tear sheet artifact を作ります。通常環境で `quantstats` が未インストールなら `skipped/not_installed_in_current_env`、一時 `uv --with quantstats` 環境では `quantstats.reports.html` と `quantstats.reports.metrics` を呼び、`strategy_backtest_report_extension.v1` と HTML report path/hash を記録します。依存追加や live order は行いません。
 `strategy-backtest-stress` は既存 `strategy_backtest_metrics.json` の executed signal return に追加 cost / slippage bps を掛け、`strategy_backtest_stress.v1` に scenario 別の耐性結果を記録します。既定 scenario は `base`, `mild`, `moderate`, `severe` です。依存追加や live order は行いません。
@@ -91,11 +91,11 @@ uv run --with vectorbt sis strategy-backtest-external-run
 uv run sis strategy-backtest-compare
 ```
 
-`bt` を repo dependency に入れず一時環境で portfolio comparison smoke する場合:
+`bt` optional extra で portfolio comparison smoke する場合:
 
 ```bash
 uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
-uv run --with bt sis strategy-backtest-portfolio-compare
+uv run --extra bt sis strategy-backtest-portfolio-compare
 uv run sis strategy-backtest-compare
 ```
 

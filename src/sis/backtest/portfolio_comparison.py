@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import json
 from pathlib import Path
+import tomllib
 from typing import Any
 
 import polars as pl
@@ -45,6 +46,42 @@ def _bt_candidate() -> dict[str, Any]:
         "status": "not_installed",
         "version": None,
     }
+
+
+def _project_pyproject_path() -> Path | None:
+    for directory in [Path.cwd(), *Path.cwd().parents]:
+        pyproject_path = directory / "pyproject.toml"
+        if pyproject_path.exists():
+            return pyproject_path
+    return None
+
+
+def _project_declares_bt_extra() -> bool:
+    pyproject_path = _project_pyproject_path()
+    if pyproject_path is None:
+        return False
+    try:
+        payload = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError:
+        return False
+    project = payload.get("project")
+    if not isinstance(project, dict):
+        return False
+    optional_dependencies = project.get("optional-dependencies")
+    if not isinstance(optional_dependencies, dict):
+        return False
+    bt_extra = optional_dependencies.get("bt")
+    if not isinstance(bt_extra, list):
+        return False
+    return any(str(item).startswith("bt==") or str(item).startswith("bt>=") for item in bt_extra)
+
+
+def _dependency_source(candidate: dict[str, Any]) -> str:
+    if candidate.get("status") != "installed":
+        return "not_installed_in_current_env"
+    if _project_declares_bt_extra():
+        return "optional_extra_available"
+    return "temporary_uv_with"
 
 
 def _member_rows(bundle_payload: dict[str, Any]) -> list[dict[str, Any]]:
@@ -166,6 +203,7 @@ def _base_payload(
     reason_codes: list[str],
     engine_run: bool,
     runner_mode: str,
+    dependency_source: str,
     portfolio_return: float | int | None = None,
     max_drawdown: float | int | None = None,
     turnover: float | int | None = None,
@@ -179,6 +217,7 @@ def _base_payload(
         "adapter_role": str(candidate.get("adapter_role") or "portfolio_allocation_candidate"),
         "framework_version": candidate.get("version"),
         "runner_mode": runner_mode,
+        "dependency_source": dependency_source,
         "run_status": run_status,
         "reason_codes": reason_codes,
         "dependency_added": False,
@@ -260,6 +299,7 @@ def _run_bt_payload(
             reason_codes=["framework_run_failed"],
             engine_run=False,
             runner_mode="temporary_or_optional_import",
+            dependency_source=_dependency_source(candidate),
         )
     return _base_payload(
         candidate=candidate,
@@ -272,6 +312,7 @@ def _run_bt_payload(
         reason_codes=[],
         engine_run=True,
         runner_mode="temporary_or_optional_import",
+        dependency_source=_dependency_source(candidate),
         portfolio_return=portfolio_return,
         max_drawdown=max_drawdown,
         turnover=turnover,
@@ -286,6 +327,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         f"- framework_id: {payload['framework_id']}",
         f"- framework_version: {payload['framework_version']}",
         f"- runner_mode: {payload['runner_mode']}",
+        f"- dependency_source: {payload['dependency_source']}",
         f"- run_status: {payload['run_status']}",
         f"- engine_run: {payload['engine_run']}",
         f"- source_bundle_path: `{payload['source_bundle_path']}`",
@@ -344,6 +386,7 @@ def build_strategy_backtest_portfolio_comparison(
             reason_codes=["not_installed_in_current_env"],
             engine_run=False,
             runner_mode="not_installed_in_current_env",
+            dependency_source=_dependency_source(candidate),
             turnover=None,
         )
     else:

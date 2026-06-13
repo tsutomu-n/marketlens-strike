@@ -758,6 +758,7 @@
         "adapter_role",
         "framework_version",
         "runner_mode",
+        "dependency_source",
         "run_status",
         "reason_codes",
         "dependency_added",
@@ -781,6 +782,14 @@
             "not_installed_in_current_env",
             "temporary_or_optional_import",
             "installed_without_runner",
+            null
+          ]
+        },
+        "dependency_source": {
+          "enum": [
+            "not_installed_in_current_env",
+            "temporary_uv_with",
+            "optional_extra_available",
             null
           ]
         },

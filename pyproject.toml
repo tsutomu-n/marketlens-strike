@@ -29,6 +29,11 @@ dependencies = [
 [project.scripts]
 sis = "sis.cli:main"
 
+[project.optional-dependencies]
+bt = [
+  "bt==1.2.0",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

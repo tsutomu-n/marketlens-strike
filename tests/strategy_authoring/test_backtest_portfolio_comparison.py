@@ -114,6 +114,7 @@ def test_build_strategy_backtest_portfolio_comparison_skips_when_bt_missing(
     assert payload["run_status"] == "skipped"
     assert payload["reason_codes"] == ["not_installed_in_current_env"]
     assert payload["runner_mode"] == "not_installed_in_current_env"
+    assert payload["dependency_source"] == "not_installed_in_current_env"
     assert payload["engine_run"] is False
     assert payload["dependency_added"] is False
     assert payload["permits_live_order"] is False
@@ -201,6 +202,7 @@ def test_build_strategy_backtest_portfolio_comparison_runs_bt_when_installed(
     payload = result.payload
     assert payload["framework_version"] == "1.2.0"
     assert payload["runner_mode"] == "temporary_or_optional_import"
+    assert payload["dependency_source"] == "optional_extra_available"
     assert payload["run_status"] == "completed"
     assert payload["engine_run"] is True
     assert payload["portfolio_return"] == 0.04

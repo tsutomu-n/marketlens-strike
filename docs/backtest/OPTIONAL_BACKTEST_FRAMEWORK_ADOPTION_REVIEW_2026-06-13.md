@@ -1,20 +1,22 @@
 <!--
 作成日: 2026-06-13_20:36 JST
-更新日: 2026-06-13_20:36 JST
+更新日: 2026-06-13_20:42 JST
 -->
 
 # Optional Backtest Framework Adoption Review
 
 ## 結論
 
-現時点では `pyproject.toml` / `uv.lock` に外部 backtest framework を追加しない。
+`bt` は portfolio allocation / rebalance comparison 用の optional extra として採用済みである。通常 dependency には入れず、`uv sync --dev --extra bt --locked` または `uv run --extra bt ...` で使う。
+
+`vectorbt`, `empyrical-reloaded`, `quantstats`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` は現時点では `pyproject.toml` / `uv.lock` に追加しない。
 
 正式 optional extra の第一候補は、用途で分ける。
 
 | 用途 | 第一候補 | 判断 |
 |---|---|---|
 | 高速 signal runner / parameter sweep | `vectorbt` | 条件付き候補。Python 3.13 対応と一時 smoke はよいが、Commons Clause 付き license の review が終わるまで lock しない。 |
-| portfolio allocation / rebalance comparison | `bt` | 最初に lock する optional extra として最も進めやすい候補。MIT、Python 3.13 wheel、現行 adapter surface との役割一致がある。 |
+| portfolio allocation / rebalance comparison | `bt` | optional extra 採用済み。MIT、Python 3.13 wheel、現行 adapter surface との役割一致がある。 |
 | metrics normalization | `empyrical-reloaded` | engine ではなく metrics extra 候補。Apache 系で比較的進めやすい。 |
 | report / tear sheet | `quantstats` | engine ではなく report extra 候補。Apache-2.0 だが、HTML / plot dependency と artifact 再現性を先に確認する。 |
 
@@ -30,7 +32,8 @@
 
 Local repo:
 
-- `pyproject.toml`: Python `>=3.13,<3.14`、現時点で外部 backtest framework は通常 dependency / dev dependency ではない。
+- `pyproject.toml`: Python `>=3.13,<3.14`、`bt==1.2.0` を `[project.optional-dependencies].bt` に固定。通常 dependency / dev dependency ではない。
+- `uv.lock`: `bt==1.2.0` と transitive dependency を optional extra として lock。
 - `src/sis/backtest/frameworks.py`: 9件の候補を metadata candidate として列挙。
 - `src/sis/backtest/framework_smoke.py`: `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` を一時 import smoke 対象にする。
 - `src/sis/backtest/adapter_selection.py`: `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を adapter design 対象にし、他候補を deferred にする。
@@ -57,7 +60,7 @@ External primary sources:
 | Candidate | Repo role | Current package signal | 採用判断 | 次の実装単位 |
 |---|---|---|---|---|
 | `vectorbt` | `high_speed_signal_runner` | `1.0.0`, Python 3.13 classifier, Commons Clause | 条件付き。license review なしで lock しない。 | license decision memo の後、`[project.optional-dependencies].vectorbt` と `dependency_source=optional_extra` を追加。 |
-| `bt` | `portfolio_allocation_rebalance` | `1.2.0`, MIT, Python 3.13 wheel | 最初の optional extra として最有力。 | `bt = ["bt==1.2.0"]` extra、`uv sync --dev --extra bt --locked`、portfolio comparison real smoke。 |
+| `bt` | `portfolio_allocation_rebalance` | `1.2.0`, MIT, Python 3.13 wheel | optional extra 採用済み。 | `uv sync --dev --extra bt --locked`、`uv run --extra bt sis strategy-backtest-portfolio-compare`、portfolio comparison real smoke。 |
 | `empyrical-reloaded` | `metrics_normalization` | `0.5.12`, Apache系, Python 3.13 classifier | metrics extra 候補。engine ではない。 | `metrics = ["empyrical-reloaded==0.5.12"]` か `reports` extra に含める。 |
 | `quantstats` | `report_tearsheet` | `0.0.81`, Apache-2.0, Python 3.13 classifier | report extra 候補。engine ではない。 | HTML report artifact の再現性と optional plot deps を確認してから lock。 |
 | `backtesting.py` | `simple_ohlc_candidate` | AGPLv3+ | 今回は不採用。 | license review 後に別 spike。 |
@@ -68,26 +71,23 @@ External primary sources:
 
 ## 採用順
 
-依存追加を実行する場合の最小順:
+残りの依存追加を実行する場合の最小順:
 
-1. `bt` を optional extra として採用する。
-2. `strategy-backtest-portfolio-compare` の real `bt` run を optional extra 環境で検証する。
-3. `strategy_backtest_portfolio_comparison.v1` に `dependency_source=optional_extra` を追加するか、現行 `runner_mode=temporary_or_optional_import` で足りるかを決める。
-4. `strategy-backtest-pack` / `strategy-backtest-pack-validate` で通常 env と `--extra bt` env の読み分けを文書化する。
-5. `empyrical-reloaded` と `quantstats` は `reports` extra として一括にするか、`metrics` / `reports` に分けるかを決める。
-6. `vectorbt` は license review が通った場合だけ `vectorbt` extra として追加する。
+1. `strategy-backtest-pack` / `strategy-backtest-pack-validate` で通常 env と `--extra bt` env の読み分けを維持する。
+2. `empyrical-reloaded` と `quantstats` は `reports` extra として一括にするか、`metrics` / `reports` に分けるかを決める。
+3. `vectorbt` は license review が通った場合だけ `vectorbt` extra として追加する。
 
 ## 受入条件
 
-`bt` optional extra 採用の受入条件:
+`bt` optional extra 採用の受入条件と確認結果:
 
-- `pyproject.toml` に `[project.optional-dependencies]` を追加し、通常 dependency には入れない。
-- `uv.lock` の差分が optional extra 採用に限定される。
-- `uv sync --dev --locked` が通常 env で通る。
-- `uv sync --dev --extra bt --locked` が optional env で通る。
-- `uv run --extra bt sis strategy-backtest-portfolio-compare` が `engine_run=true` を artifact に記録する。
-- `uv run sis strategy-backtest-pack` は通常 env で `complete_without_locked_external_dependency` を維持する。
-- 全 artifact で `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を維持する。
+- `pyproject.toml` に `[project.optional-dependencies].bt = ["bt==1.2.0"]` を追加し、通常 dependency には入れない。
+- `uv.lock` の差分は `bt` optional extra と transitive dependency である。
+- `uv sync --dev --locked` は通常 env で通る。
+- `uv sync --dev --extra bt --locked` は optional env で通る。
+- `uv run --extra bt sis strategy-backtest-portfolio-compare` は `engine_run=true`, `framework_version=1.2.0`, `dependency_source=optional_extra_available` を artifact に記録する。
+- 通常 env では `bt` が未インストールなら `run_status=skipped`, `dependency_source=not_installed_in_current_env` を維持する。
+- 全 artifact で `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を維持する。
 
 `vectorbt` optional extra 採用の追加受入条件:
 
@@ -102,7 +102,7 @@ External primary sources:
 
 - license review が未完了、または repo 利用形態に合わない。
 - Python 3.13 / uv lock / CI 相当 sync が不安定。
-- optional extra が通常 `uv sync --dev --locked` に影響する。
+- optional extra が通常 `uv sync --dev --locked` の依存集合に混入する。
 - external framework result が source path / source hash / runner mode / dependency source を記録できない。
 - external framework artifact が live order、wallet、signing、exchange write と接続しそうになる。
 - native backtest と optional framework result の差分を説明できず、比較 report が誤解を生む。
