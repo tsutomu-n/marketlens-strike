@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_15:19 JST
-更新日: 2026-06-13_11:59 JST
+更新日: 2026-06-13_17:16 JST
 -->
 
 # Strategy Author Guide
@@ -96,6 +96,22 @@ uv run sis strategy-backtest-adapter-spike
 ```
 
 これは dependency を追加せず、外部 framework engine も実行せず、candidate metadata / license risk / adoption blocker を `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json` に記録します。
+
+外部 framework 候補を repo dependency に入れず、一時環境で import できるかを記録する場合は、次を使います。
+
+```bash
+uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis strategy-backtest-framework-smoke
+```
+
+これは `strategy_backtest_framework_smoke.v1` artifact に import status、version、license metadata、Requires-Python、採用分類を記録します。外部 engine は実行せず、`pyproject.toml` / `uv.lock` も変更しません。
+
+Phase C の初期 adapter 選定を記録する場合は、次を使います。
+
+```bash
+uv run sis strategy-backtest-adapter-selection
+```
+
+これは `strategy_backtest_adapter_selection.v1` artifact に、`vectorbt`, `bt`, `empyrical-reloaded` を selected、その他候補を deferred として記録します。外部 engine は実行せず、`pyproject.toml` / `uv.lock` も変更しません。
 
 外部 framework result 用 artifact を作る場合は、次を使います。
 

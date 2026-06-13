@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_framework_smoke.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "dependency_added",
+    "external_engine_run",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used",
+    "runner_mode",
+    "target_frameworks",
+    "results",
+    "summary",
+    "decision"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_framework_smoke.v1"},
+    "created_at": {"type": "string"},
+    "dependency_added": {"const": false},
+    "external_engine_run": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "runner_mode": {"const": "temporary_import_smoke"},
+    "target_frameworks": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "vectorbt",
+          "bt",
+          "backtesting",
+          "zipline_reloaded",
+          "backtrader",
+          "quantstats",
+          "empyrical_reloaded",
+          "pyfolio_reloaded",
+          "qstrader"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "framework_id",
+          "module",
+          "distribution",
+          "adapter_role",
+          "import_status",
+          "adoption_classification",
+          "adoption_note",
+          "adoption_blockers",
+          "dependency_added",
+          "engine_run",
+          "permits_live_order",
+          "wallet_used",
+          "exchange_write_used"
+        ],
+        "properties": {
+          "framework_id": {
+            "enum": [
+              "vectorbt",
+              "bt",
+              "backtesting",
+              "zipline_reloaded",
+              "backtrader",
+              "quantstats",
+              "empyrical_reloaded",
+              "pyfolio_reloaded",
+              "qstrader"
+            ]
+          },
+          "module": {"type": "string"},
+          "distribution": {"type": "string"},
+          "adapter_role": {"type": "string"},
+          "import_status": {"enum": ["imported", "not_installed", "import_failed"]},
+          "version": {"type": ["string", "null"]},
+          "license": {"type": ["string", "null"]},
+          "requires_python": {"type": ["string", "null"]},
+          "license_classifiers": {"type": "array", "items": {"type": "string"}},
+          "adoption_classification": {
+            "enum": [
+              "optional_extra_candidate",
+              "separate_runner_candidate",
+              "report_only_candidate"
+            ]
+          },
+          "adoption_note": {"type": "string"},
+          "adoption_blockers": {"type": "array", "items": {"type": "string"}},
+          "import_error_type": {"type": ["string", "null"]},
+          "import_error_message": {"type": ["string", "null"]},
+          "dependency_added": {"const": false},
+          "engine_run": {"const": false},
+          "permits_live_order": {"const": false},
+          "wallet_used": {"const": false},
+          "exchange_write_used": {"const": false}
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "target_count",
+        "imported_count",
+        "not_installed_count",
+        "import_failed_count",
+        "optional_extra_candidate_count",
+        "separate_runner_candidate_count",
+        "report_only_candidate_count"
+      ],
+      "properties": {
+        "target_count": {"type": "integer", "minimum": 0},
+        "imported_count": {"type": "integer", "minimum": 0},
+        "not_installed_count": {"type": "integer", "minimum": 0},
+        "import_failed_count": {"type": "integer", "minimum": 0},
+        "optional_extra_candidate_count": {"type": "integer", "minimum": 0},
+        "separate_runner_candidate_count": {"type": "integer", "minimum": 0},
+        "report_only_candidate_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "decision": {
+      "type": "object",
+      "required": [
+        "selected_for_dependency_adoption",
+        "reason_codes",
+        "recommended_next_step"
+      ],
+      "properties": {
+        "selected_for_dependency_adoption": {"type": "null"},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "recommended_next_step": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -6,8 +6,10 @@ from typing import Literal, cast
 import typer
 
 from sis.backtest.adapter_spike import build_backtest_adapter_spike
+from sis.backtest.adapter_selection import build_backtest_adapter_selection
 from sis.backtest.compare import build_strategy_backtest_comparison
 from sis.backtest.external import build_strategy_backtest_external_result
+from sis.backtest.framework_smoke import build_backtest_framework_smoke
 from sis.backtest.pack import (
     validate_strategy_backtest_pack,
     write_strategy_backtest_pack_outputs,
@@ -360,6 +362,82 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
         typer.echo(f"backtest_external_result={result.external_path}")
         typer.echo(f"backtest_external_report={result.report_path}")
+
+    @app.command("strategy-backtest-framework-smoke")
+    def strategy_backtest_framework_smoke_cmd(
+        framework: list[str] | None = typer.Option(
+            None,
+            "--framework",
+            help="Framework ID to smoke. Repeat this option; defaults to Phase B targets.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_framework_smoke"),
+            "--out",
+            help="Output directory for framework smoke artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        selected_out = _resolve_workspace_path(out, settings.data_dir)
+        selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
+        try:
+            result = build_backtest_framework_smoke(
+                out_dir=selected_out,
+                reports_dir=selected_reports,
+                target_frameworks=framework,
+            )
+        except ValueError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_framework_smoke={result.smoke_path}")
+        typer.echo(f"backtest_framework_smoke_report={result.report_path}")
+
+    @app.command("strategy-backtest-adapter-selection")
+    def strategy_backtest_adapter_selection_cmd(
+        adapter_spike_path: Path = typer.Option(
+            Path("data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json"),
+            "--adapter-spike-path",
+            help="Strategy Backtest Adapter Spike JSON.",
+        ),
+        framework_smoke_path: Path = typer.Option(
+            Path("data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json"),
+            "--framework-smoke-path",
+            help="Strategy Backtest Framework Smoke JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_adapter_selection"),
+            "--out",
+            help="Output directory for adapter selection artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        selected_adapter_spike_path = _resolve_workspace_path(adapter_spike_path, settings.data_dir)
+        selected_framework_smoke_path = _resolve_workspace_path(
+            framework_smoke_path, settings.data_dir
+        )
+        selected_out = _resolve_workspace_path(out, settings.data_dir)
+        selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
+        try:
+            result = build_backtest_adapter_selection(
+                adapter_spike_path=selected_adapter_spike_path,
+                framework_smoke_path=selected_framework_smoke_path,
+                out_dir=selected_out,
+                reports_dir=selected_reports,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_adapter_selection={result.selection_path}")
+        typer.echo(f"backtest_adapter_selection_report={result.report_path}")
 
     @app.command("strategy-backtest-pack")
     def strategy_backtest_pack_cmd(

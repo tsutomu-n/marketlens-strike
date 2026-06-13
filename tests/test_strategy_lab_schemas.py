@@ -27,7 +27,9 @@ def test_strategy_lab_schema_files_exist_and_parse() -> None:
         "strategy_backtest_suite.v1.schema.json",
         "strategy_backtest_suite_result.v1.schema.json",
         "strategy_backtest_adapter_spike.v1.schema.json",
+        "strategy_backtest_adapter_selection.v1.schema.json",
         "strategy_backtest_external_result.v1.schema.json",
+        "strategy_backtest_framework_smoke.v1.schema.json",
         "strategy_backtest_pack.v1.schema.json",
         "strategy_backtest_pack_validation.v1.schema.json",
         "instrument_registry_snapshot.v1.schema.json",
@@ -69,8 +71,16 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
     backtest_adapter_spike = json.loads(
         Path("schemas/strategy_backtest_adapter_spike.v1.schema.json").read_text(encoding="utf-8")
     )
+    backtest_adapter_selection = json.loads(
+        Path("schemas/strategy_backtest_adapter_selection.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
     backtest_external_result = json.loads(
         Path("schemas/strategy_backtest_external_result.v1.schema.json").read_text(encoding="utf-8")
+    )
+    backtest_framework_smoke = json.loads(
+        Path("schemas/strategy_backtest_framework_smoke.v1.schema.json").read_text(encoding="utf-8")
     )
     backtest_pack = json.loads(
         Path("schemas/strategy_backtest_pack.v1.schema.json").read_text(encoding="utf-8")
@@ -127,7 +137,9 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
         assert backtest_comparison["properties"][name]["const"] is False
         assert backtest_suite_result["properties"][name]["const"] is False
         assert backtest_adapter_spike["properties"][name]["const"] is False
+        assert backtest_adapter_selection["properties"][name]["const"] is False
         assert backtest_external_result["properties"][name]["const"] is False
+        assert backtest_framework_smoke["properties"][name]["const"] is False
         assert backtest_pack["properties"][name]["const"] is False
         assert backtest_pack_validation["properties"][name]["const"] is False
     assert "comparison_diagnostics" in backtest_comparison["properties"]

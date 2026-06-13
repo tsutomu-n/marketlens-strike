@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_16:21 JST
+更新日: 2026-06-13_17:16 JST
 -->
 
 # Backtest Docs
@@ -28,6 +28,8 @@
 を見ます。
 `strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML を読み、複数specと複数backtest条件を1コマンドで実行して suite result / report に集約します。標準例は `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の5手法を走らせ、suite result の `method_matrix` で手法別 run 数を確認できます。
 `strategy-backtest-adapter-spike` は9件の外部 backtest / metrics / report OSS 候補の import / metadata / license risk を artifact 化します。依存追加、外部engine実行、live order は行いません。
+`strategy-backtest-framework-smoke` は一時 `uv --with ...` 環境で `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` などの import 結果、version、license metadata、Requires-Python、採用分類を artifact 化します。repo dependency は追加しません。
+`strategy-backtest-adapter-selection` は adapter spike と framework smoke の artifact から Phase C の初期選定を artifact 化します。現時点では `vectorbt`, `bt`, `empyrical-reloaded` を selected、`quantstats`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` を deferred とします。repo dependency は追加しません。
 `strategy-backtest-external-run` は外部 framework 候補の実行結果用 artifact を作ります。`vectorbt` がインストール済みで signals / quotes 入力がある場合は `vectorbt.Portfolio.from_signals` を呼び、未インストールなら `skipped/not_installed_in_current_env` として記録します。artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes` を残します。依存追加や live order は行いません。
 `strategy-backtest-compare` は `strategy_backtest_metrics.json` から overall / walk-forward era / optimizer sweep を `method_results` に正規化し、既定の suite result があれば `suite_results`、既定の adapter spike があれば `adapter_spike`、既定の external result があれば `external_results` として取り込みます。`comparison_diagnostics` では threshold failure、weakest era、suite best run も確認できます。
 `strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、adapter spike、external result、comparison、pack manifest を一括生成します。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
@@ -49,13 +51,21 @@ uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_
 uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports
 uv run sis strategy-backtest-suite --suite docs/strategy_research_lab/examples/backtest_suite.yaml
 uv run sis strategy-backtest-adapter-spike
+uv run sis strategy-backtest-framework-smoke
+uv run sis strategy-backtest-adapter-selection
 uv run sis strategy-backtest-external-run
 uv run sis strategy-backtest-compare
 uv run sis strategy-backtest-pack
 uv run sis strategy-backtest-pack-validate
 ```
 
-`vectorbt` を repo dependency に入れず一時環境で smoke する場合:
+Tier 1 / report 候補を repo dependency に入れず一時 import smoke する場合:
+
+```bash
+uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis strategy-backtest-framework-smoke
+```
+
+`vectorbt` を repo dependency に入れず一時環境で external-run smoke する場合:
 
 ```bash
 uv run --with vectorbt sis strategy-backtest-external-run
@@ -75,6 +85,8 @@ uv run sis strategy-backtest-compare
 - `data/research/backtest_compare/strategy_backtest_comparison.json`
 - `data/research/backtest_suite/strategy_backtest_suite_result.json`
 - `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`
+- `data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json`
+- `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`
 - `data/research/backtest_external/strategy_backtest_external_result.json`
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/research/backtest_pack/strategy_backtest_pack_validation.json`
@@ -83,6 +95,8 @@ uv run sis strategy-backtest-compare
 - `data/reports/strategy_backtest_comparison_report.md`
 - `data/reports/strategy_backtest_suite_report.md`
 - `data/reports/strategy_backtest_adapter_spike_report.md`
+- `data/reports/strategy_backtest_framework_smoke_report.md`
+- `data/reports/strategy_backtest_adapter_selection_report.md`
 - `data/reports/strategy_backtest_external_report.md`
 - `data/reports/strategy_backtest_pack_report.md`
 - `data/reports/strategy_backtest_pack_validation_report.md`

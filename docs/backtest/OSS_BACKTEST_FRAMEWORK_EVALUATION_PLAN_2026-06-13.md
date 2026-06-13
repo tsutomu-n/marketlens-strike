@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_16:12 JST
-更新日: 2026-06-13_16:21 JST
+更新日: 2026-06-13_17:16 JST
 -->
 
 # OSS Backtest Framework Evaluation Plan
@@ -279,6 +279,8 @@
 
 ### Phase B: Tier 1 import smoke
 
+実装状況: 実装済み。`strategy-backtest-framework-smoke` で一時 import smoke を artifact 化する。
+
 対象:
 
 - `vectorbt`
@@ -292,13 +294,31 @@
 - version / license metadata / Requires-Python を artifact に残す。
 - 採用候補を `optional_extra_candidate` / `separate_runner_candidate` / `report_only_candidate` に分類する。
 
+実測:
+
+```bash
+uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis strategy-backtest-framework-smoke
+```
+
+2026-06-13_16:50 JST 時点で、`vectorbt=1.0.0`, `bt=1.2.0`, `quantstats=0.0.81`, `empyrical-reloaded=0.5.12` はすべて `import_status=imported` だった。`pyproject.toml` / `uv.lock` は変更していない。
+
 ### Phase C: adapter selection
+
+実装状況: 実装済み。`strategy-backtest-adapter-selection` で Phase C の初期選定を artifact 化する。
 
 推奨:
 
 1. `vectorbt`: high-speed signal runner
 2. `bt`: portfolio allocation / rebalance comparison
 3. `quantstats` または `empyrical-reloaded`: report / metrics extension
+
+実測選定:
+
+- selected: `vectorbt` = `high_speed_signal_runner`
+- selected: `bt` = `portfolio_allocation_rebalance`
+- selected: `empyrical-reloaded` = `metrics_normalization`
+- deferred: `quantstats` = metrics contract 後の report / tearsheet 拡張
+- deferred: `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader`
 
 やらない:
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_16:21 JST
+更新日: 2026-06-13_17:16 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -56,9 +56,13 @@ uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_ba
 - `data/research/backtest_compare/strategy_backtest_comparison.json`
 - `data/research/backtest_suite/strategy_backtest_suite_result.json`
 - `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`
+- `data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json`
+- `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`
 - `data/reports/strategy_backtest_comparison_report.md`
 - `data/reports/strategy_backtest_suite_report.md`
 - `data/reports/strategy_backtest_adapter_spike_report.md`
+- `data/reports/strategy_backtest_framework_smoke_report.md`
+- `data/reports/strategy_backtest_adapter_selection_report.md`
 
 現在できること:
 
@@ -235,6 +239,46 @@ uv run sis strategy-backtest-adapter-spike
 - `data/reports/strategy_backtest_adapter_spike_report.md`
 
 この command は `pyproject.toml` / `uv.lock` を変更しない。外部 framework engine を実行せず、`vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` の import 可否、installed metadata、license classifier、adoption blocker、次の review step を記録する。`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
+
+## Backtest Framework Temporary Import Smoke
+
+`strategy-backtest-framework-smoke` は、外部 OSS を repo dependency に追加する前に、一時環境で import できるかを artifact 化する。
+
+```bash
+uv run sis strategy-backtest-framework-smoke
+```
+
+出力:
+
+- `data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json`
+- `data/reports/strategy_backtest_framework_smoke_report.md`
+
+既定 target は `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` である。通常環境では未インストールなら `not_installed` として記録する。実際の一時 import smoke は次で行う。
+
+```bash
+uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis strategy-backtest-framework-smoke
+```
+
+2026-06-13_16:50 JST 時点の一時 smoke では4件すべて `import_status=imported` だった。artifact は `vectorbt=1.0.0`, `bt=1.2.0`, `quantstats=0.0.81`, `empyrical-reloaded=0.5.12`、Requires-Python はそれぞれ `>=3.10`, `>=3.9`, `>=3.10`, `>=3.9` を記録した。採用分類は `vectorbt` と `bt` が `optional_extra_candidate`、`quantstats` と `empyrical-reloaded` が `report_only_candidate` である。
+
+この command は `pyproject.toml` / `uv.lock` を変更しない。外部 engine は実行せず、`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
+
+## Backtest Adapter Selection
+
+`strategy-backtest-adapter-selection` は、adapter spike と framework smoke の artifact から Phase C の初期選定を作る。
+
+```bash
+uv run sis strategy-backtest-adapter-selection
+```
+
+出力:
+
+- `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`
+- `data/reports/strategy_backtest_adapter_selection_report.md`
+
+2026-06-13_17:16 JST 時点では、`vectorbt` を `high_speed_signal_runner`、`bt` を `portfolio_allocation_rebalance`、`empyrical-reloaded` を `metrics_normalization` として selected にした。`quantstats` は metrics contract が固まった後の report / tearsheet 拡張として deferred、`backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` も license / build / maturity / no-live isolation などの理由で deferred にした。
+
+この command は `pyproject.toml` / `uv.lock` を変更しない。外部 engine は実行せず、`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
 
 ## Backtest External Framework Result
 
