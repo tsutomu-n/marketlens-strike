@@ -1242,6 +1242,28 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--report-extension-path",
             help="Strategy backtest report extension JSON.",
         ),
+        stress_path: Path = typer.Option(
+            Path("data/research/backtest_stress/strategy_backtest_stress.json"),
+            "--stress-path",
+            help="Strategy backtest stress JSON.",
+        ),
+        regime_split_path: Path = typer.Option(
+            Path("data/research/backtest_regime_split/strategy_backtest_regime_split.json"),
+            "--regime-split-path",
+            help="Strategy backtest regime split JSON.",
+        ),
+        rolling_stability_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_rolling_stability/strategy_backtest_rolling_stability.json"
+            ),
+            "--rolling-stability-path",
+            help="Strategy backtest rolling stability JSON.",
+        ),
+        comparison_path: Path = typer.Option(
+            Path("data/research/backtest_compare/strategy_backtest_comparison.json"),
+            "--comparison-path",
+            help="Strategy backtest comparison JSON.",
+        ),
     ) -> None:
         settings = get_settings()
         selected_pack_path = _resolve_workspace_path(pack_path, settings.data_dir)
@@ -1255,6 +1277,12 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         selected_report_extension_path = _resolve_workspace_path(
             report_extension_path, settings.data_dir
         )
+        selected_stress_path = _resolve_workspace_path(stress_path, settings.data_dir)
+        selected_regime_split_path = _resolve_workspace_path(regime_split_path, settings.data_dir)
+        selected_rolling_stability_path = _resolve_workspace_path(
+            rolling_stability_path, settings.data_dir
+        )
+        selected_comparison_path = _resolve_workspace_path(comparison_path, settings.data_dir)
         try:
             result = build_strategy_backtest_artifact_summary(
                 pack_path=selected_pack_path,
@@ -1262,6 +1290,10 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 benchmark_relative_path=selected_benchmark_relative_path,
                 metric_extension_path=selected_metric_extension_path,
                 report_extension_path=selected_report_extension_path,
+                stress_path=selected_stress_path,
+                regime_split_path=selected_regime_split_path,
+                rolling_stability_path=selected_rolling_stability_path,
+                comparison_path=selected_comparison_path,
             )
         except ValueError as exc:
             typer.echo(str(exc))

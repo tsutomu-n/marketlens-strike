@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_21:51 JST
+更新日: 2026-06-13_21:56 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -528,13 +528,13 @@ uv run sis strategy-backtest-pack-validate
 
 この command は `strategy_backtest_pack.v1` の artifact path / hash、標準5手法、paper-only / no-live boundary、外部 framework 方針を検査し、`strategy_backtest_pack_validation.v1` を作る。`decision=PASS` の場合だけ exit code 0 で、`FAIL` の場合は validation artifact / report を残して exit code 2 で止まる。
 
-pack、pack validation、benchmark relative、metric extension、report extension の主要 field だけを確認する場合は `strategy-backtest-artifact-summary` を使う。
+pack、pack validation、benchmark relative、metric extension、report extension、stress、regime split、rolling stability、comparison diagnostics の主要 field だけを確認する場合は `strategy-backtest-artifact-summary` を使う。
 
 ```bash
 uv run sis strategy-backtest-artifact-summary
 ```
 
-この command は artifact を新規生成せず、既存 JSON を読み、pack の paper-only / no-live field、suite method count、external framework policy、benchmark-relative active return / source benchmark path、metric extension status、report extension status / warning count、validation decision / failed count を JSON で stdout に出す。欠損 artifact は失敗にせず `exists=false` として表示し、壊れた JSON は exit code 2 で止める。
+この command は artifact を新規生成せず、既存 JSON を読み、pack の paper-only / no-live field、suite method count、external framework policy、benchmark-relative active return / source benchmark path、metric extension status、report extension status / warning count、stress worst scenario、regime split worst bucket、rolling stability worst window、comparison threshold failure / weakest era / suite best run count、validation decision / failed count を JSON で stdout に出す。欠損 artifact は失敗にせず `exists=false` として表示し、壊れた JSON は exit code 2 で止める。
 
 `bt`、`metrics`、`reports` optional extra をまとめて smoke し、pack manifest の artifact hash も揃える場合は、個別 extension だけを後から上書きせず、pack 自体を extras 環境で再実行する。
 

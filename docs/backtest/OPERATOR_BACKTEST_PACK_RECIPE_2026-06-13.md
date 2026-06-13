@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_21:35 JST
-更新日: 2026-06-13_21:51 JST
+更新日: 2026-06-13_21:56 JST
 -->
 
 # Operator Backtest Pack Recipe
@@ -93,7 +93,7 @@ benchmark-relative artifact:
 uv run sis strategy-backtest-artifact-summary
 ```
 
-この command は pack、pack validation、benchmark relative、metric extension、report extension を読み、欠損 artifact は `exists=false` として表示する。
+この command は pack、pack validation、benchmark relative、metric extension、report extension、stress、regime split、rolling stability、comparison diagnostics を読み、欠損 artifact は `exists=false` として表示する。
 
 ## optional extras
 

@@ -431,6 +431,19 @@ portfolio:
     assert summary_payload["metric_extension"]["exists"] is True
     assert summary_payload["report_extension"]["exists"] is True
     assert "framework_warning_count" in summary_payload["report_extension"]
+    assert summary_payload["stress"]["exists"] is True
+    assert summary_payload["stress"]["scenario_count"] == 4
+    assert summary_payload["stress"]["worst_scenario_id"] == "severe"
+    assert summary_payload["regime_split"]["exists"] is True
+    assert summary_payload["regime_split"]["dimension_count"] == 5
+    assert summary_payload["regime_split"]["worst_dimension_id"] == "ts_hour"
+    assert summary_payload["rolling_stability"]["exists"] is True
+    assert summary_payload["rolling_stability"]["window_count"] == 2
+    assert summary_payload["rolling_stability"]["worst_window_size"] == 3
+    assert summary_payload["comparison"]["exists"] is True
+    assert summary_payload["comparison"]["threshold_failure_count"] == 0
+    assert summary_payload["comparison"]["suite_best_run_count"] == 1
+    assert summary_payload["comparison"]["weakest_era_count"] >= 1
 
 
 def test_strategy_authoring_optimizer_rejects_unsupported_parameter_path(tmp_path) -> None:
