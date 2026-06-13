@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Literal, cast
 
@@ -8,6 +9,7 @@ import typer
 from sis.backtest.adapter_spike import build_backtest_adapter_spike
 from sis.backtest.adapter_contract import build_backtest_adapter_contract
 from sis.backtest.adapter_selection import build_backtest_adapter_selection
+from sis.backtest.artifact_summary import build_strategy_backtest_artifact_summary
 from sis.backtest.benchmark_relative import (
     DEFAULT_BENCHMARK_RETURN_COLUMN,
     DEFAULT_BENCHMARK_SERIES_RETURN_COLUMN,
@@ -1209,6 +1211,62 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         typer.echo(f"decision={result.payload['decision']}")
         if result.payload["decision"] != "PASS":
             raise typer.Exit(2)
+
+    @app.command("strategy-backtest-artifact-summary")
+    def strategy_backtest_artifact_summary_cmd(
+        pack_path: Path = typer.Option(
+            Path("data/research/backtest_pack/strategy_backtest_pack.json"),
+            "--pack-path",
+            help="Strategy backtest pack manifest JSON.",
+        ),
+        validation_path: Path = typer.Option(
+            Path("data/research/backtest_pack/strategy_backtest_pack_validation.json"),
+            "--validation-path",
+            help="Strategy backtest pack validation JSON.",
+        ),
+        benchmark_relative_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_benchmark_relative/"
+                "strategy_backtest_benchmark_relative.json"
+            ),
+            "--benchmark-relative-path",
+            help="Strategy backtest benchmark-relative JSON.",
+        ),
+        metric_extension_path: Path = typer.Option(
+            Path("data/research/backtest_metric_extension/strategy_backtest_metric_extension.json"),
+            "--metric-extension-path",
+            help="Strategy backtest metric extension JSON.",
+        ),
+        report_extension_path: Path = typer.Option(
+            Path("data/research/backtest_report_extension/strategy_backtest_report_extension.json"),
+            "--report-extension-path",
+            help="Strategy backtest report extension JSON.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        selected_pack_path = _resolve_workspace_path(pack_path, settings.data_dir)
+        selected_validation_path = _resolve_workspace_path(validation_path, settings.data_dir)
+        selected_benchmark_relative_path = _resolve_workspace_path(
+            benchmark_relative_path, settings.data_dir
+        )
+        selected_metric_extension_path = _resolve_workspace_path(
+            metric_extension_path, settings.data_dir
+        )
+        selected_report_extension_path = _resolve_workspace_path(
+            report_extension_path, settings.data_dir
+        )
+        try:
+            result = build_strategy_backtest_artifact_summary(
+                pack_path=selected_pack_path,
+                validation_path=selected_validation_path,
+                benchmark_relative_path=selected_benchmark_relative_path,
+                metric_extension_path=selected_metric_extension_path,
+                report_extension_path=selected_report_extension_path,
+            )
+        except ValueError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(json.dumps(result.payload, ensure_ascii=False, sort_keys=True))
 
     @app.command("strategy-author-train-model")
     def strategy_author_train_model_cmd(

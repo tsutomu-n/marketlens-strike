@@ -406,6 +406,32 @@ portfolio:
     assert validate_result.exit_code == 0, validate_result.stdout
     assert "decision=PASS" in validate_result.stdout
 
+    summary_result = runner.invoke(app, ["strategy-backtest-artifact-summary"])
+
+    assert summary_result.exit_code == 0, summary_result.stdout
+    summary_payload = json.loads(summary_result.stdout)
+    assert summary_payload["summary_kind"] == "strategy_backtest_artifact_summary.v1"
+    assert summary_payload["pack"]["exists"] is True
+    assert summary_payload["pack"]["paper_only"] is True
+    assert summary_payload["pack"]["permits_live_order"] is False
+    assert summary_payload["pack"]["suite_method_count"] == 5
+    assert summary_payload["pack"]["external_framework_policy"] == {
+        "policy_id": "native_primary_external_evaluation_only.v1",
+        "standard_engine": "strategy_authoring_native",
+        "decision": "complete_without_locked_external_dependency",
+        "locked_dependency_added": False,
+        "external_adapters_required_for_completion": False,
+    }
+    assert summary_payload["pack_validation"]["decision"] == "PASS"
+    assert summary_payload["pack_validation"]["failed_count"] == 0
+    assert summary_payload["benchmark_relative"]["source_benchmark_series_path"] == (
+        benchmark_series_path.as_posix()
+    )
+    assert summary_payload["benchmark_relative"]["comparison_count"] > 0
+    assert summary_payload["metric_extension"]["exists"] is True
+    assert summary_payload["report_extension"]["exists"] is True
+    assert "framework_warning_count" in summary_payload["report_extension"]
+
 
 def test_strategy_authoring_optimizer_rejects_unsupported_parameter_path(tmp_path) -> None:
     spec_path = tmp_path / "spec.yaml"

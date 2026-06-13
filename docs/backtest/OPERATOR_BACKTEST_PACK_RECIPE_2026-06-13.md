@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_21:35 JST
-更新日: 2026-06-13_21:35 JST
+更新日: 2026-06-13_21:48 JST
 -->
 
 # Operator Backtest Pack Recipe
@@ -13,6 +13,7 @@
 uv run python scripts/seed_strategy_authoring_baseline_data.py
 uv run sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
 uv run sis strategy-backtest-pack-validate
+uv run sis strategy-backtest-artifact-summary
 ```
 
 これは local fixture と local CSV だけを読む paper-only 手順である。live order、wallet、signing、exchange write、外部 benchmark fetching は行わない。
@@ -85,6 +86,14 @@ benchmark-relative artifact:
 - `findings[].check_id`
 
 `decision=PASS` の場合だけ `strategy-backtest-pack-validate` は exit code 0 で終わる。`decision=FAIL` の場合は validation artifact と report を残して exit code 2 で止まる。
+
+主要 field だけを JSON で確認する場合は、次を使う。
+
+```bash
+uv run sis strategy-backtest-artifact-summary
+```
+
+この command は pack、pack validation、benchmark relative、metric extension、report extension を読み、欠損 artifact は `exists=false` として表示する。
 
 ## optional extras
 
