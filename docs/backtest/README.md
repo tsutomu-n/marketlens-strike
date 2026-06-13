@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-11_21:34 JST
+更新日: 2026-06-13_11:59 JST
 -->
 
 # Backtest Docs
@@ -17,6 +17,16 @@
 | Strategy Authoring fixed-horizon backtest | `uv run sis strategy-author-run --through backtest` | 実装済み、baseline seedあり | YAML戦略のpaper-only研究評価 |
 | Legacy backtest bridge | `uv run sis build-backtest` | 互換維持 | Strategy Lab / historical bridge系の簡易評価 |
 
+現行 backtest の詳細、現在できること、専用 backtesting OSS / framework の候補整理は
+[CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md](CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md)
+を見ます。
+`strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML を読み、複数specと複数backtest条件を1コマンドで実行して suite result / report に集約します。標準例は `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の5手法を走らせ、suite result の `method_matrix` で手法別 run 数を確認できます。
+`strategy-backtest-adapter-spike` は外部 backtest framework 候補の import / metadata / license risk を artifact 化します。依存追加、外部engine実行、live order は行いません。
+`strategy-backtest-external-run` は外部 framework 候補の実行結果用 artifact を作ります。`vectorbt` がインストール済みで signals / quotes 入力がある場合は `vectorbt.Portfolio.from_signals` を呼び、未インストールなら `skipped/not_installed_in_current_env` として記録します。artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes` を残します。依存追加や live order は行いません。
+`strategy-backtest-compare` は `strategy_backtest_metrics.json` から overall / walk-forward era / optimizer sweep を `method_results` に正規化し、既定の suite result があれば `suite_results`、既定の adapter spike があれば `adapter_spike`、既定の external result があれば `external_results` として取り込みます。`comparison_diagnostics` では threshold failure、weakest era、suite best run も確認できます。
+`strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、adapter spike、external result、comparison、pack manifest を一括生成します。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
+`strategy-backtest-pack-validate` は pack manifest の artifact path / hash、5手法、paper-only / no-live boundary、外部 framework 方針を検査し、PASS / FAIL artifact を出します。
+
 バックテストへ最短で入る入口は Strategy Authoring baseline です。
 Trade[XYZ] を当面の注文口にせず、バックテスト優先へ切り替える計画は
 [BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md](BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md)
@@ -31,7 +41,22 @@ uv run python scripts/seed_strategy_authoring_baseline_data.py
 uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
 uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
 uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports
+uv run sis strategy-backtest-suite --suite docs/strategy_research_lab/examples/backtest_suite.yaml
+uv run sis strategy-backtest-adapter-spike
+uv run sis strategy-backtest-external-run
+uv run sis strategy-backtest-compare
+uv run sis strategy-backtest-pack
+uv run sis strategy-backtest-pack-validate
 ```
+
+`vectorbt` を repo dependency に入れず一時環境で smoke する場合:
+
+```bash
+uv run --with vectorbt sis strategy-backtest-external-run
+uv run sis strategy-backtest-compare
+```
+
+この一時 smoke では `pyproject.toml` / `uv.lock` を変更しません。
 
 主な出力:
 
@@ -41,8 +66,20 @@ uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_ba
 - `data/research/strategy_signals.parquet`
 - `data/research/strategy_backtest_metrics.json`
 - `data/research/strategy_lifecycle/backtest_acceptance_decision.json`
+- `data/research/backtest_compare/strategy_backtest_comparison.json`
+- `data/research/backtest_suite/strategy_backtest_suite_result.json`
+- `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`
+- `data/research/backtest_external/strategy_backtest_external_result.json`
+- `data/research/backtest_pack/strategy_backtest_pack.json`
+- `data/research/backtest_pack/strategy_backtest_pack_validation.json`
 - `data/reports/strategy_backtest_report.md`
 - `data/reports/strategy_backtest_acceptance_report.md`
+- `data/reports/strategy_backtest_comparison_report.md`
+- `data/reports/strategy_backtest_suite_report.md`
+- `data/reports/strategy_backtest_adapter_spike_report.md`
+- `data/reports/strategy_backtest_external_report.md`
+- `data/reports/strategy_backtest_pack_report.md`
+- `data/reports/strategy_backtest_pack_validation_report.md`
 
 これは Strategy Authoring の paper-only 研究評価です。`strategy-backtest-acceptance` は backtest artifact の pass/fail/boundary 判定を固定しますが、Trade[XYZ] `backtest_data_ready=true`、Bitget 接続、demo order submit、live readiness の証明ではありません。
 

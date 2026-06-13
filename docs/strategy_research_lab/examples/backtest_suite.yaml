@@ -1,0 +1,48 @@
+# 作成日: 2026-06-13_10:29 JST
+# 更新日: 2026-06-13_11:32 JST
+schema_version: strategy_backtest_suite.v1
+suite_id: trend_pullback_backtest_suite_v1
+selection_metric: total_return
+selection_direction: maximize
+cases:
+  - case_id: single_window_120m
+    backtest:
+      split_method: single_window
+      label_horizon_minutes: 120
+      min_trade_count: 1
+  - case_id: walk_forward_240m
+    backtest:
+      split_method: walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+  - case_id: purged_walk_forward_240m
+    backtest:
+      split_method: purged_walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+  - case_id: return_bootstrap_240m
+    backtest:
+      split_method: purged_walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+    resampling:
+      method: return_bootstrap
+      iterations: 100
+      seed: 7
+  - case_id: block_bootstrap_240m
+    backtest:
+      split_method: purged_walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+    resampling:
+      method: block_bootstrap
+      iterations: 100
+      seed: 11
+      block_size: 2
+members:
+  - spec_path: trend_pullback_authoring_spec.yaml
+    enabled: true

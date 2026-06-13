@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_pack.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "spec_path",
+    "suite_path",
+    "paper_only",
+    "live_order_submitted",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used",
+    "summary",
+    "external_framework_policy",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_pack.v1"},
+    "created_at": {"type": "string"},
+    "spec_path": {"type": "string"},
+    "suite_path": {"type": "string"},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "summary": {
+      "type": "object",
+      "required": [
+        "suite_run_count",
+        "suite_passed_count",
+        "suite_method_count",
+        "suite_methods",
+        "external_engine_run",
+        "external_result_count",
+        "comparison_id"
+      ],
+      "properties": {
+        "suite_run_count": {"type": ["integer", "null"], "minimum": 0},
+        "suite_passed_count": {"type": ["integer", "null"], "minimum": 0},
+        "suite_method_count": {"type": ["integer", "null"], "minimum": 0},
+        "suite_methods": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        },
+        "external_engine_run": {"type": ["boolean", "null"]},
+        "external_result_count": {"type": "integer", "minimum": 0},
+        "comparison_id": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "external_framework_policy": {
+      "type": "object",
+      "required": [
+        "policy_id",
+        "standard_engine",
+        "decision",
+        "locked_dependency_added",
+        "external_adapters_required_for_completion",
+        "temporary_uv_with_allowed",
+        "candidate_frameworks",
+        "adoption_requires"
+      ],
+      "properties": {
+        "policy_id": {"const": "native_primary_external_evaluation_only.v1"},
+        "standard_engine": {"const": "strategy_authoring_native"},
+        "decision": {"const": "complete_without_locked_external_dependency"},
+        "locked_dependency_added": {"const": false},
+        "external_adapters_required_for_completion": {"const": false},
+        "temporary_uv_with_allowed": {
+          "type": "array",
+          "items": {"type": "string"},
+          "contains": {"const": "vectorbt"}
+        },
+        "candidate_frameworks": {
+          "type": "array",
+          "items": {"enum": ["vectorbt", "backtesting.py", "backtrader", "zipline-reloaded"]},
+          "minItems": 4,
+          "uniqueItems": true
+        },
+        "adoption_requires": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "license_review",
+              "python_3_13_uv_lock_review",
+              "ci_green",
+              "schema_boundary_review"
+            ]
+          },
+          "minItems": 4,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "exists", "sha256"],
+        "properties": {
+          "path": {"type": "string"},
+          "exists": {"type": "boolean"},
+          "sha256": {
+            "type": ["string", "null"],
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -305,3 +305,97 @@ class StrategyAuthoringBundleSpec(BaseModel):
         if not [member for member in self.members if member.enabled]:
             raise ValueError("bundle must include at least one enabled member")
         return self
+
+
+class BacktestSuiteBacktestOverrides(BaseModel):
+    split_method: Literal["single_window", "walk_forward", "purged_walk_forward"] | None = None
+    era_unit: Literal["trading_day", "week", "month"] | None = None
+    label_horizon_minutes: int | None = None
+    purge_minutes: int | None = None
+    embargo_minutes: int | None = None
+    min_trade_count: int | None = None
+    primary_metric: str | None = None
+    pass_thresholds: dict[str, float] | None = None
+
+    @model_validator(mode="after")
+    def validate_overrides(self) -> BacktestSuiteBacktestOverrides:
+        if self.label_horizon_minutes is not None and self.label_horizon_minutes <= 0:
+            raise ValueError("case.backtest.label_horizon_minutes must be positive")
+        if self.purge_minutes is not None and self.purge_minutes < 0:
+            raise ValueError("case.backtest.purge_minutes must be >= 0")
+        if self.embargo_minutes is not None and self.embargo_minutes < 0:
+            raise ValueError("case.backtest.embargo_minutes must be >= 0")
+        if self.min_trade_count is not None and self.min_trade_count < 0:
+            raise ValueError("case.backtest.min_trade_count must be >= 0")
+        return self
+
+
+class BacktestSuiteResampling(BaseModel):
+    method: Literal["none", "return_bootstrap", "block_bootstrap"] = "none"
+    iterations: int = 100
+    seed: int = 0
+    block_size: int = 1
+
+    @model_validator(mode="after")
+    def validate_resampling(self) -> BacktestSuiteResampling:
+        if self.iterations <= 0:
+            raise ValueError("case.resampling.iterations must be positive")
+        if self.block_size <= 0:
+            raise ValueError("case.resampling.block_size must be positive")
+        if self.method == "return_bootstrap" and self.block_size != 1:
+            raise ValueError("case.resampling.block_size is only used for block_bootstrap")
+        return self
+
+
+class BacktestSuiteCase(BaseModel):
+    case_id: str
+    enabled: bool = True
+    backtest: BacktestSuiteBacktestOverrides = Field(default_factory=BacktestSuiteBacktestOverrides)
+    resampling: BacktestSuiteResampling = Field(default_factory=BacktestSuiteResampling)
+
+    @model_validator(mode="after")
+    def validate_case(self) -> BacktestSuiteCase:
+        if not self.case_id.strip():
+            raise ValueError("case_id must be non-empty")
+        return self
+
+
+class BacktestSuiteMember(BaseModel):
+    spec_path: str
+    enabled: bool = True
+    case_ids: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_member(self) -> BacktestSuiteMember:
+        if not self.spec_path.strip():
+            raise ValueError("suite member spec_path must be non-empty")
+        return self
+
+
+class StrategyBacktestSuiteSpec(BaseModel):
+    schema_version: Literal["strategy_backtest_suite.v1"]
+    suite_id: str
+    selection_metric: str = "total_return"
+    selection_direction: Literal["maximize", "minimize", "auto"] = "maximize"
+    cases: list[BacktestSuiteCase]
+    members: list[BacktestSuiteMember]
+
+    @model_validator(mode="after")
+    def validate_suite(self) -> StrategyBacktestSuiteSpec:
+        if not self.suite_id.strip():
+            raise ValueError("suite_id must be non-empty")
+        enabled_cases = [case for case in self.cases if case.enabled]
+        enabled_members = [member for member in self.members if member.enabled]
+        if not enabled_cases:
+            raise ValueError("suite must include at least one enabled case")
+        if not enabled_members:
+            raise ValueError("suite must include at least one enabled member")
+        case_ids = [case.case_id for case in self.cases]
+        if len(case_ids) != len(set(case_ids)):
+            raise ValueError("suite case_id values must be unique")
+        known_case_ids = set(case_ids)
+        for member in self.members:
+            unknown = sorted(set(member.case_ids) - known_case_ids)
+            if unknown:
+                raise ValueError(f"suite member references unknown case_ids: {unknown}")
+        return self

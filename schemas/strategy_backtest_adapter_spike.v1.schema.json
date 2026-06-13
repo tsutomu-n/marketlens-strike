@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_adapter_spike.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "dependency_added",
+    "external_engine_run",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used",
+    "candidates",
+    "decision"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_adapter_spike.v1"},
+    "created_at": {"type": "string"},
+    "dependency_added": {"const": false},
+    "external_engine_run": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "framework_id",
+          "module",
+          "distribution",
+          "adapter_role",
+          "status",
+          "adoption_note",
+          "adoption_status",
+          "adoption_blockers",
+          "dependency_added",
+          "engine_run",
+          "permits_live_order",
+          "wallet_used",
+          "exchange_write_used"
+        ],
+        "properties": {
+          "framework_id": {
+            "enum": ["vectorbt", "backtesting", "backtrader", "zipline_reloaded"]
+          },
+          "module": {"type": "string"},
+          "distribution": {"type": "string"},
+          "adapter_role": {"type": "string"},
+          "status": {"enum": ["installed", "not_installed"]},
+          "version": {"type": ["string", "null"]},
+          "license": {"type": ["string", "null"]},
+          "requires_python": {"type": ["string", "null"]},
+          "license_classifiers": {"type": "array", "items": {"type": "string"}},
+          "adoption_note": {"type": "string"},
+          "adoption_status": {
+            "enum": [
+              "metadata_review_required",
+              "requires_temporary_install_spike",
+              "blocked_pending_install_spike",
+              "blocked_pending_license_review"
+            ]
+          },
+          "adoption_blockers": {"type": "array", "items": {"type": "string"}},
+          "dependency_added": {"const": false},
+          "engine_run": {"const": false},
+          "permits_live_order": {"const": false},
+          "wallet_used": {"const": false},
+          "exchange_write_used": {"const": false}
+        },
+        "additionalProperties": false
+      }
+    },
+    "decision": {
+      "type": "object",
+      "required": [
+        "selected_for_dependency_adoption",
+        "reason_codes",
+        "recommended_next_step"
+      ],
+      "properties": {
+        "selected_for_dependency_adoption": {"type": "null"},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "recommended_next_step": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

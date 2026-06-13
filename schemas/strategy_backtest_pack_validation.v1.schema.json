@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_pack_validation.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "pack_path",
+    "pack_hash",
+    "decision",
+    "paper_only",
+    "live_order_submitted",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used",
+    "summary",
+    "external_framework_policy",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_pack_validation.v1"},
+    "created_at": {"type": "string"},
+    "pack_path": {"type": "string"},
+    "pack_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "decision": {"enum": ["PASS", "FAIL"]},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "summary": {
+      "type": "object",
+      "required": [
+        "check_count",
+        "passed_count",
+        "failed_count",
+        "min_suite_method_count",
+        "required_methods",
+        "external_framework_policy_decision",
+        "locked_dependency_added"
+      ],
+      "properties": {
+        "check_count": {"type": "integer", "minimum": 0},
+        "passed_count": {"type": "integer", "minimum": 0},
+        "failed_count": {"type": "integer", "minimum": 0},
+        "min_suite_method_count": {"type": "integer", "minimum": 1},
+        "required_methods": {"type": "array", "items": {"type": "string"}},
+        "external_framework_policy_decision": {
+          "const": "complete_without_locked_external_dependency"
+        },
+        "locked_dependency_added": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "external_framework_policy": {
+      "type": "object",
+      "required": [
+        "policy_id",
+        "standard_engine",
+        "decision",
+        "locked_dependency_added",
+        "external_adapters_required_for_completion",
+        "temporary_uv_with_allowed",
+        "candidate_frameworks",
+        "adoption_requires"
+      ],
+      "properties": {
+        "policy_id": {"const": "native_primary_external_evaluation_only.v1"},
+        "standard_engine": {"const": "strategy_authoring_native"},
+        "decision": {"const": "complete_without_locked_external_dependency"},
+        "locked_dependency_added": {"const": false},
+        "external_adapters_required_for_completion": {"const": false},
+        "temporary_uv_with_allowed": {
+          "type": "array",
+          "items": {"type": "string"},
+          "contains": {"const": "vectorbt"}
+        },
+        "candidate_frameworks": {
+          "type": "array",
+          "items": {"enum": ["vectorbt", "backtesting.py", "backtrader", "zipline-reloaded"]},
+          "minItems": 4,
+          "uniqueItems": true
+        },
+        "adoption_requires": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "license_review",
+              "python_3_13_uv_lock_review",
+              "ci_green",
+              "schema_boundary_review"
+            ]
+          },
+          "minItems": 4,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "passed", "message"],
+        "properties": {
+          "check_id": {"type": "string"},
+          "passed": {"type": "boolean"},
+          "message": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

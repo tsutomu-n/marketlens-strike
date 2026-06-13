@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_15:19 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-13_11:59 JST
 -->
 
 # Strategy Author Guide
@@ -73,6 +73,63 @@ v1 は fixed horizon exit です。`backtest.label_horizon_minutes` で horizon 
 `rules.exit.exit_on_opposite_signal: true` を指定すると、同じ execution symbol で反対方向の次シグナルが出た時点でも仮想 exit します。これは reversal、ドテン、close-on-sell / close-on-buy 型の評価用です。実注文は出しません。
 
 `backtest.pass_thresholds` は `strategy_backtest_metrics.json` の `summary.pass_thresholds` と `summary.backtest_passed` に反映されます。`max_drawdown` は `-0.2` 以上なら pass です。`cost_drag_bps`, `stale_rejected_count`, `halt_rejected_count`, `*_cost_bps`, `*_drag_bps`, `*_imbalance`, rejected / blocked / unfilled 系 count、`incomplete_*` は threshold 以下なら pass、それ以外は threshold 以上なら pass です。`multi_leg_group_metrics.complete_group_count`, `multi_leg_group_metrics.total_return`, `multi_leg_group_metrics.incomplete_group_count`, `multi_leg_group_metrics.avg_leg_return_imbalance` のような summary 内の dotted path も指定できます。
+
+## 5.1. 複数条件のバックテスト suite を実行する
+
+```bash
+uv run sis strategy-backtest-suite --suite docs/strategy_research_lab/examples/backtest_suite.yaml
+```
+
+`strategy_backtest_suite.v1` は `cases` に backtest 条件、`members` に対象 spec を並べます。標準例では1つの spec を `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の5手法で試します。複数specを同じ条件で比較する使い方もできます。
+
+出力は次です。
+
+- `data/research/backtest_suite/strategy_backtest_suite_result.json`
+- `data/reports/strategy_backtest_suite_report.md`
+
+suite result は paper-only artifact です。live order、wallet、exchange write は行いません。`method_matrix` で `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` などの手法別 run 数、pass 数、case id を確認できます。`resampling.method` に `return_bootstrap` または `block_bootstrap` を指定した case は、実行済み signal return を deterministic に再標本化し、`summary.resampling` に total return の p05 / p50 / p95、min / max、positive rate を記録します。
+
+外部 framework 候補を repo dependency に入れる前の確認だけを行う場合は、次を使います。
+
+```bash
+uv run sis strategy-backtest-adapter-spike
+```
+
+これは dependency を追加せず、外部 framework engine も実行せず、candidate metadata / license risk / adoption blocker を `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json` に記録します。
+
+外部 framework result 用 artifact を作る場合は、次を使います。
+
+```bash
+uv run sis strategy-backtest-external-run
+```
+
+既定では `data/research/strategy_signals.parquet` と `data/research/strategy_authoring_baseline_quotes.parquet` を読み、`--label-horizon-minutes` で外部 framework 用の exit を組み立てます。外部 result artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes` が入ります。`vectorbt` がインストール済みなら `vectorbt.Portfolio.from_signals` を呼びます。現環境で framework が未インストールなら、各候補は `run_status=skipped` と `not_installed_in_current_env` を持ちます。これは失敗ではなく、依存を追加せずに比較 artifact へ取り込むための境界安全な記録です。
+
+`vectorbt` を repo dependency に入れず一時環境だけで実測する場合は、次を使います。
+
+```bash
+uv run --with vectorbt sis strategy-backtest-external-run
+```
+
+この場合、`vectorbt` が import でき、入力に entry / exit を作れるなら `vectorbt` の result は `run_status=completed`, `engine_run=true` になります。`pyproject.toml` / `uv.lock` は変更しません。
+
+suite、adapter spike、external result の実行後に `uv run sis strategy-backtest-compare` を実行すると、単発backtest metrics、suite result、外部 framework adapter 候補の状態、adapter spike の採否判断材料、external result を `data/research/backtest_compare/strategy_backtest_comparison.json` にまとめられます。既定では `data/research/backtest_suite/strategy_backtest_suite_result.json`、`data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`、`data/research/backtest_external/strategy_backtest_external_result.json` が存在する場合だけ取り込みます。comparison artifact は suite の `method_matrix` と run ごとの `method_id` も保持します。`comparison_diagnostics` では threshold failure、weakest era、suite best run を確認できます。
+
+標準の単発backtest、5手法 suite、adapter spike、external result、comparison、pack manifest を一括生成する場合は、次を使います。
+
+```bash
+uv run sis strategy-backtest-pack
+```
+
+既定出力は `data/research/backtest_pack/strategy_backtest_pack.json` と `data/reports/strategy_backtest_pack_report.md` です。pack manifest は生成 artifact の path / hash、suite method count、external engine 実行有無、comparison id、`external_framework_policy` を記録します。標準 engine は `strategy_authoring_native` で、完成線は `complete_without_locked_external_dependency` です。これも paper-only artifact で、live order、wallet、exchange write は許可しません。
+
+生成済み pack を検査する場合は次を使います。
+
+```bash
+uv run sis strategy-backtest-pack-validate
+```
+
+validation は pack manifest の artifact path / hash、標準5手法、paper-only / no-live boundary、外部 framework 方針を検査し、`data/research/backtest_pack/strategy_backtest_pack_validation.json` に `PASS` または `FAIL` を記録します。CLI は `FAIL` の場合 exit code 2 で止まります。
 
 ## 6. paper-preview artifact まで出す
 

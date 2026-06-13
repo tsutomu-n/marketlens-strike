@@ -8,6 +8,7 @@ from sis.research.strategy_lab.authoring.contracts.base import (
     StrategyAuthoringValidationError,
 )
 from sis.research.strategy_lab.authoring.contracts.spec import (
+    StrategyBacktestSuiteSpec,
     StrategyAuthoringBundleSpec,
     StrategyAuthoringSpec,
 )
@@ -25,6 +26,13 @@ def load_authoring_bundle_spec(path: Path) -> StrategyAuthoringBundleSpec:
     if not isinstance(payload, dict):
         raise StrategyAuthoringValidationError("bundle spec must be a YAML object")
     return StrategyAuthoringBundleSpec.model_validate(payload)
+
+
+def load_backtest_suite_spec(path: Path) -> StrategyBacktestSuiteSpec:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise StrategyAuthoringValidationError("backtest suite spec must be a YAML object")
+    return StrategyBacktestSuiteSpec.model_validate(payload)
 
 
 def template_yaml() -> str:

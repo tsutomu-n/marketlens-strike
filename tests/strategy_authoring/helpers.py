@@ -21,6 +21,7 @@ from sis.research.strategy_lab.authoring.compiler.build import (
 )
 from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 from sis.research.strategy_lab.authoring.io import (
+    load_backtest_suite_spec,
     load_authoring_bundle_spec,
     load_authoring_spec,
     template_yaml,
@@ -38,9 +39,11 @@ def test_strategy_authoring_example_specs_and_bundles_parse() -> None:
     examples_dir = Path("docs/strategy_research_lab/examples")
     spec_paths = sorted(examples_dir.glob("*_authoring_spec.yaml"))
     bundle_paths = sorted(examples_dir.glob("*bundle.yaml"))
+    suite_paths = sorted(examples_dir.glob("*suite.yaml"))
 
     assert spec_paths
     assert bundle_paths
+    assert suite_paths
     for spec_path in spec_paths:
         assert load_authoring_spec(spec_path).schema_version == "strategy_authoring_spec.v1"
     for bundle_path in bundle_paths:
@@ -48,6 +51,11 @@ def test_strategy_authoring_example_specs_and_bundles_parse() -> None:
         assert bundle.schema_version == "strategy_authoring_bundle.v1"
         for member in bundle.members:
             assert (bundle_path.parent / member.spec_path).exists()
+    for suite_path in suite_paths:
+        suite = load_backtest_suite_spec(suite_path)
+        assert suite.schema_version == "strategy_backtest_suite.v1"
+        for member in suite.members:
+            assert (suite_path.parent / member.spec_path).exists()
 
 
 def _feature_rows() -> list[dict]:

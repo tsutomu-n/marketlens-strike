@@ -48,6 +48,276 @@ def test_strategy_authoring_cli_init_validate_explain_and_run_backtest(
     assert metrics["summary"]["strategy_scorecard"]["live_order_submitted"] is False
 
 
+def test_strategy_backtest_suite_runs_multiple_cases_for_spec(tmp_path, monkeypatch) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    suite_path = tmp_path / "suite.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    _write_spec(spec_path)
+    suite_path.write_text(
+        f"""schema_version: strategy_backtest_suite.v1
+suite_id: demo_backtest_suite
+selection_metric: total_return
+selection_direction: maximize
+cases:
+  - case_id: single_window_120m
+    backtest:
+      split_method: single_window
+      label_horizon_minutes: 120
+      min_trade_count: 1
+  - case_id: walk_forward_240m
+    backtest:
+      split_method: walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+  - case_id: purged_walk_forward_240m
+    backtest:
+      split_method: purged_walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+  - case_id: return_bootstrap_240m
+    backtest:
+      split_method: purged_walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+    resampling:
+      method: return_bootstrap
+      iterations: 16
+      seed: 7
+  - case_id: block_bootstrap_240m
+    backtest:
+      split_method: purged_walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+    resampling:
+      method: block_bootstrap
+      iterations: 16
+      seed: 11
+      block_size: 2
+members:
+  - spec_path: {spec_path.name}
+""",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["strategy-backtest-suite", "--suite", str(suite_path)])
+
+    assert result.exit_code == 0, result.stdout
+    assert "backtest_suite_result=" in result.stdout
+    result_path = data_dir / "research/backtest_suite/strategy_backtest_suite_result.json"
+    report_path = data_dir / "reports/strategy_backtest_suite_report.md"
+    assert result_path.exists()
+    assert report_path.exists()
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        Path("schemas/strategy_backtest_suite_result.v1.schema.json").read_text(encoding="utf-8")
+    )
+    validate(instance=payload, schema=schema)
+    assert payload["schema_version"] == "strategy_backtest_suite_result.v1"
+    assert payload["paper_only"] is True
+    assert payload["live_order_submitted"] is False
+    assert payload["permits_live_order"] is False
+    assert payload["aggregate"]["run_count"] == 5
+    assert payload["aggregate"]["passed_count"] == 5
+    assert payload["method_matrix"]["method_count"] == 5
+    assert {method["method_id"] for method in payload["method_matrix"]["methods"]} == {
+        "single_window",
+        "walk_forward:trading_day",
+        "purged_walk_forward:trading_day",
+        "purged_walk_forward:trading_day+return_bootstrap",
+        "purged_walk_forward:trading_day+block_bootstrap",
+    }
+    assert payload["method_matrix"]["counts_by_method"] == {
+        "purged_walk_forward:trading_day+block_bootstrap": 1,
+        "purged_walk_forward:trading_day+return_bootstrap": 1,
+        "purged_walk_forward:trading_day": 1,
+        "single_window": 1,
+        "walk_forward:trading_day": 1,
+    }
+    assert {run["case_id"] for run in payload["runs"]} == {
+        "single_window_120m",
+        "walk_forward_240m",
+        "purged_walk_forward_240m",
+        "return_bootstrap_240m",
+        "block_bootstrap_240m",
+    }
+    assert {run["method_id"] for run in payload["runs"]} == {
+        "single_window",
+        "walk_forward:trading_day",
+        "purged_walk_forward:trading_day",
+        "purged_walk_forward:trading_day+return_bootstrap",
+        "purged_walk_forward:trading_day+block_bootstrap",
+    }
+    resampled_runs = [
+        run
+        for run in payload["runs"]
+        if run["method_id"]
+        in {
+            "purged_walk_forward:trading_day+return_bootstrap",
+            "purged_walk_forward:trading_day+block_bootstrap",
+        }
+    ]
+    assert len(resampled_runs) == 2
+    assert all(run["resampling"]["status"] == "completed" for run in resampled_runs)
+    assert all(run["summary"]["resampling"]["iteration_count"] == 16 for run in resampled_runs)
+    assert all("total_return_p05" in run["summary"]["resampling"] for run in resampled_runs)
+    assert payload["best_run"]["case_id"] in {
+        "single_window_120m",
+        "walk_forward_240m",
+        "purged_walk_forward_240m",
+        "return_bootstrap_240m",
+        "block_bootstrap_240m",
+    }
+    assert all(run["summary"]["backtest_passed"] is True for run in payload["runs"])
+
+
+def test_strategy_backtest_pack_runs_standard_backtest_artifact_chain(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    suite_path = tmp_path / "suite.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    _write_spec(spec_path)
+    suite_path.write_text(
+        f"""schema_version: strategy_backtest_suite.v1
+suite_id: demo_backtest_pack_suite
+selection_metric: total_return
+selection_direction: maximize
+cases:
+  - case_id: single_window_120m
+    backtest:
+      split_method: single_window
+      label_horizon_minutes: 120
+      min_trade_count: 1
+  - case_id: walk_forward_240m
+    backtest:
+      split_method: walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+  - case_id: purged_walk_forward_240m
+    backtest:
+      split_method: purged_walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+  - case_id: return_bootstrap_240m
+    backtest:
+      split_method: purged_walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+    resampling:
+      method: return_bootstrap
+      iterations: 16
+      seed: 7
+  - case_id: block_bootstrap_240m
+    backtest:
+      split_method: purged_walk_forward
+      era_unit: trading_day
+      label_horizon_minutes: 240
+      min_trade_count: 1
+    resampling:
+      method: block_bootstrap
+      iterations: 16
+      seed: 11
+      block_size: 2
+members:
+  - spec_path: {spec_path.name}
+""",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "strategy-backtest-pack",
+            "--spec",
+            str(spec_path),
+            "--suite",
+            str(suite_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "backtest_pack=" in result.stdout
+    assert "backtest_pack_validation=" in result.stdout
+    assert "backtest_comparison=" in result.stdout
+    pack_path = data_dir / "research/backtest_pack/strategy_backtest_pack.json"
+    validation_path = data_dir / "research/backtest_pack/strategy_backtest_pack_validation.json"
+    comparison_path = data_dir / "research/backtest_compare/strategy_backtest_comparison.json"
+    assert pack_path.exists()
+    assert validation_path.exists()
+    assert comparison_path.exists()
+    payload = json.loads(pack_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        Path("schemas/strategy_backtest_pack.v1.schema.json").read_text(encoding="utf-8")
+    )
+    validate(instance=payload, schema=schema)
+    assert payload["schema_version"] == "strategy_backtest_pack.v1"
+    assert payload["paper_only"] is True
+    assert payload["permits_live_order"] is False
+    assert payload["summary"]["suite_run_count"] == 5
+    assert payload["summary"]["suite_method_count"] == 5
+    assert payload["summary"]["suite_methods"] == {
+        "purged_walk_forward:trading_day+block_bootstrap": 1,
+        "purged_walk_forward:trading_day+return_bootstrap": 1,
+        "purged_walk_forward:trading_day": 1,
+        "single_window": 1,
+        "walk_forward:trading_day": 1,
+    }
+    assert payload["external_framework_policy"] == {
+        "policy_id": "native_primary_external_evaluation_only.v1",
+        "standard_engine": "strategy_authoring_native",
+        "decision": "complete_without_locked_external_dependency",
+        "locked_dependency_added": False,
+        "external_adapters_required_for_completion": False,
+        "temporary_uv_with_allowed": ["vectorbt"],
+        "candidate_frameworks": [
+            "vectorbt",
+            "backtesting.py",
+            "backtrader",
+            "zipline-reloaded",
+        ],
+        "adoption_requires": [
+            "license_review",
+            "python_3_13_uv_lock_review",
+            "ci_green",
+            "schema_boundary_review",
+        ],
+    }
+    assert payload["artifacts"]["comparison"]["exists"] is True
+    assert payload["artifacts"]["external_result"]["exists"] is True
+    assert (data_dir / "reports/strategy_backtest_pack_report.md").exists()
+    validation_payload = json.loads(validation_path.read_text(encoding="utf-8"))
+    validation_schema = json.loads(
+        Path("schemas/strategy_backtest_pack_validation.v1.schema.json").read_text(encoding="utf-8")
+    )
+    validate(instance=validation_payload, schema=validation_schema)
+    assert validation_payload["decision"] == "PASS"
+    assert validation_payload["summary"]["failed_count"] == 0
+    assert validation_payload["summary"]["external_framework_policy_decision"] == (
+        "complete_without_locked_external_dependency"
+    )
+    assert validation_payload["summary"]["locked_dependency_added"] is False
+    assert validation_payload["external_framework_policy"]["policy_id"] == (
+        "native_primary_external_evaluation_only.v1"
+    )
+    assert (data_dir / "reports/strategy_backtest_pack_validation_report.md").exists()
+
+    validate_result = runner.invoke(app, ["strategy-backtest-pack-validate"])
+
+    assert validate_result.exit_code == 0, validate_result.stdout
+    assert "decision=PASS" in validate_result.stdout
+
+
 def test_strategy_authoring_optimizer_rejects_unsupported_parameter_path(tmp_path) -> None:
     spec_path = tmp_path / "spec.yaml"
     spec_path.write_text(

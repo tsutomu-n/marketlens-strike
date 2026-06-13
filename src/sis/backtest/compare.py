@@ -1,0 +1,770 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
+from typing import Any, cast
+
+from sis.backtest.frameworks import framework_adapter_status
+
+
+@dataclass(frozen=True)
+class BacktestComparisonResult:
+    comparison_path: Path
+    report_path: Path
+    payload: dict[str, Any]
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return f"sha256:{digest.hexdigest()}"
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"expected JSON object: {path}")
+    return payload
+
+
+def _native_result(metrics_payload: dict[str, Any]) -> dict[str, Any]:
+    summary = metrics_payload.get("summary")
+    if not isinstance(summary, dict):
+        raise ValueError("strategy backtest metrics missing summary object.")
+    aggregate = summary.get("aggregate_metrics")
+    if not isinstance(aggregate, dict):
+        aggregate = {}
+    executed_summary = summary.get("executed_signal_summary")
+    if not isinstance(executed_summary, dict):
+        executed_summary = {}
+    return {
+        "engine_id": "strategy_authoring_native",
+        "strategy_id": metrics_payload.get("strategy_id"),
+        "schema_version": metrics_payload.get("schema_version"),
+        "backtest_passed": summary.get("backtest_passed"),
+        "signals_considered": summary.get("signals_considered"),
+        "executed_count": summary.get("executed_count"),
+        "blocked_count": summary.get("blocked_count"),
+        "trade_count": aggregate.get("trade_count"),
+        "total_return": aggregate.get("total_return"),
+        "max_drawdown": aggregate.get("max_drawdown"),
+        "cost_drag_bps": aggregate.get("cost_drag_bps"),
+        "win_rate": executed_summary.get("win_rate"),
+        "avg_signal_return": executed_summary.get("avg_signal_return"),
+        "total_notional_usd": executed_summary.get("total_notional_usd"),
+    }
+
+
+def _aggregate_metrics(summary: dict[str, Any]) -> dict[str, Any]:
+    aggregate = summary.get("aggregate_metrics")
+    if not isinstance(aggregate, dict):
+        aggregate = {}
+    return {
+        "trade_count": aggregate.get("trade_count"),
+        "total_return": aggregate.get("total_return"),
+        "max_drawdown": aggregate.get("max_drawdown"),
+        "cost_drag_bps": aggregate.get("cost_drag_bps"),
+        "stale_rejected_count": aggregate.get("stale_rejected_count"),
+        "halt_rejected_count": aggregate.get("halt_rejected_count"),
+    }
+
+
+def _variant_metrics(variant: dict[str, Any]) -> dict[str, Any]:
+    aggregate = variant.get("aggregate_metrics")
+    if not isinstance(aggregate, dict):
+        aggregate = {}
+    return {
+        "trade_count": aggregate.get("trade_count"),
+        "total_return": aggregate.get("total_return"),
+        "max_drawdown": aggregate.get("max_drawdown"),
+        "cost_drag_bps": aggregate.get("cost_drag_bps"),
+        "stale_rejected_count": aggregate.get("stale_rejected_count"),
+        "halt_rejected_count": aggregate.get("halt_rejected_count"),
+    }
+
+
+def _method_results(metrics_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    summary = metrics_payload.get("summary")
+    if not isinstance(summary, dict):
+        raise ValueError("strategy backtest metrics missing summary object.")
+
+    results: list[dict[str, Any]] = [
+        {
+            "method_id": "strategy_authoring_native_overall",
+            "method_type": "native_overall",
+            "engine_id": "strategy_authoring_native",
+            "status": "available",
+            "backtest_passed": summary.get("backtest_passed"),
+            "split_method": summary.get("authoring_split_method"),
+            "era_unit": summary.get("authoring_era_unit"),
+            "signals_considered": summary.get("signals_considered"),
+            "executed_count": summary.get("executed_count"),
+            "blocked_count": summary.get("blocked_count"),
+            "metrics": _aggregate_metrics(summary),
+        }
+    ]
+
+    eras = summary.get("walk_forward_eras")
+    if isinstance(eras, list) and eras:
+        normalized_eras = [
+            {
+                "era": era.get("era"),
+                "signal_count": era.get("signal_count"),
+                "executed_count": era.get("executed_count"),
+                "metrics": _aggregate_metrics(era),
+            }
+            for era in eras
+            if isinstance(era, dict)
+        ]
+        results.append(
+            {
+                "method_id": "strategy_authoring_walk_forward",
+                "method_type": "walk_forward",
+                "engine_id": "strategy_authoring_native",
+                "status": "available",
+                "backtest_passed": summary.get("backtest_passed"),
+                "split_method": summary.get("authoring_split_method"),
+                "era_unit": summary.get("authoring_era_unit"),
+                "era_count": len(normalized_eras),
+                "eras": normalized_eras,
+                "metrics": _aggregate_metrics(summary),
+            }
+        )
+
+    optimizer = summary.get("optimizer")
+    if isinstance(optimizer, dict):
+        variants = [
+            {
+                "variant_id": variant.get("variant_id"),
+                "parameters": variant.get("parameters") if isinstance(variant, dict) else {},
+                "backtest_passed": variant.get("backtest_passed"),
+                "metrics": _variant_metrics(variant),
+            }
+            for variant in optimizer.get("variants") or []
+            if isinstance(variant, dict)
+        ]
+        best_variant = optimizer.get("best_variant")
+        normalized_best = (
+            {
+                "variant_id": best_variant.get("variant_id"),
+                "parameters": best_variant.get("parameters"),
+                "backtest_passed": best_variant.get("backtest_passed"),
+                "metrics": _variant_metrics(best_variant),
+            }
+            if isinstance(best_variant, dict)
+            else None
+        )
+        results.append(
+            {
+                "method_id": "strategy_authoring_optimizer_sweep",
+                "method_type": "parameter_sweep",
+                "engine_id": "strategy_authoring_native",
+                "status": "available",
+                "selection_metric": optimizer.get("selection_metric"),
+                "selection_direction": optimizer.get("selection_direction"),
+                "resolved_selection_direction": optimizer.get("resolved_selection_direction"),
+                "variant_count": optimizer.get("variant_count"),
+                "best_variant": normalized_best,
+                "variants": variants,
+                "metrics": _aggregate_metrics(summary),
+            }
+        )
+
+    return results
+
+
+def _suite_run_metrics(run: dict[str, Any]) -> dict[str, Any]:
+    summary = run.get("summary")
+    if not isinstance(summary, dict):
+        summary = {}
+    return _aggregate_metrics(summary)
+
+
+def _suite_run(run: dict[str, Any]) -> dict[str, Any]:
+    backtest = run.get("backtest")
+    if not isinstance(backtest, dict):
+        backtest = {}
+    return {
+        "run_id": run.get("run_id"),
+        "case_id": run.get("case_id"),
+        "strategy_id": run.get("strategy_id"),
+        "signal_count": run.get("signal_count"),
+        "method_id": run.get("method_id"),
+        "method_type": run.get("method_type"),
+        "base_method_id": run.get("base_method_id"),
+        "resampling": run.get("resampling") if isinstance(run.get("resampling"), dict) else None,
+        "backtest_passed": (
+            run.get("summary", {}).get("backtest_passed")
+            if isinstance(run.get("summary"), dict)
+            else None
+        ),
+        "split_method": backtest.get("split_method"),
+        "era_unit": backtest.get("era_unit"),
+        "label_horizon_minutes": backtest.get("label_horizon_minutes"),
+        "metrics": _suite_run_metrics(run),
+    }
+
+
+def _suite_results(suite_payload: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if suite_payload is None:
+        return []
+    best_run = suite_payload.get("best_run")
+    runs = [run for run in suite_payload.get("runs") or [] if isinstance(run, dict)]
+    return [
+        {
+            "suite_id": suite_payload.get("suite_id"),
+            "schema_version": suite_payload.get("schema_version"),
+            "selection": suite_payload.get("selection") or {},
+            "aggregate": suite_payload.get("aggregate") or {},
+            "method_matrix": suite_payload.get("method_matrix") or {},
+            "best_run": _suite_run(best_run) if isinstance(best_run, dict) else None,
+            "runs": [_suite_run(run) for run in runs],
+            "permits_live_order": suite_payload.get("permits_live_order"),
+            "live_conversion_allowed": suite_payload.get("live_conversion_allowed"),
+            "wallet_used": suite_payload.get("wallet_used"),
+            "exchange_write_used": suite_payload.get("exchange_write_used"),
+        }
+    ]
+
+
+def _adapter_spike(spike_payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if spike_payload is None:
+        return None
+    candidates = [
+        {
+            "framework_id": candidate.get("framework_id"),
+            "adapter_role": candidate.get("adapter_role"),
+            "status": candidate.get("status"),
+            "version": candidate.get("version"),
+            "adoption_status": candidate.get("adoption_status"),
+            "adoption_blockers": candidate.get("adoption_blockers") or [],
+            "dependency_added": candidate.get("dependency_added"),
+            "engine_run": candidate.get("engine_run"),
+            "permits_live_order": candidate.get("permits_live_order"),
+            "wallet_used": candidate.get("wallet_used"),
+            "exchange_write_used": candidate.get("exchange_write_used"),
+        }
+        for candidate in spike_payload.get("candidates") or []
+        if isinstance(candidate, dict)
+    ]
+    return {
+        "schema_version": spike_payload.get("schema_version"),
+        "created_at": spike_payload.get("created_at"),
+        "dependency_added": spike_payload.get("dependency_added"),
+        "external_engine_run": spike_payload.get("external_engine_run"),
+        "permits_live_order": spike_payload.get("permits_live_order"),
+        "live_conversion_allowed": spike_payload.get("live_conversion_allowed"),
+        "wallet_used": spike_payload.get("wallet_used"),
+        "exchange_write_used": spike_payload.get("exchange_write_used"),
+        "decision": spike_payload.get("decision") or {},
+        "candidates": candidates,
+    }
+
+
+def _external_results(external_payload: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if external_payload is None:
+        return []
+    return [
+        {
+            "framework_id": result.get("framework_id"),
+            "adapter_role": result.get("adapter_role"),
+            "status": result.get("status"),
+            "run_status": result.get("run_status"),
+            "reason_codes": result.get("reason_codes") or [],
+            "dependency_added": result.get("dependency_added"),
+            "engine_run": result.get("engine_run"),
+            "permits_live_order": result.get("permits_live_order"),
+            "wallet_used": result.get("wallet_used"),
+            "exchange_write_used": result.get("exchange_write_used"),
+            "metrics": result.get("metrics") or {},
+        }
+        for result in external_payload.get("results") or []
+        if isinstance(result, dict)
+    ]
+
+
+def _numeric(value: Any) -> float | int | None:
+    if isinstance(value, bool):
+        return None
+    return value if isinstance(value, int | float) else None
+
+
+def _threshold_failures(metrics_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    summary = metrics_payload.get("summary")
+    if not isinstance(summary, dict):
+        return []
+    thresholds = summary.get("pass_thresholds")
+    if not isinstance(thresholds, dict):
+        return []
+    failures: list[dict[str, Any]] = []
+    for metric, result in sorted(thresholds.items()):
+        if not isinstance(result, dict):
+            continue
+        result_payload = cast(dict[str, Any], result)
+        if result_payload.get("passed") is not False:
+            continue
+        failures.append(
+            {
+                "metric": metric,
+                "actual": _numeric(result_payload.get("actual")),
+                "threshold": _numeric(result_payload.get("threshold")),
+            }
+        )
+    return failures
+
+
+def _weakest_eras(method_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    eras: list[dict[str, Any]] = []
+    for method in method_results:
+        method_id = method.get("method_id")
+        for era in method.get("eras") or []:
+            if not isinstance(era, dict):
+                continue
+            metrics = era.get("metrics") if isinstance(era.get("metrics"), dict) else {}
+            eras.append(
+                {
+                    "method_id": method_id,
+                    "era": era.get("era"),
+                    "trade_count": metrics.get("trade_count"),
+                    "total_return": metrics.get("total_return"),
+                    "max_drawdown": metrics.get("max_drawdown"),
+                    "cost_drag_bps": metrics.get("cost_drag_bps"),
+                }
+            )
+    return sorted(
+        eras,
+        key=lambda item: (
+            float(item["total_return"]) if isinstance(item.get("total_return"), int | float) else 0
+        ),
+    )[:3]
+
+
+def _suite_best_runs(suite_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    best_runs: list[dict[str, Any]] = []
+    for suite in suite_results:
+        best_run = suite.get("best_run")
+        if not isinstance(best_run, dict):
+            continue
+        metrics = best_run.get("metrics") if isinstance(best_run.get("metrics"), dict) else {}
+        best_runs.append(
+            {
+                "suite_id": suite.get("suite_id"),
+                "run_id": best_run.get("run_id"),
+                "case_id": best_run.get("case_id"),
+                "method_id": best_run.get("method_id"),
+                "strategy_id": best_run.get("strategy_id"),
+                "backtest_passed": best_run.get("backtest_passed"),
+                "trade_count": metrics.get("trade_count"),
+                "total_return": metrics.get("total_return"),
+                "max_drawdown": metrics.get("max_drawdown"),
+                "cost_drag_bps": metrics.get("cost_drag_bps"),
+            }
+        )
+    return best_runs
+
+
+def _suite_failed_runs(suite_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    failed_runs: list[dict[str, Any]] = []
+    for suite in suite_results:
+        for run in suite.get("runs") or []:
+            if not isinstance(run, dict) or run.get("backtest_passed") is not False:
+                continue
+            metrics = run.get("metrics") if isinstance(run.get("metrics"), dict) else {}
+            failed_runs.append(
+                {
+                    "suite_id": suite.get("suite_id"),
+                    "run_id": run.get("run_id"),
+                    "case_id": run.get("case_id"),
+                    "strategy_id": run.get("strategy_id"),
+                    "trade_count": metrics.get("trade_count"),
+                    "total_return": metrics.get("total_return"),
+                    "max_drawdown": metrics.get("max_drawdown"),
+                    "cost_drag_bps": metrics.get("cost_drag_bps"),
+                }
+            )
+    return failed_runs
+
+
+def _comparison_diagnostics(
+    *,
+    metrics_payload: dict[str, Any],
+    method_results: list[dict[str, Any]],
+    suite_results: list[dict[str, Any]],
+) -> dict[str, Any]:
+    threshold_failures = _threshold_failures(metrics_payload)
+    weakest_eras = _weakest_eras(method_results)
+    suite_best_runs = _suite_best_runs(suite_results)
+    suite_failed_runs = _suite_failed_runs(suite_results)
+    notes: list[str] = []
+    if threshold_failures:
+        notes.append("THRESHOLD_FAILURES_PRESENT")
+    if weakest_eras:
+        notes.append("WEAKEST_ERAS_AVAILABLE")
+    if suite_best_runs:
+        notes.append("SUITE_BEST_RUN_AVAILABLE")
+    if suite_failed_runs:
+        notes.append("SUITE_FAILED_RUNS_PRESENT")
+    if not notes:
+        notes.append("NO_DIAGNOSTIC_FINDINGS")
+    return {
+        "threshold_failures": threshold_failures,
+        "weakest_eras": weakest_eras,
+        "suite_best_runs": suite_best_runs,
+        "suite_failed_runs": suite_failed_runs,
+        "diagnostic_notes": notes,
+    }
+
+
+def _write_report(path: Path, payload: dict[str, Any]) -> Path:
+    native = payload["native_result"]
+    lines = [
+        "# Strategy Backtest Comparison",
+        "",
+        f"- comparison_id: {payload['comparison_id']}",
+        f"- source_metrics_path: `{payload['source_metrics_path']}`",
+        f"- native_engine: {native['engine_id']}",
+        f"- strategy_id: {native.get('strategy_id')}",
+        f"- backtest_passed: {native.get('backtest_passed')}",
+        f"- trade_count: {native.get('trade_count')}",
+        f"- total_return: {native.get('total_return')}",
+        f"- max_drawdown: {native.get('max_drawdown')}",
+        f"- cost_drag_bps: {native.get('cost_drag_bps')}",
+        "- permits_live_order: false",
+        "- wallet_used: false",
+        "- exchange_write_used: false",
+        "",
+        "## Backtest Method Results",
+        "",
+        "| Method | Type | Status | Trades | Total Return | Max Drawdown |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for method in payload["method_results"]:
+        metrics = method.get("metrics") or {}
+        lines.append(
+            "| {method_id} | {method_type} | {status} | {trade_count} | {total_return} | {max_drawdown} |".format(
+                method_id=method["method_id"],
+                method_type=method["method_type"],
+                status=method["status"],
+                trade_count=metrics.get("trade_count"),
+                total_return=metrics.get("total_return"),
+                max_drawdown=metrics.get("max_drawdown"),
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "## Backtest Suite Results",
+            "",
+            "| Suite | Runs | Passed | Best Case | Best Strategy | Best Total Return |",
+            "|---|---:|---:|---|---|---:|",
+        ]
+    )
+    if payload["suite_results"]:
+        for suite in payload["suite_results"]:
+            aggregate = suite.get("aggregate") or {}
+            best_run = suite.get("best_run") or {}
+            best_metrics = best_run.get("metrics") or {}
+            lines.append(
+                "| {suite_id} | {run_count} | {passed_count} | {case_id} | {strategy_id} | {total_return} |".format(
+                    suite_id=suite.get("suite_id"),
+                    run_count=aggregate.get("run_count"),
+                    passed_count=aggregate.get("passed_count"),
+                    case_id=best_run.get("case_id"),
+                    strategy_id=best_run.get("strategy_id"),
+                    total_return=best_metrics.get("total_return"),
+                )
+            )
+            method_matrix = suite.get("method_matrix") or {}
+            methods = method_matrix.get("methods") if isinstance(method_matrix, dict) else []
+            if methods:
+                lines.extend(
+                    [
+                        "",
+                        f"### Suite Methods: {suite.get('suite_id')}",
+                        "",
+                        "| Method | Type | Runs | Passed | Cases |",
+                        "|---|---|---:|---:|---|",
+                    ]
+                )
+                for method in methods:
+                    if not isinstance(method, dict):
+                        continue
+                    lines.append(
+                        "| {method_id} | {method_type} | {run_count} | {passed_count} | {cases} |".format(
+                            method_id=method.get("method_id"),
+                            method_type=method.get("method_type"),
+                            run_count=method.get("run_count"),
+                            passed_count=method.get("passed_count"),
+                            cases=", ".join(method.get("case_ids") or []),
+                        )
+                    )
+    else:
+        lines.append("| none | 0 | 0 |  |  |  |")
+    diagnostics = payload["comparison_diagnostics"]
+    lines.extend(
+        [
+            "",
+            "## Diagnostics",
+            "",
+            "### Threshold Failures",
+            "",
+        ]
+    )
+    if diagnostics["threshold_failures"]:
+        for failure in diagnostics["threshold_failures"]:
+            lines.append(
+                f"- {failure['metric']}: actual={failure.get('actual')} threshold={failure.get('threshold')}"
+            )
+    else:
+        lines.append("- none")
+    lines.extend(["", "### Weakest Eras", ""])
+    if diagnostics["weakest_eras"]:
+        lines.extend(
+            [
+                "| Method | Era | Trades | Total Return | Max Drawdown |",
+                "|---|---|---:|---:|---:|",
+            ]
+        )
+        for era in diagnostics["weakest_eras"]:
+            lines.append(
+                "| {method_id} | {era} | {trade_count} | {total_return} | {max_drawdown} |".format(
+                    method_id=era.get("method_id"),
+                    era=era.get("era"),
+                    trade_count=era.get("trade_count"),
+                    total_return=era.get("total_return"),
+                    max_drawdown=era.get("max_drawdown"),
+                )
+            )
+    else:
+        lines.append("- none")
+    lines.extend(["", "### Suite Best Runs", ""])
+    if diagnostics["suite_best_runs"]:
+        lines.extend(
+            [
+                "| Suite | Case | Strategy | Trades | Total Return | Passed |",
+                "|---|---|---|---:|---:|---:|",
+            ]
+        )
+        for run in diagnostics["suite_best_runs"]:
+            lines.append(
+                "| {suite_id} | {case_id} | {strategy_id} | {trade_count} | {total_return} | {backtest_passed} |".format(
+                    suite_id=run.get("suite_id"),
+                    case_id=run.get("case_id"),
+                    strategy_id=run.get("strategy_id"),
+                    trade_count=run.get("trade_count"),
+                    total_return=run.get("total_return"),
+                    backtest_passed=run.get("backtest_passed"),
+                )
+            )
+    else:
+        lines.append("- none")
+    lines.extend(["", "## Adapter Spike", ""])
+    if payload["adapter_spike"]:
+        spike = payload["adapter_spike"]
+        decision = spike.get("decision") or {}
+        lines.extend(
+            [
+                f"- selected_for_dependency_adoption: {decision.get('selected_for_dependency_adoption')}",
+                f"- reason_codes: {decision.get('reason_codes')}",
+                "",
+                "| Framework | Status | Adoption Status | Blockers |",
+                "|---|---:|---|---|",
+            ]
+        )
+        for candidate in spike.get("candidates") or []:
+            lines.append(
+                "| {framework_id} | {status} | {adoption_status} | {blockers} |".format(
+                    framework_id=candidate.get("framework_id"),
+                    status=candidate.get("status"),
+                    adoption_status=candidate.get("adoption_status"),
+                    blockers=", ".join(candidate.get("adoption_blockers") or []) or "none",
+                )
+            )
+    else:
+        lines.append("- none")
+    lines.extend(["", "## External Framework Results", ""])
+    if payload["external_results"]:
+        lines.extend(
+            [
+                "| Framework | Status | Run Status | Engine Run | Reason Codes | Trades | Total Return |",
+                "|---|---:|---:|---:|---|---:|---:|",
+            ]
+        )
+        for result in payload["external_results"]:
+            metrics = result.get("metrics") or {}
+            lines.append(
+                "| {framework_id} | {status} | {run_status} | {engine_run} | {reasons} | {trade_count} | {total_return} |".format(
+                    framework_id=result.get("framework_id"),
+                    status=result.get("status"),
+                    run_status=result.get("run_status"),
+                    engine_run=result.get("engine_run"),
+                    reasons=", ".join(result.get("reason_codes") or []) or "none",
+                    trade_count=metrics.get("trade_count"),
+                    total_return=metrics.get("total_return"),
+                )
+            )
+    else:
+        lines.append("- none")
+    lines.extend(
+        [
+            "",
+            "## Framework Adapter Status",
+            "",
+            "| Framework | Status | Version | Role | Note |",
+            "|---|---:|---|---|---|",
+        ]
+    )
+    for adapter in payload["framework_adapters"]:
+        lines.append(
+            "| {framework_id} | {status} | {version} | {adapter_role} | {adoption_note} |".format(
+                framework_id=adapter["framework_id"],
+                status=adapter["status"],
+                version=adapter.get("version") or "",
+                adapter_role=adapter["adapter_role"],
+                adoption_note=adapter["adoption_note"],
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "This comparison does not run external framework engines and does not permit live orders.",
+        ]
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def build_strategy_backtest_comparison(
+    *,
+    metrics_path: Path,
+    suite_result_path: Path | None = None,
+    adapter_spike_path: Path | None = None,
+    external_result_path: Path | None = None,
+    out_dir: Path,
+    reports_dir: Path,
+) -> BacktestComparisonResult:
+    if not metrics_path.exists():
+        raise FileNotFoundError(f"strategy backtest metrics missing: {metrics_path}")
+    metrics_payload = _read_json(metrics_path)
+    native = _native_result(metrics_payload)
+    method_results = _method_results(metrics_payload)
+    suite_payload = (
+        _read_json(suite_result_path)
+        if suite_result_path is not None and suite_result_path.exists()
+        else None
+    )
+    suite_result_hash = (
+        _sha256_file(suite_result_path)
+        if suite_result_path is not None and suite_result_path.exists()
+        else None
+    )
+    suite_results = _suite_results(suite_payload)
+    adapter_spike_payload = (
+        _read_json(adapter_spike_path)
+        if adapter_spike_path is not None and adapter_spike_path.exists()
+        else None
+    )
+    adapter_spike_hash = (
+        _sha256_file(adapter_spike_path)
+        if adapter_spike_path is not None and adapter_spike_path.exists()
+        else None
+    )
+    adapter_spike = _adapter_spike(adapter_spike_payload)
+    external_payload = (
+        _read_json(external_result_path)
+        if external_result_path is not None and external_result_path.exists()
+        else None
+    )
+    external_result_hash = (
+        _sha256_file(external_result_path)
+        if external_result_path is not None and external_result_path.exists()
+        else None
+    )
+    external_results = _external_results(external_payload)
+    comparison_diagnostics = _comparison_diagnostics(
+        metrics_payload=metrics_payload,
+        method_results=method_results,
+        suite_results=suite_results,
+    )
+    created_at = datetime.now(timezone.utc).isoformat()
+    source_hash = _sha256_file(metrics_path)
+    comparison_id = hashlib.sha256(
+        json.dumps(
+            {
+                "metrics_path": metrics_path.as_posix(),
+                "source_hash": source_hash,
+                "suite_result_path": suite_result_path.as_posix()
+                if suite_result_path is not None and suite_result_path.exists()
+                else None,
+                "suite_result_hash": suite_result_hash,
+                "adapter_spike_path": adapter_spike_path.as_posix()
+                if adapter_spike_path is not None and adapter_spike_path.exists()
+                else None,
+                "adapter_spike_hash": adapter_spike_hash,
+                "external_result_path": external_result_path.as_posix()
+                if external_result_path is not None and external_result_path.exists()
+                else None,
+                "external_result_hash": external_result_hash,
+                "native": native,
+                "suite_results": suite_results,
+                "adapter_spike": adapter_spike,
+                "external_results": external_results,
+            },
+            sort_keys=True,
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+    payload: dict[str, Any] = {
+        "schema_version": "strategy_backtest_comparison.v1",
+        "comparison_id": f"sha256:{comparison_id}",
+        "created_at": created_at,
+        "source_metrics_path": metrics_path.as_posix(),
+        "source_metrics_hash": source_hash,
+        "source_suite_result_path": (
+            suite_result_path.as_posix()
+            if suite_result_path is not None and suite_result_path.exists()
+            else None
+        ),
+        "source_suite_result_hash": suite_result_hash,
+        "source_adapter_spike_path": (
+            adapter_spike_path.as_posix()
+            if adapter_spike_path is not None and adapter_spike_path.exists()
+            else None
+        ),
+        "source_adapter_spike_hash": adapter_spike_hash,
+        "source_external_result_path": (
+            external_result_path.as_posix()
+            if external_result_path is not None and external_result_path.exists()
+            else None
+        ),
+        "source_external_result_hash": external_result_hash,
+        "native_result": native,
+        "method_results": method_results,
+        "suite_results": suite_results,
+        "adapter_spike": adapter_spike,
+        "external_results": external_results,
+        "comparison_diagnostics": comparison_diagnostics,
+        "framework_adapters": framework_adapter_status(),
+        "permits_live_order": False,
+        "live_conversion_allowed": False,
+        "wallet_used": False,
+        "exchange_write_used": False,
+    }
+    out_dir.mkdir(parents=True, exist_ok=True)
+    comparison_path = out_dir / "strategy_backtest_comparison.json"
+    comparison_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n",
+        encoding="utf-8",
+    )
+    report_path = _write_report(reports_dir / "strategy_backtest_comparison_report.md", payload)
+    return BacktestComparisonResult(
+        comparison_path=comparison_path,
+        report_path=report_path,
+        payload=payload,
+    )

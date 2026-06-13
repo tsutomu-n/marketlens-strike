@@ -23,6 +23,13 @@ def test_strategy_lab_schema_files_exist_and_parse() -> None:
         "paper_intent_preview.v1.schema.json",
         "strategy_authoring_bundle_result.v1.schema.json",
         "strategy_authoring_backtest_result.v1.schema.json",
+        "strategy_backtest_comparison.v1.schema.json",
+        "strategy_backtest_suite.v1.schema.json",
+        "strategy_backtest_suite_result.v1.schema.json",
+        "strategy_backtest_adapter_spike.v1.schema.json",
+        "strategy_backtest_external_result.v1.schema.json",
+        "strategy_backtest_pack.v1.schema.json",
+        "strategy_backtest_pack_validation.v1.schema.json",
         "instrument_registry_snapshot.v1.schema.json",
         "funding_event.v1.schema.json",
         "fee_snapshot.v1.schema.json",
@@ -52,6 +59,24 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
         Path("schemas/strategy_authoring_backtest_result.v1.schema.json").read_text(
             encoding="utf-8"
         )
+    )
+    backtest_comparison = json.loads(
+        Path("schemas/strategy_backtest_comparison.v1.schema.json").read_text(encoding="utf-8")
+    )
+    backtest_suite_result = json.loads(
+        Path("schemas/strategy_backtest_suite_result.v1.schema.json").read_text(encoding="utf-8")
+    )
+    backtest_adapter_spike = json.loads(
+        Path("schemas/strategy_backtest_adapter_spike.v1.schema.json").read_text(encoding="utf-8")
+    )
+    backtest_external_result = json.loads(
+        Path("schemas/strategy_backtest_external_result.v1.schema.json").read_text(encoding="utf-8")
+    )
+    backtest_pack = json.loads(
+        Path("schemas/strategy_backtest_pack.v1.schema.json").read_text(encoding="utf-8")
+    )
+    backtest_pack_validation = json.loads(
+        Path("schemas/strategy_backtest_pack_validation.v1.schema.json").read_text(encoding="utf-8")
     )
 
     for name in (
@@ -93,6 +118,39 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
 
     assert backtest_result["properties"]["paper_only"]["const"] is True
     assert backtest_result["properties"]["live_order_submitted"]["const"] is False
+    for name in (
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "exchange_write_used",
+    ):
+        assert backtest_comparison["properties"][name]["const"] is False
+        assert backtest_suite_result["properties"][name]["const"] is False
+        assert backtest_adapter_spike["properties"][name]["const"] is False
+        assert backtest_external_result["properties"][name]["const"] is False
+        assert backtest_pack["properties"][name]["const"] is False
+        assert backtest_pack_validation["properties"][name]["const"] is False
+    assert "comparison_diagnostics" in backtest_comparison["properties"]
+    assert backtest_suite_result["properties"]["paper_only"]["const"] is True
+    assert backtest_suite_result["properties"]["live_order_submitted"]["const"] is False
+    assert backtest_adapter_spike["properties"]["dependency_added"]["const"] is False
+    assert backtest_adapter_spike["properties"]["external_engine_run"]["const"] is False
+    assert backtest_external_result["properties"]["dependency_added"]["const"] is False
+    pack_policy = backtest_pack["properties"]["external_framework_policy"]["properties"]
+    validation_policy = backtest_pack_validation["properties"]["external_framework_policy"][
+        "properties"
+    ]
+    for policy in (pack_policy, validation_policy):
+        assert policy["policy_id"]["const"] == "native_primary_external_evaluation_only.v1"
+        assert policy["standard_engine"]["const"] == "strategy_authoring_native"
+        assert policy["decision"]["const"] == "complete_without_locked_external_dependency"
+        assert policy["locked_dependency_added"]["const"] is False
+        assert policy["external_adapters_required_for_completion"]["const"] is False
+    validation_summary = backtest_pack_validation["properties"]["summary"]["properties"]
+    assert validation_summary["external_framework_policy_decision"]["const"] == (
+        "complete_without_locked_external_dependency"
+    )
+    assert validation_summary["locked_dependency_added"]["const"] is False
     summary_properties = backtest_result["properties"]["summary"]["properties"]
     assert "executed_signal_summary" in summary_properties
     assert "strategy_scorecard" in summary_properties
