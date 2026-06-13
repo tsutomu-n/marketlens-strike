@@ -18,6 +18,8 @@
     "source_portfolio_comparison_hash",
     "source_metric_extension_path",
     "source_metric_extension_hash",
+    "source_report_extension_path",
+    "source_report_extension_hash",
     "native_result",
     "method_results",
     "suite_results",
@@ -25,6 +27,7 @@
     "external_results",
     "portfolio_comparison",
     "metric_extension",
+    "report_extension",
     "comparison_diagnostics",
     "framework_adapters",
     "permits_live_order",
@@ -60,6 +63,11 @@
     },
     "source_metric_extension_path": {"type": ["string", "null"]},
     "source_metric_extension_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_report_extension_path": {"type": ["string", "null"]},
+    "source_report_extension_hash": {
       "type": ["string", "null"],
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
@@ -112,6 +120,12 @@
     "metric_extension": {
       "anyOf": [
         {"$ref": "#/$defs/metric_extension"},
+        {"type": "null"}
+      ]
+    },
+    "report_extension": {
+      "anyOf": [
+        {"$ref": "#/$defs/report_extension"},
         {"type": "null"}
       ]
     },
@@ -781,6 +795,60 @@
         "annual_volatility": {"type": ["number", "null"]},
         "calmar_ratio": {"type": ["number", "null"]},
         "omega_ratio": {"type": ["number", "null"]},
+        "permits_live_order": {"const": false},
+        "wallet_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "report_extension": {
+      "type": "object",
+      "required": [
+        "framework_id",
+        "adapter_role",
+        "framework_version",
+        "runner_mode",
+        "report_status",
+        "reason_codes",
+        "dependency_added",
+        "engine_run",
+        "frequency",
+        "risk_free_rate",
+        "periods_per_year",
+        "return_count",
+        "metrics_table_row_count",
+        "quantstats_html_path",
+        "quantstats_html_hash",
+        "permits_live_order",
+        "wallet_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "framework_id": {"enum": ["quantstats", null]},
+        "adapter_role": {"type": ["string", "null"]},
+        "framework_version": {"type": ["string", "null"]},
+        "runner_mode": {
+          "enum": [
+            "not_installed_in_current_env",
+            "temporary_or_optional_import",
+            "installed_without_runner",
+            null
+          ]
+        },
+        "report_status": {"enum": ["completed", "skipped", "failed", null]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "dependency_added": {"const": false},
+        "engine_run": {"type": ["boolean", "null"]},
+        "frequency": {"enum": ["daily", "weekly", "monthly", "signal", null]},
+        "risk_free_rate": {"type": ["number", "null"]},
+        "periods_per_year": {"type": ["integer", "null"], "minimum": 1},
+        "return_count": {"type": ["integer", "null"], "minimum": 0},
+        "metrics_table_row_count": {"type": ["integer", "null"], "minimum": 0},
+        "quantstats_html_path": {"type": ["string", "null"]},
+        "quantstats_html_hash": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
         "permits_live_order": {"const": false},
         "wallet_used": {"const": false},
         "exchange_write_used": {"const": false}

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_18:57 JST
+更新日: 2026-06-13_19:23 JST
 -->
 
 # Backtest Docs
@@ -29,13 +29,14 @@
 `strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML を読み、複数specと複数backtest条件を1コマンドで実行して suite result / report に集約します。標準例は `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の5手法を走らせ、suite result の `method_matrix` で手法別 run 数を確認できます。
 `strategy-backtest-adapter-spike` は9件の外部 backtest / metrics / report OSS 候補の import / metadata / license risk を artifact 化します。依存追加、外部engine実行、live order は行いません。
 `strategy-backtest-framework-smoke` は一時 `uv --with ...` 環境で `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` などの import 結果、version、license metadata、Requires-Python、採用分類を artifact 化します。repo dependency は追加しません。
-`strategy-backtest-adapter-selection` は adapter spike と framework smoke の artifact から Phase C の初期選定を artifact 化します。現時点では `vectorbt`, `bt`, `empyrical-reloaded` を selected、`quantstats`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` を deferred とします。repo dependency は追加しません。
-`strategy-backtest-adapter-contract` は selected adapter の入力、出力、provenance、受入条件を artifact 化します。`vectorbt`, `bt`, `empyrical-reloaded` の contract を作りますが、repo dependency は追加しません。
+`strategy-backtest-adapter-selection` は adapter spike と framework smoke の artifact から Phase C の初期選定を artifact 化します。現時点では `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を selected、`backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` を deferred とします。repo dependency は追加しません。
+`strategy-backtest-adapter-contract` は selected adapter の入力、出力、provenance、受入条件を artifact 化します。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` の contract を作りますが、repo dependency は追加しません。
 `strategy-backtest-external-run` は外部 framework 候補の実行結果用 artifact を作ります。`vectorbt` がインストール済みで signals / quotes 入力がある場合は `src/sis/backtest/vectorbt_adapter.py` 経由で `vectorbt.Portfolio.from_signals` を呼び、未インストールなら `skipped/not_installed_in_current_env` として記録します。artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes`、framework ごとの `framework_version` と `runner_mode` を残します。依存追加や live order は行いません。
 `strategy-backtest-portfolio-compare` は `bt` 用の portfolio allocation / rebalance comparison artifact を作ります。通常環境で `bt` が未インストールなら `skipped/not_installed_in_current_env`、一時 `uv --with bt` 環境では `bt.run()` の結果を `strategy_backtest_portfolio_comparison.v1` に記録します。依存追加や live order は行いません。
 `strategy-backtest-metric-extension` は `empyrical-reloaded` 用の metrics normalization artifact を作ります。通常環境で `empyrical` が未インストールなら `skipped/not_installed_in_current_env`、一時 `uv --with empyrical-reloaded` 環境では `empyrical` の Sharpe / drawdown / annual return / annual volatility 系 metric を `strategy_backtest_metric_extension.v1` に記録します。依存追加や live order は行いません。
-`strategy-backtest-compare` は `strategy_backtest_metrics.json` から overall / walk-forward era / optimizer sweep を `method_results` に正規化し、既定の suite result があれば `suite_results`、既定の adapter spike があれば `adapter_spike`、既定の external result があれば `external_results`、既定の portfolio comparison があれば `portfolio_comparison`、既定の metric extension があれば `metric_extension` として取り込みます。`comparison_diagnostics` では threshold failure、weakest era、suite best run も確認できます。
-`strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、bundle result、adapter spike、external result、portfolio comparison、metric extension、comparison、pack manifest を一括生成します。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
+`strategy-backtest-report-extension` は `quantstats` 用の report / tear sheet artifact を作ります。通常環境で `quantstats` が未インストールなら `skipped/not_installed_in_current_env`、一時 `uv --with quantstats` 環境では `quantstats.reports.html` と `quantstats.reports.metrics` を呼び、`strategy_backtest_report_extension.v1` と HTML report path/hash を記録します。依存追加や live order は行いません。
+`strategy-backtest-compare` は `strategy_backtest_metrics.json` から overall / walk-forward era / optimizer sweep を `method_results` に正規化し、既定の suite result があれば `suite_results`、既定の adapter spike があれば `adapter_spike`、既定の external result があれば `external_results`、既定の portfolio comparison があれば `portfolio_comparison`、既定の metric extension があれば `metric_extension`、既定の report extension があれば `report_extension` として取り込みます。`comparison_diagnostics` では threshold failure、weakest era、suite best run も確認できます。
+`strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、comparison、pack manifest を一括生成します。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
 `strategy-backtest-pack-validate` は pack manifest の artifact path / hash、5手法、paper-only / no-live boundary、外部 framework 方針を検査し、PASS / FAIL artifact を出します。
 
 バックテストへ最短で入る入口は Strategy Authoring baseline です。
@@ -60,6 +61,7 @@ uv run sis strategy-backtest-adapter-contract
 uv run sis strategy-backtest-external-run
 uv run sis strategy-backtest-portfolio-compare
 uv run sis strategy-backtest-metric-extension
+uv run sis strategy-backtest-report-extension
 uv run sis strategy-backtest-compare
 uv run sis strategy-backtest-pack
 uv run sis strategy-backtest-pack-validate
@@ -93,6 +95,13 @@ uv run --with empyrical-reloaded sis strategy-backtest-metric-extension
 uv run sis strategy-backtest-compare
 ```
 
+`quantstats` を repo dependency に入れず一時環境で report extension smoke する場合:
+
+```bash
+uv run --with quantstats sis strategy-backtest-report-extension
+uv run sis strategy-backtest-compare
+```
+
 この一時 smoke では `pyproject.toml` / `uv.lock` を変更しません。
 
 主な出力:
@@ -113,6 +122,9 @@ uv run sis strategy-backtest-compare
 - `data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json`
 - `data/research/backtest_metric_extension/strategy_backtest_metric_extension.json`
 - `data/research/backtest_metric_extension/strategy_backtest_returns.jsonl`
+- `data/research/backtest_report_extension/strategy_backtest_report_extension.json`
+- `data/research/backtest_report_extension/strategy_backtest_report_returns.jsonl`
+- `data/research/backtest_report_extension/strategy_backtest_quantstats_report.html`
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/research/backtest_pack/strategy_backtest_pack_validation.json`
 - `data/reports/strategy_backtest_report.md`
@@ -126,6 +138,7 @@ uv run sis strategy-backtest-compare
 - `data/reports/strategy_backtest_external_report.md`
 - `data/reports/strategy_backtest_portfolio_comparison_report.md`
 - `data/reports/strategy_backtest_metric_extension_report.md`
+- `data/reports/strategy_backtest_report_extension_report.md`
 - `data/reports/strategy_backtest_pack_report.md`
 - `data/reports/strategy_backtest_pack_validation_report.md`
 

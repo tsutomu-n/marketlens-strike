@@ -84,14 +84,15 @@
         ],
         "properties": {
           "framework_id": {
-            "enum": ["vectorbt", "bt", "empyrical_reloaded"]
+            "enum": ["vectorbt", "bt", "empyrical_reloaded", "quantstats"]
           },
           "contract_status": {"const": "ready_for_adapter_implementation"},
           "adapter_role": {
             "enum": [
               "high_speed_signal_runner",
               "portfolio_allocation_rebalance",
-              "metrics_normalization"
+              "metrics_normalization",
+              "report_tearsheet"
             ]
           },
           "adoption_classification": {

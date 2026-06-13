@@ -269,6 +269,7 @@ portfolio:
     assert "backtest_comparison=" in result.stdout
     assert "backtest_portfolio_comparison=" in result.stdout
     assert "backtest_metric_extension=" in result.stdout
+    assert "backtest_report_extension=" in result.stdout
     pack_path = data_dir / "research/backtest_pack/strategy_backtest_pack.json"
     validation_path = data_dir / "research/backtest_pack/strategy_backtest_pack_validation.json"
     comparison_path = data_dir / "research/backtest_compare/strategy_backtest_comparison.json"
@@ -278,11 +279,15 @@ portfolio:
     metric_extension_path = (
         data_dir / "research/backtest_metric_extension/strategy_backtest_metric_extension.json"
     )
+    report_extension_path = (
+        data_dir / "research/backtest_report_extension/strategy_backtest_report_extension.json"
+    )
     assert pack_path.exists()
     assert validation_path.exists()
     assert comparison_path.exists()
     assert portfolio_path.exists()
     assert metric_extension_path.exists()
+    assert report_extension_path.exists()
     payload = json.loads(pack_path.read_text(encoding="utf-8"))
     schema = json.loads(
         Path("schemas/strategy_backtest_pack.v1.schema.json").read_text(encoding="utf-8")
@@ -306,7 +311,7 @@ portfolio:
         "decision": "complete_without_locked_external_dependency",
         "locked_dependency_added": False,
         "external_adapters_required_for_completion": False,
-        "temporary_uv_with_allowed": ["vectorbt", "bt", "empyrical-reloaded"],
+        "temporary_uv_with_allowed": ["vectorbt", "bt", "empyrical-reloaded", "quantstats"],
         "candidate_frameworks": [
             "vectorbt",
             "bt",
@@ -329,6 +334,7 @@ portfolio:
     assert payload["artifacts"]["external_result"]["exists"] is True
     assert payload["artifacts"]["portfolio_comparison"]["exists"] is True
     assert payload["artifacts"]["metric_extension"]["exists"] is True
+    assert payload["artifacts"]["report_extension"]["exists"] is True
     assert payload["artifacts"]["returns_series"]["exists"] is True
     assert (data_dir / "reports/strategy_backtest_pack_report.md").exists()
     validation_payload = json.loads(validation_path.read_text(encoding="utf-8"))

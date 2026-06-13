@@ -454,6 +454,44 @@ def _write_metric_extension(path: Path) -> None:
     )
 
 
+def _write_report_extension(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "strategy_backtest_report_extension.v1",
+                "created_at": "2026-06-13T00:00:00+00:00",
+                "framework_id": "quantstats",
+                "adapter_role": "report_only_candidate",
+                "framework_version": None,
+                "runner_mode": "not_installed_in_current_env",
+                "report_status": "skipped",
+                "reason_codes": ["not_installed_in_current_env"],
+                "dependency_added": False,
+                "engine_run": False,
+                "source_backtest_metrics_path": "data/research/strategy_backtest_metrics.json",
+                "source_backtest_metrics_hash": "sha256:" + "5" * 64,
+                "returns_series_path": (
+                    "data/research/backtest_report_extension/strategy_backtest_report_returns.jsonl"
+                ),
+                "returns_series_hash": "sha256:" + "6" * 64,
+                "quantstats_html_path": None,
+                "quantstats_html_hash": None,
+                "frequency": "daily",
+                "risk_free_rate": 0.0,
+                "periods_per_year": 252,
+                "return_count": 2,
+                "metrics_table_row_count": None,
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "exchange_write_used": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_path) -> None:
     metrics_path = tmp_path / "data/research/strategy_backtest_metrics.json"
     suite_result_path = (
@@ -471,6 +509,9 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     metric_extension_path = (
         tmp_path / "data/research/backtest_metric_extension/strategy_backtest_metric_extension.json"
     )
+    report_extension_path = (
+        tmp_path / "data/research/backtest_report_extension/strategy_backtest_report_extension.json"
+    )
     out_dir = tmp_path / "data/research/backtest_compare"
     reports_dir = tmp_path / "data/reports"
     _write_metrics(metrics_path)
@@ -479,6 +520,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     _write_external_result(external_result_path)
     _write_portfolio_comparison(portfolio_comparison_path)
     _write_metric_extension(metric_extension_path)
+    _write_report_extension(report_extension_path)
 
     result = build_strategy_backtest_comparison(
         metrics_path=metrics_path,
@@ -487,6 +529,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
         external_result_path=external_result_path,
         portfolio_comparison_path=portfolio_comparison_path,
         metric_extension_path=metric_extension_path,
+        report_extension_path=report_extension_path,
         out_dir=out_dir,
         reports_dir=reports_dir,
     )
@@ -531,6 +574,8 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["source_portfolio_comparison_hash"].startswith("sha256:")
     assert payload["source_metric_extension_path"] == metric_extension_path.as_posix()
     assert payload["source_metric_extension_hash"].startswith("sha256:")
+    assert payload["source_report_extension_path"] == report_extension_path.as_posix()
+    assert payload["source_report_extension_hash"].startswith("sha256:")
     assert payload["suite_results"][0]["suite_id"] == "demo_suite"
     assert payload["suite_results"][0]["aggregate"]["run_count"] == 2
     assert payload["suite_results"][0]["method_matrix"]["method_count"] == 2
@@ -576,6 +621,9 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["metric_extension"]["framework_id"] == "empyrical_reloaded"
     assert payload["metric_extension"]["metric_status"] == "skipped"
     assert payload["metric_extension"]["return_count"] == 2
+    assert payload["report_extension"]["framework_id"] == "quantstats"
+    assert payload["report_extension"]["report_status"] == "skipped"
+    assert payload["report_extension"]["return_count"] == 2
     assert {item["framework_id"] for item in payload["framework_adapters"]} == {
         "vectorbt",
         "bt",
@@ -607,6 +655,9 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     _write_metric_extension(
         data_dir / "research/backtest_metric_extension/strategy_backtest_metric_extension.json"
     )
+    _write_report_extension(
+        data_dir / "research/backtest_report_extension/strategy_backtest_report_extension.json"
+    )
 
     result = runner.invoke(app, ["strategy-backtest-compare"])
 
@@ -622,6 +673,7 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     assert payload["external_results"][0]["run_status"] == "skipped"
     assert payload["portfolio_comparison"]["run_status"] == "skipped"
     assert payload["metric_extension"]["metric_status"] == "skipped"
+    assert payload["report_extension"]["report_status"] == "skipped"
     assert (data_dir / "reports/strategy_backtest_comparison_report.md").exists()
 
 
@@ -650,8 +702,11 @@ def test_strategy_backtest_compare_without_suite_result_keeps_empty_suite_sectio
     assert payload["source_external_result_hash"] is None
     assert payload["source_metric_extension_path"] is None
     assert payload["source_metric_extension_hash"] is None
+    assert payload["source_report_extension_path"] is None
+    assert payload["source_report_extension_hash"] is None
     assert payload["suite_results"] == []
     assert payload["adapter_spike"] is None
     assert payload["external_results"] == []
     assert payload["metric_extension"] is None
+    assert payload["report_extension"] is None
     assert payload["comparison_diagnostics"]["suite_best_runs"] == []

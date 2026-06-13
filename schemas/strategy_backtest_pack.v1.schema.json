@@ -80,7 +80,8 @@
           "allOf": [
             {"contains": {"const": "vectorbt"}},
             {"contains": {"const": "bt"}},
-            {"contains": {"const": "empyrical-reloaded"}}
+            {"contains": {"const": "empyrical-reloaded"}},
+            {"contains": {"const": "quantstats"}}
           ]
         },
         "candidate_frameworks": {

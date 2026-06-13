@@ -57,7 +57,7 @@ def _external_framework_policy() -> dict[str, Any]:
         "decision": "complete_without_locked_external_dependency",
         "locked_dependency_added": False,
         "external_adapters_required_for_completion": False,
-        "temporary_uv_with_allowed": ["vectorbt", "bt", "empyrical-reloaded"],
+        "temporary_uv_with_allowed": ["vectorbt", "bt", "empyrical-reloaded", "quantstats"],
         "candidate_frameworks": [
             "vectorbt",
             "bt",
@@ -228,10 +228,10 @@ def validate_strategy_backtest_pack(
     )
     temporary_allowed = external_framework_policy.get("temporary_uv_with_allowed")
     add_check(
-        "external_framework_temporary_vectorbt_bt_empyrical",
+        "external_framework_temporary_vectorbt_bt_empyrical_quantstats",
         isinstance(temporary_allowed, list)
-        and {"vectorbt", "bt", "empyrical-reloaded"}.issubset(set(temporary_allowed)),
-        "temporary uv --with vectorbt/bt/empyrical-reloaded smoke paths must remain allowed external execution paths",
+        and {"vectorbt", "bt", "empyrical-reloaded", "quantstats"}.issubset(set(temporary_allowed)),
+        "temporary uv --with vectorbt/bt/empyrical-reloaded/quantstats smoke paths must remain allowed external execution paths",
     )
     adoption_requires = external_framework_policy.get("adoption_requires")
     add_check(

@@ -123,9 +123,9 @@ def test_build_backtest_adapter_selection_chooses_phase_c_adapters(tmp_path) -> 
         "vectorbt",
         "bt",
         "empyrical_reloaded",
+        "quantstats",
     ]
     assert [item["framework_id"] for item in payload["deferred_adapters"]] == [
-        "quantstats",
         "backtesting",
         "zipline_reloaded",
         "backtrader",
@@ -133,10 +133,10 @@ def test_build_backtest_adapter_selection_chooses_phase_c_adapters(tmp_path) -> 
         "qstrader",
     ]
     assert payload["summary"] == {
-        "selected_count": 3,
-        "deferred_count": 6,
+        "selected_count": 4,
+        "deferred_count": 5,
         "optional_extra_selected_count": 2,
-        "report_only_selected_count": 1,
+        "report_only_selected_count": 2,
         "separate_runner_selected_count": 0,
     }
     assert payload["decision"]["decision"] == "SELECT_PHASE_C_ADAPTERS"
@@ -165,5 +165,5 @@ def test_strategy_backtest_adapter_selection_cli(tmp_path, monkeypatch) -> None:
             / "research/backtest_adapter_selection/strategy_backtest_adapter_selection.json"
         ).read_text(encoding="utf-8")
     )
-    assert payload["summary"]["selected_count"] == 3
+    assert payload["summary"]["selected_count"] == 4
     assert (data_dir / "reports/strategy_backtest_adapter_selection_report.md").exists()

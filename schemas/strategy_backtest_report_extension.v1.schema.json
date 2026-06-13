@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_report_extension.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "framework_id",
+    "adapter_role",
+    "framework_version",
+    "runner_mode",
+    "report_status",
+    "reason_codes",
+    "dependency_added",
+    "engine_run",
+    "source_backtest_metrics_path",
+    "source_backtest_metrics_hash",
+    "returns_series_path",
+    "returns_series_hash",
+    "quantstats_html_path",
+    "quantstats_html_hash",
+    "frequency",
+    "risk_free_rate",
+    "periods_per_year",
+    "return_count",
+    "metrics_table_row_count",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_report_extension.v1"},
+    "created_at": {"type": "string"},
+    "framework_id": {"const": "quantstats"},
+    "adapter_role": {"type": "string"},
+    "framework_version": {"type": ["string", "null"]},
+    "runner_mode": {
+      "enum": [
+        "not_installed_in_current_env",
+        "temporary_or_optional_import",
+        "installed_without_runner"
+      ]
+    },
+    "report_status": {"enum": ["completed", "skipped", "failed"]},
+    "reason_codes": {"type": "array", "items": {"type": "string"}},
+    "dependency_added": {"const": false},
+    "engine_run": {"type": "boolean"},
+    "source_backtest_metrics_path": {"type": "string"},
+    "source_backtest_metrics_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "returns_series_path": {"type": "string"},
+    "returns_series_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "quantstats_html_path": {"type": ["string", "null"]},
+    "quantstats_html_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "frequency": {"enum": ["daily", "weekly", "monthly", "signal"]},
+    "risk_free_rate": {"type": "number"},
+    "periods_per_year": {"type": "integer", "minimum": 1},
+    "return_count": {"type": "integer", "minimum": 0},
+    "metrics_table_row_count": {"type": ["integer", "null"], "minimum": 0},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": false
+}

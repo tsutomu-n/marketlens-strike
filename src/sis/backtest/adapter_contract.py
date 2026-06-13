@@ -139,6 +139,49 @@ CONTRACTS = {
             "Add a metrics extension artifact before visual report or tearsheet integration."
         ),
     },
+    "quantstats": {
+        "adapter_role": "report_tearsheet",
+        "input_contract": {
+            "artifact_kind": "returns_series",
+            "required_fields": [
+                "source_backtest_metrics_path",
+                "source_backtest_metrics_hash",
+                "returns_series_path",
+                "returns_series_hash",
+                "frequency",
+                "periods_per_year",
+            ],
+            "optional_fields": ["benchmark_returns_path", "risk_free_rate"],
+        },
+        "output_contract": {
+            "artifact_kind": "strategy_backtest_report_extension.v1",
+            "required_fields": [
+                "framework_id",
+                "report_status",
+                "engine_run",
+                "quantstats_html_path",
+                "quantstats_html_hash",
+                "metrics_table_row_count",
+            ],
+            "optional_fields": ["html_report", "metrics_table", "benchmark_report"],
+        },
+        "provenance_requirements": [
+            "source_backtest_metrics_hash",
+            "returns_series_hash",
+            "quantstats_html_hash",
+            "framework_version",
+            "runner_mode",
+        ],
+        "acceptance_checks": [
+            "report_extension_schema_validation",
+            "paper_only_boundary",
+            "no_wallet_or_exchange_write",
+            "report_inputs_hash_match",
+        ],
+        "next_implementation_step": (
+            "Add a quantstats report extension before considering a locked report extra."
+        ),
+    },
 }
 
 
@@ -196,7 +239,7 @@ def _contracts(selection_payload: dict[str, Any]) -> list[dict[str, Any]]:
         )
     return [
         _contract_item(framework_id, selected[framework_id])
-        for framework_id in ("vectorbt", "bt", "empyrical_reloaded")
+        for framework_id in ("vectorbt", "bt", "empyrical_reloaded", "quantstats")
     ]
 
 

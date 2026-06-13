@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_16:12 JST
-更新日: 2026-06-13_18:57 JST
+更新日: 2026-06-13_19:23 JST
 -->
 
 # OSS Backtest Framework Evaluation Plan
@@ -177,11 +177,13 @@
 現状:
 
 - PyPI は Apache-2.0 license expression、Python `>=3.10` と説明している。
+- `strategy-backtest-report-extension` は `quantstats` が import できる環境では `quantstats.reports.html` と `quantstats.reports.metrics` を呼び、`strategy_backtest_report_extension.v1` に framework version、runner mode、HTML report path/hash、metrics table row count を記録できる。
+- `uv run --with quantstats sis strategy-backtest-report-extension` の一時 smoke は `quantstats=0.0.81` で通過済み。
 
 判断:
 
 - engine ではなく report 補助として有力。
-- `strategy-backtest-compare` の report 拡張候補。
+- `strategy-backtest-compare` / `strategy-backtest-pack` の report extension として実装済み。
 
 参照:
 
@@ -313,14 +315,14 @@ uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis
 
 1. `vectorbt`: high-speed signal runner
 2. `bt`: portfolio allocation / rebalance comparison
-3. `quantstats` または `empyrical-reloaded`: report / metrics extension
+3. `quantstats` と `empyrical-reloaded`: report / metrics extension
 
 実測選定:
 
 - selected: `vectorbt` = `high_speed_signal_runner`
 - selected: `bt` = `portfolio_allocation_rebalance`
 - selected: `empyrical-reloaded` = `metrics_normalization`
-- deferred: `quantstats` = metrics contract 後の report / tearsheet 拡張
+- selected: `quantstats` = report / tearsheet extension
 - deferred: `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader`
 
 やらない:
@@ -330,7 +332,7 @@ uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis
 
 ### Phase D: optional extras
 
-実装状況: optional dependency 採用前の adapter contract を実装済み。`strategy-backtest-adapter-contract` が `vectorbt`, `bt`, `empyrical-reloaded` の input / output / provenance / acceptance contract を artifact 化する。`vectorbt` の `strategy_backtest_external_result.v1` adapter wrapper、`bt` の `strategy_backtest_portfolio_comparison.v1` adapter wrapper、`empyrical-reloaded` の `strategy_backtest_metric_extension.v1` adapter wrapper は実装済み。`pyproject.toml` / `uv.lock` は未変更。
+実装状況: optional dependency 採用前の adapter contract を実装済み。`strategy-backtest-adapter-contract` が `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` の input / output / provenance / acceptance contract を artifact 化する。`vectorbt` の `strategy_backtest_external_result.v1` adapter wrapper、`bt` の `strategy_backtest_portfolio_comparison.v1` adapter wrapper、`empyrical-reloaded` の `strategy_backtest_metric_extension.v1` adapter wrapper、`quantstats` の `strategy_backtest_report_extension.v1` adapter wrapper は実装済み。`pyproject.toml` / `uv.lock` は未変更。
 
 候補:
 

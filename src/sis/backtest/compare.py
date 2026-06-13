@@ -342,6 +342,31 @@ def _metric_extension(metric_payload: dict[str, Any] | None) -> dict[str, Any] |
     }
 
 
+def _report_extension(report_payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if report_payload is None:
+        return None
+    return {
+        "framework_id": report_payload.get("framework_id"),
+        "adapter_role": report_payload.get("adapter_role"),
+        "framework_version": report_payload.get("framework_version"),
+        "runner_mode": report_payload.get("runner_mode"),
+        "report_status": report_payload.get("report_status"),
+        "reason_codes": report_payload.get("reason_codes") or [],
+        "dependency_added": report_payload.get("dependency_added"),
+        "engine_run": report_payload.get("engine_run"),
+        "frequency": report_payload.get("frequency"),
+        "risk_free_rate": report_payload.get("risk_free_rate"),
+        "periods_per_year": report_payload.get("periods_per_year"),
+        "return_count": report_payload.get("return_count"),
+        "metrics_table_row_count": report_payload.get("metrics_table_row_count"),
+        "quantstats_html_path": report_payload.get("quantstats_html_path"),
+        "quantstats_html_hash": report_payload.get("quantstats_html_hash"),
+        "permits_live_order": report_payload.get("permits_live_order"),
+        "wallet_used": report_payload.get("wallet_used"),
+        "exchange_write_used": report_payload.get("exchange_write_used"),
+    }
+
+
 def _numeric(value: Any) -> float | int | None:
     if isinstance(value, bool):
         return None
@@ -699,6 +724,22 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         )
     else:
         lines.append("- none")
+    lines.extend(["", "## Report Extension", ""])
+    if payload["report_extension"]:
+        extension = payload["report_extension"]
+        lines.extend(
+            [
+                f"- framework_id: {extension.get('framework_id')}",
+                f"- report_status: {extension.get('report_status')}",
+                f"- engine_run: {extension.get('engine_run')}",
+                f"- frequency: {extension.get('frequency')}",
+                f"- return_count: {extension.get('return_count')}",
+                f"- metrics_table_row_count: {extension.get('metrics_table_row_count')}",
+                f"- quantstats_html_path: {extension.get('quantstats_html_path')}",
+            ]
+        )
+    else:
+        lines.append("- none")
     lines.extend(
         [
             "",
@@ -737,6 +778,7 @@ def build_strategy_backtest_comparison(
     external_result_path: Path | None = None,
     portfolio_comparison_path: Path | None = None,
     metric_extension_path: Path | None = None,
+    report_extension_path: Path | None = None,
     out_dir: Path,
     reports_dir: Path,
 ) -> BacktestComparisonResult:
@@ -800,6 +842,17 @@ def build_strategy_backtest_comparison(
         else None
     )
     metric_extension = _metric_extension(metric_payload)
+    report_payload = (
+        _read_json(report_extension_path)
+        if report_extension_path is not None and report_extension_path.exists()
+        else None
+    )
+    report_extension_hash = (
+        _sha256_file(report_extension_path)
+        if report_extension_path is not None and report_extension_path.exists()
+        else None
+    )
+    report_extension = _report_extension(report_payload)
     comparison_diagnostics = _comparison_diagnostics(
         metrics_payload=metrics_payload,
         method_results=method_results,
@@ -838,6 +891,11 @@ def build_strategy_backtest_comparison(
                 else None,
                 "metric_extension_hash": metric_extension_hash,
                 "metric_extension": metric_extension,
+                "report_extension_path": report_extension_path.as_posix()
+                if report_extension_path is not None and report_extension_path.exists()
+                else None,
+                "report_extension_hash": report_extension_hash,
+                "report_extension": report_extension,
             },
             sort_keys=True,
             default=str,
@@ -879,6 +937,12 @@ def build_strategy_backtest_comparison(
             else None
         ),
         "source_metric_extension_hash": metric_extension_hash,
+        "source_report_extension_path": (
+            report_extension_path.as_posix()
+            if report_extension_path is not None and report_extension_path.exists()
+            else None
+        ),
+        "source_report_extension_hash": report_extension_hash,
         "native_result": native,
         "method_results": method_results,
         "suite_results": suite_results,
@@ -886,6 +950,7 @@ def build_strategy_backtest_comparison(
         "external_results": external_results,
         "portfolio_comparison": portfolio_comparison,
         "metric_extension": metric_extension,
+        "report_extension": report_extension,
         "comparison_diagnostics": comparison_diagnostics,
         "framework_adapters": framework_adapter_status(),
         "permits_live_order": False,

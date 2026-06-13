@@ -32,6 +32,7 @@ def test_strategy_lab_schema_files_exist_and_parse() -> None:
         "strategy_backtest_external_result.v1.schema.json",
         "strategy_backtest_portfolio_comparison.v1.schema.json",
         "strategy_backtest_metric_extension.v1.schema.json",
+        "strategy_backtest_report_extension.v1.schema.json",
         "strategy_backtest_framework_smoke.v1.schema.json",
         "strategy_backtest_pack.v1.schema.json",
         "strategy_backtest_pack_validation.v1.schema.json",
@@ -94,6 +95,11 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
     )
     backtest_metric_extension = json.loads(
         Path("schemas/strategy_backtest_metric_extension.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    backtest_report_extension = json.loads(
+        Path("schemas/strategy_backtest_report_extension.v1.schema.json").read_text(
             encoding="utf-8"
         )
     )
@@ -160,6 +166,7 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
         assert backtest_external_result["properties"][name]["const"] is False
         assert backtest_portfolio_comparison["properties"][name]["const"] is False
         assert backtest_metric_extension["properties"][name]["const"] is False
+        assert backtest_report_extension["properties"][name]["const"] is False
         assert backtest_framework_smoke["properties"][name]["const"] is False
         assert backtest_pack["properties"][name]["const"] is False
         assert backtest_pack_validation["properties"][name]["const"] is False

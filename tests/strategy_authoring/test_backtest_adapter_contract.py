@@ -44,6 +44,11 @@ def _selection_payload() -> dict:
                 "selection_role": "metrics_normalization",
                 "adoption_classification": "report_only_candidate",
             },
+            {
+                "framework_id": "quantstats",
+                "selection_role": "report_tearsheet",
+                "adoption_classification": "report_only_candidate",
+            },
         ],
         "deferred_adapters": [],
     }
@@ -77,11 +82,12 @@ def test_build_backtest_adapter_contract_writes_selected_contracts(tmp_path) -> 
         "vectorbt",
         "bt",
         "empyrical_reloaded",
+        "quantstats",
     ]
     assert payload["summary"] == {
-        "contract_count": 3,
+        "contract_count": 4,
         "optional_extra_contract_count": 2,
-        "report_only_contract_count": 1,
+        "report_only_contract_count": 2,
     }
     assert payload["decision"]["decision"] == "DESIGN_ADAPTER_CONTRACTS_BEFORE_DEPENDENCY"
     vectorbt = payload["contracts"][0]
@@ -107,5 +113,5 @@ def test_strategy_backtest_adapter_contract_cli(tmp_path, monkeypatch) -> None:
             data_dir / "research/backtest_adapter_contract/strategy_backtest_adapter_contract.json"
         ).read_text(encoding="utf-8")
     )
-    assert payload["summary"]["contract_count"] == 3
+    assert payload["summary"]["contract_count"] == 4
     assert (data_dir / "reports/strategy_backtest_adapter_contract_report.md").exists()

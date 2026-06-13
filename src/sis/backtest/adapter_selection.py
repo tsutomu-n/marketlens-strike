@@ -36,17 +36,18 @@ SELECTED_FRAMEWORKS = {
         ],
         "Design a metrics normalization extension before adding a locked report extra.",
     ),
-}
-
-DEFERRED_FRAMEWORKS = {
     "quantstats": (
         "report_tearsheet",
         [
             "phase_b_imported",
-            "defer_visual_tearsheet_until_metrics_contract_exists",
+            "metric_extension_contract_exists",
+            "report_extension_without_locked_dependency",
         ],
-        "Revisit after metrics normalization output is stable.",
+        "Design a report extension artifact before adding a locked report extra.",
     ),
+}
+
+DEFERRED_FRAMEWORKS = {
     "backtesting": (
         "blocked_license_or_install",
         ["license_review_required_before_lock"],
@@ -163,7 +164,6 @@ def _deferred_items(
     smoke_results: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
     deferred_ids = [
-        "quantstats",
         "backtesting",
         "zipline_reloaded",
         "backtrader",
