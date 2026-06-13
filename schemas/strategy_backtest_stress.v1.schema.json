@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_stress.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "stress_kind",
+    "source_backtest_metrics_path",
+    "source_backtest_metrics_hash",
+    "scenario_count",
+    "summary",
+    "scenarios",
+    "dependency_added",
+    "paper_only",
+    "live_order_submitted",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_stress.v1"},
+    "created_at": {"type": "string"},
+    "stress_kind": {"const": "cost_slippage"},
+    "source_backtest_metrics_path": {"type": "string"},
+    "source_backtest_metrics_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "scenario_count": {"type": "integer", "minimum": 1},
+    "summary": {
+      "type": "object",
+      "required": [
+        "return_count",
+        "base_total_return",
+        "base_avg_signal_return",
+        "base_positive_rate",
+        "base_max_drawdown",
+        "base_cost_drag_bps",
+        "worst_scenario_id",
+        "worst_stressed_total_return",
+        "worst_delta_total_return"
+      ],
+      "properties": {
+        "return_count": {"type": "integer", "minimum": 0},
+        "base_total_return": {"type": "number"},
+        "base_avg_signal_return": {"type": ["number", "null"]},
+        "base_positive_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "base_max_drawdown": {"type": ["number", "null"]},
+        "base_cost_drag_bps": {"type": "number", "minimum": 0},
+        "worst_scenario_id": {"type": "string"},
+        "worst_stressed_total_return": {"type": "number"},
+        "worst_delta_total_return": {"type": "number"}
+      },
+      "additionalProperties": false
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "additional_cost_bps_per_trade",
+          "additional_slippage_bps_per_trade",
+          "total_additional_bps_per_trade",
+          "return_count",
+          "base_total_return",
+          "stressed_total_return",
+          "delta_total_return",
+          "stressed_avg_signal_return",
+          "stressed_min_signal_return",
+          "stressed_max_signal_return",
+          "stressed_positive_rate",
+          "stressed_max_drawdown",
+          "stressed_cost_drag_bps"
+        ],
+        "properties": {
+          "scenario_id": {"type": "string"},
+          "additional_cost_bps_per_trade": {"type": "number", "minimum": 0},
+          "additional_slippage_bps_per_trade": {"type": "number", "minimum": 0},
+          "total_additional_bps_per_trade": {"type": "number", "minimum": 0},
+          "return_count": {"type": "integer", "minimum": 0},
+          "base_total_return": {"type": "number"},
+          "stressed_total_return": {"type": "number"},
+          "delta_total_return": {"type": "number"},
+          "stressed_avg_signal_return": {"type": ["number", "null"]},
+          "stressed_min_signal_return": {"type": ["number", "null"]},
+          "stressed_max_signal_return": {"type": ["number", "null"]},
+          "stressed_positive_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "stressed_max_drawdown": {"type": ["number", "null"]},
+          "stressed_cost_drag_bps": {"type": "number", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "dependency_added": {"const": false},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": false
+}

@@ -367,6 +367,24 @@ def _report_extension(report_payload: dict[str, Any] | None) -> dict[str, Any] |
     }
 
 
+def _stress(stress_payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if stress_payload is None:
+        return None
+    summary = stress_payload.get("summary")
+    return {
+        "stress_kind": stress_payload.get("stress_kind"),
+        "scenario_count": stress_payload.get("scenario_count"),
+        "summary": summary if isinstance(summary, dict) else {},
+        "scenarios": stress_payload.get("scenarios") or [],
+        "dependency_added": stress_payload.get("dependency_added"),
+        "paper_only": stress_payload.get("paper_only"),
+        "permits_live_order": stress_payload.get("permits_live_order"),
+        "live_conversion_allowed": stress_payload.get("live_conversion_allowed"),
+        "wallet_used": stress_payload.get("wallet_used"),
+        "exchange_write_used": stress_payload.get("exchange_write_used"),
+    }
+
+
 def _numeric(value: Any) -> float | int | None:
     if isinstance(value, bool):
         return None
@@ -740,6 +758,21 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         )
     else:
         lines.append("- none")
+    lines.extend(["", "## Cost / Slippage Stress", ""])
+    if payload["stress"]:
+        stress = payload["stress"]
+        summary = stress.get("summary") or {}
+        lines.extend(
+            [
+                f"- stress_kind: {stress.get('stress_kind')}",
+                f"- scenario_count: {stress.get('scenario_count')}",
+                f"- base_total_return: {summary.get('base_total_return')}",
+                f"- worst_scenario_id: {summary.get('worst_scenario_id')}",
+                f"- worst_stressed_total_return: {summary.get('worst_stressed_total_return')}",
+            ]
+        )
+    else:
+        lines.append("- none")
     lines.extend(
         [
             "",
@@ -779,6 +812,7 @@ def build_strategy_backtest_comparison(
     portfolio_comparison_path: Path | None = None,
     metric_extension_path: Path | None = None,
     report_extension_path: Path | None = None,
+    stress_path: Path | None = None,
     out_dir: Path,
     reports_dir: Path,
 ) -> BacktestComparisonResult:
@@ -853,6 +887,13 @@ def build_strategy_backtest_comparison(
         else None
     )
     report_extension = _report_extension(report_payload)
+    stress_payload = (
+        _read_json(stress_path) if stress_path is not None and stress_path.exists() else None
+    )
+    stress_hash = (
+        _sha256_file(stress_path) if stress_path is not None and stress_path.exists() else None
+    )
+    stress = _stress(stress_payload)
     comparison_diagnostics = _comparison_diagnostics(
         metrics_payload=metrics_payload,
         method_results=method_results,
@@ -896,6 +937,11 @@ def build_strategy_backtest_comparison(
                 else None,
                 "report_extension_hash": report_extension_hash,
                 "report_extension": report_extension,
+                "stress_path": stress_path.as_posix()
+                if stress_path is not None and stress_path.exists()
+                else None,
+                "stress_hash": stress_hash,
+                "stress": stress,
             },
             sort_keys=True,
             default=str,
@@ -943,6 +989,10 @@ def build_strategy_backtest_comparison(
             else None
         ),
         "source_report_extension_hash": report_extension_hash,
+        "source_stress_path": (
+            stress_path.as_posix() if stress_path is not None and stress_path.exists() else None
+        ),
+        "source_stress_hash": stress_hash,
         "native_result": native,
         "method_results": method_results,
         "suite_results": suite_results,
@@ -951,6 +1001,7 @@ def build_strategy_backtest_comparison(
         "portfolio_comparison": portfolio_comparison,
         "metric_extension": metric_extension,
         "report_extension": report_extension,
+        "stress": stress,
         "comparison_diagnostics": comparison_diagnostics,
         "framework_adapters": framework_adapter_status(),
         "permits_live_order": False,

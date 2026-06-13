@@ -33,6 +33,7 @@ def test_strategy_lab_schema_files_exist_and_parse() -> None:
         "strategy_backtest_portfolio_comparison.v1.schema.json",
         "strategy_backtest_metric_extension.v1.schema.json",
         "strategy_backtest_report_extension.v1.schema.json",
+        "strategy_backtest_stress.v1.schema.json",
         "strategy_backtest_framework_smoke.v1.schema.json",
         "strategy_backtest_pack.v1.schema.json",
         "strategy_backtest_pack_validation.v1.schema.json",
@@ -103,6 +104,9 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
             encoding="utf-8"
         )
     )
+    backtest_stress = json.loads(
+        Path("schemas/strategy_backtest_stress.v1.schema.json").read_text(encoding="utf-8")
+    )
     backtest_framework_smoke = json.loads(
         Path("schemas/strategy_backtest_framework_smoke.v1.schema.json").read_text(encoding="utf-8")
     )
@@ -167,6 +171,7 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
         assert backtest_portfolio_comparison["properties"][name]["const"] is False
         assert backtest_metric_extension["properties"][name]["const"] is False
         assert backtest_report_extension["properties"][name]["const"] is False
+        assert backtest_stress["properties"][name]["const"] is False
         assert backtest_framework_smoke["properties"][name]["const"] is False
         assert backtest_pack["properties"][name]["const"] is False
         assert backtest_pack_validation["properties"][name]["const"] is False
@@ -176,6 +181,9 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
     assert backtest_adapter_spike["properties"]["dependency_added"]["const"] is False
     assert backtest_adapter_spike["properties"]["external_engine_run"]["const"] is False
     assert backtest_external_result["properties"]["dependency_added"]["const"] is False
+    assert backtest_stress["properties"]["dependency_added"]["const"] is False
+    assert backtest_stress["properties"]["paper_only"]["const"] is True
+    assert backtest_stress["properties"]["live_order_submitted"]["const"] is False
     pack_policy = backtest_pack["properties"]["external_framework_policy"]["properties"]
     validation_policy = backtest_pack_validation["properties"]["external_framework_policy"][
         "properties"

@@ -492,6 +492,75 @@ def _write_report_extension(path: Path) -> None:
     )
 
 
+def _write_stress(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "strategy_backtest_stress.v1",
+                "created_at": "2026-06-13T00:00:00+00:00",
+                "stress_kind": "cost_slippage",
+                "source_backtest_metrics_path": "data/research/strategy_backtest_metrics.json",
+                "source_backtest_metrics_hash": "sha256:" + "7" * 64,
+                "scenario_count": 2,
+                "summary": {
+                    "return_count": 2,
+                    "base_total_return": 0.03,
+                    "base_avg_signal_return": 0.015,
+                    "base_positive_rate": 1.0,
+                    "base_max_drawdown": 0.0,
+                    "base_cost_drag_bps": 12.5,
+                    "worst_scenario_id": "severe",
+                    "worst_stressed_total_return": 0.025,
+                    "worst_delta_total_return": -0.005,
+                },
+                "scenarios": [
+                    {
+                        "scenario_id": "base",
+                        "additional_cost_bps_per_trade": 0.0,
+                        "additional_slippage_bps_per_trade": 0.0,
+                        "total_additional_bps_per_trade": 0.0,
+                        "return_count": 2,
+                        "base_total_return": 0.03,
+                        "stressed_total_return": 0.03,
+                        "delta_total_return": 0.0,
+                        "stressed_avg_signal_return": 0.015,
+                        "stressed_min_signal_return": 0.01,
+                        "stressed_max_signal_return": 0.02,
+                        "stressed_positive_rate": 1.0,
+                        "stressed_max_drawdown": 0.0,
+                        "stressed_cost_drag_bps": 12.5,
+                    },
+                    {
+                        "scenario_id": "severe",
+                        "additional_cost_bps_per_trade": 5.0,
+                        "additional_slippage_bps_per_trade": 20.0,
+                        "total_additional_bps_per_trade": 25.0,
+                        "return_count": 2,
+                        "base_total_return": 0.03,
+                        "stressed_total_return": 0.025,
+                        "delta_total_return": -0.005,
+                        "stressed_avg_signal_return": 0.0125,
+                        "stressed_min_signal_return": 0.0075,
+                        "stressed_max_signal_return": 0.0175,
+                        "stressed_positive_rate": 1.0,
+                        "stressed_max_drawdown": 0.0,
+                        "stressed_cost_drag_bps": 62.5,
+                    },
+                ],
+                "dependency_added": False,
+                "paper_only": True,
+                "live_order_submitted": False,
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "exchange_write_used": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_path) -> None:
     metrics_path = tmp_path / "data/research/strategy_backtest_metrics.json"
     suite_result_path = (
@@ -512,6 +581,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     report_extension_path = (
         tmp_path / "data/research/backtest_report_extension/strategy_backtest_report_extension.json"
     )
+    stress_path = tmp_path / "data/research/backtest_stress/strategy_backtest_stress.json"
     out_dir = tmp_path / "data/research/backtest_compare"
     reports_dir = tmp_path / "data/reports"
     _write_metrics(metrics_path)
@@ -521,6 +591,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     _write_portfolio_comparison(portfolio_comparison_path)
     _write_metric_extension(metric_extension_path)
     _write_report_extension(report_extension_path)
+    _write_stress(stress_path)
 
     result = build_strategy_backtest_comparison(
         metrics_path=metrics_path,
@@ -530,6 +601,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
         portfolio_comparison_path=portfolio_comparison_path,
         metric_extension_path=metric_extension_path,
         report_extension_path=report_extension_path,
+        stress_path=stress_path,
         out_dir=out_dir,
         reports_dir=reports_dir,
     )
@@ -576,6 +648,8 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["source_metric_extension_hash"].startswith("sha256:")
     assert payload["source_report_extension_path"] == report_extension_path.as_posix()
     assert payload["source_report_extension_hash"].startswith("sha256:")
+    assert payload["source_stress_path"] == stress_path.as_posix()
+    assert payload["source_stress_hash"].startswith("sha256:")
     assert payload["suite_results"][0]["suite_id"] == "demo_suite"
     assert payload["suite_results"][0]["aggregate"]["run_count"] == 2
     assert payload["suite_results"][0]["method_matrix"]["method_count"] == 2
@@ -624,6 +698,10 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["report_extension"]["framework_id"] == "quantstats"
     assert payload["report_extension"]["report_status"] == "skipped"
     assert payload["report_extension"]["return_count"] == 2
+    assert payload["stress"]["stress_kind"] == "cost_slippage"
+    assert payload["stress"]["scenario_count"] == 2
+    assert payload["stress"]["summary"]["worst_scenario_id"] == "severe"
+    assert payload["stress"]["live_conversion_allowed"] is False
     assert {item["framework_id"] for item in payload["framework_adapters"]} == {
         "vectorbt",
         "bt",
@@ -658,6 +736,7 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     _write_report_extension(
         data_dir / "research/backtest_report_extension/strategy_backtest_report_extension.json"
     )
+    _write_stress(data_dir / "research/backtest_stress/strategy_backtest_stress.json")
 
     result = runner.invoke(app, ["strategy-backtest-compare"])
 
@@ -674,6 +753,7 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     assert payload["portfolio_comparison"]["run_status"] == "skipped"
     assert payload["metric_extension"]["metric_status"] == "skipped"
     assert payload["report_extension"]["report_status"] == "skipped"
+    assert payload["stress"]["summary"]["worst_scenario_id"] == "severe"
     assert (data_dir / "reports/strategy_backtest_comparison_report.md").exists()
 
 
@@ -704,9 +784,12 @@ def test_strategy_backtest_compare_without_suite_result_keeps_empty_suite_sectio
     assert payload["source_metric_extension_hash"] is None
     assert payload["source_report_extension_path"] is None
     assert payload["source_report_extension_hash"] is None
+    assert payload["source_stress_path"] is None
+    assert payload["source_stress_hash"] is None
     assert payload["suite_results"] == []
     assert payload["adapter_spike"] is None
     assert payload["external_results"] == []
     assert payload["metric_extension"] is None
     assert payload["report_extension"] is None
+    assert payload["stress"] is None
     assert payload["comparison_diagnostics"]["suite_best_runs"] == []

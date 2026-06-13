@@ -18,6 +18,7 @@ from sis.backtest.pack import (
 )
 from sis.backtest.portfolio_comparison import build_strategy_backtest_portfolio_comparison
 from sis.backtest.report_extension import build_strategy_backtest_report_extension
+from sis.backtest.stress import DEFAULT_SCENARIO_CSV, build_strategy_backtest_stress
 from sis.research.strategy_lab.authoring.backtest import (
     run_authoring_backtest,
     write_authoring_backtest_outputs,
@@ -243,6 +244,11 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--report-extension-path",
             help="Optional Strategy Backtest Report Extension JSON. Used when the file exists.",
         ),
+        stress_path: Path = typer.Option(
+            Path("data/research/backtest_stress/strategy_backtest_stress.json"),
+            "--stress-path",
+            help="Optional Strategy Backtest Stress JSON. Used when the file exists.",
+        ),
         out: Path = typer.Option(
             Path("data/research/backtest_compare"),
             "--out",
@@ -288,6 +294,9 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             if report_extension_path.is_absolute()
             else settings.data_dir.parent / report_extension_path
         )
+        selected_stress_path = (
+            stress_path if stress_path.is_absolute() else settings.data_dir.parent / stress_path
+        )
         selected_out = out if out.is_absolute() else settings.data_dir.parent / out
         selected_reports = (
             reports_dir if reports_dir.is_absolute() else settings.data_dir.parent / reports_dir
@@ -313,6 +322,7 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 report_extension_path=selected_report_extension_path
                 if selected_report_extension_path.exists()
                 else None,
+                stress_path=selected_stress_path if selected_stress_path.exists() else None,
                 out_dir=selected_out,
                 reports_dir=selected_reports,
             )
@@ -476,6 +486,46 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         if result.quantstats_html_path is not None:
             typer.echo(f"backtest_quantstats_html={result.quantstats_html_path}")
         typer.echo(f"backtest_report_extension_report={result.report_path}")
+
+    @app.command("strategy-backtest-stress")
+    def strategy_backtest_stress_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        scenario_csv: str = typer.Option(
+            DEFAULT_SCENARIO_CSV,
+            "--scenario-csv",
+            help="Comma-separated stress scenarios as id:additional_cost_bps:additional_slippage_bps.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_stress"),
+            "--out",
+            help="Output directory for stress artifacts.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        selected_metrics_path = _resolve_workspace_path(metrics_path, settings.data_dir)
+        selected_out = _resolve_workspace_path(out, settings.data_dir)
+        selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
+        try:
+            result = build_strategy_backtest_stress(
+                metrics_path=selected_metrics_path,
+                scenario_csv=scenario_csv,
+                out_dir=selected_out,
+                reports_dir=selected_reports,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_stress={result.stress_path}")
+        typer.echo(f"backtest_stress_report={result.report_path}")
 
     @app.command("strategy-backtest-adapter-spike")
     def strategy_backtest_adapter_spike_cmd(
@@ -772,6 +822,11 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 out_dir=settings.data_dir / "research/backtest_report_extension",
                 reports_dir=selected_reports,
             )
+            stress_result = build_strategy_backtest_stress(
+                metrics_path=backtest_artifacts["metrics"],
+                out_dir=settings.data_dir / "research/backtest_stress",
+                reports_dir=selected_reports,
+            )
             comparison_result = build_strategy_backtest_comparison(
                 metrics_path=backtest_artifacts["metrics"],
                 suite_result_path=suite_artifacts["suite_result"],
@@ -780,6 +835,7 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 portfolio_comparison_path=portfolio_comparison_result.comparison_path,
                 metric_extension_path=metric_extension_result.metric_extension_path,
                 report_extension_path=report_extension_result.report_extension_path,
+                stress_path=stress_result.stress_path,
                 out_dir=settings.data_dir / "research/backtest_compare",
                 reports_dir=selected_reports,
             )
@@ -808,6 +864,8 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                     "report_extension": report_extension_result.report_extension_path,
                     "report_extension_report": report_extension_result.report_path,
                     "report_returns_series": report_extension_result.returns_series_path,
+                    "stress": stress_result.stress_path,
+                    "stress_report": stress_result.report_path,
                     "comparison": comparison_result.comparison_path,
                     "comparison_report": comparison_result.report_path,
                 },
@@ -833,6 +891,7 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         typer.echo(f"backtest_portfolio_comparison={portfolio_comparison_result.comparison_path}")
         typer.echo(f"backtest_metric_extension={metric_extension_result.metric_extension_path}")
         typer.echo(f"backtest_report_extension={report_extension_result.report_extension_path}")
+        typer.echo(f"backtest_stress={stress_result.stress_path}")
         typer.echo(f"backtest_suite_result={suite_artifacts['suite_result']}")
         if validation_result.payload["decision"] != "PASS":
             raise typer.Exit(2)
