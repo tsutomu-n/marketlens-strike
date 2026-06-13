@@ -104,7 +104,6 @@ members:
 """,
         encoding="utf-8",
     )
-
     result = runner.invoke(app, ["strategy-backtest-suite", "--suite", str(suite_path)])
 
     assert result.exit_code == 0, result.stdout
@@ -182,6 +181,7 @@ def test_strategy_backtest_pack_runs_standard_backtest_artifact_chain(
     data_dir = tmp_path / "data"
     spec_path = tmp_path / "authoring.yaml"
     suite_path = tmp_path / "suite.yaml"
+    bundle_path = tmp_path / "bundle.yaml"
     monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
     _write_data(data_dir)
     _write_spec(spec_path)
@@ -234,6 +234,21 @@ members:
 """,
         encoding="utf-8",
     )
+    bundle_path.write_text(
+        f"""schema_version: strategy_authoring_bundle.v1
+bundle_id: demo_pack_bundle
+members:
+  - spec_path: {spec_path.name}
+    allocation_weight: 1.0
+    enabled: true
+portfolio:
+  allocation_method: fixed_weight
+  max_total_allocation_weight: 1.0
+  selection_metric: total_return
+  selection_direction: maximize
+""",
+        encoding="utf-8",
+    )
 
     result = runner.invoke(
         app,
@@ -243,6 +258,8 @@ members:
             str(spec_path),
             "--suite",
             str(suite_path),
+            "--bundle",
+            str(bundle_path),
         ],
     )
 
@@ -250,12 +267,22 @@ members:
     assert "backtest_pack=" in result.stdout
     assert "backtest_pack_validation=" in result.stdout
     assert "backtest_comparison=" in result.stdout
+    assert "backtest_portfolio_comparison=" in result.stdout
+    assert "backtest_metric_extension=" in result.stdout
     pack_path = data_dir / "research/backtest_pack/strategy_backtest_pack.json"
     validation_path = data_dir / "research/backtest_pack/strategy_backtest_pack_validation.json"
     comparison_path = data_dir / "research/backtest_compare/strategy_backtest_comparison.json"
+    portfolio_path = (
+        data_dir / "research/backtest_portfolio/strategy_backtest_portfolio_comparison.json"
+    )
+    metric_extension_path = (
+        data_dir / "research/backtest_metric_extension/strategy_backtest_metric_extension.json"
+    )
     assert pack_path.exists()
     assert validation_path.exists()
     assert comparison_path.exists()
+    assert portfolio_path.exists()
+    assert metric_extension_path.exists()
     payload = json.loads(pack_path.read_text(encoding="utf-8"))
     schema = json.loads(
         Path("schemas/strategy_backtest_pack.v1.schema.json").read_text(encoding="utf-8")
@@ -279,7 +306,7 @@ members:
         "decision": "complete_without_locked_external_dependency",
         "locked_dependency_added": False,
         "external_adapters_required_for_completion": False,
-        "temporary_uv_with_allowed": ["vectorbt"],
+        "temporary_uv_with_allowed": ["vectorbt", "bt", "empyrical-reloaded"],
         "candidate_frameworks": [
             "vectorbt",
             "bt",
@@ -300,6 +327,9 @@ members:
     }
     assert payload["artifacts"]["comparison"]["exists"] is True
     assert payload["artifacts"]["external_result"]["exists"] is True
+    assert payload["artifacts"]["portfolio_comparison"]["exists"] is True
+    assert payload["artifacts"]["metric_extension"]["exists"] is True
+    assert payload["artifacts"]["returns_series"]["exists"] is True
     assert (data_dir / "reports/strategy_backtest_pack_report.md").exists()
     validation_payload = json.loads(validation_path.read_text(encoding="utf-8"))
     validation_schema = json.loads(

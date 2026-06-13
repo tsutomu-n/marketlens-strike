@@ -274,6 +274,8 @@ def _external_results(external_payload: dict[str, Any] | None) -> list[dict[str,
             "framework_id": result.get("framework_id"),
             "adapter_role": result.get("adapter_role"),
             "status": result.get("status"),
+            "framework_version": result.get("framework_version"),
+            "runner_mode": result.get("runner_mode"),
             "run_status": result.get("run_status"),
             "reason_codes": result.get("reason_codes") or [],
             "dependency_added": result.get("dependency_added"),
@@ -286,6 +288,58 @@ def _external_results(external_payload: dict[str, Any] | None) -> list[dict[str,
         for result in external_payload.get("results") or []
         if isinstance(result, dict)
     ]
+
+
+def _portfolio_comparison(portfolio_payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if portfolio_payload is None:
+        return None
+    return {
+        "framework_id": portfolio_payload.get("framework_id"),
+        "adapter_role": portfolio_payload.get("adapter_role"),
+        "framework_version": portfolio_payload.get("framework_version"),
+        "runner_mode": portfolio_payload.get("runner_mode"),
+        "run_status": portfolio_payload.get("run_status"),
+        "reason_codes": portfolio_payload.get("reason_codes") or [],
+        "dependency_added": portfolio_payload.get("dependency_added"),
+        "engine_run": portfolio_payload.get("engine_run"),
+        "allocation_rule_id": portfolio_payload.get("allocation_rule_id"),
+        "rebalance_cadence": portfolio_payload.get("rebalance_cadence"),
+        "portfolio_return": portfolio_payload.get("portfolio_return"),
+        "max_drawdown": portfolio_payload.get("max_drawdown"),
+        "turnover": portfolio_payload.get("turnover"),
+        "rebalance_count": portfolio_payload.get("rebalance_count"),
+        "permits_live_order": portfolio_payload.get("permits_live_order"),
+        "wallet_used": portfolio_payload.get("wallet_used"),
+        "exchange_write_used": portfolio_payload.get("exchange_write_used"),
+    }
+
+
+def _metric_extension(metric_payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if metric_payload is None:
+        return None
+    return {
+        "framework_id": metric_payload.get("framework_id"),
+        "adapter_role": metric_payload.get("adapter_role"),
+        "framework_version": metric_payload.get("framework_version"),
+        "runner_mode": metric_payload.get("runner_mode"),
+        "metric_status": metric_payload.get("metric_status"),
+        "reason_codes": metric_payload.get("reason_codes") or [],
+        "dependency_added": metric_payload.get("dependency_added"),
+        "engine_run": metric_payload.get("engine_run"),
+        "frequency": metric_payload.get("frequency"),
+        "risk_free_rate": metric_payload.get("risk_free_rate"),
+        "return_count": metric_payload.get("return_count"),
+        "sharpe_ratio": metric_payload.get("sharpe_ratio"),
+        "sortino_ratio": metric_payload.get("sortino_ratio"),
+        "max_drawdown": metric_payload.get("max_drawdown"),
+        "annual_return": metric_payload.get("annual_return"),
+        "annual_volatility": metric_payload.get("annual_volatility"),
+        "calmar_ratio": metric_payload.get("calmar_ratio"),
+        "omega_ratio": metric_payload.get("omega_ratio"),
+        "permits_live_order": metric_payload.get("permits_live_order"),
+        "wallet_used": metric_payload.get("wallet_used"),
+        "exchange_write_used": metric_payload.get("exchange_write_used"),
+    }
 
 
 def _numeric(value: Any) -> float | int | None:
@@ -610,6 +664,41 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
             )
     else:
         lines.append("- none")
+    lines.extend(["", "## Portfolio Comparison", ""])
+    if payload["portfolio_comparison"]:
+        portfolio = payload["portfolio_comparison"]
+        lines.extend(
+            [
+                f"- framework_id: {portfolio.get('framework_id')}",
+                f"- run_status: {portfolio.get('run_status')}",
+                f"- engine_run: {portfolio.get('engine_run')}",
+                f"- portfolio_return: {portfolio.get('portfolio_return')}",
+                f"- max_drawdown: {portfolio.get('max_drawdown')}",
+                f"- turnover: {portfolio.get('turnover')}",
+                f"- rebalance_count: {portfolio.get('rebalance_count')}",
+            ]
+        )
+    else:
+        lines.append("- none")
+    lines.extend(["", "## Metric Extension", ""])
+    if payload["metric_extension"]:
+        extension = payload["metric_extension"]
+        lines.extend(
+            [
+                f"- framework_id: {extension.get('framework_id')}",
+                f"- metric_status: {extension.get('metric_status')}",
+                f"- engine_run: {extension.get('engine_run')}",
+                f"- frequency: {extension.get('frequency')}",
+                f"- return_count: {extension.get('return_count')}",
+                f"- sharpe_ratio: {extension.get('sharpe_ratio')}",
+                f"- sortino_ratio: {extension.get('sortino_ratio')}",
+                f"- max_drawdown: {extension.get('max_drawdown')}",
+                f"- annual_return: {extension.get('annual_return')}",
+                f"- annual_volatility: {extension.get('annual_volatility')}",
+            ]
+        )
+    else:
+        lines.append("- none")
     lines.extend(
         [
             "",
@@ -646,6 +735,8 @@ def build_strategy_backtest_comparison(
     suite_result_path: Path | None = None,
     adapter_spike_path: Path | None = None,
     external_result_path: Path | None = None,
+    portfolio_comparison_path: Path | None = None,
+    metric_extension_path: Path | None = None,
     out_dir: Path,
     reports_dir: Path,
 ) -> BacktestComparisonResult:
@@ -687,6 +778,28 @@ def build_strategy_backtest_comparison(
         else None
     )
     external_results = _external_results(external_payload)
+    portfolio_payload = (
+        _read_json(portfolio_comparison_path)
+        if portfolio_comparison_path is not None and portfolio_comparison_path.exists()
+        else None
+    )
+    portfolio_comparison_hash = (
+        _sha256_file(portfolio_comparison_path)
+        if portfolio_comparison_path is not None and portfolio_comparison_path.exists()
+        else None
+    )
+    portfolio_comparison = _portfolio_comparison(portfolio_payload)
+    metric_payload = (
+        _read_json(metric_extension_path)
+        if metric_extension_path is not None and metric_extension_path.exists()
+        else None
+    )
+    metric_extension_hash = (
+        _sha256_file(metric_extension_path)
+        if metric_extension_path is not None and metric_extension_path.exists()
+        else None
+    )
+    metric_extension = _metric_extension(metric_payload)
     comparison_diagnostics = _comparison_diagnostics(
         metrics_payload=metrics_payload,
         method_results=method_results,
@@ -715,6 +828,16 @@ def build_strategy_backtest_comparison(
                 "suite_results": suite_results,
                 "adapter_spike": adapter_spike,
                 "external_results": external_results,
+                "portfolio_comparison_path": portfolio_comparison_path.as_posix()
+                if portfolio_comparison_path is not None and portfolio_comparison_path.exists()
+                else None,
+                "portfolio_comparison_hash": portfolio_comparison_hash,
+                "portfolio_comparison": portfolio_comparison,
+                "metric_extension_path": metric_extension_path.as_posix()
+                if metric_extension_path is not None and metric_extension_path.exists()
+                else None,
+                "metric_extension_hash": metric_extension_hash,
+                "metric_extension": metric_extension,
             },
             sort_keys=True,
             default=str,
@@ -744,11 +867,25 @@ def build_strategy_backtest_comparison(
             else None
         ),
         "source_external_result_hash": external_result_hash,
+        "source_portfolio_comparison_path": (
+            portfolio_comparison_path.as_posix()
+            if portfolio_comparison_path is not None and portfolio_comparison_path.exists()
+            else None
+        ),
+        "source_portfolio_comparison_hash": portfolio_comparison_hash,
+        "source_metric_extension_path": (
+            metric_extension_path.as_posix()
+            if metric_extension_path is not None and metric_extension_path.exists()
+            else None
+        ),
+        "source_metric_extension_hash": metric_extension_hash,
         "native_result": native,
         "method_results": method_results,
         "suite_results": suite_results,
         "adapter_spike": adapter_spike,
         "external_results": external_results,
+        "portfolio_comparison": portfolio_comparison,
+        "metric_extension": metric_extension,
         "comparison_diagnostics": comparison_diagnostics,
         "framework_adapters": framework_adapter_status(),
         "permits_live_order": False,

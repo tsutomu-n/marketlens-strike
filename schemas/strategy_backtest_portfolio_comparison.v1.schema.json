@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_portfolio_comparison.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "framework_id",
+    "adapter_role",
+    "framework_version",
+    "runner_mode",
+    "run_status",
+    "reason_codes",
+    "dependency_added",
+    "engine_run",
+    "source_bundle_path",
+    "source_bundle_hash",
+    "price_frame_path",
+    "price_frame_hash",
+    "allocation_rule_id",
+    "rebalance_cadence",
+    "portfolio_return",
+    "max_drawdown",
+    "turnover",
+    "rebalance_count",
+    "members",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_portfolio_comparison.v1"},
+    "created_at": {"type": "string"},
+    "framework_id": {"const": "bt"},
+    "adapter_role": {"type": "string"},
+    "framework_version": {"type": ["string", "null"]},
+    "runner_mode": {
+      "enum": [
+        "not_installed_in_current_env",
+        "temporary_or_optional_import",
+        "installed_without_runner"
+      ]
+    },
+    "run_status": {"enum": ["completed", "skipped", "failed"]},
+    "reason_codes": {"type": "array", "items": {"type": "string"}},
+    "dependency_added": {"const": false},
+    "engine_run": {"type": "boolean"},
+    "source_bundle_path": {"type": "string"},
+    "source_bundle_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "price_frame_path": {"type": "string"},
+    "price_frame_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "allocation_rule_id": {"type": "string"},
+    "rebalance_cadence": {"type": "string"},
+    "portfolio_return": {"type": ["number", "null"]},
+    "max_drawdown": {"type": ["number", "null"]},
+    "turnover": {"type": ["number", "null"], "minimum": 0},
+    "rebalance_count": {"type": "integer", "minimum": 0},
+    "benchmark_return": {"type": ["number", "null"]},
+    "weight_drift": {"type": ["number", "null"], "minimum": 0},
+    "allocation_trace": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["column_id", "target_weight"],
+        "properties": {
+          "column_id": {"type": "string"},
+          "target_weight": {"type": "number"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "member_index",
+          "strategy_id",
+          "column_id",
+          "effective_allocation_weight"
+        ],
+        "properties": {
+          "member_index": {"type": "integer", "minimum": 0},
+          "strategy_id": {"type": "string"},
+          "column_id": {"type": "string"},
+          "effective_allocation_weight": {"type": "number", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": false
+}

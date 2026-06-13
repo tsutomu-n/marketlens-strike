@@ -155,6 +155,7 @@ def test_build_strategy_backtest_external_result_runs_vectorbt_when_installed(
                 "framework_id": "vectorbt",
                 "adapter_role": "vectorized_research_candidate",
                 "status": "installed",
+                "version": "1.0.0",
             }
         ],
     )
@@ -181,6 +182,8 @@ def test_build_strategy_backtest_external_result_runs_vectorbt_when_installed(
             "framework_id": "vectorbt",
             "adapter_role": "vectorized_research_candidate",
             "status": "installed",
+            "framework_version": "1.0.0",
+            "runner_mode": "temporary_or_optional_import",
             "run_status": "completed",
             "reason_codes": [],
             "dependency_added": False,

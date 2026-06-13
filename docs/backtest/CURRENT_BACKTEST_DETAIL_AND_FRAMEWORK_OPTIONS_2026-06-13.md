@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_18:07 JST
+更新日: 2026-06-13_18:57 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -11,7 +11,7 @@
 
 いま実務で使う主入口は `Strategy Authoring fixed-horizon backtest` である。YAML で戦略を記述し、`strategy-author-run --through backtest` で signal 生成から paper-only backtest metrics まで出す。これは live readiness ではなく、研究用の backtest artifact である。
 
-今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` だが、現時点で正式採用している外部 framework はない。`vectorbt` は一時 `uv --with vectorbt` で実行確認済みだが、依存追加前に Python 3.13 / uv lock / license / artifact contract の review が必要である。
+今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` だが、現時点で正式採用している外部 framework はない。`vectorbt`, `bt`, `empyrical-reloaded` は一時 `uv --with ...` で実行確認済みだが、依存追加前に Python 3.13 / uv lock / license / artifact contract の review が必要である。
 
 ## 現行 Backtest Surface
 
@@ -59,12 +59,15 @@ uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_ba
 - `data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json`
 - `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`
 - `data/research/backtest_adapter_contract/strategy_backtest_adapter_contract.json`
+- `data/research/backtest_metric_extension/strategy_backtest_metric_extension.json`
+- `data/research/backtest_metric_extension/strategy_backtest_returns.jsonl`
 - `data/reports/strategy_backtest_comparison_report.md`
 - `data/reports/strategy_backtest_suite_report.md`
 - `data/reports/strategy_backtest_adapter_spike_report.md`
 - `data/reports/strategy_backtest_framework_smoke_report.md`
 - `data/reports/strategy_backtest_adapter_selection_report.md`
 - `data/reports/strategy_backtest_adapter_contract_report.md`
+- `data/reports/strategy_backtest_metric_extension_report.md`
 
 現在できること:
 
@@ -197,7 +200,7 @@ uv run sis build-backtest
 
 ## Backtest Comparison Artifact
 
-`strategy-backtest-compare` は、現行 `strategy_backtest_metrics.json` を比較用の canonical artifact に正規化する。既定の `data/research/backtest_suite/strategy_backtest_suite_result.json` が存在する場合は suite 結果を `suite_results` として、既定の `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json` が存在する場合は adapter spike 結果を `adapter_spike` として、既定の `data/research/backtest_external/strategy_backtest_external_result.json` が存在する場合は外部 framework result を `external_results` として同じ artifact に取り込む。
+`strategy-backtest-compare` は、現行 `strategy_backtest_metrics.json` を比較用の canonical artifact に正規化する。既定の `data/research/backtest_suite/strategy_backtest_suite_result.json` が存在する場合は suite 結果を `suite_results` として、既定の `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json` が存在する場合は adapter spike 結果を `adapter_spike` として、既定の `data/research/backtest_external/strategy_backtest_external_result.json` が存在する場合は外部 framework result を `external_results` として、既定の `data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json` が存在する場合は `portfolio_comparison` として、既定の `data/research/backtest_metric_extension/strategy_backtest_metric_extension.json` が存在する場合は `metric_extension` として同じ artifact に取り込む。
 
 ```bash
 uv run sis strategy-backtest-compare
@@ -208,7 +211,7 @@ uv run sis strategy-backtest-compare
 - `data/research/backtest_compare/strategy_backtest_comparison.json`
 - `data/reports/strategy_backtest_comparison_report.md`
 
-現時点では外部 framework dependency を追加しない。`framework_adapters` には optional framework の installed / not installed 状態、候補 role、license 注意を記録する。`adapter_spike` には `strategy-backtest-adapter-spike` が作った dependency 追加なしの import / metadata / license risk / adoption blocker を取り込む。`external_results` には `strategy-backtest-external-run` が作った外部 framework 実行用 artifact を取り込む。現環境で framework が未インストールなら `run_status=skipped`, `reason_codes=["not_installed_in_current_env"]` として記録する。これは今後の adapter 比較の土台であり、外部 dependency 採用や live 許可ではない。
+現時点では外部 framework dependency を追加しない。`framework_adapters` には optional framework の installed / not installed 状態、候補 role、license 注意を記録する。`adapter_spike` には `strategy-backtest-adapter-spike` が作った dependency 追加なしの import / metadata / license risk / adoption blocker を取り込む。`external_results` には `strategy-backtest-external-run` が作った外部 framework 実行用 artifact を取り込む。`portfolio_comparison` には `strategy-backtest-portfolio-compare` が作った `bt` 用 portfolio allocation / rebalance comparison artifact を取り込む。`metric_extension` には `strategy-backtest-metric-extension` が作った `empyrical-reloaded` 用 metrics normalization artifact を取り込む。現環境で framework が未インストールなら `run_status=skipped` または `metric_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env` として記録する。`vectorbt`, `bt`, `empyrical-reloaded` の一時実行結果は `framework_version` と `runner_mode=temporary_or_optional_import` も比較 artifact に保持する。これは今後の adapter 比較の土台であり、外部 dependency 採用や live 許可ではない。
 
 `method_results` には現行 native engine で実行済みの比較軸を正規化して記録する。現在の対応は `strategy_authoring_native_overall`、`strategy_authoring_walk_forward`、`strategy_authoring_optimizer_sweep` で、`summary.walk_forward_eras` と `summary.optimizer` が metrics に存在する場合は era 別結果と parameter sweep の best variant / variants も同じ comparison artifact で読める。`suite_results` には suite 単位の aggregate、best run、run 別 metrics、`method_matrix` を正規化する。`adapter_spike` には候補 framework ごとの `dependency_added=false`, `engine_run=false`, `permits_live_order=false` を含める。`comparison_diagnostics` には threshold failure、weakest era、suite best run、suite failed run、diagnostic notes を記録し、Markdown report にも Diagnostics section と Adapter Spike section を出す。
 
@@ -318,7 +321,7 @@ uv run sis strategy-backtest-external-run
 - `data/research/backtest_external/strategy_backtest_external_result.json`
 - `data/reports/strategy_backtest_external_report.md`
 
-この command も `pyproject.toml` / `uv.lock` を変更しない。既定では `data/research/strategy_signals.parquet` と `data/research/strategy_authoring_baseline_quotes.parquet` を読み、`--label-horizon-minutes` で external framework 用の exit を作る。artifact には `source_metrics_path/hash`, `source_signals_path/hash`, `source_quotes_path/hash`, `label_horizon_minutes` を記録する。`vectorbt` がインストール済みなら `vectorbt.Portfolio.from_signals` を呼び、`trade_count`, `total_return`, `max_drawdown`, `cost_drag_bps` を `strategy_backtest_external_result.v1` に記録する。現環境で `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` が未インストールなら、各 candidate を `run_status=skipped` と `not_installed_in_current_env` で記録する。artifact は `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定し、外部 engine 実行が無い場合は `external_engine_run=false` になる。
+この command も `pyproject.toml` / `uv.lock` を変更しない。既定では `data/research/strategy_signals.parquet` と `data/research/strategy_authoring_baseline_quotes.parquet` を読み、`--label-horizon-minutes` で external framework 用の exit を作る。artifact には `source_metrics_path/hash`, `source_signals_path/hash`, `source_quotes_path/hash`, `label_horizon_minutes` を記録する。framework ごとの result には `framework_version` と `runner_mode` も入る。`vectorbt` がインストール済みなら `src/sis/backtest/vectorbt_adapter.py` が `vectorbt.Portfolio.from_signals` を呼び、`trade_count`, `total_return`, `max_drawdown`, `cost_drag_bps` を `strategy_backtest_external_result.v1` に記録する。現環境で `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` が未インストールなら、各 candidate を `run_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env` で記録する。artifact は `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定し、外部 engine 実行が無い場合は `external_engine_run=false` になる。
 
 一時環境で `vectorbt` を使う場合:
 
@@ -327,7 +330,57 @@ uv run --with vectorbt sis strategy-backtest-external-run
 uv run sis strategy-backtest-compare
 ```
 
-2026-06-13_11:19 JST 時点の smoke では、`uv run --with vectorbt` で `vectorbt_version=1.0.0` を import でき、`strategy-backtest-external-run` は `vectorbt` result を `run_status=completed`, `engine_run=true`, `trade_count=7`, `total_return=0.005833333333333431`, `max_drawdown=0.0`, `cost_drag_bps=0.0` として記録した。この smoke は repo dependency / lockfile 採用ではない。
+2026-06-13_18:25 JST 時点の smoke では、`uv run --with vectorbt` で `vectorbt_version=1.0.0` を import でき、`strategy-backtest-external-run` は `vectorbt` result を `framework_version=1.0.0`, `runner_mode=temporary_or_optional_import`, `run_status=completed`, `engine_run=true`, `trade_count=7`, `total_return=0.005833333333333431`, `max_drawdown=0.0`, `cost_drag_bps=0.0` として記録した。この smoke は repo dependency / lockfile 採用ではない。
+
+## Backtest Portfolio Comparison
+
+`strategy-backtest-portfolio-compare` は、Phase C selected adapter の `bt` contract に対応する portfolio allocation / rebalance comparison artifact を作る。
+
+```bash
+uv run sis strategy-backtest-portfolio-compare
+```
+
+出力:
+
+- `data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json`
+- `data/reports/strategy_backtest_portfolio_comparison_report.md`
+
+既定では `data/research/strategy_authoring_bundle_result.json` と `data/research/strategy_authoring_baseline_quotes.parquet` を読む。通常 locked env で `bt` が未インストールなら `run_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env`, `engine_run=false` を記録する。`bt` がインストール済みなら `src/sis/backtest/portfolio_comparison.py` が `bt.Strategy`, `bt.Backtest`, `bt.run()` を呼び、`portfolio_return`, `max_drawdown`, `turnover`, `rebalance_count` を `strategy_backtest_portfolio_comparison.v1` に記録する。artifact は `source_bundle_hash`, `price_frame_hash`, `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。
+
+一時環境で `bt` を使う場合:
+
+```bash
+uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
+uv run --with bt sis strategy-backtest-portfolio-compare
+uv run sis strategy-backtest-compare
+```
+
+2026-06-13_18:40 JST 時点の smoke では、`uv run --with bt` で `bt=1.2.0` を import でき、`strategy-backtest-portfolio-compare` は `bt` result を `framework_version=1.2.0`, `runner_mode=temporary_or_optional_import`, `run_status=completed`, `engine_run=true`, `portfolio_return=0.005833333333333801`, `max_drawdown=0.0`, `turnover=1.0`, `rebalance_count=1` として記録した。この smoke は repo dependency / lockfile 採用ではない。
+
+## Backtest Metric Extension
+
+`strategy-backtest-metric-extension` は、Phase C selected adapter の `empyrical-reloaded` contract に対応する metrics normalization artifact を作る。
+
+```bash
+uv run sis strategy-backtest-metric-extension
+```
+
+出力:
+
+- `data/research/backtest_metric_extension/strategy_backtest_metric_extension.json`
+- `data/research/backtest_metric_extension/strategy_backtest_returns.jsonl`
+- `data/reports/strategy_backtest_metric_extension_report.md`
+
+既定では `data/research/strategy_backtest_metrics.json` を読み、`summary.executed_signal_results[].signal_return` から returns series JSONL を作る。通常 locked env で `empyrical` が未インストールなら `metric_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env`, `engine_run=false` を記録する。`empyrical` がインストール済みなら `src/sis/backtest/metric_extension.py` が `empyrical` の Sharpe / Sortino / max drawdown / annual return / annual volatility / Calmar / Omega 系 metric を呼び、`strategy_backtest_metric_extension.v1` に記録する。artifact は `source_backtest_metrics_hash`, `returns_series_hash`, `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。
+
+一時環境で `empyrical-reloaded` を使う場合:
+
+```bash
+uv run --with empyrical-reloaded sis strategy-backtest-metric-extension
+uv run sis strategy-backtest-compare
+```
+
+2026-06-13_18:57 JST 時点の smoke では、`uv run --with empyrical-reloaded` で `empyrical-reloaded=0.5.12` を import でき、`strategy-backtest-metric-extension` は `framework_version=0.5.12`, `runner_mode=temporary_or_optional_import`, `metric_status=completed`, `engine_run=true`, `return_count=7`, `sharpe_ratio=7684.451501905242`, `max_drawdown=0.0`, `annual_return=0.18229407031297362`, `annual_volatility=0.000021798866106592272` として記録した。現行サンプル return では `sortino_ratio`, `calmar_ratio`, `omega_ratio` は null になり得る。この smoke は repo dependency / lockfile 採用ではない。
 
 ## Backtest Pack
 
@@ -337,12 +390,12 @@ uv run sis strategy-backtest-compare
 uv run sis strategy-backtest-pack
 ```
 
-この command は、単発 Strategy Authoring backtest metrics、5手法 suite、adapter spike、external result、comparison、pack manifest/report を順番に生成する。pack manifest は `strategy_backtest_pack.v1` で、artifact path / hash、suite run count、suite method count、external engine 実行有無、comparison id、外部 framework 方針を記録する。既定出力は次である。
+この command は、単発 Strategy Authoring backtest metrics、5手法 suite、Strategy Authoring bundle result、adapter spike、external result、portfolio comparison、metric extension、comparison、pack manifest/report を順番に生成する。pack manifest は `strategy_backtest_pack.v1` で、artifact path / hash、suite run count、suite method count、external engine 実行有無、comparison id、外部 framework 方針を記録する。既定出力は次である。
 
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/reports/strategy_backtest_pack_report.md`
 
-pack も `paper_only=true`, `live_order_submitted=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。外部 framework dependency は追加せず、通常 locked env では外部 framework が未インストールなら `external_results` は skipped として comparison に残る。`external_framework_policy.policy_id` は `native_primary_external_evaluation_only.v1` で、標準 engine は `strategy_authoring_native`、標準完成線は `complete_without_locked_external_dependency`、`locked_dependency_added=false`、`external_adapters_required_for_completion=false` である。外部 OSS を正式採用する場合は、license、Python 3.13 / uv lock、CI、schema boundary review を先に通す。
+pack も `paper_only=true`, `live_order_submitted=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。外部 framework dependency は追加せず、通常 locked env では外部 framework が未インストールなら `external_results`、`portfolio_comparison`、`metric_extension` は skipped として comparison に残る。`external_framework_policy.policy_id` は `native_primary_external_evaluation_only.v1` で、標準 engine は `strategy_authoring_native`、標準完成線は `complete_without_locked_external_dependency`、`locked_dependency_added=false`、`external_adapters_required_for_completion=false` である。一時実行許可は `vectorbt`, `bt`, `empyrical-reloaded` に限定する。外部 OSS を正式採用する場合は、license、Python 3.13 / uv lock、CI、schema boundary review を先に通す。
 
 生成済み pack を検査する場合は `strategy-backtest-pack-validate` を使う。
 

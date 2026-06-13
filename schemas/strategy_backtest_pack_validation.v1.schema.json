@@ -75,7 +75,11 @@
         "temporary_uv_with_allowed": {
           "type": "array",
           "items": {"type": "string"},
-          "contains": {"const": "vectorbt"}
+          "allOf": [
+            {"contains": {"const": "vectorbt"}},
+            {"contains": {"const": "bt"}},
+            {"contains": {"const": "empyrical-reloaded"}}
+          ]
         },
         "candidate_frameworks": {
           "type": "array",

@@ -342,6 +342,8 @@ def _write_external_result(path: Path) -> None:
                         "framework_id": "vectorbt",
                         "adapter_role": "vectorized_research_candidate",
                         "status": "not_installed",
+                        "framework_version": None,
+                        "runner_mode": "not_installed_in_current_env",
                         "run_status": "skipped",
                         "reason_codes": ["not_installed_in_current_env"],
                         "dependency_added": False,
@@ -365,6 +367,93 @@ def _write_external_result(path: Path) -> None:
     )
 
 
+def _write_portfolio_comparison(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "strategy_backtest_portfolio_comparison.v1",
+                "created_at": "2026-06-13T00:00:00+00:00",
+                "framework_id": "bt",
+                "adapter_role": "portfolio_allocation_candidate",
+                "framework_version": None,
+                "runner_mode": "not_installed_in_current_env",
+                "run_status": "skipped",
+                "reason_codes": ["not_installed_in_current_env"],
+                "dependency_added": False,
+                "engine_run": False,
+                "source_bundle_path": "data/research/strategy_authoring_bundle_result.json",
+                "source_bundle_hash": "sha256:" + "1" * 64,
+                "price_frame_path": "data/research/strategy_authoring_baseline_quotes.parquet",
+                "price_frame_hash": "sha256:" + "2" * 64,
+                "allocation_rule_id": "fixed_weight",
+                "rebalance_cadence": "initial_only",
+                "portfolio_return": None,
+                "max_drawdown": None,
+                "turnover": None,
+                "rebalance_count": 0,
+                "benchmark_return": None,
+                "weight_drift": None,
+                "allocation_trace": [{"column_id": "alpha_0", "target_weight": 1.0}],
+                "members": [
+                    {
+                        "member_index": 0,
+                        "strategy_id": "alpha",
+                        "column_id": "alpha_0",
+                        "effective_allocation_weight": 1.0,
+                    }
+                ],
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "exchange_write_used": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def _write_metric_extension(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "strategy_backtest_metric_extension.v1",
+                "created_at": "2026-06-13T00:00:00+00:00",
+                "framework_id": "empyrical_reloaded",
+                "adapter_role": "metrics_only_candidate",
+                "framework_version": None,
+                "runner_mode": "not_installed_in_current_env",
+                "metric_status": "skipped",
+                "reason_codes": ["not_installed_in_current_env"],
+                "dependency_added": False,
+                "engine_run": False,
+                "source_backtest_metrics_path": "data/research/strategy_backtest_metrics.json",
+                "source_backtest_metrics_hash": "sha256:" + "3" * 64,
+                "returns_series_path": "data/research/backtest_metric_extension/strategy_backtest_returns.jsonl",
+                "returns_series_hash": "sha256:" + "4" * 64,
+                "frequency": "daily",
+                "risk_free_rate": 0.0,
+                "return_count": 2,
+                "sharpe_ratio": None,
+                "sortino_ratio": None,
+                "max_drawdown": None,
+                "annual_return": None,
+                "annual_volatility": None,
+                "alpha": None,
+                "beta": None,
+                "calmar_ratio": None,
+                "omega_ratio": None,
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "exchange_write_used": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_path) -> None:
     metrics_path = tmp_path / "data/research/strategy_backtest_metrics.json"
     suite_result_path = (
@@ -376,18 +465,28 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     external_result_path = (
         tmp_path / "data/research/backtest_external/strategy_backtest_external_result.json"
     )
+    portfolio_comparison_path = (
+        tmp_path / "data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json"
+    )
+    metric_extension_path = (
+        tmp_path / "data/research/backtest_metric_extension/strategy_backtest_metric_extension.json"
+    )
     out_dir = tmp_path / "data/research/backtest_compare"
     reports_dir = tmp_path / "data/reports"
     _write_metrics(metrics_path)
     _write_suite_result(suite_result_path)
     _write_adapter_spike(adapter_spike_path)
     _write_external_result(external_result_path)
+    _write_portfolio_comparison(portfolio_comparison_path)
+    _write_metric_extension(metric_extension_path)
 
     result = build_strategy_backtest_comparison(
         metrics_path=metrics_path,
         suite_result_path=suite_result_path,
         adapter_spike_path=adapter_spike_path,
         external_result_path=external_result_path,
+        portfolio_comparison_path=portfolio_comparison_path,
+        metric_extension_path=metric_extension_path,
         out_dir=out_dir,
         reports_dir=reports_dir,
     )
@@ -428,6 +527,10 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["source_adapter_spike_hash"].startswith("sha256:")
     assert payload["source_external_result_path"] == external_result_path.as_posix()
     assert payload["source_external_result_hash"].startswith("sha256:")
+    assert payload["source_portfolio_comparison_path"] == portfolio_comparison_path.as_posix()
+    assert payload["source_portfolio_comparison_hash"].startswith("sha256:")
+    assert payload["source_metric_extension_path"] == metric_extension_path.as_posix()
+    assert payload["source_metric_extension_hash"].startswith("sha256:")
     assert payload["suite_results"][0]["suite_id"] == "demo_suite"
     assert payload["suite_results"][0]["aggregate"]["run_count"] == 2
     assert payload["suite_results"][0]["method_matrix"]["method_count"] == 2
@@ -467,6 +570,12 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["external_results"][0]["framework_id"] == "vectorbt"
     assert payload["external_results"][0]["run_status"] == "skipped"
     assert payload["external_results"][0]["reason_codes"] == ["not_installed_in_current_env"]
+    assert payload["portfolio_comparison"]["framework_id"] == "bt"
+    assert payload["portfolio_comparison"]["run_status"] == "skipped"
+    assert payload["portfolio_comparison"]["rebalance_count"] == 0
+    assert payload["metric_extension"]["framework_id"] == "empyrical_reloaded"
+    assert payload["metric_extension"]["metric_status"] == "skipped"
+    assert payload["metric_extension"]["return_count"] == 2
     assert {item["framework_id"] for item in payload["framework_adapters"]} == {
         "vectorbt",
         "bt",
@@ -492,6 +601,12 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     _write_external_result(
         data_dir / "research/backtest_external/strategy_backtest_external_result.json"
     )
+    _write_portfolio_comparison(
+        data_dir / "research/backtest_portfolio/strategy_backtest_portfolio_comparison.json"
+    )
+    _write_metric_extension(
+        data_dir / "research/backtest_metric_extension/strategy_backtest_metric_extension.json"
+    )
 
     result = runner.invoke(app, ["strategy-backtest-compare"])
 
@@ -505,6 +620,8 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     assert payload["suite_results"][0]["suite_id"] == "demo_suite"
     assert payload["adapter_spike"]["decision"]["reason_codes"] == ["not_installed_in_current_env"]
     assert payload["external_results"][0]["run_status"] == "skipped"
+    assert payload["portfolio_comparison"]["run_status"] == "skipped"
+    assert payload["metric_extension"]["metric_status"] == "skipped"
     assert (data_dir / "reports/strategy_backtest_comparison_report.md").exists()
 
 
@@ -531,7 +648,10 @@ def test_strategy_backtest_compare_without_suite_result_keeps_empty_suite_sectio
     assert payload["source_adapter_spike_hash"] is None
     assert payload["source_external_result_path"] is None
     assert payload["source_external_result_hash"] is None
+    assert payload["source_metric_extension_path"] is None
+    assert payload["source_metric_extension_hash"] is None
     assert payload["suite_results"] == []
     assert payload["adapter_spike"] is None
     assert payload["external_results"] == []
+    assert payload["metric_extension"] is None
     assert payload["comparison_diagnostics"]["suite_best_runs"] == []

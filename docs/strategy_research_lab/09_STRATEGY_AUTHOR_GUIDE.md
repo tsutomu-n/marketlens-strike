@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_15:19 JST
-更新日: 2026-06-13_18:07 JST
+更新日: 2026-06-13_18:57 JST
 -->
 
 # Strategy Author Guide
@@ -127,7 +127,7 @@ uv run sis strategy-backtest-adapter-contract
 uv run sis strategy-backtest-external-run
 ```
 
-既定では `data/research/strategy_signals.parquet` と `data/research/strategy_authoring_baseline_quotes.parquet` を読み、`--label-horizon-minutes` で外部 framework 用の exit を組み立てます。外部 result artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes` が入ります。`vectorbt` がインストール済みなら `vectorbt.Portfolio.from_signals` を呼びます。現環境で framework が未インストールなら、各候補は `run_status=skipped` と `not_installed_in_current_env` を持ちます。これは失敗ではなく、依存を追加せずに比較 artifact へ取り込むための境界安全な記録です。
+既定では `data/research/strategy_signals.parquet` と `data/research/strategy_authoring_baseline_quotes.parquet` を読み、`--label-horizon-minutes` で外部 framework 用の exit を組み立てます。外部 result artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes`、framework ごとの `framework_version` と `runner_mode` が入ります。`vectorbt` がインストール済みなら `src/sis/backtest/vectorbt_adapter.py` 経由で `vectorbt.Portfolio.from_signals` を呼びます。現環境で framework が未インストールなら、各候補は `run_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env` を持ちます。これは失敗ではなく、依存を追加せずに比較 artifact へ取り込むための境界安全な記録です。
 
 `vectorbt` を repo dependency に入れず一時環境だけで実測する場合は、次を使います。
 
@@ -135,17 +135,46 @@ uv run sis strategy-backtest-external-run
 uv run --with vectorbt sis strategy-backtest-external-run
 ```
 
-この場合、`vectorbt` が import でき、入力に entry / exit を作れるなら `vectorbt` の result は `run_status=completed`, `engine_run=true` になります。`pyproject.toml` / `uv.lock` は変更しません。
+この場合、`vectorbt` が import でき、入力に entry / exit を作れるなら `vectorbt` の result は `framework_version=1.0.0`, `runner_mode=temporary_or_optional_import`, `run_status=completed`, `engine_run=true` になります。`pyproject.toml` / `uv.lock` は変更しません。
 
-suite、adapter spike、external result の実行後に `uv run sis strategy-backtest-compare` を実行すると、単発backtest metrics、suite result、外部 framework adapter 候補の状態、adapter spike の採否判断材料、external result を `data/research/backtest_compare/strategy_backtest_comparison.json` にまとめられます。既定では `data/research/backtest_suite/strategy_backtest_suite_result.json`、`data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`、`data/research/backtest_external/strategy_backtest_external_result.json` が存在する場合だけ取り込みます。comparison artifact は suite の `method_matrix` と run ごとの `method_id` も保持します。`comparison_diagnostics` では threshold failure、weakest era、suite best run を確認できます。
+`bt` 用の portfolio allocation / rebalance comparison artifact を作る場合は、次を使います。
 
-標準の単発backtest、5手法 suite、adapter spike、external result、comparison、pack manifest を一括生成する場合は、次を使います。
+```bash
+uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
+uv run sis strategy-backtest-portfolio-compare
+```
+
+既定では `data/research/strategy_authoring_bundle_result.json` と `data/research/strategy_authoring_baseline_quotes.parquet` を読みます。通常環境で `bt` が未インストールなら `run_status=skipped`, `runner_mode=not_installed_in_current_env` になります。`bt` を repo dependency に入れず一時環境だけで実測する場合は、次を使います。
+
+```bash
+uv run --with bt sis strategy-backtest-portfolio-compare
+```
+
+この場合、`bt` が import でき、入力 bundle / price frame を組めるなら `bt` の result は `framework_version=1.2.0`, `runner_mode=temporary_or_optional_import`, `run_status=completed`, `engine_run=true` になります。`pyproject.toml` / `uv.lock` は変更しません。
+
+`empyrical-reloaded` 用の metric extension artifact を作る場合は、次を使います。
+
+```bash
+uv run sis strategy-backtest-metric-extension
+```
+
+通常環境で `empyrical` が未インストールなら `metric_status=skipped`, `runner_mode=not_installed_in_current_env` になります。`empyrical-reloaded` を repo dependency に入れず一時環境だけで実測する場合は、次を使います。
+
+```bash
+uv run --with empyrical-reloaded sis strategy-backtest-metric-extension
+```
+
+この場合、`empyrical` が import でき、`strategy_backtest_metrics.json` から returns series を作れるなら `empyrical-reloaded` の result は `framework_version=0.5.12`, `runner_mode=temporary_or_optional_import`, `metric_status=completed`, `engine_run=true` になります。`pyproject.toml` / `uv.lock` は変更しません。
+
+suite、adapter spike、external result、portfolio comparison、metric extension の実行後に `uv run sis strategy-backtest-compare` を実行すると、単発backtest metrics、suite result、外部 framework adapter 候補の状態、adapter spike の採否判断材料、external result、portfolio comparison result、metric extension result を `data/research/backtest_compare/strategy_backtest_comparison.json` にまとめられます。既定では `data/research/backtest_suite/strategy_backtest_suite_result.json`、`data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`、`data/research/backtest_external/strategy_backtest_external_result.json`、`data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json`、`data/research/backtest_metric_extension/strategy_backtest_metric_extension.json` が存在する場合だけ取り込みます。comparison artifact は suite の `method_matrix` と run ごとの `method_id` も保持します。`comparison_diagnostics` では threshold failure、weakest era、suite best run を確認できます。
+
+標準の単発backtest、5手法 suite、adapter spike、external result、portfolio comparison、metric extension、comparison、pack manifest を一括生成する場合は、次を使います。
 
 ```bash
 uv run sis strategy-backtest-pack
 ```
 
-既定出力は `data/research/backtest_pack/strategy_backtest_pack.json` と `data/reports/strategy_backtest_pack_report.md` です。pack manifest は生成 artifact の path / hash、suite method count、external engine 実行有無、comparison id、`external_framework_policy` を記録します。標準 engine は `strategy_authoring_native` で、完成線は `complete_without_locked_external_dependency` です。これも paper-only artifact で、live order、wallet、exchange write は許可しません。
+既定出力は `data/research/backtest_pack/strategy_backtest_pack.json` と `data/reports/strategy_backtest_pack_report.md` です。pack manifest は生成 artifact の path / hash、suite method count、external engine 実行有無、comparison id、`external_framework_policy` を記録します。pack には bundle result、portfolio comparison、metric extension、returns series も入ります。標準 engine は `strategy_authoring_native` で、完成線は `complete_without_locked_external_dependency` です。これも paper-only artifact で、live order、wallet、exchange write は許可しません。
 
 生成済み pack を検査する場合は次を使います。
 

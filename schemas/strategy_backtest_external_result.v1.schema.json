@@ -75,6 +75,8 @@
         "framework_id",
         "adapter_role",
         "status",
+        "framework_version",
+        "runner_mode",
         "run_status",
         "reason_codes",
         "dependency_added",
@@ -100,6 +102,14 @@
         },
         "adapter_role": {"type": "string"},
         "status": {"enum": ["installed", "not_installed"]},
+        "framework_version": {"type": ["string", "null"]},
+        "runner_mode": {
+          "enum": [
+            "not_installed_in_current_env",
+            "temporary_or_optional_import",
+            "installed_without_runner"
+          ]
+        },
         "run_status": {"enum": ["completed", "skipped", "failed"]},
         "reason_codes": {"type": "array", "items": {"type": "string"}},
         "dependency_added": {"const": false},

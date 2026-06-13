@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_16:12 JST
-更新日: 2026-06-13_18:07 JST
+更新日: 2026-06-13_18:57 JST
 -->
 
 # OSS Backtest Framework Evaluation Plan
@@ -53,6 +53,7 @@
 現状:
 
 - `strategy-backtest-external-run` で `vectorbt.Portfolio.from_signals` の一時 smoke 済み。
+- 実行処理は `src/sis/backtest/vectorbt_adapter.py` に分離済みで、external result と comparison result に `framework_version` と `runner_mode` を残す。
 - PyPI の `vectorbt 1.0.0` は Python `>=3.10`、Python 3.13 classifier を持つ。
 - license は `Apache 2.0 with Commons Clause` と説明されており、通常 Apache-2.0 単体ではない。
 
@@ -79,6 +80,8 @@
 
 - PyPI / docs は、quantitative trading strategies の flexible backtesting framework と説明している。
 - 現行 repo の portfolio allocation / bundle comparison と役割が近い。
+- `strategy-backtest-portfolio-compare` は `bt` が import できる環境では `bt.run()` を呼び、`strategy_backtest_portfolio_comparison.v1` に `framework_version`, `runner_mode`, `portfolio_return`, `max_drawdown`, `turnover`, `rebalance_count` を記録できる。
+- `uv run --with bt sis strategy-backtest-portfolio-compare` の一時 smoke は `bt=1.2.0` で通過済み。
 
 判断:
 
@@ -327,7 +330,7 @@ uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis
 
 ### Phase D: optional extras
 
-実装状況: optional dependency 採用前の adapter contract を実装済み。`strategy-backtest-adapter-contract` が `vectorbt`, `bt`, `empyrical-reloaded` の input / output / provenance / acceptance contract を artifact 化する。`pyproject.toml` / `uv.lock` は未変更。
+実装状況: optional dependency 採用前の adapter contract を実装済み。`strategy-backtest-adapter-contract` が `vectorbt`, `bt`, `empyrical-reloaded` の input / output / provenance / acceptance contract を artifact 化する。`vectorbt` の `strategy_backtest_external_result.v1` adapter wrapper、`bt` の `strategy_backtest_portfolio_comparison.v1` adapter wrapper、`empyrical-reloaded` の `strategy_backtest_metric_extension.v1` adapter wrapper は実装済み。`pyproject.toml` / `uv.lock` は未変更。
 
 候補:
 

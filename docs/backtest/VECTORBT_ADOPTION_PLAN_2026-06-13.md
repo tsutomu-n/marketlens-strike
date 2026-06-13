@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_16:04 JST
-更新日: 2026-06-13_16:04 JST
+更新日: 2026-06-13_18:25 JST
 -->
 
 # vectorbt Adoption Plan
@@ -16,6 +16,7 @@
 現行の実装済み surface:
 
 - `strategy-backtest-external-run` は `vectorbt` が import できる環境では `vectorbt.Portfolio.from_signals` を呼べる。
+- `vectorbt` 実行処理は `src/sis/backtest/vectorbt_adapter.py` に分離済みで、外部 result は `framework_version` と `runner_mode` を記録する。
 - `uv run --with vectorbt sis strategy-backtest-external-run` の一時 smoke は通過済み。
 - `strategy_backtest_pack.v1` は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定している。
 - `pyproject.toml` / `uv.lock` には `vectorbt` を入れていない。
@@ -129,9 +130,9 @@ uv run --extra vectorbt python -c 'import vectorbt; print(vectorbt.__version__)'
 想定変更:
 
 - `strategy_backtest_external_result.v1`
-  - `dependency_source`: `temporary_uv_with` / `optional_extra`
-  - `framework_version`
-  - `runner_mode`: `from_signals`
+  - `framework_version`: pre-adoption surface で実装済み
+  - `runner_mode`: pre-adoption surface で実装済み。現行値は `not_installed_in_current_env`, `temporary_or_optional_import`, `installed_without_runner`
+  - `dependency_source`: optional extra 採用時に `temporary_uv_with` / `optional_extra` の区別として追加検討
 - `strategy_backtest_pack.v1`
   - `external_framework_policy.decision`
     - `complete_with_optional_vectorbt_extra`
@@ -204,10 +205,16 @@ uv run sis strategy-backtest-compare
 1. license review 結果を追記する。
 2. `pyproject.toml` に optional extra を追加する。
 3. `uv.lock` を更新する。
-4. `strategy-backtest-external-run` の artifact に `framework_version` と `dependency_source` を追加する。
+4. `strategy-backtest-external-run` の artifact に optional extra 採用後の `dependency_source` を追加する。
 5. `strategy-backtest-pack-validate` の policy を optional extra 採用後の状態へ更新する。
 6. focused tests を追加する。
 7. `./scripts/check` を通す。
+
+実装済みの前倒し項目:
+
+- `strategy-backtest-external-run` の artifact に `framework_version` と `runner_mode` を追加した。
+- `strategy-backtest-compare` は external result の `framework_version` と `runner_mode` を保持する。
+- `vectorbt` runner logic を `src/sis/backtest/vectorbt_adapter.py` に分離した。
 
 ## 採用後も残す境界
 

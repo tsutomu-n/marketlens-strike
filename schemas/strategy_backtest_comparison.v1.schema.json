@@ -14,11 +14,17 @@
     "source_adapter_spike_hash",
     "source_external_result_path",
     "source_external_result_hash",
+    "source_portfolio_comparison_path",
+    "source_portfolio_comparison_hash",
+    "source_metric_extension_path",
+    "source_metric_extension_hash",
     "native_result",
     "method_results",
     "suite_results",
     "adapter_spike",
     "external_results",
+    "portfolio_comparison",
+    "metric_extension",
     "comparison_diagnostics",
     "framework_adapters",
     "permits_live_order",
@@ -44,6 +50,16 @@
     },
     "source_external_result_path": {"type": ["string", "null"]},
     "source_external_result_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_portfolio_comparison_path": {"type": ["string", "null"]},
+    "source_portfolio_comparison_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_metric_extension_path": {"type": ["string", "null"]},
+    "source_metric_extension_hash": {
       "type": ["string", "null"],
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
@@ -86,6 +102,18 @@
     "external_results": {
       "type": "array",
       "items": {"$ref": "#/$defs/external_result"}
+    },
+    "portfolio_comparison": {
+      "anyOf": [
+        {"$ref": "#/$defs/portfolio_comparison"},
+        {"type": "null"}
+      ]
+    },
+    "metric_extension": {
+      "anyOf": [
+        {"$ref": "#/$defs/metric_extension"},
+        {"type": "null"}
+      ]
     },
     "comparison_diagnostics": {"$ref": "#/$defs/comparison_diagnostics"},
     "framework_adapters": {
@@ -605,6 +633,8 @@
         "framework_id",
         "adapter_role",
         "status",
+        "framework_version",
+        "runner_mode",
         "run_status",
         "reason_codes",
         "dependency_added",
@@ -631,6 +661,15 @@
         },
         "adapter_role": {"type": ["string", "null"]},
         "status": {"enum": ["installed", "not_installed", null]},
+        "framework_version": {"type": ["string", "null"]},
+        "runner_mode": {
+          "enum": [
+            "not_installed_in_current_env",
+            "temporary_or_optional_import",
+            "installed_without_runner",
+            null
+          ]
+        },
         "run_status": {"enum": ["completed", "skipped", "failed", null]},
         "reason_codes": {"type": "array", "items": {"type": "string"}},
         "dependency_added": {"const": false},
@@ -639,6 +678,112 @@
         "wallet_used": {"const": false},
         "exchange_write_used": {"const": false},
         "metrics": {"$ref": "#/$defs/method_metrics"}
+      },
+      "additionalProperties": false
+    },
+    "portfolio_comparison": {
+      "type": "object",
+      "required": [
+        "framework_id",
+        "adapter_role",
+        "framework_version",
+        "runner_mode",
+        "run_status",
+        "reason_codes",
+        "dependency_added",
+        "engine_run",
+        "allocation_rule_id",
+        "rebalance_cadence",
+        "portfolio_return",
+        "max_drawdown",
+        "turnover",
+        "rebalance_count",
+        "permits_live_order",
+        "wallet_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "framework_id": {"enum": ["bt", null]},
+        "adapter_role": {"type": ["string", "null"]},
+        "framework_version": {"type": ["string", "null"]},
+        "runner_mode": {
+          "enum": [
+            "not_installed_in_current_env",
+            "temporary_or_optional_import",
+            "installed_without_runner",
+            null
+          ]
+        },
+        "run_status": {"enum": ["completed", "skipped", "failed", null]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "dependency_added": {"const": false},
+        "engine_run": {"type": ["boolean", "null"]},
+        "allocation_rule_id": {"type": ["string", "null"]},
+        "rebalance_cadence": {"type": ["string", "null"]},
+        "portfolio_return": {"type": ["number", "null"]},
+        "max_drawdown": {"type": ["number", "null"]},
+        "turnover": {"type": ["number", "null"], "minimum": 0},
+        "rebalance_count": {"type": ["integer", "null"], "minimum": 0},
+        "permits_live_order": {"const": false},
+        "wallet_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "metric_extension": {
+      "type": "object",
+      "required": [
+        "framework_id",
+        "adapter_role",
+        "framework_version",
+        "runner_mode",
+        "metric_status",
+        "reason_codes",
+        "dependency_added",
+        "engine_run",
+        "frequency",
+        "risk_free_rate",
+        "return_count",
+        "sharpe_ratio",
+        "sortino_ratio",
+        "max_drawdown",
+        "annual_return",
+        "annual_volatility",
+        "calmar_ratio",
+        "omega_ratio",
+        "permits_live_order",
+        "wallet_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "framework_id": {"enum": ["empyrical_reloaded", null]},
+        "adapter_role": {"type": ["string", "null"]},
+        "framework_version": {"type": ["string", "null"]},
+        "runner_mode": {
+          "enum": [
+            "not_installed_in_current_env",
+            "temporary_or_optional_import",
+            "installed_without_runner",
+            null
+          ]
+        },
+        "metric_status": {"enum": ["completed", "skipped", "failed", null]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "dependency_added": {"const": false},
+        "engine_run": {"type": ["boolean", "null"]},
+        "frequency": {"enum": ["daily", "weekly", "monthly", "signal", null]},
+        "risk_free_rate": {"type": ["number", "null"]},
+        "return_count": {"type": ["integer", "null"], "minimum": 0},
+        "sharpe_ratio": {"type": ["number", "null"]},
+        "sortino_ratio": {"type": ["number", "null"]},
+        "max_drawdown": {"type": ["number", "null"]},
+        "annual_return": {"type": ["number", "null"]},
+        "annual_volatility": {"type": ["number", "null"]},
+        "calmar_ratio": {"type": ["number", "null"]},
+        "omega_ratio": {"type": ["number", "null"]},
+        "permits_live_order": {"const": false},
+        "wallet_used": {"const": false},
+        "exchange_write_used": {"const": false}
       },
       "additionalProperties": false
     }

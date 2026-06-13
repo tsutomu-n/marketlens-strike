@@ -11,10 +11,12 @@ from sis.backtest.adapter_selection import build_backtest_adapter_selection
 from sis.backtest.compare import build_strategy_backtest_comparison
 from sis.backtest.external import build_strategy_backtest_external_result
 from sis.backtest.framework_smoke import build_backtest_framework_smoke
+from sis.backtest.metric_extension import build_strategy_backtest_metric_extension
 from sis.backtest.pack import (
     validate_strategy_backtest_pack,
     write_strategy_backtest_pack_outputs,
 )
+from sis.backtest.portfolio_comparison import build_strategy_backtest_portfolio_comparison
 from sis.research.strategy_lab.authoring.backtest import (
     run_authoring_backtest,
     write_authoring_backtest_outputs,
@@ -225,6 +227,16 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--external-result-path",
             help="Optional Strategy Backtest External Result JSON. Used when the file exists.",
         ),
+        portfolio_comparison_path: Path = typer.Option(
+            Path("data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json"),
+            "--portfolio-comparison-path",
+            help="Optional Strategy Backtest Portfolio Comparison JSON. Used when the file exists.",
+        ),
+        metric_extension_path: Path = typer.Option(
+            Path("data/research/backtest_metric_extension/strategy_backtest_metric_extension.json"),
+            "--metric-extension-path",
+            help="Optional Strategy Backtest Metric Extension JSON. Used when the file exists.",
+        ),
         out: Path = typer.Option(
             Path("data/research/backtest_compare"),
             "--out",
@@ -255,6 +267,16 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             if external_result_path.is_absolute()
             else settings.data_dir.parent / external_result_path
         )
+        selected_portfolio_comparison_path = (
+            portfolio_comparison_path
+            if portfolio_comparison_path.is_absolute()
+            else settings.data_dir.parent / portfolio_comparison_path
+        )
+        selected_metric_extension_path = (
+            metric_extension_path
+            if metric_extension_path.is_absolute()
+            else settings.data_dir.parent / metric_extension_path
+        )
         selected_out = out if out.is_absolute() else settings.data_dir.parent / out
         selected_reports = (
             reports_dir if reports_dir.is_absolute() else settings.data_dir.parent / reports_dir
@@ -271,6 +293,12 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 external_result_path=selected_external_result_path
                 if selected_external_result_path.exists()
                 else None,
+                portfolio_comparison_path=selected_portfolio_comparison_path
+                if selected_portfolio_comparison_path.exists()
+                else None,
+                metric_extension_path=selected_metric_extension_path
+                if selected_metric_extension_path.exists()
+                else None,
                 out_dir=selected_out,
                 reports_dir=selected_reports,
             )
@@ -279,6 +307,109 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
         typer.echo(f"backtest_comparison={result.comparison_path}")
         typer.echo(f"backtest_comparison_report={result.report_path}")
+
+    @app.command("strategy-backtest-portfolio-compare")
+    def strategy_backtest_portfolio_compare_cmd(
+        bundle_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_bundle_result.json"),
+            "--bundle-path",
+            help="Strategy Authoring bundle result JSON.",
+        ),
+        price_frame_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_baseline_quotes.parquet"),
+            "--price-frame-path",
+            help="Quotes or price frame parquet used by the optional bt adapter.",
+        ),
+        allocation_rule_id: str = typer.Option(
+            "fixed_weight",
+            "--allocation-rule-id",
+            help="Allocation rule label recorded in the portfolio comparison artifact.",
+        ),
+        rebalance_cadence: str = typer.Option(
+            "initial_only",
+            "--rebalance-cadence",
+            help="Rebalance cadence label recorded in the portfolio comparison artifact.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_portfolio"),
+            "--out",
+            help="Output directory for portfolio comparison artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        selected_bundle_path = _resolve_workspace_path(bundle_path, settings.data_dir)
+        selected_price_frame_path = _resolve_workspace_path(price_frame_path, settings.data_dir)
+        selected_out = _resolve_workspace_path(out, settings.data_dir)
+        selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
+        try:
+            result = build_strategy_backtest_portfolio_comparison(
+                bundle_path=selected_bundle_path,
+                price_frame_path=selected_price_frame_path,
+                allocation_rule_id=allocation_rule_id,
+                rebalance_cadence=rebalance_cadence,
+                out_dir=selected_out,
+                reports_dir=selected_reports,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_portfolio_comparison={result.comparison_path}")
+        typer.echo(f"backtest_portfolio_comparison_report={result.report_path}")
+
+    @app.command("strategy-backtest-metric-extension")
+    def strategy_backtest_metric_extension_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        frequency: str = typer.Option(
+            "daily",
+            "--frequency",
+            help="Return frequency label for empyrical metrics: daily, weekly, monthly, or signal.",
+        ),
+        risk_free_rate: float = typer.Option(
+            0.0,
+            "--risk-free-rate",
+            help="Risk-free rate passed to optional empyrical metrics.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_metric_extension"),
+            "--out",
+            help="Output directory for metric extension artifacts.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        if frequency not in {"daily", "weekly", "monthly", "signal"}:
+            typer.echo("frequency must be one of: daily, weekly, monthly, signal")
+            raise typer.Exit(2)
+        settings = get_settings()
+        selected_metrics_path = _resolve_workspace_path(metrics_path, settings.data_dir)
+        selected_out = _resolve_workspace_path(out, settings.data_dir)
+        selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
+        try:
+            result = build_strategy_backtest_metric_extension(
+                metrics_path=selected_metrics_path,
+                frequency=frequency,
+                risk_free_rate=risk_free_rate,
+                out_dir=selected_out,
+                reports_dir=selected_reports,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_metric_extension={result.metric_extension_path}")
+        typer.echo(f"backtest_returns_series={result.returns_series_path}")
+        typer.echo(f"backtest_metric_extension_report={result.report_path}")
 
     @app.command("strategy-backtest-adapter-spike")
     def strategy_backtest_adapter_spike_cmd(
@@ -490,6 +621,11 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--suite",
             help="Strategy Backtest Suite YAML used for multi-method backtests.",
         ),
+        bundle: Path = typer.Option(
+            Path("docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml"),
+            "--bundle",
+            help="Strategy Authoring bundle YAML used for portfolio allocation comparison.",
+        ),
         label_horizon_minutes: int = typer.Option(
             240,
             "--label-horizon-minutes",
@@ -509,10 +645,12 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         settings = get_settings()
         selected_spec = _resolve_workspace_path(spec, settings.data_dir)
         selected_suite = _resolve_workspace_path(suite, settings.data_dir)
+        selected_bundle = _resolve_workspace_path(bundle, settings.data_dir)
         selected_out = _resolve_workspace_path(out, settings.data_dir)
         selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
         parsed_spec = _load_spec_or_exit(selected_spec)
         parsed_suite = _load_backtest_suite_or_exit(selected_suite)
+        parsed_bundle = _load_bundle_or_exit(selected_bundle)
         try:
             frame, manifest = build_authoring_signals(parsed_spec, data_dir=settings.data_dir)
             signal_artifacts = write_authoring_signal_artifacts(
@@ -534,6 +672,12 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 out_dir=settings.data_dir / "research/backtest_adapter_spike",
                 reports_dir=selected_reports,
             )
+            bundle_payload = run_authoring_bundle(
+                parsed_bundle, bundle_path=selected_bundle, data_dir=settings.data_dir
+            )
+            bundle_artifacts = write_authoring_bundle_outputs(
+                bundle_payload, data_dir=settings.data_dir
+            )
             external_result = build_strategy_backtest_external_result(
                 metrics_path=backtest_artifacts["metrics"],
                 signals_path=signal_artifacts["signals_parquet"],
@@ -544,11 +688,26 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 out_dir=settings.data_dir / "research/backtest_external",
                 reports_dir=selected_reports,
             )
+            portfolio_comparison_result = build_strategy_backtest_portfolio_comparison(
+                bundle_path=bundle_artifacts["bundle_result"],
+                price_frame_path=_resolve_spec_data_path(
+                    parsed_spec.data.quote_data_path, settings.data_dir
+                ),
+                out_dir=settings.data_dir / "research/backtest_portfolio",
+                reports_dir=selected_reports,
+            )
+            metric_extension_result = build_strategy_backtest_metric_extension(
+                metrics_path=backtest_artifacts["metrics"],
+                out_dir=settings.data_dir / "research/backtest_metric_extension",
+                reports_dir=selected_reports,
+            )
             comparison_result = build_strategy_backtest_comparison(
                 metrics_path=backtest_artifacts["metrics"],
                 suite_result_path=suite_artifacts["suite_result"],
                 adapter_spike_path=adapter_result.spike_path,
                 external_result_path=external_result.external_path,
+                portfolio_comparison_path=portfolio_comparison_result.comparison_path,
+                metric_extension_path=metric_extension_result.metric_extension_path,
                 out_dir=settings.data_dir / "research/backtest_compare",
                 reports_dir=selected_reports,
             )
@@ -565,8 +724,15 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                     "suite_report": suite_artifacts["suite_report"],
                     "adapter_spike": adapter_result.spike_path,
                     "adapter_spike_report": adapter_result.report_path,
+                    "bundle_result": bundle_artifacts["bundle_result"],
+                    "bundle_report": bundle_artifacts["bundle_report"],
                     "external_result": external_result.external_path,
                     "external_report": external_result.report_path,
+                    "portfolio_comparison": portfolio_comparison_result.comparison_path,
+                    "portfolio_comparison_report": portfolio_comparison_result.report_path,
+                    "metric_extension": metric_extension_result.metric_extension_path,
+                    "metric_extension_report": metric_extension_result.report_path,
+                    "returns_series": metric_extension_result.returns_series_path,
                     "comparison": comparison_result.comparison_path,
                     "comparison_report": comparison_result.report_path,
                 },
@@ -589,6 +755,8 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         typer.echo(f"backtest_pack_validation={validation_result.validation_path}")
         typer.echo(f"backtest_pack_validation_report={validation_result.report_path}")
         typer.echo(f"backtest_comparison={comparison_result.comparison_path}")
+        typer.echo(f"backtest_portfolio_comparison={portfolio_comparison_result.comparison_path}")
+        typer.echo(f"backtest_metric_extension={metric_extension_result.metric_extension_path}")
         typer.echo(f"backtest_suite_result={suite_artifacts['suite_result']}")
         if validation_result.payload["decision"] != "PASS":
             raise typer.Exit(2)
