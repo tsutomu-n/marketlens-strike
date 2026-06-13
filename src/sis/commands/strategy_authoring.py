@@ -962,6 +962,16 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--label-horizon-minutes",
             help="Holding horizon used to build optional external framework exits.",
         ),
+        benchmark_series_path: Path | None = typer.Option(
+            None,
+            "--benchmark-series-path",
+            help="Optional local benchmark return series file passed to benchmark-relative artifact generation.",
+        ),
+        benchmark_series_return_column: str = typer.Option(
+            DEFAULT_BENCHMARK_SERIES_RETURN_COLUMN,
+            "--benchmark-series-return-column",
+            help="Benchmark return column in --benchmark-series-path.",
+        ),
         out: Path = typer.Option(
             Path("data/research/backtest_pack"),
             "--out",
@@ -977,6 +987,11 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         selected_spec = _resolve_workspace_path(spec, settings.data_dir)
         selected_suite = _resolve_workspace_path(suite, settings.data_dir)
         selected_bundle = _resolve_workspace_path(bundle, settings.data_dir)
+        selected_benchmark_series_path = (
+            _resolve_workspace_path(benchmark_series_path, settings.data_dir)
+            if benchmark_series_path is not None
+            else None
+        )
         selected_out = _resolve_workspace_path(out, settings.data_dir)
         selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
         parsed_spec = _load_spec_or_exit(selected_spec)
@@ -1057,6 +1072,8 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 quotes_path=_resolve_spec_data_path(
                     parsed_spec.data.quote_data_path, settings.data_dir
                 ),
+                benchmark_series_path=selected_benchmark_series_path,
+                benchmark_series_return_column=benchmark_series_return_column,
                 horizon_minutes=parsed_spec.backtest.label_horizon_minutes,
                 out_dir=settings.data_dir / "research/backtest_benchmark_relative",
                 reports_dir=selected_reports,

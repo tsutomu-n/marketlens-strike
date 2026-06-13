@@ -182,6 +182,7 @@ def test_strategy_backtest_pack_runs_standard_backtest_artifact_chain(
     spec_path = tmp_path / "authoring.yaml"
     suite_path = tmp_path / "suite.yaml"
     bundle_path = tmp_path / "bundle.yaml"
+    benchmark_series_path = tmp_path / "external_benchmark.csv"
     monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
     _write_data(data_dir)
     _write_spec(spec_path)
@@ -249,6 +250,18 @@ portfolio:
 """,
         encoding="utf-8",
     )
+    pl.DataFrame(
+        [
+            {
+                "source_row_index": 0,
+                "benchmark_return": 0.001,
+            },
+            {
+                "source_row_index": 1,
+                "benchmark_return": -0.001,
+            },
+        ]
+    ).write_csv(benchmark_series_path)
 
     result = runner.invoke(
         app,
@@ -260,6 +273,8 @@ portfolio:
             str(suite_path),
             "--bundle",
             str(bundle_path),
+            "--benchmark-series-path",
+            str(benchmark_series_path),
         ],
     )
 
@@ -362,6 +377,13 @@ portfolio:
     assert payload["artifacts"]["benchmark_relative"]["exists"] is True
     assert payload["artifacts"]["benchmark_relative_report"]["exists"] is True
     assert payload["artifacts"]["returns_series"]["exists"] is True
+    benchmark_payload = json.loads(benchmark_relative_path.read_text(encoding="utf-8"))
+    assert benchmark_payload["source_benchmark_series_path"] == benchmark_series_path.as_posix()
+    assert benchmark_payload["source_benchmark_series_hash"].startswith("sha256:")
+    assert benchmark_payload["benchmark_series_return_column"] == "benchmark_return"
+    assert any(
+        row["benchmark_source"] == "external_series" for row in benchmark_payload["comparisons"]
+    )
     assert (data_dir / "reports/strategy_backtest_pack_report.md").exists()
     validation_payload = json.loads(validation_path.read_text(encoding="utf-8"))
     validation_schema = json.loads(

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_15:19 JST
-更新日: 2026-06-13_21:15 JST
+更新日: 2026-06-13_21:24 JST
 -->
 
 # Strategy Author Guide
@@ -220,7 +220,7 @@ suite、adapter spike、external result、portfolio comparison、metric extensio
 uv run sis strategy-backtest-pack
 ```
 
-既定出力は `data/research/backtest_pack/strategy_backtest_pack.json` と `data/reports/strategy_backtest_pack_report.md` です。pack manifest は生成 artifact の path / hash、suite method count、external engine 実行有無、comparison id、`external_framework_policy` を記録します。pack には bundle result、portfolio comparison、metric extension、report extension、stress、regime split、rolling stability、benchmark relative、returns series も入ります。標準 engine は `strategy_authoring_native` で、完成線は `complete_without_locked_external_dependency` です。これも paper-only artifact で、live order、wallet、exchange write は許可しません。
+既定出力は `data/research/backtest_pack/strategy_backtest_pack.json` と `data/reports/strategy_backtest_pack_report.md` です。pack manifest は生成 artifact の path / hash、suite method count、external engine 実行有無、comparison id、`external_framework_policy` を記録します。pack には bundle result、portfolio comparison、metric extension、report extension、stress、regime split、rolling stability、benchmark relative、returns series も入ります。`--benchmark-series-path` を渡すと pack 内の benchmark relative でも明示 external benchmark series を使います。標準 engine は `strategy_authoring_native` で、完成線は `complete_without_locked_external_dependency` です。これも paper-only artifact で、live order、wallet、exchange write は許可しません。
 
 生成済み pack を検査する場合は次を使います。
 

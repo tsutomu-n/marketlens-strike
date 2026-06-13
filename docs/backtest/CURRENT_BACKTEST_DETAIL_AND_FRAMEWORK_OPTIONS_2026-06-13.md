@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_21:15 JST
+更新日: 2026-06-13_21:24 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -513,7 +513,7 @@ uv run sis strategy-backtest-benchmark-relative
 uv run sis strategy-backtest-pack
 ```
 
-この command は、単発 Strategy Authoring backtest metrics、5手法 suite、Strategy Authoring bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、cost / slippage stress、regime split、rolling stability、benchmark relative、comparison、pack manifest/report を順番に生成する。pack manifest は `strategy_backtest_pack.v1` で、artifact path / hash、suite run count、suite method count、external engine 実行有無、comparison id、外部 framework 方針を記録する。既定出力は次である。
+この command は、単発 Strategy Authoring backtest metrics、5手法 suite、Strategy Authoring bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、cost / slippage stress、regime split、rolling stability、benchmark relative、comparison、pack manifest/report を順番に生成する。`--benchmark-series-path` を渡すと pack 内の benchmark relative でも明示 external benchmark series を使い、benchmark-relative artifact 側に source path/hash を残す。pack manifest は `strategy_backtest_pack.v1` で、artifact path / hash、suite run count、suite method count、external engine 実行有無、comparison id、外部 framework 方針を記録する。既定出力は次である。
 
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/reports/strategy_backtest_pack_report.md`

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_21:15 JST
+更新日: 2026-06-13_21:24 JST
 -->
 
 # Backtest Docs
@@ -49,7 +49,7 @@
 `strategy-backtest-rolling-stability` は既存 `strategy_backtest_metrics.json` の executed signal return を rolling window 別に集計し、窓幅ごとの worst return / drawdown を確認できる `strategy_backtest_rolling_stability.v1` を作ります。既定 window は `3,5` です。依存追加や live order は行いません。
 `strategy-backtest-benchmark-relative` は既存 `strategy_backtest_metrics.json` の executed signal return を row-level benchmark return、明示 external benchmark series、または quote frame 由来の benchmark return と比較し、active return / tracking error / information ratio を確認できる `strategy_backtest_benchmark_relative.v1` を作ります。依存追加や live order は行いません。
 `strategy-backtest-compare` は `strategy_backtest_metrics.json` から overall / walk-forward era / optimizer sweep を `method_results` に正規化し、既定の suite result があれば `suite_results`、既定の adapter spike があれば `adapter_spike`、既定の external result があれば `external_results`、既定の portfolio comparison があれば `portfolio_comparison`、既定の metric extension があれば `metric_extension`、既定の report extension があれば `report_extension`、既定の stress result があれば `stress`、既定の regime split result があれば `regime_split`、既定の rolling stability result があれば `rolling_stability`、既定の benchmark relative result があれば `benchmark_relative` として取り込みます。`comparison_diagnostics` では threshold failure、weakest era、suite best run も確認できます。
-`strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、cost / slippage stress、regime split、rolling stability、benchmark relative、comparison、pack manifest を一括生成します。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
+`strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、cost / slippage stress、regime split、rolling stability、benchmark relative、comparison、pack manifest を一括生成します。`--benchmark-series-path` を渡すと pack 内の benchmark relative でも明示 external benchmark series を使います。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
 `strategy-backtest-pack-validate` は pack manifest の artifact path / hash、5手法、paper-only / no-live boundary、外部 framework 方針を検査し、PASS / FAIL artifact を出します。
 
 バックテストへ最短で入る入口は Strategy Authoring baseline です。
