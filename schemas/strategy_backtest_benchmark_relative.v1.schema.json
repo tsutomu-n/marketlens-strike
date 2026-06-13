@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_benchmark_relative.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "comparison_kind",
+    "source_backtest_metrics_path",
+    "source_backtest_metrics_hash",
+    "source_quotes_path",
+    "source_quotes_hash",
+    "benchmark_return_column",
+    "price_column",
+    "horizon_minutes",
+    "summary",
+    "comparisons",
+    "dependency_added",
+    "paper_only",
+    "live_order_submitted",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_benchmark_relative.v1"},
+    "created_at": {"type": "string"},
+    "comparison_kind": {"const": "benchmark_relative_return"},
+    "source_backtest_metrics_path": {"type": "string"},
+    "source_backtest_metrics_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "source_quotes_path": {"type": ["string", "null"]},
+    "source_quotes_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "benchmark_return_column": {"type": "string", "minLength": 1},
+    "price_column": {"type": "string", "minLength": 1},
+    "horizon_minutes": {"type": "integer", "minimum": 1},
+    "summary": {"$ref": "#/$defs/summary"},
+    "comparisons": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/comparison_row"}
+    },
+    "dependency_added": {"const": false},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": [
+        "return_count",
+        "paired_return_count",
+        "missing_benchmark_count",
+        "strategy_total_return",
+        "benchmark_total_return",
+        "active_total_return",
+        "avg_active_return",
+        "min_active_return",
+        "max_active_return",
+        "active_positive_rate",
+        "active_max_drawdown",
+        "tracking_error",
+        "information_ratio",
+        "strategy_benchmark_correlation"
+      ],
+      "properties": {
+        "return_count": {"type": "integer", "minimum": 0},
+        "paired_return_count": {"type": "integer", "minimum": 0},
+        "missing_benchmark_count": {"type": "integer", "minimum": 0},
+        "strategy_total_return": {"type": "number"},
+        "benchmark_total_return": {"type": "number"},
+        "active_total_return": {"type": "number"},
+        "avg_active_return": {"type": ["number", "null"]},
+        "min_active_return": {"type": ["number", "null"]},
+        "max_active_return": {"type": ["number", "null"]},
+        "active_positive_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "active_max_drawdown": {"type": ["number", "null"]},
+        "tracking_error": {"type": ["number", "null"], "minimum": 0},
+        "information_ratio": {"type": ["number", "null"]},
+        "strategy_benchmark_correlation": {
+          "type": ["number", "null"],
+          "minimum": -1,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "comparison_row": {
+      "type": "object",
+      "required": [
+        "source_row_index",
+        "signal_id",
+        "ts_signal",
+        "venue",
+        "canonical_symbol",
+        "side",
+        "strategy_return",
+        "benchmark_return",
+        "active_return",
+        "benchmark_source"
+      ],
+      "properties": {
+        "source_row_index": {"type": "integer", "minimum": 0},
+        "signal_id": {"type": ["string", "null"]},
+        "ts_signal": {"type": ["string", "null"]},
+        "venue": {"type": ["string", "null"]},
+        "canonical_symbol": {"type": ["string", "null"]},
+        "side": {"type": ["string", "null"]},
+        "strategy_return": {"type": "number"},
+        "benchmark_return": {"type": "number"},
+        "active_return": {"type": "number"},
+        "benchmark_source": {"enum": ["row_column", "quote_frame"]}
+      },
+      "additionalProperties": false
+    }
+  }
+}

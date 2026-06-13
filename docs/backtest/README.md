@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_20:08 JST
+更新日: 2026-06-13_20:23 JST
 -->
 
 # Backtest Docs
@@ -38,8 +38,9 @@
 `strategy-backtest-stress` は既存 `strategy_backtest_metrics.json` の executed signal return に追加 cost / slippage bps を掛け、`strategy_backtest_stress.v1` に scenario 別の耐性結果を記録します。既定 scenario は `base`, `mild`, `moderate`, `severe` です。依存追加や live order は行いません。
 `strategy-backtest-regime-split` は既存 `strategy_backtest_metrics.json` の executed signal return を `side`, `timeframe`, `exit_reason`, `ts_weekday`, `ts_hour` などの dimension 別に集計し、弱い bucket を確認できる `strategy_backtest_regime_split.v1` を作ります。依存追加や live order は行いません。
 `strategy-backtest-rolling-stability` は既存 `strategy_backtest_metrics.json` の executed signal return を rolling window 別に集計し、窓幅ごとの worst return / drawdown を確認できる `strategy_backtest_rolling_stability.v1` を作ります。既定 window は `3,5` です。依存追加や live order は行いません。
-`strategy-backtest-compare` は `strategy_backtest_metrics.json` から overall / walk-forward era / optimizer sweep を `method_results` に正規化し、既定の suite result があれば `suite_results`、既定の adapter spike があれば `adapter_spike`、既定の external result があれば `external_results`、既定の portfolio comparison があれば `portfolio_comparison`、既定の metric extension があれば `metric_extension`、既定の report extension があれば `report_extension`、既定の stress result があれば `stress`、既定の regime split result があれば `regime_split`、既定の rolling stability result があれば `rolling_stability` として取り込みます。`comparison_diagnostics` では threshold failure、weakest era、suite best run も確認できます。
-`strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、cost / slippage stress、regime split、rolling stability、comparison、pack manifest を一括生成します。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
+`strategy-backtest-benchmark-relative` は既存 `strategy_backtest_metrics.json` の executed signal return を row-level benchmark return または quote frame 由来の benchmark return と比較し、active return / tracking error / information ratio を確認できる `strategy_backtest_benchmark_relative.v1` を作ります。依存追加や live order は行いません。
+`strategy-backtest-compare` は `strategy_backtest_metrics.json` から overall / walk-forward era / optimizer sweep を `method_results` に正規化し、既定の suite result があれば `suite_results`、既定の adapter spike があれば `adapter_spike`、既定の external result があれば `external_results`、既定の portfolio comparison があれば `portfolio_comparison`、既定の metric extension があれば `metric_extension`、既定の report extension があれば `report_extension`、既定の stress result があれば `stress`、既定の regime split result があれば `regime_split`、既定の rolling stability result があれば `rolling_stability`、既定の benchmark relative result があれば `benchmark_relative` として取り込みます。`comparison_diagnostics` では threshold failure、weakest era、suite best run も確認できます。
+`strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、cost / slippage stress、regime split、rolling stability、benchmark relative、comparison、pack manifest を一括生成します。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
 `strategy-backtest-pack-validate` は pack manifest の artifact path / hash、5手法、paper-only / no-live boundary、外部 framework 方針を検査し、PASS / FAIL artifact を出します。
 
 バックテストへ最短で入る入口は Strategy Authoring baseline です。
@@ -68,6 +69,7 @@ uv run sis strategy-backtest-report-extension
 uv run sis strategy-backtest-stress
 uv run sis strategy-backtest-regime-split
 uv run sis strategy-backtest-rolling-stability
+uv run sis strategy-backtest-benchmark-relative
 uv run sis strategy-backtest-compare
 uv run sis strategy-backtest-pack
 uv run sis strategy-backtest-pack-validate
@@ -134,6 +136,7 @@ uv run sis strategy-backtest-compare
 - `data/research/backtest_stress/strategy_backtest_stress.json`
 - `data/research/backtest_regime_split/strategy_backtest_regime_split.json`
 - `data/research/backtest_rolling_stability/strategy_backtest_rolling_stability.json`
+- `data/research/backtest_benchmark_relative/strategy_backtest_benchmark_relative.json`
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/research/backtest_pack/strategy_backtest_pack_validation.json`
 - `data/reports/strategy_backtest_report.md`
@@ -151,6 +154,7 @@ uv run sis strategy-backtest-compare
 - `data/reports/strategy_backtest_stress_report.md`
 - `data/reports/strategy_backtest_regime_split_report.md`
 - `data/reports/strategy_backtest_rolling_stability_report.md`
+- `data/reports/strategy_backtest_benchmark_relative_report.md`
 - `data/reports/strategy_backtest_pack_report.md`
 - `data/reports/strategy_backtest_pack_validation_report.md`
 

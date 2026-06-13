@@ -36,6 +36,7 @@ def test_strategy_lab_schema_files_exist_and_parse() -> None:
         "strategy_backtest_stress.v1.schema.json",
         "strategy_backtest_regime_split.v1.schema.json",
         "strategy_backtest_rolling_stability.v1.schema.json",
+        "strategy_backtest_benchmark_relative.v1.schema.json",
         "strategy_backtest_framework_smoke.v1.schema.json",
         "strategy_backtest_pack.v1.schema.json",
         "strategy_backtest_pack_validation.v1.schema.json",
@@ -117,6 +118,11 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
             encoding="utf-8"
         )
     )
+    backtest_benchmark_relative = json.loads(
+        Path("schemas/strategy_backtest_benchmark_relative.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
     backtest_framework_smoke = json.loads(
         Path("schemas/strategy_backtest_framework_smoke.v1.schema.json").read_text(encoding="utf-8")
     )
@@ -184,6 +190,7 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
         assert backtest_stress["properties"][name]["const"] is False
         assert backtest_regime_split["properties"][name]["const"] is False
         assert backtest_rolling_stability["properties"][name]["const"] is False
+        assert backtest_benchmark_relative["properties"][name]["const"] is False
         assert backtest_framework_smoke["properties"][name]["const"] is False
         assert backtest_pack["properties"][name]["const"] is False
         assert backtest_pack_validation["properties"][name]["const"] is False
@@ -202,6 +209,9 @@ def test_strategy_lab_schema_guards_match_paper_only_boundary() -> None:
     assert backtest_rolling_stability["properties"]["dependency_added"]["const"] is False
     assert backtest_rolling_stability["properties"]["paper_only"]["const"] is True
     assert backtest_rolling_stability["properties"]["live_order_submitted"]["const"] is False
+    assert backtest_benchmark_relative["properties"]["dependency_added"]["const"] is False
+    assert backtest_benchmark_relative["properties"]["paper_only"]["const"] is True
+    assert backtest_benchmark_relative["properties"]["live_order_submitted"]["const"] is False
     pack_policy = backtest_pack["properties"]["external_framework_policy"]["properties"]
     validation_policy = backtest_pack_validation["properties"]["external_framework_policy"][
         "properties"

@@ -8,6 +8,12 @@ import typer
 from sis.backtest.adapter_spike import build_backtest_adapter_spike
 from sis.backtest.adapter_contract import build_backtest_adapter_contract
 from sis.backtest.adapter_selection import build_backtest_adapter_selection
+from sis.backtest.benchmark_relative import (
+    DEFAULT_BENCHMARK_RETURN_COLUMN,
+    DEFAULT_HORIZON_MINUTES,
+    DEFAULT_PRICE_COLUMN,
+    build_strategy_backtest_benchmark_relative,
+)
 from sis.backtest.compare import build_strategy_backtest_comparison
 from sis.backtest.external import build_strategy_backtest_external_result
 from sis.backtest.framework_smoke import build_backtest_framework_smoke
@@ -269,6 +275,14 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--rolling-stability-path",
             help="Optional Strategy Backtest Rolling Stability JSON. Used when the file exists.",
         ),
+        benchmark_relative_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_benchmark_relative/"
+                "strategy_backtest_benchmark_relative.json"
+            ),
+            "--benchmark-relative-path",
+            help="Optional Strategy Backtest Benchmark Relative JSON. Used when the file exists.",
+        ),
         out: Path = typer.Option(
             Path("data/research/backtest_compare"),
             "--out",
@@ -327,6 +341,11 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             if rolling_stability_path.is_absolute()
             else settings.data_dir.parent / rolling_stability_path
         )
+        selected_benchmark_relative_path = (
+            benchmark_relative_path
+            if benchmark_relative_path.is_absolute()
+            else settings.data_dir.parent / benchmark_relative_path
+        )
         selected_out = out if out.is_absolute() else settings.data_dir.parent / out
         selected_reports = (
             reports_dir if reports_dir.is_absolute() else settings.data_dir.parent / reports_dir
@@ -358,6 +377,9 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 else None,
                 rolling_stability_path=selected_rolling_stability_path
                 if selected_rolling_stability_path.exists()
+                else None,
+                benchmark_relative_path=selected_benchmark_relative_path
+                if selected_benchmark_relative_path.exists()
                 else None,
                 out_dir=selected_out,
                 reports_dir=selected_reports,
@@ -642,6 +664,65 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
         typer.echo(f"backtest_rolling_stability={result.rolling_stability_path}")
         typer.echo(f"backtest_rolling_stability_report={result.report_path}")
+
+    @app.command("strategy-backtest-benchmark-relative")
+    def strategy_backtest_benchmark_relative_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        quotes_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_baseline_quotes.parquet"),
+            "--quotes-path",
+            help="Optional quote parquet used to derive benchmark returns.",
+        ),
+        benchmark_return_column: str = typer.Option(
+            DEFAULT_BENCHMARK_RETURN_COLUMN,
+            "--benchmark-return-column",
+            help="Executed signal result column used when row-level benchmark returns exist.",
+        ),
+        price_column: str = typer.Option(
+            DEFAULT_PRICE_COLUMN,
+            "--price-column",
+            help="Quote price column used to derive benchmark returns.",
+        ),
+        horizon_minutes: int = typer.Option(
+            DEFAULT_HORIZON_MINUTES,
+            "--horizon-minutes",
+            help="Benchmark return horizon in minutes when using quote data.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_benchmark_relative"),
+            "--out",
+            help="Output directory for benchmark-relative artifacts.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        selected_metrics_path = _resolve_workspace_path(metrics_path, settings.data_dir)
+        selected_quotes_path = _resolve_workspace_path(quotes_path, settings.data_dir)
+        selected_out = _resolve_workspace_path(out, settings.data_dir)
+        selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
+        try:
+            result = build_strategy_backtest_benchmark_relative(
+                metrics_path=selected_metrics_path,
+                quotes_path=selected_quotes_path if selected_quotes_path.exists() else None,
+                benchmark_return_column=benchmark_return_column,
+                price_column=price_column,
+                horizon_minutes=horizon_minutes,
+                out_dir=selected_out,
+                reports_dir=selected_reports,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_benchmark_relative={result.benchmark_relative_path}")
+        typer.echo(f"backtest_benchmark_relative_report={result.report_path}")
 
     @app.command("strategy-backtest-adapter-spike")
     def strategy_backtest_adapter_spike_cmd(
@@ -953,6 +1034,15 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 out_dir=settings.data_dir / "research/backtest_rolling_stability",
                 reports_dir=selected_reports,
             )
+            benchmark_relative_result = build_strategy_backtest_benchmark_relative(
+                metrics_path=backtest_artifacts["metrics"],
+                quotes_path=_resolve_spec_data_path(
+                    parsed_spec.data.quote_data_path, settings.data_dir
+                ),
+                horizon_minutes=parsed_spec.backtest.label_horizon_minutes,
+                out_dir=settings.data_dir / "research/backtest_benchmark_relative",
+                reports_dir=selected_reports,
+            )
             comparison_result = build_strategy_backtest_comparison(
                 metrics_path=backtest_artifacts["metrics"],
                 suite_result_path=suite_artifacts["suite_result"],
@@ -964,6 +1054,7 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 stress_path=stress_result.stress_path,
                 regime_split_path=regime_split_result.regime_split_path,
                 rolling_stability_path=rolling_stability_result.rolling_stability_path,
+                benchmark_relative_path=benchmark_relative_result.benchmark_relative_path,
                 out_dir=settings.data_dir / "research/backtest_compare",
                 reports_dir=selected_reports,
             )
@@ -998,6 +1089,8 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                     "regime_split_report": regime_split_result.report_path,
                     "rolling_stability": rolling_stability_result.rolling_stability_path,
                     "rolling_stability_report": rolling_stability_result.report_path,
+                    "benchmark_relative": benchmark_relative_result.benchmark_relative_path,
+                    "benchmark_relative_report": benchmark_relative_result.report_path,
                     "comparison": comparison_result.comparison_path,
                     "comparison_report": comparison_result.report_path,
                 },
@@ -1026,6 +1119,9 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         typer.echo(f"backtest_stress={stress_result.stress_path}")
         typer.echo(f"backtest_regime_split={regime_split_result.regime_split_path}")
         typer.echo(f"backtest_rolling_stability={rolling_stability_result.rolling_stability_path}")
+        typer.echo(
+            f"backtest_benchmark_relative={benchmark_relative_result.benchmark_relative_path}"
+        )
         typer.echo(f"backtest_suite_result={suite_artifacts['suite_result']}")
         if validation_result.payload["decision"] != "PASS":
             raise typer.Exit(2)

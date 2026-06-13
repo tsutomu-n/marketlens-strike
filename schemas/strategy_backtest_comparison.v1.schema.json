@@ -26,6 +26,8 @@
     "source_regime_split_hash",
     "source_rolling_stability_path",
     "source_rolling_stability_hash",
+    "source_benchmark_relative_path",
+    "source_benchmark_relative_hash",
     "native_result",
     "method_results",
     "suite_results",
@@ -37,6 +39,7 @@
     "stress",
     "regime_split",
     "rolling_stability",
+    "benchmark_relative",
     "comparison_diagnostics",
     "framework_adapters",
     "permits_live_order",
@@ -92,6 +95,11 @@
     },
     "source_rolling_stability_path": {"type": ["string", "null"]},
     "source_rolling_stability_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_benchmark_relative_path": {"type": ["string", "null"]},
+    "source_benchmark_relative_hash": {
       "type": ["string", "null"],
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
@@ -168,6 +176,12 @@
     "rolling_stability": {
       "anyOf": [
         {"$ref": "#/$defs/rolling_stability"},
+        {"type": "null"}
+      ]
+    },
+    "benchmark_relative": {
+      "anyOf": [
+        {"$ref": "#/$defs/benchmark_relative"},
         {"type": "null"}
       ]
     },
@@ -1206,6 +1220,109 @@
           "type": "array",
           "minItems": 1,
           "items": {"$ref": "#/$defs/rolling_stability_window_group"}
+        },
+        "dependency_added": {"const": false},
+        "paper_only": {"const": true},
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "benchmark_relative_summary": {
+      "type": "object",
+      "required": [
+        "return_count",
+        "paired_return_count",
+        "missing_benchmark_count",
+        "strategy_total_return",
+        "benchmark_total_return",
+        "active_total_return",
+        "avg_active_return",
+        "min_active_return",
+        "max_active_return",
+        "active_positive_rate",
+        "active_max_drawdown",
+        "tracking_error",
+        "information_ratio",
+        "strategy_benchmark_correlation"
+      ],
+      "properties": {
+        "return_count": {"type": "integer", "minimum": 0},
+        "paired_return_count": {"type": "integer", "minimum": 0},
+        "missing_benchmark_count": {"type": "integer", "minimum": 0},
+        "strategy_total_return": {"type": "number"},
+        "benchmark_total_return": {"type": "number"},
+        "active_total_return": {"type": "number"},
+        "avg_active_return": {"type": ["number", "null"]},
+        "min_active_return": {"type": ["number", "null"]},
+        "max_active_return": {"type": ["number", "null"]},
+        "active_positive_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "active_max_drawdown": {"type": ["number", "null"]},
+        "tracking_error": {"type": ["number", "null"], "minimum": 0},
+        "information_ratio": {"type": ["number", "null"]},
+        "strategy_benchmark_correlation": {
+          "type": ["number", "null"],
+          "minimum": -1,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "benchmark_relative_row": {
+      "type": "object",
+      "required": [
+        "source_row_index",
+        "signal_id",
+        "ts_signal",
+        "venue",
+        "canonical_symbol",
+        "side",
+        "strategy_return",
+        "benchmark_return",
+        "active_return",
+        "benchmark_source"
+      ],
+      "properties": {
+        "source_row_index": {"type": "integer", "minimum": 0},
+        "signal_id": {"type": ["string", "null"]},
+        "ts_signal": {"type": ["string", "null"]},
+        "venue": {"type": ["string", "null"]},
+        "canonical_symbol": {"type": ["string", "null"]},
+        "side": {"type": ["string", "null"]},
+        "strategy_return": {"type": "number"},
+        "benchmark_return": {"type": "number"},
+        "active_return": {"type": "number"},
+        "benchmark_source": {"enum": ["row_column", "quote_frame"]}
+      },
+      "additionalProperties": false
+    },
+    "benchmark_relative": {
+      "type": "object",
+      "required": [
+        "comparison_kind",
+        "benchmark_return_column",
+        "price_column",
+        "horizon_minutes",
+        "summary",
+        "comparisons",
+        "dependency_added",
+        "paper_only",
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "comparison_kind": {"const": "benchmark_relative_return"},
+        "benchmark_return_column": {"type": "string", "minLength": 1},
+        "price_column": {"type": "string", "minLength": 1},
+        "horizon_minutes": {"type": "integer", "minimum": 1},
+        "summary": {"$ref": "#/$defs/benchmark_relative_summary"},
+        "comparisons": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/benchmark_relative_row"}
         },
         "dependency_added": {"const": false},
         "paper_only": {"const": true},

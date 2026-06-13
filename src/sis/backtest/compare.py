@@ -421,6 +421,26 @@ def _rolling_stability(rolling_payload: dict[str, Any] | None) -> dict[str, Any]
     }
 
 
+def _benchmark_relative(benchmark_payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if benchmark_payload is None:
+        return None
+    summary = benchmark_payload.get("summary")
+    return {
+        "comparison_kind": benchmark_payload.get("comparison_kind"),
+        "benchmark_return_column": benchmark_payload.get("benchmark_return_column"),
+        "price_column": benchmark_payload.get("price_column"),
+        "horizon_minutes": benchmark_payload.get("horizon_minutes"),
+        "summary": summary if isinstance(summary, dict) else {},
+        "comparisons": benchmark_payload.get("comparisons") or [],
+        "dependency_added": benchmark_payload.get("dependency_added"),
+        "paper_only": benchmark_payload.get("paper_only"),
+        "permits_live_order": benchmark_payload.get("permits_live_order"),
+        "live_conversion_allowed": benchmark_payload.get("live_conversion_allowed"),
+        "wallet_used": benchmark_payload.get("wallet_used"),
+        "exchange_write_used": benchmark_payload.get("exchange_write_used"),
+    }
+
+
 def _numeric(value: Any) -> float | int | None:
     if isinstance(value, bool):
         return None
@@ -840,6 +860,23 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         )
     else:
         lines.append("- none")
+    lines.extend(["", "## Benchmark Relative", ""])
+    if payload["benchmark_relative"]:
+        benchmark = payload["benchmark_relative"]
+        summary = benchmark.get("summary") or {}
+        lines.extend(
+            [
+                f"- comparison_kind: {benchmark.get('comparison_kind')}",
+                f"- paired_return_count: {summary.get('paired_return_count')}",
+                f"- missing_benchmark_count: {summary.get('missing_benchmark_count')}",
+                f"- benchmark_total_return: {summary.get('benchmark_total_return')}",
+                f"- active_total_return: {summary.get('active_total_return')}",
+                f"- tracking_error: {summary.get('tracking_error')}",
+                f"- information_ratio: {summary.get('information_ratio')}",
+            ]
+        )
+    else:
+        lines.append("- none")
     lines.extend(
         [
             "",
@@ -882,6 +919,7 @@ def build_strategy_backtest_comparison(
     stress_path: Path | None = None,
     regime_split_path: Path | None = None,
     rolling_stability_path: Path | None = None,
+    benchmark_relative_path: Path | None = None,
     out_dir: Path,
     reports_dir: Path,
 ) -> BacktestComparisonResult:
@@ -985,6 +1023,17 @@ def build_strategy_backtest_comparison(
         else None
     )
     rolling_stability = _rolling_stability(rolling_payload)
+    benchmark_payload = (
+        _read_json(benchmark_relative_path)
+        if benchmark_relative_path is not None and benchmark_relative_path.exists()
+        else None
+    )
+    benchmark_relative_hash = (
+        _sha256_file(benchmark_relative_path)
+        if benchmark_relative_path is not None and benchmark_relative_path.exists()
+        else None
+    )
+    benchmark_relative = _benchmark_relative(benchmark_payload)
     comparison_diagnostics = _comparison_diagnostics(
         metrics_payload=metrics_payload,
         method_results=method_results,
@@ -1043,6 +1092,11 @@ def build_strategy_backtest_comparison(
                 else None,
                 "rolling_stability_hash": rolling_stability_hash,
                 "rolling_stability": rolling_stability,
+                "benchmark_relative_path": benchmark_relative_path.as_posix()
+                if benchmark_relative_path is not None and benchmark_relative_path.exists()
+                else None,
+                "benchmark_relative_hash": benchmark_relative_hash,
+                "benchmark_relative": benchmark_relative,
             },
             sort_keys=True,
             default=str,
@@ -1106,6 +1160,12 @@ def build_strategy_backtest_comparison(
             else None
         ),
         "source_rolling_stability_hash": rolling_stability_hash,
+        "source_benchmark_relative_path": (
+            benchmark_relative_path.as_posix()
+            if benchmark_relative_path is not None and benchmark_relative_path.exists()
+            else None
+        ),
+        "source_benchmark_relative_hash": benchmark_relative_hash,
         "native_result": native,
         "method_results": method_results,
         "suite_results": suite_results,
@@ -1117,6 +1177,7 @@ def build_strategy_backtest_comparison(
         "stress": stress,
         "regime_split": regime_split,
         "rolling_stability": rolling_stability,
+        "benchmark_relative": benchmark_relative,
         "comparison_diagnostics": comparison_diagnostics,
         "framework_adapters": framework_adapter_status(),
         "permits_live_order": False,

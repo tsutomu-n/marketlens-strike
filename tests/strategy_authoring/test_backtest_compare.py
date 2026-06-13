@@ -677,6 +677,76 @@ def _write_rolling_stability(path: Path) -> None:
     )
 
 
+def _write_benchmark_relative(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "strategy_backtest_benchmark_relative.v1",
+                "created_at": "2026-06-13T00:00:00+00:00",
+                "comparison_kind": "benchmark_relative_return",
+                "source_backtest_metrics_path": "data/research/strategy_backtest_metrics.json",
+                "source_backtest_metrics_hash": "sha256:" + "a" * 64,
+                "source_quotes_path": "data/research/quotes.parquet",
+                "source_quotes_hash": "sha256:" + "b" * 64,
+                "benchmark_return_column": "benchmark_return",
+                "price_column": "mid_price",
+                "horizon_minutes": 60,
+                "summary": {
+                    "return_count": 2,
+                    "paired_return_count": 2,
+                    "missing_benchmark_count": 0,
+                    "strategy_total_return": 0.03,
+                    "benchmark_total_return": 0.02,
+                    "active_total_return": 0.01,
+                    "avg_active_return": 0.005,
+                    "min_active_return": -0.002,
+                    "max_active_return": 0.012,
+                    "active_positive_rate": 0.5,
+                    "active_max_drawdown": -0.002,
+                    "tracking_error": 0.007,
+                    "information_ratio": 0.7142857142857143,
+                    "strategy_benchmark_correlation": 0.5,
+                },
+                "comparisons": [
+                    {
+                        "source_row_index": 0,
+                        "signal_id": "sig-a",
+                        "ts_signal": "2026-01-05T14:00:00+00:00",
+                        "venue": "trade_xyz",
+                        "canonical_symbol": "XYZ100",
+                        "side": "long",
+                        "strategy_return": 0.01,
+                        "benchmark_return": -0.002,
+                        "active_return": 0.012,
+                        "benchmark_source": "quote_frame",
+                    },
+                    {
+                        "source_row_index": 1,
+                        "signal_id": "sig-b",
+                        "ts_signal": "2026-01-05T15:00:00+00:00",
+                        "venue": "trade_xyz",
+                        "canonical_symbol": "XYZ100",
+                        "side": "long",
+                        "strategy_return": 0.02,
+                        "benchmark_return": 0.022,
+                        "active_return": -0.002,
+                        "benchmark_source": "row_column",
+                    },
+                ],
+                "dependency_added": False,
+                "paper_only": True,
+                "live_order_submitted": False,
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "exchange_write_used": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_path) -> None:
     metrics_path = tmp_path / "data/research/strategy_backtest_metrics.json"
     suite_result_path = (
@@ -705,6 +775,10 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
         tmp_path
         / "data/research/backtest_rolling_stability/strategy_backtest_rolling_stability.json"
     )
+    benchmark_relative_path = (
+        tmp_path
+        / "data/research/backtest_benchmark_relative/strategy_backtest_benchmark_relative.json"
+    )
     out_dir = tmp_path / "data/research/backtest_compare"
     reports_dir = tmp_path / "data/reports"
     _write_metrics(metrics_path)
@@ -717,6 +791,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     _write_stress(stress_path)
     _write_regime_split(regime_split_path)
     _write_rolling_stability(rolling_stability_path)
+    _write_benchmark_relative(benchmark_relative_path)
 
     result = build_strategy_backtest_comparison(
         metrics_path=metrics_path,
@@ -729,6 +804,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
         stress_path=stress_path,
         regime_split_path=regime_split_path,
         rolling_stability_path=rolling_stability_path,
+        benchmark_relative_path=benchmark_relative_path,
         out_dir=out_dir,
         reports_dir=reports_dir,
     )
@@ -781,6 +857,8 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["source_regime_split_hash"].startswith("sha256:")
     assert payload["source_rolling_stability_path"] == rolling_stability_path.as_posix()
     assert payload["source_rolling_stability_hash"].startswith("sha256:")
+    assert payload["source_benchmark_relative_path"] == benchmark_relative_path.as_posix()
+    assert payload["source_benchmark_relative_hash"].startswith("sha256:")
     assert payload["suite_results"][0]["suite_id"] == "demo_suite"
     assert payload["suite_results"][0]["aggregate"]["run_count"] == 2
     assert payload["suite_results"][0]["method_matrix"]["method_count"] == 2
@@ -839,6 +917,9 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["rolling_stability"]["stability_kind"] == "rolling_return_window"
     assert payload["rolling_stability"]["summary"]["worst_window_size"] == 2
     assert payload["rolling_stability"]["live_conversion_allowed"] is False
+    assert payload["benchmark_relative"]["comparison_kind"] == "benchmark_relative_return"
+    assert payload["benchmark_relative"]["summary"]["active_total_return"] == 0.01
+    assert payload["benchmark_relative"]["live_conversion_allowed"] is False
     assert {item["framework_id"] for item in payload["framework_adapters"]} == {
         "vectorbt",
         "bt",
@@ -880,6 +961,9 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     _write_rolling_stability(
         data_dir / "research/backtest_rolling_stability/strategy_backtest_rolling_stability.json"
     )
+    _write_benchmark_relative(
+        data_dir / "research/backtest_benchmark_relative/strategy_backtest_benchmark_relative.json"
+    )
 
     result = runner.invoke(app, ["strategy-backtest-compare"])
 
@@ -899,6 +983,7 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     assert payload["stress"]["summary"]["worst_scenario_id"] == "severe"
     assert payload["regime_split"]["summary"]["worst_bucket_id"] == "side:long"
     assert payload["rolling_stability"]["summary"]["worst_window_size"] == 2
+    assert payload["benchmark_relative"]["summary"]["active_total_return"] == 0.01
     assert (data_dir / "reports/strategy_backtest_comparison_report.md").exists()
 
 
@@ -935,6 +1020,8 @@ def test_strategy_backtest_compare_without_suite_result_keeps_empty_suite_sectio
     assert payload["source_regime_split_hash"] is None
     assert payload["source_rolling_stability_path"] is None
     assert payload["source_rolling_stability_hash"] is None
+    assert payload["source_benchmark_relative_path"] is None
+    assert payload["source_benchmark_relative_hash"] is None
     assert payload["suite_results"] == []
     assert payload["adapter_spike"] is None
     assert payload["external_results"] == []
@@ -943,4 +1030,5 @@ def test_strategy_backtest_compare_without_suite_result_keeps_empty_suite_sectio
     assert payload["stress"] is None
     assert payload["regime_split"] is None
     assert payload["rolling_stability"] is None
+    assert payload["benchmark_relative"] is None
     assert payload["comparison_diagnostics"]["suite_best_runs"] == []
