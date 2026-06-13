@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_20:51 JST
+更新日: 2026-06-13_21:09 JST
 -->
 
 # Backtest Docs
@@ -32,11 +32,14 @@
 正式 optional dependency としてどの OSS を先に採用するかの review は
 [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md)
 を見ます。
+`empyrical-reloaded` / `quantstats` の optional extra 採用判断は
+[METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md](METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md)
+を見ます。現時点では `metrics = ["empyrical-reloaded==0.5.12"]` と `reports = ["quantstats==0.0.81"]` を分けて採用済みです。
 `strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML を読み、複数specと複数backtest条件を1コマンドで実行して suite result / report に集約します。標準例は `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の5手法を走らせ、suite result の `method_matrix` で手法別 run 数を確認できます。
 `strategy-backtest-adapter-spike` は9件の外部 backtest / metrics / report OSS 候補の import / metadata / license risk を artifact 化します。依存追加、外部engine実行、live order は行いません。
-`strategy-backtest-framework-smoke` は一時 `uv --with ...` 環境で `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` などの import 結果、version、license metadata、Requires-Python、採用分類を artifact 化します。repo dependency は追加しません。
-`strategy-backtest-adapter-selection` は adapter spike と framework smoke の artifact から Phase C の初期選定を artifact 化します。現時点では `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を selected、`backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` を deferred とします。repo dependency は追加しません。
-`strategy-backtest-adapter-contract` は selected adapter の入力、出力、provenance、受入条件を artifact 化します。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` の contract を作りますが、repo dependency は追加しません。
+`strategy-backtest-framework-smoke` は一時 `uv --with ...` 環境で `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` などの import 結果、version、license metadata、Requires-Python、採用分類を artifact 化します。この command 自体は repo dependency を変更しません。
+`strategy-backtest-adapter-selection` は adapter spike と framework smoke の artifact から Phase C の初期選定を artifact 化します。現時点では `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を selected、`backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` を deferred とします。この command 自体は repo dependency を変更しません。
+`strategy-backtest-adapter-contract` は selected adapter の入力、出力、provenance、受入条件を artifact 化します。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` の contract を作りますが、この command 自体は repo dependency を変更しません。
 `strategy-backtest-external-run` は外部 framework 候補の実行結果用 artifact を作ります。`vectorbt` がインストール済みで signals / quotes 入力がある場合は `src/sis/backtest/vectorbt_adapter.py` 経由で `vectorbt.Portfolio.from_signals` を呼び、未インストールなら `skipped/not_installed_in_current_env` として記録します。artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes`、framework ごとの `framework_version` と `runner_mode` を残します。依存追加や live order は行いません。
 `strategy-backtest-portfolio-compare` は `bt` 用の portfolio allocation / rebalance comparison artifact を作ります。通常環境で `bt` が未インストールなら `skipped/not_installed_in_current_env`、`uv run --extra bt` 環境では `bt.run()` の結果を `strategy_backtest_portfolio_comparison.v1` に記録します。live order は行いません。
 `strategy-backtest-metric-extension` は `empyrical-reloaded` 用の metrics normalization artifact を作ります。通常環境で `empyrical` が未インストールなら `skipped/not_installed_in_current_env`、一時 `uv --with empyrical-reloaded` 環境では `empyrical` の Sharpe / drawdown / annual return / annual volatility 系 metric を `strategy_backtest_metric_extension.v1` に記録します。依存追加や live order は行いません。
@@ -109,6 +112,14 @@ uv run --with empyrical-reloaded sis strategy-backtest-metric-extension
 uv run sis strategy-backtest-compare
 ```
 
+`metrics` optional extra で metric extension を実行する場合:
+
+```bash
+uv sync --dev --extra metrics --locked
+uv run --extra metrics sis strategy-backtest-metric-extension
+uv run sis strategy-backtest-compare
+```
+
 `quantstats` を repo dependency に入れず一時環境で report extension smoke する場合:
 
 ```bash
@@ -116,7 +127,15 @@ uv run --with quantstats sis strategy-backtest-report-extension
 uv run sis strategy-backtest-compare
 ```
 
-この一時 smoke では `pyproject.toml` / `uv.lock` を変更しません。
+`reports` optional extra で report extension を実行する場合:
+
+```bash
+uv sync --dev --extra reports --locked
+uv run --extra reports sis strategy-backtest-report-extension
+uv run sis strategy-backtest-compare
+```
+
+一時 `uv --with ...` smoke では `pyproject.toml` / `uv.lock` を変更しません。`--extra metrics` / `--extra reports` は locked optional extra を使う経路です。
 
 主な出力:
 

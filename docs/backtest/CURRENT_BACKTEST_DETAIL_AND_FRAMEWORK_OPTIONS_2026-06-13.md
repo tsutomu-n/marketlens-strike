@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_20:51 JST
+更新日: 2026-06-13_21:01 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -11,7 +11,7 @@
 
 いま実務で使う主入口は `Strategy Authoring fixed-horizon backtest` である。YAML で戦略を記述し、`strategy-author-run --through backtest` で signal 生成から paper-only backtest metrics まで出す。これは live readiness ではなく、研究用の backtest artifact である。
 
-今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` である。正式 optional dependency の採用判断は [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md) を正とし、現時点では `bt` を optional extra 採用済み、`vectorbt` を [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) により明示承認まで未採用として扱う。
+今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` である。正式 optional dependency の採用判断は [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md) を正とし、現時点では `bt`、`metrics`、`reports` を optional extra 採用済み、`vectorbt` を [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) により明示承認まで未採用として扱う。
 
 ## 現行 Backtest Surface
 
@@ -231,7 +231,7 @@ uv run sis strategy-backtest-compare
 - `data/research/backtest_compare/strategy_backtest_comparison.json`
 - `data/reports/strategy_backtest_comparison_report.md`
 
-現時点では外部 framework dependency を追加しない。`framework_adapters` には optional framework の installed / not installed 状態、候補 role、license 注意を記録する。`adapter_spike` には `strategy-backtest-adapter-spike` が作った dependency 追加なしの import / metadata / license risk / adoption blocker を取り込む。`external_results` には `strategy-backtest-external-run` が作った外部 framework 実行用 artifact を取り込む。`portfolio_comparison` には `strategy-backtest-portfolio-compare` が作った `bt` 用 portfolio allocation / rebalance comparison artifact を取り込む。`metric_extension` には `strategy-backtest-metric-extension` が作った `empyrical-reloaded` 用 metrics normalization artifact を取り込む。`report_extension` には `strategy-backtest-report-extension` が作った `quantstats` 用 report / tear sheet artifact を取り込む。`stress` には `strategy-backtest-stress` が作った cost / slippage robustness artifact を取り込む。`regime_split` には `strategy-backtest-regime-split` が作った dimension 別 robustness artifact を取り込む。`rolling_stability` には `strategy-backtest-rolling-stability` が作った rolling window return / drawdown robustness artifact を取り込む。`benchmark_relative` には `strategy-backtest-benchmark-relative` が作った benchmark-relative active return artifact を取り込む。現環境で framework が未インストールなら `run_status=skipped`, `metric_status=skipped`, `report_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env` として記録する。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` の一時実行結果は `framework_version` と `runner_mode=temporary_or_optional_import` も比較 artifact に保持する。これは今後の adapter 比較の土台であり、外部 dependency 採用や live 許可ではない。
+現時点の標準 pack completion は外部 framework dependency を必須にしない。`framework_adapters` には optional framework の installed / not installed 状態、候補 role、license 注意を記録する。`adapter_spike` には `strategy-backtest-adapter-spike` が作った dependency 追加なしの import / metadata / license risk / adoption blocker を取り込む。`external_results` には `strategy-backtest-external-run` が作った外部 framework 実行用 artifact を取り込む。`portfolio_comparison` には `strategy-backtest-portfolio-compare` が作った `bt` 用 portfolio allocation / rebalance comparison artifact を取り込む。`metric_extension` には `strategy-backtest-metric-extension` が作った `empyrical-reloaded` 用 metrics normalization artifact を取り込む。`report_extension` には `strategy-backtest-report-extension` が作った `quantstats` 用 report / tear sheet artifact を取り込む。`stress` には `strategy-backtest-stress` が作った cost / slippage robustness artifact を取り込む。`regime_split` には `strategy-backtest-regime-split` が作った dimension 別 robustness artifact を取り込む。`rolling_stability` には `strategy-backtest-rolling-stability` が作った rolling window return / drawdown robustness artifact を取り込む。`benchmark_relative` には `strategy-backtest-benchmark-relative` が作った benchmark-relative active return artifact を取り込む。現環境で framework が未インストールなら `run_status=skipped`, `metric_status=skipped`, `report_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env`, `dependency_source=not_installed_in_current_env` として記録する。locked optional extra で実行した場合は `dependency_source=optional_extra_available` を比較 artifact に保持する。これは optional adapter 比較の土台であり、live 許可ではない。
 
 `method_results` には現行 native engine で実行済みの比較軸を正規化して記録する。現在の対応は `strategy_authoring_native_overall`、`strategy_authoring_walk_forward`、`strategy_authoring_optimizer_sweep` で、`summary.walk_forward_eras` と `summary.optimizer` が metrics に存在する場合は era 別結果と parameter sweep の best variant / variants も同じ comparison artifact で読める。`suite_results` には suite 単位の aggregate、best run、run 別 metrics、`method_matrix` を正規化する。`adapter_spike` には候補 framework ごとの `dependency_added=false`, `engine_run=false`, `permits_live_order=false` を含める。`comparison_diagnostics` には threshold failure、weakest era、suite best run、suite failed run、diagnostic notes を記録し、Markdown report にも Diagnostics section と Adapter Spike section を出す。
 
@@ -401,7 +401,15 @@ uv run --with empyrical-reloaded sis strategy-backtest-metric-extension
 uv run sis strategy-backtest-compare
 ```
 
-2026-06-13_18:57 JST 時点の smoke では、`uv run --with empyrical-reloaded` で `empyrical-reloaded=0.5.12` を import でき、`strategy-backtest-metric-extension` は `framework_version=0.5.12`, `runner_mode=temporary_or_optional_import`, `metric_status=completed`, `engine_run=true`, `return_count=7`, `sharpe_ratio=7684.451501905242`, `max_drawdown=0.0`, `annual_return=0.18229407031297362`, `annual_volatility=0.000021798866106592272` として記録した。現行サンプル return では `sortino_ratio`, `calmar_ratio`, `omega_ratio` は null になり得る。この smoke は repo dependency / lockfile 採用ではない。
+locked `metrics` optional extra で `empyrical-reloaded` を使う場合:
+
+```bash
+uv sync --dev --extra metrics --locked
+uv run --extra metrics sis strategy-backtest-metric-extension
+uv run sis strategy-backtest-compare
+```
+
+2026-06-13_21:01 JST 時点の optional extra smoke では、`empyrical-reloaded=0.5.12` を import でき、`strategy-backtest-metric-extension` は `framework_version=0.5.12`, `runner_mode=temporary_or_optional_import`, `dependency_source=optional_extra_available`, `metric_status=completed`, `engine_run=true`, `return_count=7`, `sharpe_ratio=7684.451501905242`, `max_drawdown=0.0`, `annual_return=0.18229407031297362`, `annual_volatility=0.000021798866106592272` として記録した。現行サンプル return では `sortino_ratio`, `calmar_ratio`, `omega_ratio` は null になり得る。
 
 ## Backtest Report Extension
 
@@ -427,7 +435,15 @@ uv run --with quantstats sis strategy-backtest-report-extension
 uv run sis strategy-backtest-compare
 ```
 
-2026-06-13_19:23 JST 時点の smoke では、`uv run --with quantstats` で `quantstats=0.0.81` を import でき、`strategy-backtest-report-extension` は `framework_version=0.0.81`, `runner_mode=temporary_or_optional_import`, `report_status=completed`, `engine_run=true`, `return_count=7`, `metrics_table_row_count=38` として記録し、HTML report を生成した。この smoke は repo dependency / lockfile 採用ではない。
+locked `reports` optional extra で `quantstats` を使う場合:
+
+```bash
+uv sync --dev --extra reports --locked
+uv run --extra reports sis strategy-backtest-report-extension
+uv run sis strategy-backtest-compare
+```
+
+2026-06-13_21:01 JST 時点の optional extra smoke では、`quantstats=0.0.81` を importでき、`strategy-backtest-report-extension` は `framework_version=0.0.81`, `runner_mode=temporary_or_optional_import`, `dependency_source=optional_extra_available`, `report_status=completed`, `engine_run=true`, `return_count=7`, `metrics_table_row_count=38` として記録し、HTML report を生成した。小さい demo return series では font / numerical warning が出る場合がある。
 
 ## Backtest Cost / Slippage Stress
 

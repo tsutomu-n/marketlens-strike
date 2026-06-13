@@ -89,6 +89,7 @@ def test_build_strategy_backtest_metric_extension_skips_when_empyrical_missing(
     assert payload["metric_status"] == "skipped"
     assert payload["reason_codes"] == ["not_installed_in_current_env"]
     assert payload["runner_mode"] == "not_installed_in_current_env"
+    assert payload["dependency_source"] == "not_installed_in_current_env"
     assert payload["engine_run"] is False
     assert payload["dependency_added"] is False
     assert payload["return_count"] == 3
@@ -147,6 +148,7 @@ def test_build_strategy_backtest_metric_extension_runs_empyrical_when_installed(
     assert calls
     assert payload["framework_version"] == "0.5.12"
     assert payload["runner_mode"] == "temporary_or_optional_import"
+    assert payload["dependency_source"] == "optional_extra_available"
     assert payload["metric_status"] == "completed"
     assert payload["engine_run"] is True
     assert payload["sharpe_ratio"] == 1.2

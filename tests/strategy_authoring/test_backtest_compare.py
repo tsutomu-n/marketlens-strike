@@ -425,6 +425,7 @@ def _write_metric_extension(path: Path) -> None:
                 "adapter_role": "metrics_only_candidate",
                 "framework_version": None,
                 "runner_mode": "not_installed_in_current_env",
+                "dependency_source": "not_installed_in_current_env",
                 "metric_status": "skipped",
                 "reason_codes": ["not_installed_in_current_env"],
                 "dependency_added": False,
@@ -466,6 +467,7 @@ def _write_report_extension(path: Path) -> None:
                 "adapter_role": "report_only_candidate",
                 "framework_version": None,
                 "runner_mode": "not_installed_in_current_env",
+                "dependency_source": "not_installed_in_current_env",
                 "report_status": "skipped",
                 "reason_codes": ["not_installed_in_current_env"],
                 "dependency_added": False,
@@ -905,9 +907,11 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["portfolio_comparison"]["rebalance_count"] == 0
     assert payload["metric_extension"]["framework_id"] == "empyrical_reloaded"
     assert payload["metric_extension"]["metric_status"] == "skipped"
+    assert payload["metric_extension"]["dependency_source"] == "not_installed_in_current_env"
     assert payload["metric_extension"]["return_count"] == 2
     assert payload["report_extension"]["framework_id"] == "quantstats"
     assert payload["report_extension"]["report_status"] == "skipped"
+    assert payload["report_extension"]["dependency_source"] == "not_installed_in_current_env"
     assert payload["report_extension"]["return_count"] == 2
     assert payload["stress"]["stress_kind"] == "cost_slippage"
     assert payload["stress"]["scenario_count"] == 2

@@ -6,12 +6,12 @@ import hashlib
 import importlib
 import json
 from pathlib import Path
-import tomllib
 from typing import Any
 
 import polars as pl
 
 from sis.backtest.frameworks import framework_adapter_status
+from sis.backtest.optional_dependencies import optional_dependency_source
 
 
 @dataclass(frozen=True)
@@ -48,40 +48,12 @@ def _bt_candidate() -> dict[str, Any]:
     }
 
 
-def _project_pyproject_path() -> Path | None:
-    for directory in [Path.cwd(), *Path.cwd().parents]:
-        pyproject_path = directory / "pyproject.toml"
-        if pyproject_path.exists():
-            return pyproject_path
-    return None
-
-
-def _project_declares_bt_extra() -> bool:
-    pyproject_path = _project_pyproject_path()
-    if pyproject_path is None:
-        return False
-    try:
-        payload = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-    except tomllib.TOMLDecodeError:
-        return False
-    project = payload.get("project")
-    if not isinstance(project, dict):
-        return False
-    optional_dependencies = project.get("optional-dependencies")
-    if not isinstance(optional_dependencies, dict):
-        return False
-    bt_extra = optional_dependencies.get("bt")
-    if not isinstance(bt_extra, list):
-        return False
-    return any(str(item).startswith("bt==") or str(item).startswith("bt>=") for item in bt_extra)
-
-
 def _dependency_source(candidate: dict[str, Any]) -> str:
-    if candidate.get("status") != "installed":
-        return "not_installed_in_current_env"
-    if _project_declares_bt_extra():
-        return "optional_extra_available"
-    return "temporary_uv_with"
+    return optional_dependency_source(
+        candidate,
+        extra_name="bt",
+        dependency_prefixes={"bt==", "bt>="},
+    )
 
 
 def _member_rows(bundle_payload: dict[str, Any]) -> list[dict[str, Any]]:

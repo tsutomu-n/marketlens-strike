@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from sis.backtest.frameworks import framework_adapter_status
+from sis.backtest.optional_dependencies import optional_dependency_source
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,14 @@ def _quantstats_candidate() -> dict[str, Any]:
         "status": "not_installed",
         "version": None,
     }
+
+
+def _dependency_source(candidate: dict[str, Any]) -> str:
+    return optional_dependency_source(
+        candidate,
+        extra_name="reports",
+        dependency_prefixes={"quantstats==", "quantstats>="},
+    )
 
 
 def _numeric(value: Any) -> float | None:
@@ -154,6 +163,7 @@ def _base_payload(
     reason_codes: list[str],
     engine_run: bool,
     runner_mode: str,
+    dependency_source: str,
     metrics_table_row_count: int | None = None,
 ) -> dict[str, Any]:
     return {
@@ -163,6 +173,7 @@ def _base_payload(
         "adapter_role": str(candidate.get("adapter_role") or "report_only_candidate"),
         "framework_version": candidate.get("version"),
         "runner_mode": runner_mode,
+        "dependency_source": dependency_source,
         "report_status": report_status,
         "reason_codes": reason_codes,
         "dependency_added": False,
@@ -233,6 +244,7 @@ def _run_quantstats_payload(
             reason_codes=["framework_report_run_failed"],
             engine_run=False,
             runner_mode="temporary_or_optional_import",
+            dependency_source=_dependency_source(candidate),
         )
     return _base_payload(
         candidate=candidate,
@@ -246,6 +258,7 @@ def _run_quantstats_payload(
         reason_codes=[],
         engine_run=True,
         runner_mode="temporary_or_optional_import",
+        dependency_source=_dependency_source(candidate),
         metrics_table_row_count=_metrics_row_count(metrics_table),
     )
 
@@ -257,6 +270,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         f"- framework_id: {payload['framework_id']}",
         f"- framework_version: {payload['framework_version']}",
         f"- runner_mode: {payload['runner_mode']}",
+        f"- dependency_source: {payload['dependency_source']}",
         f"- report_status: {payload['report_status']}",
         f"- engine_run: {payload['engine_run']}",
         f"- source_backtest_metrics_path: `{payload['source_backtest_metrics_path']}`",
@@ -313,6 +327,7 @@ def build_strategy_backtest_report_extension(
             runner_mode="not_installed_in_current_env"
             if candidate.get("status") != "installed"
             else "temporary_or_optional_import",
+            dependency_source=_dependency_source(candidate),
         )
         selected_html_path = None
     elif candidate.get("status") != "installed":
@@ -328,6 +343,7 @@ def build_strategy_backtest_report_extension(
             reason_codes=["not_installed_in_current_env"],
             engine_run=False,
             runner_mode="not_installed_in_current_env",
+            dependency_source=_dependency_source(candidate),
         )
         selected_html_path = None
     else:

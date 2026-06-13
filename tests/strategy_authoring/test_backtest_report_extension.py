@@ -89,6 +89,7 @@ def test_build_strategy_backtest_report_extension_skips_when_quantstats_missing(
     assert payload["report_status"] == "skipped"
     assert payload["reason_codes"] == ["not_installed_in_current_env"]
     assert payload["runner_mode"] == "not_installed_in_current_env"
+    assert payload["dependency_source"] == "not_installed_in_current_env"
     assert payload["engine_run"] is False
     assert payload["dependency_added"] is False
     assert payload["return_count"] == 3
@@ -156,6 +157,7 @@ def test_build_strategy_backtest_report_extension_runs_quantstats_when_installed
     assert calls == [("series", 3), ("html", 3), ("metrics", 3)]
     assert payload["framework_version"] == "0.0.81"
     assert payload["runner_mode"] == "temporary_or_optional_import"
+    assert payload["dependency_source"] == "optional_extra_available"
     assert payload["report_status"] == "completed"
     assert payload["engine_run"] is True
     assert payload["metrics_table_row_count"] == 12

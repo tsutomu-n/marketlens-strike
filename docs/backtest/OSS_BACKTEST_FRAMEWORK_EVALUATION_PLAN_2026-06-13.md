@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_16:12 JST
-更新日: 2026-06-13_20:51 JST
+更新日: 2026-06-13_21:09 JST
 -->
 
 # OSS Backtest Framework Evaluation Plan
@@ -18,8 +18,8 @@
 | Tier 2 | `backtesting.py` | 小型 OHLC strategy prototype | license review 後の spike 候補 |
 | Tier 2 | `zipline-reloaded` | event-driven equity / calendar / pipeline 系 | 重いが大型比較候補 |
 | Tier 3 | `backtrader` | indicator-heavy / event-driven 比較 | GPL/live 機能分離が重く、別環境候補 |
-| 補助 | `quantstats` | return / drawdown / tear sheet | engine ではなく report 補助候補 |
-| 補助 | `empyrical-reloaded` | risk / performance metrics | engine ではなく metrics 補助候補 |
+| 補助 | `quantstats` | return / drawdown / tear sheet | `reports` optional extra 採用済み |
+| 補助 | `empyrical-reloaded` | risk / performance metrics | `metrics` optional extra 採用済み |
 | 補助 | `pyfolio-reloaded` | portfolio analysis report | report 補助候補 |
 | 保留 | `QSTrader` | schedule/event-driven equities | repo maturity / Python 3.13 / install spike 後 |
 
@@ -184,8 +184,9 @@
 
 判断:
 
-- engine ではなく report 補助として有力。
+- engine ではなく report 補助として `reports` optional extra 採用済み。
 - `strategy-backtest-compare` / `strategy-backtest-pack` の report extension として実装済み。
+- `quantstats[plotly]` は初回採用に含めない。
 
 参照:
 
@@ -205,8 +206,9 @@
 
 判断:
 
-- engine ではなく metrics normalization 補助。
+- engine ではなく metrics normalization 補助として `metrics` optional extra 採用済み。
 - native engine の metric consistency test に使える可能性がある。
+- `empyrical-reloaded[yfinance]` / `empyrical-reloaded[datareader]` は初回採用に含めない。
 
 参照:
 
@@ -382,8 +384,7 @@ backtest-report = ["quantstats==<locked-version>", "empyrical-reloaded==<locked-
 
 ## 次の具体タスク
 
-1. `src/sis/backtest/frameworks.py` の候補を広げる。
-2. `strategy-backtest-adapter-spike` の schema と report を更新する。
-3. `bt`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` の temporary import smoke を実行する。
-4. `strategy-backtest-compare` に report-only candidate と engine candidate の区分を出す。
-5. optional extra 採用候補を `vectorbt`, `bt`, `quantstats/empyrical` に絞る。
+1. 採用済み optional extra として `bt`, `metrics`, `reports` の通常 env / extra env の境界を維持する。
+2. `strategy-backtest-compare` / `strategy-backtest-pack` が `dependency_source=optional_extra_available` と `not_installed_in_current_env` を区別できる状態を保つ。
+3. 次の拡張は explicit external benchmark series input を `strategy-backtest-benchmark-relative` に足し、source hash と no-live boundary を維持する。
+4. `vectorbt` は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) の通り、legal / owner approval 後だけ optional extra 採用を再検討する。

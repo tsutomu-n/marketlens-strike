@@ -33,6 +33,12 @@ sis = "sis.cli:main"
 bt = [
   "bt==1.2.0",
 ]
+metrics = [
+  "empyrical-reloaded==0.5.12",
+]
+reports = [
+  "quantstats==0.0.81",
+]
 
 [build-system]
 requires = ["hatchling"]

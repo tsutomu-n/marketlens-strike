@@ -323,6 +323,7 @@ def _metric_extension(metric_payload: dict[str, Any] | None) -> dict[str, Any] |
         "adapter_role": metric_payload.get("adapter_role"),
         "framework_version": metric_payload.get("framework_version"),
         "runner_mode": metric_payload.get("runner_mode"),
+        "dependency_source": metric_payload.get("dependency_source"),
         "metric_status": metric_payload.get("metric_status"),
         "reason_codes": metric_payload.get("reason_codes") or [],
         "dependency_added": metric_payload.get("dependency_added"),
@@ -351,6 +352,7 @@ def _report_extension(report_payload: dict[str, Any] | None) -> dict[str, Any] |
         "adapter_role": report_payload.get("adapter_role"),
         "framework_version": report_payload.get("framework_version"),
         "runner_mode": report_payload.get("runner_mode"),
+        "dependency_source": report_payload.get("dependency_source"),
         "report_status": report_payload.get("report_status"),
         "reason_codes": report_payload.get("reason_codes") or [],
         "dependency_added": report_payload.get("dependency_added"),
@@ -787,6 +789,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
             [
                 f"- framework_id: {extension.get('framework_id')}",
                 f"- metric_status: {extension.get('metric_status')}",
+                f"- dependency_source: {extension.get('dependency_source')}",
                 f"- engine_run: {extension.get('engine_run')}",
                 f"- frequency: {extension.get('frequency')}",
                 f"- return_count: {extension.get('return_count')}",
@@ -806,6 +809,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
             [
                 f"- framework_id: {extension.get('framework_id')}",
                 f"- report_status: {extension.get('report_status')}",
+                f"- dependency_source: {extension.get('dependency_source')}",
                 f"- engine_run: {extension.get('engine_run')}",
                 f"- frequency: {extension.get('frequency')}",
                 f"- return_count: {extension.get('return_count')}",

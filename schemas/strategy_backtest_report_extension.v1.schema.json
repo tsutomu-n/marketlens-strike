@@ -9,6 +9,7 @@
     "adapter_role",
     "framework_version",
     "runner_mode",
+    "dependency_source",
     "report_status",
     "reason_codes",
     "dependency_added",
@@ -40,6 +41,13 @@
         "not_installed_in_current_env",
         "temporary_or_optional_import",
         "installed_without_runner"
+      ]
+    },
+    "dependency_source": {
+      "enum": [
+        "not_installed_in_current_env",
+        "temporary_uv_with",
+        "optional_extra_available"
       ]
     },
     "report_status": {"enum": ["completed", "skipped", "failed"]},
