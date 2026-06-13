@@ -403,6 +403,24 @@ def _regime_split(regime_payload: dict[str, Any] | None) -> dict[str, Any] | Non
     }
 
 
+def _rolling_stability(rolling_payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if rolling_payload is None:
+        return None
+    summary = rolling_payload.get("summary")
+    return {
+        "stability_kind": rolling_payload.get("stability_kind"),
+        "window_count": rolling_payload.get("window_count"),
+        "summary": summary if isinstance(summary, dict) else {},
+        "windows": rolling_payload.get("windows") or [],
+        "dependency_added": rolling_payload.get("dependency_added"),
+        "paper_only": rolling_payload.get("paper_only"),
+        "permits_live_order": rolling_payload.get("permits_live_order"),
+        "live_conversion_allowed": rolling_payload.get("live_conversion_allowed"),
+        "wallet_used": rolling_payload.get("wallet_used"),
+        "exchange_write_used": rolling_payload.get("exchange_write_used"),
+    }
+
+
 def _numeric(value: Any) -> float | int | None:
     if isinstance(value, bool):
         return None
@@ -806,6 +824,22 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         )
     else:
         lines.append("- none")
+    lines.extend(["", "## Rolling Stability", ""])
+    if payload["rolling_stability"]:
+        rolling = payload["rolling_stability"]
+        summary = rolling.get("summary") or {}
+        lines.extend(
+            [
+                f"- stability_kind: {rolling.get('stability_kind')}",
+                f"- window_count: {rolling.get('window_count')}",
+                f"- worst_window_size: {summary.get('worst_window_size')}",
+                f"- worst_window_start_index: {summary.get('worst_window_start_index')}",
+                f"- worst_window_end_index: {summary.get('worst_window_end_index')}",
+                f"- worst_window_total_return: {summary.get('worst_window_total_return')}",
+            ]
+        )
+    else:
+        lines.append("- none")
     lines.extend(
         [
             "",
@@ -847,6 +881,7 @@ def build_strategy_backtest_comparison(
     report_extension_path: Path | None = None,
     stress_path: Path | None = None,
     regime_split_path: Path | None = None,
+    rolling_stability_path: Path | None = None,
     out_dir: Path,
     reports_dir: Path,
 ) -> BacktestComparisonResult:
@@ -939,6 +974,17 @@ def build_strategy_backtest_comparison(
         else None
     )
     regime_split = _regime_split(regime_payload)
+    rolling_payload = (
+        _read_json(rolling_stability_path)
+        if rolling_stability_path is not None and rolling_stability_path.exists()
+        else None
+    )
+    rolling_stability_hash = (
+        _sha256_file(rolling_stability_path)
+        if rolling_stability_path is not None and rolling_stability_path.exists()
+        else None
+    )
+    rolling_stability = _rolling_stability(rolling_payload)
     comparison_diagnostics = _comparison_diagnostics(
         metrics_payload=metrics_payload,
         method_results=method_results,
@@ -992,6 +1038,11 @@ def build_strategy_backtest_comparison(
                 else None,
                 "regime_split_hash": regime_split_hash,
                 "regime_split": regime_split,
+                "rolling_stability_path": rolling_stability_path.as_posix()
+                if rolling_stability_path is not None and rolling_stability_path.exists()
+                else None,
+                "rolling_stability_hash": rolling_stability_hash,
+                "rolling_stability": rolling_stability,
             },
             sort_keys=True,
             default=str,
@@ -1049,6 +1100,12 @@ def build_strategy_backtest_comparison(
             else None
         ),
         "source_regime_split_hash": regime_split_hash,
+        "source_rolling_stability_path": (
+            rolling_stability_path.as_posix()
+            if rolling_stability_path is not None and rolling_stability_path.exists()
+            else None
+        ),
+        "source_rolling_stability_hash": rolling_stability_hash,
         "native_result": native,
         "method_results": method_results,
         "suite_results": suite_results,
@@ -1059,6 +1116,7 @@ def build_strategy_backtest_comparison(
         "report_extension": report_extension,
         "stress": stress,
         "regime_split": regime_split,
+        "rolling_stability": rolling_stability,
         "comparison_diagnostics": comparison_diagnostics,
         "framework_adapters": framework_adapter_status(),
         "permits_live_order": False,

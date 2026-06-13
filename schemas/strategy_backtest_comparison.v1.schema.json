@@ -24,6 +24,8 @@
     "source_stress_hash",
     "source_regime_split_path",
     "source_regime_split_hash",
+    "source_rolling_stability_path",
+    "source_rolling_stability_hash",
     "native_result",
     "method_results",
     "suite_results",
@@ -34,6 +36,7 @@
     "report_extension",
     "stress",
     "regime_split",
+    "rolling_stability",
     "comparison_diagnostics",
     "framework_adapters",
     "permits_live_order",
@@ -84,6 +87,11 @@
     },
     "source_regime_split_path": {"type": ["string", "null"]},
     "source_regime_split_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_rolling_stability_path": {"type": ["string", "null"]},
+    "source_rolling_stability_hash": {
       "type": ["string", "null"],
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
@@ -154,6 +162,12 @@
     "regime_split": {
       "anyOf": [
         {"$ref": "#/$defs/regime_split"},
+        {"type": "null"}
+      ]
+    },
+    "rolling_stability": {
+      "anyOf": [
+        {"$ref": "#/$defs/rolling_stability"},
         {"type": "null"}
       ]
     },
@@ -1067,6 +1081,131 @@
           "type": "array",
           "minItems": 1,
           "items": {"$ref": "#/$defs/regime_split_dimension"}
+        },
+        "dependency_added": {"const": false},
+        "paper_only": {"const": true},
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "rolling_stability_summary": {
+      "type": "object",
+      "required": [
+        "return_count",
+        "window_count",
+        "worst_window_size",
+        "worst_window_start_index",
+        "worst_window_end_index",
+        "worst_window_total_return",
+        "worst_window_max_drawdown"
+      ],
+      "properties": {
+        "return_count": {"type": "integer", "minimum": 0},
+        "window_count": {"type": "integer", "minimum": 1},
+        "worst_window_size": {"type": ["integer", "null"], "minimum": 1},
+        "worst_window_start_index": {"type": ["integer", "null"], "minimum": 0},
+        "worst_window_end_index": {"type": ["integer", "null"], "minimum": 0},
+        "worst_window_total_return": {"type": ["number", "null"]},
+        "worst_window_max_drawdown": {"type": ["number", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "rolling_stability_window": {
+      "type": "object",
+      "required": [
+        "window_size",
+        "start_index",
+        "end_index",
+        "return_count",
+        "total_return",
+        "avg_signal_return",
+        "min_signal_return",
+        "max_signal_return",
+        "positive_rate",
+        "max_drawdown",
+        "source_row_indices"
+      ],
+      "properties": {
+        "window_size": {"type": "integer", "minimum": 1},
+        "start_index": {"type": "integer", "minimum": 0},
+        "end_index": {"type": "integer", "minimum": 0},
+        "return_count": {"type": "integer", "minimum": 1},
+        "total_return": {"type": "number"},
+        "avg_signal_return": {"type": ["number", "null"]},
+        "min_signal_return": {"type": ["number", "null"]},
+        "max_signal_return": {"type": ["number", "null"]},
+        "positive_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "max_drawdown": {"type": ["number", "null"]},
+        "source_row_indices": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "integer", "minimum": 0}
+        }
+      },
+      "additionalProperties": false
+    },
+    "rolling_stability_window_group": {
+      "type": "object",
+      "required": [
+        "window_size",
+        "window_count",
+        "min_total_return",
+        "max_total_return",
+        "avg_total_return",
+        "positive_total_return_rate",
+        "worst_window_start_index",
+        "worst_window_end_index",
+        "worst_window_total_return",
+        "worst_window_max_drawdown",
+        "rolling_windows"
+      ],
+      "properties": {
+        "window_size": {"type": "integer", "minimum": 1},
+        "window_count": {"type": "integer", "minimum": 0},
+        "min_total_return": {"type": ["number", "null"]},
+        "max_total_return": {"type": ["number", "null"]},
+        "avg_total_return": {"type": ["number", "null"]},
+        "positive_total_return_rate": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "worst_window_start_index": {"type": ["integer", "null"], "minimum": 0},
+        "worst_window_end_index": {"type": ["integer", "null"], "minimum": 0},
+        "worst_window_total_return": {"type": ["number", "null"]},
+        "worst_window_max_drawdown": {"type": ["number", "null"]},
+        "rolling_windows": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/rolling_stability_window"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "rolling_stability": {
+      "type": "object",
+      "required": [
+        "stability_kind",
+        "window_count",
+        "summary",
+        "windows",
+        "dependency_added",
+        "paper_only",
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "stability_kind": {"const": "rolling_return_window"},
+        "window_count": {"type": "integer", "minimum": 1},
+        "summary": {"$ref": "#/$defs/rolling_stability_summary"},
+        "windows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/rolling_stability_window_group"}
         },
         "dependency_added": {"const": false},
         "paper_only": {"const": true},

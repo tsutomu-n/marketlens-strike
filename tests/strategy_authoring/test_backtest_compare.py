@@ -615,6 +615,68 @@ def _write_regime_split(path: Path) -> None:
     )
 
 
+def _write_rolling_stability(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "strategy_backtest_rolling_stability.v1",
+                "created_at": "2026-06-13T00:00:00+00:00",
+                "stability_kind": "rolling_return_window",
+                "source_backtest_metrics_path": "data/research/strategy_backtest_metrics.json",
+                "source_backtest_metrics_hash": "sha256:" + "9" * 64,
+                "window_count": 1,
+                "summary": {
+                    "return_count": 2,
+                    "window_count": 1,
+                    "worst_window_size": 2,
+                    "worst_window_start_index": 0,
+                    "worst_window_end_index": 1,
+                    "worst_window_total_return": 0.03,
+                    "worst_window_max_drawdown": 0.0,
+                },
+                "windows": [
+                    {
+                        "window_size": 2,
+                        "window_count": 1,
+                        "min_total_return": 0.03,
+                        "max_total_return": 0.03,
+                        "avg_total_return": 0.03,
+                        "positive_total_return_rate": 1.0,
+                        "worst_window_start_index": 0,
+                        "worst_window_end_index": 1,
+                        "worst_window_total_return": 0.03,
+                        "worst_window_max_drawdown": 0.0,
+                        "rolling_windows": [
+                            {
+                                "window_size": 2,
+                                "start_index": 0,
+                                "end_index": 1,
+                                "return_count": 2,
+                                "total_return": 0.03,
+                                "avg_signal_return": 0.015,
+                                "min_signal_return": 0.01,
+                                "max_signal_return": 0.02,
+                                "positive_rate": 1.0,
+                                "max_drawdown": 0.0,
+                                "source_row_indices": [0, 1],
+                            }
+                        ],
+                    }
+                ],
+                "dependency_added": False,
+                "paper_only": True,
+                "live_order_submitted": False,
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "exchange_write_used": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_path) -> None:
     metrics_path = tmp_path / "data/research/strategy_backtest_metrics.json"
     suite_result_path = (
@@ -639,6 +701,10 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     regime_split_path = (
         tmp_path / "data/research/backtest_regime_split/strategy_backtest_regime_split.json"
     )
+    rolling_stability_path = (
+        tmp_path
+        / "data/research/backtest_rolling_stability/strategy_backtest_rolling_stability.json"
+    )
     out_dir = tmp_path / "data/research/backtest_compare"
     reports_dir = tmp_path / "data/reports"
     _write_metrics(metrics_path)
@@ -650,6 +716,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     _write_report_extension(report_extension_path)
     _write_stress(stress_path)
     _write_regime_split(regime_split_path)
+    _write_rolling_stability(rolling_stability_path)
 
     result = build_strategy_backtest_comparison(
         metrics_path=metrics_path,
@@ -661,6 +728,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
         report_extension_path=report_extension_path,
         stress_path=stress_path,
         regime_split_path=regime_split_path,
+        rolling_stability_path=rolling_stability_path,
         out_dir=out_dir,
         reports_dir=reports_dir,
     )
@@ -711,6 +779,8 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["source_stress_hash"].startswith("sha256:")
     assert payload["source_regime_split_path"] == regime_split_path.as_posix()
     assert payload["source_regime_split_hash"].startswith("sha256:")
+    assert payload["source_rolling_stability_path"] == rolling_stability_path.as_posix()
+    assert payload["source_rolling_stability_hash"].startswith("sha256:")
     assert payload["suite_results"][0]["suite_id"] == "demo_suite"
     assert payload["suite_results"][0]["aggregate"]["run_count"] == 2
     assert payload["suite_results"][0]["method_matrix"]["method_count"] == 2
@@ -766,6 +836,9 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["regime_split"]["split_kind"] == "regime_dimension"
     assert payload["regime_split"]["summary"]["worst_bucket_id"] == "side:long"
     assert payload["regime_split"]["live_conversion_allowed"] is False
+    assert payload["rolling_stability"]["stability_kind"] == "rolling_return_window"
+    assert payload["rolling_stability"]["summary"]["worst_window_size"] == 2
+    assert payload["rolling_stability"]["live_conversion_allowed"] is False
     assert {item["framework_id"] for item in payload["framework_adapters"]} == {
         "vectorbt",
         "bt",
@@ -804,6 +877,9 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     _write_regime_split(
         data_dir / "research/backtest_regime_split/strategy_backtest_regime_split.json"
     )
+    _write_rolling_stability(
+        data_dir / "research/backtest_rolling_stability/strategy_backtest_rolling_stability.json"
+    )
 
     result = runner.invoke(app, ["strategy-backtest-compare"])
 
@@ -822,6 +898,7 @@ def test_strategy_backtest_compare_cli(tmp_path, monkeypatch) -> None:
     assert payload["report_extension"]["report_status"] == "skipped"
     assert payload["stress"]["summary"]["worst_scenario_id"] == "severe"
     assert payload["regime_split"]["summary"]["worst_bucket_id"] == "side:long"
+    assert payload["rolling_stability"]["summary"]["worst_window_size"] == 2
     assert (data_dir / "reports/strategy_backtest_comparison_report.md").exists()
 
 
@@ -856,6 +933,8 @@ def test_strategy_backtest_compare_without_suite_result_keeps_empty_suite_sectio
     assert payload["source_stress_hash"] is None
     assert payload["source_regime_split_path"] is None
     assert payload["source_regime_split_hash"] is None
+    assert payload["source_rolling_stability_path"] is None
+    assert payload["source_rolling_stability_hash"] is None
     assert payload["suite_results"] == []
     assert payload["adapter_spike"] is None
     assert payload["external_results"] == []
@@ -863,4 +942,5 @@ def test_strategy_backtest_compare_without_suite_result_keeps_empty_suite_sectio
     assert payload["report_extension"] is None
     assert payload["stress"] is None
     assert payload["regime_split"] is None
+    assert payload["rolling_stability"] is None
     assert payload["comparison_diagnostics"]["suite_best_runs"] == []

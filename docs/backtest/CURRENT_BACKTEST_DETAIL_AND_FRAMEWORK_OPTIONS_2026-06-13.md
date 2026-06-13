@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_19:56 JST
+更新日: 2026-06-13_20:08 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -66,6 +66,7 @@ uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_ba
 - `data/research/backtest_report_extension/strategy_backtest_quantstats_report.html`
 - `data/research/backtest_stress/strategy_backtest_stress.json`
 - `data/research/backtest_regime_split/strategy_backtest_regime_split.json`
+- `data/research/backtest_rolling_stability/strategy_backtest_rolling_stability.json`
 - `data/reports/strategy_backtest_comparison_report.md`
 - `data/reports/strategy_backtest_suite_report.md`
 - `data/reports/strategy_backtest_adapter_spike_report.md`
@@ -76,6 +77,7 @@ uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_ba
 - `data/reports/strategy_backtest_report_extension_report.md`
 - `data/reports/strategy_backtest_stress_report.md`
 - `data/reports/strategy_backtest_regime_split_report.md`
+- `data/reports/strategy_backtest_rolling_stability_report.md`
 
 現在できること:
 
@@ -96,6 +98,7 @@ uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_ba
 - suite case の `return_bootstrap`, `block_bootstrap` resampling
 - cost / slippage bps stress scenario
 - side / timeframe / exit_reason / timestamp bucket split
+- rolling window return / drawdown stability
 - pass thresholds
 - executed signal summary
 - strategy scorecard
@@ -118,6 +121,7 @@ uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_ba
 - `strategy_backtest_comparison.v1` は comparison artifact でも `permits_live_order=false`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を要求する。
 - `strategy_backtest_stress.v1` は既存 backtest metrics の returns を入力にした paper-only robustness artifact で、`dependency_added=false`, `live_order_submitted=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を要求する。
 - `strategy_backtest_regime_split.v1` は既存 backtest metrics の returns を dimension 別に集計する paper-only robustness artifact で、`dependency_added=false`, `live_order_submitted=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を要求する。
+- `strategy_backtest_rolling_stability.v1` は既存 backtest metrics の returns を rolling window 別に集計する paper-only robustness artifact で、`dependency_added=false`, `live_order_submitted=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を要求する。
 - `strategy-backtest-acceptance` は `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を維持する。
 - backtest pass は paper observation や live canary 許可ではない。現行 Strategy Lifecycle では backtest acceptance の後に paper observation review が必要である。
 
@@ -208,11 +212,11 @@ uv run sis build-backtest
 | Backtest bridge | Strategy Lab signal を `ResearchSignal` として評価 | `src/sis/backtest/bridge.py` |
 | Trade[XYZ] pure engine | venue 専用の fill / gate / fee / artifact engine | `src/sis/backtest/engine/`, `src/sis/backtest/trade_xyz/` |
 | Lifecycle gate | backtest pass を paper observation 以降へ接続 | `src/sis/research/strategy_lifecycle/` |
-| Artifact schemas | paper-only / no-live 境界を固定 | `schemas/strategy_authoring_backtest_result.v1.schema.json`, `schemas/strategy_backtest_acceptance_decision.v1.schema.json`, `schemas/strategy_backtest_comparison.v1.schema.json`, `schemas/strategy_backtest_stress.v1.schema.json`, `schemas/strategy_backtest_regime_split.v1.schema.json` |
+| Artifact schemas | paper-only / no-live 境界を固定 | `schemas/strategy_authoring_backtest_result.v1.schema.json`, `schemas/strategy_backtest_acceptance_decision.v1.schema.json`, `schemas/strategy_backtest_comparison.v1.schema.json`, `schemas/strategy_backtest_stress.v1.schema.json`, `schemas/strategy_backtest_regime_split.v1.schema.json`, `schemas/strategy_backtest_rolling_stability.v1.schema.json` |
 
 ## Backtest Comparison Artifact
 
-`strategy-backtest-compare` は、現行 `strategy_backtest_metrics.json` を比較用の canonical artifact に正規化する。既定の `data/research/backtest_suite/strategy_backtest_suite_result.json` が存在する場合は suite 結果を `suite_results` として、既定の `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json` が存在する場合は adapter spike 結果を `adapter_spike` として、既定の `data/research/backtest_external/strategy_backtest_external_result.json` が存在する場合は外部 framework result を `external_results` として、既定の `data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json` が存在する場合は `portfolio_comparison` として、既定の `data/research/backtest_metric_extension/strategy_backtest_metric_extension.json` が存在する場合は `metric_extension` として、既定の `data/research/backtest_report_extension/strategy_backtest_report_extension.json` が存在する場合は `report_extension` として、既定の `data/research/backtest_stress/strategy_backtest_stress.json` が存在する場合は `stress` として、既定の `data/research/backtest_regime_split/strategy_backtest_regime_split.json` が存在する場合は `regime_split` として同じ artifact に取り込む。
+`strategy-backtest-compare` は、現行 `strategy_backtest_metrics.json` を比較用の canonical artifact に正規化する。既定の `data/research/backtest_suite/strategy_backtest_suite_result.json` が存在する場合は suite 結果を `suite_results` として、既定の `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json` が存在する場合は adapter spike 結果を `adapter_spike` として、既定の `data/research/backtest_external/strategy_backtest_external_result.json` が存在する場合は外部 framework result を `external_results` として、既定の `data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json` が存在する場合は `portfolio_comparison` として、既定の `data/research/backtest_metric_extension/strategy_backtest_metric_extension.json` が存在する場合は `metric_extension` として、既定の `data/research/backtest_report_extension/strategy_backtest_report_extension.json` が存在する場合は `report_extension` として、既定の `data/research/backtest_stress/strategy_backtest_stress.json` が存在する場合は `stress` として、既定の `data/research/backtest_regime_split/strategy_backtest_regime_split.json` が存在する場合は `regime_split` として、既定の `data/research/backtest_rolling_stability/strategy_backtest_rolling_stability.json` が存在する場合は `rolling_stability` として同じ artifact に取り込む。
 
 ```bash
 uv run sis strategy-backtest-compare
@@ -223,7 +227,7 @@ uv run sis strategy-backtest-compare
 - `data/research/backtest_compare/strategy_backtest_comparison.json`
 - `data/reports/strategy_backtest_comparison_report.md`
 
-現時点では外部 framework dependency を追加しない。`framework_adapters` には optional framework の installed / not installed 状態、候補 role、license 注意を記録する。`adapter_spike` には `strategy-backtest-adapter-spike` が作った dependency 追加なしの import / metadata / license risk / adoption blocker を取り込む。`external_results` には `strategy-backtest-external-run` が作った外部 framework 実行用 artifact を取り込む。`portfolio_comparison` には `strategy-backtest-portfolio-compare` が作った `bt` 用 portfolio allocation / rebalance comparison artifact を取り込む。`metric_extension` には `strategy-backtest-metric-extension` が作った `empyrical-reloaded` 用 metrics normalization artifact を取り込む。`report_extension` には `strategy-backtest-report-extension` が作った `quantstats` 用 report / tear sheet artifact を取り込む。`stress` には `strategy-backtest-stress` が作った cost / slippage robustness artifact を取り込む。`regime_split` には `strategy-backtest-regime-split` が作った dimension 別 robustness artifact を取り込む。現環境で framework が未インストールなら `run_status=skipped`, `metric_status=skipped`, `report_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env` として記録する。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` の一時実行結果は `framework_version` と `runner_mode=temporary_or_optional_import` も比較 artifact に保持する。これは今後の adapter 比較の土台であり、外部 dependency 採用や live 許可ではない。
+現時点では外部 framework dependency を追加しない。`framework_adapters` には optional framework の installed / not installed 状態、候補 role、license 注意を記録する。`adapter_spike` には `strategy-backtest-adapter-spike` が作った dependency 追加なしの import / metadata / license risk / adoption blocker を取り込む。`external_results` には `strategy-backtest-external-run` が作った外部 framework 実行用 artifact を取り込む。`portfolio_comparison` には `strategy-backtest-portfolio-compare` が作った `bt` 用 portfolio allocation / rebalance comparison artifact を取り込む。`metric_extension` には `strategy-backtest-metric-extension` が作った `empyrical-reloaded` 用 metrics normalization artifact を取り込む。`report_extension` には `strategy-backtest-report-extension` が作った `quantstats` 用 report / tear sheet artifact を取り込む。`stress` には `strategy-backtest-stress` が作った cost / slippage robustness artifact を取り込む。`regime_split` には `strategy-backtest-regime-split` が作った dimension 別 robustness artifact を取り込む。`rolling_stability` には `strategy-backtest-rolling-stability` が作った rolling window return / drawdown robustness artifact を取り込む。現環境で framework が未インストールなら `run_status=skipped`, `metric_status=skipped`, `report_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env` として記録する。`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` の一時実行結果は `framework_version` と `runner_mode=temporary_or_optional_import` も比較 artifact に保持する。これは今後の adapter 比較の土台であり、外部 dependency 採用や live 許可ではない。
 
 `method_results` には現行 native engine で実行済みの比較軸を正規化して記録する。現在の対応は `strategy_authoring_native_overall`、`strategy_authoring_walk_forward`、`strategy_authoring_optimizer_sweep` で、`summary.walk_forward_eras` と `summary.optimizer` が metrics に存在する場合は era 別結果と parameter sweep の best variant / variants も同じ comparison artifact で読める。`suite_results` には suite 単位の aggregate、best run、run 別 metrics、`method_matrix` を正規化する。`adapter_spike` には候補 framework ごとの `dependency_added=false`, `engine_run=false`, `permits_live_order=false` を含める。`comparison_diagnostics` には threshold failure、weakest era、suite best run、suite failed run、diagnostic notes を記録し、Markdown report にも Diagnostics section と Adapter Spike section を出す。
 
@@ -451,6 +455,21 @@ uv run sis strategy-backtest-regime-split
 
 既定 dimension は `side,timeframe,exit_reason,ts_weekday,ts_hour` で、`--dimension-csv side,timeframe,exit_reason,ts_date,ts_weekday,ts_hour,...` のように変更できる。dimension は executed signal row の既存 field か、`ts_signal` から派生する `ts_date`, `ts_weekday`, `ts_hour` を使う。artifact は source backtest metrics の path / hash、dimension count、bucket count、bucket 別 total return / average return / positive rate / max drawdown / cost drag / notional を記録する。現時点の baseline artifact には明示的な `market_regime` 列はないため、まず timestamp bucket と既存 row field の分割を使う。これは paper-only 分析であり、外部 framework、dependency 追加、live order、wallet、exchange write は使わない。
 
+## Backtest Rolling Stability
+
+`strategy-backtest-rolling-stability` は、既存 `strategy_backtest_metrics.json` の `summary.executed_signal_results[].signal_return` を rolling window 別に集計し、窓幅ごとの弱い期間を確認する artifact を作る。
+
+```bash
+uv run sis strategy-backtest-rolling-stability
+```
+
+出力:
+
+- `data/research/backtest_rolling_stability/strategy_backtest_rolling_stability.json`
+- `data/reports/strategy_backtest_rolling_stability_report.md`
+
+既定 window は `3,5` で、`--window-csv 3,5,10` のように変更できる。artifact は source backtest metrics の path / hash、window count、window size 別の min / max / average total return、positive rate、worst window の start / end index、worst total return、max drawdown、source row indices を記録する。これは既存 returns に対する paper-only stability 分析であり、外部 framework、dependency 追加、live order、wallet、exchange write は使わない。
+
 ## Backtest Pack
 
 標準の local backtest artifact chain を一括で作る場合は `strategy-backtest-pack` を使う。
@@ -459,7 +478,7 @@ uv run sis strategy-backtest-regime-split
 uv run sis strategy-backtest-pack
 ```
 
-この command は、単発 Strategy Authoring backtest metrics、5手法 suite、Strategy Authoring bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、cost / slippage stress、regime split、comparison、pack manifest/report を順番に生成する。pack manifest は `strategy_backtest_pack.v1` で、artifact path / hash、suite run count、suite method count、external engine 実行有無、comparison id、外部 framework 方針を記録する。既定出力は次である。
+この command は、単発 Strategy Authoring backtest metrics、5手法 suite、Strategy Authoring bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、cost / slippage stress、regime split、rolling stability、comparison、pack manifest/report を順番に生成する。pack manifest は `strategy_backtest_pack.v1` で、artifact path / hash、suite run count、suite method count、external engine 実行有無、comparison id、外部 framework 方針を記録する。既定出力は次である。
 
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/reports/strategy_backtest_pack_report.md`

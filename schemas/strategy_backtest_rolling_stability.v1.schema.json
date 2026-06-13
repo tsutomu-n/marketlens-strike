@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_rolling_stability.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "stability_kind",
+    "source_backtest_metrics_path",
+    "source_backtest_metrics_hash",
+    "window_count",
+    "summary",
+    "windows",
+    "dependency_added",
+    "paper_only",
+    "live_order_submitted",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_rolling_stability.v1"},
+    "created_at": {"type": "string"},
+    "stability_kind": {"const": "rolling_return_window"},
+    "source_backtest_metrics_path": {"type": "string"},
+    "source_backtest_metrics_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "window_count": {"type": "integer", "minimum": 1},
+    "summary": {"$ref": "#/$defs/summary"},
+    "windows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/window_group"}
+    },
+    "dependency_added": {"const": false},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": [
+        "return_count",
+        "window_count",
+        "worst_window_size",
+        "worst_window_start_index",
+        "worst_window_end_index",
+        "worst_window_total_return",
+        "worst_window_max_drawdown"
+      ],
+      "properties": {
+        "return_count": {"type": "integer", "minimum": 0},
+        "window_count": {"type": "integer", "minimum": 1},
+        "worst_window_size": {"type": ["integer", "null"], "minimum": 1},
+        "worst_window_start_index": {"type": ["integer", "null"], "minimum": 0},
+        "worst_window_end_index": {"type": ["integer", "null"], "minimum": 0},
+        "worst_window_total_return": {"type": ["number", "null"]},
+        "worst_window_max_drawdown": {"type": ["number", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "window_group": {
+      "type": "object",
+      "required": [
+        "window_size",
+        "window_count",
+        "min_total_return",
+        "max_total_return",
+        "avg_total_return",
+        "positive_total_return_rate",
+        "worst_window_start_index",
+        "worst_window_end_index",
+        "worst_window_total_return",
+        "worst_window_max_drawdown",
+        "rolling_windows"
+      ],
+      "properties": {
+        "window_size": {"type": "integer", "minimum": 1},
+        "window_count": {"type": "integer", "minimum": 0},
+        "min_total_return": {"type": ["number", "null"]},
+        "max_total_return": {"type": ["number", "null"]},
+        "avg_total_return": {"type": ["number", "null"]},
+        "positive_total_return_rate": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "worst_window_start_index": {"type": ["integer", "null"], "minimum": 0},
+        "worst_window_end_index": {"type": ["integer", "null"], "minimum": 0},
+        "worst_window_total_return": {"type": ["number", "null"]},
+        "worst_window_max_drawdown": {"type": ["number", "null"]},
+        "rolling_windows": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/rolling_window"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "rolling_window": {
+      "type": "object",
+      "required": [
+        "window_size",
+        "start_index",
+        "end_index",
+        "return_count",
+        "total_return",
+        "avg_signal_return",
+        "min_signal_return",
+        "max_signal_return",
+        "positive_rate",
+        "max_drawdown",
+        "source_row_indices"
+      ],
+      "properties": {
+        "window_size": {"type": "integer", "minimum": 1},
+        "start_index": {"type": "integer", "minimum": 0},
+        "end_index": {"type": "integer", "minimum": 0},
+        "return_count": {"type": "integer", "minimum": 1},
+        "total_return": {"type": "number"},
+        "avg_signal_return": {"type": ["number", "null"]},
+        "min_signal_return": {"type": ["number", "null"]},
+        "max_signal_return": {"type": ["number", "null"]},
+        "positive_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "max_drawdown": {"type": ["number", "null"]},
+        "source_row_indices": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "integer", "minimum": 0}
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

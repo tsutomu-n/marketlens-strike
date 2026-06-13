@@ -272,6 +272,7 @@ portfolio:
     assert "backtest_report_extension=" in result.stdout
     assert "backtest_stress=" in result.stdout
     assert "backtest_regime_split=" in result.stdout
+    assert "backtest_rolling_stability=" in result.stdout
     pack_path = data_dir / "research/backtest_pack/strategy_backtest_pack.json"
     validation_path = data_dir / "research/backtest_pack/strategy_backtest_pack_validation.json"
     comparison_path = data_dir / "research/backtest_compare/strategy_backtest_comparison.json"
@@ -288,6 +289,9 @@ portfolio:
     regime_split_path = (
         data_dir / "research/backtest_regime_split/strategy_backtest_regime_split.json"
     )
+    rolling_stability_path = (
+        data_dir / "research/backtest_rolling_stability/strategy_backtest_rolling_stability.json"
+    )
     assert pack_path.exists()
     assert validation_path.exists()
     assert comparison_path.exists()
@@ -296,6 +300,7 @@ portfolio:
     assert report_extension_path.exists()
     assert stress_path.exists()
     assert regime_split_path.exists()
+    assert rolling_stability_path.exists()
     payload = json.loads(pack_path.read_text(encoding="utf-8"))
     schema = json.loads(
         Path("schemas/strategy_backtest_pack.v1.schema.json").read_text(encoding="utf-8")
@@ -347,6 +352,8 @@ portfolio:
     assert payload["artifacts"]["stress_report"]["exists"] is True
     assert payload["artifacts"]["regime_split"]["exists"] is True
     assert payload["artifacts"]["regime_split_report"]["exists"] is True
+    assert payload["artifacts"]["rolling_stability"]["exists"] is True
+    assert payload["artifacts"]["rolling_stability_report"]["exists"] is True
     assert payload["artifacts"]["returns_series"]["exists"] is True
     assert (data_dir / "reports/strategy_backtest_pack_report.md").exists()
     validation_payload = json.loads(validation_path.read_text(encoding="utf-8"))

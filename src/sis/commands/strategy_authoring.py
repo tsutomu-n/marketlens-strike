@@ -22,6 +22,10 @@ from sis.backtest.regime_split import (
     build_strategy_backtest_regime_split,
 )
 from sis.backtest.report_extension import build_strategy_backtest_report_extension
+from sis.backtest.rolling_stability import (
+    DEFAULT_WINDOW_CSV,
+    build_strategy_backtest_rolling_stability,
+)
 from sis.backtest.stress import DEFAULT_SCENARIO_CSV, build_strategy_backtest_stress
 from sis.research.strategy_lab.authoring.backtest import (
     run_authoring_backtest,
@@ -258,6 +262,13 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--regime-split-path",
             help="Optional Strategy Backtest Regime Split JSON. Used when the file exists.",
         ),
+        rolling_stability_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_rolling_stability/strategy_backtest_rolling_stability.json"
+            ),
+            "--rolling-stability-path",
+            help="Optional Strategy Backtest Rolling Stability JSON. Used when the file exists.",
+        ),
         out: Path = typer.Option(
             Path("data/research/backtest_compare"),
             "--out",
@@ -311,6 +322,11 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             if regime_split_path.is_absolute()
             else settings.data_dir.parent / regime_split_path
         )
+        selected_rolling_stability_path = (
+            rolling_stability_path
+            if rolling_stability_path.is_absolute()
+            else settings.data_dir.parent / rolling_stability_path
+        )
         selected_out = out if out.is_absolute() else settings.data_dir.parent / out
         selected_reports = (
             reports_dir if reports_dir.is_absolute() else settings.data_dir.parent / reports_dir
@@ -339,6 +355,9 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 stress_path=selected_stress_path if selected_stress_path.exists() else None,
                 regime_split_path=selected_regime_split_path
                 if selected_regime_split_path.exists()
+                else None,
+                rolling_stability_path=selected_rolling_stability_path
+                if selected_rolling_stability_path.exists()
                 else None,
                 out_dir=selected_out,
                 reports_dir=selected_reports,
@@ -583,6 +602,46 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
         typer.echo(f"backtest_regime_split={result.regime_split_path}")
         typer.echo(f"backtest_regime_split_report={result.report_path}")
+
+    @app.command("strategy-backtest-rolling-stability")
+    def strategy_backtest_rolling_stability_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        window_csv: str = typer.Option(
+            DEFAULT_WINDOW_CSV,
+            "--window-csv",
+            help="Comma-separated positive integer rolling return window sizes.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_rolling_stability"),
+            "--out",
+            help="Output directory for rolling stability artifacts.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        selected_metrics_path = _resolve_workspace_path(metrics_path, settings.data_dir)
+        selected_out = _resolve_workspace_path(out, settings.data_dir)
+        selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
+        try:
+            result = build_strategy_backtest_rolling_stability(
+                metrics_path=selected_metrics_path,
+                window_csv=window_csv,
+                out_dir=selected_out,
+                reports_dir=selected_reports,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_rolling_stability={result.rolling_stability_path}")
+        typer.echo(f"backtest_rolling_stability_report={result.report_path}")
 
     @app.command("strategy-backtest-adapter-spike")
     def strategy_backtest_adapter_spike_cmd(
@@ -889,6 +948,11 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 out_dir=settings.data_dir / "research/backtest_regime_split",
                 reports_dir=selected_reports,
             )
+            rolling_stability_result = build_strategy_backtest_rolling_stability(
+                metrics_path=backtest_artifacts["metrics"],
+                out_dir=settings.data_dir / "research/backtest_rolling_stability",
+                reports_dir=selected_reports,
+            )
             comparison_result = build_strategy_backtest_comparison(
                 metrics_path=backtest_artifacts["metrics"],
                 suite_result_path=suite_artifacts["suite_result"],
@@ -899,6 +963,7 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 report_extension_path=report_extension_result.report_extension_path,
                 stress_path=stress_result.stress_path,
                 regime_split_path=regime_split_result.regime_split_path,
+                rolling_stability_path=rolling_stability_result.rolling_stability_path,
                 out_dir=settings.data_dir / "research/backtest_compare",
                 reports_dir=selected_reports,
             )
@@ -931,6 +996,8 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                     "stress_report": stress_result.report_path,
                     "regime_split": regime_split_result.regime_split_path,
                     "regime_split_report": regime_split_result.report_path,
+                    "rolling_stability": rolling_stability_result.rolling_stability_path,
+                    "rolling_stability_report": rolling_stability_result.report_path,
                     "comparison": comparison_result.comparison_path,
                     "comparison_report": comparison_result.report_path,
                 },
@@ -958,6 +1025,7 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         typer.echo(f"backtest_report_extension={report_extension_result.report_extension_path}")
         typer.echo(f"backtest_stress={stress_result.stress_path}")
         typer.echo(f"backtest_regime_split={regime_split_result.regime_split_path}")
+        typer.echo(f"backtest_rolling_stability={rolling_stability_result.rolling_stability_path}")
         typer.echo(f"backtest_suite_result={suite_artifacts['suite_result']}")
         if validation_result.payload["decision"] != "PASS":
             raise typer.Exit(2)
