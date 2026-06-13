@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_21:28 JST
+更新日: 2026-06-13_21:35 JST
 -->
 
 # Backtest Docs
@@ -35,6 +35,9 @@
 `empyrical-reloaded` / `quantstats` の optional extra 採用判断は
 [METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md](METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md)
 を見ます。現時点では `metrics = ["empyrical-reloaded==0.5.12"]` と `reports = ["quantstats==0.0.81"]` を分けて採用済みです。
+external benchmark series を明示して標準 pack を実行する operator 手順は
+[OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md](OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md)
+を見ます。
 `strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML を読み、複数specと複数backtest条件を1コマンドで実行して suite result / report に集約します。標準例は `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の5手法を走らせ、suite result の `method_matrix` で手法別 run 数を確認できます。
 `strategy-backtest-adapter-spike` は9件の外部 backtest / metrics / report OSS 候補の import / metadata / license risk を artifact 化します。依存追加、外部engine実行、live order は行いません。
 `strategy-backtest-framework-smoke` は一時 `uv --with ...` 環境で `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` などの import 結果、version、license metadata、Requires-Python、採用分類を artifact 化します。この command 自体は repo dependency を変更しません。
@@ -80,9 +83,13 @@ uv run sis strategy-backtest-regime-split
 uv run sis strategy-backtest-rolling-stability
 uv run sis strategy-backtest-benchmark-relative
 uv run sis strategy-backtest-compare
-uv run sis strategy-backtest-pack
+uv run sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
 uv run sis strategy-backtest-pack-validate
 ```
+
+外部 benchmark series 付きの最短 pack 手順と確認 field は
+[OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md](OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md)
+にまとめています。
 
 Tier 1 / report 候補を repo dependency に入れず一時 import smoke する場合:
 
