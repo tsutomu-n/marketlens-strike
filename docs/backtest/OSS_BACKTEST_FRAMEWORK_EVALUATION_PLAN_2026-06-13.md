@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_16:12 JST
-更新日: 2026-06-13_17:16 JST
+更新日: 2026-06-13_18:07 JST
 -->
 
 # OSS Backtest Framework Evaluation Plan
@@ -326,6 +326,8 @@ uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis
 - `zipline-reloaded` を build smoke 前に optional extra にしない。
 
 ### Phase D: optional extras
+
+実装状況: optional dependency 採用前の adapter contract を実装済み。`strategy-backtest-adapter-contract` が `vectorbt`, `bt`, `empyrical-reloaded` の input / output / provenance / acceptance contract を artifact 化する。`pyproject.toml` / `uv.lock` は未変更。
 
 候補:
 

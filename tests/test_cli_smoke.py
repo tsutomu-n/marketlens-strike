@@ -51,6 +51,7 @@ def test_help_smoke() -> None:
     assert "strategy-backtest-compare" in stdout
     assert "strategy-backtest-suite" in stdout
     assert "strategy-backtest-adapter-spike" in stdout
+    assert "strategy-backtest-adapter-contract" in stdout
     assert "strategy-backtest-adapter-selection" in stdout
     assert "strategy-backtest-external-run" in stdout
     assert "strategy-backtest-framework-smoke" in stdout

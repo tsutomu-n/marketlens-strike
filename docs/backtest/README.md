@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_17:16 JST
+更新日: 2026-06-13_18:07 JST
 -->
 
 # Backtest Docs
@@ -30,6 +30,7 @@
 `strategy-backtest-adapter-spike` は9件の外部 backtest / metrics / report OSS 候補の import / metadata / license risk を artifact 化します。依存追加、外部engine実行、live order は行いません。
 `strategy-backtest-framework-smoke` は一時 `uv --with ...` 環境で `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` などの import 結果、version、license metadata、Requires-Python、採用分類を artifact 化します。repo dependency は追加しません。
 `strategy-backtest-adapter-selection` は adapter spike と framework smoke の artifact から Phase C の初期選定を artifact 化します。現時点では `vectorbt`, `bt`, `empyrical-reloaded` を selected、`quantstats`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` を deferred とします。repo dependency は追加しません。
+`strategy-backtest-adapter-contract` は selected adapter の入力、出力、provenance、受入条件を artifact 化します。`vectorbt`, `bt`, `empyrical-reloaded` の contract を作りますが、repo dependency は追加しません。
 `strategy-backtest-external-run` は外部 framework 候補の実行結果用 artifact を作ります。`vectorbt` がインストール済みで signals / quotes 入力がある場合は `vectorbt.Portfolio.from_signals` を呼び、未インストールなら `skipped/not_installed_in_current_env` として記録します。artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes` を残します。依存追加や live order は行いません。
 `strategy-backtest-compare` は `strategy_backtest_metrics.json` から overall / walk-forward era / optimizer sweep を `method_results` に正規化し、既定の suite result があれば `suite_results`、既定の adapter spike があれば `adapter_spike`、既定の external result があれば `external_results` として取り込みます。`comparison_diagnostics` では threshold failure、weakest era、suite best run も確認できます。
 `strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、adapter spike、external result、comparison、pack manifest を一括生成します。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
@@ -53,6 +54,7 @@ uv run sis strategy-backtest-suite --suite docs/strategy_research_lab/examples/b
 uv run sis strategy-backtest-adapter-spike
 uv run sis strategy-backtest-framework-smoke
 uv run sis strategy-backtest-adapter-selection
+uv run sis strategy-backtest-adapter-contract
 uv run sis strategy-backtest-external-run
 uv run sis strategy-backtest-compare
 uv run sis strategy-backtest-pack
@@ -87,6 +89,7 @@ uv run sis strategy-backtest-compare
 - `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`
 - `data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json`
 - `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`
+- `data/research/backtest_adapter_contract/strategy_backtest_adapter_contract.json`
 - `data/research/backtest_external/strategy_backtest_external_result.json`
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/research/backtest_pack/strategy_backtest_pack_validation.json`
@@ -97,6 +100,7 @@ uv run sis strategy-backtest-compare
 - `data/reports/strategy_backtest_adapter_spike_report.md`
 - `data/reports/strategy_backtest_framework_smoke_report.md`
 - `data/reports/strategy_backtest_adapter_selection_report.md`
+- `data/reports/strategy_backtest_adapter_contract_report.md`
 - `data/reports/strategy_backtest_external_report.md`
 - `data/reports/strategy_backtest_pack_report.md`
 - `data/reports/strategy_backtest_pack_validation_report.md`

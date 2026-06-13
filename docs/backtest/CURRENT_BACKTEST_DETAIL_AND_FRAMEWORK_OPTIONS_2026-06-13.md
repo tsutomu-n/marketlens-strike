@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_17:16 JST
+更新日: 2026-06-13_18:07 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -58,11 +58,13 @@ uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_ba
 - `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`
 - `data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json`
 - `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`
+- `data/research/backtest_adapter_contract/strategy_backtest_adapter_contract.json`
 - `data/reports/strategy_backtest_comparison_report.md`
 - `data/reports/strategy_backtest_suite_report.md`
 - `data/reports/strategy_backtest_adapter_spike_report.md`
 - `data/reports/strategy_backtest_framework_smoke_report.md`
 - `data/reports/strategy_backtest_adapter_selection_report.md`
+- `data/reports/strategy_backtest_adapter_contract_report.md`
 
 現在できること:
 
@@ -277,6 +279,29 @@ uv run sis strategy-backtest-adapter-selection
 - `data/reports/strategy_backtest_adapter_selection_report.md`
 
 2026-06-13_17:16 JST 時点では、`vectorbt` を `high_speed_signal_runner`、`bt` を `portfolio_allocation_rebalance`、`empyrical-reloaded` を `metrics_normalization` として selected にした。`quantstats` は metrics contract が固まった後の report / tearsheet 拡張として deferred、`backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` も license / build / maturity / no-live isolation などの理由で deferred にした。
+
+この command は `pyproject.toml` / `uv.lock` を変更しない。外部 engine は実行せず、`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
+
+## Backtest Adapter Contract
+
+`strategy-backtest-adapter-contract` は、Phase C selected adapter の入力、出力、provenance、受入条件を dependency-free artifact として作る。
+
+```bash
+uv run sis strategy-backtest-adapter-contract
+```
+
+出力:
+
+- `data/research/backtest_adapter_contract/strategy_backtest_adapter_contract.json`
+- `data/reports/strategy_backtest_adapter_contract_report.md`
+
+2026-06-13_18:07 JST 時点では、次の3 contract を作る。
+
+| Framework | Role | Input | Output |
+|---|---|---|---|
+| `vectorbt` | `high_speed_signal_runner` | `strategy_signals_and_quotes` | `strategy_backtest_external_result.v1.result` |
+| `bt` | `portfolio_allocation_rebalance` | `strategy_authoring_bundle_or_weight_series` | `strategy_backtest_portfolio_comparison.v1` |
+| `empyrical-reloaded` | `metrics_normalization` | `returns_series` | `strategy_backtest_metric_extension.v1` |
 
 この command は `pyproject.toml` / `uv.lock` を変更しない。外部 engine は実行せず、`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
 

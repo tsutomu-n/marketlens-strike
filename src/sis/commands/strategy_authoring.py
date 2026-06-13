@@ -6,6 +6,7 @@ from typing import Literal, cast
 import typer
 
 from sis.backtest.adapter_spike import build_backtest_adapter_spike
+from sis.backtest.adapter_contract import build_backtest_adapter_contract
 from sis.backtest.adapter_selection import build_backtest_adapter_selection
 from sis.backtest.compare import build_strategy_backtest_comparison
 from sis.backtest.external import build_strategy_backtest_external_result
@@ -438,6 +439,44 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
         typer.echo(f"backtest_adapter_selection={result.selection_path}")
         typer.echo(f"backtest_adapter_selection_report={result.report_path}")
+
+    @app.command("strategy-backtest-adapter-contract")
+    def strategy_backtest_adapter_contract_cmd(
+        adapter_selection_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json"
+            ),
+            "--adapter-selection-path",
+            help="Strategy Backtest Adapter Selection JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_adapter_contract"),
+            "--out",
+            help="Output directory for adapter contract artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        selected_adapter_selection_path = _resolve_workspace_path(
+            adapter_selection_path, settings.data_dir
+        )
+        selected_out = _resolve_workspace_path(out, settings.data_dir)
+        selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
+        try:
+            result = build_backtest_adapter_contract(
+                adapter_selection_path=selected_adapter_selection_path,
+                out_dir=selected_out,
+                reports_dir=selected_reports,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_adapter_contract={result.contract_path}")
+        typer.echo(f"backtest_adapter_contract_report={result.report_path}")
 
     @app.command("strategy-backtest-pack")
     def strategy_backtest_pack_cmd(

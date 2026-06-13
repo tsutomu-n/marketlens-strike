@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_15:19 JST
-更新日: 2026-06-13_17:16 JST
+更新日: 2026-06-13_18:07 JST
 -->
 
 # Strategy Author Guide
@@ -112,6 +112,14 @@ uv run sis strategy-backtest-adapter-selection
 ```
 
 これは `strategy_backtest_adapter_selection.v1` artifact に、`vectorbt`, `bt`, `empyrical-reloaded` を selected、その他候補を deferred として記録します。外部 engine は実行せず、`pyproject.toml` / `uv.lock` も変更しません。
+
+selected adapter の入力、出力、provenance、受入条件を固定する場合は、次を使います。
+
+```bash
+uv run sis strategy-backtest-adapter-contract
+```
+
+これは `strategy_backtest_adapter_contract.v1` artifact に `vectorbt`, `bt`, `empyrical-reloaded` の adapter contract を記録します。外部 engine は実行せず、`pyproject.toml` / `uv.lock` も変更しません。
 
 外部 framework result 用 artifact を作る場合は、次を使います。
 

@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_adapter_contract.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "dependency_added",
+    "external_engine_run",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used",
+    "source_adapter_selection_path",
+    "source_adapter_selection_hash",
+    "contract_policy",
+    "contracts",
+    "summary",
+    "decision"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_adapter_contract.v1"},
+    "created_at": {"type": "string"},
+    "dependency_added": {"const": false},
+    "external_engine_run": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "source_adapter_selection_path": {"type": "string"},
+    "source_adapter_selection_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "contract_policy": {
+      "type": "object",
+      "required": [
+        "policy_id",
+        "standard_engine",
+        "dependency_adoption_allowed",
+        "external_engine_execution_allowed",
+        "requires_source_hashes",
+        "requires_before_dependency_adoption"
+      ],
+      "properties": {
+        "policy_id": {"const": "phase_d_adapter_contract_before_dependency.v1"},
+        "standard_engine": {"const": "strategy_authoring_native"},
+        "dependency_adoption_allowed": {"const": false},
+        "external_engine_execution_allowed": {"const": false},
+        "requires_source_hashes": {"const": true},
+        "requires_before_dependency_adoption": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "license_review",
+              "python_3_13_uv_lock_review",
+              "ci_green",
+              "schema_boundary_review",
+              "optional_extra_decision",
+              "golden_artifact_comparison"
+            ]
+          },
+          "minItems": 6,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "contracts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "framework_id",
+          "contract_status",
+          "adapter_role",
+          "adoption_classification",
+          "input_contract",
+          "output_contract",
+          "provenance_requirements",
+          "acceptance_checks",
+          "next_implementation_step"
+        ],
+        "properties": {
+          "framework_id": {
+            "enum": ["vectorbt", "bt", "empyrical_reloaded"]
+          },
+          "contract_status": {"const": "ready_for_adapter_implementation"},
+          "adapter_role": {
+            "enum": [
+              "high_speed_signal_runner",
+              "portfolio_allocation_rebalance",
+              "metrics_normalization"
+            ]
+          },
+          "adoption_classification": {
+            "enum": ["optional_extra_candidate", "report_only_candidate"]
+          },
+          "input_contract": {"$ref": "#/$defs/contract_block"},
+          "output_contract": {"$ref": "#/$defs/contract_block"},
+          "provenance_requirements": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 1
+          },
+          "acceptance_checks": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 1
+          },
+          "next_implementation_step": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "contract_count",
+        "optional_extra_contract_count",
+        "report_only_contract_count"
+      ],
+      "properties": {
+        "contract_count": {"type": "integer", "minimum": 0},
+        "optional_extra_contract_count": {"type": "integer", "minimum": 0},
+        "report_only_contract_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "decision": {
+      "type": "object",
+      "required": ["decision", "reason_codes", "recommended_next_step"],
+      "properties": {
+        "decision": {"const": "DESIGN_ADAPTER_CONTRACTS_BEFORE_DEPENDENCY"},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "recommended_next_step": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "contract_block": {
+      "type": "object",
+      "required": ["artifact_kind", "required_fields", "optional_fields"],
+      "properties": {
+        "artifact_kind": {"type": "string"},
+        "required_fields": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1
+        },
+        "optional_fields": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
