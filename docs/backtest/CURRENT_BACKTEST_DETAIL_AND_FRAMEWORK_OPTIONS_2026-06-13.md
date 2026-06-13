@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_11:59 JST
+更新日: 2026-06-13_16:21 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -11,7 +11,7 @@
 
 いま実務で使う主入口は `Strategy Authoring fixed-horizon backtest` である。YAML で戦略を記述し、`strategy-author-run --through backtest` で signal 生成から paper-only backtest metrics まで出す。これは live readiness ではなく、研究用の backtest artifact である。
 
-今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `backtesting.py`, `backtrader`, `zipline-reloaded` だが、現時点で正式採用している外部 framework はない。`vectorbt` は一時 `uv --with vectorbt` で実行確認済みだが、依存追加前に Python 3.13 / uv lock / license / artifact contract の review が必要である。
+今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` だが、現時点で正式採用している外部 framework はない。`vectorbt` は一時 `uv --with vectorbt` で実行確認済みだが、依存追加前に Python 3.13 / uv lock / license / artifact contract の review が必要である。
 
 ## 現行 Backtest Surface
 
@@ -234,7 +234,7 @@ uv run sis strategy-backtest-adapter-spike
 - `data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`
 - `data/reports/strategy_backtest_adapter_spike_report.md`
 
-この command は `pyproject.toml` / `uv.lock` を変更しない。外部 framework engine を実行せず、import 可否、installed metadata、license classifier、adoption blocker、次の review step を記録する。`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
+この command は `pyproject.toml` / `uv.lock` を変更しない。外部 framework engine を実行せず、`vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` の import 可否、installed metadata、license classifier、adoption blocker、次の review step を記録する。`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
 
 ## Backtest External Framework Result
 
@@ -249,7 +249,7 @@ uv run sis strategy-backtest-external-run
 - `data/research/backtest_external/strategy_backtest_external_result.json`
 - `data/reports/strategy_backtest_external_report.md`
 
-この command も `pyproject.toml` / `uv.lock` を変更しない。既定では `data/research/strategy_signals.parquet` と `data/research/strategy_authoring_baseline_quotes.parquet` を読み、`--label-horizon-minutes` で external framework 用の exit を作る。artifact には `source_metrics_path/hash`, `source_signals_path/hash`, `source_quotes_path/hash`, `label_horizon_minutes` を記録する。`vectorbt` がインストール済みなら `vectorbt.Portfolio.from_signals` を呼び、`trade_count`, `total_return`, `max_drawdown`, `cost_drag_bps` を `strategy_backtest_external_result.v1` に記録する。現環境で `vectorbt`, `backtesting.py`, `backtrader`, `zipline-reloaded` が未インストールなら、各 candidate を `run_status=skipped` と `not_installed_in_current_env` で記録する。artifact は `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定し、外部 engine 実行が無い場合は `external_engine_run=false` になる。
+この command も `pyproject.toml` / `uv.lock` を変更しない。既定では `data/research/strategy_signals.parquet` と `data/research/strategy_authoring_baseline_quotes.parquet` を読み、`--label-horizon-minutes` で external framework 用の exit を作る。artifact には `source_metrics_path/hash`, `source_signals_path/hash`, `source_quotes_path/hash`, `label_horizon_minutes` を記録する。`vectorbt` がインストール済みなら `vectorbt.Portfolio.from_signals` を呼び、`trade_count`, `total_return`, `max_drawdown`, `cost_drag_bps` を `strategy_backtest_external_result.v1` に記録する。現環境で `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` が未インストールなら、各 candidate を `run_status=skipped` と `not_installed_in_current_env` で記録する。artifact は `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定し、外部 engine 実行が無い場合は `external_engine_run=false` になる。
 
 一時環境で `vectorbt` を使う場合:
 
@@ -411,7 +411,7 @@ Backtest Expansion Scope 1: Framework Adapter Spike
 ## 抜け、漏れ、誤謬リスク
 
 - 外部 OSS の Python 3.13 実互換は未検証。公式 PyPI の `Requires-Python` は導入成功や全テスト成功を保証しない。
-- `vectorbt` / `backtesting.py` / `backtrader` / `zipline-reloaded` は現行 lockfile に入っていない。採用には依存追加と CI 検証が必要。
+- `vectorbt` / `bt` / `backtesting.py` / `zipline-reloaded` / `backtrader` / `quantstats` / `empyrical-reloaded` / `pyfolio-reloaded` / `qstrader` は現行 lockfile に入っていない。採用には依存追加と CI 検証が必要。
 - `backtesting.py` は PyPI 上で AGPLv3+ と表示されるため、利用形態によっては license review が必要。
 - external framework が持つ live trading 機能は、採用しても repo では無効化・隔離する必要がある。
 - 現行 NDX Layer 2.5 は `permits_backtest=false` の research-only export であり、NDX residual validation 自体が backtest 許可を出しているわけではない。

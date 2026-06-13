@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_16:04 JST
+更新日: 2026-06-13_16:21 JST
 -->
 
 # Backtest Docs
@@ -20,11 +20,14 @@
 現行 backtest の詳細、現在できること、専用 backtesting OSS / framework の候補整理は
 [CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md](CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md)
 を見ます。
+`vectorbt` 以外も含めた OSS backtest framework の評価計画は
+[OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md](OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md)
+を見ます。
 `vectorbt` を一時 smoke から optional extra 採用へ進める場合の計画は
 [VECTORBT_ADOPTION_PLAN_2026-06-13.md](VECTORBT_ADOPTION_PLAN_2026-06-13.md)
 を見ます。
 `strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML を読み、複数specと複数backtest条件を1コマンドで実行して suite result / report に集約します。標準例は `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の5手法を走らせ、suite result の `method_matrix` で手法別 run 数を確認できます。
-`strategy-backtest-adapter-spike` は外部 backtest framework 候補の import / metadata / license risk を artifact 化します。依存追加、外部engine実行、live order は行いません。
+`strategy-backtest-adapter-spike` は9件の外部 backtest / metrics / report OSS 候補の import / metadata / license risk を artifact 化します。依存追加、外部engine実行、live order は行いません。
 `strategy-backtest-external-run` は外部 framework 候補の実行結果用 artifact を作ります。`vectorbt` がインストール済みで signals / quotes 入力がある場合は `vectorbt.Portfolio.from_signals` を呼び、未インストールなら `skipped/not_installed_in_current_env` として記録します。artifact には metrics / signals / quotes の source path と hash、`label_horizon_minutes` を残します。依存追加や live order は行いません。
 `strategy-backtest-compare` は `strategy_backtest_metrics.json` から overall / walk-forward era / optimizer sweep を `method_results` に正規化し、既定の suite result があれば `suite_results`、既定の adapter spike があれば `adapter_spike`、既定の external result があれば `external_results` として取り込みます。`comparison_diagnostics` では threshold failure、weakest era、suite best run も確認できます。
 `strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、adapter spike、external result、comparison、pack manifest を一括生成します。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。

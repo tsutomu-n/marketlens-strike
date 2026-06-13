@@ -51,9 +51,14 @@ def test_build_strategy_backtest_external_result_skips_missing_frameworks(tmp_pa
     assert payload["exchange_write_used"] is False
     assert {item["framework_id"] for item in payload["results"]} == {
         "vectorbt",
+        "bt",
         "backtesting",
-        "backtrader",
         "zipline_reloaded",
+        "backtrader",
+        "quantstats",
+        "empyrical_reloaded",
+        "pyfolio_reloaded",
+        "qstrader",
     }
     assert all(item["run_status"] == "skipped" for item in payload["results"])
     assert all(

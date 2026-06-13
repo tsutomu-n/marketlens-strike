@@ -45,7 +45,17 @@
         ],
         "properties": {
           "framework_id": {
-            "enum": ["vectorbt", "backtesting", "backtrader", "zipline_reloaded"]
+            "enum": [
+              "vectorbt",
+              "bt",
+              "backtesting",
+              "zipline_reloaded",
+              "backtrader",
+              "quantstats",
+              "empyrical_reloaded",
+              "pyfolio_reloaded",
+              "qstrader"
+            ]
           },
           "module": {"type": "string"},
           "distribution": {"type": "string"},

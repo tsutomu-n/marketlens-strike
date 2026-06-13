@@ -60,9 +60,14 @@ def _external_framework_policy() -> dict[str, Any]:
         "temporary_uv_with_allowed": ["vectorbt"],
         "candidate_frameworks": [
             "vectorbt",
+            "bt",
             "backtesting.py",
-            "backtrader",
             "zipline-reloaded",
+            "backtrader",
+            "quantstats",
+            "empyrical-reloaded",
+            "pyfolio-reloaded",
+            "qstrader",
         ],
         "adoption_requires": [
             "license_review",

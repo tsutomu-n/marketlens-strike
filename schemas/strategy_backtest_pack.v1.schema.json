@@ -81,8 +81,20 @@
         },
         "candidate_frameworks": {
           "type": "array",
-          "items": {"enum": ["vectorbt", "backtesting.py", "backtrader", "zipline-reloaded"]},
-          "minItems": 4,
+          "items": {
+            "enum": [
+              "vectorbt",
+              "bt",
+              "backtesting.py",
+              "zipline-reloaded",
+              "backtrader",
+              "quantstats",
+              "empyrical-reloaded",
+              "pyfolio-reloaded",
+              "qstrader"
+            ]
+          },
+          "minItems": 9,
           "uniqueItems": true
         },
         "adoption_requires": {

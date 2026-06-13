@@ -33,10 +33,16 @@ def test_build_backtest_adapter_spike_writes_dependency_free_artifacts(tmp_path)
     assert payload["exchange_write_used"] is False
     assert {candidate["framework_id"] for candidate in payload["candidates"]} == {
         "vectorbt",
+        "bt",
         "backtesting",
-        "backtrader",
         "zipline_reloaded",
+        "backtrader",
+        "quantstats",
+        "empyrical_reloaded",
+        "pyfolio_reloaded",
+        "qstrader",
     }
+    assert len(payload["candidates"]) == 9
     assert all(candidate["engine_run"] is False for candidate in payload["candidates"])
     assert all(candidate["dependency_added"] is False for candidate in payload["candidates"])
     assert payload["decision"]["selected_for_dependency_adoption"] is None

@@ -469,9 +469,14 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["external_results"][0]["reason_codes"] == ["not_installed_in_current_env"]
     assert {item["framework_id"] for item in payload["framework_adapters"]} == {
         "vectorbt",
+        "bt",
         "backtesting",
-        "backtrader",
         "zipline_reloaded",
+        "backtrader",
+        "quantstats",
+        "empyrical_reloaded",
+        "pyfolio_reloaded",
+        "qstrader",
     }
     assert result.report_path.exists()
 

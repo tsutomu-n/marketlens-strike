@@ -104,7 +104,17 @@
         ],
         "properties": {
           "framework_id": {
-            "enum": ["vectorbt", "backtesting", "backtrader", "zipline_reloaded"]
+            "enum": [
+              "vectorbt",
+              "bt",
+              "backtesting",
+              "zipline_reloaded",
+              "backtrader",
+              "quantstats",
+              "empyrical_reloaded",
+              "pyfolio_reloaded",
+              "qstrader"
+            ]
           },
           "module": {"type": "string"},
           "distribution": {"type": "string"},
@@ -520,7 +530,18 @@
       ],
       "properties": {
         "framework_id": {
-          "enum": ["vectorbt", "backtesting", "backtrader", "zipline_reloaded", null]
+          "enum": [
+            "vectorbt",
+            "bt",
+            "backtesting",
+            "zipline_reloaded",
+            "backtrader",
+            "quantstats",
+            "empyrical_reloaded",
+            "pyfolio_reloaded",
+            "qstrader",
+            null
+          ]
         },
         "adapter_role": {"type": ["string", "null"]},
         "status": {"enum": ["installed", "not_installed", null]},
@@ -595,7 +616,18 @@
       ],
       "properties": {
         "framework_id": {
-          "enum": ["vectorbt", "backtesting", "backtrader", "zipline_reloaded", null]
+          "enum": [
+            "vectorbt",
+            "bt",
+            "backtesting",
+            "zipline_reloaded",
+            "backtrader",
+            "quantstats",
+            "empyrical_reloaded",
+            "pyfolio_reloaded",
+            "qstrader",
+            null
+          ]
         },
         "adapter_role": {"type": ["string", "null"]},
         "status": {"enum": ["installed", "not_installed", null]},
