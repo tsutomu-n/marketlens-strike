@@ -385,6 +385,24 @@ def _stress(stress_payload: dict[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
+def _regime_split(regime_payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if regime_payload is None:
+        return None
+    summary = regime_payload.get("summary")
+    return {
+        "split_kind": regime_payload.get("split_kind"),
+        "dimension_count": regime_payload.get("dimension_count"),
+        "summary": summary if isinstance(summary, dict) else {},
+        "dimensions": regime_payload.get("dimensions") or [],
+        "dependency_added": regime_payload.get("dependency_added"),
+        "paper_only": regime_payload.get("paper_only"),
+        "permits_live_order": regime_payload.get("permits_live_order"),
+        "live_conversion_allowed": regime_payload.get("live_conversion_allowed"),
+        "wallet_used": regime_payload.get("wallet_used"),
+        "exchange_write_used": regime_payload.get("exchange_write_used"),
+    }
+
+
 def _numeric(value: Any) -> float | int | None:
     if isinstance(value, bool):
         return None
@@ -773,6 +791,21 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         )
     else:
         lines.append("- none")
+    lines.extend(["", "## Regime Split", ""])
+    if payload["regime_split"]:
+        regime_split = payload["regime_split"]
+        summary = regime_split.get("summary") or {}
+        lines.extend(
+            [
+                f"- split_kind: {regime_split.get('split_kind')}",
+                f"- dimension_count: {regime_split.get('dimension_count')}",
+                f"- worst_dimension_id: {summary.get('worst_dimension_id')}",
+                f"- worst_bucket_id: {summary.get('worst_bucket_id')}",
+                f"- worst_bucket_total_return: {summary.get('worst_bucket_total_return')}",
+            ]
+        )
+    else:
+        lines.append("- none")
     lines.extend(
         [
             "",
@@ -813,6 +846,7 @@ def build_strategy_backtest_comparison(
     metric_extension_path: Path | None = None,
     report_extension_path: Path | None = None,
     stress_path: Path | None = None,
+    regime_split_path: Path | None = None,
     out_dir: Path,
     reports_dir: Path,
 ) -> BacktestComparisonResult:
@@ -894,6 +928,17 @@ def build_strategy_backtest_comparison(
         _sha256_file(stress_path) if stress_path is not None and stress_path.exists() else None
     )
     stress = _stress(stress_payload)
+    regime_payload = (
+        _read_json(regime_split_path)
+        if regime_split_path is not None and regime_split_path.exists()
+        else None
+    )
+    regime_split_hash = (
+        _sha256_file(regime_split_path)
+        if regime_split_path is not None and regime_split_path.exists()
+        else None
+    )
+    regime_split = _regime_split(regime_payload)
     comparison_diagnostics = _comparison_diagnostics(
         metrics_payload=metrics_payload,
         method_results=method_results,
@@ -942,6 +987,11 @@ def build_strategy_backtest_comparison(
                 else None,
                 "stress_hash": stress_hash,
                 "stress": stress,
+                "regime_split_path": regime_split_path.as_posix()
+                if regime_split_path is not None and regime_split_path.exists()
+                else None,
+                "regime_split_hash": regime_split_hash,
+                "regime_split": regime_split,
             },
             sort_keys=True,
             default=str,
@@ -993,6 +1043,12 @@ def build_strategy_backtest_comparison(
             stress_path.as_posix() if stress_path is not None and stress_path.exists() else None
         ),
         "source_stress_hash": stress_hash,
+        "source_regime_split_path": (
+            regime_split_path.as_posix()
+            if regime_split_path is not None and regime_split_path.exists()
+            else None
+        ),
+        "source_regime_split_hash": regime_split_hash,
         "native_result": native,
         "method_results": method_results,
         "suite_results": suite_results,
@@ -1002,6 +1058,7 @@ def build_strategy_backtest_comparison(
         "metric_extension": metric_extension,
         "report_extension": report_extension,
         "stress": stress,
+        "regime_split": regime_split,
         "comparison_diagnostics": comparison_diagnostics,
         "framework_adapters": framework_adapter_status(),
         "permits_live_order": False,

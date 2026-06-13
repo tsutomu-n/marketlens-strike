@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_15:19 JST
-更新日: 2026-06-13_19:44 JST
+更新日: 2026-06-13_19:56 JST
 -->
 
 # Strategy Author Guide
@@ -188,15 +188,23 @@ uv run sis strategy-backtest-stress
 
 既定では `data/research/strategy_backtest_metrics.json` を読み、`base:0:0,mild:1:4,moderate:2:8,severe:5:20` の scenario で `data/research/backtest_stress/strategy_backtest_stress.json` と `data/reports/strategy_backtest_stress_report.md` を作ります。`--scenario-csv id:additional_cost_bps:additional_slippage_bps,...` で scenario を変更できます。これは既存 returns への paper-only stress で、live order、wallet、exchange write は許可しません。
 
-suite、adapter spike、external result、portfolio comparison、metric extension、report extension、stress の実行後に `uv run sis strategy-backtest-compare` を実行すると、単発backtest metrics、suite result、外部 framework adapter 候補の状態、adapter spike の採否判断材料、external result、portfolio comparison result、metric extension result、report extension result、cost / slippage stress result を `data/research/backtest_compare/strategy_backtest_comparison.json` にまとめられます。既定では `data/research/backtest_suite/strategy_backtest_suite_result.json`、`data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`、`data/research/backtest_external/strategy_backtest_external_result.json`、`data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json`、`data/research/backtest_metric_extension/strategy_backtest_metric_extension.json`、`data/research/backtest_report_extension/strategy_backtest_report_extension.json`、`data/research/backtest_stress/strategy_backtest_stress.json` が存在する場合だけ取り込みます。comparison artifact は suite の `method_matrix` と run ごとの `method_id` も保持します。`comparison_diagnostics` では threshold failure、weakest era、suite best run を確認できます。
+executed signal return を dimension 別に分解する場合は、次を使います。
 
-標準の単発backtest、5手法 suite、adapter spike、external result、portfolio comparison、metric extension、report extension、stress、comparison、pack manifest を一括生成する場合は、次を使います。
+```bash
+uv run sis strategy-backtest-regime-split
+```
+
+既定では `data/research/strategy_backtest_metrics.json` を読み、`side,timeframe,exit_reason,ts_weekday,ts_hour` で `data/research/backtest_regime_split/strategy_backtest_regime_split.json` と `data/reports/strategy_backtest_regime_split_report.md` を作ります。`--dimension-csv` で executed signal row の field や `ts_signal` から派生する `ts_date`, `ts_weekday`, `ts_hour` を指定できます。これは paper-only 分析で、live order、wallet、exchange write は許可しません。
+
+suite、adapter spike、external result、portfolio comparison、metric extension、report extension、stress、regime split の実行後に `uv run sis strategy-backtest-compare` を実行すると、単発backtest metrics、suite result、外部 framework adapter 候補の状態、adapter spike の採否判断材料、external result、portfolio comparison result、metric extension result、report extension result、cost / slippage stress result、regime split result を `data/research/backtest_compare/strategy_backtest_comparison.json` にまとめられます。既定では `data/research/backtest_suite/strategy_backtest_suite_result.json`、`data/research/backtest_adapter_spike/strategy_backtest_adapter_spike.json`、`data/research/backtest_external/strategy_backtest_external_result.json`、`data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json`、`data/research/backtest_metric_extension/strategy_backtest_metric_extension.json`、`data/research/backtest_report_extension/strategy_backtest_report_extension.json`、`data/research/backtest_stress/strategy_backtest_stress.json`、`data/research/backtest_regime_split/strategy_backtest_regime_split.json` が存在する場合だけ取り込みます。comparison artifact は suite の `method_matrix` と run ごとの `method_id` も保持します。`comparison_diagnostics` では threshold failure、weakest era、suite best run を確認できます。
+
+標準の単発backtest、5手法 suite、adapter spike、external result、portfolio comparison、metric extension、report extension、stress、regime split、comparison、pack manifest を一括生成する場合は、次を使います。
 
 ```bash
 uv run sis strategy-backtest-pack
 ```
 
-既定出力は `data/research/backtest_pack/strategy_backtest_pack.json` と `data/reports/strategy_backtest_pack_report.md` です。pack manifest は生成 artifact の path / hash、suite method count、external engine 実行有無、comparison id、`external_framework_policy` を記録します。pack には bundle result、portfolio comparison、metric extension、report extension、stress、returns series も入ります。標準 engine は `strategy_authoring_native` で、完成線は `complete_without_locked_external_dependency` です。これも paper-only artifact で、live order、wallet、exchange write は許可しません。
+既定出力は `data/research/backtest_pack/strategy_backtest_pack.json` と `data/reports/strategy_backtest_pack_report.md` です。pack manifest は生成 artifact の path / hash、suite method count、external engine 実行有無、comparison id、`external_framework_policy` を記録します。pack には bundle result、portfolio comparison、metric extension、report extension、stress、regime split、returns series も入ります。標準 engine は `strategy_authoring_native` で、完成線は `complete_without_locked_external_dependency` です。これも paper-only artifact で、live order、wallet、exchange write は許可しません。
 
 生成済み pack を検査する場合は次を使います。
 

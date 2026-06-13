@@ -22,6 +22,8 @@
     "source_report_extension_hash",
     "source_stress_path",
     "source_stress_hash",
+    "source_regime_split_path",
+    "source_regime_split_hash",
     "native_result",
     "method_results",
     "suite_results",
@@ -31,6 +33,7 @@
     "metric_extension",
     "report_extension",
     "stress",
+    "regime_split",
     "comparison_diagnostics",
     "framework_adapters",
     "permits_live_order",
@@ -76,6 +79,11 @@
     },
     "source_stress_path": {"type": ["string", "null"]},
     "source_stress_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_regime_split_path": {"type": ["string", "null"]},
+    "source_regime_split_hash": {
       "type": ["string", "null"],
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
@@ -140,6 +148,12 @@
     "stress": {
       "anyOf": [
         {"$ref": "#/$defs/stress"},
+        {"type": "null"}
+      ]
+    },
+    "regime_split": {
+      "anyOf": [
+        {"$ref": "#/$defs/regime_split"},
         {"type": "null"}
       ]
     },
@@ -953,6 +967,106 @@
           "type": "array",
           "minItems": 1,
           "items": {"$ref": "#/$defs/stress_scenario"}
+        },
+        "dependency_added": {"const": false},
+        "paper_only": {"const": true},
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "regime_split_summary": {
+      "type": "object",
+      "required": [
+        "return_count",
+        "dimension_count",
+        "worst_dimension_id",
+        "worst_bucket_id",
+        "worst_bucket_total_return"
+      ],
+      "properties": {
+        "return_count": {"type": "integer", "minimum": 0},
+        "dimension_count": {"type": "integer", "minimum": 1},
+        "worst_dimension_id": {"type": ["string", "null"]},
+        "worst_bucket_id": {"type": ["string", "null"]},
+        "worst_bucket_total_return": {"type": ["number", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "regime_split_bucket": {
+      "type": "object",
+      "required": [
+        "dimension_id",
+        "bucket_id",
+        "bucket_value",
+        "return_count",
+        "total_return",
+        "avg_signal_return",
+        "min_signal_return",
+        "max_signal_return",
+        "positive_rate",
+        "max_drawdown",
+        "cost_drag_bps",
+        "notional_usd",
+        "source_row_indices"
+      ],
+      "properties": {
+        "dimension_id": {"type": "string"},
+        "bucket_id": {"type": "string"},
+        "bucket_value": {"type": "string"},
+        "return_count": {"type": "integer", "minimum": 0},
+        "total_return": {"type": "number"},
+        "avg_signal_return": {"type": ["number", "null"]},
+        "min_signal_return": {"type": ["number", "null"]},
+        "max_signal_return": {"type": ["number", "null"]},
+        "positive_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "max_drawdown": {"type": ["number", "null"]},
+        "cost_drag_bps": {"type": "number", "minimum": 0},
+        "notional_usd": {"type": "number", "minimum": 0},
+        "source_row_indices": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0}
+        }
+      },
+      "additionalProperties": false
+    },
+    "regime_split_dimension": {
+      "type": "object",
+      "required": ["dimension_id", "bucket_count", "buckets"],
+      "properties": {
+        "dimension_id": {"type": "string"},
+        "bucket_count": {"type": "integer", "minimum": 0},
+        "buckets": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/regime_split_bucket"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "regime_split": {
+      "type": "object",
+      "required": [
+        "split_kind",
+        "dimension_count",
+        "summary",
+        "dimensions",
+        "dependency_added",
+        "paper_only",
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "split_kind": {"const": "regime_dimension"},
+        "dimension_count": {"type": "integer", "minimum": 1},
+        "summary": {"$ref": "#/$defs/regime_split_summary"},
+        "dimensions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/regime_split_dimension"}
         },
         "dependency_added": {"const": false},
         "paper_only": {"const": true},
