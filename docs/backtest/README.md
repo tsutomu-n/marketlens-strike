@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_11:59 JST
+更新日: 2026-06-13_16:04 JST
 -->
 
 # Backtest Docs
@@ -19,6 +19,9 @@
 
 現行 backtest の詳細、現在できること、専用 backtesting OSS / framework の候補整理は
 [CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md](CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md)
+を見ます。
+`vectorbt` を一時 smoke から optional extra 採用へ進める場合の計画は
+[VECTORBT_ADOPTION_PLAN_2026-06-13.md](VECTORBT_ADOPTION_PLAN_2026-06-13.md)
 を見ます。
 `strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML を読み、複数specと複数backtest条件を1コマンドで実行して suite result / report に集約します。標準例は `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の5手法を走らせ、suite result の `method_matrix` で手法別 run 数を確認できます。
 `strategy-backtest-adapter-spike` は外部 backtest framework 候補の import / metadata / license risk を artifact 化します。依存追加、外部engine実行、live order は行いません。
