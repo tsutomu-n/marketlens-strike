@@ -10,7 +10,10 @@
     "source_backtest_metrics_hash",
     "source_quotes_path",
     "source_quotes_hash",
+    "source_benchmark_series_path",
+    "source_benchmark_series_hash",
     "benchmark_return_column",
+    "benchmark_series_return_column",
     "price_column",
     "horizon_minutes",
     "summary",
@@ -34,7 +37,13 @@
       "type": ["string", "null"],
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
+    "source_benchmark_series_path": {"type": ["string", "null"]},
+    "source_benchmark_series_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
     "benchmark_return_column": {"type": "string", "minLength": 1},
+    "benchmark_series_return_column": {"type": "string", "minLength": 1},
     "price_column": {"type": "string", "minLength": 1},
     "horizon_minutes": {"type": "integer", "minimum": 1},
     "summary": {"$ref": "#/$defs/summary"},
@@ -116,7 +125,7 @@
         "strategy_return": {"type": "number"},
         "benchmark_return": {"type": "number"},
         "active_return": {"type": "number"},
-        "benchmark_source": {"enum": ["row_column", "quote_frame"]}
+        "benchmark_source": {"enum": ["row_column", "external_series", "quote_frame"]}
       },
       "additionalProperties": false
     }

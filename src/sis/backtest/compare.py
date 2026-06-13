@@ -431,6 +431,7 @@ def _benchmark_relative(benchmark_payload: dict[str, Any] | None) -> dict[str, A
     return {
         "comparison_kind": benchmark_payload.get("comparison_kind"),
         "benchmark_return_column": benchmark_payload.get("benchmark_return_column"),
+        "benchmark_series_return_column": benchmark_payload.get("benchmark_series_return_column"),
         "price_column": benchmark_payload.get("price_column"),
         "horizon_minutes": benchmark_payload.get("horizon_minutes"),
         "summary": summary if isinstance(summary, dict) else {},
@@ -872,6 +873,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         lines.extend(
             [
                 f"- comparison_kind: {benchmark.get('comparison_kind')}",
+                f"- benchmark_series_return_column: {benchmark.get('benchmark_series_return_column')}",
                 f"- paired_return_count: {summary.get('paired_return_count')}",
                 f"- missing_benchmark_count: {summary.get('missing_benchmark_count')}",
                 f"- benchmark_total_return: {summary.get('benchmark_total_return')}",

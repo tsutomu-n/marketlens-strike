@@ -10,6 +10,7 @@ from sis.backtest.adapter_contract import build_backtest_adapter_contract
 from sis.backtest.adapter_selection import build_backtest_adapter_selection
 from sis.backtest.benchmark_relative import (
     DEFAULT_BENCHMARK_RETURN_COLUMN,
+    DEFAULT_BENCHMARK_SERIES_RETURN_COLUMN,
     DEFAULT_HORIZON_MINUTES,
     DEFAULT_PRICE_COLUMN,
     build_strategy_backtest_benchmark_relative,
@@ -677,10 +678,20 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--quotes-path",
             help="Optional quote parquet used to derive benchmark returns.",
         ),
+        benchmark_series_path: Path | None = typer.Option(
+            None,
+            "--benchmark-series-path",
+            help="Optional local benchmark return series file. Supports parquet, csv, jsonl, ndjson, and json.",
+        ),
         benchmark_return_column: str = typer.Option(
             DEFAULT_BENCHMARK_RETURN_COLUMN,
             "--benchmark-return-column",
             help="Executed signal result column used when row-level benchmark returns exist.",
+        ),
+        benchmark_series_return_column: str = typer.Option(
+            DEFAULT_BENCHMARK_SERIES_RETURN_COLUMN,
+            "--benchmark-series-return-column",
+            help="Benchmark return column in --benchmark-series-path.",
         ),
         price_column: str = typer.Option(
             DEFAULT_PRICE_COLUMN,
@@ -706,13 +717,20 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         settings = get_settings()
         selected_metrics_path = _resolve_workspace_path(metrics_path, settings.data_dir)
         selected_quotes_path = _resolve_workspace_path(quotes_path, settings.data_dir)
+        selected_benchmark_series_path = (
+            _resolve_workspace_path(benchmark_series_path, settings.data_dir)
+            if benchmark_series_path is not None
+            else None
+        )
         selected_out = _resolve_workspace_path(out, settings.data_dir)
         selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
         try:
             result = build_strategy_backtest_benchmark_relative(
                 metrics_path=selected_metrics_path,
                 quotes_path=selected_quotes_path if selected_quotes_path.exists() else None,
+                benchmark_series_path=selected_benchmark_series_path,
                 benchmark_return_column=benchmark_return_column,
+                benchmark_series_return_column=benchmark_series_return_column,
                 price_column=price_column,
                 horizon_minutes=horizon_minutes,
                 out_dir=selected_out,

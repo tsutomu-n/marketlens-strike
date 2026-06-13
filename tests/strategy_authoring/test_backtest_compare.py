@@ -692,7 +692,10 @@ def _write_benchmark_relative(path: Path) -> None:
                 "source_backtest_metrics_hash": "sha256:" + "a" * 64,
                 "source_quotes_path": "data/research/quotes.parquet",
                 "source_quotes_hash": "sha256:" + "b" * 64,
+                "source_benchmark_series_path": None,
+                "source_benchmark_series_hash": None,
                 "benchmark_return_column": "benchmark_return",
+                "benchmark_series_return_column": "benchmark_return",
                 "price_column": "mid_price",
                 "horizon_minutes": 60,
                 "summary": {
@@ -924,6 +927,7 @@ def test_build_strategy_backtest_comparison_writes_boundary_safe_artifacts(tmp_p
     assert payload["rolling_stability"]["summary"]["worst_window_size"] == 2
     assert payload["rolling_stability"]["live_conversion_allowed"] is False
     assert payload["benchmark_relative"]["comparison_kind"] == "benchmark_relative_return"
+    assert payload["benchmark_relative"]["benchmark_series_return_column"] == "benchmark_return"
     assert payload["benchmark_relative"]["summary"]["active_total_return"] == 0.01
     assert payload["benchmark_relative"]["live_conversion_allowed"] is False
     assert {item["framework_id"] for item in payload["framework_adapters"]} == {

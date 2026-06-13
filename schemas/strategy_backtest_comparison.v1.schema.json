@@ -1321,7 +1321,7 @@
         "strategy_return": {"type": "number"},
         "benchmark_return": {"type": "number"},
         "active_return": {"type": "number"},
-        "benchmark_source": {"enum": ["row_column", "quote_frame"]}
+        "benchmark_source": {"enum": ["row_column", "external_series", "quote_frame"]}
       },
       "additionalProperties": false
     },
@@ -1330,6 +1330,7 @@
       "required": [
         "comparison_kind",
         "benchmark_return_column",
+        "benchmark_series_return_column",
         "price_column",
         "horizon_minutes",
         "summary",
@@ -1344,6 +1345,7 @@
       "properties": {
         "comparison_kind": {"const": "benchmark_relative_return"},
         "benchmark_return_column": {"type": "string", "minLength": 1},
+        "benchmark_series_return_column": {"type": "string", "minLength": 1},
         "price_column": {"type": "string", "minLength": 1},
         "horizon_minutes": {"type": "integer", "minimum": 1},
         "summary": {"$ref": "#/$defs/benchmark_relative_summary"},

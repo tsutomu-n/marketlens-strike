@@ -12,6 +12,7 @@ import polars as pl
 
 
 DEFAULT_BENCHMARK_RETURN_COLUMN = "benchmark_return"
+DEFAULT_BENCHMARK_SERIES_RETURN_COLUMN = "benchmark_return"
 DEFAULT_PRICE_COLUMN = "mid_price"
 DEFAULT_HORIZON_MINUTES = 240
 
@@ -113,6 +114,98 @@ def _quote_groups(
     return groups
 
 
+def _read_benchmark_series_frame(path: Path) -> pl.DataFrame:
+    suffix = path.suffix.lower()
+    if suffix == ".parquet":
+        return pl.read_parquet(path)
+    if suffix == ".csv":
+        return pl.read_csv(path)
+    if suffix in {".jsonl", ".ndjson"}:
+        return pl.read_ndjson(path)
+    if suffix == ".json":
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        rows = payload.get("rows") if isinstance(payload, dict) else payload
+        if not isinstance(rows, list):
+            raise ValueError("benchmark series JSON must be an array or an object with rows.")
+        return pl.DataFrame(rows)
+    raise ValueError("benchmark series path must use .parquet, .csv, .jsonl, .ndjson, or .json")
+
+
+def _ts_key(value: Any) -> str | None:
+    parsed = _parse_ts(value)
+    if parsed is not None:
+        return parsed.isoformat()
+    if isinstance(value, str) and value:
+        return value
+    return None
+
+
+def _string_key(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value)
+    return text if text else None
+
+
+def _row_index_key(value: Any) -> int | None:
+    numeric = _numeric(value)
+    if numeric is None:
+        return None
+    row_index = int(numeric)
+    return row_index if row_index == numeric and row_index >= 0 else None
+
+
+def _benchmark_series_indexes(
+    benchmark_series_path: Path | None,
+    *,
+    return_column: str,
+) -> dict[str, dict[Any, float]]:
+    if benchmark_series_path is None:
+        return {"row_index": {}, "signal_id": {}, "identity": {}}
+    if not benchmark_series_path.exists():
+        raise FileNotFoundError(f"benchmark series missing: {benchmark_series_path}")
+    frame = _read_benchmark_series_frame(benchmark_series_path)
+    if return_column not in frame.columns:
+        raise ValueError(f"benchmark series missing return column: {return_column}")
+    indexes: dict[str, dict[Any, float]] = {"row_index": {}, "signal_id": {}, "identity": {}}
+    for raw in frame.to_dicts():
+        benchmark_return = _numeric(raw.get(return_column))
+        if benchmark_return is None:
+            continue
+        row_index = _row_index_key(raw.get("source_row_index"))
+        if row_index is not None:
+            indexes["row_index"][row_index] = benchmark_return
+        signal_id = _string_key(raw.get("signal_id"))
+        if signal_id is not None:
+            indexes["signal_id"][signal_id] = benchmark_return
+        ts_signal = _ts_key(raw.get("ts_signal"))
+        venue = _string_key(raw.get("venue"))
+        symbol = _string_key(raw.get("canonical_symbol"))
+        if ts_signal is not None and venue is not None and symbol is not None:
+            indexes["identity"][(ts_signal, venue, symbol.upper())] = benchmark_return
+    return indexes
+
+
+def _series_benchmark_return(
+    row: ReturnRow,
+    benchmark_series_indexes: dict[str, dict[Any, float]],
+) -> float | None:
+    by_row_index = benchmark_series_indexes.get("row_index") or {}
+    if row.index in by_row_index:
+        return by_row_index[row.index]
+    signal_id = _string_key(row.raw.get("signal_id"))
+    by_signal_id = benchmark_series_indexes.get("signal_id") or {}
+    if signal_id is not None and signal_id in by_signal_id:
+        return by_signal_id[signal_id]
+    ts_signal = _ts_key(row.raw.get("ts_signal"))
+    venue = _string_key(row.raw.get("venue"))
+    symbol = _string_key(row.raw.get("canonical_symbol"))
+    by_identity = benchmark_series_indexes.get("identity") or {}
+    if ts_signal is not None and venue is not None and symbol is not None:
+        return by_identity.get((ts_signal, venue, symbol.upper()))
+    return None
+
+
 def _quote_benchmark_return(
     row: ReturnRow,
     quote_groups: dict[tuple[str, str], list[QuoteRow]],
@@ -197,6 +290,7 @@ def _correlation(left: list[float], right: list[float]) -> float | None:
 def _comparison_rows(
     *,
     rows: list[ReturnRow],
+    benchmark_series_indexes: dict[str, dict[Any, float]],
     quote_groups: dict[tuple[str, str], list[QuoteRow]],
     benchmark_return_column: str,
     horizon_minutes: int,
@@ -206,6 +300,9 @@ def _comparison_rows(
     for row in rows:
         benchmark_return = _numeric(row.raw.get(benchmark_return_column))
         source = "row_column"
+        if benchmark_return is None:
+            benchmark_return = _series_benchmark_return(row, benchmark_series_indexes)
+            source = "external_series" if benchmark_return is not None else "missing"
         if benchmark_return is None:
             benchmark_return = _quote_benchmark_return(
                 row,
@@ -274,7 +371,9 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         f"- comparison_kind: {payload['comparison_kind']}",
         f"- source_backtest_metrics_path: `{payload['source_backtest_metrics_path']}`",
         f"- source_quotes_path: `{payload['source_quotes_path']}`",
+        f"- source_benchmark_series_path: `{payload['source_benchmark_series_path']}`",
         f"- benchmark_return_column: {payload['benchmark_return_column']}",
+        f"- benchmark_series_return_column: {payload['benchmark_series_return_column']}",
         f"- price_column: {payload['price_column']}",
         f"- horizon_minutes: {payload['horizon_minutes']}",
         f"- return_count: {summary['return_count']}",
@@ -313,7 +412,9 @@ def build_strategy_backtest_benchmark_relative(
     out_dir: Path,
     reports_dir: Path,
     quotes_path: Path | None = None,
+    benchmark_series_path: Path | None = None,
     benchmark_return_column: str = DEFAULT_BENCHMARK_RETURN_COLUMN,
+    benchmark_series_return_column: str = DEFAULT_BENCHMARK_SERIES_RETURN_COLUMN,
     price_column: str = DEFAULT_PRICE_COLUMN,
     horizon_minutes: int = DEFAULT_HORIZON_MINUTES,
 ) -> BacktestBenchmarkRelativeResult:
@@ -323,9 +424,14 @@ def build_strategy_backtest_benchmark_relative(
         raise ValueError("horizon_minutes must be > 0")
     metrics_payload = _read_json(metrics_path)
     rows = _rows(metrics_payload)
+    benchmark_series_indexes = _benchmark_series_indexes(
+        benchmark_series_path,
+        return_column=benchmark_series_return_column,
+    )
     quote_groups = _quote_groups(quotes_path, price_column=price_column)
     comparisons, missing_benchmark_count = _comparison_rows(
         rows=rows,
+        benchmark_series_indexes=benchmark_series_indexes,
         quote_groups=quote_groups,
         benchmark_return_column=benchmark_return_column,
         horizon_minutes=horizon_minutes,
@@ -342,7 +448,18 @@ def build_strategy_backtest_benchmark_relative(
         "source_quotes_hash": (
             _sha256_file(quotes_path) if quotes_path is not None and quotes_path.exists() else None
         ),
+        "source_benchmark_series_path": (
+            benchmark_series_path.as_posix()
+            if benchmark_series_path is not None and benchmark_series_path.exists()
+            else None
+        ),
+        "source_benchmark_series_hash": (
+            _sha256_file(benchmark_series_path)
+            if benchmark_series_path is not None and benchmark_series_path.exists()
+            else None
+        ),
         "benchmark_return_column": benchmark_return_column,
+        "benchmark_series_return_column": benchmark_series_return_column,
         "price_column": price_column,
         "horizon_minutes": horizon_minutes,
         "summary": _summary(
