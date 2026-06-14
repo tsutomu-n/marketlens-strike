@@ -87,6 +87,58 @@ def _timestamp_column(columns: list[str]) -> str | None:
     return None
 
 
+def _group_columns(columns: list[str]) -> list[str]:
+    return [
+        candidate
+        for candidate in (
+            "venue",
+            "canonical_symbol",
+            "venue_symbol",
+            "symbol",
+            "instrument",
+        )
+        if candidate in columns
+    ]
+
+
+def _timestamp_groups(
+    frame: pl.DataFrame, timestamp_column: str, group_columns: list[str]
+) -> dict[tuple[str, ...], list[datetime]]:
+    groups: dict[tuple[str, ...], list[datetime]] = {}
+    selected = [timestamp_column, *group_columns]
+    for row in frame.select(selected).to_dicts():
+        timestamp = _timestamp(row.get(timestamp_column))
+        if timestamp is None:
+            continue
+        group_key = (
+            tuple(str(row.get(column) or "") for column in group_columns)
+            if group_columns
+            else ("__all__",)
+        )
+        groups.setdefault(group_key, []).append(timestamp)
+    return groups
+
+
+def _duplicate_count_by_group(groups: dict[tuple[str, ...], list[datetime]]) -> int:
+    return sum(len(timestamps) - len(set(timestamps)) for timestamps in groups.values())
+
+
+def _gap_count_by_group(groups: dict[tuple[str, ...], list[datetime]]) -> int:
+    gap_count = 0
+    for timestamps in groups.values():
+        unique_timestamps = sorted(set(timestamps))
+        deltas = [
+            (right - left).total_seconds()
+            for left, right in zip(unique_timestamps, unique_timestamps[1:], strict=False)
+            if (right - left).total_seconds() > 0
+        ]
+        if not deltas:
+            continue
+        expected = min(deltas)
+        gap_count += sum(1 for delta in deltas if delta > expected * 1.5)
+    return gap_count
+
+
 def _parquet_stats(path: Path) -> dict[str, Any]:
     try:
         frame = pl.read_parquet(path)
@@ -102,6 +154,7 @@ def _parquet_stats(path: Path) -> dict[str, Any]:
         }
     timestamp_column = _timestamp_column(frame.columns)
     timestamps: list[datetime] = []
+    group_columns = _group_columns(frame.columns)
     if timestamp_column is not None:
         timestamps = [
             item
@@ -112,25 +165,16 @@ def _parquet_stats(path: Path) -> dict[str, Any]:
         ]
     duplicate_count: int | None = None
     gap_count: int | None = None
-    if timestamps:
-        sorted_timestamps = sorted(timestamps)
-        duplicate_count = len(sorted_timestamps) - len(set(sorted_timestamps))
-        unique_timestamps = sorted(set(sorted_timestamps))
-        deltas = [
-            (right - left).total_seconds()
-            for left, right in zip(unique_timestamps, unique_timestamps[1:], strict=False)
-            if (right - left).total_seconds() > 0
-        ]
-        if deltas:
-            expected = min(deltas)
-            gap_count = sum(1 for delta in deltas if delta > expected * 1.5)
-        else:
-            gap_count = 0
+    if timestamps and timestamp_column is not None:
+        groups = _timestamp_groups(frame, timestamp_column, group_columns)
+        duplicate_count = _duplicate_count_by_group(groups)
+        gap_count = _gap_count_by_group(groups)
     return {
         "row_count": frame.height,
         "available_start": min(timestamps).isoformat() if timestamps else None,
         "available_end": max(timestamps).isoformat() if timestamps else None,
         "timestamp_column": timestamp_column,
+        "group_columns": group_columns,
         "gap_count": gap_count,
         "duplicate_count": duplicate_count,
         "unusable_reason": None,
@@ -151,6 +195,7 @@ def _artifact_row(
     gap_count: int | None = None
     duplicate_count: int | None = None
     timestamp_column: str | None = None
+    group_columns: list[str] = []
     unusable_reason: str | None = None
     if path.exists():
         if path.suffix == ".json":
@@ -163,6 +208,7 @@ def _artifact_row(
             gap_count = stats["gap_count"]
             duplicate_count = stats["duplicate_count"]
             timestamp_column = stats["timestamp_column"]
+            group_columns = stats["group_columns"]
             unusable_reason = stats["unusable_reason"]
         elif path.suffix == ".csv":
             row_count = _csv_row_count(path)
@@ -188,6 +234,7 @@ def _artifact_row(
         "available_start": available_start,
         "available_end": available_end,
         "timestamp_column": timestamp_column,
+        "group_columns": group_columns,
         "gap_count": gap_count,
         "duplicate_count": duplicate_count,
         "available_at_policy": "local_artifact_timestamp_only",

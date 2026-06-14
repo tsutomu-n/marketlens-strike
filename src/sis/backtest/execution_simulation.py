@@ -46,14 +46,14 @@ def _value(row: dict[str, Any], *keys: str) -> Any:
     return None
 
 
-def _fill_status(fill_fraction: Any) -> str:
+def _fill_status(fill_fraction: Any) -> tuple[str, str]:
     if not isinstance(fill_fraction, int | float):
-        return "unknown"
+        return "filled", "executed_result_without_explicit_fill_fraction"
     if fill_fraction >= 1.0:
-        return "filled"
+        return "filled", "explicit_fill_fraction"
     if fill_fraction > 0:
-        return "partial"
-    return "unfilled"
+        return "partial", "explicit_fill_fraction"
+    return "unfilled", "explicit_fill_fraction"
 
 
 def _event_rows(rows: list[Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -66,6 +66,7 @@ def _event_rows(rows: list[Any]) -> tuple[list[dict[str, Any]], list[dict[str, A
         event_id = f"native_execution_row_{index:06d}"
         signal_id = _value(row, "signal_id")
         fill_fraction = _value(row, "fill_fraction", "effective_fill_fraction")
+        fill_status, fill_status_source = _fill_status(fill_fraction)
         order_intents.append(
             {
                 "event_id": event_id,
@@ -85,7 +86,8 @@ def _event_rows(rows: list[Any]) -> tuple[list[dict[str, Any]], list[dict[str, A
                 "event_id": event_id,
                 "signal_id": signal_id,
                 "ts_signal": _value(row, "ts_signal"),
-                "fill_status": _fill_status(fill_fraction),
+                "fill_status": fill_status,
+                "fill_status_source": fill_status_source,
                 "fill_fraction": fill_fraction,
                 "slippage_bps": _value(row, "slippage_bps"),
                 "cost_drag_bps": _value(row, "cost_drag_bps"),

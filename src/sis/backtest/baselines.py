@@ -61,11 +61,13 @@ def _baseline_row(
     total_return: float | None,
     return_count: int,
     status: str = "available",
+    comparison_role: str = "independent_baseline",
 ) -> dict[str, Any]:
     return {
         "baseline_id": baseline_id,
         "description": description,
         "status": status,
+        "comparison_role": comparison_role,
         "return_count": return_count,
         "total_return": total_return,
         "avg_return": total_return / return_count
@@ -142,7 +144,8 @@ def build_strategy_backtest_baseline_comparison(
             description="Naive 1.5x leverage of realized strategy returns; stress comparison only.",
             total_return=strategy_total_return * 1.5 if returns else None,
             return_count=len(returns),
-            status="available" if returns else "skipped",
+            status="diagnostic_only" if returns else "skipped",
+            comparison_role="strategy_derived_stress",
         ),
         _baseline_row(
             baseline_id="simple_funding_carry",
@@ -152,7 +155,11 @@ def build_strategy_backtest_baseline_comparison(
             status="skipped_no_funding_series",
         ),
     ]
-    available = [row for row in baselines if row["status"] == "available"]
+    available = [
+        row
+        for row in baselines
+        if row["status"] == "available" and row["comparison_role"] == "independent_baseline"
+    ]
     strongest = max(
         available,
         key=lambda row: row["total_return"] if row["total_return"] is not None else float("-inf"),
@@ -179,6 +186,9 @@ def build_strategy_backtest_baseline_comparison(
             "strategy_total_return": strategy_total_return,
             "baseline_count": len(baselines),
             "available_baseline_count": len(available),
+            "diagnostic_only_count": sum(
+                1 for row in baselines if row["status"] == "diagnostic_only"
+            ),
             "strongest_baseline_id": strongest["baseline_id"] if strongest else None,
             "strongest_baseline_total_return": strongest["total_return"] if strongest else None,
             "weakness_flag_count": len(weakness_flags),

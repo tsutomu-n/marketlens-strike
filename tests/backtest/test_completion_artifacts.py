@@ -195,14 +195,87 @@ def test_completion_artifact_builders_write_schema_valid_no_live_outputs(tmp_pat
         and row["available_start"] is not None
         for row in data_availability.payload["rows"]
     )
+    assert baseline.payload["summary"]["diagnostic_only_count"] == 1
+    assert not any(
+        flag["baseline_id"] == "simple_leverage_1_5x" for flag in baseline.payload["weakness_flags"]
+    )
     assert execution.payload["execution_mode"] == "native_metrics_order_fill_events_v1"
     assert execution.payload["summary"]["order_intent_count"] == 3
     assert execution.payload["summary"]["fill_event_count"] == 3
     assert execution.payload["order_intents"]
     assert execution.payload["fill_events"]
+    assert execution.payload["fill_events"][2]["fill_status"] == "filled"
+    assert (
+        execution.payload["fill_events"][2]["fill_status_source"]
+        == "executed_result_without_explicit_fill_fraction"
+    )
     assert all(
         event["market_impact_claimed"] is False for event in execution.payload["fill_events"]
     )
+
+
+def test_data_availability_counts_duplicate_and_gap_per_symbol_group(tmp_path: Path) -> None:
+    metrics_path = _metrics_path(tmp_path)
+    signals_path = tmp_path / "strategy_signals.parquet"
+    quotes_path = tmp_path / "quotes.parquet"
+    reports_dir = tmp_path / "reports"
+    pl.DataFrame(
+        [
+            {
+                "ts_signal": "2026-01-01T00:00:00+00:00",
+                "canonical_symbol": "AAA",
+            }
+        ]
+    ).write_parquet(signals_path)
+    pl.DataFrame(
+        [
+            {
+                "ts_client": "2026-01-01T00:00:00+00:00",
+                "venue": "demo",
+                "canonical_symbol": "AAA",
+                "mid_price": 100.0,
+            },
+            {
+                "ts_client": "2026-01-01T00:00:00+00:00",
+                "venue": "demo",
+                "canonical_symbol": "BBB",
+                "mid_price": 200.0,
+            },
+            {
+                "ts_client": "2026-01-01T04:00:00+00:00",
+                "venue": "demo",
+                "canonical_symbol": "AAA",
+                "mid_price": 101.0,
+            },
+            {
+                "ts_client": "2026-01-01T12:00:00+00:00",
+                "venue": "demo",
+                "canonical_symbol": "AAA",
+                "mid_price": 102.0,
+            },
+            {
+                "ts_client": "2026-01-01T00:00:00+00:00",
+                "venue": "demo",
+                "canonical_symbol": "AAA",
+                "mid_price": 100.1,
+            },
+        ]
+    ).write_parquet(quotes_path)
+
+    result = build_backtest_data_availability_ledger(
+        metrics_path=metrics_path,
+        signals_path=signals_path,
+        quotes_path=quotes_path,
+        out_dir=tmp_path / "data_availability",
+        reports_dir=reports_dir,
+    )
+
+    quote_row = next(
+        row for row in result.payload["rows"] if row["artifact_id"] == "strategy_quotes"
+    )
+    assert quote_row["group_columns"] == ["venue", "canonical_symbol"]
+    assert quote_row["duplicate_count"] == 1
+    assert quote_row["gap_count"] == 1
 
 
 def test_no_lookahead_diff_runs_future_feature_mutation_replay(tmp_path: Path) -> None:

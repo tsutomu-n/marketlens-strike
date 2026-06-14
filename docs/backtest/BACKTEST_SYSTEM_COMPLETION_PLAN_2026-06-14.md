@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-14_20:12 JST
-更新日: 2026-06-14_20:29 JST
+更新日: 2026-06-14_20:40 JST
 -->
 
 # Backtest System Completion Plan
@@ -55,8 +55,8 @@ Docs:
 
 | Artifact | CLI | Schema | 役割 |
 |---|---|---|---|
-| Data availability ledger | `strategy-backtest-data-availability` | `backtest_data_availability_ledger.v1` | local metrics / signals / quotes の source hash、parquet row count、timestamp range、gap / duplicate、future candidate provider を記録 |
-| Baseline comparison | `strategy-backtest-baseline-compare` | `strategy_backtest_baseline_comparison.v1` | cash/no-trade、単純手法、random throttle、leverage との比較 |
+| Data availability ledger | `strategy-backtest-data-availability` | `backtest_data_availability_ledger.v1` | local metrics / signals / quotes の source hash、parquet row count、timestamp range、symbol/venue group 単位の gap / duplicate、future candidate provider を記録 |
+| Baseline comparison | `strategy-backtest-baseline-compare` | `strategy_backtest_baseline_comparison.v1` | cash/no-trade、単純手法、random throttle との比較。leverage は独立 baseline ではなく diagnostic stress として分離 |
 | No-lookahead diff v1 | `strategy-backtest-no-lookahead-diff` | `strategy_backtest_no_lookahead_diff.v1` | 未来側 feature rows を変異させて再実行し、cutoff 以前の signals / executed backtest rows が不変か検査 |
 | Execution simulation v1 | `strategy-backtest-execution-sim` | `strategy_backtest_execution_simulation.v1` | native metrics から paper-only order intents / fill events を作り、未モデル venue realism を明示 |
 | Assumption ledger | `strategy-backtest-assumption-ledger` | `strategy_backtest_assumption_ledger.v1` | measured / configured / assumed / unknown を分離 |
@@ -127,5 +127,6 @@ uv run sis strategy-backtest-artifact-summary
 - `strategy-backtest-execution-sim` を paper-only order intent / fill event から、将来は cancel race / modify / unknown state の venue-specific event model へ進める。
 - `trial_ledger` を artifact-level から parameter / framework / candidate-level ledger へ広げる。
 - `baseline_comparison` に buy-and-hold と funding carry を、入力データが揃った場合だけ実計算で追加する。
+- `data_availability` の group-aware gap / duplicate は local parquet の列から推定するため、将来 venue schema を広げる時は明示 key contract を追加する。
 
 これらは v0 完了後の quality improvement であり、current scope に live / direct venue / external data provider adoption を混ぜる理由にはしない。
