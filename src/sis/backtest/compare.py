@@ -445,6 +445,23 @@ def _benchmark_relative(benchmark_payload: dict[str, Any] | None) -> dict[str, A
     }
 
 
+def _completion_artifact(payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if payload is None:
+        return None
+    summary = payload.get("summary")
+    return {
+        "schema_version": payload.get("schema_version"),
+        "status": payload.get("status"),
+        "summary": summary if isinstance(summary, dict) else {},
+        "dependency_added": payload.get("dependency_added"),
+        "paper_only": payload.get("paper_only"),
+        "permits_live_order": payload.get("permits_live_order"),
+        "live_conversion_allowed": payload.get("live_conversion_allowed"),
+        "wallet_used": payload.get("wallet_used"),
+        "exchange_write_used": payload.get("exchange_write_used"),
+    }
+
+
 def _numeric(value: Any) -> float | int | None:
     if isinstance(value, bool):
         return None
@@ -927,6 +944,12 @@ def build_strategy_backtest_comparison(
     regime_split_path: Path | None = None,
     rolling_stability_path: Path | None = None,
     benchmark_relative_path: Path | None = None,
+    data_availability_path: Path | None = None,
+    baseline_comparison_path: Path | None = None,
+    trial_ledger_path: Path | None = None,
+    assumption_ledger_path: Path | None = None,
+    no_lookahead_path: Path | None = None,
+    execution_simulation_path: Path | None = None,
     out_dir: Path,
     reports_dir: Path,
 ) -> BacktestComparisonResult:
@@ -1041,6 +1064,72 @@ def build_strategy_backtest_comparison(
         else None
     )
     benchmark_relative = _benchmark_relative(benchmark_payload)
+    data_availability_payload = (
+        _read_json(data_availability_path)
+        if data_availability_path is not None and data_availability_path.exists()
+        else None
+    )
+    data_availability_hash = (
+        _sha256_file(data_availability_path)
+        if data_availability_path is not None and data_availability_path.exists()
+        else None
+    )
+    data_availability = _completion_artifact(data_availability_payload)
+    baseline_payload = (
+        _read_json(baseline_comparison_path)
+        if baseline_comparison_path is not None and baseline_comparison_path.exists()
+        else None
+    )
+    baseline_comparison_hash = (
+        _sha256_file(baseline_comparison_path)
+        if baseline_comparison_path is not None and baseline_comparison_path.exists()
+        else None
+    )
+    baseline_comparison = _completion_artifact(baseline_payload)
+    trial_payload = (
+        _read_json(trial_ledger_path)
+        if trial_ledger_path is not None and trial_ledger_path.exists()
+        else None
+    )
+    trial_ledger_hash = (
+        _sha256_file(trial_ledger_path)
+        if trial_ledger_path is not None and trial_ledger_path.exists()
+        else None
+    )
+    trial_ledger = _completion_artifact(trial_payload)
+    assumption_payload = (
+        _read_json(assumption_ledger_path)
+        if assumption_ledger_path is not None and assumption_ledger_path.exists()
+        else None
+    )
+    assumption_ledger_hash = (
+        _sha256_file(assumption_ledger_path)
+        if assumption_ledger_path is not None and assumption_ledger_path.exists()
+        else None
+    )
+    assumption_ledger = _completion_artifact(assumption_payload)
+    no_lookahead_payload = (
+        _read_json(no_lookahead_path)
+        if no_lookahead_path is not None and no_lookahead_path.exists()
+        else None
+    )
+    no_lookahead_hash = (
+        _sha256_file(no_lookahead_path)
+        if no_lookahead_path is not None and no_lookahead_path.exists()
+        else None
+    )
+    no_lookahead_diff = _completion_artifact(no_lookahead_payload)
+    execution_payload = (
+        _read_json(execution_simulation_path)
+        if execution_simulation_path is not None and execution_simulation_path.exists()
+        else None
+    )
+    execution_simulation_hash = (
+        _sha256_file(execution_simulation_path)
+        if execution_simulation_path is not None and execution_simulation_path.exists()
+        else None
+    )
+    execution_simulation = _completion_artifact(execution_payload)
     comparison_diagnostics = _comparison_diagnostics(
         metrics_payload=metrics_payload,
         method_results=method_results,
@@ -1104,6 +1193,36 @@ def build_strategy_backtest_comparison(
                 else None,
                 "benchmark_relative_hash": benchmark_relative_hash,
                 "benchmark_relative": benchmark_relative,
+                "data_availability_path": data_availability_path.as_posix()
+                if data_availability_path is not None and data_availability_path.exists()
+                else None,
+                "data_availability_hash": data_availability_hash,
+                "data_availability": data_availability,
+                "baseline_comparison_path": baseline_comparison_path.as_posix()
+                if baseline_comparison_path is not None and baseline_comparison_path.exists()
+                else None,
+                "baseline_comparison_hash": baseline_comparison_hash,
+                "baseline_comparison": baseline_comparison,
+                "trial_ledger_path": trial_ledger_path.as_posix()
+                if trial_ledger_path is not None and trial_ledger_path.exists()
+                else None,
+                "trial_ledger_hash": trial_ledger_hash,
+                "trial_ledger": trial_ledger,
+                "assumption_ledger_path": assumption_ledger_path.as_posix()
+                if assumption_ledger_path is not None and assumption_ledger_path.exists()
+                else None,
+                "assumption_ledger_hash": assumption_ledger_hash,
+                "assumption_ledger": assumption_ledger,
+                "no_lookahead_path": no_lookahead_path.as_posix()
+                if no_lookahead_path is not None and no_lookahead_path.exists()
+                else None,
+                "no_lookahead_hash": no_lookahead_hash,
+                "no_lookahead_diff": no_lookahead_diff,
+                "execution_simulation_path": execution_simulation_path.as_posix()
+                if execution_simulation_path is not None and execution_simulation_path.exists()
+                else None,
+                "execution_simulation_hash": execution_simulation_hash,
+                "execution_simulation": execution_simulation,
             },
             sort_keys=True,
             default=str,
@@ -1173,6 +1292,42 @@ def build_strategy_backtest_comparison(
             else None
         ),
         "source_benchmark_relative_hash": benchmark_relative_hash,
+        "source_data_availability_path": (
+            data_availability_path.as_posix()
+            if data_availability_path is not None and data_availability_path.exists()
+            else None
+        ),
+        "source_data_availability_hash": data_availability_hash,
+        "source_baseline_comparison_path": (
+            baseline_comparison_path.as_posix()
+            if baseline_comparison_path is not None and baseline_comparison_path.exists()
+            else None
+        ),
+        "source_baseline_comparison_hash": baseline_comparison_hash,
+        "source_trial_ledger_path": (
+            trial_ledger_path.as_posix()
+            if trial_ledger_path is not None and trial_ledger_path.exists()
+            else None
+        ),
+        "source_trial_ledger_hash": trial_ledger_hash,
+        "source_assumption_ledger_path": (
+            assumption_ledger_path.as_posix()
+            if assumption_ledger_path is not None and assumption_ledger_path.exists()
+            else None
+        ),
+        "source_assumption_ledger_hash": assumption_ledger_hash,
+        "source_no_lookahead_path": (
+            no_lookahead_path.as_posix()
+            if no_lookahead_path is not None and no_lookahead_path.exists()
+            else None
+        ),
+        "source_no_lookahead_hash": no_lookahead_hash,
+        "source_execution_simulation_path": (
+            execution_simulation_path.as_posix()
+            if execution_simulation_path is not None and execution_simulation_path.exists()
+            else None
+        ),
+        "source_execution_simulation_hash": execution_simulation_hash,
         "native_result": native,
         "method_results": method_results,
         "suite_results": suite_results,
@@ -1185,6 +1340,12 @@ def build_strategy_backtest_comparison(
         "regime_split": regime_split,
         "rolling_stability": rolling_stability,
         "benchmark_relative": benchmark_relative,
+        "data_availability": data_availability,
+        "baseline_comparison": baseline_comparison,
+        "trial_ledger": trial_ledger,
+        "assumption_ledger": assumption_ledger,
+        "no_lookahead_diff": no_lookahead_diff,
+        "execution_simulation": execution_simulation,
         "comparison_diagnostics": comparison_diagnostics,
         "framework_adapters": framework_adapter_status(),
         "permits_live_order": False,

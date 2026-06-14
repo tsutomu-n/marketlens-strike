@@ -55,6 +55,12 @@ def _summarize_pack(payload: dict[str, Any]) -> dict[str, Any]:
     stress = artifacts.get("stress")
     regime_split = artifacts.get("regime_split")
     rolling_stability = artifacts.get("rolling_stability")
+    data_availability = artifacts.get("data_availability")
+    baseline_comparison = artifacts.get("baseline_comparison")
+    trial_ledger = artifacts.get("trial_ledger")
+    assumption_ledger = artifacts.get("assumption_ledger")
+    no_lookahead_diff = artifacts.get("no_lookahead_diff")
+    execution_simulation = artifacts.get("execution_simulation")
     return {
         "schema_version": payload.get("schema_version"),
         "paper_only": payload.get("paper_only"),
@@ -79,12 +85,22 @@ def _summarize_pack(payload: dict[str, Any]) -> dict[str, Any]:
             "benchmark_relative": benchmark_relative
             if isinstance(benchmark_relative, dict)
             else None,
+            "baseline_comparison": baseline_comparison
+            if isinstance(baseline_comparison, dict)
+            else None,
             "comparison": comparison if isinstance(comparison, dict) else None,
+            "data_availability": data_availability if isinstance(data_availability, dict) else None,
+            "execution_simulation": execution_simulation
+            if isinstance(execution_simulation, dict)
+            else None,
+            "assumption_ledger": assumption_ledger if isinstance(assumption_ledger, dict) else None,
             "metric_extension": metric_extension if isinstance(metric_extension, dict) else None,
+            "no_lookahead_diff": no_lookahead_diff if isinstance(no_lookahead_diff, dict) else None,
             "regime_split": regime_split if isinstance(regime_split, dict) else None,
             "report_extension": report_extension if isinstance(report_extension, dict) else None,
             "rolling_stability": rolling_stability if isinstance(rolling_stability, dict) else None,
             "stress": stress if isinstance(stress, dict) else None,
+            "trial_ledger": trial_ledger if isinstance(trial_ledger, dict) else None,
         },
     }
 
@@ -240,6 +256,19 @@ def _summarize_comparison(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _summarize_completion_artifact(payload: dict[str, Any]) -> dict[str, Any]:
+    summary = _summary_value(payload, "summary")
+    return {
+        "schema_version": payload.get("schema_version"),
+        "status": payload.get("status"),
+        "summary": summary,
+        "paper_only": payload.get("paper_only"),
+        "permits_live_order": payload.get("permits_live_order"),
+        "wallet_used": payload.get("wallet_used"),
+        "exchange_write_used": payload.get("exchange_write_used"),
+    }
+
+
 def build_strategy_backtest_artifact_summary(
     *,
     pack_path: Path,
@@ -250,6 +279,12 @@ def build_strategy_backtest_artifact_summary(
     stress_path: Path,
     regime_split_path: Path,
     rolling_stability_path: Path,
+    data_availability_path: Path,
+    baseline_comparison_path: Path,
+    trial_ledger_path: Path,
+    assumption_ledger_path: Path,
+    no_lookahead_path: Path,
+    execution_simulation_path: Path,
     comparison_path: Path,
 ) -> BacktestArtifactSummaryResult:
     payload = {
@@ -266,6 +301,20 @@ def build_strategy_backtest_artifact_summary(
         "regime_split": _artifact_summary(regime_split_path, _summarize_regime_split),
         "rolling_stability": _artifact_summary(
             rolling_stability_path, _summarize_rolling_stability
+        ),
+        "data_availability": _artifact_summary(
+            data_availability_path, _summarize_completion_artifact
+        ),
+        "baseline_comparison": _artifact_summary(
+            baseline_comparison_path, _summarize_completion_artifact
+        ),
+        "trial_ledger": _artifact_summary(trial_ledger_path, _summarize_completion_artifact),
+        "assumption_ledger": _artifact_summary(
+            assumption_ledger_path, _summarize_completion_artifact
+        ),
+        "no_lookahead_diff": _artifact_summary(no_lookahead_path, _summarize_completion_artifact),
+        "execution_simulation": _artifact_summary(
+            execution_simulation_path, _summarize_completion_artifact
         ),
         "comparison": _artifact_summary(comparison_path, _summarize_comparison),
     }

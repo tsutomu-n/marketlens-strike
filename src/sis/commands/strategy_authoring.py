@@ -10,6 +10,8 @@ from sis.backtest.adapter_spike import build_backtest_adapter_spike
 from sis.backtest.adapter_contract import build_backtest_adapter_contract
 from sis.backtest.adapter_selection import build_backtest_adapter_selection
 from sis.backtest.artifact_summary import build_strategy_backtest_artifact_summary
+from sis.backtest.assumptions import build_strategy_backtest_assumption_ledger
+from sis.backtest.baselines import build_strategy_backtest_baseline_comparison
 from sis.backtest.benchmark_relative import (
     DEFAULT_BENCHMARK_RETURN_COLUMN,
     DEFAULT_BENCHMARK_SERIES_RETURN_COLUMN,
@@ -18,10 +20,13 @@ from sis.backtest.benchmark_relative import (
     build_strategy_backtest_benchmark_relative,
 )
 from sis.backtest.compare import build_strategy_backtest_comparison
+from sis.backtest.data_availability import build_backtest_data_availability_ledger
+from sis.backtest.execution_simulation import build_strategy_backtest_execution_simulation
 from sis.backtest.external import build_strategy_backtest_external_result
 from sis.backtest.framework_run import build_strategy_backtest_framework_run
 from sis.backtest.framework_smoke import build_backtest_framework_smoke
 from sis.backtest.metric_extension import build_strategy_backtest_metric_extension
+from sis.backtest.no_lookahead import build_strategy_backtest_no_lookahead_diff
 from sis.backtest.pack import (
     validate_strategy_backtest_pack,
     write_strategy_backtest_pack_outputs,
@@ -37,6 +42,7 @@ from sis.backtest.rolling_stability import (
     build_strategy_backtest_rolling_stability,
 )
 from sis.backtest.stress import DEFAULT_SCENARIO_CSV, build_strategy_backtest_stress
+from sis.backtest.trial_ledger import build_strategy_backtest_trial_ledger
 from sis.research.strategy_lab.authoring.backtest import (
     run_authoring_backtest,
     write_authoring_backtest_outputs,
@@ -287,6 +293,44 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--benchmark-relative-path",
             help="Optional Strategy Backtest Benchmark Relative JSON. Used when the file exists.",
         ),
+        data_availability_path: Path = typer.Option(
+            Path("data/research/backtest_data_availability/backtest_data_availability_ledger.json"),
+            "--data-availability-path",
+            help="Optional Backtest Data Availability Ledger JSON. Used when the file exists.",
+        ),
+        baseline_comparison_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_baseline_comparison/"
+                "strategy_backtest_baseline_comparison.json"
+            ),
+            "--baseline-comparison-path",
+            help="Optional Strategy Backtest Baseline Comparison JSON. Used when the file exists.",
+        ),
+        trial_ledger_path: Path = typer.Option(
+            Path("data/research/backtest_trial_ledger/strategy_backtest_trial_ledger.json"),
+            "--trial-ledger-path",
+            help="Optional Strategy Backtest Trial Ledger JSON. Used when the file exists.",
+        ),
+        assumption_ledger_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_assumption_ledger/strategy_backtest_assumption_ledger.json"
+            ),
+            "--assumption-ledger-path",
+            help="Optional Strategy Backtest Assumption Ledger JSON. Used when the file exists.",
+        ),
+        no_lookahead_path: Path = typer.Option(
+            Path("data/research/backtest_no_lookahead/strategy_backtest_no_lookahead_diff.json"),
+            "--no-lookahead-path",
+            help="Optional Strategy Backtest No-Lookahead Diff JSON. Used when the file exists.",
+        ),
+        execution_simulation_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_execution_simulation/"
+                "strategy_backtest_execution_simulation.json"
+            ),
+            "--execution-simulation-path",
+            help="Optional Strategy Backtest Execution Simulation JSON. Used when the file exists.",
+        ),
         out: Path = typer.Option(
             Path("data/research/backtest_compare"),
             "--out",
@@ -350,6 +394,36 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             if benchmark_relative_path.is_absolute()
             else settings.data_dir.parent / benchmark_relative_path
         )
+        selected_data_availability_path = (
+            data_availability_path
+            if data_availability_path.is_absolute()
+            else settings.data_dir.parent / data_availability_path
+        )
+        selected_baseline_comparison_path = (
+            baseline_comparison_path
+            if baseline_comparison_path.is_absolute()
+            else settings.data_dir.parent / baseline_comparison_path
+        )
+        selected_trial_ledger_path = (
+            trial_ledger_path
+            if trial_ledger_path.is_absolute()
+            else settings.data_dir.parent / trial_ledger_path
+        )
+        selected_assumption_ledger_path = (
+            assumption_ledger_path
+            if assumption_ledger_path.is_absolute()
+            else settings.data_dir.parent / assumption_ledger_path
+        )
+        selected_no_lookahead_path = (
+            no_lookahead_path
+            if no_lookahead_path.is_absolute()
+            else settings.data_dir.parent / no_lookahead_path
+        )
+        selected_execution_simulation_path = (
+            execution_simulation_path
+            if execution_simulation_path.is_absolute()
+            else settings.data_dir.parent / execution_simulation_path
+        )
         selected_out = out if out.is_absolute() else settings.data_dir.parent / out
         selected_reports = (
             reports_dir if reports_dir.is_absolute() else settings.data_dir.parent / reports_dir
@@ -385,6 +459,24 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 benchmark_relative_path=selected_benchmark_relative_path
                 if selected_benchmark_relative_path.exists()
                 else None,
+                data_availability_path=selected_data_availability_path
+                if selected_data_availability_path.exists()
+                else None,
+                baseline_comparison_path=selected_baseline_comparison_path
+                if selected_baseline_comparison_path.exists()
+                else None,
+                trial_ledger_path=selected_trial_ledger_path
+                if selected_trial_ledger_path.exists()
+                else None,
+                assumption_ledger_path=selected_assumption_ledger_path
+                if selected_assumption_ledger_path.exists()
+                else None,
+                no_lookahead_path=selected_no_lookahead_path
+                if selected_no_lookahead_path.exists()
+                else None,
+                execution_simulation_path=selected_execution_simulation_path
+                if selected_execution_simulation_path.exists()
+                else None,
                 out_dir=selected_out,
                 reports_dir=selected_reports,
             )
@@ -393,6 +485,257 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
         typer.echo(f"backtest_comparison={result.comparison_path}")
         typer.echo(f"backtest_comparison_report={result.report_path}")
+
+    @app.command("strategy-backtest-data-availability")
+    def strategy_backtest_data_availability_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        signals_path: Path = typer.Option(
+            Path("data/research/strategy_signals.parquet"),
+            "--signals-path",
+            help="Strategy Authoring signals parquet.",
+        ),
+        quotes_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_baseline_quotes.parquet"),
+            "--quotes-path",
+            help="Strategy Authoring quotes parquet.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_data_availability"),
+            "--out",
+            help="Output directory for data availability ledger.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_backtest_data_availability_ledger(
+                metrics_path=_resolve_workspace_path(metrics_path, settings.data_dir),
+                signals_path=_resolve_workspace_path(signals_path, settings.data_dir),
+                quotes_path=_resolve_workspace_path(quotes_path, settings.data_dir),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_data_availability={result.ledger_path}")
+        typer.echo(f"backtest_data_availability_report={result.report_path}")
+
+    @app.command("strategy-backtest-baseline-compare")
+    def strategy_backtest_baseline_compare_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_baseline_comparison"),
+            "--out",
+            help="Output directory for baseline comparison artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_strategy_backtest_baseline_comparison(
+                metrics_path=_resolve_workspace_path(metrics_path, settings.data_dir),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_baseline_comparison={result.comparison_path}")
+        typer.echo(f"backtest_baseline_comparison_report={result.report_path}")
+
+    @app.command("strategy-backtest-no-lookahead-diff")
+    def strategy_backtest_no_lookahead_diff_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        signals_path: Path = typer.Option(
+            Path("data/research/strategy_signals.parquet"),
+            "--signals-path",
+            help="Strategy Authoring signals parquet.",
+        ),
+        quotes_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_baseline_quotes.parquet"),
+            "--quotes-path",
+            help="Strategy Authoring quotes parquet.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_no_lookahead"),
+            "--out",
+            help="Output directory for no-lookahead diff artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_strategy_backtest_no_lookahead_diff(
+                metrics_path=_resolve_workspace_path(metrics_path, settings.data_dir),
+                signals_path=_resolve_workspace_path(signals_path, settings.data_dir),
+                quotes_path=_resolve_workspace_path(quotes_path, settings.data_dir),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_no_lookahead_diff={result.diff_path}")
+        typer.echo(f"backtest_no_lookahead_diff_report={result.report_path}")
+
+    @app.command("strategy-backtest-execution-sim")
+    def strategy_backtest_execution_sim_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        signals_path: Path = typer.Option(
+            Path("data/research/strategy_signals.parquet"),
+            "--signals-path",
+            help="Strategy Authoring signals parquet.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_execution_simulation"),
+            "--out",
+            help="Output directory for execution simulation artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_strategy_backtest_execution_simulation(
+                metrics_path=_resolve_workspace_path(metrics_path, settings.data_dir),
+                signals_path=_resolve_workspace_path(signals_path, settings.data_dir),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_execution_simulation={result.simulation_path}")
+        typer.echo(f"backtest_execution_simulation_report={result.report_path}")
+
+    @app.command("strategy-backtest-assumption-ledger")
+    def strategy_backtest_assumption_ledger_cmd(
+        data_availability_path: Path = typer.Option(
+            Path("data/research/backtest_data_availability/backtest_data_availability_ledger.json"),
+            "--data-availability-path",
+            help="Backtest Data Availability Ledger JSON.",
+        ),
+        baseline_comparison_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_baseline_comparison/"
+                "strategy_backtest_baseline_comparison.json"
+            ),
+            "--baseline-comparison-path",
+            help="Strategy Backtest Baseline Comparison JSON.",
+        ),
+        no_lookahead_path: Path = typer.Option(
+            Path("data/research/backtest_no_lookahead/strategy_backtest_no_lookahead_diff.json"),
+            "--no-lookahead-path",
+            help="Strategy Backtest No-Lookahead Diff JSON.",
+        ),
+        execution_simulation_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_execution_simulation/"
+                "strategy_backtest_execution_simulation.json"
+            ),
+            "--execution-simulation-path",
+            help="Strategy Backtest Execution Simulation JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_assumption_ledger"),
+            "--out",
+            help="Output directory for assumption ledger artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_strategy_backtest_assumption_ledger(
+                data_availability_path=_resolve_workspace_path(
+                    data_availability_path, settings.data_dir
+                ),
+                baseline_comparison_path=_resolve_workspace_path(
+                    baseline_comparison_path, settings.data_dir
+                ),
+                no_lookahead_path=_resolve_workspace_path(no_lookahead_path, settings.data_dir),
+                execution_simulation_path=_resolve_workspace_path(
+                    execution_simulation_path, settings.data_dir
+                ),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_assumption_ledger={result.ledger_path}")
+        typer.echo(f"backtest_assumption_ledger_report={result.report_path}")
+
+    @app.command("strategy-backtest-trial-ledger")
+    def strategy_backtest_trial_ledger_cmd(
+        out: Path = typer.Option(
+            Path("data/research/backtest_trial_ledger"),
+            "--out",
+            help="Output directory for trial ledger artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        root = settings.data_dir.parent
+        artifacts = {
+            "backtest_metrics": root / "data/research/strategy_backtest_metrics.json",
+            "suite_result": root
+            / "data/research/backtest_suite/strategy_backtest_suite_result.json",
+            "baseline_comparison": root
+            / "data/research/backtest_baseline_comparison/strategy_backtest_baseline_comparison.json",
+            "data_availability": root
+            / "data/research/backtest_data_availability/backtest_data_availability_ledger.json",
+            "no_lookahead_diff": root
+            / "data/research/backtest_no_lookahead/strategy_backtest_no_lookahead_diff.json",
+            "execution_simulation": root
+            / "data/research/backtest_execution_simulation/strategy_backtest_execution_simulation.json",
+        }
+        result = build_strategy_backtest_trial_ledger(
+            artifacts=artifacts,
+            out_dir=_resolve_workspace_path(out, settings.data_dir),
+            reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+        )
+        typer.echo(f"backtest_trial_ledger={result.ledger_path}")
+        typer.echo(f"backtest_trial_ledger_report={result.report_path}")
 
     @app.command("strategy-backtest-portfolio-compare")
     def strategy_backtest_portfolio_compare_cmd(
@@ -1187,6 +1530,66 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 out_dir=settings.data_dir / "research/backtest_benchmark_relative",
                 reports_dir=selected_reports,
             )
+            data_availability_result = build_backtest_data_availability_ledger(
+                metrics_path=backtest_artifacts["metrics"],
+                signals_path=signal_artifacts["signals_parquet"],
+                quotes_path=_resolve_spec_data_path(
+                    parsed_spec.data.quote_data_path, settings.data_dir
+                ),
+                out_dir=settings.data_dir / "research/backtest_data_availability",
+                reports_dir=selected_reports,
+            )
+            baseline_comparison_result = build_strategy_backtest_baseline_comparison(
+                metrics_path=backtest_artifacts["metrics"],
+                out_dir=settings.data_dir / "research/backtest_baseline_comparison",
+                reports_dir=selected_reports,
+            )
+            no_lookahead_result = build_strategy_backtest_no_lookahead_diff(
+                metrics_path=backtest_artifacts["metrics"],
+                signals_path=signal_artifacts["signals_parquet"],
+                quotes_path=_resolve_spec_data_path(
+                    parsed_spec.data.quote_data_path, settings.data_dir
+                ),
+                out_dir=settings.data_dir / "research/backtest_no_lookahead",
+                reports_dir=selected_reports,
+            )
+            execution_simulation_result = build_strategy_backtest_execution_simulation(
+                metrics_path=backtest_artifacts["metrics"],
+                signals_path=signal_artifacts["signals_parquet"],
+                out_dir=settings.data_dir / "research/backtest_execution_simulation",
+                reports_dir=selected_reports,
+            )
+            assumption_ledger_result = build_strategy_backtest_assumption_ledger(
+                data_availability_path=data_availability_result.ledger_path,
+                baseline_comparison_path=baseline_comparison_result.comparison_path,
+                no_lookahead_path=no_lookahead_result.diff_path,
+                execution_simulation_path=execution_simulation_result.simulation_path,
+                out_dir=settings.data_dir / "research/backtest_assumption_ledger",
+                reports_dir=selected_reports,
+            )
+            completion_artifacts = {
+                "signals_parquet": signal_artifacts["signals_parquet"],
+                "backtest_metrics": backtest_artifacts["metrics"],
+                "suite_result": suite_artifacts["suite_result"],
+                "external_result": external_result.external_path,
+                "portfolio_comparison": portfolio_comparison_result.comparison_path,
+                "metric_extension": metric_extension_result.metric_extension_path,
+                "report_extension": report_extension_result.report_extension_path,
+                "stress": stress_result.stress_path,
+                "regime_split": regime_split_result.regime_split_path,
+                "rolling_stability": rolling_stability_result.rolling_stability_path,
+                "benchmark_relative": benchmark_relative_result.benchmark_relative_path,
+                "data_availability": data_availability_result.ledger_path,
+                "baseline_comparison": baseline_comparison_result.comparison_path,
+                "no_lookahead_diff": no_lookahead_result.diff_path,
+                "execution_simulation": execution_simulation_result.simulation_path,
+                "assumption_ledger": assumption_ledger_result.ledger_path,
+            }
+            trial_ledger_result = build_strategy_backtest_trial_ledger(
+                artifacts=completion_artifacts,
+                out_dir=settings.data_dir / "research/backtest_trial_ledger",
+                reports_dir=selected_reports,
+            )
             comparison_result = build_strategy_backtest_comparison(
                 metrics_path=backtest_artifacts["metrics"],
                 suite_result_path=suite_artifacts["suite_result"],
@@ -1199,6 +1602,12 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 regime_split_path=regime_split_result.regime_split_path,
                 rolling_stability_path=rolling_stability_result.rolling_stability_path,
                 benchmark_relative_path=benchmark_relative_result.benchmark_relative_path,
+                data_availability_path=data_availability_result.ledger_path,
+                baseline_comparison_path=baseline_comparison_result.comparison_path,
+                trial_ledger_path=trial_ledger_result.ledger_path,
+                assumption_ledger_path=assumption_ledger_result.ledger_path,
+                no_lookahead_path=no_lookahead_result.diff_path,
+                execution_simulation_path=execution_simulation_result.simulation_path,
                 out_dir=settings.data_dir / "research/backtest_compare",
                 reports_dir=selected_reports,
             )
@@ -1235,6 +1644,18 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                     "rolling_stability_report": rolling_stability_result.report_path,
                     "benchmark_relative": benchmark_relative_result.benchmark_relative_path,
                     "benchmark_relative_report": benchmark_relative_result.report_path,
+                    "data_availability": data_availability_result.ledger_path,
+                    "data_availability_report": data_availability_result.report_path,
+                    "baseline_comparison": baseline_comparison_result.comparison_path,
+                    "baseline_comparison_report": baseline_comparison_result.report_path,
+                    "no_lookahead_diff": no_lookahead_result.diff_path,
+                    "no_lookahead_diff_report": no_lookahead_result.report_path,
+                    "execution_simulation": execution_simulation_result.simulation_path,
+                    "execution_simulation_report": execution_simulation_result.report_path,
+                    "assumption_ledger": assumption_ledger_result.ledger_path,
+                    "assumption_ledger_report": assumption_ledger_result.report_path,
+                    "trial_ledger": trial_ledger_result.ledger_path,
+                    "trial_ledger_report": trial_ledger_result.report_path,
                     "comparison": comparison_result.comparison_path,
                     "comparison_report": comparison_result.report_path,
                 },
@@ -1266,6 +1687,12 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         typer.echo(
             f"backtest_benchmark_relative={benchmark_relative_result.benchmark_relative_path}"
         )
+        typer.echo(f"backtest_data_availability={data_availability_result.ledger_path}")
+        typer.echo(f"backtest_baseline_comparison={baseline_comparison_result.comparison_path}")
+        typer.echo(f"backtest_no_lookahead_diff={no_lookahead_result.diff_path}")
+        typer.echo(f"backtest_execution_simulation={execution_simulation_result.simulation_path}")
+        typer.echo(f"backtest_assumption_ledger={assumption_ledger_result.ledger_path}")
+        typer.echo(f"backtest_trial_ledger={trial_ledger_result.ledger_path}")
         typer.echo(f"backtest_suite_result={suite_artifacts['suite_result']}")
         if validation_result.payload["decision"] != "PASS":
             raise typer.Exit(2)
@@ -1360,6 +1787,44 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             "--rolling-stability-path",
             help="Strategy backtest rolling stability JSON.",
         ),
+        data_availability_path: Path = typer.Option(
+            Path("data/research/backtest_data_availability/backtest_data_availability_ledger.json"),
+            "--data-availability-path",
+            help="Backtest data availability ledger JSON.",
+        ),
+        baseline_comparison_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_baseline_comparison/"
+                "strategy_backtest_baseline_comparison.json"
+            ),
+            "--baseline-comparison-path",
+            help="Strategy backtest baseline comparison JSON.",
+        ),
+        trial_ledger_path: Path = typer.Option(
+            Path("data/research/backtest_trial_ledger/strategy_backtest_trial_ledger.json"),
+            "--trial-ledger-path",
+            help="Strategy backtest trial ledger JSON.",
+        ),
+        assumption_ledger_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_assumption_ledger/strategy_backtest_assumption_ledger.json"
+            ),
+            "--assumption-ledger-path",
+            help="Strategy backtest assumption ledger JSON.",
+        ),
+        no_lookahead_path: Path = typer.Option(
+            Path("data/research/backtest_no_lookahead/strategy_backtest_no_lookahead_diff.json"),
+            "--no-lookahead-path",
+            help="Strategy backtest no-lookahead diff JSON.",
+        ),
+        execution_simulation_path: Path = typer.Option(
+            Path(
+                "data/research/backtest_execution_simulation/"
+                "strategy_backtest_execution_simulation.json"
+            ),
+            "--execution-simulation-path",
+            help="Strategy backtest execution simulation JSON.",
+        ),
         comparison_path: Path = typer.Option(
             Path("data/research/backtest_compare/strategy_backtest_comparison.json"),
             "--comparison-path",
@@ -1383,6 +1848,20 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         selected_rolling_stability_path = _resolve_workspace_path(
             rolling_stability_path, settings.data_dir
         )
+        selected_data_availability_path = _resolve_workspace_path(
+            data_availability_path, settings.data_dir
+        )
+        selected_baseline_comparison_path = _resolve_workspace_path(
+            baseline_comparison_path, settings.data_dir
+        )
+        selected_trial_ledger_path = _resolve_workspace_path(trial_ledger_path, settings.data_dir)
+        selected_assumption_ledger_path = _resolve_workspace_path(
+            assumption_ledger_path, settings.data_dir
+        )
+        selected_no_lookahead_path = _resolve_workspace_path(no_lookahead_path, settings.data_dir)
+        selected_execution_simulation_path = _resolve_workspace_path(
+            execution_simulation_path, settings.data_dir
+        )
         selected_comparison_path = _resolve_workspace_path(comparison_path, settings.data_dir)
         try:
             result = build_strategy_backtest_artifact_summary(
@@ -1394,6 +1873,12 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 stress_path=selected_stress_path,
                 regime_split_path=selected_regime_split_path,
                 rolling_stability_path=selected_rolling_stability_path,
+                data_availability_path=selected_data_availability_path,
+                baseline_comparison_path=selected_baseline_comparison_path,
+                trial_ledger_path=selected_trial_ledger_path,
+                assumption_ledger_path=selected_assumption_ledger_path,
+                no_lookahead_path=selected_no_lookahead_path,
+                execution_simulation_path=selected_execution_simulation_path,
                 comparison_path=selected_comparison_path,
             )
         except ValueError as exc:

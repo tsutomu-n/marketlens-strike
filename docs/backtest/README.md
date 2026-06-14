@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-14_18:03 JST
+更新日: 2026-06-14_19:58 JST
 -->
 
 # Backtest Docs
@@ -19,6 +19,12 @@
 
 現行 backtest の詳細、現在できること、専用 backtesting OSS / framework の候補整理は
 [CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md](CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md)
+を見ます。
+現在の backtest 方針、外部 framework の責務分担、PyBroker / NautilusTrader / LEAN / Freqtrade まで含めた現実的な採用位置は
+[CURRENT_BACKTEST_PLAN_AND_FRAMEWORK_ROLES_2026-06-14.md](CURRENT_BACKTEST_PLAN_AND_FRAMEWORK_ROLES_2026-06-14.md)
+を見ます。
+現在の completion scope では実装しないが将来候補として残す Bitget / Hyperliquid schema widening、Coinalyze collector、live / wallet / signing、NautilusTrader / HftBacktest / Tardis / PyBroker / Qlib / FinRL / skfolio 採用、market impact / alpha / live readiness claim の扱いは
+[BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md](BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md)
 を見ます。
 `vectorbt` 以外も含めた OSS backtest framework の評価計画は
 [OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md](OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md)

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_execution_simulation.v1"},
+    "status": {"enum": ["pass", "fail"]},
+    "execution_mode": {"type": "string"},
+    "summary": {"type": "object"},
+    "feature_counts": {"type": "object"},
+    "unsupported_venue_realism": {"type": "array"},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "execution_mode",
+    "summary",
+    "feature_counts",
+    "unsupported_venue_realism",
+    "paper_only",
+    "live_order_submitted",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used"
+  ],
+  "type": "object"
+}

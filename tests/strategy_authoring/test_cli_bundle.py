@@ -289,6 +289,12 @@ portfolio:
     assert "backtest_regime_split=" in result.stdout
     assert "backtest_rolling_stability=" in result.stdout
     assert "backtest_benchmark_relative=" in result.stdout
+    assert "backtest_data_availability=" in result.stdout
+    assert "backtest_baseline_comparison=" in result.stdout
+    assert "backtest_no_lookahead_diff=" in result.stdout
+    assert "backtest_execution_simulation=" in result.stdout
+    assert "backtest_assumption_ledger=" in result.stdout
+    assert "backtest_trial_ledger=" in result.stdout
     pack_path = data_dir / "research/backtest_pack/strategy_backtest_pack.json"
     validation_path = data_dir / "research/backtest_pack/strategy_backtest_pack_validation.json"
     comparison_path = data_dir / "research/backtest_compare/strategy_backtest_comparison.json"
@@ -311,6 +317,26 @@ portfolio:
     benchmark_relative_path = (
         data_dir / "research/backtest_benchmark_relative/strategy_backtest_benchmark_relative.json"
     )
+    data_availability_path = (
+        data_dir / "research/backtest_data_availability/backtest_data_availability_ledger.json"
+    )
+    baseline_comparison_path = (
+        data_dir
+        / "research/backtest_baseline_comparison/strategy_backtest_baseline_comparison.json"
+    )
+    no_lookahead_path = (
+        data_dir / "research/backtest_no_lookahead/strategy_backtest_no_lookahead_diff.json"
+    )
+    execution_simulation_path = (
+        data_dir
+        / "research/backtest_execution_simulation/strategy_backtest_execution_simulation.json"
+    )
+    assumption_ledger_path = (
+        data_dir / "research/backtest_assumption_ledger/strategy_backtest_assumption_ledger.json"
+    )
+    trial_ledger_path = (
+        data_dir / "research/backtest_trial_ledger/strategy_backtest_trial_ledger.json"
+    )
     assert pack_path.exists()
     assert validation_path.exists()
     assert comparison_path.exists()
@@ -321,6 +347,12 @@ portfolio:
     assert regime_split_path.exists()
     assert rolling_stability_path.exists()
     assert benchmark_relative_path.exists()
+    assert data_availability_path.exists()
+    assert baseline_comparison_path.exists()
+    assert no_lookahead_path.exists()
+    assert execution_simulation_path.exists()
+    assert assumption_ledger_path.exists()
+    assert trial_ledger_path.exists()
     payload = json.loads(pack_path.read_text(encoding="utf-8"))
     schema = json.loads(
         Path("schemas/strategy_backtest_pack.v1.schema.json").read_text(encoding="utf-8")
@@ -376,6 +408,12 @@ portfolio:
     assert payload["artifacts"]["rolling_stability_report"]["exists"] is True
     assert payload["artifacts"]["benchmark_relative"]["exists"] is True
     assert payload["artifacts"]["benchmark_relative_report"]["exists"] is True
+    assert payload["artifacts"]["data_availability"]["exists"] is True
+    assert payload["artifacts"]["baseline_comparison"]["exists"] is True
+    assert payload["artifacts"]["no_lookahead_diff"]["exists"] is True
+    assert payload["artifacts"]["execution_simulation"]["exists"] is True
+    assert payload["artifacts"]["assumption_ledger"]["exists"] is True
+    assert payload["artifacts"]["trial_ledger"]["exists"] is True
     assert payload["artifacts"]["returns_series"]["exists"] is True
     benchmark_payload = json.loads(benchmark_relative_path.read_text(encoding="utf-8"))
     assert benchmark_payload["source_benchmark_series_path"] == benchmark_series_path.as_posix()
@@ -392,6 +430,10 @@ portfolio:
     validate(instance=validation_payload, schema=validation_schema)
     assert validation_payload["decision"] == "PASS"
     assert validation_payload["summary"]["failed_count"] == 0
+    assert any(
+        finding["check_id"] == "completion_artifacts_present" and finding["passed"] is True
+        for finding in validation_payload["findings"]
+    )
     assert validation_payload["summary"]["external_framework_policy_decision"] == (
         "complete_without_locked_external_dependency"
     )
@@ -440,6 +482,18 @@ portfolio:
     assert summary_payload["rolling_stability"]["exists"] is True
     assert summary_payload["rolling_stability"]["window_count"] == 2
     assert summary_payload["rolling_stability"]["worst_window_size"] == 3
+    assert summary_payload["data_availability"]["exists"] is True
+    assert summary_payload["data_availability"]["status"] == "pass"
+    assert summary_payload["baseline_comparison"]["exists"] is True
+    assert summary_payload["baseline_comparison"]["status"] == "pass"
+    assert summary_payload["no_lookahead_diff"]["exists"] is True
+    assert summary_payload["no_lookahead_diff"]["status"] == "pass"
+    assert summary_payload["execution_simulation"]["exists"] is True
+    assert summary_payload["execution_simulation"]["status"] == "pass"
+    assert summary_payload["assumption_ledger"]["exists"] is True
+    assert summary_payload["assumption_ledger"]["status"] == "pass"
+    assert summary_payload["trial_ledger"]["exists"] is True
+    assert summary_payload["trial_ledger"]["status"] == "pass"
     assert summary_payload["comparison"]["exists"] is True
     assert summary_payload["comparison"]["threshold_failure_count"] == 0
     assert summary_payload["comparison"]["suite_best_run_count"] == 1

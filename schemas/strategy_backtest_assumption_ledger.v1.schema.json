@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_assumption_ledger.v1"},
+    "status": {"enum": ["pass", "fail"]},
+    "summary": {"type": "object"},
+    "assumptions": {"type": "array"},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "summary",
+    "assumptions",
+    "paper_only",
+    "live_order_submitted",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used"
+  ],
+  "type": "object"
+}

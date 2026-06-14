@@ -257,6 +257,20 @@ def validate_strategy_backtest_pack(
 
     artifacts = _dict_value(pack, "artifacts")
     add_check("artifacts_present", bool(artifacts), "pack artifacts must not be empty")
+    required_artifact_keys = [
+        "data_availability",
+        "baseline_comparison",
+        "trial_ledger",
+        "assumption_ledger",
+        "no_lookahead_diff",
+        "execution_simulation",
+    ]
+    missing_artifact_keys = [key for key in required_artifact_keys if key not in artifacts]
+    add_check(
+        "completion_artifacts_present",
+        not missing_artifact_keys,
+        f"completion artifacts must be present; missing={missing_artifact_keys}",
+    )
     for name, row in sorted(artifacts.items()):
         if not isinstance(row, dict):
             add_check(f"artifact_{name}", False, "artifact row must be an object")
