@@ -57,35 +57,43 @@ def _framework_smoke_payload() -> dict:
             {
                 "framework_id": "vectorbt",
                 "import_status": "imported",
-                "version": "1.0.0",
-                "requires_python": ">=3.10",
-                "adoption_classification": "optional_extra_candidate",
-                "adoption_blockers": [],
-            },
-            {
-                "framework_id": "bt",
-                "import_status": "imported",
-                "version": "1.2.0",
-                "requires_python": ">=3.9",
-                "adoption_classification": "optional_extra_candidate",
-                "adoption_blockers": [],
-            },
-            {
-                "framework_id": "quantstats",
-                "import_status": "imported",
-                "version": "0.0.81",
-                "requires_python": ">=3.10",
-                "adoption_classification": "report_only_candidate",
-                "adoption_blockers": [],
-            },
-            {
-                "framework_id": "empyrical_reloaded",
-                "import_status": "imported",
-                "version": "0.5.12",
-                "requires_python": ">=3.9",
-                "adoption_classification": "report_only_candidate",
-                "adoption_blockers": [],
-            },
+            "version": "1.0.0",
+            "requires_python": ">=3.10",
+            "adoption_classification": "optional_extra_candidate",
+            "adoption_blockers": [],
+            "license_classifiers": ["License :: Other/Proprietary License"],
+            "python_classifiers": ["Programming Language :: Python :: 3.13"],
+        },
+        {
+            "framework_id": "bt",
+            "import_status": "imported",
+            "version": "1.2.0",
+            "requires_python": ">=3.9",
+            "adoption_classification": "optional_extra_candidate",
+            "adoption_blockers": [],
+            "license_classifiers": ["License :: OSI Approved :: MIT License"],
+            "python_classifiers": ["Programming Language :: Python :: 3.13"],
+        },
+        {
+            "framework_id": "quantstats",
+            "import_status": "imported",
+            "version": "0.0.81",
+            "requires_python": ">=3.10",
+            "adoption_classification": "report_only_candidate",
+            "adoption_blockers": [],
+            "license_classifiers": ["License :: OSI Approved :: Apache Software License"],
+            "python_classifiers": ["Programming Language :: Python :: 3.13"],
+        },
+        {
+            "framework_id": "empyrical_reloaded",
+            "import_status": "imported",
+            "version": "0.5.12",
+            "requires_python": ">=3.9",
+            "adoption_classification": "report_only_candidate",
+            "adoption_blockers": [],
+            "license_classifiers": ["License :: OSI Approved :: Apache Software License"],
+            "python_classifiers": ["Programming Language :: Python :: 3.13"],
+        },
         ],
         "summary": {"imported_count": 4},
         "decision": {"selected_for_dependency_adoption": None},
@@ -109,6 +117,14 @@ def _framework_smoke_payload_with_qstrader() -> dict:
             "requires_python": ">=3.9",
             "adoption_classification": "separate_runner_candidate",
             "adoption_blockers": [],
+            "license_classifiers": ["License :: OSI Approved :: MIT License"],
+            "python_classifiers": [
+                "Programming Language :: Python :: 3",
+                "Programming Language :: Python :: 3.9",
+                "Programming Language :: Python :: 3.10",
+                "Programming Language :: Python :: 3.11",
+                "Programming Language :: Python :: 3.12",
+            ],
         }
     )
     payload["summary"] = {"imported_count": 5}
@@ -200,6 +216,14 @@ def test_build_backtest_adapter_selection_promotes_imported_qstrader_spike(tmp_p
     assert qstrader["dependency_added"] is False
     assert qstrader["engine_run"] is False
     assert qstrader["permits_live_order"] is False
+    assert qstrader["rationale_codes"] == [
+        "explicit_import_smoke_passed",
+        "isolated_runner_contract_before_optional_extra",
+        "mit_license_signal_observed",
+        "mit_license_signal_required",
+        "python_3_13_classifier_missing_but_local_import_passed",
+        "schedule_event_driven_role_matches_equity_etf_research",
+    ]
     assert "qstrader" not in [item["framework_id"] for item in payload["deferred_adapters"]]
     assert payload["summary"] == {
         "selected_count": 5,
@@ -209,6 +233,28 @@ def test_build_backtest_adapter_selection_promotes_imported_qstrader_spike(tmp_p
         "separate_runner_selected_count": 1,
     }
     assert "qstrader isolated runner contract" in payload["decision"]["recommended_next_step"]
+
+
+def test_build_backtest_adapter_selection_does_not_promote_qstrader_without_license_signal(
+    tmp_path,
+) -> None:
+    adapter_spike_path = tmp_path / "data/research/backtest_adapter_spike/spike.json"
+    framework_smoke_path = tmp_path / "data/research/backtest_framework_smoke/smoke.json"
+    smoke_payload = _framework_smoke_payload_with_qstrader()
+    smoke_payload["results"][-1]["license_classifiers"] = []
+    _write_json(adapter_spike_path, _adapter_spike_payload())
+    _write_json(framework_smoke_path, smoke_payload)
+
+    result = build_backtest_adapter_selection(
+        adapter_spike_path=adapter_spike_path,
+        framework_smoke_path=framework_smoke_path,
+        out_dir=tmp_path / "data/research/backtest_adapter_selection",
+        reports_dir=tmp_path / "data/reports",
+    )
+
+    payload = json.loads(result.selection_path.read_text(encoding="utf-8"))
+    assert "qstrader" not in [item["framework_id"] for item in payload["selected_adapters"]]
+    assert "qstrader" in [item["framework_id"] for item in payload["deferred_adapters"]]
 
 
 def test_strategy_backtest_adapter_selection_cli(tmp_path, monkeypatch) -> None:

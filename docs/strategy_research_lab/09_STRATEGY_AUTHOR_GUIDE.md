@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_15:19 JST
-更新日: 2026-06-14_17:55 JST
+更新日: 2026-06-14_18:03 JST
 -->
 
 # Strategy Author Guide
@@ -111,7 +111,7 @@ uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis
 uv run --with qstrader sis strategy-backtest-framework-smoke --framework qstrader
 ```
 
-この smoke が `imported` の場合、次の adapter selection で `qstrader` は selected `separate_runner_research` として記録され、local-input isolated runner contract の設計候補になります。これは dependency 採用でも engine 実行でもありません。
+この smoke が `imported`、fatal blocker なし、MIT license signal ありの場合、次の adapter selection で `qstrader` は selected `separate_runner_research` として記録され、local-input isolated runner contract の設計候補になります。Python 3.13 classifier が無い場合は rationale に残します。これは dependency 採用でも engine 実行でもありません。
 
 Phase C の初期 adapter 選定を記録する場合は、次を使います。
 
@@ -119,7 +119,7 @@ Phase C の初期 adapter 選定を記録する場合は、次を使います。
 uv run sis strategy-backtest-adapter-selection
 ```
 
-これは `strategy_backtest_adapter_selection.v1` artifact に、`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を selected、その他候補を deferred として記録します。明示 smoke で `qstrader` が `imported` の場合だけ、`qstrader` も selected `separate_runner_research` として記録します。外部 engine は実行せず、`pyproject.toml` / `uv.lock` も変更しません。
+これは `strategy_backtest_adapter_selection.v1` artifact に、`vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を selected、その他候補を deferred として記録します。明示 smoke で `qstrader` が `imported`、fatal blocker なし、MIT license signal ありの場合だけ、`qstrader` も selected `separate_runner_research` として記録します。外部 engine は実行せず、`pyproject.toml` / `uv.lock` も変更しません。
 
 selected adapter の入力、出力、provenance、受入条件を固定する場合は、次を使います。
 

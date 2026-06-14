@@ -45,14 +45,18 @@ def _candidate_by_id() -> dict[str, dict[str, Any]]:
 def _metadata_for(distribution: str) -> dict[str, Any]:
     try:
         package_metadata = metadata.metadata(distribution)
+        classifiers = package_metadata.get_all("Classifier") or []
         return {
             "version": metadata.version(distribution),
             "license": package_metadata.get("License"),
             "requires_python": package_metadata.get("Requires-Python"),
             "license_classifiers": [
+                item for item in classifiers if item.startswith("License ::")
+            ],
+            "python_classifiers": [
                 item
-                for item in package_metadata.get_all("Classifier") or []
-                if item.startswith("License ::")
+                for item in classifiers
+                if item.startswith("Programming Language :: Python ::")
             ],
         }
     except metadata.PackageNotFoundError:
@@ -61,6 +65,7 @@ def _metadata_for(distribution: str) -> dict[str, Any]:
             "license": None,
             "requires_python": None,
             "license_classifiers": [],
+            "python_classifiers": [],
         }
 
 

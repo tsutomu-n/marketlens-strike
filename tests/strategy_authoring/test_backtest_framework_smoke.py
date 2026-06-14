@@ -28,7 +28,11 @@ class _FakeMetadata:
 
     def get_all(self, key: str) -> list[str]:
         if key == "Classifier":
-            return ["License :: OSI Approved :: Apache Software License"]
+            return [
+                "License :: OSI Approved :: Apache Software License",
+                "Programming Language :: Python :: 3",
+                "Programming Language :: Python :: 3.13",
+            ]
         return []
 
 
@@ -93,6 +97,11 @@ def test_build_backtest_framework_smoke_records_tier1_metadata(tmp_path, monkeyp
         "empyrical_reloaded",
     }
     assert all(result_item["import_status"] == "imported" for result_item in payload["results"])
+    assert all(
+        result_item["python_classifiers"]
+        == ["Programming Language :: Python :: 3", "Programming Language :: Python :: 3.13"]
+        for result_item in payload["results"]
+    )
     assert imported_modules == ["vectorbt", "bt", "quantstats", "empyrical"]
     assert result.report_path.exists()
 

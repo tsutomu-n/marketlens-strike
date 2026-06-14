@@ -87,6 +87,7 @@
           "license": {"type": ["string", "null"]},
           "requires_python": {"type": ["string", "null"]},
           "license_classifiers": {"type": "array", "items": {"type": "string"}},
+          "python_classifiers": {"type": "array", "items": {"type": "string"}},
           "adoption_classification": {
             "enum": [
               "optional_extra_candidate",

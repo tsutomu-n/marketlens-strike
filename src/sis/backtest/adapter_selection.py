@@ -80,7 +80,7 @@ CONDITIONAL_SELECTED_FRAMEWORKS = {
         "separate_runner_research",
         [
             "explicit_import_smoke_passed",
-            "mit_license_metadata_observed",
+            "mit_license_signal_required",
             "schedule_event_driven_role_matches_equity_etf_research",
             "isolated_runner_contract_before_optional_extra",
         ],
@@ -135,6 +135,44 @@ def _adapter_by_id(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
     }
 
 
+def _license_text(payload: dict[str, Any]) -> str:
+    parts = [str(payload.get("license") or "")]
+    parts.extend(str(item) for item in payload.get("license_classifiers") or [])
+    return " ".join(parts).lower()
+
+
+def _fatal_blockers(payload: dict[str, Any]) -> set[str]:
+    return {
+        str(item)
+        for item in payload.get("adoption_blockers") or []
+        if str(item).startswith("license_review_required")
+        or str(item)
+        in {
+            "not_installed_in_temporary_env",
+            "temporary_import_failed",
+            "build_smoke_required_before_optional_extra",
+        }
+    }
+
+
+def _qstrader_ready_for_contract_spike(smoke: dict[str, Any]) -> bool:
+    if smoke.get("import_status") != "imported":
+        return False
+    if _fatal_blockers(smoke):
+        return False
+    return "mit" in _license_text(smoke)
+
+
+def _qstrader_rationale_codes(smoke: dict[str, Any], rationale: list[str]) -> list[str]:
+    codes = list(rationale)
+    python_classifiers = [str(item) for item in smoke.get("python_classifiers") or []]
+    if not any(item.endswith(":: 3.13") for item in python_classifiers):
+        codes.append("python_3_13_classifier_missing_but_local_import_passed")
+    if "mit" in _license_text(smoke):
+        codes.append("mit_license_signal_observed")
+    return sorted(set(codes))
+
+
 def _selection_item(
     *,
     framework_id: str,
@@ -180,14 +218,18 @@ def _selected_items(smoke_results: dict[str, dict[str, Any]]) -> list[dict[str, 
         )
     for framework_id, (role, rationale, next_step) in CONDITIONAL_SELECTED_FRAMEWORKS.items():
         smoke = smoke_results.get(framework_id, {})
-        if smoke.get("import_status") != "imported":
+        if framework_id == "qstrader" and not _qstrader_ready_for_contract_spike(smoke):
             continue
         selected.append(
             _selection_item(
                 framework_id=framework_id,
                 selection_status="selected_for_adapter_design",
                 selection_role=role,
-                rationale_codes=rationale,
+                rationale_codes=(
+                    _qstrader_rationale_codes(smoke, rationale)
+                    if framework_id == "qstrader"
+                    else rationale
+                ),
                 next_step=next_step,
                 smoke_results=smoke_results,
             )

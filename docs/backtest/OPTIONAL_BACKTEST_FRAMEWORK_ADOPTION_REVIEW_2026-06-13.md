@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_20:36 JST
-更新日: 2026-06-14_17:55 JST
+更新日: 2026-06-14_18:03 JST
 -->
 
 # Optional Backtest Framework Adoption Review
@@ -92,7 +92,7 @@ External primary sources:
 
 追加採用候補だけを見ると、優先順位は次の通り。
 
-1. `qstrader`: MIT で、local Python 3.13 import smoke も通った。現行の NDX / QQQ research に近い equity / ETF schedule-driven portfolio backtest を補完できる。2026-06-14_17:55 JST 時点では、明示 smoke で imported の場合だけ `strategy-backtest-adapter-selection` が selected `separate_runner_research` に昇格する。ただし PyPI classifier は Python 3.12 までなので、CI 相当の `uv lock` / test gate と、外部データ取得を使わない local input runner が必要。
+1. `qstrader`: MIT で、local Python 3.13 import smoke も通った。現行の NDX / QQQ research に近い equity / ETF schedule-driven portfolio backtest を補完できる。2026-06-14_18:03 JST 時点では、明示 smoke で imported、fatal blocker なし、MIT license signal ありの場合だけ `strategy-backtest-adapter-selection` が selected `separate_runner_research` に昇格する。ただし PyPI classifier は Python 3.12 までなので、CI 相当の `uv lock` / test gate と、外部データ取得を使わない local input runner が必要。
 2. `backtesting.py`: simple OHLCV runner としては最も軽く、native backtest と `vectorbt` の間の readable prototype surface を補完できる。ただし AGPLv3+ のため、正式採用は license approval なしに進めない。
 3. `zipline-reloaded` / `zipline-refresh`: event-driven / calendar / pipeline 方面の補完力は大きいが、現環境ではどちらも build が通らない。repo optional extra ではなく、別 Python headers / container / mamba 系の隔離検証が先。
 4. `backtrader`: event-driven の補完力はあるが GPLv3+ と live trading surface の分離が重い。現 repo の no-live 境界では `qstrader` より後。
