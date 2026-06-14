@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 @dataclass(frozen=True)
@@ -38,6 +38,66 @@ def _count_rows(rows: list[Any], key: str) -> int:
     return count
 
 
+def _value(row: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        value = row.get(key)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def _fill_status(fill_fraction: Any) -> str:
+    if not isinstance(fill_fraction, int | float):
+        return "unknown"
+    if fill_fraction >= 1.0:
+        return "filled"
+    if fill_fraction > 0:
+        return "partial"
+    return "unfilled"
+
+
+def _event_rows(rows: list[Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    order_intents: list[dict[str, Any]] = []
+    fill_events: list[dict[str, Any]] = []
+    for index, raw in enumerate(rows):
+        if not isinstance(raw, dict):
+            continue
+        row = cast(dict[str, Any], raw)
+        event_id = f"native_execution_row_{index:06d}"
+        signal_id = _value(row, "signal_id")
+        fill_fraction = _value(row, "fill_fraction", "effective_fill_fraction")
+        order_intents.append(
+            {
+                "event_id": event_id,
+                "signal_id": signal_id,
+                "ts_signal": _value(row, "ts_signal"),
+                "side": _value(row, "side"),
+                "order_type": _value(row, "order_type", "entry_order_type") or "market",
+                "time_in_force": _value(row, "time_in_force", "entry_time_in_force"),
+                "post_only": bool(_value(row, "post_only", "entry_post_only") or False),
+                "reduce_only": bool(_value(row, "reduce_only", "entry_reduce_only") or False),
+                "notional_usd": _value(row, "notional_usd"),
+                "paper_only": True,
+            }
+        )
+        fill_events.append(
+            {
+                "event_id": event_id,
+                "signal_id": signal_id,
+                "ts_signal": _value(row, "ts_signal"),
+                "fill_status": _fill_status(fill_fraction),
+                "fill_fraction": fill_fraction,
+                "slippage_bps": _value(row, "slippage_bps"),
+                "cost_drag_bps": _value(row, "cost_drag_bps"),
+                "signal_return": _value(row, "signal_return"),
+                "exit_reason": _value(row, "exit_reason"),
+                "market_impact_claimed": False,
+                "paper_only": True,
+            }
+        )
+    return order_intents, fill_events
+
+
 def _write_report(path: Path, payload: dict[str, Any]) -> Path:
     summary = payload["summary"]
     lines = [
@@ -47,6 +107,8 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         f"- execution_mode: {payload['execution_mode']}",
         f"- executed_count: {summary['executed_count']}",
         f"- blocked_count: {summary['blocked_count']}",
+        f"- order_intent_count: {summary['order_intent_count']}",
+        f"- fill_event_count: {summary['fill_event_count']}",
         f"- unsupported_venue_realism_count: {summary['unsupported_venue_realism_count']}",
         "- market_impact_claimed: false",
         "- permits_live_order: false",
@@ -78,11 +140,15 @@ def build_strategy_backtest_execution_simulation(
         raise ValueError("strategy backtest metrics missing summary object.")
     executed_rows = summary.get("executed_signal_results")
     rows = executed_rows if isinstance(executed_rows, list) else []
+    order_intents, fill_events = _event_rows(rows)
+    partial_fill_count = sum(1 for row in fill_events if row["fill_status"] == "partial")
     feature_counts = {
         "row_level_result_count": len(rows),
         "slippage_rows": _count_rows(rows, "slippage_bps"),
         "partial_fill_rows": _count_rows(rows, "fill_fraction"),
-        "limit_or_order_type_rows": _count_rows(rows, "order_type"),
+        "limit_or_order_type_rows": max(
+            _count_rows(rows, "order_type"), _count_rows(rows, "entry_order_type")
+        ),
         "post_only_rows": _count_rows(rows, "post_only"),
         "time_in_force_rows": _count_rows(rows, "time_in_force"),
         "latency_rows": _count_rows(rows, "latency_ms"),
@@ -116,7 +182,7 @@ def build_strategy_backtest_execution_simulation(
         "schema_version": "strategy_backtest_execution_simulation.v1",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "status": "pass",
-        "execution_mode": "native_metrics_execution_awareness_v0",
+        "execution_mode": "native_metrics_order_fill_events_v1",
         "source_backtest_metrics_path": metrics_path.as_posix(),
         "source_backtest_metrics_hash": _sha256_file(metrics_path),
         "source_signals_path": signals_path.as_posix(),
@@ -125,10 +191,15 @@ def build_strategy_backtest_execution_simulation(
             "signals_considered": summary.get("signals_considered"),
             "executed_count": summary.get("executed_count"),
             "blocked_count": summary.get("blocked_count"),
+            "order_intent_count": len(order_intents),
+            "fill_event_count": len(fill_events),
+            "partial_fill_count": partial_fill_count,
             "unsupported_venue_realism_count": len(unsupported),
             "market_impact_claimed": False,
         },
         "feature_counts": feature_counts,
+        "order_intents": order_intents,
+        "fill_events": fill_events,
         "unsupported_venue_realism": unsupported,
         "dependency_added": False,
         "paper_only": True,

@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import polars as pl
+
 
 @dataclass(frozen=True)
 class BacktestDataAvailabilityResult:
@@ -57,6 +59,84 @@ def _json_row_count(payload: dict[str, Any]) -> int:
     return 1
 
 
+def _timestamp(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+    return None
+
+
+def _timestamp_column(columns: list[str]) -> str | None:
+    for candidate in (
+        "available_at",
+        "ts_signal",
+        "ts_client",
+        "ts",
+        "event_ts",
+        "exchange_ts",
+        "timestamp",
+        "date",
+    ):
+        if candidate in columns:
+            return candidate
+    return None
+
+
+def _parquet_stats(path: Path) -> dict[str, Any]:
+    try:
+        frame = pl.read_parquet(path)
+    except Exception as exc:
+        return {
+            "row_count": None,
+            "available_start": None,
+            "available_end": None,
+            "timestamp_column": None,
+            "gap_count": None,
+            "duplicate_count": None,
+            "unusable_reason": f"parquet_unreadable:{type(exc).__name__}",
+        }
+    timestamp_column = _timestamp_column(frame.columns)
+    timestamps: list[datetime] = []
+    if timestamp_column is not None:
+        timestamps = [
+            item
+            for item in (
+                _timestamp(value) for value in frame.get_column(timestamp_column).to_list()
+            )
+            if item is not None
+        ]
+    duplicate_count: int | None = None
+    gap_count: int | None = None
+    if timestamps:
+        sorted_timestamps = sorted(timestamps)
+        duplicate_count = len(sorted_timestamps) - len(set(sorted_timestamps))
+        unique_timestamps = sorted(set(sorted_timestamps))
+        deltas = [
+            (right - left).total_seconds()
+            for left, right in zip(unique_timestamps, unique_timestamps[1:], strict=False)
+            if (right - left).total_seconds() > 0
+        ]
+        if deltas:
+            expected = min(deltas)
+            gap_count = sum(1 for delta in deltas if delta > expected * 1.5)
+        else:
+            gap_count = 0
+    return {
+        "row_count": frame.height,
+        "available_start": min(timestamps).isoformat() if timestamps else None,
+        "available_end": max(timestamps).isoformat() if timestamps else None,
+        "timestamp_column": timestamp_column,
+        "gap_count": gap_count,
+        "duplicate_count": duplicate_count,
+        "unusable_reason": None,
+    }
+
+
 def _artifact_row(
     *,
     artifact_id: str,
@@ -66,13 +146,33 @@ def _artifact_row(
     capture_mode: str = "local_artifact",
 ) -> dict[str, Any]:
     row_count: int | None = None
+    available_start: str | None = None
+    available_end: str | None = None
+    gap_count: int | None = None
+    duplicate_count: int | None = None
+    timestamp_column: str | None = None
+    unusable_reason: str | None = None
     if path.exists():
         if path.suffix == ".json":
             row_count = _json_row_count(_read_json(path))
+        elif path.suffix == ".parquet":
+            stats = _parquet_stats(path)
+            row_count = stats["row_count"]
+            available_start = stats["available_start"]
+            available_end = stats["available_end"]
+            gap_count = stats["gap_count"]
+            duplicate_count = stats["duplicate_count"]
+            timestamp_column = stats["timestamp_column"]
+            unusable_reason = stats["unusable_reason"]
         elif path.suffix == ".csv":
             row_count = _csv_row_count(path)
         elif path.suffix == ".jsonl":
             row_count = sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line)
+    repo_status = (
+        "enabled" if path.exists() and unusable_reason is None else "missing_local_artifact"
+    )
+    if path.exists() and unusable_reason is not None:
+        repo_status = "unreadable_local_artifact"
     return {
         "artifact_id": artifact_id,
         "provider": provider,
@@ -81,17 +181,18 @@ def _artifact_row(
         "timeframe": None,
         "data_type": data_type,
         "capture_mode": capture_mode,
-        "repo_status": "enabled" if path.exists() else "missing_local_artifact",
+        "repo_status": repo_status,
         "path": path.as_posix(),
         "source_hash": _sha256_file(path) if path.exists() else None,
         "row_count": row_count,
-        "available_start": None,
-        "available_end": None,
-        "gap_count": None,
-        "duplicate_count": None,
+        "available_start": available_start,
+        "available_end": available_end,
+        "timestamp_column": timestamp_column,
+        "gap_count": gap_count,
+        "duplicate_count": duplicate_count,
         "available_at_policy": "local_artifact_timestamp_only",
-        "unusable_reason": None if path.exists() else "artifact_missing",
-        "assumption_level": "measured" if path.exists() else "unknown",
+        "unusable_reason": unusable_reason if path.exists() else "artifact_missing",
+        "assumption_level": "measured" if repo_status == "enabled" else "unknown",
     }
 
 
@@ -173,16 +274,20 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         "- wallet_used: false",
         "- exchange_write_used: false",
         "",
-        "| Artifact | Provider | Status | Rows | Path |",
-        "|---|---|---|---:|---|",
+        "| Artifact | Provider | Status | Rows | Start | End | Gaps | Duplicates | Path |",
+        "|---|---|---|---:|---|---|---:|---:|---|",
     ]
     for row in payload["rows"]:
         lines.append(
-            "| {artifact_id} | {provider} | {repo_status} | {row_count} | `{path}` |".format(
+            "| {artifact_id} | {provider} | {repo_status} | {row_count} | {start} | {end} | {gaps} | {dups} | `{path}` |".format(
                 artifact_id=row["artifact_id"],
                 provider=row["provider"],
                 repo_status=row["repo_status"],
                 row_count=row["row_count"],
+                start=row.get("available_start"),
+                end=row.get("available_end"),
+                gaps=row.get("gap_count"),
+                dups=row.get("duplicate_count"),
                 path=row["path"],
             )
         )
@@ -219,6 +324,12 @@ def build_backtest_data_availability_ledger(
     ]
     enabled_count = sum(1 for row in rows if row["repo_status"] == "enabled")
     candidate_count = sum(1 for row in rows if row["capture_mode"] == "external_candidate")
+    total_gap_count = sum(
+        int(row["gap_count"]) for row in rows if isinstance(row.get("gap_count"), int)
+    )
+    total_duplicate_count = sum(
+        int(row["duplicate_count"]) for row in rows if isinstance(row.get("duplicate_count"), int)
+    )
     payload: dict[str, Any] = {
         "schema_version": "backtest_data_availability_ledger.v1",
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -230,6 +341,8 @@ def build_backtest_data_availability_ledger(
             "network_used": False,
             "external_api_called": False,
             "schema_widening_required": False,
+            "total_gap_count": total_gap_count,
+            "total_duplicate_count": total_duplicate_count,
         },
         "rows": rows,
         "dependency_added": False,

@@ -562,6 +562,11 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
 
     @app.command("strategy-backtest-no-lookahead-diff")
     def strategy_backtest_no_lookahead_diff_cmd(
+        spec: Path | None = typer.Option(
+            Path("docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml"),
+            "--spec",
+            help="Optional Strategy Authoring spec for runtime future-row mutation replay.",
+        ),
         metrics_path: Path = typer.Option(
             Path("data/research/strategy_backtest_metrics.json"),
             "--metrics-path",
@@ -589,11 +594,16 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         ),
     ) -> None:
         settings = get_settings()
+        selected_spec = (
+            _resolve_workspace_path(spec, settings.data_dir) if spec is not None else None
+        )
         try:
             result = build_strategy_backtest_no_lookahead_diff(
                 metrics_path=_resolve_workspace_path(metrics_path, settings.data_dir),
                 signals_path=_resolve_workspace_path(signals_path, settings.data_dir),
                 quotes_path=_resolve_workspace_path(quotes_path, settings.data_dir),
+                spec_path=selected_spec,
+                data_dir=settings.data_dir if selected_spec is not None else None,
                 out_dir=_resolve_workspace_path(out, settings.data_dir),
                 reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
             )
@@ -1550,6 +1560,8 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 quotes_path=_resolve_spec_data_path(
                     parsed_spec.data.quote_data_path, settings.data_dir
                 ),
+                spec_path=selected_spec,
+                data_dir=settings.data_dir,
                 out_dir=settings.data_dir / "research/backtest_no_lookahead",
                 reports_dir=selected_reports,
             )

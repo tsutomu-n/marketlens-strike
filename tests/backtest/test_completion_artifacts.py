@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
+from datetime import datetime, timedelta, timezone
 
 from jsonschema import validate
+import polars as pl
 
 from sis.backtest.assumptions import build_strategy_backtest_assumption_ledger
 from sis.backtest.baselines import build_strategy_backtest_baseline_comparison
@@ -12,6 +14,7 @@ from sis.backtest.data_availability import build_backtest_data_availability_ledg
 from sis.backtest.execution_simulation import build_strategy_backtest_execution_simulation
 from sis.backtest.no_lookahead import build_strategy_backtest_no_lookahead_diff
 from sis.backtest.trial_ledger import build_strategy_backtest_trial_ledger
+from sis.research.strategy_lab.authoring.io import template_yaml
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -52,12 +55,76 @@ def _metrics_path(tmp_path: Path) -> Path:
     return path
 
 
+def _quote(ts: str, price: float) -> dict[str, Any]:
+    return {
+        "ts_client": ts,
+        "venue": "trade_xyz",
+        "canonical_symbol": "XYZ100",
+        "venue_symbol": "XYZ100",
+        "exec_buy_price": price,
+        "exec_sell_price": price - 0.1,
+        "mark_price": price,
+        "mid_price": price,
+        "oracle_price": price,
+        "index_price": price,
+        "spread_bps": 1.0,
+        "min_side_depth_10bps_usd": 10_000.0,
+        "oracle_ts_ms": 1760000000000,
+        "market_status": "open",
+        "is_tradable": True,
+    }
+
+
+def _write_runtime_authoring_fixture(tmp_path: Path) -> Path:
+    data_dir = tmp_path / "data"
+    feature_path = data_dir / "research/feature_panel.parquet"
+    quote_path = data_dir / "normalized/quotes.parquet"
+    feature_path.parent.mkdir(parents=True, exist_ok=True)
+    quote_path.parent.mkdir(parents=True, exist_ok=True)
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    rows = [
+        {
+            "ts": start + timedelta(hours=hour),
+            "canonical_symbol": "QQQ",
+            "trade_allowed": True,
+            "close_above_sma20": True,
+            "vix_level": 20.0,
+            "research_return_1d": 0.02,
+            "research_return_4h": 0.01,
+            "source_confidence": 0.8,
+            "venue_quality_score": 0.9,
+        }
+        for hour in (0, 4, 8, 12, 16)
+    ]
+    pl.DataFrame(rows).write_parquet(feature_path)
+    pl.DataFrame(
+        [
+            _quote(f"2026-01-01T{hour:02d}:00:00+00:00", 100.0 + index)
+            for index, hour in enumerate(range(0, 24, 4))
+        ]
+    ).write_parquet(quote_path)
+    spec_path = tmp_path / "authoring.yaml"
+    spec_path.write_text(template_yaml(), encoding="utf-8")
+    return spec_path
+
+
 def test_completion_artifact_builders_write_schema_valid_no_live_outputs(tmp_path: Path) -> None:
     metrics_path = _metrics_path(tmp_path)
     signals_path = tmp_path / "strategy_signals.parquet"
     quotes_path = tmp_path / "quotes.parquet"
-    signals_path.write_bytes(b"signals")
-    quotes_path.write_bytes(b"quotes")
+    pl.DataFrame(
+        [
+            {"ts_signal": datetime(2026, 1, 1, tzinfo=timezone.utc), "signal_id": "a"},
+            {"ts_signal": datetime(2026, 1, 1, 4, tzinfo=timezone.utc), "signal_id": "b"},
+        ]
+    ).write_parquet(signals_path)
+    pl.DataFrame(
+        [
+            {"ts_client": "2026-01-01T00:00:00+00:00", "mid_price": 100.0},
+            {"ts_client": "2026-01-01T04:00:00+00:00", "mid_price": 101.0},
+            {"ts_client": "2026-01-01T08:00:00+00:00", "mid_price": 102.0},
+        ]
+    ).write_parquet(quotes_path)
     reports_dir = tmp_path / "reports"
 
     data_availability = build_backtest_data_availability_ledger(
@@ -120,3 +187,47 @@ def test_completion_artifact_builders_write_schema_valid_no_live_outputs(tmp_pat
         assert payload["wallet_used"] is False
         assert payload["exchange_write_used"] is False
         assert payload["status"] == "pass"
+    assert data_availability.payload["summary"]["total_duplicate_count"] == 0
+    assert data_availability.payload["summary"]["total_gap_count"] == 0
+    assert any(
+        row["artifact_id"] == "strategy_signals"
+        and row["row_count"] == 2
+        and row["available_start"] is not None
+        for row in data_availability.payload["rows"]
+    )
+    assert execution.payload["execution_mode"] == "native_metrics_order_fill_events_v1"
+    assert execution.payload["summary"]["order_intent_count"] == 3
+    assert execution.payload["summary"]["fill_event_count"] == 3
+    assert execution.payload["order_intents"]
+    assert execution.payload["fill_events"]
+    assert all(
+        event["market_impact_claimed"] is False for event in execution.payload["fill_events"]
+    )
+
+
+def test_no_lookahead_diff_runs_future_feature_mutation_replay(tmp_path: Path) -> None:
+    spec_path = _write_runtime_authoring_fixture(tmp_path)
+    metrics_path = _metrics_path(tmp_path)
+    signals_path = tmp_path / "strategy_signals.parquet"
+    quotes_path = tmp_path / "data/normalized/quotes.parquet"
+    signals_path.write_bytes(b"signals")
+
+    result = build_strategy_backtest_no_lookahead_diff(
+        metrics_path=metrics_path,
+        signals_path=signals_path,
+        quotes_path=quotes_path,
+        spec_path=spec_path,
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "no_lookahead",
+        reports_dir=tmp_path / "reports",
+    )
+
+    validate(
+        instance=result.payload,
+        schema=_schema("strategy_backtest_no_lookahead_diff.v1.schema.json"),
+    )
+    assert result.payload["status"] == "pass"
+    assert result.payload["diff_mode"] == "runtime_future_feature_mutation_v1"
+    assert result.payload["summary"]["runtime_future_mutation_replay"] is True
+    assert result.payload["mutation_scenarios"]
+    assert all(check["passed"] is True for check in result.payload["checks"])

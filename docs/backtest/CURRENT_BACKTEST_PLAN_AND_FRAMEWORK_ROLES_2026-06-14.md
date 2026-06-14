@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-14_18:28 JST
-更新日: 2026-06-14_19:58 JST
+更新日: 2026-06-14_20:29 JST
 -->
 
 # Current Backtest Plan And Framework Roles
@@ -16,6 +16,8 @@
 backtest artifact は alpha、paper observation、live readiness の証明ではない。すべての backtest / framework / report surface は `paper_only`、no live order、no wallet、no signing、no exchange write の境界内で扱う。
 
 この completion scope で実装しないが将来候補として残す項目は [BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md](BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md) に分ける。Bitget / Hyperliquid direct schema widening、Coinalyze collector、live / wallet / signing / exchange write、NautilusTrader / HftBacktest / Tardis / PyBroker / Qlib / FinRL / skfolio の dependency adoption、replay-style simulation からの market impact claim、alpha / live readiness claim は、現在のゴールへ混ぜない。
+
+2026-06-14_20:29 JST 時点で、completion artifact として `strategy-backtest-data-availability`、`strategy-backtest-baseline-compare`、`strategy-backtest-no-lookahead-diff`、`strategy-backtest-execution-sim`、`strategy-backtest-assumption-ledger`、`strategy-backtest-trial-ledger` を追加済みである。`strategy-backtest-data-availability` は local parquet の row count、timestamp range、gap / duplicate を実測する。`strategy-backtest-no-lookahead-diff` は spec が渡された場合、未来側 feature rows を一時 parquet で変異させて Strategy Authoring を再実行し、cutoff 以前の signals / executed backtest rows の不変性を検査する。`strategy-backtest-execution-sim` は native metrics から paper-only order intents / fill events を作る。`strategy-backtest-pack` はこれらを標準 chain で生成し、`strategy-backtest-pack-validate` は completion artifact の存在、hash、paper-only / no-live boundary を検査する。
 
 ## 追加調査で修正した判断
 
@@ -70,7 +72,7 @@ backtest artifact は alpha、paper observation、live readiness の証明では
 | 論点 | 補強後の判断 |
 |---|---|
 | point-in-time feature | `available_at <= decision_ts` だけでなく、`event_ts`, `exchange_ts`, `ingested_at`, `available_at`, `decision_ts`, `fill_ts` を混同しない。Feast の point-in-time join と NautilusTrader の `ts_event` / `ts_init` は設計参考になる |
-| lookahead 検査 | Freqtrade の `lookahead-analysis` は、baseline run と signal 別 run を比較して未来参照を検出する発想が有用。MarketLens Strike でも将来は「未来 row を変えても過去 decision が変わらない」差分検査を artifact 化する |
+| lookahead 検査 | Freqtrade の `lookahead-analysis` は、baseline run と signal 別 run を比較して未来参照を検出する発想が有用。MarketLens Strike では「未来 feature row を変えても過去 decision / executed row が変わらない」差分検査を artifact 化する |
 | HftBacktest の限界 | HftBacktest は L2 / latency / queue realism には有用だが、market replay 型なので自分の注文が市場を変える効果は表現しにくい。大きい liquidity-taking order の fill は非現実的になり得る |
 | queue position | 多くの crypto venue は Market-By-Price で、正確な自分の queue position は直接分からない。HftBacktest を使う場合も queue model は仮定として ledger に残す |
 | CPCV / PBO / DSR / SPA | 多数の parameter / strategy を試す段階では有用。ただし現行 v0 の合格条件にはしない。まず trial count、candidate universe、同一データで試した全履歴を残す |
@@ -379,8 +381,9 @@ Hyperliquid を対象に execution-aware backtest を考えるなら、通常の
    - 採用理由よりも、棄却理由、未確認仮定、データ欠損を先に読める report にする。
 
 10. no-lookahead differential harness を作る。
-   - baseline run と、未来側 rows / signal rows / feature rows を切った run を比較する。
+   - baseline run と、未来側 feature rows を変異させた run を比較する。
    - 過去 decision / fill / metrics が動くなら、lookahead または global aggregation leak として棄却する。
+   - 将来は signal rows / quote rows mutation replay にも広げる。
 
 11. 多数試行向け validation を後段に設計する。
    - `CPCV`, `PBO`, `Deflated Sharpe Ratio`, `White Reality Check`, `Hansen SPA` は、trial ledger と candidate universe が揃ってから検討する。

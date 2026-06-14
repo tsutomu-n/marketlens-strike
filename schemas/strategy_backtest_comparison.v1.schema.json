@@ -28,6 +28,18 @@
     "source_rolling_stability_hash",
     "source_benchmark_relative_path",
     "source_benchmark_relative_hash",
+    "source_data_availability_path",
+    "source_data_availability_hash",
+    "source_baseline_comparison_path",
+    "source_baseline_comparison_hash",
+    "source_trial_ledger_path",
+    "source_trial_ledger_hash",
+    "source_assumption_ledger_path",
+    "source_assumption_ledger_hash",
+    "source_no_lookahead_path",
+    "source_no_lookahead_hash",
+    "source_execution_simulation_path",
+    "source_execution_simulation_hash",
     "native_result",
     "method_results",
     "suite_results",
@@ -40,6 +52,12 @@
     "regime_split",
     "rolling_stability",
     "benchmark_relative",
+    "data_availability",
+    "baseline_comparison",
+    "trial_ledger",
+    "assumption_ledger",
+    "no_lookahead_diff",
+    "execution_simulation",
     "comparison_diagnostics",
     "framework_adapters",
     "permits_live_order",
@@ -100,6 +118,36 @@
     },
     "source_benchmark_relative_path": {"type": ["string", "null"]},
     "source_benchmark_relative_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_data_availability_path": {"type": ["string", "null"]},
+    "source_data_availability_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_baseline_comparison_path": {"type": ["string", "null"]},
+    "source_baseline_comparison_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_trial_ledger_path": {"type": ["string", "null"]},
+    "source_trial_ledger_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_assumption_ledger_path": {"type": ["string", "null"]},
+    "source_assumption_ledger_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_no_lookahead_path": {"type": ["string", "null"]},
+    "source_no_lookahead_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_execution_simulation_path": {"type": ["string", "null"]},
+    "source_execution_simulation_hash": {
       "type": ["string", "null"],
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
@@ -182,6 +230,42 @@
     "benchmark_relative": {
       "anyOf": [
         {"$ref": "#/$defs/benchmark_relative"},
+        {"type": "null"}
+      ]
+    },
+    "data_availability": {
+      "anyOf": [
+        {"$ref": "#/$defs/completion_artifact"},
+        {"type": "null"}
+      ]
+    },
+    "baseline_comparison": {
+      "anyOf": [
+        {"$ref": "#/$defs/completion_artifact"},
+        {"type": "null"}
+      ]
+    },
+    "trial_ledger": {
+      "anyOf": [
+        {"$ref": "#/$defs/completion_artifact"},
+        {"type": "null"}
+      ]
+    },
+    "assumption_ledger": {
+      "anyOf": [
+        {"$ref": "#/$defs/completion_artifact"},
+        {"type": "null"}
+      ]
+    },
+    "no_lookahead_diff": {
+      "anyOf": [
+        {"$ref": "#/$defs/completion_artifact"},
+        {"type": "null"}
+      ]
+    },
+    "execution_simulation": {
+      "anyOf": [
+        {"$ref": "#/$defs/completion_artifact"},
         {"type": "null"}
       ]
     },
@@ -1353,6 +1437,32 @@
           "type": "array",
           "items": {"$ref": "#/$defs/benchmark_relative_row"}
         },
+        "dependency_added": {"const": false},
+        "paper_only": {"const": true},
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "completion_artifact": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "status",
+        "summary",
+        "dependency_added",
+        "paper_only",
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "schema_version": {"type": "string", "minLength": 1},
+        "status": {"enum": ["pass", "fail"]},
+        "summary": {"type": "object"},
         "dependency_added": {"const": false},
         "paper_only": {"const": true},
         "permits_live_order": {"const": false},
