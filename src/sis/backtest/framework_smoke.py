@@ -50,13 +50,9 @@ def _metadata_for(distribution: str) -> dict[str, Any]:
             "version": metadata.version(distribution),
             "license": package_metadata.get("License"),
             "requires_python": package_metadata.get("Requires-Python"),
-            "license_classifiers": [
-                item for item in classifiers if item.startswith("License ::")
-            ],
+            "license_classifiers": [item for item in classifiers if item.startswith("License ::")],
             "python_classifiers": [
-                item
-                for item in classifiers
-                if item.startswith("Programming Language :: Python ::")
+                item for item in classifiers if item.startswith("Programming Language :: Python ::")
             ],
         }
     except metadata.PackageNotFoundError:

@@ -295,6 +295,8 @@ uv run --with qstrader sis strategy-backtest-framework-smoke --framework qstrade
 
 2026-06-14_18:03 JST 時点の一時 smoke では `qstrader 0.3.0` が `import_status=imported` だった。MIT license classifier は記録されるが、Python classifier は 3.9-3.12 までで 3.13 はない。これは engine 実行ではなく import / metadata artifact だけであり、`pyproject.toml` / `uv.lock` は変更しない。
 
+qstrader 自体は `CSVDailyBarDataSource(csv_dir, asset_type, adjust_prices=True, csv_symbols=None)` を持つため local CSV 入力の isolated runner 候補にはなる。ただし `BacktestTradingSession` には `universe`, `alpha_model`, `risk_model`, `data_handler`, rebalance cadence, fee model などが必要であり、Strategy Authoring の signals / quotes artifact からそれらをどう作るかは未設計である。したがって import smoke 成功は runner 完成や optional dependency 採用を意味しない。
+
 この command は `pyproject.toml` / `uv.lock` を変更しない。外部 engine は実行せず、`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
 
 ## Backtest Adapter Selection

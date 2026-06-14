@@ -67,6 +67,7 @@ External primary sources:
 - `uv run --with backtesting python - ...`: `backtesting 0.6.5`, AGPL-3.0, `Requires-Python >=3.9`, import OK.
 - `uv run --with backtrader python - ...`: `backtrader 1.9.78.123`, GPLv3+, `Requires-Python` metadataなし, import OK.
 - `uv run --with qstrader python - ...`: `qstrader 0.3.0`, MIT classifier, `Requires-Python >=3.9`, import OK.
+- `uv run --with qstrader python - ...`: `Requires-Dist` は `click>=8.1`, `matplotlib>=3.8`, `numpy>=2.0.0`, `pandas>=2.2`, `seaborn>=0.13`。`BacktestTradingSession` は `universe`, `alpha_model`, `risk_model`, `data_handler` などの明示設計が必要。`CSVDailyBarDataSource(csv_dir, asset_type, adjust_prices=True, csv_symbols=None)` は local CSV source として存在する。
 - `uv run --with pyfolio-reloaded python - ...`: `pyfolio-reloaded 0.9.9`, Apache Software License, `Requires-Python >=3.9`, import OK。`zipline.assets` 不在 warning は出る。
 - `uv run --with alphalens-reloaded python - ...`: `alphalens-reloaded 0.4.6`, Apache Software License, `Requires-Python >=3.10`, import OK。
 - `uv run --with zipline-reloaded python - ...`: `zipline-reloaded 3.1.1` が依存する `bcolz-zipline==1.13.0` の wheel build で `fatal error: Python.h: No such file or directory`。
@@ -158,6 +159,7 @@ External primary sources:
 - 現在の generated smoke artifact は locked env の `not_installed` 状態であり、過去の一時 `uv --with ...` smoke 結果とは分けて読む。
 - package popularity や maintenance activity は定量評価していない。採用直前に GitHub releases / issue activity を再確認する。
 - `qstrader` は PyPI の latest metadata と local import は良好だが、公式説明上の主対象は long-short equities / ETF であり、既存 Strategy Lab artifact との入出力変換は未設計。
+- qstrader は local CSV source を持つが、Strategy Authoring の signals / quotes artifact から `BacktestTradingSession` に必要な universe、alpha model、risk model、rebalance cadence、fee model をどう作るかは未設計。import smoke 成功を runner 実装可能性の証明として扱わない。
 - `zipline-refresh` は `zipline-reloaded` とは別 fork なので、Zipline 系を再評価する時は両方を同じ bucket に雑にまとめない。
 - `alphalens-reloaded` は backtest ではなく alpha factor analysis であり、backtest framework として採用すると役割誤認になる。
 - local build failure の `Python.h` は環境側の Python development headers 不足を含む可能性がある。package そのものの Python 3.13 非対応とは断定しない。
