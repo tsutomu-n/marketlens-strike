@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-14_21:42 JST
+更新日: 2026-06-14_21:49 JST
 -->
 
 # Backtest Docs
@@ -28,6 +28,9 @@
 を見ます。
 backtest system completion の目的、制約、対象ファイル、テスト方針、完了条件は
 [BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md](BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md)
+を見ます。
+backtest system completion 後に、機能追加ではなく責務分離で保守性とカスタマイズ性を上げる実装計画は
+[BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md](BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md)
 を見ます。
 `vectorbt` 以外も含めた OSS backtest framework の評価計画は
 [OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md](OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md)
