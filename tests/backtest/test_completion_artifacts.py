@@ -196,6 +196,16 @@ def test_completion_artifact_builders_write_schema_valid_no_live_outputs(tmp_pat
         for row in data_availability.payload["rows"]
     )
     assert baseline.payload["summary"]["diagnostic_only_count"] == 1
+    assert {
+        row["baseline_id"]: row["comparison_role"] for row in baseline.payload["baselines"]
+    } == {
+        "cash_no_trade": "cash_control",
+        "simple_momentum": "return_series_control",
+        "simple_mean_reversion": "return_series_control",
+        "random_throttle_seed_0": "return_series_control",
+        "simple_leverage_1_5x": "strategy_derived_stress",
+        "simple_funding_carry": "return_series_control",
+    }
     assert not any(
         flag["baseline_id"] == "simple_leverage_1_5x" for flag in baseline.payload["weakness_flags"]
     )

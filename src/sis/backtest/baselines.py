@@ -61,7 +61,7 @@ def _baseline_row(
     total_return: float | None,
     return_count: int,
     status: str = "available",
-    comparison_role: str = "independent_baseline",
+    comparison_role: str = "return_series_control",
 ) -> dict[str, Any]:
     return {
         "baseline_id": baseline_id,
@@ -120,6 +120,7 @@ def build_strategy_backtest_baseline_comparison(
             description="No position and no transaction cost.",
             total_return=0.0,
             return_count=len(returns),
+            comparison_role="cash_control",
         ),
         _baseline_row(
             baseline_id="simple_momentum",
@@ -158,7 +159,8 @@ def build_strategy_backtest_baseline_comparison(
     available = [
         row
         for row in baselines
-        if row["status"] == "available" and row["comparison_role"] == "independent_baseline"
+        if row["status"] == "available"
+        and row["comparison_role"] in {"cash_control", "return_series_control"}
     ]
     strongest = max(
         available,

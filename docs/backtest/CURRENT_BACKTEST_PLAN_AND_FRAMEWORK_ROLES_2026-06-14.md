@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-14_18:28 JST
-更新日: 2026-06-14_20:29 JST
+更新日: 2026-06-14_21:42 JST
 -->
 
 # Current Backtest Plan And Framework Roles
@@ -17,7 +17,7 @@ backtest artifact は alpha、paper observation、live readiness の証明では
 
 この completion scope で実装しないが将来候補として残す項目は [BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md](BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md) に分ける。Bitget / Hyperliquid direct schema widening、Coinalyze collector、live / wallet / signing / exchange write、NautilusTrader / HftBacktest / Tardis / PyBroker / Qlib / FinRL / skfolio の dependency adoption、replay-style simulation からの market impact claim、alpha / live readiness claim は、現在のゴールへ混ぜない。
 
-2026-06-14_20:29 JST 時点で、completion artifact として `strategy-backtest-data-availability`、`strategy-backtest-baseline-compare`、`strategy-backtest-no-lookahead-diff`、`strategy-backtest-execution-sim`、`strategy-backtest-assumption-ledger`、`strategy-backtest-trial-ledger` を追加済みである。`strategy-backtest-data-availability` は local parquet の row count、timestamp range、gap / duplicate を実測する。`strategy-backtest-no-lookahead-diff` は spec が渡された場合、未来側 feature rows を一時 parquet で変異させて Strategy Authoring を再実行し、cutoff 以前の signals / executed backtest rows の不変性を検査する。`strategy-backtest-execution-sim` は native metrics から paper-only order intents / fill events を作る。`strategy-backtest-pack` はこれらを標準 chain で生成し、`strategy-backtest-pack-validate` は completion artifact の存在、hash、paper-only / no-live boundary を検査する。
+2026-06-14_21:42 JST 時点で、completion artifact として `strategy-backtest-data-availability`、`strategy-backtest-baseline-compare`、`strategy-backtest-no-lookahead-diff`、`strategy-backtest-execution-sim`、`strategy-backtest-assumption-ledger`、`strategy-backtest-trial-ledger` を追加済みである。`strategy-backtest-data-availability` は local parquet の row count、timestamp range、`venue` / `canonical_symbol` などの存在する列で group 化した gap / duplicate を記録する。`strategy-backtest-baseline-compare` の simple momentum / mean reversion / random throttle は `executed_signal_results.signal_return` 由来の `return_series_control` であり、独立した別 engine の baseline ではない。`simple_leverage_1_5x` は `strategy_derived_stress` として `diagnostic_only` に分ける。`strategy-backtest-no-lookahead-diff` は spec が渡された場合、未来側 feature rows を一時 parquet で変異させて Strategy Authoring を再実行し、cutoff 以前の signals / executed backtest rows の不変性を検査する。`strategy-backtest-execution-sim` は native metrics から paper-only order intents / fill events を作る。`strategy-backtest-pack` はこれらを標準 chain で生成し、`strategy-backtest-pack-validate` は completion artifact の存在、hash、paper-only / no-live boundary を検査する。
 
 ## 追加調査で修正した判断
 
@@ -47,7 +47,7 @@ backtest artifact は alpha、paper observation、live readiness の証明では
 | signal と order を混ぜない | Strategy Authoring は signal / target / candidate を出し、fill / portfolio accounting は backtest 側で別責務にする |
 | fill と slippage を二重控除しない | `fill_price` に spread / slippage を含めた場合、PnL から同じ slippage を再控除しない。slippage は attribution metric として別に残す |
 | fee / funding の単位を推測しない | 不明 fee は entry block、funding rate は単位 / interval / sign / price basis が不明なら `unknown_or_null` として artifact に残す |
-| baseline / negative control が必要 | cash/no-trade、buy-and-hold、単純 momentum、単純 funding carry、random throttle、単純 leverage を比較候補にする |
+| baseline / negative control が必要 | 現行実装では cash/no-trade と、`executed_signal_results.signal_return` 由来の return-series control を記録する。単純 leverage は独立 baseline ではなく diagnostic stress として分離する。buy-and-hold と funding carry は入力データが揃うまで実計算しない |
 | trial ledger が必要 | parameter sweep、framework comparison、PyBroker / vectorbt 補助検証は、試した条件と失敗理由を残す。良い結果だけを report に残さない |
 | scenario layer が必要 | base / conservative / severe cost stress だけでなく、将来は optimistic / standard / conservative の約定仮定差も artifact 化する |
 | capacity / liquidity stress が必要 | turnover、fee drag、slippage drag、fill ratio、partial fill ratio、capacity を採用判断に入れる |
@@ -373,8 +373,10 @@ Hyperliquid を対象に execution-aware backtest を考えるなら、通常の
    - metrics / reports が alpha 証明に読まれないように文言を固定する。
 
 8. negative control / baseline comparison を増やす。
-   - cash/no-trade、buy-and-hold、単純 momentum、単純 funding carry、random throttle、単純 leverage を比較する。
-   - 高機能な strategy が、単純 baseline や取引削減だけの random throttle に負けるなら棄却する。
+   - 現行実装は cash/no-trade と return-series control を比較する。
+   - buy-and-hold と funding carry は、対応する入力系列を artifact に持つ段階で追加する。
+   - 単純 leverage は strategy-derived diagnostic stress として記録し、独立 baseline の勝敗判定には使わない。
+   - strategy が return-series control や取引削減だけの random throttle に負ける場合は、棄却理由として記録する。
 
 9. assumption ledger / reason code を report に出す。
    - `measured`, `configured`, `assumed`, `unknown` を分ける。
