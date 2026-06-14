@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-14_11:00 JST
+更新日: 2026-06-14_17:23 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -332,22 +332,31 @@ uv run sis strategy-backtest-adapter-contract
 
 ## Backtest Framework Run Selector
 
-`strategy-backtest-framework-run` は、選んだ optional framework / OSS surface だけを実行して、1つの selector manifest にまとめる。標準 pack のように全 chain を一括生成する入口ではなく、operator が比較したい framework を明示して使う入口である。
+`strategy-backtest-framework-run` は、選んだ optional framework / OSS surface だけを実行して、1つの selector manifest にまとめる。標準 pack のように全 chain を一括生成する入口ではなく、operator が比較したい surface を明示して使う入口である。
 
 ```bash
-uv run sis strategy-backtest-framework-run --framework bt
-uv run sis strategy-backtest-framework-run --framework metrics --framework reports
+uv run --extra bt sis strategy-backtest-framework-run --framework bt
+uv run --extra metrics --extra reports sis strategy-backtest-framework-run --framework metrics --framework reports
 uv run --extra vectorbt sis strategy-backtest-framework-run --framework vectorbt
 ```
 
 対応する `--framework` は `vectorbt`, `bt`, `empyrical_reloaded`, `quantstats` である。alias として `metrics` は `empyrical_reloaded`、`reports` は `quantstats` に正規化する。
+
+この4件は同じ「backtest engine」ではない。`surface_type` で役割を分けて読む。
+
+| `--framework` | package / extra | `surface_type` | 役割 |
+|---|---|---|---|
+| `vectorbt` | `vectorbt==1.0.0` / `vectorbt` | `backtest_engine` | signals / quotes から `vectorbt.Portfolio.from_signals` を実行する高速 runner |
+| `bt` | `bt==1.2.0` / `bt` | `portfolio_backtest_engine` | portfolio allocation / rebalance comparison |
+| `metrics` | `empyrical-reloaded==0.5.12` / `metrics` | `metrics_analytics` | backtest return series の risk / performance metrics |
+| `reports` | `quantstats==0.0.81` / `reports` | `report_analytics` | tear sheet / HTML report |
 
 出力:
 
 - `data/research/backtest_framework_run/strategy_backtest_framework_run.json`
 - `data/reports/strategy_backtest_framework_run_report.md`
 
-selector manifest は `strategy_backtest_framework_run.v1` で、`selected_frameworks`、入力 source の path / hash、framework ごとの artifact / report path、`run_status`、`reason_codes`、`engine_run`、`dependency_added=false`、`permits_live_order=false`、`wallet_used=false`、`exchange_write_used=false` を記録する。未対応 framework id を指定した場合も、依存追加や外部実行はせず `run_status=skipped`, `reason_codes=["unsupported_framework_selector"]` として manifest に残す。
+selector manifest は `strategy_backtest_framework_run.v1` で、`selected_frameworks`、入力 source の path / hash、framework ごとの `surface_type`、artifact / report path、`run_status`、`reason_codes`、`dependency_source`、`engine_run`、`dependency_added=false`、`permits_live_order=false`、`wallet_used=false`、`exchange_write_used=false` を記録する。未対応 framework id を指定した場合も、依存追加や外部実行はせず `surface_type=unsupported`, `run_status=skipped`, `reason_codes=["unsupported_framework_selector"]` として manifest に残す。
 
 optional extras を使って選択実行する場合:
 
@@ -355,7 +364,11 @@ optional extras を使って選択実行する場合:
 uv run --extra bt --extra metrics --extra reports sis strategy-backtest-framework-run --framework bt --framework metrics --framework reports
 ```
 
-2026-06-14_09:39 JST 時点の確認では、この command は `framework_count=3`, `executed_count=3`, `failed_count=0`, `skipped_count=0` を返した。`bt` は portfolio comparison、`metrics` は `empyrical_reloaded` metric extension、`reports` は `quantstats` report extension を実行し、各 sub-run の report は `data/reports/backtest_framework_run/<framework>/` に隔離する。`quantstats` 実行時の framework warning は artifact に捕捉し、Matplotlib font lookup noise は既定では operator 出力へ出さない。
+2026-06-14_11:40 JST 時点の再確認では、次の command は `framework_count=4`, `executed_count=4`, `failed_count=0`, `skipped_count=0` を返した。各 sub-run の report は `data/reports/backtest_framework_run/<framework>/` に隔離する。`quantstats` 実行時の framework warning は artifact に捕捉し、Matplotlib font lookup noise は既定では operator 出力へ出さない。
+
+```bash
+uv run --extra vectorbt --extra bt --extra metrics --extra reports sis strategy-backtest-framework-run --framework vectorbt --framework bt --framework metrics --framework reports
+```
 
 `vectorbt` を承認済み optional extra として selector 経由で実行する場合:
 
@@ -572,13 +585,13 @@ uv run sis strategy-backtest-artifact-summary
 
 この command は artifact を新規生成せず、既存 JSON を読み、pack の paper-only / no-live field、suite method count、external framework policy、benchmark-relative active return / source benchmark path、metric extension status、report extension status / warning count、stress worst scenario、regime split worst bucket、rolling stability worst window、comparison threshold failure / weakest era / suite best run count、validation decision / failed count を JSON で stdout に出す。欠損 artifact は失敗にせず `exists=false` として表示し、壊れた JSON は exit code 2 で止める。
 
-`bt`、`metrics`、`reports` optional extra をまとめて smoke し、pack manifest の artifact hash も揃える場合は、個別 extension だけを後から上書きせず、pack 自体を extras 環境で再実行する。
+`vectorbt`、`bt`、`metrics`、`reports` optional extra をまとめて smoke し、pack manifest の artifact hash も揃える場合は、個別 extension だけを後から上書きせず、pack 自体を extras 環境で再実行する。
 
 ```bash
-uv sync --dev --extra bt --extra metrics --extra reports --locked
-uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
-uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack-validate
-uv run --extra bt --extra metrics --extra reports sis strategy-backtest-artifact-summary
+uv sync --dev --extra vectorbt --extra bt --extra metrics --extra reports --locked
+uv run --extra vectorbt --extra bt --extra metrics --extra reports sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
+uv run --extra vectorbt --extra bt --extra metrics --extra reports sis strategy-backtest-pack-validate
+uv run --extra vectorbt --extra bt --extra metrics --extra reports sis strategy-backtest-artifact-summary
 ```
 
 現行依存:
@@ -591,8 +604,12 @@ uv run --extra bt --extra metrics --extra reports sis strategy-backtest-artifact
 - `typer`: CLI
 - `exchange-calendars`: market calendar 系
 - `yfinance`, `yahooquery`, `fredapi`, `pandas-datareader`: research data source
+- `vectorbt==1.0.0`: `vectorbt` optional extra。高速 vectorized backtest runner surface。
+- `bt==1.2.0`: `bt` optional extra。portfolio allocation / rebalance comparison surface。
+- `empyrical-reloaded==0.5.12`: `metrics` optional extra。metrics analytics surface。
+- `quantstats==0.0.81`: `reports` optional extra。report analytics surface。
 
-専用 backtest OSS は `pyproject.toml` に入っていない。
+専用 OSS は通常 dependency ではなく optional extra として分離する。通常 `uv sync --dev --locked` では optional extras は入らない。
 
 ## OSS / Framework 候補
 
@@ -613,10 +630,10 @@ uv run --extra bt --extra metrics --extra reports sis strategy-backtest-artifact
 
 | 候補 | 公式情報ベースの特徴 | repo への向き | 注意点 | 位置づけ |
 |---|---|---|---|---|
-| `vectorbt` | pandas / NumPy ベースの高速 backtesting / quantitative analysis。Numba / Rust による高速化も説明されている。 | 大量 parameter sweep、vectorized research、factor scan に向く | Polars 中心の現行 artifact とは変換層が必要。Python 3.13 / optional deps は導入 spike 必須 | 研究探索 adapter 候補 |
+| `vectorbt` | pandas / NumPy ベースの高速 backtesting / quantitative analysis。Numba / Rust による高速化も説明されている。 | 大量 parameter sweep、vectorized research、factor scan に向く | Polars 中心の現行 artifact とは変換層が必要。公式 license は Apache 2.0 with Commons Clause。base extra のみ採用し、`full` / `rust` / `all` は未採用 | optional extra 採用済み runner |
 | `backtesting.py` | historical data 上で trading strategy viability を見る Python framework。PyPI では Python `>=3.9`。 | 単純な OHLC strategy prototype に向く | AGPLv3+ 表示があるため license review 必須。複雑な portfolio / artifact contract は adapter が必要 | 小型 prototype 候補 |
 | `backtrader` | backtesting と trading の feature-rich Python framework。strategy / indicators / analyzers を書く設計。 | event-driven / indicator-heavy な検証に向く | live trading 機能も含むため、repo の no-live boundary と強く分離が必要。依存と保守状態の spike 必須 | event-driven comparison 候補 |
-| `zipline-reloaded` | Pythonic event-driven backtester。PyPI は Python `>=3.9` と NumFOCUS library 互換を説明している。 | equity-style pipeline / calendar / event-driven 検証に向く | 導入が重くなりやすい。現行 Strategy Authoring YAML との対応が薄い。Python 3.13 での実導入確認が必要 | 大型 framework 候補 |
+| `zipline-reloaded` | Pythonic event-driven backtester。PyPI は Python `>=3.10` と NumFOCUS library 互換を説明している。 | equity-style pipeline / calendar / event-driven 検証に向く | 導入が重くなりやすい。現行 Strategy Authoring YAML との対応が薄い。Python 3.13 での実導入確認が必要 | 大型 framework 候補 |
 
 ### 2026-06-13 Import / License Smoke
 
@@ -644,7 +661,7 @@ for dist in ['vectorbt', 'backtesting', 'backtrader']:
 PY
 ```
 
-この smoke は「依存追加してよい」証明ではない。`uv.lock`、CI、license、artifact normalization、no-live boundary test を通すまでは採用しない。
+この smoke は当時の導入可否調査であり、現在は `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を optional extra として採用済みである。`backtesting.py`, `backtrader`, `zipline-reloaded` は引き続き採用していない。
 
 参照:
 
@@ -700,16 +717,17 @@ Backtest Expansion Scope 1: Framework Adapter Spike
 
 その次の実装候補:
 
-1. `strategy-backtest-compare` command を追加し、現行 engine と adapter result を同じ report に並べる。
-2. 最初の adapter は repo 依存を増やさず、現行 output を比較用 canonical shape に正規化する internal adapter にする。
-3. 外部 framework は、license review 後に optional extra または別環境 runner として扱う。
-4. `strategy_authoring_spec.v1` の `backtest.engine` を追加する前に、内部設定だけで adapter を選ぶ spike を行う。
-5. 採用する場合だけ `pyproject.toml` / `uv.lock` を更新する。
+1. `strategy-backtest-framework-run` の selected manifest を UI / report 側から読みやすくする。
+2. `vectorbt` runner の parameter sweep 入力を Strategy Authoring artifact から安全に作る。
+3. `bt` portfolio comparison の asset/weight 入力を拡張する。
+4. `metrics` / `reports` は backtest engine ではなく analytics surface として表示し、誤って alpha 証明に使わない。
+5. 追加 OSS は license review 後に optional extra または別環境 runner として扱う。
 
 ## 抜け、漏れ、誤謬リスク
 
-- 外部 OSS の Python 3.13 実互換は未検証。公式 PyPI の `Requires-Python` は導入成功や全テスト成功を保証しない。
-- `bt` は optional extra として現行 lockfile に入っている。`vectorbt` / `backtesting.py` / `zipline-reloaded` / `backtrader` / `quantstats` / `empyrical-reloaded` / `pyfolio-reloaded` / `qstrader` は現行 lockfile に入っていない。採用には依存追加と CI 検証が必要。
+- 外部 OSS の Python 3.13 実互換は採用済み extras については `uv lock` / smoke / full gate で確認済み。ただし公式 PyPI の `Requires-Python` は将来版の導入成功や全テスト成功を保証しない。
+- `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` は optional extra として現行 lockfile に入っている。`backtesting.py` / `zipline-reloaded` / `backtrader` / `pyfolio-reloaded` / `qstrader` は現行 lockfile に入っていない。
+- `empyrical-reloaded` と `quantstats` は backtest engine ではなく analytics / report surface である。`framework_count` を「4つの backtest engine」と読まない。
 - `backtesting.py` は PyPI 上で AGPLv3+ と表示されるため、利用形態によっては license review が必要。
 - external framework が持つ live trading 機能は、採用しても repo では無効化・隔離する必要がある。
 - 現行 NDX Layer 2.5 は `permits_backtest=false` の research-only export であり、NDX residual validation 自体が backtest 許可を出しているわけではない。

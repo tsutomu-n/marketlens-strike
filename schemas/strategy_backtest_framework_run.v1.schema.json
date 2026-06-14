@@ -121,6 +121,7 @@
       "type": "object",
       "required": [
         "framework_id",
+        "surface_type",
         "status",
         "run_status",
         "reason_codes",
@@ -131,6 +132,15 @@
       ],
       "properties": {
         "framework_id": {"type": "string"},
+        "surface_type": {
+          "enum": [
+            "backtest_engine",
+            "portfolio_backtest_engine",
+            "metrics_analytics",
+            "report_analytics",
+            "unsupported"
+          ]
+        },
         "status": {"enum": ["supported", "unsupported"]},
         "run_status": {"enum": ["completed", "skipped", "failed", "unknown"]},
         "reason_codes": {"type": "array", "items": {"type": "string"}},

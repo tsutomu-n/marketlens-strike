@@ -86,6 +86,7 @@ def test_build_strategy_backtest_framework_run_selects_only_requested_framework(
     assert result.payload["sources"]["bundle"]["sha256"] is None
     assert result.payload["summary"]["framework_count"] == 1
     assert result.payload["runs"][0]["framework_id"] == "empyrical_reloaded"
+    assert result.payload["runs"][0]["surface_type"] == "metrics_analytics"
     assert result.payload["runs"][0]["artifact"]["exists"] is True
     assert result.payload["runs"][0]["boundary"]["permits_live_order"] is False
     assert result.payload["runs"][0]["boundary"]["wallet_used"] is False
@@ -110,6 +111,7 @@ def test_strategy_backtest_framework_run_cli_supports_metrics_alias(
     assert payload["selected_frameworks"] == ["empyrical_reloaded"]
     assert payload["sources"]["metrics"]["sha256"].startswith("sha256:")
     assert payload["runs"][0]["framework_id"] == "empyrical_reloaded"
+    assert payload["runs"][0]["surface_type"] == "metrics_analytics"
     assert payload["permits_live_order"] is False
 
 
@@ -196,6 +198,7 @@ def test_build_strategy_backtest_framework_run_selects_vectorbt_runner(
     assert result.payload["sources"]["quotes"]["exists"] is True
     assert result.payload["sources"]["quotes"]["sha256"].startswith("sha256:")
     assert result.payload["runs"][0]["framework_id"] == "vectorbt"
+    assert result.payload["runs"][0]["surface_type"] == "backtest_engine"
     assert result.payload["runs"][0]["run_status"] == "completed"
     assert result.payload["runs"][0]["dependency_source"] == "optional_extra_available"
     assert result.payload["runs"][0]["boundary"]["engine_run"] is True

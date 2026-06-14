@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_16:04 JST
-更新日: 2026-06-14_11:00 JST
+更新日: 2026-06-14_17:23 JST
 -->
 
 # vectorbt Adoption Plan
@@ -92,12 +92,14 @@ uv run sis strategy-backtest-compare
 - license review 結果を docs に残す。
 - `vectorbt` を採用するか、temporary `uv --with` のままにするかを明記する。
 
-2026-06-13_20:51 JST の結果:
+2026-06-13_20:51 JST の一時判断:
 
 - [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) を作成済み。
-- `vectorbt` は採用しない。
-- temporary `uv --with vectorbt` smoke と existing adapter surface に留める。
-- `pyproject.toml` / `uv.lock` に `vectorbt` を追加しない。
+- 当時は `vectorbt` を採用しない判断だった。
+- 当時は temporary `uv --with vectorbt` smoke と existing adapter surface に留める判断だった。
+- 当時は `pyproject.toml` / `uv.lock` に `vectorbt` を追加しない判断だった。
+
+2026-06-14_11:00 JST の owner approval により、この一時判断は上書き済みである。現在は `vectorbt==1.0.0` を base optional extra として採用済みで、`vectorbt[full]`, `vectorbt[rust]`, `vectorbt[all]` は採用しない。
 
 ## Phase 1: optional extra と lockfile
 

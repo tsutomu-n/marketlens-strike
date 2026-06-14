@@ -27,6 +27,13 @@ FRAMEWORK_ALIASES = {
     "reports": "quantstats",
 }
 
+SURFACE_TYPES = {
+    "vectorbt": "backtest_engine",
+    "bt": "portfolio_backtest_engine",
+    "empyrical_reloaded": "metrics_analytics",
+    "quantstats": "report_analytics",
+}
+
 
 @dataclass(frozen=True)
 class BacktestFrameworkRunResult:
@@ -112,15 +119,16 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         "- wallet_used: false",
         "- exchange_write_used: false",
         "",
-        "| Framework | Status | Run Status | Dependency Source | Engine Run | Artifact |",
-        "|---|---:|---:|---|---:|---|",
+        "| Framework | Surface | Status | Run Status | Dependency Source | Engine Run | Artifact |",
+        "|---|---|---:|---:|---|---:|---|",
     ]
     for run in payload["runs"]:
         artifact = run.get("artifact")
         artifact_path = artifact.get("path") if isinstance(artifact, dict) else None
         lines.append(
-            "| {framework_id} | {status} | {run_status} | {dependency_source} | {engine_run} | `{artifact}` |".format(
+            "| {framework_id} | {surface_type} | {status} | {run_status} | {dependency_source} | {engine_run} | `{artifact}` |".format(
                 framework_id=run["framework_id"],
+                surface_type=run.get("surface_type") or "",
                 status=run["status"],
                 run_status=run["run_status"],
                 dependency_source=run.get("dependency_source") or "",
@@ -158,6 +166,7 @@ def build_strategy_backtest_framework_run(
             runs.append(
                 {
                     "framework_id": framework_id,
+                    "surface_type": "unsupported",
                     "status": "unsupported",
                     "run_status": "skipped",
                     "reason_codes": ["unsupported_framework_selector"],
@@ -188,6 +197,7 @@ def build_strategy_backtest_framework_run(
             runs.append(
                 {
                     "framework_id": framework_id,
+                    "surface_type": SURFACE_TYPES[framework_id],
                     "status": "supported",
                     "run_status": _external_run_status(result.payload, framework_id),
                     "reason_codes": [],
@@ -208,6 +218,7 @@ def build_strategy_backtest_framework_run(
             runs.append(
                 {
                     "framework_id": framework_id,
+                    "surface_type": SURFACE_TYPES[framework_id],
                     "status": "supported",
                     "run_status": str(result.payload.get("run_status") or "unknown"),
                     "reason_codes": result.payload.get("reason_codes") or [],
@@ -229,6 +240,7 @@ def build_strategy_backtest_framework_run(
             runs.append(
                 {
                     "framework_id": framework_id,
+                    "surface_type": SURFACE_TYPES[framework_id],
                     "status": "supported",
                     "run_status": str(result.payload.get("metric_status") or "unknown"),
                     "reason_codes": result.payload.get("reason_codes") or [],
@@ -250,6 +262,7 @@ def build_strategy_backtest_framework_run(
         runs.append(
             {
                 "framework_id": framework_id,
+                "surface_type": SURFACE_TYPES[framework_id],
                 "status": "supported",
                 "run_status": str(result.payload.get("report_status") or "unknown"),
                 "reason_codes": result.payload.get("reason_codes") or [],
