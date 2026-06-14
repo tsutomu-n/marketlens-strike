@@ -124,6 +124,7 @@
         "status",
         "run_status",
         "reason_codes",
+        "dependency_source",
         "artifact",
         "report",
         "boundary"
@@ -133,6 +134,15 @@
         "status": {"enum": ["supported", "unsupported"]},
         "run_status": {"enum": ["completed", "skipped", "failed", "unknown"]},
         "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "dependency_source": {
+          "type": ["string", "null"],
+          "enum": [
+            "not_installed_in_current_env",
+            "temporary_uv_with",
+            "optional_extra_available",
+            null
+          ]
+        },
         "artifact": {"anyOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]},
         "report": {"anyOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]},
         "boundary": {"$ref": "#/$defs/boundary"}

@@ -37,14 +37,9 @@ def test_pure_backtest_scope_has_no_live_execution_coupling() -> None:
     assert violations == []
 
 
-def test_vectorbt_is_not_locked_without_approval() -> None:
+def test_vectorbt_is_locked_as_approved_optional_extra() -> None:
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     optional_dependencies = pyproject["project"].get("optional-dependencies", {})
 
-    assert "vectorbt" not in optional_dependencies
-    assert not any(
-        str(dependency).startswith("vectorbt")
-        for dependencies in optional_dependencies.values()
-        for dependency in dependencies
-    )
-    assert 'name = "vectorbt"' not in Path("uv.lock").read_text(encoding="utf-8")
+    assert optional_dependencies["vectorbt"] == ["vectorbt==1.0.0"]
+    assert 'name = "vectorbt"' in Path("uv.lock").read_text(encoding="utf-8")

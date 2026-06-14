@@ -1,17 +1,17 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-14_09:47 JST
+更新日: 2026-06-14_11:00 JST
 -->
 
 # Current Backtest Detail And Framework Options
 
 ## 結論
 
-現行 repo の backtest は、専用 OSS backtesting framework を依存として使っていない。中核は repo 内の自前実装で、`polars`, `pydantic`, `pyarrow`, `duckdb`, `typer` などの Python data / CLI stack の上に作られている。
+現行 repo の backtest 中核は repo 内の自前実装で、`polars`, `pydantic`, `pyarrow`, `duckdb`, `typer` などの Python data / CLI stack の上に作られている。専用 OSS backtesting framework は中核 engine ではなく、選択式 optional adapter として採用する。
 
 いま実務で使う主入口は `Strategy Authoring fixed-horizon backtest` である。YAML で戦略を記述し、`strategy-author-run --through backtest` で signal 生成から paper-only backtest metrics まで出す。これは live readiness ではなく、研究用の backtest artifact である。
 
-今後「様々な手法で backtest する」機能を広げる場合、最初に外部 OSS を中核へ入れるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入するのが安全である。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` である。正式 optional dependency の採用判断は [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md) を正とし、現時点では `bt`、`metrics`、`reports` を optional extra 採用済み、`vectorbt` を [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) により明示承認まで未採用として扱う。
+今後「様々な手法で backtest する」機能を広げる場合も、外部 OSS を中核へ置き換えるのではなく、現行の artifact / safety boundary を維持したまま、adapter として比較導入する。候補は `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` である。正式 optional dependency の採用判断は [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md) を正とし、現時点では `vectorbt`、`bt`、`metrics`、`reports` を optional extra 採用済みである。
 
 ## 現行 Backtest Surface
 
@@ -337,7 +337,7 @@ uv run sis strategy-backtest-adapter-contract
 ```bash
 uv run sis strategy-backtest-framework-run --framework bt
 uv run sis strategy-backtest-framework-run --framework metrics --framework reports
-uv run --with vectorbt sis strategy-backtest-framework-run --framework vectorbt
+uv run --extra vectorbt sis strategy-backtest-framework-run --framework vectorbt
 ```
 
 対応する `--framework` は `vectorbt`, `bt`, `empyrical_reloaded`, `quantstats` である。alias として `metrics` は `empyrical_reloaded`、`reports` は `quantstats` に正規化する。
@@ -357,13 +357,13 @@ uv run --extra bt --extra metrics --extra reports sis strategy-backtest-framewor
 
 2026-06-14_09:39 JST 時点の確認では、この command は `framework_count=3`, `executed_count=3`, `failed_count=0`, `skipped_count=0` を返した。`bt` は portfolio comparison、`metrics` は `empyrical_reloaded` metric extension、`reports` は `quantstats` report extension を実行し、各 sub-run の report は `data/reports/backtest_framework_run/<framework>/` に隔離する。`quantstats` 実行時の framework warning は artifact に捕捉し、Matplotlib font lookup noise は既定では operator 出力へ出さない。
 
-`vectorbt` を repo dependency に入れず、selector 経由で一時実行する場合:
+`vectorbt` を承認済み optional extra として selector 経由で実行する場合:
 
 ```bash
-uv run --with vectorbt sis strategy-backtest-framework-run --framework vectorbt
+uv run --extra vectorbt sis strategy-backtest-framework-run --framework vectorbt
 ```
 
-2026-06-14_09:42 JST 時点の確認では、この command は `framework_count=1`, `executed_count=1`, `failed_count=0`, `skipped_count=0` を返した。sub-run artifact は `data/research/backtest_framework_run/vectorbt_external/strategy_backtest_external_result.json` で、`vectorbt` row は `framework_version=1.0.0`, `runner_mode=temporary_or_optional_import`, `run_status=completed`, `engine_run=true`, `trade_count=7`, `total_return=0.005833333333333431`, `max_drawdown=0.0`, `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を記録した。`pyproject.toml` / `uv.lock` には `vectorbt` を追加していない。2026-06-14_09:42 JST の公式 license page 再確認でも `Apache 2.0 with Commons Clause` の扱いであり、正式採用は引き続き legal / owner approval 後だけである。
+2026-06-14_11:00 JST に owner 承認済みとして `vectorbt==1.0.0` を `[project.optional-dependencies].vectorbt` と `uv.lock` に追加した。selector sub-run artifact は `data/research/backtest_framework_run/vectorbt_external/strategy_backtest_external_result.json` で、`vectorbt` row は `framework_version=1.0.0`, `runner_mode=temporary_or_optional_import`, `dependency_source=optional_extra_available`, `run_status=completed`, `engine_run=true`, `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を記録する。公式 license page は `Apache 2.0 with Commons Clause` の扱いであるため、採用範囲は base optional extra のみで、`vectorbt[full]`, `vectorbt[rust]`, `vectorbt[all]` は採用しない。
 
 ## Backtest External Framework Result
 
@@ -378,16 +378,16 @@ uv run sis strategy-backtest-external-run
 - `data/research/backtest_external/strategy_backtest_external_result.json`
 - `data/reports/strategy_backtest_external_report.md`
 
-この command も `pyproject.toml` / `uv.lock` を変更しない。既定では `data/research/strategy_signals.parquet` と `data/research/strategy_authoring_baseline_quotes.parquet` を読み、`--label-horizon-minutes` で external framework 用の exit を作る。artifact には `source_metrics_path/hash`, `source_signals_path/hash`, `source_quotes_path/hash`, `label_horizon_minutes` を記録する。framework ごとの result には `framework_version` と `runner_mode` も入る。`vectorbt` がインストール済みなら `src/sis/backtest/vectorbt_adapter.py` が `vectorbt.Portfolio.from_signals` を呼び、`trade_count`, `total_return`, `max_drawdown`, `cost_drag_bps` を `strategy_backtest_external_result.v1` に記録する。現環境で `vectorbt`, `bt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `quantstats`, `empyrical-reloaded`, `pyfolio-reloaded`, `qstrader` が未インストールなら、各 candidate を `run_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env` で記録する。artifact は `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定し、外部 engine 実行が無い場合は `external_engine_run=false` になる。
+この command も実行時には `pyproject.toml` / `uv.lock` を変更しない。既定では `data/research/strategy_signals.parquet` と `data/research/strategy_authoring_baseline_quotes.parquet` を読み、`--label-horizon-minutes` で external framework 用の exit を作る。artifact には `source_metrics_path/hash`, `source_signals_path/hash`, `source_quotes_path/hash`, `label_horizon_minutes` を記録する。framework ごとの result には `framework_version`, `runner_mode`, `dependency_source` も入る。`vectorbt` が `uv run --extra vectorbt` 環境でインストール済みなら `src/sis/backtest/vectorbt_adapter.py` が `vectorbt.Portfolio.from_signals` を呼び、`trade_count`, `total_return`, `max_drawdown`, `cost_drag_bps` を `strategy_backtest_external_result.v1` に記録する。現環境で候補 framework が未インストールなら、各 candidate を `run_status=skipped`, `reason_codes=["not_installed_in_current_env"]`, `runner_mode=not_installed_in_current_env`, `dependency_source=not_installed_in_current_env` で記録する。artifact は `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定し、外部 engine 実行が無い場合は `external_engine_run=false` になる。
 
-一時環境で `vectorbt` を使う場合:
+optional extra 環境で `vectorbt` を使う場合:
 
 ```bash
-uv run --with vectorbt sis strategy-backtest-external-run
+uv run --extra vectorbt sis strategy-backtest-external-run
 uv run sis strategy-backtest-compare
 ```
 
-2026-06-13_18:25 JST 時点の smoke では、`uv run --with vectorbt` で `vectorbt_version=1.0.0` を import でき、`strategy-backtest-external-run` は `vectorbt` result を `framework_version=1.0.0`, `runner_mode=temporary_or_optional_import`, `run_status=completed`, `engine_run=true`, `trade_count=7`, `total_return=0.005833333333333431`, `max_drawdown=0.0`, `cost_drag_bps=0.0` として記録した。この smoke は repo dependency / lockfile 採用ではない。
+2026-06-14_11:00 JST の正式採用後 smoke では、`uv run --extra vectorbt` で `vectorbt_version=1.0.0` を import し、`strategy-backtest-external-run` は `vectorbt` result を `framework_version=1.0.0`, `runner_mode=temporary_or_optional_import`, `dependency_source=optional_extra_available`, `run_status=completed`, `engine_run=true` として記録する。
 
 ## Backtest Portfolio Comparison
 
@@ -554,7 +554,7 @@ uv run sis strategy-backtest-pack
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/reports/strategy_backtest_pack_report.md`
 
-pack も `paper_only=true`, `live_order_submitted=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。`bt` は optional extra として lock 済みだが、標準 pack 完成には要求しない。通常 locked env で外部 framework が未インストールなら `external_results`、`portfolio_comparison`、`metric_extension`、`report_extension` は skipped として comparison に残る。`external_framework_policy.policy_id` は `native_primary_external_evaluation_only.v1` で、標準 engine は `strategy_authoring_native`、標準完成線は `complete_without_locked_external_dependency`、`locked_dependency_added=false`、`external_adapters_required_for_completion=false` である。一時実行許可は `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` に限定する。追加の外部 OSS を正式採用する場合は、license、Python 3.13 / uv lock、CI、schema boundary review を先に通す。
+pack も `paper_only=true`, `live_order_submitted=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を固定する。`vectorbt` と `bt` は optional extra として lock 済みだが、標準 pack 完成には要求しない。通常 locked env で外部 framework が未インストールなら `external_results`、`portfolio_comparison`、`metric_extension`、`report_extension` は skipped として comparison に残る。`external_framework_policy.policy_id` は `native_primary_external_evaluation_only.v1` で、標準 engine は `strategy_authoring_native`、標準完成線は `complete_without_locked_external_dependency`、`locked_dependency_added=false`、`external_adapters_required_for_completion=false` である。正式採用済み optional extra は `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` に限定する。追加の外部 OSS を正式採用する場合は、license、Python 3.13 / uv lock、CI、schema boundary review を先に通す。
 
 生成済み pack を検査する場合は `strategy-backtest-pack-validate` を使う。
 

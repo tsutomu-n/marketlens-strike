@@ -1,15 +1,15 @@
 <!--
 作成日: 2026-06-13_20:51 JST
-更新日: 2026-06-13_20:51 JST
+更新日: 2026-06-14_11:00 JST
 -->
 
 # vectorbt License Decision Memo
 
 ## 結論
 
-`vectorbt` は現時点では repo optional extra として採用しない。`pyproject.toml` / `uv.lock` へ `vectorbt` を追加しない。
+`vectorbt` は repo optional extra として正式採用する。`pyproject.toml` / `uv.lock` へ `vectorbt==1.0.0` を追加済みである。
 
-理由は、公式 license が `Apache 2.0 with Commons Clause` であり、通常の Apache-2.0 単体ではないためである。Commons Clause は販売・有償サービス提供の解釈が絡む制限を追加するため、この repo の依存として lock するには legal / owner approval が必要である。
+公式 license が `Apache 2.0 with Commons Clause` であり、通常の Apache-2.0 単体ではない点は変わらない。2026-06-14_11:00 JST に owner から「懸念事項はすべて解決しているため正式採用する」と明示されたため、この repo では owner approval 済みとして optional extra 採用に進める。
 
 技術面では `vectorbt 1.0.0` は Python `>=3.10` と Python 3.13 classifier を持ち、一時 `uv --with vectorbt` import と `strategy-backtest-external-run` smoke は成立している。したがって blocker は主に license / adoption policy であり、adapter 技術検証ではない。
 
@@ -17,13 +17,13 @@
 
 | Item | Decision |
 |---|---|
-| repo dependency | 採用しない |
-| optional extra | 追加しない |
-| lockfile | 更新しない |
-| temporary smoke | 継続可 |
+| repo dependency | 通常 dependency にはしない |
+| optional extra | `vectorbt = ["vectorbt==1.0.0"]` を追加 |
+| lockfile | `uv.lock` に `vectorbt==1.0.0` と transitive dependency を追加 |
+| temporary smoke | `uv run --extra vectorbt ...` に置き換え |
 | `vectorbt[full]` / `vectorbt[rust]` / `vectorbt[all]` | 採用しない |
 | production / live path | 接続しない |
-| 再評価条件 | legal / owner approval と transitive dependency review |
+| 採用根拠 | 2026-06-14_11:00 JST の owner approval |
 
 ## 確認した一次情報
 
@@ -72,29 +72,27 @@ PyPI page は Python 3.13 対応を示す一方、machine-readable license metad
 
 したがって、現時点の repo policy としては次を採る。
 
-- `vectorbt` は `temporary_uv_with` 相当の検証だけ許可する。
+- `vectorbt` は `vectorbt` optional extra として採用する。
 - `src/sis/backtest/vectorbt_adapter.py` は残してよい。
-- `strategy-backtest-external-run` は `vectorbt` が現在の環境にある場合だけ実行してよい。
+- `strategy-backtest-external-run` は `uv run --extra vectorbt` 環境で `vectorbt.Portfolio.from_signals` を実行してよい。
 - `strategy-backtest-compare` は `vectorbt` result を optional external result として取り込んでよい。
-- ただし、`pyproject.toml` / `uv.lock` / CI required dependency には入れない。
+- ただし、通常 dependency / dev dependency / 標準 engine にはしない。
 
-## 変更してはいけないこと
+## 採用後も変更してはいけないこと
 
-明示承認なしに次を行わない。
+次を行わない。
 
-- `[project.optional-dependencies].vectorbt = ["vectorbt==1.0.0"]` を追加する。
-- `uv.lock` に `vectorbt` を lock する。
 - `vectorbt[full]`, `vectorbt[rust]`, `vectorbt[all]` を採用する。
 - `vectorbt` を標準 engine にする。
 - `strategy_authoring_native` の完成線を `vectorbt` 前提へ変える。
 - `vectorbt` result から alpha / paper / live readiness を主張する。
 - live order、wallet、signing、exchange write に接続する。
 
-## 再評価する場合の条件
+## 採用時の条件
 
-`vectorbt` 採用を再評価する場合は、次をすべて満たす。
+`vectorbt` 採用では、次を満たす。
 
-1. legal / owner approval を docs か issue / decision record に残す。
+1. owner approval を docs か issue / decision record に残す。
 2. Commons Clause が repo の利用形態に許容される理由を明記する。
 3. `vectorbt` base extra だけを対象にし、`full`, `rust`, `all` は別 review にする。
 4. `uv sync --dev --extra vectorbt --locked` が安定することを確認する。
@@ -105,11 +103,12 @@ PyPI page は Python 3.13 対応を示す一方、machine-readable license metad
 
 ## 現時点で使えるコマンド
 
-repo dependency に入れず、検証目的で一時環境を使う場合:
+optional extra 環境で `vectorbt` を使う場合:
 
 ```bash
-uv run --with vectorbt python -c 'import vectorbt; print(vectorbt.__version__)'
-uv run --with vectorbt sis strategy-backtest-external-run
+uv run --extra vectorbt python -c 'import vectorbt; print(vectorbt.__version__)'
+uv run --extra vectorbt sis strategy-backtest-external-run
+uv run --extra vectorbt sis strategy-backtest-framework-run --framework vectorbt
 uv run sis strategy-backtest-compare
 ```
 

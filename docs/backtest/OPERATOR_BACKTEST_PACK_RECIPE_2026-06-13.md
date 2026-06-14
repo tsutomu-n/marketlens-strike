@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_21:35 JST
-更新日: 2026-06-13_21:56 JST
+更新日: 2026-06-14_11:00 JST
 -->
 
 # Operator Backtest Pack Recipe
@@ -120,4 +120,4 @@ uv run --extra bt --extra metrics --extra reports sis strategy-backtest-artifact
 - `report_extension.framework_warning_count`
 - `pack_validation.decision`
 
-`vectorbt` は license decision により、明示承認なしでは optional extra / lockfile に追加しない。
+`vectorbt` は 2026-06-14_11:00 JST の owner 承認により、`vectorbt==1.0.0` を optional extra / lockfile に正式採用済みである。標準 pack の完成線は native-primary のままなので、`vectorbt` を明示して使う場合は `uv run --extra vectorbt sis strategy-backtest-framework-run --framework vectorbt` を使う。

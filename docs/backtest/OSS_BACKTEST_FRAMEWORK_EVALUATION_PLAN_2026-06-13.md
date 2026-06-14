@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_16:12 JST
-更新日: 2026-06-13_21:09 JST
+更新日: 2026-06-14_11:00 JST
 -->
 
 # OSS Backtest Framework Evaluation Plan
@@ -13,7 +13,7 @@
 
 | Tier | 候補 | 役割 | 判断 |
 |---|---|---|---|
-| Tier 1 | `vectorbt` | 高速 vectorized research / parameter sweep | license decision により明示承認まで未採用 |
+| Tier 1 | `vectorbt` | 高速 vectorized research / parameter sweep | optional extra 採用済み |
 | Tier 1 | `bt` | portfolio / allocation / rebalance 型の比較 | optional extra 採用済み |
 | Tier 2 | `backtesting.py` | 小型 OHLC strategy prototype | license review 後の spike 候補 |
 | Tier 2 | `zipline-reloaded` | event-driven equity / calendar / pipeline 系 | 重いが大型比較候補 |
@@ -52,15 +52,15 @@
 
 現状:
 
-- `strategy-backtest-external-run` で `vectorbt.Portfolio.from_signals` の一時 smoke 済み。
+- `strategy-backtest-external-run` で `vectorbt.Portfolio.from_signals` の optional extra smoke 済み。
 - 実行処理は `src/sis/backtest/vectorbt_adapter.py` に分離済みで、external result と comparison result に `framework_version` と `runner_mode` を残す。
 - PyPI の `vectorbt 1.0.0` は Python `>=3.10`、Python 3.13 classifier を持つ。
 - 公式 license は `Apache 2.0 with Commons Clause` で、通常 Apache-2.0 単体ではない。
-- [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) により、legal / owner approval なしでは repo optional extra にしない。
+- [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) により、2026-06-14_11:00 JST の owner approval 済みとして repo optional extra に採用する。
 
 判断:
 
-- 技術的には optional adapter 候補だが、現時点では採用しない。
+- optional adapter として採用済み。
 - `vectorbt[full]` / `vectorbt[rust]` は初回採用に含めない。
 
 参照:
@@ -384,7 +384,7 @@ backtest-report = ["quantstats==<locked-version>", "empyrical-reloaded==<locked-
 
 ## 次の具体タスク
 
-1. 採用済み optional extra として `bt`, `metrics`, `reports` の通常 env / extra env の境界を維持する。
+1. 採用済み optional extra として `vectorbt`, `bt`, `metrics`, `reports` の通常 env / extra env の境界を維持する。
 2. `strategy-backtest-compare` / `strategy-backtest-pack` が `dependency_source=optional_extra_available` と `not_installed_in_current_env` を区別できる状態を保つ。
 3. 次の拡張は explicit external benchmark series input を `strategy-backtest-benchmark-relative` に足し、source hash と no-live boundary を維持する。
-4. `vectorbt` は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) の通り、legal / owner approval 後だけ optional extra 採用を再検討する。
+4. 追加の外部 OSS は license、Python 3.13 / uv lock、CI、schema boundary review 後だけ optional extra 採用を再検討する。

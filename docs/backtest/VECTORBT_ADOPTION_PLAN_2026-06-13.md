@@ -1,15 +1,15 @@
 <!--
 作成日: 2026-06-13_16:04 JST
-更新日: 2026-06-13_20:51 JST
+更新日: 2026-06-14_11:00 JST
 -->
 
 # vectorbt Adoption Plan
 
 ## 結論
 
-`vectorbt` は採用候補であり、現行 repo にはすでに一時実行 surface がある。ただし、正式採用はまだしない。2026-06-13_20:51 JST 時点の license decision では、`Apache 2.0 with Commons Clause` を理由に、明示的な legal / owner approval なしでは `vectorbt` を repo optional extra や lockfile に追加しない。
+`vectorbt` は 2026-06-14_11:00 JST の owner 承認により正式採用済みである。現行 repo には `vectorbt==1.0.0` の optional extra と、選択式実行 surface がある。
 
-採用判断の正本は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) とする。将来正式採用する場合も、`Strategy Authoring native` を標準 engine として残したまま、`vectorbt` を optional adapter として入れ、外部 engine 比較の高速化と parameter sweep 補助に限定する。
+採用判断の正本は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) とする。`Strategy Authoring native` を標準 engine として残したまま、`vectorbt` を optional adapter として入れ、外部 engine 比較の高速化と parameter sweep 補助に限定する。
 
 この計画では `VectorBot` という呼び名は使わず、Python package 名の `vectorbt` に統一する。
 
@@ -19,16 +19,16 @@
 
 - `strategy-backtest-external-run` は `vectorbt` が import できる環境では `vectorbt.Portfolio.from_signals` を呼べる。
 - `vectorbt` 実行処理は `src/sis/backtest/vectorbt_adapter.py` に分離済みで、外部 result は `framework_version` と `runner_mode` を記録する。
-- `uv run --with vectorbt sis strategy-backtest-external-run` の一時 smoke は通過済み。
+- `uv run --extra vectorbt sis strategy-backtest-external-run` と `strategy-backtest-framework-run --framework vectorbt` で正式 optional extra smoke を行う。
 - `strategy_backtest_pack.v1` は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定している。
-- `pyproject.toml` / `uv.lock` には `vectorbt` を入れていない。
+- `pyproject.toml` / `uv.lock` には `vectorbt==1.0.0` を optional extra として入れている。
 - live order、wallet、signing、exchange write はどの external framework surface でも許可しない。
 
 現在の外部情報:
 
 - PyPI の `vectorbt 1.0.0` は 2026-04-22 release、`Requires-Python >=3.10`、Python 3.13 classifier を持つ。
 - PyPI の説明では、pandas / NumPy / Numba を中心に、大量設定を高速に評価する backtesting / analysis library とされている。
-- 公式 license page と GitHub license file は `Apache 2.0 with Commons Clause` を示す。これは通常の Apache-2.0 単体とは扱いが違うため、正式採用前に legal / owner approval を必須にする。
+- 公式 license page と GitHub license file は `Apache 2.0 with Commons Clause` を示す。これは通常の Apache-2.0 単体とは扱いが違うため、2026-06-14_11:00 JST の owner approval を採用根拠として記録する。
 - PyPI metadata は `License=None`, `License-Expression=None` で、machine-readable license 判定だけでは採用可否を決められない。
 - optional dependencies はより制限的な license を含む可能性があるため、初回採用では `vectorbt[full]` や `vectorbt[rust]` は使わない。
 
@@ -210,15 +210,15 @@ uv run sis strategy-backtest-compare
 - vectorbt result を source hash / no-live boundary 付き artifact に正規化できない。
 - `strategy_authoring_native` と `vectorbt` の metric 差分が説明不能で、比較 report が誤解を生む。
 
-## 最小実装順
+## 実装済み順
 
-1. license review 結果を追記する。これは完了済み。
-2. legal / owner approval が出た場合だけ `pyproject.toml` に optional extra を追加する。
-3. approval 後だけ `uv.lock` を更新する。
-4. approval 後だけ `strategy-backtest-external-run` の artifact に optional extra 採用後の `dependency_source` を追加する。
-5. approval 後だけ `strategy-backtest-pack-validate` の policy を optional extra 採用後の状態へ更新する。
-6. approval 後だけ focused tests を追加する。
-7. approval 後だけ `./scripts/check` を通す。
+1. license review 結果を追記する。
+2. owner approval を decision record に残す。
+3. `pyproject.toml` に `vectorbt` optional extra を追加する。
+4. `uv.lock` を更新する。
+5. `strategy-backtest-external-run` の artifact に optional extra 採用後の `dependency_source` を追加する。
+6. `strategy-backtest-framework-run --framework vectorbt` で選択式 runner から実行する。
+7. focused tests と `./scripts/check` を通す。
 
 実装済みの前倒し項目:
 

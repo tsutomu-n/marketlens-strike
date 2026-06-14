@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-13_21:56 JST
+更新日: 2026-06-14_11:00 JST
 -->
 
 # Backtest Docs
@@ -28,13 +28,13 @@
 を見ます。
 `vectorbt` の license 採用判断は
 [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md)
-を見ます。現時点では `Apache 2.0 with Commons Clause` を理由に、明示承認なしで `vectorbt` を optional extra / lockfile に追加しません。
+を見ます。2026-06-14_11:00 JST に owner 承認済みとして、`vectorbt==1.0.0` を optional extra / lockfile に正式採用済みです。
 正式 optional dependency としてどの OSS を先に採用するかの review は
 [OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md](OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md)
 を見ます。
 `empyrical-reloaded` / `quantstats` の optional extra 採用判断は
 [METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md](METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md)
-を見ます。現時点では `metrics = ["empyrical-reloaded==0.5.12"]` と `reports = ["quantstats==0.0.81"]` を分けて採用済みです。
+を見ます。現時点では `vectorbt = ["vectorbt==1.0.0"]`, `metrics = ["empyrical-reloaded==0.5.12"]`, `reports = ["quantstats==0.0.81"]` を分けて採用済みです。
 external benchmark series を明示して標準 pack を実行する operator 手順は
 [OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md](OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md)
 を見ます。

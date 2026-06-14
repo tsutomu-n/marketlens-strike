@@ -80,6 +80,7 @@
         "run_status",
         "reason_codes",
         "dependency_added",
+        "dependency_source",
         "engine_run",
         "permits_live_order",
         "wallet_used",
@@ -113,6 +114,13 @@
         "run_status": {"enum": ["completed", "skipped", "failed"]},
         "reason_codes": {"type": "array", "items": {"type": "string"}},
         "dependency_added": {"const": false},
+        "dependency_source": {
+          "enum": [
+            "not_installed_in_current_env",
+            "temporary_uv_with",
+            "optional_extra_available"
+          ]
+        },
         "engine_run": {"type": "boolean"},
         "permits_live_order": {"const": false},
         "wallet_used": {"const": false},

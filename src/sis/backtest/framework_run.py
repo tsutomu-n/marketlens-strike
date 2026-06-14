@@ -91,6 +91,14 @@ def _external_run_status(payload: dict[str, Any], framework_id: str) -> str:
     return "unknown"
 
 
+def _external_dependency_source(payload: dict[str, Any], framework_id: str) -> str | None:
+    for result in payload.get("results") or []:
+        if isinstance(result, dict) and result.get("framework_id") == framework_id:
+            value = result.get("dependency_source")
+            return str(value) if value is not None else None
+    return None
+
+
 def _write_report(path: Path, payload: dict[str, Any]) -> Path:
     lines = [
         "# Strategy Backtest Framework Run",
@@ -104,17 +112,18 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         "- wallet_used: false",
         "- exchange_write_used: false",
         "",
-        "| Framework | Status | Run Status | Engine Run | Artifact |",
-        "|---|---:|---:|---:|---|",
+        "| Framework | Status | Run Status | Dependency Source | Engine Run | Artifact |",
+        "|---|---:|---:|---|---:|---|",
     ]
     for run in payload["runs"]:
         artifact = run.get("artifact")
         artifact_path = artifact.get("path") if isinstance(artifact, dict) else None
         lines.append(
-            "| {framework_id} | {status} | {run_status} | {engine_run} | `{artifact}` |".format(
+            "| {framework_id} | {status} | {run_status} | {dependency_source} | {engine_run} | `{artifact}` |".format(
                 framework_id=run["framework_id"],
                 status=run["status"],
                 run_status=run["run_status"],
+                dependency_source=run.get("dependency_source") or "",
                 engine_run=run["boundary"]["engine_run"],
                 artifact=artifact_path,
             )
@@ -152,6 +161,7 @@ def build_strategy_backtest_framework_run(
                     "status": "unsupported",
                     "run_status": "skipped",
                     "reason_codes": ["unsupported_framework_selector"],
+                    "dependency_source": None,
                     "artifact": None,
                     "report": None,
                     "boundary": {
@@ -181,6 +191,7 @@ def build_strategy_backtest_framework_run(
                     "status": "supported",
                     "run_status": _external_run_status(result.payload, framework_id),
                     "reason_codes": [],
+                    "dependency_source": _external_dependency_source(result.payload, framework_id),
                     "artifact": _artifact_row(result.external_path),
                     "report": _artifact_row(result.report_path),
                     "boundary": _boundary_row(result.payload),
@@ -200,6 +211,7 @@ def build_strategy_backtest_framework_run(
                     "status": "supported",
                     "run_status": str(result.payload.get("run_status") or "unknown"),
                     "reason_codes": result.payload.get("reason_codes") or [],
+                    "dependency_source": result.payload.get("dependency_source"),
                     "artifact": _artifact_row(result.comparison_path),
                     "report": _artifact_row(result.report_path),
                     "boundary": _boundary_row(result.payload),
@@ -220,6 +232,7 @@ def build_strategy_backtest_framework_run(
                     "status": "supported",
                     "run_status": str(result.payload.get("metric_status") or "unknown"),
                     "reason_codes": result.payload.get("reason_codes") or [],
+                    "dependency_source": result.payload.get("dependency_source"),
                     "artifact": _artifact_row(result.metric_extension_path),
                     "report": _artifact_row(result.report_path),
                     "boundary": _boundary_row(result.payload),
@@ -240,6 +253,7 @@ def build_strategy_backtest_framework_run(
                 "status": "supported",
                 "run_status": str(result.payload.get("report_status") or "unknown"),
                 "reason_codes": result.payload.get("reason_codes") or [],
+                "dependency_source": result.payload.get("dependency_source"),
                 "artifact": _artifact_row(result.report_extension_path),
                 "report": _artifact_row(result.report_path),
                 "boundary": _boundary_row(result.payload),

@@ -7,6 +7,8 @@ from typing import Any
 
 import polars as pl
 
+from sis.backtest.optional_dependencies import optional_dependency_source
+
 
 def _base_result(
     candidate: dict[str, Any],
@@ -25,6 +27,9 @@ def _base_result(
         "run_status": run_status,
         "reason_codes": reason_codes,
         "dependency_added": False,
+        "dependency_source": optional_dependency_source(
+            candidate, extra_name="vectorbt", dependency_prefixes={"vectorbt"}
+        ),
         "engine_run": engine_run,
         "permits_live_order": False,
         "wallet_used": False,

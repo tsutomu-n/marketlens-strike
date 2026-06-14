@@ -19,11 +19,37 @@ from .test_backtest_compare import _write_metrics
 runner = CliRunner()
 
 
-def test_build_strategy_backtest_external_result_skips_missing_frameworks(tmp_path) -> None:
+def test_build_strategy_backtest_external_result_skips_missing_frameworks(
+    tmp_path, monkeypatch
+) -> None:
     metrics_path = tmp_path / "data/research/strategy_backtest_metrics.json"
     out_dir = tmp_path / "data/research/backtest_external"
     reports_dir = tmp_path / "data/reports"
     _write_metrics(metrics_path)
+    frameworks = [
+        "vectorbt",
+        "bt",
+        "backtesting",
+        "zipline_reloaded",
+        "backtrader",
+        "quantstats",
+        "empyrical_reloaded",
+        "pyfolio_reloaded",
+        "qstrader",
+    ]
+    monkeypatch.setattr(
+        external_module,
+        "framework_adapter_status",
+        lambda: [
+            {
+                "framework_id": framework_id,
+                "adapter_role": f"{framework_id}_candidate",
+                "status": "not_installed",
+                "version": None,
+            }
+            for framework_id in frameworks
+        ],
+    )
 
     result = build_strategy_backtest_external_result(
         metrics_path=metrics_path,
@@ -49,20 +75,13 @@ def test_build_strategy_backtest_external_result_skips_missing_frameworks(tmp_pa
     assert payload["permits_live_order"] is False
     assert payload["wallet_used"] is False
     assert payload["exchange_write_used"] is False
-    assert {item["framework_id"] for item in payload["results"]} == {
-        "vectorbt",
-        "bt",
-        "backtesting",
-        "zipline_reloaded",
-        "backtrader",
-        "quantstats",
-        "empyrical_reloaded",
-        "pyfolio_reloaded",
-        "qstrader",
-    }
+    assert {item["framework_id"] for item in payload["results"]} == set(frameworks)
     assert all(item["run_status"] == "skipped" for item in payload["results"])
     assert all(
         "not_installed_in_current_env" in item["reason_codes"] for item in payload["results"]
+    )
+    assert all(
+        item["dependency_source"] == "not_installed_in_current_env" for item in payload["results"]
     )
     assert all(item["engine_run"] is False for item in payload["results"])
     assert result.report_path.exists()
@@ -187,6 +206,7 @@ def test_build_strategy_backtest_external_result_runs_vectorbt_when_installed(
             "run_status": "completed",
             "reason_codes": [],
             "dependency_added": False,
+            "dependency_source": "optional_extra_available",
             "engine_run": True,
             "permits_live_order": False,
             "wallet_used": False,

@@ -30,6 +30,9 @@ dependencies = [
 sis = "sis.cli:main"
 
 [project.optional-dependencies]
+vectorbt = [
+  "vectorbt==1.0.0",
+]
 bt = [
   "bt==1.2.0",
 ]

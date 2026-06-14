@@ -8,7 +8,15 @@ from pathlib import Path
 from typing import Any
 
 from sis.backtest.frameworks import framework_adapter_status
+from sis.backtest.optional_dependencies import optional_dependency_source
 from sis.backtest.vectorbt_adapter import run_vectorbt_result
+
+OPTIONAL_EXTRA_BY_FRAMEWORK = {
+    "vectorbt": ("vectorbt", {"vectorbt"}),
+    "bt": ("bt", {"bt"}),
+    "quantstats": ("reports", {"quantstats"}),
+    "empyrical_reloaded": ("metrics", {"empyrical-reloaded", "empyrical"}),
+}
 
 
 @dataclass(frozen=True)
@@ -50,6 +58,16 @@ def _aggregate_metrics(metrics_payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _dependency_source(candidate: dict[str, Any]) -> str:
+    extra_name, dependency_prefixes = OPTIONAL_EXTRA_BY_FRAMEWORK.get(
+        str(candidate["framework_id"]),
+        (str(candidate["framework_id"]), {str(candidate["framework_id"])}),
+    )
+    return optional_dependency_source(
+        candidate, extra_name=extra_name, dependency_prefixes=dependency_prefixes
+    )
+
+
 def _skipped_result(candidate: dict[str, Any], reason_codes: list[str]) -> dict[str, Any]:
     return {
         "framework_id": candidate["framework_id"],
@@ -60,6 +78,7 @@ def _skipped_result(candidate: dict[str, Any], reason_codes: list[str]) -> dict[
         "run_status": "skipped",
         "reason_codes": reason_codes,
         "dependency_added": False,
+        "dependency_source": _dependency_source(candidate),
         "engine_run": False,
         "permits_live_order": False,
         "wallet_used": False,
@@ -87,6 +106,7 @@ def _installed_without_runner_result(candidate: dict[str, Any]) -> dict[str, Any
         "run_status": "skipped",
         "reason_codes": ["framework_runner_not_implemented"],
         "dependency_added": False,
+        "dependency_source": _dependency_source(candidate),
         "engine_run": False,
         "permits_live_order": False,
         "wallet_used": False,

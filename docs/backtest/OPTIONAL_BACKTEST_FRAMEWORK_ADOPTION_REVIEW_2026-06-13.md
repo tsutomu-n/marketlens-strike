@@ -1,21 +1,23 @@
 <!--
 作成日: 2026-06-13_20:36 JST
-更新日: 2026-06-13_21:01 JST
+更新日: 2026-06-14_11:00 JST
 -->
 
 # Optional Backtest Framework Adoption Review
 
 ## 結論
 
+`vectorbt` は 2026-06-14_11:00 JST の owner 承認により、高速 signal runner / parameter sweep 用の optional extra として採用済みである。通常 dependency には入れず、`uv sync --dev --extra vectorbt --locked` または `uv run --extra vectorbt ...` で使う。
+
 `bt` は portfolio allocation / rebalance comparison 用の optional extra として採用済みである。通常 dependency には入れず、`uv sync --dev --extra bt --locked` または `uv run --extra bt ...` で使う。
 
-`empyrical-reloaded` と `quantstats` は [METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md](METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md) により、別々の optional extra として採用済みである。`vectorbt`, `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` は現時点では `pyproject.toml` / `uv.lock` に追加しない。特に `vectorbt` は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) により、Commons Clause を理由に明示承認まで採用しない。
+`empyrical-reloaded` と `quantstats` は [METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md](METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md) により、別々の optional extra として採用済みである。`backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` は現時点では `pyproject.toml` / `uv.lock` に追加しない。
 
 正式 optional extra の第一候補は、用途で分ける。
 
 | 用途 | 第一候補 | 判断 |
 |---|---|---|
-| 高速 signal runner / parameter sweep | `vectorbt` | 未採用。Python 3.13 対応と一時 smoke はよいが、Commons Clause 付き license のため、legal / owner approval なしで lock しない。 |
+| 高速 signal runner / parameter sweep | `vectorbt` | optional extra 採用済み。Commons Clause 付き license は owner 承認済みとして扱い、base extra のみ lock する。 |
 | portfolio allocation / rebalance comparison | `bt` | optional extra 採用済み。MIT、Python 3.13 wheel、現行 adapter surface との役割一致がある。 |
 | metrics normalization | `empyrical-reloaded` | `metrics` optional extra 採用済み。base package のみ採用し、`datareader` / `yfinance` extra は含めない。 |
 | report / tear sheet | `quantstats` | `reports` optional extra 採用済み。base package のみ採用し、`plotly` extra は含めない。 |
@@ -32,15 +34,15 @@
 
 Local repo:
 
-- `pyproject.toml`: Python `>=3.13,<3.14`、`bt==1.2.0` を `[project.optional-dependencies].bt`、`empyrical-reloaded==0.5.12` を `metrics`、`quantstats==0.0.81` を `reports` に固定。通常 dependency / dev dependency ではない。
-- `uv.lock`: `bt==1.2.0`, `empyrical-reloaded==0.5.12`, `quantstats==0.0.81` と transitive dependency を optional extra として lock。
+- `pyproject.toml`: Python `>=3.13,<3.14`、`vectorbt==1.0.0` を `[project.optional-dependencies].vectorbt`、`bt==1.2.0` を `bt`、`empyrical-reloaded==0.5.12` を `metrics`、`quantstats==0.0.81` を `reports` に固定。通常 dependency / dev dependency ではない。
+- `uv.lock`: `vectorbt==1.0.0`, `bt==1.2.0`, `empyrical-reloaded==0.5.12`, `quantstats==0.0.81` と transitive dependency を optional extra として lock。
 - `src/sis/backtest/frameworks.py`: 9件の候補を metadata candidate として列挙。
 - `src/sis/backtest/framework_smoke.py`: `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` を一時 import smoke 対象にする。
 - `src/sis/backtest/adapter_selection.py`: `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を adapter design 対象にし、他候補を deferred にする。
 - `data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json`: locked env では4候補すべて `not_installed`、`dependency_added=false`。
 - `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`: selected 4件、deferred 5件、全件 `dependency_added=false`, `permits_live_order=false`。
-- `data/research/backtest_external/strategy_backtest_external_result.json`: locked env では外部 engine は実行されず、各 framework は `skipped/not_installed_in_current_env`。
-- `docs/backtest/VECTORBT_ADOPTION_PLAN_2026-06-13.md`: `vectorbt` は optional adapter 計画済みだが、license decision により明示承認まで採用しない。
+- `data/research/backtest_external/strategy_backtest_external_result.json`: optional extra env では `vectorbt` が `dependency_source=optional_extra_available` として実行される。
+- `docs/backtest/VECTORBT_ADOPTION_PLAN_2026-06-13.md`: `vectorbt` は optional adapter として正式採用済み。
 - `docs/backtest/OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md`: 役割別候補分類の既存計画。
 
 External primary sources:
@@ -60,7 +62,7 @@ External primary sources:
 
 | Candidate | Repo role | Current package signal | 採用判断 | 次の実装単位 |
 |---|---|---|---|---|
-| `vectorbt` | `high_speed_signal_runner` | `1.0.0`, Python 3.13 classifier, official license is Apache 2.0 with Commons Clause | 未採用。明示承認なしで lock しない。 | approval が出た場合だけ、`[project.optional-dependencies].vectorbt` と `dependency_source=optional_extra` を追加。 |
+| `vectorbt` | `high_speed_signal_runner` | `1.0.0`, Python 3.13 classifier, official license is Apache 2.0 with Commons Clause | optional extra 採用済み。 | `uv run --extra vectorbt sis strategy-backtest-framework-run --framework vectorbt`。 |
 | `bt` | `portfolio_allocation_rebalance` | `1.2.0`, MIT, Python 3.13 wheel | optional extra 採用済み。 | `uv sync --dev --extra bt --locked`、`uv run --extra bt sis strategy-backtest-portfolio-compare`、portfolio comparison real smoke。 |
 | `empyrical-reloaded` | `metrics_normalization` | `0.5.12`, Apache系, Python 3.13 classifier | `metrics` optional extra 採用済み。engine ではない。 | `uv run --extra metrics sis strategy-backtest-metric-extension`。 |
 | `quantstats` | `report_tearsheet` | `0.0.81`, Apache-2.0, Python 3.13 classifier | `reports` optional extra 採用済み。engine ではない。 | `uv run --extra reports sis strategy-backtest-report-extension`。 |
@@ -76,7 +78,7 @@ External primary sources:
 
 1. `strategy-backtest-pack` / `strategy-backtest-pack-validate` で通常 env と `--extra bt` env の読み分けを維持する。
 2. `empyrical-reloaded` と `quantstats` は `metrics` / `reports` に分けて採用済み。
-3. `vectorbt` は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) の通り、legal / owner approval が出た場合だけ `vectorbt` extra として追加する。
+3. `vectorbt` は [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md) の通り、owner approval 済みとして `vectorbt` extra に追加済みである。
 
 ## 受入条件
 
@@ -101,19 +103,21 @@ External primary sources:
 - 通常 env では未インストールなら `dependency_source=not_installed_in_current_env` を維持する。
 - 全 artifact で `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を維持する。
 
-`vectorbt` optional extra 採用の追加受入条件:
+`vectorbt` optional extra 採用の受入条件と確認結果:
 
-- Commons Clause を含む license review 結果を docs に残す。現時点の結果は「未採用、明示承認まで保留」。
-- legal / owner approval を decision record に残す。
+- Commons Clause を含む license review 結果を docs に残す。
+- owner approval を decision record に残す。
+- `pyproject.toml` に `[project.optional-dependencies].vectorbt = ["vectorbt==1.0.0"]` を追加し、通常 dependency には入れない。
+- `uv.lock` の差分は `vectorbt` optional extra と transitive dependency である。
 - `vectorbt[full]`, `vectorbt[rust]`, `vectorbt[all]` は初回採用に含めない。
 - `src/sis/backtest/vectorbt_adapter.py` の入出力を source hash 付き artifact に閉じ込める。
+- `strategy-backtest-external-run` / `strategy-backtest-framework-run --framework vectorbt` は `dependency_source=optional_extra_available`, `engine_run=true` を artifact に記録する。
 - `strategy_authoring_native` を標準 engine として維持する。
 
 ## Stop Conditions
 
 次の場合は optional dependency 採用を止める。
 
-- license review が未完了、または repo 利用形態に合わない。
 - Python 3.13 / uv lock / CI 相当 sync が不安定。
 - optional extra が通常 `uv sync --dev --locked` の依存集合に混入する。
 - external framework result が source path / source hash / runner mode / dependency source を記録できない。
