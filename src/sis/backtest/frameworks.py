@@ -66,7 +66,7 @@ FRAMEWORK_CANDIDATES = (
         "module": "qstrader",
         "distribution": "qstrader",
         "adapter_role": "schedule_event_driven_candidate",
-        "adoption_note": "Schedule-driven equities framework candidate; keep on hold until package maturity and Python 3.13 install smoke are verified.",
+        "adoption_note": "Schedule-driven equities framework candidate; Python 3.13 temporary import smoke passed, but local-input runner boundary and lock stability remain required.",
     },
 )
 

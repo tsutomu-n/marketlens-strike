@@ -92,6 +92,29 @@ def _framework_smoke_payload() -> dict:
     }
 
 
+def _framework_smoke_payload_with_qstrader() -> dict:
+    payload = _framework_smoke_payload()
+    payload["target_frameworks"] = [
+        "vectorbt",
+        "bt",
+        "quantstats",
+        "empyrical_reloaded",
+        "qstrader",
+    ]
+    payload["results"].append(
+        {
+            "framework_id": "qstrader",
+            "import_status": "imported",
+            "version": "0.3.0",
+            "requires_python": ">=3.9",
+            "adoption_classification": "separate_runner_candidate",
+            "adoption_blockers": [],
+        }
+    )
+    payload["summary"] = {"imported_count": 5}
+    return payload
+
+
 def test_build_backtest_adapter_selection_chooses_phase_c_adapters(tmp_path) -> None:
     adapter_spike_path = tmp_path / "data/research/backtest_adapter_spike/spike.json"
     framework_smoke_path = tmp_path / "data/research/backtest_framework_smoke/smoke.json"
@@ -141,6 +164,51 @@ def test_build_backtest_adapter_selection_chooses_phase_c_adapters(tmp_path) -> 
     }
     assert payload["decision"]["decision"] == "SELECT_PHASE_C_ADAPTERS"
     assert result.report_path.exists()
+
+
+def test_build_backtest_adapter_selection_promotes_imported_qstrader_spike(tmp_path) -> None:
+    adapter_spike_path = tmp_path / "data/research/backtest_adapter_spike/spike.json"
+    framework_smoke_path = tmp_path / "data/research/backtest_framework_smoke/smoke.json"
+    _write_json(adapter_spike_path, _adapter_spike_payload())
+    _write_json(framework_smoke_path, _framework_smoke_payload_with_qstrader())
+
+    result = build_backtest_adapter_selection(
+        adapter_spike_path=adapter_spike_path,
+        framework_smoke_path=framework_smoke_path,
+        out_dir=tmp_path / "data/research/backtest_adapter_selection",
+        reports_dir=tmp_path / "data/reports",
+    )
+
+    payload = json.loads(result.selection_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        Path("schemas/strategy_backtest_adapter_selection.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    Draft202012Validator(schema).validate(payload)
+    assert [item["framework_id"] for item in payload["selected_adapters"]] == [
+        "vectorbt",
+        "bt",
+        "empyrical_reloaded",
+        "quantstats",
+        "qstrader",
+    ]
+    qstrader = payload["selected_adapters"][-1]
+    assert qstrader["selection_role"] == "separate_runner_research"
+    assert qstrader["import_status"] == "imported"
+    assert qstrader["version"] == "0.3.0"
+    assert qstrader["dependency_added"] is False
+    assert qstrader["engine_run"] is False
+    assert qstrader["permits_live_order"] is False
+    assert "qstrader" not in [item["framework_id"] for item in payload["deferred_adapters"]]
+    assert payload["summary"] == {
+        "selected_count": 5,
+        "deferred_count": 4,
+        "optional_extra_selected_count": 2,
+        "report_only_selected_count": 2,
+        "separate_runner_selected_count": 1,
+    }
+    assert "qstrader isolated runner contract" in payload["decision"]["recommended_next_step"]
 
 
 def test_strategy_backtest_adapter_selection_cli(tmp_path, monkeypatch) -> None:

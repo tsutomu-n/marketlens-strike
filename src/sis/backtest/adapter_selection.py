@@ -70,9 +70,30 @@ DEFERRED_FRAMEWORKS = {
     ),
     "qstrader": (
         "separate_runner_research",
-        ["not_in_phase_b_smoke", "package_maturity_review_required"],
-        "Revisit after package maturity and Python 3.13 smoke are verified.",
+        ["explicit_qstrader_smoke_required", "local_input_runner_boundary_required"],
+        "Revisit after explicit qstrader import smoke and local-input runner boundary review.",
     ),
+}
+
+CONDITIONAL_SELECTED_FRAMEWORKS = {
+    "qstrader": (
+        "separate_runner_research",
+        [
+            "explicit_import_smoke_passed",
+            "mit_license_metadata_observed",
+            "schedule_event_driven_role_matches_equity_etf_research",
+            "isolated_runner_contract_before_optional_extra",
+        ],
+        "Design a local-input qstrader isolated runner contract before adding any optional extra.",
+    ),
+}
+
+ADOPTION_CLASSIFICATION_BY_ID = {
+    "vectorbt": "optional_extra_candidate",
+    "bt": "optional_extra_candidate",
+    "empyrical_reloaded": "report_only_candidate",
+    "quantstats": "report_only_candidate",
+    "qstrader": "separate_runner_candidate",
 }
 
 
@@ -129,6 +150,7 @@ def _selection_item(
         "selection_status": selection_status,
         "selection_role": selection_role,
         "adoption_classification": smoke.get("adoption_classification")
+        or ADOPTION_CLASSIFICATION_BY_ID.get(framework_id)
         or "separate_runner_candidate",
         "version": smoke.get("version"),
         "requires_python": smoke.get("requires_python"),
@@ -156,13 +178,29 @@ def _selected_items(smoke_results: dict[str, dict[str, Any]]) -> list[dict[str, 
                 smoke_results=smoke_results,
             )
         )
+    for framework_id, (role, rationale, next_step) in CONDITIONAL_SELECTED_FRAMEWORKS.items():
+        smoke = smoke_results.get(framework_id, {})
+        if smoke.get("import_status") != "imported":
+            continue
+        selected.append(
+            _selection_item(
+                framework_id=framework_id,
+                selection_status="selected_for_adapter_design",
+                selection_role=role,
+                rationale_codes=rationale,
+                next_step=next_step,
+                smoke_results=smoke_results,
+            )
+        )
     return selected
 
 
 def _deferred_items(
     adapter_candidates: dict[str, dict[str, Any]],
     smoke_results: dict[str, dict[str, Any]],
+    selected_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
+    selected_ids = selected_ids or set()
     deferred_ids = [
         "backtesting",
         "zipline_reloaded",
@@ -172,6 +210,8 @@ def _deferred_items(
     ]
     deferred: list[dict[str, Any]] = []
     for framework_id in deferred_ids:
+        if framework_id in selected_ids:
+            continue
         role, rationale, next_step = DEFERRED_FRAMEWORKS[framework_id]
         candidate = adapter_candidates.get(framework_id, {})
         blockers = [
@@ -271,7 +311,9 @@ def build_backtest_adapter_selection(
     adapter_candidates = _adapter_by_id(adapter_payload)
     smoke_results = _smoke_by_id(smoke_payload)
     selected = _selected_items(smoke_results)
-    deferred = _deferred_items(adapter_candidates, smoke_results)
+    selected_ids = {str(item["framework_id"]) for item in selected}
+    deferred = _deferred_items(adapter_candidates, smoke_results, selected_ids)
+    has_qstrader_selection = "qstrader" in selected_ids
     payload: dict[str, Any] = {
         "schema_version": "strategy_backtest_adapter_selection.v1",
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -308,7 +350,9 @@ def build_backtest_adapter_selection(
                 "dependency_adoption_deferred_until_review",
             ],
             "recommended_next_step": (
-                "Design source-hashed adapter contracts for vectorbt and bt, then add metrics normalization with empyrical-reloaded."
+                "Design source-hashed adapter contracts for vectorbt and bt, add metrics normalization with empyrical-reloaded, and design a local-input qstrader isolated runner contract."
+                if has_qstrader_selection
+                else "Design source-hashed adapter contracts for vectorbt and bt, then add metrics normalization with empyrical-reloaded."
             ),
         },
     }

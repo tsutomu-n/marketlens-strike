@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-14_17:23 JST
+更新日: 2026-06-14_17:55 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -287,6 +287,14 @@ uv run --with vectorbt --with bt --with quantstats --with empyrical-reloaded sis
 
 2026-06-13_16:50 JST 時点の一時 smoke では4件すべて `import_status=imported` だった。artifact は `vectorbt=1.0.0`, `bt=1.2.0`, `quantstats=0.0.81`, `empyrical-reloaded=0.5.12`、Requires-Python はそれぞれ `>=3.10`, `>=3.9`, `>=3.10`, `>=3.9` を記録した。採用分類は `vectorbt` と `bt` が `optional_extra_candidate`、`quantstats` と `empyrical-reloaded` が `report_only_candidate` である。
 
+`qstrader` を dependency に入れず isolated runner 候補として再評価する場合は、明示 target で smoke する。
+
+```bash
+uv run --with qstrader sis strategy-backtest-framework-smoke --framework qstrader
+```
+
+2026-06-14_17:41 JST 時点の一時 smoke では `qstrader 0.3.0` が `import_status=imported` だった。これは engine 実行ではなく import / metadata artifact だけであり、`pyproject.toml` / `uv.lock` は変更しない。
+
 この command は `pyproject.toml` / `uv.lock` を変更しない。外部 engine は実行せず、`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
 
 ## Backtest Adapter Selection
@@ -302,7 +310,9 @@ uv run sis strategy-backtest-adapter-selection
 - `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`
 - `data/reports/strategy_backtest_adapter_selection_report.md`
 
-2026-06-13_19:23 JST 時点では、`vectorbt` を `high_speed_signal_runner`、`bt` を `portfolio_allocation_rebalance`、`empyrical-reloaded` を `metrics_normalization`、`quantstats` を `report_tearsheet` として selected にした。`backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` は license / build / maturity / no-live isolation などの理由で deferred にした。
+2026-06-13_19:23 JST 時点では、`vectorbt` を `high_speed_signal_runner`、`bt` を `portfolio_allocation_rebalance`、`empyrical-reloaded` を `metrics_normalization`、`quantstats` を `report_tearsheet` として selected にした。通常の smoke artifact では `backtesting.py`, `zipline-reloaded`, `backtrader`, `pyfolio-reloaded`, `qstrader` は license / build / maturity / no-live isolation などの理由で deferred にする。
+
+2026-06-14_17:55 JST 以降は、明示 smoke artifact で `qstrader` が `imported` の場合だけ、`qstrader` を selected `separate_runner_research` に昇格する。この昇格は optional dependency 採用や engine 実行ではなく、local CSV / parquet input を使う isolated runner contract を次に設計するための selection である。
 
 この command は `pyproject.toml` / `uv.lock` を変更しない。外部 engine は実行せず、`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
 
@@ -726,7 +736,7 @@ Backtest Expansion Scope 1: Framework Adapter Spike
 ## 抜け、漏れ、誤謬リスク
 
 - 外部 OSS の Python 3.13 実互換は採用済み extras については `uv lock` / smoke / full gate で確認済み。ただし公式 PyPI の `Requires-Python` は将来版の導入成功や全テスト成功を保証しない。
-- `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` は optional extra として現行 lockfile に入っている。`backtesting.py` / `zipline-reloaded` / `backtrader` / `pyfolio-reloaded` / `qstrader` は現行 lockfile に入っていない。
+- `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` は optional extra として現行 lockfile に入っている。`backtesting.py` / `zipline-reloaded` / `backtrader` / `pyfolio-reloaded` / `qstrader` は現行 lockfile に入っていない。`qstrader` の selected `separate_runner_research` は dependency 採用ではなく、明示 smoke 後の isolated runner contract 候補である。
 - `empyrical-reloaded` と `quantstats` は backtest engine ではなく analytics / report surface である。`framework_count` を「4つの backtest engine」と読まない。
 - `backtesting.py` は PyPI 上で AGPLv3+ と表示されるため、利用形態によっては license review が必要。
 - external framework が持つ live trading 機能は、採用しても repo では無効化・隔離する必要がある。
