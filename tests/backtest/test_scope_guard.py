@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import tomllib
 
 
 FORBIDDEN_SCOPE_TERMS = [
@@ -34,3 +35,16 @@ def test_pure_backtest_scope_has_no_live_execution_coupling() -> None:
                     violations.append(f"{path}:{term}")
 
     assert violations == []
+
+
+def test_vectorbt_is_not_locked_without_approval() -> None:
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    optional_dependencies = pyproject["project"].get("optional-dependencies", {})
+
+    assert "vectorbt" not in optional_dependencies
+    assert not any(
+        str(dependency).startswith("vectorbt")
+        for dependencies in optional_dependencies.values()
+        for dependency in dependencies
+    )
+    assert 'name = "vectorbt"' not in Path("uv.lock").read_text(encoding="utf-8")

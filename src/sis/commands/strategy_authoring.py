@@ -19,6 +19,7 @@ from sis.backtest.benchmark_relative import (
 )
 from sis.backtest.compare import build_strategy_backtest_comparison
 from sis.backtest.external import build_strategy_backtest_external_result
+from sis.backtest.framework_run import build_strategy_backtest_framework_run
 from sis.backtest.framework_smoke import build_backtest_framework_smoke
 from sis.backtest.metric_extension import build_strategy_backtest_metric_extension
 from sis.backtest.pack import (
@@ -833,6 +834,106 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
         typer.echo(f"backtest_external_result={result.external_path}")
         typer.echo(f"backtest_external_report={result.report_path}")
+
+    @app.command("strategy-backtest-framework-run")
+    def strategy_backtest_framework_run_cmd(
+        framework: list[str] = typer.Option(
+            ...,
+            "--framework",
+            help=(
+                "Framework ID to run. Repeat this option. Supported: vectorbt, bt, "
+                "empyrical_reloaded, quantstats."
+            ),
+        ),
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        bundle_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_bundle_result.json"),
+            "--bundle-path",
+            help="Strategy Authoring bundle result JSON for bt portfolio comparison.",
+        ),
+        price_frame_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_baseline_quotes.parquet"),
+            "--price-frame-path",
+            help="Quotes or price frame parquet used by optional framework runners.",
+        ),
+        signals_path: Path = typer.Option(
+            Path("data/research/strategy_signals.parquet"),
+            "--signals-path",
+            help="Strategy signals parquet used by optional external framework runners.",
+        ),
+        quotes_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_baseline_quotes.parquet"),
+            "--quotes-path",
+            help="Quotes parquet used by optional external framework runners.",
+        ),
+        label_horizon_minutes: int = typer.Option(
+            240,
+            "--label-horizon-minutes",
+            help="Holding horizon used to build optional external framework exits.",
+        ),
+        frequency: str = typer.Option(
+            "daily",
+            "--frequency",
+            help="Return frequency label for metrics/report frameworks.",
+        ),
+        risk_free_rate: float = typer.Option(
+            0.0,
+            "--risk-free-rate",
+            help="Risk-free rate passed to optional metrics/report frameworks.",
+        ),
+        show_framework_warnings: bool = typer.Option(
+            False,
+            "--show-framework-warnings",
+            help="Show warnings emitted by optional report framework generation.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_framework_run"),
+            "--out",
+            help="Output directory for selected framework run manifest.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        if frequency not in {"daily", "weekly", "monthly", "signal"}:
+            typer.echo("frequency must be one of: daily, weekly, monthly, signal")
+            raise typer.Exit(2)
+        settings = get_settings()
+        selected_metrics_path = _resolve_workspace_path(metrics_path, settings.data_dir)
+        selected_bundle_path = _resolve_workspace_path(bundle_path, settings.data_dir)
+        selected_price_frame_path = _resolve_workspace_path(price_frame_path, settings.data_dir)
+        selected_signals_path = _resolve_workspace_path(signals_path, settings.data_dir)
+        selected_quotes_path = _resolve_workspace_path(quotes_path, settings.data_dir)
+        selected_out = _resolve_workspace_path(out, settings.data_dir)
+        selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
+        try:
+            result = build_strategy_backtest_framework_run(
+                frameworks=framework,
+                metrics_path=selected_metrics_path,
+                bundle_path=selected_bundle_path,
+                price_frame_path=selected_price_frame_path,
+                signals_path=selected_signals_path,
+                quotes_path=selected_quotes_path,
+                label_horizon_minutes=label_horizon_minutes,
+                frequency=frequency,
+                risk_free_rate=risk_free_rate,
+                suppress_framework_warnings=not show_framework_warnings,
+                out_dir=selected_out,
+                reports_dir=selected_reports,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_framework_run={result.run_path}")
+        typer.echo(f"backtest_framework_run_report={result.report_path}")
+        typer.echo(f"framework_count={result.payload['summary']['framework_count']}")
+        typer.echo(f"executed_count={result.payload['summary']['executed_count']}")
 
     @app.command("strategy-backtest-framework-smoke")
     def strategy_backtest_framework_smoke_cmd(

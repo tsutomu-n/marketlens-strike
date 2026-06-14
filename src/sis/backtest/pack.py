@@ -42,6 +42,15 @@ def _dict_value(payload: dict[str, Any], key: str) -> dict[str, Any]:
     return cast(dict[str, Any], value) if isinstance(value, dict) else {}
 
 
+def _json_artifact_payload(path: Path) -> dict[str, Any] | None:
+    if path.suffix != ".json" or not path.exists():
+        return None
+    try:
+        return _read_json(path)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
 def _artifact_row(path: Path) -> dict[str, Any]:
     return {
         "path": path.as_posix(),
@@ -269,6 +278,24 @@ def validate_strategy_backtest_pack(
             actual_hash == expected_hash,
             f"artifact hash must match manifest: {path_raw}",
         )
+        artifact_payload = _json_artifact_payload(artifact_path)
+        if artifact_payload is None:
+            continue
+        for field, expected in {
+            "paper_only": True,
+            "live_order_submitted": False,
+            "permits_live_order": False,
+            "live_conversion_allowed": False,
+            "wallet_used": False,
+            "exchange_write_used": False,
+        }.items():
+            if field not in artifact_payload:
+                continue
+            add_check(
+                f"artifact_{name}_boundary_{field}",
+                artifact_payload.get(field) is expected,
+                f"artifact {name} {field} must be {expected}: {path_raw}",
+            )
 
     decision = "PASS" if all(item["passed"] is True for item in findings) else "FAIL"
     payload: dict[str, Any] = {

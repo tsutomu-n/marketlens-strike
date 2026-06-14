@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_framework_run.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "selected_frameworks",
+    "source_metrics_path",
+    "source_metrics_hash",
+    "source_bundle_path",
+    "source_bundle_hash",
+    "source_price_frame_path",
+    "source_price_frame_hash",
+    "source_signals_path",
+    "source_signals_hash",
+    "source_quotes_path",
+    "source_quotes_hash",
+    "sources",
+    "dependency_added",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used",
+    "summary",
+    "runs"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_framework_run.v1"},
+    "created_at": {"type": "string"},
+    "selected_frameworks": {"type": "array", "items": {"type": "string"}},
+    "source_metrics_path": {"type": "string"},
+    "source_metrics_hash": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+    "source_bundle_path": {"type": "string"},
+    "source_bundle_hash": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+    "source_price_frame_path": {"type": "string"},
+    "source_price_frame_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_signals_path": {"type": "string"},
+    "source_signals_hash": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+    "source_quotes_path": {"type": "string"},
+    "source_quotes_hash": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+    "sources": {
+      "type": "object",
+      "required": ["metrics", "bundle", "price_frame", "signals", "quotes"],
+      "properties": {
+        "metrics": {"$ref": "#/$defs/source"},
+        "bundle": {"$ref": "#/$defs/source"},
+        "price_frame": {"$ref": "#/$defs/source"},
+        "signals": {"$ref": "#/$defs/source"},
+        "quotes": {"$ref": "#/$defs/source"}
+      },
+      "additionalProperties": false
+    },
+    "dependency_added": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "summary": {
+      "type": "object",
+      "required": ["framework_count", "executed_count", "skipped_count", "failed_count"],
+      "properties": {
+        "framework_count": {"type": "integer", "minimum": 0},
+        "executed_count": {"type": "integer", "minimum": 0},
+        "skipped_count": {"type": "integer", "minimum": 0},
+        "failed_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "runs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/run"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["path", "exists", "sha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "exists": {"type": "boolean"},
+        "sha256": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["path", "exists", "sha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "exists": {"type": "boolean"},
+        "sha256": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "dependency_added",
+        "engine_run",
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "dependency_added": {"const": false},
+        "engine_run": {"type": "boolean"},
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "run": {
+      "type": "object",
+      "required": [
+        "framework_id",
+        "status",
+        "run_status",
+        "reason_codes",
+        "artifact",
+        "report",
+        "boundary"
+      ],
+      "properties": {
+        "framework_id": {"type": "string"},
+        "status": {"enum": ["supported", "unsupported"]},
+        "run_status": {"enum": ["completed", "skipped", "failed", "unknown"]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "artifact": {"anyOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]},
+        "report": {"anyOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]},
+        "boundary": {"$ref": "#/$defs/boundary"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

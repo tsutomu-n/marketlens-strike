@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import hashlib
 import importlib
 import json
+import logging
 import math
 from pathlib import Path
 from typing import Any
@@ -161,6 +162,17 @@ def _show_captured_warnings(captured_warnings: list[warnings.WarningMessage]) ->
         )
 
 
+def _set_logger_level(name: str, level: int) -> int:
+    logger = logging.getLogger(name)
+    previous_level = logger.level
+    logger.setLevel(level)
+    return previous_level
+
+
+def _restore_logger_level(name: str, level: int) -> None:
+    logging.getLogger(name).setLevel(level)
+
+
 def _returns_series(rows: list[dict[str, Any]], returns: list[float], pandas: Any) -> Any:
     timestamps = [row.get("ts_signal") for row in rows]
     index = None
@@ -248,6 +260,7 @@ def _run_quantstats_payload(
     suppress_framework_warnings: bool,
 ) -> dict[str, Any]:
     captured_warnings: list[warnings.WarningMessage] = []
+    previous_font_manager_level = _set_logger_level("matplotlib.font_manager", logging.ERROR)
     try:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
@@ -291,6 +304,8 @@ def _run_quantstats_payload(
             dependency_source=_dependency_source(candidate),
             framework_warnings=_framework_warning_rows(captured_warnings),
         )
+    finally:
+        _restore_logger_level("matplotlib.font_manager", previous_font_manager_level)
     if not suppress_framework_warnings:
         _show_captured_warnings(captured_warnings)
     return _base_payload(

@@ -107,9 +107,13 @@ def _external_results(
     signals_path: Path | None,
     quotes_path: Path | None,
     label_horizon_minutes: int,
+    target_frameworks: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
+    selected_frameworks = set(target_frameworks) if target_frameworks is not None else None
     for candidate in framework_adapter_status():
+        if selected_frameworks is not None and candidate["framework_id"] not in selected_frameworks:
+            continue
         if candidate["status"] != "installed":
             results.append(_skipped_result(candidate, ["not_installed_in_current_env"]))
             continue
@@ -177,6 +181,7 @@ def build_strategy_backtest_external_result(
     signals_path: Path | None = None,
     quotes_path: Path | None = None,
     label_horizon_minutes: int = 240,
+    target_frameworks: list[str] | None = None,
 ) -> BacktestExternalResult:
     if not metrics_path.exists():
         raise FileNotFoundError(f"strategy backtest metrics missing: {metrics_path}")
@@ -186,6 +191,7 @@ def build_strategy_backtest_external_result(
         signals_path=signals_path,
         quotes_path=quotes_path,
         label_horizon_minutes=label_horizon_minutes,
+        target_frameworks=target_frameworks,
     )
     payload: dict[str, Any] = {
         "schema_version": "strategy_backtest_external_result.v1",

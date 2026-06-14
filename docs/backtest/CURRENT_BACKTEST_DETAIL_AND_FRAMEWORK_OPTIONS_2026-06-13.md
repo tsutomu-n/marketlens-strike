@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-13_21:56 JST
+更新日: 2026-06-14_09:47 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -19,6 +19,7 @@
 |---|---|---:|---|---|
 | Strategy Authoring fixed-horizon backtest | `uv run sis strategy-author-run --spec <spec> --through backtest` | 実装済み / public CLI | YAML 戦略の paper-only 研究評価 | live order なし、wallet なし、固定 horizon が主軸 |
 | Strategy Backtest Acceptance | `uv run sis strategy-backtest-acceptance` | 実装済み / public CLI | backtest artifact の pass/fail と境界判定 | backtest を live 許可へ昇格しない |
+| Strategy Backtest Framework Run Selector | `uv run sis strategy-backtest-framework-run --framework <id>` | 実装済み / public CLI | 選んだ optional framework / OSS surface だけを実行して manifest 化 | framework は明示選択。全候補を一括実行しない |
 | Trade[XYZ] pure backtest v0.1 | `sis.backtest.engine.runner.run_backtest()` | 実装済み / CLI 未公開 | Trade[XYZ] 単一銘柄 long-only の詳細 engine | venue 専用、public CLI なし、portfolio 不十分 |
 | Legacy backtest bridge | `uv run sis build-backtest` | 互換維持 | historical bridge 系の簡易評価 | 新規主経路ではない |
 
@@ -328,6 +329,41 @@ uv run sis strategy-backtest-adapter-contract
 | `quantstats` | `report_tearsheet` | `returns_series` | `strategy_backtest_report_extension.v1` |
 
 この command は `pyproject.toml` / `uv.lock` を変更しない。外部 engine は実行せず、`dependency_added=false`, `external_engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を artifact で固定する。
+
+## Backtest Framework Run Selector
+
+`strategy-backtest-framework-run` は、選んだ optional framework / OSS surface だけを実行して、1つの selector manifest にまとめる。標準 pack のように全 chain を一括生成する入口ではなく、operator が比較したい framework を明示して使う入口である。
+
+```bash
+uv run sis strategy-backtest-framework-run --framework bt
+uv run sis strategy-backtest-framework-run --framework metrics --framework reports
+uv run --with vectorbt sis strategy-backtest-framework-run --framework vectorbt
+```
+
+対応する `--framework` は `vectorbt`, `bt`, `empyrical_reloaded`, `quantstats` である。alias として `metrics` は `empyrical_reloaded`、`reports` は `quantstats` に正規化する。
+
+出力:
+
+- `data/research/backtest_framework_run/strategy_backtest_framework_run.json`
+- `data/reports/strategy_backtest_framework_run_report.md`
+
+selector manifest は `strategy_backtest_framework_run.v1` で、`selected_frameworks`、入力 source の path / hash、framework ごとの artifact / report path、`run_status`、`reason_codes`、`engine_run`、`dependency_added=false`、`permits_live_order=false`、`wallet_used=false`、`exchange_write_used=false` を記録する。未対応 framework id を指定した場合も、依存追加や外部実行はせず `run_status=skipped`, `reason_codes=["unsupported_framework_selector"]` として manifest に残す。
+
+optional extras を使って選択実行する場合:
+
+```bash
+uv run --extra bt --extra metrics --extra reports sis strategy-backtest-framework-run --framework bt --framework metrics --framework reports
+```
+
+2026-06-14_09:39 JST 時点の確認では、この command は `framework_count=3`, `executed_count=3`, `failed_count=0`, `skipped_count=0` を返した。`bt` は portfolio comparison、`metrics` は `empyrical_reloaded` metric extension、`reports` は `quantstats` report extension を実行し、各 sub-run の report は `data/reports/backtest_framework_run/<framework>/` に隔離する。`quantstats` 実行時の framework warning は artifact に捕捉し、Matplotlib font lookup noise は既定では operator 出力へ出さない。
+
+`vectorbt` を repo dependency に入れず、selector 経由で一時実行する場合:
+
+```bash
+uv run --with vectorbt sis strategy-backtest-framework-run --framework vectorbt
+```
+
+2026-06-14_09:42 JST 時点の確認では、この command は `framework_count=1`, `executed_count=1`, `failed_count=0`, `skipped_count=0` を返した。sub-run artifact は `data/research/backtest_framework_run/vectorbt_external/strategy_backtest_external_result.json` で、`vectorbt` row は `framework_version=1.0.0`, `runner_mode=temporary_or_optional_import`, `run_status=completed`, `engine_run=true`, `trade_count=7`, `total_return=0.005833333333333431`, `max_drawdown=0.0`, `dependency_added=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を記録した。`pyproject.toml` / `uv.lock` には `vectorbt` を追加していない。2026-06-14_09:42 JST の公式 license page 再確認でも `Apache 2.0 with Commons Clause` の扱いであり、正式採用は引き続き legal / owner approval 後だけである。
 
 ## Backtest External Framework Result
 
