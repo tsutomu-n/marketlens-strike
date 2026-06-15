@@ -117,6 +117,7 @@ def _external_results(
     signals_path: Path | None,
     quotes_path: Path | None,
     label_horizon_minutes: int,
+    initial_capital_usd: float,
     target_frameworks: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
@@ -134,6 +135,7 @@ def _external_results(
                     signals_path=signals_path,
                     quotes_path=quotes_path,
                     label_horizon_minutes=label_horizon_minutes,
+                    initial_capital_usd=initial_capital_usd,
                 )
             )
             continue
@@ -189,6 +191,7 @@ def build_strategy_backtest_external_result(
     signals_path: Path | None = None,
     quotes_path: Path | None = None,
     label_horizon_minutes: int = 240,
+    initial_capital_usd: float = 10000.0,
     target_frameworks: list[str] | None = None,
 ) -> BacktestExternalResult:
     if not metrics_path.exists():
@@ -199,6 +202,7 @@ def build_strategy_backtest_external_result(
         signals_path=signals_path,
         quotes_path=quotes_path,
         label_horizon_minutes=label_horizon_minutes,
+        initial_capital_usd=initial_capital_usd,
         target_frameworks=target_frameworks,
     )
     payload: dict[str, Any] = with_no_live_capability_boundary(
@@ -226,6 +230,7 @@ def build_strategy_backtest_external_result(
                 else None
             ),
             "label_horizon_minutes": label_horizon_minutes,
+            "initial_capital_usd": initial_capital_usd,
             "dependency_added": False,
             "external_engine_run": any(result["engine_run"] is True for result in results),
             "results": results,

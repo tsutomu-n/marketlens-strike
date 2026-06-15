@@ -122,6 +122,7 @@ def run_vectorbt_result(
     signals_path: Path | None,
     quotes_path: Path | None,
     label_horizon_minutes: int,
+    initial_capital_usd: float = 10000.0,
 ) -> dict[str, Any]:
     if signals_path is None or quotes_path is None:
         return _base_result(
@@ -155,7 +156,7 @@ def run_vectorbt_result(
             close,
             entries,
             exits,
-            init_cash=100_000.0,
+            init_cash=initial_capital_usd,
             fees=0.0,
         )
         total_return = _scalar(portfolio.total_return())
@@ -179,5 +180,6 @@ def run_vectorbt_result(
             "cost_drag_bps": 0.0,
             "stale_rejected_count": None,
             "halt_rejected_count": None,
+            "initial_capital_usd": initial_capital_usd,
         },
     )

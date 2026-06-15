@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Literal
+from datetime import datetime
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from sis.research.strategy_lab.authoring.contracts.core import (
     AuthoringData,
@@ -172,6 +173,8 @@ class AuthoringRules(BaseModel):
 
 
 class AuthoringBacktest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     split_method: Literal["single_window", "walk_forward", "purged_walk_forward"] = (
         "purged_walk_forward"
     )
@@ -182,6 +185,23 @@ class AuthoringBacktest(BaseModel):
     min_trade_count: int = 1
     primary_metric: str = "total_return"
     pass_thresholds: dict[str, float] = Field(default_factory=dict)
+    initial_capital_usd: float = Field(default=10000.0, ge=100.0, le=50000.0)
+    evaluation_start_at: datetime | None = None
+    evaluation_end_at: datetime | None = None
+
+    @field_validator("initial_capital_usd", mode="before")
+    @classmethod
+    def validate_initial_capital_type(cls, value: Any) -> Any:
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            raise ValueError("backtest.initial_capital_usd must be a number")
+        return value
+
+    @field_validator("evaluation_start_at", "evaluation_end_at")
+    @classmethod
+    def validate_evaluation_datetime(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("backtest evaluation datetimes must include timezone")
+        return value
 
     @model_validator(mode="after")
     def validate_backtest(self) -> AuthoringBacktest:
@@ -191,6 +211,21 @@ class AuthoringBacktest(BaseModel):
             raise ValueError("backtest purge/embargo minutes must be >= 0")
         if self.min_trade_count < 0:
             raise ValueError("backtest.min_trade_count must be >= 0")
+        if (
+            self.evaluation_start_at is None
+            and self.evaluation_end_at is not None
+            or self.evaluation_start_at is not None
+            and self.evaluation_end_at is None
+        ):
+            raise ValueError(
+                "backtest.evaluation_start_at and evaluation_end_at must be set together"
+            )
+        if (
+            self.evaluation_start_at is not None
+            and self.evaluation_end_at is not None
+            and self.evaluation_start_at >= self.evaluation_end_at
+        ):
+            raise ValueError("backtest.evaluation_start_at must be before evaluation_end_at")
         return self
 
 
@@ -308,6 +343,8 @@ class StrategyAuthoringBundleSpec(BaseModel):
 
 
 class BacktestSuiteBacktestOverrides(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     split_method: Literal["single_window", "walk_forward", "purged_walk_forward"] | None = None
     era_unit: Literal["trading_day", "week", "month"] | None = None
     label_horizon_minutes: int | None = None
@@ -316,6 +353,25 @@ class BacktestSuiteBacktestOverrides(BaseModel):
     min_trade_count: int | None = None
     primary_metric: str | None = None
     pass_thresholds: dict[str, float] | None = None
+    initial_capital_usd: float | None = Field(default=None, ge=100.0, le=50000.0)
+    evaluation_start_at: datetime | None = None
+    evaluation_end_at: datetime | None = None
+
+    @field_validator("initial_capital_usd", mode="before")
+    @classmethod
+    def validate_initial_capital_type(cls, value: Any) -> Any:
+        if value is None:
+            return value
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            raise ValueError("case.backtest.initial_capital_usd must be a number")
+        return value
+
+    @field_validator("evaluation_start_at", "evaluation_end_at")
+    @classmethod
+    def validate_evaluation_datetime(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("case.backtest evaluation datetimes must include timezone")
+        return value
 
     @model_validator(mode="after")
     def validate_overrides(self) -> BacktestSuiteBacktestOverrides:
@@ -327,6 +383,23 @@ class BacktestSuiteBacktestOverrides(BaseModel):
             raise ValueError("case.backtest.embargo_minutes must be >= 0")
         if self.min_trade_count is not None and self.min_trade_count < 0:
             raise ValueError("case.backtest.min_trade_count must be >= 0")
+        if (
+            self.evaluation_start_at is None
+            and self.evaluation_end_at is not None
+            or self.evaluation_start_at is not None
+            and self.evaluation_end_at is None
+        ):
+            raise ValueError(
+                "case.backtest.evaluation_start_at and evaluation_end_at must be set together"
+            )
+        if (
+            self.evaluation_start_at is not None
+            and self.evaluation_end_at is not None
+            and self.evaluation_start_at >= self.evaluation_end_at
+        ):
+            raise ValueError(
+                "case.backtest.evaluation_start_at must be before evaluation_end_at"
+            )
         return self
 
 

@@ -320,6 +320,8 @@ def write_authoring_run_summary(
     through: str,
     artifacts: dict[str, Path],
     signal_count: int,
+    source_signal_count: int | None = None,
+    evaluation_signal_count: int | None = None,
 ) -> Path:
     out = data_dir / "research/strategy_authoring_run.json"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -330,6 +332,12 @@ def write_authoring_run_summary(
                 "strategy_id": spec.experiment.strategy_id,
                 "through": through,
                 "signal_count": signal_count,
+                "source_signal_count": (
+                    source_signal_count if source_signal_count is not None else signal_count
+                ),
+                "evaluation_signal_count": (
+                    evaluation_signal_count if evaluation_signal_count is not None else signal_count
+                ),
                 "paper_only": True,
                 "live_order_submitted": False,
                 "artifacts": {key: str(value) for key, value in artifacts.items()},

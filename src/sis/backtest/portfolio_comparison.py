@@ -161,6 +161,7 @@ def _base_payload(
     bundle_payload: dict[str, Any],
     allocation_rule_id: str,
     rebalance_cadence: str,
+    initial_capital_usd: float,
     run_status: str,
     reason_codes: list[str],
     engine_run: bool,
@@ -191,6 +192,7 @@ def _base_payload(
             "price_frame_hash": _sha256_file(price_frame_path),
             "allocation_rule_id": allocation_rule_id,
             "rebalance_cadence": rebalance_cadence,
+            "initial_capital_usd": initial_capital_usd,
             "portfolio_return": portfolio_return,
             "max_drawdown": max_drawdown,
             "turnover": turnover,
@@ -217,6 +219,7 @@ def _run_bt_payload(
     bundle_payload: dict[str, Any],
     allocation_rule_id: str,
     rebalance_cadence: str,
+    initial_capital_usd: float,
 ) -> dict[str, Any]:
     try:
         bt = importlib.import_module("bt")
@@ -239,7 +242,7 @@ def _run_bt_payload(
         backtest = bt.Backtest(
             strategy,
             data,
-            initial_capital=1_000_000.0,
+            initial_capital=initial_capital_usd,
             integer_positions=False,
             progress_bar=False,
         )
@@ -255,6 +258,7 @@ def _run_bt_payload(
             bundle_payload=bundle_payload,
             allocation_rule_id=allocation_rule_id,
             rebalance_cadence=rebalance_cadence,
+            initial_capital_usd=initial_capital_usd,
             run_status="failed",
             reason_codes=["framework_run_failed"],
             engine_run=False,
@@ -268,6 +272,7 @@ def _run_bt_payload(
         bundle_payload=bundle_payload,
         allocation_rule_id=allocation_rule_id,
         rebalance_cadence=rebalance_cadence,
+        initial_capital_usd=initial_capital_usd,
         run_status="completed",
         reason_codes=[],
         engine_run=True,
@@ -294,6 +299,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         f"- price_frame_path: `{payload['price_frame_path']}`",
         f"- allocation_rule_id: {payload['allocation_rule_id']}",
         f"- rebalance_cadence: {payload['rebalance_cadence']}",
+        f"- initial_capital_usd: {payload['initial_capital_usd']}",
         f"- portfolio_return: {payload['portfolio_return']}",
         f"- max_drawdown: {payload['max_drawdown']}",
         f"- turnover: {payload['turnover']}",
@@ -325,6 +331,7 @@ def build_strategy_backtest_portfolio_comparison(
     reports_dir: Path,
     allocation_rule_id: str = "fixed_weight",
     rebalance_cadence: str = "initial_only",
+    initial_capital_usd: float = 10000.0,
 ) -> BacktestPortfolioComparisonResult:
     if not bundle_path.exists():
         raise FileNotFoundError(f"strategy authoring bundle result missing: {bundle_path}")
@@ -340,6 +347,7 @@ def build_strategy_backtest_portfolio_comparison(
             bundle_payload=bundle_payload,
             allocation_rule_id=allocation_rule_id,
             rebalance_cadence=rebalance_cadence,
+            initial_capital_usd=initial_capital_usd,
             run_status="skipped",
             reason_codes=["not_installed_in_current_env"],
             engine_run=False,
@@ -355,6 +363,7 @@ def build_strategy_backtest_portfolio_comparison(
             bundle_payload=bundle_payload,
             allocation_rule_id=allocation_rule_id,
             rebalance_cadence=rebalance_cadence,
+            initial_capital_usd=initial_capital_usd,
         )
     out_dir.mkdir(parents=True, exist_ok=True)
     comparison_path = out_dir / "strategy_backtest_portfolio_comparison.json"

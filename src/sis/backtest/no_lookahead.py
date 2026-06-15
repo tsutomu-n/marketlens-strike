@@ -13,6 +13,7 @@ from sis.backtest.boundary import with_backtest_paper_only_boundary
 from sis.research.strategy_lab.authoring.backtest import run_authoring_backtest
 from sis.research.strategy_lab.authoring.compiler.build import build_authoring_signals
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
+from sis.research.strategy_lab.authoring.evaluation_window import apply_evaluation_window
 from sis.research.strategy_lab.authoring.io import load_authoring_spec
 
 
@@ -176,8 +177,10 @@ def _runtime_future_mutation_checks(
         mutated_spec, mutated_frame, data_dir=data_dir
     )
 
-    baseline_signals = _stable_signal_rows(baseline_frame, cutoff=cutoff)
-    mutated_signals = _stable_signal_rows(mutated_frame, cutoff=cutoff)
+    baseline_evaluation_frame = apply_evaluation_window(spec, baseline_frame)
+    mutated_evaluation_frame = apply_evaluation_window(mutated_spec, mutated_frame)
+    baseline_signals = _stable_signal_rows(baseline_evaluation_frame, cutoff=cutoff)
+    mutated_signals = _stable_signal_rows(mutated_evaluation_frame, cutoff=cutoff)
     baseline_backtest = _stable_backtest_rows(baseline_summary, cutoff=cutoff)
     mutated_backtest = _stable_backtest_rows(mutated_summary, cutoff=cutoff)
     baseline_signal_hash = _fingerprint(baseline_signals)

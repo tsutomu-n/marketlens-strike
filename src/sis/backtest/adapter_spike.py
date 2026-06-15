@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from sis.backtest.frameworks import framework_adapter_status
+from sis.backtest.frameworks import framework_adapter_status, framework_reference_only_status
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,8 @@ def _license_text(candidate: dict[str, Any]) -> str:
 
 
 def _adoption_blockers(candidate: dict[str, Any]) -> list[str]:
+    if candidate.get("candidate_kind") == "reference_only":
+        return ["reference_only_not_adapter_candidate"]
     blockers: list[str] = []
     license_text = _license_text(candidate)
     if "agpl" in license_text:
@@ -38,6 +40,8 @@ def _adoption_blockers(candidate: dict[str, Any]) -> list[str]:
 
 
 def _adoption_status(blockers: list[str]) -> str:
+    if "reference_only_not_adapter_candidate" in blockers:
+        return "reference_only"
     if any(item.startswith("license_review_required") for item in blockers):
         return "blocked_pending_license_review"
     if "temporary_install_failed_in_prior_spike" in blockers:
@@ -51,6 +55,7 @@ def _spike_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     blockers = _adoption_blockers(candidate)
     return {
         "framework_id": candidate["framework_id"],
+        "candidate_kind": str(candidate.get("candidate_kind") or "optional_runner"),
         "module": candidate["module"],
         "distribution": candidate["distribution"],
         "adapter_role": candidate["adapter_role"],
@@ -126,7 +131,10 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
 
 
 def build_backtest_adapter_spike(*, out_dir: Path, reports_dir: Path) -> BacktestAdapterSpikeResult:
-    candidates = [_spike_candidate(candidate) for candidate in framework_adapter_status()]
+    candidates = [
+        _spike_candidate(candidate)
+        for candidate in [*framework_adapter_status(), *framework_reference_only_status()]
+    ]
     payload: dict[str, Any] = {
         "schema_version": "strategy_backtest_adapter_spike.v1",
         "created_at": datetime.now(timezone.utc).isoformat(),

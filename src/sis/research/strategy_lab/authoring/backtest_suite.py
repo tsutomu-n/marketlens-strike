@@ -17,6 +17,7 @@ from sis.research.strategy_lab.authoring.contracts.spec import (
     StrategyAuthoringSpec,
     StrategyBacktestSuiteSpec,
 )
+from sis.research.strategy_lab.authoring.evaluation_window import apply_evaluation_window
 from sis.research.strategy_lab.authoring.io import load_authoring_spec
 
 
@@ -253,6 +254,7 @@ def run_backtest_suite(
                 continue
             spec = _apply_backtest_case(base_spec, case)
             frame, _manifest = build_authoring_signals(spec, data_dir=data_dir)
+            evaluation_frame = apply_evaluation_window(spec, frame)
             _metrics, summary = run_authoring_backtest(spec, frame, data_dir=data_dir)
             resampling = _resampling_payload(case, summary)
             if resampling["status"] != "not_requested":
@@ -268,7 +270,9 @@ def run_backtest_suite(
                     "case_id": case.case_id,
                     "spec_path": str(spec_path),
                     "strategy_id": spec.experiment.strategy_id,
-                    "signal_count": frame.height,
+                    "signal_count": evaluation_frame.height,
+                    "source_signal_count": frame.height,
+                    "evaluation_signal_count": evaluation_frame.height,
                     "method_id": method["method_id"],
                     "method_type": method["method_type"],
                     "base_method_id": method.get("base_method_id"),

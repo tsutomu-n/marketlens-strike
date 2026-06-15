@@ -21,6 +21,12 @@ from sis.research.strategy_lab.authoring.contracts.spec import (
     StrategyAuthoringBundleSpec,
     StrategyAuthoringSpec,
 )
+from sis.research.strategy_lab.authoring.evaluation_window import (
+    apply_evaluation_window,
+    capital_metrics,
+    evaluation_counts,
+    evaluation_window,
+)
 from sis.research.strategy_lab.authoring.scorecard import (
     _increment_count,
     _metrics_json,
@@ -599,7 +605,10 @@ def _run_authoring_backtest_once(
     summary["authoring_split_method"] = spec.backtest.split_method
     summary["authoring_era_unit"] = spec.backtest.era_unit
     summary["min_trade_count"] = spec.backtest.min_trade_count
+    summary["evaluation_window"] = evaluation_window(spec)
+    summary["evaluation_signal_count"] = frame.height
     summary["aggregate_metrics"] = aggregate_metrics
+    summary["capital"] = capital_metrics(spec, aggregate_metrics)
     summary["multi_leg_group_metrics"] = _multi_leg_group_backtest_metrics(frame, summary)
     threshold_results = _evaluate_pass_thresholds(spec, summary)
     pass_all_thresholds = all(bool(result["passed"]) for result in threshold_results.values())
@@ -615,14 +624,18 @@ def _run_authoring_backtest_once(
 def run_authoring_backtest(
     spec: StrategyAuthoringSpec, frame: pl.DataFrame, *, data_dir: Path
 ) -> tuple[list[Any], dict[str, Any]]:
+    source_frame = frame
+    frame = apply_evaluation_window(spec, source_frame)
     metrics, summary = _run_authoring_backtest_once(spec, frame, data_dir=data_dir)
+    summary.update(evaluation_counts(spec, source_frame, frame))
     if spec.backtest.split_method in {"walk_forward", "purged_walk_forward"}:
         summary["walk_forward_eras"] = _walk_forward_eras(spec, frame, data_dir=data_dir)
     variant_results = []
     for variant_id, variant in _optimizer_variants(spec):
         variant_frame, _manifest = build_authoring_signals(variant, data_dir=data_dir)
+        variant_evaluation_frame = apply_evaluation_window(variant, variant_frame)
         _variant_metrics, variant_summary = _run_authoring_backtest_once(
-            variant, variant_frame, data_dir=data_dir
+            variant, variant_evaluation_frame, data_dir=data_dir
         )
         variant_results.append(
             {
@@ -631,7 +644,9 @@ def run_authoring_backtest(
                     path: _nested_get(variant.model_dump(mode="json"), path)
                     for path in sorted(spec.optimizer.parameter_sweep)
                 },
+                **evaluation_counts(variant, variant_frame, variant_evaluation_frame),
                 "aggregate_metrics": variant_summary["aggregate_metrics"],
+                "capital": variant_summary["capital"],
                 "multi_leg_group_metrics": variant_summary["multi_leg_group_metrics"],
                 "backtest_passed": variant_summary["backtest_passed"],
             }
@@ -675,6 +690,7 @@ def write_authoring_backtest_outputs(
         for item in metrics
     )
     scorecard = summary.get("strategy_scorecard") or {}
+    capital = summary.get("capital") or {}
     scorecard_lines = (
         "\n".join(
             f"- {name}: {count}"
@@ -693,11 +709,20 @@ def write_authoring_backtest_outputs(
         "# Strategy Authoring Backtest Report\n\n"
         "paper_only: true\n\n"
         f"- strategy_id: {spec.experiment.strategy_id}\n"
+        f"- source_signal_count: {summary.get('source_signal_count')}\n"
+        f"- evaluation_signal_count: {summary.get('evaluation_signal_count')}\n"
+        f"- evaluation_start_at: {summary.get('evaluation_window', {}).get('evaluation_start_at')}\n"
+        f"- evaluation_end_at: {summary.get('evaluation_window', {}).get('evaluation_end_at')}\n"
         f"- signals_considered: {summary.get('signals_considered')}\n"
         f"- executed_count: {summary.get('executed_count')}\n"
         f"- pass_min_trade_count: {summary.get('pass_min_trade_count')}\n\n"
         f"- pass_all_thresholds: {summary.get('pass_all_thresholds')}\n"
         f"- backtest_passed: {summary.get('backtest_passed')}\n\n"
+        "## Capital\n\n"
+        f"- initial_capital_usd: {capital.get('initial_capital_usd')}\n"
+        f"- net_pnl_usd: {capital.get('net_pnl_usd')}\n"
+        f"- ending_equity_usd: {capital.get('ending_equity_usd')}\n"
+        f"- max_drawdown_loss_usd: {capital.get('max_drawdown_loss_usd')}\n\n"
         "## Strategy Scorecard\n\n"
         f"- derived_feature_count: {scorecard.get('derived_feature_count', 0)}\n"
         f"- failed_thresholds: {scorecard.get('failed_thresholds', [])}\n\n"

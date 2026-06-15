@@ -69,6 +69,10 @@ from sis.research.strategy_lab.authoring.contracts.base import (
     StrategyAuthoringValidationError,
 )
 from sis.research.strategy_lab.authoring.explain import explain_authoring_spec
+from sis.research.strategy_lab.authoring.evaluation_window import (
+    apply_evaluation_window,
+    manifest_for_evaluation_frame,
+)
 from sis.research.strategy_lab.authoring.io import (
     load_backtest_suite_spec,
     load_authoring_bundle_spec,
@@ -172,8 +176,15 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         parsed = _load_spec_or_exit(spec)
         try:
             frame, manifest = build_authoring_signals(parsed, data_dir=settings.data_dir)
+            artifact_frame = frame
+            artifact_manifest = manifest
+            if through in {"backtest", "paper-preview"}:
+                artifact_frame = apply_evaluation_window(parsed, frame)
+                artifact_manifest = manifest_for_evaluation_frame(
+                    parsed, frame, artifact_frame, manifest
+                )
             artifacts = write_authoring_signal_artifacts(
-                frame, manifest, data_dir=settings.data_dir
+                artifact_frame, artifact_manifest, data_dir=settings.data_dir
             )
             summary = None
             if through in {"backtest", "paper-preview"}:
@@ -188,7 +199,7 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                     summary = {}
                 artifacts.update(
                     write_authoring_paper_preview_outputs(
-                        parsed, frame, summary, data_dir=settings.data_dir
+                        parsed, artifact_frame, summary, data_dir=settings.data_dir
                     )
                 )
             run_summary = write_authoring_run_summary(
@@ -196,7 +207,9 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
                 data_dir=settings.data_dir,
                 through=through,
                 artifacts=artifacts,
-                signal_count=frame.height,
+                signal_count=artifact_frame.height,
+                source_signal_count=frame.height,
+                evaluation_signal_count=artifact_frame.height,
             )
         except (FileNotFoundError, ValueError, StrategyAuthoringValidationError) as exc:
             typer.echo(str(exc))

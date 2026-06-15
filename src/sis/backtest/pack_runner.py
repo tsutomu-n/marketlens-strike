@@ -37,6 +37,10 @@ from sis.research.strategy_lab.authoring.compiler.artifacts import (
     write_authoring_signal_artifacts,
 )
 from sis.research.strategy_lab.authoring.compiler.build import build_authoring_signals
+from sis.research.strategy_lab.authoring.evaluation_window import (
+    apply_evaluation_window,
+    manifest_for_evaluation_frame,
+)
 from sis.research.strategy_lab.authoring.io import (
     load_authoring_bundle_spec,
     load_authoring_spec,
@@ -90,7 +94,13 @@ def run_strategy_backtest_pack(
     quotes_path = _resolve_spec_data_path(parsed_spec.data.quote_data_path, inputs.data_dir)
 
     frame, manifest = build_authoring_signals(parsed_spec, data_dir=inputs.data_dir)
-    signal_artifacts = write_authoring_signal_artifacts(frame, manifest, data_dir=inputs.data_dir)
+    evaluation_frame = apply_evaluation_window(parsed_spec, frame)
+    evaluation_manifest = manifest_for_evaluation_frame(
+        parsed_spec, frame, evaluation_frame, manifest
+    )
+    signal_artifacts = write_authoring_signal_artifacts(
+        evaluation_frame, evaluation_manifest, data_dir=inputs.data_dir
+    )
     metrics, summary = run_authoring_backtest(parsed_spec, frame, data_dir=inputs.data_dir)
     backtest_artifacts = write_authoring_backtest_outputs(
         parsed_spec, metrics, summary, data_dir=inputs.data_dir
@@ -112,12 +122,14 @@ def run_strategy_backtest_pack(
         signals_path=signal_artifacts["signals_parquet"],
         quotes_path=quotes_path,
         label_horizon_minutes=inputs.label_horizon_minutes,
+        initial_capital_usd=parsed_spec.backtest.initial_capital_usd,
         out_dir=inputs.data_dir / "research/backtest_external",
         reports_dir=inputs.reports_dir,
     )
     portfolio_comparison_result = build_strategy_backtest_portfolio_comparison(
         bundle_path=bundle_artifacts["bundle_result"],
         price_frame_path=quotes_path,
+        initial_capital_usd=parsed_spec.backtest.initial_capital_usd,
         out_dir=inputs.data_dir / "research/backtest_portfolio",
         reports_dir=inputs.reports_dir,
     )

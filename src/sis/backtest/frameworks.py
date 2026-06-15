@@ -70,6 +70,44 @@ FRAMEWORK_CANDIDATES = (
     },
 )
 
+REFERENCE_ONLY_FRAMEWORK_CANDIDATES = (
+    {
+        "framework_id": "nautilus_trader",
+        "module": "nautilus_trader",
+        "distribution": "nautilus-trader",
+        "adapter_role": "reference_only_backtesting_architecture",
+        "adoption_note": "Reference-only review target for event-driven backtesting design; not an adapter, runner, or dependency adoption target.",
+    },
+    {
+        "framework_id": "freqtrade",
+        "module": "freqtrade",
+        "distribution": "freqtrade",
+        "adapter_role": "reference_only_lookahead_analysis",
+        "adoption_note": "Reference-only review target for lookahead-analysis workflow; not an adapter, runner, or dependency adoption target.",
+    },
+    {
+        "framework_id": "qlib",
+        "module": "qlib",
+        "distribution": "pyqlib",
+        "adapter_role": "reference_only_research_platform",
+        "adoption_note": "Reference-only review target for research workflow design; not an adapter, runner, or dependency adoption target.",
+    },
+    {
+        "framework_id": "finrl",
+        "module": "finrl",
+        "distribution": "finrl",
+        "adapter_role": "reference_only_rl_research",
+        "adoption_note": "Reference-only review target for RL research workflow; not an adapter, runner, or dependency adoption target.",
+    },
+    {
+        "framework_id": "skfolio",
+        "module": "skfolio",
+        "distribution": "skfolio",
+        "adapter_role": "reference_only_portfolio_validation",
+        "adoption_note": "Reference-only review target for portfolio validation methodology; not an adapter, runner, or dependency adoption target.",
+    },
+)
+
 
 def framework_adapter_status() -> list[dict[str, Any]]:
     adapters: list[dict[str, Any]] = []
@@ -106,3 +144,19 @@ def framework_adapter_status() -> list[dict[str, Any]]:
             }
         )
     return adapters
+
+
+def framework_reference_only_status() -> list[dict[str, Any]]:
+    return [
+        {
+            **candidate,
+            "candidate_kind": "reference_only",
+            "status": "reference_only",
+            "version": None,
+            "license": None,
+            "requires_python": None,
+            "license_classifiers": [],
+            "runs_in_this_command": False,
+        }
+        for candidate in REFERENCE_ONLY_FRAMEWORK_CANDIDATES
+    ]
