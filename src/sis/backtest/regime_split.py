@@ -2,11 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import hashlib
-import json
 import math
 from pathlib import Path
 from typing import Any
+
+from sis.backtest.artifact_io import (
+    read_json_object as _read_json,
+    sha256_file as _sha256_file,
+    write_json_object,
+)
+from sis.backtest.boundary import with_backtest_paper_only_boundary
 
 
 DEFAULT_DIMENSION_CSV = "side,timeframe,exit_reason,ts_weekday,ts_hour"
@@ -26,21 +31,6 @@ class ReturnRow:
     cost_drag_bps: float
     notional_usd: float | None
     raw: dict[str, Any]
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return f"sha256:{digest.hexdigest()}"
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"expected JSON object: {path}")
-    return payload
 
 
 def _numeric(value: Any) -> float | None:
@@ -250,35 +240,28 @@ def build_strategy_backtest_regime_split(
             "total_return": None,
         },
     )
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_regime_split.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "split_kind": "regime_dimension",
-        "source_backtest_metrics_path": metrics_path.as_posix(),
-        "source_backtest_metrics_hash": _sha256_file(metrics_path),
-        "dimension_count": len(dimensions),
-        "summary": {
-            "return_count": len(rows),
+    payload: dict[str, Any] = with_backtest_paper_only_boundary(
+        {
+            "schema_version": "strategy_backtest_regime_split.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "split_kind": "regime_dimension",
+            "source_backtest_metrics_path": metrics_path.as_posix(),
+            "source_backtest_metrics_hash": _sha256_file(metrics_path),
             "dimension_count": len(dimensions),
-            "worst_dimension_id": worst["dimension_id"],
-            "worst_bucket_id": worst["bucket_id"],
-            "worst_bucket_total_return": worst["total_return"],
-        },
-        "dimensions": dimensions,
-        "dependency_added": False,
-        "paper_only": True,
-        "live_order_submitted": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+            "summary": {
+                "return_count": len(rows),
+                "dimension_count": len(dimensions),
+                "worst_dimension_id": worst["dimension_id"],
+                "worst_bucket_id": worst["bucket_id"],
+                "worst_bucket_total_return": worst["total_return"],
+            },
+            "dimensions": dimensions,
+            "dependency_added": False,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     regime_split_path = out_dir / "strategy_backtest_regime_split.json"
-    regime_split_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
-    )
+    write_json_object(regime_split_path, payload)
     report_path = _write_report(reports_dir / "strategy_backtest_regime_split_report.md", payload)
     return BacktestRegimeSplitResult(
         regime_split_path=regime_split_path,

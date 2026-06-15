@@ -9,6 +9,7 @@ from typing import Any, cast
 
 import polars as pl
 
+from sis.backtest.boundary import with_backtest_paper_only_boundary
 from sis.research.strategy_lab.authoring.backtest import run_authoring_backtest
 from sis.research.strategy_lab.authoring.compiler.build import build_authoring_signals
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
@@ -307,36 +308,32 @@ def build_strategy_backtest_no_lookahead_diff(
             }
         )
     failed_count = sum(1 for row in checks if row["passed"] is not True)
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_no_lookahead_diff.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "status": "pass" if failed_count == 0 else "fail",
-        "diff_mode": diff_mode,
-        "source_backtest_metrics_path": metrics_path.as_posix(),
-        "source_backtest_metrics_hash": _sha256_file(metrics_path),
-        "source_signals_path": signals_path.as_posix(),
-        "source_signals_hash": _sha256_file(signals_path) if signals_path.exists() else None,
-        "source_quotes_path": quotes_path.as_posix(),
-        "source_quotes_hash": _sha256_file(quotes_path) if quotes_path.exists() else None,
-        "source_spec_path": spec_path.as_posix() if spec_path is not None else None,
-        "source_spec_hash": _sha256_file(spec_path)
-        if spec_path is not None and spec_path.exists()
-        else None,
-        "summary": {
-            "check_count": len(checks),
-            "failed_count": failed_count,
-            "runtime_future_mutation_replay": runtime_meta["runtime_future_mutation_replay"],
-        },
-        "checks": checks,
-        "mutation_scenarios": scenarios,
-        "dependency_added": False,
-        "paper_only": True,
-        "live_order_submitted": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    payload: dict[str, Any] = with_backtest_paper_only_boundary(
+        {
+            "schema_version": "strategy_backtest_no_lookahead_diff.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "status": "pass" if failed_count == 0 else "fail",
+            "diff_mode": diff_mode,
+            "source_backtest_metrics_path": metrics_path.as_posix(),
+            "source_backtest_metrics_hash": _sha256_file(metrics_path),
+            "source_signals_path": signals_path.as_posix(),
+            "source_signals_hash": _sha256_file(signals_path) if signals_path.exists() else None,
+            "source_quotes_path": quotes_path.as_posix(),
+            "source_quotes_hash": _sha256_file(quotes_path) if quotes_path.exists() else None,
+            "source_spec_path": spec_path.as_posix() if spec_path is not None else None,
+            "source_spec_hash": _sha256_file(spec_path)
+            if spec_path is not None and spec_path.exists()
+            else None,
+            "summary": {
+                "check_count": len(checks),
+                "failed_count": failed_count,
+                "runtime_future_mutation_replay": runtime_meta["runtime_future_mutation_replay"],
+            },
+            "checks": checks,
+            "mutation_scenarios": scenarios,
+            "dependency_added": False,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     diff_path = out_dir / "strategy_backtest_no_lookahead_diff.json"
     diff_path.write_text(

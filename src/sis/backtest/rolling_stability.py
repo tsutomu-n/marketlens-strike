@@ -2,11 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import hashlib
-import json
 import math
 from pathlib import Path
 from typing import Any
+
+from sis.backtest.artifact_io import (
+    read_json_object as _read_json,
+    sha256_file as _sha256_file,
+    write_json_object,
+)
+from sis.backtest.boundary import with_backtest_paper_only_boundary
+from sis.backtest.reporting import write_markdown_report
 
 
 DEFAULT_WINDOW_CSV = "3,5"
@@ -23,21 +29,6 @@ class BacktestRollingStabilityResult:
 class ReturnRow:
     index: int
     signal_return: float
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return f"sha256:{digest.hexdigest()}"
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"expected JSON object: {path}")
-    return payload
 
 
 def _numeric(value: Any) -> float | None:
@@ -181,9 +172,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
                 worst_window_max_drawdown=window["worst_window_max_drawdown"],
             )
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_rolling_stability(
@@ -208,37 +197,30 @@ def build_strategy_backtest_rolling_stability(
         if rolling_window["return_count"] > 0
     ]
     worst = min(all_windows, key=lambda item: float(item["total_return"]), default=None)
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_rolling_stability.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "stability_kind": "rolling_return_window",
-        "source_backtest_metrics_path": metrics_path.as_posix(),
-        "source_backtest_metrics_hash": _sha256_file(metrics_path),
-        "window_count": len(windows),
-        "summary": {
-            "return_count": len(rows),
+    payload: dict[str, Any] = with_backtest_paper_only_boundary(
+        {
+            "schema_version": "strategy_backtest_rolling_stability.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "stability_kind": "rolling_return_window",
+            "source_backtest_metrics_path": metrics_path.as_posix(),
+            "source_backtest_metrics_hash": _sha256_file(metrics_path),
             "window_count": len(windows),
-            "worst_window_size": worst["window_size"] if worst is not None else None,
-            "worst_window_start_index": worst["start_index"] if worst is not None else None,
-            "worst_window_end_index": worst["end_index"] if worst is not None else None,
-            "worst_window_total_return": worst["total_return"] if worst is not None else None,
-            "worst_window_max_drawdown": worst["max_drawdown"] if worst is not None else None,
-        },
-        "windows": windows,
-        "dependency_added": False,
-        "paper_only": True,
-        "live_order_submitted": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+            "summary": {
+                "return_count": len(rows),
+                "window_count": len(windows),
+                "worst_window_size": worst["window_size"] if worst is not None else None,
+                "worst_window_start_index": worst["start_index"] if worst is not None else None,
+                "worst_window_end_index": worst["end_index"] if worst is not None else None,
+                "worst_window_total_return": worst["total_return"] if worst is not None else None,
+                "worst_window_max_drawdown": worst["max_drawdown"] if worst is not None else None,
+            },
+            "windows": windows,
+            "dependency_added": False,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     rolling_stability_path = out_dir / "strategy_backtest_rolling_stability.json"
-    rolling_stability_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
-    )
+    write_json_object(rolling_stability_path, payload)
     report_path = _write_report(
         reports_dir / "strategy_backtest_rolling_stability_report.md",
         payload,

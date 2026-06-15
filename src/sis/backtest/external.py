@@ -2,13 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
+from sis.backtest.artifact_io import (
+    read_json_object as _read_json,
+    sha256_file as _sha256_file,
+    write_json_object,
+)
+from sis.backtest.boundary import with_no_live_capability_boundary
 from sis.backtest.frameworks import framework_adapter_status
 from sis.backtest.optional_dependencies import optional_dependency_source
+from sis.backtest.reporting import write_markdown_report
 from sis.backtest.vectorbt_adapter import run_vectorbt_result
 
 OPTIONAL_EXTRA_BY_FRAMEWORK = {
@@ -24,21 +29,6 @@ class BacktestExternalResult:
     external_path: Path
     report_path: Path
     payload: dict[str, Any]
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return f"sha256:{digest.hexdigest()}"
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"expected JSON object: {path}")
-    return payload
 
 
 def _aggregate_metrics(metrics_payload: dict[str, Any]) -> dict[str, Any]:
@@ -188,9 +178,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
             "This artifact never adds dependencies and never permits live orders.",
         ]
     )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_external_result(
@@ -213,40 +201,39 @@ def build_strategy_backtest_external_result(
         label_horizon_minutes=label_horizon_minutes,
         target_frameworks=target_frameworks,
     )
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_external_result.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "source_metrics_path": metrics_path.as_posix(),
-        "source_metrics_hash": _sha256_file(metrics_path),
-        "source_signals_path": (
-            signals_path.as_posix() if signals_path is not None and signals_path.exists() else None
-        ),
-        "source_signals_hash": (
-            _sha256_file(signals_path)
-            if signals_path is not None and signals_path.exists()
-            else None
-        ),
-        "source_quotes_path": (
-            quotes_path.as_posix() if quotes_path is not None and quotes_path.exists() else None
-        ),
-        "source_quotes_hash": (
-            _sha256_file(quotes_path) if quotes_path is not None and quotes_path.exists() else None
-        ),
-        "label_horizon_minutes": label_horizon_minutes,
-        "dependency_added": False,
-        "external_engine_run": any(result["engine_run"] is True for result in results),
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-        "results": results,
-    }
+    payload: dict[str, Any] = with_no_live_capability_boundary(
+        {
+            "schema_version": "strategy_backtest_external_result.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "source_metrics_path": metrics_path.as_posix(),
+            "source_metrics_hash": _sha256_file(metrics_path),
+            "source_signals_path": (
+                signals_path.as_posix()
+                if signals_path is not None and signals_path.exists()
+                else None
+            ),
+            "source_signals_hash": (
+                _sha256_file(signals_path)
+                if signals_path is not None and signals_path.exists()
+                else None
+            ),
+            "source_quotes_path": (
+                quotes_path.as_posix() if quotes_path is not None and quotes_path.exists() else None
+            ),
+            "source_quotes_hash": (
+                _sha256_file(quotes_path)
+                if quotes_path is not None and quotes_path.exists()
+                else None
+            ),
+            "label_horizon_minutes": label_horizon_minutes,
+            "dependency_added": False,
+            "external_engine_run": any(result["engine_run"] is True for result in results),
+            "results": results,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     external_path = out_dir / "strategy_backtest_external_result.json"
-    external_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
-    )
+    write_json_object(external_path, payload)
     report_path = _write_report(reports_dir / "strategy_backtest_external_report.md", payload)
     return BacktestExternalResult(
         external_path=external_path, report_path=report_path, payload=payload

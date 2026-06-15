@@ -7,6 +7,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+from sis.backtest.boundary import with_backtest_paper_only_boundary
+from sis.backtest.reporting import write_markdown_report
+
 
 @dataclass(frozen=True)
 class BacktestTrialLedgerResult:
@@ -55,9 +58,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         lines.append(
             f"| {row['trial_id']} | {row['trial_type']} | {row['status']} | `{row['path']}` |"
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_trial_ledger(
@@ -83,24 +84,20 @@ def build_strategy_backtest_trial_ledger(
             }
         )
     missing_count = sum(1 for row in trials if row["status"] != "available")
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_trial_ledger.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "status": "pass" if missing_count == 0 else "fail",
-        "summary": {
-            "trial_count": len(trials),
-            "missing_count": missing_count,
-            "success_only_reporting": False,
-        },
-        "trials": trials,
-        "dependency_added": False,
-        "paper_only": True,
-        "live_order_submitted": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    payload: dict[str, Any] = with_backtest_paper_only_boundary(
+        {
+            "schema_version": "strategy_backtest_trial_ledger.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "status": "pass" if missing_count == 0 else "fail",
+            "summary": {
+                "trial_count": len(trials),
+                "missing_count": missing_count,
+                "success_only_reporting": False,
+            },
+            "trials": trials,
+            "dependency_added": False,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     ledger_path = out_dir / "strategy_backtest_trial_ledger.json"
     ledger_path.write_text(

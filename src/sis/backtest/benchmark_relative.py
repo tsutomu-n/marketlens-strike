@@ -2,13 +2,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-import hashlib
 import json
 import math
 from pathlib import Path
 from typing import Any
 
 import polars as pl
+
+from sis.backtest.artifact_io import (
+    read_json_object as _read_json,
+    sha256_file as _sha256_file,
+    write_json_object,
+)
+from sis.backtest.boundary import with_backtest_paper_only_boundary
+from sis.backtest.reporting import write_markdown_report
 
 
 DEFAULT_BENCHMARK_RETURN_COLUMN = "benchmark_return"
@@ -35,21 +42,6 @@ class ReturnRow:
 class QuoteRow:
     ts: datetime
     price: float
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return f"sha256:{digest.hexdigest()}"
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"expected JSON object: {path}")
-    return payload
 
 
 def _numeric(value: Any) -> float | None:
@@ -401,9 +393,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
                 source=row["benchmark_source"],
             )
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_benchmark_relative(
@@ -436,52 +426,47 @@ def build_strategy_backtest_benchmark_relative(
         benchmark_return_column=benchmark_return_column,
         horizon_minutes=horizon_minutes,
     )
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_benchmark_relative.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "comparison_kind": "benchmark_relative_return",
-        "source_backtest_metrics_path": metrics_path.as_posix(),
-        "source_backtest_metrics_hash": _sha256_file(metrics_path),
-        "source_quotes_path": (
-            quotes_path.as_posix() if quotes_path is not None and quotes_path.exists() else None
-        ),
-        "source_quotes_hash": (
-            _sha256_file(quotes_path) if quotes_path is not None and quotes_path.exists() else None
-        ),
-        "source_benchmark_series_path": (
-            benchmark_series_path.as_posix()
-            if benchmark_series_path is not None and benchmark_series_path.exists()
-            else None
-        ),
-        "source_benchmark_series_hash": (
-            _sha256_file(benchmark_series_path)
-            if benchmark_series_path is not None and benchmark_series_path.exists()
-            else None
-        ),
-        "benchmark_return_column": benchmark_return_column,
-        "benchmark_series_return_column": benchmark_series_return_column,
-        "price_column": price_column,
-        "horizon_minutes": horizon_minutes,
-        "summary": _summary(
-            return_count=len(rows),
-            rows=comparisons,
-            missing_benchmark_count=missing_benchmark_count,
-        ),
-        "comparisons": comparisons,
-        "dependency_added": False,
-        "paper_only": True,
-        "live_order_submitted": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    payload: dict[str, Any] = with_backtest_paper_only_boundary(
+        {
+            "schema_version": "strategy_backtest_benchmark_relative.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "comparison_kind": "benchmark_relative_return",
+            "source_backtest_metrics_path": metrics_path.as_posix(),
+            "source_backtest_metrics_hash": _sha256_file(metrics_path),
+            "source_quotes_path": (
+                quotes_path.as_posix() if quotes_path is not None and quotes_path.exists() else None
+            ),
+            "source_quotes_hash": (
+                _sha256_file(quotes_path)
+                if quotes_path is not None and quotes_path.exists()
+                else None
+            ),
+            "source_benchmark_series_path": (
+                benchmark_series_path.as_posix()
+                if benchmark_series_path is not None and benchmark_series_path.exists()
+                else None
+            ),
+            "source_benchmark_series_hash": (
+                _sha256_file(benchmark_series_path)
+                if benchmark_series_path is not None and benchmark_series_path.exists()
+                else None
+            ),
+            "benchmark_return_column": benchmark_return_column,
+            "benchmark_series_return_column": benchmark_series_return_column,
+            "price_column": price_column,
+            "horizon_minutes": horizon_minutes,
+            "summary": _summary(
+                return_count=len(rows),
+                rows=comparisons,
+                missing_benchmark_count=missing_benchmark_count,
+            ),
+            "comparisons": comparisons,
+            "dependency_added": False,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     benchmark_relative_path = out_dir / "strategy_backtest_benchmark_relative.json"
-    benchmark_relative_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
-    )
+    write_json_object(benchmark_relative_path, payload)
     report_path = _write_report(
         reports_dir / "strategy_backtest_benchmark_relative_report.md",
         payload,

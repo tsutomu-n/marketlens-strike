@@ -27,9 +27,10 @@ from sis.backtest.framework_run import build_strategy_backtest_framework_run
 from sis.backtest.framework_smoke import build_backtest_framework_smoke
 from sis.backtest.metric_extension import build_strategy_backtest_metric_extension
 from sis.backtest.no_lookahead import build_strategy_backtest_no_lookahead_diff
-from sis.backtest.pack import (
-    validate_strategy_backtest_pack,
-    write_strategy_backtest_pack_outputs,
+from sis.backtest.pack import validate_strategy_backtest_pack
+from sis.backtest.pack_runner import (
+    StrategyBacktestPackRunInputs,
+    run_strategy_backtest_pack,
 )
 from sis.backtest.portfolio_comparison import build_strategy_backtest_portfolio_comparison
 from sis.backtest.regime_split import (
@@ -1456,257 +1457,43 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         )
         selected_out = _resolve_workspace_path(out, settings.data_dir)
         selected_reports = _resolve_workspace_path(reports_dir, settings.data_dir)
-        parsed_spec = _load_spec_or_exit(selected_spec)
-        parsed_suite = _load_backtest_suite_or_exit(selected_suite)
-        parsed_bundle = _load_bundle_or_exit(selected_bundle)
         try:
-            frame, manifest = build_authoring_signals(parsed_spec, data_dir=settings.data_dir)
-            signal_artifacts = write_authoring_signal_artifacts(
-                frame, manifest, data_dir=settings.data_dir
-            )
-            metrics, summary = run_authoring_backtest(
-                parsed_spec, frame, data_dir=settings.data_dir
-            )
-            backtest_artifacts = write_authoring_backtest_outputs(
-                parsed_spec, metrics, summary, data_dir=settings.data_dir
-            )
-            suite_payload = run_backtest_suite(
-                parsed_suite, suite_path=selected_suite, data_dir=settings.data_dir
-            )
-            suite_artifacts = write_backtest_suite_outputs(
-                suite_payload, data_dir=settings.data_dir
-            )
-            adapter_result = build_backtest_adapter_spike(
-                out_dir=settings.data_dir / "research/backtest_adapter_spike",
-                reports_dir=selected_reports,
-            )
-            bundle_payload = run_authoring_bundle(
-                parsed_bundle, bundle_path=selected_bundle, data_dir=settings.data_dir
-            )
-            bundle_artifacts = write_authoring_bundle_outputs(
-                bundle_payload, data_dir=settings.data_dir
-            )
-            external_result = build_strategy_backtest_external_result(
-                metrics_path=backtest_artifacts["metrics"],
-                signals_path=signal_artifacts["signals_parquet"],
-                quotes_path=_resolve_spec_data_path(
-                    parsed_spec.data.quote_data_path, settings.data_dir
-                ),
-                label_horizon_minutes=label_horizon_minutes,
-                out_dir=settings.data_dir / "research/backtest_external",
-                reports_dir=selected_reports,
-            )
-            portfolio_comparison_result = build_strategy_backtest_portfolio_comparison(
-                bundle_path=bundle_artifacts["bundle_result"],
-                price_frame_path=_resolve_spec_data_path(
-                    parsed_spec.data.quote_data_path, settings.data_dir
-                ),
-                out_dir=settings.data_dir / "research/backtest_portfolio",
-                reports_dir=selected_reports,
-            )
-            metric_extension_result = build_strategy_backtest_metric_extension(
-                metrics_path=backtest_artifacts["metrics"],
-                out_dir=settings.data_dir / "research/backtest_metric_extension",
-                reports_dir=selected_reports,
-            )
-            report_extension_result = build_strategy_backtest_report_extension(
-                metrics_path=backtest_artifacts["metrics"],
-                out_dir=settings.data_dir / "research/backtest_report_extension",
-                reports_dir=selected_reports,
-            )
-            stress_result = build_strategy_backtest_stress(
-                metrics_path=backtest_artifacts["metrics"],
-                out_dir=settings.data_dir / "research/backtest_stress",
-                reports_dir=selected_reports,
-            )
-            regime_split_result = build_strategy_backtest_regime_split(
-                metrics_path=backtest_artifacts["metrics"],
-                out_dir=settings.data_dir / "research/backtest_regime_split",
-                reports_dir=selected_reports,
-            )
-            rolling_stability_result = build_strategy_backtest_rolling_stability(
-                metrics_path=backtest_artifacts["metrics"],
-                out_dir=settings.data_dir / "research/backtest_rolling_stability",
-                reports_dir=selected_reports,
-            )
-            benchmark_relative_result = build_strategy_backtest_benchmark_relative(
-                metrics_path=backtest_artifacts["metrics"],
-                quotes_path=_resolve_spec_data_path(
-                    parsed_spec.data.quote_data_path, settings.data_dir
-                ),
-                benchmark_series_path=selected_benchmark_series_path,
-                benchmark_series_return_column=benchmark_series_return_column,
-                horizon_minutes=parsed_spec.backtest.label_horizon_minutes,
-                out_dir=settings.data_dir / "research/backtest_benchmark_relative",
-                reports_dir=selected_reports,
-            )
-            data_availability_result = build_backtest_data_availability_ledger(
-                metrics_path=backtest_artifacts["metrics"],
-                signals_path=signal_artifacts["signals_parquet"],
-                quotes_path=_resolve_spec_data_path(
-                    parsed_spec.data.quote_data_path, settings.data_dir
-                ),
-                out_dir=settings.data_dir / "research/backtest_data_availability",
-                reports_dir=selected_reports,
-            )
-            baseline_comparison_result = build_strategy_backtest_baseline_comparison(
-                metrics_path=backtest_artifacts["metrics"],
-                out_dir=settings.data_dir / "research/backtest_baseline_comparison",
-                reports_dir=selected_reports,
-            )
-            no_lookahead_result = build_strategy_backtest_no_lookahead_diff(
-                metrics_path=backtest_artifacts["metrics"],
-                signals_path=signal_artifacts["signals_parquet"],
-                quotes_path=_resolve_spec_data_path(
-                    parsed_spec.data.quote_data_path, settings.data_dir
-                ),
-                spec_path=selected_spec,
-                data_dir=settings.data_dir,
-                out_dir=settings.data_dir / "research/backtest_no_lookahead",
-                reports_dir=selected_reports,
-            )
-            execution_simulation_result = build_strategy_backtest_execution_simulation(
-                metrics_path=backtest_artifacts["metrics"],
-                signals_path=signal_artifacts["signals_parquet"],
-                out_dir=settings.data_dir / "research/backtest_execution_simulation",
-                reports_dir=selected_reports,
-            )
-            assumption_ledger_result = build_strategy_backtest_assumption_ledger(
-                data_availability_path=data_availability_result.ledger_path,
-                baseline_comparison_path=baseline_comparison_result.comparison_path,
-                no_lookahead_path=no_lookahead_result.diff_path,
-                execution_simulation_path=execution_simulation_result.simulation_path,
-                out_dir=settings.data_dir / "research/backtest_assumption_ledger",
-                reports_dir=selected_reports,
-            )
-            completion_artifacts = {
-                "signals_parquet": signal_artifacts["signals_parquet"],
-                "backtest_metrics": backtest_artifacts["metrics"],
-                "suite_result": suite_artifacts["suite_result"],
-                "external_result": external_result.external_path,
-                "portfolio_comparison": portfolio_comparison_result.comparison_path,
-                "metric_extension": metric_extension_result.metric_extension_path,
-                "report_extension": report_extension_result.report_extension_path,
-                "stress": stress_result.stress_path,
-                "regime_split": regime_split_result.regime_split_path,
-                "rolling_stability": rolling_stability_result.rolling_stability_path,
-                "benchmark_relative": benchmark_relative_result.benchmark_relative_path,
-                "data_availability": data_availability_result.ledger_path,
-                "baseline_comparison": baseline_comparison_result.comparison_path,
-                "no_lookahead_diff": no_lookahead_result.diff_path,
-                "execution_simulation": execution_simulation_result.simulation_path,
-                "assumption_ledger": assumption_ledger_result.ledger_path,
-            }
-            trial_ledger_result = build_strategy_backtest_trial_ledger(
-                artifacts=completion_artifacts,
-                out_dir=settings.data_dir / "research/backtest_trial_ledger",
-                reports_dir=selected_reports,
-            )
-            comparison_result = build_strategy_backtest_comparison(
-                metrics_path=backtest_artifacts["metrics"],
-                suite_result_path=suite_artifacts["suite_result"],
-                adapter_spike_path=adapter_result.spike_path,
-                external_result_path=external_result.external_path,
-                portfolio_comparison_path=portfolio_comparison_result.comparison_path,
-                metric_extension_path=metric_extension_result.metric_extension_path,
-                report_extension_path=report_extension_result.report_extension_path,
-                stress_path=stress_result.stress_path,
-                regime_split_path=regime_split_result.regime_split_path,
-                rolling_stability_path=rolling_stability_result.rolling_stability_path,
-                benchmark_relative_path=benchmark_relative_result.benchmark_relative_path,
-                data_availability_path=data_availability_result.ledger_path,
-                baseline_comparison_path=baseline_comparison_result.comparison_path,
-                trial_ledger_path=trial_ledger_result.ledger_path,
-                assumption_ledger_path=assumption_ledger_result.ledger_path,
-                no_lookahead_path=no_lookahead_result.diff_path,
-                execution_simulation_path=execution_simulation_result.simulation_path,
-                out_dir=settings.data_dir / "research/backtest_compare",
-                reports_dir=selected_reports,
-            )
-            pack_result = write_strategy_backtest_pack_outputs(
-                spec_path=selected_spec,
-                suite_path=selected_suite,
-                artifacts={
-                    "signals_parquet": signal_artifacts["signals_parquet"],
-                    "signals_jsonl": signal_artifacts["signals_jsonl"],
-                    "signal_manifest": signal_artifacts["manifest"],
-                    "backtest_metrics": backtest_artifacts["metrics"],
-                    "backtest_report": backtest_artifacts["report"],
-                    "suite_result": suite_artifacts["suite_result"],
-                    "suite_report": suite_artifacts["suite_report"],
-                    "adapter_spike": adapter_result.spike_path,
-                    "adapter_spike_report": adapter_result.report_path,
-                    "bundle_result": bundle_artifacts["bundle_result"],
-                    "bundle_report": bundle_artifacts["bundle_report"],
-                    "external_result": external_result.external_path,
-                    "external_report": external_result.report_path,
-                    "portfolio_comparison": portfolio_comparison_result.comparison_path,
-                    "portfolio_comparison_report": portfolio_comparison_result.report_path,
-                    "metric_extension": metric_extension_result.metric_extension_path,
-                    "metric_extension_report": metric_extension_result.report_path,
-                    "returns_series": metric_extension_result.returns_series_path,
-                    "report_extension": report_extension_result.report_extension_path,
-                    "report_extension_report": report_extension_result.report_path,
-                    "report_returns_series": report_extension_result.returns_series_path,
-                    "stress": stress_result.stress_path,
-                    "stress_report": stress_result.report_path,
-                    "regime_split": regime_split_result.regime_split_path,
-                    "regime_split_report": regime_split_result.report_path,
-                    "rolling_stability": rolling_stability_result.rolling_stability_path,
-                    "rolling_stability_report": rolling_stability_result.report_path,
-                    "benchmark_relative": benchmark_relative_result.benchmark_relative_path,
-                    "benchmark_relative_report": benchmark_relative_result.report_path,
-                    "data_availability": data_availability_result.ledger_path,
-                    "data_availability_report": data_availability_result.report_path,
-                    "baseline_comparison": baseline_comparison_result.comparison_path,
-                    "baseline_comparison_report": baseline_comparison_result.report_path,
-                    "no_lookahead_diff": no_lookahead_result.diff_path,
-                    "no_lookahead_diff_report": no_lookahead_result.report_path,
-                    "execution_simulation": execution_simulation_result.simulation_path,
-                    "execution_simulation_report": execution_simulation_result.report_path,
-                    "assumption_ledger": assumption_ledger_result.ledger_path,
-                    "assumption_ledger_report": assumption_ledger_result.report_path,
-                    "trial_ledger": trial_ledger_result.ledger_path,
-                    "trial_ledger_report": trial_ledger_result.report_path,
-                    "comparison": comparison_result.comparison_path,
-                    "comparison_report": comparison_result.report_path,
-                },
-                suite_payload=suite_payload,
-                external_payload=external_result.payload,
-                comparison_payload=comparison_result.payload,
-                out_dir=selected_out,
-                reports_dir=selected_reports,
-            )
-            validation_result = validate_strategy_backtest_pack(
-                pack_path=pack_result.pack_path,
-                out_dir=selected_out,
-                reports_dir=selected_reports,
+            run_result = run_strategy_backtest_pack(
+                StrategyBacktestPackRunInputs(
+                    spec_path=selected_spec,
+                    suite_path=selected_suite,
+                    bundle_path=selected_bundle,
+                    label_horizon_minutes=label_horizon_minutes,
+                    benchmark_series_path=selected_benchmark_series_path,
+                    benchmark_series_return_column=benchmark_series_return_column,
+                    out_dir=selected_out,
+                    reports_dir=selected_reports,
+                    data_dir=settings.data_dir,
+                )
             )
         except (FileNotFoundError, ValueError, StrategyAuthoringValidationError) as exc:
             typer.echo(str(exc))
             raise typer.Exit(2) from exc
-        typer.echo(f"backtest_pack={pack_result.pack_path}")
-        typer.echo(f"backtest_pack_report={pack_result.report_path}")
-        typer.echo(f"backtest_pack_validation={validation_result.validation_path}")
-        typer.echo(f"backtest_pack_validation_report={validation_result.report_path}")
-        typer.echo(f"backtest_comparison={comparison_result.comparison_path}")
-        typer.echo(f"backtest_portfolio_comparison={portfolio_comparison_result.comparison_path}")
-        typer.echo(f"backtest_metric_extension={metric_extension_result.metric_extension_path}")
-        typer.echo(f"backtest_report_extension={report_extension_result.report_extension_path}")
-        typer.echo(f"backtest_stress={stress_result.stress_path}")
-        typer.echo(f"backtest_regime_split={regime_split_result.regime_split_path}")
-        typer.echo(f"backtest_rolling_stability={rolling_stability_result.rolling_stability_path}")
-        typer.echo(
-            f"backtest_benchmark_relative={benchmark_relative_result.benchmark_relative_path}"
-        )
-        typer.echo(f"backtest_data_availability={data_availability_result.ledger_path}")
-        typer.echo(f"backtest_baseline_comparison={baseline_comparison_result.comparison_path}")
-        typer.echo(f"backtest_no_lookahead_diff={no_lookahead_result.diff_path}")
-        typer.echo(f"backtest_execution_simulation={execution_simulation_result.simulation_path}")
-        typer.echo(f"backtest_assumption_ledger={assumption_ledger_result.ledger_path}")
-        typer.echo(f"backtest_trial_ledger={trial_ledger_result.ledger_path}")
-        typer.echo(f"backtest_suite_result={suite_artifacts['suite_result']}")
-        if validation_result.payload["decision"] != "PASS":
+        typer.echo(f"backtest_pack={run_result.pack_path}")
+        typer.echo(f"backtest_pack_report={run_result.pack_report_path}")
+        typer.echo(f"backtest_pack_validation={run_result.validation_path}")
+        typer.echo(f"backtest_pack_validation_report={run_result.validation_report_path}")
+        typer.echo(f"backtest_comparison={run_result.comparison_path}")
+        typer.echo(f"backtest_portfolio_comparison={run_result.portfolio_comparison_path}")
+        typer.echo(f"backtest_metric_extension={run_result.metric_extension_path}")
+        typer.echo(f"backtest_report_extension={run_result.report_extension_path}")
+        typer.echo(f"backtest_stress={run_result.stress_path}")
+        typer.echo(f"backtest_regime_split={run_result.regime_split_path}")
+        typer.echo(f"backtest_rolling_stability={run_result.rolling_stability_path}")
+        typer.echo(f"backtest_benchmark_relative={run_result.benchmark_relative_path}")
+        typer.echo(f"backtest_data_availability={run_result.data_availability_path}")
+        typer.echo(f"backtest_baseline_comparison={run_result.baseline_comparison_path}")
+        typer.echo(f"backtest_no_lookahead_diff={run_result.no_lookahead_path}")
+        typer.echo(f"backtest_execution_simulation={run_result.execution_simulation_path}")
+        typer.echo(f"backtest_assumption_ledger={run_result.assumption_ledger_path}")
+        typer.echo(f"backtest_trial_ledger={run_result.trial_ledger_path}")
+        typer.echo(f"backtest_suite_result={run_result.suite_result_path}")
+        if run_result.validation_decision != "PASS":
             raise typer.Exit(2)
 
     @app.command("strategy-backtest-pack-validate")

@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+from sis.backtest.boundary import with_backtest_paper_only_boundary
+from sis.backtest.reporting import write_markdown_report
+
 
 @dataclass(frozen=True)
 class BacktestAssumptionLedgerResult:
@@ -50,9 +53,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         lines.append(
             f"| {row['assumption_id']} | {row['level']} | {row['severity']} | {row['statement']} |"
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_assumption_ledger(
@@ -117,23 +118,19 @@ def build_strategy_backtest_assumption_ledger(
     unknown_critical_count = sum(
         1 for row in assumptions if row["level"] == "unknown" and row["severity"] == "critical"
     )
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_assumption_ledger.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "status": "pass" if unknown_critical_count == 0 else "fail",
-        "summary": {
-            "assumption_count": len(assumptions),
-            "unknown_critical_count": unknown_critical_count,
-        },
-        "assumptions": assumptions,
-        "dependency_added": False,
-        "paper_only": True,
-        "live_order_submitted": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    payload: dict[str, Any] = with_backtest_paper_only_boundary(
+        {
+            "schema_version": "strategy_backtest_assumption_ledger.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "status": "pass" if unknown_critical_count == 0 else "fail",
+            "summary": {
+                "assumption_count": len(assumptions),
+                "unknown_critical_count": unknown_critical_count,
+            },
+            "assumptions": assumptions,
+            "dependency_added": False,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     ledger_path = out_dir / "strategy_backtest_assumption_ledger.json"
     ledger_path.write_text(

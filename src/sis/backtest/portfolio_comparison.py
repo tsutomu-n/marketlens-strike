@@ -2,16 +2,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import hashlib
 import importlib
-import json
 from pathlib import Path
 from typing import Any
 
 import polars as pl
 
+from sis.backtest.artifact_io import (
+    read_json_object as _read_json,
+    sha256_file as _sha256_file,
+    write_json_object,
+)
+from sis.backtest.boundary import with_no_live_capability_boundary
 from sis.backtest.frameworks import framework_adapter_status
 from sis.backtest.optional_dependencies import optional_dependency_source
+from sis.backtest.reporting import write_markdown_report
 
 
 @dataclass(frozen=True)
@@ -19,21 +24,6 @@ class BacktestPortfolioComparisonResult:
     comparison_path: Path
     report_path: Path
     payload: dict[str, Any]
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return f"sha256:{digest.hexdigest()}"
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"expected JSON object: {path}")
-    return payload
 
 
 def _bt_candidate() -> dict[str, Any]:
@@ -182,43 +172,41 @@ def _base_payload(
     rebalance_count: int = 0,
 ) -> dict[str, Any]:
     members = _member_rows(bundle_payload)
-    return {
-        "schema_version": "strategy_backtest_portfolio_comparison.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "framework_id": "bt",
-        "adapter_role": str(candidate.get("adapter_role") or "portfolio_allocation_candidate"),
-        "framework_version": candidate.get("version"),
-        "runner_mode": runner_mode,
-        "dependency_source": dependency_source,
-        "run_status": run_status,
-        "reason_codes": reason_codes,
-        "dependency_added": False,
-        "engine_run": engine_run,
-        "source_bundle_path": bundle_path.as_posix(),
-        "source_bundle_hash": _sha256_file(bundle_path),
-        "price_frame_path": price_frame_path.as_posix(),
-        "price_frame_hash": _sha256_file(price_frame_path),
-        "allocation_rule_id": allocation_rule_id,
-        "rebalance_cadence": rebalance_cadence,
-        "portfolio_return": portfolio_return,
-        "max_drawdown": max_drawdown,
-        "turnover": turnover,
-        "rebalance_count": rebalance_count,
-        "benchmark_return": None,
-        "weight_drift": None,
-        "allocation_trace": [
-            {
-                "column_id": str(member["column_id"]),
-                "target_weight": float(member["effective_allocation_weight"]),
-            }
-            for member in members
-        ],
-        "members": members,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    return with_no_live_capability_boundary(
+        {
+            "schema_version": "strategy_backtest_portfolio_comparison.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "framework_id": "bt",
+            "adapter_role": str(candidate.get("adapter_role") or "portfolio_allocation_candidate"),
+            "framework_version": candidate.get("version"),
+            "runner_mode": runner_mode,
+            "dependency_source": dependency_source,
+            "run_status": run_status,
+            "reason_codes": reason_codes,
+            "dependency_added": False,
+            "engine_run": engine_run,
+            "source_bundle_path": bundle_path.as_posix(),
+            "source_bundle_hash": _sha256_file(bundle_path),
+            "price_frame_path": price_frame_path.as_posix(),
+            "price_frame_hash": _sha256_file(price_frame_path),
+            "allocation_rule_id": allocation_rule_id,
+            "rebalance_cadence": rebalance_cadence,
+            "portfolio_return": portfolio_return,
+            "max_drawdown": max_drawdown,
+            "turnover": turnover,
+            "rebalance_count": rebalance_count,
+            "benchmark_return": None,
+            "weight_drift": None,
+            "allocation_trace": [
+                {
+                    "column_id": str(member["column_id"]),
+                    "target_weight": float(member["effective_allocation_weight"]),
+                }
+                for member in members
+            ],
+            "members": members,
+        }
+    )
 
 
 def _run_bt_payload(
@@ -326,9 +314,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
                 weight=member["effective_allocation_weight"],
             )
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_portfolio_comparison(
@@ -372,10 +358,7 @@ def build_strategy_backtest_portfolio_comparison(
         )
     out_dir.mkdir(parents=True, exist_ok=True)
     comparison_path = out_dir / "strategy_backtest_portfolio_comparison.json"
-    comparison_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
-    )
+    write_json_object(comparison_path, payload)
     report_path = _write_report(
         reports_dir / "strategy_backtest_portfolio_comparison_report.md", payload
     )

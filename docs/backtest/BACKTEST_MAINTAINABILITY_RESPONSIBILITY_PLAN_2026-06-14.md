@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-14_21:49 JST
-更新日: 2026-06-15_15:44 JST
+更新日: 2026-06-15_17:42 JST
 -->
 
 # Backtest Maintainability Responsibility Plan
@@ -15,6 +15,24 @@
 - artifact I/O、source hash、paper-only boundary、Markdown report、pack artifact key、validation rule、summary extraction を共通部品へ寄せる。
 - 既存 CLI、schema、artifact、pack validation の挙動を維持する。
 - 将来、baseline、data availability、report、optional framework surface を追加するときに、既存の builder を直接コピーしなくてよい構造にする。
+
+## 実装ステータス
+
+2026-06-15_17:42 JST 時点:
+
+| Task | Status | Evidence |
+|---|---|---|
+| R0 Baseline Snapshot | 完了 | baseline pack generation / pack validation / artifact summary / `./scripts/check` |
+| R1 Artifact I/O | 完了 | `src/sis/backtest/artifact_io.py`, `tests/backtest/test_artifact_io.py` |
+| R2 Paper-only Boundary | 完了 | `src/sis/backtest/boundary.py`, `tests/backtest/test_backtest_boundary.py` |
+| R3 Markdown Reporting | 完了 | `src/sis/backtest/reporting.py`, `tests/backtest/test_reporting.py` |
+| R4 Pack Contract | 完了 | `src/sis/backtest/pack_contract.py`, `tests/backtest/test_pack_contract.py` |
+| R5 Pack Runner | 完了 | `src/sis/backtest/pack_runner.py`, `tests/backtest/test_pack_runner.py` |
+| R6 Pack Validation Rule | 完了 | `src/sis/backtest/pack_validation.py`, `tests/backtest/test_pack_validation_rules.py` |
+| R7 Artifact Summary Registry | 完了 | `src/sis/backtest/artifact_summary_registry.py`, `tests/backtest/test_artifact_summary_registry.py` |
+| R8 Builder Modules Cleanup | 完了 | R8 focused tests passed; JSON I/O, report write, and boundary helpers are used in target modules |
+| R9 Docs / Operator Entry | 完了 | `docs/backtest/README.md` links this plan and lists the responsibility-split entry modules |
+| R10 Final Gate | 完了 | pack validation `decision=PASS`, completion artifact `exists=true`, current-doc check passed, `./scripts/check` passed |
 
 ## 確認済みの現状
 

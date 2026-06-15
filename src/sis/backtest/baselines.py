@@ -8,6 +8,9 @@ import math
 from pathlib import Path
 from typing import Any
 
+from sis.backtest.boundary import with_backtest_paper_only_boundary
+from sis.backtest.reporting import write_markdown_report
+
 
 @dataclass(frozen=True)
 class BacktestBaselineComparisonResult:
@@ -95,9 +98,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         lines.append(
             f"| {row['baseline_id']} | {row['status']} | {row['total_return']} | {row['description']} |"
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_baseline_comparison(
@@ -177,34 +178,30 @@ def build_strategy_backtest_baseline_comparison(
         for row in available
         if row["total_return"] is not None and row["total_return"] >= strategy_total_return
     ]
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_baseline_comparison.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "status": "pass",
-        "source_backtest_metrics_path": metrics_path.as_posix(),
-        "source_backtest_metrics_hash": _sha256_file(metrics_path),
-        "summary": {
-            "return_count": len(returns),
-            "strategy_total_return": strategy_total_return,
-            "baseline_count": len(baselines),
-            "available_baseline_count": len(available),
-            "diagnostic_only_count": sum(
-                1 for row in baselines if row["status"] == "diagnostic_only"
-            ),
-            "strongest_baseline_id": strongest["baseline_id"] if strongest else None,
-            "strongest_baseline_total_return": strongest["total_return"] if strongest else None,
-            "weakness_flag_count": len(weakness_flags),
-        },
-        "baselines": baselines,
-        "weakness_flags": weakness_flags,
-        "dependency_added": False,
-        "paper_only": True,
-        "live_order_submitted": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    payload: dict[str, Any] = with_backtest_paper_only_boundary(
+        {
+            "schema_version": "strategy_backtest_baseline_comparison.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "status": "pass",
+            "source_backtest_metrics_path": metrics_path.as_posix(),
+            "source_backtest_metrics_hash": _sha256_file(metrics_path),
+            "summary": {
+                "return_count": len(returns),
+                "strategy_total_return": strategy_total_return,
+                "baseline_count": len(baselines),
+                "available_baseline_count": len(available),
+                "diagnostic_only_count": sum(
+                    1 for row in baselines if row["status"] == "diagnostic_only"
+                ),
+                "strongest_baseline_id": strongest["baseline_id"] if strongest else None,
+                "strongest_baseline_total_return": strongest["total_return"] if strongest else None,
+                "weakness_flag_count": len(weakness_flags),
+            },
+            "baselines": baselines,
+            "weakness_flags": weakness_flags,
+            "dependency_added": False,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     comparison_path = out_dir / "strategy_backtest_baseline_comparison.json"
     comparison_path.write_text(

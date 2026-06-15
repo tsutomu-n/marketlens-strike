@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import hashlib
 import importlib
 import json
 import logging
@@ -11,8 +10,15 @@ from pathlib import Path
 from typing import Any
 import warnings
 
+from sis.backtest.artifact_io import (
+    read_json_object as _read_json,
+    sha256_file as _sha256_file,
+    write_json_object,
+)
+from sis.backtest.boundary import with_no_live_capability_boundary
 from sis.backtest.frameworks import framework_adapter_status
 from sis.backtest.optional_dependencies import optional_dependency_source
+from sis.backtest.reporting import write_markdown_report
 
 
 @dataclass(frozen=True)
@@ -22,21 +28,6 @@ class BacktestReportExtensionResult:
     quantstats_html_path: Path | None
     report_path: Path
     payload: dict[str, Any]
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return f"sha256:{digest.hexdigest()}"
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"expected JSON object: {path}")
-    return payload
 
 
 def _quantstats_candidate() -> dict[str, Any]:
@@ -211,40 +202,38 @@ def _base_payload(
     metrics_table_row_count: int | None = None,
 ) -> dict[str, Any]:
     selected_warnings = framework_warnings or []
-    return {
-        "schema_version": "strategy_backtest_report_extension.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "framework_id": "quantstats",
-        "adapter_role": str(candidate.get("adapter_role") or "report_only_candidate"),
-        "framework_version": candidate.get("version"),
-        "runner_mode": runner_mode,
-        "dependency_source": dependency_source,
-        "report_status": report_status,
-        "reason_codes": reason_codes,
-        "dependency_added": False,
-        "engine_run": engine_run,
-        "source_backtest_metrics_path": metrics_path.as_posix(),
-        "source_backtest_metrics_hash": _sha256_file(metrics_path),
-        "returns_series_path": returns_series_path.as_posix(),
-        "returns_series_hash": _sha256_file(returns_series_path),
-        "quantstats_html_path": quantstats_html_path.as_posix()
-        if quantstats_html_path is not None
-        else None,
-        "quantstats_html_hash": _sha256_file(quantstats_html_path)
-        if quantstats_html_path is not None and quantstats_html_path.exists()
-        else None,
-        "frequency": frequency,
-        "risk_free_rate": risk_free_rate,
-        "periods_per_year": _periods_per_year(frequency),
-        "return_count": return_count,
-        "framework_warning_count": len(selected_warnings),
-        "framework_warnings": selected_warnings,
-        "metrics_table_row_count": metrics_table_row_count,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    return with_no_live_capability_boundary(
+        {
+            "schema_version": "strategy_backtest_report_extension.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "framework_id": "quantstats",
+            "adapter_role": str(candidate.get("adapter_role") or "report_only_candidate"),
+            "framework_version": candidate.get("version"),
+            "runner_mode": runner_mode,
+            "dependency_source": dependency_source,
+            "report_status": report_status,
+            "reason_codes": reason_codes,
+            "dependency_added": False,
+            "engine_run": engine_run,
+            "source_backtest_metrics_path": metrics_path.as_posix(),
+            "source_backtest_metrics_hash": _sha256_file(metrics_path),
+            "returns_series_path": returns_series_path.as_posix(),
+            "returns_series_hash": _sha256_file(returns_series_path),
+            "quantstats_html_path": quantstats_html_path.as_posix()
+            if quantstats_html_path is not None
+            else None,
+            "quantstats_html_hash": _sha256_file(quantstats_html_path)
+            if quantstats_html_path is not None and quantstats_html_path.exists()
+            else None,
+            "frequency": frequency,
+            "risk_free_rate": risk_free_rate,
+            "periods_per_year": _periods_per_year(frequency),
+            "return_count": return_count,
+            "framework_warning_count": len(selected_warnings),
+            "framework_warnings": selected_warnings,
+            "metrics_table_row_count": metrics_table_row_count,
+        }
+    )
 
 
 def _run_quantstats_payload(
@@ -349,9 +338,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         "- wallet_used: false",
         "- exchange_write_used: false",
     ]
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_report_extension(
@@ -428,10 +415,7 @@ def build_strategy_backtest_report_extension(
         selected_html_path = quantstats_html_path if quantstats_html_path.exists() else None
     out_dir.mkdir(parents=True, exist_ok=True)
     report_extension_path = out_dir / "strategy_backtest_report_extension.json"
-    report_extension_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
-    )
+    write_json_object(report_extension_path, payload)
     report_path = _write_report(
         reports_dir / "strategy_backtest_report_extension_report.md", payload
     )

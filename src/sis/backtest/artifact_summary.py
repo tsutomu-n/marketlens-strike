@@ -2,25 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import json
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
+
+from sis.backtest.artifact_summary_registry import (
+    ARTIFACT_SUMMARY_SPECS,
+    summarize_artifact,
+)
 
 
 @dataclass(frozen=True)
 class BacktestArtifactSummaryResult:
     payload: dict[str, Any]
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"expected JSON object: {path}")
-    return payload
-
-
-def _artifact_exists(path: Path) -> dict[str, Any]:
-    return {"path": path.as_posix(), "exists": path.exists()}
 
 
 def _summary_value(payload: dict[str, Any], key: str) -> dict[str, Any]:
@@ -31,17 +24,6 @@ def _summary_value(payload: dict[str, Any], key: str) -> dict[str, Any]:
 def _list_value(payload: dict[str, Any], key: str) -> list[Any]:
     value = payload.get(key)
     return value if isinstance(value, list) else []
-
-
-def _artifact_summary(
-    path: Path, summarize: Callable[[dict[str, Any]], dict[str, Any]]
-) -> dict[str, Any]:
-    row = _artifact_exists(path)
-    if not path.exists():
-        return row
-    payload = _read_json(path)
-    row.update(summarize(payload))
-    return row
 
 
 def _summarize_pack(payload: dict[str, Any]) -> dict[str, Any]:
@@ -287,35 +269,39 @@ def build_strategy_backtest_artifact_summary(
     execution_simulation_path: Path,
     comparison_path: Path,
 ) -> BacktestArtifactSummaryResult:
-    payload = {
+    paths = {
+        "pack_path": pack_path,
+        "validation_path": validation_path,
+        "benchmark_relative_path": benchmark_relative_path,
+        "metric_extension_path": metric_extension_path,
+        "report_extension_path": report_extension_path,
+        "stress_path": stress_path,
+        "regime_split_path": regime_split_path,
+        "rolling_stability_path": rolling_stability_path,
+        "data_availability_path": data_availability_path,
+        "baseline_comparison_path": baseline_comparison_path,
+        "trial_ledger_path": trial_ledger_path,
+        "assumption_ledger_path": assumption_ledger_path,
+        "no_lookahead_path": no_lookahead_path,
+        "execution_simulation_path": execution_simulation_path,
+        "comparison_path": comparison_path,
+    }
+    summarizers = {
+        "pack": _summarize_pack,
+        "validation": _summarize_validation,
+        "benchmark_relative": _summarize_benchmark_relative,
+        "metric_extension": _summarize_metric_extension,
+        "report_extension": _summarize_report_extension,
+        "stress": _summarize_stress,
+        "regime_split": _summarize_regime_split,
+        "rolling_stability": _summarize_rolling_stability,
+        "completion_artifact": _summarize_completion_artifact,
+        "comparison": _summarize_comparison,
+    }
+    payload: dict[str, Any] = {
         "summary_kind": "strategy_backtest_artifact_summary.v1",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "pack": _artifact_summary(pack_path, _summarize_pack),
-        "pack_validation": _artifact_summary(validation_path, _summarize_validation),
-        "benchmark_relative": _artifact_summary(
-            benchmark_relative_path, _summarize_benchmark_relative
-        ),
-        "metric_extension": _artifact_summary(metric_extension_path, _summarize_metric_extension),
-        "report_extension": _artifact_summary(report_extension_path, _summarize_report_extension),
-        "stress": _artifact_summary(stress_path, _summarize_stress),
-        "regime_split": _artifact_summary(regime_split_path, _summarize_regime_split),
-        "rolling_stability": _artifact_summary(
-            rolling_stability_path, _summarize_rolling_stability
-        ),
-        "data_availability": _artifact_summary(
-            data_availability_path, _summarize_completion_artifact
-        ),
-        "baseline_comparison": _artifact_summary(
-            baseline_comparison_path, _summarize_completion_artifact
-        ),
-        "trial_ledger": _artifact_summary(trial_ledger_path, _summarize_completion_artifact),
-        "assumption_ledger": _artifact_summary(
-            assumption_ledger_path, _summarize_completion_artifact
-        ),
-        "no_lookahead_diff": _artifact_summary(no_lookahead_path, _summarize_completion_artifact),
-        "execution_simulation": _artifact_summary(
-            execution_simulation_path, _summarize_completion_artifact
-        ),
-        "comparison": _artifact_summary(comparison_path, _summarize_comparison),
     }
+    for spec in ARTIFACT_SUMMARY_SPECS:
+        payload[spec.key] = summarize_artifact(paths[spec.path_field], spec, summarizers)
     return BacktestArtifactSummaryResult(payload=payload)

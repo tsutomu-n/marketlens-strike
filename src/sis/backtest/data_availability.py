@@ -10,6 +10,9 @@ from typing import Any
 
 import polars as pl
 
+from sis.backtest.boundary import with_backtest_paper_only_boundary
+from sis.backtest.reporting import write_markdown_report
+
 
 @dataclass(frozen=True)
 class BacktestDataAvailabilityResult:
@@ -338,9 +341,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
                 path=row["path"],
             )
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_backtest_data_availability_ledger(
@@ -377,29 +378,25 @@ def build_backtest_data_availability_ledger(
     total_duplicate_count = sum(
         int(row["duplicate_count"]) for row in rows if isinstance(row.get("duplicate_count"), int)
     )
-    payload: dict[str, Any] = {
-        "schema_version": "backtest_data_availability_ledger.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "ledger_kind": "local_artifact_and_future_candidate",
-        "status": "pass" if enabled_count >= 2 else "fail",
-        "summary": {
-            "enabled_artifact_count": enabled_count,
-            "future_candidate_count": candidate_count,
-            "network_used": False,
-            "external_api_called": False,
-            "schema_widening_required": False,
-            "total_gap_count": total_gap_count,
-            "total_duplicate_count": total_duplicate_count,
-        },
-        "rows": rows,
-        "dependency_added": False,
-        "paper_only": True,
-        "live_order_submitted": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    payload: dict[str, Any] = with_backtest_paper_only_boundary(
+        {
+            "schema_version": "backtest_data_availability_ledger.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "ledger_kind": "local_artifact_and_future_candidate",
+            "status": "pass" if enabled_count >= 2 else "fail",
+            "summary": {
+                "enabled_artifact_count": enabled_count,
+                "future_candidate_count": candidate_count,
+                "network_used": False,
+                "external_api_called": False,
+                "schema_widening_required": False,
+                "total_gap_count": total_gap_count,
+                "total_duplicate_count": total_duplicate_count,
+            },
+            "rows": rows,
+            "dependency_added": False,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     ledger_path = out_dir / "backtest_data_availability_ledger.json"
     ledger_path.write_text(

@@ -7,6 +7,9 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+from sis.backtest.boundary import with_backtest_paper_only_boundary
+from sis.backtest.reporting import write_markdown_report
+
 
 @dataclass(frozen=True)
 class BacktestExecutionSimulationResult:
@@ -122,9 +125,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
     ]
     for key, value in payload["feature_counts"].items():
         lines.append(f"| {key} | {value} |")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_execution_simulation(
@@ -180,37 +181,33 @@ def build_strategy_backtest_execution_simulation(
             "reason": "replay-style simulation cannot prove market impact",
         },
     ]
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_execution_simulation.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "status": "pass",
-        "execution_mode": "native_metrics_order_fill_events_v1",
-        "source_backtest_metrics_path": metrics_path.as_posix(),
-        "source_backtest_metrics_hash": _sha256_file(metrics_path),
-        "source_signals_path": signals_path.as_posix(),
-        "source_signals_hash": _sha256_file(signals_path) if signals_path.exists() else None,
-        "summary": {
-            "signals_considered": summary.get("signals_considered"),
-            "executed_count": summary.get("executed_count"),
-            "blocked_count": summary.get("blocked_count"),
-            "order_intent_count": len(order_intents),
-            "fill_event_count": len(fill_events),
-            "partial_fill_count": partial_fill_count,
-            "unsupported_venue_realism_count": len(unsupported),
-            "market_impact_claimed": False,
-        },
-        "feature_counts": feature_counts,
-        "order_intents": order_intents,
-        "fill_events": fill_events,
-        "unsupported_venue_realism": unsupported,
-        "dependency_added": False,
-        "paper_only": True,
-        "live_order_submitted": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    payload: dict[str, Any] = with_backtest_paper_only_boundary(
+        {
+            "schema_version": "strategy_backtest_execution_simulation.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "status": "pass",
+            "execution_mode": "native_metrics_order_fill_events_v1",
+            "source_backtest_metrics_path": metrics_path.as_posix(),
+            "source_backtest_metrics_hash": _sha256_file(metrics_path),
+            "source_signals_path": signals_path.as_posix(),
+            "source_signals_hash": _sha256_file(signals_path) if signals_path.exists() else None,
+            "summary": {
+                "signals_considered": summary.get("signals_considered"),
+                "executed_count": summary.get("executed_count"),
+                "blocked_count": summary.get("blocked_count"),
+                "order_intent_count": len(order_intents),
+                "fill_event_count": len(fill_events),
+                "partial_fill_count": partial_fill_count,
+                "unsupported_venue_realism_count": len(unsupported),
+                "market_impact_claimed": False,
+            },
+            "feature_counts": feature_counts,
+            "order_intents": order_intents,
+            "fill_events": fill_events,
+            "unsupported_venue_realism": unsupported,
+            "dependency_added": False,
+        }
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
     simulation_path = out_dir / "strategy_backtest_execution_simulation.json"
     simulation_path.write_text(

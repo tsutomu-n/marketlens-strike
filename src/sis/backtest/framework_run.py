@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
+from sis.backtest.artifact_io import sha256_file as _sha256_file, write_json_object
+from sis.backtest.boundary import with_no_live_capability_boundary
 from sis.backtest.external import build_strategy_backtest_external_result
 from sis.backtest.metric_extension import build_strategy_backtest_metric_extension
 from sis.backtest.portfolio_comparison import build_strategy_backtest_portfolio_comparison
+from sis.backtest.reporting import write_markdown_report
 from sis.backtest.report_extension import build_strategy_backtest_report_extension
 
 
@@ -40,14 +41,6 @@ class BacktestFrameworkRunResult:
     run_path: Path
     report_path: Path
     payload: dict[str, Any]
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return f"sha256:{digest.hexdigest()}"
 
 
 def normalize_framework_ids(frameworks: list[str]) -> list[str]:
@@ -136,9 +129,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
                 artifact=artifact_path,
             )
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_framework_run(
@@ -274,46 +265,43 @@ def build_strategy_backtest_framework_run(
         )
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    payload: dict[str, Any] = {
-        "schema_version": "strategy_backtest_framework_run.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "selected_frameworks": selected_frameworks,
-        "source_metrics_path": metrics_path.as_posix(),
-        "source_metrics_hash": _sha256_file(metrics_path) if metrics_path.exists() else None,
-        "source_bundle_path": bundle_path.as_posix(),
-        "source_bundle_hash": _sha256_file(bundle_path) if bundle_path.exists() else None,
-        "source_price_frame_path": price_frame_path.as_posix(),
-        "source_price_frame_hash": (
-            _sha256_file(price_frame_path) if price_frame_path.exists() else None
-        ),
-        "source_signals_path": signals_path.as_posix(),
-        "source_signals_hash": _sha256_file(signals_path) if signals_path.exists() else None,
-        "source_quotes_path": quotes_path.as_posix(),
-        "source_quotes_hash": _sha256_file(quotes_path) if quotes_path.exists() else None,
-        "sources": {
-            "metrics": _source_row(metrics_path),
-            "bundle": _source_row(bundle_path),
-            "price_frame": _source_row(price_frame_path),
-            "signals": _source_row(signals_path),
-            "quotes": _source_row(quotes_path),
-        },
-        "dependency_added": False,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-        "summary": {
-            "framework_count": len(runs),
-            "executed_count": sum(1 for run in runs if run["boundary"].get("engine_run") is True),
-            "skipped_count": sum(1 for run in runs if run["run_status"] == "skipped"),
-            "failed_count": sum(1 for run in runs if run["run_status"] == "failed"),
-        },
-        "runs": runs,
-    }
-    run_path = out_dir / "strategy_backtest_framework_run.json"
-    run_path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
+    payload: dict[str, Any] = with_no_live_capability_boundary(
+        {
+            "schema_version": "strategy_backtest_framework_run.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "selected_frameworks": selected_frameworks,
+            "source_metrics_path": metrics_path.as_posix(),
+            "source_metrics_hash": _sha256_file(metrics_path) if metrics_path.exists() else None,
+            "source_bundle_path": bundle_path.as_posix(),
+            "source_bundle_hash": _sha256_file(bundle_path) if bundle_path.exists() else None,
+            "source_price_frame_path": price_frame_path.as_posix(),
+            "source_price_frame_hash": (
+                _sha256_file(price_frame_path) if price_frame_path.exists() else None
+            ),
+            "source_signals_path": signals_path.as_posix(),
+            "source_signals_hash": _sha256_file(signals_path) if signals_path.exists() else None,
+            "source_quotes_path": quotes_path.as_posix(),
+            "source_quotes_hash": _sha256_file(quotes_path) if quotes_path.exists() else None,
+            "sources": {
+                "metrics": _source_row(metrics_path),
+                "bundle": _source_row(bundle_path),
+                "price_frame": _source_row(price_frame_path),
+                "signals": _source_row(signals_path),
+                "quotes": _source_row(quotes_path),
+            },
+            "dependency_added": False,
+            "summary": {
+                "framework_count": len(runs),
+                "executed_count": sum(
+                    1 for run in runs if run["boundary"].get("engine_run") is True
+                ),
+                "skipped_count": sum(1 for run in runs if run["run_status"] == "skipped"),
+                "failed_count": sum(1 for run in runs if run["run_status"] == "failed"),
+            },
+            "runs": runs,
+        }
     )
+    run_path = out_dir / "strategy_backtest_framework_run.json"
+    write_json_object(run_path, payload)
     report_path = _write_report(reports_dir / "strategy_backtest_framework_run_report.md", payload)
     return BacktestFrameworkRunResult(run_path=run_path, report_path=report_path, payload=payload)

@@ -2,15 +2,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import hashlib
 import importlib
 import json
 import math
 from pathlib import Path
 from typing import Any
 
+from sis.backtest.artifact_io import (
+    read_json_object as _read_json,
+    sha256_file as _sha256_file,
+    write_json_object,
+)
+from sis.backtest.boundary import with_no_live_capability_boundary
 from sis.backtest.frameworks import framework_adapter_status
 from sis.backtest.optional_dependencies import optional_dependency_source
+from sis.backtest.reporting import write_markdown_report
 
 
 @dataclass(frozen=True)
@@ -19,21 +25,6 @@ class BacktestMetricExtensionResult:
     returns_series_path: Path
     report_path: Path
     payload: dict[str, Any]
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return f"sha256:{digest.hexdigest()}"
-
-
-def _read_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"expected JSON object: {path}")
-    return payload
 
 
 def _empyrical_candidate() -> dict[str, Any]:
@@ -162,39 +153,37 @@ def _base_payload(
     calmar_ratio: float | None = None,
     omega_ratio: float | None = None,
 ) -> dict[str, Any]:
-    return {
-        "schema_version": "strategy_backtest_metric_extension.v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "framework_id": "empyrical_reloaded",
-        "adapter_role": str(candidate.get("adapter_role") or "metrics_only_candidate"),
-        "framework_version": candidate.get("version"),
-        "runner_mode": runner_mode,
-        "dependency_source": dependency_source,
-        "metric_status": metric_status,
-        "reason_codes": reason_codes,
-        "dependency_added": False,
-        "engine_run": engine_run,
-        "source_backtest_metrics_path": metrics_path.as_posix(),
-        "source_backtest_metrics_hash": _sha256_file(metrics_path),
-        "returns_series_path": returns_series_path.as_posix(),
-        "returns_series_hash": _sha256_file(returns_series_path),
-        "frequency": frequency,
-        "risk_free_rate": risk_free_rate,
-        "return_count": return_count,
-        "sharpe_ratio": sharpe_ratio,
-        "sortino_ratio": sortino_ratio,
-        "max_drawdown": max_drawdown,
-        "annual_return": annual_return,
-        "annual_volatility": annual_volatility,
-        "alpha": None,
-        "beta": None,
-        "calmar_ratio": calmar_ratio,
-        "omega_ratio": omega_ratio,
-        "permits_live_order": False,
-        "live_conversion_allowed": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-    }
+    return with_no_live_capability_boundary(
+        {
+            "schema_version": "strategy_backtest_metric_extension.v1",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "framework_id": "empyrical_reloaded",
+            "adapter_role": str(candidate.get("adapter_role") or "metrics_only_candidate"),
+            "framework_version": candidate.get("version"),
+            "runner_mode": runner_mode,
+            "dependency_source": dependency_source,
+            "metric_status": metric_status,
+            "reason_codes": reason_codes,
+            "dependency_added": False,
+            "engine_run": engine_run,
+            "source_backtest_metrics_path": metrics_path.as_posix(),
+            "source_backtest_metrics_hash": _sha256_file(metrics_path),
+            "returns_series_path": returns_series_path.as_posix(),
+            "returns_series_hash": _sha256_file(returns_series_path),
+            "frequency": frequency,
+            "risk_free_rate": risk_free_rate,
+            "return_count": return_count,
+            "sharpe_ratio": sharpe_ratio,
+            "sortino_ratio": sortino_ratio,
+            "max_drawdown": max_drawdown,
+            "annual_return": annual_return,
+            "annual_volatility": annual_volatility,
+            "alpha": None,
+            "beta": None,
+            "calmar_ratio": calmar_ratio,
+            "omega_ratio": omega_ratio,
+        }
+    )
 
 
 def _run_empyrical_payload(
@@ -298,9 +287,7 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         "- wallet_used: false",
         "- exchange_write_used: false",
     ]
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+    return write_markdown_report(path, lines)
 
 
 def build_strategy_backtest_metric_extension(
@@ -365,10 +352,7 @@ def build_strategy_backtest_metric_extension(
         )
     out_dir.mkdir(parents=True, exist_ok=True)
     metric_extension_path = out_dir / "strategy_backtest_metric_extension.json"
-    metric_extension_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
-    )
+    write_json_object(metric_extension_path, payload)
     report_path = _write_report(
         reports_dir / "strategy_backtest_metric_extension_report.md", payload
     )
