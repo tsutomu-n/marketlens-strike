@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-15_19:13 JST
+更新日: 2026-06-15_19:17 JST
 -->
 
 # Backtest Docs
@@ -25,6 +25,9 @@
 を見ます。
 高校生にも分かるように専門語を減らした別版は
 [BACKTEST_HIGH_SCHOOL_GUIDE_2026-06-15.md](BACKTEST_HIGH_SCHOOL_GUIDE_2026-06-15.md)
+を見ます。
+プレースホルダーデータで、backtest 実行後にどのような端末出力、JSON、Markdown report が見えるかのサンプルは
+[BACKTEST_PLACEHOLDER_OUTPUT_SAMPLE_2026-06-15.md](BACKTEST_PLACEHOLDER_OUTPUT_SAMPLE_2026-06-15.md)
 を見ます。
 現在の backtest 方針、外部 framework の責務分担、PyBroker / NautilusTrader / LEAN / Freqtrade まで含めた現実的な採用位置は
 [CURRENT_BACKTEST_PLAN_AND_FRAMEWORK_ROLES_2026-06-14.md](CURRENT_BACKTEST_PLAN_AND_FRAMEWORK_ROLES_2026-06-14.md)
