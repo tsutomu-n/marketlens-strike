@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-06-04_17:47 JST
-更新日: 2026-06-08_18:01 JST
+更新日: 2026-06-16_06:46 JST
 -->
 
 # Trade[XYZ] Quote Coverage And 24h Backtest Smoke Next Steps 2026-06-04
 
 この文書は、30日quote coverageを待つ間に、24時間WS artifactで先に進める作業を固定するための運用計画である。
 
-現在の主経路 next action ではなく、Trade[XYZ] quote coverage 収集を主目的にしていた時点の historical / operational record として読む。現在の開発主経路は backtest-first / venue-neutral で、入口は [docs/backtest/README.md](backtest/README.md) と [docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md](backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md) で確認する。
+現在の主経路 next action ではなく、Trade[XYZ] quote coverage 収集を主目的にしていた時点の historical / operational record として読む。現在の開発主経路は backtest-first / venue-neutral で、入口は [docs/backtest/README.md](backtest/README.md) と [docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md) で確認する。
 
 ユーザー向けの短い判断記録は [TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md](TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md) に分離している。PID `2484910` の自然終了条件は [TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md](TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md) を読む。
 

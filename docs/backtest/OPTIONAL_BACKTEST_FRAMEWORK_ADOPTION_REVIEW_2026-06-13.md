@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_20:36 JST
-更新日: 2026-06-14_18:03 JST
+更新日: 2026-06-16_06:46 JST
 -->
 
 # Optional Backtest Framework Adoption Review
@@ -11,7 +11,7 @@
 
 `bt` は portfolio allocation / rebalance comparison 用の optional extra として採用済みである。通常 dependency には入れず、`uv sync --dev --extra bt --locked` または `uv run --extra bt ...` で使う。
 
-`empyrical-reloaded` と `quantstats` は [METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md](METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md) により、別々の optional extra として採用済みである。`backtesting.py`, `zipline-reloaded`, `zipline-refresh`, `backtrader`, `pyfolio-reloaded`, `alphalens-reloaded`, `qstrader` は現時点では `pyproject.toml` / `uv.lock` に追加しない。
+`empyrical-reloaded` と `quantstats` は [METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md](../archive/backtest/METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md) により、別々の optional extra として採用済みである。`backtesting.py`, `zipline-reloaded`, `zipline-refresh`, `backtrader`, `pyfolio-reloaded`, `alphalens-reloaded`, `qstrader` は現時点では `pyproject.toml` / `uv.lock` に追加しない。
 
 正式 optional extra の第一候補は、用途で分ける。
 
@@ -44,8 +44,8 @@ Local repo:
 - `data/research/backtest_framework_smoke/strategy_backtest_framework_smoke.json`: locked env では4候補すべて `not_installed`、`dependency_added=false`。
 - `data/research/backtest_adapter_selection/strategy_backtest_adapter_selection.json`: selected 4件、deferred 5件、全件 `dependency_added=false`, `permits_live_order=false`。
 - `data/research/backtest_external/strategy_backtest_external_result.json`: optional extra env では `vectorbt` が `dependency_source=optional_extra_available` として実行される。
-- `docs/backtest/VECTORBT_ADOPTION_PLAN_2026-06-13.md`: `vectorbt` は optional adapter として正式採用済み。
-- `docs/backtest/OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md`: 役割別候補分類の既存計画。
+- `docs/archive/backtest/VECTORBT_ADOPTION_PLAN_2026-06-13.md`: `vectorbt` は optional adapter として正式採用済み。
+- `docs/archive/backtest/OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md`: 役割別候補分類の既存計画。
 
 External primary sources:
 

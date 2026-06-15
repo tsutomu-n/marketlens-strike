@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-14_19:58 JST
-更新日: 2026-06-15_21:08 JST
+更新日: 2026-06-16_06:46 JST
 -->
 
 # Backtest Non-Goals And Future Scope
@@ -96,7 +96,7 @@ NautilusTrader / HftBacktest / Tardis / PyBroker / Qlib / FinRL / skfolio / Risk
 - `tests/strategy_authoring/`
 - `tests/backtest/`
 - `docs/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md`
-- `docs/backtest/CURRENT_BACKTEST_PLAN_AND_FRAMEWORK_ROLES_2026-06-14.md`
+- `docs/archive/backtest/CURRENT_BACKTEST_PLAN_AND_FRAMEWORK_ROLES_2026-06-14.md`
 - `docs/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md`
 
 ## 完了条件を混ぜないための禁止事項

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-14_11:00 JST
+更新日: 2026-06-16_06:46 JST
 -->
 
 # Current State
@@ -182,7 +182,7 @@ PR-08 専用確認:
 5. `docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md`
 6. `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`
 7. `docs/backtest/README.md`
-8. `docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md`
+8. `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`
 9. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
 10. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
 11. `docs/strategy_research_lab/README.md`
