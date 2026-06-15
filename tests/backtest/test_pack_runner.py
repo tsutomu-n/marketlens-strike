@@ -34,6 +34,7 @@ def test_pack_runner_result_exposes_cli_echo_paths() -> None:
         validation_report_path=Path("validation.md"),
         validation_decision="PASS",
         comparison_path=Path("comparison.json"),
+        framework_run_path=Path("framework.json"),
         portfolio_comparison_path=Path("portfolio.json"),
         metric_extension_path=Path("metric.json"),
         report_extension_path=Path("report.json"),
@@ -52,4 +53,5 @@ def test_pack_runner_result_exposes_cli_echo_paths() -> None:
 
     assert result.validation_decision == "PASS"
     assert result.pack_path == Path("pack.json")
+    assert result.framework_run_path == Path("framework.json")
     assert result.suite_result_path == Path("suite.json")

@@ -282,6 +282,7 @@ portfolio:
     assert "backtest_pack=" in result.stdout
     assert "backtest_pack_validation=" in result.stdout
     assert "backtest_comparison=" in result.stdout
+    assert "backtest_framework_run=" in result.stdout
     assert "backtest_portfolio_comparison=" in result.stdout
     assert "backtest_metric_extension=" in result.stdout
     assert "backtest_report_extension=" in result.stdout
@@ -298,6 +299,9 @@ portfolio:
     pack_path = data_dir / "research/backtest_pack/strategy_backtest_pack.json"
     validation_path = data_dir / "research/backtest_pack/strategy_backtest_pack_validation.json"
     comparison_path = data_dir / "research/backtest_compare/strategy_backtest_comparison.json"
+    framework_run_path = (
+        data_dir / "research/backtest_framework_run/strategy_backtest_framework_run.json"
+    )
     portfolio_path = (
         data_dir / "research/backtest_portfolio/strategy_backtest_portfolio_comparison.json"
     )
@@ -340,6 +344,7 @@ portfolio:
     assert pack_path.exists()
     assert validation_path.exists()
     assert comparison_path.exists()
+    assert framework_run_path.exists()
     assert portfolio_path.exists()
     assert metric_extension_path.exists()
     assert report_extension_path.exists()
@@ -387,6 +392,14 @@ portfolio:
             "empyrical-reloaded",
             "pyfolio-reloaded",
             "qstrader",
+            "hftbacktest",
+            "nautilus-trader",
+            "freqtrade",
+            "pyqlib",
+            "finrl",
+            "skfolio",
+            "riskfolio-lib",
+            "lib-pybroker",
         ],
         "adoption_requires": [
             "license_review",
@@ -396,6 +409,7 @@ portfolio:
         ],
     }
     assert payload["artifacts"]["comparison"]["exists"] is True
+    assert payload["artifacts"]["framework_run"]["exists"] is True
     assert payload["artifacts"]["external_result"]["exists"] is True
     assert payload["artifacts"]["portfolio_comparison"]["exists"] is True
     assert payload["artifacts"]["metric_extension"]["exists"] is True
@@ -466,6 +480,8 @@ portfolio:
     }
     assert summary_payload["pack_validation"]["decision"] == "PASS"
     assert summary_payload["pack_validation"]["failed_count"] == 0
+    assert summary_payload["framework_run"]["exists"] is True
+    assert summary_payload["framework_run"]["summary"]["framework_count"] == 4
     assert summary_payload["benchmark_relative"]["source_benchmark_series_path"] == (
         benchmark_series_path.as_posix()
     )
@@ -498,6 +514,51 @@ portfolio:
     assert summary_payload["comparison"]["threshold_failure_count"] == 0
     assert summary_payload["comparison"]["suite_best_run_count"] == 1
     assert summary_payload["comparison"]["weakest_era_count"] >= 1
+
+    microstructure_result = runner.invoke(app, ["strategy-backtest-microstructure-readiness"])
+    assert microstructure_result.exit_code == 0, microstructure_result.stdout
+    assert "decision=NOT_READY_FOR_HFT_REPLAY" in microstructure_result.stdout
+
+    qstrader_result = runner.invoke(app, ["strategy-backtest-qstrader-contract"])
+    assert qstrader_result.exit_code == 0, qstrader_result.stdout
+    assert "backtest_qstrader_contract=" in qstrader_result.stdout
+
+    portfolio_validation_result = runner.invoke(
+        app, ["strategy-backtest-portfolio-validation-contract"]
+    )
+    assert portfolio_validation_result.exit_code == 0, portfolio_validation_result.stdout
+    assert "backtest_portfolio_validation_contract=" in portfolio_validation_result.stdout
+
+    pybroker_result = runner.invoke(app, ["strategy-backtest-pybroker-contract"])
+    assert pybroker_result.exit_code == 0, pybroker_result.stdout
+    assert "decision=NOT_READY_FOR_PYBROKER_REFERENCE_RUN" in pybroker_result.stdout
+
+    constraint_result = runner.invoke(
+        app,
+        [
+            "strategy-backtest-constraint-breaker-decision",
+            "--candidate-id",
+            "hftbacktest",
+            "--constraint-to-break",
+            "native-only",
+            "--capability-gap",
+            "material",
+            "--expected-failure-mode-reduction",
+            "high",
+            "--proof-fixture-status",
+            "synthetic_only",
+            "--license-terms-status",
+            "reviewed_allowed",
+            "--external-data-status",
+            "not_used",
+            "--ci-cost-status",
+            "acceptable",
+            "--rollback-complexity",
+            "low",
+        ],
+    )
+    assert constraint_result.exit_code == 0, constraint_result.stdout
+    assert "decision=APPROVE_BREAK" in constraint_result.stdout
 
 
 def test_strategy_authoring_optimizer_rejects_unsupported_parameter_path(tmp_path) -> None:

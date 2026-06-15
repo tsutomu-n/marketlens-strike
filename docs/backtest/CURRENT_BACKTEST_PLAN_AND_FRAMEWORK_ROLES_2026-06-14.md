@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-14_18:28 JST
-更新日: 2026-06-14_21:42 JST
+更新日: 2026-06-15_21:08 JST
 -->
 
 # Current Backtest Plan And Framework Roles
@@ -411,6 +411,28 @@ Hyperliquid を対象に execution-aware backtest を考えるなら、通常の
 - Tardis を「無料 OSS framework」として扱う。
 - Qlib / FinRL / skfolio を、現行 backtest core の dependency として混ぜる。
 - CPCV / PBO / DSR などの高度 validation 名を、trial ledger 無しに飾りとして report に出す。
+
+## 2026-06-15 実装後の補正
+
+2026-06-15_21:08 JST 時点で、通常レーンの OSS capability expansion は実装済みである。最新の実装計画と完了線は [OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md](OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md) を見る。
+
+実装済み:
+
+- `strategy-backtest-framework-run` は `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` の matrix artifact を作り、pack / comparison / summary に入る。
+- `strategy-backtest-no-lookahead-diff` は coverage と false-negative risk を出す。
+- `hftbacktest` は reference-only microstructure replay 候補に追加済み。
+- `strategy-backtest-microstructure-readiness` は HftBacktest などの L2/L3/tick/latency/queue input readiness を判定する。
+- `strategy-backtest-qstrader-contract` は qstrader の local input contract を出す。
+- `strategy-backtest-portfolio-validation-contract` は skfolio / Riskfolio-Lib の portfolio validation / optimization reference contract を出す。
+- `strategy-backtest-pybroker-contract` は PyBroker の local DataFrame input contract を出す。
+- `strategy-backtest-constraint-breaker-decision` は制約破壊の scorecard decision を出す。
+
+変わっていないもの:
+
+- 標準 engine は `strategy_authoring_native`。
+- `hftbacktest`, `qstrader`, `skfolio`, `riskfolio-lib`, `lib-pybroker` は dependency 未追加。
+- `NautilusTrader`, `LEAN`, `Qlib`, `FinRL`, `Freqtrade` は reference / future scope。
+- live order、wallet、signing、exchange write は禁止。
 
 ## 抜け・漏れ・誤謬リスク
 

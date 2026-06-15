@@ -34,6 +34,7 @@ def _summarize_pack(payload: dict[str, Any]) -> dict[str, Any]:
     report_extension = artifacts.get("report_extension")
     metric_extension = artifacts.get("metric_extension")
     comparison = artifacts.get("comparison")
+    framework_run = artifacts.get("framework_run")
     stress = artifacts.get("stress")
     regime_split = artifacts.get("regime_split")
     rolling_stability = artifacts.get("rolling_stability")
@@ -72,6 +73,7 @@ def _summarize_pack(payload: dict[str, Any]) -> dict[str, Any]:
             if isinstance(baseline_comparison, dict)
             else None,
             "comparison": comparison if isinstance(comparison, dict) else None,
+            "framework_run": framework_run if isinstance(framework_run, dict) else None,
             "data_availability": data_availability if isinstance(data_availability, dict) else None,
             "execution_simulation": execution_simulation
             if isinstance(execution_simulation, dict)
@@ -157,6 +159,31 @@ def _summarize_report_extension(payload: dict[str, Any]) -> dict[str, Any]:
         "metrics_table_row_count": payload.get("metrics_table_row_count"),
         "framework_warning_count": payload.get("framework_warning_count"),
         "quantstats_html_path": payload.get("quantstats_html_path"),
+        "permits_live_order": payload.get("permits_live_order"),
+        "wallet_used": payload.get("wallet_used"),
+        "exchange_write_used": payload.get("exchange_write_used"),
+    }
+
+
+def _summarize_framework_run(payload: dict[str, Any]) -> dict[str, Any]:
+    summary = _summary_value(payload, "summary")
+    runs = [
+        {
+            "framework_id": run.get("framework_id"),
+            "surface_type": run.get("surface_type"),
+            "run_status": run.get("run_status"),
+            "dependency_source": run.get("dependency_source"),
+            "boundary": run.get("boundary") if isinstance(run.get("boundary"), dict) else {},
+        }
+        for run in _list_value(payload, "runs")
+        if isinstance(run, dict)
+    ]
+    return {
+        "schema_version": payload.get("schema_version"),
+        "selected_frameworks": payload.get("selected_frameworks") or [],
+        "summary": summary,
+        "runs": runs,
+        "dependency_added": payload.get("dependency_added"),
         "permits_live_order": payload.get("permits_live_order"),
         "wallet_used": payload.get("wallet_used"),
         "exchange_write_used": payload.get("exchange_write_used"),
@@ -275,6 +302,8 @@ def build_strategy_backtest_artifact_summary(
     paths = {
         "pack_path": pack_path,
         "validation_path": validation_path,
+        "framework_run_path": pack_path.parent.parent
+        / "backtest_framework_run/strategy_backtest_framework_run.json",
         "benchmark_relative_path": benchmark_relative_path,
         "metric_extension_path": metric_extension_path,
         "report_extension_path": report_extension_path,
@@ -292,6 +321,7 @@ def build_strategy_backtest_artifact_summary(
     summarizers = {
         "pack": _summarize_pack,
         "validation": _summarize_validation,
+        "framework_run": _summarize_framework_run,
         "benchmark_relative": _summarize_benchmark_relative,
         "metric_extension": _summarize_metric_extension,
         "report_extension": _summarize_report_extension,

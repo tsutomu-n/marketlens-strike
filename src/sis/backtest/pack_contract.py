@@ -16,6 +16,8 @@ class BacktestArtifactKey:
     ADAPTER_SPIKE_REPORT = "adapter_spike_report"
     BUNDLE_RESULT = "bundle_result"
     BUNDLE_REPORT = "bundle_report"
+    FRAMEWORK_RUN = "framework_run"
+    FRAMEWORK_RUN_REPORT = "framework_run_report"
     EXTERNAL_RESULT = "external_result"
     EXTERNAL_REPORT = "external_report"
     PORTFOLIO_COMPARISON = "portfolio_comparison"
@@ -71,6 +73,8 @@ PACK_MANIFEST_ARTIFACT_KEYS: tuple[str, ...] = (
     BacktestArtifactKey.ADAPTER_SPIKE_REPORT,
     BacktestArtifactKey.BUNDLE_RESULT,
     BacktestArtifactKey.BUNDLE_REPORT,
+    BacktestArtifactKey.FRAMEWORK_RUN,
+    BacktestArtifactKey.FRAMEWORK_RUN_REPORT,
     BacktestArtifactKey.EXTERNAL_RESULT,
     BacktestArtifactKey.EXTERNAL_REPORT,
     BacktestArtifactKey.PORTFOLIO_COMPARISON,
@@ -132,6 +136,14 @@ def external_framework_policy() -> dict[str, Any]:
             "empyrical-reloaded",
             "pyfolio-reloaded",
             "qstrader",
+            "hftbacktest",
+            "nautilus-trader",
+            "freqtrade",
+            "pyqlib",
+            "finrl",
+            "skfolio",
+            "riskfolio-lib",
+            "lib-pybroker",
         ],
         "adoption_requires": [
             "license_review",
@@ -160,6 +172,10 @@ def default_pack_artifact_paths(data_dir: Path) -> dict[str, Path]:
         / "strategy_backtest_adapter_spike_report.md",
         BacktestArtifactKey.BUNDLE_RESULT: research_dir / "strategy_authoring_bundle_result.json",
         BacktestArtifactKey.BUNDLE_REPORT: reports_dir / "strategy_authoring_bundle_report.md",
+        BacktestArtifactKey.FRAMEWORK_RUN: research_dir
+        / "backtest_framework_run/strategy_backtest_framework_run.json",
+        BacktestArtifactKey.FRAMEWORK_RUN_REPORT: reports_dir
+        / "strategy_backtest_framework_run_report.md",
         BacktestArtifactKey.EXTERNAL_RESULT: research_dir
         / "backtest_external/strategy_backtest_external_result.json",
         BacktestArtifactKey.EXTERNAL_REPORT: reports_dir / "strategy_backtest_external_report.md",

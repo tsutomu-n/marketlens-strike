@@ -317,6 +317,39 @@ def _external_results(external_payload: dict[str, Any] | None) -> list[dict[str,
     ]
 
 
+def _framework_run(framework_payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    if framework_payload is None:
+        return None
+    summary = framework_payload.get("summary")
+    runs = [
+        {
+            "framework_id": run.get("framework_id"),
+            "surface_type": run.get("surface_type"),
+            "status": run.get("status"),
+            "run_status": run.get("run_status"),
+            "reason_codes": run.get("reason_codes") or [],
+            "dependency_source": run.get("dependency_source"),
+            "artifact": run.get("artifact") if isinstance(run.get("artifact"), dict) else None,
+            "report": run.get("report") if isinstance(run.get("report"), dict) else None,
+            "boundary": run.get("boundary") if isinstance(run.get("boundary"), dict) else {},
+        }
+        for run in framework_payload.get("runs") or []
+        if isinstance(run, dict)
+    ]
+    return {
+        "schema_version": framework_payload.get("schema_version"),
+        "created_at": framework_payload.get("created_at"),
+        "selected_frameworks": framework_payload.get("selected_frameworks") or [],
+        "summary": summary if isinstance(summary, dict) else {},
+        "dependency_added": framework_payload.get("dependency_added"),
+        "permits_live_order": framework_payload.get("permits_live_order"),
+        "live_conversion_allowed": framework_payload.get("live_conversion_allowed"),
+        "wallet_used": framework_payload.get("wallet_used"),
+        "exchange_write_used": framework_payload.get("exchange_write_used"),
+        "runs": runs,
+    }
+
+
 def _portfolio_comparison(portfolio_payload: dict[str, Any] | None) -> dict[str, Any] | None:
     if portfolio_payload is None:
         return None
@@ -792,6 +825,35 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
             )
     else:
         lines.append("- none")
+    lines.extend(["", "## Framework Run Matrix", ""])
+    if payload.get("framework_run"):
+        framework_run = payload["framework_run"]
+        summary = framework_run.get("summary") or {}
+        lines.extend(
+            [
+                f"- framework_count: {summary.get('framework_count')}",
+                f"- executed_count: {summary.get('executed_count')}",
+                f"- skipped_count: {summary.get('skipped_count')}",
+                f"- failed_count: {summary.get('failed_count')}",
+                "",
+                "| Framework | Surface | Status | Run Status | Dependency Source | Engine Run |",
+                "|---|---|---:|---:|---|---:|",
+            ]
+        )
+        for run in framework_run.get("runs") or []:
+            boundary = run.get("boundary") or {}
+            lines.append(
+                "| {framework_id} | {surface_type} | {status} | {run_status} | {dependency_source} | {engine_run} |".format(
+                    framework_id=run.get("framework_id"),
+                    surface_type=run.get("surface_type"),
+                    status=run.get("status"),
+                    run_status=run.get("run_status"),
+                    dependency_source=run.get("dependency_source"),
+                    engine_run=boundary.get("engine_run"),
+                )
+            )
+    else:
+        lines.append("- none")
     lines.extend(["", "## External Framework Results", ""])
     if payload["external_results"]:
         lines.extend(
@@ -967,6 +1029,7 @@ def build_strategy_backtest_comparison(
     metrics_path: Path,
     suite_result_path: Path | None = None,
     adapter_spike_path: Path | None = None,
+    framework_run_path: Path | None = None,
     external_result_path: Path | None = None,
     portfolio_comparison_path: Path | None = None,
     metric_extension_path: Path | None = None,
@@ -1011,6 +1074,17 @@ def build_strategy_backtest_comparison(
         else None
     )
     adapter_spike = _adapter_spike(adapter_spike_payload)
+    framework_payload = (
+        _read_json(framework_run_path)
+        if framework_run_path is not None and framework_run_path.exists()
+        else None
+    )
+    framework_run_hash = (
+        _sha256_file(framework_run_path)
+        if framework_run_path is not None and framework_run_path.exists()
+        else None
+    )
+    framework_run = _framework_run(framework_payload)
     external_payload = (
         _read_json(external_result_path)
         if external_result_path is not None and external_result_path.exists()
@@ -1188,6 +1262,11 @@ def build_strategy_backtest_comparison(
                 "native": native,
                 "suite_results": suite_results,
                 "adapter_spike": adapter_spike,
+                "framework_run_path": framework_run_path.as_posix()
+                if framework_run_path is not None and framework_run_path.exists()
+                else None,
+                "framework_run_hash": framework_run_hash,
+                "framework_run": framework_run,
                 "external_results": external_results,
                 "portfolio_comparison_path": portfolio_comparison_path.as_posix()
                 if portfolio_comparison_path is not None and portfolio_comparison_path.exists()
@@ -1277,6 +1356,12 @@ def build_strategy_backtest_comparison(
             else None
         ),
         "source_adapter_spike_hash": adapter_spike_hash,
+        "source_framework_run_path": (
+            framework_run_path.as_posix()
+            if framework_run_path is not None and framework_run_path.exists()
+            else None
+        ),
+        "source_framework_run_hash": framework_run_hash,
         "source_external_result_path": (
             external_result_path.as_posix()
             if external_result_path is not None and external_result_path.exists()
@@ -1363,6 +1448,7 @@ def build_strategy_backtest_comparison(
         "method_results": method_results,
         "suite_results": suite_results,
         "adapter_spike": adapter_spike,
+        "framework_run": framework_run,
         "external_results": external_results,
         "portfolio_comparison": portfolio_comparison,
         "metric_extension": metric_extension,

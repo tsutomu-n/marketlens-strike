@@ -100,6 +100,13 @@ REFERENCE_ONLY_FRAMEWORK_CANDIDATES = (
         "adoption_note": "Reference-only review target for RL research workflow; not an adapter, runner, or dependency adoption target.",
     },
     {
+        "framework_id": "hftbacktest",
+        "module": "hftbacktest",
+        "distribution": "hftbacktest",
+        "adapter_role": "reference_only_microstructure_replay",
+        "adoption_note": "Reference-only review target for L2/L3/tick replay, feed/order latency, and queue-position modeling; not an adapter, runner, or dependency adoption target.",
+    },
+    {
         "framework_id": "skfolio",
         "module": "skfolio",
         "distribution": "skfolio",

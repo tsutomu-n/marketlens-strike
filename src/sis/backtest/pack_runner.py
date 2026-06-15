@@ -11,6 +11,7 @@ from sis.backtest.compare import build_strategy_backtest_comparison
 from sis.backtest.data_availability import build_backtest_data_availability_ledger
 from sis.backtest.execution_simulation import build_strategy_backtest_execution_simulation
 from sis.backtest.external import build_strategy_backtest_external_result
+from sis.backtest.framework_run import build_strategy_backtest_framework_run
 from sis.backtest.metric_extension import build_strategy_backtest_metric_extension
 from sis.backtest.no_lookahead import build_strategy_backtest_no_lookahead_diff
 from sis.backtest.pack import validate_strategy_backtest_pack, write_strategy_backtest_pack_outputs
@@ -69,6 +70,7 @@ class StrategyBacktestPackRunResult:
     validation_report_path: Path
     validation_decision: str
     comparison_path: Path
+    framework_run_path: Path
     portfolio_comparison_path: Path
     metric_extension_path: Path
     report_extension_path: Path
@@ -117,6 +119,17 @@ def run_strategy_backtest_pack(
         parsed_bundle, bundle_path=inputs.bundle_path, data_dir=inputs.data_dir
     )
     bundle_artifacts = write_authoring_bundle_outputs(bundle_payload, data_dir=inputs.data_dir)
+    framework_run_result = build_strategy_backtest_framework_run(
+        frameworks=["vectorbt", "bt", "metrics", "reports"],
+        metrics_path=backtest_artifacts["metrics"],
+        bundle_path=bundle_artifacts["bundle_result"],
+        price_frame_path=quotes_path,
+        signals_path=signal_artifacts["signals_parquet"],
+        quotes_path=quotes_path,
+        label_horizon_minutes=inputs.label_horizon_minutes,
+        out_dir=inputs.data_dir / "research/backtest_framework_run",
+        reports_dir=inputs.reports_dir,
+    )
     external_result = build_strategy_backtest_external_result(
         metrics_path=backtest_artifacts["metrics"],
         signals_path=signal_artifacts["signals_parquet"],
@@ -229,6 +242,7 @@ def run_strategy_backtest_pack(
         metrics_path=backtest_artifacts["metrics"],
         suite_result_path=suite_artifacts["suite_result"],
         adapter_spike_path=adapter_result.spike_path,
+        framework_run_path=framework_run_result.run_path,
         external_result_path=external_result.external_path,
         portfolio_comparison_path=portfolio_comparison_result.comparison_path,
         metric_extension_path=metric_extension_result.metric_extension_path,
@@ -258,6 +272,8 @@ def run_strategy_backtest_pack(
         BacktestArtifactKey.ADAPTER_SPIKE_REPORT: adapter_result.report_path,
         BacktestArtifactKey.BUNDLE_RESULT: bundle_artifacts["bundle_result"],
         BacktestArtifactKey.BUNDLE_REPORT: bundle_artifacts["bundle_report"],
+        BacktestArtifactKey.FRAMEWORK_RUN: framework_run_result.run_path,
+        BacktestArtifactKey.FRAMEWORK_RUN_REPORT: framework_run_result.report_path,
         BacktestArtifactKey.EXTERNAL_RESULT: external_result.external_path,
         BacktestArtifactKey.EXTERNAL_REPORT: external_result.report_path,
         BacktestArtifactKey.PORTFOLIO_COMPARISON: portfolio_comparison_result.comparison_path,
@@ -314,6 +330,7 @@ def run_strategy_backtest_pack(
         validation_report_path=validation_result.report_path,
         validation_decision=str(validation_result.payload["decision"]),
         comparison_path=comparison_result.comparison_path,
+        framework_run_path=framework_run_result.run_path,
         portfolio_comparison_path=portfolio_comparison_result.comparison_path,
         metric_extension_path=metric_extension_result.metric_extension_path,
         report_extension_path=report_extension_result.report_extension_path,

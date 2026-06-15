@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_portfolio_validation_contract.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "decision",
+    "reason_codes",
+    "source_paths",
+    "source_hashes",
+    "candidate_frameworks",
+    "summary",
+    "input_availability",
+    "risk_notes",
+    "dependency_added",
+    "engine_run",
+    "paper_only",
+    "live_order_submitted",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_portfolio_validation_contract.v1"},
+    "created_at": {"type": "string"},
+    "decision": {
+      "enum": [
+        "READY_FOR_PORTFOLIO_VALIDATION_CONTRACT_SPIKE",
+        "NOT_READY_FOR_PORTFOLIO_VALIDATION_ENGINE"
+      ]
+    },
+    "reason_codes": {"type": "array", "items": {"type": "string"}},
+    "source_paths": {"type": "object"},
+    "source_hashes": {"type": "object"},
+    "candidate_frameworks": {"type": "array"},
+    "summary": {"type": "object"},
+    "input_availability": {"type": "array"},
+    "risk_notes": {"type": "array", "items": {"type": "string"}},
+    "dependency_added": {"const": false},
+    "engine_run": {"const": false},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": false
+}

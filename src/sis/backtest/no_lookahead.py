@@ -230,14 +230,20 @@ def _runtime_future_mutation_checks(
 
 
 def _write_report(path: Path, payload: dict[str, Any]) -> Path:
+    summary = payload["summary"]
     lines = [
         "# Strategy Backtest No-Lookahead Diff",
         "",
         f"- status: {payload['status']}",
-        f"- check_count: {payload['summary']['check_count']}",
-        f"- failed_count: {payload['summary']['failed_count']}",
+        f"- check_count: {summary['check_count']}",
+        f"- failed_count: {summary['failed_count']}",
+        f"- checked_signal_count: {summary['checked_signal_count']}",
+        f"- verified_signal_count: {summary['verified_signal_count']}",
+        f"- unverified_signal_count: {summary['unverified_signal_count']}",
+        f"- coverage_status: {summary['coverage_status']}",
+        f"- false_negative_risk: {summary['false_negative_risk']}",
         f"- diff_mode: {payload['diff_mode']}",
-        f"- runtime_future_mutation_replay: {payload['summary']['runtime_future_mutation_replay']}",
+        f"- runtime_future_mutation_replay: {summary['runtime_future_mutation_replay']}",
         "- permits_live_order: false",
         "- wallet_used: false",
         "- exchange_write_used: false",
@@ -311,6 +317,22 @@ def build_strategy_backtest_no_lookahead_diff(
             }
         )
     failed_count = sum(1 for row in checks if row["passed"] is not True)
+    checked_signal_count = len(executed_rows) if isinstance(executed_rows, list) else 0
+    runtime_replay = runtime_meta["runtime_future_mutation_replay"]
+    verified_signal_count = checked_signal_count if runtime_replay and failed_count == 0 else 0
+    unverified_signal_count = max(checked_signal_count - verified_signal_count, 0)
+    if checked_signal_count < 4:
+        coverage_status = "insufficient_signal_coverage"
+        false_negative_risk = "high"
+    elif not runtime_replay:
+        coverage_status = "runtime_replay_not_applicable"
+        false_negative_risk = "medium"
+    elif failed_count == 0:
+        coverage_status = "runtime_replay_verified"
+        false_negative_risk = "low"
+    else:
+        coverage_status = "runtime_replay_failed"
+        false_negative_risk = "high"
     payload: dict[str, Any] = with_backtest_paper_only_boundary(
         {
             "schema_version": "strategy_backtest_no_lookahead_diff.v1",
@@ -330,7 +352,12 @@ def build_strategy_backtest_no_lookahead_diff(
             "summary": {
                 "check_count": len(checks),
                 "failed_count": failed_count,
-                "runtime_future_mutation_replay": runtime_meta["runtime_future_mutation_replay"],
+                "checked_signal_count": checked_signal_count,
+                "verified_signal_count": verified_signal_count,
+                "unverified_signal_count": unverified_signal_count,
+                "coverage_status": coverage_status,
+                "false_negative_risk": false_negative_risk,
+                "runtime_future_mutation_replay": runtime_replay,
             },
             "checks": checks,
             "mutation_scenarios": scenarios,

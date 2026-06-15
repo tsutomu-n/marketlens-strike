@@ -14,6 +14,7 @@ def test_artifact_summary_specs_keep_current_top_level_key_order() -> None:
     assert [spec.key for spec in ARTIFACT_SUMMARY_SPECS] == [
         "pack",
         "pack_validation",
+        "framework_run",
         "benchmark_relative",
         "metric_extension",
         "report_extension",

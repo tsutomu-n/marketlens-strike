@@ -60,6 +60,7 @@
               "freqtrade",
               "qlib",
               "finrl",
+              "hftbacktest",
               "skfolio"
             ]
           },

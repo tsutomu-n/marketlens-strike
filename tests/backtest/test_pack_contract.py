@@ -28,6 +28,8 @@ def test_pack_manifest_keys_are_unique_and_include_non_required_artifacts() -> N
     assert len(PACK_MANIFEST_ARTIFACT_KEYS) == len(set(PACK_MANIFEST_ARTIFACT_KEYS))
     assert BacktestArtifactKey.EXTERNAL_RESULT in PACK_MANIFEST_ARTIFACT_KEYS
     assert BacktestArtifactKey.EXTERNAL_RESULT not in PACK_REQUIRED_COMPLETION_ARTIFACT_KEYS
+    assert BacktestArtifactKey.FRAMEWORK_RUN in PACK_MANIFEST_ARTIFACT_KEYS
+    assert BacktestArtifactKey.FRAMEWORK_RUN not in PACK_REQUIRED_COMPLETION_ARTIFACT_KEYS
     assert BacktestArtifactKey.COMPARISON_REPORT in PACK_MANIFEST_ARTIFACT_KEYS
 
 
@@ -60,6 +62,14 @@ def test_external_framework_policy_matches_current_artifact_contract_and_is_fres
             "empyrical-reloaded",
             "pyfolio-reloaded",
             "qstrader",
+            "hftbacktest",
+            "nautilus-trader",
+            "freqtrade",
+            "pyqlib",
+            "finrl",
+            "skfolio",
+            "riskfolio-lib",
+            "lib-pybroker",
         ],
         "adoption_requires": [
             "license_review",
@@ -96,6 +106,9 @@ def test_default_pack_artifact_paths_cover_manifest_keys() -> None:
     )
     assert paths[BacktestArtifactKey.BUNDLE_RESULT] == (
         data_dir / "research/strategy_authoring_bundle_result.json"
+    )
+    assert paths[BacktestArtifactKey.FRAMEWORK_RUN] == (
+        data_dir / "research/backtest_framework_run/strategy_backtest_framework_run.json"
     )
     assert paths[BacktestArtifactKey.RETURNS_SERIES] == (
         data_dir / "research/backtest_metric_extension/strategy_backtest_returns.jsonl"

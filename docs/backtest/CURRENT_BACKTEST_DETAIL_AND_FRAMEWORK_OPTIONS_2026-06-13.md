@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-13_09:53 JST
-更新日: 2026-06-14_18:03 JST
+更新日: 2026-06-15_21:08 JST
 -->
 
 # Current Backtest Detail And Framework Options
@@ -734,6 +734,25 @@ Backtest Expansion Scope 1: Framework Adapter Spike
 3. `bt` portfolio comparison の asset/weight 入力を拡張する。
 4. `metrics` / `reports` は backtest engine ではなく analytics surface として表示し、誤って alpha 証明に使わない。
 5. 追加 OSS は license review 後に optional extra または別環境 runner として扱う。
+
+## 2026-06-15 実装後の補正
+
+この文書の古い「次に作るべき scope」は、2026-06-15_21:08 JST 時点で通常レーンとして実装済みである。最新の実装計画と完了線は [OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md](OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md) を見る。
+
+実装済みの変更:
+
+- `strategy-backtest-framework-run` の matrix artifact を `strategy-backtest-pack`、`strategy-backtest-compare`、`strategy-backtest-artifact-summary` が読む。
+- `framework_run` は標準 pack の必須合格条件ではない。通常 env では skipped、extras env では実行結果を artifact 化する。
+- `strategy-backtest-no-lookahead-diff` は coverage と false-negative risk を machine-readable に出す。
+- `hftbacktest` は `strategy-backtest-adapter-spike` の reference-only microstructure replay 候補に入った。
+- `strategy-backtest-microstructure-readiness`, `strategy-backtest-qstrader-contract`, `strategy-backtest-portfolio-validation-contract`, `strategy-backtest-pybroker-contract`, `strategy-backtest-constraint-breaker-decision` を追加した。
+
+変わっていない制約:
+
+- 標準 engine は `strategy_authoring_native` のまま。
+- `hftbacktest`, `qstrader`, `skfolio`, `riskfolio-lib`, `lib-pybroker` は dependency 追加していない。
+- reference-only contract は engine 実行ではない。
+- live order、wallet、signing、exchange write は引き続き禁止。
 
 ## 抜け、漏れ、誤謬リスク
 

@@ -113,10 +113,18 @@
               "quantstats",
               "empyrical-reloaded",
               "pyfolio-reloaded",
-              "qstrader"
+              "qstrader",
+              "hftbacktest",
+              "nautilus-trader",
+              "freqtrade",
+              "pyqlib",
+              "finrl",
+              "skfolio",
+              "riskfolio-lib",
+              "lib-pybroker"
             ]
           },
-          "minItems": 9,
+          "minItems": 17,
           "uniqueItems": true
         },
         "adoption_requires": {

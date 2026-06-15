@@ -10,7 +10,37 @@
       "type": ["string", "null"],
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
-    "summary": {"type": "object"},
+    "summary": {
+      "type": "object",
+      "required": [
+        "check_count",
+        "failed_count",
+        "checked_signal_count",
+        "verified_signal_count",
+        "unverified_signal_count",
+        "coverage_status",
+        "false_negative_risk",
+        "runtime_future_mutation_replay"
+      ],
+      "properties": {
+        "check_count": {"type": "integer", "minimum": 0},
+        "failed_count": {"type": "integer", "minimum": 0},
+        "checked_signal_count": {"type": "integer", "minimum": 0},
+        "verified_signal_count": {"type": "integer", "minimum": 0},
+        "unverified_signal_count": {"type": "integer", "minimum": 0},
+        "coverage_status": {
+          "enum": [
+            "insufficient_signal_coverage",
+            "runtime_replay_not_applicable",
+            "runtime_replay_verified",
+            "runtime_replay_failed"
+          ]
+        },
+        "false_negative_risk": {"enum": ["low", "medium", "high"]},
+        "runtime_future_mutation_replay": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    },
     "checks": {"type": "array"},
     "mutation_scenarios": {"type": "array"},
     "paper_only": {"const": true},

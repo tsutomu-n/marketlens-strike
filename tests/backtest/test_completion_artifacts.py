@@ -312,5 +312,16 @@ def test_no_lookahead_diff_runs_future_feature_mutation_replay(tmp_path: Path) -
     assert result.payload["status"] == "pass"
     assert result.payload["diff_mode"] == "runtime_future_feature_mutation_v1"
     assert result.payload["summary"]["runtime_future_mutation_replay"] is True
+    assert result.payload["summary"]["checked_signal_count"] >= 1
+    assert (
+        result.payload["summary"]["verified_signal_count"]
+        == result.payload["summary"]["checked_signal_count"]
+    )
+    assert result.payload["summary"]["unverified_signal_count"] == 0
+    assert result.payload["summary"]["coverage_status"] in {
+        "runtime_replay_verified",
+        "insufficient_signal_coverage",
+    }
+    assert result.payload["summary"]["false_negative_risk"] in {"low", "high"}
     assert result.payload["mutation_scenarios"]
     assert all(check["passed"] is True for check in result.payload["checks"])

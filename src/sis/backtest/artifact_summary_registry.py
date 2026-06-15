@@ -17,6 +17,7 @@ class ArtifactSummarySpec:
 ARTIFACT_SUMMARY_SPECS: tuple[ArtifactSummarySpec, ...] = (
     ArtifactSummarySpec("pack", "pack_path", "pack"),
     ArtifactSummarySpec("pack_validation", "validation_path", "validation"),
+    ArtifactSummarySpec("framework_run", "framework_run_path", "framework_run"),
     ArtifactSummarySpec("benchmark_relative", "benchmark_relative_path", "benchmark_relative"),
     ArtifactSummarySpec("metric_extension", "metric_extension_path", "metric_extension"),
     ArtifactSummarySpec("report_extension", "report_extension_path", "report_extension"),

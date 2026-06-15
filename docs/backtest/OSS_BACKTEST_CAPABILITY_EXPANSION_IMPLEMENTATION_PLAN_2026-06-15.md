@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_20:13 JST
-更新日: 2026-06-15_20:32 JST
+更新日: 2026-06-15_21:08 JST
 -->
 
 # OSS Backtest Capability Expansion Implementation Plan
@@ -25,6 +25,35 @@
 `PyBroker` と `Riskfolio-Lib` は追加調査で補完した。`PyBroker` は ML / walk-forward / bootstrap workflow の参考候補、`Riskfolio-Lib` は portfolio optimization 参考候補である。ただし、どちらも標準 backtest engine にしない。`PyBroker` は package / license / data-source surface が重く、`Riskfolio-Lib` は backtest engine ではなく optimizer であるため、dependency 追加前の reference-only 分類に留める。
 
 ただし、現行制約を守ること自体が目的ではない。制約を破ることで判断品質が大きく上がる可能性が高い場合は、通常タスクに混ぜず、後述の **Constraint Breaker Gate** を通してから別レーンで進める。
+
+## 実装結果
+
+2026-06-15_21:08 JST 時点で、この文書の通常レーンは実装済みである。
+
+実装済みの範囲:
+
+- `strategy-backtest-framework-run` の結果を `strategy-backtest-pack`、`strategy-backtest-compare`、`strategy-backtest-artifact-summary` で読めるようにした。
+- `framework_run` は pack completion の必須条件ではない。通常 env では skipped artifact として残り、optional extras env では実行結果を残す。
+- `strategy-backtest-no-lookahead-diff` は `checked_signal_count`, `verified_signal_count`, `unverified_signal_count`, `coverage_status`, `false_negative_risk` を出す。
+- `hftbacktest` は `strategy-backtest-adapter-spike` の reference-only 候補に追加した。dependency 追加、engine 実行、live order は行わない。
+- `strategy-backtest-microstructure-readiness` を追加し、HftBacktest などに必要な L2/L3/tick/latency/queue input の不足を artifact 化する。
+- `strategy-backtest-qstrader-contract` を追加し、qstrader dependency 追加前の local input contract を artifact 化する。
+- `strategy-backtest-portfolio-validation-contract` を追加し、skfolio / Riskfolio-Lib を backtest engine ではなく portfolio validation / optimization reference として扱う。
+- `strategy-backtest-pybroker-contract` を追加し、PyBroker を local DataFrame input 専用の reference contract として扱う。外部 data fetch は許可しない。
+- `strategy-backtest-constraint-breaker-decision` を追加し、制約を破る価値を scorecard artifact として残せるようにした。
+
+未実装として残す範囲:
+
+- `hftbacktest`, `qstrader`, `skfolio`, `riskfolio-lib`, `lib-pybroker` の dependency 追加。
+- HftBacktest / qstrader / PyBroker / portfolio optimizer の engine 実行。
+- L2/L3/tick collector、external data fetch、credentialed read-only source。
+- live order、wallet、signing、exchange write。
+
+実装後の読む順番:
+
+1. operator は [README.md](README.md) と [BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md](BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md) を読む。
+2. 実装者はこの文書の `対象ファイル`、`実装契約`、`テスト方針`、`完了条件` を読む。
+3. 大きな制約変更を検討する場合だけ `Constraint Breaker Gate` と `strategy-backtest-constraint-breaker-decision` を使う。
 
 ## 目的
 

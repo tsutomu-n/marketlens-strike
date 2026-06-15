@@ -45,6 +45,7 @@ def test_build_backtest_adapter_spike_writes_dependency_free_artifacts(tmp_path)
         "freqtrade",
         "qlib",
         "finrl",
+        "hftbacktest",
         "skfolio",
     }
     reference_only = {
@@ -52,8 +53,21 @@ def test_build_backtest_adapter_spike_writes_dependency_free_artifacts(tmp_path)
         for candidate in payload["candidates"]
         if candidate["candidate_kind"] == "reference_only"
     }
-    assert reference_only == {"nautilus_trader", "freqtrade", "qlib", "finrl", "skfolio"}
-    assert len(payload["candidates"]) == 14
+    assert reference_only == {
+        "nautilus_trader",
+        "freqtrade",
+        "qlib",
+        "finrl",
+        "hftbacktest",
+        "skfolio",
+    }
+    hftbacktest = next(
+        candidate
+        for candidate in payload["candidates"]
+        if candidate["framework_id"] == "hftbacktest"
+    )
+    assert hftbacktest["adapter_role"] == "reference_only_microstructure_replay"
+    assert len(payload["candidates"]) == 15
     assert all(candidate["engine_run"] is False for candidate in payload["candidates"])
     assert all(candidate["dependency_added"] is False for candidate in payload["candidates"])
     assert payload["decision"]["selected_for_dependency_adoption"] is None

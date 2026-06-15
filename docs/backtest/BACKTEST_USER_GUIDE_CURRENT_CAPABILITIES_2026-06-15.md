@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_19:09 JST
-更新日: 2026-06-15_19:09 JST
+更新日: 2026-06-15_21:08 JST
 -->
 
 # Backtest User Guide And Current Capabilities
@@ -39,18 +39,19 @@ uv run sis strategy-backtest-artifact-summary
 
 ## 現在の代表的な状態
 
-2026-06-15_19:09 JST 時点で、現在の artifact summary は次の状態です。
+2026-06-15_21:08 JST 時点で、現在の artifact summary で確認する代表 field は次の通りです。数値は artifact を再生成すると変わるため、最新値は `uv run sis strategy-backtest-artifact-summary` を正とします。
 
 | 項目 | 現在値 | 意味 |
 |---|---:|---|
 | pack path | `data/research/backtest_pack/strategy_backtest_pack.json` | 標準 pack artifact |
 | pack schema | `strategy_backtest_pack.v1` | 現行 pack schema |
 | pack validation | `PASS` | pack integrity と no-live 境界の検査に通過 |
-| validation checks | `198` checks / `0` failed | pack validation の確認数 |
+| validation checks | summary JSON の `pack_validation.summary` | pack validation の確認数 |
 | suite methods | `5` | 標準 backtest suite の手法数 |
 | suite runs | `5` | 標準 suite の run 数 |
 | standard engine | `strategy_authoring_native` | 標準 backtest engine |
 | completion line | `complete_without_locked_external_dependency` | 外部 framework 必須なしで完成扱い |
+| framework run | `framework_run` artifact | optional OSS の matrix 結果。pack の必須合格条件ではない |
 | paper only | `true` | paper-only artifact |
 | permits live order | `false` | live order は許可しない |
 | wallet / exchange write | `false` / `false` | wallet / exchange write は使わない |
@@ -177,7 +178,24 @@ uv run sis strategy-backtest-baseline-compare
 
 注意: ここでの simple momentum などは return-series control です。別 engine で再実行した独立 baseline ではありません。
 
-### 8. No-lookahead と execution simulation を確認する
+### 8. Optional OSS の matrix を確認する
+
+既存 optional extras の `vectorbt`, `bt`, `empyrical-reloaded`, `quantstats` を、1つの matrix artifact として確認できます。
+
+```bash
+uv run sis strategy-backtest-framework-run --framework vectorbt --framework bt --framework metrics --framework reports
+uv run sis strategy-backtest-artifact-summary
+```
+
+通常 env で optional extra が未導入なら、各 framework は `skipped/not_installed_in_current_env` として artifact に残ります。これは失敗ではありません。optional extras を入れて実行結果を見たい場合は、pack 自体も同じ extras env で再実行します。
+
+```bash
+uv run --extra vectorbt --extra bt --extra metrics --extra reports sis strategy-backtest-framework-run --framework vectorbt --framework bt --framework metrics --framework reports
+```
+
+この matrix は外部検算用です。標準 engine は引き続き `strategy_authoring_native` です。
+
+### 9. No-lookahead と execution simulation を確認する
 
 未来側 feature rows を変異させて cutoff 以前の結果が変わらないか、paper-only の order intent / fill event simulation がどうなるかを artifact 化できます。
 
@@ -189,12 +207,52 @@ uv run sis strategy-backtest-execution-sim
 現在の代表値:
 
 - no-lookahead status: `pass`
+- no-lookahead coverage: `checked_signal_count`, `verified_signal_count`, `unverified_signal_count`, `coverage_status`, `false_negative_risk` を確認する
 - execution simulation status: `pass`
 - unknown critical assumptions: `0`
 
 execution simulation は live execution ではありません。rate limit、cancel/modify、unknown order state、market impact などは仮定として記録します。
 
-### 9. Assumption ledger と trial ledger を残す
+### 10. Reference-only 候補の採用可否を判断する
+
+大型 OSS を採用済みと誤読しないため、dependency 追加前の readiness / contract artifact を作れます。
+
+```bash
+uv run sis strategy-backtest-microstructure-readiness
+uv run sis strategy-backtest-qstrader-contract
+uv run sis strategy-backtest-portfolio-validation-contract
+uv run sis strategy-backtest-pybroker-contract
+```
+
+主な意味:
+
+- `strategy-backtest-microstructure-readiness`: HftBacktest などに必要な L2/L3/tick/latency/queue input が足りるかを見る。
+- `strategy-backtest-qstrader-contract`: qstrader に渡せる local input contract があるかを見る。
+- `strategy-backtest-portfolio-validation-contract`: skfolio / Riskfolio-Lib を portfolio validation / optimization reference として使えるかを見る。
+- `strategy-backtest-pybroker-contract`: PyBroker を local DataFrame input に閉じて評価できるかを見る。
+
+これらは engine 実行ではありません。`dependency_added=false`, `engine_run=false`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` を維持します。
+
+### 11. 制約を破る価値を scorecard で判断する
+
+標準 engine を変える、重い dependency を入れる、外部 sandbox を使うなどの大きな変更は、通常タスクに混ぜません。先に decision artifact を作ります。
+
+```bash
+uv run sis strategy-backtest-constraint-breaker-decision \
+  --candidate-id hftbacktest \
+  --constraint-to-break native-only \
+  --capability-gap material \
+  --expected-failure-mode-reduction high \
+  --proof-fixture-status synthetic_only \
+  --license-terms-status reviewed_allowed \
+  --external-data-status not_used \
+  --ci-cost-status acceptable \
+  --rollback-complexity low
+```
+
+`APPROVE_BREAK` は実装開始の前提条件であり、live / wallet / signing / exchange write の許可ではありません。
+
+### 12. Assumption ledger と trial ledger を残す
 
 仮定と試行履歴を artifact として残せます。
 
@@ -209,7 +267,7 @@ uv run sis strategy-backtest-trial-ledger
 - measured / configured / assumed / unknown を分ける。
 - 何を試し、何が available / missing だったかを追跡する。
 
-### 10. まとめ pack を作る
+### 13. まとめ pack を作る
 
 個別 command をまとめ、標準 artifact chain を一括生成します。
 
@@ -223,6 +281,7 @@ uv run sis strategy-backtest-artifact-summary
 
 - `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/research/backtest_pack/strategy_backtest_pack_validation.json`
+- `data/research/backtest_framework_run/strategy_backtest_framework_run.json`
 - `data/reports/strategy_backtest_pack_report.md`
 - `data/reports/strategy_backtest_pack_validation_report.md`
 
@@ -244,10 +303,10 @@ lockfile 上の optional extras:
 例:
 
 ```bash
-uv sync --dev --extra bt --extra metrics --extra reports --locked
-uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
-uv run --extra bt --extra metrics --extra reports sis strategy-backtest-pack-validate
-uv run --extra bt --extra metrics --extra reports sis strategy-backtest-artifact-summary
+uv sync --dev --extra vectorbt --extra bt --extra metrics --extra reports --locked
+uv run --extra vectorbt --extra bt --extra metrics --extra reports sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
+uv run --extra vectorbt --extra bt --extra metrics --extra reports sis strategy-backtest-pack-validate
+uv run --extra vectorbt --extra bt --extra metrics --extra reports sis strategy-backtest-artifact-summary
 ```
 
 pack manifest の hash と実ファイルをずらさないため、optional extra の artifact を使う場合は pack 自体を extras 環境で再実行します。
@@ -290,7 +349,8 @@ uv run sis strategy-lifecycle-review --data-dir data --out data/research/strateg
 - replay-style simulation から market impact を主張する。
 - Bitget / Hyperliquid direct schema widening を行う。
 - Coinalyze collector を作る。
-- NautilusTrader / HftBacktest / Tardis / PyBroker / Qlib / FinRL / skfolio を採用する。
+- NautilusTrader / HftBacktest / Tardis / PyBroker / Qlib / FinRL / skfolio / Riskfolio-Lib を標準 engine として採用する。
+- HftBacktest / qstrader / PyBroker / skfolio / Riskfolio-Lib の engine を実行する。
 
 ## 出力の読み方
 
@@ -305,6 +365,8 @@ uv run sis strategy-lifecycle-review --data-dir data --out data/research/strateg
 | `PASS_BACKTEST_ACCEPTANCE` | lifecycle に渡せる backtest acceptance は通った |
 | `CONTINUE_PAPER_OBSERVATION` | paper observation を続ける状態 |
 | `ELIGIBLE_FOR_LIVE_CANARY_PLAN` | live order 許可ではなく、別計画を書いてよい候補 |
+| `framework_run.summary.executed_count` | optional OSS matrix の実行件数。標準 backtest 合格とは別 |
+| `no_lookahead_diff.summary.false_negative_risk` | lookahead 検査で残る見逃しリスク |
 
 ## よく使う確認 command
 

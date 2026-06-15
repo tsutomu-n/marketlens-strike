@@ -12,6 +12,8 @@
     "source_suite_result_hash",
     "source_adapter_spike_path",
     "source_adapter_spike_hash",
+    "source_framework_run_path",
+    "source_framework_run_hash",
     "source_external_result_path",
     "source_external_result_hash",
     "source_portfolio_comparison_path",
@@ -44,6 +46,7 @@
     "method_results",
     "suite_results",
     "adapter_spike",
+    "framework_run",
     "external_results",
     "portfolio_comparison",
     "metric_extension",
@@ -78,6 +81,11 @@
     },
     "source_adapter_spike_path": {"type": ["string", "null"]},
     "source_adapter_spike_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_framework_run_path": {"type": ["string", "null"]},
+    "source_framework_run_hash": {
       "type": ["string", "null"],
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
@@ -185,6 +193,12 @@
     "adapter_spike": {
       "anyOf": [
         {"$ref": "#/$defs/adapter_spike"},
+        {"type": "null"}
+      ]
+    },
+    "framework_run": {
+      "anyOf": [
+        {"$ref": "#/$defs/framework_run"},
         {"type": "null"}
       ]
     },
@@ -752,6 +766,7 @@
             "freqtrade",
             "qlib",
             "finrl",
+            "hftbacktest",
             "skfolio",
             null
           ]
@@ -810,6 +825,76 @@
           "type": "array",
           "items": {"$ref": "#/$defs/adapter_spike_candidate"}
         }
+      },
+      "additionalProperties": false
+    },
+    "framework_run": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "created_at",
+        "selected_frameworks",
+        "summary",
+        "dependency_added",
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "exchange_write_used",
+        "runs"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": ["string", "null"],
+          "enum": ["strategy_backtest_framework_run.v1", null]
+        },
+        "created_at": {"type": ["string", "null"]},
+        "selected_frameworks": {"type": "array", "items": {"type": "string"}},
+        "summary": {
+          "type": "object",
+          "required": ["framework_count", "executed_count", "skipped_count", "failed_count"],
+          "properties": {
+            "framework_count": {"type": ["integer", "null"], "minimum": 0},
+            "executed_count": {"type": ["integer", "null"], "minimum": 0},
+            "skipped_count": {"type": ["integer", "null"], "minimum": 0},
+            "failed_count": {"type": ["integer", "null"], "minimum": 0}
+          },
+          "additionalProperties": false
+        },
+        "dependency_added": {"const": false},
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "runs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/framework_run_item"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "framework_run_item": {
+      "type": "object",
+      "required": [
+        "framework_id",
+        "surface_type",
+        "status",
+        "run_status",
+        "reason_codes",
+        "dependency_source",
+        "artifact",
+        "report",
+        "boundary"
+      ],
+      "properties": {
+        "framework_id": {"type": ["string", "null"]},
+        "surface_type": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "run_status": {"type": ["string", "null"]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "dependency_source": {"type": ["string", "null"]},
+        "artifact": {"type": ["object", "null"]},
+        "report": {"type": ["object", "null"]},
+        "boundary": {"type": "object"}
       },
       "additionalProperties": false
     },

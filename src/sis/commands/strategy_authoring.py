@@ -21,11 +21,15 @@ from sis.backtest.benchmark_relative import (
 )
 from sis.backtest.compare import build_strategy_backtest_comparison
 from sis.backtest.data_availability import build_backtest_data_availability_ledger
+from sis.backtest.constraint_breaker import build_strategy_backtest_constraint_breaker_decision
 from sis.backtest.execution_simulation import build_strategy_backtest_execution_simulation
 from sis.backtest.external import build_strategy_backtest_external_result
 from sis.backtest.framework_run import build_strategy_backtest_framework_run
 from sis.backtest.framework_smoke import build_backtest_framework_smoke
 from sis.backtest.metric_extension import build_strategy_backtest_metric_extension
+from sis.backtest.microstructure_readiness import (
+    build_strategy_backtest_microstructure_readiness,
+)
 from sis.backtest.no_lookahead import build_strategy_backtest_no_lookahead_diff
 from sis.backtest.pack import validate_strategy_backtest_pack
 from sis.backtest.pack_runner import (
@@ -33,6 +37,11 @@ from sis.backtest.pack_runner import (
     run_strategy_backtest_pack,
 )
 from sis.backtest.portfolio_comparison import build_strategy_backtest_portfolio_comparison
+from sis.backtest.portfolio_validation_contract import (
+    build_strategy_backtest_portfolio_validation_contract,
+)
+from sis.backtest.pybroker_contract import build_strategy_backtest_pybroker_contract
+from sis.backtest.qstrader_contract import build_strategy_backtest_qstrader_contract
 from sis.backtest.regime_split import (
     DEFAULT_DIMENSION_CSV,
     build_strategy_backtest_regime_split,
@@ -1302,6 +1311,208 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         typer.echo(f"framework_count={result.payload['summary']['framework_count']}")
         typer.echo(f"executed_count={result.payload['summary']['executed_count']}")
 
+    @app.command("strategy-backtest-microstructure-readiness")
+    def strategy_backtest_microstructure_readiness_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        signals_path: Path = typer.Option(
+            Path("data/research/strategy_signals.parquet"),
+            "--signals-path",
+            help="Strategy signals parquet.",
+        ),
+        quotes_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_baseline_quotes.parquet"),
+            "--quotes-path",
+            help="Quotes parquet used by the backtest.",
+        ),
+        data_availability_path: Path | None = typer.Option(
+            Path("data/research/backtest_data_availability/backtest_data_availability_ledger.json"),
+            "--data-availability-path",
+            help="Optional data availability ledger JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_microstructure_readiness"),
+            "--out",
+            help="Output directory for microstructure readiness artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_strategy_backtest_microstructure_readiness(
+                metrics_path=_resolve_workspace_path(metrics_path, settings.data_dir),
+                signals_path=_resolve_workspace_path(signals_path, settings.data_dir),
+                quotes_path=_resolve_workspace_path(quotes_path, settings.data_dir),
+                data_availability_path=_resolve_workspace_path(
+                    data_availability_path, settings.data_dir
+                )
+                if data_availability_path is not None
+                else None,
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_microstructure_readiness={result.readiness_path}")
+        typer.echo(f"backtest_microstructure_readiness_report={result.report_path}")
+        typer.echo(f"decision={result.payload['decision']}")
+
+    @app.command("strategy-backtest-qstrader-contract")
+    def strategy_backtest_qstrader_contract_cmd(
+        signals_path: Path = typer.Option(
+            Path("data/research/strategy_signals.parquet"),
+            "--signals-path",
+            help="Strategy signals parquet.",
+        ),
+        quotes_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_baseline_quotes.parquet"),
+            "--quotes-path",
+            help="Quotes parquet used by the backtest.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_qstrader_contract"),
+            "--out",
+            help="Output directory for qstrader contract artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        result = build_strategy_backtest_qstrader_contract(
+            signals_path=_resolve_workspace_path(signals_path, settings.data_dir),
+            quotes_path=_resolve_workspace_path(quotes_path, settings.data_dir),
+            out_dir=_resolve_workspace_path(out, settings.data_dir),
+            reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+        )
+        typer.echo(f"backtest_qstrader_contract={result.contract_path}")
+        typer.echo(f"backtest_qstrader_contract_report={result.report_path}")
+        typer.echo(f"decision={result.payload['decision']}")
+
+    @app.command("strategy-backtest-portfolio-validation-contract")
+    def strategy_backtest_portfolio_validation_contract_cmd(
+        metrics_path: Path = typer.Option(
+            Path("data/research/strategy_backtest_metrics.json"),
+            "--metrics-path",
+            help="Strategy Authoring backtest metrics JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_portfolio_validation_contract"),
+            "--out",
+            help="Output directory for portfolio validation contract artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_strategy_backtest_portfolio_validation_contract(
+                metrics_path=_resolve_workspace_path(metrics_path, settings.data_dir),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(2) from exc
+        typer.echo(f"backtest_portfolio_validation_contract={result.contract_path}")
+        typer.echo(f"backtest_portfolio_validation_contract_report={result.report_path}")
+        typer.echo(f"decision={result.payload['decision']}")
+
+    @app.command("strategy-backtest-pybroker-contract")
+    def strategy_backtest_pybroker_contract_cmd(
+        signals_path: Path = typer.Option(
+            Path("data/research/strategy_signals.parquet"),
+            "--signals-path",
+            help="Strategy signals parquet.",
+        ),
+        quotes_path: Path = typer.Option(
+            Path("data/research/strategy_authoring_baseline_quotes.parquet"),
+            "--quotes-path",
+            help="Quotes parquet used by the backtest.",
+        ),
+        out: Path = typer.Option(
+            Path("data/research/backtest_pybroker_contract"),
+            "--out",
+            help="Output directory for PyBroker contract artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        result = build_strategy_backtest_pybroker_contract(
+            signals_path=_resolve_workspace_path(signals_path, settings.data_dir),
+            quotes_path=_resolve_workspace_path(quotes_path, settings.data_dir),
+            out_dir=_resolve_workspace_path(out, settings.data_dir),
+            reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+        )
+        typer.echo(f"backtest_pybroker_contract={result.contract_path}")
+        typer.echo(f"backtest_pybroker_contract_report={result.report_path}")
+        typer.echo(f"decision={result.payload['decision']}")
+
+    @app.command("strategy-backtest-constraint-breaker-decision")
+    def strategy_backtest_constraint_breaker_decision_cmd(
+        candidate_id: str = typer.Option(..., "--candidate-id"),
+        constraint_to_break: str = typer.Option(..., "--constraint-to-break"),
+        capability_gap: str = typer.Option(..., "--capability-gap"),
+        expected_failure_mode_reduction: str = typer.Option(
+            ..., "--expected-failure-mode-reduction"
+        ),
+        proof_fixture_status: str = typer.Option(..., "--proof-fixture-status"),
+        license_terms_status: str = typer.Option(..., "--license-terms-status"),
+        external_data_status: str = typer.Option(..., "--external-data-status"),
+        ci_cost_status: str = typer.Option(..., "--ci-cost-status"),
+        rollback_complexity: str = typer.Option(..., "--rollback-complexity"),
+        owner_approval_ref: str | None = typer.Option(None, "--owner-approval-ref"),
+        evidence_path: Path | None = typer.Option(None, "--evidence-path"),
+        out: Path = typer.Option(
+            Path("data/research/backtest_constraint_breaker"),
+            "--out",
+            help="Output directory for constraint breaker decision artifact.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        result = build_strategy_backtest_constraint_breaker_decision(
+            candidate_id=candidate_id,
+            constraint_to_break=constraint_to_break,
+            capability_gap=capability_gap,
+            expected_failure_mode_reduction=expected_failure_mode_reduction,
+            proof_fixture_status=proof_fixture_status,
+            license_terms_status=license_terms_status,
+            external_data_status=external_data_status,
+            ci_cost_status=ci_cost_status,
+            rollback_complexity=rollback_complexity,
+            owner_approval_ref=owner_approval_ref,
+            evidence_path=_resolve_workspace_path(evidence_path, settings.data_dir)
+            if evidence_path is not None
+            else None,
+            out_dir=_resolve_workspace_path(out, settings.data_dir),
+            reports_dir=_resolve_workspace_path(reports_dir, settings.data_dir),
+        )
+        typer.echo(f"backtest_constraint_breaker_decision={result.decision_path}")
+        typer.echo(f"backtest_constraint_breaker_decision_report={result.report_path}")
+        typer.echo(f"decision={result.payload['decision']}")
+
     @app.command("strategy-backtest-framework-smoke")
     def strategy_backtest_framework_smoke_cmd(
         framework: list[str] | None = typer.Option(
@@ -1492,6 +1703,7 @@ def register_strategy_authoring_commands(app: typer.Typer) -> None:
         typer.echo(f"backtest_pack_validation={run_result.validation_path}")
         typer.echo(f"backtest_pack_validation_report={run_result.validation_report_path}")
         typer.echo(f"backtest_comparison={run_result.comparison_path}")
+        typer.echo(f"backtest_framework_run={run_result.framework_run_path}")
         typer.echo(f"backtest_portfolio_comparison={run_result.portfolio_comparison_path}")
         typer.echo(f"backtest_metric_extension={run_result.metric_extension_path}")
         typer.echo(f"backtest_report_extension={run_result.report_extension_path}")
