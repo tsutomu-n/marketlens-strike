@@ -397,9 +397,7 @@ class BacktestSuiteBacktestOverrides(BaseModel):
             and self.evaluation_end_at is not None
             and self.evaluation_start_at >= self.evaluation_end_at
         ):
-            raise ValueError(
-                "case.backtest.evaluation_start_at must be before evaluation_end_at"
-            )
+            raise ValueError("case.backtest.evaluation_start_at must be before evaluation_end_at")
         return self
 
 

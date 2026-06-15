@@ -29,9 +29,7 @@ def evaluation_window(spec: StrategyAuthoringSpec) -> dict[str, str | None]:
     }
 
 
-def apply_evaluation_window(
-    spec: StrategyAuthoringSpec, frame: pl.DataFrame
-) -> pl.DataFrame:
+def apply_evaluation_window(spec: StrategyAuthoringSpec, frame: pl.DataFrame) -> pl.DataFrame:
     if spec.backtest.evaluation_start_at is None or spec.backtest.evaluation_end_at is None:
         return frame
     if "ts_signal" not in frame.columns:
@@ -82,7 +80,9 @@ def manifest_for_evaluation_frame(
     )
 
 
-def capital_metrics(spec: StrategyAuthoringSpec, aggregate_metrics: dict[str, Any]) -> dict[str, Any]:
+def capital_metrics(
+    spec: StrategyAuthoringSpec, aggregate_metrics: dict[str, Any]
+) -> dict[str, Any]:
     initial = float(spec.backtest.initial_capital_usd)
     total_return = _float_or_none(aggregate_metrics.get("total_return")) or 0.0
     max_drawdown = _float_or_none(aggregate_metrics.get("max_drawdown"))
@@ -91,9 +91,7 @@ def capital_metrics(spec: StrategyAuthoringSpec, aggregate_metrics: dict[str, An
         "initial_capital_usd": initial,
         "net_pnl_usd": net_pnl,
         "ending_equity_usd": initial + net_pnl,
-        "max_drawdown_loss_usd": abs(max_drawdown) * initial
-        if max_drawdown is not None
-        else None,
+        "max_drawdown_loss_usd": abs(max_drawdown) * initial if max_drawdown is not None else None,
     }
 
 

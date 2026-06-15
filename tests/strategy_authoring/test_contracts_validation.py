@@ -100,9 +100,7 @@ def test_authoring_backtest_capital_and_evaluation_window_contract(tmp_path) -> 
 
 
 @pytest.mark.parametrize("initial_capital_usd", [99.99, 50000.01, "1000", True])
-def test_authoring_backtest_rejects_invalid_initial_capital(
-    tmp_path, initial_capital_usd
-) -> None:
+def test_authoring_backtest_rejects_invalid_initial_capital(tmp_path, initial_capital_usd) -> None:
     spec_path = tmp_path / "spec.yaml"
     import yaml
 
