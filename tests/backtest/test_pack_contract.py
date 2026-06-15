@@ -78,7 +78,19 @@ def test_default_pack_artifact_paths_cover_manifest_keys() -> None:
     data_dir = Path("data")
     paths = default_pack_artifact_paths(data_dir)
 
-    assert set(paths).issubset(PACK_MANIFEST_ARTIFACT_KEYS)
+    assert set(paths) == set(PACK_MANIFEST_ARTIFACT_KEYS)
+    assert paths[BacktestArtifactKey.ADAPTER_SPIKE] == (
+        data_dir / "research/backtest_adapter_spike/strategy_backtest_adapter_spike.json"
+    )
+    assert paths[BacktestArtifactKey.BUNDLE_RESULT] == (
+        data_dir / "research/strategy_authoring_bundle_result.json"
+    )
+    assert paths[BacktestArtifactKey.RETURNS_SERIES] == (
+        data_dir / "research/backtest_metric_extension/strategy_backtest_returns.jsonl"
+    )
+    assert paths[BacktestArtifactKey.REPORT_RETURNS_SERIES] == (
+        data_dir / "research/backtest_report_extension/strategy_backtest_report_returns.jsonl"
+    )
     assert paths[BacktestArtifactKey.DATA_AVAILABILITY] == (
         data_dir / "research/backtest_data_availability/backtest_data_availability_ledger.json"
     )

@@ -155,6 +155,12 @@ def default_pack_artifact_paths(data_dir: Path) -> dict[str, Path]:
         BacktestArtifactKey.SUITE_RESULT: research_dir
         / "backtest_suite/strategy_backtest_suite_result.json",
         BacktestArtifactKey.SUITE_REPORT: reports_dir / "strategy_backtest_suite_report.md",
+        BacktestArtifactKey.ADAPTER_SPIKE: research_dir
+        / "backtest_adapter_spike/strategy_backtest_adapter_spike.json",
+        BacktestArtifactKey.ADAPTER_SPIKE_REPORT: reports_dir
+        / "strategy_backtest_adapter_spike_report.md",
+        BacktestArtifactKey.BUNDLE_RESULT: research_dir / "strategy_authoring_bundle_result.json",
+        BacktestArtifactKey.BUNDLE_REPORT: reports_dir / "strategy_authoring_bundle_report.md",
         BacktestArtifactKey.EXTERNAL_RESULT: research_dir
         / "backtest_external/strategy_backtest_external_result.json",
         BacktestArtifactKey.EXTERNAL_REPORT: reports_dir / "strategy_backtest_external_report.md",
@@ -166,10 +172,14 @@ def default_pack_artifact_paths(data_dir: Path) -> dict[str, Path]:
         / "backtest_metric_extension/strategy_backtest_metric_extension.json",
         BacktestArtifactKey.METRIC_EXTENSION_REPORT: reports_dir
         / "strategy_backtest_metric_extension_report.md",
+        BacktestArtifactKey.RETURNS_SERIES: research_dir
+        / "backtest_metric_extension/strategy_backtest_returns.jsonl",
         BacktestArtifactKey.REPORT_EXTENSION: research_dir
         / "backtest_report_extension/strategy_backtest_report_extension.json",
         BacktestArtifactKey.REPORT_EXTENSION_REPORT: reports_dir
         / "strategy_backtest_report_extension_report.md",
+        BacktestArtifactKey.REPORT_RETURNS_SERIES: research_dir
+        / "backtest_report_extension/strategy_backtest_report_returns.jsonl",
         BacktestArtifactKey.STRESS: research_dir / "backtest_stress/strategy_backtest_stress.json",
         BacktestArtifactKey.STRESS_REPORT: reports_dir / "strategy_backtest_stress_report.md",
         BacktestArtifactKey.REGIME_SPLIT: research_dir
