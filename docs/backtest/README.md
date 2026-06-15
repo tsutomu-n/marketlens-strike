@@ -74,6 +74,9 @@ Trade[XYZ] 専用 Python API surface は
 ## Archive
 
 採用前調査、古い `CURRENT_*`、完了済み計画、固定 sample は `docs/archive/backtest/` に移した。archive は判断履歴であり、current truth ではない。
+
+## Command Reference
+
 `strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML を読み、複数specと複数backtest条件を1コマンドで実行して suite result / report に集約します。標準例は `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の5手法を走らせ、suite result の `method_matrix` で手法別 run 数を確認できます。
 `strategy-backtest-adapter-spike` は外部 backtest / metrics / report OSS 候補と reference-only 候補の import / metadata / license risk を artifact 化します。`hftbacktest` は reference-only microstructure replay 候補であり、依存追加、外部engine実行、live order は行いません。
 `strategy-backtest-framework-smoke` は一時 `uv --with ...` 環境で `vectorbt`, `bt`, `quantstats`, `empyrical-reloaded` などの import 結果、version、license metadata、Requires-Python、採用分類を artifact 化します。この command 自体は repo dependency を変更しません。

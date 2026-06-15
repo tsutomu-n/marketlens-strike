@@ -70,11 +70,11 @@
 
 | Document | 作り直す理由 | 作り直し後の形 |
 |---|---|---|
-| `docs/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md` | 700行超で、current detail、過去 smoke、採用判断、実装前 scope、実装後補正が同居している | `BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` と `BACKTEST_FRAMEWORK_HISTORY_ARCHIVE.md` に分割 |
-| `docs/backtest/CURRENT_BACKTEST_PLAN_AND_FRAMEWORK_ROLES_2026-06-14.md` | 外部 framework 役割表として有用だが、実装前 plan と実装後補正が混ざる | `BACKTEST_FRAMEWORK_ROLES_CURRENT.md` として再構成し、reference-only / optional extra / future scope の3表にする |
-| `docs/backtest/BACKTEST_CAPABILITY_BEFORE_AFTER_UNIVERSITY_GUIDE_2026-06-15.md` | 実装前後比較としては役目を終えた。現在は「完了後」が現状 | `BACKTEST_CAPABILITY_UNIVERSITY_GUIDE_2026-06-15.md` として current-only に作り直す |
-| `docs/backtest/BACKTEST_PLACEHOLDER_OUTPUT_SAMPLE_2026-06-15.md` | placeholder sample と current artifact sample の境界が弱く、固定数値がすぐ古くなる | generated sample を作る script / command と、sample capture timestamp を明記した appendix にする |
-| `docs/backtest/BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md` | completion plan は完了済み計画としての価値はあるが、current operator doc ではない | `docs/archive/backtest/` へ移し、README からは historical plan としてリンクする |
+| `docs/archive/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md` | 700行超で、current detail、過去 smoke、採用判断、実装前 scope、実装後補正が同居している | archive 済み。current 技術正本は `BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` |
+| `docs/archive/backtest/CURRENT_BACKTEST_PLAN_AND_FRAMEWORK_ROLES_2026-06-14.md` | 外部 framework 役割表として有用だが、実装前 plan と実装後補正が混ざる | archive 済み。current 技術正本は `BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` |
+| `docs/archive/backtest/BACKTEST_CAPABILITY_BEFORE_AFTER_UNIVERSITY_GUIDE_2026-06-15.md` | 実装前後比較としては役目を終えた。現在は「完了後」が現状 | archive 済み。current-only 版は `BACKTEST_CAPABILITY_UNIVERSITY_GUIDE_2026-06-16.md` |
+| `docs/archive/backtest/BACKTEST_PLACEHOLDER_OUTPUT_SAMPLE_2026-06-15.md` | placeholder sample と current artifact sample の境界が弱く、固定数値がすぐ古くなる | archive 済み |
+| `docs/archive/backtest/BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md` | completion plan は完了済み計画としての価値はあるが、current operator doc ではない | archive 済み |
 
 ## 削除・アーカイブしてもよいドキュメント
 
@@ -82,12 +82,12 @@
 
 | Document | 推奨 | 理由 |
 |---|---|---|
-| `docs/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md` | archive | 初期 pivot 計画。現在は Strategy Authoring backtest と pack が実装済みで、operator 入口としては古い |
-| `docs/backtest/BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md` | archive | completion plan。完了済みなら current guide ではなく履歴 |
-| `docs/backtest/OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md` | archive | 採用前評価計画。現在は optional extras と reference-only contract が実装済み |
-| `docs/backtest/VECTORBT_ADOPTION_PLAN_2026-06-13.md` | archive | 採用計画としては完了済み。license decision memo があれば current には不要 |
-| `docs/backtest/BACKTEST_PLACEHOLDER_OUTPUT_SAMPLE_2026-06-15.md` | archive または regenerate | placeholder / fixed sample は current artifact とズレやすい |
-| `docs/backtest/METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md` | archive after summary extraction | decision memo としては残せるが、current execution guide ではない |
+| `docs/archive/backtest/BACKTEST_FIRST_VENUE_NEUTRAL_PIVOT_PLAN_2026-06-05.md` | archived | 初期 pivot 計画。現在は Strategy Authoring backtest と pack が実装済みで、operator 入口としては古い |
+| `docs/archive/backtest/BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md` | archived | completion plan。完了済みなら current guide ではなく履歴 |
+| `docs/archive/backtest/OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md` | archived | 採用前評価計画。現在は optional extras と reference-only contract が実装済み |
+| `docs/archive/backtest/VECTORBT_ADOPTION_PLAN_2026-06-13.md` | archived | 採用計画としては完了済み。license decision memo があれば current には不要 |
+| `docs/archive/backtest/BACKTEST_PLACEHOLDER_OUTPUT_SAMPLE_2026-06-15.md` | archived | placeholder / fixed sample は current artifact とズレやすい |
+| `docs/archive/backtest/METRICS_REPORT_OPTIONAL_EXTRAS_DECISION_2026-06-13.md` | archived | decision memo としては残せるが、current execution guide ではない |
 
 ## 残すべき主導線
 
