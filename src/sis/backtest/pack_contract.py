@@ -146,11 +146,10 @@ def default_pack_artifact_paths(data_dir: Path) -> dict[str, Path]:
     reports_dir = data_dir / "reports"
     research_dir = data_dir / "research"
     return {
-        BacktestArtifactKey.SIGNALS_PARQUET: data_dir / "strategy_signals.parquet",
-        BacktestArtifactKey.SIGNALS_JSONL: data_dir / "strategy_signals.jsonl",
-        BacktestArtifactKey.SIGNAL_MANIFEST: data_dir / "strategy_signal_manifest.json",
-        BacktestArtifactKey.BACKTEST_METRICS: research_dir
-        / "backtests/strategy_backtest_metrics.json",
+        BacktestArtifactKey.SIGNALS_PARQUET: research_dir / "strategy_signals.parquet",
+        BacktestArtifactKey.SIGNALS_JSONL: research_dir / "strategy_signals.jsonl",
+        BacktestArtifactKey.SIGNAL_MANIFEST: research_dir / "strategy_signal_manifest.json",
+        BacktestArtifactKey.BACKTEST_METRICS: research_dir / "strategy_backtest_metrics.json",
         BacktestArtifactKey.BACKTEST_REPORT: reports_dir / "strategy_backtest_report.md",
         BacktestArtifactKey.SUITE_RESULT: research_dir
         / "backtest_suite/strategy_backtest_suite_result.json",
