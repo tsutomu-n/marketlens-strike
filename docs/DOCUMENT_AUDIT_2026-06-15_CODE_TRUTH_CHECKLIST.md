@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_07:23 JST
-更新日: 2026-06-15_07:29 JST
+更新日: 2026-06-15_12:02 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-15
@@ -38,9 +38,11 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - [x] `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict check 一覧が、今回追加した current audit と NDX/QQQ venue suitability audit を含んでいなかった。
   - 修正: strict check 一覧を更新した。
 - [ ] `plan/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/` は README 上で implemented at HEAD と書いているが、`plan/README.md` ではまだ current plan 扱い。
-  - 修正案: `plan/README.md` では implemented historical plan に移す。
-- [ ] `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` と `plan/0609ここからの計画/03_venue_read_only_capability_probe/` は、`src/sis/venues/capabilities.py`, `docs/venues/bitget_hyperliquid_capability_gate.md`, `tests/test_venue_capabilities.py` の実装済み capability gate と役割が重なっている。
-  - 修正案: current implementation plan として残すなら、未実装差分を具体化する。差分がなければ implemented/superseded plan として archive 寄りに分類する。
+  - 修正済み: `plan/README.md` では implemented / historical に移した。
+- [x] `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` と `03_venue_read_only_capability_probe/` の扱いが曖昧だった。
+  - 追加確認: `02` は `src/sis/venues/capabilities.py`, `docs/venues/bitget_hyperliquid_capability_gate.md`, `tests/test_venue_capabilities.py` と focused tests で実装済み相当。
+  - 追加確認: `03` が要求する `src/sis/venues/read_only_probe.py`, `schemas/venue_read_only_probe_summary.v1.schema.json`, `venue-read-only-probe` CLI, `tests/test_venue_read_only_probe*.py`, `docs/venues/read_only_capability_probe.md` は存在しない。
+  - 修正済み: `plan/README.md` では `02` を implemented / historical、`03` を current unimplemented implementation handoff として分けた。
 - [ ] `plan/0610ここからの計画/01_grok_architecture_adoption_review/` は docs-only review plan としては有用だが、内部に Layer 2.4 が `REVISE_2_3` で止まる前提が残る。
   - 修正案: current architecture guidance ではなく historical external-review decision として扱う。
 
@@ -93,13 +95,13 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 現行コード・current state と食い違う記述がある。内容を直すか、historical と明記する。
 
 - [ ] `README.md`
-  - 古い内容: `README.md` は Layer 2.3/2.4 の default fixture が `REVISE_2_3` で止まると書いている。
+  - 古い内容: `README.md` は Layer 2.3/2.4 の default fixture が `REVISE_2_3` で止まると書いていた。
   - コード正本: `docs/CODE_STATUS.md` と `docs/CURRENT_STATE.md` は現行 default を `APPROVE_STRATEGY_LAB_EXPORT` とし、`src/sis/research/ndx/` / `tests/research/test_ndx_layer24_residual_validation.py` が Layer 2.4 gate を実装済み。
-  - 修正案: `README.md` の NDX Layer 2.4 説明と 2026-06-09 snapshot を、Layer 2.5-2.8 までの現行 flow に更新する。
+  - 修正済み: 2026-06-15_12:02 JST に Layer 2.5-2.8 flow、current local documentation snapshot、本チェックリストへの read-first link を追加した。
 - [ ] `plan/README.md`
-  - 古い内容: `plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/` と `plan/0611ここからの計画/*` を current implementation plan として扱っている。
+  - 古い内容: `plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/` と `plan/0611ここからの計画/*` を current implementation plan として扱っていた。
   - コード正本: `research-ndx-strategy-lab-export`, `research-ndx-paper-observation-gate`, `research-ndx-operator-promotion`, `research-ndx-paper-observation-review`, `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review` は CLI 登録済みで、対応 code/schema/tests/docs がある。
-  - 修正案: これらを implemented historical plan に移し、current plan は `BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md` の R0-R10 に寄せる。
+  - 修正済み: 2026-06-15_12:02 JST に implemented / historical と current unimplemented plan を分けた。
 - [ ] `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`
   - 古い内容: 2026-06-09 時点の監査として Layer 2.4 default を `REVISE_2_3`、current-doc count を 101、pytest pass count を 936 と記録している。
   - コード正本: 2026-06-15 時点の current-doc checker は 117 docs。現行 docs/code は Layer 2.4 default を `APPROVE_STRATEGY_LAB_EXPORT` と扱う。
@@ -182,9 +184,15 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - [ ] `plan/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`
   - 推奨: `plan/archive/` へ移動。
   - 理由: README 自体が implemented at HEAD と記録しており、current proof は code/schema/tests/CLI/docs。
+- [ ] `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`
+  - 推奨: `plan/archive/` へ移動。
+  - 理由: capability contract は `src/sis/venues/capabilities.py`, `docs/venues/bitget_hyperliquid_capability_gate.md`, `tests/test_venue_capabilities.py` で実装済み。focused tests も通る。
 - [ ] `plan/0610ここからの計画/01_grok_architecture_adoption_review/`
   - 推奨: historical docs-only review として archive または `plan/README.md` 上で historical に分類。
   - 理由: external suggestion review として有用だが、Layer 2.4 `REVISE_2_3` 前提が古い。
+- [ ] `plan/0609ここからの計画/03_venue_read_only_capability_probe/`
+  - 推奨: 削除・archive しない。current unimplemented plan として残す。
+  - 理由: 計画が要求する module/schema/CLI/tests/docs が現行コードに存在しない。
 - [ ] `資料/`
   - 推奨: active docs からは外し、必要なものだけ `docs/archive/` または `docs/algo/` に取り込む。
   - 理由: current-doc checker 対象外で、コード正本との同期保証がない。調査素材としては有用だが current requirements ではない。
@@ -194,8 +202,8 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 
 ## 先に直す順番
 
-1. [ ] `README.md` の Layer 2.4 / 2.5-2.8 current flow を修正する。
-2. [ ] `plan/README.md` の current implementation plan 分類を現行コードに合わせる。特に 0609/0610/0611 の実装済み plan を historical/superseded に分ける。
+1. [x] `README.md` の Layer 2.4 / 2.5-2.8 current flow を修正する。
+2. [x] `plan/README.md` の current implementation plan 分類を現行コードに合わせる。特に 0609/0610/0611 の実装済み plan を historical/superseded に分ける。
 3. [ ] `docs/DOCS_LINT_POLICY_2026-05-30.md` と `scripts/check_current_docs.py` の allowlist を今後も同期する。
 4. [ ] `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`, `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`, `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を historical と明記するか archive する。
 5. [ ] `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` の肥大化を分割計画に落とす。
@@ -206,4 +214,4 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - この調査では `./scripts/check` は実行していない。重い full gate は docs 分類保存には必須ではないが、archive / README 修正後は実行する。
 - `data/` 配下の runtime artifact は git-ignored であり、今回の分類では現 checkout の artifact freshness を正本にしていない。
 - `資料/` は素材量が多いため、個別ファイルの正誤までは未分類。current-doc checker 対象外として一括で archive / source material 扱いにした。
-- `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` と `plan/0609ここからの計画/03_venue_read_only_capability_probe/` は、完全実装済みか一部未実装かを task 単位ではまだ突合していない。次回 `plan/README.md` 修正時に `src/sis/venues/capabilities.py`, `src/sis/commands/execution_artifacts.py`, `tests/test_venue_capabilities.py`, `tests/test_execution_venue_*` と照合する。
+- `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` は実装済み相当、`plan/0609ここからの計画/03_venue_read_only_capability_probe/` は未実装 current plan として分類済み。未実装の `03` は削除・archive しない。

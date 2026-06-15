@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-11_23:57 JST
+更新日: 2026-06-15_12:02 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -15,34 +15,37 @@
 
 ## Current 2026-06-09 venue plans
 
-These are current implementation handoff plans until their code slices are
-implemented and reflected in `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md`.
+Only the read-only capability probe remains a current unimplemented plan in
+this group. Code, tests, schemas, CLI help, and docs are the source of truth.
+
+Implemented / historical:
 
 - `plan/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`
 - `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`
+
+Current unimplemented implementation handoff:
+
 - `plan/0609ここからの計画/03_venue_read_only_capability_probe/`
 
 ## Current 2026-06-10 review plans
 
-These are docs-only review or adoption plans. They do not authorize code,
-schema, dependency, paper, or live-execution changes by themselves.
+These are historical docs-only review or adoption plans. They do not authorize
+code, schema, dependency, paper, or live-execution changes by themselves.
 
 - [plan/0610ここからの計画/01_grok_architecture_adoption_review/README.md](0610ここからの計画/01_grok_architecture_adoption_review/README.md)
 
-## Current 2026-06-10 implementation plans
+## Historical 2026-06-10 implementation plans
 
-These are implementation handoff plans. They require code, schema, tests, CLI
-help, and docs to be changed and verified before they become current project
-truth.
+These implementation handoff plans have corresponding code, schema, tests, CLI
+help, and docs. Treat them as implementation history, not current status proof.
 
 - [plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/README.md](0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/README.md)
 
-## Current 2026-06-11 implementation plans
+## Historical 2026-06-11 implementation plans
 
-These are implementation handoff plans for the NDX paper-observation gate and
-the strategy lifecycle control plane. They require code, schema, tests, CLI
-help, and docs to be changed and verified before they become current project
-truth.
+These implementation handoff plans for the NDX paper-observation gate and the
+strategy lifecycle control plane have corresponding code, schema, tests, CLI
+help, and docs. Treat them as implementation history, not current status proof.
 
 - [plan/0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/README.md](0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/README.md)
 - [plan/0611ここからの計画/02_strategy_lifecycle_control_plane/README.md](0611ここからの計画/02_strategy_lifecycle_control_plane/README.md)
