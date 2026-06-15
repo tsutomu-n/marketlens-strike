@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-16_06:46 JST
+更新日: 2026-06-16_07:41 JST
 -->
 
 # Repo Capabilities Current
@@ -12,6 +12,16 @@
 現在できないことは、production live trading、wallet / signing / exchange write、backtest だけによる alpha / paper pass / live readiness の主張、Bitget / Hyperliquid production venue の正式 schema 対応、credentialed external API を暗黙に使う workflow である。
 
 この文書は、コード、CLI help、schema、current docs を正として、repo でできることを漏れなく読む入口にする。
+
+## 追加調査での補正
+
+この更新では、`uv run sis --help` の public command 一覧、`src/sis/cli.py` の command registration、`schemas/*.json`、`tests/`、既存 current docs を再確認した。
+
+補正した点:
+
+- Public CLI Command Catalog は `uv run sis --help` の public command と一致する。
+- 本文側で薄かった `research-dag-*`、`strategy-backtest-framework-run`、legacy `build-backtest`、Trade[XYZ] data cycle、historical archive quote normalization、market-session utility、Strategy Lifecycle docs、Algo / Strategy Factory docs、schema family の説明を補った。
+- `docs/strategy_lifecycle/` は current-docs 検査対象に追加した。
 
 ## 正本と検証方法
 
@@ -85,7 +95,26 @@ uv run python scripts/check_current_docs.py
 - `PaperIntentPreview` は paper-only。live order ではない。
 - Strategy Lab の tracked JSON Schema は interoperability guard で、詳細 validation は Pydantic model が正本。
 
-## 3. Strategy Authoring YAML
+## 3. Algo Strategy Docs / Strategy Factory
+
+できること:
+
+- `docs/algo/` で、戦略仮説、戦略部品、blueprint、実験準備、scorecard、validation playbook、source note index を読める。
+- `docs/algo/strategy_factory/` で、1戦略1枚の候補シート、reject taxonomy、backlog 台帳、gate review checklist、duplicate control、operator guide を使える。
+- これはコード実行 surface ではなく、Strategy Lab / Strategy Authoring に入れる前の設計・選別・記録のための文書 surface である。
+
+主要 docs:
+
+- [algo/README.md](algo/README.md)
+- [algo/strategy_factory/README.md](algo/strategy_factory/README.md)
+- [algo/RESEARCH_VALIDATION_PLAYBOOK.md](algo/RESEARCH_VALIDATION_PLAYBOOK.md)
+
+境界:
+
+- 外部メモや動画由来の勝率・利益主張は検証済み事実として扱わない。
+- 実弾運用ではなく、研究、設計、検証のための作業資料である。
+
+## 4. Strategy Authoring YAML
 
 できること:
 
@@ -126,7 +155,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-author-run --through backtest` は research / paper-only backtest であり、live order ではない。
 - `rules.sizing.notional_usd` は signal の想定 notional であり、backtest initial capital とは混ぜない。
 
-## 4. Backtest
+## 5. Backtest
 
 できること:
 
@@ -141,6 +170,8 @@ uv run python scripts/check_current_docs.py
 - `strategy-backtest-no-lookahead-diff` で future mutation replay と coverage / false-negative risk を記録できる。
 - `strategy-backtest-execution-sim` で paper-only order intents / fill events を作れる。
 - `strategy-backtest-assumption-ledger` と `strategy-backtest-trial-ledger` で仮定と試行履歴を残せる。
+- `strategy-backtest-framework-run` で optional extra の `vectorbt`, `bt`, `empyrical_reloaded`, `quantstats` runner / extension を明示 framework list から実行できる。
+- `build-backtest` で legacy bridge 系の backtest decision summary / decision log を作れる。
 - stress、regime split、rolling stability、benchmark relative を出せる。
 
 optional OSS:
@@ -168,6 +199,7 @@ reference-only / 採用前 contract:
 - `framework_run` は pack に入るが、pack completion の必須条件ではない。
 - pack validation `PASS` は alpha / paper pass / live readiness ではない。
 - HftBacktest / qstrader / PyBroker / skfolio / Riskfolio-Lib は dependency 追加前 contract まで。engine 実行ではない。
+- `build-backtest` は Trade[XYZ] pure backtest v0.1 や Strategy Authoring native backtest の入口ではなく、既存 bridge 系 command として読む。
 
 詳細:
 
@@ -175,7 +207,7 @@ reference-only / 採用前 contract:
 - [backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)
 - [backtest/OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md](backtest/OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md)
 
-## 5. Strategy Lifecycle / Paper Observation
+## 6. Strategy Lifecycle / Paper Observation
 
 できること:
 
@@ -190,15 +222,24 @@ reference-only / 採用前 contract:
 - `paper_observation_session_manifest.v1.schema.json`
 - `strategy_lifecycle_review.v1.schema.json`
 
+主要 docs:
+
+- [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
+- [strategy_lifecycle/TARGET_OPERATING_MODEL.md](strategy_lifecycle/TARGET_OPERATING_MODEL.md)
+- [strategy_lifecycle/PAPER_OBSERVATION_CYCLE.md](strategy_lifecycle/PAPER_OBSERVATION_CYCLE.md)
+- [strategy_lifecycle/LIVE_CANARY_PLAN_GATE.md](strategy_lifecycle/LIVE_CANARY_PLAN_GATE.md)
+
 境界:
 
 - lifecycle review は live order を許可しない。
 - `ELIGIBLE_FOR_LIVE_CANARY_PLAN` は live order 実行許可ではなく、別計画を書いてよい候補という意味。
+- `strategy-lifecycle-review` は `lifecycle-report` とは別物。前者は strategy promotion control plane、後者は operations / recovery report である。
 
-## 6. NDX Research Gates
+## 7. NDX / Research DAG Gates
 
 できること:
 
+- `research-dag-validate` と `research-dag-export` で core DAG YAML、variable inventory、counter DAG、data source registry を検証・export できる。
 - Layer 2.2 DAG foundation を local-only で validate / export できる。
 - Layer 2.2 manual review pack を作り、手動 review JSON を import し、exit gate を判定できる。
 - Layer 2.3 source resolve / feature panel / open-gap residual / diagnostics を fixture-first で作れる。
@@ -227,21 +268,24 @@ reference-only / 採用前 contract:
 
 境界:
 
+- `research-dag-*` は generic core DAG artifact の検証・export surface。NDX Layer 2.2 command 群とは分けて読む。
 - Layer 2.2 は manual review plumbing。feature panel、residual、backtest、paper/live order には直接接続しない。
 - Layer 2.4 approval は Layer 2.5 research-only export bridge の許可であり、alpha / backtest / paper / live readiness ではない。
 - Layer 2.5 export は research-only。valid Layer 2.6 / 2.7 evidence がない限り paper path では fail closed する。
 
-## 7. Trade[XYZ] Data / Venue Surface
+## 8. Trade[XYZ] Data / Venue Surface
 
 できること:
 
 - Trade[XYZ] probe を実行できる。
 - Trade[XYZ] quotes を収集し、summary / report を書ける。
+- `collect-trade-xyz-data-cycle` で registry refresh、quote collection、normalization、coverage / readiness / bundle 更新をまとめて実行できる。
 - WebSocket capture、WS quality、REST parity を作れる。
 - quotes を normalize できる。
 - quote coverage を build できる。
 - reference data、real market reference、signal candles、account fee を収集できる。
 - historical L2 archive、historical asset contexts archive、bulk archive preflight / execute / normalize を扱える。
+- `normalize-trade-xyz-historical-archive-quotes` で単体の historical L2 / asset context archive から raw quote rows を作り、必要なら normalized quotes を再構築できる。
 - funding history を収集し、funding events を history から build できる。
 - Trade[XYZ] data readiness を build できる。
 - Trade[XYZ] collection status と data bundle を作れる。
@@ -280,7 +324,7 @@ reference-only / 採用前 contract:
 - Trade[XYZ] pure backtest v0.1 は public CLI ではなく Python API surface。
 - 実 live order integration は opt-in safety surface 止まりで、標準 operator CLI には micro-live 実行 command を出していない。
 
-## 8. Real Market / Tracking / Alpaca
+## 9. Real Market / Tracking / Alpaca
 
 できること:
 
@@ -304,7 +348,7 @@ reference-only / 採用前 contract:
 - fresh live `status=pass` は市場時間中の fresh bar 取得で再確認が必要。
 - read-only provider connectivity は live trading readiness ではない。
 
-## 9. Execution / Paper / Read-Only Operations
+## 10. Execution / Paper / Read-Only Operations
 
 できること:
 
@@ -314,6 +358,7 @@ reference-only / 採用前 contract:
 - `bitget-demo-smoke` で local/mock-first Bitget demo smoke を実行できる。
 - `paper-step`, `paper-from-intents`, `paper-report`, `paper-operations-cycle` で paper operation artifact を扱える。
 - daemon manifest / dry-run / run、state export / restore、monitoring status、kill switch、schedule run、notification outbox を扱える。
+- `check-timeframe`, `market-session`, `next-live-window` で timeframe policy と market session / next recommended window を確認できる。
 
 主要 command:
 
@@ -345,6 +390,9 @@ reference-only / 採用前 contract:
 - `paper-from-intents`
 - `paper-report`
 - `paper-operations-cycle`
+- `check-timeframe`
+- `market-session`
+- `next-live-window`
 
 境界:
 
@@ -352,7 +400,7 @@ reference-only / 採用前 contract:
 - `bitget-demo-smoke` の `status=configured` は local env が揃った意味だけ。network / account / order submit / fill sync 成功ではない。
 - execution utility command が存在しても、production live trading ready ではない。
 
-## 10. Operations / Audit / Remediation
+## 11. Operations / Audit / Remediation
 
 できること:
 
@@ -410,7 +458,7 @@ reference-only / 採用前 contract:
 - `phase-gate-review` は read-only / paper gate の判断正本。production live trading ready の証明ではない。
 - operations artifacts は runtime state なので再生成が必要になる。
 
-## 11. Venue Policy / Suitability
+## 12. Venue Policy / Suitability
 
 できること:
 
@@ -424,7 +472,7 @@ reference-only / 採用前 contract:
 - `bitget_futures` と `hyperliquid_perp` は current `VenueId` ではない。
 - NDX/QQQ は research / backtest record として保持できるが、valid paper-observation evidence がない限り paper candidate / paper intent path で fail closed する。
 
-## 12. Schemas / Artifact Contracts
+## 13. Schemas / Artifact Contracts
 
 できること:
 
@@ -434,19 +482,18 @@ reference-only / 採用前 contract:
 
 主な schema families:
 
-- `strategy_*`
-- `strategy_backtest_*`
-- `ndx_*`
-- `layer_2_2_*`
-- `trade_xyz_*`
-- `paper_*`
-- `research_*`
+- Strategy Lab / lifecycle: `strategy_experiment_spec.v1`, `strategy_signal.v1`, `strategy_signal_manifest.v1`, `evaluation_plan.mls.v1`, `trial_record.v1`, `trade_candidate.v1`, `paper_candidate_pack.v1`, `promotion_decision.v1`, `paper_intent_preview.v1`, `strategy_lifecycle_review.v1`, `paper_observation_session_manifest.v1`
+- Strategy Authoring / Backtest: `strategy_authoring_*`, `strategy_backtest_*`, `backtest_data_availability_ledger.v1`
+- NDX / research gates: `ndx_*`, `layer_2_2_*`, `core_dag.v1`, `counter_dag.v1`, `llm_dag_review.v1`
+- Research protocol: `research_seed_registry.v1`, `research_scope.v1`, `research_variable_inventory.v1`, `research_temporal_availability.v1`, `research_causal_roles.v1`, `research_mechanism_parts.v1`
+- Market / venue / quote artifacts: `quote_log_v1`, `quote_log_v2`, `quote_log_v2.trade_xyz.strict`, `trade_xyz_*`, `instrument_registry*`, `cost_snapshot`, `fee_snapshot`, `funding_event`, `funding_history_event`, `session_calendar_snapshot`, `session_state_observation`
+- Snapshot / operations guard: `data_snapshot_manifest.v1`, `feature_snapshot_manifest.v1`, `go_no_go_report`
 
 境界:
 
 - tracked JSON Schema は薄い guard と interoperability 用。詳細 validation は `src/sis/` の Pydantic model / builder が正本。
 
-## 13. Tests / Quality Gates
+## 14. Tests / Quality Gates
 
 できること:
 
@@ -454,6 +501,7 @@ reference-only / 採用前 contract:
 - `tests/strategy_authoring` で authoring / backtest CLI bundle / module boundaries を検査できる。
 - `tests/research` で NDX / lifecycle / research gates を検査できる。
 - `tests/paper` で paper surfaces を検査できる。
+- `tests/test_cli_help_contract.py`, `tests/test_cli_smoke.py`, `tests/test_docs_current_truth.py` で CLI help / smoke / docs current-truth の drift を検査できる。
 - repo 全体は `./scripts/check` でまとめて検証できる。
 
 主要 test dirs:
@@ -674,10 +722,12 @@ reference-only / 採用前 contract:
 
 1. [CURRENT_STATE.md](CURRENT_STATE.md)
 2. [CODE_STATUS.md](CODE_STATUS.md)
-3. [backtest/README.md](backtest/README.md)
-4. [backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)
-5. [strategy_research_lab/README.md](strategy_research_lab/README.md)
-6. [strategy_research_lab/08_CURRENT_CAPABILITIES.md](strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-7. [research/ndx/README.md](research/ndx/README.md)
-8. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
-9. [ARCHITECTURE_AND_PHASES.md](ARCHITECTURE_AND_PHASES.md)
+3. [algo/README.md](algo/README.md)
+4. [strategy_research_lab/README.md](strategy_research_lab/README.md)
+5. [strategy_research_lab/08_CURRENT_CAPABILITIES.md](strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+6. [backtest/README.md](backtest/README.md)
+7. [backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)
+8. [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
+9. [research/ndx/README.md](research/ndx/README.md)
+10. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
+11. [ARCHITECTURE_AND_PHASES.md](ARCHITECTURE_AND_PHASES.md)
