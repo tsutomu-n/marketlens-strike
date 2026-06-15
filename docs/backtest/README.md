@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-15_19:17 JST
+更新日: 2026-06-15_20:13 JST
 -->
 
 # Backtest Docs
@@ -35,6 +35,9 @@
 現在の completion scope では実装しないが将来候補として残す Bitget / Hyperliquid schema widening、Coinalyze collector、live / wallet / signing、NautilusTrader / HftBacktest / Tardis / PyBroker / Qlib / FinRL / skfolio 採用、market impact / alpha / live readiness claim の扱いは
 [BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md](BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md)
 を見ます。
+OSS を使って backtest capability を現実的に増やすための最終実装計画は
+[OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md](OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md)
+を見ます。既存 optional extras の実行レーン強化、lookahead 検査強化、HftBacktest / qstrader / skfolio の dependency 追加前 contract を、目的・制約・対象ファイル・テスト方針・完了条件つきで定義しています。
 backtest system completion の目的、制約、対象ファイル、テスト方針、完了条件は
 [BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md](BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md)
 を見ます。
