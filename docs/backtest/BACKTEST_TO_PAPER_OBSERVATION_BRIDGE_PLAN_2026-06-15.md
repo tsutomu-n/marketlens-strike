@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_18:42 JST
-更新日: 2026-06-15_18:42 JST
+更新日: 2026-06-15_19:01 JST
 -->
 
 # Backtest To Paper Observation Bridge Plan
@@ -13,11 +13,15 @@
 
 この plan の完了条件は「paper observation を開始する」ではなく、「backtest pack のどの証拠が既存 lifecycle artifact のどこに入るか、入らないなら最小 adapter が必要かを決める」こと。
 
+2026-06-15_19:01 JST の BP0 追加調査では、既存 route がすでに `CONTINUE_PAPER_OBSERVATION` まで到達していることを確認した。詳細は
+[BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md](BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md)
+を見る。現時点で bridge adapter は必須ではない。
+
 ## 現在確認できた事実
 
 | 項目 | 現在の事実 | 根拠 |
 |---|---|---|
-| Backtest pack | pack は存在し、pack validation は `PASS` | `uv run sis strategy-backtest-artifact-summary` |
+| Backtest pack | `data/research/backtest_pack/strategy_backtest_pack.json` は存在し、pack validation は `PASS` | `uv run sis strategy-backtest-artifact-summary` |
 | Safety boundary | `paper_only=true`, `permits_live_order=false`, `wallet_used=false`, `exchange_write_used=false` | `strategy-backtest-artifact-summary` の `pack_validation` |
 | External framework policy | 標準 engine は `strategy_authoring_native`、完成線は `complete_without_locked_external_dependency` | `strategy-backtest-artifact-summary` の `external_framework_policy` |
 | Strategy Lifecycle | backtest acceptance、paper observation cycle、lifecycle review の CLI が実装済み | `uv run sis strategy-lifecycle-review --help`, `uv run sis strategy-paper-observation-cycle --help` |
@@ -65,7 +69,7 @@
 
 対象:
 
-- `data/research/backtest_pack/strategy_backtest_pack_manifest.json`
+- `data/research/backtest_pack/strategy_backtest_pack.json`
 - `data/research/backtest_pack/strategy_backtest_pack_validation.json`
 - `uv run sis strategy-backtest-artifact-summary`
 - `schemas/strategy_backtest_acceptance_decision.v1.schema.json`
@@ -199,3 +203,5 @@ BP0 だけを先に実行する。
 理由は単純で、現時点では paper observation gate が未実装なのではなく、完成済み backtest pack が既存 lifecycle のどの入力に対応するかが未整理だから。ここを飛ばすと、必要ない CLI / schema / gate を増やすリスクが高い。
 
 BP0 の結果で「既存 route で十分」と分かれば、実装は不要で operator recipe 更新だけでよい。逆に重要な証拠が落ちるなら、その時点で初めて BP2 の最小 bridge を作る。
+
+2026-06-15_19:01 JST 時点の BP0 結果では、既存 route で paper observation 継続判断までは十分である。pack validation を lifecycle の mandatory input に昇格したい場合だけ、BP2 を検討する。
