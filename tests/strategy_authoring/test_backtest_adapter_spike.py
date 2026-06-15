@@ -41,8 +41,19 @@ def test_build_backtest_adapter_spike_writes_dependency_free_artifacts(tmp_path)
         "empyrical_reloaded",
         "pyfolio_reloaded",
         "qstrader",
+        "nautilus_trader",
+        "freqtrade",
+        "qlib",
+        "finrl",
+        "skfolio",
     }
-    assert len(payload["candidates"]) == 9
+    reference_only = {
+        candidate["framework_id"]
+        for candidate in payload["candidates"]
+        if candidate["candidate_kind"] == "reference_only"
+    }
+    assert reference_only == {"nautilus_trader", "freqtrade", "qlib", "finrl", "skfolio"}
+    assert len(payload["candidates"]) == 14
     assert all(candidate["engine_run"] is False for candidate in payload["candidates"])
     assert all(candidate["dependency_added"] is False for candidate in payload["candidates"])
     assert payload["decision"]["selected_for_dependency_adoption"] is None

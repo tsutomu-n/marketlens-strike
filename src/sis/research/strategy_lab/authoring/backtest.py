@@ -531,6 +531,7 @@ def _walk_forward_eras(
                 "era": era,
                 "signal_count": era_frame.height,
                 "aggregate_metrics": summary["aggregate_metrics"],
+                "capital": summary["capital"],
                 "multi_leg_group_metrics": summary["multi_leg_group_metrics"],
                 "executed_count": summary.get("executed_count", 0),
             }

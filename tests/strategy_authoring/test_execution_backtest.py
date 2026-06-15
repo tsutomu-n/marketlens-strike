@@ -118,6 +118,88 @@ def test_authoring_partial_take_profit_and_position_weight_affect_backtest(
     assert 0 < metrics["summary"]["aggregate_metrics"]["total_return"] < 0.02
 
 
+def test_strategy_author_run_filters_signals_only_for_backtest_artifacts(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    rows = _feature_rows()
+    start = rows[1]["ts"]
+    end = rows[2]["ts"]
+    spec_path.write_text(
+        template_yaml().replace(
+            "backtest:\n",
+            "backtest:\n"
+            "  initial_capital_usd: 20000\n"
+            f"  evaluation_start_at: {start.isoformat()}\n"
+            f"  evaluation_end_at: {end.isoformat()}\n",
+        ),
+        encoding="utf-8",
+    )
+
+    signals_result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "signals"]
+    )
+
+    assert signals_result.exit_code == 0, signals_result.stdout
+    assert pl.read_parquet(data_dir / "research/strategy_signals.parquet").height == 3
+
+    backtest_result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert backtest_result.exit_code == 0, backtest_result.stdout
+    filtered = pl.read_parquet(data_dir / "research/strategy_signals.parquet")
+    assert filtered.height == 1
+    assert filtered.get_column("ts_signal").to_list() == [start]
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    summary = metrics["summary"]
+    capital = summary["capital"]
+    total_return = summary["aggregate_metrics"]["total_return"]
+    assert summary["source_signal_count"] == 3
+    assert summary["evaluation_signal_count"] == 1
+    assert summary["signals_considered"] == 1
+    assert capital["initial_capital_usd"] == 20000.0
+    assert capital["net_pnl_usd"] == pytest.approx(20000.0 * total_return)
+    assert capital["ending_equity_usd"] == pytest.approx(20000.0 + capital["net_pnl_usd"])
+
+
+def test_strategy_author_run_empty_evaluation_window_writes_failed_artifact(
+    tmp_path, monkeypatch
+) -> None:
+    data_dir = tmp_path / "data"
+    spec_path = tmp_path / "authoring.yaml"
+    monkeypatch.setenv("SIS_DATA_DIR", str(data_dir))
+    _write_data(data_dir)
+    spec_path.write_text(
+        template_yaml().replace(
+            "backtest:\n",
+            "backtest:\n"
+            "  evaluation_start_at: 2026-01-03T00:00:00+00:00\n"
+            "  evaluation_end_at: 2026-01-04T00:00:00+00:00\n",
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app, ["strategy-author-run", "--spec", str(spec_path), "--through", "backtest"]
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert pl.read_parquet(data_dir / "research/strategy_signals.parquet").height == 0
+    metrics = json.loads(
+        (data_dir / "research/strategy_backtest_metrics.json").read_text(encoding="utf-8")
+    )
+    assert metrics["summary"]["source_signal_count"] == 3
+    assert metrics["summary"]["evaluation_signal_count"] == 0
+    assert metrics["summary"]["aggregate_metrics"]["trade_count"] == 0
+    assert metrics["summary"]["backtest_passed"] is False
+
+
 def test_strategy_authoring_trailing_stop_can_exit_before_horizon(tmp_path, monkeypatch) -> None:
     data_dir = tmp_path / "data"
     spec_path = tmp_path / "authoring.yaml"

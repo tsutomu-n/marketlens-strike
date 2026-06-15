@@ -77,3 +77,81 @@ def test_strategy_lab_signal_adapter_avoids_legacy_csv(tmp_path) -> None:
     assert signals[0].side == "long"
     assert signals[0].stop_loss_bps == 150.0
     assert signals[0].take_profit_bps == 300.0
+
+
+def test_authoring_backtest_capital_and_evaluation_window_contract(tmp_path) -> None:
+    spec_path = tmp_path / "spec.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "backtest:\n",
+            "backtest:\n"
+            "  initial_capital_usd: 100\n"
+            "  evaluation_start_at: 2026-01-01T00:00:00+00:00\n"
+            "  evaluation_end_at: 2026-01-02T00:00:00+00:00\n",
+        ),
+        encoding="utf-8",
+    )
+
+    spec = load_authoring_spec(spec_path)
+
+    assert spec.backtest.initial_capital_usd == 100
+    assert spec.backtest.evaluation_start_at is not None
+    assert spec.backtest.evaluation_end_at is not None
+
+
+@pytest.mark.parametrize("initial_capital_usd", [99.99, 50000.01, "1000", True])
+def test_authoring_backtest_rejects_invalid_initial_capital(
+    tmp_path, initial_capital_usd
+) -> None:
+    spec_path = tmp_path / "spec.yaml"
+    import yaml
+
+    payload = yaml.safe_load(template_yaml())
+    payload["backtest"]["initial_capital_usd"] = initial_capital_usd
+    spec_path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+
+    with pytest.raises(Exception):
+        load_authoring_spec(spec_path)
+
+
+def test_authoring_backtest_rejects_invalid_evaluation_window(tmp_path) -> None:
+    spec_path = tmp_path / "spec.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "backtest:\n",
+            "backtest:\n"
+            "  evaluation_start_at: 2026-01-02T00:00:00+00:00\n"
+            "  evaluation_end_at: 2026-01-01T00:00:00+00:00\n",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(Exception):
+        load_authoring_spec(spec_path)
+
+
+def test_authoring_backtest_rejects_naive_evaluation_datetime(tmp_path) -> None:
+    spec_path = tmp_path / "spec.yaml"
+    spec_path.write_text(
+        template_yaml().replace(
+            "backtest:\n",
+            "backtest:\n"
+            "  evaluation_start_at: 2026-01-01T00:00:00\n"
+            "  evaluation_end_at: 2026-01-02T00:00:00+00:00\n",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(Exception):
+        load_authoring_spec(spec_path)
+
+
+def test_authoring_backtest_rejects_unknown_fields(tmp_path) -> None:
+    spec_path = tmp_path / "spec.yaml"
+    spec_path.write_text(
+        template_yaml().replace("backtest:\n", "backtest:\n  unknown_field: true\n"),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(Exception):
+        load_authoring_spec(spec_path)

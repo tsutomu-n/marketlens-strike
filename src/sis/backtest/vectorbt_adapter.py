@@ -180,6 +180,5 @@ def run_vectorbt_result(
             "cost_drag_bps": 0.0,
             "stale_rejected_count": None,
             "halt_rejected_count": None,
-            "initial_capital_usd": initial_capital_usd,
         },
     )

@@ -54,6 +54,7 @@ def _summarize_pack(payload: dict[str, Any]) -> dict[str, Any]:
         "suite_method_count": summary.get("suite_method_count"),
         "external_engine_run": summary.get("external_engine_run"),
         "comparison_id": summary.get("comparison_id"),
+        "capital": summary.get("capital") if isinstance(summary.get("capital"), dict) else None,
         "external_framework_policy": {
             "policy_id": policy.get("policy_id"),
             "standard_engine": policy.get("standard_engine"),
@@ -215,6 +216,7 @@ def _summarize_rolling_stability(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _summarize_comparison(payload: dict[str, Any]) -> dict[str, Any]:
     diagnostics = _summary_value(payload, "comparison_diagnostics")
+    native = _summary_value(payload, "native_result")
     threshold_failures = _list_value(diagnostics, "threshold_failures")
     weakest_eras = _list_value(diagnostics, "weakest_eras")
     suite_best_runs = _list_value(diagnostics, "suite_best_runs")
@@ -232,6 +234,7 @@ def _summarize_comparison(payload: dict[str, Any]) -> dict[str, Any]:
         "first_threshold_failure": threshold_failures[0] if threshold_failures else None,
         "first_weakest_era": weakest_eras[0] if weakest_eras else None,
         "first_suite_best_run": suite_best_runs[0] if suite_best_runs else None,
+        "capital": native.get("capital") if isinstance(native.get("capital"), dict) else None,
         "permits_live_order": payload.get("permits_live_order"),
         "wallet_used": payload.get("wallet_used"),
         "exchange_write_used": payload.get("exchange_write_used"),

@@ -42,6 +42,9 @@ def _native_result(metrics_payload: dict[str, Any]) -> dict[str, Any]:
     executed_summary = summary.get("executed_signal_summary")
     if not isinstance(executed_summary, dict):
         executed_summary = {}
+    capital = summary.get("capital")
+    if not isinstance(capital, dict):
+        capital = {}
     return {
         "engine_id": "strategy_authoring_native",
         "strategy_id": metrics_payload.get("strategy_id"),
@@ -57,6 +60,16 @@ def _native_result(metrics_payload: dict[str, Any]) -> dict[str, Any]:
         "win_rate": executed_summary.get("win_rate"),
         "avg_signal_return": executed_summary.get("avg_signal_return"),
         "total_notional_usd": executed_summary.get("total_notional_usd"),
+        "capital": _capital(capital),
+    }
+
+
+def _capital(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "initial_capital_usd": payload.get("initial_capital_usd"),
+        "net_pnl_usd": payload.get("net_pnl_usd"),
+        "ending_equity_usd": payload.get("ending_equity_usd"),
+        "max_drawdown_loss_usd": payload.get("max_drawdown_loss_usd"),
     }
 
 
@@ -88,6 +101,11 @@ def _variant_metrics(variant: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _summary_capital(summary: dict[str, Any]) -> dict[str, Any]:
+    capital = summary.get("capital")
+    return _capital(capital) if isinstance(capital, dict) else _capital({})
+
+
 def _method_results(metrics_payload: dict[str, Any]) -> list[dict[str, Any]]:
     summary = metrics_payload.get("summary")
     if not isinstance(summary, dict):
@@ -105,6 +123,7 @@ def _method_results(metrics_payload: dict[str, Any]) -> list[dict[str, Any]]:
             "signals_considered": summary.get("signals_considered"),
             "executed_count": summary.get("executed_count"),
             "blocked_count": summary.get("blocked_count"),
+            "capital": _summary_capital(summary),
             "metrics": _aggregate_metrics(summary),
         }
     ]
@@ -116,6 +135,7 @@ def _method_results(metrics_payload: dict[str, Any]) -> list[dict[str, Any]]:
                 "era": era.get("era"),
                 "signal_count": era.get("signal_count"),
                 "executed_count": era.get("executed_count"),
+                "capital": _summary_capital(era),
                 "metrics": _aggregate_metrics(era),
             }
             for era in eras
@@ -143,6 +163,7 @@ def _method_results(metrics_payload: dict[str, Any]) -> list[dict[str, Any]]:
                 "variant_id": variant.get("variant_id"),
                 "parameters": variant.get("parameters") if isinstance(variant, dict) else {},
                 "backtest_passed": variant.get("backtest_passed"),
+                "capital": _summary_capital(variant),
                 "metrics": _variant_metrics(variant),
             }
             for variant in optimizer.get("variants") or []
@@ -154,6 +175,7 @@ def _method_results(metrics_payload: dict[str, Any]) -> list[dict[str, Any]]:
                 "variant_id": best_variant.get("variant_id"),
                 "parameters": best_variant.get("parameters"),
                 "backtest_passed": best_variant.get("backtest_passed"),
+                "capital": _summary_capital(best_variant),
                 "metrics": _variant_metrics(best_variant),
             }
             if isinstance(best_variant, dict)
@@ -189,23 +211,28 @@ def _suite_run(run: dict[str, Any]) -> dict[str, Any]:
     backtest = run.get("backtest")
     if not isinstance(backtest, dict):
         backtest = {}
+    summary = run.get("summary")
+    if not isinstance(summary, dict):
+        summary = {}
     return {
         "run_id": run.get("run_id"),
         "case_id": run.get("case_id"),
         "strategy_id": run.get("strategy_id"),
         "signal_count": run.get("signal_count"),
+        "source_signal_count": run.get("source_signal_count"),
+        "evaluation_signal_count": run.get("evaluation_signal_count"),
         "method_id": run.get("method_id"),
         "method_type": run.get("method_type"),
         "base_method_id": run.get("base_method_id"),
         "resampling": run.get("resampling") if isinstance(run.get("resampling"), dict) else None,
-        "backtest_passed": (
-            run.get("summary", {}).get("backtest_passed")
-            if isinstance(run.get("summary"), dict)
-            else None
-        ),
+        "backtest_passed": summary.get("backtest_passed"),
         "split_method": backtest.get("split_method"),
         "era_unit": backtest.get("era_unit"),
         "label_horizon_minutes": backtest.get("label_horizon_minutes"),
+        "initial_capital_usd": backtest.get("initial_capital_usd"),
+        "evaluation_start_at": backtest.get("evaluation_start_at"),
+        "evaluation_end_at": backtest.get("evaluation_end_at"),
+        "capital": _summary_capital(summary),
         "metrics": _suite_run_metrics(run),
     }
 
@@ -608,6 +635,10 @@ def _write_report(path: Path, payload: dict[str, Any]) -> Path:
         f"- total_return: {native.get('total_return')}",
         f"- max_drawdown: {native.get('max_drawdown')}",
         f"- cost_drag_bps: {native.get('cost_drag_bps')}",
+        f"- initial_capital_usd: {native.get('capital', {}).get('initial_capital_usd')}",
+        f"- net_pnl_usd: {native.get('capital', {}).get('net_pnl_usd')}",
+        f"- ending_equity_usd: {native.get('capital', {}).get('ending_equity_usd')}",
+        f"- max_drawdown_loss_usd: {native.get('capital', {}).get('max_drawdown_loss_usd')}",
         "- permits_live_order: false",
         "- wallet_used: false",
         "- exchange_write_used: false",

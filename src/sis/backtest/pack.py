@@ -51,6 +51,8 @@ def write_strategy_backtest_pack_outputs(
 ) -> BacktestPackResult:
     artifact_rows = {name: artifact_row(path) for name, path in sorted(artifacts.items())}
     policy = external_framework_policy()
+    native_result = _dict_value(comparison_payload, "native_result")
+    capital = _dict_value(native_result, "capital")
     payload: dict[str, Any] = with_backtest_paper_only_boundary(
         {
             "schema_version": "strategy_backtest_pack.v1",
@@ -66,6 +68,7 @@ def write_strategy_backtest_pack_outputs(
                 "external_engine_run": external_payload.get("external_engine_run"),
                 "external_result_count": len(external_payload.get("results") or []),
                 "comparison_id": comparison_payload.get("comparison_id"),
+                "capital": capital,
             },
             "external_framework_policy": policy,
             "artifacts": artifact_rows,
@@ -84,6 +87,10 @@ def write_strategy_backtest_pack_outputs(
         f"- suite_run_count: {payload['summary']['suite_run_count']}",
         f"- suite_method_count: {payload['summary']['suite_method_count']}",
         f"- external_engine_run: {payload['summary']['external_engine_run']}",
+        f"- initial_capital_usd: {capital.get('initial_capital_usd')}",
+        f"- net_pnl_usd: {capital.get('net_pnl_usd')}",
+        f"- ending_equity_usd: {capital.get('ending_equity_usd')}",
+        f"- max_drawdown_loss_usd: {capital.get('max_drawdown_loss_usd')}",
         f"- external_framework_policy: {policy['policy_id']}",
         f"- external_framework_decision: {policy['decision']}",
         "- locked_dependency_added: false",

@@ -168,7 +168,8 @@
         "cost_drag_bps": {"type": ["number", "null"]},
         "win_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
         "avg_signal_return": {"type": ["number", "null"]},
-        "total_notional_usd": {"type": ["number", "null"], "minimum": 0}
+        "total_notional_usd": {"type": ["number", "null"], "minimum": 0},
+        "capital": {"$ref": "#/$defs/capital_metrics"}
       },
       "additionalProperties": false
     },
@@ -319,6 +320,22 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "capital_metrics": {
+      "type": "object",
+      "required": [
+        "initial_capital_usd",
+        "net_pnl_usd",
+        "ending_equity_usd",
+        "max_drawdown_loss_usd"
+      ],
+      "properties": {
+        "initial_capital_usd": {"type": ["number", "null"], "minimum": 100},
+        "net_pnl_usd": {"type": ["number", "null"]},
+        "ending_equity_usd": {"type": ["number", "null"]},
+        "max_drawdown_loss_usd": {"type": ["number", "null"], "minimum": 0}
+      },
+      "additionalProperties": false
+    },
     "method_metrics": {
       "type": "object",
       "required": [
@@ -346,6 +363,7 @@
         "era": {"type": ["string", "null"]},
         "signal_count": {"type": ["integer", "null"], "minimum": 0},
         "executed_count": {"type": ["integer", "null"], "minimum": 0},
+        "capital": {"$ref": "#/$defs/capital_metrics"},
         "metrics": {"$ref": "#/$defs/method_metrics"}
       },
       "additionalProperties": false
@@ -357,6 +375,7 @@
         "variant_id": {"type": ["string", "null"]},
         "parameters": {"type": ["object", "null"]},
         "backtest_passed": {"type": ["boolean", "null"]},
+        "capital": {"$ref": "#/$defs/capital_metrics"},
         "metrics": {"$ref": "#/$defs/method_metrics"}
       },
       "additionalProperties": false
@@ -395,6 +414,7 @@
         "signals_considered": {"type": ["integer", "null"], "minimum": 0},
         "executed_count": {"type": ["integer", "null"], "minimum": 0},
         "blocked_count": {"type": ["integer", "null"], "minimum": 0},
+        "capital": {"$ref": "#/$defs/capital_metrics"},
         "era_count": {"type": ["integer", "null"], "minimum": 0},
         "eras": {
           "type": "array",
@@ -475,6 +495,8 @@
         "case_id": {"type": ["string", "null"]},
         "strategy_id": {"type": ["string", "null"]},
         "signal_count": {"type": ["integer", "null"], "minimum": 0},
+        "source_signal_count": {"type": ["integer", "null"], "minimum": 0},
+        "evaluation_signal_count": {"type": ["integer", "null"], "minimum": 0},
         "method_id": {"type": ["string", "null"]},
         "method_type": {"type": ["string", "null"]},
         "base_method_id": {"type": ["string", "null"]},
@@ -494,6 +516,10 @@
           "enum": ["trading_day", "week", "month", null]
         },
         "label_horizon_minutes": {"type": ["integer", "null"], "minimum": 1},
+        "initial_capital_usd": {"type": ["number", "null"], "minimum": 100},
+        "evaluation_start_at": {"type": ["string", "null"]},
+        "evaluation_end_at": {"type": ["string", "null"]},
+        "capital": {"$ref": "#/$defs/capital_metrics"},
         "metrics": {"$ref": "#/$defs/method_metrics"}
       },
       "additionalProperties": false
@@ -722,11 +748,16 @@
             "empyrical_reloaded",
             "pyfolio_reloaded",
             "qstrader",
+            "nautilus_trader",
+            "freqtrade",
+            "qlib",
+            "finrl",
+            "skfolio",
             null
           ]
         },
         "adapter_role": {"type": ["string", "null"]},
-        "status": {"enum": ["installed", "not_installed", null]},
+        "status": {"enum": ["installed", "not_installed", "reference_only", null]},
         "version": {"type": ["string", "null"]},
         "adoption_status": {
           "type": ["string", "null"],
@@ -735,6 +766,7 @@
             "requires_temporary_install_spike",
             "blocked_pending_install_spike",
             "blocked_pending_license_review",
+            "reference_only",
             null
           ]
         },

@@ -37,7 +37,8 @@
         "suite_methods",
         "external_engine_run",
         "external_result_count",
-        "comparison_id"
+        "comparison_id",
+        "capital"
       ],
       "properties": {
         "suite_run_count": {"type": ["integer", "null"], "minimum": 0},
@@ -52,6 +53,22 @@
         "comparison_id": {
           "type": ["string", "null"],
           "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "capital": {
+          "type": "object",
+          "required": [
+            "initial_capital_usd",
+            "net_pnl_usd",
+            "ending_equity_usd",
+            "max_drawdown_loss_usd"
+          ],
+          "properties": {
+            "initial_capital_usd": {"type": ["number", "null"], "minimum": 100},
+            "net_pnl_usd": {"type": ["number", "null"]},
+            "ending_equity_usd": {"type": ["number", "null"]},
+            "max_drawdown_loss_usd": {"type": ["number", "null"], "minimum": 0}
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

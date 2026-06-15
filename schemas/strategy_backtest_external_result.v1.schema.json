@@ -12,6 +12,7 @@
     "source_quotes_path",
     "source_quotes_hash",
     "label_horizon_minutes",
+    "initial_capital_usd",
     "dependency_added",
     "external_engine_run",
     "permits_live_order",
@@ -36,6 +37,7 @@
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
     "label_horizon_minutes": {"type": "integer", "minimum": 1},
+    "initial_capital_usd": {"type": "number", "minimum": 100, "maximum": 50000},
     "dependency_added": {"const": false},
     "external_engine_run": {"type": "boolean"},
     "permits_live_order": {"const": false},

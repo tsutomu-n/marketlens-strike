@@ -30,6 +30,7 @@
         "type": "object",
         "required": [
           "framework_id",
+          "candidate_kind",
           "module",
           "distribution",
           "adapter_role",
@@ -54,13 +55,19 @@
               "quantstats",
               "empyrical_reloaded",
               "pyfolio_reloaded",
-              "qstrader"
+              "qstrader",
+              "nautilus_trader",
+              "freqtrade",
+              "qlib",
+              "finrl",
+              "skfolio"
             ]
           },
+          "candidate_kind": {"enum": ["optional_runner", "reference_only"]},
           "module": {"type": "string"},
           "distribution": {"type": "string"},
           "adapter_role": {"type": "string"},
-          "status": {"enum": ["installed", "not_installed"]},
+          "status": {"enum": ["installed", "not_installed", "reference_only"]},
           "version": {"type": ["string", "null"]},
           "license": {"type": ["string", "null"]},
           "requires_python": {"type": ["string", "null"]},
@@ -71,7 +78,8 @@
               "metadata_review_required",
               "requires_temporary_install_spike",
               "blocked_pending_install_spike",
-              "blocked_pending_license_review"
+              "blocked_pending_license_review",
+              "reference_only"
             ]
           },
           "adoption_blockers": {"type": "array", "items": {"type": "string"}},
