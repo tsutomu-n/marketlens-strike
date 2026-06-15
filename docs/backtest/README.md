@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-15_20:13 JST
+更新日: 2026-06-15_20:31 JST
 -->
 
 # Backtest Docs
@@ -37,7 +37,7 @@
 を見ます。
 OSS を使って backtest capability を現実的に増やすための最終実装計画は
 [OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md](OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md)
-を見ます。既存 optional extras の実行レーン強化、lookahead 検査強化、HftBacktest / qstrader / skfolio の dependency 追加前 contract を、目的・制約・対象ファイル・テスト方針・完了条件つきで定義しています。
+を見ます。既存 optional extras の実行レーン強化、lookahead 検査強化、HftBacktest / qstrader / skfolio / Riskfolio-Lib / PyBroker の dependency 追加前 contract と、制約を破る価値が大きい場合の Constraint Breaker Gate を、目的・制約・対象ファイル・テスト方針・完了条件つきで定義しています。
 backtest system completion の目的、制約、対象ファイル、テスト方針、完了条件は
 [BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md](BACKTEST_SYSTEM_COMPLETION_PLAN_2026-06-14.md)
 を見ます。
