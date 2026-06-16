@@ -108,3 +108,11 @@ def test_strategy_review_id_rejects_path_segments() -> None:
         payload["review_id"] = review_id
         with pytest.raises(ValidationError):
             StrategyReviewManifest.model_validate(payload)
+
+
+def test_strategy_review_id_schema_and_model_accept_regex_valid_dotted_id() -> None:
+    payload = _valid_manifest()
+    payload["review_id"] = "foo..bar"
+
+    Draft202012Validator(_schema()).validate(payload)
+    StrategyReviewManifest.model_validate(payload)

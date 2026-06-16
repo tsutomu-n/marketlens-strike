@@ -106,6 +106,4 @@ class StrategyReviewManifest(BaseModel):
     def validate_review_id(cls, value: str) -> str:
         if not REVIEW_ID_PATTERN.fullmatch(value):
             raise ValueError("review_id must match ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
-        if "/" in value or "\\" in value or value.startswith(".") or ".." in value:
-            raise ValueError("review_id must be a single safe path segment")
         return value

@@ -117,3 +117,33 @@ def test_strategy_review_build_cli_rejects_bad_review_id(tmp_path: Path) -> None
 
     assert result.exit_code == 2
     assert "review_id" in result.stdout
+
+
+def test_strategy_review_build_cli_invalid_json_exits_two_with_manifest(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path)
+    pack_path.write_text("{not-json", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "strategy-review-build",
+            "--review-id",
+            "invalid-json",
+            "--out",
+            str(tmp_path / "data/strategy_reviews"),
+            "--pack-path",
+            str(pack_path),
+            "--validation-path",
+            str(validation_path),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "review_status=INVALID_INPUT" in result.stdout
+    manifest_path = tmp_path / "data/strategy_reviews/invalid-json/review_manifest.json"
+    assert json.loads(manifest_path.read_text(encoding="utf-8"))["review_status"] == (
+        "INVALID_INPUT"
+    )

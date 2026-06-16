@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from jsonschema import Draft202012Validator
+
 from sis.strategy_review.service import (
     StrategyReviewOutputExistsError,
     build_strategy_review,
@@ -10,6 +12,14 @@ from sis.strategy_review.service import (
 
 
 CREATED_AT = "2026-06-16T09:00:00Z"
+
+
+def _manifest_schema() -> dict:
+    return json.loads(
+        (
+            Path(__file__).resolve().parents[2] / "schemas/strategy_review_manifest.v1.schema.json"
+        ).read_text(encoding="utf-8")
+    )
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -106,6 +116,10 @@ def test_build_strategy_review_missing_required_artifact_is_incomplete(
     assert result.manifest.review_status.value == "INCOMPLETE_ARTIFACTS"
     assert result.manifest.summary.missing_required_count == 2
     assert result.review_markdown_path.exists()
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_manifest_schema()).validate(payload)
+    pack = next(row for row in payload["source_artifacts"] if row["artifact_key"] == "pack")
+    assert "sha256" not in pack
 
 
 def test_build_strategy_review_detects_boundary_violation(tmp_path: Path, monkeypatch) -> None:
@@ -122,6 +136,41 @@ def test_build_strategy_review_detects_boundary_violation(tmp_path: Path, monkey
 
     assert result.manifest.review_status.value == "BLOCKED_BOUNDARY_VIOLATION"
     assert result.manifest.summary.boundary_violation_count == 1
+
+
+def test_build_strategy_review_invalid_required_json_is_invalid_input(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path)
+    pack_path.write_text("{not-json", encoding="utf-8")
+
+    result = build_strategy_review(
+        review_id="invalid-pack",
+        out_dir=tmp_path / "data/strategy_reviews",
+        pack_path=pack_path,
+        validation_path=validation_path,
+        created_at=CREATED_AT,
+    )
+
+    assert result.manifest.review_status.value == "INVALID_INPUT"
+    assert result.manifest.summary.invalid_required_count == 1
+    pack = next(
+        artifact for artifact in result.manifest.source_artifacts if artifact.artifact_key == "pack"
+    )
+    validation = next(
+        artifact
+        for artifact in result.manifest.source_artifacts
+        if artifact.artifact_key == "pack_validation"
+    )
+    assert pack.exists is True
+    assert pack.status.value == "invalid"
+    assert "error" in pack.summary
+    assert validation.status.value == "present"
+    assert "error" not in validation.summary
+    assert "summary_unavailable_due_to" in validation.summary
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_manifest_schema()).validate(payload)
 
 
 def test_build_strategy_review_refuses_existing_output_without_replace(

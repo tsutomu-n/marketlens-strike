@@ -145,6 +145,52 @@ def _artifact_from_summary(artifact_key: str, row: dict[str, Any]) -> SourceArti
     )
 
 
+def _artifact_from_path_after_summary_error(
+    artifact_key: str,
+    path: Path,
+    *,
+    error: Exception,
+) -> SourceArtifact:
+    required = artifact_key in REQUIRED_ARTIFACT_KEYS
+    exists = path.exists()
+    if not exists:
+        return SourceArtifact(
+            artifact_key=artifact_key,
+            path=repo_relative_path(path),
+            exists=False,
+            required=required,
+            status=SourceArtifactStatus.MISSING,
+            summary={},
+        )
+    summary: dict[str, Any] = {}
+    try:
+        payload = read_source_json(path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        summary["error"] = str(exc)
+        return SourceArtifact(
+            artifact_key=artifact_key,
+            path=repo_relative_path(path),
+            exists=True,
+            required=required,
+            status=SourceArtifactStatus.INVALID,
+            summary=summary,
+        )
+
+    violations = boundary_true_paths(payload)
+    if violations:
+        summary["boundary_violations"] = violations
+    summary["summary_unavailable_due_to"] = str(error)
+    return SourceArtifact(
+        artifact_key=artifact_key,
+        path=repo_relative_path(path),
+        exists=True,
+        required=required,
+        status=SourceArtifactStatus.PRESENT,
+        sha256=source_hash(path),
+        summary=summary,
+    )
+
+
 def _build_manifest(
     *,
     review_id: str,
@@ -168,9 +214,12 @@ def _build_manifest(
     boundary_violation_count = sum(
         len(artifact.summary.get("boundary_violations", [])) for artifact in source_artifacts
     )
+    invalid_artifact_count = sum(
+        1 for artifact in source_artifacts if artifact.status is SourceArtifactStatus.INVALID
+    )
     if boundary_violation_count:
         review_status = ReviewStatus.BLOCKED_BOUNDARY_VIOLATION
-    elif invalid_required_count:
+    elif invalid_artifact_count:
         review_status = ReviewStatus.INVALID_INPUT
     elif missing_required_count:
         review_status = ReviewStatus.INCOMPLETE_ARTIFACTS
@@ -205,6 +254,14 @@ def _build_manifest(
             boundary_violation_count=boundary_violation_count,
         ),
     )
+
+
+def _manifest_json_payload(manifest: StrategyReviewManifest) -> dict[str, Any]:
+    payload = manifest.model_dump(mode="json")
+    for artifact in payload["source_artifacts"]:
+        if artifact.get("sha256") is None:
+            artifact.pop("sha256", None)
+    return payload
 
 
 def build_strategy_review(
@@ -259,15 +316,10 @@ def build_strategy_review(
         ]
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         source_artifacts = [
-            SourceArtifact(
-                artifact_key=spec.key,
-                path=repo_relative_path(paths[spec.path_field]),
-                exists=paths[spec.path_field].exists(),
-                required=spec.key in REQUIRED_ARTIFACT_KEYS,
-                status=SourceArtifactStatus.INVALID
-                if spec.key in REQUIRED_ARTIFACT_KEYS
-                else SourceArtifactStatus.MISSING,
-                summary={"error": str(exc)} if spec.key in REQUIRED_ARTIFACT_KEYS else {},
+            _artifact_from_path_after_summary_error(
+                spec.key,
+                paths[spec.path_field],
+                error=exc,
             )
             for spec in ARTIFACT_SUMMARY_SPECS
         ]
@@ -288,7 +340,7 @@ def build_strategy_review(
     review_markdown_path.write_text(render_strategy_review_markdown(manifest), encoding="utf-8")
     manifest_path.write_text(
         json.dumps(
-            manifest.model_dump(mode="json"),
+            _manifest_json_payload(manifest),
             ensure_ascii=False,
             indent=2,
             sort_keys=True,
