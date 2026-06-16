@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-16_06:46 JST
+更新日: 2026-06-17_01:26 JST
 -->
 
 # marketlens-strike
@@ -24,19 +24,22 @@ in a fresh checkout until commands are run.
 6. [docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md](docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md)
 7. [docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md](docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md)
 8. [docs/backtest/README.md](docs/backtest/README.md)
-9. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
-10. [docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md](docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md)
-11. [docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md](docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md)
-12. [docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md)
-13. [docs/venues/bitget_hyperliquid_capability_gate.md](docs/venues/bitget_hyperliquid_capability_gate.md)
-14. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
-15. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
-16. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-17. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-18. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-19. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
-20. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md) is a historical backtest update audit.
-21. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
+9. [docs/strategy_review/README.md](docs/strategy_review/README.md)
+10. [docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
+11. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
+12. [docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md](docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md)
+13. [docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md](docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md)
+14. [docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md)
+15. [docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md)
+16. [docs/venues/bitget_hyperliquid_capability_gate.md](docs/venues/bitget_hyperliquid_capability_gate.md)
+17. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
+18. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
+19. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+20. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+21. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+22. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+23. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md) is a historical backtest update audit.
+24. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
 
 ## Setup
 
@@ -118,6 +121,21 @@ uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_
 uv run sis strategy-author-train-model --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --target-column research_return_1d --feature-column research_return_4h --feature-column vix_level
 uv run sis strategy-author-bundle-run --bundle docs/strategy_research_lab/examples/multi_strategy_authoring_bundle.yaml
 ```
+
+Strategy review packet for human review:
+
+```bash
+uv run sis strategy-review-build \
+  --review-id local-review-001 \
+  --out data/strategy_reviews \
+  --pack-path data/research/backtest_pack/strategy_backtest_pack.json \
+  --validation-path data/research/backtest_pack/strategy_backtest_pack_validation.json \
+  --lifecycle-review data/research/strategy_lifecycle/strategy_lifecycle_review.json
+```
+
+This creates `review.md` and `review_manifest.json` for human review only. It
+does not prove alpha, paper readiness, live readiness, or paper execution
+permission. See [docs/strategy_review/README.md](docs/strategy_review/README.md).
 
 NDX Layer 2.2 local DAG foundation and review gate:
 
@@ -204,6 +222,9 @@ Strategy idea preparation starts at
 - `PaperIntentPreview` is paper-only. Do not convert it to live orders.
 - Trade[XYZ] pure backtest v0.1 is separate from `build-backtest` and Strategy
   Authoring fixed-horizon backtest.
+- `strategy-review-build` reads existing backtest / validation / optional
+  authoring / lifecycle artifacts and writes a human-review packet. It is not a
+  paper or live permission gate.
 - Strategy Lab runtime validation lives in Pydantic models; tracked JSON Schema files are thin guards for interoperability.
 - wallet secrets, signing, exchange writes, and production live trading remain out of scope.
 - `data/` is git-ignored runtime state.

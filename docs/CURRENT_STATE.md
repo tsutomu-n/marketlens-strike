@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-16_06:46 JST
+更新日: 2026-06-17_01:26 JST
 -->
 
 # Current State
@@ -16,6 +16,7 @@
 - `src/sis/venues/capabilities.py` は `bitget_futures` と `hyperliquid_perp` を known but schema-disabled / paper-disabled / network-disabled / live-disabled として固定する。`bitget_demo` は execution-venue schema では許可されるが、`evaluation_plan.mls.v1` の `target_venue` としてはまだ disabled。
 - Strategy Authoring baseline は外部 API なしの fixture seed で backtest まで通せる。
 - Strategy Lifecycle control plane は `strategy-backtest-acceptance`、`strategy-paper-observation-cycle`、`strategy-lifecycle-review` に実装済み。Backtest acceptance、fresh paper intent generation、session manifest / session ledger、NDX paper observation review、phase gate summary を local artifact で統合し、`REJECT_OR_REVISE` / `CONTINUE_RESEARCH` / `BACKTEST_ACCEPTED` / `CONTINUE_PAPER_OBSERVATION` / `CONTINUE_EXECUTION_READINESS` / `ELIGIBLE_FOR_LIVE_CANARY_PLAN` / `BLOCKED_BOUNDARY_VIOLATION` を出す。これは live order、wallet、exchange write を許可しない。`strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML から複数spec / 複数backtest case を実行し、suite result / report に集約し、標準例では `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の手法別 run 数を `method_matrix` に記録する。resampling case は実行済み signal return から deterministic bootstrap 分布を作り、`summary.resampling` に p05 / p50 / p95 / positive rate を残す。`strategy-backtest-stress`、`strategy-backtest-regime-split`、`strategy-backtest-rolling-stability`、`strategy-backtest-benchmark-relative` は paper-only robustness artifact を作る。`strategy-backtest-benchmark-relative` は row-level、明示 external series、quote-derived benchmark return を source hash 付きで扱える。`strategy-backtest-compare` は現行 backtest metrics を比較用 canonical artifact に正規化し、native overall / walk-forward era / optimizer sweep、suite result、adapter spike、external framework result、portfolio comparison、metric extension、report extension、stress、regime split、rolling stability、benchmark relative を同じ artifact に記録する。`strategy-backtest-pack` は標準 artifact chain を一括生成し、標準 engine は `strategy_authoring_native`、標準完成線は `complete_without_locked_external_dependency`、`external_adapters_required_for_completion=false` である。`vectorbt==1.0.0` は `vectorbt` optional extra、`bt==1.2.0` は `bt` optional extra、`empyrical-reloaded==0.5.12` は `metrics` optional extra、`quantstats==0.0.81` は `reports` optional extra として採用済みで、それぞれ `dependency_source=optional_extra_available` を artifact に記録する。`vectorbt` は `Apache 2.0 with Commons Clause` の license decision を owner 承認済みとして扱う。live 許可は出さない。
+- Strategy Review builder は `strategy-review-build` に実装済み。既存 backtest pack / validation / optional authoring spec / optional lifecycle review を読み、人間レビュー用の `review.md` と機械検証用の `review_manifest.json` を作る。これは alpha、paper readiness、live readiness、paper execution permission を証明しない。入口は `docs/strategy_review/README.md`、copy-paste 手順は `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md`。
 - Bitget demo local smoke は実装済み。ただし `status=configured` は local credential env が揃った意味だけで、Bitget network/account/order readiness ではない。
 - PR9a-PR12 の read-only smoke と P2 gate restore まで完了しており、phase gate は `READ_ONLY_GO` になり得る。
 - Trade[XYZ] 実データ readiness はまだ `NOT_READY`。現在の fail は `quote_coverage` だけで、known gap は `funding_events` と `oracle_timestamp_provenance` である。
@@ -72,6 +73,7 @@
 - Strategy Research Lab models and commands: `StrategyExperimentSpec`, `StrategySignalRecord`, `EvaluationPlan`, `TrialRecord`, `TradeCandidate`, `PaperCandidatePack`, `PromotionDecision`, `PaperIntentPreview`
 - Strategy authoring commands: `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-bundle-run`, `strategy-author-train-model`
 - Strategy backtest comparison, suite, adapter spike, optional framework adoption review, vectorbt license decision, external result, portfolio comparison, metric extension, report extension, stress, regime split, rolling stability, benchmark relative, pack, and pack validation commands/docs: `strategy-backtest-compare`, `strategy-backtest-suite`, `strategy-backtest-adapter-spike`, `docs/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md`, `docs/backtest/VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md`, `strategy-backtest-external-run`, `strategy-backtest-portfolio-compare`, `strategy-backtest-metric-extension`, `strategy-backtest-report-extension`, `strategy-backtest-stress`, `strategy-backtest-regime-split`, `strategy-backtest-rolling-stability`, `strategy-backtest-benchmark-relative`, `strategy-backtest-pack`, `strategy-backtest-pack-validate`
+- Strategy review packet builder: `strategy-review-build`, `src/sis/strategy_review/`, `schemas/strategy_review_manifest.v1.schema.json`, `tests/strategy_review/`, `docs/strategy_review/`
 - Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/` and `src/sis/research_protocol/`
 - venue suitability policy: `src/sis/venues/suitability.py` with `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp`; current schemas still accept only `trade_xyz` and `bitget_demo`
 - venue capability contract: `src/sis/venues/capabilities.py`; `bitget_futures` and `hyperliquid_perp` are known future venues but disabled for schema, paper, network, and live; `bitget_demo` is disabled for `evaluation_plan.mls.v1` target venue
@@ -94,6 +96,7 @@
 - NDX Layer 2.5 export 由来の `strategy_signals.parquet` は research-only artifact。`evaluate-strategy-lab` と `build-paper-candidate-pack` には渡せるが、valid な Layer 2.6/2.7 paper-observation evidence がない場合は `RESEARCH_ONLY_EXPORT_NOT_OPERATOR_PROMOTED` と venue suitability gate により paper candidate selection / `PaperIntentPreview` で fail closed する。
 - `PaperCandidatePack.selected_candidate_ids` は `status="candidate"`、空の `block_reasons`、venue-suitable の候補だけを受け入れる。NDX/QQQ の `trade_xyz` proxy は `VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION` で止まり、`bitget_demo` / future catalog venues では `VENUE_ASSET_UNIVERSE_MISMATCH` または operator-disabled 理由で止まる。
 - Backtest surface の読み分けは `docs/backtest/README.md` に記録する。Trade[XYZ] pure backtest、Strategy Authoring fixed-horizon backtest、legacy bridge を混同しない。
+- Strategy Review は existing artifact を読む human-review packet builder。`review_status=READY_FOR_HUMAN_REVIEW` や pack validation `PASS` を alpha、paper permission、live readiness と読まない。
 - Strategy Lab で今できることは `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` に記録する。わかりやすい HTML 版は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html`。現行では registered generator または `strategy-experiment-run --spec` から signal artifact を作り、threshold sweep、複数 selected signal の candidate 化、authoring YAML からの entry / hold / close / reduce / add / rebalance / long / short / derived features including true range, ATR, Bollinger bands, Donchian channels, Keltner channels, Ichimoku cloud, MACD line, stochastic K/D, ADX, OBV, volume z-score, calendar features, rolling correlation / beta / spread z-score / tracking error / information ratio, flow/carry/liquidity/options-vol, on-chain/sentiment/event/fundamental/factor-ranking, execution-constraint, data-quality/ensemble/capacity features, lag, return/log-return, rolling return/sum/volatility/percentile-rank/skew/kurtosis, annualized volatility, realized variance, downside volatility, Sharpe/Sortino-like ratios, Kelly fraction, historical VaR, expected shortfall, cumulative return, slope, mean-reversion score, EMA, RSI, and rolling min/max / column-to-column and cross/trend/consecutive condition / regime membership filter / regime-specific overrides / paper-only dynamic multi-leg with leg exit, order, execution overrides, group metadata, and group aggregate metrics / pair-trade signal / paper-only linear model score / train-model adapter / group-wise cross-sectional top-bottom and fraction-tail rotation with minimum candidates and score thresholds / opposite-signal exit / explicit close-signal exit / reduce-signal partial exit / add-signal scale-in / rebalance-signal exposure resize / rebalance band skip / bracket-OCO / partial-profit break-even lifecycle / order-style entry / time-in-force / post-only / reduce-only / execution-profile presets / slippage with row cost / partial-fill with row fill / min-fill gate with row threshold / spread gate / depth-based fill / latency gate / queue-position gate with row threshold / short-borrow availability/cost gate with row threshold / tax-drag-with-row-threshold / turnover-capacity-crowding-fee gate / stop-loss / take-profit / stop/target width guard / reward-risk gate / close-signal exit / partial exit / trailing stop with optional activation / minimum/maximum holding period with row thresholds / exit priority / sizing / grouped, group-net, row-level portfolio exposure, and global net portfolio exposure limits / portfolio turnover budget / data guard presets with row thresholds / risk throttle profiles with row thresholds and cooldown / volatility targeting / target-weight / inverse-vol / dollar-neutral / beta-neutral / group-neutral allocation / marker-aware, pyramiding-aware, and opposing-side position-state controls / multi-timeframe confirmation panels / temporal-cadence control / event-window calendar filters / parameter sweep / era metrics と executed_signal_summary と strategy_scorecard 付き fixed-horizon backtest、multi-strategy bundle / risk-parity allocation、paper-only preview まで進められる。
 - `PaperIntentPreview` は paper-only の仮注文意図。`live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false` を守り、live order として扱わない。
 - legacy `paper-step` は `data/research/signals.csv` 由来の NDX/QQQ family を paper order/fill に変換せず、`legacy_paper_blocked_count` と `legacy_paper_blocked_reason_counts` にブロックを記録する。
@@ -184,15 +187,17 @@ PR-08 専用確認:
 7. `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`
 8. `docs/backtest/README.md`
 9. `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`
-10. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
-11. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-12. `docs/strategy_research_lab/README.md`
-13. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
-14. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
-15. `docs/OPERATIONS_RUNBOOK.md`
-16. `docs/ARCHITECTURE_AND_PHASES.md`
-17. `docs/trade_xyz_bot_beginner_guide.html`
-18. `plan/README.md`
+10. `docs/strategy_review/README.md`
+11. `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md`
+12. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
+13. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+14. `docs/strategy_research_lab/README.md`
+15. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+16. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+17. `docs/OPERATIONS_RUNBOOK.md`
+18. `docs/ARCHITECTURE_AND_PHASES.md`
+19. `docs/trade_xyz_bot_beginner_guide.html`
+20. `plan/README.md`
 
 historical focused audit:
 
