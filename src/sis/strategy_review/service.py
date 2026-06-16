@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,20 +10,25 @@ from sis.backtest.artifact_summary import build_strategy_backtest_artifact_summa
 from sis.backtest.artifact_summary_registry import ARTIFACT_SUMMARY_SPECS
 from sis.research.strategy_lab.authoring.io import load_authoring_spec
 from sis.strategy_review.manifest import (
+    BuilderSafety,
     EvaluationFlags,
     ReviewPaths,
-    ReviewSafety,
     ReviewStatus,
     ReviewSummary,
+    SourceSafety,
+    SourceSafetyFlags,
+    SourceSafetyStatus,
     SourceArtifact,
     SourceArtifactStatus,
     StrategyReviewManifest,
 )
 from sis.strategy_review.provenance import (
     boundary_true_paths,
+    observed_boundary_flags,
     read_source_json,
     repo_relative_path,
     source_hash,
+    validate_review_id,
 )
 from sis.strategy_review.renderer import render_strategy_review_markdown
 from sis.strategy_review.sections import ReviewSection
@@ -136,7 +140,9 @@ def _artifact_from_summary(artifact_key: str, row: dict[str, Any]) -> SourceArti
     if exists:
         digest = source_hash(path)
         status = SourceArtifactStatus.PRESENT
-        violations = boundary_true_paths(read_source_json(path))
+        payload = read_source_json(path)
+        summary["observed_boundary_flags"] = observed_boundary_flags(payload)
+        violations = boundary_true_paths(payload)
         if violations:
             summary["boundary_violations"] = violations
     return SourceArtifact(
@@ -182,6 +188,7 @@ def _artifact_from_path_after_summary_error(
         )
 
     violations = boundary_true_paths(payload)
+    summary["observed_boundary_flags"] = observed_boundary_flags(payload)
     if violations:
         summary["boundary_violations"] = violations
     summary["summary_unavailable_due_to"] = str(error)
@@ -228,6 +235,7 @@ def _present_optional_artifact(
     payload: Any,
 ) -> SourceArtifact:
     violations = boundary_true_paths(payload)
+    summary["observed_boundary_flags"] = observed_boundary_flags(payload)
     if violations:
         summary = {**summary, "boundary_violations": violations}
     return SourceArtifact(
@@ -458,14 +466,42 @@ def _build_manifest(
     invalid_artifact_count = sum(
         1 for artifact in source_artifacts if artifact.status is SourceArtifactStatus.INVALID
     )
+    unknown_boundary_count = sum(
+        1
+        for artifact in source_artifacts
+        if artifact.required
+        and artifact.status in {SourceArtifactStatus.MISSING, SourceArtifactStatus.INVALID}
+    )
+    observed_flags = dict.fromkeys(
+        (
+            "permits_live_order",
+            "live_conversion_allowed",
+            "wallet_used",
+            "signing_used",
+            "exchange_write_used",
+            "venue_write_used",
+        ),
+        False,
+    )
+    for artifact in source_artifacts:
+        for key, value in artifact.summary.get("observed_boundary_flags", {}).items():
+            if key in observed_flags:
+                observed_flags[key] = bool(observed_flags[key] or value)
+
     if boundary_violation_count:
         review_status = ReviewStatus.BLOCKED_BOUNDARY_VIOLATION
+        source_safety_status = SourceSafetyStatus.BLOCKED
     elif invalid_artifact_count:
         review_status = ReviewStatus.INVALID_INPUT
+        source_safety_status = (
+            SourceSafetyStatus.UNKNOWN if unknown_boundary_count else SourceSafetyStatus.PASS
+        )
     elif missing_required_count:
         review_status = ReviewStatus.INCOMPLETE_ARTIFACTS
+        source_safety_status = SourceSafetyStatus.UNKNOWN
     else:
         review_status = ReviewStatus.READY_FOR_HUMAN_REVIEW
+        source_safety_status = SourceSafetyStatus.PASS
 
     pack_validation = next(
         (artifact for artifact in source_artifacts if artifact.artifact_key == "pack_validation"),
@@ -487,7 +523,13 @@ def _build_manifest(
             manifest_path=repo_relative_path(manifest_path),
         ),
         source_artifacts=source_artifacts,
-        safety=ReviewSafety(),
+        builder_safety=BuilderSafety(),
+        source_safety=SourceSafety(
+            status=source_safety_status,
+            boundary_violation_count=boundary_violation_count,
+            unknown_boundary_count=unknown_boundary_count,
+            observed_flags=SourceSafetyFlags(**observed_flags),
+        ),
         evaluation_flags=EvaluationFlags(pack_validation_status=pack_validation_status),
         summary=ReviewSummary(
             missing_required_count=missing_required_count,
@@ -517,28 +559,7 @@ def build_strategy_review(
     replace_existing: bool = False,
     created_at: datetime | str | None = None,
 ) -> StrategyReviewBuildResult:
-    # Validate review_id before it is used as a path segment.
-    StrategyReviewManifest.model_validate(
-        {
-            "review_id": review_id,
-            "created_at": _created_at_value(created_at),
-            "review_status": "INVALID_INPUT",
-            "strict": strict,
-            "paths": {
-                "review_dir": "data/strategy_reviews/placeholder",
-                "review_markdown_path": "data/strategy_reviews/placeholder/review.md",
-                "manifest_path": "data/strategy_reviews/placeholder/review_manifest.json",
-            },
-            "source_artifacts": [],
-            "safety": {},
-            "evaluation_flags": {},
-            "summary": {
-                "missing_required_count": 0,
-                "invalid_required_count": 0,
-                "boundary_violation_count": 0,
-            },
-        }
-    )
+    validate_review_id(review_id)
 
     review_dir = out_dir / review_id
     if review_dir.exists():
@@ -546,7 +567,6 @@ def build_strategy_review(
             raise StrategyReviewOutputExistsError(
                 f"strategy review output already exists: {repo_relative_path(review_dir)}"
             )
-        shutil.rmtree(review_dir)
 
     paths = _summary_paths(pack_path, validation_path)
     try:

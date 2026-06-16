@@ -33,14 +33,14 @@ def register_strategy_review_commands(app: typer.Typer) -> None:
             "--validation-path",
             help="Strategy backtest pack validation JSON.",
         ),
-        authoring_spec_path: Path | None = typer.Option(
+        authoring_spec: Path | None = typer.Option(
             None,
-            "--authoring-spec-path",
+            "--authoring-spec",
             help="Optional Strategy Authoring YAML spec. Defaults to pack spec_path when available.",
         ),
-        lifecycle_review_path: Path = typer.Option(
+        lifecycle_review: Path = typer.Option(
             Path("data/research/strategy_lifecycle/strategy_lifecycle_review.json"),
-            "--lifecycle-review-path",
+            "--lifecycle-review",
             help="Optional strategy lifecycle review JSON.",
         ),
         strict: bool = typer.Option(
@@ -50,7 +50,7 @@ def register_strategy_review_commands(app: typer.Typer) -> None:
         ),
         replace_existing: bool = typer.Option(
             False,
-            "--replace-existing",
+            "--replace-existing/--no-replace-existing",
             help="Replace an existing review output directory.",
         ),
     ) -> None:
@@ -62,13 +62,11 @@ def register_strategy_review_commands(app: typer.Typer) -> None:
                 pack_path=_resolve_workspace_path(pack_path, settings.data_dir),
                 validation_path=_resolve_workspace_path(validation_path, settings.data_dir),
                 authoring_spec_path=(
-                    _resolve_workspace_path(authoring_spec_path, settings.data_dir)
-                    if authoring_spec_path is not None
+                    _resolve_workspace_path(authoring_spec, settings.data_dir)
+                    if authoring_spec is not None
                     else None
                 ),
-                lifecycle_review_path=_resolve_workspace_path(
-                    lifecycle_review_path, settings.data_dir
-                ),
+                lifecycle_review_path=_resolve_workspace_path(lifecycle_review, settings.data_dir),
                 strict=strict,
                 replace_existing=replace_existing,
             )
@@ -82,9 +80,13 @@ def register_strategy_review_commands(app: typer.Typer) -> None:
             typer.echo(str(exc))
             raise typer.Exit(2) from exc
 
-        typer.echo(f"strategy_review={result.review_markdown_path.as_posix()}")
-        typer.echo(f"strategy_review_manifest={result.manifest_path.as_posix()}")
         typer.echo(f"review_status={result.manifest.review_status.value}")
+        typer.echo(f"review_dir={result.manifest.paths.review_dir}")
+        typer.echo(f"manifest_path={result.manifest.paths.manifest_path}")
+        typer.echo(f"markdown_path={result.manifest.paths.review_markdown_path}")
+        typer.echo(f"missing_required_count={result.manifest.summary.missing_required_count}")
+        typer.echo(f"invalid_required_count={result.manifest.summary.invalid_required_count}")
+        typer.echo(f"boundary_violation_count={result.manifest.summary.boundary_violation_count}")
         if result.manifest.review_status in {
             ReviewStatus.INVALID_INPUT,
             ReviewStatus.BLOCKED_BOUNDARY_VIOLATION,

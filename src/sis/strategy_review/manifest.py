@@ -25,6 +25,24 @@ class SourceArtifactStatus(StrEnum):
     INVALID = "invalid"
 
 
+class SourceSafetyStatus(StrEnum):
+    PASS = "PASS"
+    UNKNOWN = "UNKNOWN"
+    BLOCKED = "BLOCKED"
+
+
+def _validate_manifest_path(value: str) -> str:
+    if "\\" in value:
+        raise ValueError("manifest paths must use POSIX separators")
+    if value.startswith("/"):
+        raise ValueError("manifest paths must be repository-relative")
+    if any(part == ".." for part in value.split("/")):
+        raise ValueError("manifest paths must not contain ..")
+    if value in {"", "."}:
+        raise ValueError("manifest paths must not be empty")
+    return value
+
+
 class ReviewPaths(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -32,8 +50,13 @@ class ReviewPaths(BaseModel):
     review_markdown_path: str
     manifest_path: str
 
+    @field_validator("review_dir", "review_markdown_path", "manifest_path")
+    @classmethod
+    def validate_paths(cls, value: str) -> str:
+        return _validate_manifest_path(value)
 
-class ReviewSafety(BaseModel):
+
+class BuilderSafety(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     permits_live_order: Literal[False] = False
@@ -41,6 +64,37 @@ class ReviewSafety(BaseModel):
     wallet_used: Literal[False] = False
     signing_used: Literal[False] = False
     exchange_write_used: Literal[False] = False
+
+
+class SourceSafetyFlags(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    permits_live_order: bool = False
+    live_conversion_allowed: bool = False
+    wallet_used: bool = False
+    signing_used: bool = False
+    exchange_write_used: bool = False
+    venue_write_used: bool = False
+
+
+class SourceSafety(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: SourceSafetyStatus
+    boundary_violation_count: int = Field(ge=0)
+    unknown_boundary_count: int = Field(ge=0)
+    observed_flags: SourceSafetyFlags
+
+    @model_validator(mode="after")
+    def validate_counts(self) -> SourceSafety:
+        if self.status is SourceSafetyStatus.BLOCKED and self.boundary_violation_count < 1:
+            raise ValueError("BLOCKED source_safety requires boundary_violation_count >= 1")
+        if self.status is SourceSafetyStatus.UNKNOWN and self.unknown_boundary_count < 1:
+            raise ValueError("UNKNOWN source_safety requires unknown_boundary_count >= 1")
+        if self.status is SourceSafetyStatus.PASS:
+            if self.boundary_violation_count or self.unknown_boundary_count:
+                raise ValueError("PASS source_safety requires zero violation and unknown counts")
+        return self
 
 
 class EvaluationFlags(BaseModel):
@@ -68,6 +122,11 @@ class SourceArtifact(BaseModel):
     status: SourceArtifactStatus
     sha256: str | None = None
     summary: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("path")
+    @classmethod
+    def validate_path(cls, value: str) -> str:
+        return _validate_manifest_path(value)
 
     @field_validator("sha256")
     @classmethod
@@ -97,7 +156,8 @@ class StrategyReviewManifest(BaseModel):
     strict: bool
     paths: ReviewPaths
     source_artifacts: list[SourceArtifact]
-    safety: ReviewSafety
+    builder_safety: BuilderSafety
+    source_safety: SourceSafety
     evaluation_flags: EvaluationFlags
     summary: ReviewSummary
 
@@ -107,3 +167,26 @@ class StrategyReviewManifest(BaseModel):
         if not REVIEW_ID_PATTERN.fullmatch(value):
             raise ValueError("review_id must match ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
         return value
+
+    @model_validator(mode="after")
+    def validate_status_safety_relationship(self) -> StrategyReviewManifest:
+        if (
+            self.source_safety.status is SourceSafetyStatus.BLOCKED
+            and self.review_status is not ReviewStatus.BLOCKED_BOUNDARY_VIOLATION
+        ):
+            raise ValueError("BLOCKED source_safety requires BLOCKED_BOUNDARY_VIOLATION")
+        has_invalid_artifact = any(
+            artifact.status is SourceArtifactStatus.INVALID for artifact in self.source_artifacts
+        )
+        if (
+            self.source_safety.status is SourceSafetyStatus.UNKNOWN
+            and not has_invalid_artifact
+            and self.review_status is not ReviewStatus.INCOMPLETE_ARTIFACTS
+        ):
+            raise ValueError("UNKNOWN source_safety requires INCOMPLETE_ARTIFACTS")
+        if (
+            self.review_status is ReviewStatus.READY_FOR_HUMAN_REVIEW
+            and self.source_safety.status is not SourceSafetyStatus.PASS
+        ):
+            raise ValueError("READY_FOR_HUMAN_REVIEW requires PASS source_safety")
+        return self
