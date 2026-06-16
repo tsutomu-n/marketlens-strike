@@ -330,6 +330,20 @@ def _not_configured_strategy_definition_section() -> ReviewSection:
     )
 
 
+def _string_list_field(payload: dict[str, Any], field_name: str) -> list[str]:
+    value = payload.get(field_name)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f"{field_name} must be a list of strings")
+    return value
+
+
+def _object_field(payload: dict[str, Any], field_name: str) -> dict[str, Any]:
+    value = payload.get(field_name)
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be an object")
+    return value
+
+
 def _lifecycle_review_summary(path: Path) -> tuple[SourceArtifact, ReviewSection]:
     if not path.exists():
         return (
@@ -343,6 +357,10 @@ def _lifecycle_review_summary(path: Path) -> tuple[SourceArtifact, ReviewSection
         payload = read_source_json(path)
         if payload.get("schema_version") != "strategy_lifecycle_review.v1":
             raise ValueError("schema_version must be strategy_lifecycle_review.v1")
+        decision_reasons = _string_list_field(payload, "decision_reasons")
+        next_actions = _string_list_field(payload, "next_actions")
+        input_status = _object_field(payload, "input_status")
+        blocker_counts = _object_field(payload, "blocker_counts")
     except Exception as exc:
         return (
             _invalid_optional_artifact("lifecycle_review", path, exc),
@@ -354,10 +372,10 @@ def _lifecycle_review_summary(path: Path) -> tuple[SourceArtifact, ReviewSection
 
     summary = {
         "decision": payload.get("decision"),
-        "decision_reasons": payload.get("decision_reasons", []),
-        "next_actions": payload.get("next_actions", []),
-        "input_status": payload.get("input_status", {}),
-        "blocker_counts": payload.get("blocker_counts", {}),
+        "decision_reasons": decision_reasons,
+        "next_actions": next_actions,
+        "input_status": input_status,
+        "blocker_counts": blocker_counts,
         "permits_live_order": payload.get("permits_live_order"),
         "wallet_used": payload.get("wallet_used"),
         "venue_write_used": payload.get("venue_write_used"),

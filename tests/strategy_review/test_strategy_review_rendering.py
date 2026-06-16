@@ -52,8 +52,9 @@ def test_strategy_review_markdown_orders_strategy_before_backtest_summary(
     )
     text = result.review_markdown_path.read_text(encoding="utf-8")
 
-    assert text.index("## 2. 戦略定義") < text.index("## 3. Backtest Pack Summary")
-    assert text.index("## 3. Backtest Pack Summary") < text.index("## 4. Lifecycle Summary")
+    assert text.index("## 2. 戦略定義") < text.index("## 3. 入力artifact")
+    assert text.index("## 3. 入力artifact") < text.index("## 4. Backtest Pack Summary")
+    assert text.index("## 4. Backtest Pack Summary") < text.index("## 5. Lifecycle Summary")
     assert "decision: `CONTINUE_PAPER_OBSERVATION`" in text
     assert "next_actions: `Continue paper observation until thresholds are met.`" in text
     assert "pack_validation_pass_is_readiness_proof: `false`" in text

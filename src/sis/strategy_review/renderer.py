@@ -18,6 +18,8 @@ def render_strategy_review_markdown(
     sections: list[ReviewSection] | None = None,
 ) -> str:
     review_sections = sections or []
+    strategy_sections = [section for section in review_sections if section.title == "戦略定義"]
+    followup_sections = [section for section in review_sections if section.title != "戦略定義"]
     lines: list[str] = [
         f"# Strategy Review: {manifest.review_id}",
         "",
@@ -35,7 +37,7 @@ def render_strategy_review_markdown(
     ]
 
     section_number = 2
-    for section in review_sections:
+    for section in strategy_sections:
         lines.extend([f"## {section_number}. {section.title}", "", section.markdown.rstrip(), ""])
         section_number += 1
 
@@ -58,6 +60,10 @@ def render_strategy_review_markdown(
         )
     lines.append("")
     section_number += 1
+
+    for section in followup_sections:
+        lines.extend([f"## {section_number}. {section.title}", "", section.markdown.rstrip(), ""])
+        section_number += 1
 
     lines.extend(
         [

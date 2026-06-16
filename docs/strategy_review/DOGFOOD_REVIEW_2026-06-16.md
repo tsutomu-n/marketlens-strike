@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_20:09 JST
-更新日: 2026-06-16_20:09 JST
+更新日: 2026-06-16_20:25 JST
 -->
 
 # Strategy Review Dogfood Review 2026-06-16
@@ -9,7 +9,7 @@
 
 `strategy-review-build` を実 artifact と失敗系 fixture に当て、`review.md` が人間レビューの判断資料として読めることを確認した。
 
-今回の Dogfood で見つかった読みづらさは、PR-REVIEW-01 実装前に renderer を最小 hardening して解消した。具体的には、`review.md` の先頭側に戦略定義、Backtest Pack Summary、Lifecycle Summary を固定順で出し、`Missing / Invalid / Blocked (Needs Attention)` を明示した。
+今回の Dogfood で見つかった読みづらさは、PR-REVIEW-01 実装前に renderer を最小 hardening して解消した。具体的には、`review.md` の先頭側に戦略定義、入力 artifact、Backtest Pack Summary、Lifecycle Summary を固定順で出し、`Missing / Invalid / Blocked (Needs Attention)` を明示した。
 
 ## 実行結果
 
@@ -40,11 +40,11 @@
 - missing strict は manifest / markdown を書いたうえで exit 2。
 - boundary fixture は `BLOCKED_BOUNDARY_VIOLATION`。
 - `pack_validation_pass_is_readiness_proof=false` は manifest と markdown の両方で読める。
-- complete markdown は先頭から、戦略定義、pack 要約、lifecycle decision / next action、入力 artifact、境界、未解決点の順で読める。
+- complete markdown は先頭から、戦略定義、入力 artifact、pack 要約、lifecycle decision / next action、境界、未解決点の順で読める。
 
 ## 3分レビューで次に見る点
 
-complete の場合、人間はまず `戦略定義` で `strategy_id`、symbol binding、entry / hold / exit / sizing / backtest 設定を確認する。次に `Backtest Pack Summary` で pack と validation が present / PASS であることを確認する。最後に `Lifecycle Summary` の `decision=CONTINUE_PAPER_OBSERVATION` と `next_actions` を見て、次に paper observation を継続する判断資料として読む。
+complete の場合、人間はまず `戦略定義` で `strategy_id`、symbol binding、entry / hold / exit / sizing / backtest 設定を確認する。次に `入力artifact` で必須 artifact と optional artifact の status / hash を確認し、`Backtest Pack Summary` で pack と validation が present / PASS であることを確認する。最後に `Lifecycle Summary` の `decision=CONTINUE_PAPER_OBSERVATION` と `next_actions` を見て、次に paper observation を継続する判断資料として読む。
 
 missing / boundary の場合は、`Missing / Invalid / Blocked (Needs Attention)` の該当行を先に直す。`pack_validation PASS` は readiness proof ではないため、戦略評価や live 可否として読まない。
 

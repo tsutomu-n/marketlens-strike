@@ -356,6 +356,44 @@ def test_build_strategy_review_invalid_lifecycle_review_is_invalid_input(
     assert lifecycle.status.value == "invalid"
 
 
+def test_build_strategy_review_malformed_lifecycle_review_writes_invalid_manifest(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path)
+    lifecycle_path = tmp_path / "lifecycle.json"
+    _write_json(
+        lifecycle_path,
+        {
+            "schema_version": "strategy_lifecycle_review.v1",
+            "decision": "CONTINUE_PAPER_OBSERVATION",
+            "decision_reasons": "not-a-list",
+            "next_actions": ["Continue paper observation until thresholds are met."],
+            "input_status": {},
+            "blocker_counts": {},
+        },
+    )
+
+    result = build_strategy_review(
+        review_id="malformed-lifecycle",
+        out_dir=tmp_path / "data/strategy_reviews",
+        pack_path=pack_path,
+        validation_path=validation_path,
+        lifecycle_review_path=lifecycle_path,
+        created_at=CREATED_AT,
+    )
+
+    assert result.manifest.review_status.value == "INVALID_INPUT"
+    assert result.manifest_path.exists()
+    lifecycle = next(
+        artifact
+        for artifact in result.manifest.source_artifacts
+        if artifact.artifact_key == "lifecycle_review"
+    )
+    assert lifecycle.status.value == "invalid"
+    assert "decision_reasons" in lifecycle.summary["error"]
+
+
 def test_build_strategy_review_lifecycle_venue_write_boundary_blocks(
     tmp_path: Path, monkeypatch
 ) -> None:
