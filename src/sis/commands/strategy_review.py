@@ -33,6 +33,16 @@ def register_strategy_review_commands(app: typer.Typer) -> None:
             "--validation-path",
             help="Strategy backtest pack validation JSON.",
         ),
+        authoring_spec_path: Path | None = typer.Option(
+            None,
+            "--authoring-spec-path",
+            help="Optional Strategy Authoring YAML spec. Defaults to pack spec_path when available.",
+        ),
+        lifecycle_review_path: Path = typer.Option(
+            Path("data/research/strategy_lifecycle/strategy_lifecycle_review.json"),
+            "--lifecycle-review-path",
+            help="Optional strategy lifecycle review JSON.",
+        ),
         strict: bool = typer.Option(
             False,
             "--strict/--no-strict",
@@ -51,6 +61,14 @@ def register_strategy_review_commands(app: typer.Typer) -> None:
                 out_dir=_resolve_workspace_path(out, settings.data_dir),
                 pack_path=_resolve_workspace_path(pack_path, settings.data_dir),
                 validation_path=_resolve_workspace_path(validation_path, settings.data_dir),
+                authoring_spec_path=(
+                    _resolve_workspace_path(authoring_spec_path, settings.data_dir)
+                    if authoring_spec_path is not None
+                    else None
+                ),
+                lifecycle_review_path=_resolve_workspace_path(
+                    lifecycle_review_path, settings.data_dir
+                ),
                 strict=strict,
                 replace_existing=replace_existing,
             )

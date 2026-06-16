@@ -24,6 +24,8 @@ def test_strategy_review_build_help() -> None:
     assert "--no-strict" in stdout
     assert "--pack-path" in stdout
     assert "--validation-path" in stdout
+    assert "--authoring-spec-path" in stdout
+    assert "--lifecycle-review-path" in stdout
     assert "--replace-existing" in stdout
 
 

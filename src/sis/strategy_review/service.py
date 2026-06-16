@@ -9,6 +9,7 @@ from typing import Any
 
 from sis.backtest.artifact_summary import build_strategy_backtest_artifact_summary
 from sis.backtest.artifact_summary_registry import ARTIFACT_SUMMARY_SPECS
+from sis.research.strategy_lab.authoring.io import load_authoring_spec
 from sis.strategy_review.manifest import (
     EvaluationFlags,
     ReviewPaths,
@@ -26,6 +27,7 @@ from sis.strategy_review.provenance import (
     source_hash,
 )
 from sis.strategy_review.renderer import render_strategy_review_markdown
+from sis.strategy_review.sections import ReviewSection
 
 
 DEFAULT_BENCHMARK_RELATIVE_PATH = Path(
@@ -63,6 +65,9 @@ DEFAULT_EXECUTION_SIMULATION_PATH = Path(
     "data/research/backtest_execution_simulation/strategy_backtest_execution_simulation.json"
 )
 DEFAULT_COMPARISON_PATH = Path("data/research/backtest_compare/strategy_backtest_comparison.json")
+DEFAULT_LIFECYCLE_REVIEW_PATH = Path(
+    "data/research/strategy_lifecycle/strategy_lifecycle_review.json"
+)
 
 REQUIRED_ARTIFACT_KEYS = {"pack", "pack_validation"}
 
@@ -191,6 +196,224 @@ def _artifact_from_path_after_summary_error(
     )
 
 
+def _missing_optional_artifact(artifact_key: str, path: Path) -> SourceArtifact:
+    return SourceArtifact(
+        artifact_key=artifact_key,
+        path=repo_relative_path(path),
+        exists=False,
+        required=False,
+        status=SourceArtifactStatus.MISSING,
+        summary={},
+    )
+
+
+def _invalid_optional_artifact(
+    artifact_key: str, path: Path, error: Exception | str
+) -> SourceArtifact:
+    return SourceArtifact(
+        artifact_key=artifact_key,
+        path=repo_relative_path(path),
+        exists=True,
+        required=False,
+        status=SourceArtifactStatus.INVALID,
+        summary={"error": str(error)},
+    )
+
+
+def _present_optional_artifact(
+    artifact_key: str,
+    path: Path,
+    summary: dict[str, Any],
+    *,
+    payload: Any,
+) -> SourceArtifact:
+    violations = boundary_true_paths(payload)
+    if violations:
+        summary = {**summary, "boundary_violations": violations}
+    return SourceArtifact(
+        artifact_key=artifact_key,
+        path=repo_relative_path(path),
+        exists=True,
+        required=False,
+        status=SourceArtifactStatus.PRESENT,
+        sha256=source_hash(path),
+        summary=summary,
+    )
+
+
+def _condition_count(value: Any) -> int:
+    total = 0
+    for field_name in ("all", "any", "none"):
+        items = getattr(value, field_name, None)
+        if isinstance(items, list):
+            total += len(items)
+    return total
+
+
+def _configured_field_names(model: Any) -> list[str]:
+    if not hasattr(model, "model_dump"):
+        return []
+    values = model.model_dump(exclude_none=True, exclude_defaults=True)
+    return sorted(str(key) for key, value in values.items() if value not in (False, [], {}, None))
+
+
+def _strategy_definition_summary(path: Path) -> tuple[SourceArtifact, ReviewSection]:
+    try:
+        spec = load_authoring_spec(path)
+    except Exception as exc:
+        return (
+            _invalid_optional_artifact("authoring_spec", path, exc),
+            ReviewSection(
+                title="戦略定義",
+                markdown=f"- status: `invalid`\n- path: `{repo_relative_path(path)}`\n- error: `{exc}`",
+            ),
+        )
+
+    first_binding = spec.experiment.symbol_bindings[0]
+    exit_fields = _configured_field_names(spec.rules.exit)
+    summary: dict[str, Any] = {
+        "strategy_id": spec.experiment.strategy_id,
+        "strategy_family": spec.experiment.strategy_family,
+        "strategy_version": spec.experiment.strategy_version,
+        "execution_venue": first_binding.execution_venue,
+        "execution_symbol": first_binding.execution_symbol,
+        "real_market_symbol": first_binding.real_market_symbol,
+        "run_profile_id": spec.experiment.run_profile_id,
+        "side": spec.rules.side,
+        "timeframe": spec.rules.timeframe,
+        "entry_rule_count": _condition_count(spec.rules.entry),
+        "hold_rule_count": _condition_count(spec.rules.hold) if spec.rules.hold is not None else 0,
+        "exit_rule_fields": exit_fields,
+        "position_weight": spec.rules.sizing.position_weight,
+        "notional_usd": spec.rules.sizing.notional_usd,
+        "split_method": spec.backtest.split_method,
+        "label_horizon_minutes": spec.backtest.label_horizon_minutes,
+        "primary_metric": spec.backtest.primary_metric,
+    }
+    markdown = "\n".join(
+        [
+            "- status: `present`",
+            f"- strategy_id: `{summary['strategy_id']}`",
+            f"- strategy_family: `{summary['strategy_family']}`",
+            f"- strategy_version: `{summary['strategy_version']}`",
+            f"- execution_venue: `{summary['execution_venue']}`",
+            f"- execution_symbol: `{summary['execution_symbol']}`",
+            f"- real_market_symbol: `{summary['real_market_symbol']}`",
+            f"- run_profile_id: `{summary['run_profile_id']}`",
+            f"- side: `{summary['side']}`",
+            f"- timeframe: `{summary['timeframe']}`",
+            f"- entry_rule_count: `{summary['entry_rule_count']}`",
+            f"- hold_rule_count: `{summary['hold_rule_count']}`",
+            f"- exit_rule_fields: `{', '.join(exit_fields) if exit_fields else 'none'}`",
+            f"- sizing.position_weight: `{summary['position_weight']}`",
+            f"- sizing.notional_usd: `{summary['notional_usd']}`",
+            f"- backtest.split_method: `{summary['split_method']}`",
+            f"- backtest.label_horizon_minutes: `{summary['label_horizon_minutes']}`",
+            f"- backtest.primary_metric: `{summary['primary_metric']}`",
+        ]
+    )
+    return (
+        _present_optional_artifact(
+            "authoring_spec",
+            path,
+            summary,
+            payload=spec.model_dump(mode="json"),
+        ),
+        ReviewSection(title="戦略定義", markdown=markdown),
+    )
+
+
+def _not_configured_strategy_definition_section() -> ReviewSection:
+    return ReviewSection(
+        title="戦略定義",
+        markdown="- status: `not_configured`\n- reason: `authoring spec path was not provided or derivable`",
+    )
+
+
+def _lifecycle_review_summary(path: Path) -> tuple[SourceArtifact, ReviewSection]:
+    if not path.exists():
+        return (
+            _missing_optional_artifact("lifecycle_review", path),
+            ReviewSection(
+                title="Lifecycle Summary",
+                markdown=f"- status: `missing`\n- path: `{repo_relative_path(path)}`",
+            ),
+        )
+    try:
+        payload = read_source_json(path)
+        if payload.get("schema_version") != "strategy_lifecycle_review.v1":
+            raise ValueError("schema_version must be strategy_lifecycle_review.v1")
+    except Exception as exc:
+        return (
+            _invalid_optional_artifact("lifecycle_review", path, exc),
+            ReviewSection(
+                title="Lifecycle Summary",
+                markdown=f"- status: `invalid`\n- path: `{repo_relative_path(path)}`\n- error: `{exc}`",
+            ),
+        )
+
+    summary = {
+        "decision": payload.get("decision"),
+        "decision_reasons": payload.get("decision_reasons", []),
+        "next_actions": payload.get("next_actions", []),
+        "input_status": payload.get("input_status", {}),
+        "blocker_counts": payload.get("blocker_counts", {}),
+        "permits_live_order": payload.get("permits_live_order"),
+        "wallet_used": payload.get("wallet_used"),
+        "venue_write_used": payload.get("venue_write_used"),
+        "exchange_write_used": payload.get("exchange_write_used"),
+    }
+    markdown = "\n".join(
+        [
+            "- status: `present`",
+            f"- decision: `{summary['decision']}`",
+            f"- decision_reasons: `{', '.join(summary['decision_reasons'])}`",
+            f"- next_actions: `{', '.join(summary['next_actions'])}`",
+            f"- input_status: `{json.dumps(summary['input_status'], sort_keys=True)}`",
+            f"- blocker_counts: `{json.dumps(summary['blocker_counts'], sort_keys=True)}`",
+            f"- permits_live_order: `{str(summary['permits_live_order']).lower()}`",
+            f"- wallet_used: `{str(summary['wallet_used']).lower()}`",
+            f"- venue_write_used: `{str(summary['venue_write_used']).lower()}`",
+            f"- exchange_write_used: `{str(summary['exchange_write_used']).lower()}`",
+        ]
+    )
+    return (
+        _present_optional_artifact("lifecycle_review", path, summary, payload=payload),
+        ReviewSection(title="Lifecycle Summary", markdown=markdown),
+    )
+
+
+def _backtest_pack_section(source_artifacts: list[SourceArtifact]) -> ReviewSection:
+    by_key = {artifact.artifact_key: artifact for artifact in source_artifacts}
+    pack = by_key.get("pack")
+    validation = by_key.get("pack_validation")
+    pack_summary = pack.summary if pack is not None else {}
+    validation_summary = validation.summary if validation is not None else {}
+    lines = [
+        f"- pack_status: `{pack.status.value if pack else 'missing'}`",
+        f"- validation_status: `{validation.status.value if validation else 'missing'}`",
+        f"- validation_decision: `{validation_summary.get('decision')}`",
+        f"- suite_run_count: `{pack_summary.get('suite_run_count', pack_summary.get('summary', {}).get('suite_run_count'))}`",
+        f"- suite_method_count: `{pack_summary.get('suite_method_count', pack_summary.get('summary', {}).get('suite_method_count'))}`",
+        f"- pack_validation_pass_is_readiness_proof: `{str(False).lower()}`",
+    ]
+    return ReviewSection(title="Backtest Pack Summary", markdown="\n".join(lines))
+
+
+def _derive_authoring_spec_path(pack_path: Path) -> Path | None:
+    if not pack_path.exists():
+        return None
+    try:
+        payload = read_source_json(pack_path)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+    raw_path = payload.get("spec_path")
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        return None
+    path = Path(raw_path)
+    return path if path.is_absolute() else Path.cwd() / path
+
+
 def _build_manifest(
     *,
     review_id: str,
@@ -270,6 +493,8 @@ def build_strategy_review(
     out_dir: Path,
     pack_path: Path,
     validation_path: Path,
+    authoring_spec_path: Path | None = None,
+    lifecycle_review_path: Path | None = None,
     strict: bool = False,
     replace_existing: bool = False,
     created_at: datetime | str | None = None,
@@ -324,6 +549,36 @@ def build_strategy_review(
             for spec in ARTIFACT_SUMMARY_SPECS
         ]
 
+    sections: list[ReviewSection] = []
+    resolved_authoring_spec_path = authoring_spec_path or _derive_authoring_spec_path(pack_path)
+    if resolved_authoring_spec_path is None:
+        sections.append(_not_configured_strategy_definition_section())
+    elif not resolved_authoring_spec_path.exists():
+        source_artifacts.append(
+            _missing_optional_artifact("authoring_spec", resolved_authoring_spec_path)
+        )
+        sections.append(
+            ReviewSection(
+                title="戦略定義",
+                markdown=f"- status: `missing`\n- path: `{repo_relative_path(resolved_authoring_spec_path)}`",
+            )
+        )
+    else:
+        artifact, section = _strategy_definition_summary(resolved_authoring_spec_path)
+        source_artifacts.append(artifact)
+        sections.append(section)
+
+    sections.append(_backtest_pack_section(source_artifacts))
+
+    resolved_lifecycle_review_path = lifecycle_review_path or _default_path(
+        DEFAULT_LIFECYCLE_REVIEW_PATH
+    )
+    lifecycle_artifact, lifecycle_section = _lifecycle_review_summary(
+        resolved_lifecycle_review_path
+    )
+    source_artifacts.append(lifecycle_artifact)
+    sections.append(lifecycle_section)
+
     review_markdown_path = review_dir / "review.md"
     manifest_path = review_dir / "review_manifest.json"
     manifest = _build_manifest(
@@ -337,7 +592,10 @@ def build_strategy_review(
     )
 
     review_dir.mkdir(parents=True, exist_ok=True)
-    review_markdown_path.write_text(render_strategy_review_markdown(manifest), encoding="utf-8")
+    review_markdown_path.write_text(
+        render_strategy_review_markdown(manifest, sections),
+        encoding="utf-8",
+    )
     manifest_path.write_text(
         json.dumps(
             _manifest_json_payload(manifest),

@@ -11,7 +11,10 @@ BOUNDARY_TRUE_KEYS = {
     "live_conversion_allowed",
     "live_order_submitted",
     "wallet_used",
+    "venue_write_used",
     "signing_used",
+    "credentials_used",
+    "external_api_used",
     "exchange_write_used",
 }
 

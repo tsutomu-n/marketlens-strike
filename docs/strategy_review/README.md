@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_18:25 JST
-更新日: 2026-06-16_18:25 JST
+更新日: 2026-06-16_20:09 JST
 -->
 
 # Strategy Review
@@ -18,7 +18,8 @@ uv run sis strategy-review-build \
   --review-id ndx-smoke-001 \
   --out data/strategy_reviews \
   --pack-path data/research/backtest_pack/strategy_backtest_pack.json \
-  --validation-path data/research/backtest_pack/strategy_backtest_pack_validation.json
+  --validation-path data/research/backtest_pack/strategy_backtest_pack_validation.json \
+  --lifecycle-review-path data/research/strategy_lifecycle/strategy_lifecycle_review.json
 ```
 
 出力:
@@ -27,6 +28,10 @@ uv run sis strategy-review-build \
 - `data/strategy_reviews/{review_id}/review_manifest.json`
 
 既存 review directory がある場合、`--replace-existing` なしでは exit 2 で止まります。
+
+`--authoring-spec-path` は任意です。未指定の場合は pack JSON の `spec_path` から Strategy Authoring YAML を導出し、導出できない場合は `戦略定義` section を `not_configured` として出します。
+
+`--lifecycle-review-path` は任意の Strategy Lifecycle review JSON です。既定値は `data/research/strategy_lifecycle/strategy_lifecycle_review.json` です。欠損は optional missing として扱い、壊れた JSON や schema version mismatch は `INVALID_INPUT` にします。
 
 ## Status
 
@@ -48,3 +53,7 @@ uv run sis strategy-review-build \
 source artifact はコピーしません。manifest には repo-relative path と `sha256:<64 hex>` hash だけを記録します。欠損 artifact は `status=missing` とし、hash は省略します。
 
 `evaluation_flags.pack_validation_pass_is_readiness_proof` は常に `false` です。
+
+`authoring_spec` と `lifecycle_review` は `required=false` の optional artifact です。optional artifact の欠損は `review_status` を変えませんが、invalid input と boundary violation は全体の `review_status` に反映します。
+
+`review.md` は、結論、戦略定義、Backtest Pack Summary、Lifecycle Summary、入力 artifact、Safety Boundary、Missing / Invalid / Blocked、Human Review Checklist の順で出力します。

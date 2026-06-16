@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sis.strategy_review.manifest import StrategyReviewManifest
+from sis.strategy_review.sections import ReviewSection
 
 
 BOUNDARY_NOTICE = (
@@ -12,22 +13,19 @@ PACK_VALIDATION_NOTICE = (
 )
 
 
-def render_strategy_review_markdown(manifest: StrategyReviewManifest) -> str:
+def render_strategy_review_markdown(
+    manifest: StrategyReviewManifest,
+    sections: list[ReviewSection] | None = None,
+) -> str:
+    review_sections = sections or []
     lines: list[str] = [
         f"# Strategy Review: {manifest.review_id}",
+        "",
+        "## 1. 結論",
         "",
         f"- created_at: `{manifest.created_at}`",
         f"- review_status: `{manifest.review_status.value}`",
         f"- strict: `{str(manifest.strict).lower()}`",
-        "",
-        "## Boundary",
-        "",
-        BOUNDARY_NOTICE,
-        "",
-        PACK_VALIDATION_NOTICE,
-        "",
-        "## Status Summary",
-        "",
         f"- missing_required_count: `{manifest.summary.missing_required_count}`",
         f"- invalid_required_count: `{manifest.summary.invalid_required_count}`",
         f"- boundary_violation_count: `{manifest.summary.boundary_violation_count}`",
@@ -36,24 +34,14 @@ def render_strategy_review_markdown(manifest: StrategyReviewManifest) -> str:
         "",
     ]
 
-    problem_rows = [
-        artifact
-        for artifact in manifest.source_artifacts
-        if artifact.status.value != "present" or artifact.summary.get("boundary_violations")
-    ]
-    if problem_rows:
-        lines.extend(["## Needs Attention", ""])
-        for artifact in problem_rows:
-            reason = artifact.status.value
-            violations = artifact.summary.get("boundary_violations")
-            if violations:
-                reason = f"boundary_violation: {', '.join(violations)}"
-            lines.append(f"- `{artifact.artifact_key}`: {reason} ({artifact.path})")
-        lines.append("")
+    section_number = 2
+    for section in review_sections:
+        lines.extend([f"## {section_number}. {section.title}", "", section.markdown.rstrip(), ""])
+        section_number += 1
 
     lines.extend(
         [
-            "## Source Artifacts",
+            f"## {section_number}. 入力artifact",
             "",
             "| artifact | required | status | path | sha256 |",
             "|---|---:|---|---|---|",
@@ -68,12 +56,45 @@ def render_strategy_review_markdown(manifest: StrategyReviewManifest) -> str:
             f"`{artifact.path}` | "
             f"`{artifact.sha256 or ''}` |"
         )
+    lines.append("")
+    section_number += 1
 
-    lines.extend(["", "## Human Review Checklist", ""])
+    lines.extend(
+        [
+            f"## {section_number}. Safety Boundary",
+            "",
+            BOUNDARY_NOTICE,
+            "",
+            PACK_VALIDATION_NOTICE,
+            "",
+        ]
+    )
+    section_number += 1
+
+    problem_rows = [
+        artifact
+        for artifact in manifest.source_artifacts
+        if artifact.status.value != "present" or artifact.summary.get("boundary_violations")
+    ]
+    lines.extend([f"## {section_number}. Missing / Invalid / Blocked (Needs Attention)", ""])
+    if problem_rows:
+        for artifact in problem_rows:
+            reason = artifact.status.value
+            violations = artifact.summary.get("boundary_violations")
+            if violations:
+                reason = f"boundary_violation: {', '.join(violations)}"
+            lines.append(f"- `{artifact.artifact_key}`: {reason} ({artifact.path})")
+    else:
+        lines.append("- なし。")
+    lines.append("")
+    section_number += 1
+
+    lines.extend([f"## {section_number}. Human Review Checklist", ""])
     lines.extend(
         [
             "- 必須 artifact が `present` であることを確認する。",
             "- 欠損、invalid、boundary violation があれば先に原因を確認する。",
+            "- Strategy Definition と Lifecycle Summary を読み、次に確認する artifact を決める。",
             "- pack validation の結果を戦略評価や readiness proof として読まない。",
             "- source hash table の path と hash を再現性確認に使う。",
             "",
