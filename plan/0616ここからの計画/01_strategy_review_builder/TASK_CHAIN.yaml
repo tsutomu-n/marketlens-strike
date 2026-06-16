@@ -1,0 +1,182 @@
+version: 1
+created_at_jst: "2026-06-16_17:09 JST"
+updated_at_jst: "2026-06-16_17:09 JST"
+objective: >
+  Build a thin read-only Strategy Review Builder that turns existing Strategy
+  Authoring and backtest artifacts into review.md and review_manifest.json
+  without creating a Strategy Case registry, UI, paper gate, or live-readiness
+  proof.
+
+global_constraints:
+  - Treat code, tests, schemas, config, lockfiles, CI, and CLI help as source of truth.
+  - Keep the first implementation read-only.
+  - Do not add external API fetches, credentials, wallet/signing, exchange write, or live order execution.
+  - Do not add a Strategy Case registry, UI, paper gate, lifecycle decision change, or artifact bundle copy in PR-REVIEW-00.
+  - Do not add new dependencies; keep pyproject.toml and uv.lock unchanged unless a later explicit plan approves it.
+  - Use the existing sha256:<64 hex> hash format.
+  - Use repo-relative POSIX paths in review_manifest.json.
+  - Treat generated data under data/ as runtime output, not source-controlled truth.
+  - State that review output is for human review and is not alpha, paper, or live readiness proof.
+
+tasks:
+  - id: T0
+    goal: "Confirm current CLI, schema, and artifact summary contracts before editing."
+    target_files: []
+    out_of_scope:
+      - "File edits"
+      - "Generated artifact rewrites"
+      - "Implementation"
+    acceptance:
+      - "strategy-review-build is confirmed absent from uv run sis --help."
+      - "strategy-backtest-artifact-summary help is inspected."
+      - "strategy_backtest_pack.v1 and strategy_backtest_pack_validation.v1 hash patterns are confirmed as sha256:<64 hex>."
+      - "Existing build_strategy_backtest_artifact_summary(...) and missing-artifact behavior are inspected."
+    verification:
+      - "git status --short --branch --untracked-files=all"
+      - "uv run sis --help"
+      - "uv run sis strategy-backtest-artifact-summary --help"
+      - "sed -n '1,220p' schemas/strategy_backtest_pack.v1.schema.json"
+      - "sed -n '1,220p' schemas/strategy_backtest_pack_validation.v1.schema.json"
+      - "sed -n '1,260p' src/sis/backtest/artifact_summary.py"
+      - "sed -n '1,260p' src/sis/backtest/artifact_summary_registry.py"
+    destructive_level: "none"
+
+  - id: T1
+    goal: "Add schema-first tests for the strategy review manifest."
+    dependencies:
+      - T0
+    target_files:
+      - "schemas/strategy_review_manifest.v1.schema.json"
+      - "tests/strategy_review/test_strategy_review_manifest_schema.py"
+    out_of_scope:
+      - "CLI command"
+      - "Markdown renderer"
+      - "Registry or UI"
+    acceptance:
+      - "A minimum valid strategy_review_manifest.v1 fixture validates."
+      - "Bare 64-hex hashes are rejected."
+      - "sha256:<64 hex> hashes are accepted."
+      - "live, wallet, signing, and exchange-write flags are false const values."
+      - "Missing source artifacts can omit sha256."
+      - "review_status enum is fixed."
+    verification:
+      - "uv run pytest -q tests/strategy_review/test_strategy_review_manifest_schema.py"
+    destructive_level: "low"
+
+  - id: T2
+    goal: "Implement the read-only core builder over the existing backtest artifact summary."
+    dependencies:
+      - T1
+    target_files:
+      - "src/sis/strategy_review/__init__.py"
+      - "src/sis/strategy_review/manifest.py"
+      - "src/sis/strategy_review/renderer.py"
+      - "src/sis/strategy_review/service.py"
+      - "tests/strategy_review/test_strategy_review_build.py"
+    out_of_scope:
+      - "CLI command registration"
+      - "Paper gate changes"
+      - "Lifecycle decision changes"
+      - "Artifact copying"
+    acceptance:
+      - "The service accepts review_id, output directory, strict flag, input paths, and injectable created_at."
+      - "The service reuses build_strategy_backtest_artifact_summary(...)."
+      - "review.md and review_manifest.json are written under data/strategy_reviews/{review_id}/."
+      - "Existing files get sha256:<64 hex> source hashes."
+      - "Missing files appear as missing in both markdown and manifest."
+      - "Boundary violations produce BLOCKED_BOUNDARY_VIOLATION."
+    verification:
+      - "uv run pytest -q tests/strategy_review/test_strategy_review_build.py tests/backtest/test_artifact_summary_registry.py"
+    destructive_level: "low"
+
+  - id: T3
+    goal: "Expose the builder as a flat sis CLI command."
+    dependencies:
+      - T2
+    target_files:
+      - "src/sis/commands/strategy_review.py"
+      - "src/sis/cli.py"
+      - "tests/test_cli_smoke.py"
+      - "tests/strategy_review/test_strategy_review_cli.py"
+    out_of_scope:
+      - "Nested strategy-review command group"
+      - "Automatic review_id registry"
+      - "Full duplication of every artifact-summary option unless tests are added"
+    acceptance:
+      - "uv run sis --help lists strategy-review-build."
+      - "uv run sis strategy-review-build --help lists review-id, out, strict/no-strict, pack-path, and validation-path."
+      - "Lenient missing artifacts exit 0 and set review_status=INCOMPLETE_ARTIFACTS."
+      - "Strict missing artifacts write review outputs where possible and exit 2."
+      - "Invalid input and boundary violations exit 2."
+    verification:
+      - "uv run sis strategy-review-build --help"
+      - "uv run pytest -q tests/strategy_review/test_strategy_review_cli.py tests/test_cli_smoke.py"
+    destructive_level: "low"
+
+  - id: T4
+    goal: "Harden markdown rendering for human review and stable tests."
+    dependencies:
+      - T2
+    target_files:
+      - "src/sis/strategy_review/renderer.py"
+      - "tests/strategy_review/test_strategy_review_rendering.py"
+    out_of_scope:
+      - "New readiness decisions"
+      - "UI/dashboard"
+      - "External citations in generated review output"
+    acceptance:
+      - "review.md has stable section order."
+      - "Missing, invalid, and boundary-blocked states appear near the top."
+      - "The markdown says pack validation PASS is not alpha, paper, or live proof."
+      - "Source hash table is present."
+      - "Dynamic timestamp is injectable or normalized in tests."
+    verification:
+      - "uv run pytest -q tests/strategy_review/test_strategy_review_rendering.py"
+    destructive_level: "low"
+
+  - id: T5
+    goal: "Document the operator usage and current capability boundary."
+    dependencies:
+      - T3
+      - T4
+    target_files:
+      - "docs/strategy_review/README.md"
+      - "docs/backtest/README.md"
+      - "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md"
+      - "plan/README.md"
+    out_of_scope:
+      - "Historical archive rewrite"
+      - "Claiming generated artifacts as current truth"
+      - "Changing paper or live runbooks beyond linking the review builder"
+    acceptance:
+      - "Docs explain strategy-review-build command and output files."
+      - "Docs state the review builder is a human-review artifact, not readiness proof."
+      - "Docs link backtest artifact summary to strategy review usage."
+      - "Markdown metadata timestamps are updated."
+    verification:
+      - "uv run python scripts/check_current_docs.py"
+    destructive_level: "low"
+
+  - id: T6
+    goal: "Run focused and full verification, then inspect the final diff."
+    dependencies:
+      - T5
+    target_files: []
+    out_of_scope:
+      - "Unrelated formatting"
+      - "Unrelated user-owned untracked files"
+      - "Destructive cleanup"
+    acceptance:
+      - "Focused strategy_review tests pass."
+      - "Backtest artifact summary regression tests pass."
+      - "CLI help command works."
+      - "Current docs checker passes."
+      - "Full scripts/check is attempted, or any blocker is reported with exact command and failure."
+    verification:
+      - "uv run sis strategy-review-build --help"
+      - "uv run pytest -q tests/strategy_review tests/backtest/test_artifact_summary_registry.py tests/strategy_authoring/test_cli_bundle.py"
+      - "uv run python scripts/check_current_docs.py"
+      - "./scripts/check"
+      - "git diff --check"
+      - "git status --short --branch --untracked-files=all"
+    destructive_level: "low"

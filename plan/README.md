@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-15_12:02 JST
+更新日: 2026-06-16_17:05 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -33,6 +33,16 @@ These are historical docs-only review or adoption plans. They do not authorize
 code, schema, dependency, paper, or live-execution changes by themselves.
 
 - [plan/0610ここからの計画/01_grok_architecture_adoption_review/README.md](0610ここからの計画/01_grok_architecture_adoption_review/README.md)
+
+## Current 2026-06-16 review builder plan
+
+This is the current implementation handoff for a thin, read-only Strategy
+Review Builder. It turns existing Strategy Authoring / backtest artifacts into a
+human review markdown file and a machine-readable manifest. It does not create a
+Strategy Case registry, UI, paper gate, live readiness proof, wallet/signing
+path, or exchange-write path.
+
+- [plan/0616ここからの計画/01_strategy_review_builder/README.md](0616ここからの計画/01_strategy_review_builder/README.md)
 
 ## Historical 2026-06-10 implementation plans
 
