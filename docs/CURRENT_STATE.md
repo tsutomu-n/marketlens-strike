@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-17_01:26 JST
+更新日: 2026-06-17_06:45 JST
 -->
 
 # Current State
@@ -180,24 +180,25 @@ PR-08 専用確認:
 
 1. `docs/CURRENT_STATE.md`
 2. `docs/CODE_STATUS.md`
-3. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`
-4. `docs/research/ndx/README.md`
-5. `docs/research/ndx/09_LLM_REVIEW_GATE.md`
-6. `docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md`
-7. `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`
-8. `docs/backtest/README.md`
-9. `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`
-10. `docs/strategy_review/README.md`
-11. `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md`
-12. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
-13. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-14. `docs/strategy_research_lab/README.md`
-15. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
-16. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
-17. `docs/OPERATIONS_RUNBOOK.md`
-18. `docs/ARCHITECTURE_AND_PHASES.md`
-19. `docs/trade_xyz_bot_beginner_guide.html`
-20. `plan/README.md`
+3. `docs/IMPLEMENTED_SURFACES.md`
+4. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`
+5. `docs/research/ndx/README.md`
+6. `docs/research/ndx/09_LLM_REVIEW_GATE.md`
+7. `docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md`
+8. `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`
+9. `docs/backtest/README.md`
+10. `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`
+11. `docs/strategy_review/README.md`
+12. `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md`
+13. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
+14. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+15. `docs/strategy_research_lab/README.md`
+16. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+17. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+18. `docs/OPERATIONS_RUNBOOK.md`
+19. `docs/ARCHITECTURE_AND_PHASES.md`
+20. `docs/trade_xyz_bot_beginner_guide.html`
+21. `plan/README.md`
 
 historical focused audit:
 

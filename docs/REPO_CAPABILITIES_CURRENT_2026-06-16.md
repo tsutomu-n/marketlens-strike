@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-16_18:25 JST
+更新日: 2026-06-17_06:45 JST
 -->
 
 # Repo Capabilities Current
@@ -725,12 +725,16 @@ reference-only / 採用前 contract:
 
 1. [CURRENT_STATE.md](CURRENT_STATE.md)
 2. [CODE_STATUS.md](CODE_STATUS.md)
-3. [algo/README.md](algo/README.md)
-4. [strategy_research_lab/README.md](strategy_research_lab/README.md)
-5. [strategy_research_lab/08_CURRENT_CAPABILITIES.md](strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-6. [backtest/README.md](backtest/README.md)
-7. [backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)
-8. [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
-9. [research/ndx/README.md](research/ndx/README.md)
-10. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
-11. [ARCHITECTURE_AND_PHASES.md](ARCHITECTURE_AND_PHASES.md)
+3. [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
+4. [algo/README.md](algo/README.md)
+5. [strategy_research_lab/README.md](strategy_research_lab/README.md)
+6. [strategy_research_lab/08_CURRENT_CAPABILITIES.md](strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+7. [backtest/README.md](backtest/README.md)
+8. [backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)
+9. [strategy_review/README.md](strategy_review/README.md)
+10. [strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
+11. [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
+12. [research/ndx/README.md](research/ndx/README.md)
+13. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
+14. [ARCHITECTURE_AND_PHASES.md](ARCHITECTURE_AND_PHASES.md)
+15. [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md)

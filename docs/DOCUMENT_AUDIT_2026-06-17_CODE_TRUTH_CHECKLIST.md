@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_06:32 JST
+更新日: 2026-06-17_06:45 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -9,14 +9,15 @@
 
 ## 結論
 
-現行 docs は大きく壊れてはいない。`uv run python scripts/check_current_docs.py` は 129 current docs を pass しており、Strategy Review の専用 docs も current-doc checker 対象に入っている。
+現行 docs は大きく壊れてはいない。`uv run python scripts/check_current_docs.py` は 131 current docs を pass しており、Strategy Review の専用 docs も current-doc checker 対象に入っている。
 
 ただし、直近で `strategy-review-build` が強化されたため、top-level docs の導線が少し古い。先に直すべきは次の4点。
 
 1. `README.md` と `docs/CURRENT_STATE.md` に `docs/strategy_review/README.md` / `OPERATOR_REVIEW_PACKET_RECIPE.md` への導線を足す。2026-06-17_01:26 JST に実施済み。
 2. `docs/CODE_STATUS.md` は 2026-06-17_06:32 JST に thin index 化し、実装履歴を `docs/MIGRATION_HISTORY.md`、現行 surface を `docs/IMPLEMENTED_SURFACES.md` へ分割済み。
-3. `plan/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` には `APPROVE_FOR_PAPER` が残る。実装後の次手では `plan/ねくすと.md` を優先し、この古い decision 名は使わない。
-4. `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict 対象一覧が、現行 checker の `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`docs/strategy_lifecycle/**`、`docs/strategy_review/**` に追いついていなかったため、この監査で更新する。
+3. 分割後の新文書導線を `README.md`、`docs/CURRENT_STATE.md`、`docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`plan/README.md` へ 2026-06-17_06:45 JST に追加済み。
+4. `plan/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` には `APPROVE_FOR_PAPER` が残る。実装後の次手では `plan/ねくすと.md` を優先し、この古い decision 名は使わない。
+5. `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict 対象一覧が、現行 checker の `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`docs/strategy_lifecycle/**`、`docs/strategy_review/**` に追いついていなかったため、この監査で更新する。
 
 ## 照合した正本
 
