@@ -24,9 +24,10 @@ def test_strategy_review_markdown_contains_boundary_notices(tmp_path: Path, monk
     )
     text = result.review_markdown_path.read_text(encoding="utf-8")
 
-    assert "この review は人間の戦略レビュー用 artifact" in text
-    assert "alpha、paper readiness、live readiness を証明しません" in text
-    assert "pack validation PASS でも収益性、paper移行可否、live実行可否は証明しません" in text
+    assert "このreviewは人間の戦略レビュー用artifactです。" in text
+    assert "alpha、paper readiness、live readinessを証明しません" in text
+    assert "戦略の収益性、paper移行可否、live実行可否は証明されません" in text
+    assert "source_safety.status: `PASS`" in text
     assert "| artifact | required | status | path | sha256 |" in text
     assert CREATED_AT in text
 

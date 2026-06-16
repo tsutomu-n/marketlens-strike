@@ -31,6 +31,9 @@ def _write_required_artifacts(
     root: Path,
     *,
     wallet_used: bool = False,
+    signing_used: bool = False,
+    exchange_write_used: bool = False,
+    permits_live_order: bool = False,
     spec_path: str | None = None,
 ) -> tuple[Path, Path]:
     pack_path = root / "data/research/backtest_pack/strategy_backtest_pack.json"
@@ -41,10 +44,11 @@ def _write_required_artifacts(
             "schema_version": "strategy_backtest_pack.v1",
             "paper_only": True,
             "live_order_submitted": False,
-            "permits_live_order": False,
+            "permits_live_order": permits_live_order,
             "live_conversion_allowed": False,
             "wallet_used": wallet_used,
-            "exchange_write_used": False,
+            "signing_used": signing_used,
+            "exchange_write_used": exchange_write_used,
             **({"spec_path": spec_path} if spec_path is not None else {}),
             "summary": {"suite_run_count": 1, "suite_method_count": 1},
             "external_framework_policy": {
@@ -170,6 +174,17 @@ def test_build_strategy_review_writes_markdown_and_manifest(tmp_path: Path, monk
     assert result.manifest_path.exists()
     payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert payload["review_status"] == "READY_FOR_HUMAN_REVIEW"
+    assert "safety" not in payload
+    assert payload["builder_safety"] == {
+        "exchange_write_used": False,
+        "live_conversion_allowed": False,
+        "permits_live_order": False,
+        "signing_used": False,
+        "wallet_used": False,
+    }
+    assert payload["source_safety"]["status"] == "PASS"
+    assert payload["source_safety"]["boundary_violation_count"] == 0
+    assert payload["source_safety"]["unknown_boundary_count"] == 0
     assert payload["evaluation_flags"]["pack_validation_status"] == "PASS"
     assert payload["evaluation_flags"]["pack_validation_pass_is_readiness_proof"] is False
     pack = next(row for row in payload["source_artifacts"] if row["artifact_key"] == "pack")
@@ -198,6 +213,8 @@ def test_build_strategy_review_missing_required_artifact_is_incomplete(
     )
 
     assert result.manifest.review_status.value == "INCOMPLETE_ARTIFACTS"
+    assert result.manifest.source_safety.status.value == "UNKNOWN"
+    assert result.manifest.source_safety.unknown_boundary_count == 2
     assert result.manifest.summary.missing_required_count == 2
     assert result.review_markdown_path.exists()
     payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
@@ -219,7 +236,37 @@ def test_build_strategy_review_detects_boundary_violation(tmp_path: Path, monkey
     )
 
     assert result.manifest.review_status.value == "BLOCKED_BOUNDARY_VIOLATION"
+    assert result.manifest.source_safety.status.value == "BLOCKED"
+    assert result.manifest.source_safety.observed_flags.wallet_used is True
     assert result.manifest.summary.boundary_violation_count == 1
+
+
+def test_build_strategy_review_detects_all_blocking_boundary_flags(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(
+        tmp_path,
+        wallet_used=True,
+        signing_used=True,
+        exchange_write_used=True,
+        permits_live_order=True,
+    )
+
+    result = build_strategy_review(
+        review_id="blocked-flags",
+        out_dir=tmp_path / "data/strategy_reviews",
+        pack_path=pack_path,
+        validation_path=validation_path,
+        created_at=CREATED_AT,
+    )
+
+    assert result.manifest.review_status.value == "BLOCKED_BOUNDARY_VIOLATION"
+    flags = result.manifest.source_safety.observed_flags
+    assert flags.permits_live_order is True
+    assert flags.wallet_used is True
+    assert flags.signing_used is True
+    assert flags.exchange_write_used is True
 
 
 def test_build_strategy_review_loads_authoring_yaml_from_pack_spec_path(
@@ -412,6 +459,7 @@ def test_build_strategy_review_lifecycle_venue_write_boundary_blocks(
     )
 
     assert result.manifest.review_status.value == "BLOCKED_BOUNDARY_VIOLATION"
+    assert result.manifest.source_safety.observed_flags.venue_write_used is True
     lifecycle = next(
         artifact
         for artifact in result.manifest.source_artifacts
@@ -475,3 +523,24 @@ def test_build_strategy_review_refuses_existing_output_without_replace(
         assert "already exists" in str(exc)
     else:
         raise AssertionError("expected existing output error")
+
+
+def test_build_strategy_review_replace_existing_preserves_unmanaged_files(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path)
+    kwargs = {
+        "review_id": "replace-id",
+        "out_dir": tmp_path / "data/strategy_reviews",
+        "pack_path": pack_path,
+        "validation_path": validation_path,
+        "created_at": CREATED_AT,
+    }
+    build_strategy_review(**kwargs)
+    extra_path = tmp_path / "data/strategy_reviews/replace-id/operator-note.txt"
+    extra_path.write_text("keep\n", encoding="utf-8")
+
+    build_strategy_review(**kwargs, replace_existing=True)
+
+    assert extra_path.read_text(encoding="utf-8") == "keep\n"

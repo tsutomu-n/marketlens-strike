@@ -10,7 +10,8 @@
     "strict",
     "paths",
     "source_artifacts",
-    "safety",
+    "builder_safety",
+    "source_safety",
     "evaluation_flags",
     "summary"
   ],
@@ -31,9 +32,9 @@
       "type": "object",
       "required": ["review_dir", "review_markdown_path", "manifest_path"],
       "properties": {
-        "review_dir": {"type": "string"},
-        "review_markdown_path": {"type": "string"},
-        "manifest_path": {"type": "string"}
+        "review_dir": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+"},
+        "review_markdown_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+"},
+        "manifest_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+"}
       },
       "additionalProperties": false
     },
@@ -44,7 +45,7 @@
         "required": ["artifact_key", "path", "exists", "required", "status", "summary"],
         "properties": {
           "artifact_key": {"type": "string"},
-          "path": {"type": "string"},
+          "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+"},
           "exists": {"type": "boolean"},
           "required": {"type": "boolean"},
           "status": {"enum": ["present", "missing", "invalid"]},
@@ -64,7 +65,7 @@
         "additionalProperties": false
       }
     },
-    "safety": {
+    "builder_safety": {
       "type": "object",
       "required": [
         "permits_live_order",
@@ -80,6 +81,60 @@
         "signing_used": {"const": false},
         "exchange_write_used": {"const": false}
       },
+      "additionalProperties": false
+    },
+    "source_safety": {
+      "type": "object",
+      "required": [
+        "status",
+        "boundary_violation_count",
+        "unknown_boundary_count",
+        "observed_flags"
+      ],
+      "properties": {
+        "status": {"enum": ["PASS", "UNKNOWN", "BLOCKED"]},
+        "boundary_violation_count": {"type": "integer", "minimum": 0},
+        "unknown_boundary_count": {"type": "integer", "minimum": 0},
+        "observed_flags": {
+          "type": "object",
+          "required": [
+            "permits_live_order",
+            "live_conversion_allowed",
+            "wallet_used",
+            "signing_used",
+            "exchange_write_used",
+            "venue_write_used"
+          ],
+          "properties": {
+            "permits_live_order": {"type": "boolean"},
+            "live_conversion_allowed": {"type": "boolean"},
+            "wallet_used": {"type": "boolean"},
+            "signing_used": {"type": "boolean"},
+            "exchange_write_used": {"type": "boolean"},
+            "venue_write_used": {"type": "boolean"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "PASS"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "boundary_violation_count": {"const": 0},
+              "unknown_boundary_count": {"const": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"status": {"const": "BLOCKED"}}, "required": ["status"]},
+          "then": {"properties": {"boundary_violation_count": {"minimum": 1}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "UNKNOWN"}}, "required": ["status"]},
+          "then": {"properties": {"unknown_boundary_count": {"minimum": 1}}}
+        }
+      ],
       "additionalProperties": false
     },
     "evaluation_flags": {

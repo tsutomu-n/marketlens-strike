@@ -47,12 +47,25 @@ def _valid_manifest() -> dict:
                 "summary": {},
             },
         ],
-        "safety": {
+        "builder_safety": {
             "permits_live_order": False,
             "live_conversion_allowed": False,
             "wallet_used": False,
             "signing_used": False,
             "exchange_write_used": False,
+        },
+        "source_safety": {
+            "status": "PASS",
+            "boundary_violation_count": 0,
+            "unknown_boundary_count": 0,
+            "observed_flags": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+                "venue_write_used": False,
+            },
         },
         "evaluation_flags": {
             "pack_validation_status": "PASS",
@@ -85,9 +98,50 @@ def test_strategy_review_manifest_rejects_bare_hex_hash() -> None:
 
 def test_strategy_review_manifest_rejects_true_safety_flags() -> None:
     payload = _valid_manifest()
-    payload["safety"]["wallet_used"] = True
+    payload["builder_safety"]["wallet_used"] = True
 
     assert list(Draft202012Validator(_schema()).iter_errors(payload))
+    with pytest.raises(ValidationError):
+        StrategyReviewManifest.model_validate(payload)
+
+
+def test_strategy_review_manifest_rejects_old_safety_only_shape() -> None:
+    payload = _valid_manifest()
+    payload["safety"] = payload.pop("builder_safety")
+    payload.pop("source_safety")
+
+    assert list(Draft202012Validator(_schema()).iter_errors(payload))
+    with pytest.raises(ValidationError):
+        StrategyReviewManifest.model_validate(payload)
+
+
+def test_strategy_review_manifest_source_safety_unknown_maps_to_incomplete() -> None:
+    payload = _valid_manifest()
+    payload["review_status"] = "INCOMPLETE_ARTIFACTS"
+    payload["source_safety"]["status"] = "UNKNOWN"
+    payload["source_safety"]["unknown_boundary_count"] = 1
+    payload["summary"]["missing_required_count"] = 1
+
+    Draft202012Validator(_schema()).validate(payload)
+    StrategyReviewManifest.model_validate(payload)
+
+    payload["review_status"] = "READY_FOR_HUMAN_REVIEW"
+    with pytest.raises(ValidationError):
+        StrategyReviewManifest.model_validate(payload)
+
+
+def test_strategy_review_manifest_source_safety_blocked_maps_to_blocked() -> None:
+    payload = _valid_manifest()
+    payload["review_status"] = "BLOCKED_BOUNDARY_VIOLATION"
+    payload["source_safety"]["status"] = "BLOCKED"
+    payload["source_safety"]["boundary_violation_count"] = 1
+    payload["source_safety"]["observed_flags"]["wallet_used"] = True
+    payload["summary"]["boundary_violation_count"] = 1
+
+    Draft202012Validator(_schema()).validate(payload)
+    StrategyReviewManifest.model_validate(payload)
+
+    payload["review_status"] = "READY_FOR_HUMAN_REVIEW"
     with pytest.raises(ValidationError):
         StrategyReviewManifest.model_validate(payload)
 

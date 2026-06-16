@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_18:25 JST
-更新日: 2026-06-16_20:25 JST
+更新日: 2026-06-16_21:15 JST
 -->
 
 # Strategy Review
@@ -19,7 +19,7 @@ uv run sis strategy-review-build \
   --out data/strategy_reviews \
   --pack-path data/research/backtest_pack/strategy_backtest_pack.json \
   --validation-path data/research/backtest_pack/strategy_backtest_pack_validation.json \
-  --lifecycle-review-path data/research/strategy_lifecycle/strategy_lifecycle_review.json
+  --lifecycle-review data/research/strategy_lifecycle/strategy_lifecycle_review.json
 ```
 
 出力:
@@ -29,9 +29,9 @@ uv run sis strategy-review-build \
 
 既存 review directory がある場合、`--replace-existing` なしでは exit 2 で止まります。
 
-`--authoring-spec-path` は任意です。未指定の場合は pack JSON の `spec_path` から Strategy Authoring YAML を導出し、導出できない場合は `戦略定義` section を `not_configured` として出します。
+`--authoring-spec` は任意です。未指定の場合は pack JSON の `spec_path` から Strategy Authoring YAML を導出し、導出できない場合は `戦略定義` section を `not_configured` として出します。
 
-`--lifecycle-review-path` は任意の Strategy Lifecycle review JSON です。既定値は `data/research/strategy_lifecycle/strategy_lifecycle_review.json` です。欠損は optional missing として扱い、壊れた JSON や schema version mismatch は `INVALID_INPUT` にします。
+`--lifecycle-review` は任意の Strategy Lifecycle review JSON です。既定値は `data/research/strategy_lifecycle/strategy_lifecycle_review.json` です。欠損は optional missing として扱い、壊れた JSON や schema version mismatch は `INVALID_INPUT` にします。
 
 ## Status
 
@@ -51,6 +51,8 @@ uv run sis strategy-review-build \
 `review_manifest.json` は `strategy_review_manifest.v1` です。Pydantic model は `src/sis/strategy_review/manifest.py`、外部互換と artifact 検証用 JSON Schema は `schemas/strategy_review_manifest.v1.schema.json` にあります。
 
 source artifact はコピーしません。manifest には repo-relative path と `sha256:<64 hex>` hash だけを記録します。欠損 artifact は `status=missing` とし、hash は省略します。
+
+`builder_safety` は builder 自身が live order、wallet、signing、exchange write を使わないことを固定します。`source_safety` は入力 artifact から読めた境界状態で、`PASS` / `UNKNOWN` / `BLOCKED` のいずれかです。`UNKNOWN` は必須 artifact の欠損などで境界を確認できない状態、`BLOCKED` は入力に live / wallet / signing / exchange write 系 flag が混入した状態です。
 
 `evaluation_flags.pack_validation_pass_is_readiness_proof` は常に `false` です。
 

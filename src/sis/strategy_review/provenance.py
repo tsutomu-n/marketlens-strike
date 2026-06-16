@@ -7,14 +7,14 @@ from sis.backtest.artifact_io import read_json_object, sha256_file
 from sis.strategy_review.manifest import REVIEW_ID_PATTERN, SourceArtifact, SourceArtifactStatus
 
 
-BOUNDARY_FLAG_KEYS = {
+BOUNDARY_FLAG_KEYS = (
     "permits_live_order",
     "live_conversion_allowed",
     "wallet_used",
     "signing_used",
     "exchange_write_used",
     "venue_write_used",
-}
+)
 
 BOUNDARY_TRUE_KEYS = {
     *BOUNDARY_FLAG_KEYS,

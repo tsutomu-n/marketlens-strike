@@ -24,8 +24,10 @@ def test_strategy_review_build_help() -> None:
     assert "--no-strict" in stdout
     assert "--pack-path" in stdout
     assert "--validation-path" in stdout
-    assert "--authoring-spec-path" in stdout
-    assert "--lifecycle-review-path" in stdout
+    assert "--authoring-spec" in stdout
+    assert "--lifecycle-review" in stdout
+    assert "--authoring-spec-path" not in stdout
+    assert "--lifecycle-review-path" not in stdout
     assert "--replace-existing" in stdout
 
 
@@ -50,6 +52,12 @@ def test_strategy_review_build_cli_writes_outputs(tmp_path: Path, monkeypatch) -
 
     assert result.exit_code == 0
     assert "review_status=READY_FOR_HUMAN_REVIEW" in result.stdout
+    assert "review_dir=data/strategy_reviews/cli-smoke" in result.stdout
+    assert "manifest_path=data/strategy_reviews/cli-smoke/review_manifest.json" in result.stdout
+    assert "markdown_path=data/strategy_reviews/cli-smoke/review.md" in result.stdout
+    assert "missing_required_count=0" in result.stdout
+    assert "invalid_required_count=0" in result.stdout
+    assert "boundary_violation_count=0" in result.stdout
     manifest_path = tmp_path / "data/strategy_reviews/cli-smoke/review_manifest.json"
     assert json.loads(manifest_path.read_text(encoding="utf-8"))["review_status"] == (
         "READY_FOR_HUMAN_REVIEW"
