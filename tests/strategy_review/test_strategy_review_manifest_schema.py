@@ -7,7 +7,7 @@ from jsonschema import Draft202012Validator
 import pytest
 from pydantic import ValidationError
 
-from sis.strategy_review.manifest import StrategyReviewManifest
+from sis.strategy_review.manifest import SourceArtifactStatus, StrategyReviewManifest
 
 
 def _schema() -> dict:
@@ -21,6 +21,11 @@ def _valid_manifest() -> dict:
         "schema_version": "strategy_review_manifest.v1",
         "review_id": "ndx-smoke-001",
         "created_at": "2026-06-16T09:00:00Z",
+        "producer": {
+            "tool": "sis",
+            "command": "strategy-review-build",
+            "schema_version": "strategy_review_manifest.v1",
+        },
         "review_status": "READY_FOR_HUMAN_REVIEW",
         "strict": False,
         "paths": {
@@ -36,6 +41,8 @@ def _valid_manifest() -> dict:
                 "required": True,
                 "status": "present",
                 "sha256": "sha256:" + "a" * 64,
+                "bytes": 123,
+                "detected_schema_version": "strategy_backtest_pack.v1",
                 "summary": {"paper_only": True},
             },
             {
@@ -75,6 +82,7 @@ def _valid_manifest() -> dict:
             "missing_required_count": 0,
             "invalid_required_count": 0,
             "boundary_violation_count": 0,
+            "unknown_boundary_count": 0,
         },
     }
 
@@ -85,6 +93,13 @@ def test_strategy_review_manifest_schema_accepts_valid_manifest() -> None:
     Draft202012Validator.check_schema(_schema())
     Draft202012Validator(_schema()).validate(payload)
     StrategyReviewManifest.model_validate(payload)
+
+
+def test_strategy_review_manifest_pydantic_canonical_dump_matches_tracked_schema() -> None:
+    manifest = StrategyReviewManifest.model_validate(_valid_manifest())
+    payload = manifest.model_dump(mode="json", exclude_none=True)
+
+    Draft202012Validator(_schema()).validate(payload)
 
 
 def test_strategy_review_manifest_rejects_bare_hex_hash() -> None:
@@ -121,6 +136,7 @@ def test_strategy_review_manifest_source_safety_unknown_maps_to_incomplete() -> 
     payload["source_safety"]["status"] = "UNKNOWN"
     payload["source_safety"]["unknown_boundary_count"] = 1
     payload["summary"]["missing_required_count"] = 1
+    payload["summary"]["unknown_boundary_count"] = 1
 
     Draft202012Validator(_schema()).validate(payload)
     StrategyReviewManifest.model_validate(payload)
@@ -137,6 +153,9 @@ def test_strategy_review_manifest_source_safety_blocked_maps_to_blocked() -> Non
     payload["source_safety"]["boundary_violation_count"] = 1
     payload["source_safety"]["observed_flags"]["wallet_used"] = True
     payload["summary"]["boundary_violation_count"] = 1
+    payload["source_artifacts"][0]["status"] = "blocked"
+    payload["source_artifacts"][0]["error"] = "source boundary violation: wallet_used"
+    payload["source_artifacts"][0]["summary"] = {"boundary_violations": ["wallet_used"]}
 
     Draft202012Validator(_schema()).validate(payload)
     StrategyReviewManifest.model_validate(payload)
@@ -151,9 +170,46 @@ def test_strategy_review_manifest_allows_missing_artifact_without_hash() -> None
     missing = payload["source_artifacts"][1]
     assert missing["exists"] is False
     assert "sha256" not in missing
+    assert "bytes" not in missing
 
     Draft202012Validator(_schema()).validate(payload)
     StrategyReviewManifest.model_validate(payload)
+
+
+def test_strategy_review_manifest_rejects_invalid_or_blocked_without_error() -> None:
+    for status in ("invalid", "blocked"):
+        payload = _valid_manifest()
+        payload["review_status"] = (
+            "BLOCKED_BOUNDARY_VIOLATION" if status == "blocked" else "INVALID_INPUT"
+        )
+        payload["source_artifacts"][0]["status"] = status
+        if status == "blocked":
+            payload["source_artifacts"][0]["summary"] = {"boundary_violations": ["wallet_used"]}
+            payload["source_safety"]["status"] = "BLOCKED"
+            payload["source_safety"]["boundary_violation_count"] = 1
+            payload["source_safety"]["observed_flags"]["wallet_used"] = True
+            payload["summary"]["boundary_violation_count"] = 1
+
+        assert list(Draft202012Validator(_schema()).iter_errors(payload))
+        with pytest.raises(ValidationError):
+            StrategyReviewManifest.model_validate(payload)
+
+
+def test_strategy_review_manifest_rejects_present_without_bytes() -> None:
+    payload = _valid_manifest()
+    payload["source_artifacts"][0].pop("bytes")
+
+    assert list(Draft202012Validator(_schema()).iter_errors(payload))
+    with pytest.raises(ValidationError):
+        StrategyReviewManifest.model_validate(payload)
+
+
+def test_strategy_review_manifest_status_enum_matches_model() -> None:
+    schema_status_enum = set(
+        _schema()["properties"]["source_artifacts"]["items"]["properties"]["status"]["enum"]
+    )
+
+    assert schema_status_enum == {status.value for status in SourceArtifactStatus}
 
 
 def test_strategy_review_id_rejects_path_segments() -> None:

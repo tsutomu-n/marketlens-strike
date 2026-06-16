@@ -157,3 +157,61 @@ def test_strategy_review_build_cli_invalid_json_exits_two_with_manifest(
     assert json.loads(manifest_path.read_text(encoding="utf-8"))["review_status"] == (
         "INVALID_INPUT"
     )
+
+
+def test_strategy_review_build_cli_boundary_violation_exits_two_with_manifest(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path, wallet_used=True)
+
+    result = runner.invoke(
+        app,
+        [
+            "strategy-review-build",
+            "--review-id",
+            "blocked-wallet",
+            "--out",
+            str(tmp_path / "data/strategy_reviews"),
+            "--pack-path",
+            str(pack_path),
+            "--validation-path",
+            str(validation_path),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "review_status=BLOCKED_BOUNDARY_VIOLATION" in result.stdout
+    manifest_path = tmp_path / "data/strategy_reviews/blocked-wallet/review_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    pack = next(row for row in payload["source_artifacts"] if row["artifact_key"] == "pack")
+    assert pack["status"] == "blocked"
+    assert pack["error"] == "source boundary violation: wallet_used"
+
+
+def test_strategy_review_build_cli_rejects_secret_path_without_outputs(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    secret_path = tmp_path / "data/secrets/pack.json"
+    secret_path.parent.mkdir(parents=True)
+    secret_path.write_text("{}\n", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "strategy-review-build",
+            "--review-id",
+            "secret-path",
+            "--out",
+            str(tmp_path / "data/strategy_reviews"),
+            "--pack-path",
+            str(secret_path),
+            "--validation-path",
+            str(tmp_path / "missing-validation.json"),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "secret path segments" in result.stdout
+    assert not (tmp_path / "data/strategy_reviews/secret-path/review_manifest.json").exists()

@@ -174,6 +174,11 @@ def test_build_strategy_review_writes_markdown_and_manifest(tmp_path: Path, monk
     assert result.manifest_path.exists()
     payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert payload["review_status"] == "READY_FOR_HUMAN_REVIEW"
+    assert payload["producer"] == {
+        "command": "strategy-review-build",
+        "schema_version": "strategy_review_manifest.v1",
+        "tool": "sis",
+    }
     assert "safety" not in payload
     assert payload["builder_safety"] == {
         "exchange_write_used": False,
@@ -191,6 +196,8 @@ def test_build_strategy_review_writes_markdown_and_manifest(tmp_path: Path, monk
     assert pack["path"] == "data/research/backtest_pack/strategy_backtest_pack.json"
     assert pack["sha256"].startswith("sha256:")
     assert len(pack["sha256"]) == len("sha256:") + 64
+    assert pack["bytes"] == pack_path.stat().st_size
+    assert pack["detected_schema_version"] == "strategy_backtest_pack.v1"
     assert not any(row["artifact_key"] == "authoring_spec" for row in payload["source_artifacts"])
 
 
@@ -215,12 +222,14 @@ def test_build_strategy_review_missing_required_artifact_is_incomplete(
     assert result.manifest.review_status.value == "INCOMPLETE_ARTIFACTS"
     assert result.manifest.source_safety.status.value == "UNKNOWN"
     assert result.manifest.source_safety.unknown_boundary_count == 2
+    assert result.manifest.summary.unknown_boundary_count == 2
     assert result.manifest.summary.missing_required_count == 2
     assert result.review_markdown_path.exists()
     payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     Draft202012Validator(_manifest_schema()).validate(payload)
     pack = next(row for row in payload["source_artifacts"] if row["artifact_key"] == "pack")
     assert "sha256" not in pack
+    assert "bytes" not in pack
 
 
 def test_build_strategy_review_detects_boundary_violation(tmp_path: Path, monkeypatch) -> None:
@@ -239,6 +248,11 @@ def test_build_strategy_review_detects_boundary_violation(tmp_path: Path, monkey
     assert result.manifest.source_safety.status.value == "BLOCKED"
     assert result.manifest.source_safety.observed_flags.wallet_used is True
     assert result.manifest.summary.boundary_violation_count == 1
+    pack = next(
+        artifact for artifact in result.manifest.source_artifacts if artifact.artifact_key == "pack"
+    )
+    assert pack.status.value == "blocked"
+    assert pack.error == "source boundary violation: wallet_used"
 
 
 def test_build_strategy_review_detects_all_blocking_boundary_flags(
@@ -465,7 +479,9 @@ def test_build_strategy_review_lifecycle_venue_write_boundary_blocks(
         for artifact in result.manifest.source_artifacts
         if artifact.artifact_key == "lifecycle_review"
     )
+    assert lifecycle.status.value == "blocked"
     assert lifecycle.summary["boundary_violations"] == ["venue_write_used"]
+    assert lifecycle.error == "source boundary violation: venue_write_used"
 
 
 def test_build_strategy_review_invalid_required_json_is_invalid_input(
@@ -495,7 +511,9 @@ def test_build_strategy_review_invalid_required_json_is_invalid_input(
     )
     assert pack.exists is True
     assert pack.status.value == "invalid"
+    assert pack.error
     assert "error" in pack.summary
+    assert pack.bytes == pack_path.stat().st_size
     assert validation.status.value == "present"
     assert "error" not in validation.summary
     assert "summary_unavailable_due_to" in validation.summary
@@ -516,6 +534,10 @@ def test_build_strategy_review_refuses_existing_output_without_replace(
         "created_at": CREATED_AT,
     }
     build_strategy_review(**kwargs)
+    review_path = tmp_path / "data/strategy_reviews/same-id/review.md"
+    manifest_path = tmp_path / "data/strategy_reviews/same-id/review_manifest.json"
+    review_path.write_text("keep review\n", encoding="utf-8")
+    manifest_path.write_text("keep manifest\n", encoding="utf-8")
 
     try:
         build_strategy_review(**kwargs)
@@ -523,6 +545,8 @@ def test_build_strategy_review_refuses_existing_output_without_replace(
         assert "already exists" in str(exc)
     else:
         raise AssertionError("expected existing output error")
+    assert review_path.read_text(encoding="utf-8") == "keep review\n"
+    assert manifest_path.read_text(encoding="utf-8") == "keep manifest\n"
 
 
 def test_build_strategy_review_replace_existing_preserves_unmanaged_files(
@@ -540,7 +564,13 @@ def test_build_strategy_review_replace_existing_preserves_unmanaged_files(
     build_strategy_review(**kwargs)
     extra_path = tmp_path / "data/strategy_reviews/replace-id/operator-note.txt"
     extra_path.write_text("keep\n", encoding="utf-8")
+    review_path = tmp_path / "data/strategy_reviews/replace-id/review.md"
+    manifest_path = tmp_path / "data/strategy_reviews/replace-id/review_manifest.json"
+    review_path.write_text("old review\n", encoding="utf-8")
+    manifest_path.write_text("old manifest\n", encoding="utf-8")
 
     build_strategy_review(**kwargs, replace_existing=True)
 
     assert extra_path.read_text(encoding="utf-8") == "keep\n"
+    assert "old review" not in review_path.read_text(encoding="utf-8")
+    assert "old manifest" not in manifest_path.read_text(encoding="utf-8")

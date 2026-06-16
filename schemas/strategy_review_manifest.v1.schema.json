@@ -6,6 +6,7 @@
     "schema_version",
     "review_id",
     "created_at",
+    "producer",
     "review_status",
     "strict",
     "paths",
@@ -19,6 +20,16 @@
     "schema_version": {"const": "strategy_review_manifest.v1"},
     "review_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
     "created_at": {"type": "string"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command", "schema_version"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-review-build"},
+        "schema_version": {"const": "strategy_review_manifest.v1"}
+      },
+      "additionalProperties": false
+    },
     "review_status": {
       "enum": [
         "READY_FOR_HUMAN_REVIEW",
@@ -32,9 +43,9 @@
       "type": "object",
       "required": ["review_dir", "review_markdown_path", "manifest_path"],
       "properties": {
-        "review_dir": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+"},
-        "review_markdown_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+"},
-        "manifest_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+"}
+        "review_dir": {"type": "string", "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"},
+        "review_markdown_path": {"type": "string", "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"},
+        "manifest_path": {"type": "string", "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"}
       },
       "additionalProperties": false
     },
@@ -45,21 +56,47 @@
         "required": ["artifact_key", "path", "exists", "required", "status", "summary"],
         "properties": {
           "artifact_key": {"type": "string"},
-          "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+"},
+          "path": {"type": "string", "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"},
           "exists": {"type": "boolean"},
           "required": {"type": "boolean"},
-          "status": {"enum": ["present", "missing", "invalid"]},
+          "status": {"enum": ["present", "missing", "invalid", "blocked"]},
           "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "bytes": {"type": "integer", "minimum": 0},
+          "detected_schema_version": {"type": "string"},
+          "error": {"type": "string", "minLength": 1},
           "summary": {"type": "object"}
         },
         "allOf": [
           {
             "if": {"properties": {"status": {"const": "present"}}, "required": ["status"]},
-            "then": {"required": ["sha256"]}
+            "then": {
+              "required": ["sha256", "bytes"],
+              "properties": {"exists": {"const": true}}
+            }
           },
           {
             "if": {"properties": {"status": {"const": "missing"}}, "required": ["status"]},
-            "then": {"not": {"required": ["sha256"]}}
+            "then": {
+              "properties": {"exists": {"const": false}},
+              "allOf": [
+                {"not": {"required": ["sha256"]}},
+                {"not": {"required": ["bytes"]}}
+              ]
+            }
+          },
+          {
+            "if": {"properties": {"status": {"const": "invalid"}}, "required": ["status"]},
+            "then": {
+              "required": ["error"],
+              "properties": {"exists": {"const": true}}
+            }
+          },
+          {
+            "if": {"properties": {"status": {"const": "blocked"}}, "required": ["status"]},
+            "then": {
+              "required": ["error"],
+              "properties": {"exists": {"const": true}}
+            }
           }
         ],
         "additionalProperties": false
@@ -151,12 +188,14 @@
       "required": [
         "missing_required_count",
         "invalid_required_count",
-        "boundary_violation_count"
+        "boundary_violation_count",
+        "unknown_boundary_count"
       ],
       "properties": {
         "missing_required_count": {"type": "integer", "minimum": 0},
         "invalid_required_count": {"type": "integer", "minimum": 0},
-        "boundary_violation_count": {"type": "integer", "minimum": 0}
+        "boundary_violation_count": {"type": "integer", "minimum": 0},
+        "unknown_boundary_count": {"type": "integer", "minimum": 0}
       },
       "additionalProperties": false
     }

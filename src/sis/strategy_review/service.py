@@ -24,10 +24,10 @@ from sis.strategy_review.manifest import (
 )
 from sis.strategy_review.provenance import (
     boundary_true_paths,
+    collect_source_artifact,
     observed_boundary_flags,
     read_source_json,
     repo_relative_path,
-    source_hash,
     validate_review_id,
 )
 from sis.strategy_review.renderer import render_strategy_review_markdown
@@ -135,25 +135,25 @@ def _artifact_from_summary(artifact_key: str, row: dict[str, Any]) -> SourceArti
     required = artifact_key in REQUIRED_ARTIFACT_KEYS
     path = Path(str(row.get("path", "")))
     summary = {key: value for key, value in row.items() if key not in {"path", "exists"}}
-    status = SourceArtifactStatus.MISSING
-    digest: str | None = None
-    if exists:
-        digest = source_hash(path)
-        status = SourceArtifactStatus.PRESENT
-        payload = read_source_json(path)
-        summary["observed_boundary_flags"] = observed_boundary_flags(payload)
-        violations = boundary_true_paths(payload)
-        if violations:
-            summary["boundary_violations"] = violations
-    return SourceArtifact(
+    artifact = collect_source_artifact(
         artifact_key=artifact_key,
-        path=repo_relative_path(path),
-        exists=exists,
+        path=path,
         required=required,
-        status=status,
-        sha256=digest,
         summary=summary,
     )
+    if exists and artifact.status is SourceArtifactStatus.PRESENT:
+        payload = read_source_json(path)
+        artifact.summary["observed_boundary_flags"] = observed_boundary_flags(payload)
+        violations = boundary_true_paths(payload)
+        if violations:
+            artifact.summary["boundary_violations"] = violations
+            return artifact.model_copy(
+                update={
+                    "status": SourceArtifactStatus.BLOCKED,
+                    "error": f"source boundary violation: {', '.join(violations)}",
+                }
+            )
+    return artifact
 
 
 def _artifact_from_path_after_summary_error(
@@ -165,26 +165,21 @@ def _artifact_from_path_after_summary_error(
     required = artifact_key in REQUIRED_ARTIFACT_KEYS
     exists = path.exists()
     if not exists:
-        return SourceArtifact(
-            artifact_key=artifact_key,
-            path=repo_relative_path(path),
-            exists=False,
-            required=required,
-            status=SourceArtifactStatus.MISSING,
-            summary={},
-        )
+        return collect_source_artifact(artifact_key=artifact_key, path=path, required=required)
     summary: dict[str, Any] = {}
     try:
         payload = read_source_json(path)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
-        summary["error"] = str(exc)
-        return SourceArtifact(
+        artifact = collect_source_artifact(
             artifact_key=artifact_key,
-            path=repo_relative_path(path),
-            exists=True,
+            path=path,
             required=required,
-            status=SourceArtifactStatus.INVALID,
             summary=summary,
+        )
+        if artifact.status is SourceArtifactStatus.INVALID:
+            return artifact
+        return artifact.model_copy(
+            update={"status": SourceArtifactStatus.INVALID, "error": str(exc)}
         )
 
     violations = boundary_true_paths(payload)
@@ -192,39 +187,36 @@ def _artifact_from_path_after_summary_error(
     if violations:
         summary["boundary_violations"] = violations
     summary["summary_unavailable_due_to"] = str(error)
-    return SourceArtifact(
+    artifact = collect_source_artifact(
         artifact_key=artifact_key,
-        path=repo_relative_path(path),
-        exists=True,
         required=required,
-        status=SourceArtifactStatus.PRESENT,
-        sha256=source_hash(path),
+        path=path,
         summary=summary,
     )
+    if violations:
+        return artifact.model_copy(
+            update={
+                "status": SourceArtifactStatus.BLOCKED,
+                "error": f"source boundary violation: {', '.join(violations)}",
+            }
+        )
+    return artifact
 
 
 def _missing_optional_artifact(artifact_key: str, path: Path) -> SourceArtifact:
-    return SourceArtifact(
-        artifact_key=artifact_key,
-        path=repo_relative_path(path),
-        exists=False,
-        required=False,
-        status=SourceArtifactStatus.MISSING,
-        summary={},
-    )
+    return collect_source_artifact(artifact_key=artifact_key, path=path, required=False)
 
 
 def _invalid_optional_artifact(
     artifact_key: str, path: Path, error: Exception | str
 ) -> SourceArtifact:
-    return SourceArtifact(
+    artifact = collect_source_artifact(
         artifact_key=artifact_key,
-        path=repo_relative_path(path),
-        exists=True,
+        path=path,
         required=False,
-        status=SourceArtifactStatus.INVALID,
         summary={"error": str(error)},
     )
+    return artifact.model_copy(update={"status": SourceArtifactStatus.INVALID, "error": str(error)})
 
 
 def _present_optional_artifact(
@@ -238,15 +230,20 @@ def _present_optional_artifact(
     summary["observed_boundary_flags"] = observed_boundary_flags(payload)
     if violations:
         summary = {**summary, "boundary_violations": violations}
-    return SourceArtifact(
+    artifact = collect_source_artifact(
         artifact_key=artifact_key,
-        path=repo_relative_path(path),
-        exists=True,
         required=False,
-        status=SourceArtifactStatus.PRESENT,
-        sha256=source_hash(path),
+        path=path,
         summary=summary,
     )
+    if violations:
+        return artifact.model_copy(
+            update={
+                "status": SourceArtifactStatus.BLOCKED,
+                "error": f"source boundary violation: {', '.join(violations)}",
+            }
+        )
+    return artifact
 
 
 def _condition_count(value: Any) -> int:
@@ -272,8 +269,11 @@ def _strategy_definition_summary(path: Path) -> tuple[SourceArtifact, ReviewSect
         return (
             _invalid_optional_artifact("authoring_spec", path, exc),
             ReviewSection(
-                title="戦略定義",
+                section_id="strategy_definition",
+                title="Strategy Definition",
+                status="invalid",
                 markdown=f"- status: `invalid`\n- path: `{repo_relative_path(path)}`\n- error: `{exc}`",
+                source_artifact_keys=("authoring_spec",),
             ),
         )
 
@@ -327,13 +327,21 @@ def _strategy_definition_summary(path: Path) -> tuple[SourceArtifact, ReviewSect
             summary,
             payload=spec.model_dump(mode="json"),
         ),
-        ReviewSection(title="戦略定義", markdown=markdown),
+        ReviewSection(
+            section_id="strategy_definition",
+            title="Strategy Definition",
+            status="present",
+            markdown=markdown,
+            source_artifact_keys=("authoring_spec",),
+        ),
     )
 
 
 def _not_configured_strategy_definition_section() -> ReviewSection:
     return ReviewSection(
-        title="戦略定義",
+        section_id="strategy_definition",
+        title="Strategy Definition",
+        status="not_configured",
         markdown="- status: `not_configured`\n- reason: `authoring spec path was not provided or derivable`",
     )
 
@@ -357,8 +365,11 @@ def _lifecycle_review_summary(path: Path) -> tuple[SourceArtifact, ReviewSection
         return (
             _missing_optional_artifact("lifecycle_review", path),
             ReviewSection(
+                section_id="lifecycle_summary",
                 title="Lifecycle Summary",
+                status="missing",
                 markdown=f"- status: `missing`\n- path: `{repo_relative_path(path)}`",
+                source_artifact_keys=("lifecycle_review",),
             ),
         )
     try:
@@ -373,8 +384,11 @@ def _lifecycle_review_summary(path: Path) -> tuple[SourceArtifact, ReviewSection
         return (
             _invalid_optional_artifact("lifecycle_review", path, exc),
             ReviewSection(
+                section_id="lifecycle_summary",
                 title="Lifecycle Summary",
+                status="invalid",
                 markdown=f"- status: `invalid`\n- path: `{repo_relative_path(path)}`\n- error: `{exc}`",
+                source_artifact_keys=("lifecycle_review",),
             ),
         )
 
@@ -405,7 +419,13 @@ def _lifecycle_review_summary(path: Path) -> tuple[SourceArtifact, ReviewSection
     )
     return (
         _present_optional_artifact("lifecycle_review", path, summary, payload=payload),
-        ReviewSection(title="Lifecycle Summary", markdown=markdown),
+        ReviewSection(
+            section_id="lifecycle_summary",
+            title="Lifecycle Summary",
+            status="present",
+            markdown=markdown,
+            source_artifact_keys=("lifecycle_review",),
+        ),
     )
 
 
@@ -423,7 +443,13 @@ def _backtest_pack_section(source_artifacts: list[SourceArtifact]) -> ReviewSect
         f"- suite_method_count: `{pack_summary.get('suite_method_count', pack_summary.get('summary', {}).get('suite_method_count'))}`",
         f"- pack_validation_pass_is_readiness_proof: `{str(False).lower()}`",
     ]
-    return ReviewSection(title="Backtest Pack Summary", markdown="\n".join(lines))
+    return ReviewSection(
+        section_id="backtest_pack_validation_summary",
+        title="Backtest Pack / Validation Summary",
+        status="present",
+        markdown="\n".join(lines),
+        source_artifact_keys=("pack", "pack_validation"),
+    )
 
 
 def _derive_authoring_spec_path(pack_path: Path) -> Path | None:
@@ -535,6 +561,7 @@ def _build_manifest(
             missing_required_count=missing_required_count,
             invalid_required_count=invalid_required_count,
             boundary_violation_count=boundary_violation_count,
+            unknown_boundary_count=unknown_boundary_count,
         ),
     )
 
@@ -542,9 +569,28 @@ def _build_manifest(
 def _manifest_json_payload(manifest: StrategyReviewManifest) -> dict[str, Any]:
     payload = manifest.model_dump(mode="json")
     for artifact in payload["source_artifacts"]:
-        if artifact.get("sha256") is None:
-            artifact.pop("sha256", None)
+        for field_name in ("sha256", "bytes", "detected_schema_version", "error"):
+            if artifact.get(field_name) is None:
+                artifact.pop(field_name, None)
     return payload
+
+
+def _atomic_write_pair(
+    first_path: Path, first_text: str, second_path: Path, second_text: str
+) -> None:
+    first_path.parent.mkdir(parents=True, exist_ok=True)
+    second_path.parent.mkdir(parents=True, exist_ok=True)
+    first_tmp = first_path.parent / f".{first_path.name}.tmp"
+    second_tmp = second_path.parent / f".{second_path.name}.tmp"
+    try:
+        first_tmp.write_text(first_text, encoding="utf-8")
+        second_tmp.write_text(second_text, encoding="utf-8")
+        first_tmp.replace(first_path)
+        second_tmp.replace(second_path)
+    finally:
+        for tmp_path in (first_tmp, second_tmp):
+            if tmp_path.exists():
+                tmp_path.unlink()
 
 
 def build_strategy_review(
@@ -597,8 +643,11 @@ def build_strategy_review(
         )
         sections.append(
             ReviewSection(
-                title="戦略定義",
+                section_id="strategy_definition",
+                title="Strategy Definition",
+                status="missing",
                 markdown=f"- status: `missing`\n- path: `{repo_relative_path(resolved_authoring_spec_path)}`",
+                source_artifact_keys=("authoring_spec",),
             )
         )
     else:
@@ -629,21 +678,17 @@ def build_strategy_review(
         source_artifacts=source_artifacts,
     )
 
-    review_dir.mkdir(parents=True, exist_ok=True)
-    review_markdown_path.write_text(
-        render_strategy_review_markdown(manifest, sections),
-        encoding="utf-8",
-    )
-    manifest_path.write_text(
+    review_text = render_strategy_review_markdown(manifest, sections)
+    manifest_text = (
         json.dumps(
             _manifest_json_payload(manifest),
             ensure_ascii=False,
             indent=2,
             sort_keys=True,
         )
-        + "\n",
-        encoding="utf-8",
+        + "\n"
     )
+    _atomic_write_pair(review_markdown_path, review_text, manifest_path, manifest_text)
     return StrategyReviewBuildResult(
         manifest=manifest,
         review_markdown_path=review_markdown_path,

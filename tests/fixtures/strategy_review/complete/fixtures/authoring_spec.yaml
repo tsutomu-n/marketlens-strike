@@ -1,0 +1,37 @@
+schema_version: strategy_authoring_spec.v1
+experiment:
+  strategy_id: trend_pullback_test_v1
+  strategy_family: trend_pullback
+  strategy_version: v1
+  symbol_bindings:
+    - execution_venue: trade_xyz
+      execution_symbol: XYZ100
+      real_market_symbol: QQQ
+      asset_class: equity_index
+  run_profile_id: strategy_lab_research_only
+rules:
+  side: long
+  timeframe: 4h
+  entry:
+    all:
+      - column: trade_allowed
+        op: is_true
+    any:
+      - column: research_return_1d
+        op: gt
+        value: 0
+  hold:
+    any:
+      - column: vix_level
+        op: gte
+        value: 30
+  exit:
+    stop_loss_bps: 150
+    take_profit_bps: 300
+  sizing:
+    position_weight: 1.0
+    notional_usd: 1000
+backtest:
+  split_method: purged_walk_forward
+  label_horizon_minutes: 240
+  primary_metric: total_return

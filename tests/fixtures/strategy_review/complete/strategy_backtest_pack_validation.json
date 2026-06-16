@@ -1,0 +1,14 @@
+{
+  "decision": "PASS",
+  "exchange_write_used": false,
+  "paper_only": true,
+  "permits_live_order": false,
+  "schema_version": "strategy_backtest_pack_validation.v1",
+  "summary": {
+    "check_count": 1,
+    "failed_count": 0,
+    "locked_dependency_added": false,
+    "passed_count": 1
+  },
+  "wallet_used": false
+}

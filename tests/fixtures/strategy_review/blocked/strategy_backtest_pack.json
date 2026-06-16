@@ -1,0 +1,22 @@
+{
+  "artifacts": {},
+  "exchange_write_used": false,
+  "external_framework_policy": {
+    "decision": "complete_without_locked_external_dependency",
+    "external_adapters_required_for_completion": false,
+    "locked_dependency_added": false,
+    "policy_id": "native_primary_external_evaluation_only.v1",
+    "standard_engine": "strategy_authoring_native"
+  },
+  "live_conversion_allowed": false,
+  "live_order_submitted": false,
+  "paper_only": true,
+  "permits_live_order": false,
+  "schema_version": "strategy_backtest_pack.v1",
+  "signing_used": false,
+  "summary": {
+    "suite_method_count": 1,
+    "suite_run_count": 1
+  },
+  "wallet_used": true
+}

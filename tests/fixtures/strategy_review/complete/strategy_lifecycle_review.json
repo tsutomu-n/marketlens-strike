@@ -1,0 +1,33 @@
+{
+  "blocker_counts": {
+    "LIVE_READINESS_BLOCKER": 1,
+    "P2_BLOCKER": 0
+  },
+  "boundary_flags": {},
+  "created_at": "2026-06-16T09:00:00Z",
+  "decision": "CONTINUE_PAPER_OBSERVATION",
+  "decision_reasons": [
+    "PAPER_OBSERVATION_INSUFFICIENT"
+  ],
+  "exchange_write_used": false,
+  "input_status": {
+    "backtest_acceptance_present": true,
+    "paper_review_present": true,
+    "phase_gate_present": true
+  },
+  "live_conversion_allowed": false,
+  "next_actions": [
+    "Continue paper observation until thresholds are met."
+  ],
+  "permits_live_order": false,
+  "review_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "schema_version": "strategy_lifecycle_review.v1",
+  "source_backtest_acceptance_hash": "",
+  "source_backtest_acceptance_path": "",
+  "source_paper_review_hash": "",
+  "source_paper_review_path": "",
+  "source_phase_gate_hash": "",
+  "source_phase_gate_path": "",
+  "venue_write_used": false,
+  "wallet_used": false
+}

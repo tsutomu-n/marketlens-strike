@@ -10,6 +10,18 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 SCHEMA_VERSION = "strategy_review_manifest.v1"
 REVIEW_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 SHA256_PATTERN = re.compile(r"^sha256:[a-f0-9]{64}$")
+URL_SCHEME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+SECRET_PATH_SEGMENTS = {
+    ".env",
+    ".env.local",
+    ".envrc",
+    "id_rsa",
+    "id_ed25519",
+    "credentials",
+    "credential",
+    "secrets",
+    "secret",
+}
 
 
 class ReviewStatus(StrEnum):
@@ -23,6 +35,7 @@ class SourceArtifactStatus(StrEnum):
     PRESENT = "present"
     MISSING = "missing"
     INVALID = "invalid"
+    BLOCKED = "blocked"
 
 
 class SourceSafetyStatus(StrEnum):
@@ -36,8 +49,15 @@ def _validate_manifest_path(value: str) -> str:
         raise ValueError("manifest paths must use POSIX separators")
     if value.startswith("/"):
         raise ValueError("manifest paths must be repository-relative")
+    if URL_SCHEME_PATTERN.match(value):
+        raise ValueError("manifest paths must not include URL schemes")
     if any(part == ".." for part in value.split("/")):
         raise ValueError("manifest paths must not contain ..")
+    for part in value.split("/"):
+        if part.startswith("."):
+            raise ValueError("manifest paths must not include hidden path segments")
+        if part.lower() in SECRET_PATH_SEGMENTS:
+            raise ValueError("manifest paths must not include secret path segments")
     if value in {"", "."}:
         raise ValueError("manifest paths must not be empty")
     return value
@@ -110,6 +130,15 @@ class ReviewSummary(BaseModel):
     missing_required_count: int = Field(ge=0)
     invalid_required_count: int = Field(ge=0)
     boundary_violation_count: int = Field(ge=0)
+    unknown_boundary_count: int = Field(ge=0)
+
+
+class ProducerInfo(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tool: Literal["sis"] = "sis"
+    command: Literal["strategy-review-build"] = "strategy-review-build"
+    schema_version: Literal["strategy_review_manifest.v1"] = SCHEMA_VERSION
 
 
 class SourceArtifact(BaseModel):
@@ -121,6 +150,9 @@ class SourceArtifact(BaseModel):
     required: bool
     status: SourceArtifactStatus
     sha256: str | None = None
+    bytes: int | None = Field(default=None, ge=0)
+    detected_schema_version: str | None = None
+    error: str | None = None
     summary: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("path")
@@ -137,12 +169,25 @@ class SourceArtifact(BaseModel):
 
     @model_validator(mode="after")
     def validate_status_shape(self) -> SourceArtifact:
-        if self.status is SourceArtifactStatus.PRESENT and not self.exists:
-            raise ValueError("present source artifact must exist")
-        if self.status is SourceArtifactStatus.PRESENT and self.sha256 is None:
-            raise ValueError("present source artifact must include sha256")
-        if self.status is SourceArtifactStatus.MISSING and self.sha256 is not None:
-            raise ValueError("missing source artifact must omit sha256")
+        if self.status is SourceArtifactStatus.PRESENT:
+            if not self.exists:
+                raise ValueError("present source artifact must exist")
+            if self.sha256 is None:
+                raise ValueError("present source artifact must include sha256")
+            if self.bytes is None:
+                raise ValueError("present source artifact must include bytes")
+        if self.status is SourceArtifactStatus.MISSING:
+            if self.exists:
+                raise ValueError("missing source artifact must not exist")
+            if self.sha256 is not None:
+                raise ValueError("missing source artifact must omit sha256")
+            if self.bytes is not None:
+                raise ValueError("missing source artifact must omit bytes")
+        if self.status in {SourceArtifactStatus.INVALID, SourceArtifactStatus.BLOCKED}:
+            if not self.exists:
+                raise ValueError("invalid or blocked source artifact must exist")
+            if not self.error:
+                raise ValueError("invalid or blocked source artifact must include error")
         return self
 
 
@@ -152,6 +197,7 @@ class StrategyReviewManifest(BaseModel):
     schema_version: Literal["strategy_review_manifest.v1"] = SCHEMA_VERSION
     review_id: str
     created_at: str
+    producer: ProducerInfo = Field(default_factory=ProducerInfo)
     review_status: ReviewStatus
     strict: bool
     paths: ReviewPaths
@@ -170,6 +216,10 @@ class StrategyReviewManifest(BaseModel):
 
     @model_validator(mode="after")
     def validate_status_safety_relationship(self) -> StrategyReviewManifest:
+        if self.summary.boundary_violation_count != self.source_safety.boundary_violation_count:
+            raise ValueError("summary.boundary_violation_count must match source_safety")
+        if self.summary.unknown_boundary_count != self.source_safety.unknown_boundary_count:
+            raise ValueError("summary.unknown_boundary_count must match source_safety")
         if (
             self.source_safety.status is SourceSafetyStatus.BLOCKED
             and self.review_status is not ReviewStatus.BLOCKED_BOUNDARY_VIOLATION
