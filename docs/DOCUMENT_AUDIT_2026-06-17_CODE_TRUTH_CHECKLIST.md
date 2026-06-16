@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_01:26 JST
+更新日: 2026-06-17_06:32 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -14,7 +14,7 @@
 ただし、直近で `strategy-review-build` が強化されたため、top-level docs の導線が少し古い。先に直すべきは次の4点。
 
 1. `README.md` と `docs/CURRENT_STATE.md` に `docs/strategy_review/README.md` / `OPERATOR_REVIEW_PACKET_RECIPE.md` への導線を足す。2026-06-17_01:26 JST に実施済み。
-2. `docs/CODE_STATUS.md` は PR-00 から PR-08 軸のままで、新しい Strategy Review / Operator Review 予定を載せにくい。差分追記より分割した方がよい。
+2. `docs/CODE_STATUS.md` は 2026-06-17_06:32 JST に thin index 化し、実装履歴を `docs/MIGRATION_HISTORY.md`、現行 surface を `docs/IMPLEMENTED_SURFACES.md` へ分割済み。
 3. `plan/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` には `APPROVE_FOR_PAPER` が残る。実装後の次手では `plan/ねくすと.md` を優先し、この古い decision 名は使わない。
 4. `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict 対象一覧が、現行 checker の `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`docs/strategy_lifecycle/**`、`docs/strategy_review/**` に追いついていなかったため、この監査で更新する。
 
@@ -68,7 +68,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 
 | Document | 古い内容 | コード上の現在値 | 推奨処置 |
 |---|---|---|---|
-| `docs/CODE_STATUS.md` | PR-00 から PR-08 と Post-PR08 が主軸で、Strategy Review が status 表に見えない | `strategy-review-build` は CLI / code / schema / tests / docs まで実装済み | 差分追記ではなく、migration status と implemented surfaces を分ける |
+| `docs/CODE_STATUS.md` | PR-00 から PR-08 と Post-PR08 が主軸で、Strategy Review が status 表に見えなかった | `strategy-review-build` は CLI / code / schema / tests / docs まで実装済み | 2026-06-17_06:32 JST に thin index 化し、`MIGRATION_HISTORY.md` と `IMPLEMENTED_SURFACES.md` へ分割済み |
 | `docs/CURRENT_STATE.md` | Strategy Lifecycle / Backtest は厚いが、Strategy Review の独立導線がなかった | `docs/strategy_review/` と `strategy-review-build` が current surface | 2026-06-17_01:26 JST に追加済み |
 | `README.md` | Main Flows に Strategy Review がなかった | `uv run sis strategy-review-build --help` が公開済み | 2026-06-17_01:26 JST に追加済み |
 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | `strategy-review-build` は Backtest section に埋もれている | Strategy Review は backtest artifact を読む別 surface | 独立小節化する |
@@ -86,7 +86,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 
 | Document | 作り直す理由 | 作り直し後の形 |
 |---|---|---|
-| `docs/CODE_STATUS.md` | migration PR、post-PR status、implemented surfaces、known gaps、verification snapshots が混在 | `IMPLEMENTED_SURFACES.md` と `MIGRATION_HISTORY.md` に分離 |
+| `docs/CODE_STATUS.md` | migration PR、post-PR status、implemented surfaces、known gaps、verification snapshots が混在していた | 2026-06-17_06:32 JST に `IMPLEMENTED_SURFACES.md` と `MIGRATION_HISTORY.md` に分離済み |
 | `docs/CURRENT_STATE.md` | current state、capability catalog、runtime snapshots、known gaps が長くなりすぎている | 入口 index に縮小し、詳細は domain docs へリンク |
 | `docs/OPERATIONS_RUNBOOK.md` | Trade[XYZ]、NDX、Strategy Lifecycle、paper operations、long-running script が同居 | root operator index + domain runbook へ分割 |
 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | capability catalog と CLI catalog が一文書に大きく積まれている | capability overview と generated/checked CLI catalog を分離 |
@@ -117,7 +117,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 1. [x] この監査を current-doc checker 対象に入れる。
 2. [x] `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict 対象一覧を現行 checker に合わせる。
 3. [x] `README.md` と `docs/CURRENT_STATE.md` に Strategy Review への導線を足す。
-4. [ ] `docs/CODE_STATUS.md` を migration history と implemented surfaces に分割する。
+4. [x] `docs/CODE_STATUS.md` を migration history と implemented surfaces に分割する。
 5. [ ] 古い audit / plan を archive に寄せる。
 6. [ ] `docs/OPERATIONS_RUNBOOK.md` を domain runbook へ分割する。
 
