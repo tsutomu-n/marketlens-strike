@@ -58,6 +58,7 @@ def test_help_smoke() -> None:
     assert "strategy-backtest-pack" in stdout
     assert "strategy-backtest-pack-validate" in stdout
     assert "strategy-backtest-acceptance" in stdout
+    assert "strategy-review-build" in stdout
     assert "strategy-lifecycle-review" in stdout
     assert "strategy-paper-observation-cycle" in stdout
     assert "paper-step" in stdout

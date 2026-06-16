@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_17:05 JST
-更新日: 2026-06-16_17:09 JST
+更新日: 2026-06-16_18:25 JST
 -->
 
 # Strategy Review Builder implementation plan
@@ -99,6 +99,10 @@ data/strategy_reviews/ndx-smoke-001/
 `review.md` は人間 review 用で、`review_manifest.json` は再現性、欠損、hash、boundary flags、strict status を機械的に読める contract とする。
 
 実行順序だけを追う場合は、同じディレクトリの `TASK_CHAIN.yaml` を使う。
+
+## Implementation status
+
+2026-06-16_18:25 JST 時点で、初期 implementation は `strategy-review-build`、`strategy_review_manifest.v1`、`review.md` rendering、focused tests、operator docs まで実装済みである。完了確認は code、schema、CLI help、tests を正とする。
 
 ## Non-goals
 

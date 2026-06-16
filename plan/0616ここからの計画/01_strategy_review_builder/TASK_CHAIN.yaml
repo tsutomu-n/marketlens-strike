@@ -1,11 +1,12 @@
 version: 1
 created_at_jst: "2026-06-16_17:09 JST"
-updated_at_jst: "2026-06-16_17:09 JST"
+updated_at_jst: "2026-06-16_18:25 JST"
 objective: >
   Build a thin read-only Strategy Review Builder that turns existing Strategy
   Authoring and backtest artifacts into review.md and review_manifest.json
   without creating a Strategy Case registry, UI, paper gate, or live-readiness
   proof.
+implementation_status: "implemented_2026-06-16_18:25_JST"
 
 global_constraints:
   - Treat code, tests, schemas, config, lockfiles, CI, and CLI help as source of truth.

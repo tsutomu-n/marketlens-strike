@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-16_06:46 JST
+更新日: 2026-06-16_18:25 JST
 -->
 
 # Backtest Docs
@@ -107,6 +107,7 @@ Trade[XYZ] 専用 Python API surface は
 `strategy-backtest-pack` は単発 Strategy Authoring backtest、5手法 suite、bundle result、adapter spike、external result、portfolio comparison、metric extension、report extension、cost / slippage stress、regime split、rolling stability、benchmark relative、data availability、baseline comparison、no-lookahead diff、execution simulation、assumption ledger、trial ledger、comparison、pack manifest を一括生成します。`--benchmark-series-path` を渡すと pack 内の benchmark relative でも明示 external benchmark series を使います。pack manifest は `external_framework_policy` で、標準 engine を `strategy_authoring_native`、完成線を `complete_without_locked_external_dependency` として固定します。
 `strategy-backtest-pack-validate` は pack manifest の artifact path / hash、5手法、paper-only / no-live boundary、外部 framework 方針、completion artifact の存在を検査し、PASS / FAIL artifact を出します。
 `strategy-backtest-artifact-summary` は pack、pack validation、benchmark relative、metric extension、report extension、stress、regime split、rolling stability、data availability、baseline comparison、trial ledger、assumption ledger、no-lookahead diff、execution simulation、comparison diagnostics の主要 field を読み、JSON で stdout に出します。artifact を生成せず、欠損 artifact は `exists=false` として表示します。
+`strategy-review-build` はこの既存 artifact chain を読み、`data/strategy_reviews/{review_id}/review.md` と `review_manifest.json` を作る read-only builder です。これは人間の戦略レビュー用 artifact であり、alpha、paper readiness、live readiness を証明しません。詳しくは [../strategy_review/README.md](../strategy_review/README.md) を見ます。
 
 バックテストへ最短で入る入口は Strategy Authoring baseline です。現在の backtest-first 入口は
 [BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)

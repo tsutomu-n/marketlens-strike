@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-16_17:05 JST
+更新日: 2026-06-16_18:25 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -36,11 +36,11 @@ code, schema, dependency, paper, or live-execution changes by themselves.
 
 ## Current 2026-06-16 review builder plan
 
-This is the current implementation handoff for a thin, read-only Strategy
-Review Builder. It turns existing Strategy Authoring / backtest artifacts into a
-human review markdown file and a machine-readable manifest. It does not create a
-Strategy Case registry, UI, paper gate, live readiness proof, wallet/signing
-path, or exchange-write path.
+This implementation handoff now has corresponding code, schema, CLI help,
+focused tests, and docs. The Strategy Review Builder turns existing Strategy
+Authoring / backtest artifacts into a human review markdown file and a
+machine-readable manifest. It does not create a Strategy Case registry, UI,
+paper gate, live readiness proof, wallet/signing path, or exchange-write path.
 
 - [plan/0616ここからの計画/01_strategy_review_builder/README.md](0616ここからの計画/01_strategy_review_builder/README.md)
 

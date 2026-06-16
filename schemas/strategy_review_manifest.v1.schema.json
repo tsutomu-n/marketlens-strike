@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_review_manifest.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "review_id",
+    "created_at",
+    "review_status",
+    "strict",
+    "paths",
+    "source_artifacts",
+    "safety",
+    "evaluation_flags",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_review_manifest.v1"},
+    "review_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "created_at": {"type": "string"},
+    "review_status": {
+      "enum": [
+        "READY_FOR_HUMAN_REVIEW",
+        "INCOMPLETE_ARTIFACTS",
+        "INVALID_INPUT",
+        "BLOCKED_BOUNDARY_VIOLATION"
+      ]
+    },
+    "strict": {"type": "boolean"},
+    "paths": {
+      "type": "object",
+      "required": ["review_dir", "review_markdown_path", "manifest_path"],
+      "properties": {
+        "review_dir": {"type": "string"},
+        "review_markdown_path": {"type": "string"},
+        "manifest_path": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "source_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["artifact_key", "path", "exists", "required", "status", "summary"],
+        "properties": {
+          "artifact_key": {"type": "string"},
+          "path": {"type": "string"},
+          "exists": {"type": "boolean"},
+          "required": {"type": "boolean"},
+          "status": {"enum": ["present", "missing", "invalid"]},
+          "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "summary": {"type": "object"}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"status": {"const": "present"}}, "required": ["status"]},
+            "then": {"required": ["sha256"]}
+          },
+          {
+            "if": {"properties": {"status": {"const": "missing"}}, "required": ["status"]},
+            "then": {"not": {"required": ["sha256"]}}
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "evaluation_flags": {
+      "type": "object",
+      "required": ["pack_validation_status", "pack_validation_pass_is_readiness_proof"],
+      "properties": {
+        "pack_validation_status": {"type": ["string", "null"]},
+        "pack_validation_pass_is_readiness_proof": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "missing_required_count",
+        "invalid_required_count",
+        "boundary_violation_count"
+      ],
+      "properties": {
+        "missing_required_count": {"type": "integer", "minimum": 0},
+        "invalid_required_count": {"type": "integer", "minimum": 0},
+        "boundary_violation_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

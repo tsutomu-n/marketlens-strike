@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-16_07:41 JST
+更新日: 2026-06-16_18:25 JST
 -->
 
 # Repo Capabilities Current
@@ -164,6 +164,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-backtest-pack` で backtest artifact chain を一括生成できる。
 - `strategy-backtest-pack-validate` で path / hash / method / paper-only boundary / framework policy を検査できる。
 - `strategy-backtest-artifact-summary` で主要 artifact field を JSON stdout にまとめられる。
+- `strategy-review-build` で既存 backtest artifact chain から人間レビュー用 `review.md` と機械検証用 `review_manifest.json` を作れる。
 - `strategy-backtest-compare` で native result、suite、adapter spike、external result、portfolio comparison、metric extension、report extension、stress、regime split、rolling stability、benchmark relative、completion artifact を比較 artifact に正規化できる。
 - `strategy-backtest-data-availability` で local source hash、row count、timestamp range、gap / duplicate、future candidate を記録できる。
 - `strategy-backtest-baseline-compare` で cash / no-trade と return-series control を比較できる。
@@ -198,6 +199,7 @@ reference-only / 採用前 contract:
 - optional OSS は標準 engine を置き換えない。
 - `framework_run` は pack に入るが、pack completion の必須条件ではない。
 - pack validation `PASS` は alpha / paper pass / live readiness ではない。
+- strategy review output は human-review artifact であり、pack validation `PASS` を収益性、paper 移行可否、live 実行可否の証明にしない。
 - HftBacktest / qstrader / PyBroker / skfolio / Riskfolio-Lib は dependency 追加前 contract まで。engine 実行ではない。
 - `build-backtest` は Trade[XYZ] pure backtest v0.1 や Strategy Authoring native backtest の入口ではなく、既存 bridge 系 command として読む。
 
@@ -586,6 +588,7 @@ reference-only / 採用前 contract:
 - `strategy-backtest-pack`
 - `strategy-backtest-pack-validate`
 - `strategy-backtest-artifact-summary`
+- `strategy-review-build`
 
 ### Trade[XYZ] / Quotes / Data Readiness
 

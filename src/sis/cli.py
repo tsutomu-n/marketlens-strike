@@ -16,6 +16,7 @@ from sis.commands.quotes import register_quote_commands
 from sis.commands.remediation import register_remediation_commands
 from sis.commands.research import register_research_commands
 from sis.commands.strategy_authoring import register_strategy_authoring_commands
+from sis.commands.strategy_review import register_strategy_review_commands
 from sis.commands.execution import register_execution_commands
 from sis.commands.bot import register_bot_commands
 from sis.commands.execution_artifacts import (
@@ -112,6 +113,7 @@ register_probe_commands(app)
 
 register_research_commands(app, _recommended_read_order)
 register_strategy_authoring_commands(app)
+register_strategy_review_commands(app)
 register_quote_commands(app, _recommended_read_order)
 register_bot_commands(app, _recommended_read_order)
 
