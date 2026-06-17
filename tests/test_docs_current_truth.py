@@ -110,6 +110,13 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "2026-06-04_16:39 JST" in script
     assert "generated artifact gate は `READ_ONLY_GO` まで確認済み" in script
     assert "2026-06-15_19:13 JST 時点では、代表的な状態は次の通りです。" in script
+    assert "2026-06-15_21:08 JST 時点で、現在の artifact summary" in script
+    assert "strategy total return: `0.0046531202609065075`" in script
+    assert "benchmark total return: `0.004920882894421784`" in script
+    assert "information ratio: `-0.08156554737966769`" in script
+    assert "worst stressed total return: `-0.012846879739093493`" in script
+    assert "future candidate count: `3`" in script
+    assert "unknown critical assumptions: `0`" in script
 
     checker_globals = _checker_globals()
     current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])
@@ -172,6 +179,10 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "docs/CURRENT_STATE.md" in current_status_docs
     assert "docs/CODE_STATUS.md" in current_status_docs
     assert "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md" in current_status_docs
+    assert (
+        "docs/backtest/BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md"
+        in current_status_docs
+    )
     assert "docs/research/ndx/README.md" in current_status_docs
     assert "docs/runbooks/NDX_RESEARCH_RUNBOOK.md" in current_status_docs
     assert "docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md" not in current_status_docs

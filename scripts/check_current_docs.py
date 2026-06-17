@@ -119,6 +119,34 @@ CURRENT_DOC_SEMANTIC_DRIFT_MARKERS = (
         "2026-06-15_19:13 JST 時点では、代表的な状態は次の通りです。",
         "old copied backtest high-school guide runtime snapshot; rerun backtest artifact/status commands instead",
     ),
+    (
+        "2026-06-15_21:08 JST 時点で、現在の artifact summary",
+        "old copied backtest user guide runtime snapshot; rerun backtest artifact/status commands instead",
+    ),
+    (
+        "strategy total return: `0.0046531202609065075`",
+        "old copied backtest benchmark runtime value; inspect strategy-backtest-artifact-summary instead",
+    ),
+    (
+        "benchmark total return: `0.004920882894421784`",
+        "old copied backtest benchmark runtime value; inspect strategy-backtest-artifact-summary instead",
+    ),
+    (
+        "information ratio: `-0.08156554737966769`",
+        "old copied backtest benchmark runtime value; inspect strategy-backtest-artifact-summary instead",
+    ),
+    (
+        "worst stressed total return: `-0.012846879739093493`",
+        "old copied backtest stress runtime value; inspect strategy-backtest-artifact-summary instead",
+    ),
+    (
+        "future candidate count: `3`",
+        "old copied backtest data-availability runtime value; inspect strategy-backtest-artifact-summary instead",
+    ),
+    (
+        "unknown critical assumptions: `0`",
+        "old copied backtest assumption-ledger runtime value; inspect strategy-backtest-artifact-summary instead",
+    ),
 )
 
 CURRENT_STATUS_DOC_FILES = (
@@ -131,6 +159,7 @@ CURRENT_STATUS_DOC_FILES = (
     "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md",
     "docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md",
     "docs/OPERATIONS_RUNBOOK.md",
+    "docs/backtest/BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md",
     "docs/backtest/README.md",
     "docs/research/ndx/README.md",
     "docs/runbooks/README.md",
