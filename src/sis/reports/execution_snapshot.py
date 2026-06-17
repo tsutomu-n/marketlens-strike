@@ -8,7 +8,7 @@ from sis.storage.jsonl_store import write_json
 EMPTY_SNAPSHOT_REASON = "trade_xyz_live_execution_snapshot_not_connected"
 EMPTY_SNAPSHOT_ROOT_SOURCE = "execution_snapshot_summary.venues=[]"
 EMPTY_SNAPSHOT_NEXT_ACTION = "decide_read_only_execution_state_collector_scope"
-UNAVAILABLE_SNAPSHOT_REASON = "read_only_execution_state_collector_not_implemented"
+UNAVAILABLE_SNAPSHOT_REASON = "read_only_execution_state_collector_unavailable"
 UNAVAILABLE_SNAPSHOT_ROOT_SOURCE = "execution_read_only_surfaces_summary.venues[].collector_status"
 
 
@@ -72,15 +72,20 @@ def build_execution_snapshot_report(
     if venue_snapshots and not any(snapshot.get("registry_exists") for snapshot in venue_snapshots):
         overall_status = "degraded"
     empty_snapshot = len(venue_snapshots) == 0
-    unavailable_reason = next(
+    unavailable_snapshot = next(
         (
-            snapshot.get("collector_reason")
+            snapshot
             for snapshot in venue_snapshots
             if snapshot.get("collector_status") in {"not_connected", "unavailable"}
-            and isinstance(snapshot.get("collector_reason"), str)
         ),
-        None,
+        {},
     )
+    unavailable_reason = unavailable_snapshot.get("collector_reason")
+    if not isinstance(unavailable_reason, str):
+        unavailable_reason = None
+    unavailable_next_action = unavailable_snapshot.get("next_action")
+    if not isinstance(unavailable_next_action, str):
+        unavailable_next_action = None
     snapshot_reason = (
         EMPTY_SNAPSHOT_REASON
         if empty_snapshot
@@ -105,7 +110,13 @@ def build_execution_snapshot_report(
         "execution_snapshot_reason": snapshot_reason,
         "execution_snapshot_reason_codes": reason_codes,
         "execution_snapshot_root_source": root_source,
-        "execution_snapshot_next_action": EMPTY_SNAPSHOT_NEXT_ACTION if snapshot_reason else None,
+        "execution_snapshot_next_action": (
+            EMPTY_SNAPSHOT_NEXT_ACTION
+            if empty_snapshot
+            else unavailable_next_action
+            if snapshot_reason
+            else None
+        ),
         "execution_snapshot_empty": empty_snapshot,
         "execution_report_path": str(out_path) if out_path is not None else None,
         "venues": venue_snapshots,
@@ -146,8 +157,38 @@ def build_execution_snapshot_report(
     for snapshot in venue_snapshots:
         venue = snapshot.get("venue")
         balance = snapshot.get("balance", {})
-        latest_order = snapshot.get("latest_order_status") or {}
-        latest_fill = snapshot.get("latest_fill") or {}
+        latest_order_payload = snapshot.get("latest_order_status_snapshot")
+        if not isinstance(latest_order_payload, dict):
+            latest_order_payload = snapshot.get("latest_order_status")
+        latest_order = latest_order_payload if isinstance(latest_order_payload, dict) else {}
+        latest_order_id = (
+            latest_order.get("order_id")
+            or latest_order.get("oid")
+            or latest_order.get("cloid")
+            or snapshot.get("latest_order_id")
+        )
+        latest_order_status = (
+            latest_order.get("status")
+            if latest_order
+            else snapshot.get("latest_order_status")
+            if isinstance(snapshot.get("latest_order_status"), str)
+            else None
+        )
+        latest_fill_payload = snapshot.get("latest_fill")
+        latest_fill = latest_fill_payload if isinstance(latest_fill_payload, dict) else {}
+        latest_fill_id = (
+            latest_fill.get("fill_id")
+            or latest_fill.get("hash")
+            or latest_fill.get("tid")
+            or snapshot.get("latest_fill_id")
+        )
+        latest_fill_status = (
+            latest_fill.get("status")
+            if latest_fill
+            else snapshot.get("latest_fill_status")
+            if isinstance(snapshot.get("latest_fill_status"), str)
+            else None
+        )
         lines.extend(
             [
                 f"## Venue: {venue}",
@@ -162,10 +203,10 @@ def build_execution_snapshot_report(
                 f"- order_status_count: {snapshot.get('order_status_count')}",
                 f"- balance_currency: {balance.get('currency')}",
                 f"- balance_equity: {balance.get('equity')}",
-                f"- latest_order_id: {latest_order.get('order_id')}",
-                f"- latest_order_status: {latest_order.get('status')}",
-                f"- latest_fill_id: {latest_fill.get('fill_id')}",
-                f"- latest_fill_status: {latest_fill.get('status')}",
+                f"- latest_order_id: {latest_order_id}",
+                f"- latest_order_status: {latest_order_status}",
+                f"- latest_fill_id: {latest_fill_id}",
+                f"- latest_fill_status: {latest_fill_status}",
                 "",
             ]
         )

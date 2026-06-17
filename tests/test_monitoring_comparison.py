@@ -2684,6 +2684,8 @@ def test_build_execution_drift_overview_report_marks_unavailable_collector_linea
             "latest_execution_summary": {
                 "execution_overall_status": "degraded",
                 "execution_venue_count": 2,
+                "execution_snapshot_reason": "trade_xyz_execution_state_user_address_missing",
+                "execution_snapshot_next_action": "set_trade_xyz_execution_state_public_user_address",
             },
             "latest_execution_comparison_summary": {
                 "execution_comparison_all_registries_present": False,
@@ -2715,12 +2717,12 @@ def test_build_execution_drift_overview_report_marks_unavailable_collector_linea
         summary_path=tmp_path / "execution_drift_overview.json",
     )
 
-    assert "read_only_execution_state_collector_not_implemented" in report
+    assert "trade_xyz_execution_state_user_address_missing" in report
     assert "source_execution_snapshot_empty" not in report
     summary = read_json(tmp_path / "execution_drift_overview.json")
     assert summary["execution_drift_overview_status"] == "degraded"
     assert summary["execution_drift_overview_reason_codes"] == [
-        "read_only_execution_state_collector_not_implemented"
+        "trade_xyz_execution_state_user_address_missing"
     ]
     assert summary["execution_drift_overview_lineage"] == [
         {
@@ -2729,7 +2731,7 @@ def test_build_execution_drift_overview_report_marks_unavailable_collector_linea
             "expected": True,
             "root_source": "execution_read_only_surfaces_summary.venues[].collector_status",
             "derived": True,
-            "reason": "read_only_execution_state_collector_not_implemented",
+            "reason": "trade_xyz_execution_state_user_address_missing",
         },
     ]
 

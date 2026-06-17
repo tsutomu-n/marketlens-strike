@@ -1,20 +1,21 @@
 <!--
 作成日: 2026-06-17_12:00 JST
-更新日: 2026-06-17_20:14 JST
+更新日: 2026-06-17_20:44 JST
 -->
 
 # Next Implementation Sequence Current
 
 ## 結論
 
-PR単位を置かずに進める場合でも、次は venue / live / external network ではありません。
+PR単位を置かずに進める場合でも、現時点で次に残る主線は venue / live / external network ではありません。
 
 現実的な実装順は次です。
 
 1. Strategy Review dogfood は [docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md](strategy_review/DOGFOOD_REVIEW_2026-06-16.md) に記録済み。
 2. paper observation の通常thresholdと smoke threshold を混同しない status artifact は `strategy-paper-observation-status` として実装済み。
-3. status artifact は `needs_more_normal_paper_observation` なので、通常thresholdの paper observation 継続が次候補。
-4. lifecycle が paper observation insufficient から進んだ場合だけ、次の local preflight を考える。
+3. Trade[XYZ] read-only execution state collector contract は実装済み。ただし通常実行では external API を勝手に呼ばず、public user address と明示 opt-in がない場合は `trade_xyz_execution_state_user_address_missing` / opt-in-required として止まる。
+4. status artifact は `needs_more_normal_paper_observation` なので、通常thresholdの paper observation 継続が次候補。
+5. lifecycle が paper observation insufficient から進んだ場合だけ、次の local preflight を考える。
 
 この順序は、`venue-read-only-probe` の `NO_ACTION` と、追加調査で確認した Strategy Lifecycle の `CONTINUE_PAPER_OBSERVATION` / `PAPER_OBSERVATION_INSUFFICIENT` を前提にする。
 
@@ -116,6 +117,26 @@ smoke_pass_counts_as_normal_pass=false
 - `strategy-paper-observation-cycle` で既存 `--session-id` を再利用すると fail closed する。既存 session に追記する場合は append 専用 command だけを使う。
 - 既存 session に追記する場合は `strategy-paper-observation-append` を使う。これは manifest の source hash を検証し、session-local intent preview snapshot と ledger path だけを使う。
 - smoke pass は引き続き通常passとして数えない。
+
+### Trade[XYZ] read-only execution state collector contract は実装済み
+
+2026-06-17_20:44 JST 時点で、Trade[XYZ] の読み取り専用 execution state collector contract は実装済み。`execution-read-only-surfaces` と `execution-snapshot` はこの collector surface を読む。
+
+安全境界:
+
+- public user address と `SIS_TRADE_XYZ_EXECUTION_STATE_COLLECTOR_ENABLED=1` がない限り外部 API を呼ばない。
+- wallet、signing、live order、exchange write は使わない。
+- public user address 未設定時は `trade_xyz_execution_state_user_address_missing` を返す。
+- `execution-drift-overview` と `phase-gate-review` はこの具体 reason / next action を伝播する。
+
+現行 runtime artifact の要点:
+
+```text
+execution_snapshot_reason=trade_xyz_execution_state_user_address_missing
+execution_snapshot_next_action=set_trade_xyz_execution_state_public_user_address
+execution_drift_overview_reason_codes=["trade_xyz_execution_state_user_address_missing"]
+phase_gate_execution_gap_next_action=set_trade_xyz_execution_state_public_user_address
+```
 
 ## 実装順
 

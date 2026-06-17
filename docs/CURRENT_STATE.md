@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-17_20:25 JST
+更新日: 2026-06-17_20:44 JST
 -->
 
 # Current State
@@ -70,6 +70,7 @@
 - `tracking` layer による real-market vs venue 判定
 - venue quality gate 付き paper fill / fee model / paper report
 - `Trade[XYZ]` micro live safety adapter / policy / canary code path
+- `Trade[XYZ]` read-only execution state collector contract: public user address と明示 opt-in がある時だけ `/info` 由来の account state / open orders / fills を読み、通常実行では external API、wallet、signing、exchange write を使わず未設定理由を出す
 - Bitget demo local/mock-first adapter and smoke: `src/sis/execution/bitget_demo_adapter.py`, `uv run sis bitget-demo-smoke`
 - read-only execution surfaces, operations dashboard, remediation chain, daemon loop, notification outbox
 - Strategy Research Lab models and commands: `StrategyExperimentSpec`, `StrategySignalRecord`, `EvaluationPlan`, `TrialRecord`, `TradeCandidate`, `PaperCandidatePack`, `PromotionDecision`, `PaperIntentPreview`
@@ -153,13 +154,13 @@ uv run python scripts/check_current_docs.py
 - `bitget_futures` and `hyperliquid_perp` are also explicit disabled capability entries in `src/sis/venues/capabilities.py`.
 - NDX/QQQ family records remain usable for research/backtest artifacts. Paper candidate selection, `PaperIntentPreview`, raw `paper-from-intents` JSON, and legacy `paper-step` order generation remain blocked unless valid Layer 2.6/2.7 paper-observation evidence is present.
 
-2026-06-17_20:25 JST runtime validation snapshot:
+2026-06-17_20:44 JST runtime validation snapshot:
 
 - `uv run sis validate-artifacts --strict`: `checked_files=13`, `issues=0`
 - latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `next_actions=[]`, `latest_evidence_card_path=data/evidence/evidence_card_20260617_111729.json`
 - latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded. Current classification is `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`; read-only/paper readiness and live execution readiness are separate surfaces.
-- latest local execution lineage refresh reran `execution-read-only-surfaces`, `execution-snapshot`, `execution-venue-comparison`, `execution-venue-diagnostics`, `execution-gap-history`, `execution-state-comparison-history`, `execution-snapshot-drift-history`, and `execution-drift-overview`. It did not clear live-readiness blockers: Trade[XYZ] still reports `read_only_execution_state_collector_not_implemented`, and Bitget demo still reports missing demo credentials / read-only network probe not executed.
-- latest `execution-drift-overview` reason-code hardening distinguishes the current `venue_count=2` unavailable collector path from the old empty snapshot path. It now reports `execution_drift_overview_reason_codes=["read_only_execution_state_collector_not_implemented"]` for this state.
+- latest local execution lineage refresh reran `execution-read-only-surfaces`, `execution-snapshot`, `execution-venue-comparison`, `execution-venue-diagnostics`, `operations-bundle`, `execution-gap-history`, `execution-state-comparison-history`, `execution-snapshot-drift-history`, `execution-drift-overview`, `phase-gate-review`, and `readiness-snapshot`. It did not clear live-readiness blockers: Trade[XYZ] now reports `trade_xyz_execution_state_user_address_missing`, `phase-gate-review` propagates `set_trade_xyz_execution_state_public_user_address` as the execution gap next action, and Bitget demo still reports missing demo credentials / read-only network probe not executed.
+- latest `execution-drift-overview` reason-code hardening distinguishes the current `venue_count=2` unavailable collector path from the old empty snapshot path. It now reports `execution_drift_overview_reason_codes=["trade_xyz_execution_state_user_address_missing"]` for this state.
 - latest supplemental `uv run sis diagnose-quotes --venue trade_xyz` completed for current Trade[XYZ] symbols; `check-go-no-go` returned `GO`; `build-evidence-card` wrote `data/evidence/evidence_card_20260617_111729.json`. These are supplemental reports. They do not override `phase-gate-review` and do not prove live readiness.
 - latest `refresh-operations-artifacts` regenerated local operations/audit/remediation reports but did not clear execution readiness: operations dashboard is `overall_status=degraded`, `monitoring_status=degraded`, `execution_venue_count=2`, `execution_comparison_all_registries_present=false`, and readiness snapshot has `operations_ready=false`.
 - latest phase gate remediation order is `none` when only live-readiness blockers remain. Do not repeatedly run `refresh-operations-artifacts` as a P2 remediation loop for those blockers; it can refresh local reports, but it does not create missing execution evidence.

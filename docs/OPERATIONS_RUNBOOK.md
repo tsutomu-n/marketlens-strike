@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-16_06:46 JST
+更新日: 2026-06-17_20:47 JST
 -->
 
 # Operations Runbook
@@ -491,6 +491,17 @@ uv run sis execution-venue-comparison
 uv run sis execution-venue-diagnostics
 uv run sis execution-read-only-surfaces
 ```
+
+Trade[XYZ] の read-only execution state collector は、通常実行では external API を呼ばない。public user address と明示 opt-in がない場合は、`trade_xyz_execution_state_user_address_missing` または opt-in required として artifact に残る。
+
+read-only account state を明示的に取りたい場合だけ、local `.env` で次を設定する。これは公開 user address だけであり、wallet secret、signing、live order、exchange write credential ではない。
+
+```bash
+SIS_TRADE_XYZ_EXECUTION_STATE_USER_ADDRESS=<public-user-address>
+SIS_TRADE_XYZ_EXECUTION_STATE_COLLECTOR_ENABLED=1
+```
+
+この設定後に `uv run sis execution-read-only-surfaces` と `uv run sis execution-snapshot` を再実行する。production live trading ready とは読まない。
 
 single-command surface:
 

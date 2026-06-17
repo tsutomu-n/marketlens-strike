@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-17_16:57 JST
+更新日: 2026-06-17_20:47 JST
 -->
 
 # Repo Capabilities Current
@@ -364,6 +364,7 @@ reference-only / 採用前 contract:
 
 - `bot-preview` で read-only HOLD preview artifact を作れる。
 - execution snapshot、venue comparison、venue diagnostics、read-only surfaces を作れる。
+- Trade[XYZ] read-only execution state collector contract を使える。public user address と明示 opt-in がある場合だけ `/info` 由来の account state / open orders / fills を読み、通常実行では external API、wallet、signing、exchange write を使わず未設定理由を出す。
 - order status、estimate order、balance status、fill status、cancel、close、reconcile などの execution utility command がある。
 - `bitget-demo-smoke` で local/mock-first Bitget demo smoke を実行できる。
 - `paper-step`, `paper-from-intents`, `paper-report`, `paper-operations-cycle` で paper operation artifact を扱える。
@@ -408,6 +409,7 @@ reference-only / 採用前 contract:
 
 - `bot-preview` は read-only HOLD preview。wallet、signing、exchange write は使わない。
 - `bitget-demo-smoke` の `status=configured` は local env が揃った意味だけ。network / account / order submit / fill sync 成功ではない。
+- Trade[XYZ] read-only execution state collector は public user address と `SIS_TRADE_XYZ_EXECUTION_STATE_COLLECTOR_ENABLED=1` がない限り external API を呼ばない。未設定時の current reason は `trade_xyz_execution_state_user_address_missing`。
 - execution utility command が存在しても、production live trading ready ではない。
 
 ## 11. Operations / Audit / Remediation

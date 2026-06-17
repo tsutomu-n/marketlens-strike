@@ -584,6 +584,11 @@ def _execution_summary_note_lines(execution_summary: dict) -> list[str]:
     return [
         f"execution_overall_status={execution_fields.get('execution_overall_status')}",
         f"execution_venue_count={execution_fields.get('execution_venue_count')}",
+        f"execution_snapshot_reason={execution_fields.get('execution_snapshot_reason')}",
+        (
+            "execution_snapshot_next_action="
+            f"{execution_fields.get('execution_snapshot_next_action')}"
+        ),
     ]
 
 

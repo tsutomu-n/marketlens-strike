@@ -3,6 +3,7 @@ from sis.venues.trade_xyz.collector import (
     collect_and_normalize_trade_xyz_quotes,
     collect_trade_xyz_quotes,
 )
+from sis.venues.trade_xyz.execution_state import build_trade_xyz_execution_state_surface
 from sis.venues.trade_xyz.normalizer import (
     BookMetrics,
     compute_book_metrics,
@@ -35,6 +36,7 @@ __all__ = [
     "quote_from_l2_book",
     "collect_trade_xyz_quotes",
     "collect_and_normalize_trade_xyz_quotes",
+    "build_trade_xyz_execution_state_surface",
     "build_trade_xyz_registry",
     "load_trade_xyz_seed",
     "resolve_asset_id",

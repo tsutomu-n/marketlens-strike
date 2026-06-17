@@ -10,6 +10,7 @@ from sis.reports.execution_adapter_status import build_execution_read_only_surfa
 from sis.reports.execution_snapshot import build_execution_snapshot_report
 from sis.reports.execution_venue_comparison import build_execution_venue_comparison_report
 from sis.reports.execution_venue_diagnostics import build_execution_venue_diagnostics_report
+from sis.venues.trade_xyz.execution_state import build_trade_xyz_execution_state_surface
 
 
 def _adapter_for_venue(settings_data_dir: Path, venue: str):
@@ -25,23 +26,7 @@ def _adapter_for_venue(settings_data_dir: Path, venue: str):
 
 
 def _trade_xyz_read_only_surface(settings_data_dir: Path) -> dict[str, object]:
-    registry_path = settings_data_dir / "registry/trade_xyz_instrument_registry.json"
-    return {
-        "venue": "trade_xyz",
-        "registry_exists": registry_path.exists(),
-        "balance_snapshot_exists": False,
-        "positions_snapshot_exists": False,
-        "fills_snapshot_exists": False,
-        "order_status_snapshot_exists": False,
-        "positions_count": None,
-        "fills_count": None,
-        "order_status_count": None,
-        "collector_status": "not_connected",
-        "collector_reason": "read_only_execution_state_collector_not_implemented",
-        "collector_root_source": "execution_read_only_surfaces_summary.venues[].collector_status",
-        "read_only_endpoint_scope": "info_endpoint_only",
-        "next_action": "connect_trade_xyz_read_only_execution_state_collector",
-    }
+    return build_trade_xyz_execution_state_surface(settings_data_dir)
 
 
 def _bitget_demo_read_only_surface() -> dict[str, object]:

@@ -254,6 +254,9 @@ def _as_dict_list(value: object) -> list[dict[str, object]]:
 def _execution_drift_classifications(summary: dict[str, object]) -> list[dict[str, object]]:
     snapshot_reason = summary.get("execution_snapshot_reason")
     snapshot_root_source = summary.get("execution_snapshot_root_source")
+    snapshot_next_action = summary.get("execution_snapshot_next_action")
+    if not isinstance(snapshot_next_action, str) or not snapshot_next_action:
+        snapshot_next_action = None
     comparison_reason = summary.get("execution_comparison_reason")
     comparison_root_source = summary.get("execution_comparison_root_source")
     diagnostics_reason = summary.get("execution_diagnostics_reason")
@@ -273,7 +276,9 @@ def _execution_drift_classifications(summary: dict[str, object]) -> list[dict[st
             return {
                 "root_source": diagnostics_root_source or comparison_root_source,
                 "derived_from": diagnostics_reason or comparison_reason,
-                "recommended_next_action": "decide_read_only_execution_state_collector_scope",
+                "recommended_next_action": (
+                    snapshot_next_action or "decide_read_only_execution_state_collector_scope"
+                ),
             }
         if signal == "execution_drift_overview_status" and drift_reason_codes:
             return {

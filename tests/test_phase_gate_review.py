@@ -48,6 +48,28 @@ def test_execution_drift_classifications_include_lineage_for_empty_snapshot() ->
     )
 
 
+def test_execution_drift_classifications_use_snapshot_next_action_for_execution_gaps() -> None:
+    classifications = _execution_drift_classifications(
+        {
+            "execution_snapshot_reason": "trade_xyz_execution_state_user_address_missing",
+            "execution_snapshot_root_source": (
+                "execution_read_only_surfaces_summary.venues[].collector_status"
+            ),
+            "execution_snapshot_next_action": "set_trade_xyz_execution_state_public_user_address",
+            "execution_balance_gap_detected": True,
+            "execution_fills_gap_detected": True,
+        }
+    )
+
+    by_signal = {item["signal"]: item for item in classifications}
+    assert by_signal["execution_balance_gap_detected"]["recommended_next_action"] == (
+        "set_trade_xyz_execution_state_public_user_address"
+    )
+    assert by_signal["execution_fills_gap_detected"]["recommended_next_action"] == (
+        "set_trade_xyz_execution_state_public_user_address"
+    )
+
+
 def _write_registry(path: Path, venue: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(

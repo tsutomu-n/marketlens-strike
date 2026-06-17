@@ -14,7 +14,7 @@ from sis.reports.summary_normalizers import (
 )
 from sis.storage.jsonl_store import write_json
 
-UNAVAILABLE_COLLECTOR_REASON = "read_only_execution_state_collector_not_implemented"
+UNAVAILABLE_COLLECTOR_REASON = "read_only_execution_state_collector_unavailable"
 UNAVAILABLE_COLLECTOR_ROOT_SOURCE = "execution_read_only_surfaces_summary.venues[].collector_status"
 
 
@@ -95,6 +95,11 @@ def build_execution_drift_overview_report(
     latest_execution_status = latest_execution_lineage.get("latest_execution_overall_status")
     latest_execution_venue_count = latest_execution_lineage.get("latest_execution_venue_count")
     latest_execution_venue_count_int = _int_or_none(latest_execution_venue_count)
+    latest_execution_snapshot_reason = latest_execution_lineage.get(
+        "latest_execution_snapshot_reason"
+    )
+    if not isinstance(latest_execution_snapshot_reason, str):
+        latest_execution_snapshot_reason = None
     latest_registries_present = latest_execution_lineage.get(
         "latest_execution_comparison_all_registries_present"
     )
@@ -115,7 +120,7 @@ def build_execution_drift_overview_report(
             reason = "source_execution_snapshot_empty"
             root_source = "execution_snapshot_summary.venues=[]"
         else:
-            reason = UNAVAILABLE_COLLECTOR_REASON
+            reason = latest_execution_snapshot_reason or UNAVAILABLE_COLLECTOR_REASON
             root_source = UNAVAILABLE_COLLECTOR_ROOT_SOURCE
         if reason not in reason_codes:
             reason_codes.append(reason)

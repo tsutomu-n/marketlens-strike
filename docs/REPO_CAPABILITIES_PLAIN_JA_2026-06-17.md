@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-17_20:25 JST
+更新日: 2026-06-17_20:44 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -210,9 +210,9 @@ uv run sis remediation-planner
 
 2026-06-17_20:17 JST の補助確認では、`diagnose-quotes --venue trade_xyz` は current Trade[XYZ] symbols の診断を出力し、`check-go-no-go` は `GO`、`build-evidence-card` は `data/evidence/evidence_card_20260617_111729.json` を生成しました。ただし、これらは補助レポートです。最終的な段階判断は `phase-gate-review` を見ます。
 
-2026-06-17_20:21 JST に execution 系のローカル生成物も再計算しました。結果はまだ `degraded` です。理由は、Trade[XYZ] の読み取り専用 execution state collector が未実装で、Bitget demo は資格情報がなく read-only network probe も実行されていないためです。
+2026-06-17_20:44 JST に execution 系のローカル生成物も再計算しました。結果はまだ `degraded` です。Trade[XYZ] の読み取り専用 execution state collector は実装済みですが、通常実行では外部 API を勝手に呼ばず、public user address が未設定のため `trade_xyz_execution_state_user_address_missing` で止まります。Bitget demo は資格情報がなく read-only network probe も実行されていません。
 
-2026-06-17_20:25 JST 時点では、`execution-drift-overview` の理由表示も補正済みです。現在の状態は「空の snapshot」とは扱わず、`read_only_execution_state_collector_not_implemented` として表示します。
+2026-06-17_20:44 JST 時点では、`execution-drift-overview` と `phase-gate-review` の理由表示も補正済みです。現在の状態は「空の snapshot」とは扱わず、`trade_xyz_execution_state_user_address_missing` として表示します。次に必要な操作は `set_trade_xyz_execution_state_public_user_address`、つまり読み取り対象にする public user address を設定することです。
 
 2026-06-17_19:24 JST のローカル再計算では、operations dashboard は `degraded` でした。これは「読み取り専用や paper gate が落ちた」という意味ではなく、Trade[XYZ] と Bitget demo の execution 状態がまだ揃っていないという意味です。`phase-gate-review` は `READ_ONLY_GO` のままですが、operations readiness と live readiness は未達です。
 

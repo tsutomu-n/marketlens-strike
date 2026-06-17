@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-17_20:25 JST
+更新日: 2026-06-17_20:44 JST
 -->
 
 # Next Direction Current
@@ -98,9 +98,9 @@ uv run sis strategy-paper-observation-cycle \
 
 2026-06-17_20:17 JST に補助確認として `diagnose-quotes --venue trade_xyz`、`check-go-no-go`、`build-evidence-card`、`validate-artifacts --strict`、`phase-gate-review` を再実行済み。`check-go-no-go` は `GO`、最新 evidence card は `data/evidence/evidence_card_20260617_111729.json`、`phase-gate-review` は `READ_ONLY_GO` / `phase2_entry_allowed=true` / `strict_validation_issue_count=0`。
 
-2026-06-17_20:21 JST に execution lineage artifact も再生成済み。`execution-snapshot` は `overall_status=degraded`、`venue_count=2`、`snapshot_reason=read_only_execution_state_collector_not_implemented` のまま。Trade[XYZ] は read-only execution state collector 未実装、Bitget demo は demo credentials 不足かつ read-only network probe 未実行として残る。
+2026-06-17_20:44 JST に execution lineage artifact も再生成済み。`execution-snapshot` は `overall_status=degraded`、`venue_count=2`、`snapshot_reason=trade_xyz_execution_state_user_address_missing`。Trade[XYZ] は read-only execution state collector contract 実装済みだが、通常実行では external API を使わず、public user address 未設定として止まる。Bitget demo は demo credentials 不足かつ read-only network probe 未実行として残る。
 
-2026-06-17_20:25 JST に `execution-drift-overview` の reason-code 表示を hardening 済み。現在の `venue_count=2` の未接続状態は、古い empty snapshot 由来の `source_execution_snapshot_empty` ではなく、`read_only_execution_state_collector_not_implemented` として出る。
+2026-06-17_20:44 JST に `execution-drift-overview` と `phase-gate-review` の reason-code / next-action 表示も更新済み。現在の `venue_count=2` の未接続状態は、古い empty snapshot 由来の `source_execution_snapshot_empty` ではなく、`trade_xyz_execution_state_user_address_missing` として出る。execution gap の次 action は `set_trade_xyz_execution_state_public_user_address`。
 
 これは read-only / paper gate の失敗ではない。`phase-gate-review` は `READ_ONLY_GO` / `phase2_entry_allowed=true` のままだが、execution readiness と live readiness は未達。`check-go-no-go` と evidence card は補助 report であり、live readiness の正本ではない。
 

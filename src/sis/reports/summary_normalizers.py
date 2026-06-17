@@ -551,6 +551,10 @@ def latest_execution_lineage_fields(
         f"{prefix}_execution_comparison_summary": execution_comparison_summary,
         f"{prefix}_execution_overall_status": execution_fields.get("execution_overall_status"),
         f"{prefix}_execution_venue_count": execution_fields.get("execution_venue_count"),
+        f"{prefix}_execution_snapshot_reason": execution_fields.get("execution_snapshot_reason"),
+        f"{prefix}_execution_snapshot_next_action": execution_fields.get(
+            "execution_snapshot_next_action"
+        ),
         f"{prefix}_execution_comparison_all_registries_present": (
             execution_comparison_fields.get("execution_comparison_all_registries_present")
         ),
@@ -709,12 +713,16 @@ def latest_execution_lineage_from_values(
     overall_status: Any,
     venue_count: Any,
     all_registries_present: Any,
+    snapshot_reason: Any = None,
+    snapshot_next_action: Any = None,
 ) -> dict[str, Any]:
     return latest_execution_lineage_fields(
         {
             f"{prefix}_execution_summary": {
                 "overall_status": overall_status,
                 "venue_count": venue_count,
+                "execution_snapshot_reason": snapshot_reason,
+                "execution_snapshot_next_action": snapshot_next_action,
             },
             f"{prefix}_execution_comparison_summary": {
                 "all_registries_present": all_registries_present,
@@ -738,11 +746,17 @@ def latest_execution_lineage_from_notes(
                 return text.removeprefix(note_prefix)
         return None
 
+    def _optional_note_value(note_prefix: str) -> str | None:
+        value = _note_value(note_prefix)
+        return None if value in {None, "", "None"} else value
+
     return latest_execution_lineage_from_values(
         prefix=prefix,
         overall_status=_note_value("execution_overall_status="),
         venue_count=_note_value("execution_venue_count="),
         all_registries_present=_note_value("execution_comparison_all_registries_present="),
+        snapshot_reason=_optional_note_value("execution_snapshot_reason="),
+        snapshot_next_action=_optional_note_value("execution_snapshot_next_action="),
     )
 
 

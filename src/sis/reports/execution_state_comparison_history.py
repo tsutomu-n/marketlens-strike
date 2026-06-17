@@ -112,6 +112,12 @@ def build_execution_state_comparison_history_report(
                 "execution_venue_count": latest_execution_lineage.get(
                     "latest_execution_venue_count"
                 ),
+                "execution_snapshot_reason": latest_execution_lineage.get(
+                    "latest_execution_snapshot_reason"
+                ),
+                "execution_snapshot_next_action": latest_execution_lineage.get(
+                    "latest_execution_snapshot_next_action"
+                ),
                 "execution_comparison_all_registries_present": latest_execution_lineage.get(
                     "latest_execution_comparison_all_registries_present"
                 ),
@@ -159,6 +165,8 @@ def build_execution_state_comparison_history_report(
         [
             f"execution_overall_status={latest.get('execution_overall_status')}",
             f"execution_venue_count={latest.get('execution_venue_count')}",
+            f"execution_snapshot_reason={latest.get('execution_snapshot_reason')}",
+            f"execution_snapshot_next_action={latest.get('execution_snapshot_next_action')}",
             "execution_comparison_all_registries_present="
             f"{latest.get('execution_comparison_all_registries_present')}",
         ],
