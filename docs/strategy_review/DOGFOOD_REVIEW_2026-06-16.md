@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_20:09 JST
-更新日: 2026-06-17_20:14 JST
+更新日: 2026-06-17_20:54 JST
 -->
 
 # Strategy Review Dogfood Review 2026-06-16
@@ -46,6 +46,8 @@ copy-paste 用の現行 recipe は [OPERATOR_REVIEW_PACKET_RECIPE.md](OPERATOR_R
 
 `dogfood-operator-current` は、現行の `strategy-review-build` と `strategy-review-record` を通す stable review id として使った。2026-06-17_20:14 JST の local artifact loop では、`strategy-paper-observation-append` で最新通常 session を `20 fills` まで進めた後、既存の `data/research/backtest_pack/strategy_backtest_pack.json`、`data/research/backtest_pack/strategy_backtest_pack_validation.json`、`data/research/strategy_lifecycle/strategy_lifecycle_review.json` を使って再 build / record / validate した。
 
+2026-06-17_20:54 JST にも同じ stable review id で再 build / record / validate し、結果が維持されていることを確認した。この再確認でも runtime hash は tracked doc に写さない。
+
 確認した値:
 
 - `review_status=READY_FOR_HUMAN_REVIEW`
@@ -58,6 +60,13 @@ copy-paste 用の現行 recipe は [OPERATOR_REVIEW_PACKET_RECIPE.md](OPERATOR_R
 - `strategy-review-record --validate-existing` は `status=pass`
 
 `operator_review.yaml` 内には `review.md` と `review_manifest.json` の hash が保存される。この文書は tracked doc なので、runtime hash は固定して写さない。hash の一致確認は `strategy-review-record --validate-existing` で行う。
+
+Manifest の lifecycle 値は top-level の `lifecycle_summary` ではなく、`source_artifacts` 配列内の `artifact_key=lifecycle_review` の `summary` に入る。readback では次の形で確認する:
+
+```bash
+jq '.source_artifacts[] | select(.artifact_key=="lifecycle_review") | .summary' \
+  data/strategy_reviews/dogfood-operator-current/review_manifest.json
+```
 
 ## 合格条件チェック
 
