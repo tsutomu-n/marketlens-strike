@@ -117,6 +117,18 @@ CURRENT_DOC_SEMANTIC_DRIFT_MARKERS = (
         "old copied PR12 generated artifact gate wording; rerun phase-gate-review and keep live-readiness boundary explicit",
     ),
     (
+        "Trade[XYZ]用の読み取り専用ゲートは通りました",
+        "old fixed Trade[XYZ] guide wording; describe rerunnable read-only state checks instead",
+    ),
+    (
+        "PR12の読み取り専用ゲート結果を毎回確認する",
+        "old fixed PR12 guide wording; avoid tying current steps to a stale run label",
+    ),
+    (
+        "Trade[XYZ] Implementation Status Audit",
+        "old Trade[XYZ] archive audit link label; route current readers to current guides/runbooks",
+    ),
+    (
         "2026-06-15_19:13 JST 時点では、代表的な状態は次の通りです。",
         "old copied backtest high-school guide runtime snapshot; rerun backtest artifact/status commands instead",
     ),

@@ -108,6 +108,9 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "PID 2484910" in script
     assert "2026-06-04_16:39 JST" in script
     assert "generated artifact gate は `READ_ONLY_GO` まで確認済み" in script
+    assert "Trade[XYZ]用の読み取り専用ゲートは通りました" in script
+    assert "PR12の読み取り専用ゲート結果を毎回確認する" in script
+    assert "Trade[XYZ] Implementation Status Audit" in script
     assert "2026-06-15_19:13 JST 時点では、代表的な状態は次の通りです。" in script
     assert "2026-06-15_21:08 JST 時点で、現在の artifact summary" in script
     assert "strategy total return: `0.0046531202609065075`" in script
