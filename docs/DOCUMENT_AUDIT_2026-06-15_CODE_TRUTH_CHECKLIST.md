@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_07:23 JST
-更新日: 2026-06-17_22:02 JST
+更新日: 2026-06-17_22:13 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-15
@@ -38,14 +38,14 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
   - 残る注意: 文書内の `946 passed` は 2026-06-09 時点の historical snapshot。current pass count として再利用しない。
 - [x] `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict check 一覧が、今回追加した current audit と NDX/QQQ venue suitability audit を含んでいなかった。
   - 修正: strict check 一覧を更新した。
-- [ ] `plan/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/` は README 上で implemented at HEAD と書いているが、`plan/README.md` ではまだ current plan 扱い。
-  - 修正済み: `plan/README.md` では implemented / historical に移した。
-- [x] `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` と `03_venue_read_only_capability_probe/` の扱いが曖昧だった。
+- [x] `plan/archive/2026-06-17-plan-routing/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/` は README 上で implemented at HEAD と書いているが、`plan/README.md` ではまだ current plan 扱いだった。
+  - 修正済み: `plan/README.md` では implemented / historical に移し、2026-06-17_22:13 JST に archive へ移動した。
+- [x] `plan/archive/2026-06-17-plan-routing/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` と `plan/0609ここからの計画/03_venue_read_only_capability_probe/` の扱いが曖昧だった。
   - 追加確認: `02` は `src/sis/venues/capabilities.py`, `docs/venues/bitget_hyperliquid_capability_gate.md`, `tests/test_venue_capabilities.py` と focused tests で実装済み相当。
   - 追加確認: `03` が要求する `src/sis/venues/read_only_probe.py`, `schemas/venue_read_only_probe_summary.v1.schema.json`, `venue-read-only-probe` CLI, `tests/test_venue_read_only_probe*.py`, `docs/venues/read_only_capability_probe.md` は存在しない。
-  - 修正済み: `plan/README.md` では `02` を implemented / historical、`03` を current unimplemented implementation handoff として分けた。
-- [ ] `plan/0610ここからの計画/01_grok_architecture_adoption_review/` は docs-only review plan としては有用だが、内部に Layer 2.4 が `REVISE_2_3` で止まる前提が残る。
-  - 修正案: current architecture guidance ではなく historical external-review decision として扱う。
+  - 修正済み: `plan/README.md` では `02` を implemented / historical、`03` を current unimplemented implementation handoff として分けた。2026-06-17_22:13 JST に `02` は archive へ移動し、`03` は root `plan/` 側に残した。
+- [x] `plan/archive/2026-06-17-plan-routing/0610ここからの計画/01_grok_architecture_adoption_review/` は docs-only review plan としては有用だが、内部に Layer 2.4 が `REVISE_2_3` で止まる前提が残る。
+  - 修正済み: current architecture guidance ではなく historical external-review decision として archive へ移動した。
 
 ## 更新できるドキュメント
 
@@ -100,9 +100,9 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
   - コード正本: `docs/CODE_STATUS.md` と `docs/CURRENT_STATE.md` は現行 default を `APPROVE_STRATEGY_LAB_EXPORT` とし、`src/sis/research/ndx/` / `tests/research/test_ndx_layer24_residual_validation.py` が Layer 2.4 gate を実装済み。
   - 修正済み: 2026-06-15_12:02 JST に Layer 2.5-2.8 flow、current local documentation snapshot、本チェックリストへの read-first link を追加した。
 - [ ] `plan/README.md`
-  - 古い内容: `plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/` と `plan/0611ここからの計画/*` を current implementation plan として扱っていた。
+  - 古い内容: 移動前の 0610/02 と 0611/* を current implementation plan として扱っていた。
   - コード正本: `research-ndx-strategy-lab-export`, `research-ndx-paper-observation-gate`, `research-ndx-operator-promotion`, `research-ndx-paper-observation-review`, `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review` は CLI 登録済みで、対応 code/schema/tests/docs がある。
-  - 修正済み: 2026-06-15_12:02 JST に implemented / historical と current unimplemented plan を分けた。
+  - 修正済み: 2026-06-15_12:02 JST に implemented / historical と current unimplemented plan を分け、2026-06-17_22:13 JST に実装済み plan を `plan/archive/2026-06-17-plan-routing/` へ移動した。
 - [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`
   - 古い内容: 2026-06-09 時点の監査として Layer 2.4 default を `REVISE_2_3`、current-doc count を 101、pytest pass count を 936 と記録している。
   - コード正本: 2026-06-15 時点の current-doc checker は 117 docs。現行 docs/code は Layer 2.4 default を `APPROVE_STRATEGY_LAB_EXPORT` と扱う。
@@ -171,25 +171,25 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - [x] `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md`
   - 推奨: `docs/archive/` へ移動。
   - 理由: current live-readiness boundary は `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md`, runtime phase-gate artifacts を正とする。
-- [ ] `plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/`
+- [x] `plan/archive/2026-06-17-plan-routing/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/`
   - 推奨: `plan/archive/` へ移動。
   - 理由: Layer 2.5 は実装済み。current proof は code/schema/tests/CLI/docs。
-- [ ] `plan/0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/`
+- [x] `plan/archive/2026-06-17-plan-routing/0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/`
   - 推奨: `plan/archive/` へ移動。
   - 理由: Layer 2.6 / 2.7 は実装済み。current proof は code/schema/tests/CLI/docs。
-- [ ] `plan/0611ここからの計画/02_strategy_lifecycle_control_plane/`
+- [x] `plan/archive/2026-06-17-plan-routing/0611ここからの計画/02_strategy_lifecycle_control_plane/`
   - 推奨: `plan/archive/` へ移動。
   - 理由: Strategy Lifecycle control plane は CLI / schema / tests / docs が実装済み。
-- [ ] `plan/0611ここからの計画/03_paper_observation_cycle_completion/`
+- [x] `plan/archive/2026-06-17-plan-routing/0611ここからの計画/03_paper_observation_cycle_completion/`
   - 推奨: `plan/archive/` へ移動。
   - 理由: Paper observation cycle / review 系は実装済み。
-- [ ] `plan/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`
+- [x] `plan/archive/2026-06-17-plan-routing/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`
   - 推奨: `plan/archive/` へ移動。
   - 理由: README 自体が implemented at HEAD と記録しており、current proof は code/schema/tests/CLI/docs。
-- [ ] `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`
+- [x] `plan/archive/2026-06-17-plan-routing/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`
   - 推奨: `plan/archive/` へ移動。
   - 理由: capability contract は `src/sis/venues/capabilities.py`, `docs/venues/bitget_hyperliquid_capability_gate.md`, `tests/test_venue_capabilities.py` で実装済み。focused tests も通る。
-- [ ] `plan/0610ここからの計画/01_grok_architecture_adoption_review/`
+- [x] `plan/archive/2026-06-17-plan-routing/0610ここからの計画/01_grok_architecture_adoption_review/`
   - 推奨: historical docs-only review として archive または `plan/README.md` 上で historical に分類。
   - 理由: external suggestion review として有用だが、Layer 2.4 `REVISE_2_3` 前提が古い。
 - [ ] `plan/0609ここからの計画/03_venue_read_only_capability_probe/`
@@ -205,7 +205,7 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 ## 先に直す順番
 
 1. [x] `README.md` の Layer 2.4 / 2.5-2.8 current flow を修正する。
-2. [x] `plan/README.md` の current implementation plan 分類を現行コードに合わせる。特に 0609/0610/0611 の実装済み plan を historical/superseded に分ける。
+2. [x] `plan/README.md` の current implementation plan 分類を現行コードに合わせる。特に 0609/0610/0611 の実装済み plan を historical/superseded に分け、2026-06-17_22:13 JST に archive へ移動する。
 3. [ ] `docs/DOCS_LINT_POLICY_2026-05-30.md` と `scripts/check_current_docs.py` の allowlist を今後も同期する。
 4. [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を historical と明記するか archive する。
 5. [ ] `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` の肥大化を分割計画に落とす。
@@ -216,4 +216,4 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - この調査では `./scripts/check` は実行していない。重い full gate は docs 分類保存には必須ではないが、archive / README 修正後は実行する。
 - `data/` 配下の runtime artifact は git-ignored であり、今回の分類では現 checkout の artifact freshness を正本にしていない。
 - `資料/` は素材量が多いため、個別ファイルの正誤までは未分類。current-doc checker 対象外として一括で archive / source material 扱いにした。
-- `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` は実装済み相当、`plan/0609ここからの計画/03_venue_read_only_capability_probe/` は未実装 current plan として分類済み。未実装の `03` は削除・archive しない。
+- `plan/archive/2026-06-17-plan-routing/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` は実装済み相当として archive 済み、`plan/0609ここからの計画/03_venue_read_only_capability_probe/` は未実装 current plan として分類済み。未実装の `03` は削除・archive しない。

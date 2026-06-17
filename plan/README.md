@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-17_10:40 JST
+更新日: 2026-06-17_22:13 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -13,15 +13,15 @@
 
 重要: `plan/marketlens_strategy_research_lab_migration_pack/` は historical migration contract です。`execution_venue: Literal["trade_xyz"]` のような記述は当時の実装前契約であり、現在の contract ではありません。現在の venue contract は code/schema の `trade_xyz`, `bitget_demo` です。
 
-## Current 2026-06-09 venue plans
+## 2026-06-09 venue plans
 
 Only the read-only capability probe remains a current unimplemented plan in
 this group. Code, tests, schemas, CLI help, and docs are the source of truth.
 
 Implemented / historical:
 
-- `plan/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`
-- `plan/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`
+- `plan/archive/2026-06-17-plan-routing/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`
+- `plan/archive/2026-06-17-plan-routing/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`
 
 Current unimplemented implementation handoff:
 
@@ -29,14 +29,14 @@ Current unimplemented implementation handoff:
 - Final coder-ready plan:
   [plan/0609ここからの計画/03_venue_read_only_capability_probe/11_PR_VENUE_PROBE_00_FINAL_PLAN.md](0609ここからの計画/03_venue_read_only_capability_probe/11_PR_VENUE_PROBE_00_FINAL_PLAN.md)
 
-## Current 2026-06-10 review plans
+## Historical 2026-06-10 review plans
 
 These are historical docs-only review or adoption plans. They do not authorize
 code, schema, dependency, paper, or live-execution changes by themselves.
 
-- [plan/0610ここからの計画/01_grok_architecture_adoption_review/README.md](0610ここからの計画/01_grok_architecture_adoption_review/README.md)
+- [plan/archive/2026-06-17-plan-routing/0610ここからの計画/01_grok_architecture_adoption_review/README.md](archive/2026-06-17-plan-routing/0610ここからの計画/01_grok_architecture_adoption_review/README.md)
 
-## Current 2026-06-16 review builder plan
+## Historical 2026-06-16 review builder plan
 
 This implementation handoff now has corresponding code, schema, CLI help,
 focused tests, and docs. The Strategy Review Builder turns existing Strategy
@@ -48,8 +48,8 @@ not as the current unimplemented next action. It does not create a Strategy
 Case registry, UI, paper gate, live readiness proof, wallet/signing path, or
 exchange-write path.
 
-- [plan/0616ここからの計画/01_strategy_review_builder/README.md](0616ここからの計画/01_strategy_review_builder/README.md)
-- [STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md](STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md)
+- [plan/archive/2026-06-17-plan-routing/0616ここからの計画/01_strategy_review_builder/README.md](archive/2026-06-17-plan-routing/0616ここからの計画/01_strategy_review_builder/README.md)
+- [plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md](archive/2026-06-17-plan-routing/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md)
 - [ねくすと.md](ねくすと.md)
 
 ## Current Direction
@@ -63,7 +63,7 @@ exchange-write path.
 These implementation handoff plans have corresponding code, schema, tests, CLI
 help, and docs. Treat them as implementation history, not current status proof.
 
-- [plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/README.md](0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/README.md)
+- [plan/archive/2026-06-17-plan-routing/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/README.md](archive/2026-06-17-plan-routing/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/README.md)
 
 ## Historical 2026-06-11 implementation plans
 
@@ -71,9 +71,9 @@ These implementation handoff plans for the NDX paper-observation gate and the
 strategy lifecycle control plane have corresponding code, schema, tests, CLI
 help, and docs. Treat them as implementation history, not current status proof.
 
-- [plan/0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/README.md](0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/README.md)
-- [plan/0611ここからの計画/02_strategy_lifecycle_control_plane/README.md](0611ここからの計画/02_strategy_lifecycle_control_plane/README.md)
-- [plan/0611ここからの計画/03_paper_observation_cycle_completion/README.md](0611ここからの計画/03_paper_observation_cycle_completion/README.md)
+- [plan/archive/2026-06-17-plan-routing/0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/README.md](archive/2026-06-17-plan-routing/0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/README.md)
+- [plan/archive/2026-06-17-plan-routing/0611ここからの計画/02_strategy_lifecycle_control_plane/README.md](archive/2026-06-17-plan-routing/0611ここからの計画/02_strategy_lifecycle_control_plane/README.md)
+- [plan/archive/2026-06-17-plan-routing/0611ここからの計画/03_paper_observation_cycle_completion/README.md](archive/2026-06-17-plan-routing/0611ここからの計画/03_paper_observation_cycle_completion/README.md)
 
 ## Historical read order
 
