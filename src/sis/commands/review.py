@@ -173,6 +173,17 @@ def register_review_commands(
 
     @app.command("check-go-no-go")
     def check_go_no_go() -> None:
+        """Build a local Go/No-Go evidence summary.
+
+        Reads local evidence under data/, including registries, normalized
+        quotes, cost matrices, backtest metrics, and phase-gate summaries when
+        present. Writes data/research/go_no_go_report.md, prints the current
+        decision, and prints recommended_read_order entries.
+
+        This is a review report only. It performs no external API calls,
+        submits no paper or live orders, and does not grant paper execution or
+        live trading permission.
+        """
         settings = get_settings()
         latest_execution_payload = _paper_last_run_latest_execution_payload(settings.data_dir)
         report = build_go_no_go_report(settings.data_dir)

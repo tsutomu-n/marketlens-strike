@@ -264,6 +264,28 @@ def test_diagnose_quotes_help_describes_io_and_boundary() -> None:
     assert "Optional canonical symbol filter" in stdout
 
 
+def test_check_go_no_go_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["check-go-no-go", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "local Go/No-Go evidence summary" in stdout
+    assert "data/" in stdout
+    assert "registries" in stdout
+    assert "normalized" in stdout
+    assert "quotes" in stdout
+    assert "cost matrices" in stdout
+    assert "backtest metrics" in stdout
+    assert "phase-gate summaries" in stdout
+    assert "data/research/go_no_go_report.md" in stdout
+    assert "current" in stdout
+    assert "decision" in stdout
+    assert "recommended_read_order" in stdout
+    assert "performs no external API calls" in stdout
+    assert "submits no paper or live orders" in stdout
+    assert "does not grant paper execution" in stdout
+    assert "live trading permission" in stdout
+
+
 def test_validate_artifacts_help_describes_io_and_boundary() -> None:
     result = invoke_cli(["validate-artifacts", "--help"])
     stdout = normalized_stdout(result)
