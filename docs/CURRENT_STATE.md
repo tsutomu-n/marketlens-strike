@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-17_16:57 JST
+更新日: 2026-06-17_19:24 JST
 -->
 
 # Current State
@@ -152,14 +152,14 @@ uv run python scripts/check_current_docs.py
 - `bitget_futures` and `hyperliquid_perp` are also explicit disabled capability entries in `src/sis/venues/capabilities.py`.
 - NDX/QQQ family records remain usable for research/backtest artifacts. Paper candidate selection, `PaperIntentPreview`, raw `paper-from-intents` JSON, and legacy `paper-step` order generation remain blocked unless valid Layer 2.6/2.7 paper-observation evidence is present.
 
-2026-06-05 runtime artifact snapshot:
+2026-06-17 runtime validation snapshot:
 
-- P2 targeted verification: Trade[XYZ] / diagnostics / phase gate / Alpaca / tracking tests pass
-- `uv run sis validate-artifacts --strict`: `checked_files=12`, `issues=0`
+- `uv run sis validate-artifacts --strict`: `checked_files=13`, `issues=0`
 - latest `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`, `next_actions=[]`
-- latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded. Current classification is `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=5`; read-only/paper readiness and live execution readiness are separate surfaces.
-- latest phase gate remediation order is `none` when only live-readiness blockers remain. Do not run `refresh-operations-artifacts` as a P2 remediation loop for those blockers.
-- latest Trade[XYZ] data readiness: `decision=NOT_READY`, `backtest_data_ready=false`, `fail_count=1`, `known_gap_count=2`, fail=`quote_coverage`, known gaps=`funding_events`,`oracle_timestamp_provenance`; `real_market_reference`, `signal_candles`, and `account_specific_fee` are pass. `funding_events_from_history` is usable but partial: `row_count=605`, `skipped.missing_oracle_quote_within_lag=671`.
+- latest phase gate can be `READ_ONLY_GO` while execution lineage remains degraded. Current classification is `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`; read-only/paper readiness and live execution readiness are separate surfaces.
+- latest `refresh-operations-artifacts` regenerated local operations/audit/remediation reports but did not clear execution readiness: operations dashboard is `overall_status=degraded`, `monitoring_status=degraded`, `execution_venue_count=2`, `execution_comparison_all_registries_present=false`, and readiness snapshot has `operations_ready=false`.
+- latest phase gate remediation order is `none` when only live-readiness blockers remain. Do not repeatedly run `refresh-operations-artifacts` as a P2 remediation loop for those blockers; it can refresh local reports, but it does not create missing execution evidence.
+- latest available Trade[XYZ] data readiness artifact: `data/manifests/trade_xyz_data_readiness_manifest.json` has `decision=NOT_READY`, `backtest_data_ready=false`, `fail_count=1`, `known_gap_count=2`.
 
 PR-08 専用確認:
 

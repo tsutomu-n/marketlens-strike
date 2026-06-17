@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-17_17:59 JST
+更新日: 2026-06-17_19:24 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -102,9 +102,9 @@ uv run sis strategy-review-record --help
 
 現行レポートでは、通常のペーパー観察がまだ足りない状態です。
 
-- 通常ペーパー観察の session 数: `2`
+- 通常ペーパー観察の session 数: `3`
 - smoke session 数: `1`
-- 最新の通常 session: `local-paper-20260612-2107`
+- 最新の通常 session: `local-paper-20260617-190737`
 - 最新の通常判定: `NEEDS_MORE_PAPER_OBSERVATION`
 - 最新の smoke 判定: `PASS_PAPER_OBSERVATION_REVIEW`
 - 通常基準を満たしたか: `false`
@@ -193,6 +193,8 @@ uv run sis remediation-planner
 ```
 
 ここで readiness snapshot は「何の準備ができているか」を見るための生成物です。live readiness と read-only / paper readiness は別物として読みます。
+
+2026-06-17_19:24 JST のローカル再計算では、operations dashboard は `degraded` でした。これは「読み取り専用や paper gate が落ちた」という意味ではなく、Trade[XYZ] と Bitget demo の execution 状態がまだ揃っていないという意味です。`phase-gate-review` は `READ_ONLY_GO` のままですが、operations readiness と live readiness は未達です。
 
 ### 9. Trade[XYZ] pure backtest と Bitget demo smoke を扱える
 
