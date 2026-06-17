@@ -97,6 +97,9 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "latest local `refresh-operations-artifacts`" in script
     assert "evidence_card_20260617_111729.json" in script
     assert "old copied operations artifact timestamp" in script
+    assert "通常ペーパー観察の session 数:" in script
+    assert "local-paper-20260617-200702" in script
+    assert "old copied paper-observation session count" in script
 
     checker_globals = _checker_globals()
     current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])

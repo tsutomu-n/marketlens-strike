@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_00:49 JST
+更新日: 2026-06-18_00:59 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -11,7 +11,7 @@
 
 現行 docs は大きく壊れてはいない。current-doc checker は Strategy Review の専用 docs と `docs/NEXT_DIRECTION_CURRENT.md` も対象にしている。確認時は固定の checked count ではなく、`uv run python scripts/check_current_docs.py` を再実行する。
 
-ただし、直近で `strategy-review-build` / `strategy-review-record`、外部入力時の read-only / observation 再確認手順、plain Japanese guide 導線、domain runbook 導線、古い audit / 実装済み plan / historical implementation-sequence snapshot の archive 導線、古い operations / evidence runtime snapshot の再混入 guard が強化されたため、top-level docs と実務 docs の導線は追加更新済み。2026-06-18_00:49 JST 時点で確認すべき点は次。
+ただし、直近で `strategy-review-build` / `strategy-review-record`、外部入力時の read-only / observation 再確認手順、plain Japanese guide 導線、domain runbook 導線、古い audit / 実装済み plan / historical implementation-sequence snapshot の archive 導線、古い operations / evidence / paper-observation runtime snapshot の再混入 guard が強化されたため、top-level docs と実務 docs の導線は追加更新済み。2026-06-18_00:59 JST 時点で確認すべき点は次。
 
 1. `README.md` と `docs/CURRENT_STATE.md` に `docs/strategy_review/README.md` / `OPERATOR_REVIEW_PACKET_RECIPE.md` への導線を足す。2026-06-17_01:26 JST に実施済み。
 2. `docs/CODE_STATUS.md` は 2026-06-17_06:32 JST に thin index 化し、実装履歴を `docs/MIGRATION_HISTORY.md`、現行 surface を `docs/IMPLEMENTED_SURFACES.md` へ分割済み。
@@ -41,6 +41,7 @@
 26. 2026-06-15 の code-truth checklist は 2026-06-18_00:31 JST に `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` へ移動した。2026-06-17 checklist に superseded された historical audit として残し、current-doc checker 対象からは外す。
 27. root にあった `NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` は 2026-06-18_00:39 JST に `docs/archive/2026-06-17-doc-routing/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` へ移動した。2026-06-17 時点の implementation-sequence snapshot として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
 28. `README.md`、`docs/NEXT_DIRECTION_CURRENT.md`、`docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` は 2026-06-18_00:49 JST に、古い operations dashboard / evidence card / execution artifact の固定 snapshot 値を tracked docs へ写さず、再実行 command と読む field に寄せた。`scripts/check_current_docs.py` は同種の古い marker の再混入を current-status docs で失敗させる。
+29. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` は 2026-06-18_00:59 JST に、paper observation の session id / fills / trading days などの固定 runtime 値を tracked docs へ写さず、`strategy-paper-observation-status` と読む field に寄せた。`scripts/check_current_docs.py` は同種の古い marker の再混入を current-status docs で失敗させる。
 
 ## 照合した正本
 
@@ -175,6 +176,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 17. [x] 2026-06-15 の historical code-truth checklist を `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` へ移し、current-doc checker 対象から外す。
 18. [x] root にあった `NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` を `docs/archive/2026-06-17-doc-routing/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` へ移し、current 次手の正本を `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` に寄せる。
 19. [x] current status docs に古い operations / evidence / execution runtime snapshot の固定値が戻らないよう、`scripts/check_current_docs.py` に semantic drift marker を追加する。
+20. [x] current status docs に古い paper-observation runtime snapshot の固定値が戻らないよう、`scripts/check_current_docs.py` に semantic drift marker を追加する。
 
 ## 残リスク
 

@@ -160,6 +160,22 @@ CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS = (
         "evidence_card_20260617_111729.json",
         "old copied evidence-card artifact path; rebuild or inspect runtime artifacts instead",
     ),
+    (
+        "通常ペーパー観察の session 数:",
+        "old copied paper-observation session count; rerun strategy-paper-observation-status instead",
+    ),
+    (
+        "最新通常 session の fills:",
+        "old copied paper-observation fill gap; inspect latest_normal_requirement_gaps instead",
+    ),
+    (
+        "最新通常 session の trading days:",
+        "old copied paper-observation trading-day gap; inspect latest_normal_requirement_gaps instead",
+    ),
+    (
+        "local-paper-20260617-200702",
+        "old copied paper-observation session id; inspect runtime artifacts instead",
+    ),
 )
 
 CURRENT_STATUS_SEMANTIC_DRIFT_PATTERNS = (

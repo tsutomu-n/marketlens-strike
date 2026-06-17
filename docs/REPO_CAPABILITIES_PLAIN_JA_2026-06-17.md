@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-18_00:49 JST
+更新日: 2026-06-18_00:59 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -102,26 +102,23 @@ uv run sis strategy-review-record --help
 
 ペーパー観察とは、本番資金を使わずに、候補戦略が想定どおりに紙上の注文や約定として記録されるかを見る段階です。
 
-現行レポートでは、通常のペーパー観察がまだ足りない状態です。
+現行レポートの値は `data/research/strategy_lifecycle/paper_observation_status.json` に出ます。文書内の固定値ではなく、次の command を再実行して確認します。
 
-- 通常ペーパー観察の session 数: `8`
-- smoke session 数: `1`
-- 最新の通常 session: `local-paper-20260617-200702`
-- 最新の通常判定: `NEEDS_MORE_PAPER_OBSERVATION`
-- 最新の smoke 判定: `PASS_PAPER_OBSERVATION_REVIEW`
-- 通常基準を満たしたか: `false`
-- 最新通常 session の fills: `20 / 20`、不足 `0`
-- 最新通常 session の trading days: `1 / 10`、不足 `9`
-- smoke の合格を通常合格に数えるか: `false`
-- 不足 artifact: なし
-- 古い artifact: なし
-- 禁止された live / wallet / exchange write の混入: なし
-- 次の実務アクション: `continue_normal_paper_observation`
-- live 注文許可: `false`
+見る field:
 
-つまり、短縮検査である smoke は通っていますが、通常基準のペーパー観察はまだ不足しています。次は live ではなく、通常基準のペーパー観察を続けます。
+- `observation_state`: 通常観察が十分か、smoke だけか、artifact が不足しているか。
+- `next_action`: 次にやるべき作業。
+- `normal_session_count` と `smoke_session_count`: 通常 session と短縮検査 session の数。
+- `latest_normal_decision` と `latest_smoke_decision`: 最新の通常判定と smoke 判定。
+- `normal_thresholds_met`: 通常基準を満たしたか。
+- `latest_normal_requirement_gaps`: 最新通常 session の fills、trading days、timestamp 品質の不足。
+- `smoke_pass_counts_as_normal_pass`: smoke の合格を通常合格に数えるか。
+- `incomplete_artifacts`: 不足 artifact。
+- `live_conversion_allowed`、`permits_live_order`、`wallet_used`、`signing_used`、`exchange_write_used`: live / wallet / exchange write 混入の有無。
 
-ここでの「通常ペーパー観察の session 数」は、合格条件そのものではありません。一般的に言うと「観察を何回開始したか」の数です。通常基準の合格には、最新の通常 session そのものが `20 fills` と `10 trading days` を満たす必要があります。いまの最新通常 session は `20 fills` には到達しましたが、まだ `1 trading day` だけなので、通常基準を満たしたとは言えません。機械的に確認する場合は `latest_normal_requirement_gaps` を見ます。
+`observation_state=needs_more_normal_paper_observation` の場合、次は live ではなく通常基準のペーパー観察を続けます。`smoke_pass_counts_as_normal_pass=false` の場合、短縮検査の合格を通常基準の合格として扱いません。
+
+ここでの「通常ペーパー観察の session 数」は、合格条件そのものではありません。一般的に言うと「観察を何回開始したか」の数です。通常基準の合格には、最新の通常 session そのものが `min_fills_for_pass` と `min_trading_days_for_pass` を満たす必要があります。機械的に確認する場合は `latest_normal_requirement_gaps` を見ます。
 
 ここでいう「続ける」は、同じ日の生成物を何度も作り直すことではありません。`trading days` は観測できた取引日の数なので、同じ取引日の fill を増やしても、`10 trading days` の代わりにはなりません。次に必要なのは、別の取引日を含む通常観察の証拠です。
 
