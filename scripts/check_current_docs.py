@@ -140,6 +140,26 @@ CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS = (
         "pack hash sha256:",
         "old copied runtime hash wording; inspect runtime artifacts instead",
     ),
+    (
+        "latest local `refresh-operations-artifacts`",
+        "old copied operations snapshot wording; rerun operations commands instead",
+    ),
+    (
+        "2026-06-17_19:24 JST のローカル再計算",
+        "old copied operations artifact timestamp; rerun operations commands instead",
+    ),
+    (
+        "2026-06-17_20:17 JST の補助確認",
+        "old copied auxiliary evidence timestamp; rerun evidence commands instead",
+    ),
+    (
+        "2026-06-17_20:44 JST に execution",
+        "old copied execution artifact timestamp; rerun execution commands instead",
+    ),
+    (
+        "evidence_card_20260617_111729.json",
+        "old copied evidence-card artifact path; rebuild or inspect runtime artifacts instead",
+    ),
 )
 
 CURRENT_STATUS_SEMANTIC_DRIFT_PATTERNS = (

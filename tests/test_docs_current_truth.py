@@ -94,6 +94,9 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "REVISE_2_3" in script
     assert "162 commands" in script
     assert "checked 125 current docs" in script
+    assert "latest local `refresh-operations-artifacts`" in script
+    assert "evidence_card_20260617_111729.json" in script
+    assert "old copied operations artifact timestamp" in script
 
     checker_globals = _checker_globals()
     current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])

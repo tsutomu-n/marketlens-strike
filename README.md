@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-18_00:31 JST
+更新日: 2026-06-18_00:49 JST
 -->
 
 # marketlens-strike
@@ -310,13 +310,12 @@ uv run python scripts/check_current_docs.py
 - Current Layer 2.4 default artifact decision is `APPROVE_STRATEGY_LAB_EXPORT`; this is only permission for Layer 2.5 research-only export and is not alpha, backtest, paper, or live readiness proof.
 - `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` records a historical code-truth docs cleanup checklist.
 
-2026-06-17 runtime validation snapshot:
+Runtime validation readback:
 
-- `uv run sis validate-artifacts --strict`: `checked_files=13`, `issues=0`
-- `uv run sis phase-gate-review`: `READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
-- current execution drift classification: `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`
-- latest local `refresh-operations-artifacts`: operations dashboard `overall_status=degraded`, `monitoring_status=degraded`, `execution_venue_count=2`, `execution_comparison_all_registries_present=false`; this is an execution-readiness gap, not a live permission.
-- latest available `data/manifests/trade_xyz_data_readiness_manifest.json`: `NOT_READY`, `backtest_data_ready=false`, `fail_count=1`, `known_gap_count=2`
+- Run `uv run sis validate-artifacts --strict` for strict artifact validation.
+- Run `uv run sis phase-gate-review` for the read-only / paper gate decision.
+- Run `uv run sis execution-drift-overview` and `uv run sis execution-snapshot --venue trade_xyz` for execution-readiness gaps.
+- Run `uv run sis readiness-snapshot` and inspect `data/manifests/trade_xyz_data_readiness_manifest.json` only as runtime artifacts, not as tracked-doc proof.
 - `docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md` records the current code-truth documentation checklist, plain-Japanese / external-input routing cleanup, domain runbook split, and old audit archive routing.
 
 `READ_ONLY_GO` means the read-only / paper gate is clear. It does not mean
