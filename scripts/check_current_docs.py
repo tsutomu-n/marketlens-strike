@@ -56,10 +56,7 @@ CURRENT_DOC_DIRS = (
 
 PLAN_ROUTING_ALLOWED_FILES = ("plan/README.md",)
 
-PLAN_ROUTING_ALLOWED_PREFIXES = (
-    "plan/archive/",
-    "plan/0609ここからの計画/03_venue_read_only_capability_probe/",
-)
+PLAN_ROUTING_ALLOWED_PREFIXES = ("plan/archive/",)
 
 EXCLUDED_DOC_PREFIXES = (
     "docs/archive/",
@@ -81,6 +78,7 @@ LEGACY_ROOT_PATHS = (
     "docs/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md",
     "docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md",
     "docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md",
+    "plan/0609ここからの計画/03_venue_read_only_capability_probe/",
     "docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md",
     "docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md",
     "docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md",

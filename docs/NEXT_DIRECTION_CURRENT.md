@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-18_01:06 JST
+更新日: 2026-06-18_02:34 JST
 -->
 
 # Next Direction Current
@@ -18,12 +18,12 @@
 - code: `src/`, `tests/`, `configs/`, `schemas/`, `scripts/`
 - CLI help: `uv run sis --help`, `uv run sis strategy-review-record --help`
 - current docs: `docs/CURRENT_STATE.md`, `docs/IMPLEMENTED_SURFACES.md`, `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`, `docs/strategy_review/README.md`
-- plan handoff: `plan/0609ここからの計画/03_venue_read_only_capability_probe/`
 
 次は current proof として扱わない:
 
 - stale plan
 - historical audit
+- archived plan handoff
 - archived implementation-sequence snapshot: `docs/archive/2026-06-17-doc-routing/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md`
 - `data/` runtime artifact
 - old pass count / public command count snapshot
@@ -176,6 +176,8 @@ uv run sis strategy-paper-observation-status \
 `venue-read-only-probe` は実装済みで、dogfood decision は `NO_ACTION`。
 
 これは Bitget / Hyperliquid production readiness、credentialed read-only network readiness、paper readiness、live readiness を証明しない。
+
+実装計画と dogfood 記録は `plan/archive/2026-06-17-plan-routing/0609ここからの計画/03_venue_read_only_capability_probe/` に archive 済み。現行 next action としては読まない。
 
 ### Operations / audit / remediation refresh
 

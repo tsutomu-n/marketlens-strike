@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:13 JST
-更新日: 2026-06-18_00:01 JST
+更新日: 2026-06-18_02:34 JST
 -->
 
 # 2026-06-17 Plan Routing Archive
@@ -20,6 +20,7 @@
 
 - `0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`: NDX / QQQ venue suitability gate の実装済み plan。
 - `0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`: Bitget / Hyperliquid capability design gate の実装済み plan。
+- `0609ここからの計画/03_venue_read_only_capability_probe/`: fixture-first venue read-only capability probe と dogfood `NO_ACTION` decision の実装済み plan。
 - `0610ここからの計画/01_grok_architecture_adoption_review/`: external suggestion review の historical docs-only plan。
 - `0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/`: Layer 2.5 Strategy Lab export の実装済み plan。
 - `0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/`: Layer 2.6 / 2.7 backtest operator promotion の実装済み plan。
@@ -32,6 +33,6 @@
 
 ## Boundary
 
-- `plan/0609ここからの計画/03_venue_read_only_capability_probe/` は未実装 plan として root `plan/` 側に残す。
+- 2026-06-09 venue plan はすべて archive 済み。root `plan/` 側に残す current unimplemented venue plan はない。
 - `plan/archive/2026-06-17-plan-routing/ねくすと.md` は Strategy Review operator artifact の historical implementation context として読む。
 - archive 内の古い pass count、artifact snapshot、phase gate value は現在値ではない。確認時は `./scripts/check` と対象 CLI を再実行する。

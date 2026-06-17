@@ -90,7 +90,6 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "PLAN_ROUTING_ALLOWED_FILES" in script
     assert "PLAN_ROUTING_ALLOWED_PREFIXES" in script
     assert "check_plan_routing" in script
-    assert "plan/0609ここからの計画/03_venue_read_only_capability_probe/" in script
     assert "REVISE_2_3" in script
     assert "162 commands" in script
     assert "checked 125 current docs" in script
@@ -188,6 +187,7 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
         "docs/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md" not in current_doc_files
     )
     assert "docs/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md" in legacy_root_paths
+    assert "plan/0609ここからの計画/03_venue_read_only_capability_probe/" in legacy_root_paths
 
     current_status_docs = set(checker_globals["CURRENT_STATUS_DOC_FILES"])
     assert "README.md" in current_status_docs
@@ -222,8 +222,16 @@ def test_plan_routing_keeps_historical_docs_archived() -> None:
         "plan/archive/2026-06-08-plan-routing/0607ここからの計画2/zip_intake_guide/README.md"
         in tracked_plan_files
     )
+    assert (
+        "plan/archive/2026-06-17-plan-routing/0609ここからの計画/03_venue_read_only_capability_probe/README.md"
+        in tracked_plan_files
+    )
     assert all(not path.startswith("plan/0607ここからの計画2/") for path in tracked_plan_files)
     assert all(not path.startswith("plan/0608ここからの計画/") for path in tracked_plan_files)
+    assert all(
+        not path.startswith("plan/0609ここからの計画/03_venue_read_only_capability_probe/")
+        for path in tracked_plan_files
+    )
 
 
 def test_human_facing_html_guides_have_markdown_sources() -> None:

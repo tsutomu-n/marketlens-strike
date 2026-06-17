@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-18_00:08 JST
+更新日: 2026-06-18_02:34 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -15,19 +15,23 @@
 
 ## 2026-06-09 venue plans
 
-Only the read-only capability probe remains a current unimplemented plan in
-this group. Code, tests, schemas, CLI help, and docs are the source of truth.
+No 2026-06-09 venue plan remains a current unimplemented root plan. Code,
+tests, schemas, CLI help, and docs are the source of truth.
 
 Implemented / historical:
 
 - `plan/archive/2026-06-17-plan-routing/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/`
 - `plan/archive/2026-06-17-plan-routing/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/`
 
-Current unimplemented implementation handoff:
+Implemented / dogfooded / historical:
 
-- `plan/0609ここからの計画/03_venue_read_only_capability_probe/`
-- Final coder-ready plan:
-  [plan/0609ここからの計画/03_venue_read_only_capability_probe/11_PR_VENUE_PROBE_00_FINAL_PLAN.md](0609ここからの計画/03_venue_read_only_capability_probe/11_PR_VENUE_PROBE_00_FINAL_PLAN.md)
+- `plan/archive/2026-06-17-plan-routing/0609ここからの計画/03_venue_read_only_capability_probe/`
+
+The final decision in that archive is `NO_ACTION`: `venue-read-only-probe` is
+implemented and dogfooded as a fixture-first local boundary artifact, but it
+does not justify credentialed network probing, paper bridge validation,
+Strategy Case registry work, schema widening, paper execution, or live
+execution.
 
 ## Historical 2026-06-10 review plans
 

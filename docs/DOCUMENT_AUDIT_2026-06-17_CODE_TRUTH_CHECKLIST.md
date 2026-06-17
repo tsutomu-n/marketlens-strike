@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_02:27 JST
+更新日: 2026-06-18_02:34 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -22,7 +22,7 @@
 7. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` は専門用語を減らして repo でできること / できないことを読む入口として追加済み。`README.md` の Read First でも上位に置く。
 8. `docs/OPERATIONS_RUNBOOK.md` は root index に縮小済み。長い domain 手順は `docs/runbooks/` に分割し、current-doc checker 対象に追加済み。
 9. 古い root audit / blocker docs は `docs/archive/2026-06-17-doc-routing/` へ移し、current-doc checker 対象から外した。
-10. 実装済み plan / historical review plan は `plan/archive/2026-06-17-plan-routing/` へ移し、`plan/0609ここからの計画/03_venue_read_only_capability_probe/` だけを current unimplemented plan として root 側に残した。
+10. 実装済み plan / historical review plan は `plan/archive/2026-06-17-plan-routing/` へ移した。2026-06-09 venue plan はすべて archive 済みで、root 側に残す current unimplemented venue plan はない。
 11. `docs/CURRENT_STATE.md` は 2026-06-17_22:22 JST に 1ページ寄りの入口文書へ縮小し、詳細能力列挙は `docs/IMPLEMENTED_SURFACES.md`、`docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、domain docs へ逃がした。
 12. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` は 2026-06-17_22:30 JST に短い入口文書へ縮小し、詳細列挙は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md` へ分離した。schema / strategy type matrix は `docs/strategy_research_lab/13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` が担う。
 13. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` の public CLI catalog は 2026-06-17_22:40 JST に `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` へ分離し、`scripts/check_cli_catalog.py` で Typer registration と照合するようにした。`strategy-paper-observation-append` の catalog 漏れも補正済み。
@@ -36,7 +36,7 @@
 21. `plan/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` は 2026-06-17_23:53 JST に `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` へ移動した。本文は historical implementation plan として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
 22. `plan/ねくすと.md` は 2026-06-18_00:01 JST に `plan/archive/2026-06-17-plan-routing/ねくすと.md` へ移動した。本文は Strategy Review operator artifact の historical implementation plan として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
 23. `plan/0607ここからの計画2/README.md` と `plan/0607ここからの計画2/TEMPLATE_MANIFEST.json` は 2026-06-18_00:08 JST に `plan/archive/2026-06-08-plan-routing/0607ここからの計画2/zip_intake_guide/` へ移動した。feature expansion ZIP の historical intake guide / template として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
-24. `scripts/check_current_docs.py` は 2026-06-18_00:15 JST に tracked plan routing guard を追加した。tracked plan file は `plan/README.md`、`plan/archive/**`、`plan/0609ここからの計画/03_venue_read_only_capability_probe/**` だけを許可し、root historical plan file の再混入を失敗させる。
+24. `scripts/check_current_docs.py` は 2026-06-18_00:15 JST に tracked plan routing guard を追加した。2026-06-18_02:34 JST 時点では tracked plan file は `plan/README.md` と `plan/archive/**` だけを許可し、root historical plan file の再混入を失敗させる。
 25. 2026-05-31 の base audit は 2026-06-18_00:24 JST に `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31.md` へ移動した。2026-05-31 時点の audit snapshot として残し、current-doc checker 対象からは外す。
 26. 2026-06-15 の code-truth checklist は 2026-06-18_00:31 JST に `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` へ移動した。2026-06-17 checklist に superseded された historical audit として残し、current-doc checker 対象からは外す。
 27. root にあった `NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` は 2026-06-18_00:39 JST に `docs/archive/2026-06-17-doc-routing/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` へ移動した。2026-06-17 時点の implementation-sequence snapshot として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
@@ -54,6 +54,7 @@
 39. `docs/backtest/BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md` は、2026-06-18_02:10 JST に dated runtime snapshot 表や固定 benchmark / stress / data availability 値を外し、`strategy-backtest-artifact-summary`、targeted `jq`、`strategy-paper-observation-status` で現在値を読む導線へ寄せた。
 40. `docs/archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md` は、実装済み OSS capability expansion plan と当時の外部調査・対象ファイル一覧を含む履歴資料として残す。2026-06-18_02:18 JST に current-doc checker 対象から外し、現行の backtest technical boundary は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`、CLI help、`pyproject.toml`、`uv.lock` へ寄せた。
 41. `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md` は、BP0 完了後に bridge adapter 不要と判定した historical bridge audit plan として残す。2026-06-18_02:27 JST に current-doc checker 対象から外し、現行の backtest-to-paper 導線は `docs/strategy_lifecycle/README.md` と `uv run sis strategy-paper-observation-status` へ寄せた。
+42. `plan/archive/2026-06-17-plan-routing/0609ここからの計画/03_venue_read_only_capability_probe/` は、`venue-read-only-probe` 実装と dogfood `NO_ACTION` decision まで完了した historical implementation plan として残す。root `plan/` からは外し、現行 next action は `docs/NEXT_DIRECTION_CURRENT.md` で確認する。
 
 ## 照合した正本
 
@@ -220,6 +221,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 30. [x] backtest user guide から dated runtime snapshot 値を外し、現在値は artifact/status command と読む field に寄せる。
 31. [x] OSS backtest capability expansion implementation plan を archive へ移し、現行 backtest technical boundary は technical reference、lockfile、CLI help に寄せる。
 32. [x] backtest to paper observation bridge plan を archive へ移し、現行 paper observation status は Strategy Lifecycle README と status command に寄せる。
+33. [x] venue read-only capability probe plan を archive へ移し、root plan から current unimplemented venue plan を外す。
 
 ## 残リスク
 
