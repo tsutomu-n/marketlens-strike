@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_21:11 JST
-更新日: 2026-06-17_10:40 JST
+更新日: 2026-06-17_11:38 JST
 -->
 
 # Venue Read-Only Capability Probe Plan
@@ -11,7 +11,9 @@ This is the next implementation plan after
 Current implementation source for this plan:
 
 1. `11_PR_VENUE_PROBE_00_FINAL_PLAN.md`
-2. older split plan files below for background and cross-checks
+2. `12_PR_VENUE_PROBE_01_DOGFOOD_AND_DECISION.md`
+3. `13_PR_VENUE_PROBE_01_DECISION.md`
+4. older split plan files below for background and cross-checks
 
 Goal: add a fixture-first read-only capability probe surface for future
 `bitget_futures` and `hyperliquid_perp` without widening `VenueId`, enabling
@@ -32,6 +34,14 @@ Read historical split files in order only after the final plan:
 10. `10_CODER_HANDOFF_PROMPT.md`
 
 Readiness verdict: ready with assumptions.
+
+Current decision:
+
+- `PR-VENUE-PROBE-01` selected `NO_ACTION` after local dogfood.
+- The dogfood does not prove credentialed read-only network readiness, paper
+  readiness, live readiness, wallet readiness, signing readiness, or
+  exchange-write readiness.
+- Additional work requires a new explicit plan.
 
 Assumptions:
 
