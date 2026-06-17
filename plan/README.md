@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-18_00:01 JST
+更新日: 2026-06-18_00:08 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -105,8 +105,11 @@ Top-level Trade[XYZ] plan docs are not current truth. Use them only for implemen
 
 2026-06-07 Layer 2.2 plan packs, the 2026-06-08 Layer 2.2 acceptance hardening plan, and the 2026-06-08 Layer 2.3 preflight / feature residual plan are implemented historical contracts. Code, configs, schemas, tests, CLI help, and `docs/research/ndx/README.md` remain current status proof.
 
+- `plan/archive/2026-06-08-plan-routing/README.md`
 - `plan/archive/2026-06-09-ndx-plan-routing/feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1/`
 - `plan/archive/2026-06-09-ndx-plan-routing/feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1/`
+- `plan/archive/2026-06-08-plan-routing/0607ここからの計画2/zip_intake_guide/`
+- `plan/0607ここからの計画2/*.zip` is ignored by git and treated as historical source packages.
 - `plan/0608ここからの計画/feature_expansion_plan_20260608_layer_2_2_acceptance_hardening_v1.zip` is ignored by git and treated as a historical source package.
 - `plan/0608ここからの計画/feature_expansion_plan_20260608_layer_2_3_ndx_preflight_feature_residual_v1.zip` is ignored by git and treated as a historical source package.
 - `plan/0608ここからの計画/01_layer_2_2_foundation/` and `plan/0608ここからの計画/02_layer_2_2_exit_gate/` contain ignored historical ZIP inputs and are not new implementation instructions.

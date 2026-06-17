@@ -1,11 +1,13 @@
 <!--
 作成日: 2026-06-07_20:21 JST
-更新日: 2026-06-07_20:21 JST
+更新日: 2026-06-18_00:08 JST
 -->
 
 # Feature Expansion Zip Intake Guide
 
 ## 結論
+
+この文書は historical template です。2026-06-07 時点で、外部から受け取る feature expansion plan ZIP をどう構成し、どう読むかを揃えるために作りました。現行 repo の仕様、実装済み機能、paper / live 許可、次アクションは `../../../../README.md`、`../../../../../docs/CURRENT_STATE.md`、`../../../../../docs/NEXT_DIRECTION_CURRENT.md` を先に確認してください。
 
 新しい機能拡張計画は、Zip の中で「何を作るか」「何を作らないか」「どのファイルに触るか」「どう検証するか」「どこで止まるか」が分かる形にする。
 
@@ -182,4 +184,3 @@ Zip と一緒に、次のように渡すと再開しやすい。
 実装前に、抜け、漏れ、誤謬リスクと stop condition を確認してください。
 問題なければ 04_TASKS.md の T1 から進めてください。
 ```
-

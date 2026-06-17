@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_00:01 JST
+更新日: 2026-06-18_00:08 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -35,6 +35,7 @@
 20. `scripts/check_current_docs.py` は 2026-06-17_23:47 JST に HTML current docs の同名 Markdown source を必須化した。今後 human-facing HTML が増える場合も、文章正本なしでは current-doc gate を通らない。
 21. `plan/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` は 2026-06-17_23:53 JST に `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` へ移動した。本文は historical implementation plan として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
 22. `plan/ねくすと.md` は 2026-06-18_00:01 JST に `plan/archive/2026-06-17-plan-routing/ねくすと.md` へ移動した。本文は Strategy Review operator artifact の historical implementation plan として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
+23. `plan/0607ここからの計画2/README.md` と `plan/0607ここからの計画2/TEMPLATE_MANIFEST.json` は 2026-06-18_00:08 JST に `plan/archive/2026-06-08-plan-routing/0607ここからの計画2/zip_intake_guide/` へ移動した。feature expansion ZIP の historical intake guide / template として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
 
 ## 照合した正本
 
@@ -84,6 +85,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/DOCS_LINT_POLICY_2026-05-30.md` | 更新して維持 | current-doc checker の運用方針として必要 | この監査で strict 対象一覧を現行 checker に合わせる |
 | `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` | historical として維持 | Strategy Review Builder 次期実装の計画として有用だが、現行コードでは operator record まで実装済み | root plan からは外し、archive record として読む |
 | `plan/archive/2026-06-17-plan-routing/ねくすと.md` | historical として維持 | PR-OPERATOR-00 の実装計画として有用だが、現行コードでは `strategy-review-record` / `operator_review.yaml` は実装済み | root plan からは外し、archive record として読む |
+| `plan/archive/2026-06-08-plan-routing/0607ここからの計画2/zip_intake_guide/README.md` | historical として維持 | feature expansion ZIP を受け取る時の形式として有用だが、現行実装計画ではない | root plan からは外し、archive template として読む |
 
 ## 古い内容があるドキュメント
 
@@ -138,6 +140,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` | 移動済み | 旧 `APPROVE_FOR_PAPER` bridge が残るため、PR-OPERATOR-00 の正本にしない |
 | `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` | 移動済み | Strategy Review Builder の historical plan。現行未実装 next action として root に残さない |
 | `plan/archive/2026-06-17-plan-routing/ねくすと.md` | 移動済み | Strategy Review operator artifact の historical plan。現行未実装 next action として root に残さない |
+| `plan/archive/2026-06-08-plan-routing/0607ここからの計画2/zip_intake_guide/` | 移動済み | 2026-06-07 の feature expansion ZIP intake guide / template。現行未実装 next action として root に残さない |
 | `資料/` | active docs から外す | current-doc checker 対象外。研究素材としてのみ扱う |
 | `docs/archive/**` と `plan/archive/**` | 維持 | current proof ではないが、過去判断の証跡として有用 |
 
@@ -156,6 +159,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 11. [x] HTML current docs が同名 Markdown source を持つことを `scripts/check_current_docs.py` 本体で検査する。
 12. [x] historical implementation plan `plan/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` を root plan から archive へ移す。
 13. [x] historical implementation plan `plan/ねくすと.md` を root plan から archive へ移す。
+14. [x] historical template `plan/0607ここからの計画2/README.md` / `TEMPLATE_MANIFEST.json` を root plan から archive へ移す。
 
 ## 残リスク
 
