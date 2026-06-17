@@ -167,6 +167,8 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     )
     assert "docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md" not in current_doc_files
     assert "docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md" in legacy_root_paths
+    assert "docs/research/ndx/2_2_IMPLEMENTATION_BOUNDARY.md" not in current_doc_files
+    assert "docs/research/ndx/2_2_IMPLEMENTATION_BOUNDARY.md" in legacy_root_paths
     assert (
         "docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md"
         not in current_doc_files

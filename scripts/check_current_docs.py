@@ -79,6 +79,7 @@ LEGACY_ROOT_PATHS = (
     "docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md",
     "plan/0609ここからの計画/03_venue_read_only_capability_probe/",
     "docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md",
+    "docs/research/ndx/2_2_IMPLEMENTATION_BOUNDARY.md",
     "docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md",
     "docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md",
     "docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md",

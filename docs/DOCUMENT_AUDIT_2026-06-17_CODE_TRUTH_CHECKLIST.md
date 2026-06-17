@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_02:42 JST
+更新日: 2026-06-18_02:56 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -56,6 +56,7 @@
 41. `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md` は、BP0 完了後に bridge adapter 不要と判定した historical bridge audit plan として残す。2026-06-18_02:27 JST に current-doc checker 対象から外し、現行の backtest-to-paper 導線は `docs/strategy_lifecycle/README.md` と `uv run sis strategy-paper-observation-status` へ寄せた。
 42. `plan/archive/2026-06-17-plan-routing/0609ここからの計画/03_venue_read_only_capability_probe/` は、`venue-read-only-probe` 実装と dogfood `NO_ACTION` decision まで完了した historical implementation plan として残す。root `plan/` からは外し、現行 next action は `docs/NEXT_DIRECTION_CURRENT.md` で確認する。
 43. `docs/archive/strategy_research_lab/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` は、2026-05-30 時点の Strategy Lab doc audit / spec hybrid として残す。現行仕様は `docs/strategy_research_lab/README.md`、`01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`、`02_ARTIFACT_FLOW_AND_LINEAGE.md`、`08_CURRENT_CAPABILITIES.md`、`13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` で確認する。
+44. `docs/archive/2026-06-09-ndx-doc-refresh/2_2_IMPLEMENTATION_BOUNDARY.md` は、Layer 2.2 実装直後の completion boundary として残す。現行 NDX 入口は `docs/research/ndx/README.md`、Layer 2.2 実装履歴は `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` で確認する。
 
 ## 照合した正本
 

@@ -1,11 +1,13 @@
 <!--
 作成日: 2026-06-07_19:37 JST
-更新日: 2026-06-08_18:01 JST
+更新日: 2026-06-18_02:56 JST
 -->
 
 # Layer 2.2 Implementation Boundary
 
-今回の完成扱いは、HYP-NDX-001 を YAML から validation、lint、counter DAG、data requirements、Mermaid、Markdown report、manual review pack/import、exit gate decision まで local-only で再現できる状態である。
+この文書は、Layer 2.2 実装直後の completion boundary を記録した履歴資料です。現行の NDX 入口は `docs/research/ndx/README.md`、Layer 2.2 実装履歴は `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` を読みます。
+
+当時の完成扱いは、HYP-NDX-001 を YAML から validation、lint、counter DAG、data requirements、Mermaid、Markdown report、manual review pack/import、exit gate decision まで local-only で再現できる状態である。
 
 今回やらない:
 - external API

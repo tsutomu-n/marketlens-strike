@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-18_02:27 JST
+更新日: 2026-06-18_02:56 JST
 -->
 
 # Documentation Archive
@@ -78,6 +78,7 @@ Archived on 2026-06-08:
 Archived on 2026-06-09:
 
 - `docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md` -> `docs/archive/2026-06-09-ndx-doc-refresh/`
+- `docs/research/ndx/2_2_IMPLEMENTATION_BOUNDARY.md` -> `docs/archive/2026-06-09-ndx-doc-refresh/`
 
 Archived on 2026-06-17:
 

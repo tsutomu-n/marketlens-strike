@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-08_18:01 JST
-更新日: 2026-06-17_23:19 JST
+更新日: 2026-06-18_02:56 JST
 -->
 
 # NDX Research Docs
@@ -16,12 +16,11 @@
 5. `13_LAYER_2_6_PAPER_OBSERVATION_GATE.md`
 6. `14_LAYER_2_7_OPERATOR_PROMOTION.md`
 7. `15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md`
-8. `2_2_IMPLEMENTATION_BOUNDARY.md`
-9. `LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` - Layer 2.2 の historical implementation record。Layer 2.3 以降の current status や現在の artifact hash はここへ追記しない。
-10. `DATA_SOURCE_CONTRACT.md`
-11. `05_TEMPORAL_AVAILABILITY.md`
-12. `COUNTER_DAGS.md`
-13. `04_CAUSAL_ROLES.md`
+8. `LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` - Layer 2.2 の historical implementation record。Layer 2.3 以降の current status や現在の artifact hash はここへ追記しない。
+9. `DATA_SOURCE_CONTRACT.md`
+10. `05_TEMPORAL_AVAILABILITY.md`
+11. `COUNTER_DAGS.md`
+12. `04_CAUSAL_ROLES.md`
 
 ## Commands
 
