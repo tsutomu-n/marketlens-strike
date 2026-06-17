@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-17_21:08 JST
+更新日: 2026-06-18_00:39 JST
 -->
 
 # Next Direction Current
@@ -19,12 +19,12 @@
 - CLI help: `uv run sis --help`, `uv run sis strategy-review-record --help`
 - current docs: `docs/CURRENT_STATE.md`, `docs/IMPLEMENTED_SURFACES.md`, `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`, `docs/strategy_review/README.md`
 - plan handoff: `plan/0609ここからの計画/03_venue_read_only_capability_probe/`
-- implementation sequence: `docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md`
 
 次は current proof として扱わない:
 
 - stale plan
 - historical audit
+- archived implementation-sequence snapshot: `docs/archive/2026-06-17-doc-routing/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md`
 - `data/` runtime artifact
 - old pass count / public command count snapshot
 

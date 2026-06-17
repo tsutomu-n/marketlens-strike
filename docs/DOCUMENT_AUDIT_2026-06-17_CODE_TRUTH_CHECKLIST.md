@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_00:31 JST
+更新日: 2026-06-18_00:39 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -11,7 +11,7 @@
 
 現行 docs は大きく壊れてはいない。current-doc checker は Strategy Review の専用 docs と `docs/NEXT_DIRECTION_CURRENT.md` も対象にしている。確認時は固定の checked count ではなく、`uv run python scripts/check_current_docs.py` を再実行する。
 
-ただし、直近で `strategy-review-build` / `strategy-review-record`、外部入力時の read-only / observation 再確認手順、plain Japanese guide 導線、domain runbook 導線、古い audit / 実装済み plan の archive 導線が強化されたため、top-level docs と実務 docs の導線は追加更新済み。2026-06-18_00:31 JST 時点で確認すべき点は次。
+ただし、直近で `strategy-review-build` / `strategy-review-record`、外部入力時の read-only / observation 再確認手順、plain Japanese guide 導線、domain runbook 導線、古い audit / 実装済み plan / historical implementation-sequence snapshot の archive 導線が強化されたため、top-level docs と実務 docs の導線は追加更新済み。2026-06-18_00:39 JST 時点で確認すべき点は次。
 
 1. `README.md` と `docs/CURRENT_STATE.md` に `docs/strategy_review/README.md` / `OPERATOR_REVIEW_PACKET_RECIPE.md` への導線を足す。2026-06-17_01:26 JST に実施済み。
 2. `docs/CODE_STATUS.md` は 2026-06-17_06:32 JST に thin index 化し、実装履歴を `docs/MIGRATION_HISTORY.md`、現行 surface を `docs/IMPLEMENTED_SURFACES.md` へ分割済み。
@@ -39,6 +39,7 @@
 24. `scripts/check_current_docs.py` は 2026-06-18_00:15 JST に tracked plan routing guard を追加した。tracked plan file は `plan/README.md`、`plan/archive/**`、`plan/0609ここからの計画/03_venue_read_only_capability_probe/**` だけを許可し、root historical plan file の再混入を失敗させる。
 25. 2026-05-31 の base audit は 2026-06-18_00:24 JST に `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31.md` へ移動した。2026-05-31 時点の audit snapshot として残し、current-doc checker 対象からは外す。
 26. 2026-06-15 の code-truth checklist は 2026-06-18_00:31 JST に `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` へ移動した。2026-06-17 checklist に superseded された historical audit として残し、current-doc checker 対象からは外す。
+27. root にあった `NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` は 2026-06-18_00:39 JST に `docs/archive/2026-06-17-doc-routing/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` へ移動した。2026-06-17 時点の implementation-sequence snapshot として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
 
 ## 照合した正本
 
@@ -105,6 +106,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31.md` | `596 passed` / current docs `78` など当時の snapshot が多い | 現行検証は command 再実行が正本 | archive 済み |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` | `650 passed` / current docs `81` など当時の snapshot が多い | Backtest docs は 2026-06-15/16 で追加整理済み | archive 済み |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` | `117 docs` / `119 docs` など当時の current-doc count と、後続更新で完了した TODO が残る | 現行分類はこの 2026-06-17 checklist と command 再実行が正本 | archive 済み |
+| `docs/archive/2026-06-17-doc-routing/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` | 2026-06-17 時点の implementation sequence、runtime snapshot、完了済み実装順が混在 | 現行次手は `docs/NEXT_DIRECTION_CURRENT.md`、active / archived plan routing は `plan/README.md` | archive 済み |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` | Layer 2.3/2.4 当時の fixed snapshot が中心 | 現行 NDX docs は Layer 2.8 まで current-doc checker 対象 | archive 済み |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` | 2026-06-09 の pass count snapshot がある | current verification は command 再実行 | archive 済み |
 | `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | live readiness blocker の古い分解 | 現行は Strategy Lifecycle / NDX paper observation / phase gate が増えている | archive 済み |
@@ -132,6 +134,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31.md` | 移動済み | 2026-05-31 時点の historical audit。現行検証は command 再実行が正本 |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` | 移動済み | historical backtest update audit。現行 backtest は 2026-06-15/16 docs が正本 |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` | 移動済み | 2026-06-15 時点の code-truth checklist。2026-06-17 checklist に superseded |
+| `docs/archive/2026-06-17-doc-routing/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` | 移動済み | 2026-06-17 時点の implementation-sequence snapshot。現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` | 移動済み | Layer 2.3/2.4 の古い snapshot |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` | 移動済み | NDX/QQQ venue suitability の 2026-06-09 snapshot |
 | `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | 移動済み | current blocker 正本ではない |
@@ -169,6 +172,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 15. [x] tracked historical plan file が root `plan/` に戻らないよう `scripts/check_current_docs.py` に plan routing guard を追加する。
 16. [x] 2026-05-31 の historical audit を `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31.md` へ移し、current-doc checker 対象から外す。
 17. [x] 2026-06-15 の historical code-truth checklist を `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` へ移し、current-doc checker 対象から外す。
+18. [x] root にあった `NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` を `docs/archive/2026-06-17-doc-routing/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` へ移し、current 次手の正本を `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` に寄せる。
 
 ## 残リスク
 

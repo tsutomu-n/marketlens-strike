@@ -1,9 +1,11 @@
 <!--
 作成日: 2026-06-17_12:00 JST
-更新日: 2026-06-17_20:44 JST
+更新日: 2026-06-18_00:39 JST
 -->
 
 # Next Implementation Sequence Current
+
+Archive note: この文書は 2026-06-17 時点の implementation-sequence snapshot です。現行の次手証明としては使わないでください。現在の次方向は [../../NEXT_DIRECTION_CURRENT.md](../../NEXT_DIRECTION_CURRENT.md)、active / archived plan routing は [../../../plan/README.md](../../../plan/README.md) を読みます。
 
 ## 結論
 
