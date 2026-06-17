@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_21:47 JST
-更新日: 2026-06-16_06:46 JST
+更新日: 2026-06-18_01:22 JST
 -->
 
 # Backtest Docs Code-Truth Audit
@@ -17,6 +17,8 @@
 現時点で operator に読ませる正本は、`README.md`、`BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md`、`OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md`、`BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md` の4本に寄せるのが現実的である。
 
 2026-06-16_06:46 JST に、この audit に基づいて current 導線を整理した。古い計画・採用前調査・固定 sample は `docs/archive/backtest/` に移し、現行コードを正とする [BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](BACKTEST_CURRENT_TECHNICAL_REFERENCE.md) と、大学生向け current-only guide の [BACKTEST_CAPABILITY_UNIVERSITY_GUIDE_2026-06-16.md](BACKTEST_CAPABILITY_UNIVERSITY_GUIDE_2026-06-16.md) を追加した。
+
+2026-06-18_01:22 JST に、BP0 bridge audit 時点の fixed artifact values を含む evidence map も `docs/archive/backtest/` に移した。現行の paper observation 状態は `docs/strategy_lifecycle/README.md` と `uv run sis strategy-paper-observation-status` で再確認する。
 
 ## 照合したコード上の事実
 
@@ -57,7 +59,7 @@
 | `docs/archive/backtest/BACKTEST_CAPABILITY_BEFORE_AFTER_UNIVERSITY_GUIDE_2026-06-15.md` | 「実装完了後」という未来形が残る | 通常レーンは実装済み | archive 済み。current-only 版は `BACKTEST_CAPABILITY_UNIVERSITY_GUIDE_2026-06-16.md` |
 | `docs/backtest/BACKTEST_HIGH_SCHOOL_GUIDE_2026-06-15.md` | 新しい `framework_run`、reference-only contract、constraint breaker の説明が薄い | CLI と docs は追加済み | 高校生向け current guide として軽く追記する |
 | `docs/archive/backtest/BACKTEST_PLACEHOLDER_OUTPUT_SAMPLE_2026-06-15.md` | `check_count=198` が固定で載る | current summary は `pack_validation.check_count=206` | archive 済み |
-| `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` | `check_count=198` が固定で載る | current summary は `206` | current artifact 値を再生成して更新、または `example at time of capture` と明記 |
+| `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` | `check_count=198` が固定で載る | current status は再実行 command で確認する | archive 済み |
 | `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md` | 「整理する計画」色が強い | backtest pack 自体は拡張済み。paper bridge は別問題 | paper observation docs 側と突き合わせて、完了/未完了を再判定する |
 | `docs/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md` | qstrader は runner contract 未設計としている | `strategy-backtest-qstrader-contract` は実装済み。ただし dependency / engine は未採用 | qstrader 行だけ現行 contract 実装済みに更新 |
 | `docs/archive/backtest/OSS_BACKTEST_FRAMEWORK_EVALUATION_PLAN_2026-06-13.md` | 採用前評価と一時 smoke の表現が中心 | `vectorbt`, `bt`, `metrics`, `reports` は optional extra 済み | archive 済み |

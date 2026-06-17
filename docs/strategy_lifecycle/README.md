@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_21:34 JST
-更新日: 2026-06-17_23:19 JST
+更新日: 2026-06-18_01:22 JST
 -->
 
 # Strategy Lifecycle
@@ -42,11 +42,12 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 3. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`
 4. `docs/NEXT_DIRECTION_CURRENT.md`
 5. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md`
-6. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
-7. `LIVE_CANARY_PLAN_GATE.md`
-8. `docs/backtest/README.md`
-9. `docs/research/ndx/README.md`
-10. `docs/OPERATIONS_RUNBOOK.md`
+6. `LIVE_CANARY_PLAN_GATE.md`
+7. `docs/backtest/README.md`
+8. `docs/research/ndx/README.md`
+9. `docs/OPERATIONS_RUNBOOK.md`
+
+BP0 evidence map は `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` に archive 済み。当時の artifact 値を含む履歴資料であり、現行 status の正本ではない。現行 status は `uv run sis strategy-paper-observation-status` を再実行して確認する。
 
 ## NDX Paper Observation Handoff
 

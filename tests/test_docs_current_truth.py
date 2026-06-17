@@ -114,6 +114,14 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "docs/DOCUMENT_AUDIT_2026-05-31.md" in legacy_root_paths
     assert "docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md" not in current_doc_files
     assert "docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md" in legacy_root_paths
+    assert (
+        "docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md"
+        not in current_doc_files
+    )
+    assert (
+        "docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md"
+        in legacy_root_paths
+    )
     assert "docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md" not in current_doc_files
     assert "docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md" in legacy_root_paths
     assert "docs/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md" not in current_doc_files

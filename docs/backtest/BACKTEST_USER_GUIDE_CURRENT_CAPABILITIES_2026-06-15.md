@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_19:09 JST
-更新日: 2026-06-15_21:08 JST
+更新日: 2026-06-18_01:22 JST
 -->
 
 # Backtest User Guide And Current Capabilities
@@ -393,8 +393,8 @@ repo 全体の通常 gate:
 
 1. この文書
 2. `docs/backtest/OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md`
-3. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
-4. `docs/strategy_lifecycle/README.md`
+3. `docs/strategy_lifecycle/README.md`
+4. `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
 5. `docs/backtest/BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md`
 
 ## まとめ

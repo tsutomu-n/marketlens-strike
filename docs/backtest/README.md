@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-16_21:51 JST
+更新日: 2026-06-18_01:22 JST
 -->
 
 # Backtest Docs
@@ -59,9 +59,9 @@ Trade[XYZ] 専用 Python API surface は
 
 完成済み backtest pack を既存 Strategy Lifecycle / paper observation route にどう接続するかの bridge audit は
 [BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md](BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md)
-を見る。BP0 の追加調査結果と evidence map は
-[BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md](BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md)
-を見る。
+を見る。BP0 の追加調査結果と evidence map は、当時の artifact 値を含む履歴資料として
+[../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md](../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md)
+に保存している。現行の paper observation 状態は [../strategy_lifecycle/README.md](../strategy_lifecycle/README.md) と `uv run sis strategy-paper-observation-status` で確認する。
 
 責務分離で保守性とカスタマイズ性を上げた完了記録は
 [BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md](BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md)

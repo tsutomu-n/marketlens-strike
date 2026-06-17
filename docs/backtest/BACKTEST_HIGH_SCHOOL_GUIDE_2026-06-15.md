@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_19:13 JST
-更新日: 2026-06-15_19:13 JST
+更新日: 2026-06-18_01:22 JST
 -->
 
 # 高校生向け: バックテストシステムで今できること
@@ -266,8 +266,8 @@ uv run sis strategy-backtest-artifact-summary
 
 1. `docs/backtest/BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md`
 2. `docs/backtest/OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md`
-3. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
-4. `docs/strategy_lifecycle/README.md`
+3. `docs/strategy_lifecycle/README.md`
+4. `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
 
 ## まとめ
 
