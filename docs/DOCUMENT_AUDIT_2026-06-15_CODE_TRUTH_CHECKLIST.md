@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_07:23 JST
-更新日: 2026-06-17_22:53 JST
+更新日: 2026-06-17_23:01 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-15
@@ -154,9 +154,9 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - [x] `docs/trade_xyz_bot_beginner_guide.html`
   - 理由: README の read-first に入る初心者向け HTML だが、current venue suitability、NDX/QQQ fail-closed、Strategy Lifecycle、backtest-first 境界まで体系的に読むには古い。
   - 実施済み: 2026-06-17_22:53 JST に `docs/trade_xyz_bot_beginner_guide.md` を文章正本として追加し、README は Markdown 正本を先に読む導線へ変更した。HTML は companion として維持する。
-- [ ] `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html`
+- [x] `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html`
   - 理由: Markdown companion HTML で、Markdown 側を更新した時に同期漏れしやすい。
-  - 作り直し案: `08_CURRENT_CAPABILITIES.md` を正本にし、HTML は生成物または明示 companion として更新手順を持たせる。
+  - 実施済み: 2026-06-17_23:01 JST に `08_CURRENT_CAPABILITIES_EXPLAINED.md` を文章正本として追加し、HTML は見た目つき companion とした。
 
 ## 削除・アーカイブしてもよいドキュメント
 

@@ -80,6 +80,20 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "research-dag-" in script
 
 
+def test_human_facing_html_guides_have_markdown_sources() -> None:
+    readme = _read("README.md")
+    strategy_readme = _read("docs/strategy_research_lab/README.md")
+    strategy_short = _read("docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md")
+    strategy_html = _read("docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html")
+    beginner = _read("docs/trade_xyz_bot_beginner_guide.md")
+
+    assert "docs/trade_xyz_bot_beginner_guide.md" in readme
+    assert "trade_xyz_bot_beginner_guide.html" in beginner
+    assert "08_CURRENT_CAPABILITIES_EXPLAINED.md" in strategy_readme
+    assert "08_CURRENT_CAPABILITIES_EXPLAINED.md" in strategy_short
+    assert "08_CURRENT_CAPABILITIES_EXPLAINED.md" in strategy_html
+
+
 def test_cli_catalog_matches_registered_commands() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/check_cli_catalog.py"],

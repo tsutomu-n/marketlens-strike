@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_22:53 JST
+更新日: 2026-06-17_23:01 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -27,6 +27,7 @@
 12. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` は 2026-06-17_22:30 JST に短い入口文書へ縮小し、詳細列挙は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md` へ分離した。schema / strategy type matrix は `docs/strategy_research_lab/13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` が担う。
 13. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` の public CLI catalog は 2026-06-17_22:40 JST に `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` へ分離し、`scripts/check_cli_catalog.py` で Typer registration と照合するようにした。`strategy-paper-observation-append` の catalog 漏れも補正済み。
 14. `docs/trade_xyz_bot_beginner_guide.html` は 2026-06-17_22:53 JST に `docs/trade_xyz_bot_beginner_guide.md` を文章正本として追加し、README は Markdown 正本を先に読む導線へ変更した。
+15. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html` は 2026-06-17_23:01 JST に `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md` を文章正本として追加し、HTML は見た目つき companion とした。
 
 ## 照合した正本
 
@@ -106,7 +107,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | capability catalog と CLI catalog が一文書に大きく積まれていた | 2026-06-17_22:40 JST に CLI catalog を `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` へ分離し、`scripts/check_cli_catalog.py` で照合するようにした |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | capability 列挙が長大で、更新漏れリスクが高かった | 2026-06-17_22:30 JST に short guide 化し、詳細列挙は `08_CURRENT_CAPABILITIES_DETAILS.md`、matrix は `13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` へ分離済み |
 | `docs/trade_xyz_bot_beginner_guide.html` | HTML が read-first にあるが、Markdown 正本との同期が追いにくかった | 2026-06-17_22:53 JST に `docs/trade_xyz_bot_beginner_guide.md` を文章正本として追加し、HTML は companion とした |
-| `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html` | Markdown と HTML の二重保守になる | 既存の `08_CURRENT_CAPABILITIES.md` / `08_CURRENT_CAPABILITIES_DETAILS.md` を正本として読み、HTML は次の再生成対象にする |
+| `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html` | Markdown と HTML の二重保守になる | 2026-06-17_23:01 JST に `08_CURRENT_CAPABILITIES_EXPLAINED.md` を文章正本として追加し、HTML は見た目つき companion とした |
 
 ## 削除・アーカイブしてもよいドキュメント
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_14:13 JST
-更新日: 2026-06-17_22:30 JST
+更新日: 2026-06-17_23:01 JST
 -->
 
 # Current Capabilities Details
@@ -9,7 +9,7 @@
 
 正本はコードです。特に `src/sis/commands/research.py`, `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `src/sis/paper/runner.py`, `tests/test_strategy_lab_commands.py` を優先します。
 
-より具体的な説明と専門用語の言い換えは [08_CURRENT_CAPABILITIES_EXPLAINED.html](08_CURRENT_CAPABILITIES_EXPLAINED.html) で読めます。
+より具体的な説明と専門用語の言い換えは [08_CURRENT_CAPABILITIES_EXPLAINED.md](08_CURRENT_CAPABILITIES_EXPLAINED.md) で読めます。見た目つき HTML 版は [08_CURRENT_CAPABILITIES_EXPLAINED.html](08_CURRENT_CAPABILITIES_EXPLAINED.html) です。
 
 ユーザーが YAML で作れる売買ロジック、buy / sell signal、hold、損切、portfolio / execution 制約、未実装領域の整理は [11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md](11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md) で確認できます。
 

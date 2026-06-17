@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_22:53 JST
+更新日: 2026-06-17_23:01 JST
 -->
 
 # marketlens-strike
@@ -243,7 +243,9 @@ The author-facing capability list is
 [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md),
 with command-level detail at
 [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md),
-with an HTML explanation at
+with a plain-Japanese explanation source at
+[docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md),
+and a visual HTML companion at
 [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html](docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html).
 Strategy idea preparation starts at
 [docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html](docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html).

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_14:13 JST
-更新日: 2026-06-17_22:30 JST
+更新日: 2026-06-17_23:01 JST
 -->
 
 # Current Capabilities
@@ -9,7 +9,7 @@
 
 正本はコードです。特に `src/sis/commands/research.py`, `src/sis/research/strategy_lab/`, `src/sis/research_protocol/`, `src/sis/paper/runner.py`, `tests/test_strategy_lab_commands.py` を優先します。
 
-より具体的な説明と専門用語の言い換えは [08_CURRENT_CAPABILITIES_EXPLAINED.html](08_CURRENT_CAPABILITIES_EXPLAINED.html) で読めます。Strategy authoring の対応戦略一覧は [13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md](13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md) を読んでください。
+より具体的な説明と専門用語の言い換えは [08_CURRENT_CAPABILITIES_EXPLAINED.md](08_CURRENT_CAPABILITIES_EXPLAINED.md) で読めます。見た目つき HTML 版は [08_CURRENT_CAPABILITIES_EXPLAINED.html](08_CURRENT_CAPABILITIES_EXPLAINED.html) です。Strategy authoring の対応戦略一覧は [13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md](13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md) を読んでください。
 
 ## 結論
 
@@ -66,6 +66,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 
 | 読みたいこと | 読む文書 |
 |---|---|
+| 専門用語を減らした説明 | [08_CURRENT_CAPABILITIES_EXPLAINED.md](08_CURRENT_CAPABILITIES_EXPLAINED.md) |
 | コマンド別のできること、artifact、実行例 | [08_CURRENT_CAPABILITIES_DETAILS.md](08_CURRENT_CAPABILITIES_DETAILS.md) |
 | YAML で作れる戦略タイプと証拠 test | [13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md](13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md) |
 | 売買ロジックの書き方 | [09_STRATEGY_AUTHOR_GUIDE.md](09_STRATEGY_AUTHOR_GUIDE.md) |
