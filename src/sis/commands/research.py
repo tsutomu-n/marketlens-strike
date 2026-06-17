@@ -1896,8 +1896,19 @@ def register_research_commands(
 
     @app.command("promotion-decision")
     def promotion_decision_cmd(
-        source_pack: Path | None = typer.Option(None, "--source-pack"),
-        decision: str = typer.Option("hold", "--decision"),
+        source_pack: Path | None = typer.Option(
+            None,
+            "--source-pack",
+            help="PaperCandidatePack JSON path. Defaults to data/research/paper_candidate_pack.json.",
+        ),
+        decision: str = typer.Option(
+            "hold",
+            "--decision",
+            help=(
+                "Operator decision to record: hold, reject, or promote. "
+                "Promote requires all required evidence and remains paper-only."
+            ),
+        ),
     ) -> None:
         settings = get_settings()
         if decision not in {"promote", "reject", "hold"}:

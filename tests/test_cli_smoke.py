@@ -140,6 +140,17 @@ def test_build_paper_intent_preview_help_describes_inputs() -> None:
     assert "PromotionDecision JSON path" in stdout
 
 
+def test_promotion_decision_help_describes_decision_boundary() -> None:
+    result = invoke_cli(["promotion-decision", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "--source-pack" in stdout
+    assert "PaperCandidatePack JSON path" in stdout
+    assert "--decision" in stdout
+    assert "hold, reject, or promote" in stdout
+    assert "remains paper-only" in stdout
+
+
 def test_strategy_paper_observation_cycle_help_smoke() -> None:
     result = invoke_cli(["strategy-paper-observation-cycle", "--help"])
     stdout = normalized_stdout(result)
