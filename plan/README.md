@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-17_22:13 JST
+更新日: 2026-06-17_23:53 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -50,6 +50,7 @@ exchange-write path.
 
 - [plan/archive/2026-06-17-plan-routing/0616ここからの計画/01_strategy_review_builder/README.md](archive/2026-06-17-plan-routing/0616ここからの計画/01_strategy_review_builder/README.md)
 - [plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md](archive/2026-06-17-plan-routing/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md)
+- [plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md](archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md)
 - [ねくすと.md](ねくすと.md)
 
 ## Current Direction

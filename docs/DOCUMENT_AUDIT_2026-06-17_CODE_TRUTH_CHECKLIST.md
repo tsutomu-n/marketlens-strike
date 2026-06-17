@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_23:47 JST
+更新日: 2026-06-17_23:53 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -33,6 +33,7 @@
 18. `scripts/check_current_docs.py` は 2026-06-17_23:29 JST に current status docs 専用の semantic drift guard を追加した。対象は README、current-state、capability guide、domain runbook など現在状態を説明する入口文書に限定し、監査記録や implementation record の古い snapshot 値は historical として許可する。
 19. `docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html` は 2026-06-17_23:38 JST に `docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md` を文章正本として追加し、HTML は見た目つき companion とした。
 20. `scripts/check_current_docs.py` は 2026-06-17_23:47 JST に HTML current docs の同名 Markdown source を必須化した。今後 human-facing HTML が増える場合も、文章正本なしでは current-doc gate を通らない。
+21. `plan/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` は 2026-06-17_23:53 JST に `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` へ移動した。本文は historical implementation plan として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
 
 ## 照合した正本
 
@@ -81,6 +82,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `plan/README.md` | 更新して維持 | Strategy Review plan と next plan への導線を持つ | 2026-06-17_22:13 JST に実装済み plan と未実装 plan の root/archive 導線を整理済み |
 | `plan/ねくすと.md` | historical として維持 | PR-OPERATOR-00 の実装計画として有用だが、現行コードでは `strategy-review-record` / `operator_review.yaml` は実装済み | 先頭で historical / implemented を明記し、現行次手には使わない |
 | `docs/DOCS_LINT_POLICY_2026-05-30.md` | 更新して維持 | current-doc checker の運用方針として必要 | この監査で strict 対象一覧を現行 checker に合わせる |
+| `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` | historical として維持 | Strategy Review Builder 次期実装の計画として有用だが、現行コードでは operator record まで実装済み | root plan からは外し、archive record として読む |
 
 ## 古い内容があるドキュメント
 
@@ -133,6 +135,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `plan/archive/2026-06-17-plan-routing/0611ここからの計画/03_paper_observation_cycle_completion/` | 移動済み | Paper observation cycle / review は実装済み |
 | `plan/archive/2026-06-17-plan-routing/0616ここからの計画/01_strategy_review_builder/README.md` | 移動済み | `strategy-review-build` は実装済み。次手は runtime artifact readback と外部入力待ち |
 | `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` | 移動済み | 旧 `APPROVE_FOR_PAPER` bridge が残るため、PR-OPERATOR-00 の正本にしない |
+| `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` | 移動済み | Strategy Review Builder の historical plan。現行未実装 next action として root に残さない |
 | `資料/` | active docs から外す | current-doc checker 対象外。研究素材としてのみ扱う |
 | `docs/archive/**` と `plan/archive/**` | 維持 | current proof ではないが、過去判断の証跡として有用 |
 
@@ -149,6 +152,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 9. [x] current status docs に古い固定件数や旧 NDX 判定語が再混入しないよう、`scripts/check_current_docs.py` に追加 guard を入れる。
 10. [x] human-facing HTML のうち current-doc 対象で Markdown 正本がなかった `STRATEGY_FACTORY_OPERATOR_GUIDE.html` に、文章正本 `STRATEGY_FACTORY_OPERATOR_GUIDE.md` を追加する。
 11. [x] HTML current docs が同名 Markdown source を持つことを `scripts/check_current_docs.py` 本体で検査する。
+12. [x] historical implementation plan `plan/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` を root plan から archive へ移す。
 
 ## 残リスク
 

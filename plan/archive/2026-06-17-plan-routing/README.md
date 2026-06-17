@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:13 JST
-更新日: 2026-06-17_22:13 JST
+更新日: 2026-06-17_23:53 JST
 -->
 
 # 2026-06-17 Plan Routing Archive
@@ -27,6 +27,7 @@
 - `0611ここからの計画/03_paper_observation_cycle_completion/`: paper observation cycle / review の実装済み plan。
 - `0616ここからの計画/01_strategy_review_builder/`: Strategy Review Builder の実装済み plan。
 - `STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md`: Strategy Review contract の historical record。
+- `STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md`: Strategy Review Builder 次期実装の historical record。
 
 ## Boundary
 
