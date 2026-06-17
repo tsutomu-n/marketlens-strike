@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-17_22:40 JST
+更新日: 2026-06-17_23:38 JST
 -->
 
 # Repo Capabilities Current
@@ -110,6 +110,7 @@ uv run python scripts/check_current_docs.py
 
 - [algo/README.md](algo/README.md)
 - [algo/strategy_factory/README.md](algo/strategy_factory/README.md)
+- [algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md](algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md)
 - [algo/RESEARCH_VALIDATION_PLAYBOOK.md](algo/RESEARCH_VALIDATION_PLAYBOOK.md)
 
 境界:

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-29_22:07 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-17_23:38 JST
 -->
 
 # Strategy Factory
@@ -30,7 +30,7 @@
 10. `../../strategy_research_lab/README.md`
    - 候補を実装済み Strategy Lab schema と artifact chain に落とす時の正本を見る。
 
-読みやすい運用ガイドは [STRATEGY_FACTORY_OPERATOR_GUIDE.html](STRATEGY_FACTORY_OPERATOR_GUIDE.html) です。
+読みやすい運用ガイドの文章正本は [STRATEGY_FACTORY_OPERATOR_GUIDE.md](STRATEGY_FACTORY_OPERATOR_GUIDE.md) です。見た目つきの別表示は [STRATEGY_FACTORY_OPERATOR_GUIDE.html](STRATEGY_FACTORY_OPERATOR_GUIDE.html) です。
 
 ## 状態の考え方
 

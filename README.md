@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_23:18 JST
+更新日: 2026-06-17_23:38 JST
 -->
 
 # marketlens-strike
@@ -248,6 +248,8 @@ with a plain-Japanese explanation source at
 and a visual HTML companion at
 [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html](docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html).
 Strategy idea preparation starts at
+[docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md](docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md),
+with a visual HTML companion at
 [docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html](docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html).
 
 ## Current Boundaries

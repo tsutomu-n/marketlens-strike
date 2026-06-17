@@ -107,6 +107,12 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
 
 def test_human_facing_html_guides_have_markdown_sources() -> None:
     readme = _read("README.md")
+    algo_readme = _read("docs/algo/README.md")
+    strategy_factory_readme = _read("docs/algo/strategy_factory/README.md")
+    strategy_factory_html = _read("docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html")
+    strategy_factory_markdown = _read(
+        "docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md"
+    )
     strategy_readme = _read("docs/strategy_research_lab/README.md")
     strategy_short = _read("docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md")
     strategy_html = _read("docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html")
@@ -114,9 +120,22 @@ def test_human_facing_html_guides_have_markdown_sources() -> None:
 
     assert "docs/trade_xyz_bot_beginner_guide.md" in readme
     assert "trade_xyz_bot_beginner_guide.html" in beginner
+    assert "STRATEGY_FACTORY_OPERATOR_GUIDE.md" in readme
+    assert "STRATEGY_FACTORY_OPERATOR_GUIDE.md" in algo_readme
+    assert "STRATEGY_FACTORY_OPERATOR_GUIDE.md" in strategy_factory_readme
+    assert "STRATEGY_FACTORY_OPERATOR_GUIDE.md" in strategy_factory_html
+    assert "STRATEGY_FACTORY_OPERATOR_GUIDE.html" in strategy_factory_markdown
     assert "08_CURRENT_CAPABILITIES_EXPLAINED.md" in strategy_readme
     assert "08_CURRENT_CAPABILITIES_EXPLAINED.md" in strategy_short
     assert "08_CURRENT_CAPABILITIES_EXPLAINED.md" in strategy_html
+
+    checker_globals = _checker_globals()
+    html_without_markdown_source = [
+        checker_globals["_repo_relative"](path)
+        for path in checker_globals["_iter_current_docs"]()
+        if path.suffix == ".html" and not path.with_suffix(".md").exists()
+    ]
+    assert html_without_markdown_source == []
 
 
 def test_layer22_record_is_frozen_history_not_current_hash_source() -> None:
