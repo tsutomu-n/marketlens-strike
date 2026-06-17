@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-17_06:45 JST
+更新日: 2026-06-17_09:18 JST
 -->
 
 # Repo Capabilities Current
@@ -20,8 +20,10 @@
 補正した点:
 
 - Public CLI Command Catalog は `uv run sis --help` の public command と一致する。
+- 2026-06-17_09:18 JST 時点では public command は 163 件で、Strategy Review には `strategy-review-build` と `strategy-review-record` がある。
 - 本文側で薄かった `research-dag-*`、`strategy-backtest-framework-run`、legacy `build-backtest`、Trade[XYZ] data cycle、historical archive quote normalization、market-session utility、Strategy Lifecycle docs、Algo / Strategy Factory docs、schema family の説明を補った。
 - `docs/strategy_lifecycle/` は current-docs 検査対象に追加した。
+- `operator_strategy_review.v1` と `operator_review.yaml` の境界を追記した。これは paper / live 許可ではなく、Strategy Review packet に対する人間判断と source hash 再検証の artifact である。
 
 ## 正本と検証方法
 
@@ -174,6 +176,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-backtest-framework-run` で optional extra の `vectorbt`, `bt`, `empyrical_reloaded`, `quantstats` runner / extension を明示 framework list から実行できる。
 - `build-backtest` で legacy bridge 系の backtest decision summary / decision log を作れる。
 - stress、regime split、rolling stability、benchmark relative を出せる。
+- `strategy-review-record` で `review.md` / `review_manifest.json` を読んだ人間判断を `operator_review.yaml` として保存し、`--validate-existing` で path と hash を再照合できる。
 
 optional OSS:
 
@@ -200,6 +203,7 @@ reference-only / 採用前 contract:
 - `framework_run` は pack に入るが、pack completion の必須条件ではない。
 - pack validation `PASS` は alpha / paper pass / live readiness ではない。
 - strategy review output は human-review artifact であり、pack validation `PASS` を収益性、paper 移行可否、live 実行可否の証明にしない。
+- operator strategy review output は non-permission artifact であり、`PAPER_OBSERVATION_CANDIDATE` は validation candidate だけを意味する。`live_allowed=false` と `paper_execution_allowed=false` は固定である。
 - HftBacktest / qstrader / PyBroker / skfolio / Riskfolio-Lib は dependency 追加前 contract まで。engine 実行ではない。
 - `build-backtest` は Trade[XYZ] pure backtest v0.1 や Strategy Authoring native backtest の入口ではなく、既存 bridge 系 command として読む。
 
@@ -485,6 +489,7 @@ reference-only / 採用前 contract:
 主な schema families:
 
 - Strategy Lab / lifecycle: `strategy_experiment_spec.v1`, `strategy_signal.v1`, `strategy_signal_manifest.v1`, `evaluation_plan.mls.v1`, `trial_record.v1`, `trade_candidate.v1`, `paper_candidate_pack.v1`, `promotion_decision.v1`, `paper_intent_preview.v1`, `strategy_lifecycle_review.v1`, `paper_observation_session_manifest.v1`
+- Strategy Review: `strategy_review_manifest.v1`, `operator_strategy_review.v1`
 - Strategy Authoring / Backtest: `strategy_authoring_*`, `strategy_backtest_*`, `backtest_data_availability_ledger.v1`
 - NDX / research gates: `ndx_*`, `layer_2_2_*`, `core_dag.v1`, `counter_dag.v1`, `llm_dag_review.v1`
 - Research protocol: `research_seed_registry.v1`, `research_scope.v1`, `research_variable_inventory.v1`, `research_temporal_availability.v1`, `research_causal_roles.v1`, `research_mechanism_parts.v1`
@@ -517,7 +522,7 @@ reference-only / 採用前 contract:
 
 ## Public CLI Command Catalog
 
-2026-06-16 時点の `uv run sis --help` に出る public command を、用途別に整理する。
+2026-06-17_09:18 JST 時点の `uv run sis --help` に出る public command を、用途別に整理する。
 
 ### Research / NDX
 
@@ -589,6 +594,7 @@ reference-only / 採用前 contract:
 - `strategy-backtest-pack-validate`
 - `strategy-backtest-artifact-summary`
 - `strategy-review-build`
+- `strategy-review-record`
 
 ### Trade[XYZ] / Quotes / Data Readiness
 

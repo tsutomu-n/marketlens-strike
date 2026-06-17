@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_06:45 JST
+更新日: 2026-06-17_09:18 JST
 -->
 
 # marketlens-strike
@@ -139,6 +139,24 @@ This creates `review.md` and `review_manifest.json` for human review only. It
 does not prove alpha, paper readiness, live readiness, or paper execution
 permission. See [docs/strategy_review/README.md](docs/strategy_review/README.md).
 
+Record and revalidate a human Strategy Review decision:
+
+```bash
+uv run sis strategy-review-record \
+  --review-dir data/strategy_reviews/local-review-001 \
+  --decision REVIEWED_FOR_CONTEXT \
+  --reviewer operator-name \
+  --rationale "review.md and review_manifest.json were reviewed as context"
+
+uv run sis strategy-review-record \
+  --review-dir data/strategy_reviews/local-review-001 \
+  --validate-existing
+```
+
+This writes `operator_review.yaml` as `operator_strategy_review.v1`. It records
+path/hash lineage for the current `review.md` and `review_manifest.json`; it
+does not authorize paper execution or live trading.
+
 NDX Layer 2.2 local DAG foundation and review gate:
 
 ```bash
@@ -227,6 +245,9 @@ Strategy idea preparation starts at
 - `strategy-review-build` reads existing backtest / validation / optional
   authoring / lifecycle artifacts and writes a human-review packet. It is not a
   paper or live permission gate.
+- `strategy-review-record` writes and validates `operator_review.yaml` for the
+  review packet. `live_allowed=false` and `paper_execution_allowed=false` are
+  fixed.
 - Strategy Lab runtime validation lives in Pydantic models; tracked JSON Schema files are thin guards for interoperability.
 - wallet secrets, signing, exchange writes, and production live trading remain out of scope.
 - `data/` is git-ignored runtime state.

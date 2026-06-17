@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-17_06:32 JST
+更新日: 2026-06-17_09:18 JST
 -->
 
 # Implemented Surfaces
@@ -32,7 +32,7 @@ production live trading、wallet、signing、exchange write は現行 operator p
 | Strategy backtest pack and validation | implemented | `strategy-backtest-pack`, `strategy-backtest-pack-validate`, `schemas/strategy_backtest_pack*.json`, `docs/backtest/` |
 | optional framework surfaces | implemented as optional / no-live | `strategy-backtest-framework-run`, `vectorbt`, `bt`, `metrics`, `reports` optional extras |
 | Strategy Lifecycle review | implemented as local artifact review | `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review`, `docs/strategy_lifecycle/` |
-| Strategy Review packet builder | implemented as read-only human-review packet | `strategy-review-build`, `src/sis/strategy_review/`, `schemas/strategy_review_manifest.v1.schema.json`, `tests/strategy_review/`, `docs/strategy_review/` |
+| Strategy Review packet / operator decision record | implemented as read-only human-review packet plus non-permission decision artifact | `strategy-review-build`, `strategy-review-record`, `src/sis/strategy_review/`, `schemas/strategy_review_manifest.v1.schema.json`, `schemas/operator_strategy_review.v1.schema.json`, `tests/strategy_review/`, `docs/strategy_review/` |
 
 ## NDX Research Gates
 
@@ -63,7 +63,7 @@ NDX approvals do not prove alpha, backtest readiness, paper readiness, live read
 - `bitget_futures` and `hyperliquid_perp` are catalog-only / disabled for current Strategy Lab schemas.
 - `bitget_demo` is a demo execution surface, not production Bitget readiness.
 - `PaperIntentPreview` is paper-only and requires revalidation before paper flow use.
-- `strategy-review-build` creates review artifacts only. It does not authorize paper execution.
+- `strategy-review-build` creates review artifacts only. `strategy-review-record` records human decisions against those artifacts. Neither authorizes paper execution or live trading.
 - `READ_ONLY_GO` is not live trading ready.
 - `data/` is git-ignored runtime state and may be absent in a fresh checkout.
 
