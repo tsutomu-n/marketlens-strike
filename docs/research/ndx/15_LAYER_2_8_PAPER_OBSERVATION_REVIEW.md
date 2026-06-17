@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_19:06 JST
-更新日: 2026-06-12_01:16 JST
+更新日: 2026-06-17_23:19 JST
 -->
 
 # NDX Layer 2.8 Paper Observation Review
@@ -66,6 +66,33 @@ uv run sis research-ndx-paper-observation-review \
 Schema:
 
 - `schemas/ndx_paper_observation_review_decision.v1.schema.json`
+
+## Strategy Lifecycle Handoff
+
+Layer 2.8 の decision artifact は Strategy Lifecycle の paper observation input です。Layer 2.8 が pass しても、この文書内で live canary や live order に進めない。
+
+Layer 2.8 後の統合判定:
+
+```bash
+uv run sis strategy-lifecycle-review \
+  --data-dir data \
+  --paper-review-path data/research/ndx/paper_observation_review_decision.json \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+```
+
+通常 paper observation が足りているかの読み戻し:
+
+```bash
+uv run sis strategy-paper-observation-status \
+  --data-dir data \
+  --canonical-review-path data/research/ndx/paper_observation_review_decision.json \
+  --lifecycle-review-path data/research/strategy_lifecycle/strategy_lifecycle_review.json \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+```
+
+Strategy Lifecycle の詳細は [docs/strategy_lifecycle/README.md](../../strategy_lifecycle/README.md) を読む。`ELIGIBLE_FOR_LIVE_CANARY_PLAN` は live order 許可ではなく、別計画として live canary plan を書ける候補に限る。
 
 ## Decisions
 

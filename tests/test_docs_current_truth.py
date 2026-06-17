@@ -106,6 +106,33 @@ def test_layer22_record_is_frozen_history_not_current_hash_source() -> None:
     assert "現在値の証明として使わない" in record
 
 
+def test_strategy_lifecycle_and_ndx_docs_cross_link_paper_only_handoff() -> None:
+    strategy_lifecycle = _read("docs/strategy_lifecycle/README.md")
+    ndx_readme = _read("docs/research/ndx/README.md")
+    layer28 = _read("docs/research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md")
+    paper_runbook = _read("docs/runbooks/PAPER_EXECUTION_RUNBOOK.md")
+
+    canonical_review_path = "data/research/ndx/paper_observation_review_decision.json"
+    assert canonical_review_path in strategy_lifecycle
+    assert canonical_review_path in ndx_readme
+    assert canonical_review_path in layer28
+    assert canonical_review_path in paper_runbook
+    assert (
+        "--paper-review-path data/research/ndx/paper_observation_review_decision.json"
+        in strategy_lifecycle
+    )
+    assert (
+        "--canonical-review-path data/research/ndx/paper_observation_review_decision.json"
+        in strategy_lifecycle
+    )
+    assert "strategy-paper-observation-status" in ndx_readme
+    assert "[docs/strategy_lifecycle/README.md](../../strategy_lifecycle/README.md)" in ndx_readme
+    assert "[docs/strategy_lifecycle/README.md](../../strategy_lifecycle/README.md)" in layer28
+    assert "[docs/strategy_lifecycle/README.md](../strategy_lifecycle/README.md)" in paper_runbook
+    assert "Layer 2.8 pass" in ndx_readme
+    assert "live_conversion_allowed=false" in paper_runbook
+
+
 def test_cli_catalog_matches_registered_commands() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/check_cli_catalog.py"],

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-08_18:01 JST
-更新日: 2026-06-17_23:18 JST
+更新日: 2026-06-17_23:19 JST
 -->
 
 # NDX Research Docs
@@ -41,6 +41,7 @@ uv run sis research-ndx-paper-observation-gate --data-dir data --artifact-dir da
 uv run sis research-ndx-operator-promotion --data-dir data --artifact-dir data/research/ndx --decision promote_to_paper_observation --reviewer local_operator --approval-reason paper_observation_gate_reviewed
 uv run sis research-ndx-paper-observation-review --data-dir data --artifact-dir data/research/ndx --reports-dir data/reports
 uv run sis strategy-lifecycle-review --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
+uv run sis strategy-paper-observation-status --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
 ```
 
 ## Boundary
@@ -61,4 +62,6 @@ Layer 2.7 は Layer 2.6 approval と明示的な operator approval reason を前
 
 Layer 2.8 は Layer 2.7 後の `paper_observation_ledger.jsonl` と paper artifacts を集計し、fills、観測日数、block rate、連続 block、artifact completeness、boundary violation から paper observation を pass / needs-more / stop に分類する review gate である。live order、wallet、exchange write は許可しない。
 
-Strategy Lifecycle は Layer 2.8 と Strategy Authoring backtest acceptance と phase gate を統合する別 surface である。`ELIGIBLE_FOR_LIVE_CANARY_PLAN` は live order 許可ではなく、別計画として live canary plan を書ける候補に限る。
+Strategy Lifecycle は Layer 2.8 と Strategy Authoring backtest acceptance と phase gate を統合する別 surface である。NDX 側から渡す canonical paper review は `data/research/ndx/paper_observation_review_decision.json` で、`strategy-lifecycle-review --paper-review-path data/research/ndx/paper_observation_review_decision.json` と `strategy-paper-observation-status --canonical-review-path data/research/ndx/paper_observation_review_decision.json` で読み戻す。詳細は [docs/strategy_lifecycle/README.md](../../strategy_lifecycle/README.md) を読む。
+
+`ELIGIBLE_FOR_LIVE_CANARY_PLAN` は live order 許可ではなく、別計画として live canary plan を書ける候補に限る。Layer 2.8 pass、Strategy Lifecycle pass、paper observation status pass のいずれも、wallet、signing、exchange write、production live trading permission にはならない。

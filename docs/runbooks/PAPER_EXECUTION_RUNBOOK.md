@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_21:52 JST
-更新日: 2026-06-17_21:52 JST
+更新日: 2026-06-17_23:19 JST
 -->
 
 # Paper And Execution Runbook
@@ -22,6 +22,35 @@ uv run sis paper-operations-cycle
 - `data/paper/positions.parquet`
 - `data/reports/daily_paper_report.md`
 - `data/reports/paper_operations_runbook.md`
+
+## Strategy Lifecycle Readback
+
+NDX paper observation session や `strategy-paper-observation-cycle` の後は、paper execution の成否だけでなく Strategy Lifecycle の status を読む。canonical NDX review artifact は `data/research/ndx/paper_observation_review_decision.json`。
+
+```bash
+uv run sis strategy-lifecycle-review \
+  --data-dir data \
+  --paper-review-path data/research/ndx/paper_observation_review_decision.json \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+
+uv run sis strategy-paper-observation-status \
+  --data-dir data \
+  --canonical-review-path data/research/ndx/paper_observation_review_decision.json \
+  --lifecycle-review-path data/research/strategy_lifecycle/strategy_lifecycle_review.json \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+```
+
+読む値:
+
+- `latest_normal_requirement_gaps.trading_days`
+- `normal_thresholds_met`
+- `smoke_pass_counts_as_normal_pass=false`
+- `permits_live_order=false`
+- `live_conversion_allowed=false`
+
+詳細は [docs/strategy_lifecycle/README.md](../strategy_lifecycle/README.md) と [docs/research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md](../research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md) を読む。
 
 ## Execution And Ops Artifacts
 

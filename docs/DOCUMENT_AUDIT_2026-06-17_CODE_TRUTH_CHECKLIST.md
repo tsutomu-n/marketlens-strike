@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_23:18 JST
+更新日: 2026-06-17_23:19 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -29,6 +29,7 @@
 14. `docs/trade_xyz_bot_beginner_guide.html` は 2026-06-17_22:53 JST に `docs/trade_xyz_bot_beginner_guide.md` を文章正本として追加し、README は Markdown 正本を先に読む導線へ変更した。
 15. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html` は 2026-06-17_23:01 JST に `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md` を文章正本として追加し、HTML は見た目つき companion とした。
 16. `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` は 2026-06-17_23:18 JST に Layer 2.2 historical implementation record として凍結し、Layer 2.3 以降の current status や現在の artifact hash は tracked docs へ写さず runtime artifact と再実行 command で確認する導線にした。
+17. `docs/strategy_lifecycle/README.md`、`docs/research/ndx/README.md`、`docs/research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md`、`docs/runbooks/PAPER_EXECUTION_RUNBOOK.md` は 2026-06-17_23:19 JST に NDX Layer 2.8 paper review と Strategy Lifecycle の handoff を相互リンクし、canonical review path、status command、live 非許可境界を明記した。
 
 ## 照合した正本
 

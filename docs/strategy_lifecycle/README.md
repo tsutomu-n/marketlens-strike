@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_21:34 JST
-更新日: 2026-06-17_21:33 JST
+更新日: 2026-06-17_23:19 JST
 -->
 
 # Strategy Lifecycle
@@ -25,6 +25,7 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 
 - `data/research/strategy_lifecycle/backtest_acceptance_decision.json`
 - `data/reports/strategy_backtest_acceptance_report.md`
+- `data/research/ndx/paper_observation_review_decision.json`
 - `data/paper/observations/<session_id>/paper_observation_session_manifest.json`
 - `data/paper/observations/<session_id>/source_artifacts/paper_intent_preview.json`
 - `data/paper/observations/<session_id>/paper_observation_ledger.jsonl`
@@ -46,6 +47,31 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 8. `docs/backtest/README.md`
 9. `docs/research/ndx/README.md`
 10. `docs/OPERATIONS_RUNBOOK.md`
+
+## NDX Paper Observation Handoff
+
+NDX Layer 2.6 / 2.7 / 2.8 は Strategy Lifecycle の上流にある paper-only gate です。Layer 2.8 の canonical artifact は `data/research/ndx/paper_observation_review_decision.json` で、Strategy Lifecycle はこの artifact を paper observation 側の入力として読む。
+
+明示的に読み戻す場合:
+
+```bash
+uv run sis strategy-lifecycle-review \
+  --data-dir data \
+  --paper-review-path data/research/ndx/paper_observation_review_decision.json \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+
+uv run sis strategy-paper-observation-status \
+  --data-dir data \
+  --canonical-review-path data/research/ndx/paper_observation_review_decision.json \
+  --lifecycle-review-path data/research/strategy_lifecycle/strategy_lifecycle_review.json \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+```
+
+Layer 2.8 の `PASS_PAPER_OBSERVATION_REVIEW` は paper observation 入力の通過だけを意味する。Strategy Authoring backtest acceptance と phase gate も揃って初めて `ELIGIBLE_FOR_LIVE_CANARY_PLAN` になり得るが、その場合でも live order、wallet、signing、exchange write は許可しない。
+
+Layer 2.8 が `NEEDS_MORE_PAPER_OBSERVATION` の場合は、同じ日の rerun ではなく新しい通常 paper observation session を集める。smoke pass は通常 paper observation の代替にしない。NDX 側の詳細は [docs/research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md](../research/ndx/15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md) を読む。
 
 ## External Input
 
