@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-17_19:56 JST
+更新日: 2026-06-17_20:07 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -102,13 +102,13 @@ uv run sis strategy-review-record --help
 
 現行レポートでは、通常のペーパー観察がまだ足りない状態です。
 
-- 通常ペーパー観察の session 数: `7`
+- 通常ペーパー観察の session 数: `8`
 - smoke session 数: `1`
-- 最新の通常 session: `local-paper-20260617-194550`
+- 最新の通常 session: `local-paper-20260617-200702`
 - 最新の通常判定: `NEEDS_MORE_PAPER_OBSERVATION`
 - 最新の smoke 判定: `PASS_PAPER_OBSERVATION_REVIEW`
 - 通常基準を満たしたか: `false`
-- 最新通常 session の fills: `1 / 20`、不足 `19`
+- 最新通常 session の fills: `2 / 20`、不足 `18`
 - 最新通常 session の trading days: `1 / 10`、不足 `9`
 - smoke の合格を通常合格に数えるか: `false`
 - 不足 artifact: なし
@@ -119,13 +119,21 @@ uv run sis strategy-review-record --help
 
 つまり、短縮検査である smoke は通っていますが、通常基準のペーパー観察はまだ不足しています。次は live ではなく、通常基準のペーパー観察を続けます。
 
-ここでの「通常ペーパー観察の session 数」は、合格条件そのものではありません。一般的に言うと「観察を何回開始したか」の数です。通常基準の合格には、最新の通常 session そのものが `20 fills` と `10 trading days` を満たす必要があります。いまの local one-shot cycle は `1 fill` / `1 trading day` なので、短時間に同じ cycle を何度も回すだけでは「通常基準を満たした」とは言えません。機械的に確認する場合は `latest_normal_requirement_gaps` を見ます。
+ここでの「通常ペーパー観察の session 数」は、合格条件そのものではありません。一般的に言うと「観察を何回開始したか」の数です。通常基準の合格には、最新の通常 session そのものが `20 fills` と `10 trading days` を満たす必要があります。いまの最新通常 session は append 後でも `2 fills` / `1 trading day` なので、短時間に同じ trading day の fill を増やすだけでは「通常基準を満たした」とは言えません。機械的に確認する場合は `latest_normal_requirement_gaps` を見ます。
 
 また、同じ session id を使い回して既存の観察ファイルに追記する運用はできません。既存 session artifact がある場合は止まります。これは、どの入力ファイルから作られた観察なのかが曖昧になるのを避けるためです。
+
+既存 session に1回分追記する場合は、専用の `strategy-paper-observation-append` を使います。これは既存 session manifest の hash を確認してから、同じ ledger に追記し、review / lifecycle / status を再生成します。
 
 主な入口:
 
 ```bash
+uv run sis strategy-paper-observation-append \
+  --data-dir data \
+  --artifact-dir data/research/ndx \
+  --reports-dir data/reports \
+  --session-manifest data/paper/observations/<session_id>/paper_observation_session_manifest.json
+
 uv run sis strategy-paper-observation-status \
   --data-dir data \
   --out data/research/strategy_lifecycle \

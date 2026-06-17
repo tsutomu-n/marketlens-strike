@@ -264,7 +264,8 @@ def test_layer28_fails_on_session_manifest_intent_hash_mismatch(tmp_path, monkey
         (data_dir / "paper/paper_observation_ledger.jsonl").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
-    (data_dir / "bot/paper_intent_preview.json").write_text("[]\n", encoding="utf-8")
+    manifest_payload = json.loads(manifest.manifest_path.read_text(encoding="utf-8"))
+    Path(manifest_payload["source_intent_preview_path"]).write_text("[]\n", encoding="utf-8")
 
     result = invoke_cli(
         [

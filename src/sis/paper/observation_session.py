@@ -59,6 +59,11 @@ def create_paper_observation_session(
     manifest_path = session_dir / "paper_observation_session_manifest.json"
     observation_ledger_path = session_dir / "paper_observation_ledger.jsonl"
     ensure_paper_observation_session_absent(data_dir=data_dir, session_id=selected_session_id)
+    session_intent_preview_path = _snapshot_source_artifact(
+        session_dir=session_dir,
+        source_path=source_intent_preview_path,
+        filename="paper_intent_preview.json",
+    )
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "session_id": selected_session_id,
@@ -73,8 +78,9 @@ def create_paper_observation_session(
         "source_backtest_acceptance_sha256": sha256_file(source_backtest_acceptance_path),
         "source_operator_promotion_path": source_operator_promotion_path.as_posix(),
         "source_operator_promotion_sha256": sha256_file(source_operator_promotion_path),
-        "source_intent_preview_path": source_intent_preview_path.as_posix(),
-        "source_intent_preview_sha256": sha256_file(source_intent_preview_path),
+        "source_intent_preview_path": session_intent_preview_path.as_posix(),
+        "source_intent_preview_original_path": source_intent_preview_path.as_posix(),
+        "source_intent_preview_sha256": sha256_file(session_intent_preview_path),
         "thresholds": {
             "min_fills_for_pass": selected_thresholds.min_fills_for_pass,
             "min_trading_days_for_pass": selected_thresholds.min_trading_days_for_pass,
@@ -148,3 +154,10 @@ def _ensure_session_artifacts_absent(session_dir: Path) -> None:
             "paper observation session already exists; use a unique --session-id: "
             f"{session_dir.as_posix()} ({joined})"
         )
+
+
+def _snapshot_source_artifact(*, session_dir: Path, source_path: Path, filename: str) -> Path:
+    snapshot_path = session_dir / "source_artifacts" / filename
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    snapshot_path.write_bytes(source_path.read_bytes())
+    return snapshot_path

@@ -138,6 +138,14 @@ def test_strategy_paper_observation_cycle_help_smoke() -> None:
     assert "--smoke" in stdout
 
 
+def test_strategy_paper_observation_append_help_smoke() -> None:
+    result = invoke_cli(["strategy-paper-observation-append", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "--session-manifest" in stdout
+    assert "--state-path" in stdout
+
+
 def test_strategy_paper_observation_status_help_smoke() -> None:
     result = invoke_cli(["strategy-paper-observation-status", "--help"])
     stdout = normalized_stdout(result)

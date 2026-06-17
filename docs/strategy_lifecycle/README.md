@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_21:34 JST
-更新日: 2026-06-17_19:52 JST
+更新日: 2026-06-17_20:07 JST
 -->
 
 # Strategy Lifecycle
@@ -16,6 +16,7 @@ Strategy Lifecycle は、Strategy Authoring backtest、paper observation、phase
 ```bash
 uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports
 uv run sis strategy-paper-observation-cycle --data-dir data --artifact-dir data/research/ndx --reports-dir data/reports
+uv run sis strategy-paper-observation-append --data-dir data --artifact-dir data/research/ndx --reports-dir data/reports --session-manifest data/paper/observations/<session_id>/paper_observation_session_manifest.json
 uv run sis strategy-lifecycle-review --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
 uv run sis strategy-paper-observation-status --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
 ```
@@ -25,7 +26,9 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 - `data/research/strategy_lifecycle/backtest_acceptance_decision.json`
 - `data/reports/strategy_backtest_acceptance_report.md`
 - `data/paper/observations/<session_id>/paper_observation_session_manifest.json`
+- `data/paper/observations/<session_id>/source_artifacts/paper_intent_preview.json`
 - `data/paper/observations/<session_id>/paper_observation_ledger.jsonl`
+- `data/paper/observations/<session_id>/paper_observation_append_summary.json`
 - `data/research/strategy_lifecycle/strategy_lifecycle_review.json`
 - `data/reports/strategy_lifecycle_review.md`
 - `data/research/strategy_lifecycle/paper_observation_status.json`
@@ -46,6 +49,8 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 ## Boundary
 
 `strategy-lifecycle-review` は既存の `lifecycle-report` とは別物です。`lifecycle-report` は operations / recovery report で、Strategy Lifecycle の promotion 判定ではありません。
+
+`strategy-paper-observation-append` は既存 session manifest を固定して、manifest に記録済みの session-local intent preview snapshot から同じ ledger に1回分追記します。fresh intent preview は作りません。
 
 `strategy-paper-observation-status` は既存の paper observation review / session manifest / lifecycle review を読む status artifact です。paper intent 生成、paper order 実行、ledger 再集計はしません。smoke pass は通常threshold pass として数えません。通常thresholdの不足量は `latest_normal_requirement_gaps` に出ます。
 

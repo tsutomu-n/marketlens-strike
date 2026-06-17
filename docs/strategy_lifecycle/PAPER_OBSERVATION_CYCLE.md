@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-12_01:16 JST
-更新日: 2026-06-17_19:56 JST
+更新日: 2026-06-17_20:07 JST
 -->
 
 # Paper Observation Cycle
@@ -20,6 +20,16 @@ uv run sis strategy-paper-observation-cycle \
   --reports-dir data/reports
 ```
 
+Append to an existing session:
+
+```bash
+uv run sis strategy-paper-observation-append \
+  --data-dir data \
+  --artifact-dir data/research/ndx \
+  --reports-dir data/reports \
+  --session-manifest data/paper/observations/<session_id>/paper_observation_session_manifest.json
+```
+
 Local fixture smoke:
 
 ```bash
@@ -37,6 +47,8 @@ uv run sis strategy-paper-observation-cycle \
 
 同じ `--session-id` は再利用しません。既存 session の manifest、ledger、review、cycle summary がある場合、command は fail closed します。これは既存 ledger に新しい source artifact を混ぜて、長期観察の証跡を曖昧にしないためです。
 
+既存 session に1回分追記する場合は `strategy-paper-observation-append` を使います。append は既存 session manifest の source hash を検証し、manifest に記録された `source_intent_preview_path` と `observation_ledger_path` だけを使います。fresh `PaperIntentPreview` は作りません。新規 session 作成時点で、intent preview は session 配下の `source_artifacts/paper_intent_preview.json` に snapshot されます。
+
 ## Inputs
 
 - `data/research/strategy_lifecycle/backtest_acceptance_decision.json`
@@ -52,12 +64,15 @@ Backtest acceptance は `PASS_BACKTEST_ACCEPTANCE` が必須です。fail / miss
 - `data/bot/paper_intent_preview.json`
 - `data/reports/paper_intent_preview.md`
 - `data/paper/observations/<session_id>/paper_observation_session_manifest.json`
+- `data/paper/observations/<session_id>/source_artifacts/paper_intent_preview.json`
 - `data/paper/observations/<session_id>/paper_observation_ledger.jsonl`
 - `data/paper/observations/<session_id>/paper_observation_review_decision.json`
 - `data/paper/observations/<session_id>/paper_observation_cycle_summary.json`
+- `data/paper/observations/<session_id>/paper_observation_append_summary.json`
 - `data/research/ndx/paper_observation_review_decision.json`
 - `data/research/strategy_lifecycle/strategy_lifecycle_review.json`
 - `data/reports/paper_observation_session_report.md`
+- `data/reports/paper_observation_append_report.md`
 
 ## Artifact Roles
 
@@ -86,11 +101,13 @@ uv run sis strategy-paper-observation-status \
 
 This status command reads existing review/session/lifecycle artifacts. It does not create paper intents, submit paper orders, or recompute the ledger.
 
-## Current Limitation
+## Append Boundary
 
-現行 `strategy-paper-observation-cycle` は fresh session を作る command です。既存 session に安全に追記して `20 fills / 10 trading days` を積み上げる resume command ではありません。
+`strategy-paper-observation-cycle` は fresh session を作る command です。既存 session への追記には使いません。
 
-通常thresholdの長期観察を作る場合は、source artifact の同一性、ledger の追記範囲、session manifest の初回作成時刻を保ったまま安全に追記できる別の運用または command が必要です。既存 session id の再利用で代用しません。
+`strategy-paper-observation-append` は既存 session manifest の source hash を検証してから、同じ ledger に1回分だけ追記します。その後、NDX paper observation review、Strategy Lifecycle review、paper observation status を再生成します。
+
+append は manifest に記録済みの session-local `PaperIntentPreview` snapshot を使います。preview snapshot が書き換わって hash が変わっている場合は fail closed します。長期観察で fresh preview を毎回作る設計は、この command とは別の責任です。
 
 ## Stop Conditions
 
@@ -99,5 +116,6 @@ This status command reads existing review/session/lifecycle artifacts. It does n
 - fresh paper intent preview has no intents
 - session id already has existing session artifacts
 - session manifest source hash does not match current source artifact
+- append source intent preview has no intents
 - paper ledger has live / wallet / venue-write / exchange-write boundary violation
 - review thresholds are not met, in which case lifecycle should remain `CONTINUE_PAPER_OBSERVATION`

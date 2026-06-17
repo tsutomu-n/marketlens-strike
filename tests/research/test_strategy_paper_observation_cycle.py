@@ -69,6 +69,11 @@ def test_strategy_paper_observation_cycle_creates_fresh_session_and_reviews(
     assert manifest["thresholds"]["min_trading_days_for_pass"] == 1
     assert manifest["observation_ledger_path"] == ledger_path.as_posix()
     assert (
+        manifest["source_intent_preview_path"]
+        == (session_dir / "source_artifacts/paper_intent_preview.json").as_posix()
+    )
+    assert manifest["source_intent_preview_original_path"] == stale_preview.as_posix()
+    assert (
         manifest["source_paper_candidate_pack_path"]
         == (data_dir / "research/paper_candidate_pack.json").as_posix()
     )
@@ -156,6 +161,122 @@ def test_strategy_paper_observation_cycle_rejects_existing_session_id(
     assert "use a unique --session-id" in second.stdout
     assert len(ledger_path.read_text(encoding="utf-8").splitlines()) == 1
     assert preview_path.read_text(encoding="utf-8") == preview_before
+
+
+def test_strategy_paper_observation_append_extends_existing_session_and_reviews(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    data_dir, artifact_dir, reports_dir = _prepare_promoted_paper_candidate(tmp_path, monkeypatch)
+    _write_backtest_acceptance(
+        data_dir / "research/strategy_lifecycle/backtest_acceptance_decision.json"
+    )
+    cycle = invoke_cli(
+        [
+            "strategy-paper-observation-cycle",
+            "--data-dir",
+            str(data_dir),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--reports-dir",
+            str(reports_dir),
+            "--session-id",
+            "session-append",
+            "--min-fills-for-pass",
+            "2",
+            "--min-trading-days-for-pass",
+            "1",
+        ]
+    )
+    assert cycle.exit_code == 0, cycle.stdout
+    assert "paper_review_decision=NEEDS_MORE_PAPER_OBSERVATION" in cycle.stdout
+    session_dir = data_dir / "paper/observations/session-append"
+    manifest_path = session_dir / "paper_observation_session_manifest.json"
+    ledger_path = session_dir / "paper_observation_ledger.jsonl"
+    preview_path = data_dir / "bot/paper_intent_preview.json"
+    preview_before = preview_path.read_text(encoding="utf-8")
+    assert len(ledger_path.read_text(encoding="utf-8").splitlines()) == 1
+
+    append = invoke_cli(
+        [
+            "strategy-paper-observation-append",
+            "--data-dir",
+            str(data_dir),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--reports-dir",
+            str(reports_dir),
+            "--session-manifest",
+            str(manifest_path),
+        ]
+    )
+
+    assert append.exit_code == 0, append.stdout
+    assert "appended_ledger_entries=1" in append.stdout
+    assert "ledger_entry_count=2" in append.stdout
+    assert "paper_review_decision=PASS_PAPER_OBSERVATION_REVIEW" in append.stdout
+    assert "observation_state=normal_observation_passed_not_live_ready" in append.stdout
+    assert len(ledger_path.read_text(encoding="utf-8").splitlines()) == 2
+    assert preview_path.read_text(encoding="utf-8") == preview_before
+    review = json.loads((session_dir / "paper_observation_review_decision.json").read_text())
+    assert review["decision"] == "PASS_PAPER_OBSERVATION_REVIEW"
+    assert review["metrics"]["fills_count"] == 2
+    summary = json.loads((session_dir / "paper_observation_append_summary.json").read_text())
+    assert summary["appended_ledger_entries"] == 1
+    assert summary["ledger_entry_count"] == 2
+    status = json.loads(
+        (data_dir / "research/strategy_lifecycle/paper_observation_status.json").read_text()
+    )
+    assert status["normal_thresholds_met"] is True
+
+
+def test_strategy_paper_observation_append_rejects_source_hash_mismatch_before_write(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    data_dir, artifact_dir, reports_dir = _prepare_promoted_paper_candidate(tmp_path, monkeypatch)
+    _write_backtest_acceptance(
+        data_dir / "research/strategy_lifecycle/backtest_acceptance_decision.json"
+    )
+    cycle = invoke_cli(
+        [
+            "strategy-paper-observation-cycle",
+            "--data-dir",
+            str(data_dir),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--reports-dir",
+            str(reports_dir),
+            "--session-id",
+            "session-hash-mismatch",
+            "--smoke",
+        ]
+    )
+    assert cycle.exit_code == 0, cycle.stdout
+    session_dir = data_dir / "paper/observations/session-hash-mismatch"
+    manifest_path = session_dir / "paper_observation_session_manifest.json"
+    ledger_path = session_dir / "paper_observation_ledger.jsonl"
+    before_lines = ledger_path.read_text(encoding="utf-8").splitlines()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    Path(manifest["source_intent_preview_path"]).write_text("[]\n", encoding="utf-8")
+
+    append = invoke_cli(
+        [
+            "strategy-paper-observation-append",
+            "--data-dir",
+            str(data_dir),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--reports-dir",
+            str(reports_dir),
+            "--session-manifest",
+            str(manifest_path),
+        ]
+    )
+
+    assert append.exit_code == 2
+    assert "intent preview hash mismatch" in append.stdout
+    assert ledger_path.read_text(encoding="utf-8").splitlines() == before_lines
 
 
 def _prepare_promoted_paper_candidate(tmp_path: Path, monkeypatch) -> tuple[Path, Path, Path]:

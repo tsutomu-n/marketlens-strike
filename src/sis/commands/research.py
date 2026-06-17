@@ -46,6 +46,7 @@ from sis.research.ndx.strategy_lab_export import export_ndx_strategy_lab_researc
 from sis.research.strategy_lifecycle.backtest_acceptance import run_backtest_acceptance
 from sis.research.strategy_lifecycle.paper_observation_cycle import (
     build_fresh_paper_intent_preview,
+    run_strategy_paper_observation_append,
     run_strategy_paper_observation_cycle,
 )
 from sis.research.strategy_lifecycle.paper_observation_status import (
@@ -1294,6 +1295,73 @@ def register_research_commands(
         typer.echo(f"observation_ledger={result.session.observation_ledger_path}")
         typer.echo(f"paper_review_decision={result.paper_review.decision}")
         typer.echo(f"lifecycle_decision={result.lifecycle_review.decision}")
+        typer.echo(f"report={result.report_path}")
+
+    @app.command("strategy-paper-observation-append")
+    def strategy_paper_observation_append_cmd(
+        data_dir: Path | None = typer.Option(
+            None,
+            "--data-dir",
+            file_okay=False,
+            help="Runtime data root. Defaults to SIS_DATA_DIR/settings data_dir.",
+        ),
+        artifact_dir: Path = typer.Option(
+            Path("data/research/ndx"),
+            "--artifact-dir",
+            file_okay=False,
+            help="NDX paper observation artifact directory.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            file_okay=False,
+            help="Output report directory.",
+        ),
+        session_manifest_path: Path = typer.Option(
+            ...,
+            "--session-manifest",
+            dir_okay=False,
+            help="Existing paper observation session manifest path.",
+        ),
+        state_path: Path | None = typer.Option(
+            None,
+            "--state-path",
+            dir_okay=False,
+            help="Optional sqlite state path. Defaults to data/state/marketlens.sqlite.",
+        ),
+        paper_notional_usd: float = typer.Option(1000.0, "--paper-notional-usd", min=0.01),
+    ) -> None:
+        settings = get_settings()
+        effective_data_dir = data_dir or settings.data_dir
+        try:
+            result = run_strategy_paper_observation_append(
+                data_dir=effective_data_dir,
+                artifact_dir=artifact_dir,
+                reports_dir=reports_dir,
+                session_manifest_path=session_manifest_path,
+                state_path=state_path,
+                paper_notional_usd=paper_notional_usd,
+            )
+        except (
+            FileNotFoundError,
+            ValueError,
+            TypeError,
+            ValidationError,
+            json.JSONDecodeError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"session_id={result.session_id}")
+        typer.echo(f"session_manifest={result.session_manifest_path}")
+        typer.echo(f"observation_ledger={result.observation_ledger_path}")
+        typer.echo(f"appended_ledger_entries={result.appended_ledger_entries}")
+        typer.echo(f"ledger_entry_count={result.ledger_entry_count}")
+        typer.echo(f"paper_review_decision={result.paper_review.decision}")
+        typer.echo(f"lifecycle_decision={result.lifecycle_review.decision}")
+        typer.echo(f"observation_state={result.status.observation_state}")
+        typer.echo(f"next_action={result.status.next_action}")
         typer.echo(f"report={result.report_path}")
 
     @app.command("strategy-paper-observation-status")
