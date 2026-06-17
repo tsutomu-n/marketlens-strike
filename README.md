@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_22:02 JST
+更新日: 2026-06-17_22:30 JST
 -->
 
 # marketlens-strike
@@ -237,6 +237,8 @@ as a public CLI command. See [docs/backtest/README.md](docs/backtest/README.md).
 Strategy Lab details live in [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md).
 The author-facing capability list is
 [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md),
+with command-level detail at
+[docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md),
 with an HTML explanation at
 [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html](docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html).
 Strategy idea preparation starts at

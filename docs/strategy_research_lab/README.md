@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-17_22:30 JST
 -->
 
 # Strategy Research Lab
@@ -26,7 +26,8 @@
 7. [07_VALIDATION_STOP_CONDITIONS_AND_TEST_MATRIX.md](07_VALIDATION_STOP_CONDITIONS_AND_TEST_MATRIX.md)
    - 受け入れ条件、停止条件、既存テストが守る契約を確認する。
 8. [08_CURRENT_CAPABILITIES.md](08_CURRENT_CAPABILITIES.md)
-   - 現時点で Strategy Research Lab ができること、まだできないこと、確認済み検証を確認する。
+   - 現時点で Strategy Research Lab ができること、まだできないこと、確認済み検証を短く確認する。
+   - 詳細参照: [08_CURRENT_CAPABILITIES_DETAILS.md](08_CURRENT_CAPABILITIES_DETAILS.md)
    - わかりやすい HTML 版: [08_CURRENT_CAPABILITIES_EXPLAINED.html](08_CURRENT_CAPABILITIES_EXPLAINED.html)
 9. [09_STRATEGY_AUTHOR_GUIDE.md](09_STRATEGY_AUTHOR_GUIDE.md)
    - ユーザーが YAML で売買ロジックを作り、validate / explain / signals / backtest / paper-preview へ進める手順を確認する。

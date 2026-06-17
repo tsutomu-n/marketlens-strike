@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_07:23 JST
-更新日: 2026-06-17_22:22 JST
+更新日: 2026-06-17_22:30 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-15
@@ -69,12 +69,12 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - [ ] `docs/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md`
   - 理由: HANDOFF 上も実装未開始の coder-ready plan。コード変更前の実装契約として有効。
   - 更新案: R0 baseline 実行後に結果だけ追記する。R1 以降の仕様を先に広げない。
-- [ ] `docs/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md`
-  - 理由: optional extras、qstrader の isolated runner 候補、standard pack boundary は `pyproject.toml` と backtest code に合う。
-  - 更新案: 長大なので operator recipe と framework evaluation record に分割する。
-- [ ] `docs/strategy_research_lab/README.md` と `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+- [x] `docs/archive/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md`
+  - 理由: optional extras、qstrader の isolated runner 候補、standard pack boundary は historical record としては有用だが、current root からは archive 済み。
+  - 実施済み: current 技術正本は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` と `docs/backtest/README.md` へ寄せ、旧 detail doc は archive 配下に固定した。
+- [x] `docs/strategy_research_lab/README.md` と `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
   - 理由: Strategy Authoring / Strategy Lab の主要 capability 入口として現行コード面と対応する。
-  - 更新案: capability 列挙を機能カテゴリ別 index にし、詳細は schema / examples に逃がす。
+  - 実施済み: 2026-06-17_22:30 JST に `08_CURRENT_CAPABILITIES.md` を短い入口にし、詳細列挙を `08_CURRENT_CAPABILITIES_DETAILS.md`、strategy type matrix を `13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` へ分けた。
 - [ ] `docs/strategy_lifecycle/README.md`, `docs/strategy_lifecycle/PAPER_OBSERVATION_CYCLE.md`, `docs/strategy_lifecycle/TARGET_OPERATING_MODEL.md`
   - 理由: `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review` の実装と対応する。
   - 更新案: NDX Layer 2.6-2.8 docs との読み順を明示する。
@@ -142,12 +142,12 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - [ ] `docs/OPERATIONS_RUNBOOK.md`
   - 理由: Trade[XYZ] collection、NDX research gates、Strategy Lifecycle、paper operations、long-running script 運用が同居している。
   - 作り直し案: root operator index + domain runbooks に分割する。
-- [ ] `docs/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md`
-  - 理由: framework evaluation、operator recipe、optional extras、historical smoke、future candidates が長大に混ざる。
-  - 作り直し案: `FRAMEWORK_DECISIONS.md`, `BACKTEST_OPERATOR_RECIPE.md`, `FUTURE_FRAMEWORK_CANDIDATES.md` へ分ける。
-- [ ] `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+- [x] `docs/archive/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md`
+  - 理由: framework evaluation、operator recipe、optional extras、historical smoke、future candidates が長大に混ざっていた。
+  - 実施済み: archive 配下に固定済み。current 技術正本は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` と `docs/backtest/README.md`。
+- [x] `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
   - 理由: capability の列挙が大きく、更新漏れリスクが高い。
-  - 作り直し案: schema-driven capability matrix と operator-facing short guide に分ける。
+  - 実施済み: 2026-06-17_22:30 JST に operator-facing short guide と `08_CURRENT_CAPABILITIES_DETAILS.md` に分離。schema-driven matrix は `13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` を使用する。
 - [ ] `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md`
   - 理由: Layer 2.2 実装記録に後続 layer の条件や履歴が追記されやすい。
   - 作り直し案: Layer 2.2 の historical record に固定し、Layer 2.3 以降は個別 records に分ける。
@@ -209,7 +209,7 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 3. [ ] `docs/DOCS_LINT_POLICY_2026-05-30.md` と `scripts/check_current_docs.py` の allowlist を今後も同期する。
 4. [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を historical と明記するか archive する。
 5. [x] `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` の肥大化を分割計画に落とす。`CODE_STATUS.md` は thin index 済み、`CURRENT_STATE.md` は 2026-06-17_22:22 JST に index 化済み。
-6. [ ] `docs/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md` と Strategy Lab capability docs を短文化する。
+6. [x] `docs/archive/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md` は archive 済み、Strategy Lab capability docs は 2026-06-17_22:30 JST に短文化する。
 
 ## 残リスク
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-17_21:13 JST
+更新日: 2026-06-17_22:30 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -282,7 +282,8 @@ uv run sis bitget-demo-smoke
 - `docs/backtest/README.md`: backtest 関連の入口です。複数ある backtest surface の読み分けに使います。
 - `docs/research/ndx/README.md`: NDX 研究 gate の入口です。Layer 2.2 以降の研究手順を確認できます。
 - `docs/strategy_research_lab/README.md`: Strategy Research Lab の入口です。戦略アイデアから signal、評価、candidate、paper-only preview までの流れを確認できます。
-- `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`: Strategy Research Lab で現在できることを詳しく列挙した文書です。
+- `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`: Strategy Research Lab で現在できることを短く読む入口です。
+- `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md`: Strategy Research Lab のコマンド別詳細、成果物、検証手順を詳しく列挙した文書です。
 - `docs/venues/read_only_capability_probe.md`: venue の読み取り専用 capability probe を説明する文書です。network readiness や live permission ではない点を確認できます。
 - `src/sis/cli.py`: `sis` コマンド全体の登録場所です。どのコマンドが公開されているかを確認する時に見ます。
 - `src/sis/commands/`: CLI コマンドの実装置き場です。各コマンドが何を読むか、何を出すかを確認する時に見ます。
