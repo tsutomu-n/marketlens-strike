@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-09_21:11 JST
-更新日: 2026-06-09_21:11 JST
+更新日: 2026-06-17_10:40 JST
 -->
 
 # Venue Read-Only Capability Probe Plan
@@ -8,12 +8,17 @@
 This is the next implementation plan after
 `02_bitget_hyperliquid_venue_design_gate`.
 
+Current implementation source for this plan:
+
+1. `11_PR_VENUE_PROBE_00_FINAL_PLAN.md`
+2. older split plan files below for background and cross-checks
+
 Goal: add a fixture-first read-only capability probe surface for future
 `bitget_futures` and `hyperliquid_perp` without widening `VenueId`, enabling
 Strategy Lab artifacts, calling external APIs by default, using credentials,
 or adding any order path.
 
-Read in order:
+Read historical split files in order only after the final plan:
 
 1. `01_GOAL.md`
 2. `02_SCOPE_AND_BOUNDARIES.md`
@@ -36,4 +41,3 @@ Assumptions:
   evaluation plans, and live execution.
 - A later explicit approval is required before credentialed network probes,
   paper execution, schema widening, or live execution.
-

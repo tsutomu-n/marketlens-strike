@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-17_10:00 JST
+更新日: 2026-06-17_10:40 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -26,6 +26,8 @@ Implemented / historical:
 Current unimplemented implementation handoff:
 
 - `plan/0609ここからの計画/03_venue_read_only_capability_probe/`
+- Final coder-ready plan:
+  [plan/0609ここからの計画/03_venue_read_only_capability_probe/11_PR_VENUE_PROBE_00_FINAL_PLAN.md](0609ここからの計画/03_venue_read_only_capability_probe/11_PR_VENUE_PROBE_00_FINAL_PLAN.md)
 
 ## Current 2026-06-10 review plans
 
