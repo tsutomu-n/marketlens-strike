@@ -148,6 +148,14 @@ CURRENT_DOC_SEMANTIC_DRIFT_MARKERS = (
         "unknown critical assumptions: `0`",
         "old copied backtest assumption-ledger runtime value; inspect strategy-backtest-artifact-summary instead",
     ),
+    (
+        "次に作る operator review artifact",
+        "old Strategy Review wording; use strategy-review-record and operator_review.yaml",
+    ),
+    (
+        "別の operator review artifact と既存 paper revalidation を通す",
+        "old Strategy Review checklist wording; record operator_review.yaml before paper revalidation",
+    ),
 )
 
 CURRENT_STATUS_DOC_FILES = (

@@ -116,6 +116,8 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "worst stressed total return: `-0.012846879739093493`" in script
     assert "future candidate count: `3`" in script
     assert "unknown critical assumptions: `0`" in script
+    assert "次に作る operator review artifact" in script
+    assert "別の operator review artifact と既存 paper revalidation を通す" in script
 
     checker_globals = _checker_globals()
     current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])
