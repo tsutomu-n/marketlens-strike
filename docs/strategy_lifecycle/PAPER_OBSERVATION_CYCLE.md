@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-12_01:16 JST
-更新日: 2026-06-17_16:57 JST
+更新日: 2026-06-17_19:56 JST
 -->
 
 # Paper Observation Cycle
@@ -34,6 +34,8 @@ uv run sis strategy-paper-observation-cycle \
 `--smoke` は `min_fills_for_pass=1` と `min_trading_days_for_pass=1` を使う local verification 用です。smoke pass は production paper pass ではありません。
 
 `--session-id` を指定する場合は、`local-smoke` のような単一 path segment だけを使います。`/`、`..`、absolute path は拒否されます。
+
+同じ `--session-id` は再利用しません。既存 session の manifest、ledger、review、cycle summary がある場合、command は fail closed します。これは既存 ledger に新しい source artifact を混ぜて、長期観察の証跡を曖昧にしないためです。
 
 ## Inputs
 
@@ -84,11 +86,18 @@ uv run sis strategy-paper-observation-status \
 
 This status command reads existing review/session/lifecycle artifacts. It does not create paper intents, submit paper orders, or recompute the ledger.
 
+## Current Limitation
+
+現行 `strategy-paper-observation-cycle` は fresh session を作る command です。既存 session に安全に追記して `20 fills / 10 trading days` を積み上げる resume command ではありません。
+
+通常thresholdの長期観察を作る場合は、source artifact の同一性、ledger の追記範囲、session manifest の初回作成時刻を保ったまま安全に追記できる別の運用または command が必要です。既存 session id の再利用で代用しません。
+
 ## Stop Conditions
 
 - backtest acceptance is missing or not `PASS_BACKTEST_ACCEPTANCE`
 - source candidate pack or promotion decision is missing
 - fresh paper intent preview has no intents
+- session id already has existing session artifacts
 - session manifest source hash does not match current source artifact
 - paper ledger has live / wallet / venue-write / exchange-write boundary violation
 - review thresholds are not met, in which case lifecycle should remain `CONTINUE_PAPER_OBSERVATION`

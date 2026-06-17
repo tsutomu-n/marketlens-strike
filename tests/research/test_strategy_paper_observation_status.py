@@ -84,6 +84,26 @@ def test_strategy_paper_observation_status_splits_normal_and_smoke_sessions(
     assert payload["latest_smoke_session_id"] == "smoke-001"
     assert payload["latest_smoke_decision"] == "PASS_PAPER_OBSERVATION_REVIEW"
     assert payload["normal_thresholds_met"] is False
+    gaps = payload["latest_normal_requirement_gaps"]
+    assert gaps["session_id"] == "normal-001"
+    assert gaps["available"] is True
+    assert gaps["fills"] == {
+        "observed": 1,
+        "required": 20,
+        "remaining": 19,
+        "met": False,
+    }
+    assert gaps["trading_days"] == {
+        "observed": 1,
+        "required": 10,
+        "remaining": 9,
+        "met": False,
+    }
+    assert gaps["timestamp_quality"] == {
+        "observed": "complete",
+        "required": "complete",
+        "met": True,
+    }
     assert payload["smoke_pass_present"] is True
     assert payload["smoke_pass_counts_as_normal_pass"] is False
     assert payload["permits_live_order"] is False
@@ -100,6 +120,8 @@ def test_strategy_paper_observation_status_splits_normal_and_smoke_sessions(
         "smoke-001",
     ]
     report = (reports_dir / "paper_observation_status.md").read_text(encoding="utf-8")
+    assert "latest_normal_fills: 1/20 (remaining=19)" in report
+    assert "latest_normal_trading_days: 1/10 (remaining=9)" in report
     assert "smoke_pass_counts_as_normal_pass: false" in report
     assert "live readiness" in report
 
@@ -150,6 +172,7 @@ def test_strategy_paper_observation_status_marks_smoke_only_as_not_normal_pass(
     assert payload["observation_state"] == "smoke_only_not_normal_pass"
     assert payload["next_action"] == "continue_normal_paper_observation"
     assert payload["normal_thresholds_met"] is False
+    assert payload["latest_normal_requirement_gaps"]["available"] is False
     assert payload["smoke_pass_present"] is True
     assert payload["smoke_pass_counts_as_normal_pass"] is False
     assert payload["canonical_review_session_smoke"] is True

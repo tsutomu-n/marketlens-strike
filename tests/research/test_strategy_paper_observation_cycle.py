@@ -121,6 +121,43 @@ def test_strategy_paper_observation_cycle_requires_passed_backtest(
     assert not (data_dir / "paper/observations/session-001").exists()
 
 
+def test_strategy_paper_observation_cycle_rejects_existing_session_id(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    data_dir, artifact_dir, reports_dir = _prepare_promoted_paper_candidate(tmp_path, monkeypatch)
+    _write_backtest_acceptance(
+        data_dir / "research/strategy_lifecycle/backtest_acceptance_decision.json"
+    )
+    command = [
+        "strategy-paper-observation-cycle",
+        "--data-dir",
+        str(data_dir),
+        "--artifact-dir",
+        str(artifact_dir),
+        "--reports-dir",
+        str(reports_dir),
+        "--session-id",
+        "session-001",
+        "--smoke",
+    ]
+
+    first = invoke_cli(command)
+    assert first.exit_code == 0, first.stdout
+    ledger_path = data_dir / "paper/observations/session-001/paper_observation_ledger.jsonl"
+    assert len(ledger_path.read_text(encoding="utf-8").splitlines()) == 1
+    preview_path = data_dir / "bot/paper_intent_preview.json"
+    preview_before = preview_path.read_text(encoding="utf-8")
+
+    second = invoke_cli(command)
+
+    assert second.exit_code == 2
+    assert "paper observation session already exists" in second.stdout
+    assert "use a unique --session-id" in second.stdout
+    assert len(ledger_path.read_text(encoding="utf-8").splitlines()) == 1
+    assert preview_path.read_text(encoding="utf-8") == preview_before
+
+
 def _prepare_promoted_paper_candidate(tmp_path: Path, monkeypatch) -> tuple[Path, Path, Path]:
     data_dir, artifact_dir, reports_dir = _layer25_export(tmp_path)
     quotes_path = _write_xyz_quote(data_dir)

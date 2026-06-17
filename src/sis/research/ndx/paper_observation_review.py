@@ -226,6 +226,22 @@ def _read_session_manifest(
     return manifest
 
 
+def read_validated_paper_observation_session_manifest(
+    *,
+    session_manifest_path: Path,
+    ledger_path: Path | None = None,
+    promotion_path: Path,
+) -> dict[str, Any]:
+    manifest = _read_session_manifest(
+        session_manifest_path=session_manifest_path,
+        explicit_ledger_path=ledger_path,
+        promotion_path=promotion_path,
+    )
+    if manifest is None:
+        raise ValueError("paper observation session manifest is required.")
+    return manifest
+
+
 def _validate_optional_manifest_source_hash(
     manifest: dict[str, Any],
     *,

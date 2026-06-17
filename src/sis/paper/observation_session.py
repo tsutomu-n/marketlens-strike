@@ -40,7 +40,7 @@ def create_paper_observation_session(
     thresholds: PaperObservationThresholds | None = None,
     smoke: bool = False,
 ) -> PaperObservationSession:
-    selected_session_id = _validate_session_id(session_id or _default_session_id())
+    selected_session_id = resolve_paper_observation_session_id(session_id)
     selected_thresholds = thresholds or PaperObservationThresholds()
     for path in (
         source_backtest_acceptance_path,
@@ -58,6 +58,7 @@ def create_paper_observation_session(
     session_dir = data_dir / "paper/observations" / selected_session_id
     manifest_path = session_dir / "paper_observation_session_manifest.json"
     observation_ledger_path = session_dir / "paper_observation_ledger.jsonl"
+    ensure_paper_observation_session_absent(data_dir=data_dir, session_id=selected_session_id)
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "session_id": selected_session_id,
@@ -112,6 +113,14 @@ def _default_session_id() -> str:
     return f"paper-observation-{value}"
 
 
+def resolve_paper_observation_session_id(session_id: str | None = None) -> str:
+    return _validate_session_id(session_id or _default_session_id())
+
+
+def ensure_paper_observation_session_absent(*, data_dir: Path, session_id: str) -> None:
+    _ensure_session_artifacts_absent(data_dir / "paper/observations" / session_id)
+
+
 def _validate_session_id(value: str) -> str:
     selected = value.strip()
     if not selected:
@@ -120,3 +129,22 @@ def _validate_session_id(value: str) -> str:
     if path.is_absolute() or len(path.parts) != 1 or selected in {".", ".."}:
         raise ValueError("paper observation session_id must be a single path segment.")
     return selected
+
+
+def _ensure_session_artifacts_absent(session_dir: Path) -> None:
+    existing = [
+        path
+        for path in (
+            session_dir / "paper_observation_session_manifest.json",
+            session_dir / "paper_observation_ledger.jsonl",
+            session_dir / "paper_observation_review_decision.json",
+            session_dir / "paper_observation_cycle_summary.json",
+        )
+        if path.exists()
+    ]
+    if existing:
+        joined = ", ".join(path.as_posix() for path in existing)
+        raise ValueError(
+            "paper observation session already exists; use a unique --session-id: "
+            f"{session_dir.as_posix()} ({joined})"
+        )

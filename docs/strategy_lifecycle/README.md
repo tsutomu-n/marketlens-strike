@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_21:34 JST
-更新日: 2026-06-17_17:50 JST
+更新日: 2026-06-17_19:52 JST
 -->
 
 # Strategy Lifecycle
@@ -47,6 +47,6 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 
 `strategy-lifecycle-review` は既存の `lifecycle-report` とは別物です。`lifecycle-report` は operations / recovery report で、Strategy Lifecycle の promotion 判定ではありません。
 
-`strategy-paper-observation-status` は既存の paper observation review / session manifest / lifecycle review を読む status artifact です。paper intent 生成、paper order 実行、ledger 再集計はしません。smoke pass は通常threshold pass として数えません。
+`strategy-paper-observation-status` は既存の paper observation review / session manifest / lifecycle review を読む status artifact です。paper intent 生成、paper order 実行、ledger 再集計はしません。smoke pass は通常threshold pass として数えません。通常thresholdの不足量は `latest_normal_requirement_gaps` に出ます。
 
 どの decision でも `permits_live_order=false`, `live_conversion_allowed=false`, `wallet_used=false`, `venue_write_used=false`, `exchange_write_used=false` を維持します。

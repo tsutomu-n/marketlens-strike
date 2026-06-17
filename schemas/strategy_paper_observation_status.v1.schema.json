@@ -22,6 +22,7 @@
     "latest_smoke_session_id",
     "latest_smoke_decision",
     "normal_thresholds_met",
+    "latest_normal_requirement_gaps",
     "smoke_pass_present",
     "smoke_pass_counts_as_normal_pass",
     "canonical_matches_latest_normal",
@@ -80,6 +81,7 @@
     "latest_smoke_session_id": {"type": "string"},
     "latest_smoke_decision": {"type": "string"},
     "normal_thresholds_met": {"type": "boolean"},
+    "latest_normal_requirement_gaps": {"$ref": "#/$defs/latest_normal_requirement_gaps"},
     "smoke_pass_present": {"type": "boolean"},
     "smoke_pass_counts_as_normal_pass": {"const": false},
     "canonical_matches_latest_normal": {"type": "boolean"},
@@ -137,6 +139,38 @@
         },
         "schema_version": {"type": "string"},
         "error": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "latest_normal_requirement_gaps": {
+      "type": "object",
+      "required": ["session_id", "available", "fills", "trading_days", "timestamp_quality"],
+      "properties": {
+        "session_id": {"type": "string"},
+        "available": {"type": "boolean"},
+        "fills": {"$ref": "#/$defs/count_gap"},
+        "trading_days": {"$ref": "#/$defs/count_gap"},
+        "timestamp_quality": {
+          "type": "object",
+          "required": ["observed", "required", "met"],
+          "properties": {
+            "observed": {"type": "string"},
+            "required": {"const": "complete"},
+            "met": {"type": "boolean"}
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "count_gap": {
+      "type": "object",
+      "required": ["observed", "required", "remaining", "met"],
+      "properties": {
+        "observed": {"type": "integer", "minimum": 0},
+        "required": {"type": "integer", "minimum": 0},
+        "remaining": {"type": "integer", "minimum": 0},
+        "met": {"type": "boolean"}
       },
       "additionalProperties": true
     },

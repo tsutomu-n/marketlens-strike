@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-17_19:36 JST
+更新日: 2026-06-17_19:52 JST
 -->
 
 # Next Direction Current
@@ -82,7 +82,9 @@ uv run sis strategy-paper-observation-cycle \
 
 `strategy-paper-observation-status` は実装済み。出力は `data/research/strategy_lifecycle/paper_observation_status.json` と `data/reports/paper_observation_status.md`。
 
-2026-06-17_19:36 JST の local run では `observation_state=needs_more_normal_paper_observation`、`next_action=continue_normal_paper_observation`、`normal_session_count=5`、`latest_normal_session_id=local-paper-20260617-193618`、`normal_thresholds_met=false`、`smoke_pass_present=true`、`smoke_pass_counts_as_normal_pass=false`。
+2026-06-17_19:52 JST の status run では `observation_state=needs_more_normal_paper_observation`、`next_action=continue_normal_paper_observation`、`normal_session_count=7`、`latest_normal_session_id=local-paper-20260617-194550`、`normal_thresholds_met=false`、`smoke_pass_present=true`、`smoke_pass_counts_as_normal_pass=false`。
+
+注意: `normal_session_count` は通常sessionの数であり、通常threshold達成の代替証拠ではない。現行 review logic では、最新の通常session自体が `min_fills_for_pass=20` と `min_trading_days_for_pass=10` を満たした時だけ `normal_thresholds_met=true` になる。`latest_normal_requirement_gaps` では、現状 `fills=1/20 (remaining=19)`、`trading_days=1/10 (remaining=9)`。local one-shot cycle は現状 `paper_fills=1` のため、短時間に同じlocal cycleを繰り返すだけでは通常passを証明しない。
 
 ### `venue-read-only-probe`
 

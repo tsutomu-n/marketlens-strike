@@ -9,11 +9,14 @@ from sis.paper.observation_session import (
     PaperObservationSession,
     PaperObservationThresholds,
     create_paper_observation_session,
+    ensure_paper_observation_session_absent,
+    resolve_paper_observation_session_id,
 )
 from sis.paper.runner import PaperFromIntentsSummary, run_paper_from_intents
 from sis.research.ndx.artifacts import read_json, write_json
 from sis.research.ndx.paper_observation_review import (
     PaperObservationReviewResult,
+    read_validated_paper_observation_session_manifest,
     run_paper_observation_review,
 )
 from sis.research.strategy_lab.paper_candidate_pack import PaperCandidatePack
@@ -22,6 +25,10 @@ from sis.research.strategy_lab.promotion_decision import PromotionDecision
 from sis.research.strategy_lifecycle.review import (
     StrategyLifecycleReviewResult,
     run_strategy_lifecycle_review,
+)
+from sis.research.strategy_lifecycle.paper_observation_status import (
+    StrategyPaperObservationStatusResult,
+    run_strategy_paper_observation_status,
 )
 
 
@@ -39,6 +46,20 @@ class StrategyPaperObservationCycleResult:
     paper_run: PaperFromIntentsSummary
     paper_review: PaperObservationReviewResult
     lifecycle_review: StrategyLifecycleReviewResult
+    report_path: Path
+
+
+@dataclass(frozen=True)
+class StrategyPaperObservationAppendResult:
+    session_id: str
+    session_manifest_path: Path
+    observation_ledger_path: Path
+    appended_ledger_entries: int
+    ledger_entry_count: int
+    paper_run: PaperFromIntentsSummary
+    paper_review: PaperObservationReviewResult
+    lifecycle_review: StrategyLifecycleReviewResult
+    status: StrategyPaperObservationStatusResult
     report_path: Path
 
 
@@ -119,6 +140,11 @@ def run_strategy_paper_observation_cycle(
         artifact_dir / "operator_promotion_decision.json"
     )
     _require_passed_backtest(selected_backtest_path)
+    selected_session_id = resolve_paper_observation_session_id(session_id)
+    ensure_paper_observation_session_absent(
+        data_dir=data_dir,
+        session_id=selected_session_id,
+    )
     effective_min_fills = 1 if smoke else min_fills_for_pass
     effective_min_days = 1 if smoke else min_trading_days_for_pass
 
@@ -138,7 +164,7 @@ def run_strategy_paper_observation_cycle(
         source_intent_preview_path=intents.intents_path,
         source_paper_candidate_pack_path=selected_source_pack_path,
         source_promotion_decision_path=selected_promotion_path,
-        session_id=session_id,
+        session_id=selected_session_id,
         thresholds=PaperObservationThresholds(
             min_fills_for_pass=effective_min_fills,
             min_trading_days_for_pass=effective_min_days,
@@ -192,6 +218,90 @@ def run_strategy_paper_observation_cycle(
         paper_run=paper_run,
         paper_review=paper_review,
         lifecycle_review=lifecycle_review,
+        report_path=report_path,
+    )
+
+
+def run_strategy_paper_observation_append(
+    *,
+    data_dir: Path,
+    artifact_dir: Path,
+    reports_dir: Path,
+    session_manifest_path: Path,
+    state_path: Path | None = None,
+    paper_notional_usd: float = 1000.0,
+) -> StrategyPaperObservationAppendResult:
+    manifest = read_validated_paper_observation_session_manifest(
+        session_manifest_path=session_manifest_path,
+        promotion_path=artifact_dir / "operator_promotion_decision.json",
+    )
+    session_id = str(manifest.get("session_id") or session_manifest_path.parent.name)
+    observation_ledger_path = Path(str(manifest["observation_ledger_path"]))
+    intent_preview_path = Path(str(manifest["source_intent_preview_path"]))
+    intent_count = _paper_intent_count(intent_preview_path)
+    if intent_count < 1:
+        raise ValueError("paper observation session source intent preview has no intents.")
+
+    before_count = _ledger_line_count(observation_ledger_path)
+    paper_run = run_paper_from_intents(
+        data_dir,
+        intents_path=intent_preview_path,
+        state_path=state_path,
+        observation_ledger_path=observation_ledger_path,
+    )
+    after_count = _ledger_line_count(observation_ledger_path)
+    appended_entries = after_count - before_count
+    if appended_entries < 1:
+        raise ValueError("paper observation append did not write any ledger entries.")
+
+    paper_review = run_paper_observation_review(
+        data_dir=data_dir,
+        artifact_dir=artifact_dir,
+        reports_dir=reports_dir,
+        session_manifest_path=session_manifest_path,
+        paper_notional_usd=paper_notional_usd,
+    )
+    session_review_path = session_manifest_path.parent / "paper_observation_review_decision.json"
+    session_review_path.write_text(
+        paper_review.decision_path.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    lifecycle_review = run_strategy_lifecycle_review(
+        data_dir=data_dir,
+        out_dir=data_dir / "research/strategy_lifecycle",
+        reports_dir=reports_dir,
+        backtest_decision_path=Path(str(manifest["source_backtest_acceptance_path"])),
+        paper_review_path=paper_review.decision_path,
+    )
+    status = run_strategy_paper_observation_status(
+        data_dir=data_dir,
+        out_dir=data_dir / "research/strategy_lifecycle",
+        reports_dir=reports_dir,
+    )
+    report_path = _write_append_report(
+        reports_dir / "paper_observation_append_report.md",
+        session_id=session_id,
+        session_manifest_path=session_manifest_path,
+        observation_ledger_path=observation_ledger_path,
+        intent_preview_path=intent_preview_path,
+        intent_count=intent_count,
+        appended_ledger_entries=appended_entries,
+        ledger_entry_count=after_count,
+        paper_run=paper_run,
+        paper_review=paper_review,
+        lifecycle_review=lifecycle_review,
+        status=status,
+    )
+    return StrategyPaperObservationAppendResult(
+        session_id=session_id,
+        session_manifest_path=session_manifest_path,
+        observation_ledger_path=observation_ledger_path,
+        appended_ledger_entries=appended_entries,
+        ledger_entry_count=after_count,
+        paper_run=paper_run,
+        paper_review=paper_review,
+        lifecycle_review=lifecycle_review,
+        status=status,
         report_path=report_path,
     )
 
@@ -252,6 +362,21 @@ def _require_passed_backtest(path: Path) -> None:
             raise ValueError(f"strategy backtest acceptance must keep {key}=false.")
 
 
+def _paper_intent_count(path: Path) -> int:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(payload, list):
+        return len(payload)
+    if isinstance(payload, dict):
+        return 1
+    raise ValueError("paper observation session source intent preview is not JSON object/list.")
+
+
+def _ledger_line_count(path: Path) -> int:
+    if not path.exists():
+        return 0
+    return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+
+
 def _write_cycle_report(
     path: Path,
     *,
@@ -290,6 +415,70 @@ def _write_cycle_report(
         f"- paper_fills: {paper_run.fills_count}\n"
         f"- paper_review_decision: {paper_review.decision}\n"
         f"- lifecycle_decision: {lifecycle_review.decision}\n"
+        "- permits_live_order: false\n"
+        "- wallet_used: false\n"
+        "- venue_write_used: false\n"
+        "- exchange_write_used: false\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _write_append_report(
+    path: Path,
+    *,
+    session_id: str,
+    session_manifest_path: Path,
+    observation_ledger_path: Path,
+    intent_preview_path: Path,
+    intent_count: int,
+    appended_ledger_entries: int,
+    ledger_entry_count: int,
+    paper_run: PaperFromIntentsSummary,
+    paper_review: PaperObservationReviewResult,
+    lifecycle_review: StrategyLifecycleReviewResult,
+    status: StrategyPaperObservationStatusResult,
+) -> Path:
+    write_json(
+        session_manifest_path.parent / "paper_observation_append_summary.json",
+        {
+            "schema_version": "paper_observation_append_summary.v1",
+            "session_id": session_id,
+            "session_manifest_path": session_manifest_path.as_posix(),
+            "observation_ledger_path": observation_ledger_path.as_posix(),
+            "source_intent_preview_path": intent_preview_path.as_posix(),
+            "source_intent_count": intent_count,
+            "appended_ledger_entries": appended_ledger_entries,
+            "ledger_entry_count": ledger_entry_count,
+            "paper_orders_count": paper_run.orders_count,
+            "paper_fills_count": paper_run.fills_count,
+            "paper_blocked_count": paper_run.blocked_count,
+            "paper_review_decision": paper_review.decision,
+            "lifecycle_decision": lifecycle_review.decision,
+            "observation_state": status.observation_state,
+            "next_action": status.next_action,
+            "permits_live_order": False,
+            "wallet_used": False,
+            "venue_write_used": False,
+            "exchange_write_used": False,
+        },
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "# Paper Observation Append Report\n\n"
+        f"- session_id: {session_id}\n"
+        f"- session_manifest: {session_manifest_path.as_posix()}\n"
+        f"- observation_ledger: {observation_ledger_path.as_posix()}\n"
+        f"- source_intent_preview: {intent_preview_path.as_posix()}\n"
+        f"- source_intents: {intent_count}\n"
+        f"- appended_ledger_entries: {appended_ledger_entries}\n"
+        f"- ledger_entry_count: {ledger_entry_count}\n"
+        f"- paper_fills: {paper_run.fills_count}\n"
+        f"- paper_blocked: {paper_run.blocked_count}\n"
+        f"- paper_review_decision: {paper_review.decision}\n"
+        f"- lifecycle_decision: {lifecycle_review.decision}\n"
+        f"- observation_state: {status.observation_state}\n"
+        f"- next_action: {status.next_action}\n"
         "- permits_live_order: false\n"
         "- wallet_used: false\n"
         "- venue_write_used: false\n"
