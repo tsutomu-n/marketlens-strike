@@ -55,7 +55,6 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert '"AGENTS.md"' in script
     assert '"docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md"' in script
     assert '"docs/trade_xyz_bot_beginner_guide.md"' in script
-    assert '"docs/DOCUMENT_AUDIT_2026-05-31.md"' in script
     assert '"docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"' not in script
     assert '"docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md"' not in script
     assert '"docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md"' not in script
@@ -97,6 +96,11 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "checked 125 current docs" in script
 
     checker_globals = _checker_globals()
+    current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])
+    legacy_root_paths = set(checker_globals["LEGACY_ROOT_PATHS"])
+    assert "docs/DOCUMENT_AUDIT_2026-05-31.md" not in current_doc_files
+    assert "docs/DOCUMENT_AUDIT_2026-05-31.md" in legacy_root_paths
+
     current_status_docs = set(checker_globals["CURRENT_STATUS_DOC_FILES"])
     assert "README.md" in current_status_docs
     assert "docs/CURRENT_STATE.md" in current_status_docs

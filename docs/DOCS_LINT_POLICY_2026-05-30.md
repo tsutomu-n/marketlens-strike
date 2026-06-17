@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:55 JST
-更新日: 2026-06-18_00:15 JST
+更新日: 2026-06-18_00:24 JST
 -->
 
 # Docs Lint Policy 2026-05-30
@@ -27,7 +27,6 @@ docs/NEXT_DIRECTION_CURRENT.md
 docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md
 docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md
 docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md
-docs/DOCUMENT_AUDIT_2026-05-31.md
 docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md
 docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md
 docs/DOCS_LINT_POLICY_2026-05-30.md
@@ -99,13 +98,14 @@ docs/DOCUMENT_AUDIT_2026-05-26.md
 docs/DOCUMENT_AUDIT_2026-05-27.md
 docs/DOCUMENT_AUDIT_2026-05-28.md
 docs/DOCUMENT_AUDIT_2026-05-30.md
+docs/DOCUMENT_AUDIT_2026-05-31.md
 docs/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md
 docs/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-27.md
 docs/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md
 plan/20260526_211746_trade_xyz_quote_collector_cli_plan.md
 ```
 
-`docs/DOCUMENT_AUDIT_2026-05-31.md`, この文書, `docs/archive/README.md` では、移動履歴の説明として旧 root path の plain text を許可します。ただしリンク先は archive path にします。
+この文書と `docs/archive/README.md` では、移動履歴の説明として旧 root path の plain text を許可します。ただしリンク先は archive path にします。
 
 ## 実行
 
