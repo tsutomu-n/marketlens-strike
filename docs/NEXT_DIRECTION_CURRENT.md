@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-17_12:00 JST
+更新日: 2026-06-17_16:59 JST
 -->
 
 # Next Direction Current
@@ -38,41 +38,25 @@
 
 ## Implementation-Ready Candidate
 
-### Strategy Review dogfood
+### Normal threshold paper observation continuation
 
-すぐ実行できる候補は、`strategy-review-build` / `strategy-review-record` の dogfood です。
-
-この slice で許すこと:
-
-- `data/strategy_reviews/<review_id>/review.md` の生成
-- `data/strategy_reviews/<review_id>/review_manifest.json` の生成
-- `operator_review.yaml` の記録と `--validate-existing`
-- tracked dogfood decision の作成
-- paper / live permission ではないことの明示
-
-この slice で許さないこと:
-
-- network API call
-- credentials
-- paper order 実行
-- live execution enablement
-- `PAPER_OBSERVATION_CANDIDATE` を paper permission と読むこと
-
-### Paper observation status artifact
-
-次に実装価値がある候補は、Strategy Lifecycle 用の paper observation status artifact です。
+次に実行価値がある候補は、通常thresholdの paper observation 継続です。Strategy Review dogfood は [strategy_review/DOGFOOD_REVIEW_2026-06-16.md](strategy_review/DOGFOOD_REVIEW_2026-06-16.md) に記録済みで、paper observation status artifact も `strategy-paper-observation-status` として実装済みです。
 
 目的:
 
-- normal session と smoke session を分けて読む。
-- `NEEDS_MORE_PAPER_OBSERVATION` と smoke `PASS_PAPER_OBSERVATION_REVIEW` を混同しない。
+- `needs_more_normal_paper_observation` の間は、通常thresholdの observation を続ける。
+- `--smoke` の pass を normal pass として扱わない。
 - lifecycle の `CONTINUE_PAPER_OBSERVATION` を live readiness と読まない。
 
-実装候補:
+実行候補:
 
-- command: `strategy-paper-observation-status`
-- output: `data/research/strategy_lifecycle/paper_observation_status.json`
-- report: `data/reports/paper_observation_status.md`
+```bash
+uv run sis strategy-paper-observation-cycle \
+  --data-dir data \
+  --artifact-dir data/research/ndx \
+  --reports-dir data/reports \
+  --session-id <normal-session-id>
+```
 
 ## Needs A New Explicit Plan
 
@@ -87,6 +71,18 @@
 - production venue schema widening
 
 ## Completed / Paused Candidate
+
+### Strategy Review dogfood
+
+`strategy-review-build` / `strategy-review-record` の dogfood は `dogfood-operator-current` で実行済み。tracked 記録は [strategy_review/DOGFOOD_REVIEW_2026-06-16.md](strategy_review/DOGFOOD_REVIEW_2026-06-16.md) に残す。
+
+これは paper / live permission ではない。runtime hash は tracked doc に固定せず、`operator_review.yaml` と `strategy-review-record --validate-existing` で確認する。
+
+### Paper observation status artifact
+
+`strategy-paper-observation-status` は実装済み。出力は `data/research/strategy_lifecycle/paper_observation_status.json` と `data/reports/paper_observation_status.md`。
+
+2026-06-17_16:59 JST の local run では `observation_state=needs_more_normal_paper_observation`、`next_action=continue_normal_paper_observation`、`normal_thresholds_met=false`、`smoke_pass_present=true`、`smoke_pass_counts_as_normal_pass=false`。
 
 ### `venue-read-only-probe`
 

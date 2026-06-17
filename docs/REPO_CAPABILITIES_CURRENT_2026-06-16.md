@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-17_10:50 JST
+更新日: 2026-06-17_16:57 JST
 -->
 
 # Repo Capabilities Current
@@ -220,6 +220,7 @@ reference-only / 採用前 contract:
 - `strategy-backtest-acceptance` で backtest acceptance decision を作れる。
 - `strategy-paper-observation-cycle` で paper observation cycle artifact を作れる。
 - `strategy-lifecycle-review` で backtest acceptance、paper observation、phase gate summary を統合して lifecycle decision を出せる。
+- `strategy-paper-observation-status` で既存 paper observation review / session manifest / lifecycle review を読み、normal threshold と smoke threshold を分けた status artifact を作れる。
 - decision は `REJECT_OR_REVISE`, `CONTINUE_RESEARCH`, `BACKTEST_ACCEPTED`, `CONTINUE_PAPER_OBSERVATION`, `CONTINUE_EXECUTION_READINESS`, `ELIGIBLE_FOR_LIVE_CANARY_PLAN`, `BLOCKED_BOUNDARY_VIOLATION` などを扱える。
 
 主な schema:
@@ -227,6 +228,7 @@ reference-only / 採用前 contract:
 - `strategy_backtest_acceptance_decision.v1.schema.json`
 - `paper_observation_session_manifest.v1.schema.json`
 - `strategy_lifecycle_review.v1.schema.json`
+- `strategy_paper_observation_status.v1.schema.json`
 
 主要 docs:
 
@@ -238,6 +240,8 @@ reference-only / 採用前 contract:
 境界:
 
 - lifecycle review は live order を許可しない。
+- paper observation status は paper intent 生成、paper order 実行、ledger 再集計をしない。
+- smoke pass は normal paper observation pass ではない。
 - `ELIGIBLE_FOR_LIVE_CANARY_PLAN` は live order 実行許可ではなく、別計画を書いてよい候補という意味。
 - `strategy-lifecycle-review` は `lifecycle-report` とは別物。前者は strategy promotion control plane、後者は operations / recovery report である。
 
@@ -490,7 +494,7 @@ reference-only / 採用前 contract:
 
 主な schema families:
 
-- Strategy Lab / lifecycle: `strategy_experiment_spec.v1`, `strategy_signal.v1`, `strategy_signal_manifest.v1`, `evaluation_plan.mls.v1`, `trial_record.v1`, `trade_candidate.v1`, `paper_candidate_pack.v1`, `promotion_decision.v1`, `paper_intent_preview.v1`, `strategy_lifecycle_review.v1`, `paper_observation_session_manifest.v1`
+- Strategy Lab / lifecycle: `strategy_experiment_spec.v1`, `strategy_signal.v1`, `strategy_signal_manifest.v1`, `evaluation_plan.mls.v1`, `trial_record.v1`, `trade_candidate.v1`, `paper_candidate_pack.v1`, `promotion_decision.v1`, `paper_intent_preview.v1`, `strategy_lifecycle_review.v1`, `paper_observation_session_manifest.v1`, `strategy_paper_observation_status.v1`
 - Strategy Review: `strategy_review_manifest.v1`, `operator_strategy_review.v1`
 - Strategy Authoring / Backtest: `strategy_authoring_*`, `strategy_backtest_*`, `backtest_data_availability_ledger.v1`
 - NDX / research gates: `ndx_*`, `layer_2_2_*`, `core_dag.v1`, `counter_dag.v1`, `llm_dag_review.v1`
@@ -564,6 +568,7 @@ reference-only / 採用前 contract:
 - `strategy-backtest-acceptance`
 - `strategy-lifecycle-review`
 - `strategy-paper-observation-cycle`
+- `strategy-paper-observation-status`
 
 ### Backtest
 

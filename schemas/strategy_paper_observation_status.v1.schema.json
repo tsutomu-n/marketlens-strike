@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_paper_observation_status.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status_id",
+    "generated_at",
+    "observation_state",
+    "next_action",
+    "canonical_review_decision",
+    "canonical_review_path",
+    "canonical_review_hash",
+    "canonical_review_session_id",
+    "canonical_review_session_smoke",
+    "lifecycle_decision",
+    "lifecycle_decision_reasons",
+    "normal_session_count",
+    "smoke_session_count",
+    "latest_normal_session_id",
+    "latest_normal_decision",
+    "latest_smoke_session_id",
+    "latest_smoke_decision",
+    "normal_thresholds_met",
+    "smoke_pass_present",
+    "smoke_pass_counts_as_normal_pass",
+    "canonical_matches_latest_normal",
+    "incomplete_artifacts",
+    "stale_artifacts",
+    "source_boundary_violations",
+    "source_artifacts",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "credentials_used",
+    "external_api_used",
+    "wallet_used",
+    "signing_used",
+    "venue_write_used",
+    "exchange_write_used",
+    "sessions"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_paper_observation_status.v1"},
+    "status_id": {"type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$"},
+    "generated_at": {"type": "string"},
+    "observation_state": {
+      "enum": [
+        "incomplete_artifacts",
+        "stale_or_mismatched_artifacts",
+        "source_boundary_violation",
+        "normal_observation_passed_not_live_ready",
+        "needs_more_normal_paper_observation",
+        "paper_observation_stopped",
+        "smoke_only_not_normal_pass",
+        "manual_review_required"
+      ]
+    },
+    "next_action": {
+      "enum": [
+        "continue_normal_paper_observation",
+        "review_stop_reason",
+        "manual_review_required",
+        "no_action_until_artifacts_exist"
+      ]
+    },
+    "canonical_review_decision": {"type": "string"},
+    "canonical_review_path": {"type": "string"},
+    "canonical_review_hash": {
+      "type": "string",
+      "pattern": "^(|sha256:[a-fA-F0-9]{64})$"
+    },
+    "canonical_review_session_id": {"type": "string"},
+    "canonical_review_session_smoke": {"type": ["boolean", "null"]},
+    "lifecycle_decision": {"type": "string"},
+    "lifecycle_decision_reasons": {"type": "array", "items": {"type": "string"}},
+    "normal_session_count": {"type": "integer", "minimum": 0},
+    "smoke_session_count": {"type": "integer", "minimum": 0},
+    "latest_normal_session_id": {"type": "string"},
+    "latest_normal_decision": {"type": "string"},
+    "latest_smoke_session_id": {"type": "string"},
+    "latest_smoke_decision": {"type": "string"},
+    "normal_thresholds_met": {"type": "boolean"},
+    "smoke_pass_present": {"type": "boolean"},
+    "smoke_pass_counts_as_normal_pass": {"const": false},
+    "canonical_matches_latest_normal": {"type": "boolean"},
+    "incomplete_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/artifact_issue"}
+    },
+    "stale_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/artifact_issue"}
+    },
+    "source_boundary_violations": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "source_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "credentials_used": {"const": false},
+    "external_api_used": {"const": false},
+    "wallet_used": {"const": false},
+    "signing_used": {"const": false},
+    "venue_write_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "sessions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/session"}
+    }
+  },
+  "$defs": {
+    "artifact_issue": {
+      "type": "object",
+      "required": ["name", "path", "error"],
+      "properties": {
+        "name": {"type": "string"},
+        "path": {"type": "string"},
+        "error": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "source_artifact": {
+      "type": "object",
+      "required": ["name", "required", "status", "path", "sha256", "schema_version", "error"],
+      "properties": {
+        "name": {"type": "string"},
+        "required": {"type": "boolean"},
+        "status": {"enum": ["present", "missing", "invalid"]},
+        "path": {"type": "string"},
+        "sha256": {
+          "type": "string",
+          "pattern": "^(|sha256:[a-fA-F0-9]{64})$"
+        },
+        "schema_version": {"type": "string"},
+        "error": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "session": {
+      "type": "object",
+      "required": [
+        "session_id",
+        "created_at",
+        "smoke",
+        "manifest_path",
+        "manifest_hash",
+        "review_path",
+        "review_hash",
+        "review_status",
+        "review_decision",
+        "thresholds",
+        "metrics",
+        "reason_codes",
+        "block_reasons",
+        "source_manifest_hash_matches_review"
+      ],
+      "properties": {
+        "session_id": {"type": "string"},
+        "created_at": {"type": "string"},
+        "smoke": {"type": "boolean"},
+        "manifest_path": {"type": "string"},
+        "manifest_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-fA-F0-9]{64}$"
+        },
+        "review_path": {"type": "string"},
+        "review_hash": {
+          "type": "string",
+          "pattern": "^(|sha256:[a-fA-F0-9]{64})$"
+        },
+        "review_status": {"enum": ["present", "missing", "invalid"]},
+        "review_decision": {"type": "string"},
+        "thresholds": {"type": "object"},
+        "metrics": {"type": "object"},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "block_reasons": {"type": "array", "items": {"type": "string"}},
+        "source_manifest_hash_matches_review": {"type": ["boolean", "null"]}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

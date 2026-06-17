@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-17_06:32 JST
+更新日: 2026-06-17_16:57 JST
 -->
 
 # Migration History
@@ -43,7 +43,7 @@
 | Strategy Lab paper-only workflow | DONE | `strategy-preview`, `strategy-experiment-run`, `evaluate-strategy-lab`, `build-paper-candidate-pack`, `promotion-decision`, `build-paper-intent-preview`, `paper-from-intents` |
 | Strategy Authoring YAML workflow | DONE | `strategy-author-init`, `strategy-author-validate`, `strategy-author-explain`, `strategy-author-run`, `strategy-author-train-model`, `strategy-author-bundle-run`, `tests/strategy_authoring/` |
 | Trade[XYZ] pure backtest v0.1 | DONE / CLI not public | `src/sis/backtest/engine/`, `src/sis/backtest/trade_xyz/`, `tests/backtest/`, `docs/backtest/` |
-| Strategy Lifecycle control plane | DONE / local artifact review only | `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review`, `docs/strategy_lifecycle/` |
+| Strategy Lifecycle control plane | DONE / local artifact review and status only | `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review`, `strategy-paper-observation-status`, `docs/strategy_lifecycle/` |
 | Strategy Backtest pack and optional framework surfaces | DONE | `strategy-backtest-pack`, `strategy-backtest-pack-validate`, `strategy-backtest-framework-run`, optional extras in `pyproject.toml` |
 | NDX Layer 2.2-2.8 local gates | DONE | `research-layer22-*`, `research-ndx-*`, `docs/research/ndx/`, `tests/research/` |
 | Strategy Review builder | DONE | `strategy-review-build`, `src/sis/strategy_review/`, `schemas/strategy_review_manifest.v1.schema.json`, `tests/strategy_review/`, `docs/strategy_review/` |

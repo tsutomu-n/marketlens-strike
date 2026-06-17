@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_21:34 JST
-更新日: 2026-06-15_19:01 JST
+更新日: 2026-06-17_16:57 JST
 -->
 
 # Strategy Lifecycle
@@ -17,6 +17,7 @@ Strategy Lifecycle は、Strategy Authoring backtest、paper observation、phase
 uv run sis strategy-backtest-acceptance --metrics-path data/research/strategy_backtest_metrics.json --out data/research/strategy_lifecycle --reports-dir data/reports
 uv run sis strategy-paper-observation-cycle --data-dir data --artifact-dir data/research/ndx --reports-dir data/reports
 uv run sis strategy-lifecycle-review --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
+uv run sis strategy-paper-observation-status --data-dir data --out data/research/strategy_lifecycle --reports-dir data/reports
 ```
 
 ## Artifacts
@@ -27,6 +28,8 @@ uv run sis strategy-lifecycle-review --data-dir data --out data/research/strateg
 - `data/paper/observations/<session_id>/paper_observation_ledger.jsonl`
 - `data/research/strategy_lifecycle/strategy_lifecycle_review.json`
 - `data/reports/strategy_lifecycle_review.md`
+- `data/research/strategy_lifecycle/paper_observation_status.json`
+- `data/reports/paper_observation_status.md`
 
 ## Read Order
 
@@ -42,5 +45,7 @@ uv run sis strategy-lifecycle-review --data-dir data --out data/research/strateg
 ## Boundary
 
 `strategy-lifecycle-review` は既存の `lifecycle-report` とは別物です。`lifecycle-report` は operations / recovery report で、Strategy Lifecycle の promotion 判定ではありません。
+
+`strategy-paper-observation-status` は既存の paper observation review / session manifest / lifecycle review を読む status artifact です。paper intent 生成、paper order 実行、ledger 再集計はしません。smoke pass は通常threshold pass として数えません。
 
 どの decision でも `permits_live_order=false`, `live_conversion_allowed=false`, `wallet_used=false`, `venue_write_used=false`, `exchange_write_used=false` を維持します。

@@ -48,6 +48,9 @@ from sis.research.strategy_lifecycle.paper_observation_cycle import (
     build_fresh_paper_intent_preview,
     run_strategy_paper_observation_cycle,
 )
+from sis.research.strategy_lifecycle.paper_observation_status import (
+    run_strategy_paper_observation_status,
+)
 from sis.research.strategy_lifecycle.review import run_strategy_lifecycle_review
 from sis.research.hypothesis.role_contracts import CausalRoleRegistry
 from sis.research.hypothesis.role_validator import validate_roles_against_inventory
@@ -1291,6 +1294,67 @@ def register_research_commands(
         typer.echo(f"observation_ledger={result.session.observation_ledger_path}")
         typer.echo(f"paper_review_decision={result.paper_review.decision}")
         typer.echo(f"lifecycle_decision={result.lifecycle_review.decision}")
+        typer.echo(f"report={result.report_path}")
+
+    @app.command("strategy-paper-observation-status")
+    def strategy_paper_observation_status_cmd(
+        data_dir: Path | None = typer.Option(
+            None,
+            "--data-dir",
+            file_okay=False,
+            help="Runtime data root. Defaults to SIS_DATA_DIR/settings data_dir.",
+        ),
+        canonical_review_path: Path | None = typer.Option(
+            None,
+            "--canonical-review-path",
+            dir_okay=False,
+            help="Optional canonical NDX paper observation review decision path.",
+        ),
+        lifecycle_review_path: Path | None = typer.Option(
+            None,
+            "--lifecycle-review-path",
+            dir_okay=False,
+            help="Optional strategy lifecycle review path.",
+        ),
+        sessions_root: Path | None = typer.Option(
+            None,
+            "--sessions-root",
+            file_okay=False,
+            help="Optional paper observation sessions root.",
+        ),
+        out_dir: Path = typer.Option(
+            Path("data/research/strategy_lifecycle"),
+            "--out",
+            file_okay=False,
+            help="Output strategy lifecycle artifact directory.",
+        ),
+        reports_dir: Path = typer.Option(
+            Path("data/reports"),
+            "--reports-dir",
+            file_okay=False,
+            help="Output report directory.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        effective_data_dir = data_dir or settings.data_dir
+        try:
+            result = run_strategy_paper_observation_status(
+                data_dir=effective_data_dir,
+                out_dir=out_dir,
+                reports_dir=reports_dir,
+                canonical_review_path=canonical_review_path,
+                lifecycle_review_path=lifecycle_review_path,
+                sessions_root=sessions_root,
+            )
+        except (ValueError, TypeError, json.JSONDecodeError) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        typer.echo("status=pass")
+        typer.echo(f"observation_state={result.observation_state}")
+        typer.echo(f"next_action={result.next_action}")
+        typer.echo(f"status_id={result.status_id}")
+        typer.echo(f"paper_observation_status={result.status_path}")
         typer.echo(f"report={result.report_path}")
 
     @app.command("build-cost-matrix")

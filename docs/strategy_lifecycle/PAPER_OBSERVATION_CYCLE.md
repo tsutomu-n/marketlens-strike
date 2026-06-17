@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-12_01:16 JST
-更新日: 2026-06-12_21:07 JST
+更新日: 2026-06-17_16:57 JST
 -->
 
 # Paper Observation Cycle
@@ -72,6 +72,17 @@ uv run sis research-ndx-paper-observation-review \
   --reports-dir data/reports \
   --session-manifest data/paper/observations/<session_id>/paper_observation_session_manifest.json
 ```
+
+Use `strategy-paper-observation-status` after review when the question is whether current evidence is normal-threshold paper observation, smoke-only pass, stale/mismatched artifact, or incomplete artifact:
+
+```bash
+uv run sis strategy-paper-observation-status \
+  --data-dir data \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+```
+
+This status command reads existing review/session/lifecycle artifacts. It does not create paper intents, submit paper orders, or recompute the ledger.
 
 ## Stop Conditions
 

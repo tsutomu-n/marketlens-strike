@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-17_10:50 JST
+更新日: 2026-06-17_16:57 JST
 -->
 
 # Implemented Surfaces
@@ -31,7 +31,7 @@ production live trading、wallet、signing、exchange write は現行 operator p
 | Strategy backtest suite / comparison / robustness artifacts | implemented | `strategy-backtest-suite`, `strategy-backtest-compare`, `strategy-backtest-stress`, `strategy-backtest-regime-split`, `strategy-backtest-rolling-stability`, `strategy-backtest-benchmark-relative` |
 | Strategy backtest pack and validation | implemented | `strategy-backtest-pack`, `strategy-backtest-pack-validate`, `schemas/strategy_backtest_pack*.json`, `docs/backtest/` |
 | optional framework surfaces | implemented as optional / no-live | `strategy-backtest-framework-run`, `vectorbt`, `bt`, `metrics`, `reports` optional extras |
-| Strategy Lifecycle review | implemented as local artifact review | `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review`, `docs/strategy_lifecycle/` |
+| Strategy Lifecycle review / status | implemented as local artifact review and read-only status summary | `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review`, `strategy-paper-observation-status`, `docs/strategy_lifecycle/` |
 | Strategy Review packet / operator decision record | implemented as read-only human-review packet plus non-permission decision artifact | `strategy-review-build`, `strategy-review-record`, `src/sis/strategy_review/`, `schemas/strategy_review_manifest.v1.schema.json`, `schemas/operator_strategy_review.v1.schema.json`, `tests/strategy_review/`, `docs/strategy_review/` |
 
 ## NDX Research Gates
