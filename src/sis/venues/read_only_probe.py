@@ -215,6 +215,7 @@ def build_venue_read_only_probe_report(summary: Mapping[str, object]) -> str:
                 f"- network_attempted: {row.get('network_attempted')}",
                 f"- block_reasons: {_string_list(row.get('block_reasons'))}",
                 f"- not_attempted_reasons: {_string_list(row.get('not_attempted_reasons'))}",
+                f"- notes: {_string_list(row.get('notes'))}",
                 f"- next_action: {row.get('next_action')}",
                 "",
             ]

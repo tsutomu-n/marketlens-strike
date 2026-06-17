@@ -143,3 +143,5 @@ def test_report_contains_boundaries_and_no_permission_claims() -> None:
     assert "no network attempted" in report
     assert "`catalog known` is not `venue enabled`" in report
     assert "not paper / live permission" in report
+    assert "not_direct_hyperliquid" in report
+    assert "demo_only_not_production_bitget" in report
