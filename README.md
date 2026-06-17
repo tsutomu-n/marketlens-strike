@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_19:24 JST
+更新日: 2026-06-17_21:28 JST
 -->
 
 # marketlens-strike
@@ -17,9 +17,9 @@ in a fresh checkout until commands are run.
 ## Read First
 
 1. [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md)
-2. [docs/CODE_STATUS.md](docs/CODE_STATUS.md)
-3. [docs/IMPLEMENTED_SURFACES.md](docs/IMPLEMENTED_SURFACES.md)
-4. [docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md)
+2. [docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md)
+3. [docs/CODE_STATUS.md](docs/CODE_STATUS.md)
+4. [docs/IMPLEMENTED_SURFACES.md](docs/IMPLEMENTED_SURFACES.md)
 5. [docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md](docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md)
 6. [docs/NEXT_DIRECTION_CURRENT.md](docs/NEXT_DIRECTION_CURRENT.md)
 7. [docs/research/ndx/README.md](docs/research/ndx/README.md)
@@ -45,6 +45,12 @@ in a fresh checkout until commands are run.
 27. [docs/MIGRATION_HISTORY.md](docs/MIGRATION_HISTORY.md) is the implementation history index.
 28. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md) is a historical backtest update audit.
 29. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
+
+If Trade[XYZ] public user address, Bitget demo credentials, or new normal
+paper-observation evidence arrives, use the `External Input Restart Checklist`
+in [docs/NEXT_DIRECTION_CURRENT.md](docs/NEXT_DIRECTION_CURRENT.md). Those
+checks are read-only / observation checks, not paper or live execution
+permission.
 
 ## Setup
 
