@@ -1,11 +1,13 @@
 <!--
 作成日: 2026-06-16_21:45 JST
-更新日: 2026-06-16_21:45 JST
+更新日: 2026-06-17_10:00 JST
 -->
 
 # Strategy Review Builder Contract Hardening / Next Implementation Plan
 
 ## 0. 結論
+
+この文書は historical implementation contract です。現行コードでは `strategy-review-build` と `strategy-review-record` / `operator_review.yaml` は実装済みです。本文中の `APPROVE_FOR_PAPER` bridge は現行 decision 名ではなく、current next action として扱いません。現行の次方向は `../docs/NEXT_DIRECTION_CURRENT.md` と `README.md` を先に確認してください。
 
 次に実装するべきものは、`PR-REVIEW-00.1: Review Manifest Contract Hardening` である。
 
@@ -1557,4 +1559,3 @@ uv run pytest -q \
 ```
 
 これを先に固めれば、後続の authoring/lifecycle section、operator review、paper bridge は小さく安全に実装できる。
-

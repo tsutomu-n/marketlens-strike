@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-17_09:18 JST
+更新日: 2026-06-17_10:00 JST
 -->
 
 # Current State
@@ -11,6 +11,7 @@
 
 - `plan/archive/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
 - 現在の開発主軸は backtest-first / venue-neutral。Trade[XYZ] は実装済みの主要 venue で、将来の注文口候補として残すが、当面の注文口前提にはしない。
+- ここからの現実的な方向は `docs/NEXT_DIRECTION_CURRENT.md` に分ける。current status はこの文書、実装済み surface は `docs/IMPLEMENTED_SURFACES.md`、実務的な次方向は `docs/NEXT_DIRECTION_CURRENT.md` を読む。
 - `VenueId` は `trade_xyz` と `bitget_demo` を許可する。Strategy Lab の signal / candidate / paper intent schema も同じ enum に揃っている。
 - `VENUE_SUITABILITY_CATALOG` は `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp` を持つが、`bitget_futures` と `hyperliquid_perp` は catalog-only で、現行 `VenueId` や Strategy Lab artifact schema には入らない。
 - `src/sis/venues/capabilities.py` は `bitget_futures` と `hyperliquid_perp` を known but schema-disabled / paper-disabled / network-disabled / live-disabled として固定する。`bitget_demo` は execution-venue schema では許可されるが、`evaluation_plan.mls.v1` の `target_venue` としてはまだ disabled。
@@ -182,23 +183,24 @@ PR-08 専用確認:
 2. `docs/CODE_STATUS.md`
 3. `docs/IMPLEMENTED_SURFACES.md`
 4. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`
-5. `docs/research/ndx/README.md`
-6. `docs/research/ndx/09_LLM_REVIEW_GATE.md`
-7. `docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md`
-8. `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`
-9. `docs/backtest/README.md`
-10. `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`
-11. `docs/strategy_review/README.md`
-12. `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md`
-13. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
-14. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-15. `docs/strategy_research_lab/README.md`
-16. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
-17. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
-18. `docs/OPERATIONS_RUNBOOK.md`
-19. `docs/ARCHITECTURE_AND_PHASES.md`
-20. `docs/trade_xyz_bot_beginner_guide.html`
-21. `plan/README.md`
+5. `docs/NEXT_DIRECTION_CURRENT.md`
+6. `docs/research/ndx/README.md`
+7. `docs/research/ndx/09_LLM_REVIEW_GATE.md`
+8. `docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md`
+9. `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`
+10. `docs/backtest/README.md`
+11. `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`
+12. `docs/strategy_review/README.md`
+13. `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md`
+14. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
+15. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+16. `docs/strategy_research_lab/README.md`
+17. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+18. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+19. `docs/OPERATIONS_RUNBOOK.md`
+20. `docs/ARCHITECTURE_AND_PHASES.md`
+21. `docs/trade_xyz_bot_beginner_guide.html`
+22. `plan/README.md`
 
 historical focused audit:
 

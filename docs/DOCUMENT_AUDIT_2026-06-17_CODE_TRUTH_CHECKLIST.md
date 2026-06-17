@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_06:45 JST
+更新日: 2026-06-17_10:00 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -9,14 +9,14 @@
 
 ## 結論
 
-現行 docs は大きく壊れてはいない。`uv run python scripts/check_current_docs.py` は 131 current docs を pass しており、Strategy Review の専用 docs も current-doc checker 対象に入っている。
+現行 docs は大きく壊れてはいない。current-doc checker は Strategy Review の専用 docs と `docs/NEXT_DIRECTION_CURRENT.md` も対象にしている。確認時は固定の checked count ではなく、`uv run python scripts/check_current_docs.py` を再実行する。
 
-ただし、直近で `strategy-review-build` が強化されたため、top-level docs の導線が少し古い。先に直すべきは次の4点。
+ただし、直近で `strategy-review-build` / `strategy-review-record` が強化されたため、top-level docs の導線が少し古い。先に直すべきは次の5点。
 
 1. `README.md` と `docs/CURRENT_STATE.md` に `docs/strategy_review/README.md` / `OPERATOR_REVIEW_PACKET_RECIPE.md` への導線を足す。2026-06-17_01:26 JST に実施済み。
 2. `docs/CODE_STATUS.md` は 2026-06-17_06:32 JST に thin index 化し、実装履歴を `docs/MIGRATION_HISTORY.md`、現行 surface を `docs/IMPLEMENTED_SURFACES.md` へ分割済み。
 3. 分割後の新文書導線を `README.md`、`docs/CURRENT_STATE.md`、`docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`plan/README.md` へ 2026-06-17_06:45 JST に追加済み。
-4. `plan/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` には `APPROVE_FOR_PAPER` が残る。実装後の次手では `plan/ねくすと.md` を優先し、この古い decision 名は使わない。
+4. `strategy-review-record` / `operator_review.yaml` は実装済み。`plan/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` や `plan/ねくすと.md` の PR-OPERATOR-00 記述は historical として読み、現行の次手正本にしない。古い `APPROVE_FOR_PAPER` decision 名は使わない。
 5. `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict 対象一覧が、現行 checker の `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`docs/strategy_lifecycle/**`、`docs/strategy_review/**` に追いついていなかったため、この監査で更新する。
 
 ## 照合した正本
@@ -43,7 +43,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 - Strategy Review 実装は `src/sis/strategy_review/`、CLI registration は `src/sis/commands/strategy_review.py` と `src/sis/cli.py`。
 - manifest schema は `schemas/strategy_review_manifest.v1.schema.json`。`producer.command` は `strategy-review-build`、`source_artifacts[].status` は `present | missing | invalid | blocked`。
 - tests は `tests/strategy_review/` にあり、golden fixture は `tests/fixtures/strategy_review/` にある。
-- current-doc checker 対象は 128 docs。非 archive の `docs/` Markdown / HTML は 124、非 archive の `plan/` Markdown / JSON は 65、archive 側 Markdown / HTML / JSON は 295。
+- current-doc checker 対象件数は作業時点で変わる。確認時は `uv run python scripts/check_current_docs.py` と checker の allowlist を再確認する。
 - `docs/strategy_review/README.md` と `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md` は、現行 Strategy Review contract と概ね一致する。
 
 ## 更新できるドキュメント
@@ -52,15 +52,15 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 
 | Document | 判定 | 理由 | 次の更新 |
 |---|---|---|---|
-| `docs/strategy_review/README.md` | 更新して維持 | `strategy-review-build` の現行 CLI、manifest、optional artifact、atomic replace、section order を説明している | PR-OPERATOR-00 実装後に operator artifact への導線を追記 |
-| `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md` | 更新して維持 | copy-paste 実行、読む順番、paper / NDX gate 境界が明確 | operator review artifact ができたら command を追加 |
+| `docs/strategy_review/README.md` | 更新して維持 | `strategy-review-build` と `strategy-review-record` の現行 CLI、manifest、operator artifact、paper / live 境界を説明している | 今後 paper bridge を作る場合も、この文書では permission artifact と誤読させない |
+| `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md` | 更新して維持 | copy-paste 実行、読む順番、`operator_review.yaml` 保存 / stale check、paper / NDX gate 境界が明確 | 今後 paper bridge を作る場合も、別 plan と別 validation を要求する |
 | `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` | 更新して維持 | dogfood 記録として有用。runtime artifact hash を固定していない | 新しい dogfood を足すなら別日付の record にする |
 | `docs/backtest/README.md` | 更新して維持 | Strategy Review への導線を既に持つ | Backtest pack から Strategy Review へ進む最短手順を recipe 側へ寄せる |
 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | 更新して維持 | public CLI catalog と capability summary としてまだ使える | Strategy Review を独立 section に近い形で強調し、operator recipe をリンク |
 | `README.md` | 更新して維持 | repo entrypoint として正しい | 2026-06-17_01:26 JST に Read First と Main Flows へ Strategy Review docs を追加済み |
 | `docs/CURRENT_STATE.md` | 更新して維持 | current state の入口として使える | 2026-06-17_01:26 JST に Strategy Review の現行 surface と「readiness proof ではない」境界を追加済み |
 | `plan/README.md` | 更新して維持 | Strategy Review plan と next plan への導線を持つ | 実装済み plan と未実装 next をさらに明確に分ける |
-| `plan/ねくすと.md` | 更新して維持 | 次手は `PR-OPERATOR-00` と明記済み | PR-OPERATOR-00 実装後に完了欄へ移す |
+| `plan/ねくすと.md` | historical として維持 | PR-OPERATOR-00 の実装計画として有用だが、現行コードでは `strategy-review-record` / `operator_review.yaml` は実装済み | 先頭で historical / implemented を明記し、現行次手には使わない |
 | `docs/DOCS_LINT_POLICY_2026-05-30.md` | 更新して維持 | current-doc checker の運用方針として必要 | この監査で strict 対象一覧を現行 checker に合わせる |
 
 ## 古い内容があるドキュメント

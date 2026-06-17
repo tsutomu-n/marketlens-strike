@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-17_09:18 JST
+更新日: 2026-06-17_10:00 JST
 -->
 
 # Repo Capabilities Current
@@ -19,8 +19,8 @@
 
 補正した点:
 
-- Public CLI Command Catalog は `uv run sis --help` の public command と一致する。
-- 2026-06-17_09:18 JST 時点では public command は 163 件で、Strategy Review には `strategy-review-build` と `strategy-review-record` がある。
+- Public CLI Command Catalog は、更新時点で `uv run sis --help` の public command と照合した。固定の command count を current truth にせず、確認時は `uv run sis --help` を再実行する。
+- Strategy Review には `strategy-review-build` と `strategy-review-record` がある。
 - 本文側で薄かった `research-dag-*`、`strategy-backtest-framework-run`、legacy `build-backtest`、Trade[XYZ] data cycle、historical archive quote normalization、market-session utility、Strategy Lifecycle docs、Algo / Strategy Factory docs、schema family の説明を補った。
 - `docs/strategy_lifecycle/` は current-docs 検査対象に追加した。
 - `operator_strategy_review.v1` と `operator_review.yaml` の境界を追記した。これは paper / live 許可ではなく、Strategy Review packet に対する人間判断と source hash 再検証の artifact である。
@@ -522,7 +522,7 @@ reference-only / 採用前 contract:
 
 ## Public CLI Command Catalog
 
-2026-06-17_09:18 JST 時点の `uv run sis --help` に出る public command を、用途別に整理する。
+更新時点の `uv run sis --help` に出る public command を、用途別に整理する。確認時は固定の件数ではなく、CLI help を再実行する。
 
 ### Research / NDX
 
@@ -732,15 +732,16 @@ reference-only / 採用前 contract:
 1. [CURRENT_STATE.md](CURRENT_STATE.md)
 2. [CODE_STATUS.md](CODE_STATUS.md)
 3. [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
-4. [algo/README.md](algo/README.md)
-5. [strategy_research_lab/README.md](strategy_research_lab/README.md)
-6. [strategy_research_lab/08_CURRENT_CAPABILITIES.md](strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-7. [backtest/README.md](backtest/README.md)
-8. [backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)
-9. [strategy_review/README.md](strategy_review/README.md)
-10. [strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
-11. [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
-12. [research/ndx/README.md](research/ndx/README.md)
-13. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
-14. [ARCHITECTURE_AND_PHASES.md](ARCHITECTURE_AND_PHASES.md)
-15. [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md)
+4. [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md)
+5. [algo/README.md](algo/README.md)
+6. [strategy_research_lab/README.md](strategy_research_lab/README.md)
+7. [strategy_research_lab/08_CURRENT_CAPABILITIES.md](strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+8. [backtest/README.md](backtest/README.md)
+9. [backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)
+10. [strategy_review/README.md](strategy_review/README.md)
+11. [strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
+12. [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
+13. [research/ndx/README.md](research/ndx/README.md)
+14. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
+15. [ARCHITECTURE_AND_PHASES.md](ARCHITECTURE_AND_PHASES.md)
+16. [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md)

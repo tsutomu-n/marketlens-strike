@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-17_06:45 JST
+更新日: 2026-06-17_10:00 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -39,12 +39,22 @@ code, schema, dependency, paper, or live-execution changes by themselves.
 This implementation handoff now has corresponding code, schema, CLI help,
 focused tests, and docs. The Strategy Review Builder turns existing Strategy
 Authoring / backtest artifacts into a human review markdown file and a
-machine-readable manifest. It does not create a Strategy Case registry, UI,
-paper gate, live readiness proof, wallet/signing path, or exchange-write path.
+machine-readable manifest. The follow-up Operator Strategy Review Artifact in
+`plan/ねくすと.md` is also implemented as `strategy-review-record` /
+`operator_review.yaml`. Treat this group as historical implementation context,
+not as the current unimplemented next action. It does not create a Strategy
+Case registry, UI, paper gate, live readiness proof, wallet/signing path, or
+exchange-write path.
 
 - [plan/0616ここからの計画/01_strategy_review_builder/README.md](0616ここからの計画/01_strategy_review_builder/README.md)
 - [STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md](STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md)
 - [ねくすと.md](ねくすと.md)
+
+## Current Direction
+
+現行 repo truth から見た実務的な次方向は
+[`docs/NEXT_DIRECTION_CURRENT.md`](../docs/NEXT_DIRECTION_CURRENT.md) を読む。
+`計画あり` は `実装決定` ではなく、`catalog known` は `venue enabled` ではない。
 
 ## Historical 2026-06-10 implementation plans
 

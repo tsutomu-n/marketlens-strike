@@ -1,11 +1,13 @@
 <!--
 作成日: 2026-06-16_20:23 JST
-更新日: 2026-06-16_20:23 JST
+更新日: 2026-06-17_10:00 JST
 -->
 
 # Strategy Review Builder 次期実装 最終計画
 
 ## 結論
+
+この文書は historical implementation plan です。現行コードでは後続の `strategy-review-record` / `operator_review.yaml` まで実装済みです。本文中の paper bridge や `APPROVE_FOR_PAPER` は current next action ではありません。現行の次方向は `../docs/NEXT_DIRECTION_CURRENT.md` と `README.md` を先に確認してください。
 
 次に実装するものは、既存の `strategy-review-build` をいきなり大きく拡張することではない。まず **Review Builder Contract Audit / Hardening** を入れ、その後に **Strategy Authoring / Lifecycle section** を追加する。
 
@@ -1104,4 +1106,3 @@ uv run sis strategy-review-build \
 ```
 
 この計画では、それらを `PR-REVIEW-00.1` と `PR-REVIEW-01` に分けて解消する。
-
