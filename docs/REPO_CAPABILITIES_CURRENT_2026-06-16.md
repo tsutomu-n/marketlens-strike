@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-17_23:38 JST
+更新日: 2026-06-18_04:56 JST
 -->
 
 # Repo Capabilities Current
@@ -541,6 +541,212 @@ uv run python scripts/check_cli_catalog.py
 ```
 
 この文書は capability overview と境界説明に寄せ、command 名の網羅表は CLI catalog 側で管理します。
+
+## 2026-06-18 差分追記: 2026-06-16版から何が変わったか
+
+この節は、2026-06-16 に作成したこの capability document と、2026-06-18_04:56 JST 時点の repo を比較した具体差分である。
+
+確認した正本:
+
+- `uv run sis --help`
+- `uv run python scripts/check_cli_catalog.py`
+- `schemas/*.json`
+- `src/sis/commands/`
+- `tests/`
+- この文書自身と current docs
+
+### 1. Public CLI surface は増え、catalog は機械照合に分離された
+
+2026-06-16 版では public command catalog をこの文書内に持っていた。現在は command list を [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md) に分離し、`scripts/check_cli_catalog.py` で Typer registration と照合する方式になった。
+
+現在の確認方法:
+
+```bash
+uv run python scripts/check_cli_catalog.py
+```
+
+増えた主要 command:
+
+- `strategy-review-build`
+- `strategy-review-record`
+- `strategy-paper-observation-append`
+- `strategy-paper-observation-status`
+- `venue-read-only-probe`
+
+意味:
+
+- 「command 名一覧を手で保守する文書」から、「CLI registration と照合できる catalog」に変わった。
+- command 数の固定値は current truth ではなくなり、`uv run sis --help` と `scripts/check_cli_catalog.py` の再実行が確認手順になった。
+
+### 2. Backtest の後段に Strategy Review が増えた
+
+2026-06-16 版では、backtest pack / comparison / validation までは扱っていたが、人間が読む review packet と operator review record はまだ中心機能として分離されていなかった。
+
+現在できること:
+
+- `strategy-review-build` で既存 backtest artifact chain から `review.md` と `review_manifest.json` を作れる。
+- `review_manifest.json` は入力 artifact の path / hash / producer / source safety を保持する。
+- `strategy-review-record` で、人間が review packet を読んだ判断を `operator_review.yaml` として保存できる。
+- `strategy-review-record --validate-existing` で、保存済み operator review が同じ `review.md` / `review_manifest.json` を見ていたかを path / hash で再照合できる。
+
+追加された schema family:
+
+- `strategy_review_manifest.v1`
+- `operator_strategy_review.v1`
+
+境界:
+
+- Strategy Review は paper / live 許可ではない。
+- `PAPER_OBSERVATION_CANDIDATE` は validation candidate であり、paper execution permission ではない。
+- `live_allowed=false` と `paper_execution_allowed=false` を維持する。
+
+関連 docs:
+
+- [strategy_review/README.md](strategy_review/README.md)
+- [strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
+- [strategy_review/DOGFOOD_REVIEW_2026-06-16.md](strategy_review/DOGFOOD_REVIEW_2026-06-16.md)
+
+### 3. Paper observation は「作る」だけでなく「追記する」「状態を読む」能力が増えた
+
+2026-06-16 版では、`strategy-paper-observation-cycle` で paper observation cycle artifact を作れることが中心だった。
+
+現在できること:
+
+- `strategy-paper-observation-append` で既存 paper observation session manifest を読み、manifest hash を確認した上で同じ session ledger に観察行を追記できる。
+- `strategy-paper-observation-status` で既存 paper observation review / session manifest / lifecycle review を読み、normal observation と smoke observation を分けた status artifact を作れる。
+- `data/research/strategy_lifecycle/paper_observation_status.json` に `observation_state`, `next_action`, `normal_session_count`, `smoke_session_count`, `latest_normal_requirement_gaps`, `normal_thresholds_met`, `smoke_pass_counts_as_normal_pass`, `live_conversion_allowed`, `permits_live_order`, `wallet_used`, `signing_used`, `exchange_write_used` などを出せる。
+
+追加された schema:
+
+- `strategy_paper_observation_status.v1`
+
+実務上の違い:
+
+- 同じ日の artifact 再生成を「新しい観察」と誤読しにくくなった。
+- smoke pass と normal paper observation pass を分けて読めるようになった。
+- 既存 session artifact がある場合、`strategy-paper-observation-cycle` は同じ session id の使い回しを避け、追記は専用 command に分離された。
+
+境界:
+
+- paper observation status は paper intent 生成、paper order 実行、ledger 再集計をしない。
+- `needs_more_normal_paper_observation` は live へ進む意味ではない。
+- `trading_days` は同一日の fill 増加では代替できない。
+
+### 4. Venue capability は fixture-first の read-only probe として独立した
+
+2026-06-16 版では、venue policy は `VenueId` / suitability catalog / capability contract の説明が中心だった。
+
+現在できること:
+
+- `venue-read-only-probe` で `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp` の capability boundary を local artifact として出せる。
+- `venue_read_only_probe_summary.v1` schema で probe summary を検査できる。
+- probe result は fixture-first で、external API、credentials、network attempt、wallet、signing、exchange write、live order を使わない。
+
+実務上の違い:
+
+- future venue を「実装済み live venue」と誤読せず、schema / paper / network / live disabled の境界を artifact として確認できる。
+- Bitget / Hyperliquid は known future venues のままだが、current `VenueId` ではなく、Strategy Lab の正式 target venue でもないという説明が強くなった。
+
+### 5. Trade[XYZ] は read-only execution state collector contract が増えた
+
+2026-06-16 版では、Trade[XYZ] data / quote / readiness / pure backtest の説明が中心だった。
+
+現在できること:
+
+- Trade[XYZ] の read-only execution state collector contract を持つ。
+- public user address と `SIS_TRADE_XYZ_EXECUTION_STATE_COLLECTOR_ENABLED=1` がある場合だけ、`/info` 由来の account state / open orders / fills を読む設計になった。
+- 未設定時は external API を呼ばず、`trade_xyz_execution_state_user_address_missing` のような reason を出す。
+- `execution-snapshot`, `execution-read-only-surfaces`, `execution-drift-overview`, `phase-gate-review` が concrete reason / next action を伝播する。
+
+実務上の違い:
+
+- 「execution drift がある」だけでなく、「何が未設定で、次に何を設定すべきか」を artifact で追いやすくなった。
+- ただし wallet secrets、signing、live order、exchange write credentials は引き続き使わない。
+
+### 6. Strategy Lab / Research Data / Operations 系 CLI の help が IO と境界を明示するようになった
+
+2026-06-16 版では、できることの一覧はあったが、個々の CLI が「何を読むか」「何を書くか」「何をしないか」の help 契約は薄かった。
+
+現在強化された例:
+
+- `build-paper-intent-preview`: paper-only intent preview の入力と live conversion 禁止を明示。
+- `promotion-decision`: promotion decision artifact の入力と decision の意味を明示。
+- `build-paper-candidate-pack`: candidate pack の入力、selected candidate、paper-only 境界を明示。
+- `evaluate-strategy-lab`: Strategy Lab signal 評価の入力と output を明示。
+- `strategy-experiment-run`: experiment spec から paper-only signal artifact を作る境界を明示。
+- `build-signals`, `build-feature-panel`, `check-research-quality`, `build-cost-matrix`, `alpaca-smoke`: local / read-only / generated artifact の IO を明示。
+- `diagnose-quotes`: local quote rows を診断し operator report を書くことを明示。
+- `validate-artifacts`: local `data/` と `schemas/` を読み、`checked_files` / `issues` を出し、`--strict` で Trade[XYZ] artifact chain を要求し、issue 時に exit 2 になることを明示。
+- `check-go-no-go`: local Go/No-Go evidence summary の入力、出力、no external API / no paper order / no live permission 境界を明示。
+
+実務上の違い:
+
+- operator が command help だけを見ても、local artifact command と external/API/order command を混同しにくくなった。
+- CLI smoke tests が help text の重要表現を守るようになった。
+
+### 7. Docs は「巨大な current state」から「入口 + domain docs + archive」へ再編された
+
+2026-06-16 版では、この文書自体に public command catalog や幅広い capability detail を多く抱えていた。
+
+現在の分割:
+
+- [CURRENT_STATE.md](CURRENT_STATE.md): short current-state index。
+- [CODE_STATUS.md](CODE_STATUS.md): thin code-status index。
+- [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md): 実装済み surface の一覧。
+- [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md): 次に見るべき方向と external-input restart checklist。
+- [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md): 非専門向けの plain Japanese capability guide。
+- [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md): public CLI command catalog。
+- [runbooks/README.md](runbooks/README.md): domain runbook index。
+- [strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md](strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md): Strategy Lab capability detail。
+
+実務上の違い:
+
+- current docs から古い fixed runtime snapshot / fixed pass count / dated artifact hash を減らし、必要なときは runtime command を再実行する方針になった。
+- 実装済み plan や古い audit は `docs/archive/` と `plan/archive/` に移り、current proof と historical context を分けた。
+- HTML current docs には同名 Markdown source を求める checker が追加された。
+
+### 8. Current-docs checker と full gate が強化された
+
+2026-06-16 版では `scripts/check_current_docs.py` が metadata / links / EOF / legacy root reference を見るのが中心だった。
+
+現在の checker / gate:
+
+- `scripts/check_current_docs.py` は current docs の semantic drift、HTML source 対応、plan routing も検査する。
+- `scripts/check_cli_catalog.py` が public CLI catalog と Typer registration を照合する。
+- `./scripts/check` は CLI catalog check も含む。
+- full gate の現行構成は `./scripts/check` を再実行して確認する。handoff は最後に実行した結果の記録であり、current proof の代わりにはしない。
+
+実務上の違い:
+
+- command を追加して docs catalog を忘れる drift を検出できる。
+- current docs に古い runtime snapshot を残す drift を検出しやすくなった。
+- ただし `data/` は git-ignored runtime state なので、artifact 値は都度再生成または再確認が必要である。
+
+### 9. CI / runtime 運用まわりは Node24 対応と external-input checklist が増えた
+
+2026-06-16 版には、CI action runtime と external input restart checklist の説明は薄かった。
+
+現在の変化:
+
+- GitHub Actions は Node24 runtime 対応 action に更新された。
+- `docs/NEXT_DIRECTION_CURRENT.md` に external input restart checklist が追加され、Trade[XYZ] public user address、Bitget demo env、normal paper observation の再開条件を current docs から辿れる。
+- README、CURRENT_STATE、CODE_STATUS、OPERATIONS_RUNBOOK、Strategy Lifecycle docs が external-input checklist へルーティングする。
+
+実務上の違い:
+
+- external input が必要な作業と、local-only で続けてよい作業を分けやすくなった。
+- read-only / paper observation の再開手順を live permission と混同しにくくなった。
+
+### 10. 変わっていない重要境界
+
+機能は増えたが、次は変わっていない。
+
+- production live trading ready ではない。
+- wallet secrets、signing、exchange write は使わない。
+- `READ_ONLY_GO` は live readiness ではない。
+- backtest pass、pack validation pass、strategy review、operator review、paper observation status は、単独では alpha / paper execution permission / live permission を証明しない。
+- Bitget futures / Hyperliquid perp は known future venues だが、current `VenueId` ではなく、Strategy Lab の正式 target venue でもない。
+- `PaperIntentPreview` は paper-only artifact であり、live order へ変換しない。
 
 ## できないこと / 未証明
 
