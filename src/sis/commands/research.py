@@ -1482,9 +1482,20 @@ def register_research_commands(
         generator_id: str = typer.Option(
             DEFAULT_GENERATOR_ID,
             "--generator-id",
-            help="Registered Strategy Lab signal generator ID.",
+            help=(
+                "Registered Strategy Lab signal generator ID. Unknown IDs exit "
+                "with code 2 and print registered_generator_ids."
+            ),
         ),
     ) -> None:
+        """Build Strategy Lab signal artifacts from the feature panel.
+
+        Reads data/research/feature_panel.parquet and writes
+        data/research/strategy_signals.parquet,
+        data/research/strategy_signal_manifest.json,
+        data/research/strategy_signals.jsonl, and legacy data/research/signals.csv.
+        Submits no live orders.
+        """
         settings = get_settings()
         out = _build_signals_or_exit(settings.data_dir, generator_id=generator_id)
         logger.info("written: {}", out)
@@ -1496,9 +1507,20 @@ def register_research_commands(
         generator_id: str = typer.Option(
             DEFAULT_GENERATOR_ID,
             "--generator-id",
-            help="Registered Strategy Lab signal generator ID.",
+            help=(
+                "Registered Strategy Lab signal generator ID. Unknown IDs exit "
+                "with code 2 and print registered_generator_ids."
+            ),
         ),
     ) -> None:
+        """Build Strategy Lab signal artifacts plus a preview report.
+
+        Reads data/research/feature_panel.parquet and writes
+        data/research/strategy_signals.parquet,
+        data/research/strategy_signal_manifest.json,
+        data/research/strategy_signals.jsonl, legacy data/research/signals.csv,
+        and data/reports/strategy_signals_preview.md. Submits no live orders.
+        """
         settings = get_settings()
         legacy_path = _build_signals_or_exit(settings.data_dir, generator_id=generator_id)
         report_path = settings.data_dir / "reports/strategy_signals_preview.md"

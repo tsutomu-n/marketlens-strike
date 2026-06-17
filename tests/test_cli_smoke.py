@@ -163,6 +163,37 @@ def test_build_paper_candidate_pack_help_describes_selection_inputs() -> None:
     assert "TrialRecord.metrics.selected_signal_ids" in stdout
 
 
+def test_build_signals_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["build-signals", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "Strategy Lab signal artifacts" in stdout
+    assert "data/research/feature_panel.parquet" in stdout
+    assert "data/research/strategy_signals.parquet" in stdout
+    assert "data/research/strategy_signal_manifest.json" in stdout
+    assert "data/research/strategy_signals.jsonl" in stdout
+    assert "data/research/signals.csv" in stdout
+    assert "Submits no live orders" in stdout
+    assert "--generator-id" in stdout
+    assert "registered_generator_ids" in stdout
+
+
+def test_strategy_preview_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["strategy-preview", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "preview report" in stdout
+    assert "data/research/feature_panel.parquet" in stdout
+    assert "data/research/strategy_signals.parquet" in stdout
+    assert "data/research/strategy_signal_manifest.json" in stdout
+    assert "data/research/strategy_signals.jsonl" in stdout
+    assert "data/research/signals.csv" in stdout
+    assert "data/reports/strategy_signals_preview.md" in stdout
+    assert "Submits no live orders" in stdout
+    assert "--generator-id" in stdout
+    assert "registered_generator_ids" in stdout
+
+
 def test_strategy_experiment_run_help_describes_io_and_boundary() -> None:
     result = invoke_cli(["strategy-experiment-run", "--help"])
     stdout = normalized_stdout(result)
