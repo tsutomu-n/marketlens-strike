@@ -264,6 +264,28 @@ def test_diagnose_quotes_help_describes_io_and_boundary() -> None:
     assert "Optional canonical symbol filter" in stdout
 
 
+def test_validate_artifacts_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["validate-artifacts", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "Validate local data artifacts" in stdout
+    assert "data/" in stdout
+    assert "schemas/" in stdout
+    assert "checked_files" in stdout
+    assert "issues" in stdout
+    assert "Trade[XYZ] registry" in stdout
+    assert "quote JSONL" in stdout
+    assert "normalized quotes parquet" in stdout
+    assert "strict quote fields" in stdout
+    assert "Exits 2" in stdout
+    assert "Performs no external API calls" in stdout
+    assert "submits no orders" in stdout
+    assert "does not prove" in stdout
+    assert "live readiness" in stdout
+    assert "--strict" in stdout
+    assert "strict Trade[XYZ] artifact chain" in stdout
+
+
 def test_build_signals_help_describes_io_and_boundary() -> None:
     result = invoke_cli(["build-signals", "--help"])
     stdout = normalized_stdout(result)

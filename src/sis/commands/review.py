@@ -313,7 +313,23 @@ def register_review_commands(
             typer.echo(f"recommended_read_order_{index}={item}")
 
     @app.command("validate-artifacts")
-    def validate_artifacts_cmd(strict: bool = typer.Option(False, "--strict")) -> None:
+    def validate_artifacts_cmd(
+        strict: bool = typer.Option(
+            False,
+            "--strict",
+            help="Require the strict Trade[XYZ] artifact chain instead of legacy/optional inputs.",
+        ),
+    ) -> None:
+        """Validate local data artifacts against repository schemas.
+
+        Reads artifacts under data/ and schemas under schemas/, then prints
+        checked_files and issues. With --strict, require the Trade[XYZ] registry,
+        quote JSONL, quote collection summary, normalized quotes parquet, and
+        strict quote fields. Exits 2 when issues are found.
+
+        Performs no external API calls, submits no orders, and does not prove
+        live readiness.
+        """
         settings = get_settings()
         summary = validate_artifacts(settings.data_dir, Path("schemas"), strict=strict)
         typer.echo(f"checked_files={summary.checked_files}")
