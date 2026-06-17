@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_21:52 JST
+更新日: 2026-06-17_22:02 JST
 -->
 
 # marketlens-strike
@@ -54,9 +54,9 @@ They are not the first source for current readiness or permission decisions.
 
 1. [docs/MIGRATION_HISTORY.md](docs/MIGRATION_HISTORY.md)
 2. [docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md)
-3. [docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md](docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md)
-4. [docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md](docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md)
-5. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md)
+3. [docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md](docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md)
+4. [docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md](docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md)
+5. [docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md)
 6. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md)
 
 ## Setup
@@ -297,7 +297,7 @@ uv run python scripts/check_current_docs.py
 - Latest local Layer 2.2 exit decision artifact was `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, with pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`.
 - Non-approve exit-gate runs remove stale `layer_2_2_freeze_manifest.json` from the same output directory.
 - Current Layer 2.4 default artifact decision is `APPROVE_STRATEGY_LAB_EXPORT`; this is only permission for Layer 2.5 research-only export and is not alpha, backtest, paper, or live readiness proof.
-- `docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` records the then-current code-truth docs cleanup checklist.
+- `docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` records a then-current code-truth docs cleanup checklist.
 
 2026-06-17 runtime validation snapshot:
 
@@ -306,7 +306,7 @@ uv run python scripts/check_current_docs.py
 - current execution drift classification: `P2_BLOCKER=0`, `LIVE_READINESS_BLOCKER=6`
 - latest local `refresh-operations-artifacts`: operations dashboard `overall_status=degraded`, `monitoring_status=degraded`, `execution_venue_count=2`, `execution_comparison_all_registries_present=false`; this is an execution-readiness gap, not a live permission.
 - latest available `data/manifests/trade_xyz_data_readiness_manifest.json`: `NOT_READY`, `backtest_data_ready=false`, `fail_count=1`, `known_gap_count=2`
-- `docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md` records the current code-truth documentation checklist and the plain-Japanese / external-input routing cleanup.
+- `docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md` records the current code-truth documentation checklist, plain-Japanese / external-input routing cleanup, domain runbook split, and old audit archive routing.
 
 `READ_ONLY_GO` means the read-only / paper gate is clear. It does not mean
 production live trading is ready.

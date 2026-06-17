@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_07:23 JST
-更新日: 2026-06-15_12:02 JST
+更新日: 2026-06-17_22:02 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-15
@@ -28,12 +28,13 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - `src/sis/research/ndx/` と `tests/research/` は Layer 2.3 から Layer 2.8 までの local research / paper-observation gate を持つ。
 - `src/sis/backtest/`、`schemas/strategy_backtest_*.schema.json`、`tests/strategy_authoring/test_backtest_*.py` は backtest pack、validation、optional framework surface を持つ。
 - `pyproject.toml` は Python `>=3.13,<3.14`、optional extras `vectorbt==1.0.0`, `bt==1.2.0`, `empyrical-reloaded==0.5.12`, `quantstats==0.0.81` を持つ。
-- 調査開始時点の `scripts/check_current_docs.py` の current-doc 対象は 117 docs。本書と `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` を allowlist に追加した後の検証対象は 119 docs。
+- 調査開始時点の `scripts/check_current_docs.py` の current-doc 対象は 117 docs。本書と 2026-06-09 NDX/QQQ venue suitability audit を allowlist に追加した後の検証対象は 119 docs。2026-06-17_22:02 JST には古い audit を `docs/archive/2026-06-17-doc-routing/` へ移し、current-doc checker から外した。
 
 ## 追加調査で見つけた抜けと修正
 
-- [x] `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` は `README.md` の read-first に出るが、`scripts/check_current_docs.py` の単体 allowlist には入っていなかった。
+- [x] 2026-06-09 NDX/QQQ venue suitability audit は `README.md` の read-first に出るが、`scripts/check_current_docs.py` の単体 allowlist には入っていなかった。
   - 修正: `scripts/check_current_docs.py` の allowlist と `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict check 一覧へ追加した。
+  - 後続処置: 2026-06-17_22:02 JST に `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` へ移し、current-doc checker から外した。
   - 残る注意: 文書内の `946 passed` は 2026-06-09 時点の historical snapshot。current pass count として再利用しない。
 - [x] `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict check 一覧が、今回追加した current audit と NDX/QQQ venue suitability audit を含んでいなかった。
   - 修正: strict check 一覧を更新した。
@@ -80,9 +81,9 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - [ ] `docs/venues/bitget_hyperliquid_capability_gate.md`
   - 理由: `bitget_futures` / `hyperliquid_perp` が catalog-only disabled である現行コードと合う。
   - 更新案: `src/sis/venues/capabilities.py` と schema enum の確認コマンドを追加する。
-- [ ] `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`
+- [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`
   - 理由: NDX/QQQ paper-path fail-closed 境界、`VenueId`、catalog-only venues の内容は現行コードと概ね合う。
-  - 更新案: current verification snapshot として読まれないよう、冒頭に historical audit であることを明記する。
+  - 後続処置: 2026-06-17_22:02 JST に historical audit として archive へ移した。
 - [ ] `docs/OPERATIONS_RUNBOOK.md`
   - 理由: operator command の入口として使える。
   - 更新案: domain 別 runbook へ分割し、root は command index にする。
@@ -102,25 +103,26 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
   - 古い内容: `plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/` と `plan/0611ここからの計画/*` を current implementation plan として扱っていた。
   - コード正本: `research-ndx-strategy-lab-export`, `research-ndx-paper-observation-gate`, `research-ndx-operator-promotion`, `research-ndx-paper-observation-review`, `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review` は CLI 登録済みで、対応 code/schema/tests/docs がある。
   - 修正済み: 2026-06-15_12:02 JST に implemented / historical と current unimplemented plan を分けた。
-- [ ] `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`
+- [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`
   - 古い内容: 2026-06-09 時点の監査として Layer 2.4 default を `REVISE_2_3`、current-doc count を 101、pytest pass count を 936 と記録している。
   - コード正本: 2026-06-15 時点の current-doc checker は 117 docs。現行 docs/code は Layer 2.4 default を `APPROVE_STRATEGY_LAB_EXPORT` と扱う。
-  - 修正案: historical audit と明記するか、`docs/archive/` へ移す。新しい current audit は本チェックリストを使う。
-- [ ] `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`
+  - 修正済み: `docs/archive/2026-06-17-doc-routing/` へ移動。新しい current audit は `docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md` を使う。
+- [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`
   - 古い内容: verification に `946 passed` など 2026-06-09 時点の固定 pass count がある。
   - コード正本: pass count は固定せず、`./scripts/check` と `uv run python scripts/check_current_docs.py` を再実行する。
-  - 修正案: 内容自体は有用なので archive 直行ではなく、historical snapshot と明記して current verification と分ける。
-- [ ] `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md`
+  - 修正済み: `docs/archive/2026-06-17-doc-routing/` へ移動。
+- [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md`
   - 古い内容: current-doc count 81 など、当時の snapshot が残る。
   - コード正本: current-doc checker は 117 docs。backtest surface は 2026-06-14 以降さらに pack / optional extras / responsibility plan まで進んでいる。
-  - 修正案: historical backtest update audit と明記し、README の read-first から外すか archive に寄せる。
-- [ ] `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md`
+  - 修正済み: historical backtest update audit として `docs/archive/2026-06-17-doc-routing/` へ移動。
+- [x] `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md`
   - 古い内容: 2026-05-29 時点の blocker decomposition。
   - コード正本: 現行は phase gate / execution drift / Strategy Lifecycle / NDX paper observation の境界が増えている。
-  - 修正案: current blocker plan として更新せず、historical live-readiness plan として archive 候補にする。
+  - 修正済み: current blocker plan として更新せず、historical live-readiness plan として `docs/archive/2026-06-17-doc-routing/` へ移動。
 - [ ] `docs/DOCS_LINT_POLICY_2026-05-30.md`
   - 古い内容: strict check 対象一覧が今回追加した audit docs を含んでいなかった。
-  - 修正済み: 本追加調査で `docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` と `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` を追加した。
+  - 修正済み: 本追加調査で `docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` と 2026-06-09 NDX/QQQ venue suitability audit を追加した。
+  - 後続処置: 2026-06-17_22:02 JST に古い audit を archive へ移し、strict check 対象から外した。
   - 残る注意: 今後 current docs を追加する時は checker と policy を同時更新する。
 - [ ] `docs/algo/**` と `docs/algo/obsidian_note_rewrites_2026-05-29/**`
   - 古い内容: strategy idea / source-note 系は外部ライブラリや市場文脈の古い記述を含む可能性がある。
@@ -160,13 +162,13 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 
 削除より archive 推奨。過去判断の証跡として残し、current truth から外す。
 
-- [ ] `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`
+- [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`
   - 推奨: `docs/archive/` へ移動。
   - 理由: Layer 2.4 `REVISE_2_3` snapshot と current-doc count が現行とズレる。
-- [ ] `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md`
+- [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md`
   - 推奨: `docs/archive/` へ移動。
   - 理由: backtest docs の歴史資料として有用だが、現行 backtest pack / responsibility plan の正本ではない。
-- [ ] `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md`
+- [x] `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md`
   - 推奨: `docs/archive/` へ移動。
   - 理由: current live-readiness boundary は `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md`, runtime phase-gate artifacts を正とする。
 - [ ] `plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/`
@@ -205,7 +207,7 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 1. [x] `README.md` の Layer 2.4 / 2.5-2.8 current flow を修正する。
 2. [x] `plan/README.md` の current implementation plan 分類を現行コードに合わせる。特に 0609/0610/0611 の実装済み plan を historical/superseded に分ける。
 3. [ ] `docs/DOCS_LINT_POLICY_2026-05-30.md` と `scripts/check_current_docs.py` の allowlist を今後も同期する。
-4. [ ] `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`, `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`, `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を historical と明記するか archive する。
+4. [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を historical と明記するか archive する。
 5. [ ] `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` の肥大化を分割計画に落とす。
 6. [ ] `docs/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md` と Strategy Lab capability docs を短文化する。
 

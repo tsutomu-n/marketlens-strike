@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-05-30_08:14 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-17_22:02 JST
 -->
 
 # Strategy Research Lab Doc Audit And Spec 2026-05-30
 
 この文書は、コードを正本として Strategy Research Lab の現在仕様と既存ドキュメントの扱いを固定するための入口です。
 
-関連する全体 docs audit は `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` を読む。Strategy Lab 詳細仕様は `docs/strategy_research_lab/` に展開済みです。
+関連する 2026-06-09 時点の全体 docs audit は `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` に archive 済み。Strategy Lab 詳細仕様は `docs/strategy_research_lab/` に展開済みです。
 
 ## 結論
 
@@ -399,7 +399,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 
 ### 更新する docs
 
-2026-05-30時点で、以下は実施済みまたは詳細仕様へ分離済みです。current docs 全体の分類は `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` を正本にします。
+2026-05-30時点で、以下は実施済みまたは詳細仕様へ分離済みです。2026-06-09 時点の docs 全体の分類は `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` に archive 済みです。
 
 | Path | 理由 | 更新方針 |
 |---|---|---|
@@ -445,7 +445,7 @@ uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
 | `docs/archive/2026-05-30-doc-audit/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-27.md` | historical Trade[XYZ] audit |
 | `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | historical Trade[XYZ] audit |
 | `docs/archive/2026-05-30-doc-audit/NEXT_IMPLEMENTATION_PLAN_AFTER_P0_P1_2026-05-28.md` | superseded plan |
-| `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | live-readiness blocker plan; keep for live readiness only |
+| `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | historical live-readiness blocker plan; do not use as current blocker source |
 
 `plan/marketlens_strategy_research_lab_migration_pack/` は削除しない。これは実装前の詳細 contract と PR 分割の履歴であり、現行仕様の正本ではない。ただし `templates/` 配下は再利用されやすいため、現行 `*_claimed` claim guard 名へ更新して copy-safe に保つ。
 

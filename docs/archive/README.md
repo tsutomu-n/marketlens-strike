@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-15_07:29 JST
+更新日: 2026-06-17_22:02 JST
 -->
 
 # Documentation Archive
@@ -14,9 +14,8 @@ Current docs:
 - `docs/OPERATIONS_RUNBOOK.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
 - `docs/DOCUMENT_AUDIT_2026-05-31.md`
-- `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`
-- `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`
 - `docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md`
+- `docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md`
 
 Archived on 2026-05-25:
 
@@ -81,5 +80,12 @@ Archived on 2026-06-08:
 Archived on 2026-06-09:
 
 - `docs/DOCUMENT_AUDIT_2026-06-08_CODE_TRUTH_REFRESH.md` -> `docs/archive/2026-06-09-ndx-doc-refresh/`
+
+Archived on 2026-06-17:
+
+- `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` -> `docs/archive/2026-06-17-doc-routing/`
+- `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` -> `docs/archive/2026-06-17-doc-routing/`
+- `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` -> `docs/archive/2026-06-17-doc-routing/`
+- `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` -> `docs/archive/2026-06-17-doc-routing/`
 
 Do not treat archived documents as current requirements.

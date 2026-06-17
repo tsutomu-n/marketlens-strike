@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_21:52 JST
+更新日: 2026-06-17_22:02 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -11,7 +11,7 @@
 
 現行 docs は大きく壊れてはいない。current-doc checker は Strategy Review の専用 docs と `docs/NEXT_DIRECTION_CURRENT.md` も対象にしている。確認時は固定の checked count ではなく、`uv run python scripts/check_current_docs.py` を再実行する。
 
-ただし、直近で `strategy-review-build` / `strategy-review-record`、外部入力時の read-only / observation 再確認手順、plain Japanese guide 導線、domain runbook 導線が強化されたため、top-level docs と実務 docs の導線は追加更新済み。2026-06-17_21:52 JST 時点で確認すべき点は次。
+ただし、直近で `strategy-review-build` / `strategy-review-record`、外部入力時の read-only / observation 再確認手順、plain Japanese guide 導線、domain runbook 導線、古い audit の archive 導線が強化されたため、top-level docs と実務 docs の導線は追加更新済み。2026-06-17_22:02 JST 時点で確認すべき点は次。
 
 1. `README.md` と `docs/CURRENT_STATE.md` に `docs/strategy_review/README.md` / `OPERATOR_REVIEW_PACKET_RECIPE.md` への導線を足す。2026-06-17_01:26 JST に実施済み。
 2. `docs/CODE_STATUS.md` は 2026-06-17_06:32 JST に thin index 化し、実装履歴を `docs/MIGRATION_HISTORY.md`、現行 surface を `docs/IMPLEMENTED_SURFACES.md` へ分割済み。
@@ -21,6 +21,7 @@
 6. 外部入力が来た時の再確認導線は `docs/NEXT_DIRECTION_CURRENT.md` の `External Input Restart Checklist` に集約済み。`README.md`、`docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、`docs/strategy_lifecycle/README.md` から辿れる。
 7. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` は専門用語を減らして repo でできること / できないことを読む入口として追加済み。`README.md` の Read First でも上位に置く。
 8. `docs/OPERATIONS_RUNBOOK.md` は root index に縮小済み。長い domain 手順は `docs/runbooks/` に分割し、current-doc checker 対象に追加済み。
+9. 古い root audit / blocker docs は `docs/archive/2026-06-17-doc-routing/` へ移し、current-doc checker 対象から外した。
 
 ## 照合した正本
 
@@ -82,10 +83,10 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/DOCS_LINT_POLICY_2026-05-30.md` | strict 対象一覧に `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`docs/strategy_lifecycle/**`、`docs/strategy_review/**` がない | `scripts/check_current_docs.py` はそれらを current docs として検査している | この監査で修正 |
 | `plan/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` | 後半に `APPROVE_FOR_PAPER` bridge が残る | `plan/ねくすと.md` は `PAPER_OBSERVATION_CANDIDATE` 系の弱い命名へ修正済み | historical contract として読む。次手の正本にしない |
 | `docs/DOCUMENT_AUDIT_2026-05-31.md` | `596 passed` / current docs `78` など当時の snapshot が多い | 現行検証は command 再実行が正本 | historical audit として扱う |
-| `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` | `650 passed` / current docs `81` など当時の snapshot が多い | Backtest docs は 2026-06-15/16 で追加整理済み | archive 候補 |
-| `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` | Layer 2.3/2.4 当時の fixed snapshot が中心 | 現行 NDX docs は Layer 2.8 まで current-doc checker 対象 | archive 候補 |
-| `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` | 2026-06-09 の pass count snapshot がある | current verification は command 再実行 | historical snapshot と明記して維持、または archive |
-| `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | live readiness blocker の古い分解 | 現行は Strategy Lifecycle / NDX paper observation / phase gate が増えている | archive 候補 |
+| `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` | `650 passed` / current docs `81` など当時の snapshot が多い | Backtest docs は 2026-06-15/16 で追加整理済み | archive 済み |
+| `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` | Layer 2.3/2.4 当時の fixed snapshot が中心 | 現行 NDX docs は Layer 2.8 まで current-doc checker 対象 | archive 済み |
+| `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` | 2026-06-09 の pass count snapshot がある | current verification は command 再実行 | archive 済み |
+| `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | live readiness blocker の古い分解 | 現行は Strategy Lifecycle / NDX paper observation / phase gate が増えている | archive 済み |
 
 ## 作り直したほうがいいドキュメント
 
@@ -107,9 +108,10 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 
 | Document | 推奨 | 理由 |
 |---|---|---|
-| `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` | `docs/archive/` へ移動 | historical backtest update audit。現行 backtest は 2026-06-15/16 docs が正本 |
-| `docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` | `docs/archive/` へ移動 | Layer 2.3/2.4 の古い snapshot |
-| `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | `docs/archive/` へ移動 | current blocker 正本ではない |
+| `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` | 移動済み | historical backtest update audit。現行 backtest は 2026-06-15/16 docs が正本 |
+| `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` | 移動済み | Layer 2.3/2.4 の古い snapshot |
+| `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` | 移動済み | NDX/QQQ venue suitability の 2026-06-09 snapshot |
+| `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | 移動済み | current blocker 正本ではない |
 | `plan/0610ここからの計画/02_ndx_layer25_strategy_lab_research_export/` | `plan/archive/` へ移動 | Layer 2.5 は実装済み |
 | `plan/0611ここからの計画/01_ndx_layer26_27_backtest_operator_promotion/` | `plan/archive/` へ移動 | Layer 2.6 / 2.7 は実装済み |
 | `plan/0611ここからの計画/02_strategy_lifecycle_control_plane/` | `plan/archive/` へ移動 | Strategy Lifecycle control plane は実装済み |
@@ -127,7 +129,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 4. [x] `docs/CODE_STATUS.md` を migration history と implemented surfaces に分割する。
 5. [x] plain Japanese capability guide を追加し、`README.md` / `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` から辿れるようにする。
 6. [x] 外部入力時の read-only / observation 再確認を `docs/NEXT_DIRECTION_CURRENT.md` の checklist に集約し、`README.md` / `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` / `docs/OPERATIONS_RUNBOOK.md` / `docs/strategy_lifecycle/README.md` から辿れるようにする。
-7. [ ] 古い audit / plan を archive に寄せる。
+7. [ ] 古い plan を archive に寄せる。古い root audit / blocker docs は 2026-06-17_22:02 JST に archive 済み。
 8. [x] `docs/OPERATIONS_RUNBOOK.md` を domain runbook へ分割する。
 
 ## 残リスク
@@ -135,5 +137,5 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 - この監査は docs 分類が目的で、archive 配下 295 件の本文正誤までは個別検査していない。
 - `data/` 配下の runtime artifact freshness は正本にしていない。fresh checkout で再生成する前提。
 - この監査は 2026-06-17 の複数回の更新を含む current docs audit であり、過去の時刻に実行した command 結果は固定 truth ではない。確認時は `uv run python scripts/check_current_docs.py` と `./scripts/check` を再実行する。
-- 古い audit / plan archive は未完了。これは読みやすさの残作業であり、現行 paper / live permission ではない。
+- 古い plan archive は未完了。これは読みやすさの残作業であり、現行 paper / live permission ではない。古い root audit / blocker docs は `docs/archive/2026-06-17-doc-routing/` へ移動済み。
 - runtime artifact freshness は `data/` の再生成状態に依存する。2026-06-17_21:39 JST の read-only 再確認では、Trade[XYZ] public user address、Bitget demo credentials、新しい trading day evidence が未入力のため、live / paper 実行許可には進んでいない。

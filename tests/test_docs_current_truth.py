@@ -44,10 +44,17 @@ def test_live_evidence_reports_directory_keeps_only_readme_tracked_docs() -> Non
 
 def test_current_docs_checker_policy_is_current_scope_only() -> None:
     script = _read("scripts/check_current_docs.py")
+    readme = _read("README.md")
 
     assert '"AGENTS.md"' in script
     assert '"docs/DOCUMENT_AUDIT_2026-05-31.md"' in script
-    assert '"docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"' in script
+    assert '"docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"' not in script
+    assert '"docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md"' not in script
+    assert '"docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md"' not in script
+    assert (
+        "docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"
+        in readme
+    )
     assert '"docs/DOCUMENT_AUDIT_2026-06-06_CODE_TRUTH_REFRESH.md"' not in script
     assert '"docs/algo/ALGO_STRATEGY_SYSTEM_GUIDE.md"' in script
     assert '"docs/algo/STRATEGY_PARTS_CATALOG.md"' in script

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_07:54 JST
-更新日: 2026-06-05_18:12 JST
+更新日: 2026-06-17_22:02 JST
 -->
 
 # Documentation Audit 2026-05-31
@@ -13,7 +13,7 @@
 
 現行 docs は、Strategy Authoring 完了後のコードに対して大筋では追従しています。ただし、2026-05-30 audit 以降に Strategy Authoring coverage が完了したため、検証値と audit 正本に古さが残っていました。
 
-追記: Trade[XYZ] pure backtest v0.1 main merge 後の追加監査は `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を読む。この文書の `596 passed` は Strategy Authoring 完了時点の snapshot であり、`650 passed` は 2026-05-31 backtest update 時点の snapshot である。どちらも現在の full gate として引用しない。
+追記: Trade[XYZ] pure backtest v0.1 main merge 後の追加監査は `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` へ archive 済み。この文書の `596 passed` は Strategy Authoring 完了時点の snapshot であり、`650 passed` は 2026-05-31 backtest update 時点の snapshot である。どちらも現在の full gate として引用しない。
 
 Strategy Authoring 完了時点の audit snapshot:
 
@@ -69,7 +69,7 @@ tests/test_strategy_lab_schemas.py
 | Path | 古い内容 | 現在の扱い |
 |---|---|---|
 | `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md` | Strategy Authoring completion 前の audit。`446 passed` / 2026-05-30 前提の表現が残る | archived superseded audit。現行入口は本ファイル |
-| `README.md` | `565 passed`, current docs `76` 件 | Strategy Authoring 完了時点では `596 passed` / `78` 件へ修正済み。Trade[XYZ] pure backtest v0.1 反映後は `docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を読む |
+| `README.md` | `565 passed`, current docs `76` 件 | Strategy Authoring 完了時点では `596 passed` / `78` 件へ修正済み。Trade[XYZ] pure backtest v0.1 反映後の履歴監査は `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` |
 | `docs/CURRENT_STATE.md` | `565 passed`, current docs `76` 件、authoring command list に `strategy-author-train-model` が無い | 現行では修正済み |
 | `docs/CODE_STATUS.md` | `565 passed`, current docs `76` 件 | Strategy Authoring 完了時点では修正済み。最新値は backtest update audit を読む |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | `565 passed`, current docs `76` 件 | Strategy Authoring 完了時点では修正済み。最新値は backtest update audit を読む |
@@ -77,7 +77,7 @@ tests/test_strategy_lab_schemas.py
 | `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | `181 passed` / schema tests `2 passed` / full gate `565 passed` の中間 snapshot | historical progress doc として有効。現行では最終 focused gate `214 passed` と full gate `596 passed` へ更新済み |
 | `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` | 全体 docs audit の参照先が `docs/DOCUMENT_AUDIT_2026-05-30.md` のまま | 現行では current audit `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
 | `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | `checked 77 current docs` は 05-31 audit 追加前の値 | 現行では `checked 78 current docs` も併記 |
-| `README.md`, `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md`, `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | `LIVE_READINESS_BLOCKER=6` が最新 `phase-gate-review` の `5` とズレていた | 現行では `LIVE_READINESS_BLOCKER=5` へ修正済み |
+| `README.md`, `docs/CURRENT_STATE.md`, `docs/CODE_STATUS.md`, `docs/OPERATIONS_RUNBOOK.md`, archived `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | `LIVE_READINESS_BLOCKER=6` が最新 `phase-gate-review` の `5` とズレていた | 2026-05-31 時点では `LIVE_READINESS_BLOCKER=5` へ修正済み |
 | `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | `294 passed` と 2026-05-28 runtime snapshot | focused historical audit。Trade[XYZ] read-only 証跡として読む。current full gate として引用しない |
 | `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | What To Read が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | 現行では `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
 | `docs/archive/2026-06-05-doc-cleanup/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | `294 passed` を含む 2026-05-28 failure-mode snapshot。read-first が `docs/DOCUMENT_AUDIT_2026-05-30.md` を指していた | design reference。current verification 値として引用しない。read-first 参照は現行では `docs/DOCUMENT_AUDIT_2026-05-31.md` へ修正済み |
