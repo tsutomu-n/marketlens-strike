@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-17_23:53 JST
+更新日: 2026-06-18_00:01 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -42,7 +42,7 @@ This implementation handoff now has corresponding code, schema, CLI help,
 focused tests, and docs. The Strategy Review Builder turns existing Strategy
 Authoring / backtest artifacts into a human review markdown file and a
 machine-readable manifest. The follow-up Operator Strategy Review Artifact in
-`plan/ねくすと.md` is also implemented as `strategy-review-record` /
+`plan/archive/2026-06-17-plan-routing/ねくすと.md` is also implemented as `strategy-review-record` /
 `operator_review.yaml`. Treat this group as historical implementation context,
 not as the current unimplemented next action. It does not create a Strategy
 Case registry, UI, paper gate, live readiness proof, wallet/signing path, or
@@ -51,7 +51,7 @@ exchange-write path.
 - [plan/archive/2026-06-17-plan-routing/0616ここからの計画/01_strategy_review_builder/README.md](archive/2026-06-17-plan-routing/0616ここからの計画/01_strategy_review_builder/README.md)
 - [plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md](archive/2026-06-17-plan-routing/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md)
 - [plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md](archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md)
-- [ねくすと.md](ねくすと.md)
+- [plan/archive/2026-06-17-plan-routing/ねくすと.md](archive/2026-06-17-plan-routing/ねくすと.md)
 
 ## Current Direction
 

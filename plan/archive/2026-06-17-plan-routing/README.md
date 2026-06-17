@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:13 JST
-更新日: 2026-06-17_23:53 JST
+更新日: 2026-06-18_00:01 JST
 -->
 
 # 2026-06-17 Plan Routing Archive
@@ -28,9 +28,10 @@
 - `0616ここからの計画/01_strategy_review_builder/`: Strategy Review Builder の実装済み plan。
 - `STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md`: Strategy Review contract の historical record。
 - `STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md`: Strategy Review Builder 次期実装の historical record。
+- `ねくすと.md`: Strategy Review operator artifact の historical implementation record。
 
 ## Boundary
 
 - `plan/0609ここからの計画/03_venue_read_only_capability_probe/` は未実装 plan として root `plan/` 側に残す。
-- `plan/ねくすと.md` は Strategy Review operator artifact の historical implementation context として root `plan/` 側に残す。
+- `plan/archive/2026-06-17-plan-routing/ねくすと.md` は Strategy Review operator artifact の historical implementation context として読む。
 - archive 内の古い pass count、artifact snapshot、phase gate value は現在値ではない。確認時は `./scripts/check` と対象 CLI を再実行する。
