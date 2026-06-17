@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_20:09 JST
-更新日: 2026-06-17_09:18 JST
+更新日: 2026-06-17_16:02 JST
 -->
 
 # Strategy Review Dogfood Review 2026-06-16
@@ -13,7 +13,7 @@
 
 copy-paste 用の現行 recipe は [OPERATOR_REVIEW_PACKET_RECIPE.md](OPERATOR_REVIEW_PACKET_RECIPE.md) を見る。
 
-2026-06-17_09:18 JST 現在、Strategy Review の後続 artifact として `strategy-review-record` / `operator_review.yaml` も実装済み。これはこの dogfood 実施時点の未実装項目だったが、現行手順では packet build 後に人間判断を hash 付きで保存・再検証できる。
+2026-06-17_16:02 JST 現在、Strategy Review の後続 artifact として `strategy-review-record` / `operator_review.yaml` も実装済み。これはこの dogfood 実施時点の未実装項目だったが、現行手順では packet build 後に人間判断を hash 付きで保存・再検証できる。
 
 ## 実行結果
 
@@ -23,6 +23,8 @@ copy-paste 用の現行 recipe は [OPERATOR_REVIEW_PACKET_RECIPE.md](OPERATOR_R
 | missing lenient | missing pack / validation path | 0 | `INCOMPLETE_ARTIFACTS` | pass |
 | missing strict | same missing paths + `--strict` | 2 | `INCOMPLETE_ARTIFACTS` | pass |
 | boundary fixture | `.tmp/strategy_review_dogfood/` pack with `wallet_used=true` | 2 | `BLOCKED_BOUNDARY_VIOLATION` | pass |
+| operator record | `dogfood-operator-current` + `strategy-review-record --decision REVIEWED_FOR_CONTEXT` | 0 | `READY_FOR_HUMAN_REVIEW` | pass |
+| operator validate | `dogfood-operator-current` + `strategy-review-record --validate-existing` | 0 | `READY_FOR_HUMAN_REVIEW` | pass |
 
 生成先は `data/strategy_reviews`。`data/` は ignored runtime artifact なので commit 対象にしない。
 
@@ -36,6 +38,26 @@ copy-paste 用の現行 recipe は [OPERATOR_REVIEW_PACKET_RECIPE.md](OPERATOR_R
 - `data/strategy_reviews/dogfood-missing-strict-20260616/review_manifest.json`
 - `data/strategy_reviews/dogfood-boundary-20260616/review.md`
 - `data/strategy_reviews/dogfood-boundary-20260616/review_manifest.json`
+- `data/strategy_reviews/dogfood-operator-current/review.md`
+- `data/strategy_reviews/dogfood-operator-current/review_manifest.json`
+- `data/strategy_reviews/dogfood-operator-current/operator_review.yaml`
+
+## Operator Review Dogfood
+
+`dogfood-operator-current` は、現行の `strategy-review-build` と `strategy-review-record` を通す stable review id として使った。入力 artifact は既存の `data/research/backtest_pack/strategy_backtest_pack.json`、`data/research/backtest_pack/strategy_backtest_pack_validation.json`、`data/research/strategy_lifecycle/strategy_lifecycle_review.json` を使い、この作業では再生成していない。
+
+確認した値:
+
+- `review_status=READY_FOR_HUMAN_REVIEW`
+- `source_safety.status=PASS`
+- `pack_validation_pass_is_readiness_proof=false`
+- `operator_review.yaml` の `decision=REVIEWED_FOR_CONTEXT`
+- `operator_review.yaml` の `live_allowed=false`
+- `operator_review.yaml` の `paper_execution_allowed=false`
+- `Lifecycle Summary` は `decision=CONTINUE_PAPER_OBSERVATION` / `decision_reasons=PAPER_OBSERVATION_INSUFFICIENT`
+- `strategy-review-record --validate-existing` は `status=pass`
+
+`operator_review.yaml` 内には `review.md` と `review_manifest.json` の hash が保存される。この文書は tracked doc なので、runtime hash は固定して写さない。hash の一致確認は `strategy-review-record --validate-existing` で行う。
 
 ## 合格条件チェック
 
@@ -45,6 +67,8 @@ copy-paste 用の現行 recipe は [OPERATOR_REVIEW_PACKET_RECIPE.md](OPERATOR_R
 - boundary fixture は `BLOCKED_BOUNDARY_VIOLATION`。
 - `pack_validation_pass_is_readiness_proof=false` は manifest と markdown の両方で読める。
 - complete markdown は先頭から、戦略定義、入力 artifact、pack 要約、lifecycle decision / next action、境界、未解決点の順で読める。
+- operator review dogfood は `REVIEWED_FOR_CONTEXT` として保存でき、`--validate-existing` で現在の packet と一致する。
+- `live_allowed=false` / `paper_execution_allowed=false` は operator review でも固定され、lifecycle decision は paper / live 許可として読まない。
 
 ## 3分レビューで次に見る点
 
