@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_01:22 JST
+更新日: 2026-06-18_01:29 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -45,6 +45,7 @@
 30. `docs/NEXT_DIRECTION_CURRENT.md` と `docs/runbooks/PAPER_EXECUTION_RUNBOOK.md` は 2026-06-18_01:06 JST に、paper observation の不足量や PR12 artifact の固定 runtime 値を tracked docs へ写さず、再実行 command と読む field に寄せた。`scripts/check_current_docs.py` は同種の古い marker の再混入を current-status docs で失敗させる。
 31. `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md`、`docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md`、`docs/archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md` は、Trade[XYZ] quote coverage 収集を主目的にしていた時点の historical operational record として残す。2026-06-18_01:12 JST に current-doc checker 対象からは外した。
 32. `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` は、BP0 bridge audit 時点の fixed artifact values を含む historical evidence map として残す。2026-06-18_01:22 JST に current-doc checker 対象からは外し、現行の paper observation 状態は `docs/strategy_lifecycle/README.md` と `uv run sis strategy-paper-observation-status` で確認する導線に寄せた。
+33. `docs/archive/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md` は、2026-06-15 時点の backtest docs 分類 audit として残す。fixed artifact values と当時の current-doc 件数を含むため、2026-06-18_01:29 JST に current-doc checker 対象から外した。
 
 ## 照合した正本
 
@@ -119,6 +120,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md` | 2026-06-04 の collector 判断記録 | 現行 next action ではない | archive 済み |
 | `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md` | PID 2484910 固有の自然終了条件 | 汎用の長時間 script 手順は `docs/LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md` | archive 済み |
 | `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` | BP0 bridge audit 時点の fixed artifact values を含む | 現行 paper observation 状態は Strategy Lifecycle status command で再確認する | archive 済み |
+| `docs/archive/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md` | 2026-06-15 時点の artifact values と current-doc 件数を含む | 現行 backtest docs は `docs/backtest/README.md` から読む | archive 済み |
 
 ## 作り直したほうがいいドキュメント
 
@@ -151,6 +153,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md` | 移動済み | 2026-06-04 時点のユーザー判断記録 |
 | `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md` | 移動済み | PID 2484910 固有の自然終了条件記録 |
 | `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` | 移動済み | BP0 bridge audit 時点の fixed artifact values を含む historical evidence map |
+| `docs/archive/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md` | 移動済み | 2026-06-15 時点の backtest docs 分類 audit。fixed artifact values と current-doc 件数を含む |
 | `plan/archive/2026-06-17-plan-routing/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/` | 移動済み | NDX / QQQ venue suitability gate は実装済み |
 | `plan/archive/2026-06-17-plan-routing/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` | 移動済み | Bitget / Hyperliquid capability design gate は実装済み |
 | `plan/archive/2026-06-17-plan-routing/0610ここからの計画/01_grok_architecture_adoption_review/` | 移動済み | external suggestion review として有用だが current implementation plan ではない |
@@ -191,6 +194,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 21. [x] current status docs に古い PR12 execution / readiness artifact snapshot の固定値が戻らないよう、`scripts/check_current_docs.py` に semantic drift marker を追加する。
 22. [x] Trade[XYZ] quote coverage 待ち時点の historical operational record を archive へ移し、current-doc checker 対象から外す。
 23. [x] BP0 bridge audit 時点の fixed artifact values を含む backtest evidence map を archive へ移し、current-doc checker 対象から外す。
+24. [x] 2026-06-15 時点の backtest docs 分類 audit を archive へ移し、current-doc checker 対象から外す。
 
 ## 残リスク
 

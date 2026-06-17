@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-18_01:22 JST
+更新日: 2026-06-18_01:29 JST
 -->
 
 # Backtest Docs
@@ -67,9 +67,9 @@ Trade[XYZ] 専用 Python API surface は
 [BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md](BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md)
 を見る。
 
-コード正本に照合した docs 分類 audit は
-[BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md](BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md)
-を見る。
+2026-06-15 時点の backtest docs 分類 audit は、当時の artifact 値と current-doc 件数を含む履歴資料として
+[../archive/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md](../archive/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md)
+に保存している。現行の backtest 入口はこの README と上の Current Docs を読む。
 
 ## Archive
 

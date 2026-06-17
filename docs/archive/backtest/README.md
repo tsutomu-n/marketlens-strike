@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-18_01:22 JST
+更新日: 2026-06-18_01:29 JST
 -->
 
 # Backtest Archive
@@ -28,4 +28,5 @@ Archived on 2026-06-16:
 
 Archived on 2026-06-18:
 
+- `BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md`
 - `BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
