@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-17_20:44 JST
+更新日: 2026-06-17_20:57 JST
 -->
 
 # Next Direction Current
@@ -47,6 +47,12 @@
 - `needs_more_normal_paper_observation` の間は、通常thresholdの observation を続ける。
 - `--smoke` の pass を normal pass として扱わない。
 - lifecycle の `CONTINUE_PAPER_OBSERVATION` を live readiness と読まない。
+
+実務上の注意:
+
+- ここでいう「継続」は、新しい通常観察の証拠を積むことです。同じ trading day の artifact を rerun しても `10 trading days` の代替証拠にはならない。
+- 現状は最新通常 session の `fills=20/20` は満たしているが、`trading_days=1/10` なので、必要なのは同日 fill の水増しではなく、別 trading day を含む通常観察です。
+- 既存 session に追記する場合は `strategy-paper-observation-append` を使う。新規 session を切る場合も、`latest_normal_requirement_gaps` が進んだかを `strategy-paper-observation-status` で確認する。
 
 実行候補:
 
