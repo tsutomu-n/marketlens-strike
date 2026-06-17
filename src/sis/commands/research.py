@@ -1427,6 +1427,16 @@ def register_research_commands(
 
     @app.command("build-cost-matrix")
     def build_cost_matrix() -> None:
+        """Build venue cost matrix and operator reports from normalized quotes.
+
+        Reads data/normalized/quotes.parquet and writes
+        data/research/venue_cost_matrix.csv,
+        data/reports/venue_cost_matrix.md, and
+        data/ops/venue_cost_matrix_summary.json. Falls back to the initial
+        metadata matrix when no quote aggregate can be built.
+
+        Submits no live orders.
+        """
         settings = get_settings()
         out = settings.data_dir / "research/venue_cost_matrix.csv"
         build_cost_matrix_from_quotes(

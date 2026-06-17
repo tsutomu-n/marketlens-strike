@@ -217,6 +217,20 @@ def test_check_research_quality_help_describes_io_and_boundary() -> None:
     assert "Submits no live orders" in stdout
 
 
+def test_build_cost_matrix_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["build-cost-matrix", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "venue cost matrix" in stdout
+    assert "data/normalized/quotes.parquet" in stdout
+    assert "data/research/venue_cost_matrix.csv" in stdout
+    assert "data/reports/venue_cost_matrix.md" in stdout
+    assert "data/ops/venue_cost_matrix_summary.json" in stdout
+    assert "initial" in stdout
+    assert "metadata matrix" in stdout
+    assert "Submits no live orders" in stdout
+
+
 def test_build_signals_help_describes_io_and_boundary() -> None:
     result = invoke_cli(["build-signals", "--help"])
     stdout = normalized_stdout(result)
