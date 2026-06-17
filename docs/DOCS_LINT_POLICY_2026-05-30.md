@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:55 JST
-更新日: 2026-06-17_06:32 JST
+更新日: 2026-06-17_21:52 JST
 -->
 
 # Docs Lint Policy 2026-05-30
@@ -23,6 +23,8 @@ docs/CURRENT_STATE.md
 docs/CODE_STATUS.md
 docs/IMPLEMENTED_SURFACES.md
 docs/MIGRATION_HISTORY.md
+docs/NEXT_DIRECTION_CURRENT.md
+docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md
 docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md
 docs/DOCUMENT_AUDIT_2026-05-31.md
 docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md
@@ -55,6 +57,7 @@ docs/research/ndx/**
 docs/strategy_lifecycle/**
 docs/strategy_review/**
 docs/strategy_research_lab/**
+docs/runbooks/**
 docs/live_evidence_reports/README.md
 docs/archive/README.md
 docs/trade_xyz_bot_beginner_guide.html

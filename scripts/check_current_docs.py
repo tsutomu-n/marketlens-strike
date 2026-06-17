@@ -54,6 +54,7 @@ CURRENT_DOC_DIRS = (
     "docs/strategy_lifecycle",
     "docs/strategy_review",
     "docs/strategy_research_lab",
+    "docs/runbooks",
     "docs/venues",
     "docs/algo/strategy_factory",
     "docs/algo/obsidian_note_rewrites_2026-05-29",

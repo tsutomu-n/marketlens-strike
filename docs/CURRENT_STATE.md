@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-17_21:18 JST
+更新日: 2026-06-17_21:52 JST
 -->
 
 # Current State
@@ -215,9 +215,10 @@ PR-08 専用確認:
 19. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
 20. `docs/venues/read_only_capability_probe.md`
 21. `docs/OPERATIONS_RUNBOOK.md`
-22. `docs/ARCHITECTURE_AND_PHASES.md`
-23. `docs/trade_xyz_bot_beginner_guide.html`
-24. `plan/README.md`
+22. `docs/runbooks/README.md`
+23. `docs/ARCHITECTURE_AND_PHASES.md`
+24. `docs/trade_xyz_bot_beginner_guide.html`
+25. `plan/README.md`
 
 historical focused audit:
 

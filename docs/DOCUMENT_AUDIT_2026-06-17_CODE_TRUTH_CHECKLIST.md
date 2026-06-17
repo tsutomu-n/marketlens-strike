@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_21:40 JST
+更新日: 2026-06-17_21:52 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -11,7 +11,7 @@
 
 現行 docs は大きく壊れてはいない。current-doc checker は Strategy Review の専用 docs と `docs/NEXT_DIRECTION_CURRENT.md` も対象にしている。確認時は固定の checked count ではなく、`uv run python scripts/check_current_docs.py` を再実行する。
 
-ただし、直近で `strategy-review-build` / `strategy-review-record`、外部入力時の read-only / observation 再確認手順、plain Japanese guide 導線が強化されたため、top-level docs と実務 docs の導線は追加更新済み。2026-06-17_21:40 JST 時点で確認すべき点は次。
+ただし、直近で `strategy-review-build` / `strategy-review-record`、外部入力時の read-only / observation 再確認手順、plain Japanese guide 導線、domain runbook 導線が強化されたため、top-level docs と実務 docs の導線は追加更新済み。2026-06-17_21:52 JST 時点で確認すべき点は次。
 
 1. `README.md` と `docs/CURRENT_STATE.md` に `docs/strategy_review/README.md` / `OPERATOR_REVIEW_PACKET_RECIPE.md` への導線を足す。2026-06-17_01:26 JST に実施済み。
 2. `docs/CODE_STATUS.md` は 2026-06-17_06:32 JST に thin index 化し、実装履歴を `docs/MIGRATION_HISTORY.md`、現行 surface を `docs/IMPLEMENTED_SURFACES.md` へ分割済み。
@@ -20,6 +20,7 @@
 5. `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict 対象一覧が、現行 checker の `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`docs/strategy_lifecycle/**`、`docs/strategy_review/**` に追いついていなかったため、この監査で更新する。
 6. 外部入力が来た時の再確認導線は `docs/NEXT_DIRECTION_CURRENT.md` の `External Input Restart Checklist` に集約済み。`README.md`、`docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、`docs/strategy_lifecycle/README.md` から辿れる。
 7. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` は専門用語を減らして repo でできること / できないことを読む入口として追加済み。`README.md` の Read First でも上位に置く。
+8. `docs/OPERATIONS_RUNBOOK.md` は root index に縮小済み。長い domain 手順は `docs/runbooks/` に分割し、current-doc checker 対象に追加済み。
 
 ## 照合した正本
 
@@ -94,7 +95,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 |---|---|---|
 | `docs/CODE_STATUS.md` | migration PR、post-PR status、implemented surfaces、known gaps、verification snapshots が混在していた | 2026-06-17_06:32 JST に `IMPLEMENTED_SURFACES.md` と `MIGRATION_HISTORY.md` に分離済み |
 | `docs/CURRENT_STATE.md` | current state、capability catalog、runtime snapshots、known gaps が長くなりすぎている | 入口 index に縮小し、詳細は domain docs へリンク |
-| `docs/OPERATIONS_RUNBOOK.md` | Trade[XYZ]、NDX、Strategy Lifecycle、paper operations、long-running script が同居 | root operator index + domain runbook へ分割 |
+| `docs/OPERATIONS_RUNBOOK.md` | Trade[XYZ]、NDX、Strategy Lifecycle、paper operations、long-running script が同居 | 2026-06-17_21:52 JST に root index + `docs/runbooks/**` へ分割済み |
 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | capability catalog と CLI catalog が一文書に大きく積まれている | capability overview と generated/checked CLI catalog を分離 |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | capability 列挙が長大で、更新漏れリスクが高い | short guide + schema-driven matrix に分離 |
 | `docs/trade_xyz_bot_beginner_guide.html` | HTML が read-first にあるが、Markdown 正本との同期が追いにくい | Markdown 正本を作り、HTML は companion か生成物にする |
@@ -127,12 +128,12 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 5. [x] plain Japanese capability guide を追加し、`README.md` / `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` から辿れるようにする。
 6. [x] 外部入力時の read-only / observation 再確認を `docs/NEXT_DIRECTION_CURRENT.md` の checklist に集約し、`README.md` / `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` / `docs/OPERATIONS_RUNBOOK.md` / `docs/strategy_lifecycle/README.md` から辿れるようにする。
 7. [ ] 古い audit / plan を archive に寄せる。
-8. [ ] `docs/OPERATIONS_RUNBOOK.md` を domain runbook へ分割する。
+8. [x] `docs/OPERATIONS_RUNBOOK.md` を domain runbook へ分割する。
 
 ## 残リスク
 
 - この監査は docs 分類が目的で、archive 配下 295 件の本文正誤までは個別検査していない。
 - `data/` 配下の runtime artifact freshness は正本にしていない。fresh checkout で再生成する前提。
 - この監査は 2026-06-17 の複数回の更新を含む current docs audit であり、過去の時刻に実行した command 結果は固定 truth ではない。確認時は `uv run python scripts/check_current_docs.py` と `./scripts/check` を再実行する。
-- 古い audit / plan archive と `docs/OPERATIONS_RUNBOOK.md` の domain runbook 分割は未完了。これは読みやすさの残作業であり、現行 paper / live permission ではない。
+- 古い audit / plan archive は未完了。これは読みやすさの残作業であり、現行 paper / live permission ではない。
 - runtime artifact freshness は `data/` の再生成状態に依存する。2026-06-17_21:39 JST の read-only 再確認では、Trade[XYZ] public user address、Bitget demo credentials、新しい trading day evidence が未入力のため、live / paper 実行許可には進んでいない。

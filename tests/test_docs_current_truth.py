@@ -8,13 +8,17 @@ def _read(path: str) -> str:
 
 
 def test_operations_runbook_does_not_claim_trade_xyz_log_quotes_cli() -> None:
-    text = _read("docs/OPERATIONS_RUNBOOK.md")
+    root = _read("docs/OPERATIONS_RUNBOOK.md")
+    trade_xyz = _read("docs/runbooks/TRADE_XYZ_RUNBOOK.md")
+    paper_execution = _read("docs/runbooks/PAPER_EXECUTION_RUNBOOK.md")
+    current_runbooks = trade_xyz + paper_execution
 
-    assert "uv run sis probe trade-xyz" in text
-    assert "uv run sis log-quotes --venue trade_xyz --replace" not in text
-    assert "uv run sis collect-trade-xyz-quotes" in text
-    assert "uv run sis log-quotes --venue gtrade --replace" not in text
-    assert "public CLI command" in text
+    assert "runbooks/TRADE_XYZ_RUNBOOK.md" in root
+    assert "uv run sis probe trade-xyz" in trade_xyz
+    assert "uv run sis log-quotes --venue trade_xyz --replace" not in current_runbooks
+    assert "uv run sis collect-trade-xyz-quotes" in current_runbooks
+    assert "uv run sis log-quotes --venue gtrade --replace" not in current_runbooks
+    assert "public CLI command" in paper_execution
 
 
 def test_live_evidence_reports_are_archived_and_ignored() -> None:
@@ -53,6 +57,7 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert '"docs/algo/RESEARCH_VALIDATION_PLAYBOOK.md"' in script
     assert '"docs/algo/SOURCE_NOTES_INDEX.md"' in script
     assert '"docs/strategy_research_lab"' in script
+    assert '"docs/runbooks"' in script
     assert '"docs/research/ndx"' in script
     assert '"docs/algo/strategy_factory"' in script
     assert '"docs/algo/obsidian_note_rewrites_2026-05-29"' in script

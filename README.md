@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_21:46 JST
+更新日: 2026-06-17_21:52 JST
 -->
 
 # marketlens-strike
@@ -37,8 +37,9 @@ in a fresh checkout until commands are run.
 19. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
 20. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
 21. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-22. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-23. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+22. [docs/runbooks/README.md](docs/runbooks/README.md)
+23. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+24. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
 
 If Trade[XYZ] public user address, Bitget demo credentials, or new normal
 paper-observation evidence arrives, use the `External Input Restart Checklist`
