@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-17_20:44 JST
+更新日: 2026-06-17_21:18 JST
 -->
 
 # Current State
@@ -11,7 +11,8 @@
 
 - `plan/archive/PR-00_to_PR-08_implementation_plan.md` の PR-00 から PR-08 まで、コードとテストの実装は完了している。
 - 現在の開発主軸は backtest-first / venue-neutral。Trade[XYZ] は実装済みの主要 venue で、将来の注文口候補として残すが、当面の注文口前提にはしない。
-- ここからの現実的な方向は `docs/NEXT_DIRECTION_CURRENT.md` に分ける。current status はこの文書、実装済み surface は `docs/IMPLEMENTED_SURFACES.md`、実務的な次方向は `docs/NEXT_DIRECTION_CURRENT.md` を読む。
+- ここからの現実的な方向は `docs/NEXT_DIRECTION_CURRENT.md` に分ける。current status はこの文書、実装済み surface は `docs/IMPLEMENTED_SURFACES.md`、実務的な次方向は `docs/NEXT_DIRECTION_CURRENT.md` を読む。専門用語を減らした説明は `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` を読む。
+- `docs/NEXT_DIRECTION_CURRENT.md` には `External Input Restart Checklist` があり、Trade[XYZ] public user address、Bitget demo credentials、新しい trading day の paper observation evidence が来た時に何を read-only / observation として再確認するかを分けている。これは paper / live 許可ではない。
 - `VenueId` は `trade_xyz` と `bitget_demo` を許可する。Strategy Lab の signal / candidate / paper intent schema も同じ enum に揃っている。
 - `VENUE_SUITABILITY_CATALOG` は `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp` を持つが、`bitget_futures` と `hyperliquid_perp` は catalog-only で、現行 `VenueId` や Strategy Lab artifact schema には入らない。
 - `src/sis/venues/capabilities.py` は `bitget_futures` と `hyperliquid_perp` を known but schema-disabled / paper-disabled / network-disabled / live-disabled として固定する。`bitget_demo` は execution-venue schema では許可されるが、`evaluation_plan.mls.v1` の `target_venue` としてはまだ disabled。
@@ -115,6 +116,7 @@
 - `README.md` は `READ_ONLY_GO` を read-only / paper gate として説明し、production live trading ready とは扱わない。
 - `pyproject.toml` の project description は `Trade[XYZ] research, Strategy Lab authoring, paper operations, and read-only safety gates`。
 - `AGENTS.md` は Python/uv-first を明記し、CI の Bun lockfile integrity check と `package.json` legacy-note-only 境界を記録している。
+- `.github/workflows/ci.yml` は `actions/checkout@v6.0.3`、`astral-sh/setup-uv@v8.2.0`、`oven-sh/setup-bun@v2` を使う。現行確認ではいずれも GitHub Actions の Node24 runtime 対応 action として扱う。
 - `AGENTS.md` の Python file size rule は、new or heavily edited Python files を 800 lines or fewer に保つ運用。Strategy Authoring 配下は `tests/strategy_authoring/test_module_boundaries.py` で 800 lines or fewer を強制する。既存 oversized modules は拡張前に分割を検討する。
 - `.gitignore` の ignore 動作は変えず、tracked `.tmp/live_evidence_*` helper、legacy archive zip、generated live-evidence reports の意図をコメント化している。
 - `.env.example` は `GTRADE_*` / `OSTIUM_*` live credential keys を持たない。Trade[XYZ] live write credentials も intentionally not defined で、manual micro-live preflight が文書化・承認されるまで local-only secrets として扱う。
@@ -166,6 +168,12 @@ uv run python scripts/check_current_docs.py
 - latest phase gate remediation order is `none` when only live-readiness blockers remain. Do not repeatedly run `refresh-operations-artifacts` as a P2 remediation loop for those blockers; it can refresh local reports, but it does not create missing execution evidence.
 - latest available Trade[XYZ] data readiness artifact: `data/manifests/trade_xyz_data_readiness_manifest.json` has `decision=NOT_READY`, `backtest_data_ready=false`, `fail_count=1`, `known_gap_count=2`.
 
+2026-06-17_21:18 JST docs / CI routing snapshot:
+
+- `docs/NEXT_DIRECTION_CURRENT.md` includes the current external-input restart checklist for Trade[XYZ] read-only execution state, Bitget demo read-only smoke, and normal paper observation status recheck.
+- `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` points non-specialist readers to that checklist when public user address, demo credentials, or new paper-observation evidence arrives.
+- latest GitHub Actions runs on `main` are successful after the CI action runtime update. The active workflow uses `actions/checkout@v6.0.3`, `astral-sh/setup-uv@v8.2.0`, and `oven-sh/setup-bun@v2`.
+
 PR-08 専用確認:
 
 - `tests/test_trade_xyz_live_order_policy.py`
@@ -187,28 +195,29 @@ PR-08 専用確認:
 ## Recommended Read Order
 
 1. `docs/CURRENT_STATE.md`
-2. `docs/CODE_STATUS.md`
-3. `docs/IMPLEMENTED_SURFACES.md`
-4. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`
-5. `docs/NEXT_DIRECTION_CURRENT.md`
-6. `docs/research/ndx/README.md`
-7. `docs/research/ndx/09_LLM_REVIEW_GATE.md`
-8. `docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md`
-9. `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`
-10. `docs/backtest/README.md`
-11. `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`
-12. `docs/strategy_review/README.md`
-13. `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md`
-14. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
-15. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-16. `docs/strategy_research_lab/README.md`
-17. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
-18. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
-19. `docs/venues/read_only_capability_probe.md`
-20. `docs/OPERATIONS_RUNBOOK.md`
-21. `docs/ARCHITECTURE_AND_PHASES.md`
-22. `docs/trade_xyz_bot_beginner_guide.html`
-23. `plan/README.md`
+2. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`
+3. `docs/CODE_STATUS.md`
+4. `docs/IMPLEMENTED_SURFACES.md`
+5. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`
+6. `docs/NEXT_DIRECTION_CURRENT.md`
+7. `docs/research/ndx/README.md`
+8. `docs/research/ndx/09_LLM_REVIEW_GATE.md`
+9. `docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md`
+10. `docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md`
+11. `docs/backtest/README.md`
+12. `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`
+13. `docs/strategy_review/README.md`
+14. `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md`
+15. `docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md`
+16. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+17. `docs/strategy_research_lab/README.md`
+18. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+19. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+20. `docs/venues/read_only_capability_probe.md`
+21. `docs/OPERATIONS_RUNBOOK.md`
+22. `docs/ARCHITECTURE_AND_PHASES.md`
+23. `docs/trade_xyz_bot_beginner_guide.html`
+24. `plan/README.md`
 
 historical focused audit:
 
