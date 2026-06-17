@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_07:20 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-18_01:34 JST
 -->
 
 # Strategy Archetype Coverage Matrix
@@ -78,7 +78,7 @@
 
 ## Completion Evidence
 
-Final completion evidence for the paper-only Strategy Authoring scope is recorded in `14_COMPLETION_EVIDENCE_LEDGER.md`.
+Completion evidence for the paper-only Strategy Authoring scope is archived at `docs/archive/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md`. It is a completion-time snapshot; current verification should rerun the commands in current docs.
 
 Final audit result:
 

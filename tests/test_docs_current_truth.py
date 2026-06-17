@@ -124,6 +124,16 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
         "docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md"
         in legacy_root_paths
     )
+    assert (
+        "docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md"
+        not in current_doc_files
+    )
+    assert (
+        "docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md"
+        in legacy_root_paths
+    )
+    assert "docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md" not in current_doc_files
+    assert "docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md" in legacy_root_paths
     assert "docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md" not in current_doc_files
     assert "docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md" in legacy_root_paths
     assert "docs/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md" not in current_doc_files

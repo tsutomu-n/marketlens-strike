@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_14:13 JST
-更新日: 2026-06-17_23:01 JST
+更新日: 2026-06-18_01:34 JST
 -->
 
 # Current Capabilities Details
@@ -13,7 +13,7 @@
 
 ユーザーが YAML で作れる売買ロジック、buy / sell signal、hold、損切、portfolio / execution 制約、未実装領域の整理は [11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md](11_STRATEGY_AUTHORING_CURRENT_SUMMARY.md) で確認できます。
 
-今回までに追加・整理した Strategy Authoring 機能、execution quality gate、paper-only 境界、検証済み状態は [12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md](12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md) で確認できます。
+2026-05-30 時点の Strategy Authoring progress summary は、固定検証 snapshot を含む履歴資料として [../archive/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md](../archive/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md) に保存しています。
 
 生成しうる strategy archetype ごとの対応状況、DSL surface、証拠 test、paper-only 境界は [13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md](13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md) で確認できます。
 

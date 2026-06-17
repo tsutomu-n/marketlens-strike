@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-18_01:12 JST
+更新日: 2026-06-18_01:34 JST
 -->
 
 # Documentation Archive
@@ -91,5 +91,10 @@ Archived on 2026-06-17:
 - `docs/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md` -> `docs/archive/2026-06-17-doc-routing/`
 - `docs/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md` -> `docs/archive/2026-06-17-doc-routing/`
 - `docs/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md` -> `docs/archive/2026-06-17-doc-routing/`
+
+Archived on 2026-06-18:
+
+- `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` -> `docs/archive/strategy_research_lab/`
+- `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` -> `docs/archive/strategy_research_lab/`
 
 Do not treat archived documents as current requirements.
