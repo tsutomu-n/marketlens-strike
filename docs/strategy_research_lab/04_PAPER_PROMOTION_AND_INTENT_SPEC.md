@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-11_21:34 JST
+更新日: 2026-06-18_03:27 JST
 -->
 
 # Paper Promotion And Intent Spec
@@ -88,6 +88,24 @@ uv run sis promotion-decision --decision promote
 
 `PaperIntentPreview` は paper runner へ渡す仮注文意図です。
 
+現行 CLI:
+
+```bash
+uv run sis build-paper-intent-preview
+```
+
+任意入力:
+
+- `--source-pack`: 既定は `data/research/paper_candidate_pack.json`。
+- `--promotion-decision`: 既定は `data/research/promotion_decision.json`。
+
+出力:
+
+- `data/bot/paper_intent_preview.json`
+- `data/reports/paper_intent_preview.md`
+
+`promotion_decision.decision == "promote"` の時だけ selected candidate から intent を作ります。`hold` / `reject` では空配列になり得ます。
+
 必須の安全 guard:
 
 ```text
@@ -143,7 +161,7 @@ price reference:
 | signing | none | required in live |
 | conversion | live conversion prohibited | n/a |
 | revalidation | required | required but separate live path |
-| artifact path | `data/bot/paper_intent_preview.json` | not implemented as Strategy Lab output |
+| tracked artifact | `data/bot/paper_intent_preview.json` | Strategy Lab は live order artifact を出さない |
 
 `PaperIntentPreview` を `OrderIntent` と呼ばないでください。現行 Strategy Lab の名前は意図的に preview です。
 
