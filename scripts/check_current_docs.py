@@ -76,6 +76,7 @@ LEGACY_ROOT_PATHS = (
     "docs/DOCUMENT_AUDIT_2026-05-31.md",
     "docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md",
     "docs/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md",
+    "docs/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md",
     "docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md",
     "docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md",
     "docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md",
@@ -108,6 +109,10 @@ CURRENT_DOC_SEMANTIC_DRIFT_MARKERS = (
     (
         "2026-06-04_16:39 JST",
         "old Trade[XYZ] quote coverage start timestamp; current docs should link archive history instead",
+    ),
+    (
+        "Trade[XYZ] read-only PR12 の generated artifact gate は `READ_ONLY_GO` まで確認済み",
+        "old copied PR12 generated artifact gate wording; rerun phase-gate-review and keep live-readiness boundary explicit",
     ),
 )
 

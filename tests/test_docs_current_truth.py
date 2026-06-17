@@ -108,6 +108,7 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "row_count=605" in script
     assert "PID 2484910" in script
     assert "2026-06-04_16:39 JST" in script
+    assert "generated artifact gate は `READ_ONLY_GO` まで確認済み" in script
 
     checker_globals = _checker_globals()
     current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])
@@ -118,6 +119,14 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md" in legacy_root_paths
     assert "docs/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md" not in current_doc_files
     assert "docs/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md" in legacy_root_paths
+    assert (
+        "docs/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md"
+        not in current_doc_files
+    )
+    assert (
+        "docs/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md"
+        in legacy_root_paths
+    )
     assert (
         "docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md"
         not in current_doc_files

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-18_01:29 JST
+更新日: 2026-06-18_01:50 JST
 -->
 
 # Backtest Docs
@@ -63,9 +63,9 @@ Trade[XYZ] 専用 Python API surface は
 [../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md](../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md)
 に保存している。現行の paper observation 状態は [../strategy_lifecycle/README.md](../strategy_lifecycle/README.md) と `uv run sis strategy-paper-observation-status` で確認する。
 
-責務分離で保守性とカスタマイズ性を上げた完了記録は
-[BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md](BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md)
-を見る。
+責務分離で保守性とカスタマイズ性を上げた完了記録は、当時の固定 pass / check 表現を含む履歴資料として
+[../archive/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md](../archive/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md)
+に保存している。現行の backtest 実装境界は [BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](BACKTEST_CURRENT_TECHNICAL_REFERENCE.md) と command help で確認する。
 
 2026-06-15 時点の backtest docs 分類 audit は、当時の artifact 値と current-doc 件数を含む履歴資料として
 [../archive/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md](../archive/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md)

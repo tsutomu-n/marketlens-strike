@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-11_21:34 JST
+更新日: 2026-06-18_01:50 JST
 -->
 
 # Architecture And Phases
@@ -39,7 +39,7 @@
 current truth:
 
 - Phase 1 から Phase 6 の code surface は存在する
-- Trade[XYZ] read-only PR12 の generated artifact gate は `READ_ONLY_GO` まで確認済み
+- Trade[XYZ] read-only PR12 の generated artifact gate は `phase-gate-review` と runtime artifact で再確認する。`READ_ONLY_GO` は live readiness ではない
 - Strategy Research Lab の schema / model / command surface は存在する
 - NDX Layer 2.2 DAG foundation と Exit Gate Review Harness v3 Minimal の local/manual review surface は存在する
 - NDX Layer 2.3 Preflight / Feature Panel / Open Gap Residual の local fixture-first surface は存在する
