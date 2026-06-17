@@ -1694,13 +1694,18 @@ def register_research_commands(
 
     @app.command("build-paper-candidate-pack")
     def build_paper_candidate_pack_cmd(
-        trial_ledger: Path | None = typer.Option(None, "--trial-ledger"),
+        trial_ledger: Path | None = typer.Option(
+            None,
+            "--trial-ledger",
+            help="Trial ledger JSONL path. Defaults to data/research/trial_ledger.jsonl.",
+        ),
         trial_group_id: str | None = typer.Option(
             None,
             "--trial-group-id",
             help=(
                 "Optional trial_group_id. Defaults to the latest ledger group matching "
-                "the current strategy signal artifact run_id."
+                "the current strategy signal artifact run_id. Candidates come from "
+                "TrialRecord.metrics.selected_signal_ids."
             ),
         ),
     ) -> None:

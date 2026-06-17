@@ -151,6 +151,18 @@ def test_promotion_decision_help_describes_decision_boundary() -> None:
     assert "remains paper-only" in stdout
 
 
+def test_build_paper_candidate_pack_help_describes_selection_inputs() -> None:
+    result = invoke_cli(["build-paper-candidate-pack", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "--trial-ledger" in stdout
+    assert "Trial ledger JSONL path" in stdout
+    assert "--trial-group-id" in stdout
+    assert "strategy signal artifact" in stdout
+    assert "run_id" in stdout
+    assert "TrialRecord.metrics.selected_signal_ids" in stdout
+
+
 def test_strategy_paper_observation_cycle_help_smoke() -> None:
     result = invoke_cli(["strategy-paper-observation-cycle", "--help"])
     stdout = normalized_stdout(result)
