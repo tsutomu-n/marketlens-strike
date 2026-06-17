@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-17_17:50 JST
+更新日: 2026-06-17_17:59 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -12,6 +12,17 @@
 いまできることは、戦略案を作る、過去データで試す、人間が読むレビュー資料を作る、ペーパー観察の記録を読む、次に進んでよいかをローカルの証拠ファイルで確認することです。
 
 いまできないことは、本番の自動売買、ウォレット操作、署名、取引所への書き込み、バックテストだけで「儲かる」「本番に出してよい」と証明することです。
+
+## 追加調査での補正
+
+前回版の大枠は正しいですが、実装済み機能のうち、Strategy Research Lab、paper operations、operations / audit / remediation、Trade[XYZ] pure backtest、Bitget demo smoke の説明が薄かったため補いました。
+
+確認に使った主な根拠:
+
+- `uv run sis --help`: 公開されている CLI コマンド一覧です。利用者が実行できる入口を確認しました。
+- `docs/IMPLEMENTED_SURFACES.md`: 実装済みの主要機能を一覧化した文書です。
+- `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`: 技術寄りに詳細な capability catalog です。
+- `data/research/strategy_lifecycle/paper_observation_status.json`: 現在の paper observation 状態を機械が読みやすい形でまとめた生成物です。
 
 ## まず知っておくこと
 
@@ -37,7 +48,28 @@ uv run sis strategy-author-run --spec path/to/spec.yaml --through backtest
 
 ここで `path/to/spec.yaml` は、戦略ルールを書いた YAML ファイルへの例示パスです。
 
-### 2. 過去データで戦略を試せる
+### 2. Strategy Research Lab で候補作りから paper-only preview まで進められる
+
+Strategy Research Lab は、戦略アイデアを signal、評価、候補、昇格判断、paper-only の仮注文意図までつなぐための作業台です。
+
+ここでいう signal は「買い・売り・見送りなどの判断材料」、candidate は「検証対象として残した候補」、paper-only preview は「本番注文ではない仮の注文意図」です。
+
+主な入口:
+
+```bash
+uv run sis strategy-preview
+uv run sis strategy-experiment-run --spec path/to/strategy_experiment.yaml
+uv run sis evaluate-strategy-lab
+uv run sis build-paper-candidate-pack
+uv run sis promotion-decision --decision hold
+uv run sis build-paper-intent-preview
+```
+
+ここで `path/to/strategy_experiment.yaml` は、Strategy Research Lab 用の実験設定を書いた YAML ファイルへの例示パスです。
+
+この流れで作る `PaperIntentPreview` は、本番注文ではありません。paper-only の仮注文意図であり、live 変換は許可されません。
+
+### 3. 過去データで戦略を試せる
 
 過去の価格データを使い、戦略が過去にどう動いたかを試せます。単発の backtest だけでなく、期間を分けた検査、条件を変えた検査、ストレス検査、ベンチマーク比較もできます。
 
@@ -51,7 +83,7 @@ uv run sis strategy-backtest-pack --help
 uv run sis strategy-backtest-pack-validate --help
 ```
 
-### 3. 人間が読むレビュー資料を作れる
+### 4. 人間が読むレビュー資料を作れる
 
 backtest の結果や関連ファイルを集めて、人間が確認しやすい review packet を作れます。さらに、人間が読んだ事実を `operator_review.yaml` として記録し、あとで同じ資料を見ていたかを hash で確認できます。
 
@@ -64,7 +96,7 @@ uv run sis strategy-review-build --help
 uv run sis strategy-review-record --help
 ```
 
-### 4. ペーパー観察の現在地を確認できる
+### 5. ペーパー観察の現在地を確認できる
 
 ペーパー観察とは、本番資金を使わずに、候補戦略が想定どおりに紙上の注文や約定として記録されるかを見る段階です。
 
@@ -77,6 +109,9 @@ uv run sis strategy-review-record --help
 - 最新の smoke 判定: `PASS_PAPER_OBSERVATION_REVIEW`
 - 通常基準を満たしたか: `false`
 - smoke の合格を通常合格に数えるか: `false`
+- 不足 artifact: なし
+- 古い artifact: なし
+- 禁止された live / wallet / exchange write の混入: なし
 - 次の実務アクション: `continue_normal_paper_observation`
 - live 注文許可: `false`
 
@@ -93,7 +128,11 @@ uv run sis strategy-paper-observation-status \
 
 ここで `data` は生成物の置き場、`data/research/strategy_lifecycle` は戦略の段階判断を置く場所、`data/reports` は人間向けレポートを置く場所です。
 
-### 5. NDX 系の研究ゲートをローカルで回せる
+このレポートで判断できるのは、現在の生成物が「通常基準の paper 観察として十分か」「smoke だけの合格か」「古い生成物や不足があるか」「禁止された live 系の副作用が混ざっていないか」です。
+
+このレポートだけでは、損益、将来の勝率、実口座の安全性、取引所接続の成功、本番注文の可否は判断できません。
+
+### 6. NDX 系の研究ゲートをローカルで回せる
 
 NDX / QQQ 系の研究について、データの出どころ、特徴量、残差検証、Strategy Lab への研究用 export、paper observation までの段階的な gate をローカル生成物として確認できます。
 
@@ -109,7 +148,24 @@ uv run sis research-ndx-residual-validate --root configs/research_layer_2_2/ndx 
 
 ここで `configs/research_layer_2_2/ndx` は NDX 研究の設定ディレクトリ、`data/research/ndx` は NDX 研究の生成物出力先、`data/reports` は人間向けレポートの出力先です。
 
-### 6. 読み取り専用の venue 検査や運用状態確認ができる
+### 7. paper operation artifact を扱える
+
+paper operation は、本番資金を使わない paper 用の注文、約定、レポートの生成物を扱う領域です。
+
+主な入口:
+
+```bash
+uv run sis paper-step
+uv run sis paper-from-intents --intents-path data/bot/paper_intent_preview.json
+uv run sis paper-report
+uv run sis paper-operations-cycle
+```
+
+ここで `data/bot/paper_intent_preview.json` は、paper-only の仮注文意図を保存する生成物です。
+
+注意点として、NDX / QQQ 系は valid な paper-observation evidence がない限り、paper candidate selection や legacy `paper-step` の注文生成で fail closed します。fail closed とは、条件が揃わない時に安全側へ倒して止めるという意味です。
+
+### 8. 読み取り専用の venue 検査や運用状態確認ができる
 
 Trade[XYZ] の読み取り専用データ収集、venue capability の境界確認、operations dashboard、phase gate、artifact validation を実行できます。
 
@@ -124,13 +180,46 @@ uv run sis validate-artifacts --strict
 uv run sis phase-gate-review
 ```
 
+operations / audit / remediation 系では、現状確認、監査用 bundle、修復計画、証拠の取り込み、readiness snapshot を作れます。
+
+主な入口:
+
+```bash
+uv run sis operations-dashboard
+uv run sis operations-bundle
+uv run sis audit-bundle
+uv run sis readiness-snapshot
+uv run sis remediation-planner
+```
+
+ここで readiness snapshot は「何の準備ができているか」を見るための生成物です。live readiness と read-only / paper readiness は別物として読みます。
+
+### 9. Trade[XYZ] pure backtest と Bitget demo smoke を扱える
+
+Trade[XYZ] pure backtest v0.1 は実装済みですが、公開 CLI ではなく Python API です。`build-backtest` とは別のものとして読みます。
+
+- `src/sis/backtest/engine/`: backtest の共通エンジン実装を置くディレクトリです。
+- `src/sis/backtest/trade_xyz/`: Trade[XYZ] 向け backtest 実装を置くディレクトリです。
+- `tests/backtest/`: backtest の挙動を確認する自動テストの置き場です。
+
+Bitget demo smoke は local / mock-first の検証です。
+
+```bash
+uv run sis bitget-demo-smoke
+```
+
+`bitget-demo-smoke` の `status=configured` は、ローカル設定が揃ったという意味です。Bitget の network 接続、口座 readiness、注文送信、約定同期の成功ではありません。
+
 ## いまできないこと
 
 - 本番の自動売買はできません。
 - ウォレット操作、署名、取引所への書き込みはできません。
 - 標準 operator CLI から live 注文を送ることはできません。
+- Trade[XYZ] pure backtest を `uv run sis build-backtest` の入口で実行することはできません。pure backtest は Python API surface です。
 - backtest だけで「儲かる」「paper に進めてよい」「live に進めてよい」とは言えません。
 - smoke の合格を、通常のペーパー観察合格として扱うことはできません。
+- paper operation の生成物を、そのまま live order として変換することはできません。
+- Strategy Review の `operator_review.yaml` を、paper execution permission や live permission として読むことはできません。
 - Bitget futures と Hyperliquid perp は、現時点では正式な Strategy Lab の取引先として使えません。
 - `bitget_demo` は demo 検証用です。本番 Bitget futures readiness ではありません。
 - Alpaca や Bitget などの credentialed external API を、暗黙に使う workflow にはしていません。
@@ -151,6 +240,9 @@ uv run sis phase-gate-review
 - lifecycle: 戦略が研究、backtest、paper 観察、次段階検討のどこにいるかを管理する流れです。
 - hash: ファイルの内容から作る指紋です。前に見たファイルと同じかを確認するために使います。
 - venue: 取引先や市場接続先のことです。ここでは Trade[XYZ]、Bitget demo などを指します。
+- fail closed: 条件が揃わない時に、危険側へ進まず止める設計です。
+- mock: 本物の外部サービスではなく、ローカルの代用品で動きを確認することです。
+- API surface: コードから呼び出せる入口です。CLI とは違い、ターミナルの公開コマンドとは限りません。
 
 ## 主なファイルと役割
 
@@ -164,8 +256,14 @@ uv run sis phase-gate-review
 - `docs/strategy_review/README.md`: Strategy Review の入口です。人間レビュー資料をどう作るかを確認できます。
 - `docs/backtest/README.md`: backtest 関連の入口です。複数ある backtest surface の読み分けに使います。
 - `docs/research/ndx/README.md`: NDX 研究 gate の入口です。Layer 2.2 以降の研究手順を確認できます。
+- `docs/strategy_research_lab/README.md`: Strategy Research Lab の入口です。戦略アイデアから signal、評価、candidate、paper-only preview までの流れを確認できます。
+- `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`: Strategy Research Lab で現在できることを詳しく列挙した文書です。
+- `docs/venues/read_only_capability_probe.md`: venue の読み取り専用 capability probe を説明する文書です。network readiness や live permission ではない点を確認できます。
 - `src/sis/cli.py`: `sis` コマンド全体の登録場所です。どのコマンドが公開されているかを確認する時に見ます。
 - `src/sis/commands/`: CLI コマンドの実装置き場です。各コマンドが何を読むか、何を出すかを確認する時に見ます。
+- `src/sis/research/strategy_lab/`: Strategy Research Lab のモデルや処理を置くディレクトリです。
+- `src/sis/execution/bitget_demo_adapter.py`: Bitget demo の local / mock-first adapter 実装です。本番 Bitget 接続の実装とは分けて読みます。
+- `src/sis/venues/read_only_probe.py`: venue capability を読み取り専用で確認する処理です。外部書き込みをしない境界確認に使います。
 - `configs/research_layer_2_2/ndx`: NDX 研究 gate の設定ディレクトリです。研究の部品、データ源、検査の流れを確認できます。
 - `schemas/`: JSON などの生成物の形式ルールを置く場所です。ファイル構造の契約を確認できます。
 - `tests/`: 自動テストの置き場です。現行仕様が壊れていないかを確認する証拠です。
@@ -173,6 +271,7 @@ uv run sis phase-gate-review
 - `scripts/check_current_docs.py`: current docs のメタデータ、リンク、EOF、古い root path 参照を検査するスクリプトです。
 - `data/research/strategy_lifecycle/paper_observation_status.json`: 現在の paper observation 状態を機械が読みやすい形でまとめた生成物です。
 - `data/reports/paper_observation_status.md`: 現在の paper observation 状態を人間が読みやすい形でまとめた生成レポートです。
+- `data/bot/paper_intent_preview.json`: paper-only の仮注文意図を保存する生成物です。本番注文ではありません。
 - `data/research/ndx/paper_observation_review_decision.json`: NDX paper observation review の正本になる生成物です。通常観察が足りるか、まだ続けるかを記録します。
 - `data/research/strategy_lifecycle/strategy_lifecycle_review.json`: backtest、paper observation、phase gate をまとめた段階判断の生成物です。
 - `data/paper/observations/<session_id>/paper_observation_session_manifest.json`: session ごとの paper observation 記録の目次です。入力ファイル、hash、基準、paper-only 境界を記録します。
