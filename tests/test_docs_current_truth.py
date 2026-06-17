@@ -47,6 +47,7 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     readme = _read("README.md")
 
     assert '"AGENTS.md"' in script
+    assert '"docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md"' in script
     assert '"docs/DOCUMENT_AUDIT_2026-05-31.md"' in script
     assert '"docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"' not in script
     assert '"docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md"' not in script
@@ -76,6 +77,17 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "missing or invalid metadata header" in script
     assert "LAYER22_SEMANTIC_DRIFT_MARKERS" in script
     assert "research-dag-" in script
+
+
+def test_cli_catalog_matches_registered_commands() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/check_cli_catalog.py"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "public CLI commands" in result.stdout
 
 
 def test_current_docs_checker_passes() -> None:

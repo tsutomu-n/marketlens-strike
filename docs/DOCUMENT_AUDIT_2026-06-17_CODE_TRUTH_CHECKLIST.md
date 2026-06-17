@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_22:30 JST
+更新日: 2026-06-17_22:40 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -25,6 +25,7 @@
 10. 実装済み plan / historical review plan は `plan/archive/2026-06-17-plan-routing/` へ移し、`plan/0609ここからの計画/03_venue_read_only_capability_probe/` だけを current unimplemented plan として root 側に残した。
 11. `docs/CURRENT_STATE.md` は 2026-06-17_22:22 JST に 1ページ寄りの入口文書へ縮小し、詳細能力列挙は `docs/IMPLEMENTED_SURFACES.md`、`docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、domain docs へ逃がした。
 12. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` は 2026-06-17_22:30 JST に短い入口文書へ縮小し、詳細列挙は `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md` へ分離した。schema / strategy type matrix は `docs/strategy_research_lab/13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` が担う。
+13. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` の public CLI catalog は 2026-06-17_22:40 JST に `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` へ分離し、`scripts/check_cli_catalog.py` で Typer registration と照合するようにした。`strategy-paper-observation-append` の catalog 漏れも補正済み。
 
 ## 照合した正本
 
@@ -33,6 +34,7 @@
 ```bash
 git status --short --branch --untracked-files=all
 uv run sis --help
+uv run python scripts/check_cli_catalog.py
 uv run sis strategy-review-build --help
 uv run python scripts/check_current_docs.py
 uv run python - <<'PY'
@@ -63,7 +65,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md` | 更新して維持 | copy-paste 実行、読む順番、`operator_review.yaml` 保存 / stale check、paper / NDX gate 境界が明確 | 今後 paper bridge を作る場合も、別 plan と別 validation を要求する |
 | `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` | 更新して維持 | dogfood 記録として有用。runtime artifact hash を固定していない | 新しい dogfood を足すなら別日付の record にする |
 | `docs/backtest/README.md` | 更新して維持 | Strategy Review への導線を既に持つ | Backtest pack から Strategy Review へ進む最短手順を recipe 側へ寄せる |
-| `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | 更新して維持 | public CLI catalog と capability summary としてまだ使える | Strategy Review を独立 section に近い形で強調し、operator recipe をリンク |
+| `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | 更新して維持 | capability overview としてまだ使える。public CLI catalog は分離済み | Strategy Review を独立 section に近い形で強調し、operator recipe をリンク |
 | `README.md` | 更新して維持 | repo entrypoint として正しい | 2026-06-17_01:26 JST に Read First と Main Flows へ Strategy Review docs を追加済み |
 | `docs/CURRENT_STATE.md` | 更新して維持 | current state の入口として使える | 2026-06-17_22:22 JST に 1ページ寄りの index へ短文化済み |
 | `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` | 更新して維持 | 専門用語を減らし、repo でできること / できないことを説明する入口 | 外部入力時は `docs/NEXT_DIRECTION_CURRENT.md` の checklist を読む導線を維持 |
@@ -100,7 +102,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/CODE_STATUS.md` | migration PR、post-PR status、implemented surfaces、known gaps、verification snapshots が混在していた | 2026-06-17_06:32 JST に `IMPLEMENTED_SURFACES.md` と `MIGRATION_HISTORY.md` に分離済み |
 | `docs/CURRENT_STATE.md` | current state、capability catalog、runtime snapshots、known gaps が長くなりすぎていた | 2026-06-17_22:22 JST に入口 index へ縮小し、詳細は domain docs へリンク済み |
 | `docs/OPERATIONS_RUNBOOK.md` | Trade[XYZ]、NDX、Strategy Lifecycle、paper operations、long-running script が同居 | 2026-06-17_21:52 JST に root index + `docs/runbooks/**` へ分割済み |
-| `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | capability catalog と CLI catalog が一文書に大きく積まれている | capability overview と generated/checked CLI catalog を分離 |
+| `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | capability catalog と CLI catalog が一文書に大きく積まれていた | 2026-06-17_22:40 JST に CLI catalog を `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` へ分離し、`scripts/check_cli_catalog.py` で照合するようにした |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | capability 列挙が長大で、更新漏れリスクが高かった | 2026-06-17_22:30 JST に short guide 化し、詳細列挙は `08_CURRENT_CAPABILITIES_DETAILS.md`、matrix は `13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` へ分離済み |
 | `docs/trade_xyz_bot_beginner_guide.html` | HTML が read-first にあるが、Markdown 正本との同期が追いにくい | Markdown 正本を作り、HTML は companion か生成物にする |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html` | Markdown と HTML の二重保守になる | Markdown 正本から生成する運用に寄せる |

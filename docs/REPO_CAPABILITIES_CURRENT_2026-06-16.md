@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-17_22:30 JST
+更新日: 2026-06-17_22:40 JST
 -->
 
 # Repo Capabilities Current
@@ -19,7 +19,7 @@
 
 補正した点:
 
-- Public CLI Command Catalog は、更新時点で `uv run sis --help` の public command と照合した。固定の command count を current truth にせず、確認時は `uv run sis --help` を再実行する。
+- Public CLI Command Catalog は [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md) へ分離した。固定の command count を current truth にせず、確認時は `uv run sis --help` と `uv run python scripts/check_cli_catalog.py` を再実行する。
 - Strategy Review には `strategy-review-build` と `strategy-review-record` がある。
 - 本文側で薄かった `research-dag-*`、`strategy-backtest-framework-run`、legacy `build-backtest`、Trade[XYZ] data cycle、historical archive quote normalization、market-session utility、Strategy Lifecycle docs、Algo / Strategy Factory docs、schema family の説明を補った。
 - `docs/strategy_lifecycle/` は current-docs 検査対象に追加した。
@@ -40,6 +40,7 @@
 ```bash
 uv run python -V
 uv run sis --help
+uv run python scripts/check_cli_catalog.py
 uv run python scripts/check_current_docs.py
 ./scripts/check
 ```
@@ -531,194 +532,14 @@ reference-only / 採用前 contract:
 
 ## Public CLI Command Catalog
 
-更新時点の `uv run sis --help` に出る public command を、用途別に整理する。確認時は固定の件数ではなく、CLI help を再実行する。
+Public CLI command list は [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md) に分離済みです。新しい command を追加した時は次を実行して、catalog と Typer registration の差分を確認します。
 
-### Research / NDX
+```bash
+uv run sis --help
+uv run python scripts/check_cli_catalog.py
+```
 
-- `research-dag-validate`
-- `research-dag-export`
-- `research-layer22-validate`
-- `research-layer22-export`
-- `research-layer22-review-pack`
-- `research-layer22-review-import`
-- `research-layer22-exit-gate`
-- `research-ndx-source-resolve`
-- `research-ndx-feature-panel`
-- `research-ndx-residual`
-- `research-ndx-diagnostics`
-- `research-ndx-residual-validate`
-- `research-ndx-strategy-lab-export`
-- `research-ndx-paper-observation-gate`
-- `research-ndx-operator-promotion`
-- `research-ndx-paper-observation-review`
-
-### Strategy Lab / Strategy Authoring / Lifecycle
-
-- `strategy-preview`
-- `strategy-experiment-run`
-- `evaluate-strategy-lab`
-- `build-paper-candidate-pack`
-- `promotion-decision`
-- `build-paper-intent-preview`
-- `check-research-quality`
-- `strategy-author-init`
-- `strategy-author-validate`
-- `strategy-author-explain`
-- `strategy-author-run`
-- `strategy-author-bundle-run`
-- `strategy-author-train-model`
-- `strategy-backtest-acceptance`
-- `strategy-lifecycle-review`
-- `strategy-paper-observation-cycle`
-- `strategy-paper-observation-status`
-
-### Backtest
-
-- `strategy-backtest-suite`
-- `strategy-backtest-compare`
-- `strategy-backtest-data-availability`
-- `strategy-backtest-baseline-compare`
-- `strategy-backtest-no-lookahead-diff`
-- `strategy-backtest-execution-sim`
-- `strategy-backtest-assumption-ledger`
-- `strategy-backtest-trial-ledger`
-- `strategy-backtest-portfolio-compare`
-- `strategy-backtest-metric-extension`
-- `strategy-backtest-report-extension`
-- `strategy-backtest-stress`
-- `strategy-backtest-regime-split`
-- `strategy-backtest-rolling-stability`
-- `strategy-backtest-benchmark-relative`
-- `strategy-backtest-adapter-spike`
-- `strategy-backtest-external-run`
-- `strategy-backtest-framework-run`
-- `strategy-backtest-microstructure-readiness`
-- `strategy-backtest-qstrader-contract`
-- `strategy-backtest-portfolio-validation-contract`
-- `strategy-backtest-pybroker-contract`
-- `strategy-backtest-constraint-breaker-decision`
-- `strategy-backtest-framework-smoke`
-- `strategy-backtest-adapter-selection`
-- `strategy-backtest-adapter-contract`
-- `strategy-backtest-pack`
-- `strategy-backtest-pack-validate`
-- `strategy-backtest-artifact-summary`
-- `strategy-review-build`
-- `strategy-review-record`
-
-### Trade[XYZ] / Quotes / Data Readiness
-
-- `collect-trade-xyz-ws`
-- `build-trade-xyz-ws-quality`
-- `build-trade-xyz-rest-parity`
-- `collect-trade-xyz-quotes`
-- `collect-trade-xyz-data-cycle`
-- `normalize-quotes`
-- `normalize-trade-xyz-ws-quotes`
-- `build-trade-xyz-quote-coverage`
-- `build-trade-xyz-reference-data`
-- `collect-trade-xyz-real-market-reference`
-- `collect-trade-xyz-signal-candles`
-- `collect-trade-xyz-account-fee`
-- `collect-trade-xyz-historical-l2-archive`
-- `collect-trade-xyz-historical-asset-ctxs-archive`
-- `normalize-trade-xyz-historical-archive-quotes`
-- `plan-trade-xyz-historical-archive-bulk`
-- `check-trade-xyz-historical-archive-preflight`
-- `execute-trade-xyz-historical-archive-bulk`
-- `normalize-trade-xyz-historical-archive-bulk`
-- `build-trade-xyz-session-state`
-- `collect-trade-xyz-funding-history`
-- `build-trade-xyz-funding-events-from-history`
-- `build-trade-xyz-data-readiness`
-- `trade-xyz-collection-status`
-- `build-trade-xyz-data-bundle`
-- `probe`
-
-### Research Data / Feature Build
-
-- `build-cost-matrix`
-- `ingest-research-data`
-- `build-event-calendar`
-- `build-feature-panel`
-- `build-signals`
-- `alpaca-smoke`
-
-### Execution / Paper / Bot
-
-- `bot-preview`
-- `execution-snapshot`
-- `execution-venue-comparison`
-- `execution-venue-diagnostics`
-- `execution-read-only-surfaces`
-- `order-status`
-- `estimate-order`
-- `balance-status`
-- `bitget-demo-smoke`
-- `venue-read-only-probe`
-- `fill-status`
-- `cancel-order`
-- `close-position`
-- `reconcile-positions`
-- `healthcheck`
-- `paper-step`
-- `paper-from-intents`
-- `paper-report`
-- `paper-operations-cycle`
-
-### Operations / Audit / Remediation / Runtime
-
-- `daemon-manifest`
-- `daemon-dry-run`
-- `daemon-run`
-- `export-state`
-- `restore-state`
-- `monitoring-status`
-- `kill-switch`
-- `schedule-run`
-- `render-alert`
-- `notification-outbox`
-- `lifecycle-report`
-- `comparison-report`
-- `ops-review`
-- `operations-dashboard`
-- `paper-operations-runbook`
-- `paper-cycle-history`
-- `execution-gap-history`
-- `execution-state-comparison-history`
-- `execution-snapshot-drift-history`
-- `execution-drift-overview`
-- `phase-gate-review`
-- `operations-bundle`
-- `operations-timeline`
-- `operations-audit-pack`
-- `audit-timeline`
-- `audit-dashboard`
-- `audit-bundle`
-- `audit-bundle-history`
-- `current-state-index`
-- `readiness-snapshot`
-- `remediation-planner`
-- `remediation-execution-plan`
-- `remediation-session`
-- `remediation-session-checkpoint`
-- `remediation-evidence-ingest`
-- `remediation-scoreboard`
-- `remediation-evaluator`
-- `remediation-evidence`
-- `remediation-command-results`
-- `weekly-review`
-- `refresh-operations-artifacts`
-- `build-backtest`
-- `check-halt-policy`
-- `check-go-no-go`
-- `build-evidence-card`
-- `implementation-status`
-- `check-timeframe`
-- `market-session`
-- `next-live-window`
-- `validate-artifacts`
-- `diagnose-quotes`
+この文書は capability overview と境界説明に寄せ、command 名の網羅表は CLI catalog 側で管理します。
 
 ## できないこと / 未証明
 
@@ -756,4 +577,5 @@ reference-only / 採用前 contract:
 14. [research/ndx/README.md](research/ndx/README.md)
 15. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
 16. [ARCHITECTURE_AND_PHASES.md](ARCHITECTURE_AND_PHASES.md)
-16. [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md)
+17. [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md)
+18. [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md)

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-17_22:30 JST
+更新日: 2026-06-17_22:40 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -20,8 +20,10 @@
 確認に使った主な根拠:
 
 - `uv run sis --help`: 公開されている CLI コマンド一覧です。利用者が実行できる入口を確認しました。
+- `uv run python scripts/check_cli_catalog.py`: 文書化した CLI コマンド一覧と、実際に登録されている CLI コマンドを照合する確認コマンドです。
 - `docs/IMPLEMENTED_SURFACES.md`: 実装済みの主要機能を一覧化した文書です。
 - `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`: 技術寄りに詳細な capability catalog です。
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`: 公開 CLI コマンド一覧です。機械チェックで登録 command と照合します。
 - `data/research/strategy_lifecycle/paper_observation_status.json`: 現在の paper observation 状態を機械が読みやすい形でまとめた生成物です。
 
 ## まず知っておくこと
@@ -275,6 +277,7 @@ uv run sis bitget-demo-smoke
 - `docs/IMPLEMENTED_SURFACES.md`: 実装済みの主要機能を一覧で確認する文書です。全体をざっと把握する時に使います。
 - `docs/NEXT_DIRECTION_CURRENT.md`: 次にどの方向へ進むか、外部入力が来た時に何を再確認するかをまとめた文書です。paper / live 許可と read-only 確認を混同しないために使います。
 - `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`: できること、できないことを技術寄りに詳しく整理した文書です。この文書より詳細です。
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`: 公開 CLI コマンド一覧です。`scripts/check_cli_catalog.py` で実際の登録 command と照合します。
 - `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`: この文書です。専門用語を減らし、利用者向けに現在の範囲を説明します。
 - `docs/strategy_lifecycle/README.md`: 戦略の段階管理と paper observation の入口です。
 - `docs/strategy_lifecycle/PAPER_OBSERVATION_CYCLE.md`: paper observation の作り方、読むべき生成物、止める条件を説明する文書です。

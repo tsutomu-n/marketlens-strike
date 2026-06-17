@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-17_21:23 JST
+更新日: 2026-06-17_22:40 JST
 -->
 
 # Code Status
@@ -23,6 +23,7 @@
 |---|---|
 | repo が何をできるか専門用語少なめで知る | [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) |
 | repo が何をできるか技術詳細で知る | [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) |
+| public CLI command catalog を見る | [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md) |
 | 実装済み surface を見る | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) |
 | PR migration 履歴を見る | [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md) |
 | runtime artifact / readiness を見る | [CURRENT_STATE.md](CURRENT_STATE.md) |
@@ -38,6 +39,7 @@
 ```bash
 uv run python -V
 uv run sis --help
+uv run python scripts/check_cli_catalog.py
 uv run python scripts/check_current_docs.py
 ./scripts/check
 ```
