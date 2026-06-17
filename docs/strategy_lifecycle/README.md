@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_21:34 JST
-更新日: 2026-06-17_20:07 JST
+更新日: 2026-06-17_21:33 JST
 -->
 
 # Strategy Lifecycle
@@ -39,12 +39,33 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 1. `TARGET_OPERATING_MODEL.md`
 2. `PAPER_OBSERVATION_CYCLE.md`
 3. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`
-4. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md`
-5. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
-6. `LIVE_CANARY_PLAN_GATE.md`
-7. `docs/backtest/README.md`
-8. `docs/research/ndx/README.md`
-9. `docs/OPERATIONS_RUNBOOK.md`
+4. `docs/NEXT_DIRECTION_CURRENT.md`
+5. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md`
+6. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
+7. `LIVE_CANARY_PLAN_GATE.md`
+8. `docs/backtest/README.md`
+9. `docs/research/ndx/README.md`
+10. `docs/OPERATIONS_RUNBOOK.md`
+
+## External Input
+
+新しい通常 paper observation evidence が来た場合は、`docs/NEXT_DIRECTION_CURRENT.md` の `External Input Restart Checklist` を読む。ここでいう evidence は新しい trading day を含む通常観察の証拠です。同じ trading day の artifact rerun や fill 水増しは `10 trading days` の代替にしません。
+
+再確認は次を使う:
+
+```bash
+uv run sis strategy-paper-observation-status \
+  --data-dir data \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+```
+
+確認する値:
+
+- `latest_normal_requirement_gaps.trading_days`
+- `normal_thresholds_met`
+- `smoke_pass_counts_as_normal_pass=false`
+- `live_conversion_allowed=false`
 
 ## Boundary
 

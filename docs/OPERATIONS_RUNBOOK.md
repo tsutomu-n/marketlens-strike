@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-17_20:47 JST
+更新日: 2026-06-17_21:33 JST
 -->
 
 # Operations Runbook
@@ -26,6 +26,8 @@ uv run sis strategy-lifecycle-review --data-dir data --out data/research/strateg
 4. `data/reports/readiness_snapshot.md`
 5. `data/reports/phase_gate_review.md`
 6. `data/reports/operations_dashboard.md`
+
+外部入力が来た場合は、先に `docs/NEXT_DIRECTION_CURRENT.md` の `External Input Restart Checklist` を読む。対象は Trade[XYZ] public user address、Bitget demo credentials、新しい通常 paper observation evidence です。ここでの再確認は read-only / observation であり、paper / live 実行許可ではありません。
 
 ## NDX Layer 2.2 Review Gate
 
