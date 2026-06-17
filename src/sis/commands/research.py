@@ -1518,15 +1518,27 @@ def register_research_commands(
         spec_path: Path = typer.Option(
             ...,
             "--spec",
-            help="StrategyExperimentSpec YAML/JSON file to run through the registered generator flow.",
+            help=(
+                "StrategyExperimentSpec YAML/JSON file. Runs only registered "
+                "generator IDs; no arbitrary Python plugin is executed."
+            ),
         ),
         max_variants: int = typer.Option(
             64,
             "--max-variants",
             min=1,
-            help="Maximum cartesian parameter_grid variants to materialize.",
+            help=(
+                "Maximum cartesian parameter_grid variants to materialize; "
+                "exits with code 2 when exceeded."
+            ),
         ),
     ) -> None:
+        """Run a StrategyExperimentSpec into paper-only signal artifacts.
+
+        Writes data/research/strategy_signals.parquet,
+        data/research/strategy_signal_manifest.json, legacy data/research/signals.csv,
+        and data/reports/strategy_experiment_run.md. Submits no live orders.
+        """
         settings = get_settings()
         try:
             spec = load_strategy_experiment_spec(spec_path)

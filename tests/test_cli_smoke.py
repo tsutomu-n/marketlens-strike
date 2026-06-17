@@ -163,6 +163,24 @@ def test_build_paper_candidate_pack_help_describes_selection_inputs() -> None:
     assert "TrialRecord.metrics.selected_signal_ids" in stdout
 
 
+def test_strategy_experiment_run_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["strategy-experiment-run", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "paper-only signal artifacts" in stdout
+    assert "data/research/strategy_signals.parquet" in stdout
+    assert "data/research/strategy_signal_manifest.json" in stdout
+    assert "data/research/signals.csv" in stdout
+    assert "data/reports/strategy_experiment_run.md" in stdout
+    assert "Submits no live orders" in stdout
+    assert "--spec" in stdout
+    assert "registered generator" in stdout
+    assert "IDs; no arbitrary Python" in stdout
+    assert "--max-variants" in stdout
+    assert "exits with" in stdout
+    assert "code 2 when exceeded" in stdout
+
+
 def test_evaluate_strategy_lab_help_describes_io_and_boundary() -> None:
     result = invoke_cli(["evaluate-strategy-lab", "--help"])
     stdout = normalized_stdout(result)
