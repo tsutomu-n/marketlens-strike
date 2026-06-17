@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_23:01 JST
+更新日: 2026-06-17_23:18 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -28,6 +28,7 @@
 13. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` の public CLI catalog は 2026-06-17_22:40 JST に `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` へ分離し、`scripts/check_cli_catalog.py` で Typer registration と照合するようにした。`strategy-paper-observation-append` の catalog 漏れも補正済み。
 14. `docs/trade_xyz_bot_beginner_guide.html` は 2026-06-17_22:53 JST に `docs/trade_xyz_bot_beginner_guide.md` を文章正本として追加し、README は Markdown 正本を先に読む導線へ変更した。
 15. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html` は 2026-06-17_23:01 JST に `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md` を文章正本として追加し、HTML は見た目つき companion とした。
+16. `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` は 2026-06-17_23:18 JST に Layer 2.2 historical implementation record として凍結し、Layer 2.3 以降の current status や現在の artifact hash は tracked docs へ写さず runtime artifact と再実行 command で確認する導線にした。
 
 ## 照合した正本
 

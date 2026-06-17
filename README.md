@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_23:01 JST
+更新日: 2026-06-17_23:18 JST
 -->
 
 # marketlens-strike
@@ -303,7 +303,7 @@ uv run python scripts/check_current_docs.py
 
 - `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, `research-ndx-residual-validate`, `research-ndx-strategy-lab-export`, `research-ndx-paper-observation-gate`, `research-ndx-operator-promotion`, and `research-ndx-paper-observation-review` are registered CLI commands.
 - `uv run python scripts/check_current_docs.py`: current-docs check passed; rerun for the current checked-doc count.
-- Latest local Layer 2.2 exit decision artifact was `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, with pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`.
+- Layer 2.2 historical implementation record is frozen in [docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md](docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md). For the current local exit decision and pack hash, rerun the Layer 2.2 commands above and inspect `data/research/ndx/review/layer_2_2_exit_decision.json`.
 - Non-approve exit-gate runs remove stale `layer_2_2_freeze_manifest.json` from the same output directory.
 - Current Layer 2.4 default artifact decision is `APPROVE_STRATEGY_LAB_EXPORT`; this is only permission for Layer 2.5 research-only export and is not alpha, backtest, paper, or live readiness proof.
 - `docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` records a then-current code-truth docs cleanup checklist.

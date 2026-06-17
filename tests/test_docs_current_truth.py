@@ -94,6 +94,18 @@ def test_human_facing_html_guides_have_markdown_sources() -> None:
     assert "08_CURRENT_CAPABILITIES_EXPLAINED.md" in strategy_html
 
 
+def test_layer22_record_is_frozen_history_not_current_hash_source() -> None:
+    readme = _read("README.md")
+    ndx_readme = _read("docs/research/ndx/README.md")
+    record = _read("docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md")
+
+    assert "historical implementation record" in readme
+    assert "Latest local Layer 2.2 exit decision artifact" not in readme
+    assert "sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a" not in readme
+    assert "現在の通過状態や pack hash は tracked docs へ写さず" in ndx_readme
+    assert "現在値の証明として使わない" in record
+
+
 def test_cli_catalog_matches_registered_commands() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/check_cli_catalog.py"],

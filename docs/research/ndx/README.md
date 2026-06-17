@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-08_18:01 JST
-更新日: 2026-06-11_21:34 JST
+更新日: 2026-06-17_23:18 JST
 -->
 
 # NDX Research Docs
@@ -17,7 +17,7 @@
 6. `14_LAYER_2_7_OPERATOR_PROMOTION.md`
 7. `15_LAYER_2_8_PAPER_OBSERVATION_REVIEW.md`
 8. `2_2_IMPLEMENTATION_BOUNDARY.md`
-9. `LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md`
+9. `LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` - Layer 2.2 の historical implementation record。Layer 2.3 以降の current status や現在の artifact hash はここへ追記しない。
 10. `DATA_SOURCE_CONTRACT.md`
 11. `05_TEMPORAL_AVAILABILITY.md`
 12. `COUNTER_DAGS.md`
@@ -46,6 +46,8 @@ uv run sis strategy-lifecycle-review --data-dir data --out data/research/strateg
 ## Boundary
 
 Layer 2.2 は local/manual review artifact harness である。external API、credentials、feature panel、residual calculation、neutralization、Strategy Lab export、backtest、paper/live order、Trade[XYZ] integration には接続しない。
+
+Layer 2.2 の実装履歴は `LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` に凍結する。現在の通過状態や pack hash は tracked docs へ写さず、上の `research-layer22-*` command と `data/research/ndx/review/` の runtime artifact で確認する。
 
 Layer 2.3 は `APPROVE_2_3`、freeze manifest、`second_review_required=false`、未解決 human decision なしを前提に、fixture-first data source resolution、feature panel、open-gap residual、diagnostics / neutralization pre-report、counter-DAG refutation skeleton を作る local research gate である。
 

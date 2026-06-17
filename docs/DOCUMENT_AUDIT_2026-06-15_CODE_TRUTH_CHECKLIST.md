@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_07:23 JST
-更新日: 2026-06-17_23:01 JST
+更新日: 2026-06-17_23:18 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-15
@@ -148,9 +148,9 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - [x] `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
   - 理由: capability の列挙が大きく、更新漏れリスクが高い。
   - 実施済み: 2026-06-17_22:30 JST に operator-facing short guide と `08_CURRENT_CAPABILITIES_DETAILS.md` に分離。schema-driven matrix は `13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` を使用する。
-- [ ] `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md`
+- [x] `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md`
   - 理由: Layer 2.2 実装記録に後続 layer の条件や履歴が追記されやすい。
-  - 作り直し案: Layer 2.2 の historical record に固定し、Layer 2.3 以降は個別 records に分ける。
+  - 実施済み: 2026-06-17_23:18 JST に Layer 2.2 の historical record として固定し、Layer 2.3 以降の current status、現在の pass count、現在の artifact hash を追記しない方針を明記した。README と NDX docs 入口は current artifact hash を tracked docs ではなく再実行と `data/research/ndx/review/` で確認する導線に変更した。
 - [x] `docs/trade_xyz_bot_beginner_guide.html`
   - 理由: README の read-first に入る初心者向け HTML だが、current venue suitability、NDX/QQQ fail-closed、Strategy Lifecycle、backtest-first 境界まで体系的に読むには古い。
   - 実施済み: 2026-06-17_22:53 JST に `docs/trade_xyz_bot_beginner_guide.md` を文章正本として追加し、README は Markdown 正本を先に読む導線へ変更した。HTML は companion として維持する。
