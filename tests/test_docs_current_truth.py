@@ -100,6 +100,8 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     legacy_root_paths = set(checker_globals["LEGACY_ROOT_PATHS"])
     assert "docs/DOCUMENT_AUDIT_2026-05-31.md" not in current_doc_files
     assert "docs/DOCUMENT_AUDIT_2026-05-31.md" in legacy_root_paths
+    assert "docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md" not in current_doc_files
+    assert "docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md" in legacy_root_paths
 
     current_status_docs = set(checker_globals["CURRENT_STATUS_DOC_FILES"])
     assert "README.md" in current_status_docs

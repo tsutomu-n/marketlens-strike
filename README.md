@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_23:38 JST
+更新日: 2026-06-18_00:31 JST
 -->
 
 # marketlens-strike
@@ -57,7 +57,7 @@ These documents are useful for implementation history and audit provenance.
 They are not the first source for current readiness or permission decisions.
 
 1. [docs/MIGRATION_HISTORY.md](docs/MIGRATION_HISTORY.md)
-2. [docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md)
+2. [docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md](docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md)
 3. [docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md](docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md)
 4. [docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md](docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md)
 5. [docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md)
@@ -308,7 +308,7 @@ uv run python scripts/check_current_docs.py
 - Layer 2.2 historical implementation record is frozen in [docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md](docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md). For the current local exit decision and pack hash, rerun the Layer 2.2 commands above and inspect `data/research/ndx/review/layer_2_2_exit_decision.json`.
 - Non-approve exit-gate runs remove stale `layer_2_2_freeze_manifest.json` from the same output directory.
 - Current Layer 2.4 default artifact decision is `APPROVE_STRATEGY_LAB_EXPORT`; this is only permission for Layer 2.5 research-only export and is not alpha, backtest, paper, or live readiness proof.
-- `docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` records a then-current code-truth docs cleanup checklist.
+- `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md` records a historical code-truth docs cleanup checklist.
 
 2026-06-17 runtime validation snapshot:
 
