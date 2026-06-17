@@ -100,6 +100,12 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "通常ペーパー観察の session 数:" in script
     assert "local-paper-20260617-200702" in script
     assert "old copied paper-observation session count" in script
+    assert "fills=20/20" in script
+    assert "trading_days=1/10" in script
+    assert "phase_gate_decision=READ_ONLY_GO" in script
+    assert "final_decision=READ_ONLY_GO" in script
+    assert "310 rows, 3673.995702 observed seconds" in script
+    assert "row_count=605" in script
 
     checker_globals = _checker_globals()
     current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])

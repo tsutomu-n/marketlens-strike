@@ -176,6 +176,42 @@ CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS = (
         "local-paper-20260617-200702",
         "old copied paper-observation session id; inspect runtime artifacts instead",
     ),
+    (
+        "fills=20/20",
+        "old copied paper-observation fill snapshot; inspect latest_normal_requirement_gaps instead",
+    ),
+    (
+        "trading_days=1/10",
+        "old copied paper-observation trading-day snapshot; inspect latest_normal_requirement_gaps instead",
+    ),
+    (
+        "phase_gate_decision=READ_ONLY_GO",
+        "old copied phase-gate decision snapshot; rerun phase-gate-review instead",
+    ),
+    (
+        'execution_drift_classification_counts={"P2_BLOCKER":0,"LIVE_READINESS_BLOCKER":5}',
+        "old copied execution drift count snapshot; rerun phase-gate-review instead",
+    ),
+    (
+        "final_decision=READ_ONLY_GO",
+        "old copied PR12 smoke decision snapshot; rerun the smoke path instead",
+    ),
+    (
+        "310 rows, 3673.995702 observed seconds",
+        "old copied PR12 quote collection snapshot; rerun collectors instead",
+    ),
+    (
+        "5 symbols x 62 rows",
+        "old copied PR12 smoke report snapshot; rerun the smoke path instead",
+    ),
+    (
+        "row_count=605",
+        "old copied funding manifest row-count snapshot; inspect runtime artifacts instead",
+    ),
+    (
+        "skipped.missing_oracle_quote_within_lag=671",
+        "old copied funding manifest skip-count snapshot; inspect runtime artifacts instead",
+    ),
 )
 
 CURRENT_STATUS_SEMANTIC_DRIFT_PATTERNS = (

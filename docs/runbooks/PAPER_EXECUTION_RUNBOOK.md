@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_21:52 JST
-更新日: 2026-06-17_23:19 JST
+更新日: 2026-06-18_01:06 JST
 -->
 
 # Paper And Execution Runbook
@@ -129,19 +129,13 @@ uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
 ```
 
-2026-06-05 の current artifact:
+artifact の読み方:
 
-- `data/ops/phase_gate_review_summary.json`: `phase_gate_decision=READ_ONLY_GO`, `phase2_entry_allowed=true`, `blockers=[]`
-- `data/ops/phase_gate_review_summary.json`: `execution_drift_classification_counts={"P2_BLOCKER":0,"LIVE_READINESS_BLOCKER":5}`
-- `data/manifests/trade_xyz_data_readiness_manifest.json`: `decision=NOT_READY`, `backtest_data_ready=false`, fail=`quote_coverage`, known gaps=`funding_events`,`oracle_timestamp_provenance`
-- `data/manifests/trade_xyz_data_readiness_manifest.json`: `real_market_reference`, `signal_candles`, and `account_specific_fee` are pass
-- `data/manifests/funding_history_join_manifest.json`: `row_count=605`, `usable_as_backtest_funding_event=true`, `skipped.missing_oracle_quote_within_lag=671`
-
-2026-05-27 の PR12 long-window evidence:
-
-- `data/ops/trade_xyz_quote_collection_summary.json`: 310 rows, 3673.995702 observed seconds
-- `data/ops/pr12_fresh_read_only_smoke_summary.json`: `final_decision=READ_ONLY_GO`
-- `data/reports/pr12_fresh_read_only_smoke_report.md`: 5 symbols x 62 rows
+- `data/ops/phase_gate_review_summary.json`: `phase_gate_decision`、`phase2_entry_allowed`、`blockers`、`execution_drift_classification_counts`、`execution_snapshot_reason`、`execution_snapshot_next_action` を読む。
+- `data/manifests/trade_xyz_data_readiness_manifest.json`: `decision`、`backtest_data_ready`、失敗理由、known gaps、`real_market_reference`、`signal_candles`、`account_specific_fee` を読む。
+- `data/manifests/funding_history_join_manifest.json`: `row_count`、`usable_as_backtest_funding_event`、`skipped` を読む。値は artifact 再生成で変わり得る。
+- `data/ops/pr12_fresh_read_only_smoke_summary.json`: `final_decision`、対象 symbol、row count、report path を読む。fixed snapshot を runbook にコピーしない。
+- 過去の PR12 long-window evidence の行数や観測秒数は historical snapshot として扱う。現在値の証明には、上の command を再実行して runtime artifact を読む。
 
 `docs/archive/legacy_read_only_collectors_2026-05-28/` 配下の 3 文書は、この legacy read-only collector chain の補助資料です。`Trade[XYZ]` migration 完了そのものの説明ではありません。
 

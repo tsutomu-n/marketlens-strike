@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-18_00:49 JST
+更新日: 2026-06-18_01:06 JST
 -->
 
 # Next Direction Current
@@ -51,7 +51,8 @@
 実務上の注意:
 
 - ここでいう「継続」は、新しい通常観察の証拠を積むことです。同じ trading day の artifact を rerun しても `10 trading days` の代替証拠にはならない。
-- 現状は最新通常 session の `fills=20/20` は満たしているが、`trading_days=1/10` なので、必要なのは同日 fill の水増しではなく、別 trading day を含む通常観察です。
+- 現在の不足量は固定値としてこの文書に写さず、`strategy-paper-observation-status` の `latest_normal_requirement_gaps.fills` と `latest_normal_requirement_gaps.trading_days` を読む。
+- fills が満たされていても trading days が残っている場合、必要なのは同日 fill の水増しではなく、別 trading day を含む通常観察です。
 - 既存 session に追記する場合は `strategy-paper-observation-append` を使う。新規 session を切る場合も、`latest_normal_requirement_gaps` が進んだかを `strategy-paper-observation-status` で確認する。
 
 実行候補:
@@ -192,7 +193,7 @@ uv run sis phase-gate-review
 
 Trade[XYZ] は read-only execution state collector contract 実装済みだが、通常実行では external API を使わず、public user address 未設定として止まる。未設定時の execution gap は `trade_xyz_execution_state_user_address_missing` と `set_trade_xyz_execution_state_public_user_address` を見る。Bitget demo は demo credentials と read-only network probe の有無を別に確認する。
 
-これは read-only / paper gate の失敗とは別に読む。`phase-gate-review` が `READ_ONLY_GO` / `phase2_entry_allowed=true` でも、それは execution readiness や live readiness の証明ではない。`check-go-no-go` と evidence card は補助 report であり、live readiness の正本ではない。
+これは read-only / paper gate の失敗とは別に読む。`phase-gate-review` が通過系に見えても、それは execution readiness や live readiness の証明ではない。`check-go-no-go` と evidence card は補助 report であり、live readiness の正本ではない。
 
 ## Not On Current Roadmap
 
