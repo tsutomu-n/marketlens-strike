@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-17_10:00 JST
+更新日: 2026-06-17_10:50 JST
 -->
 
 # marketlens-strike
@@ -34,15 +34,16 @@ in a fresh checkout until commands are run.
 16. [docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md)
 17. [docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md)
 18. [docs/venues/bitget_hyperliquid_capability_gate.md](docs/venues/bitget_hyperliquid_capability_gate.md)
-19. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
-20. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
-21. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-22. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-23. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-24. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
-25. [docs/MIGRATION_HISTORY.md](docs/MIGRATION_HISTORY.md) is the implementation history index.
-26. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md) is a historical backtest update audit.
-27. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
+19. [docs/venues/read_only_capability_probe.md](docs/venues/read_only_capability_probe.md)
+20. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
+21. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
+22. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+23. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+24. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+25. [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+26. [docs/MIGRATION_HISTORY.md](docs/MIGRATION_HISTORY.md) is the implementation history index.
+27. [docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md) is a historical backtest update audit.
+28. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md) is a historical migration contract.
 
 ## Setup
 
@@ -76,6 +77,12 @@ Operations and status artifacts:
 uv run sis implementation-status --write
 uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
+```
+
+Venue capability boundary probe:
+
+```bash
+uv run sis venue-read-only-probe
 ```
 
 Trade[XYZ] read-only refresh:
@@ -227,6 +234,7 @@ Strategy idea preparation starts at
 - `VenueId` currently allows `trade_xyz` and `bitget_demo`.
 - `bitget_futures` and `hyperliquid_perp` are suitability/capability catalog entries only; they are not current `VenueId` values and are not accepted by Strategy Lab artifact schemas.
 - `src/sis/venues/capabilities.py` records venue capability state. It makes `bitget_futures` and `hyperliquid_perp` known but schema-disabled, paper-disabled, network-disabled, and live-disabled.
+- `venue-read-only-probe` writes fixture-first local artifacts for these venue boundaries. It does not use external APIs, credentials, wallet, signing, exchange writes, live orders, or network attempts.
 - `bitget_demo` is accepted by execution-venue schemas, but `evaluation_plan.mls.v1` still fixes `target_venue` to `trade_xyz`; do not treat `bitget_demo` as a complete Strategy Lab evaluation target.
 - `trade_xyz`, `bitget_demo`, `real_market`, `tracking`, `paper`, and `micro_live` code surfaces exist.
 - `src/sis/cli.py` builds the root Typer app; command implementations live under `src/sis/commands/`.

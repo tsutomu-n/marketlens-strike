@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-17_10:00 JST
+更新日: 2026-06-17_10:50 JST
 -->
 
 # Implemented Surfaces
@@ -54,6 +54,7 @@ NDX approvals do not prove alpha, backtest readiness, paper readiness, live read
 | Trade[XYZ] data readiness / phase gate | implemented read-only | `validate-artifacts`, `phase-gate-review`, `trade-xyz-collection-status` |
 | Trade[XYZ] pure backtest v0.1 | implemented Python API, no public CLI | `src/sis/backtest/engine/`, `src/sis/backtest/trade_xyz/`, `tests/backtest/` |
 | Bitget demo smoke | implemented local/mock-first | `bitget-demo-smoke`, `src/sis/execution/bitget_demo_adapter.py` |
+| Venue read-only capability probe | implemented fixture-first / no-network | `venue-read-only-probe`, `src/sis/venues/read_only_probe.py`, `schemas/venue_read_only_probe_summary.v1.schema.json`, `docs/venues/read_only_capability_probe.md` |
 | paper operations | implemented paper/read-only | `paper-step`, `paper-from-intents`, `paper-report`, `paper-operations-cycle` |
 | operations / audit / remediation surfaces | implemented | `operations-dashboard`, `operations-bundle`, `audit-*`, `remediation-*`, `current-state-index`, `readiness-snapshot` |
 
@@ -61,6 +62,7 @@ NDX approvals do not prove alpha, backtest readiness, paper readiness, live read
 
 - `VenueId` currently allows `trade_xyz` and `bitget_demo`.
 - `bitget_futures` and `hyperliquid_perp` are catalog-only / disabled for current Strategy Lab schemas.
+- `venue-read-only-probe` is a local fixture-first boundary artifact. It does not prove network readiness, credential readiness, paper readiness, or live readiness.
 - `bitget_demo` is a demo execution surface, not production Bitget readiness.
 - `PaperIntentPreview` is paper-only and requires revalidation before paper flow use.
 - `strategy-review-build` creates review artifacts only. `strategy-review-record` records human decisions against those artifacts. Neither authorizes paper execution or live trading.

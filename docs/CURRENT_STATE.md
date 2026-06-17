@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-17_10:00 JST
+更新日: 2026-06-17_10:50 JST
 -->
 
 # Current State
@@ -15,6 +15,7 @@
 - `VenueId` は `trade_xyz` と `bitget_demo` を許可する。Strategy Lab の signal / candidate / paper intent schema も同じ enum に揃っている。
 - `VENUE_SUITABILITY_CATALOG` は `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp` を持つが、`bitget_futures` と `hyperliquid_perp` は catalog-only で、現行 `VenueId` や Strategy Lab artifact schema には入らない。
 - `src/sis/venues/capabilities.py` は `bitget_futures` と `hyperliquid_perp` を known but schema-disabled / paper-disabled / network-disabled / live-disabled として固定する。`bitget_demo` は execution-venue schema では許可されるが、`evaluation_plan.mls.v1` の `target_venue` としてはまだ disabled。
+- `venue-read-only-probe` は 4 venue の capability boundary を fixture-first local artifact として出す。external API、credentials、wallet、signing、exchange write、live order、network attempt は使わない。これは network readiness、paper permission、live permission ではない。
 - Strategy Authoring baseline は外部 API なしの fixture seed で backtest まで通せる。
 - Strategy Lifecycle control plane は `strategy-backtest-acceptance`、`strategy-paper-observation-cycle`、`strategy-lifecycle-review` に実装済み。Backtest acceptance、fresh paper intent generation、session manifest / session ledger、NDX paper observation review、phase gate summary を local artifact で統合し、`REJECT_OR_REVISE` / `CONTINUE_RESEARCH` / `BACKTEST_ACCEPTED` / `CONTINUE_PAPER_OBSERVATION` / `CONTINUE_EXECUTION_READINESS` / `ELIGIBLE_FOR_LIVE_CANARY_PLAN` / `BLOCKED_BOUNDARY_VIOLATION` を出す。これは live order、wallet、exchange write を許可しない。`strategy-backtest-suite` は `strategy_backtest_suite.v1` YAML から複数spec / 複数backtest case を実行し、suite result / report に集約し、標準例では `single_window`、`walk_forward:trading_day`、`purged_walk_forward:trading_day`、`purged_walk_forward:trading_day+return_bootstrap`、`purged_walk_forward:trading_day+block_bootstrap` の手法別 run 数を `method_matrix` に記録する。resampling case は実行済み signal return から deterministic bootstrap 分布を作り、`summary.resampling` に p05 / p50 / p95 / positive rate を残す。`strategy-backtest-stress`、`strategy-backtest-regime-split`、`strategy-backtest-rolling-stability`、`strategy-backtest-benchmark-relative` は paper-only robustness artifact を作る。`strategy-backtest-benchmark-relative` は row-level、明示 external series、quote-derived benchmark return を source hash 付きで扱える。`strategy-backtest-compare` は現行 backtest metrics を比較用 canonical artifact に正規化し、native overall / walk-forward era / optimizer sweep、suite result、adapter spike、external framework result、portfolio comparison、metric extension、report extension、stress、regime split、rolling stability、benchmark relative を同じ artifact に記録する。`strategy-backtest-pack` は標準 artifact chain を一括生成し、標準 engine は `strategy_authoring_native`、標準完成線は `complete_without_locked_external_dependency`、`external_adapters_required_for_completion=false` である。`vectorbt==1.0.0` は `vectorbt` optional extra、`bt==1.2.0` は `bt` optional extra、`empyrical-reloaded==0.5.12` は `metrics` optional extra、`quantstats==0.0.81` は `reports` optional extra として採用済みで、それぞれ `dependency_source=optional_extra_available` を artifact に記録する。`vectorbt` は `Apache 2.0 with Commons Clause` の license decision を owner 承認済みとして扱う。live 許可は出さない。
 - Strategy Review は `strategy-review-build` と `strategy-review-record` に実装済み。前者は既存 backtest pack / validation / optional authoring spec / optional lifecycle review から人間レビュー用の `review.md` と機械検証用の `review_manifest.json` を作る。後者は人間判断を `operator_review.yaml` として hash 付きで保存し、現在の `review.md` / `review_manifest.json` と再照合する。これは alpha、paper readiness、live readiness、paper execution permission を証明しない。入口は `docs/strategy_review/README.md`、copy-paste 手順は `docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md`。
@@ -78,6 +79,7 @@
 - Strategy Lab JSON schema files under `schemas/`; full runtime validation is in `src/sis/research/strategy_lab/` and `src/sis/research_protocol/`
 - venue suitability policy: `src/sis/venues/suitability.py` with `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp`; current schemas still accept only `trade_xyz` and `bitget_demo`
 - venue capability contract: `src/sis/venues/capabilities.py`; `bitget_futures` and `hyperliquid_perp` are known future venues but disabled for schema, paper, network, and live; `bitget_demo` is disabled for `evaluation_plan.mls.v1` target venue
+- fixture-first venue read-only capability probe: `venue-read-only-probe`, `src/sis/venues/read_only_probe.py`, `schemas/venue_read_only_probe_summary.v1.schema.json`, `docs/venues/read_only_capability_probe.md`
 - NDX Layer 2.2 DAG/review gate schemas: `schemas/research_*.schema.json`, `schemas/core_dag.v1.schema.json`, `schemas/counter_dag.v1.schema.json`, `schemas/llm_dag_review.v1.schema.json`, `schemas/layer_2_2_human_resolutions.v1.schema.json`, `schemas/layer_2_2_exit_decision.v1.schema.json`, `schemas/layer_2_2_freeze_manifest.v1.schema.json`
 - NDX Layer 2.3/2.4 schemas: `schemas/ndx_data_source_resolution.v1.schema.json`, `schemas/ndx_feature_manifest.v1.schema.json`, `schemas/ndx_open_gap_residual_manifest.v1.schema.json`, `schemas/ndx_residual_validation_decision.v1.schema.json`, `schemas/ndx_residual_validation_summary.v1.schema.json`
 
@@ -197,10 +199,11 @@ PR-08 専用確認:
 16. `docs/strategy_research_lab/README.md`
 17. `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
 18. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
-19. `docs/OPERATIONS_RUNBOOK.md`
-20. `docs/ARCHITECTURE_AND_PHASES.md`
-21. `docs/trade_xyz_bot_beginner_guide.html`
-22. `plan/README.md`
+19. `docs/venues/read_only_capability_probe.md`
+20. `docs/OPERATIONS_RUNBOOK.md`
+21. `docs/ARCHITECTURE_AND_PHASES.md`
+22. `docs/trade_xyz_bot_beginner_guide.html`
+23. `plan/README.md`
 
 historical focused audit:
 

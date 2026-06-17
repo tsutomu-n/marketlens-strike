@@ -25,6 +25,8 @@ from sis.settings import get_settings
 from sis.state.reconciliation import reconcile_positions
 from sis.state.store import StateStore
 from sis.storage.jsonl_store import write_json
+from sis.venues.read_only_probe import build_venue_read_only_probe_report
+from sis.venues.read_only_probe import build_venue_read_only_probe_summary
 
 
 class _StateStoreFactory(Protocol):
@@ -260,6 +262,36 @@ def register_execution_commands(
             typer.echo(f"recommended_read_order_{index}={item}")
         if status != "configured":
             raise typer.Exit(2)
+
+    @app.command("venue-read-only-probe")
+    def venue_read_only_probe_cmd() -> None:
+        settings = get_settings()
+        summary_path = settings.data_dir / "ops/venue_read_only_probe_summary.json"
+        report_path = settings.data_dir / "reports/venue_read_only_probe.md"
+        try:
+            summary = build_venue_read_only_probe_summary()
+            report = build_venue_read_only_probe_report(summary)
+            write_json(summary_path, summary)
+            report_path.parent.mkdir(parents=True, exist_ok=True)
+            report_path.write_text(report, encoding="utf-8")
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo(f"status={summary['status']}")
+        typer.echo(f"run_id={summary['run_id']}")
+        typer.echo(f"venue_count={summary['venue_count']}")
+        typer.echo(f"external_api_used={summary['external_api_used']}")
+        typer.echo(f"credentials_used={summary['credentials_used']}")
+        typer.echo(f"wallet_used={summary['wallet_used']}")
+        typer.echo(f"signing_used={summary['signing_used']}")
+        typer.echo(f"exchange_write_used={summary['exchange_write_used']}")
+        typer.echo(f"network_attempted={summary['network_attempted']}")
+        typer.echo(f"summary_path={summary_path}")
+        typer.echo(f"report_path={report_path}")
+        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
+            typer.echo(f"recommended_read_order_{index}={item}")
 
     @app.command("fill-status")
     def fill_status_cmd(

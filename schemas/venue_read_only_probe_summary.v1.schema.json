@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "venue_read_only_probe_summary.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "generated_at",
+    "status",
+    "external_api_used",
+    "credentials_used",
+    "wallet_used",
+    "signing_used",
+    "exchange_write_used",
+    "live_order_submitted",
+    "network_attempted",
+    "venue_count",
+    "venues"
+  ],
+  "properties": {
+    "schema_version": {"const": "venue_read_only_probe_summary.v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "generated_at": {"type": "string", "minLength": 1},
+    "status": {"enum": ["blocked", "not_configured", "fixture_only"]},
+    "external_api_used": {"const": false},
+    "credentials_used": {"const": false},
+    "wallet_used": {"const": false},
+    "signing_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "live_order_submitted": {"const": false},
+    "network_attempted": {"const": false},
+    "venue_count": {"type": "integer", "minimum": 0},
+    "venues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "venue_id",
+          "venue_family",
+          "asset_universe",
+          "known_in_capability_catalog",
+          "known_in_suitability_catalog",
+          "current_venue_id_enabled",
+          "schema_enabled",
+          "strategy_lab_enabled",
+          "evaluation_plan_enabled",
+          "paper_enabled",
+          "paper_candidate_enabled",
+          "paper_intent_enabled",
+          "read_only_network_enabled",
+          "credentialed_read_only_enabled",
+          "paper_execution_enabled",
+          "live_enabled",
+          "external_api_used",
+          "credentials_used",
+          "wallet_used",
+          "signing_used",
+          "exchange_write_used",
+          "live_order_submitted",
+          "network_attempted",
+          "read_only_probe_status",
+          "read_only_probe_mode",
+          "credential_status",
+          "not_attempted_reasons",
+          "block_reasons",
+          "notes",
+          "next_action"
+        ],
+        "properties": {
+          "venue_id": {"type": "string"},
+          "venue_family": {"type": "string"},
+          "asset_universe": {"type": "string"},
+          "known_in_capability_catalog": {"type": "boolean"},
+          "known_in_suitability_catalog": {"type": "boolean"},
+          "current_venue_id_enabled": {"type": "boolean"},
+          "schema_enabled": {"type": "boolean"},
+          "strategy_lab_enabled": {"type": "boolean"},
+          "evaluation_plan_enabled": {"type": "boolean"},
+          "paper_enabled": {"type": "boolean"},
+          "paper_candidate_enabled": {"type": "boolean"},
+          "paper_intent_enabled": {"type": "boolean"},
+          "read_only_network_enabled": {"type": "boolean"},
+          "credentialed_read_only_enabled": {"type": "boolean"},
+          "paper_execution_enabled": {"type": "boolean"},
+          "live_enabled": {"type": "boolean"},
+          "external_api_used": {"const": false},
+          "credentials_used": {"const": false},
+          "wallet_used": {"const": false},
+          "signing_used": {"const": false},
+          "exchange_write_used": {"const": false},
+          "live_order_submitted": {"const": false},
+          "network_attempted": {"const": false},
+          "read_only_probe_status": {
+            "enum": ["local_capability_only", "blocked_by_capability", "not_configured"]
+          },
+          "read_only_probe_mode": {"const": "fixture_only"},
+          "credential_status": {"enum": ["not_required", "not_checked"]},
+          "not_attempted_reasons": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "block_reasons": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "notes": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "next_action": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

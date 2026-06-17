@@ -40,6 +40,7 @@ def test_strategy_lab_schema_files_exist_and_parse() -> None:
         "strategy_backtest_framework_smoke.v1.schema.json",
         "strategy_backtest_pack.v1.schema.json",
         "strategy_backtest_pack_validation.v1.schema.json",
+        "venue_read_only_probe_summary.v1.schema.json",
         "instrument_registry_snapshot.v1.schema.json",
         "funding_event.v1.schema.json",
         "fee_snapshot.v1.schema.json",

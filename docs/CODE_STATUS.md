@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-17_06:32 JST
+更新日: 2026-06-17_10:50 JST
 -->
 
 # Code Status
@@ -25,6 +25,7 @@
 | runtime artifact / readiness を見る | [CURRENT_STATE.md](CURRENT_STATE.md) |
 | operator 手順を見る | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) |
 | Strategy Review を使う | [strategy_review/README.md](strategy_review/README.md) |
+| venue capability boundary を見る | [venues/read_only_capability_probe.md](venues/read_only_capability_probe.md) |
 
 ## Verification
 

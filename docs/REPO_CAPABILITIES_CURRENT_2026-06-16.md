@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-17_10:00 JST
+更新日: 2026-06-17_10:50 JST
 -->
 
 # Repo Capabilities Current
@@ -472,11 +472,13 @@ reference-only / 採用前 contract:
 - venue suitability catalog には `trade_xyz`, `bitget_demo`, `bitget_futures`, `hyperliquid_perp` がある。
 - venue capability contract では `bitget_futures` と `hyperliquid_perp` を known future venues として持つが、schema / paper / network / live は disabled。
 - `bitget_demo` は execution-venue schema では許可されるが、Strategy Lab `evaluation_plan.mls.v1` の target venue としてはまだ disabled。
+- `venue-read-only-probe` で 4 venue の capability boundary を fixture-first local artifact として出せる。external API、credentials、wallet、signing、exchange write、live order、network attempt は使わない。
 
 境界:
 
 - `bitget_futures` と `hyperliquid_perp` は current `VenueId` ではない。
 - NDX/QQQ は research / backtest record として保持できるが、valid paper-observation evidence がない限り paper candidate / paper intent path で fail closed する。
+- `venue-read-only-probe` は network readiness、credential readiness、paper permission、live permission ではない。
 
 ## 13. Schemas / Artifact Contracts
 
@@ -494,6 +496,7 @@ reference-only / 採用前 contract:
 - NDX / research gates: `ndx_*`, `layer_2_2_*`, `core_dag.v1`, `counter_dag.v1`, `llm_dag_review.v1`
 - Research protocol: `research_seed_registry.v1`, `research_scope.v1`, `research_variable_inventory.v1`, `research_temporal_availability.v1`, `research_causal_roles.v1`, `research_mechanism_parts.v1`
 - Market / venue / quote artifacts: `quote_log_v1`, `quote_log_v2`, `quote_log_v2.trade_xyz.strict`, `trade_xyz_*`, `instrument_registry*`, `cost_snapshot`, `fee_snapshot`, `funding_event`, `funding_history_event`, `session_calendar_snapshot`, `session_state_observation`
+- Venue capability: `venue_read_only_probe_summary.v1`
 - Snapshot / operations guard: `data_snapshot_manifest.v1`, `feature_snapshot_manifest.v1`, `go_no_go_report`
 
 境界:
@@ -645,6 +648,7 @@ reference-only / 採用前 contract:
 - `estimate-order`
 - `balance-status`
 - `bitget-demo-smoke`
+- `venue-read-only-probe`
 - `fill-status`
 - `cancel-order`
 - `close-position`
