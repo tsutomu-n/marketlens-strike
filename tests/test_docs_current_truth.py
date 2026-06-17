@@ -116,6 +116,16 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "docs/DOCUMENT_AUDIT_2026-06-15_CODE_TRUTH_CHECKLIST.md" in legacy_root_paths
     assert "docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md" not in current_doc_files
     assert "docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md" in legacy_root_paths
+    assert "docs/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md" not in current_doc_files
+    assert "docs/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md" in legacy_root_paths
+    assert (
+        "docs/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md" not in current_doc_files
+    )
+    assert "docs/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md" in legacy_root_paths
+    assert (
+        "docs/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md" not in current_doc_files
+    )
+    assert "docs/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md" in legacy_root_paths
 
     current_status_docs = set(checker_globals["CURRENT_STATUS_DOC_FILES"])
     assert "README.md" in current_status_docs

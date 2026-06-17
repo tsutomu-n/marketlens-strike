@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-18_00:39 JST
+更新日: 2026-06-18_01:12 JST
 -->
 
 # Documentation Archive
@@ -88,5 +88,8 @@ Archived on 2026-06-17:
 - `docs/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` -> `docs/archive/2026-06-17-doc-routing/`
 - `docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` -> `docs/archive/2026-06-17-doc-routing/`
 - `docs/NEXT_IMPLEMENTATION_SEQUENCE_CURRENT.md` -> `docs/archive/2026-06-17-doc-routing/`
+- `docs/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md` -> `docs/archive/2026-06-17-doc-routing/`
+- `docs/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md` -> `docs/archive/2026-06-17-doc-routing/`
+- `docs/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md` -> `docs/archive/2026-06-17-doc-routing/`
 
 Do not treat archived documents as current requirements.

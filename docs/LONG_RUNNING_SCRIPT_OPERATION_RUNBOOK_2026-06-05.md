@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-05_07:55 JST
-更新日: 2026-06-05_07:55 JST
+更新日: 2026-06-18_01:12 JST
 -->
 
 # Long Running Script Operation Runbook 2026-06-05
@@ -399,7 +399,7 @@ primary raw file:
 PID固有の自然終了条件:
 
 ```text
-docs/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md
+docs/archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md
 ```
 
 ## 完了条件

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_21:52 JST
-更新日: 2026-06-17_21:52 JST
+更新日: 2026-06-18_01:12 JST
 -->
 
 # Trade[XYZ] Runbook
@@ -46,12 +46,12 @@ scripts/collect_trade_xyz_data_until_ready.sh
 setsid -f scripts/collect_trade_xyz_data_until_ready.sh >/tmp/trade_xyz_until_ready.nohup 2>&1 < /dev/null
 ```
 
-2026-06-04_16:39 JST 起動の24時間 quote coverage cycle 後にやることは、
-[TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md](../TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md) を見る。
-ユーザー向けの短い判断記録は
-[TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md](../TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md) を見る。
-PID 2484910 の自然終了条件は
-[TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md](../TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md) を見る。
+2026-06-04_16:39 JST 起動の24時間 quote coverage cycle 後にやること、ユーザー向けの短い判断記録、PID 2484910 の自然終了条件は historical operational record として archive に残す。現在の Trade[XYZ] restart 手順の正本ではない。
+
+- [TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md](../archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md)
+- [TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md](../archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md)
+- [TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md](../archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md)
+
 今後同様の長時間 script / wrapper / supervisor を回すときの汎用運用は
 [LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md](../LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md) を見る。
 

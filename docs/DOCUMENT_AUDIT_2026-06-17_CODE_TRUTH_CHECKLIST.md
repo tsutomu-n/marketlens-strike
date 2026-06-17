@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_01:06 JST
+更新日: 2026-06-18_01:12 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -43,6 +43,7 @@
 28. `README.md`、`docs/NEXT_DIRECTION_CURRENT.md`、`docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` は 2026-06-18_00:49 JST に、古い operations dashboard / evidence card / execution artifact の固定 snapshot 値を tracked docs へ写さず、再実行 command と読む field に寄せた。`scripts/check_current_docs.py` は同種の古い marker の再混入を current-status docs で失敗させる。
 29. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` は 2026-06-18_00:59 JST に、paper observation の session id / fills / trading days などの固定 runtime 値を tracked docs へ写さず、`strategy-paper-observation-status` と読む field に寄せた。`scripts/check_current_docs.py` は同種の古い marker の再混入を current-status docs で失敗させる。
 30. `docs/NEXT_DIRECTION_CURRENT.md` と `docs/runbooks/PAPER_EXECUTION_RUNBOOK.md` は 2026-06-18_01:06 JST に、paper observation の不足量や PR12 artifact の固定 runtime 値を tracked docs へ写さず、再実行 command と読む field に寄せた。`scripts/check_current_docs.py` は同種の古い marker の再混入を current-status docs で失敗させる。
+31. `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md`、`docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md`、`docs/archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md` は、Trade[XYZ] quote coverage 収集を主目的にしていた時点の historical operational record として残す。2026-06-18_01:12 JST に current-doc checker 対象からは外した。
 
 ## 照合した正本
 
@@ -113,6 +114,9 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` | Layer 2.3/2.4 当時の fixed snapshot が中心 | 現行 NDX docs は Layer 2.8 まで current-doc checker 対象 | archive 済み |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` | 2026-06-09 の pass count snapshot がある | current verification は command 再実行 | archive 済み |
 | `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | live readiness blocker の古い分解 | 現行は Strategy Lifecycle / NDX paper observation / phase gate が増えている | archive 済み |
+| `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md` | PID、row count、phase gate、pass count など当時の snapshot が多い | 現行 Trade[XYZ] 手順は `docs/runbooks/TRADE_XYZ_RUNBOOK.md` と再実行 command が正本 | archive 済み |
+| `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md` | 2026-06-04 の collector 判断記録 | 現行 next action ではない | archive 済み |
+| `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md` | PID 2484910 固有の自然終了条件 | 汎用の長時間 script 手順は `docs/LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md` | archive 済み |
 
 ## 作り直したほうがいいドキュメント
 
@@ -141,6 +145,9 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` | 移動済み | Layer 2.3/2.4 の古い snapshot |
 | `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md` | 移動済み | NDX/QQQ venue suitability の 2026-06-09 snapshot |
 | `docs/archive/2026-06-17-doc-routing/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md` | 移動済み | current blocker 正本ではない |
+| `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md` | 移動済み | Trade[XYZ] quote coverage 待ち時点の historical operational plan |
+| `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md` | 移動済み | 2026-06-04 時点のユーザー判断記録 |
+| `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md` | 移動済み | PID 2484910 固有の自然終了条件記録 |
 | `plan/archive/2026-06-17-plan-routing/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/` | 移動済み | NDX / QQQ venue suitability gate は実装済み |
 | `plan/archive/2026-06-17-plan-routing/0609ここからの計画/02_bitget_hyperliquid_venue_design_gate/` | 移動済み | Bitget / Hyperliquid capability design gate は実装済み |
 | `plan/archive/2026-06-17-plan-routing/0610ここからの計画/01_grok_architecture_adoption_review/` | 移動済み | external suggestion review として有用だが current implementation plan ではない |
@@ -179,6 +186,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 19. [x] current status docs に古い operations / evidence / execution runtime snapshot の固定値が戻らないよう、`scripts/check_current_docs.py` に semantic drift marker を追加する。
 20. [x] current status docs に古い paper-observation runtime snapshot の固定値が戻らないよう、`scripts/check_current_docs.py` に semantic drift marker を追加する。
 21. [x] current status docs に古い PR12 execution / readiness artifact snapshot の固定値が戻らないよう、`scripts/check_current_docs.py` に semantic drift marker を追加する。
+22. [x] Trade[XYZ] quote coverage 待ち時点の historical operational record を archive へ移し、current-doc checker 対象から外す。
 
 ## 残リスク
 
