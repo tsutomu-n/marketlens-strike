@@ -114,6 +114,10 @@ CURRENT_DOC_SEMANTIC_DRIFT_MARKERS = (
         "Trade[XYZ] read-only PR12 の generated artifact gate は `READ_ONLY_GO` まで確認済み",
         "old copied PR12 generated artifact gate wording; rerun phase-gate-review and keep live-readiness boundary explicit",
     ),
+    (
+        "2026-06-15_19:13 JST 時点では、代表的な状態は次の通りです。",
+        "old copied backtest high-school guide runtime snapshot; rerun backtest artifact/status commands instead",
+    ),
 )
 
 CURRENT_STATUS_DOC_FILES = (

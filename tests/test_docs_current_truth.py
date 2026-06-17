@@ -109,6 +109,7 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "PID 2484910" in script
     assert "2026-06-04_16:39 JST" in script
     assert "generated artifact gate は `READ_ONLY_GO` まで確認済み" in script
+    assert "2026-06-15_19:13 JST 時点では、代表的な状態は次の通りです。" in script
 
     checker_globals = _checker_globals()
     current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])

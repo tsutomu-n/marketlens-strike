@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_01:50 JST
+更新日: 2026-06-18_01:57 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -49,6 +49,7 @@
 34. `docs/archive/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` と `docs/archive/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` は、2026-05-30/31 時点の Strategy Authoring progress / completion snapshot として残す。fixed pass counts と当時の current-doc 件数を含むため、2026-06-18_01:34 JST に current-doc checker 対象から外した。
 35. `docs/LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md` と `docs/runbooks/TRADE_XYZ_RUNBOOK.md` は、2026-06-18_01:42 JST に archive 済み Trade[XYZ] quote coverage 固有 PID / 起動時刻を current 手順から外した。`scripts/check_current_docs.py` は同種の再混入を全 current docs で失敗させる。
 36. `docs/archive/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md` は、backtest 責務分離の完了記録として残す。fixed pass / check 表現を含むため、2026-06-18_01:50 JST に current-doc checker 対象から外した。`docs/ARCHITECTURE_AND_PHASES.md` の `READ_ONLY_GO` 表現も runtime 再確認と live 非許可の説明へ寄せた。
+37. `docs/backtest/BACKTEST_HIGH_SCHOOL_GUIDE_2026-06-15.md` は、2026-06-18_01:57 JST に dated runtime snapshot 表を外し、`strategy-backtest-artifact-summary` / `strategy-backtest-pack-validate` / `strategy-paper-observation-status` で今の値を読む説明へ寄せた。
 
 ## 照合した正本
 
@@ -206,6 +207,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 25. [x] 2026-05-30/31 時点の Strategy Authoring progress / completion snapshot を archive へ移し、current-doc checker 対象から外す。
 26. [x] archive 済み Trade[XYZ] quote coverage 固有 PID / 起動時刻を current runbook から外し、current-doc checker で再混入を止める。
 27. [x] backtest 責務分離の完了記録を archive へ移し、`READ_ONLY_GO` を fixed completion proof と誤読させる current architecture 表現を外す。
+28. [x] 高校生向け backtest guide から dated runtime snapshot 表を外し、現在値は backtest artifact/status command で読む導線へ寄せる。
 
 ## 残リスク
 
