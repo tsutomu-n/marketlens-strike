@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:55 JST
-更新日: 2026-06-17_23:29 JST
+更新日: 2026-06-17_23:47 JST
 -->
 
 # Docs Lint Policy 2026-05-30
@@ -83,6 +83,7 @@ plan/archive/**
 - final newline がある。
 - EOF に余分な空行がない。
 - Markdown local link と HTML `href` local link が存在する。
+- HTML current docs は同名の Markdown source を持つ。
 - current docs が旧 root path へリンクしていない。
 - `README.md`、`docs/CURRENT_STATE.md`、domain runbook、capability guide など現在状態を説明する入口文書では、古い判定語、固定の current-doc 件数、固定の full-check pass 件数、古い CLI 件数、tracked docs へ写した runtime hash 表現が混入していない。
 

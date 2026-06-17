@@ -241,6 +241,12 @@ def _check_path(path: Path) -> list[str]:
     if path.suffix == ".md" and not MARKDOWN_METADATA_RE.match(text):
         errors.append(f"{rel}: missing or invalid metadata header")
 
+    if path.suffix == ".html":
+        markdown_source = path.with_suffix(".md")
+        if not markdown_source.exists():
+            source_rel = _repo_relative(markdown_source)
+            errors.append(f"{rel}: missing same-name Markdown source {source_rel}")
+
     if rel not in ALLOW_LEGACY_ROOT_PATH_TEXT:
         for legacy_path in LEGACY_ROOT_PATHS:
             if legacy_path in text:
@@ -288,7 +294,10 @@ def main() -> int:
         print("\n".join(errors))
         return 1
     checked_count = len(_iter_current_docs())
-    print(f"checked {checked_count} current docs: metadata, links, EOF, and legacy roots ok")
+    print(
+        f"checked {checked_count} current docs: "
+        "metadata, links, EOF, legacy roots, HTML sources, and semantic drift ok"
+    )
     return 0
 
 
