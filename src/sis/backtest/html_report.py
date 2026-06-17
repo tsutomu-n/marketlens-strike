@@ -256,9 +256,11 @@ def _result_label(
 
     if trade_count < min_trade_count_for_candidate:
         reasons.append(
-            f"trade_count={trade_count} is below candidate minimum {min_trade_count_for_candidate}"
+            f"trade_count={trade_count} が候補最低件数 {min_trade_count_for_candidate} を下回っています。"
         )
-        next_checks.append("Add more out-of-sample trades before treating the result as stable.")
+        next_checks.append(
+            "out-of-sample の trade を増やしてから、安定した結果として扱うか確認する。"
+        )
         return {
             "code": "insufficient_evidence",
             "label": "検証不足",
@@ -268,11 +270,11 @@ def _result_label(
         }
 
     if total_return is None or total_return <= 0:
-        reasons.append("total_return is not positive")
+        reasons.append("total_return がプラスではありません。")
     if max_drawdown is not None and max_drawdown < -0.2:
-        reasons.append("max_drawdown is worse than -20%")
+        reasons.append("max_drawdown が -20% より悪化しています。")
     if reasons:
-        next_checks.append("Review drawdown, cost drag, and rejected-signal reasons.")
+        next_checks.append("drawdown、cost drag、rejected signal の理由を確認する。")
         return {
             "code": "weak",
             "label": "弱い",
@@ -283,20 +285,20 @@ def _result_label(
 
     missing_gate_reasons: list[str] = []
     if not validation_pass:
-        missing_gate_reasons.append("pack validation is not PASS")
+        missing_gate_reasons.append("pack validation が PASS ではありません。")
     if not data_pass:
-        missing_gate_reasons.append("data availability is not pass")
+        missing_gate_reasons.append("data availability が pass ではありません。")
     if not no_lookahead_pass:
-        missing_gate_reasons.append("no-lookahead replay has failures or is missing")
+        missing_gate_reasons.append("no-lookahead replay に失敗または欠損があります。")
     if stress_worst is None or stress_worst < 0:
-        missing_gate_reasons.append("worst stress scenario is negative or missing")
+        missing_gate_reasons.append("worst stress scenario がマイナスまたは欠損です。")
     if active_return is None or active_return < 0:
-        missing_gate_reasons.append("benchmark active return is negative or missing")
+        missing_gate_reasons.append("benchmark active return がマイナスまたは欠損です。")
     if missing_gate_reasons:
         next_checks.extend(
             [
-                "Run or inspect benchmark-relative, stress, no-lookahead, and data availability artifacts.",
-                "Check whether the result survives costs, stress, and benchmark comparison.",
+                "benchmark-relative、stress、no-lookahead、data availability artifact を実行または確認する。",
+                "cost、stress、benchmark 比較に耐えているか確認する。",
             ]
         )
         return {
@@ -312,11 +314,11 @@ def _result_label(
         "label": "paper観察候補",
         "description": "次に観察候補として読む余地があります。ただし paper 実行許可ではありません。",
         "reasons": [
-            "pack validation, data availability, no-lookahead, stress, benchmark, and trade-count gates passed"
+            "pack validation、data availability、no-lookahead、stress、benchmark、trade-count gate を通過しています。"
         ],
         "next_checks": [
-            "Have a human review the artifacts and operator review output.",
-            "Record any paper observation separately; this report does not submit or permit orders.",
+            "人間が artifact と operator review output を読む。",
+            "paper observation は別 artifact として記録する。この report は注文送信も許可もしない。",
         ],
     }
 
