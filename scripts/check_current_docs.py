@@ -87,6 +87,63 @@ LAYER22_SEMANTIC_DRIFT_MARKERS = (
     ("open_to_close_outcome", "old QQQ proxy label; use qqq_open_to_close_return"),
 )
 
+CURRENT_STATUS_DOC_FILES = (
+    "README.md",
+    "docs/CURRENT_STATE.md",
+    "docs/CODE_STATUS.md",
+    "docs/IMPLEMENTED_SURFACES.md",
+    "docs/NEXT_DIRECTION_CURRENT.md",
+    "docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md",
+    "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md",
+    "docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md",
+    "docs/OPERATIONS_RUNBOOK.md",
+    "docs/backtest/README.md",
+    "docs/research/ndx/README.md",
+    "docs/runbooks/README.md",
+    "docs/runbooks/NDX_RESEARCH_RUNBOOK.md",
+    "docs/runbooks/PAPER_EXECUTION_RUNBOOK.md",
+    "docs/runbooks/STRATEGY_RESEARCH_RUNBOOK.md",
+    "docs/runbooks/TRADE_XYZ_RUNBOOK.md",
+    "docs/strategy_lifecycle/README.md",
+    "docs/strategy_review/README.md",
+    "docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md",
+    "docs/strategy_research_lab/README.md",
+    "docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md",
+    "docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md",
+    "docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md",
+    "docs/trade_xyz_bot_beginner_guide.md",
+)
+
+CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS = (
+    (
+        "REVISE_2_3",
+        "old NDX revision decision; current status docs must point to current artifacts",
+    ),
+    (
+        "162 commands",
+        "old public CLI count; rerun scripts/check_cli_catalog.py",
+    ),
+    (
+        "Latest local Layer 2.2 exit decision artifact",
+        "old copied Layer 2.2 status wording; rerun Layer 2.2 commands instead",
+    ),
+    (
+        "pack hash sha256:",
+        "old copied runtime hash wording; inspect runtime artifacts instead",
+    ),
+)
+
+CURRENT_STATUS_SEMANTIC_DRIFT_PATTERNS = (
+    (
+        re.compile(r"\bchecked \d+ current docs\b"),
+        "fixed current-doc count snapshot such as checked 125 current docs; rerun scripts/check_current_docs.py",
+    ),
+    (
+        re.compile(r"\b\d{3,4} passed\b"),
+        "fixed local pass-count snapshot; rerun ./scripts/check",
+    ),
+)
+
 ALLOW_LEGACY_ROOT_PATH_TEXT = {
     "docs/DOCUMENT_AUDIT_2026-05-31.md",
     "docs/DOCS_LINT_POLICY_2026-05-30.md",
@@ -113,6 +170,10 @@ def _is_excluded(path: Path) -> bool:
     if rel in CURRENT_DOC_FILES:
         return False
     return any(rel.startswith(prefix) for prefix in EXCLUDED_DOC_PREFIXES)
+
+
+def _is_current_status_doc(rel: str) -> bool:
+    return rel in CURRENT_STATUS_DOC_FILES
 
 
 def _iter_current_docs() -> list[Path]:
@@ -189,6 +250,16 @@ def _check_path(path: Path) -> list[str]:
         for marker, reason in LAYER22_SEMANTIC_DRIFT_MARKERS:
             if marker in text:
                 errors.append(f"{rel}: Layer 2.2 semantic drift marker {marker!r}: {reason}")
+
+    if _is_current_status_doc(rel):
+        for marker, reason in CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS:
+            if marker in text:
+                errors.append(f"{rel}: current-status semantic drift marker {marker!r}: {reason}")
+        for pattern, reason in CURRENT_STATUS_SEMANTIC_DRIFT_PATTERNS:
+            if pattern.search(text):
+                errors.append(
+                    f"{rel}: current-status semantic drift pattern {pattern.pattern!r}: {reason}"
+                )
 
     for kind, raw_target in _local_link_targets(path, text):
         target = _normalize_link_target(raw_target)

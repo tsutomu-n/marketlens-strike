@@ -1,10 +1,16 @@
 from pathlib import Path
+import runpy
 import subprocess
 import sys
+from typing import Any
 
 
 def _read(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
+
+
+def _checker_globals() -> dict[str, Any]:
+    return runpy.run_path("scripts/check_current_docs.py", run_name="check_current_docs_under_test")
 
 
 def test_operations_runbook_does_not_claim_trade_xyz_log_quotes_cli() -> None:
@@ -78,6 +84,25 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "missing or invalid metadata header" in script
     assert "LAYER22_SEMANTIC_DRIFT_MARKERS" in script
     assert "research-dag-" in script
+    assert "CURRENT_STATUS_DOC_FILES" in script
+    assert "CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS" in script
+    assert "CURRENT_STATUS_SEMANTIC_DRIFT_PATTERNS" in script
+    assert "REVISE_2_3" in script
+    assert "162 commands" in script
+    assert "checked 125 current docs" in script
+
+    checker_globals = _checker_globals()
+    current_status_docs = set(checker_globals["CURRENT_STATUS_DOC_FILES"])
+    assert "README.md" in current_status_docs
+    assert "docs/CURRENT_STATE.md" in current_status_docs
+    assert "docs/CODE_STATUS.md" in current_status_docs
+    assert "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md" in current_status_docs
+    assert "docs/research/ndx/README.md" in current_status_docs
+    assert "docs/runbooks/NDX_RESEARCH_RUNBOOK.md" in current_status_docs
+    assert "docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md" not in current_status_docs
+    assert (
+        "docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md" not in current_status_docs
+    )
 
 
 def test_human_facing_html_guides_have_markdown_sources() -> None:
