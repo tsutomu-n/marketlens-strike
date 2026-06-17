@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-17_20:57 JST
+更新日: 2026-06-17_21:13 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -273,6 +273,7 @@ uv run sis bitget-demo-smoke
 - `README.md`: リポジトリ全体の入口です。セットアップ、主要コマンド、読む順番をまとめています。
 - `docs/CURRENT_STATE.md`: 現在の状態を短く読むための文書です。細かい実装履歴よりも、いまの判断を優先して読む場所です。
 - `docs/IMPLEMENTED_SURFACES.md`: 実装済みの主要機能を一覧で確認する文書です。全体をざっと把握する時に使います。
+- `docs/NEXT_DIRECTION_CURRENT.md`: 次にどの方向へ進むか、外部入力が来た時に何を再確認するかをまとめた文書です。paper / live 許可と read-only 確認を混同しないために使います。
 - `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`: できること、できないことを技術寄りに詳しく整理した文書です。この文書より詳細です。
 - `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`: この文書です。専門用語を減らし、利用者向けに現在の範囲を説明します。
 - `docs/strategy_lifecycle/README.md`: 戦略の段階管理と paper observation の入口です。
@@ -303,5 +304,7 @@ uv run sis bitget-demo-smoke
 ## 次にやるべきこと
 
 現時点の実務的な次アクションは、通常基準の paper observation を続けることです。
+
+Trade[XYZ] の public user address、Bitget demo の認証情報、新しい trading day の paper observation 証拠が揃った場合は、`docs/NEXT_DIRECTION_CURRENT.md` の `External Input Restart Checklist` を見て、read-only / observation として再確認します。
 
 次にやるべきではないことは、smoke 合格を理由に live 実装や live 注文へ進むことです。
