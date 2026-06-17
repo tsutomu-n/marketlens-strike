@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_02:34 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -55,6 +55,7 @@
 40. `docs/archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md` は、実装済み OSS capability expansion plan と当時の外部調査・対象ファイル一覧を含む履歴資料として残す。2026-06-18_02:18 JST に current-doc checker 対象から外し、現行の backtest technical boundary は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`、CLI help、`pyproject.toml`、`uv.lock` へ寄せた。
 41. `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md` は、BP0 完了後に bridge adapter 不要と判定した historical bridge audit plan として残す。2026-06-18_02:27 JST に current-doc checker 対象から外し、現行の backtest-to-paper 導線は `docs/strategy_lifecycle/README.md` と `uv run sis strategy-paper-observation-status` へ寄せた。
 42. `plan/archive/2026-06-17-plan-routing/0609ここからの計画/03_venue_read_only_capability_probe/` は、`venue-read-only-probe` 実装と dogfood `NO_ACTION` decision まで完了した historical implementation plan として残す。root `plan/` からは外し、現行 next action は `docs/NEXT_DIRECTION_CURRENT.md` で確認する。
+43. `docs/archive/strategy_research_lab/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md` は、2026-05-30 時点の Strategy Lab doc audit / spec hybrid として残す。現行仕様は `docs/strategy_research_lab/README.md`、`01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`、`02_ARTIFACT_FLOW_AND_LINEAGE.md`、`08_CURRENT_CAPABILITIES.md`、`13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md` で確認する。
 
 ## 照合した正本
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-29_21:42 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # Repo Implementation Map
@@ -98,8 +98,9 @@
 
 ## Read order for implementers
 
-1. `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-2. `docs/strategy_research_lab/README.md`
+1. `docs/strategy_research_lab/README.md`
+2. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+3. `docs/strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md`
 3. `docs/strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
 4. `docs/strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md`
 5. `docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md`

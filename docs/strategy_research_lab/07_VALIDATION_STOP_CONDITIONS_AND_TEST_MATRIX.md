@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-09_16:13 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # Validation Stop Conditions And Test Matrix
@@ -67,7 +67,7 @@ Docs guard:
 
 ```bash
 rg -n "signals.csv|DecisionContext|ExecutionPlan|PaperIntentPreview|StrategySignalRecord|TradeCandidate" docs/strategy_research_lab docs/algo/obsidian_note_rewrites_2026-05-29
-rg -n "live_conversion_allowed=false|wallet_used=false|exchange_write_used=false|paper_only=true" docs/strategy_research_lab docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md
+rg -n "live_conversion_allowed=false|wallet_used=false|exchange_write_used=false|paper_only=true" docs/strategy_research_lab
 ```
 
 Repo standard:

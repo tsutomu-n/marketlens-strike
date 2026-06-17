@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-29_21:42 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # Pipeline Diagrams
@@ -157,6 +157,7 @@ PaperBroker
 - `docs/strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md`
 - `docs/strategy_research_lab/05_OPERATOR_RUNBOOK.md`
 
-入口監査:
+現行能力:
 
-- `docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
+- `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md`
+- `docs/strategy_research_lab/13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md`

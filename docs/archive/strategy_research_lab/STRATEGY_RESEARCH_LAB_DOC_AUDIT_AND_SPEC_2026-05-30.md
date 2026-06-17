@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-05-30_08:14 JST
-更新日: 2026-06-17_22:02 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # Strategy Research Lab Doc Audit And Spec 2026-05-30
 
-この文書は、コードを正本として Strategy Research Lab の現在仕様と既存ドキュメントの扱いを固定するための入口です。
+この文書は、2026-05-30 時点の Strategy Research Lab の仕様監査と既存ドキュメント分類をまとめた履歴資料です。現行の入口ではありません。
 
-関連する 2026-06-09 時点の全体 docs audit は `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` に archive 済み。Strategy Lab 詳細仕様は `docs/strategy_research_lab/` に展開済みです。
+関連する 2026-06-09 時点の全体 docs audit は `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md` に archive 済み。現行の Strategy Lab 仕様と能力は `docs/strategy_research_lab/` から確認します。
 
 ## 結論
 

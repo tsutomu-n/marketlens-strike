@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-12_20:55 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # Operator Runbook
@@ -301,6 +301,6 @@ uv run sis research-ndx-paper-observation-review --data-dir data --artifact-dir 
 docs と schema surface の最低確認:
 
 ```bash
-rg -n "PaperIntentPreview|TradeCandidate|strategy_signals.parquet|live_conversion_allowed|wallet_used|exchange_write_used" docs/strategy_research_lab docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md
+rg -n "PaperIntentPreview|TradeCandidate|strategy_signals.parquet|live_conversion_allowed|wallet_used|exchange_write_used" docs/strategy_research_lab
 uv run pytest tests/test_strategy_lab_*.py tests/test_strategy_run_profile.py tests/test_paper_from_intents.py
 ```

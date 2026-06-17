@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-18_00:49 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # marketlens-strike
@@ -34,15 +34,14 @@ in a fresh checkout until commands are run.
 16. [docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md)
 17. [docs/venues/bitget_hyperliquid_capability_gate.md](docs/venues/bitget_hyperliquid_capability_gate.md)
 18. [docs/venues/read_only_capability_probe.md](docs/venues/read_only_capability_probe.md)
-19. [docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](docs/STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
-20. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
-21. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-22. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-23. [docs/runbooks/README.md](docs/runbooks/README.md)
-24. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-25. [docs/trade_xyz_bot_beginner_guide.md](docs/trade_xyz_bot_beginner_guide.md)
+19. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
+20. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+21. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+22. [docs/runbooks/README.md](docs/runbooks/README.md)
+23. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+24. [docs/trade_xyz_bot_beginner_guide.md](docs/trade_xyz_bot_beginner_guide.md)
 
-The visual companion for item 25 is
+The visual companion for item 24 is
 [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html).
 
 If Trade[XYZ] public user address, Bitget demo credentials, or new normal

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-29_22:07 JST
-更新日: 2026-06-17_23:38 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # Strategy Factory
@@ -73,14 +73,15 @@ Factory docs は候補設計の入口です。実装済み artifact chain へ進
 | gate review | `PromotionDecision` |
 | paper observing entry | `PaperIntentPreview` |
 
-詳細な現行 schema と docs 監査は `../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`、実務仕様は `../../strategy_research_lab/README.md` 以下を読む。`PaperIntentPreview` は paper-only であり、live order や execution-side `OrderIntent` と混同しない。
+詳細な現行 schema は `../../strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`、artifact chain は `../../strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md`、実務仕様は `../../strategy_research_lab/README.md` 以下を読む。`PaperIntentPreview` は paper-only であり、live order や execution-side `OrderIntent` と混同しない。
 
 ## Relation To Existing Docs
 
 - 設計思想: `../ALGO_STRATEGY_SYSTEM_GUIDE.md`
 - 戦略部品: `../STRATEGY_PARTS_CATALOG.md`
 - 検証手順: `../RESEARCH_VALIDATION_PLAYBOOK.md`
-- 実装済み Strategy Lab 仕様: `../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md`
-- Strategy Lab 詳細仕様: `../../strategy_research_lab/README.md`
+- 実装済み Strategy Lab 仕様: `../../strategy_research_lab/README.md`
+- Strategy Lab schema: `../../strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
+- Strategy Lab artifact flow: `../../strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md`
 - 原ノート再構成: `../obsidian_note_rewrites_2026-05-29/`
 - signal設計付録: `../obsidian_note_rewrites_2026-05-29/appendix_materials/12_SIGNAL_DESIGN_PLAYBOOK.md`

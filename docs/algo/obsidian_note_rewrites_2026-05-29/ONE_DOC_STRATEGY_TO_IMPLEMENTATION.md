@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-29_21:42 JST
-更新日: 2026-06-05_08:11 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # One Doc: Strategy To Implementation
@@ -359,4 +359,5 @@ paper observation に進める前:
 - [../../strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md](../../strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md)
 - [../../strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md](../../strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md)
 - [../../strategy_research_lab/05_OPERATOR_RUNBOOK.md](../../strategy_research_lab/05_OPERATOR_RUNBOOK.md)
-- [../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
+- [../../strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md](../../strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md)
+- [../../strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md](../../strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md)

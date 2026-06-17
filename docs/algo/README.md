@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-28_20:41 JST
-更新日: 2026-06-17_23:38 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # Algo Strategy Docs
@@ -22,23 +22,21 @@
 6. [strategy_factory/](strategy_factory/)
    - 戦略候補を安全に量産するため、1戦略1枚の候補シート、reject taxonomy、backlog台帳、状態遷移gateで管理する。
    - 作戦パーツを候補選別へ使う運用ガイドの文章正本は [strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md](strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md)。見た目つきの別表示は [strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html](strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html)。
-7. [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md)
-   - 実装済み Strategy Research Lab の schema、artifact chain、paper-only boundary、古い docs の扱いを確認する。
-8. [../strategy_research_lab/](../strategy_research_lab/)
+7. [../strategy_research_lab/](../strategy_research_lab/)
    - Strategy Lab の売買戦略 schema、artifact flow、paper-only preview、operator runbook を詳細に確認する。
-9. [RESEARCH_VALIDATION_PLAYBOOK.md](RESEARCH_VALIDATION_PLAYBOOK.md)
+8. [RESEARCH_VALIDATION_PLAYBOOK.md](RESEARCH_VALIDATION_PLAYBOOK.md)
    - バックテスト、walk-forward、Monte Carlo、リーク検査、捨て条件を確認する。
-10. [SOURCE_NOTES_INDEX.md](SOURCE_NOTES_INDEX.md)
+9. [SOURCE_NOTES_INDEX.md](SOURCE_NOTES_INDEX.md)
    - どのObsidianノートに由来するか、どのノートを除外したかを確認する。
-11. [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/)
+10. [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/)
    - 原ノート24本を、原本なしで読める厚さに再構成した版。誤り補正、追加調査、戦略部品化を含む。
    - 図表、部品カード、売買発生シグナル設計、artifact例、テンプレートは [obsidian_note_rewrites_2026-05-29/appendix_materials/](obsidian_note_rewrites_2026-05-29/appendix_materials/) を見る。
 
 ## 正本と参照元
 
 - 現行正本: このディレクトリ直下の `ALGO_*`, `STRATEGY_*`, `RESEARCH_*`, `SOURCE_*` docs と [strategy_factory/](strategy_factory/)。
-- 実装済み Strategy Lab 正本: [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md) と `src/sis/research/strategy_lab/`。
-- Strategy Lab 詳細仕様: [../strategy_research_lab/](../strategy_research_lab/)。
+- 実装済み Strategy Lab 正本: `src/sis/research/strategy_lab/` と [../strategy_research_lab/](../strategy_research_lab/)。
+- Strategy Lab 現行能力: [../strategy_research_lab/08_CURRENT_CAPABILITIES.md](../strategy_research_lab/08_CURRENT_CAPABILITIES.md)。
 - 一次参照: [../archive/2026-06-08-doc-routing/algo/obsidian_note_copies/](../archive/2026-06-08-doc-routing/algo/obsidian_note_copies/) にある実ノートコピー。
 - 再構成参照: [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/) にある原ノートの批判的リライト。
 - 旧再構成: [../archive/2026-06-08-doc-routing/algo/obsidian_note_rewrites_2026-05-28/](../archive/2026-06-08-doc-routing/algo/obsidian_note_rewrites_2026-05-28/) は薄い初版として残すが、通常は使わない。

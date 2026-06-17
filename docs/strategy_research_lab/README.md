@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-18_01:34 JST
+更新日: 2026-06-18_02:42 JST
 -->
 
 # Strategy Research Lab
@@ -41,7 +41,7 @@
 
 2026-05-30/31 時点の Strategy Authoring progress summary と completion evidence ledger は、固定検証 snapshot を含む履歴資料として [../archive/strategy_research_lab/](../archive/strategy_research_lab/) に保存しています。
 
-入口監査仕様は [../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md](../STRATEGY_RESEARCH_LAB_DOC_AUDIT_AND_SPEC_2026-05-30.md) です。
+2026-05-30 時点の Strategy Lab doc audit / spec hybrid は、履歴資料として [../archive/strategy_research_lab/](../archive/strategy_research_lab/) に保存しています。現行仕様はこのフォルダーの読み順とコードを優先します。
 
 ## 一文での位置づけ
 
