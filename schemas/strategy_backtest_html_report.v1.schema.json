@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_backtest_html_report.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "created_at",
+    "summary",
+    "result_label",
+    "gate_statuses",
+    "visual_data",
+    "source_artifacts",
+    "html_report_path",
+    "html_report_hash",
+    "paper_observation_candidate_is_permission",
+    "min_trade_count_for_candidate",
+    "paper_only",
+    "live_order_submitted",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_backtest_html_report.v1"},
+    "created_at": {"type": "string"},
+    "summary": {
+      "type": "object",
+      "required": ["strategy_id", "trade_count", "total_return", "max_drawdown"],
+      "properties": {
+        "strategy_id": {"type": ["string", "null"]},
+        "trade_count": {"type": "integer", "minimum": 0},
+        "total_return": {"type": ["number", "null"]},
+        "total_return_label": {"type": "string"},
+        "max_drawdown": {"type": ["number", "null"]},
+        "max_drawdown_label": {"type": "string"},
+        "win_rate": {"type": ["number", "null"]},
+        "net_pnl_usd": {"type": ["number", "null"]},
+        "ending_equity_usd": {"type": ["number", "null"]},
+        "initial_capital_usd": {"type": "number"},
+        "first_signal": {"type": ["string", "null"]},
+        "last_signal": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "result_label": {
+      "type": "object",
+      "required": ["code", "label", "description", "reasons", "next_checks"],
+      "properties": {
+        "code": {
+          "enum": [
+            "insufficient_evidence",
+            "weak",
+            "needs_more_validation",
+            "paper_observation_candidate"
+          ]
+        },
+        "label": {"type": "string"},
+        "description": {"type": "string"},
+        "reasons": {"type": "array", "items": {"type": "string"}},
+        "next_checks": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "gate_statuses": {"type": "object"},
+    "visual_data": {
+      "type": "object",
+      "required": [
+        "trades",
+        "equity_curve",
+        "periods",
+        "benchmark_curve",
+        "stress_scenarios",
+        "rolling_stability_summary",
+        "regime_split_summary",
+        "comparison_diagnostics"
+      ],
+      "properties": {
+        "trades": {"type": "array", "items": {"type": "object"}},
+        "equity_curve": {"type": "array", "items": {"type": "object"}},
+        "periods": {"type": "array", "items": {"type": "object"}},
+        "benchmark_curve": {"type": "array", "items": {"type": "object"}},
+        "stress_scenarios": {"type": "array", "items": {"type": "object"}},
+        "rolling_stability_summary": {"type": "object"},
+        "regime_split_summary": {"type": "object"},
+        "comparison_diagnostics": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "source_artifacts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "exists", "sha256"],
+        "properties": {
+          "path": {"type": "string"},
+          "exists": {"type": "boolean"},
+          "sha256": {
+            "type": ["string", "null"],
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "html_report_path": {"type": "string"},
+    "html_report_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "paper_observation_candidate_is_permission": {"const": false},
+    "min_trade_count_for_candidate": {"type": "integer", "minimum": 1},
+    "paper_only": {"const": true},
+    "live_order_submitted": {"const": false},
+    "permits_live_order": {"const": false},
+    "live_conversion_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "exchange_write_used": {"const": false}
+  },
+  "additionalProperties": false
+}

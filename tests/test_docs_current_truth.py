@@ -278,6 +278,21 @@ def test_human_facing_html_guides_have_markdown_sources() -> None:
     assert html_without_markdown_source == []
 
 
+def test_strategy_backtest_guides_route_to_html_report() -> None:
+    ai_guide = _read("docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md")
+    user_guide = _read("docs/STRATEGY_AND_BACKTEST_USER_GUIDE.md")
+    current_state = _read("docs/CURRENT_STATE.md")
+    capabilities = _read("docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md")
+    cli_catalog = _read("docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md")
+
+    for text in [ai_guide, user_guide, current_state, capabilities, cli_catalog]:
+        assert "strategy-backtest-html-report" in text
+    assert "data/reports/strategy_backtest_html_report.html" in user_guide
+    assert "data/research/backtest_html_report/strategy_backtest_html_report.json" in ai_guide
+    assert "paper_observation_candidate_is_permission" in ai_guide
+    assert "paper 実行許可ではありません" in user_guide
+
+
 def test_layer22_record_is_frozen_history_not_current_hash_source() -> None:
     readme = _read("README.md")
     ndx_readme = _read("docs/research/ndx/README.md")

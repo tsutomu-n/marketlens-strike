@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-18_05:03 JST
+更新日: 2026-06-18_05:20 JST
 -->
 
 # Current State
@@ -13,6 +13,7 @@
 - いま使える主要 surface は Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operations / operations audit。詳細は [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) を読む。
 - AI / Codex が戦略作成と backtest を迷わず扱う入口は [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) を読む。
 - 人間が戦略、YAML、backtest 結果、次の確認を専門用語少なめで読む入口は [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) を読む。
+- backtest 結果を HTML / JS で見る入口は `uv run sis strategy-backtest-html-report`。生成先は `data/reports/strategy_backtest_html_report.html` と `data/research/backtest_html_report/strategy_backtest_html_report.json`。
 - 専門用語を減らして「できること / できないこと」を読む場合は [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) を読む。
 - 実務的な次方向と外部入力時の再確認は [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) を読む。
 - `READ_ONLY_GO`、Strategy Review の `READY_FOR_HUMAN_REVIEW`、backtest pack validation `PASS` は、paper execution permission、alpha proof、live readiness ではない。
@@ -25,6 +26,7 @@
 | 実装済み surface を確認する | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) |
 | AI が戦略作成 / backtest を安全に操作する | [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) |
 | 人間が戦略 / backtest 結果を理解する | [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) |
+| backtest 結果をHTMLで見る | `uv run sis strategy-backtest-html-report` |
 | 技術詳細の capability catalog を見る | [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) |
 | public CLI command catalog を見る | [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md) |
 | Strategy Lab / Strategy Authoring を使う | [strategy_research_lab/README.md](strategy_research_lab/README.md) |

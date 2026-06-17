@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-18_05:03 JST
+更新日: 2026-06-18_05:20 JST
 -->
 
 # Repo Capabilities Current
@@ -170,6 +170,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-backtest-pack` で backtest artifact chain を一括生成できる。
 - `strategy-backtest-pack-validate` で path / hash / method / paper-only boundary / framework policy を検査できる。
 - `strategy-backtest-artifact-summary` で主要 artifact field を JSON stdout にまとめられる。
+- `strategy-backtest-html-report` で既存 artifact から損益グラフ、benchmark 比較、期間指定 trade table、stress summary、結果ラベル付きの単一 HTML / JS report を作れる。
 - `strategy-review-build` で既存 backtest artifact chain から人間レビュー用 `review.md` と機械検証用 `review_manifest.json` を作れる。
 - `strategy-backtest-compare` で native result、suite、adapter spike、external result、portfolio comparison、metric extension、report extension、stress、regime split、rolling stability、benchmark relative、completion artifact を比較 artifact に正規化できる。
 - `strategy-backtest-data-availability` で local source hash、row count、timestamp range、gap / duplicate、future candidate を記録できる。

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-17_22:40 JST
+更新日: 2026-06-18_05:20 JST
 -->
 
 # Repo CLI Catalog Current
@@ -74,6 +74,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-backtest-portfolio-compare`
 - `strategy-backtest-metric-extension`
 - `strategy-backtest-report-extension`
+- `strategy-backtest-html-report`
 - `strategy-backtest-stress`
 - `strategy-backtest-regime-split`
 - `strategy-backtest-rolling-stability`

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-18_02:27 JST
+更新日: 2026-06-18_05:20 JST
 -->
 
 # Backtest Docs
@@ -90,6 +90,7 @@ Trade[XYZ] 専用 Python API surface は
 `strategy-backtest-portfolio-compare` は `bt` 用の portfolio allocation / rebalance comparison artifact を作ります。通常環境で `bt` が未インストールなら `skipped/not_installed_in_current_env`、`uv run --extra bt` 環境では `bt.run()` の結果を `strategy_backtest_portfolio_comparison.v1` に記録します。live order は行いません。
 `strategy-backtest-metric-extension` は `empyrical-reloaded` 用の metrics normalization artifact を作ります。通常環境で `empyrical` が未インストールなら `skipped/not_installed_in_current_env`、一時 `uv --with empyrical-reloaded` 環境では `empyrical` の Sharpe / drawdown / annual return / annual volatility 系 metric を `strategy_backtest_metric_extension.v1` に記録します。依存追加や live order は行いません。
 `strategy-backtest-report-extension` は `quantstats` 用の report / tear sheet artifact を作ります。通常環境で `quantstats` が未インストールなら `skipped/not_installed_in_current_env`、一時 `uv --with quantstats` 環境では `quantstats.reports.html` と `quantstats.reports.metrics` を呼び、`strategy_backtest_report_extension.v1` と HTML report path/hash、`framework_warning_count`、`framework_warnings` を記録します。既定では optional framework warning を捕捉して表示を抑え、表示したい場合は `--show-framework-warnings` を使います。依存追加や live order は行いません。
+`strategy-backtest-html-report` は既存 backtest artifact を読み、依存追加なしの単一 HTML / JS report と `strategy_backtest_html_report.v1` manifest を作ります。HTML は損益グラフ、benchmark 比較、期間指定 trade table、stress summary、結果ラベルを表示します。artifact を読むだけで、live order、wallet、signing、exchange write は行いません。
 `strategy-backtest-stress` は既存 `strategy_backtest_metrics.json` の executed signal return に追加 cost / slippage bps を掛け、`strategy_backtest_stress.v1` に scenario 別の耐性結果を記録します。既定 scenario は `base`, `mild`, `moderate`, `severe` です。依存追加や live order は行いません。
 `strategy-backtest-regime-split` は既存 `strategy_backtest_metrics.json` の executed signal return を `side`, `timeframe`, `exit_reason`, `ts_weekday`, `ts_hour` などの dimension 別に集計し、弱い bucket を確認できる `strategy_backtest_regime_split.v1` を作ります。依存追加や live order は行いません。
 `strategy-backtest-rolling-stability` は既存 `strategy_backtest_metrics.json` の executed signal return を rolling window 別に集計し、窓幅ごとの worst return / drawdown を確認できる `strategy_backtest_rolling_stability.v1` を作ります。既定 window は `3,5` です。依存追加や live order は行いません。
@@ -135,6 +136,7 @@ uv run sis strategy-backtest-external-run
 uv run sis strategy-backtest-portfolio-compare
 uv run sis strategy-backtest-metric-extension
 uv run sis strategy-backtest-report-extension
+uv run sis strategy-backtest-html-report
 uv run sis strategy-backtest-microstructure-readiness
 uv run sis strategy-backtest-qstrader-contract
 uv run sis strategy-backtest-portfolio-validation-contract
