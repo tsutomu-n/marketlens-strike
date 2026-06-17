@@ -201,6 +201,8 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     current_status_docs = set(checker_globals["CURRENT_STATUS_DOC_FILES"])
     assert "README.md" in current_status_docs
     assert "docs/CURRENT_STATE.md" in current_status_docs
+    assert "docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md" in current_status_docs
+    assert "docs/STRATEGY_AND_BACKTEST_USER_GUIDE.md" in current_status_docs
     assert "docs/CODE_STATUS.md" in current_status_docs
     assert "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md" in current_status_docs
     assert (

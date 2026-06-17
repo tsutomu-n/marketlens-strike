@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-18_04:56 JST
+更新日: 2026-06-18_05:03 JST
 -->
 
 # Repo Capabilities Current
@@ -12,6 +12,8 @@
 現在できないことは、production live trading、wallet / signing / exchange write、backtest だけによる alpha / paper pass / live readiness の主張、Bitget / Hyperliquid production venue の正式 schema 対応、credentialed external API を暗黙に使う workflow である。
 
 この文書は、コード、CLI help、schema、current docs を正として、repo でできることを漏れなく読む入口にする。
+
+AI / Codex / LLM が戦略作成、編集、backtest、結果解釈を進める場合は [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) を読む。人間が戦略と backtest 結果を専門用語少なめで理解したい場合は [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) を読む。
 
 ## 追加調査での補正
 
@@ -769,20 +771,22 @@ uv run python scripts/check_cli_catalog.py
 ## まず読む順番
 
 1. [CURRENT_STATE.md](CURRENT_STATE.md)
-2. [CODE_STATUS.md](CODE_STATUS.md)
-3. [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
-4. [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md)
-5. [algo/README.md](algo/README.md)
-6. [strategy_research_lab/README.md](strategy_research_lab/README.md)
-7. [strategy_research_lab/08_CURRENT_CAPABILITIES.md](strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-8. [strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md](strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md)
-9. [backtest/README.md](backtest/README.md)
-10. [backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)
-11. [strategy_review/README.md](strategy_review/README.md)
-12. [strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
-13. [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
-14. [research/ndx/README.md](research/ndx/README.md)
-15. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
-16. [ARCHITECTURE_AND_PHASES.md](ARCHITECTURE_AND_PHASES.md)
-17. [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md)
-18. [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
+2. [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md)
+3. [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md)
+4. [CODE_STATUS.md](CODE_STATUS.md)
+5. [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
+6. [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md)
+7. [algo/README.md](algo/README.md)
+8. [strategy_research_lab/README.md](strategy_research_lab/README.md)
+9. [strategy_research_lab/08_CURRENT_CAPABILITIES.md](strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+10. [strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md](strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md)
+11. [backtest/README.md](backtest/README.md)
+12. [backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md](backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md)
+13. [strategy_review/README.md](strategy_review/README.md)
+14. [strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
+15. [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
+16. [research/ndx/README.md](research/ndx/README.md)
+17. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
+18. [ARCHITECTURE_AND_PHASES.md](ARCHITECTURE_AND_PHASES.md)
+19. [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md)
+20. [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
