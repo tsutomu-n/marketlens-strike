@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_10:00 JST
+更新日: 2026-06-17_21:40 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -11,13 +11,15 @@
 
 現行 docs は大きく壊れてはいない。current-doc checker は Strategy Review の専用 docs と `docs/NEXT_DIRECTION_CURRENT.md` も対象にしている。確認時は固定の checked count ではなく、`uv run python scripts/check_current_docs.py` を再実行する。
 
-ただし、直近で `strategy-review-build` / `strategy-review-record` が強化されたため、top-level docs の導線が少し古い。先に直すべきは次の5点。
+ただし、直近で `strategy-review-build` / `strategy-review-record`、外部入力時の read-only / observation 再確認手順、plain Japanese guide 導線が強化されたため、top-level docs と実務 docs の導線は追加更新済み。2026-06-17_21:40 JST 時点で確認すべき点は次。
 
 1. `README.md` と `docs/CURRENT_STATE.md` に `docs/strategy_review/README.md` / `OPERATOR_REVIEW_PACKET_RECIPE.md` への導線を足す。2026-06-17_01:26 JST に実施済み。
 2. `docs/CODE_STATUS.md` は 2026-06-17_06:32 JST に thin index 化し、実装履歴を `docs/MIGRATION_HISTORY.md`、現行 surface を `docs/IMPLEMENTED_SURFACES.md` へ分割済み。
 3. 分割後の新文書導線を `README.md`、`docs/CURRENT_STATE.md`、`docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`plan/README.md` へ 2026-06-17_06:45 JST に追加済み。
 4. `strategy-review-record` / `operator_review.yaml` は実装済み。`plan/STRATEGY_REVIEW_CONTRACT_AND_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` や `plan/ねくすと.md` の PR-OPERATOR-00 記述は historical として読み、現行の次手正本にしない。古い `APPROVE_FOR_PAPER` decision 名は使わない。
 5. `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict 対象一覧が、現行 checker の `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、`docs/strategy_lifecycle/**`、`docs/strategy_review/**` に追いついていなかったため、この監査で更新する。
+6. 外部入力が来た時の再確認導線は `docs/NEXT_DIRECTION_CURRENT.md` の `External Input Restart Checklist` に集約済み。`README.md`、`docs/CURRENT_STATE.md`、`docs/CODE_STATUS.md`、`docs/OPERATIONS_RUNBOOK.md`、`docs/strategy_lifecycle/README.md` から辿れる。
+7. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` は専門用語を減らして repo でできること / できないことを読む入口として追加済み。`README.md` の Read First でも上位に置く。
 
 ## 照合した正本
 
@@ -59,6 +61,9 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | 更新して維持 | public CLI catalog と capability summary としてまだ使える | Strategy Review を独立 section に近い形で強調し、operator recipe をリンク |
 | `README.md` | 更新して維持 | repo entrypoint として正しい | 2026-06-17_01:26 JST に Read First と Main Flows へ Strategy Review docs を追加済み |
 | `docs/CURRENT_STATE.md` | 更新して維持 | current state の入口として使える | 2026-06-17_01:26 JST に Strategy Review の現行 surface と「readiness proof ではない」境界を追加済み |
+| `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` | 更新して維持 | 専門用語を減らし、repo でできること / できないことを説明する入口 | 外部入力時は `docs/NEXT_DIRECTION_CURRENT.md` の checklist を読む導線を維持 |
+| `docs/NEXT_DIRECTION_CURRENT.md` | 更新して維持 | 次方向と外部入力時の read-only / observation 再確認を分けている | `External Input Restart Checklist` を paper / live 許可と誤読させない |
+| `docs/strategy_lifecycle/README.md` | 更新して維持 | paper observation status と normal / smoke threshold の読み分けを説明する | 新しい通常 paper evidence は新しい trading day を含む必要があることを維持 |
 | `plan/README.md` | 更新して維持 | Strategy Review plan と next plan への導線を持つ | 実装済み plan と未実装 next をさらに明確に分ける |
 | `plan/ねくすと.md` | historical として維持 | PR-OPERATOR-00 の実装計画として有用だが、現行コードでは `strategy-review-record` / `operator_review.yaml` は実装済み | 先頭で historical / implemented を明記し、現行次手には使わない |
 | `docs/DOCS_LINT_POLICY_2026-05-30.md` | 更新して維持 | current-doc checker の運用方針として必要 | この監査で strict 対象一覧を現行 checker に合わせる |
@@ -119,12 +124,15 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 2. [x] `docs/DOCS_LINT_POLICY_2026-05-30.md` の strict 対象一覧を現行 checker に合わせる。
 3. [x] `README.md` と `docs/CURRENT_STATE.md` に Strategy Review への導線を足す。
 4. [x] `docs/CODE_STATUS.md` を migration history と implemented surfaces に分割する。
-5. [ ] 古い audit / plan を archive に寄せる。
-6. [ ] `docs/OPERATIONS_RUNBOOK.md` を domain runbook へ分割する。
+5. [x] plain Japanese capability guide を追加し、`README.md` / `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` から辿れるようにする。
+6. [x] 外部入力時の read-only / observation 再確認を `docs/NEXT_DIRECTION_CURRENT.md` の checklist に集約し、`README.md` / `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` / `docs/OPERATIONS_RUNBOOK.md` / `docs/strategy_lifecycle/README.md` から辿れるようにする。
+7. [ ] 古い audit / plan を archive に寄せる。
+8. [ ] `docs/OPERATIONS_RUNBOOK.md` を domain runbook へ分割する。
 
 ## 残リスク
 
 - この監査は docs 分類が目的で、archive 配下 295 件の本文正誤までは個別検査していない。
 - `data/` 配下の runtime artifact freshness は正本にしていない。fresh checkout で再生成する前提。
-- 現在の作業ツリーには Strategy Review 実装差分が未コミットで含まれる。この監査は、その作業ツリー込みのコードを正としている。
-- full gate は直前の Strategy Review 実装で `./scripts/check` pass 済みだが、この監査 doc 追加後は current-doc checker と `git diff --check` を再実行する。
+- この監査は 2026-06-17 の複数回の更新を含む current docs audit であり、過去の時刻に実行した command 結果は固定 truth ではない。確認時は `uv run python scripts/check_current_docs.py` と `./scripts/check` を再実行する。
+- 古い audit / plan archive と `docs/OPERATIONS_RUNBOOK.md` の domain runbook 分割は未完了。これは読みやすさの残作業であり、現行 paper / live permission ではない。
+- runtime artifact freshness は `data/` の再生成状態に依存する。2026-06-17_21:39 JST の read-only 再確認では、Trade[XYZ] public user address、Bitget demo credentials、新しい trading day evidence が未入力のため、live / paper 実行許可には進んでいない。
