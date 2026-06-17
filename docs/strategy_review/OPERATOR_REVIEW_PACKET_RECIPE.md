@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-06-17_00:03 JST
-更新日: 2026-06-17_00:03 JST
+更新日: 2026-06-17_09:01 JST
 -->
 
 # Operator Review Packet Recipe
 
 ## 結論
 
-`strategy-review-build` の review packet は、人間が既存 artifact を読むための read-only packet です。`review.md` と `review_manifest.json` を作っても、alpha、paper readiness、live readiness、paper execution permission は証明しません。
+`strategy-review-build` の review packet は、人間が既存 artifact を読むための read-only packet です。`strategy-review-record` は、その人間判断を `operator_review.yaml` に保存し、後から hash で再検証します。どちらも alpha、paper readiness、live readiness、paper execution permission は証明しません。
 
 この recipe は、operator が `review.md` を読む前に必要な artifact を揃え、complete / missing / invalid / blocked の挙動を同じ手順で確認するためのものです。
 
@@ -17,6 +17,7 @@
 
 ```bash
 uv run sis strategy-review-build --help
+uv run sis strategy-review-record --help
 uv run python scripts/check_current_docs.py
 ```
 
@@ -74,13 +75,56 @@ operator は次の順で読みます。
 9. `Source Hash Table`: path、bytes、hash、schema version を再現性確認に使う。
 10. `Next Human Review Checklist`: 次に作る operator review artifact の判断材料にする。
 
+## Record
+
+文脈確認として記録する:
+
+```bash
+uv run sis strategy-review-record \
+  --review-dir data/strategy_reviews/dogfood-complete-001 \
+  --decision REVIEWED_FOR_CONTEXT \
+  --reviewer operator-name \
+  --rationale "review.md と review_manifest.json を読み、現時点では文脈確認として記録する"
+```
+
+paper observation 候補として記録する。これは validation candidate だけを意味し、paper 実行許可ではありません。
+
+```bash
+uv run sis strategy-review-record \
+  --review-dir data/strategy_reviews/dogfood-complete-001 \
+  --decision PAPER_OBSERVATION_CANDIDATE \
+  --reviewer operator-name \
+  --rationale "必須 artifact、source safety、pack validation、lifecycle review を確認した"
+```
+
+修正要として記録する:
+
+```bash
+uv run sis strategy-review-record \
+  --review-dir data/strategy_reviews/dogfood-complete-001 \
+  --decision NEEDS_FIX \
+  --reviewer operator-name \
+  --rationale "追加確認が必要" \
+  --required-action "lifecycle review の source hash を確認する"
+```
+
+保存済み `operator_review.yaml` を現在の packet と照合する:
+
+```bash
+uv run sis strategy-review-record \
+  --review-dir data/strategy_reviews/dogfood-complete-001 \
+  --validate-existing
+```
+
 ## Decision Boundary
 
-この段階では `operator_review.yaml`、paper bridge、Strategy Case registry、UI は作りません。
+この段階では paper bridge、Strategy Case registry、UI は作りません。
 
 paper observation 候補に進める場合でも、review packet から直接 `paper-from-intents` を呼びません。別の operator review artifact を作り、その後の paper bridge で既存 `paper-from-intents` revalidation を通します。
 
 NDX / QQQ 系では既存 Layer 2.6 / 2.7 evidence と hash lineage を無視しません。Strategy Review の operator artifact は、既存 `ndx_operator_promotion_decision.v1` を置き換えません。
+
+`operator_review.yaml` の `live_allowed` と `paper_execution_allowed` は常に `false` です。
 
 ## Verification
 

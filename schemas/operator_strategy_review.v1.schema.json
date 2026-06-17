@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "operator_strategy_review.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "review_id",
+    "reviewed_at",
+    "producer",
+    "reviewer",
+    "decision",
+    "rationale",
+    "required_actions",
+    "live_allowed",
+    "paper_execution_allowed",
+    "source_review"
+  ],
+  "properties": {
+    "schema_version": {"const": "operator_strategy_review.v1"},
+    "review_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "reviewed_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command", "schema_version"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-review-record"},
+        "schema_version": {"const": "operator_strategy_review.v1"}
+      },
+      "additionalProperties": false
+    },
+    "reviewer": {"type": "string", "minLength": 1},
+    "decision": {
+      "enum": [
+        "REJECT",
+        "NEEDS_FIX",
+        "REVIEWED_FOR_CONTEXT",
+        "PAPER_OBSERVATION_CANDIDATE"
+      ]
+    },
+    "rationale": {"type": "string", "minLength": 1},
+    "required_actions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "live_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "source_review": {
+      "type": "object",
+      "required": [
+        "manifest_path",
+        "review_manifest_sha256",
+        "review_markdown_path",
+        "review_markdown_sha256",
+        "review_status",
+        "source_safety_status",
+        "pack_validation_status",
+        "lifecycle_review_status",
+        "missing_required_count",
+        "invalid_required_count",
+        "boundary_violation_count",
+        "unknown_boundary_count"
+      ],
+      "properties": {
+        "manifest_path": {"type": "string", "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"},
+        "review_manifest_sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "review_markdown_path": {"type": "string", "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"},
+        "review_markdown_sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "review_status": {
+          "enum": [
+            "READY_FOR_HUMAN_REVIEW",
+            "INCOMPLETE_ARTIFACTS",
+            "INVALID_INPUT",
+            "BLOCKED_BOUNDARY_VIOLATION"
+          ]
+        },
+        "source_safety_status": {"enum": ["PASS", "UNKNOWN", "BLOCKED"]},
+        "pack_validation_status": {"type": ["string", "null"]},
+        "lifecycle_review_status": {"enum": ["present", "missing", "invalid", "blocked"]},
+        "missing_required_count": {"type": "integer", "minimum": 0},
+        "invalid_required_count": {"type": "integer", "minimum": 0},
+        "boundary_violation_count": {"type": "integer", "minimum": 0},
+        "unknown_boundary_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"decision": {"const": "NEEDS_FIX"}}, "required": ["decision"]},
+      "then": {"properties": {"required_actions": {"minItems": 1}}}
+    },
+    {
+      "if": {
+        "properties": {"decision": {"const": "PAPER_OBSERVATION_CANDIDATE"}},
+        "required": ["decision"]
+      },
+      "then": {
+        "properties": {
+          "source_review": {
+            "properties": {
+              "review_status": {"const": "READY_FOR_HUMAN_REVIEW"},
+              "source_safety_status": {"const": "PASS"},
+              "pack_validation_status": {"const": "PASS"},
+              "lifecycle_review_status": {"const": "present"},
+              "missing_required_count": {"const": 0},
+              "invalid_required_count": {"const": 0},
+              "boundary_violation_count": {"const": 0},
+              "unknown_boundary_count": {"const": 0}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
