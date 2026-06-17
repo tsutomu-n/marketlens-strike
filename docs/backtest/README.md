@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_17:20 JST
-更新日: 2026-06-18_02:18 JST
+更新日: 2026-06-18_02:27 JST
 -->
 
 # Backtest Docs
@@ -58,11 +58,13 @@ Trade[XYZ] 専用 Python API surface は
 [BACKTEST_CAPABILITY_UNIVERSITY_GUIDE_2026-06-16.md](BACKTEST_CAPABILITY_UNIVERSITY_GUIDE_2026-06-16.md)
 を見る。
 
-完成済み backtest pack を既存 Strategy Lifecycle / paper observation route にどう接続するかの bridge audit は
-[BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md](BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md)
-を見る。BP0 の追加調査結果と evidence map は、当時の artifact 値を含む履歴資料として
+完成済み backtest pack を既存 Strategy Lifecycle / paper observation route に接続する現行導線は
+[../strategy_lifecycle/README.md](../strategy_lifecycle/README.md)
+と `uv run sis strategy-paper-observation-status` で確認する。bridge audit plan と BP0 evidence map は、当時の artifact 値と判断過程を含む履歴資料として
+[../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md](../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md)
+と
 [../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md](../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md)
-に保存している。現行の paper observation 状態は [../strategy_lifecycle/README.md](../strategy_lifecycle/README.md) と `uv run sis strategy-paper-observation-status` で確認する。
+に保存している。
 
 責務分離で保守性とカスタマイズ性を上げた完了記録は、当時の固定 pass / check 表現を含む履歴資料として
 [../archive/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md](../archive/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md)

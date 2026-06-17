@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_02:18 JST
+更新日: 2026-06-18_02:27 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -53,6 +53,7 @@
 38. `docs/archive/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md` は、外部 PyPI metadata と local import smoke の dated adoption review として残す。2026-06-18_02:04 JST に current-doc checker 対象から外し、現行の optional framework 境界は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`、CLI help、`pyproject.toml`、`uv.lock` で確認する導線に寄せた。
 39. `docs/backtest/BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md` は、2026-06-18_02:10 JST に dated runtime snapshot 表や固定 benchmark / stress / data availability 値を外し、`strategy-backtest-artifact-summary`、targeted `jq`、`strategy-paper-observation-status` で現在値を読む導線へ寄せた。
 40. `docs/archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md` は、実装済み OSS capability expansion plan と当時の外部調査・対象ファイル一覧を含む履歴資料として残す。2026-06-18_02:18 JST に current-doc checker 対象から外し、現行の backtest technical boundary は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`、CLI help、`pyproject.toml`、`uv.lock` へ寄せた。
+41. `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md` は、BP0 完了後に bridge adapter 不要と判定した historical bridge audit plan として残す。2026-06-18_02:27 JST に current-doc checker 対象から外し、現行の backtest-to-paper 導線は `docs/strategy_lifecycle/README.md` と `uv run sis strategy-paper-observation-status` へ寄せた。
 
 ## 照合した正本
 
@@ -131,6 +132,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/archive/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md` | backtest 責務分離の実装完了時点の fixed pass / check 表現を含む | 現行 backtest 境界は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` と CLI help で確認する | archive 済み |
 | `docs/archive/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md` | PyPI latest metadata、local smoke、候補順位など dated external/source review を含む | 現行 optional framework 境界は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`、`pyproject.toml`、`uv.lock`、CLI help で確認する | archive 済み |
 | `docs/archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md` | 実装済み plan、外部調査、対象ファイル一覧、OBF task contract が同居している | 現行 backtest 技術境界は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` と CLI help が正本 | archive 済み |
+| `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md` | BP0 完了後も plan 形式が残り、current read order に見えると追加 bridge 実装が必要だと誤読しやすい | 現行 paper observation 状態は `docs/strategy_lifecycle/README.md` と `strategy-paper-observation-status` が正本 | archive 済み |
 | `docs/archive/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | 2026-05-30/31 時点の fixed pass counts と current-doc 件数を含む | 現行 Strategy Research Lab は `docs/strategy_research_lab/README.md` から読む | archive 済み |
 | `docs/archive/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | completion-time fixed pass counts と current-doc 件数を含む | 現行 verification は current docs の command を再実行する | archive 済み |
 
@@ -166,6 +168,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md` | 移動済み | 旧 Trade[XYZ] quote coverage cycle 固有の自然終了条件記録 |
 | `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` | 移動済み | BP0 bridge audit 時点の fixed artifact values を含む historical evidence map |
 | `docs/archive/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md` | 移動済み | 2026-06-15 時点の backtest docs 分類 audit。fixed artifact values と current-doc 件数を含む |
+| `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md` | 移動済み | BP0 bridge audit plan と adapter 不要判断を含む historical record |
 | `docs/archive/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | 移動済み | 2026-05-30/31 時点の Strategy Authoring progress snapshot |
 | `docs/archive/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | 移動済み | paper-only Strategy Authoring completion-time evidence snapshot |
 | `plan/archive/2026-06-17-plan-routing/0609ここからの計画/01_ndx_qqq_venue_suitability_gate/` | 移動済み | NDX / QQQ venue suitability gate は実装済み |
@@ -216,6 +219,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 29. [x] optional framework adoption review を archive へ移し、現行 optional framework 境界は technical reference、lockfile、CLI help で読む導線へ寄せる。
 30. [x] backtest user guide から dated runtime snapshot 値を外し、現在値は artifact/status command と読む field に寄せる。
 31. [x] OSS backtest capability expansion implementation plan を archive へ移し、現行 backtest technical boundary は technical reference、lockfile、CLI help に寄せる。
+32. [x] backtest to paper observation bridge plan を archive へ移し、現行 paper observation status は Strategy Lifecycle README と status command に寄せる。
 
 ## 残リスク
 

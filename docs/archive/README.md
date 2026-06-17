@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-18_02:18 JST
+更新日: 2026-06-18_02:27 JST
 -->
 
 # Documentation Archive
@@ -97,6 +97,9 @@ Archived on 2026-06-18:
 - `docs/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md` -> `docs/archive/backtest/`
 - `docs/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md` -> `docs/archive/backtest/`
 - `docs/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md` -> `docs/archive/backtest/`
+- `docs/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md` -> `docs/archive/backtest/`
+- `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md` -> `docs/archive/backtest/`
+- `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` -> `docs/archive/backtest/`
 - `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` -> `docs/archive/strategy_research_lab/`
 - `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` -> `docs/archive/strategy_research_lab/`
 

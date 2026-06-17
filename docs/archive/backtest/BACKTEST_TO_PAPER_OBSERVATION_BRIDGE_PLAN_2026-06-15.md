@@ -1,9 +1,11 @@
 <!--
 作成日: 2026-06-15_18:42 JST
-更新日: 2026-06-18_01:22 JST
+更新日: 2026-06-18_02:27 JST
 -->
 
 # Backtest To Paper Observation Bridge Plan
+
+> Historical note: this is the 2026-06-15 bridge audit plan and completion record. BP0 concluded that a new bridge adapter was not required for the then-current paper observation continuation decision. Current paper observation status is checked with `docs/strategy_lifecycle/README.md` and `uv run sis strategy-paper-observation-status`, not with this archived plan.
 
 ## 結論
 
@@ -14,7 +16,7 @@
 この plan の完了条件は「paper observation を開始する」ではなく、「backtest pack のどの証拠が既存 lifecycle artifact のどこに入るか、入らないなら最小 adapter が必要かを決める」こと。
 
 2026-06-15_19:01 JST の BP0 追加調査では、既存 route がすでに `CONTINUE_PAPER_OBSERVATION` まで到達していることを確認した。詳細は
-[../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md](../archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md)
+[BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md](BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md)
 を見る。この evidence map は当時の artifact 値を含む履歴資料であり、現行状態は `uv run sis strategy-paper-observation-status` で確認する。現時点で bridge adapter は必須ではない。
 
 ## 現在確認できた事実
