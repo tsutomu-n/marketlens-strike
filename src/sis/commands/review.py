@@ -327,9 +327,20 @@ def register_review_commands(
 
     @app.command("diagnose-quotes")
     def diagnose_quotes(
-        venue: str | None = typer.Option(None, "--venue"),
-        symbol: str | None = typer.Option(None, "--symbol"),
+        venue: str | None = typer.Option(None, "--venue", help="Optional venue filter."),
+        symbol: str | None = typer.Option(
+            None, "--symbol", help="Optional canonical symbol filter."
+        ),
     ) -> None:
+        """Diagnose local quote rows and write operator reports.
+
+        Reads JSONL files under data/raw/quotes, applies optional venue/symbol
+        filters, and prints per-symbol stale/tradable/missing-field rates. Writes
+        data/reports/quote_diagnostics.md and
+        data/ops/quote_diagnostics_summary.json. For --venue trade_xyz, only the
+        latest venue file is diagnosed. Performs no external API calls and
+        submits no orders.
+        """
         settings = get_settings()
         try:
             policy = load_halt_policy()

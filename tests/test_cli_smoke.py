@@ -245,6 +245,25 @@ def test_alpaca_smoke_help_describes_io_and_boundary() -> None:
     assert "prove production live trading readiness" in stdout
 
 
+def test_diagnose_quotes_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["diagnose-quotes", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "Diagnose local quote rows" in stdout
+    assert "data/raw/quotes" in stdout
+    assert "venue/symbol" in stdout
+    assert "stale/tradable/missing-field rates" in stdout
+    assert "data/reports/quote_diagnostics.md" in stdout
+    assert "data/ops/quote_diagnostics_summary.json" in stdout
+    assert "latest venue file" in stdout
+    assert "Performs no external API calls" in stdout
+    assert "submits no orders" in stdout
+    assert "--venue" in stdout
+    assert "Optional venue filter" in stdout
+    assert "--symbol" in stdout
+    assert "Optional canonical symbol filter" in stdout
+
+
 def test_build_signals_help_describes_io_and_boundary() -> None:
     result = invoke_cli(["build-signals", "--help"])
     stdout = normalized_stdout(result)
