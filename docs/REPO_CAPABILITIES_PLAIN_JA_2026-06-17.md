@@ -1,0 +1,184 @@
+<!--
+作成日: 2026-06-17_17:50 JST
+更新日: 2026-06-17_17:50 JST
+-->
+
+# いまのリポジトリでできること、できないこと
+
+## 結論
+
+このリポジトリは、売買戦略をいきなり本番注文に出すためのものではありません。
+
+いまできることは、戦略案を作る、過去データで試す、人間が読むレビュー資料を作る、ペーパー観察の記録を読む、次に進んでよいかをローカルの証拠ファイルで確認することです。
+
+いまできないことは、本番の自動売買、ウォレット操作、署名、取引所への書き込み、バックテストだけで「儲かる」「本番に出してよい」と証明することです。
+
+## まず知っておくこと
+
+- `data/` は実行時に作られる生成物置き場です。git 管理外なので、新しい checkout では存在しないことがあります。
+- コード、テスト、schema、CLI help が正本です。文書はそれらを読みやすくまとめたものです。
+- `paper` は本番資金を使わない検証の意味です。本番注文ではありません。
+- `live` は本番取引の意味です。このリポジトリの標準 operator CLI は、現時点で live 注文を許可していません。
+
+## いまできること
+
+### 1. 戦略案をファイルとして書ける
+
+売買ルールを YAML という設定ファイルに書き、検証や説明をできます。たとえば、移動平均、RSI、ATR、ボリンジャーバンドのような指標、買い条件、売り条件、ポジションサイズ、損切りや利確のルールを扱えます。
+
+主な入口:
+
+```bash
+uv run sis strategy-author-init
+uv run sis strategy-author-validate --spec path/to/spec.yaml
+uv run sis strategy-author-explain --spec path/to/spec.yaml
+uv run sis strategy-author-run --spec path/to/spec.yaml --through backtest
+```
+
+ここで `path/to/spec.yaml` は、戦略ルールを書いた YAML ファイルへの例示パスです。
+
+### 2. 過去データで戦略を試せる
+
+過去の価格データを使い、戦略が過去にどう動いたかを試せます。単発の backtest だけでなく、期間を分けた検査、条件を変えた検査、ストレス検査、ベンチマーク比較もできます。
+
+ただし、backtest は「過去ならこうだった」という検査です。将来の利益や本番安全性の証明ではありません。
+
+主な入口:
+
+```bash
+uv run sis strategy-backtest-suite --help
+uv run sis strategy-backtest-pack --help
+uv run sis strategy-backtest-pack-validate --help
+```
+
+### 3. 人間が読むレビュー資料を作れる
+
+backtest の結果や関連ファイルを集めて、人間が確認しやすい review packet を作れます。さらに、人間が読んだ事実を `operator_review.yaml` として記録し、あとで同じ資料を見ていたかを hash で確認できます。
+
+これは「人間が確認した」という記録です。paper 実行や live 実行の許可ではありません。
+
+主な入口:
+
+```bash
+uv run sis strategy-review-build --help
+uv run sis strategy-review-record --help
+```
+
+### 4. ペーパー観察の現在地を確認できる
+
+ペーパー観察とは、本番資金を使わずに、候補戦略が想定どおりに紙上の注文や約定として記録されるかを見る段階です。
+
+現行レポートでは、通常のペーパー観察がまだ足りない状態です。
+
+- 通常ペーパー観察の session 数: `2`
+- smoke session 数: `1`
+- 最新の通常 session: `local-paper-20260612-2107`
+- 最新の通常判定: `NEEDS_MORE_PAPER_OBSERVATION`
+- 最新の smoke 判定: `PASS_PAPER_OBSERVATION_REVIEW`
+- 通常基準を満たしたか: `false`
+- smoke の合格を通常合格に数えるか: `false`
+- 次の実務アクション: `continue_normal_paper_observation`
+- live 注文許可: `false`
+
+つまり、短縮検査である smoke は通っていますが、通常基準のペーパー観察はまだ不足しています。次は live ではなく、通常基準のペーパー観察を続けます。
+
+主な入口:
+
+```bash
+uv run sis strategy-paper-observation-status \
+  --data-dir data \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+```
+
+ここで `data` は生成物の置き場、`data/research/strategy_lifecycle` は戦略の段階判断を置く場所、`data/reports` は人間向けレポートを置く場所です。
+
+### 5. NDX 系の研究ゲートをローカルで回せる
+
+NDX / QQQ 系の研究について、データの出どころ、特徴量、残差検証、Strategy Lab への研究用 export、paper observation までの段階的な gate をローカル生成物として確認できます。
+
+これは研究用の段階管理です。外部 API を勝手に呼ぶものでも、本番注文に接続するものでもありません。
+
+主な入口:
+
+```bash
+uv run sis research-layer22-validate --root configs/research_layer_2_2/ndx
+uv run sis research-ndx-source-resolve --root configs/research_layer_2_2/ndx --out data/research/ndx
+uv run sis research-ndx-residual-validate --root configs/research_layer_2_2/ndx --artifact-dir data/research/ndx --reports-dir data/reports --out data/research/ndx
+```
+
+ここで `configs/research_layer_2_2/ndx` は NDX 研究の設定ディレクトリ、`data/research/ndx` は NDX 研究の生成物出力先、`data/reports` は人間向けレポートの出力先です。
+
+### 6. 読み取り専用の venue 検査や運用状態確認ができる
+
+Trade[XYZ] の読み取り専用データ収集、venue capability の境界確認、operations dashboard、phase gate、artifact validation を実行できます。
+
+読み取り専用とは、外部の口座や取引所の状態を書き換えないという意味です。
+
+主な入口:
+
+```bash
+uv run sis venue-read-only-probe
+uv run sis collect-trade-xyz-quotes --write-summary --write-report
+uv run sis validate-artifacts --strict
+uv run sis phase-gate-review
+```
+
+## いまできないこと
+
+- 本番の自動売買はできません。
+- ウォレット操作、署名、取引所への書き込みはできません。
+- 標準 operator CLI から live 注文を送ることはできません。
+- backtest だけで「儲かる」「paper に進めてよい」「live に進めてよい」とは言えません。
+- smoke の合格を、通常のペーパー観察合格として扱うことはできません。
+- Bitget futures と Hyperliquid perp は、現時点では正式な Strategy Lab の取引先として使えません。
+- `bitget_demo` は demo 検証用です。本番 Bitget futures readiness ではありません。
+- Alpaca や Bitget などの credentialed external API を、暗黙に使う workflow にはしていません。
+- `data/` にある生成物は git 管理外なので、fresh checkout でそのまま存在するとは限りません。
+
+## 誤読しやすい言葉
+
+- repo / リポジトリ: このコードと文書をまとめた作業場所です。
+- CLI: ターミナルから実行するコマンド群です。ここでは `uv run sis ...` が主な入口です。
+- artifact / 生成物: コマンド実行で作られる JSON、Markdown、Parquet などの結果ファイルです。
+- schema: 生成物の形を決めるルールです。どの項目が必要か、値の種類は何かを定義します。
+- backtest: 過去データで戦略を試すことです。将来利益の保証ではありません。
+- paper: 本番資金を使わない検証です。本番注文ではありません。
+- live: 本番取引です。実口座、署名、取引所書き込みを含む領域です。
+- readiness: 準備ができているかの状態です。何に対する準備かを必ず分けて読みます。
+- smoke: 短い動作確認です。通常基準を満たした証明ではありません。
+- threshold / 基準: 合格に必要な最低条件です。たとえば約定数や観測日数です。
+- lifecycle: 戦略が研究、backtest、paper 観察、次段階検討のどこにいるかを管理する流れです。
+- hash: ファイルの内容から作る指紋です。前に見たファイルと同じかを確認するために使います。
+- venue: 取引先や市場接続先のことです。ここでは Trade[XYZ]、Bitget demo などを指します。
+
+## 主なファイルと役割
+
+- `README.md`: リポジトリ全体の入口です。セットアップ、主要コマンド、読む順番をまとめています。
+- `docs/CURRENT_STATE.md`: 現在の状態を短く読むための文書です。細かい実装履歴よりも、いまの判断を優先して読む場所です。
+- `docs/IMPLEMENTED_SURFACES.md`: 実装済みの主要機能を一覧で確認する文書です。全体をざっと把握する時に使います。
+- `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`: できること、できないことを技術寄りに詳しく整理した文書です。この文書より詳細です。
+- `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`: この文書です。専門用語を減らし、利用者向けに現在の範囲を説明します。
+- `docs/strategy_lifecycle/README.md`: 戦略の段階管理と paper observation の入口です。
+- `docs/strategy_lifecycle/PAPER_OBSERVATION_CYCLE.md`: paper observation の作り方、読むべき生成物、止める条件を説明する文書です。
+- `docs/strategy_review/README.md`: Strategy Review の入口です。人間レビュー資料をどう作るかを確認できます。
+- `docs/backtest/README.md`: backtest 関連の入口です。複数ある backtest surface の読み分けに使います。
+- `docs/research/ndx/README.md`: NDX 研究 gate の入口です。Layer 2.2 以降の研究手順を確認できます。
+- `src/sis/cli.py`: `sis` コマンド全体の登録場所です。どのコマンドが公開されているかを確認する時に見ます。
+- `src/sis/commands/`: CLI コマンドの実装置き場です。各コマンドが何を読むか、何を出すかを確認する時に見ます。
+- `configs/research_layer_2_2/ndx`: NDX 研究 gate の設定ディレクトリです。研究の部品、データ源、検査の流れを確認できます。
+- `schemas/`: JSON などの生成物の形式ルールを置く場所です。ファイル構造の契約を確認できます。
+- `tests/`: 自動テストの置き場です。現行仕様が壊れていないかを確認する証拠です。
+- `scripts/check`: まとめて検証するためのスクリプトです。lint、型チェック、docs check、pytest をまとめて走らせます。
+- `scripts/check_current_docs.py`: current docs のメタデータ、リンク、EOF、古い root path 参照を検査するスクリプトです。
+- `data/research/strategy_lifecycle/paper_observation_status.json`: 現在の paper observation 状態を機械が読みやすい形でまとめた生成物です。
+- `data/reports/paper_observation_status.md`: 現在の paper observation 状態を人間が読みやすい形でまとめた生成レポートです。
+- `data/research/ndx/paper_observation_review_decision.json`: NDX paper observation review の正本になる生成物です。通常観察が足りるか、まだ続けるかを記録します。
+- `data/research/strategy_lifecycle/strategy_lifecycle_review.json`: backtest、paper observation、phase gate をまとめた段階判断の生成物です。
+- `data/paper/observations/<session_id>/paper_observation_session_manifest.json`: session ごとの paper observation 記録の目次です。入力ファイル、hash、基準、paper-only 境界を記録します。
+
+## 次にやるべきこと
+
+現時点の実務的な次アクションは、通常基準の paper observation を続けることです。
+
+次にやるべきではないことは、smoke 合格を理由に live 実装や live 注文へ進むことです。

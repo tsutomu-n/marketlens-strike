@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_21:34 JST
-更新日: 2026-06-17_16:57 JST
+更新日: 2026-06-17_17:50 JST
 -->
 
 # Strategy Lifecycle
@@ -35,12 +35,13 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 
 1. `TARGET_OPERATING_MODEL.md`
 2. `PAPER_OBSERVATION_CYCLE.md`
-3. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md`
-4. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
-5. `LIVE_CANARY_PLAN_GATE.md`
-6. `docs/backtest/README.md`
-7. `docs/research/ndx/README.md`
-8. `docs/OPERATIONS_RUNBOOK.md`
+3. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`
+4. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_BRIDGE_PLAN_2026-06-15.md`
+5. `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md`
+6. `LIVE_CANARY_PLAN_GATE.md`
+7. `docs/backtest/README.md`
+8. `docs/research/ndx/README.md`
+9. `docs/OPERATIONS_RUNBOOK.md`
 
 ## Boundary
 
