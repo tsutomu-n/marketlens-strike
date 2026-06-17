@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-16_06:46 JST
+更新日: 2026-06-18_02:18 JST
 -->
 
 # Backtest Current Technical Reference
@@ -127,8 +127,9 @@ pack validation の `PASS` は artifact integrity と no-live boundary の検査
 - [BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md](BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md)
 - [OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md](OPERATOR_BACKTEST_PACK_RECIPE_2026-06-13.md)
 - [BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md](BACKTEST_NON_GOALS_AND_FUTURE_SCOPE_2026-06-14.md)
-- [OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md](OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md)
 - [VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md](VECTORBT_LICENSE_DECISION_MEMO_2026-06-13.md)
 - [TRADE_XYZ_PURE_BACKTEST_V0_1.md](TRADE_XYZ_PURE_BACKTEST_V0_1.md)
 
-履歴・採用前調査・完了済み計画は `docs/archive/backtest/` に置く。archive は判断履歴として残すが、current truth ではない。
+履歴・採用前調査・完了済み計画は `docs/archive/backtest/` に置く。archive は判断履歴として残すが、current truth ではない。OSS capability expansion の実装済み計画も
+[../archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md](../archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md)
+へ移動済みであり、現行境界はこの技術リファレンス、CLI help、`pyproject.toml`、`uv.lock` を読む。

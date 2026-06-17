@@ -144,6 +144,14 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
         in legacy_root_paths
     )
     assert (
+        "docs/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md"
+        not in current_doc_files
+    )
+    assert (
+        "docs/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md"
+        in legacy_root_paths
+    )
+    assert (
         "docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md"
         not in current_doc_files
     )

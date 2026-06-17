@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_02:04 JST
+更新日: 2026-06-18_02:18 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -50,7 +50,9 @@
 35. `docs/LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md` と `docs/runbooks/TRADE_XYZ_RUNBOOK.md` は、2026-06-18_01:42 JST に archive 済み Trade[XYZ] quote coverage 固有 PID / 起動時刻を current 手順から外した。`scripts/check_current_docs.py` は同種の再混入を全 current docs で失敗させる。
 36. `docs/archive/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md` は、backtest 責務分離の完了記録として残す。fixed pass / check 表現を含むため、2026-06-18_01:50 JST に current-doc checker 対象から外した。`docs/ARCHITECTURE_AND_PHASES.md` の `READ_ONLY_GO` 表現も runtime 再確認と live 非許可の説明へ寄せた。
 37. `docs/backtest/BACKTEST_HIGH_SCHOOL_GUIDE_2026-06-15.md` は、2026-06-18_01:57 JST に dated runtime snapshot 表を外し、`strategy-backtest-artifact-summary` / `strategy-backtest-pack-validate` / `strategy-paper-observation-status` で今の値を読む説明へ寄せた。
-38. `docs/archive/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md` は、外部 PyPI metadata と local import smoke の dated adoption review として残す。2026-06-18_02:04 JST に current-doc checker 対象から外し、現行の optional framework 境界は `docs/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md` と CLI help / lockfile で確認する導線に寄せた。
+38. `docs/archive/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md` は、外部 PyPI metadata と local import smoke の dated adoption review として残す。2026-06-18_02:04 JST に current-doc checker 対象から外し、現行の optional framework 境界は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`、CLI help、`pyproject.toml`、`uv.lock` で確認する導線に寄せた。
+39. `docs/backtest/BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md` は、2026-06-18_02:10 JST に dated runtime snapshot 表や固定 benchmark / stress / data availability 値を外し、`strategy-backtest-artifact-summary`、targeted `jq`、`strategy-paper-observation-status` で現在値を読む導線へ寄せた。
+40. `docs/archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md` は、実装済み OSS capability expansion plan と当時の外部調査・対象ファイル一覧を含む履歴資料として残す。2026-06-18_02:18 JST に current-doc checker 対象から外し、現行の backtest technical boundary は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`、CLI help、`pyproject.toml`、`uv.lock` へ寄せた。
 
 ## 照合した正本
 
@@ -127,7 +129,8 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/archive/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` | BP0 bridge audit 時点の fixed artifact values を含む | 現行 paper observation 状態は Strategy Lifecycle status command で再確認する | archive 済み |
 | `docs/archive/backtest/BACKTEST_DOCS_CODE_TRUTH_AUDIT_2026-06-15.md` | 2026-06-15 時点の artifact values と current-doc 件数を含む | 現行 backtest docs は `docs/backtest/README.md` から読む | archive 済み |
 | `docs/archive/backtest/BACKTEST_MAINTAINABILITY_RESPONSIBILITY_PLAN_2026-06-14.md` | backtest 責務分離の実装完了時点の fixed pass / check 表現を含む | 現行 backtest 境界は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` と CLI help で確認する | archive 済み |
-| `docs/archive/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md` | PyPI latest metadata、local smoke、候補順位など dated external/source review を含む | 現行 optional framework 境界は `docs/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md`、`pyproject.toml`、`uv.lock`、CLI help で確認する | archive 済み |
+| `docs/archive/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md` | PyPI latest metadata、local smoke、候補順位など dated external/source review を含む | 現行 optional framework 境界は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`、`pyproject.toml`、`uv.lock`、CLI help で確認する | archive 済み |
+| `docs/archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md` | 実装済み plan、外部調査、対象ファイル一覧、OBF task contract が同居している | 現行 backtest 技術境界は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` と CLI help が正本 | archive 済み |
 | `docs/archive/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` | 2026-05-30/31 時点の fixed pass counts と current-doc 件数を含む | 現行 Strategy Research Lab は `docs/strategy_research_lab/README.md` から読む | archive 済み |
 | `docs/archive/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` | completion-time fixed pass counts と current-doc 件数を含む | 現行 verification は current docs の command を再実行する | archive 済み |
 
@@ -210,7 +213,9 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 26. [x] archive 済み Trade[XYZ] quote coverage 固有 PID / 起動時刻を current runbook から外し、current-doc checker で再混入を止める。
 27. [x] backtest 責務分離の完了記録を archive へ移し、`READ_ONLY_GO` を fixed completion proof と誤読させる current architecture 表現を外す。
 28. [x] 高校生向け backtest guide から dated runtime snapshot 表を外し、現在値は backtest artifact/status command で読む導線へ寄せる。
-29. [x] optional framework adoption review を archive へ移し、現行 optional framework 境界は implementation plan、lockfile、CLI help で読む導線へ寄せる。
+29. [x] optional framework adoption review を archive へ移し、現行 optional framework 境界は technical reference、lockfile、CLI help で読む導線へ寄せる。
+30. [x] backtest user guide から dated runtime snapshot 値を外し、現在値は artifact/status command と読む field に寄せる。
+31. [x] OSS backtest capability expansion implementation plan を archive へ移し、現行 backtest technical boundary は technical reference、lockfile、CLI help に寄せる。
 
 ## 残リスク
 

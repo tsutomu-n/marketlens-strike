@@ -1,9 +1,11 @@
 <!--
 作成日: 2026-06-15_20:13 JST
-更新日: 2026-06-15_21:08 JST
+更新日: 2026-06-18_02:18 JST
 -->
 
 # OSS Backtest Capability Expansion Implementation Plan
+
+> Archive note: この文書は OSS backtest capability expansion の実装済み計画と、当時の外部調査・実装契約を残す履歴資料です。現行の backtest 技術境界は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`、CLI help、`pyproject.toml`、`uv.lock` を正とします。
 
 ## 結論
 

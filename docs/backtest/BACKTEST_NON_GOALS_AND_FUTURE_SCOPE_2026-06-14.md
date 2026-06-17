@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-14_19:58 JST
-更新日: 2026-06-18_02:04 JST
+更新日: 2026-06-18_02:18 JST
 -->
 
 # Backtest Non-Goals And Future Scope
@@ -97,7 +97,8 @@ NautilusTrader / HftBacktest / Tardis / PyBroker / Qlib / FinRL / skfolio / Risk
 - `tests/backtest/`
 - `docs/archive/backtest/OPTIONAL_BACKTEST_FRAMEWORK_ADOPTION_REVIEW_2026-06-13.md`
 - `docs/archive/backtest/CURRENT_BACKTEST_PLAN_AND_FRAMEWORK_ROLES_2026-06-14.md`
-- `docs/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md`
+- `docs/archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md`
+- `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md`
 
 ## 完了条件を混ぜないための禁止事項
 
@@ -131,7 +132,7 @@ NautilusTrader / HftBacktest / Tardis / PyBroker / Qlib / FinRL / skfolio / Risk
 
 ## 通常レーンで実装済みの reference-only artifact
 
-2026-06-15_21:08 JST 時点では、採用そのものではなく採用可否を判断するための artifact は実装済みである。
+採用そのものではなく採用可否を判断するための reference-only artifact は、現行 CLI として確認できる。実装時の詳細計画は `docs/archive/backtest/OSS_BACKTEST_CAPABILITY_EXPANSION_IMPLEMENTATION_PLAN_2026-06-15.md` に残し、現在の command と field は `docs/backtest/BACKTEST_CURRENT_TECHNICAL_REFERENCE.md` と CLI help を正とする。
 
 - `strategy-backtest-microstructure-readiness`: HftBacktest などの L2/L3/tick replay readiness。
 - `strategy-backtest-qstrader-contract`: qstrader の local input contract。
