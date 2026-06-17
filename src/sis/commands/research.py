@@ -2116,6 +2116,14 @@ def register_research_commands(
             help="Optional raw payload output path. Defaults under data/raw/real_market/alpaca.",
         ),
     ) -> None:
+        """Run a read-only Alpaca market-data connectivity smoke.
+
+        Requests latest or bounded historical stock bars with configured Alpaca
+        credentials. Writes data/ops/alpaca_live_smoke_summary.json and
+        data/reports/alpaca_live_smoke.md on pass, blocked, or failed outcomes,
+        plus an optional raw payload under data/raw/real_market/alpaca. This
+        does not submit orders or prove production live trading readiness.
+        """
         settings = get_settings()
         summary = run_alpaca_live_smoke(
             data_dir=settings.data_dir,

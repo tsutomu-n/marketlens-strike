@@ -231,6 +231,20 @@ def test_build_cost_matrix_help_describes_io_and_boundary() -> None:
     assert "Submits no live orders" in stdout
 
 
+def test_alpaca_smoke_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["alpaca-smoke", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "read-only Alpaca market-data connectivity smoke" in stdout
+    assert "latest or bounded historical stock bars" in stdout
+    assert "data/ops/alpaca_live_smoke_summary.json" in stdout
+    assert "data/reports/alpaca_live_smoke.md" in stdout
+    assert "data/raw/real_market/alpaca" in stdout
+    assert "pass, blocked, or failed outcomes" in stdout
+    assert "does not submit orders" in stdout
+    assert "prove production live trading readiness" in stdout
+
+
 def test_build_signals_help_describes_io_and_boundary() -> None:
     result = invoke_cli(["build-signals", "--help"])
     stdout = normalized_stdout(result)
