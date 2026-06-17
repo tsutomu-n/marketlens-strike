@@ -14,6 +14,9 @@ from sis.reports.summary_normalizers import (
 )
 from sis.storage.jsonl_store import write_json
 
+UNAVAILABLE_COLLECTOR_REASON = "read_only_execution_state_collector_not_implemented"
+UNAVAILABLE_COLLECTOR_ROOT_SOURCE = "execution_read_only_surfaces_summary.venues[].collector_status"
+
 
 def _quick_navigation(out_path: Path | None) -> dict[str, str]:
     if out_path is None:
@@ -52,6 +55,19 @@ def _related_reports(out_path: Path | None) -> dict[str, str]:
     }
 
 
+def _int_or_none(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
 def build_execution_drift_overview_report(
     *,
     execution_gap_history_summary_path: Path | None = None,
@@ -78,10 +94,11 @@ def build_execution_drift_overview_report(
     lineage: list[dict[str, object]] = []
     latest_execution_status = latest_execution_lineage.get("latest_execution_overall_status")
     latest_execution_venue_count = latest_execution_lineage.get("latest_execution_venue_count")
+    latest_execution_venue_count_int = _int_or_none(latest_execution_venue_count)
     latest_registries_present = latest_execution_lineage.get(
         "latest_execution_comparison_all_registries_present"
     )
-    if latest_execution_status == "degraded" and latest_execution_venue_count == 0:
+    if latest_execution_status == "degraded" and latest_execution_venue_count_int == 0:
         reason_codes.append("trade_xyz_live_execution_snapshot_not_connected")
         lineage.append(
             {
@@ -94,16 +111,22 @@ def build_execution_drift_overview_report(
             }
         )
     if latest_registries_present is False:
-        if "source_execution_snapshot_empty" not in reason_codes:
-            reason_codes.append("source_execution_snapshot_empty")
+        if latest_execution_venue_count_int == 0:
+            reason = "source_execution_snapshot_empty"
+            root_source = "execution_snapshot_summary.venues=[]"
+        else:
+            reason = UNAVAILABLE_COLLECTOR_REASON
+            root_source = UNAVAILABLE_COLLECTOR_ROOT_SOURCE
+        if reason not in reason_codes:
+            reason_codes.append(reason)
         lineage.append(
             {
                 "signal": "latest_execution_comparison_all_registries_present",
                 "observed": latest_registries_present,
                 "expected": True,
-                "root_source": "execution_snapshot_summary.venues=[]",
+                "root_source": root_source,
                 "derived": True,
-                "reason": "source_execution_snapshot_empty",
+                "reason": reason,
             }
         )
     quick_navigation = _quick_navigation(out_path)

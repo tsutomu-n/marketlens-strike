@@ -2669,6 +2669,71 @@ def test_build_execution_drift_overview_report_marks_empty_snapshot_lineage(tmp_
     )
 
 
+def test_build_execution_drift_overview_report_marks_unavailable_collector_lineage(
+    tmp_path,
+) -> None:
+    gap_history = tmp_path / "execution_gap_history.json"
+    state_comparison = tmp_path / "execution_state_comparison.json"
+    snapshot_drift = tmp_path / "execution_snapshot_drift.json"
+    write_json(
+        gap_history,
+        {
+            "entry_count": 4,
+            "latest_status": "degraded",
+            "latest_execution_diagnostics_status": "degraded",
+            "latest_execution_summary": {
+                "execution_overall_status": "degraded",
+                "execution_venue_count": 2,
+            },
+            "latest_execution_comparison_summary": {
+                "execution_comparison_all_registries_present": False,
+            },
+        },
+    )
+    write_json(
+        state_comparison,
+        {
+            "latest_execution_diagnostics_status": "degraded",
+            "latest_execution_gap_history_diagnostics_status": "degraded",
+            "latest_status_match": True,
+            "mismatching_count": 0,
+        },
+    )
+    write_json(
+        snapshot_drift,
+        {
+            "latest_execution_state_comparison_status_match": True,
+            "mismatching_snapshot_count": 0,
+        },
+    )
+
+    report = build_execution_drift_overview_report(
+        execution_gap_history_summary_path=gap_history,
+        execution_state_comparison_history_summary_path=state_comparison,
+        execution_snapshot_drift_history_summary_path=snapshot_drift,
+        out_path=tmp_path / "execution_drift_overview.md",
+        summary_path=tmp_path / "execution_drift_overview.json",
+    )
+
+    assert "read_only_execution_state_collector_not_implemented" in report
+    assert "source_execution_snapshot_empty" not in report
+    summary = read_json(tmp_path / "execution_drift_overview.json")
+    assert summary["execution_drift_overview_status"] == "degraded"
+    assert summary["execution_drift_overview_reason_codes"] == [
+        "read_only_execution_state_collector_not_implemented"
+    ]
+    assert summary["execution_drift_overview_lineage"] == [
+        {
+            "signal": "latest_execution_comparison_all_registries_present",
+            "observed": False,
+            "expected": True,
+            "root_source": "execution_read_only_surfaces_summary.venues[].collector_status",
+            "derived": True,
+            "reason": "read_only_execution_state_collector_not_implemented",
+        },
+    ]
+
+
 def test_build_execution_balance_status_report(tmp_path) -> None:
     out_path = tmp_path / "execution_balance_status.md"
     summary_path = tmp_path / "execution_balance_status_summary.json"
