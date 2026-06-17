@@ -170,8 +170,8 @@ def _benchmark_curve(payload: dict[str, Any] | None) -> list[dict[str, Any]]:
             continue
         strategy_return = (1.0 + strategy_return) * (1.0 + strategy_step) - 1.0
         benchmark_return = (1.0 + benchmark_return) * (1.0 + benchmark_step) - 1.0
-        if active_step is not None:
-            active_return = (1.0 + active_return) * (1.0 + active_step) - 1.0
+        active_step = strategy_step - benchmark_step if active_step is None else active_step
+        active_return = (1.0 + active_return) * (1.0 + active_step) - 1.0
         rows.append(
             {
                 "index": index,
@@ -342,15 +342,15 @@ def _render_html(view_model: dict[str, Any]) -> str:
   <style>
     :root {{
       color-scheme: light;
-      --paper: #f7f3ea;
-      --ink: #1b1a17;
-      --muted: #686158;
-      --line: #d9d0c0;
-      --panel: #fffaf1;
-      --accent: #176b5b;
-      --warn: #b9492d;
-      --good: #23633e;
-      --shadow: 0 12px 32px rgba(42, 31, 17, 0.12);
+      --canvas: #eef3f1;
+      --ink: #17201d;
+      --muted: #5b6762;
+      --line: #c4d0cc;
+      --panel: #fbfdfc;
+      --accent: #0f766e;
+      --warn: #b4452d;
+      --good: #1f6f49;
+      --shadow: 0 12px 32px rgba(20, 38, 33, 0.12);
     }}
     * {{ box-sizing: border-box; }}
     body {{
@@ -358,7 +358,7 @@ def _render_html(view_model: dict[str, Any]) -> str:
       background:
         linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px),
         linear-gradient(0deg, rgba(0,0,0,0.025) 1px, transparent 1px),
-        var(--paper);
+        var(--canvas);
       background-size: 28px 28px;
       color: var(--ink);
       font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
@@ -367,7 +367,7 @@ def _render_html(view_model: dict[str, Any]) -> str:
     header {{
       padding: 28px clamp(18px, 5vw, 56px) 18px;
       border-bottom: 1px solid var(--line);
-      background: rgba(255, 250, 241, 0.88);
+      background: rgba(251, 253, 252, 0.9);
       position: sticky;
       top: 0;
       z-index: 10;
@@ -399,7 +399,7 @@ def _render_html(view_model: dict[str, Any]) -> str:
       align-items: start;
     }}
     section, .panel {{
-      background: rgba(255, 250, 241, 0.92);
+      background: rgba(251, 253, 252, 0.94);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
       padding: 18px;
@@ -412,7 +412,7 @@ def _render_html(view_model: dict[str, Any]) -> str:
     }}
     .kpi {{
       border: 1px solid var(--line);
-      background: #fffdf7;
+      background: #ffffff;
       padding: 12px;
       min-height: 88px;
     }}
@@ -424,7 +424,7 @@ def _render_html(view_model: dict[str, Any]) -> str:
       gap: 8px;
       padding: 6px 10px;
       border: 1px solid var(--line);
-      background: #f4eadb;
+      background: #e5efec;
       font-weight: 700;
     }}
     .label.paper_observation_candidate {{ color: var(--good); }}
@@ -433,7 +433,7 @@ def _render_html(view_model: dict[str, Any]) -> str:
       width: 100%;
       min-height: 260px;
       border: 1px solid var(--line);
-      background: #fffdf7;
+      background: #ffffff;
       margin: 8px 0 18px;
     }}
     .chart svg {{ display: block; width: 100%; height: 260px; }}
@@ -447,7 +447,7 @@ def _render_html(view_model: dict[str, Any]) -> str:
     label {{ display: grid; gap: 4px; color: var(--muted); font-size: 13px; }}
     input, button {{
       border: 1px solid var(--line);
-      background: #fffdf7;
+      background: #ffffff;
       color: var(--ink);
       padding: 8px 10px;
       font: inherit;
@@ -456,7 +456,7 @@ def _render_html(view_model: dict[str, Any]) -> str:
     table {{
       width: 100%;
       border-collapse: collapse;
-      background: #fffdf7;
+      background: #ffffff;
       font-size: 13px;
     }}
     th, td {{
@@ -535,6 +535,10 @@ def _render_html(view_model: dict[str, Any]) -> str:
           <div id="stress"></div>
         </section>
         <section>
+          <h2>Diagnostics</h2>
+          <div id="diagnostics"></div>
+        </section>
+        <section>
           <h2>境界</h2>
           <p class="subtle">このHTMLは既存 artifact を読むだけです。paper / live 実行許可ではありません。</p>
           <ul class="list">
@@ -553,9 +557,10 @@ def _render_html(view_model: dict[str, Any]) -> str:
     const fmtPct = (v) => Number.isFinite(v) ? (v * 100).toFixed(2) + "%" : "n/a";
     const fmtMoney = (v) => Number.isFinite(v) ? "$" + v.toLocaleString(undefined, {{maximumFractionDigits: 2}}) : "n/a";
     const el = (id) => document.getElementById(id);
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}}[ch]));
 
     function kpi(label, value) {{
-      return `<div class="kpi"><span>${{label}}</span><strong>${{value}}</strong></div>`;
+      return `<div class="kpi"><span>${{escapeHtml(label)}}</span><strong>${{escapeHtml(value)}}</strong></div>`;
     }}
 
     function renderKpis() {{
@@ -568,15 +573,19 @@ def _render_html(view_model: dict[str, Any]) -> str:
       ].join("");
     }}
 
-    function pathFor(rows, key, width, height) {{
-      const values = rows.map((r) => Number(r[key])).filter((v) => Number.isFinite(v));
-      if (!values.length) return "";
+    function chartDomain(rows, specs) {{
+      const values = specs.flatMap((spec) => rows.map((r) => Number(r[spec.key])).filter((v) => Number.isFinite(v)));
       const min = Math.min(...values, 0);
       const max = Math.max(...values, 0);
-      const span = Math.max(max - min, 0.000001);
+      return [min, Math.max(max - min, 0.000001)];
+    }}
+
+    function pathFor(rows, key, width, height, domain) {{
+      const [min, span] = domain;
       return rows.map((r, i) => {{
         const x = rows.length === 1 ? width / 2 : (i / (rows.length - 1)) * width;
-        const y = height - ((Number(r[key]) - min) / span) * height;
+        const value = Number(r[key]);
+        const y = Number.isFinite(value) ? height - ((value - min) / span) * height : height;
         return `${{i === 0 ? "M" : "L"}}${{x.toFixed(2)}} ${{y.toFixed(2)}}`;
       }}).join(" ");
     }}
@@ -588,12 +597,13 @@ def _render_html(view_model: dict[str, Any]) -> str:
         el(target).innerHTML = '<p class="subtle" style="padding:14px">表示できる series がありません。</p>';
         return;
       }}
+      const domain = chartDomain(rows, specs);
       const lines = specs.map((spec) => {{
-        const d = pathFor(rows, spec.key, width, height);
+        const d = pathFor(rows, spec.key, width, height, domain);
         return `<path d="${{d}}" fill="none" stroke="${{spec.color}}" stroke-width="3" stroke-linecap="round"></path>`;
       }}).join("");
-      const legend = specs.map((spec) => `<span style="color:${{spec.color}}">${{spec.label}}</span>`).join(" / ");
-      el(target).innerHTML = `<svg viewBox="0 0 ${{width}} ${{height}}" role="img" aria-label="${{target}} line chart"><line x1="0" y1="${{height}}" x2="${{width}}" y2="${{height}}" stroke="#d9d0c0"></line>${{lines}}</svg><div class="subtle" style="padding:0 10px 10px">${{legend}}</div>`;
+      const legend = specs.map((spec) => `<span style="color:${{spec.color}}">${{escapeHtml(spec.label)}}</span>`).join(" / ");
+      el(target).innerHTML = `<svg viewBox="0 0 ${{width}} ${{height}}" role="img" aria-label="${{escapeHtml(target)}} line chart"><line x1="0" y1="${{height}}" x2="${{width}}" y2="${{height}}" stroke="#c4d0cc"></line>${{lines}}</svg><div class="subtle" style="padding:0 10px 10px">${{legend}}</div>`;
     }}
 
     function selectedTrades() {{
@@ -610,14 +620,17 @@ def _render_html(view_model: dict[str, Any]) -> str:
       const rows = selectedTrades();
       const total = rows.reduce((acc, row) => (1 + acc) * (1 + Number(row.signal_return)) - 1, 0);
       el("filter-summary").textContent = `${{rows.length}} trades / filtered return ${{fmtPct(total)}}`;
-      el("trade-rows").innerHTML = rows.map((row) => `<tr><td>${{row.ts_signal ?? ""}}</td><td>${{row.canonical_symbol ?? ""}}</td><td>${{row.side ?? ""}}</td><td>${{fmtPct(Number(row.signal_return))}}</td><td>${{row.cost_drag_bps ?? ""}}</td><td class="mono">${{row.signal_id ?? ""}}</td></tr>`).join("");
+      el("trade-rows").innerHTML = rows.map((row) => `<tr><td>${{escapeHtml(row.ts_signal)}}</td><td>${{escapeHtml(row.canonical_symbol)}}</td><td>${{escapeHtml(row.side)}}</td><td>${{fmtPct(Number(row.signal_return))}}</td><td>${{escapeHtml(row.cost_drag_bps)}}</td><td class="mono">${{escapeHtml(row.signal_id)}}</td></tr>`).join("");
     }}
 
     function renderLists() {{
-      el("reason-list").innerHTML = data.result_label.reasons.map((x) => `<li>${{x}}</li>`).join("");
-      el("next-list").innerHTML = data.result_label.next_checks.map((x) => `<li>${{x}}</li>`).join("");
-      el("periods").innerHTML = data.visual_data.periods.map((row) => `<p><strong>${{row.period}}</strong><br><span class="subtle">${{row.trade_count}} trades / ${{fmtPct(Number(row.total_return))}}</span></p>`).join("");
-      el("stress").innerHTML = data.visual_data.stress_scenarios.map((row) => `<p><strong>${{row.scenario_id}}</strong><br><span class="subtle">${{fmtPct(Number(row.stressed_total_return))}} / add ${{row.total_additional_bps_per_trade ?? "n/a"}} bps</span></p>`).join("");
+      el("reason-list").innerHTML = data.result_label.reasons.map((x) => `<li>${{escapeHtml(x)}}</li>`).join("");
+      el("next-list").innerHTML = data.result_label.next_checks.map((x) => `<li>${{escapeHtml(x)}}</li>`).join("");
+      el("periods").innerHTML = data.visual_data.periods.map((row) => `<p><strong>${{escapeHtml(row.period)}}</strong><br><span class="subtle">${{escapeHtml(row.trade_count)}} trades / ${{fmtPct(Number(row.total_return))}}</span></p>`).join("");
+      el("stress").innerHTML = data.visual_data.stress_scenarios.map((row) => `<p><strong>${{escapeHtml(row.scenario_id)}}</strong><br><span class="subtle">${{fmtPct(Number(row.stressed_total_return))}} / add ${{escapeHtml(row.total_additional_bps_per_trade ?? "n/a")}} bps</span></p>`).join("");
+      const compact = (v) => (Array.isArray(v) || (v && typeof v === "object")) ? JSON.stringify(v).slice(0, 180) : v;
+      const facts = (obj) => Object.entries(obj ?? {{}}).slice(0, 6).map(([k, v]) => `${{escapeHtml(k)}}=${{escapeHtml(compact(v))}}`).join("<br>") || "n/a";
+      el("diagnostics").innerHTML = `<p><strong>Rolling stability</strong><br><span class="subtle">${{facts(data.visual_data.rolling_stability_summary)}}</span></p><p><strong>Regime split</strong><br><span class="subtle">${{facts(data.visual_data.regime_split_summary)}}</span></p><p><strong>Comparison</strong><br><span class="subtle">${{facts(data.visual_data.comparison_diagnostics)}}</span></p>`;
     }}
 
     function initFilters() {{
@@ -639,13 +652,13 @@ def _render_html(view_model: dict[str, Any]) -> str:
 
     renderKpis();
     renderLineChart("equity-chart", data.visual_data.equity_curve, [
-      {{key: "cumulative_return", color: "#176b5b", label: "cumulative return"}},
-      {{key: "drawdown", color: "#b9492d", label: "drawdown"}}
+      {{key: "cumulative_return", color: "#0f766e", label: "cumulative return"}},
+      {{key: "drawdown", color: "#b4452d", label: "drawdown"}}
     ]);
     renderLineChart("benchmark-chart", data.visual_data.benchmark_curve, [
-      {{key: "strategy_return", color: "#176b5b", label: "strategy"}},
-      {{key: "benchmark_return", color: "#4d5f8f", label: "benchmark"}},
-      {{key: "active_return", color: "#b9492d", label: "active"}}
+      {{key: "strategy_return", color: "#0f766e", label: "strategy"}},
+      {{key: "benchmark_return", color: "#5465a9", label: "benchmark"}},
+      {{key: "active_return", color: "#b4452d", label: "active"}}
     ]);
     renderLists();
     initFilters();
