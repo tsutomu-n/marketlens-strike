@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-17_22:13 JST
+更新日: 2026-06-17_22:22 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -23,6 +23,7 @@
 8. `docs/OPERATIONS_RUNBOOK.md` は root index に縮小済み。長い domain 手順は `docs/runbooks/` に分割し、current-doc checker 対象に追加済み。
 9. 古い root audit / blocker docs は `docs/archive/2026-06-17-doc-routing/` へ移し、current-doc checker 対象から外した。
 10. 実装済み plan / historical review plan は `plan/archive/2026-06-17-plan-routing/` へ移し、`plan/0609ここからの計画/03_venue_read_only_capability_probe/` だけを current unimplemented plan として root 側に残した。
+11. `docs/CURRENT_STATE.md` は 2026-06-17_22:22 JST に 1ページ寄りの入口文書へ縮小し、詳細能力列挙は `docs/IMPLEMENTED_SURFACES.md`、`docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`、domain docs へ逃がした。
 
 ## 照合した正本
 
@@ -63,7 +64,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | `docs/backtest/README.md` | 更新して維持 | Strategy Review への導線を既に持つ | Backtest pack から Strategy Review へ進む最短手順を recipe 側へ寄せる |
 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | 更新して維持 | public CLI catalog と capability summary としてまだ使える | Strategy Review を独立 section に近い形で強調し、operator recipe をリンク |
 | `README.md` | 更新して維持 | repo entrypoint として正しい | 2026-06-17_01:26 JST に Read First と Main Flows へ Strategy Review docs を追加済み |
-| `docs/CURRENT_STATE.md` | 更新して維持 | current state の入口として使える | 2026-06-17_01:26 JST に Strategy Review の現行 surface と「readiness proof ではない」境界を追加済み |
+| `docs/CURRENT_STATE.md` | 更新して維持 | current state の入口として使える | 2026-06-17_22:22 JST に 1ページ寄りの index へ短文化済み |
 | `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` | 更新して維持 | 専門用語を減らし、repo でできること / できないことを説明する入口 | 外部入力時は `docs/NEXT_DIRECTION_CURRENT.md` の checklist を読む導線を維持 |
 | `docs/NEXT_DIRECTION_CURRENT.md` | 更新して維持 | 次方向と外部入力時の read-only / observation 再確認を分けている | `External Input Restart Checklist` を paper / live 許可と誤読させない |
 | `docs/strategy_lifecycle/README.md` | 更新して維持 | paper observation status と normal / smoke threshold の読み分けを説明する | 新しい通常 paper evidence は新しい trading day を含む必要があることを維持 |
@@ -96,7 +97,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 | Document | 作り直す理由 | 作り直し後の形 |
 |---|---|---|
 | `docs/CODE_STATUS.md` | migration PR、post-PR status、implemented surfaces、known gaps、verification snapshots が混在していた | 2026-06-17_06:32 JST に `IMPLEMENTED_SURFACES.md` と `MIGRATION_HISTORY.md` に分離済み |
-| `docs/CURRENT_STATE.md` | current state、capability catalog、runtime snapshots、known gaps が長くなりすぎている | 入口 index に縮小し、詳細は domain docs へリンク |
+| `docs/CURRENT_STATE.md` | current state、capability catalog、runtime snapshots、known gaps が長くなりすぎていた | 2026-06-17_22:22 JST に入口 index へ縮小し、詳細は domain docs へリンク済み |
 | `docs/OPERATIONS_RUNBOOK.md` | Trade[XYZ]、NDX、Strategy Lifecycle、paper operations、long-running script が同居 | 2026-06-17_21:52 JST に root index + `docs/runbooks/**` へ分割済み |
 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | capability catalog と CLI catalog が一文書に大きく積まれている | capability overview と generated/checked CLI catalog を分離 |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md` | capability 列挙が長大で、更新漏れリスクが高い | short guide + schema-driven matrix に分離 |

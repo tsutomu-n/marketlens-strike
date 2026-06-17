@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_07:23 JST
-更新日: 2026-06-17_22:13 JST
+更新日: 2026-06-17_22:22 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-15
@@ -51,9 +51,9 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 
 現行コードと大きく矛盾しない。更新するなら最新の確認結果、読み順、短文化、リンク追記を足す。
 
-- [ ] `docs/CURRENT_STATE.md`
+- [x] `docs/CURRENT_STATE.md`
   - 理由: Layer 2.2-2.8、backtest pack、venue boundary、paper-only boundary は現行コードと概ね一致する。
-  - 更新案: Runtime snapshot の固定値を増やさず、長い capability 列挙を専用 docs に寄せる。
+  - 更新済み: 2026-06-17_22:22 JST に Runtime snapshot の固定値を増やさず、長い capability 列挙を専用 docs に寄せた。
 - [ ] `docs/CODE_STATUS.md`
   - 理由: CLI / schema / tests の implemented surface は現行コードと概ね一致する。
   - 更新案: migration PR 表、post-PR status、runtime snapshot を分けて読みやすくする。
@@ -133,9 +133,9 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 
 単純更新より、役割を分割した方が保守しやすい。
 
-- [ ] `docs/CURRENT_STATE.md`
+- [x] `docs/CURRENT_STATE.md`
   - 理由: current state、capability catalog、runtime snapshots、known gaps が一文書に積み上がっている。
-  - 作り直し案: `CURRENT_STATE.md` は 1 ページ index にし、詳細は backtest / NDX / Strategy Lab / operations へ分割する。
+  - 実施済み: 2026-06-17_22:22 JST に `CURRENT_STATE.md` を 1 ページ寄りの index にし、詳細は backtest / NDX / Strategy Lab / operations docs へ分割した。
 - [ ] `docs/CODE_STATUS.md`
   - 理由: PR migration history、implemented surface、operational interpretation、known gaps、verification snapshot が混在している。
   - 作り直し案: `IMPLEMENTED_SURFACES.md` と `KNOWN_BOUNDARIES.md` に分ける。
@@ -208,7 +208,7 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 2. [x] `plan/README.md` の current implementation plan 分類を現行コードに合わせる。特に 0609/0610/0611 の実装済み plan を historical/superseded に分け、2026-06-17_22:13 JST に archive へ移動する。
 3. [ ] `docs/DOCS_LINT_POLICY_2026-05-30.md` と `scripts/check_current_docs.py` の allowlist を今後も同期する。
 4. [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を historical と明記するか archive する。
-5. [ ] `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` の肥大化を分割計画に落とす。
+5. [x] `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` の肥大化を分割計画に落とす。`CODE_STATUS.md` は thin index 済み、`CURRENT_STATE.md` は 2026-06-17_22:22 JST に index 化済み。
 6. [ ] `docs/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md` と Strategy Lab capability docs を短文化する。
 
 ## 残リスク
