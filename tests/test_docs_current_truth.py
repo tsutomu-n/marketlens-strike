@@ -88,6 +88,10 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "CURRENT_STATUS_DOC_FILES" in script
     assert "CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS" in script
     assert "CURRENT_STATUS_SEMANTIC_DRIFT_PATTERNS" in script
+    assert "PLAN_ROUTING_ALLOWED_FILES" in script
+    assert "PLAN_ROUTING_ALLOWED_PREFIXES" in script
+    assert "check_plan_routing" in script
+    assert "plan/0609ここからの計画/03_venue_read_only_capability_probe/" in script
     assert "REVISE_2_3" in script
     assert "162 commands" in script
     assert "checked 125 current docs" in script
@@ -104,6 +108,26 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert (
         "docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md" not in current_status_docs
     )
+
+
+def test_plan_routing_keeps_historical_docs_archived() -> None:
+    checker_globals = _checker_globals()
+    assert checker_globals["check_plan_routing"]() == []
+
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "--", "plan"],
+        check=True,
+        capture_output=True,
+    )
+    tracked_plan_files = {raw.decode("utf-8") for raw in result.stdout.split(b"\0") if raw}
+
+    assert "plan/README.md" in tracked_plan_files
+    assert (
+        "plan/archive/2026-06-08-plan-routing/0607ここからの計画2/zip_intake_guide/README.md"
+        in tracked_plan_files
+    )
+    assert all(not path.startswith("plan/0607ここからの計画2/") for path in tracked_plan_files)
+    assert all(not path.startswith("plan/0608ここからの計画/") for path in tracked_plan_files)
 
 
 def test_human_facing_html_guides_have_markdown_sources() -> None:

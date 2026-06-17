@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_01:18 JST
-更新日: 2026-06-18_00:08 JST
+更新日: 2026-06-18_00:15 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-17
@@ -36,6 +36,7 @@
 21. `plan/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` は 2026-06-17_23:53 JST に `plan/archive/2026-06-17-plan-routing/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` へ移動した。本文は historical implementation plan として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
 22. `plan/ねくすと.md` は 2026-06-18_00:01 JST に `plan/archive/2026-06-17-plan-routing/ねくすと.md` へ移動した。本文は Strategy Review operator artifact の historical implementation plan として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
 23. `plan/0607ここからの計画2/README.md` と `plan/0607ここからの計画2/TEMPLATE_MANIFEST.json` は 2026-06-18_00:08 JST に `plan/archive/2026-06-08-plan-routing/0607ここからの計画2/zip_intake_guide/` へ移動した。feature expansion ZIP の historical intake guide / template として残し、現行次手は `docs/NEXT_DIRECTION_CURRENT.md` と `plan/README.md` から読む。
+24. `scripts/check_current_docs.py` は 2026-06-18_00:15 JST に tracked plan routing guard を追加した。tracked plan file は `plan/README.md`、`plan/archive/**`、`plan/0609ここからの計画/03_venue_read_only_capability_probe/**` だけを許可し、root historical plan file の再混入を失敗させる。
 
 ## 照合した正本
 
@@ -160,6 +161,7 @@ rg -n "strategy-review-build|Strategy Review|strategy_review" src/sis/cli.py src
 12. [x] historical implementation plan `plan/STRATEGY_REVIEW_NEXT_IMPLEMENTATION_PLAN_2026-06-16.md` を root plan から archive へ移す。
 13. [x] historical implementation plan `plan/ねくすと.md` を root plan から archive へ移す。
 14. [x] historical template `plan/0607ここからの計画2/README.md` / `TEMPLATE_MANIFEST.json` を root plan から archive へ移す。
+15. [x] tracked historical plan file が root `plan/` に戻らないよう `scripts/check_current_docs.py` に plan routing guard を追加する。
 
 ## 残リスク
 

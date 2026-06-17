@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -56,6 +57,13 @@ CURRENT_DOC_DIRS = (
     "docs/venues",
     "docs/algo/strategy_factory",
     "docs/algo/obsidian_note_rewrites_2026-05-29",
+)
+
+PLAN_ROUTING_ALLOWED_FILES = ("plan/README.md",)
+
+PLAN_ROUTING_ALLOWED_PREFIXES = (
+    "plan/archive/",
+    "plan/0609ここからの計画/03_venue_read_only_capability_probe/",
 )
 
 EXCLUDED_DOC_PREFIXES = (
@@ -185,6 +193,16 @@ def _iter_current_docs() -> list[Path]:
     return sorted(paths)
 
 
+def _iter_tracked_files(pathspec: str) -> list[str]:
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "--", pathspec],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+    )
+    return [raw.decode("utf-8") for raw in result.stdout.split(b"\0") if raw]
+
+
 def _strip_fragment(target: str) -> str:
     return target.split("#", 1)[0]
 
@@ -285,6 +303,18 @@ def check_current_docs() -> list[str]:
     errors: list[str] = []
     for path in _iter_current_docs():
         errors.extend(_check_path(path))
+    errors.extend(check_plan_routing())
+    return errors
+
+
+def check_plan_routing() -> list[str]:
+    errors: list[str] = []
+    for rel in _iter_tracked_files("plan"):
+        if rel in PLAN_ROUTING_ALLOWED_FILES:
+            continue
+        if any(rel.startswith(prefix) for prefix in PLAN_ROUTING_ALLOWED_PREFIXES):
+            continue
+        errors.append(f"{rel}: tracked plan file is outside current root plan or archive routing")
     return errors
 
 
@@ -296,7 +326,7 @@ def main() -> int:
     checked_count = len(_iter_current_docs())
     print(
         f"checked {checked_count} current docs: "
-        "metadata, links, EOF, legacy roots, HTML sources, and semantic drift ok"
+        "metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok"
     )
     return 0
 

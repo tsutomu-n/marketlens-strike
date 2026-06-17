@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:55 JST
-更新日: 2026-06-17_23:47 JST
+更新日: 2026-06-18_00:15 JST
 -->
 
 # Docs Lint Policy 2026-05-30
@@ -86,6 +86,7 @@ plan/archive/**
 - HTML current docs は同名の Markdown source を持つ。
 - current docs が旧 root path へリンクしていない。
 - `README.md`、`docs/CURRENT_STATE.md`、domain runbook、capability guide など現在状態を説明する入口文書では、古い判定語、固定の current-doc 件数、固定の full-check pass 件数、古い CLI 件数、tracked docs へ写した runtime hash 表現が混入していない。
+- tracked plan file は `plan/README.md`、`plan/archive/**`、`plan/0609ここからの計画/03_venue_read_only_capability_probe/**` だけに限定する。
 
 この最後の検査は、現在状態の説明だけを対象にする。監査記録、実装記録、completion evidence のような historical docs は、当時の件数や判定語を含んでもよい。古い値を消すのではなく、「今の確認は command を再実行する」と読める形に分ける。
 
@@ -118,5 +119,6 @@ uv run python scripts/check_current_docs.py
 
 - current docs を増やす場合は、`scripts/check_current_docs.py` の allowlist に追加する。
 - source snapshot / archive を整形するだけの変更は、current docs 修正と同じ差分に混ぜない。
+- root `plan/` 側へ tracked plan を増やす場合は、current unimplemented plan か archive かを決め、必要なら `PLAN_ROUTING_ALLOWED_PREFIXES` を同時に更新する。
 - 広域 docs lint を作る場合も、まず current docs lint とは別コマンドにする。
 - `docs/algo/README.md` が正本として案内する docs は、原則 strict check 対象に入れる。
