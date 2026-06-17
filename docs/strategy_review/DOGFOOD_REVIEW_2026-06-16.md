@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_20:09 JST
-更新日: 2026-06-17_20:07 JST
+更新日: 2026-06-17_20:14 JST
 -->
 
 # Strategy Review Dogfood Review 2026-06-16
@@ -13,7 +13,7 @@
 
 copy-paste 用の現行 recipe は [OPERATOR_REVIEW_PACKET_RECIPE.md](OPERATOR_REVIEW_PACKET_RECIPE.md) を見る。
 
-2026-06-17_20:07 JST 現在、Strategy Review の後続 artifact として `strategy-review-record` / `operator_review.yaml` も実装済み。これはこの dogfood 初回実施時点の未実装項目だったが、現行手順では packet build 後に人間判断を hash 付きで保存・再検証できる。
+2026-06-17_20:14 JST 現在、Strategy Review の後続 artifact として `strategy-review-record` / `operator_review.yaml` も実装済み。これはこの dogfood 初回実施時点の未実装項目だったが、現行手順では packet build 後に人間判断を hash 付きで保存・再検証できる。
 
 ## 実行結果
 
@@ -44,7 +44,7 @@ copy-paste 用の現行 recipe は [OPERATOR_REVIEW_PACKET_RECIPE.md](OPERATOR_R
 
 ## Operator Review Dogfood
 
-`dogfood-operator-current` は、現行の `strategy-review-build` と `strategy-review-record` を通す stable review id として使った。2026-06-17_20:07 JST の local artifact loop では、`strategy-paper-observation-append` を dogfood した後、既存の `data/research/backtest_pack/strategy_backtest_pack.json`、`data/research/backtest_pack/strategy_backtest_pack_validation.json`、`data/research/strategy_lifecycle/strategy_lifecycle_review.json` を使って再 build / record / validate した。
+`dogfood-operator-current` は、現行の `strategy-review-build` と `strategy-review-record` を通す stable review id として使った。2026-06-17_20:14 JST の local artifact loop では、`strategy-paper-observation-append` で最新通常 session を `20 fills` まで進めた後、既存の `data/research/backtest_pack/strategy_backtest_pack.json`、`data/research/backtest_pack/strategy_backtest_pack_validation.json`、`data/research/strategy_lifecycle/strategy_lifecycle_review.json` を使って再 build / record / validate した。
 
 確認した値:
 
