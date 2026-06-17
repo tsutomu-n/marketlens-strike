@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-17_10:50 JST
+更新日: 2026-06-17_21:23 JST
 -->
 
 # Code Status
@@ -12,17 +12,21 @@
 `CODE_STATUS.md` は、migration 履歴と現行 implemented surface を混ぜないために薄い index にした。
 
 - PR-00 から PR-12 までの移行・復旧履歴は [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md) を読む。
+- 専門用語を減らして「いま何ができるか / できないか」を読む場合は [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) を読む。
 - 現在コードで使える主要 surface と境界は [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) を読む。
 - runtime artifact の鮮度や readiness は [CURRENT_STATE.md](CURRENT_STATE.md)、`uv run sis --help`、`uv run python scripts/check_current_docs.py`、`./scripts/check` で確認する。
+- 外部入力が来た時の read-only / observation 再確認手順は [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) の `External Input Restart Checklist` を読む。
 
 ## 現在の読み方
 
 | 目的 | 読むもの |
 |---|---|
-| repo が何をできるか知る | [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) |
+| repo が何をできるか専門用語少なめで知る | [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) |
+| repo が何をできるか技術詳細で知る | [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) |
 | 実装済み surface を見る | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) |
 | PR migration 履歴を見る | [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md) |
 | runtime artifact / readiness を見る | [CURRENT_STATE.md](CURRENT_STATE.md) |
+| 次に進む方向や外部入力時の再確認を見る | [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) |
 | operator 手順を見る | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) |
 | Strategy Review を使う | [strategy_review/README.md](strategy_review/README.md) |
 | venue capability boundary を見る | [venues/read_only_capability_probe.md](venues/read_only_capability_probe.md) |
