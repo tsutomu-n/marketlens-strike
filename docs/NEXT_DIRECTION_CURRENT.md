@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-17_20:57 JST
+更新日: 2026-06-17_21:08 JST
 -->
 
 # Next Direction Current
@@ -75,6 +75,77 @@ uv run sis strategy-paper-observation-cycle \
 - credentialed Hyperliquid read-only network probe
 - Bitget demo order lifecycle
 - production venue schema widening
+
+## External Input Restart Checklist
+
+外部入力が揃った場合だけ、次の順で read-only 再確認する。ここでの再確認は execution readiness の観測であり、paper / live 許可ではない。
+
+### Trade[XYZ] read-only execution state
+
+必要な入力:
+
+- `SIS_TRADE_XYZ_EXECUTION_STATE_USER_ADDRESS=<public-user-address>`
+- `SIS_TRADE_XYZ_EXECUTION_STATE_COLLECTOR_ENABLED=1`
+
+再確認コマンド:
+
+```bash
+uv run sis execution-read-only-surfaces
+uv run sis execution-snapshot --venue trade_xyz
+uv run sis execution-drift-overview
+uv run sis phase-gate-review
+```
+
+期待する読み方:
+
+- public user address と opt-in がない状態では external API を呼ばず、`trade_xyz_execution_state_user_address_missing` または opt-in required として止まる。
+- public user address と opt-in がある場合だけ account state / open orders / fills を read-only で読む。
+- 成功しても wallet、signing、exchange write、live order の許可にはならない。
+
+### Bitget demo read-only smoke
+
+必要な入力:
+
+- `BITGET_DEMO_API_KEY`
+- `BITGET_DEMO_API_SECRET`
+- `BITGET_DEMO_PASSPHRASE`
+
+再確認コマンド:
+
+```bash
+uv run sis bitget-demo-smoke
+uv run sis execution-read-only-surfaces
+uv run sis execution-drift-overview
+uv run sis phase-gate-review
+```
+
+期待する読み方:
+
+- demo credentials は production Bitget futures readiness ではない。
+- `bitget_demo` は demo 検証用 surface であり、Strategy Lab の正式 production venue ではない。
+- smoke 成功は live order lifecycle や exchange write 許可ではない。
+
+### Normal paper observation
+
+必要な入力:
+
+- 新しい trading day を含む通常 paper observation evidence。
+- 同じ trading day の artifact rerun や fill 水増しは `10 trading days` の代替にしない。
+
+再確認コマンド:
+
+```bash
+uv run sis strategy-paper-observation-status \
+  --data-dir data \
+  --out data/research/strategy_lifecycle \
+  --reports-dir data/reports
+```
+
+期待する読み方:
+
+- `latest_normal_requirement_gaps.trading_days` が進んだかを見る。
+- `smoke_pass_counts_as_normal_pass=false` を維持する。
+- `normal_thresholds_met=true` になるまで live readiness と読まない。
 
 ## Completed / Paused Candidate
 
