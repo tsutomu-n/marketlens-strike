@@ -1950,8 +1950,16 @@ def register_research_commands(
 
     @app.command("build-paper-intent-preview")
     def build_paper_intent_preview_cmd(
-        source_pack: Path | None = typer.Option(None, "--source-pack"),
-        promotion_decision: Path | None = typer.Option(None, "--promotion-decision"),
+        source_pack: Path | None = typer.Option(
+            None,
+            "--source-pack",
+            help="PaperCandidatePack JSON path. Defaults to data/research/paper_candidate_pack.json.",
+        ),
+        promotion_decision: Path | None = typer.Option(
+            None,
+            "--promotion-decision",
+            help="PromotionDecision JSON path. Defaults to data/research/promotion_decision.json.",
+        ),
     ) -> None:
         settings = get_settings()
         pack_path = source_pack or (settings.data_dir / "research/paper_candidate_pack.json")

@@ -130,6 +130,16 @@ def test_paper_from_intents_help_exposes_observation_ledger_path() -> None:
     assert "--observation-ledger-path" in stdout
 
 
+def test_build_paper_intent_preview_help_describes_inputs() -> None:
+    result = invoke_cli(["build-paper-intent-preview", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "--source-pack" in stdout
+    assert "PaperCandidatePack JSON path" in stdout
+    assert "--promotion-decision" in stdout
+    assert "PromotionDecision JSON path" in stdout
+
+
 def test_strategy_paper_observation_cycle_help_smoke() -> None:
     result = invoke_cli(["strategy-paper-observation-cycle", "--help"])
     stdout = normalized_stdout(result)
