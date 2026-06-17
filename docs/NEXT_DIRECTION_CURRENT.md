@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-17_19:24 JST
+更新日: 2026-06-17_19:36 JST
 -->
 
 # Next Direction Current
@@ -82,7 +82,7 @@ uv run sis strategy-paper-observation-cycle \
 
 `strategy-paper-observation-status` は実装済み。出力は `data/research/strategy_lifecycle/paper_observation_status.json` と `data/reports/paper_observation_status.md`。
 
-2026-06-17_19:11 JST の local run では `observation_state=needs_more_normal_paper_observation`、`next_action=continue_normal_paper_observation`、`normal_session_count=3`、`latest_normal_session_id=local-paper-20260617-190737`、`normal_thresholds_met=false`、`smoke_pass_present=true`、`smoke_pass_counts_as_normal_pass=false`。
+2026-06-17_19:36 JST の local run では `observation_state=needs_more_normal_paper_observation`、`next_action=continue_normal_paper_observation`、`normal_session_count=5`、`latest_normal_session_id=local-paper-20260617-193618`、`normal_thresholds_met=false`、`smoke_pass_present=true`、`smoke_pass_counts_as_normal_pass=false`。
 
 ### `venue-read-only-probe`
 

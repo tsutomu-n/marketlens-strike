@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-17_19:24 JST
+更新日: 2026-06-17_19:36 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -102,9 +102,9 @@ uv run sis strategy-review-record --help
 
 現行レポートでは、通常のペーパー観察がまだ足りない状態です。
 
-- 通常ペーパー観察の session 数: `3`
+- 通常ペーパー観察の session 数: `5`
 - smoke session 数: `1`
-- 最新の通常 session: `local-paper-20260617-190737`
+- 最新の通常 session: `local-paper-20260617-193618`
 - 最新の通常判定: `NEEDS_MORE_PAPER_OBSERVATION`
 - 最新の smoke 判定: `PASS_PAPER_OBSERVATION_REVIEW`
 - 通常基準を満たしたか: `false`

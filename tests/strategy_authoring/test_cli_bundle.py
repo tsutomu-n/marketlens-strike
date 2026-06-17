@@ -262,6 +262,24 @@ portfolio:
             },
         ]
     ).write_csv(benchmark_series_path)
+    canonical_signals_path = data_dir / "research/strategy_signals.parquet"
+    canonical_manifest_path = data_dir / "research/strategy_signal_manifest.json"
+    canonical_signals_path.parent.mkdir(parents=True, exist_ok=True)
+    pl.DataFrame(
+        [
+            {
+                "signal_id": "existing-canonical-signal",
+                "strategy_id": "ndx_open_gap_residual_v1",
+            }
+        ]
+    ).write_parquet(canonical_signals_path)
+    canonical_manifest_text = json.dumps(
+        {"schema_version": "strategy_signal_manifest.v1", "source": "existing-canonical"},
+        indent=2,
+        sort_keys=True,
+    )
+    canonical_manifest_path.write_text(canonical_manifest_text + "\n", encoding="utf-8")
+    canonical_signals_bytes = canonical_signals_path.read_bytes()
 
     result = runner.invoke(
         app,
@@ -429,6 +447,21 @@ portfolio:
     assert payload["artifacts"]["assumption_ledger"]["exists"] is True
     assert payload["artifacts"]["trial_ledger"]["exists"] is True
     assert payload["artifacts"]["returns_series"]["exists"] is True
+    assert (
+        payload["artifacts"]["signals_parquet"]["path"]
+        == (
+            data_dir / "research/backtest_pack/source_artifacts/research/strategy_signals.parquet"
+        ).as_posix()
+    )
+    assert (
+        payload["artifacts"]["signal_manifest"]["path"]
+        == (
+            data_dir
+            / "research/backtest_pack/source_artifacts/research/strategy_signal_manifest.json"
+        ).as_posix()
+    )
+    assert canonical_signals_path.read_bytes() == canonical_signals_bytes
+    assert canonical_manifest_path.read_text(encoding="utf-8") == canonical_manifest_text + "\n"
     benchmark_payload = json.loads(benchmark_relative_path.read_text(encoding="utf-8"))
     assert benchmark_payload["source_benchmark_series_path"] == benchmark_series_path.as_posix()
     assert benchmark_payload["source_benchmark_series_hash"].startswith("sha256:")

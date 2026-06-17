@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-17_19:24 JST
+更新日: 2026-06-17_19:36 JST
 -->
 
 # Current State
@@ -139,11 +139,12 @@ uv run python scripts/check_current_docs.py
 - `uv run sis --help`: `research-layer22-review-pack`, `research-layer22-review-import`, `research-layer22-exit-gate`, `research-ndx-source-resolve`, `research-ndx-feature-panel`, `research-ndx-residual`, `research-ndx-diagnostics`, `research-ndx-residual-validate`, `research-ndx-strategy-lab-export` registered
 - latest local exit decision artifact: `APPROVE_2_3`, `second_review_required=false`, unresolved human decision count `0`, blocker count `0`, pack hash `sha256:7fc0d644d4a8d7432df29a8dfd6c878fc97342b5745febc26e6cd6206a01dd6a`
 - latest Layer 2.4 decision artifact: `APPROVE_STRATEGY_LAB_EXPORT`, `reason_codes=[]`, `permits_strategy_lab_research_only_export=true`
-- latest Layer 2.5 export artifact: `export_id=sha256:6e205549d2bc81ae8a99f316b29a3c1b496272f30b417cff71e2404e21f3465d`, `signal_count=84`, `replace_existing=true`, previous signal hash `sha256:2790ee50d92d871031401691803a86ea32c9f3fab77c7fa03a93008f99528e6b`
-- latest Layer 2.6 paper-observation gate artifact: `decision=APPROVE_PAPER_OBSERVATION_REVIEW`, `decision_id=sha256:69418c3e6367cd9e0617241d7c76bd226b65885b915f3a05b13618618ca6c9f4`, `permits_operator_promotion_review=true`, `permits_live_order=false`
-- latest Layer 2.7 operator promotion artifact: `decision=promote_to_paper_observation`, `promotion_id=sha256:815887dea65134ffcc92a94f67ec0956577f53a6dc7643032d857e4da8d41d90`, `permits_paper_candidate=true`, `permits_paper_intent_preview=true`, `permits_paper_observation=true`, `permits_live_order=false`
+- latest Layer 2.5 export artifact: `export_id=sha256:6e205549d2bc81ae8a99f316b29a3c1b496272f30b417cff71e2404e21f3465d`, `signal_count=84`, `replace_existing=true`, previous signal hash `null`
+- latest Layer 2.6 paper-observation gate artifact: `decision=APPROVE_PAPER_OBSERVATION_REVIEW`, `decision_id=sha256:31076e5cee546e770f68d5786b619640399cabe72dbf7b997e05d94051376205`, `permits_operator_promotion_review=true`, `permits_live_order=false`
+- latest Layer 2.7 operator promotion artifact: `decision=promote_to_paper_observation`, `promotion_id=sha256:edb0ab4452f950ddbaaf86db520f0a75bd399ded263b1e8e381f2c80772c34fb`, `permits_paper_candidate=true`, `permits_paper_intent_preview=true`, `permits_paper_observation=true`, `permits_live_order=false`
 - latest paper candidate check after valid Layer 2.7 promotion: `selected_candidate_ids=["candidate-trial-d4cd44be5491-dce21eb2f5461d85"]`, `candidate_count=1`, first candidate block reasons `[]`
 - latest `PaperIntentPreview` after valid Layer 2.7 promotion: `intent_count=1`, `paper_only=true`, `requires_revalidation=true`, `live_conversion_allowed=false`, `wallet_used=false`, `exchange_write_used=false`
+- latest Strategy Backtest Pack uses isolated signal artifacts under `data/research/backtest_pack/source_artifacts/`, so pack generation no longer overwrites the NDX Strategy Lab canonical `data/research/strategy_signals.parquet`.
 
 2026-06-09 NDX/QQQ venue suitability paper-path snapshot:
 

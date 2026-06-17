@@ -100,8 +100,9 @@ def run_strategy_backtest_pack(
     evaluation_manifest = manifest_for_evaluation_frame(
         parsed_spec, frame, evaluation_frame, manifest
     )
+    pack_signal_data_dir = inputs.out_dir / "source_artifacts"
     signal_artifacts = write_authoring_signal_artifacts(
-        evaluation_frame, evaluation_manifest, data_dir=inputs.data_dir
+        evaluation_frame, evaluation_manifest, data_dir=pack_signal_data_dir
     )
     metrics, summary = run_authoring_backtest(parsed_spec, frame, data_dir=inputs.data_dir)
     backtest_artifacts = write_authoring_backtest_outputs(
