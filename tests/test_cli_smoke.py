@@ -189,6 +189,34 @@ def test_build_feature_panel_help_describes_io_and_boundary() -> None:
     assert "Submits no live orders" in stdout
 
 
+def test_build_event_calendar_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["build-event-calendar", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "event-calendar CSV" in stdout
+    assert "--csv-path" in stdout
+    assert "data/research/event_calendar.csv" in stdout
+    assert "data/research/event_calendar.parquet" in stdout
+    assert "required event window columns" in stdout
+    assert "empty event-calendar parquet" in stdout
+    assert "Submits no live orders" in stdout
+
+
+def test_check_research_quality_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["check-research-quality", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "JSON report" in stdout
+    assert "data/research/market_panel.parquet" in stdout
+    assert "data/research/macro_panel.parquet" in stdout
+    assert "data/research/event_calendar.parquet" in stdout
+    assert "data/research/feature_panel.parquet" in stdout
+    assert "data/research/signals.csv" in stdout
+    assert "data/research/research_quality_report.json" in stdout
+    assert "future-leak review status" in stdout
+    assert "Submits no live orders" in stdout
+
+
 def test_build_signals_help_describes_io_and_boundary() -> None:
     result = invoke_cli(["build-signals", "--help"])
     stdout = normalized_stdout(result)

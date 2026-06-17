@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-18_02:42 JST
+更新日: 2026-06-18_04:12 JST
 -->
 
 # Operator Runbook
@@ -29,8 +29,9 @@ uv run sis check-research-quality
 
 期待する主な artifact:
 
+- `data/research/event_calendar.parquet`
 - `data/research/feature_panel.parquet`
-- `data/reports/research_quality.md`
+- `data/research/research_quality_report.json`
 
 `build-signals()` は `data/research/feature_panel.parquet` が無いと止まります。
 

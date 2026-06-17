@@ -1467,9 +1467,18 @@ def register_research_commands(
         csv_path: Path | None = typer.Option(
             None,
             "--csv-path",
-            help="Optional event calendar CSV path. Defaults to data/research/event_calendar.csv.",
+            help=(
+                "Optional event calendar CSV path. Defaults to data/research/event_calendar.csv."
+            ),
         ),
     ) -> None:
+        """Normalize event-calendar CSV into the research event parquet.
+
+        Reads the optional CSV source, validates required event window columns,
+        and writes data/research/event_calendar.parquet. If the CSV is missing,
+        writes an empty event-calendar parquet with the expected schema.
+        Submits no live orders.
+        """
         settings = get_settings()
         out = build_event_calendar(settings.data_dir, csv_path=csv_path)
         logger.info("written: {}", out)
@@ -2059,6 +2068,15 @@ def register_research_commands(
 
     @app.command("check-research-quality")
     def check_research_quality_cmd() -> None:
+        """Summarize research artifact quality into a JSON report.
+
+        Reads data/research/market_panel.parquet, data/research/macro_panel.parquet,
+        optional data/research/event_calendar.parquet,
+        data/research/feature_panel.parquet, and data/research/signals.csv. Writes
+        data/research/research_quality_report.json with row counts, missing values,
+        duplicates, coverage summaries, and manual future-leak review status.
+        Submits no live orders.
+        """
         settings = get_settings()
         out = build_research_quality_report(settings.data_dir)
         logger.info("written: {}", out)
