@@ -41,6 +41,7 @@ CURRENT_DOC_FILES = (
     "docs/algo/SOURCE_NOTES_INDEX.md",
     "docs/live_evidence_reports/README.md",
     "docs/archive/README.md",
+    "docs/trade_xyz_bot_beginner_guide.md",
     "docs/trade_xyz_bot_beginner_guide.html",
     "plan/README.md",
 )

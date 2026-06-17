@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:55 JST
-更新日: 2026-06-17_22:40 JST
+更新日: 2026-06-17_22:53 JST
 -->
 
 # Docs Lint Policy 2026-05-30
@@ -57,6 +57,7 @@ docs/strategy_research_lab/**
 docs/runbooks/**
 docs/live_evidence_reports/README.md
 docs/archive/README.md
+docs/trade_xyz_bot_beginner_guide.md
 docs/trade_xyz_bot_beginner_guide.html
 plan/README.md
 ```

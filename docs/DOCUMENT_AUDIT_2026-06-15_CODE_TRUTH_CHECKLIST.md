@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-15_07:23 JST
-更新日: 2026-06-17_22:30 JST
+更新日: 2026-06-17_22:53 JST
 -->
 
 # Code-Truth Documentation Checklist 2026-06-15
@@ -151,9 +151,9 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 - [ ] `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md`
   - 理由: Layer 2.2 実装記録に後続 layer の条件や履歴が追記されやすい。
   - 作り直し案: Layer 2.2 の historical record に固定し、Layer 2.3 以降は個別 records に分ける。
-- [ ] `docs/trade_xyz_bot_beginner_guide.html`
+- [x] `docs/trade_xyz_bot_beginner_guide.html`
   - 理由: README の read-first に入る初心者向け HTML だが、current venue suitability、NDX/QQQ fail-closed、Strategy Lifecycle、backtest-first 境界まで体系的に読むには古い。
-  - 作り直し案: Markdown 正本を作ってから HTML を再生成する。旧 HTML は archive へ回す。
+  - 実施済み: 2026-06-17_22:53 JST に `docs/trade_xyz_bot_beginner_guide.md` を文章正本として追加し、README は Markdown 正本を先に読む導線へ変更した。HTML は companion として維持する。
 - [ ] `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html`
   - 理由: Markdown companion HTML で、Markdown 側を更新した時に同期漏れしやすい。
   - 作り直し案: `08_CURRENT_CAPABILITIES.md` を正本にし、HTML は生成物または明示 companion として更新手順を持たせる。
@@ -206,7 +206,7 @@ rg --files schemas tests src/sis/backtest src/sis/research/ndx src/sis/research/
 
 1. [x] `README.md` の Layer 2.4 / 2.5-2.8 current flow を修正する。
 2. [x] `plan/README.md` の current implementation plan 分類を現行コードに合わせる。特に 0609/0610/0611 の実装済み plan を historical/superseded に分け、2026-06-17_22:13 JST に archive へ移動する。
-3. [ ] `docs/DOCS_LINT_POLICY_2026-05-30.md` と `scripts/check_current_docs.py` の allowlist を今後も同期する。
+3. [x] `docs/DOCS_LINT_POLICY_2026-05-30.md` と `scripts/check_current_docs.py` の allowlist を今後も同期する。2026-06-17_22:53 JST に `docs/trade_xyz_bot_beginner_guide.md` を両方へ追加済み。
 4. [x] `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md`, `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md` を historical と明記するか archive する。
 5. [x] `docs/CURRENT_STATE.md` / `docs/CODE_STATUS.md` の肥大化を分割計画に落とす。`CODE_STATUS.md` は thin index 済み、`CURRENT_STATE.md` は 2026-06-17_22:22 JST に index 化済み。
 6. [x] `docs/archive/backtest/CURRENT_BACKTEST_DETAIL_AND_FRAMEWORK_OPTIONS_2026-06-13.md` は archive 済み、Strategy Lab capability docs は 2026-06-17_22:30 JST に短文化する。

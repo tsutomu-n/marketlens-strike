@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-31_07:54 JST
-更新日: 2026-06-17_22:02 JST
+更新日: 2026-06-17_22:53 JST
 -->
 
 # Documentation Audit 2026-05-31
@@ -92,7 +92,7 @@ tests/test_strategy_lab_schemas.py
 | `docs/archive/2026-05-31-doc-audit/DOCUMENT_AUDIT_2026-05-30.md` | 作り直し済み: `docs/DOCUMENT_AUDIT_2026-05-31.md` | Strategy Authoring completion evidence と最新 gate を含まない |
 | `docs/archive/2026-06-05-doc-cleanup/TRADE_XYZ_IMPLEMENTATION_STATUS_AUDIT_2026-05-28.md` | 2026-06-05 に archive 済み | 2026-05-28 runtime evidence と current full gate を混同しやすかった |
 | `docs/archive/2026-06-05-doc-cleanup/FAILURE_MODE_RESPONSIBILITY_MAP_2026-05-28.md` | 2026-06-05 に archive 済み | failure-mode catalog と古い検証 snapshot が同居していた |
-| `docs/trade_xyz_bot_beginner_guide.html` | 部分再作成候補 | Strategy Authoring / PaperIntentPreview の初心者向け導線をさらに厚くできる |
+| `docs/trade_xyz_bot_beginner_guide.html` | 文章正本追加済み | 2026-06-17_22:53 JST に `docs/trade_xyz_bot_beginner_guide.md` を追加し、README は Markdown 正本を先に読む導線へ変更済み |
 | `docs/algo/obsidian_note_rewrites_2026-05-28/` | 作り直すより archive 扱いを継続 | 2026-05-29 bundle に superseded |
 
 ## 削除・アーカイブしてもよいドキュメント
