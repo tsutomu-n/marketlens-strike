@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-05_07:55 JST
-更新日: 2026-06-18_01:12 JST
+更新日: 2026-06-18_01:42 JST
 -->
 
 # Long Running Script Operation Runbook 2026-06-05
@@ -382,21 +382,18 @@ safe_next_step:
 do_not_do:
 ```
 
-## 具体例: PID 2484910
+## 具体例を読むときの注意
 
-`2026-06-04_16:39 JST` に起動した `PID 2484910` の 24h Trade[XYZ] quote coverage cycle では、起動時の UTC 日付で raw path が固定される。
+過去の Trade[XYZ] 24h quote coverage cycle では、起動時の UTC 日付で raw path が固定される実装があった。
 
 ```text
-started:
-  2026-06-04T07:39:32Z
-
 primary raw file:
-  data/raw/quotes/trade_xyz/2026-06-04.jsonl
+  data/raw/quotes/<venue>/<started_utc_date>.jsonl
 ```
 
-このため、JSTで `2026-06-05_09:00` を過ぎても、`2026-06-05.jsonl` が増えないことだけを停止扱いしない。
+この種の script では、JST日付が変わっても「翌日側の raw file が増えないこと」だけを停止扱いしない。起動log、該当コード、lock、process、自然終了markerを合わせて判断する。
 
-PID固有の自然終了条件:
+その時点の具体的な PID、開始時刻、raw path、自然終了条件は履歴資料に残している。current runbook では固定値を正本にしない。
 
 ```text
 docs/archive/2026-06-17-doc-routing/TRADE_XYZ_DATA_CYCLE_NATURAL_EXIT_CONDITIONS_2026-06-05.md

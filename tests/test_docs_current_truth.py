@@ -106,6 +106,8 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "final_decision=READ_ONLY_GO" in script
     assert "310 rows, 3673.995702 observed seconds" in script
     assert "row_count=605" in script
+    assert "PID 2484910" in script
+    assert "2026-06-04_16:39 JST" in script
 
     checker_globals = _checker_globals()
     current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])

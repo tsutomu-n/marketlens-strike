@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_21:52 JST
-更新日: 2026-06-18_01:12 JST
+更新日: 2026-06-18_01:42 JST
 -->
 
 # Trade[XYZ] Runbook
@@ -46,7 +46,7 @@ scripts/collect_trade_xyz_data_until_ready.sh
 setsid -f scripts/collect_trade_xyz_data_until_ready.sh >/tmp/trade_xyz_until_ready.nohup 2>&1 < /dev/null
 ```
 
-2026-06-04_16:39 JST 起動の24時間 quote coverage cycle 後にやること、ユーザー向けの短い判断記録、PID 2484910 の自然終了条件は historical operational record として archive に残す。現在の Trade[XYZ] restart 手順の正本ではない。
+過去の24時間 quote coverage cycle 後にやること、ユーザー向けの短い判断記録、自然終了条件は historical operational record として archive に残す。現在の Trade[XYZ] restart 手順の正本ではない。
 
 - [TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md](../archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_NEXT_STEPS_2026-06-04.md)
 - [TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md](../archive/2026-06-17-doc-routing/TRADE_XYZ_QUOTE_COVERAGE_USER_DECISION_RECORD_2026-06-04.md)

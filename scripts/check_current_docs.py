@@ -100,6 +100,17 @@ LAYER22_SEMANTIC_DRIFT_MARKERS = (
     ("open_to_close_outcome", "old QQQ proxy label; use qqq_open_to_close_return"),
 )
 
+CURRENT_DOC_SEMANTIC_DRIFT_MARKERS = (
+    (
+        "PID 2484910",
+        "old Trade[XYZ] quote coverage process id; current docs should link archive history instead",
+    ),
+    (
+        "2026-06-04_16:39 JST",
+        "old Trade[XYZ] quote coverage start timestamp; current docs should link archive history instead",
+    ),
+)
+
 CURRENT_STATUS_DOC_FILES = (
     "README.md",
     "docs/CURRENT_STATE.md",
@@ -350,6 +361,10 @@ def _check_path(path: Path) -> list[str]:
         for marker, reason in LAYER22_SEMANTIC_DRIFT_MARKERS:
             if marker in text:
                 errors.append(f"{rel}: Layer 2.2 semantic drift marker {marker!r}: {reason}")
+
+    for marker, reason in CURRENT_DOC_SEMANTIC_DRIFT_MARKERS:
+        if marker in text:
+            errors.append(f"{rel}: current-doc semantic drift marker {marker!r}: {reason}")
 
     if _is_current_status_doc(rel):
         for marker, reason in CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS:
