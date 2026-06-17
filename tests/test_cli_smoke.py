@@ -163,6 +163,21 @@ def test_build_paper_candidate_pack_help_describes_selection_inputs() -> None:
     assert "TrialRecord.metrics.selected_signal_ids" in stdout
 
 
+def test_evaluate_strategy_lab_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["evaluate-strategy-lab", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "paper-only trial ledger" in stdout
+    assert "data/research/strategy_signals.parquet" in stdout
+    assert "data/research/trial_ledger.jsonl" in stdout
+    assert "data/reports/strategy_trial_report.md" in stdout
+    assert "--candidate-limit" in stdout
+    assert "TrialRecord.metrics.selected_signal_ids" in stdout
+    assert "--split-method" in stdout
+    assert "not a walk-forward PnL" in stdout
+    assert "engine." in stdout
+
+
 def test_strategy_paper_observation_cycle_help_smoke() -> None:
     result = invoke_cli(["strategy-paper-observation-cycle", "--help"])
     stdout = normalized_stdout(result)

@@ -1564,27 +1564,42 @@ def register_research_commands(
         rank_thresholds: str = typer.Option(
             "",
             "--rank-thresholds",
-            help="Comma-separated rank_score thresholds for paper-only parameter sweep.",
+            help=(
+                "Comma-separated rank_score thresholds for paper-only parameter sweep "
+                "over data/research/strategy_signals.parquet."
+            ),
         ),
         candidate_limit: int = typer.Option(
             1,
             "--candidate-limit",
             min=0,
-            help="Selected signal limit per trial. Use 0 to select all threshold-passing signals.",
+            help=(
+                "Selected signal limit per trial for "
+                "TrialRecord.metrics.selected_signal_ids. Use 0 to select all "
+                "threshold-passing signals."
+            ),
         ),
         split_method: Literal["single_window", "walk_forward", "purged_walk_forward"] = (
             typer.Option(
                 "single_window",
                 "--split-method",
-                help="Paper-only evaluation split metadata.",
+                help=(
+                    "Paper-only split metadata recorded in TrialRecord.metrics; "
+                    "not a walk-forward PnL engine."
+                ),
             )
         ),
         era_unit: Literal["session", "trading_day", "week", "month"] = typer.Option(
             "trading_day",
             "--era-unit",
-            help="Era unit for walk-forward style signal-count metrics.",
+            help="Era unit for signal-count metrics only.",
         ),
     ) -> None:
+        """Evaluate current Strategy Lab signals into a paper-only trial ledger.
+
+        Reads data/research/strategy_signals.parquet and writes
+        data/research/trial_ledger.jsonl plus data/reports/strategy_trial_report.md.
+        """
         settings = get_settings()
         signals_path = settings.data_dir / "research/strategy_signals.parquet"
         if not signals_path.exists():
