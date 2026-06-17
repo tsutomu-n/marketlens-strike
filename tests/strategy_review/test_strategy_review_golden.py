@@ -87,7 +87,7 @@ def test_strategy_review_complete_golden_packet(tmp_path: Path, monkeypatch) -> 
         "## 9. Source Hash Table",
         "| path | status | bytes | sha256 | detected_schema_version |",
         "## 10. Next Human Review Checklist",
-        "別の operator review artifact と既存 paper revalidation を通す",
+        "strategy-review-record で operator_review.yaml に判断を保存してから別の paper revalidation を通す",
     )
     for fragment in expected_fragments:
         assert fragment in markdown

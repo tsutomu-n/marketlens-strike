@@ -182,7 +182,7 @@ def render_strategy_review_markdown(
             "- Strategy Definition と Lifecycle Summary を読み、戦略内容と lifecycle decision を分けて判断する。",
             "- pack validation の結果を戦略評価や readiness proof として読まない。",
             "- Source Hash Table の path、bytes、hash、schema version を再現性確認に使う。",
-            "- paper observation 候補にする場合も、この review から直接 paper flow を呼ばず、別の operator review artifact と既存 paper revalidation を通す。",
+            "- paper observation 候補にする場合も、この review から直接 paper flow を呼ばず、strategy-review-record で operator_review.yaml に判断を保存してから別の paper revalidation を通す。",
             "",
         ]
     )
