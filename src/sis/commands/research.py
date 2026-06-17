@@ -1444,6 +1444,13 @@ def register_research_commands(
 
     @app.command("ingest-research-data")
     def ingest_research_data() -> None:
+        """Fetch read-only market and macro research panels.
+
+        Writes data/research/raw/yfinance_ohlcv.parquet,
+        data/research/market_panel.parquet, data/research/raw/fred_macro.parquet,
+        and data/research/macro_panel.parquet. Uses Yahoo Finance plus FRED/FRED
+        graph fallback by default. Submits no live orders.
+        """
         settings = get_settings()
         market_panel = build_market_panel(settings.data_dir)
         macro_provider = (
@@ -1471,6 +1478,13 @@ def register_research_commands(
 
     @app.command("build-feature-panel")
     def build_feature_panel_cmd() -> None:
+        """Build the Strategy Lab feature panel from research panels.
+
+        Requires data/research/market_panel.parquet and
+        data/research/macro_panel.parquet, optionally reads
+        data/research/event_calendar.parquet, and writes
+        data/research/feature_panel.parquet. Submits no live orders.
+        """
         settings = get_settings()
         out = build_feature_panel(settings.data_dir)
         logger.info("written: {}", out)

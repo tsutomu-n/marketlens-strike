@@ -163,6 +163,32 @@ def test_build_paper_candidate_pack_help_describes_selection_inputs() -> None:
     assert "TrialRecord.metrics.selected_signal_ids" in stdout
 
 
+def test_ingest_research_data_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["ingest-research-data", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "read-only market and macro research panels" in stdout
+    assert "data/research/raw/yfinance_ohlcv.parquet" in stdout
+    assert "data/research/market_panel.parquet" in stdout
+    assert "data/research/raw/fred_macro.parquet" in stdout
+    assert "data/research/macro_panel.parquet" in stdout
+    assert "Yahoo Finance" in stdout
+    assert "FRED/FRED" in stdout
+    assert "Submits no live orders" in stdout
+
+
+def test_build_feature_panel_help_describes_io_and_boundary() -> None:
+    result = invoke_cli(["build-feature-panel", "--help"])
+    stdout = normalized_stdout(result)
+    assert result.exit_code == 0
+    assert "Strategy Lab feature panel" in stdout
+    assert "data/research/market_panel.parquet" in stdout
+    assert "data/research/macro_panel.parquet" in stdout
+    assert "data/research/event_calendar.parquet" in stdout
+    assert "data/research/feature_panel.parquet" in stdout
+    assert "Submits no live orders" in stdout
+
+
 def test_build_signals_help_describes_io_and_boundary() -> None:
     result = invoke_cli(["build-signals", "--help"])
     stdout = normalized_stdout(result)
