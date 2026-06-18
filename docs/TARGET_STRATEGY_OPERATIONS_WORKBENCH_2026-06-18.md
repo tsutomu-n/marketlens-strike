@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-18_19:47 JST
-更新日: 2026-06-18_21:15 JST
+更新日: 2026-06-18_21:17 JST
 -->
 
 # Target Strategy Operations Workbench
@@ -428,6 +428,60 @@ blocked_actions:
 - Double-loop と言いながら、実際は threshold 調整だけをする。
 - Meadows を使ったと言いながら、低レバレッジな parameter tuning だけを続ける。
 - AI/ML が出した物語を paradigm shift として採用する。
+
+### 反ナラティブ・ガード
+
+この文書は、フレームワークを増やして高度に見せるためのものではない。
+
+OODA、Cynefin、Meadows、Double-loop、AI review、Model / Optimizer は、すべて誤用すると「もっともらしい物語」を増やす。実務では、フレームワーク名よりも、何を観測し、何を止め、何を小さく試し、何を捨てたかが重要である。
+
+必ず守るルール:
+
+| ルール | 理由 |
+|---|---|
+| framework label だけを artifact に残さない | `complex` や `double_loop` と書くだけでは判断根拠にならない |
+| すべての Orient に evidence を紐づける | source hash、runtime observation、drift、review note がない判断は弱い |
+| Act は artifact action から始める | いきなり execution、position size、live permission に飛ばない |
+| model / AI output は proposal として扱う | validation、limitations、human review がない output は採用しない |
+| 高レバレッジ介入ほど慎重に扱う | 目的、ルール、パラダイム変更は影響が大きく、誤ると広く壊す |
+| 小さい実験の失敗を残す | 成功例だけ残すと学習ではなく物語作りになる |
+
+フレームワークを使ってよい時:
+
+- 判断が割れている。
+- backtest と paper がズレている。
+- 同じ修正を繰り返している。
+- AI / ML / GA が候補を増やしすぎている。
+- stage advance の理由が説明できない。
+- stop / revise / extend の判断に迷っている。
+
+フレームワークを使わなくてよい時:
+
+- schema validation failure のような Clear 問題。
+- source hash missing のような単純欠落。
+- no-live boundary violation のような即停止問題。
+- retry すべき CLI / file path / metadata の修正。
+
+実装上の最小単位:
+
+```text
+まず作る:
+  Strategy Input Contract
+  Runtime Observation Manifest
+  Drift Review
+  Learning Event
+  Revision Request
+
+後で作る:
+  AI Review Packet
+  Model / Optimizer Loop
+  Multi-AI Review
+  Cynefin / Leverage / Double-loop の詳細分類 UI
+```
+
+この順序を逆にしない。基礎 artifact がない状態で AI / ML / framework UI を作ると、判断支援ではなく、判断した気分を作る道具になる。
+
+外部研究や規制実務から見ても、model / AI を使う場合は、limitations、validation、ongoing monitoring、governance、testing、data quality、explainability を避けられない。個人運用でも規制業務レベルの重い体制は不要だが、`model_run_id`、training data hash、label definition、split、seed、trial ledger、limitations、human review は最小限残す。
 
 ## 100点を待たない進行設計
 
