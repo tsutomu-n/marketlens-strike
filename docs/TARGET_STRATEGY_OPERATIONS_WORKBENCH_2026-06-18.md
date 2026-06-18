@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-18_19:47 JST
-更新日: 2026-06-18_20:52 JST
+更新日: 2026-06-18_20:56 JST
 -->
 
 # Target Strategy Operations Workbench
@@ -133,37 +133,145 @@ Trade[XYZ] は破棄済みではない。ただし、完成形の主軸ではな
 
 ## ベースフレームワーク
 
-この loop の土台は PDCA である。
+この loop の主軸は OODA である。
 
-ただし、純粋な PDCA だけではない。個人システムトレードでは、PDCA に仮説検証、stage gate、日次観測を重ねる。
+ただし、OODA だけでは危ない。速く回すだけでは、誤観測、過剰反応、雰囲気判断、後付け最適化を増やす。
+
+完成形では、次の混合フレームワークとして扱う。
+
+```text
+主ループ: OODA
+  Observe: 実時間観測、paper runtime、market data、AI/ML指摘、operator memo
+  Orient: Cynefin分類、regime判断、Drift Review、仮説更新、risk文脈化
+  Decide: REJECT / REVISE / EXTEND / paper候補 / micro live plan候補
+  Act: revision request、input contract更新、paper smoke、停止、縮小、次観察
+
+補助判断: Cynefin
+  Clear / Complicated / Complex / Chaotic / Disorder で状況を分ける
+
+品質管理: PDCA
+  安定した工程、定期改善、policy見直し、運用監査に使う
+
+安全境界: Stage Gate
+  fixed safety と configurable thresholds で暴走を止める
+
+記録: Audit Trail
+  artifact hash、policy hash、human decision、AI/ML note、override reason を残す
+```
+
+短く言うと:
+
+```text
+MarketLens Strike の loop
+= OODA-driven Strategy Operations Loop
+  with Cynefin sensemaking, PDCA audit, and stage-gated safety.
+```
+
+日本語では:
+
+```text
+Cynefinで状況を見立て、
+OODAで回し、
+PDCAで改善を監査し、
+Stage Gateで暴走を止める戦略運用ループ。
+```
+
+### OODA 対応
 
 対応:
 
-| PDCA | この repo での対応 |
+| OODA | この repo での対応 |
 |---|---|
-| Plan | Idea Intake、Strategy Input Contract、Stage Policy、Risk Limit |
-| Do | Backtest、Paper Smoke、Runtime Observation、Normal Paper Observation、Micro Live Canary |
-| Check | Review Packet、Drift Review、Learning Event、AI Review、Model Review |
-| Act | REJECT、REVISE、EXTEND、Revision Request、Policy Adjustment、Scale / Retire |
+| Observe | market data、paper fills、no-fill、spread、latency、runtime observation、news、AI/ML review、operator memo |
+| Orient | Cynefin分類、regime判断、Drift Review、仮説更新、risk文脈化、弱いシグナル整理 |
+| Decide | REJECT、REVISE、EXTEND、PAPER_OBSERVATION_CANDIDATE、micro live plan候補、policy調整 |
+| Act | input contract更新、revision request、backtest、paper smoke、normal paper、停止、縮小、次観察 |
 
-PDCA だけでは足りない理由:
+OODA を主軸にする理由:
 
-- trading では market regime が変わるため、同じ計画を繰り返すだけでは弱い。
-- backtest の良い結果は、過剰最適化や future leakage の可能性がある。
-- paper / live の execution reality は、計画時点では見えない。
-- 進める / 止める / 小さく試す判断には stage gate が必要になる。
+- trading では market regime、liquidity、execution quality が変わる。
+- paper smoke / runtime observation は、計画後に初めて見える現実である。
+- 外部情報、AI review、operator memo のような定性的シグナルも Orient に入れられる。
+- `Plan` 起点に固定すると、弱いリスク兆候や regime 変化に遅れる。
 
-したがって、完成形は次の混合フレームワークとして扱う。
+OODA のリスク:
 
-```text
-PDCA
-  + Scientific Method: hypothesis / invalidation / baseline
-  + Stage Gate: fixed safety + configurable thresholds
-  + OODA-like Daily Observation: observe / orient / decide / act
-  + Audit Trail: artifact hash / policy hash / human decision
-```
+- 速く回すことが目的化する。
+- 不十分な観測で大きな Act をしてしまう。
+- Orient が人間の思い込みや AI のもっともらしい説明に引っ張られる。
+- Act が artifact action ではなく、直接 execution action になる。
 
-短く言うと、MarketLens Strike の loop は「監査可能な PDCA」である。戦略を改善するが、自動で採用しない。実践から学ぶが、学習結果をそのまま live に送らない。
+対策:
+
+- Act は artifact action に限定する。
+- live order、wallet、signing、exchange write は別 gate まで禁止する。
+- Orient には source hash、runtime observation、drift evidence、AI/ML limitations を必ず残す。
+- Decide は stage policy と human review を通す。
+
+### Cynefin 対応
+
+Cynefin は、`Orient` の中で使う状況分類である。
+
+| Cynefin domain | この repo での扱い |
+|---|---|
+| Clear | 既知の手順。schema validation、hash check、metadata check、static guard で処理する |
+| Complicated | 専門分析で判断可能。backtest、stress、regime split、model review、AI review を使う |
+| Complex | 因果が後からしか見えにくい。paper smoke、small probe、runtime observation、Drift Review を使う |
+| Chaotic | まず止める。kill switch、no new order、position cap、manual review に寄せる |
+| Disorder | 状況分類ができていない。stage advance しない。まず input / artifact / observation を整理する |
+
+重要なのは、Complex を Complicated と誤読しないことである。
+
+backtest や model score で説明できそうに見えても、paper で no-fill、spread悪化、latency、blocked reason が出るなら、それは Complex として小さく probe する。
+
+### PDCA の位置づけ
+
+PDCA は捨てない。ただし主ループではなく、安定工程の改善と監査に使う。
+
+| PDCA | この repo での位置づけ |
+|---|---|
+| Plan | Stage Policy、risk limit、input contract、review schedule |
+| Do | backtest、paper smoke、normal paper observation、runtime observation |
+| Check | Drift Review、Learning Event、AI Review、Model Review、Daily Brief |
+| Act | policy adjustment、revision request、retire、scale down、次回 intake |
+
+PDCA が有効な領域:
+
+- 定期的な policy 見直し。
+- validator や schema の改善。
+- Daily Brief の改善。
+- stage threshold の見直し。
+- 失敗パターンの intake gate 反映。
+
+PDCA が弱い領域:
+
+- regime が急に変わる局面。
+- execution reality が backtest と違う局面。
+- まだ因果がわからない paper smoke 初期。
+- AI/ML が出した候補の真偽が不明な局面。
+
+### Stage Gate の位置づけ
+
+Stage Gate は、OODA の `Act` が大きくなりすぎないための安全装置である。
+
+Act してよいこと:
+
+- revision request を作る。
+- input contract を更新する。
+- paper smoke plan を作る。
+- risk limit を締める。
+- strategy を止める。
+- drift review を要求する。
+
+Act してはいけないこと:
+
+- live へ勝手に進む。
+- position size を増やす。
+- AI/ML output を自動採用する。
+- source hash なしで進める。
+- stage gate を飛ばす。
+
+短く言うと、MarketLens Strike の loop は「監査可能な OODA」である。現実を観測して素早く向きを変えるが、Act は artifact と gate に閉じる。
 
 ## 100点を待たない進行設計
 
