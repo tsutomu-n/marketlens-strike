@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-18_02:34 JST
+更新日: 2026-06-18_19:47 JST
 -->
 
 # Next Direction Current
@@ -10,6 +10,8 @@
 現時点の現実的な方向は、backtest-first / venue-neutral を維持しながら、Strategy Review の人間判断記録と paper observation の通常threshold状態を次段検証の土台にすることです。
 
 これは確定ロードマップではありません。実装済み surface と未実装候補を混ぜず、次に狙いやすい方向、追加候補、優先しないことを分けるための current doc です。
+
+完成形の設計定義は [TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md](TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md) を読む。これは current implementation proof ではなく、個人システムトレーダー向けに stage policy、paper smoke、drift review、micro live plan gate をどう位置づけるかの target definition です。
 
 ## 正本
 
