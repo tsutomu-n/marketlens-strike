@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-18_05:20 JST
+更新日: 2026-06-19_02:22 JST
 -->
 
 # Repo CLI Catalog Current
@@ -55,6 +55,27 @@ uv run python scripts/check_current_docs.py
 - `strategy-author-run`
 - `strategy-author-bundle-run`
 - `strategy-author-train-model`
+- `strategy-input-contract-validate`
+- `strategy-intake-validate`
+- `strategy-stage-policy-validate`
+- `strategy-stage-decision`
+- `strategy-paper-smoke-plan`
+- `strategy-runtime-observation-ingest`
+- `strategy-drift-review`
+- `strategy-learning-ledger-update`
+- `strategy-revision-request-build`
+- `strategy-revision-request-review`
+- `strategy-authoring-update-handoff`
+- `strategy-case-lite-update`
+- `strategy-daily-brief`
+- `strategy-ai-review-packet-build`
+- `strategy-ai-review-note-record`
+- `strategy-model-run-record`
+- `strategy-micro-live-plan`
+- `strategy-next-scale-plan`
+- `strategy-live-observation-ingest`
+- `strategy-scale-decision`
+- `strategy-workbench-viewer-build`
 - `strategy-backtest-acceptance`
 - `strategy-lifecycle-review`
 - `strategy-paper-observation-cycle`

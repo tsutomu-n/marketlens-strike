@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_stage_policy.v1.schema.json",
+  "type": "object",
+  "required": ["schema_version", "policy_id", "description", "fixed_safety", "stages"],
+  "properties": {
+    "schema_version": {"const": "strategy_stage_policy.v1"},
+    "policy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "description": {"type": "string", "minLength": 1},
+    "fixed_safety": {
+      "type": "object",
+      "required": [
+        "require_source_hashes",
+        "require_schema_versions",
+        "forbid_live_order_before_micro_live_gate",
+        "forbid_wallet_before_micro_live_gate",
+        "forbid_signing_before_micro_live_gate",
+        "forbid_exchange_write_before_micro_live_gate",
+        "require_manual_override_reason"
+      ],
+      "properties": {
+        "require_source_hashes": {"const": true},
+        "require_schema_versions": {"const": true},
+        "forbid_live_order_before_micro_live_gate": {"const": true},
+        "forbid_wallet_before_micro_live_gate": {"const": true},
+        "forbid_signing_before_micro_live_gate": {"const": true},
+        "forbid_exchange_write_before_micro_live_gate": {"const": true},
+        "require_manual_override_reason": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "stages": {
+      "type": "object",
+      "required": [
+        "paper_smoke",
+        "normal_paper_observation",
+        "drift_review",
+        "micro_live_plan"
+      ],
+      "properties": {
+        "paper_smoke": {"$ref": "#/$defs/stage_thresholds"},
+        "normal_paper_observation": {"$ref": "#/$defs/stage_thresholds"},
+        "drift_review": {"$ref": "#/$defs/stage_thresholds"},
+        "micro_live_plan": {"$ref": "#/$defs/stage_thresholds"}
+      },
+      "additionalProperties": false
+    },
+    "strategy_profiles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "paper_smoke": {"$ref": "#/$defs/stage_thresholds"},
+          "normal_paper_observation": {"$ref": "#/$defs/stage_thresholds"},
+          "drift_review": {"$ref": "#/$defs/stage_thresholds"},
+          "micro_live_plan": {"$ref": "#/$defs/stage_thresholds"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "stage_thresholds": {
+      "type": "object",
+      "properties": {
+        "min_fills": {"type": "integer", "minimum": 0},
+        "min_trading_days": {"type": "integer", "minimum": 0},
+        "max_no_fill_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "max_slippage_bps": {"type": "number", "minimum": 0},
+        "max_order_notional_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_position_notional_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_orders_per_day": {"type": "integer", "minimum": 0},
+        "stop_after_consecutive_errors": {"type": "integer", "minimum": 0},
+        "max_drawdown_vs_backtest_ratio": {"type": "number", "exclusiveMinimum": 0},
+        "max_blocked_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "max_consecutive_blocked": {"type": "integer", "minimum": 0},
+        "max_total_notional_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_daily_loss_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_total_loss_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_runtime_days": {"type": "integer", "minimum": 0},
+        "require_manual_start": {"type": "boolean"},
+        "require_kill_switch": {"type": "boolean"},
+        "require_monitoring_plan": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

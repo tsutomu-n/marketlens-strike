@@ -46,6 +46,16 @@ def register_strategy_review_commands(app: typer.Typer) -> None:
             "--authoring-spec",
             help="Optional Strategy Authoring YAML spec. Defaults to pack spec_path when available.",
         ),
+        input_contract: Path | None = typer.Option(
+            None,
+            "--input-contract",
+            help="Optional strategy_input_contract.v1 YAML/JSON to include as a review source.",
+        ),
+        strategy_idea: Path | None = typer.Option(
+            None,
+            "--strategy-idea",
+            help="Optional strategy_idea.v1 YAML/JSON to include as a review source.",
+        ),
         lifecycle_review: Path = typer.Option(
             Path("data/research/strategy_lifecycle/strategy_lifecycle_review.json"),
             "--lifecycle-review",
@@ -72,6 +82,16 @@ def register_strategy_review_commands(app: typer.Typer) -> None:
                 authoring_spec_path=(
                     _resolve_workspace_path(authoring_spec, settings.data_dir)
                     if authoring_spec is not None
+                    else None
+                ),
+                input_contract_path=(
+                    _resolve_workspace_path(input_contract, settings.data_dir)
+                    if input_contract is not None
+                    else None
+                ),
+                strategy_idea_path=(
+                    _resolve_workspace_path(strategy_idea, settings.data_dir)
+                    if strategy_idea is not None
                     else None
                 ),
                 lifecycle_review_path=_resolve_workspace_path(lifecycle_review, settings.data_dir),

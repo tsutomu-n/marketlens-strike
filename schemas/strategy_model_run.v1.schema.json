@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_model_run.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "model_run_id",
+    "strategy_id",
+    "created_at",
+    "producer",
+    "training_data",
+    "label_definition",
+    "split",
+    "search_space_hash",
+    "optimizer_trial_ledger_path",
+    "optimizer_trial_ledger_sha256",
+    "holdout_result",
+    "limitations",
+    "output_route",
+    "auto_applied",
+    "direct_spec_edit_allowed",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_model_run.v1"},
+    "model_run_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-model-run-record"}
+      },
+      "additionalProperties": false
+    },
+    "training_data": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "label_definition": {"type": "string", "minLength": 1},
+    "split": {"type": "string", "minLength": 1},
+    "seed": {"type": ["integer", "null"]},
+    "search_space_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "optimizer_trial_ledger_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+    },
+    "optimizer_trial_ledger_sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "best_trial_id": {"type": ["string", "null"]},
+    "holdout_result": {"type": "object"},
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "output_route": {"enum": ["IDEA_INTAKE_ONLY", "REVISION_REQUEST_ONLY"]},
+    "auto_applied": {"const": false},
+    "direct_spec_edit_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

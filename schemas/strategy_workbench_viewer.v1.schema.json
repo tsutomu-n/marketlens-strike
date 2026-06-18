@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketlens-strike.local/schemas/strategy_workbench_viewer.v1.schema.json",
+  "title": "Strategy Workbench Viewer Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "viewer_id",
+    "created_at",
+    "producer",
+    "source_artifacts",
+    "html_report_path",
+    "html_report_hash",
+    "artifact_count",
+    "boundary_violation_count",
+    "paper_execution_allowed",
+    "live_allowed",
+    "wallet_used",
+    "signing_used",
+    "exchange_write_used"
+  ],
+  "properties": {
+    "schema_version": { "const": "strategy_workbench_viewer.v1" },
+    "viewer_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command"],
+      "properties": {
+        "tool": { "type": "string" },
+        "command": { "const": "strategy-workbench-viewer-build" },
+        "version": { "type": ["string", "null"] }
+      }
+    },
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source_artifact" }
+    },
+    "html_report_path": { "type": "string", "minLength": 1 },
+    "html_report_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "artifact_count": { "type": "integer", "minimum": 1 },
+    "boundary_violation_count": { "type": "integer", "minimum": 0 },
+    "paper_execution_allowed": { "const": false },
+    "live_allowed": { "const": false },
+    "wallet_used": { "const": false },
+    "signing_used": { "const": false },
+    "exchange_write_used": { "const": false }
+  },
+  "$defs": {
+    "source_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_key",
+        "path",
+        "sha256",
+        "artifact_format",
+        "title",
+        "boundary_violations",
+        "summary"
+      ],
+      "properties": {
+        "artifact_key": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "artifact_format": { "enum": ["json", "markdown", "text"] },
+        "schema_version": { "type": ["string", "null"] },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": ["string", "null"] },
+        "boundary_violations": { "type": "array", "items": { "type": "string" } },
+        "summary": { "type": "object" },
+        "preview": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

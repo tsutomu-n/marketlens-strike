@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_revision_request_review.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "revision_request_id",
+    "strategy_id",
+    "reviewed_at",
+    "producer",
+    "reviewer",
+    "decision",
+    "rationale",
+    "required_actions",
+    "source_revision_request",
+    "authoring_update_input_allowed",
+    "requires_human_authoring_update",
+    "auto_applied",
+    "direct_spec_edit_allowed",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_revision_request_review.v1"},
+    "revision_request_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "strategy_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "reviewed_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-revision-request-review"}
+      },
+      "additionalProperties": false
+    },
+    "reviewer": {"type": "string", "minLength": 1},
+    "decision": {
+      "enum": [
+        "REJECT",
+        "NEEDS_FIX",
+        "HOLD",
+        "REVIEWED_FOR_CONTEXT",
+        "APPROVE_FOR_AUTHORING_UPDATE"
+      ]
+    },
+    "rationale": {"type": "string", "minLength": 1},
+    "required_actions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "source_revision_request": {"$ref": "#/$defs/source_revision_request"},
+    "authoring_update_input_allowed": {"type": "boolean"},
+    "requires_human_authoring_update": {"const": true},
+    "auto_applied": {"const": false},
+    "direct_spec_edit_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "source_revision_request": {
+      "type": "object",
+      "required": [
+        "revision_request_path",
+        "revision_request_sha256",
+        "revision_request_id",
+        "request_status",
+        "requested_change_count",
+        "source_learning_event_count",
+        "auto_applied",
+        "direct_spec_edit_allowed",
+        "paper_execution_allowed",
+        "live_allowed"
+      ],
+      "properties": {
+        "revision_request_path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "revision_request_sha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "revision_request_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "request_status": {
+          "enum": ["READY_FOR_HUMAN_REVIEW", "NO_REVISION_REQUIRED", "BLOCKED_BOUNDARY_VIOLATION"]
+        },
+        "requested_change_count": {"type": "integer", "minimum": 0},
+        "source_learning_event_count": {"type": "integer", "minimum": 0},
+        "auto_applied": {"const": false},
+        "direct_spec_edit_allowed": {"const": false},
+        "paper_execution_allowed": {"const": false},
+        "live_allowed": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"decision": {"const": "APPROVE_FOR_AUTHORING_UPDATE"}}},
+      "then": {
+        "properties": {
+          "authoring_update_input_allowed": {"const": true},
+          "source_revision_request": {
+            "properties": {
+              "request_status": {"const": "READY_FOR_HUMAN_REVIEW"},
+              "requested_change_count": {"exclusiveMinimum": 0}
+            }
+          }
+        }
+      },
+      "else": {"properties": {"authoring_update_input_allowed": {"const": false}}}
+    },
+    {
+      "if": {"properties": {"decision": {"const": "NEEDS_FIX"}}},
+      "then": {"properties": {"required_actions": {"minItems": 1}}}
+    }
+  ],
+  "additionalProperties": false
+}

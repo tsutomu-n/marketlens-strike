@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_ai_review_note.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "note_id",
+    "recorded_at",
+    "producer",
+    "source_packet",
+    "provider",
+    "model",
+    "prompt_hash",
+    "input_hash",
+    "limitations",
+    "findings",
+    "recommendation",
+    "disagreements",
+    "auto_applied",
+    "permission_allowed",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_ai_review_note.v1"},
+    "note_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-ai-review-note-record"}
+      },
+      "additionalProperties": false
+    },
+    "source_packet": {
+      "type": "object",
+      "required": ["path", "sha256", "ai_input_hash"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "ai_input_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "provider": {"type": "string", "minLength": 1},
+    "model": {"type": "string", "minLength": 1},
+    "prompt_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "input_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "findings": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "recommendation": {
+      "enum": ["HUMAN_REVIEW_REQUIRED", "REJECT", "REVISE", "EXTEND_OBSERVATION", "NO_ACTION"]
+    },
+    "disagreements": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "auto_applied": {"const": false},
+    "permission_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

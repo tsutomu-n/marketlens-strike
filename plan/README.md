@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-18_21:45 JST
+更新日: 2026-06-19_02:28 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -63,13 +63,34 @@ exchange-write path.
 [`docs/NEXT_DIRECTION_CURRENT.md`](../docs/NEXT_DIRECTION_CURRENT.md) を読む。
 `計画あり` は `実装決定` ではなく、`catalog known` は `venue enabled` ではない。
 
-## Current Unimplemented Plan
+## Current Strategy Operations First Slices
 
-現時点で次に実装する候補は Strategy Input Contract と Idea Intake です。コーダー向けの実装計画は次を読む。
+Strategy Input Contract / Idea Intake first gate と Strategy Review optional source connection は実装済みです。コーダー向けの設計と acceptance は次を読む。
 
-- [STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md)
+- [../docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](../docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md)
 
-これは `Human-in-the-loop Strategy Operations Workbench` の最初の入口を固める計画です。Stage Policy、Paper Smoke、Drift Review、AI / ML / GA、UI、wallet、signing、exchange write、live execution はこの計画の対象外です。
+Strategy Stage Policy / Decision first slice、Strategy Paper Smoke Plan first slice、Strategy Runtime Observation Ingest first slice、Paper vs Backtest Drift Review first slice、Strategy Learning / Revision Request / Revision Request Review first slice、Strategy Case Lite、Daily Brief、AI Review、Model Loop、Micro Live Plan、Next Scale Plan、Live Observation、Scale Decision、Static Workbench Viewer も実装済みです。現行の使い方は次を読む。
+
+- [../docs/strategy_stage/README.md](../docs/strategy_stage/README.md)
+- [../docs/strategy_paper_smoke/README.md](../docs/strategy_paper_smoke/README.md)
+- [../docs/strategy_runtime_observation/README.md](../docs/strategy_runtime_observation/README.md)
+- [../docs/strategy_drift_review/README.md](../docs/strategy_drift_review/README.md)
+- [../docs/strategy_learning/README.md](../docs/strategy_learning/README.md)
+- [../docs/strategy_case_lite/README.md](../docs/strategy_case_lite/README.md)
+- [../docs/strategy_daily_brief/README.md](../docs/strategy_daily_brief/README.md)
+- [../docs/strategy_ai_review/README.md](../docs/strategy_ai_review/README.md)
+- [../docs/strategy_model_loop/README.md](../docs/strategy_model_loop/README.md)
+- [../docs/strategy_micro_live_plan/README.md](../docs/strategy_micro_live_plan/README.md)
+- [../docs/strategy_next_scale_plan/README.md](../docs/strategy_next_scale_plan/README.md)
+- [../docs/strategy_live_observation/README.md](../docs/strategy_live_observation/README.md)
+- [../docs/strategy_scale_decision/README.md](../docs/strategy_scale_decision/README.md)
+- [../docs/strategy_workbench_viewer/README.md](../docs/strategy_workbench_viewer/README.md)
+
+これらは `Human-in-the-loop Strategy Operations Workbench` の最初の入口、stage decision、paper smoke plan、runtime observation ingest、drift review、learning / revision request / revision request review、case timeline、daily brief、AI review、model / optimizer ledger、micro live plan、next scale plan、live observation、scale decision、static viewer の土台です。Svelte UI、wallet、signing、exchange write、live execution はまだ別計画が必要です。
+
+完成形を実装完了まで閉じるための current plan は [../docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md](../docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md) です。対象ファイル、テスト方針、完了条件はこの文書を使う。
+
+T0〜T12b の実装証跡と対象外範囲は [../docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md](../docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md) を読む。
 
 ## Historical 2026-06-10 implementation plans
 

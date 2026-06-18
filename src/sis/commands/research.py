@@ -1245,8 +1245,10 @@ def register_research_commands(
             dir_okay=False,
             help="Optional NDX operator promotion decision path.",
         ),
-        min_fills_for_pass: int = typer.Option(20, "--min-fills-for-pass", min=1),
-        min_trading_days_for_pass: int = typer.Option(10, "--min-trading-days-for-pass", min=1),
+        min_fills_for_pass: int | None = typer.Option(None, "--min-fills-for-pass", min=1),
+        min_trading_days_for_pass: int | None = typer.Option(
+            None, "--min-trading-days-for-pass", min=1
+        ),
         max_blocked_rate: float = typer.Option(0.5, "--max-blocked-rate", min=0.0, max=1.0),
         max_consecutive_blocked: int = typer.Option(3, "--max-consecutive-blocked", min=1),
         max_open_position_age_hours: float = typer.Option(

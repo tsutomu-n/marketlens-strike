@@ -60,6 +60,14 @@ def render_strategy_review_markdown(
         "missing",
         "- status: `missing`",
     )
+    optional_context_sections = [
+        section
+        for section in (
+            _section_by_id(review_sections, "input_contract_summary"),
+            _section_by_id(review_sections, "idea_intake_summary"),
+        )
+        if section is not None
+    ]
 
     lines: list[str] = [
         f"# Strategy Review: {manifest.review_id}",
@@ -113,13 +121,30 @@ def render_strategy_review_markdown(
             "",
             strategy_section.markdown.rstrip(),
             "",
-            f"## 6. {lifecycle_section.title}",
+        ]
+    )
+
+    next_section_number = 6
+    for section in optional_context_sections:
+        lines.extend(
+            [
+                f"## {next_section_number}. {section.title}",
+                "",
+                section.markdown.rstrip(),
+                "",
+            ]
+        )
+        next_section_number += 1
+
+    lines.extend(
+        [
+            f"## {next_section_number}. {lifecycle_section.title}",
             "",
             LIFECYCLE_NOTICE,
             "",
             lifecycle_section.markdown.rstrip(),
             "",
-            "## 7. Safety Boundary",
+            f"## {next_section_number + 1}. Safety Boundary",
             "",
             f"- builder_safety.permits_live_order: `{str(manifest.builder_safety.permits_live_order).lower()}`",
             f"- builder_safety.live_conversion_allowed: `{str(manifest.builder_safety.live_conversion_allowed).lower()}`",
@@ -143,7 +168,7 @@ def render_strategy_review_markdown(
         for artifact in manifest.source_artifacts
         if artifact.status.value != "present" or artifact.summary.get("boundary_violations")
     ]
-    lines.extend(["## 8. Missing / Invalid / Blocked Details", ""])
+    lines.extend([f"## {next_section_number + 2}. Missing / Invalid / Blocked Details", ""])
     if problem_rows:
         for artifact in problem_rows:
             reason = artifact.status.value
@@ -156,7 +181,7 @@ def render_strategy_review_markdown(
     lines.extend(
         [
             "",
-            "## 9. Source Hash Table",
+            f"## {next_section_number + 3}. Source Hash Table",
             "",
             "| path | status | bytes | sha256 | detected_schema_version |",
             "|---|---|---:|---|---|",
@@ -174,7 +199,7 @@ def render_strategy_review_markdown(
     lines.extend(
         [
             "",
-            "## 10. Next Human Review Checklist",
+            f"## {next_section_number + 4}. Next Human Review Checklist",
             "",
             "- Summary の `review_status`、`source_safety.status`、`strict` を先に確認する。",
             "- 必須 artifact が `present` であることを Source Artifact Status で確認する。",

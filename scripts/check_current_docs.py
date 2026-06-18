@@ -19,6 +19,8 @@ CURRENT_DOC_FILES = (
     "docs/IMPLEMENTED_SURFACES.md",
     "docs/MIGRATION_HISTORY.md",
     "docs/NEXT_DIRECTION_CURRENT.md",
+    "docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md",
+    "docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md",
     "docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md",
     "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md",
     "docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md",
@@ -47,7 +49,22 @@ CURRENT_DOC_DIRS = (
     "docs/backtest",
     "docs/research/ndx",
     "docs/strategy_lifecycle",
+    "docs/strategy_inputs",
+    "docs/strategy_paper_smoke",
+    "docs/strategy_stage",
     "docs/strategy_review",
+    "docs/strategy_runtime_observation",
+    "docs/strategy_drift_review",
+    "docs/strategy_learning",
+    "docs/strategy_case_lite",
+    "docs/strategy_daily_brief",
+    "docs/strategy_ai_review",
+    "docs/strategy_model_loop",
+    "docs/strategy_micro_live_plan",
+    "docs/strategy_next_scale_plan",
+    "docs/strategy_live_observation",
+    "docs/strategy_scale_decision",
+    "docs/strategy_workbench_viewer",
     "docs/strategy_research_lab",
     "docs/runbooks",
     "docs/venues",
@@ -465,6 +482,8 @@ def check_current_docs() -> list[str]:
 def check_plan_routing() -> list[str]:
     errors: list[str] = []
     for rel in _iter_tracked_files("plan"):
+        if not (REPO_ROOT / rel).exists():
+            continue
         if rel in PLAN_ROUTING_ALLOWED_FILES:
             continue
         if any(rel.startswith(prefix) for prefix in PLAN_ROUTING_ALLOWED_PREFIXES):

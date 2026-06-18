@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_intake_decision.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "idea_id",
+    "decided_at",
+    "producer",
+    "decision",
+    "required_actions",
+    "input_contract_refs",
+    "summary",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_intake_decision.v1"},
+    "idea_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "decided_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-intake-validate"}
+      },
+      "additionalProperties": false
+    },
+    "decision": {
+      "enum": [
+        "REJECT",
+        "NEEDS_SPEC",
+        "NEEDS_DATA_CHECK",
+        "NEEDS_RISK_SPEC",
+        "READY_FOR_AUTHORING_DRAFT"
+      ]
+    },
+    "required_actions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "input_contract_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["contract_id", "validation_status"],
+        "properties": {
+          "contract_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "validation_status": {
+            "enum": ["PASS", "NEEDS_FIX", "INVALID_INPUT", "BLOCKED_BOUNDARY_VIOLATION"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "missing_hypothesis",
+        "missing_baseline",
+        "missing_invalidation",
+        "missing_risk",
+        "missing_required_inputs",
+        "boundary_violation_count"
+      ],
+      "properties": {
+        "missing_hypothesis": {"type": "boolean"},
+        "missing_baseline": {"type": "boolean"},
+        "missing_invalidation": {"type": "boolean"},
+        "missing_risk": {"type": "boolean"},
+        "missing_required_inputs": {"type": "boolean"},
+        "boundary_violation_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"decision": {"const": "READY_FOR_AUTHORING_DRAFT"}}},
+      "then": {
+        "properties": {
+          "required_actions": {"maxItems": 0},
+          "summary": {
+            "properties": {
+              "missing_hypothesis": {"const": false},
+              "missing_baseline": {"const": false},
+              "missing_invalidation": {"const": false},
+              "missing_risk": {"const": false},
+              "missing_required_inputs": {"const": false},
+              "boundary_violation_count": {"const": 0}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

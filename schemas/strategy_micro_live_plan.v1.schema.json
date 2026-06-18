@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_micro_live_plan.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "strategy_id",
+    "created_at",
+    "producer",
+    "plan_status",
+    "source_artifacts",
+    "risk_limits",
+    "monitoring_plan",
+    "passed_conditions",
+    "failed_conditions",
+    "warning_conditions",
+    "required_human_review",
+    "micro_live_execution_allowed",
+    "paper_execution_allowed",
+    "live_allowed",
+    "wallet_used",
+    "signing_used",
+    "exchange_write_used",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_micro_live_plan.v1"},
+    "plan_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "plan_status": {
+      "enum": [
+        "READY_FOR_HUMAN_MICRO_LIVE_REVIEW",
+        "NEEDS_STAGE_DECISION",
+        "NEEDS_DRIFT_REVIEW",
+        "NEEDS_HUMAN_APPROVAL",
+        "NEEDS_RISK_LIMITS",
+        "BLOCKED_BOUNDARY_VIOLATION"
+      ]
+    },
+    "stage_decision_status": {"type": ["string", "null"]},
+    "drift_review_status": {"type": ["string", "null"]},
+    "drift_recommended_action": {"type": ["string", "null"]},
+    "human_approval_present": {"type": "boolean"},
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 2,
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "risk_limits": {"$ref": "#/$defs/risk_limits"},
+    "monitoring_plan": {"$ref": "#/$defs/monitoring_plan"},
+    "micro_live_policy_snapshot": {"$ref": "#/$defs/policy_snapshot"},
+    "passed_conditions": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+    "failed_conditions": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+    "warning_conditions": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+    "required_human_review": {"const": true},
+    "micro_live_execution_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "signing_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_key", "path", "sha256"],
+      "properties": {
+        "artifact_key": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "schema_version": {"type": ["string", "null"]}
+      }
+    },
+    "risk_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_order_notional_usd",
+        "max_position_notional_usd",
+        "max_daily_loss_usd",
+        "max_total_loss_usd",
+        "max_open_positions",
+        "allowed_symbols",
+        "session_window"
+      ],
+      "properties": {
+        "max_order_notional_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_position_notional_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_daily_loss_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_total_loss_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_open_positions": {"type": "integer", "minimum": 1},
+        "allowed_symbols": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "session_window": {"type": "string", "minLength": 1}
+      }
+    },
+    "monitoring_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner",
+        "cadence",
+        "schedule_cancel_procedure",
+        "kill_switch_procedure"
+      ],
+      "properties": {
+        "owner": {"type": "string", "minLength": 1},
+        "cadence": {"type": "string", "minLength": 1},
+        "schedule_cancel_procedure": {"type": "string", "minLength": 1},
+        "kill_switch_procedure": {"type": "string", "minLength": 1}
+      }
+    },
+    "policy_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "venue",
+        "max_notional_usd",
+        "max_daily_loss_usd",
+        "max_open_positions",
+        "max_leverage",
+        "allowed_symbols",
+        "schedule_cancel_deadline_seconds_after_now",
+        "close_require_reduce_only"
+      ],
+      "properties": {
+        "policy_path": {"type": ["string", "null"]},
+        "policy_hash": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"},
+        "enabled": {"type": "boolean"},
+        "venue": {"type": "string"},
+        "max_notional_usd": {"type": "number"},
+        "max_daily_loss_usd": {"type": "number"},
+        "max_open_positions": {"type": "integer"},
+        "max_leverage": {"type": "number"},
+        "allowed_symbols": {"type": "array", "items": {"type": "string"}},
+        "schedule_cancel_deadline_seconds_after_now": {"type": "integer"},
+        "close_require_reduce_only": {"type": "boolean"}
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition_id", "passed", "observed", "required", "severity"],
+      "properties": {
+        "condition_id": {"type": "string", "minLength": 1},
+        "passed": {"type": "boolean"},
+        "observed": {"type": "string", "minLength": 1},
+        "required": {"type": "string", "minLength": 1},
+        "severity": {"enum": ["error", "warning"]}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      }
+    }
+  }
+}

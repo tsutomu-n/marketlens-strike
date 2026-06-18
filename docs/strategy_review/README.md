@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_18:25 JST
-更新日: 2026-06-17_09:01 JST
+更新日: 2026-06-18_23:11 JST
 -->
 
 # Strategy Review
@@ -19,6 +19,8 @@ uv run sis strategy-review-build \
   --out data/strategy_reviews \
   --pack-path data/research/backtest_pack/strategy_backtest_pack.json \
   --validation-path data/research/backtest_pack/strategy_backtest_pack_validation.json \
+  --input-contract configs/strategy_inputs/ndx-breakout-inputs-001.yaml \
+  --strategy-idea configs/strategy_ideas/ndx-breakout-001.yaml \
   --lifecycle-review data/research/strategy_lifecycle/strategy_lifecycle_review.json
 ```
 
@@ -30,6 +32,8 @@ uv run sis strategy-review-build \
 既存 review directory がある場合、`--replace-existing` なしでは exit 2 で止まります。`--replace-existing` を付けても directory は削除せず、`review.md` と `review_manifest.json` だけを同一 directory の一時ファイルから atomic replace します。
 
 `--authoring-spec` は任意です。未指定の場合は pack JSON の `spec_path` から Strategy Authoring YAML を導出し、導出できない場合は `戦略定義` section を `not_configured` として出します。
+
+`--input-contract` と `--strategy-idea` は任意です。指定した場合は `strategy_input_contract.v1` と `strategy_idea.v1` を read-only source artifact として読み、`review_manifest.json` の `source_artifacts` と `review.md` の Input Contract Summary / Idea Intake Summary に出します。欠損は optional missing として扱い、壊れた YAML / JSON や schema mismatch は `INVALID_INPUT`、live / wallet / signing / exchange write 系 field の混入は `BLOCKED_BOUNDARY_VIOLATION` にします。
 
 `--lifecycle-review` は任意の Strategy Lifecycle review JSON です。既定値は `data/research/strategy_lifecycle/strategy_lifecycle_review.json` です。欠損は optional missing として扱い、壊れた JSON や schema version mismatch は `INVALID_INPUT` にします。
 
@@ -95,9 +99,9 @@ artifact path は repo-relative POSIX path だけを許可します。empty、ab
 
 `evaluation_flags.pack_validation_pass_is_readiness_proof` は常に `false` です。
 
-`authoring_spec` と `lifecycle_review` は `required=false` の optional artifact です。optional artifact の欠損は `review_status` を変えませんが、invalid input と boundary violation は全体の `review_status` に反映します。
+`authoring_spec`、`input_contract`、`strategy_idea`、`lifecycle_review` は `required=false` の optional artifact です。optional artifact の欠損は `review_status` を変えませんが、invalid input と boundary violation は全体の `review_status` に反映します。
 
-`review.md` は、Summary、Readiness Disclaimer、Source Artifact Status、Backtest Pack / Validation Summary、Strategy Definition、Lifecycle Summary、Safety Boundary、Missing / Invalid / Blocked Details、Source Hash Table、Next Human Review Checklist の順で出力します。Lifecycle Summary の decision は paper / live 実行許可ではない、と section 近くに固定文を出します。
+`review.md` は、Summary、Readiness Disclaimer、Source Artifact Status、Backtest Pack / Validation Summary、Strategy Definition、任意の Input Contract Summary / Idea Intake Summary、Lifecycle Summary、Safety Boundary、Missing / Invalid / Blocked Details、Source Hash Table、Next Human Review Checklist の順で出力します。Lifecycle Summary の decision は paper / live 実行許可ではない、と section 近くに固定文を出します。
 
 ## Operator Review Contract
 

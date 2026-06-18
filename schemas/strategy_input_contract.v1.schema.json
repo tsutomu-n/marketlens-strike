@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_input_contract.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "contract_id",
+    "created_at",
+    "producer",
+    "strategy_scope",
+    "sources",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_input_contract.v1"},
+    "contract_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "strategy_scope": {
+      "type": "object",
+      "required": ["strategy_family", "instruments", "timeframe", "intended_use"],
+      "properties": {
+        "strategy_family": {"type": "string", "minLength": 1},
+        "instruments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "timeframe": {"type": "string", "minLength": 1},
+        "intended_use": {
+          "enum": ["research_backtest_only", "paper_observation_research_only"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "source_type",
+          "path",
+          "required",
+          "generated_at",
+          "available_at",
+          "revision_policy",
+          "survivorship_policy",
+          "execution_reality"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "source_type": {
+            "enum": [
+              "raw_market_data",
+              "derived_features",
+              "temporal_availability",
+              "execution_reality",
+              "universe",
+              "external_event",
+              "risk_account",
+              "runtime_observation",
+              "feedback_metadata",
+              "manual_note"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+          },
+          "required": {"type": "boolean"},
+          "declared_sha256": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "schema_version": {"type": "string", "minLength": 1},
+          "generated_at": {"type": "string", "format": "date-time"},
+          "available_at": {"type": "string", "format": "date-time"},
+          "revision_policy": {
+            "enum": ["append_only", "snapshot_immutable", "revision_tracked"]
+          },
+          "survivorship_policy": {
+            "enum": ["point_in_time", "current_constituents_not_allowed", "not_applicable"]
+          },
+          "execution_reality": {
+            "type": "object",
+            "required": [
+              "includes_fills",
+              "includes_slippage",
+              "includes_latency",
+              "assumed_order_type"
+            ],
+            "properties": {
+              "includes_fills": {"type": "boolean"},
+              "includes_slippage": {"type": "boolean"},
+              "includes_latency": {"type": "boolean"},
+              "assumed_order_type": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": false
+          },
+          "validation_expectations": {
+            "type": "object",
+            "properties": {
+              "required_columns": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1}
+              },
+              "timestamp_column": {"type": "string", "minLength": 1},
+              "max_allowed_timestamp": {"type": "string", "format": "date-time"},
+              "available_at_column": {"type": "string", "minLength": 1},
+              "available_at_column_required": {"type": "boolean"}
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {"required": ["max_allowed_timestamp"]},
+                "then": {"required": ["timestamp_column"]}
+              },
+              {
+                "if": {
+                  "properties": {"available_at_column_required": {"const": true}},
+                  "required": ["available_at_column_required"]
+                },
+                "then": {"required": ["available_at_column"]}
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {"properties": {"required": {"const": true}}, "required": ["required"]},
+            "then": {"required": ["declared_sha256"]}
+          }
+        ]
+      }
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

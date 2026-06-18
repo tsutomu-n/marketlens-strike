@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_revision_request.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "revision_request_id",
+    "strategy_id",
+    "created_at",
+    "producer",
+    "request_status",
+    "reason",
+    "source_learning_event_ids",
+    "source_artifacts",
+    "requested_changes",
+    "decision_needed",
+    "requires_human_review",
+    "auto_applied",
+    "direct_spec_edit_allowed",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_revision_request.v1"},
+    "revision_request_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "strategy_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-revision-request-build"}
+      },
+      "additionalProperties": false
+    },
+    "request_status": {
+      "enum": ["READY_FOR_HUMAN_REVIEW", "NO_REVISION_REQUIRED", "BLOCKED_BOUNDARY_VIOLATION"]
+    },
+    "reason": {"type": "string", "minLength": 1},
+    "source_learning_event_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "source_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "requested_changes": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "decision_needed": {"const": "REVIEW_AND_AUTHORING_UPDATE"},
+    "requires_human_review": {"const": true},
+    "auto_applied": {"const": false},
+    "direct_spec_edit_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "source_artifact": {
+      "type": "object",
+      "required": ["artifact_key", "path", "sha256"],
+      "properties": {
+        "artifact_key": {"type": "string", "minLength": 1},
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "schema_version": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

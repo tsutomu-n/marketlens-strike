@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_authoring_update_handoff.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "handoff_id",
+    "revision_request_id",
+    "strategy_id",
+    "created_at",
+    "producer",
+    "handoff_status",
+    "review_decision",
+    "authoring_update_input_allowed",
+    "source_artifacts",
+    "requested_changes",
+    "authoring_update_tasks",
+    "authoring_spec_path",
+    "authoring_spec_sha256",
+    "requires_human_authoring_update",
+    "auto_applied",
+    "direct_spec_edit_allowed",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_authoring_update_handoff.v1"},
+    "handoff_id": {"$ref": "#/$defs/id"},
+    "revision_request_id": {"$ref": "#/$defs/id"},
+    "strategy_id": {"$ref": "#/$defs/id"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-authoring-update-handoff"}
+      },
+      "additionalProperties": false
+    },
+    "handoff_status": {
+      "enum": [
+        "READY_FOR_HUMAN_AUTHORING_UPDATE",
+        "NEEDS_REVISION_REVIEW_APPROVAL",
+        "BLOCKED_BOUNDARY_VIOLATION"
+      ]
+    },
+    "review_decision": {
+      "enum": [
+        "REJECT",
+        "NEEDS_FIX",
+        "HOLD",
+        "REVIEWED_FOR_CONTEXT",
+        "APPROVE_FOR_AUTHORING_UPDATE"
+      ]
+    },
+    "authoring_update_input_allowed": {"type": "boolean"},
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 3,
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "requested_changes": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "authoring_update_tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "authoring_spec_path": {"$ref": "#/$defs/repo_path"},
+    "authoring_spec_sha256": {"$ref": "#/$defs/sha256"},
+    "authoring_spec_schema_version": {"type": ["string", "null"]},
+    "authoring_spec_strategy_id": {"type": ["string", "null"]},
+    "strategy_id_matches_authoring_spec": {"type": ["boolean", "null"]},
+    "requires_human_authoring_update": {"const": true},
+    "auto_applied": {"const": false},
+    "direct_spec_edit_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "repo_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_artifact": {
+      "type": "object",
+      "required": ["artifact_key", "path", "sha256"],
+      "properties": {
+        "artifact_key": {"type": "string", "minLength": 1},
+        "path": {"$ref": "#/$defs/repo_path"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "schema_version": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "handoff_status": {"const": "READY_FOR_HUMAN_AUTHORING_UPDATE"}
+        }
+      },
+      "then": {
+        "properties": {
+          "review_decision": {"const": "APPROVE_FOR_AUTHORING_UPDATE"},
+          "authoring_update_input_allowed": {"const": true}
+        }
+      }
+    },
+    {
+      "if": {
+        "not": {
+          "properties": {
+            "review_decision": {"const": "APPROVE_FOR_AUTHORING_UPDATE"}
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "authoring_update_input_allowed": {"const": false}
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

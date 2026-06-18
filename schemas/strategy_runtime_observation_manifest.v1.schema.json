@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_runtime_observation_manifest.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "strategy_id",
+    "session_id",
+    "source_stage",
+    "created_at",
+    "producer",
+    "ingest_status",
+    "source_artifacts",
+    "runtime_observation_ledger_path",
+    "runtime_observation_ledger_sha256",
+    "summary",
+    "includes_live_order",
+    "includes_wallet",
+    "includes_signing",
+    "includes_exchange_write",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_runtime_observation_manifest.v1"},
+    "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "session_id": {"type": "string", "minLength": 1, "pattern": "^[^/\\\\.][^/\\\\]*$"},
+    "source_stage": {"enum": ["paper_smoke", "normal_paper_observation"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-runtime-observation-ingest"}
+      },
+      "additionalProperties": false
+    },
+    "ingest_status": {
+      "enum": ["INGESTED", "EMPTY_LEDGER", "BLOCKED_BOUNDARY_VIOLATION"]
+    },
+    "source_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "runtime_observation_ledger_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+    },
+    "runtime_observation_ledger_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "summary": {"$ref": "#/$defs/summary"},
+    "includes_live_order": {"const": false},
+    "includes_wallet": {"const": false},
+    "includes_signing": {"const": false},
+    "includes_exchange_write": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "source_artifact": {
+      "type": "object",
+      "required": ["artifact_key", "path", "sha256"],
+      "properties": {
+        "artifact_key": {"type": "string", "minLength": 1},
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "schema_version": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "ledger_entry_count",
+        "paper_order_count",
+        "paper_fill_count",
+        "blocked_count",
+        "no_fill_count",
+        "unique_intent_count",
+        "unique_symbol_count",
+        "pnl_available",
+        "block_reasons",
+        "status_counts",
+        "order_lifecycle_counts"
+      ],
+      "properties": {
+        "ledger_entry_count": {"type": "integer", "minimum": 0},
+        "paper_order_count": {"type": "integer", "minimum": 0},
+        "paper_fill_count": {"type": "integer", "minimum": 0},
+        "blocked_count": {"type": "integer", "minimum": 0},
+        "no_fill_count": {"type": "integer", "minimum": 0},
+        "unique_intent_count": {"type": "integer", "minimum": 0},
+        "unique_symbol_count": {"type": "integer", "minimum": 0},
+        "first_observed_at": {"type": ["string", "null"]},
+        "last_observed_at": {"type": ["string", "null"]},
+        "max_observed_spread_bps": {"type": ["number", "null"]},
+        "max_observed_quote_age_ms": {"type": ["integer", "null"], "minimum": 0},
+        "pnl_available": {"type": "boolean"},
+        "pnl_unavailable_reason": {"type": ["string", "null"], "minLength": 1},
+        "realized_pnl_usd_total": {"type": ["number", "null"]},
+        "gross_pnl_usd_total": {"type": ["number", "null"]},
+        "fee_usd_total": {"type": ["number", "null"]},
+        "slippage_usd_total": {"type": ["number", "null"]},
+        "avg_slippage_bps": {"type": ["number", "null"]},
+        "max_abs_slippage_bps": {"type": ["number", "null"], "minimum": 0},
+        "avg_fill_price_drift_bps": {"type": ["number", "null"]},
+        "max_abs_fill_price_drift_bps": {"type": ["number", "null"], "minimum": 0},
+        "filled_notional_usd_total": {"type": ["number", "null"], "minimum": 0},
+        "block_reasons": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        },
+        "status_counts": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        },
+        "order_lifecycle_counts": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

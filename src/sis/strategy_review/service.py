@@ -9,6 +9,10 @@ from typing import Any
 from sis.backtest.artifact_summary import build_strategy_backtest_artifact_summary
 from sis.backtest.artifact_summary_registry import ARTIFACT_SUMMARY_SPECS
 from sis.research.strategy_lab.authoring.io import load_authoring_spec
+from sis.strategy_review.input_sources import (
+    strategy_idea_summary,
+    strategy_input_contract_summary,
+)
 from sis.strategy_review.manifest import (
     BuilderSafety,
     EvaluationFlags,
@@ -600,6 +604,8 @@ def build_strategy_review(
     pack_path: Path,
     validation_path: Path,
     authoring_spec_path: Path | None = None,
+    input_contract_path: Path | None = None,
+    strategy_idea_path: Path | None = None,
     lifecycle_review_path: Path | None = None,
     strict: bool = False,
     replace_existing: bool = False,
@@ -656,6 +662,26 @@ def build_strategy_review(
         sections.append(section)
 
     sections.append(_backtest_pack_section(source_artifacts))
+
+    if input_contract_path is not None:
+        input_contract_artifact, input_contract_section = strategy_input_contract_summary(
+            input_contract_path,
+            missing_artifact_fn=_missing_optional_artifact,
+            invalid_artifact_fn=_invalid_optional_artifact,
+            present_artifact_fn=_present_optional_artifact,
+        )
+        source_artifacts.append(input_contract_artifact)
+        sections.append(input_contract_section)
+
+    if strategy_idea_path is not None:
+        strategy_idea_artifact, strategy_idea_section = strategy_idea_summary(
+            strategy_idea_path,
+            missing_artifact_fn=_missing_optional_artifact,
+            invalid_artifact_fn=_invalid_optional_artifact,
+            present_artifact_fn=_present_optional_artifact,
+        )
+        source_artifacts.append(strategy_idea_artifact)
+        sections.append(strategy_idea_section)
 
     resolved_lifecycle_review_path = lifecycle_review_path or _default_path(
         DEFAULT_LIFECYCLE_REVIEW_PATH

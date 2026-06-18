@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_ai_review_packet.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "packet_id",
+    "generated_at",
+    "producer",
+    "packet_status",
+    "source_summaries",
+    "sensitive_source_count",
+    "review_questions",
+    "ai_input_hash",
+    "paper_execution_allowed",
+    "live_allowed",
+    "permission_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_ai_review_packet.v1"},
+    "packet_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-ai-review-packet-build"}
+      },
+      "additionalProperties": false
+    },
+    "packet_status": {
+      "enum": ["READY_FOR_AI_REVIEW", "NO_SOURCES", "BLOCKED_SENSITIVE_SOURCE"]
+    },
+    "source_summaries": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_summary"}
+    },
+    "sensitive_source_count": {"type": "integer", "minimum": 0},
+    "review_questions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "ai_input_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "permission_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "source_summary": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "schema_version": {"type": ["string", "null"]},
+        "strategy_id": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "action": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

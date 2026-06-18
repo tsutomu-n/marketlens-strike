@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_optimizer_trial_ledger.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "ledger_id",
+    "strategy_id",
+    "created_at",
+    "producer",
+    "search_space",
+    "trials",
+    "holdout_result",
+    "summary",
+    "paper_execution_allowed",
+    "live_allowed",
+    "auto_applied",
+    "direct_spec_edit_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_optimizer_trial_ledger.v1"},
+    "ledger_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-model-run-record"}
+      },
+      "additionalProperties": false
+    },
+    "search_space": {"type": "object"},
+    "trials": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/trial"}},
+    "best_trial_id": {"type": ["string", "null"]},
+    "holdout_result": {"type": "object"},
+    "summary": {"$ref": "#/$defs/summary"},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "auto_applied": {"const": false},
+    "direct_spec_edit_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "trial": {
+      "type": "object",
+      "required": ["trial_id", "status", "parameters", "metrics"],
+      "properties": {
+        "trial_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "status": {"enum": ["complete", "failed", "pruned", "running"]},
+        "parameters": {"type": "object"},
+        "objective_value": {"type": ["number", "null"]},
+        "metrics": {"type": "object"},
+        "failure_reason": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "trial_count",
+        "complete_count",
+        "failed_count",
+        "pruned_count",
+        "running_count",
+        "success_only_reporting"
+      ],
+      "properties": {
+        "trial_count": {"type": "integer", "minimum": 0},
+        "complete_count": {"type": "integer", "minimum": 0},
+        "failed_count": {"type": "integer", "minimum": 0},
+        "pruned_count": {"type": "integer", "minimum": 0},
+        "running_count": {"type": "integer", "minimum": 0},
+        "success_only_reporting": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

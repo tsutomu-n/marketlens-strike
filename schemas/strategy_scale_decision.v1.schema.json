@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_scale_decision.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_id",
+    "strategy_id",
+    "created_at",
+    "producer",
+    "decision_status",
+    "recommended_action",
+    "policy",
+    "source_artifacts",
+    "passed_conditions",
+    "failed_conditions",
+    "warning_conditions",
+    "required_human_review",
+    "next_scale_plan_allowed",
+    "scale_up_execution_allowed",
+    "live_allowed",
+    "wallet_used",
+    "signing_used",
+    "exchange_write_used",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_scale_decision.v1"},
+    "decision_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "decision_status": {
+      "enum": [
+        "READY_FOR_HUMAN_SCALE_REVIEW",
+        "NEEDS_LIVE_OBSERVATION",
+        "NEEDS_REPAIR",
+        "REVISE_OR_RETIRE",
+        "BLOCKED_BOUNDARY_VIOLATION"
+      ]
+    },
+    "recommended_action": {
+      "enum": [
+        "PREPARE_NEXT_SCALE_PLAN",
+        "HOLD_AT_MICRO_LIVE",
+        "REVISE_STRATEGY",
+        "RETIRE_STRATEGY",
+        "REPAIR_ARTIFACTS"
+      ]
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "require_actual_fill",
+        "require_cancel_or_close_observed",
+        "allow_rejection",
+        "allow_blocked_canary",
+        "allow_max_loss_breach"
+      ],
+      "properties": {
+        "require_actual_fill": {"type": "boolean"},
+        "require_cancel_or_close_observed": {"type": "boolean"},
+        "allow_rejection": {"type": "boolean"},
+        "allow_blocked_canary": {"type": "boolean"},
+        "allow_max_loss_breach": {"type": "boolean"}
+      }
+    },
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "passed_conditions": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+    "failed_conditions": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+    "warning_conditions": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
+    "required_human_review": {"const": true},
+    "next_scale_plan_allowed": {"const": false},
+    "scale_up_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "signing_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-scale-decision"}
+      }
+    },
+    "source_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_key", "path", "sha256"],
+      "properties": {
+        "artifact_key": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "schema_version": {"type": ["string", "null"]}
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition_id", "passed", "observed", "required", "severity"],
+      "properties": {
+        "condition_id": {"type": "string", "minLength": 1},
+        "passed": {"type": "boolean"},
+        "observed": {"type": "string", "minLength": 1},
+        "required": {"type": "string", "minLength": 1},
+        "severity": {"enum": ["error", "warning"]}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      }
+    }
+  }
+}

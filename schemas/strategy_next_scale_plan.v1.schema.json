@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketlens-strike.local/schemas/strategy_next_scale_plan.v1.schema.json",
+  "title": "Strategy Next Scale Plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "strategy_id",
+    "created_at",
+    "producer",
+    "plan_status",
+    "guard_policy",
+    "risk_limits",
+    "monitoring_plan",
+    "source_artifacts",
+    "passed_conditions",
+    "failed_conditions",
+    "warning_conditions",
+    "required_human_review",
+    "next_scale_execution_allowed",
+    "live_allowed",
+    "wallet_used",
+    "signing_used",
+    "exchange_write_used",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": { "const": "strategy_next_scale_plan.v1" },
+    "plan_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "strategy_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command"],
+      "properties": {
+        "tool": { "type": "string" },
+        "command": { "const": "strategy-next-scale-plan" },
+        "version": { "type": ["string", "null"] }
+      }
+    },
+    "plan_status": {
+      "enum": [
+        "READY_FOR_HUMAN_NEXT_SCALE_REVIEW",
+        "NEEDS_SCALE_DECISION",
+        "NEEDS_RISK_REPAIR",
+        "BLOCKED_BOUNDARY_VIOLATION"
+      ]
+    },
+    "scale_decision_status": { "type": ["string", "null"] },
+    "scale_recommended_action": { "type": ["string", "null"] },
+    "guard_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_scale_multiplier",
+        "require_previous_micro_live_plan",
+        "require_scale_decision_ready"
+      ],
+      "properties": {
+        "max_scale_multiplier": { "type": "number", "exclusiveMinimum": 0 },
+        "require_previous_micro_live_plan": { "type": "boolean" },
+        "require_scale_decision_ready": { "type": "boolean" }
+      }
+    },
+    "risk_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "next_max_order_notional_usd",
+        "next_max_position_notional_usd",
+        "next_max_daily_loss_usd",
+        "next_max_total_loss_usd",
+        "next_max_open_positions",
+        "allowed_symbols",
+        "session_window"
+      ],
+      "properties": {
+        "next_max_order_notional_usd": { "type": "number", "exclusiveMinimum": 0 },
+        "next_max_position_notional_usd": { "type": "number", "exclusiveMinimum": 0 },
+        "next_max_daily_loss_usd": { "type": "number", "exclusiveMinimum": 0 },
+        "next_max_total_loss_usd": { "type": "number", "exclusiveMinimum": 0 },
+        "next_max_open_positions": { "type": "integer", "minimum": 1 },
+        "allowed_symbols": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "session_window": { "type": "string", "minLength": 1 }
+      }
+    },
+    "monitoring_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner", "cadence", "schedule_cancel_procedure", "kill_switch_procedure"],
+      "properties": {
+        "owner": { "type": "string", "minLength": 1 },
+        "cadence": { "type": "string", "minLength": 1 },
+        "schedule_cancel_procedure": { "type": "string", "minLength": 1 },
+        "kill_switch_procedure": { "type": "string", "minLength": 1 }
+      }
+    },
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source_artifact" }
+    },
+    "passed_conditions": { "type": "array", "items": { "$ref": "#/$defs/condition" } },
+    "failed_conditions": { "type": "array", "items": { "$ref": "#/$defs/condition" } },
+    "warning_conditions": { "type": "array", "items": { "$ref": "#/$defs/condition" } },
+    "required_human_review": { "const": true },
+    "next_scale_execution_allowed": { "const": false },
+    "live_allowed": { "const": false },
+    "wallet_used": { "const": false },
+    "signing_used": { "const": false },
+    "exchange_write_used": { "const": false },
+    "boundary": { "type": "object" }
+  },
+  "$defs": {
+    "source_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_key", "path", "sha256"],
+      "properties": {
+        "artifact_key": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "schema_version": { "type": ["string", "null"] }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition_id", "passed", "observed", "required", "severity"],
+      "properties": {
+        "condition_id": { "type": "string", "minLength": 1 },
+        "passed": { "type": "boolean" },
+        "observed": { "type": "string" },
+        "required": { "type": "string" },
+        "severity": { "type": "string" }
+      }
+    }
+  }
+}

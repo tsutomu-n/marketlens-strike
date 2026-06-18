@@ -1,0 +1,1 @@
+"""Strategy scale decision artifacts."""

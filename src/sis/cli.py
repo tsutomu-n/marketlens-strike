@@ -16,7 +16,24 @@ from sis.commands.quotes import register_quote_commands
 from sis.commands.remediation import register_remediation_commands
 from sis.commands.research import register_research_commands
 from sis.commands.strategy_authoring import register_strategy_authoring_commands
+from sis.commands.strategy_ai_review import register_strategy_ai_review_commands
+from sis.commands.strategy_case_lite import register_strategy_case_lite_commands
+from sis.commands.strategy_daily_brief import register_strategy_daily_brief_commands
+from sis.commands.strategy_drift_review import register_strategy_drift_review_commands
+from sis.commands.strategy_inputs import register_strategy_input_commands
+from sis.commands.strategy_learning import register_strategy_learning_commands
+from sis.commands.strategy_model_loop import register_strategy_model_loop_commands
+from sis.commands.strategy_micro_live_plan import register_strategy_micro_live_plan_commands
+from sis.commands.strategy_next_scale_plan import register_strategy_next_scale_plan_commands
+from sis.commands.strategy_live_observation import register_strategy_live_observation_commands
+from sis.commands.strategy_paper_smoke import register_strategy_paper_smoke_commands
 from sis.commands.strategy_review import register_strategy_review_commands
+from sis.commands.strategy_runtime_observation import (
+    register_strategy_runtime_observation_commands,
+)
+from sis.commands.strategy_scale_decision import register_strategy_scale_decision_commands
+from sis.commands.strategy_stage import register_strategy_stage_commands
+from sis.commands.strategy_workbench_viewer import register_strategy_workbench_viewer_commands
 from sis.commands.execution import register_execution_commands
 from sis.commands.bot import register_bot_commands
 from sis.commands.execution_artifacts import (
@@ -113,7 +130,22 @@ register_probe_commands(app)
 
 register_research_commands(app, _recommended_read_order)
 register_strategy_authoring_commands(app)
+register_strategy_input_commands(app)
 register_strategy_review_commands(app)
+register_strategy_stage_commands(app)
+register_strategy_paper_smoke_commands(app)
+register_strategy_runtime_observation_commands(app)
+register_strategy_drift_review_commands(app)
+register_strategy_learning_commands(app)
+register_strategy_case_lite_commands(app)
+register_strategy_daily_brief_commands(app)
+register_strategy_ai_review_commands(app)
+register_strategy_model_loop_commands(app)
+register_strategy_micro_live_plan_commands(app)
+register_strategy_next_scale_plan_commands(app)
+register_strategy_live_observation_commands(app)
+register_strategy_scale_decision_commands(app)
+register_strategy_workbench_viewer_commands(app)
 register_quote_commands(app, _recommended_read_order)
 register_bot_commands(app, _recommended_read_order)
 

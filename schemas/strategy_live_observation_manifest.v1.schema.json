@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_live_observation_manifest.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "strategy_id",
+    "observation_id",
+    "created_at",
+    "producer",
+    "ingest_status",
+    "source_artifacts",
+    "summary",
+    "paper_runtime_observation_mixed",
+    "live_execution_submitted_by_this_command",
+    "scale_up_allowed",
+    "live_allowed",
+    "wallet_used",
+    "signing_used",
+    "exchange_write_used",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_live_observation_manifest.v1"},
+    "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "observation_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "ingest_status": {
+      "enum": [
+        "LIVE_OBSERVATION_INGESTED",
+        "BLOCKED_CANARY",
+        "BLOCKED_BOUNDARY_VIOLATION"
+      ]
+    },
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "summary": {"$ref": "#/$defs/summary"},
+    "paper_runtime_observation_mixed": {"const": false},
+    "live_execution_submitted_by_this_command": {"const": false},
+    "scale_up_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "wallet_used": {"const": false},
+    "signing_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-live-observation-ingest"}
+      }
+    },
+    "source_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_key", "path", "sha256"],
+      "properties": {
+        "artifact_key": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "schema_version": {"type": ["string", "null"]}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canary_status",
+        "blocked_reasons",
+        "actual_fill_observed",
+        "rejection_observed",
+        "cancel_observed",
+        "close_submitted",
+        "position_reconciliation_status",
+        "max_loss_breach_observed",
+        "account_snapshot_present"
+      ],
+      "properties": {
+        "canary_status": {"type": "string", "minLength": 1},
+        "blocked_reasons": {"type": "array", "items": {"type": "string"}},
+        "canonical_symbol": {"type": ["string", "null"]},
+        "side": {"type": ["string", "null"]},
+        "quantity": {"type": ["number", "null"]},
+        "limit_price": {"type": ["number", "null"]},
+        "notional_usd": {"type": ["number", "null"]},
+        "leverage": {"type": ["number", "null"]},
+        "schedule_cancel_status": {"type": ["string", "null"]},
+        "order_submit_status": {"type": ["string", "null"]},
+        "order_status": {"type": ["string", "null"]},
+        "cancel_status": {"type": ["string", "null"]},
+        "close_status": {"type": ["string", "null"]},
+        "actual_fill_observed": {"type": "boolean"},
+        "rejection_observed": {"type": "boolean"},
+        "cancel_observed": {"type": "boolean"},
+        "close_submitted": {"type": "boolean"},
+        "fee_usd": {"type": ["number", "null"]},
+        "latency_ms": {"type": ["integer", "null"], "minimum": 0},
+        "position_reconciliation_status": {"type": "string", "minLength": 1},
+        "max_loss_breach_observed": {"type": "boolean"},
+        "account_snapshot_present": {"type": "boolean"},
+        "account_equity": {"type": ["number", "null"]},
+        "account_available_cash": {"type": ["number", "null"]}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      }
+    }
+  }
+}

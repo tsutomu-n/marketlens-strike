@@ -1,19 +1,51 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-18_21:45 JST
+更新日: 2026-06-19_02:28 JST
 -->
 
 # Next Direction Current
 
 ## 結論
 
-現時点の現実的な方向は、backtest-first / venue-neutral を維持しながら、Strategy Review の人間判断記録、paper observation の通常threshold状態、Strategy Input Contract / Idea Intake を次段検証の土台にすることです。
+現時点の現実的な方向は、backtest-first / venue-neutral を維持しながら、実装済みの Strategy Input Contract / Idea Intake first gate、Strategy Review の人間判断記録、Strategy Stage Policy / Decision first slice、Strategy Paper Smoke Plan first slice、Strategy Runtime Observation Ingest first slice、Paper vs Backtest Drift Review first slice、Strategy Learning / Revision Request first slice、Strategy Case Lite first slice、Strategy Daily Brief first slice、Strategy AI Review first slice、Strategy Model Loop first slice、Strategy Micro Live Plan Gate first slice、Strategy Next Scale Plan first slice、Strategy Live Observation first slice、Strategy Scale Decision first slice、Strategy Workbench Viewer first slice、paper observation の通常threshold状態を次段検証の土台にすることです。
 
 これは確定ロードマップではありません。実装済み surface と未実装候補を混ぜず、次に狙いやすい方向、追加候補、優先しないことを分けるための current doc です。
 
 完成形の設計定義は [TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md](TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md) を読む。これは current implementation proof ではなく、個人システムトレーダー向けに stage policy、paper smoke、drift review、micro live plan gate をどう位置づけるかの target definition です。
 
-実装計画として次に読むものは [../plan/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](../plan/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md) です。これは `strategy_input_contract.v1`、`strategy_idea.v1`、validation CLI、Strategy Review への optional source connection を実装するための coder handoff です。
+完成形を実装完了まで閉じるための作業順、対象ファイル、テスト方針、完了条件は [STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md](STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md) を読む。これは、現時点の target definition だけでは実装契約として不足している部分を補う current plan です。
+
+T0〜T12b の実装証跡と残る対象外範囲は [STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md](STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md) を読む。
+
+Strategy Input Contract / Idea Intake first gate と Strategy Review optional source connection の設計は [strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md) を読む。これは `strategy_input_contract.v1`、`strategy_idea.v1`、validation CLI、`strategy-review-build --input-contract --strategy-idea` の coder handoff です。
+
+Strategy Stage Policy / Decision の使い方は [strategy_stage/README.md](strategy_stage/README.md) を読む。これは `strategy_stage_policy.v1`、`strategy_stage_policy_validation.v1`、`strategy_stage_decision.v1`、`strategy-stage-policy-validate`、`strategy-stage-decision` の current surface です。
+
+Strategy Paper Smoke Plan の使い方は [strategy_paper_smoke/README.md](strategy_paper_smoke/README.md) を読む。これは `strategy_paper_smoke_plan.v1` と `strategy-paper-smoke-plan` の current surface です。
+
+Strategy Runtime Observation の使い方は [strategy_runtime_observation/README.md](strategy_runtime_observation/README.md) を読む。これは `strategy_runtime_observation_manifest.v1` と `strategy-runtime-observation-ingest` の current surface です。
+
+Paper vs Backtest Drift Review の使い方は [strategy_drift_review/README.md](strategy_drift_review/README.md) を読む。これは `paper_vs_backtest_drift_review.v1` と `strategy-drift-review` の current surface です。
+
+Strategy Learning の使い方は [strategy_learning/README.md](strategy_learning/README.md) を読む。これは `strategy_learning_event.v1`、`strategy_revision_request.v1`、`strategy_revision_request_review.v1`、`strategy_authoring_update_handoff.v1`、`strategy-learning-ledger-update`、`strategy-revision-request-build`、`strategy-revision-request-review`、`strategy-authoring-update-handoff` の current surface です。
+
+Strategy Case Lite の使い方は [strategy_case_lite/README.md](strategy_case_lite/README.md) を読む。これは `strategy_case_lite.v1` と `strategy-case-lite-update` の current surface です。
+
+Strategy Daily Brief の使い方は [strategy_daily_brief/README.md](strategy_daily_brief/README.md) を読む。これは `strategy_daily_brief.v1` と `strategy-daily-brief` の current surface です。
+
+Strategy AI Review の使い方は [strategy_ai_review/README.md](strategy_ai_review/README.md) を読む。これは `strategy_ai_review_packet.v1`、`strategy_ai_review_note.v1`、`strategy-ai-review-packet-build`、`strategy-ai-review-note-record` の current surface です。
+
+Strategy Model / Optimizer Loop の使い方は [strategy_model_loop/README.md](strategy_model_loop/README.md) を読む。これは `strategy_model_run.v1`、`strategy_optimizer_trial_ledger.v1`、`strategy-model-run-record` の current surface です。
+
+Strategy Micro Live Plan Gate の使い方は [strategy_micro_live_plan/README.md](strategy_micro_live_plan/README.md) を読む。これは `strategy_micro_live_plan.v1` と `strategy-micro-live-plan` の current surface です。
+
+Strategy Next Scale Plan の使い方は [strategy_next_scale_plan/README.md](strategy_next_scale_plan/README.md) を読む。これは `strategy_next_scale_plan.v1` と `strategy-next-scale-plan` の current surface です。
+
+Strategy Live Observation の使い方は [strategy_live_observation/README.md](strategy_live_observation/README.md) を読む。これは `strategy_live_observation_manifest.v1` と `strategy-live-observation-ingest` の current surface です。
+
+Strategy Scale Decision の使い方は [strategy_scale_decision/README.md](strategy_scale_decision/README.md) を読む。これは `strategy_scale_decision.v1` と `strategy-scale-decision` の current surface です。
+
+Strategy Workbench Viewer の使い方は [strategy_workbench_viewer/README.md](strategy_workbench_viewer/README.md) を読む。これは `strategy_workbench_viewer.v1` と `strategy-workbench-viewer-build` の current surface です。
 
 ## 正本
 
@@ -40,33 +72,136 @@
 4. paper observation は normal threshold と smoke threshold を分けて読む。smoke pass は normal paper observation pass ではない。
 5. future venue は `venue-read-only-probe` dogfood 済みで、現時点では `NO_ACTION`。schema や paper path は広げない。
 
-## Implementation-Ready Candidate
+## Implemented First Gate
 
 ### Strategy Input Contract / Idea Intake
 
-次にコード実装する候補は、通常 paper の追加実行ではなく Strategy Input Contract / Idea Intake です。
+通常 paper の追加実行より先に必要だった Strategy Input Contract / Idea Intake first gate は実装済みです。
 
-目的:
+できること:
 
 - 入力データを path / hash だけでなく、`available_at`、revision policy、survivorship policy、execution reality 付きで契約化する。
 - 戦略の種を hypothesis、baseline、invalidation、risk、required inputs 付きで記録する。
-- Strategy Review packet から input contract と idea artifact を optional source として読めるようにする。
+- `strategy-input-contract-validate` で source path、sha256、missing required、boundary violation、required columns、timestamp upper bound、available_at column を検査する。
+- `strategy-intake-validate` で `READY_FOR_AUTHORING_DRAFT` / `NEEDS_SPEC` / `NEEDS_DATA_CHECK` / `NEEDS_RISK_SPEC` / `REJECT` を local artifact として出す。
+- `strategy-review-build --input-contract --strategy-idea` で input contract と strategy idea を review packet の optional source artifact として読む。
 
-実装計画:
+残 task:
 
-```text
-plan/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md
-```
+- Runtime Observation を Strategy Input Contract へ自動反映する処理は未実装。
 
 対象外:
 
-- Stage Policy
-- Paper Smoke
-- Drift Review
+- Paper Smoke execution automation
 - AI / ML / GA
 - UI
 - wallet / signing / exchange write
 - live execution
+
+### Strategy Stage Policy / Decision
+
+Stage Policy / Decision first slice は実装済みです。
+
+できること:
+
+- `strategy_stage_policy.v1` で、`paper_smoke`、`normal_paper_observation`、`drift_review`、`micro_live_plan` の条件を config 化する。
+- `strategy-stage-policy-validate` で、fixed safety、stage completeness、rate range、no-live boundary を検査する。
+- `strategy-stage-decision` で、operator review または paper observation status を読み、次 stage の計画に進める証拠があるかを local artifact にする。
+- decision に policy hash、source artifact hash、passed / failed condition、manual override reason を残す。
+
+実務上の注意:
+
+- `READY_FOR_PAPER_SMOKE_PLAN` は paper order 実行許可ではない。
+- `READY_FOR_MICRO_LIVE_PLAN` は micro live execution permission ではない。
+- manual override は記録されるだけで、failed evidence を自動合格にしない。
+
+### Strategy Paper Smoke Plan
+
+Paper Smoke Plan first slice は実装済みです。
+
+できること:
+
+- `strategy-paper-smoke-plan` で、`READY_FOR_PAPER_SMOKE_PLAN` の stage decision から `strategy_paper_smoke_plan.v1` JSON と Markdown report を作る。
+- Stage Policy の `paper_smoke` threshold を読み、`strategy-paper-observation-cycle --smoke` の実行 preview に反映する。
+- backtest acceptance、paper candidate pack、promotion decision、operator promotion の source artifact 存在と hash を記録する。
+- source artifact が足りない場合は `NEEDS_SOURCE_ARTIFACTS` として、欠落を plan artifact に残す。
+
+残 task:
+
+- Svelte UI は未実装。現行 repo では static viewer `strategy-workbench-viewer-build` を使う。
+
+実務上の注意:
+
+- `READY_TO_RUN_SMOKE_CYCLE` は paper smoke cycle の実行計画であり、自動 paper 実行ではない。
+- smoke pass は normal paper observation pass ではない。
+- 実際の smoke 実行は人間が execution preview を読み、明示的に `strategy-paper-observation-cycle --smoke` を実行する。
+
+### Strategy Runtime Observation Ingest
+
+Runtime Observation Ingest first slice は実装済みです。
+
+できること:
+
+- `strategy-runtime-observation-ingest` で、paper observation session manifest と observation ledger を読み、`strategy_runtime_observation_manifest.v1` JSON と Markdown summary を作る。
+- `runtime_observation_ledger.jsonl` として paper runtime ledger を正規化コピーする。
+- fills、blocked、no-fill、spread、quote age、block reason を summary にする。
+- live / wallet / signing / exchange write 系の true flag が混入したら `BLOCKED_BOUNDARY_VIOLATION` にする。
+
+残 task:
+
+- Runtime observation を Strategy Input Contract へ自動反映する処理は未実装。
+
+実務上の注意:
+
+- この ingest は paper runtime artifact を読むだけで、paper order も live order も出さない。
+- `INGESTED` は paper pass や live readiness ではない。
+
+### Paper vs Backtest Drift Review
+
+Paper vs Backtest Drift Review first slice は実装済みです。
+
+できること:
+
+- `strategy-drift-review` で、`strategy_authoring_backtest_result.v1` と `strategy_runtime_observation_manifest.v1` を読み、`paper_vs_backtest_drift_review.v1` JSON と Markdown report を作る。
+- backtest の `trade_count`、`total_return`、`max_drawdown`、`backtest_passed` と、paper runtime の fills、blocked、no-fill、spread、quote age を並べる。
+- `--max-no-fill-rate`、`--max-blocked-rate`、`--max-spread-bps` によって `recommended_action` を `HUMAN_REVIEW_REQUIRED`、`EXTEND_OBSERVATION`、`REVISE_STRATEGY`、`REPAIR_ARTIFACTS` に分ける。
+- live / wallet / signing / exchange write 系 true flag が混入したら `BLOCKED_BOUNDARY_VIOLATION` にする。
+
+次の読み口:
+
+- `strategy-workbench-viewer-build` で Drift Review と関連 artifact を static HTML viewer にまとめられる。
+
+実務上の注意:
+
+- `READY_FOR_HUMAN_DRIFT_REVIEW` は micro live plan の許可ではない。
+- `HUMAN_REVIEW_REQUIRED` は人間が読む必要があるという意味であり、合格ではない。
+- no-fill、blocked、spread の悪化が見えた場合は、進めるのではなく Strategy Idea / Authoring spec / execution assumption へ戻す。
+
+### Strategy Learning / Revision Request / Authoring Update Handoff
+
+Strategy Learning / Revision Request / Authoring Update Handoff first slice は実装済みです。
+
+できること:
+
+- `strategy-learning-ledger-update` で、`paper_vs_backtest_drift_review.v1` から `strategy_learning_event.v1` を作り、`learning_ledger.jsonl` と `learning_summary.md` に反映する。
+- `strategy-revision-request-build` で、learning ledger から `strategy_revision_request.v1` JSON と Markdown report を作る。
+- `strategy-revision-request-review` で、revision request に対する人間判断を `strategy_revision_request_review.v1` JSON と Markdown report に記録する。
+- `strategy-authoring-update-handoff` で、`APPROVE_FOR_AUTHORING_UPDATE` 済み review と現行 Strategy Authoring YAML を source hash 付きで結び、次の人間編集タスクを `strategy_authoring_update_handoff.v1` JSON と Markdown report にする。
+- `REVISE_STRATEGY`、`EXTEND_OBSERVATION`、`REPAIR_ARTIFACTS`、`HUMAN_REVIEW_REQUIRED` を、人間レビュー前提の learning / revision artifact に変換できる。
+- `auto_applied=false`、`direct_spec_edit_allowed=false`、`paper_execution_allowed=false`、`live_allowed=false` を固定する。
+
+残 task:
+
+- Learning Event を Strategy Input Contract へ反映する処理は未実装。
+- Learning ledger を Strategy Case registry に束ねる処理は未実装。
+
+実務上の注意:
+
+- revision request は採用済み改訂ではない。
+- `APPROVE_FOR_AUTHORING_UPDATE` は authoring update の入力許可であり、YAML 自動編集ではない。
+- `strategy-authoring-update-handoff` も YAML を自動編集せず、別工程の人間編集入力だけを作る。
+- Strategy Authoring YAML を自動で書き換えない。
+- `NO_REVISION_REQUIRED` は live readiness ではない。
 
 ### Normal threshold paper observation continuation
 

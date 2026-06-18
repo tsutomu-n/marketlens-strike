@@ -1,0 +1,41 @@
+from sis.strategy_learning.models import (
+    LEARNING_EVENT_SCHEMA_VERSION,
+    REVISION_REQUEST_SCHEMA_VERSION,
+    LearningEventType,
+    LearningRecommendedAction,
+    RevisionRequestReviewDecision,
+    RevisionRequestStatus,
+    StrategyLearningEvent,
+    StrategyRevisionRequest,
+    StrategyRevisionRequestReview,
+)
+from sis.strategy_learning.service import (
+    LearningLedgerUpdateResult,
+    RevisionRequestBuildResult,
+    RevisionRequestReviewRecordResult,
+    StrategyLearningError,
+    StrategyLearningOutputExistsError,
+    build_revision_request,
+    record_revision_request_review,
+    update_learning_ledger,
+)
+
+__all__ = [
+    "LEARNING_EVENT_SCHEMA_VERSION",
+    "REVISION_REQUEST_SCHEMA_VERSION",
+    "LearningEventType",
+    "LearningLedgerUpdateResult",
+    "LearningRecommendedAction",
+    "RevisionRequestBuildResult",
+    "RevisionRequestReviewDecision",
+    "RevisionRequestReviewRecordResult",
+    "RevisionRequestStatus",
+    "StrategyLearningError",
+    "StrategyLearningEvent",
+    "StrategyLearningOutputExistsError",
+    "StrategyRevisionRequest",
+    "StrategyRevisionRequestReview",
+    "build_revision_request",
+    "record_revision_request_review",
+    "update_learning_ledger",
+]

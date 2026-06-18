@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from jsonschema import Draft202012Validator
+import yaml
 
 from sis.strategy_review.service import (
     StrategyReviewOutputExistsError,
@@ -158,6 +159,89 @@ def _write_lifecycle_review(path: Path, *, venue_write_used: bool = False) -> No
     )
 
 
+def _write_input_contract(path: Path, *, exchange_write_used: bool = False) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "strategy_input_contract.v1",
+        "contract_id": "ndx-breakout-inputs-001",
+        "created_at": CREATED_AT,
+        "producer": {"tool": "sis", "command": "manual"},
+        "strategy_scope": {
+            "strategy_family": "breakout",
+            "instruments": ["NDX"],
+            "timeframe": "1d",
+            "intended_use": "research_backtest_only",
+        },
+        "sources": [
+            {
+                "source_id": "ndx_ohlcv_daily",
+                "source_type": "raw_market_data",
+                "path": "data/research/ndx/source/ohlcv.csv",
+                "required": True,
+                "declared_sha256": "sha256:" + "a" * 64,
+                "schema_version": "market_ohlcv.v1",
+                "generated_at": "2026-06-18T00:00:00Z",
+                "available_at": "2026-06-18T00:05:00Z",
+                "revision_policy": "append_only",
+                "survivorship_policy": "current_constituents_not_allowed",
+                "execution_reality": {
+                    "includes_fills": False,
+                    "includes_slippage": False,
+                    "includes_latency": False,
+                    "assumed_order_type": "none",
+                },
+            }
+        ],
+        "known_gaps": [],
+        "boundary": {
+            "permits_live_order": False,
+            "live_conversion_allowed": False,
+            "wallet_used": False,
+            "signing_used": False,
+            "exchange_write_used": exchange_write_used,
+        },
+    }
+    path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+
+def _write_strategy_idea(path: Path, *, wallet_used: bool = False) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "strategy_idea.v1",
+        "idea_id": "ndx-breakout-001",
+        "created_at": CREATED_AT,
+        "title": "NDX close breakout after volatility compression",
+        "hypothesis": "NDX follow-through after low-volatility close breakout.",
+        "mechanism": "trend_following",
+        "timeframe": "1d",
+        "instruments": ["NDX"],
+        "required_input_contract_ids": ["ndx-breakout-inputs-001"],
+        "baseline": {"name": "cash_or_no_trade", "expected_to_beat": True},
+        "invalidation": ["no improvement over cash baseline"],
+        "risk": {
+            "max_position_notional_usd": 1000,
+            "max_daily_loss_usd": 50,
+            "kill_conditions": ["no fill in paper smoke"],
+        },
+        "execution_assumptions": {
+            "order_type": "market_on_close_paper_intent",
+            "slippage_model": "fixed_bps",
+        },
+        "authoring_intent": {
+            "target": "strategy_authoring_draft",
+            "auto_generate_spec": False,
+        },
+        "boundary": {
+            "permits_live_order": False,
+            "live_conversion_allowed": False,
+            "wallet_used": wallet_used,
+            "signing_used": False,
+            "exchange_write_used": False,
+        },
+    }
+    path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+
 def test_build_strategy_review_writes_markdown_and_manifest(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     pack_path, validation_path = _write_required_artifacts(tmp_path)
@@ -199,6 +283,134 @@ def test_build_strategy_review_writes_markdown_and_manifest(tmp_path: Path, monk
     assert pack["bytes"] == pack_path.stat().st_size
     assert pack["detected_schema_version"] == "strategy_backtest_pack.v1"
     assert not any(row["artifact_key"] == "authoring_spec" for row in payload["source_artifacts"])
+
+
+def test_build_strategy_review_includes_input_contract_and_strategy_idea(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path)
+    input_contract_path = tmp_path / "configs/strategy_inputs/ndx-inputs.yaml"
+    strategy_idea_path = tmp_path / "configs/strategy_ideas/ndx-idea.yaml"
+    _write_input_contract(input_contract_path)
+    _write_strategy_idea(strategy_idea_path)
+
+    result = build_strategy_review(
+        review_id="with-inputs",
+        out_dir=tmp_path / "data/strategy_reviews",
+        pack_path=pack_path,
+        validation_path=validation_path,
+        input_contract_path=input_contract_path,
+        strategy_idea_path=strategy_idea_path,
+        created_at=CREATED_AT,
+    )
+
+    assert result.manifest.review_status.value == "READY_FOR_HUMAN_REVIEW"
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_manifest_schema()).validate(payload)
+    input_contract = next(
+        row for row in payload["source_artifacts"] if row["artifact_key"] == "input_contract"
+    )
+    strategy_idea = next(
+        row for row in payload["source_artifacts"] if row["artifact_key"] == "strategy_idea"
+    )
+    assert input_contract["status"] == "present"
+    assert input_contract["required"] is False
+    assert input_contract["summary"]["contract_id"] == "ndx-breakout-inputs-001"
+    assert input_contract["summary"]["source_count"] == 1
+    assert strategy_idea["status"] == "present"
+    assert strategy_idea["required"] is False
+    assert strategy_idea["summary"]["idea_id"] == "ndx-breakout-001"
+    assert strategy_idea["summary"]["baseline_name"] == "cash_or_no_trade"
+    text = result.review_markdown_path.read_text(encoding="utf-8")
+    assert "## 6. Input Contract Summary" in text
+    assert "## 7. Idea Intake Summary" in text
+    assert "contract_id: `ndx-breakout-inputs-001`" in text
+    assert "idea_id: `ndx-breakout-001`" in text
+
+
+def test_build_strategy_review_missing_input_optional_does_not_change_status(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path)
+
+    result = build_strategy_review(
+        review_id="missing-inputs",
+        out_dir=tmp_path / "data/strategy_reviews",
+        pack_path=pack_path,
+        validation_path=validation_path,
+        input_contract_path=tmp_path / "missing-input-contract.yaml",
+        strategy_idea_path=tmp_path / "missing-idea.yaml",
+        created_at=CREATED_AT,
+    )
+
+    assert result.manifest.review_status.value == "READY_FOR_HUMAN_REVIEW"
+    input_contract = next(
+        artifact
+        for artifact in result.manifest.source_artifacts
+        if artifact.artifact_key == "input_contract"
+    )
+    strategy_idea = next(
+        artifact
+        for artifact in result.manifest.source_artifacts
+        if artifact.artifact_key == "strategy_idea"
+    )
+    assert input_contract.status.value == "missing"
+    assert strategy_idea.status.value == "missing"
+
+
+def test_build_strategy_review_invalid_input_contract_is_invalid_input(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path)
+    input_contract_path = tmp_path / "configs/strategy_inputs/invalid.yaml"
+    input_contract_path.parent.mkdir(parents=True)
+    input_contract_path.write_text("schema_version: wrong\n", encoding="utf-8")
+
+    result = build_strategy_review(
+        review_id="invalid-input-contract",
+        out_dir=tmp_path / "data/strategy_reviews",
+        pack_path=pack_path,
+        validation_path=validation_path,
+        input_contract_path=input_contract_path,
+        created_at=CREATED_AT,
+    )
+
+    assert result.manifest.review_status.value == "INVALID_INPUT"
+    input_contract = next(
+        artifact
+        for artifact in result.manifest.source_artifacts
+        if artifact.artifact_key == "input_contract"
+    )
+    assert input_contract.status.value == "invalid"
+
+
+def test_build_strategy_review_strategy_idea_boundary_blocks(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path)
+    strategy_idea_path = tmp_path / "configs/strategy_ideas/blocked.yaml"
+    _write_strategy_idea(strategy_idea_path, wallet_used=True)
+
+    result = build_strategy_review(
+        review_id="blocked-idea",
+        out_dir=tmp_path / "data/strategy_reviews",
+        pack_path=pack_path,
+        validation_path=validation_path,
+        strategy_idea_path=strategy_idea_path,
+        created_at=CREATED_AT,
+    )
+
+    assert result.manifest.review_status.value == "BLOCKED_BOUNDARY_VIOLATION"
+    assert result.manifest.source_safety.observed_flags.wallet_used is True
+    strategy_idea = next(
+        artifact
+        for artifact in result.manifest.source_artifacts
+        if artifact.artifact_key == "strategy_idea"
+    )
+    assert strategy_idea.status.value == "blocked"
+    assert strategy_idea.error == "source boundary violation: boundary.wallet_used"
 
 
 def test_build_strategy_review_missing_required_artifact_is_incomplete(

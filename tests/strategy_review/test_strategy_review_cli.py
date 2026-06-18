@@ -11,8 +11,10 @@ from support.cli import invoke_cli
 from support.cli import normalized_stdout
 from .test_strategy_review_build import (
     CREATED_AT,
+    _write_input_contract,
     _write_lifecycle_review,
     _write_required_artifacts,
+    _write_strategy_idea,
 )
 from sis.strategy_review.service import build_strategy_review
 
@@ -32,6 +34,8 @@ def test_strategy_review_build_help() -> None:
     assert "--pack-path" in stdout
     assert "--validation-path" in stdout
     assert "--authoring-spec" in stdout
+    assert "--input-contract" in stdout
+    assert "--strategy-idea" in stdout
     assert "--lifecycle-review" in stdout
     assert "--authoring-spec-path" not in stdout
     assert "--lifecycle-review-path" not in stdout
@@ -69,6 +73,43 @@ def test_strategy_review_build_cli_writes_outputs(tmp_path: Path, monkeypatch) -
     assert json.loads(manifest_path.read_text(encoding="utf-8"))["review_status"] == (
         "READY_FOR_HUMAN_REVIEW"
     )
+
+
+def test_strategy_review_build_cli_accepts_optional_input_sources(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    pack_path, validation_path = _write_required_artifacts(tmp_path)
+    input_contract_path = tmp_path / "configs/strategy_inputs/inputs.yaml"
+    strategy_idea_path = tmp_path / "configs/strategy_ideas/idea.yaml"
+    _write_input_contract(input_contract_path)
+    _write_strategy_idea(strategy_idea_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "strategy-review-build",
+            "--review-id",
+            "cli-with-inputs",
+            "--out",
+            str(tmp_path / "data/strategy_reviews"),
+            "--pack-path",
+            str(pack_path),
+            "--validation-path",
+            str(validation_path),
+            "--input-contract",
+            str(input_contract_path),
+            "--strategy-idea",
+            str(strategy_idea_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "review_status=READY_FOR_HUMAN_REVIEW" in result.stdout
+    manifest_path = tmp_path / "data/strategy_reviews/cli-with-inputs/review_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert any(row["artifact_key"] == "input_contract" for row in payload["source_artifacts"])
+    assert any(row["artifact_key"] == "strategy_idea" for row in payload["source_artifacts"])
 
 
 def test_strategy_review_build_cli_lenient_missing_exits_zero(tmp_path: Path, monkeypatch) -> None:

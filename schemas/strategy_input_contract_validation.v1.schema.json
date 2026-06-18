@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_input_contract_validation.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "contract_id",
+    "validated_at",
+    "producer",
+    "validation_status",
+    "strict",
+    "source_results",
+    "summary",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_input_contract_validation.v1"},
+    "contract_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "validated_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-input-contract-validate"}
+      },
+      "additionalProperties": false
+    },
+    "validation_status": {
+      "enum": ["PASS", "NEEDS_FIX", "INVALID_INPUT", "BLOCKED_BOUNDARY_VIOLATION"]
+    },
+    "strict": {"type": "boolean"},
+    "source_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "status",
+          "path",
+          "available_at_present"
+        ],
+        "properties": {
+          "source_id": {"type": "string", "minLength": 1},
+          "status": {"enum": ["present", "missing", "invalid", "blocked"]},
+          "path": {"type": "string", "minLength": 1},
+          "actual_sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "declared_sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "hash_matches": {"type": ["boolean", "null"]},
+          "available_at_present": {"type": "boolean"},
+          "generated_before_available": {"type": ["boolean", "null"]},
+          "required_columns_present": {"type": ["boolean", "null"]},
+          "missing_columns": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1}
+          },
+          "timestamp_check_passed": {"type": ["boolean", "null"]},
+          "max_observed_timestamp": {"type": ["string", "null"], "format": "date-time"},
+          "available_at_column_present": {"type": ["boolean", "null"]},
+          "error": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "missing_required_count",
+        "invalid_required_count",
+        "boundary_violation_count",
+        "warning_count",
+        "column_check_failure_count",
+        "timestamp_violation_count"
+      ],
+      "properties": {
+        "missing_required_count": {"type": "integer", "minimum": 0},
+        "invalid_required_count": {"type": "integer", "minimum": 0},
+        "boundary_violation_count": {"type": "integer", "minimum": 0},
+        "warning_count": {"type": "integer", "minimum": 0},
+        "column_check_failure_count": {"type": "integer", "minimum": 0},
+        "timestamp_violation_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

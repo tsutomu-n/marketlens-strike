@@ -119,8 +119,8 @@ def run_strategy_paper_observation_cycle(
     source_pack_path: Path | None = None,
     promotion_decision_path: Path | None = None,
     operator_promotion_path: Path | None = None,
-    min_fills_for_pass: int = 20,
-    min_trading_days_for_pass: int = 10,
+    min_fills_for_pass: int | None = None,
+    min_trading_days_for_pass: int | None = None,
     max_blocked_rate: float = 0.5,
     max_consecutive_blocked: int = 3,
     max_open_position_age_hours: float = 0.0,
@@ -145,8 +145,12 @@ def run_strategy_paper_observation_cycle(
         data_dir=data_dir,
         session_id=selected_session_id,
     )
-    effective_min_fills = 1 if smoke else min_fills_for_pass
-    effective_min_days = 1 if smoke else min_trading_days_for_pass
+    effective_min_fills = (
+        min_fills_for_pass if min_fills_for_pass is not None else 1 if smoke else 20
+    )
+    effective_min_days = (
+        min_trading_days_for_pass if min_trading_days_for_pass is not None else 1 if smoke else 10
+    )
 
     intents = build_fresh_paper_intent_preview(
         data_dir=data_dir,

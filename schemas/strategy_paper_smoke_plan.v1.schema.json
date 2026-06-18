@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_paper_smoke_plan.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "strategy_id",
+    "created_at",
+    "producer",
+    "plan_status",
+    "source_artifacts",
+    "thresholds",
+    "execution_preview",
+    "passed_conditions",
+    "failed_conditions",
+    "warning_conditions",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_paper_smoke_plan.v1"},
+    "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-paper-smoke-plan"}
+      },
+      "additionalProperties": false
+    },
+    "plan_status": {
+      "enum": [
+        "READY_TO_RUN_SMOKE_CYCLE",
+        "NEEDS_SOURCE_ARTIFACTS",
+        "NEEDS_STAGE_APPROVAL",
+        "BLOCKED_BOUNDARY_VIOLATION"
+      ]
+    },
+    "source_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "thresholds": {"$ref": "#/$defs/thresholds"},
+    "execution_preview": {
+      "type": "object",
+      "required": ["command", "smoke", "paper_execution_allowed", "live_allowed"],
+      "properties": {
+        "command": {"type": "string", "minLength": 1},
+        "smoke": {"const": true},
+        "paper_execution_allowed": {"const": false},
+        "live_allowed": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "passed_conditions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/condition"}
+    },
+    "failed_conditions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/condition"}
+    },
+    "warning_conditions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/condition"}
+    },
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "source_artifact": {
+      "type": "object",
+      "required": ["artifact_key", "path", "exists", "required"],
+      "properties": {
+        "artifact_key": {"type": "string", "minLength": 1},
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "exists": {"type": "boolean"},
+        "required": {"type": "boolean"},
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "schema_version": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "thresholds": {
+      "type": "object",
+      "required": [
+        "min_fills_for_pass",
+        "min_trading_days_for_pass",
+        "max_blocked_rate",
+        "max_consecutive_blocked",
+        "max_open_position_age_hours"
+      ],
+      "properties": {
+        "min_fills_for_pass": {"type": "integer", "minimum": 1},
+        "min_trading_days_for_pass": {"type": "integer", "minimum": 1},
+        "max_blocked_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "max_consecutive_blocked": {"type": "integer", "minimum": 1},
+        "max_open_position_age_hours": {"type": "number", "minimum": 0},
+        "max_order_notional_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_position_notional_usd": {"type": "number", "exclusiveMinimum": 0},
+        "max_orders_per_day": {"type": "integer", "minimum": 0},
+        "stop_after_consecutive_errors": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "condition": {
+      "type": "object",
+      "required": ["condition_id", "passed", "observed", "required", "severity"],
+      "properties": {
+        "condition_id": {"type": "string", "minLength": 1},
+        "passed": {"type": "boolean"},
+        "observed": {"type": "string", "minLength": 1},
+        "required": {"type": "string", "minLength": 1},
+        "severity": {"enum": ["error", "warning"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

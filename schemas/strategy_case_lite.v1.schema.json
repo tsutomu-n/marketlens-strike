@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_case_lite.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "strategy_id",
+    "case_id",
+    "updated_at",
+    "producer",
+    "source_artifacts",
+    "timeline",
+    "summary",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_case_lite.v1"},
+    "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "case_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-case-lite-update"}
+      },
+      "additionalProperties": false
+    },
+    "source_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "timeline": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/timeline_entry"}
+    },
+    "summary": {"$ref": "#/$defs/summary"},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "artifact_type": {
+      "enum": [
+        "strategy_stage_decision",
+        "strategy_runtime_observation_manifest",
+        "paper_vs_backtest_drift_review",
+        "strategy_learning_event",
+        "strategy_revision_request",
+        "strategy_authoring_update_handoff",
+        "strategy_micro_live_plan",
+        "strategy_live_observation_manifest",
+        "strategy_scale_decision",
+        "strategy_next_scale_plan",
+        "generic"
+      ]
+    },
+    "source_artifact": {
+      "type": "object",
+      "required": ["artifact_type", "path", "sha256"],
+      "properties": {
+        "artifact_type": {"$ref": "#/$defs/artifact_type"},
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "schema_version": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "timeline_entry": {
+      "type": "object",
+      "required": ["artifact_type", "path", "sha256", "blocked_reasons"],
+      "properties": {
+        "artifact_type": {"$ref": "#/$defs/artifact_type"},
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "schema_version": {"type": ["string", "null"]},
+        "event_time": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "action": {"type": ["string", "null"]},
+        "blocked_reasons": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "artifact_count",
+        "timeline_count",
+        "open_actions",
+        "blocked_reasons",
+        "latest_source_hashes"
+      ],
+      "properties": {
+        "artifact_count": {"type": "integer", "minimum": 0},
+        "timeline_count": {"type": "integer", "minimum": 0},
+        "latest_status": {"type": ["string", "null"]},
+        "open_actions": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "blocked_reasons": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "latest_source_hashes": {
+          "type": "object",
+          "additionalProperties": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

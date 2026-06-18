@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-17_20:44 JST
+更新日: 2026-06-19_02:22 JST
 -->
 
 # Implemented Surfaces
@@ -9,7 +9,7 @@
 
 ## 結論
 
-現在の主軸は backtest-first / venue-neutral。実装済み surface は、Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operation / operations audit である。
+現在の主軸は backtest-first / venue-neutral。実装済み surface は、Strategy Input Contract / Idea Intake / Stage Policy / Stage Decision / Paper Smoke Plan / Runtime Observation Ingest / Paper vs Backtest Drift Review / Strategy Learning / Authoring Update Handoff / Strategy Case Lite / Strategy Daily Brief / Strategy AI Review / Strategy Model Loop / Strategy Micro Live Plan Gate / Strategy Next Scale Plan / Strategy Live Observation / Strategy Scale Decision / Strategy Workbench Viewer / Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operation / operations audit である。
 
 production live trading、wallet、signing、exchange write は現行 operator path では許可しない。
 
@@ -31,8 +31,23 @@ production live trading、wallet、signing、exchange write は現行 operator p
 | Strategy backtest suite / comparison / robustness artifacts | implemented | `strategy-backtest-suite`, `strategy-backtest-compare`, `strategy-backtest-stress`, `strategy-backtest-regime-split`, `strategy-backtest-rolling-stability`, `strategy-backtest-benchmark-relative` |
 | Strategy backtest pack and validation | implemented | `strategy-backtest-pack`, `strategy-backtest-pack-validate`, `schemas/strategy_backtest_pack*.json`, `docs/backtest/` |
 | optional framework surfaces | implemented as optional / no-live | `strategy-backtest-framework-run`, `vectorbt`, `bt`, `metrics`, `reports` optional extras |
+| Strategy Input Contract / Idea Intake first gate | implemented as local artifact validation, no permission | `strategy-input-contract-validate`, `strategy-intake-validate`, `src/sis/strategy_inputs/`, `schemas/strategy_input_contract.v1.schema.json`, `schemas/strategy_input_contract_validation.v1.schema.json`, `schemas/strategy_idea.v1.schema.json`, `schemas/strategy_intake_decision.v1.schema.json`, `tests/strategy_inputs/`, `docs/strategy_inputs/` |
+| Strategy Stage Policy / Decision first slice | implemented as local policy validation and non-permission planning decision | `strategy-stage-policy-validate`, `strategy-stage-decision`, `src/sis/strategy_stage/`, `schemas/strategy_stage_policy.v1.schema.json`, `schemas/strategy_stage_policy_validation.v1.schema.json`, `schemas/strategy_stage_decision.v1.schema.json`, `tests/strategy_stage/`, `docs/strategy_stage/` |
+| Strategy Paper Smoke Plan first slice | implemented as read-only smoke plan/report, no paper execution by itself | `strategy-paper-smoke-plan`, `src/sis/strategy_paper_smoke/`, `schemas/strategy_paper_smoke_plan.v1.schema.json`, `tests/strategy_paper_smoke/`, `docs/strategy_paper_smoke/` |
+| Strategy Runtime Observation Ingest first slice | implemented as read-only paper runtime ledger ingest for drift inputs | `strategy-runtime-observation-ingest`, `src/sis/strategy_runtime_observation/`, `schemas/strategy_runtime_observation_manifest.v1.schema.json`, `tests/strategy_runtime_observation/`, `docs/strategy_runtime_observation/` |
+| Paper vs Backtest Drift Review first slice | implemented as read-only drift review artifact, no paper/live permission | `strategy-drift-review`, `src/sis/strategy_drift_review/`, `schemas/paper_vs_backtest_drift_review.v1.schema.json`, `tests/strategy_drift_review/`, `docs/strategy_drift_review/` |
+| Strategy Learning / Revision Request / Authoring Update Handoff first slice | implemented as learning ledger, revision request, human review artifact, and human authoring update handoff, no automatic spec edit | `strategy-learning-ledger-update`, `strategy-revision-request-build`, `strategy-revision-request-review`, `strategy-authoring-update-handoff`, `src/sis/strategy_learning/`, `schemas/strategy_learning_event.v1.schema.json`, `schemas/strategy_revision_request.v1.schema.json`, `schemas/strategy_revision_request_review.v1.schema.json`, `schemas/strategy_authoring_update_handoff.v1.schema.json`, `tests/strategy_learning/`, `docs/strategy_learning/` |
+| Strategy Case Lite first slice | implemented as read-only per-strategy artifact timeline, no paper/live permission | `strategy-case-lite-update`, `src/sis/strategy_case_lite/`, `schemas/strategy_case_lite.v1.schema.json`, `tests/strategy_case_lite/`, `docs/strategy_case_lite/` |
+| Strategy Daily Brief first slice | implemented as read-only daily artifact index, no paper/live permission | `strategy-daily-brief`, `src/sis/strategy_daily_brief/`, `schemas/strategy_daily_brief.v1.schema.json`, `tests/strategy_daily_brief/`, `docs/strategy_daily_brief/` |
+| Strategy AI Review first slice | implemented as safe summary packet and AI note recorder, no auto-apply or permission | `strategy-ai-review-packet-build`, `strategy-ai-review-note-record`, `src/sis/strategy_ai_review/`, `schemas/strategy_ai_review_packet.v1.schema.json`, `schemas/strategy_ai_review_note.v1.schema.json`, `tests/strategy_ai_review/`, `docs/strategy_ai_review/` |
+| Strategy Model / Optimizer Loop first slice | implemented as generic model run and all-trial ledger, no optimizer execution or auto-apply | `strategy-model-run-record`, `src/sis/strategy_model_loop/`, `schemas/strategy_model_run.v1.schema.json`, `schemas/strategy_optimizer_trial_ledger.v1.schema.json`, `tests/strategy_model_loop/`, `docs/strategy_model_loop/` |
+| Strategy Micro Live Plan Gate first slice | implemented as read-only micro live plan artifact, no live execution permission | `strategy-micro-live-plan`, `src/sis/strategy_micro_live_plan/`, `schemas/strategy_micro_live_plan.v1.schema.json`, `tests/strategy_micro_live_plan/`, `docs/strategy_micro_live_plan/` |
+| Strategy Next Scale Plan first slice | implemented as read-only post-scale-decision planning artifact, no next-scale execution permission | `strategy-next-scale-plan`, `src/sis/strategy_next_scale_plan/`, `schemas/strategy_next_scale_plan.v1.schema.json`, `tests/strategy_next_scale_plan/`, `docs/strategy_next_scale_plan/` |
+| Strategy Live Observation first slice | implemented as read-only micro live canary evidence ingest, no live execution or scale-up permission | `strategy-live-observation-ingest`, `src/sis/strategy_live_observation/`, `schemas/strategy_live_observation_manifest.v1.schema.json`, `tests/strategy_live_observation/`, `docs/strategy_live_observation/` |
+| Strategy Scale Decision first slice | implemented as read-only post-canary decision artifact, no scale-up execution permission | `strategy-scale-decision`, `src/sis/strategy_scale_decision/`, `schemas/strategy_scale_decision.v1.schema.json`, `tests/strategy_scale_decision/`, `docs/strategy_scale_decision/` |
+| Strategy Workbench Viewer first slice | implemented as static HTML artifact viewer, no paper/live permission | `strategy-workbench-viewer-build`, `src/sis/strategy_workbench_viewer/`, `schemas/strategy_workbench_viewer.v1.schema.json`, `tests/strategy_workbench_viewer/`, `docs/strategy_workbench_viewer/` |
 | Strategy Lifecycle review / status | implemented as local artifact review and read-only status summary | `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review`, `strategy-paper-observation-status`, `docs/strategy_lifecycle/` |
-| Strategy Review packet / operator decision record | implemented as read-only human-review packet plus non-permission decision artifact | `strategy-review-build`, `strategy-review-record`, `src/sis/strategy_review/`, `schemas/strategy_review_manifest.v1.schema.json`, `schemas/operator_strategy_review.v1.schema.json`, `tests/strategy_review/`, `docs/strategy_review/` |
+| Strategy Review packet / operator decision record | implemented as read-only human-review packet plus non-permission decision artifact; can include optional input contract / strategy idea source artifacts | `strategy-review-build`, `strategy-review-record`, `src/sis/strategy_review/`, `schemas/strategy_review_manifest.v1.schema.json`, `schemas/operator_strategy_review.v1.schema.json`, `tests/strategy_review/`, `docs/strategy_review/` |
 
 ## NDX Research Gates
 
@@ -67,7 +82,19 @@ NDX approvals do not prove alpha, backtest readiness, paper readiness, live read
 - `bitget_demo` is a demo execution surface, not production Bitget readiness.
 - Trade[XYZ] read-only execution state collection requires a public user address and explicit opt-in. Without them, it records `trade_xyz_execution_state_user_address_missing` or opt-in-required status and does not call external API.
 - `PaperIntentPreview` is paper-only and requires revalidation before paper flow use.
-- `strategy-review-build` creates review artifacts only. `strategy-review-record` records human decisions against those artifacts. Neither authorizes paper execution or live trading.
+- `strategy-input-contract-validate` and `strategy-intake-validate` create local validation artifacts only. `READY_FOR_AUTHORING_DRAFT` is not paper permission or live readiness.
+- `strategy-stage-policy-validate` and `strategy-stage-decision` create local policy / decision artifacts only. `READY_FOR_PAPER_SMOKE_PLAN`, `READY_FOR_NORMAL_PAPER_OBSERVATION`, `READY_FOR_DRIFT_REVIEW`, and `READY_FOR_MICRO_LIVE_PLAN` are not paper execution or live execution permission.
+- `strategy-paper-smoke-plan` creates a plan/report only. `READY_TO_RUN_SMOKE_CYCLE` is not normal paper pass, live readiness, or automatic paper execution.
+- `strategy-runtime-observation-ingest` reads paper runtime artifacts only. It does not create orders and does not prove paper pass or live readiness.
+- `strategy-drift-review` reads backtest and runtime observation artifacts only. It does not create paper orders, permit micro live, or prove live readiness. PnL drift is used only when runtime observation includes realized paper PnL and filled notional.
+- `strategy-learning-ledger-update`, `strategy-revision-request-build`, `strategy-revision-request-review`, and `strategy-authoring-update-handoff` create learning, revision-request, review, and handoff artifacts only. They do not edit Strategy Authoring YAML and keep `auto_applied=false`.
+- `strategy-case-lite-update` creates a per-strategy timeline artifact only. It does not permit paper or live execution.
+- `strategy-daily-brief` creates a daily read-only index of actionable artifacts only. It does not permit paper or live execution.
+- `strategy-ai-review-packet-build` and `strategy-ai-review-note-record` create AI review support artifacts only. They do not auto-apply changes or permit paper/live execution.
+- `strategy-model-run-record` records model / optimizer results only. It does not run optimizers, edit Strategy Authoring YAML, or permit paper/live execution.
+- `strategy-next-scale-plan` creates a next scale planning artifact only. It does not permit next-scale execution or live execution.
+- `strategy-workbench-viewer-build` creates a static HTML viewer from existing artifacts only. It does not edit artifacts or permit paper/live execution.
+- `strategy-review-build` creates review artifacts only. Optional `--input-contract` and `--strategy-idea` add read-only source summaries. `strategy-review-record` records human decisions against those artifacts. Neither authorizes paper execution or live trading.
 - `READ_ONLY_GO` is not live trading ready.
 - `data/` is git-ignored runtime state and may be absent in a fresh checkout.
 

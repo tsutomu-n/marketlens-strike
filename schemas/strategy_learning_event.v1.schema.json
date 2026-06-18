@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_learning_event.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "learning_event_id",
+    "strategy_id",
+    "created_at",
+    "producer",
+    "source_stage",
+    "source_artifacts",
+    "event_type",
+    "finding",
+    "impact",
+    "recommended_action",
+    "source_review_status",
+    "source_recommended_action",
+    "requires_human_review",
+    "auto_applied",
+    "direct_spec_edit_allowed",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_learning_event.v1"},
+    "learning_event_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "strategy_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-learning-ledger-update"}
+      },
+      "additionalProperties": false
+    },
+    "source_stage": {"enum": ["paper_smoke", "normal_paper_observation", "drift_review"]},
+    "source_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "event_type": {
+      "enum": [
+        "execution_assumption_update",
+        "insufficient_observation",
+        "artifact_boundary_violation",
+        "human_review_required"
+      ]
+    },
+    "finding": {"type": "string", "minLength": 1},
+    "impact": {"type": "string", "minLength": 1},
+    "recommended_action": {
+      "enum": ["revise_strategy", "extend_observation", "repair_artifacts", "review_manually"]
+    },
+    "source_review_status": {"type": "string", "minLength": 1},
+    "source_recommended_action": {"type": "string", "minLength": 1},
+    "requires_human_review": {"const": true},
+    "auto_applied": {"const": false},
+    "direct_spec_edit_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "source_artifact": {
+      "type": "object",
+      "required": ["artifact_key", "path", "sha256"],
+      "properties": {
+        "artifact_key": {"type": "string", "minLength": 1},
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "schema_version": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

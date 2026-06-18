@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_stage_policy_validation.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "policy_id",
+    "policy_path",
+    "policy_hash",
+    "validated_at",
+    "producer",
+    "validation_status",
+    "summary",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_stage_policy_validation.v1"},
+    "policy_id": {"type": "string"},
+    "policy_path": {"type": "string", "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"},
+    "policy_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "validated_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-stage-policy-validate"}
+      },
+      "additionalProperties": false
+    },
+    "validation_status": {"enum": ["PASS", "INVALID_INPUT", "BLOCKED_BOUNDARY_VIOLATION"]},
+    "summary": {
+      "type": "object",
+      "required": ["stage_count", "profile_count", "boundary_violation_count"],
+      "properties": {
+        "stage_count": {"type": "integer", "minimum": 0},
+        "profile_count": {"type": "integer", "minimum": 0},
+        "boundary_violation_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
