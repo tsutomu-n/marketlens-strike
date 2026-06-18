@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-16_06:46 JST
-更新日: 2026-06-18_06:54 JST
+更新日: 2026-06-18_09:46 JST
 -->
 
 # Repo Capabilities Current
@@ -14,6 +14,77 @@
 この文書は、コード、CLI help、schema、current docs を正として、repo でできることを漏れなく読む入口にする。
 
 AI / Codex / LLM が戦略作成、編集、backtest、結果解釈を進める場合は [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) を読む。人間が戦略と backtest 結果を専門用語少なめで理解したい場合は [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) を読む。
+
+## 第三者向けの全体像
+
+この repo は、取引所へ注文を出す本番 trading bot ではない。中心にあるのは、戦略アイデアを local artifact と schema で検査し、backtest、比較、レビュー、paper observation の入口までを安全に進める研究・検証用 CLI である。
+
+大きな流れ:
+
+1. 戦略を考える: `docs/algo/` と Strategy Factory docs で、戦略仮説、候補、reject 理由、validation checklist を整理する。
+2. 戦略を機械で扱える形にする: Strategy Lab または Strategy Authoring YAML で、対象銘柄、entry / exit rule、cost、slippage、risk、pass threshold を定義する。
+3. signal と backtest artifact を作る: `strategy-author-run --through backtest` や `strategy-backtest-pack` で、metrics、suite、benchmark、stress、no-lookahead、data availability、comparison、pack validation を出す。
+4. 結果を読む: `strategy-backtest-artifact-summary`、`strategy-backtest-html-report`、Strategy Review packet で、数値、グラフ、source hash、欠損、境界違反を確認する。
+5. 次の検証に進めるか判断する: `strategy-review-record`、`strategy-backtest-acceptance`、`strategy-paper-observation-status`、`strategy-lifecycle-review` で、人間判断、paper observation 状態、lifecycle decision を local artifact として残す。
+6. venue / operation 側の境界を確認する: Trade[XYZ] read-only data、venue read-only probe、operations audit、phase gate で、外部 API、credential、wallet、signing、exchange write、live order を使わない範囲の状態を確認する。
+
+第三者が誤読しやすい点:
+
+- `backtest_passed=true` は、その YAML / artifact の閾値を満たしただけで、将来収益、paper 実行、live 実行を意味しない。
+- `strategy-backtest-pack-validate` の `PASS` は、artifact chain と no-live boundary の検査通過であり、alpha 証明ではない。
+- `strategy-review-build` と `strategy-review-record` は、人間が読んだ review packet と判断記録を残す仕組みであり、注文許可ではない。
+- `paper観察候補` / `PAPER_OBSERVATION_CANDIDATE` は、次の検証候補であり、paper order を出してよいという意味ではない。
+- `venue-read-only-probe` は、将来候補 venue の境界を local fixture で説明するだけで、Bitget / Hyperliquid の本番接続や credential readiness を証明しない。
+- Trade[XYZ] は実装済み venue surface だが、標準の開発主軸は backtest-first / venue-neutral である。
+
+この文書で「できる」と書いていることの多くは、local file を読み書きする artifact workflow である。外部 API、wallet、signing、exchange write、live order に接続する機能として読んではいけない。
+
+## 主要 artifact の読み方
+
+この repo は「画面で操作するアプリ」ではなく、「CLI が JSON / Markdown / HTML artifact を作り、それを次の command や人間レビューが読む」構造になっている。
+
+| Artifact | 何を表すか | 第三者が見るべきこと |
+|---|---|---|
+| `strategy_authoring_spec.v1` | YAML 戦略定義 | 何を見て、どの条件で入退出し、どの閾値で失敗扱いにするか |
+| `strategy_authoring_backtest_result.v1` | 単体 native backtest 結果 | `trade_count`, `total_return`, `max_drawdown`, `backtest_passed`, capital block |
+| `strategy_backtest_pack.v1` | backtest artifact chain の manifest | どの artifact を pack に含め、どの engine / framework policy で完了扱いにしたか |
+| `strategy_backtest_pack_validation.v1` | pack の検証結果 | artifact path / hash、5手法、paper-only / no-live 境界、欠損や失敗 |
+| `strategy_backtest_comparison.v1` | native / suite / optional framework / robustness の比較 | method results、suite best run、threshold failure、weakest era |
+| `strategy_backtest_html_report.v1` | HTML report の根拠 manifest | source artifact path / hash、result label、visual data、no-live flags |
+| `strategy_review_manifest.v1` | 人間 review packet の機械検証 manifest | review が読んだ source artifact、hash、missing / invalid / blocked 状態 |
+| `operator_strategy_review.v1` | 人間判断の記録 | reviewer、decision、rationale、reviewed artifact hash、paper/live permission が false か |
+| `strategy_paper_observation_status.v1` | paper observation の状態要約 | normal / smoke の分離、requirement gaps、live conversion 禁止 |
+| `venue_read_only_probe_summary.v1` | venue capability 境界 | current venue / future venue の disabled 状態、no-network / no-write flags |
+
+## 実務でまず試す最短ルート
+
+外部 API や取引所接続なしで、第三者が repo の主要機能を確認する最短ルート:
+
+```bash
+uv sync --dev --locked
+uv run python scripts/seed_strategy_authoring_baseline_data.py
+uv run sis strategy-author-validate --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml
+uv run sis strategy-author-run --spec docs/strategy_research_lab/examples/trend_pullback_authoring_spec.yaml --through backtest
+uv run sis strategy-backtest-pack --benchmark-series-path docs/strategy_research_lab/examples/external_benchmark_series.csv
+uv run sis strategy-backtest-pack-validate
+uv run sis strategy-backtest-artifact-summary
+uv run sis strategy-backtest-html-report
+```
+
+このルートで確認できること:
+
+- YAML 戦略が validation を通るか。
+- signal / backtest metrics が生成されるか。
+- backtest pack と validation artifact が作れるか。
+- benchmark、stress、no-lookahead、data availability、comparison の artifact chain が揃うか。
+- HTML report で損益グラフ、benchmark 比較、期間別 trade table、stress summary、diagnostics、結果ラベルを読めるか。
+
+このルートで確認できないこと:
+
+- 実市場で利益が出るか。
+- paper order を実行してよいか。
+- live order、wallet、signing、exchange write が動くか。
+- Bitget / Hyperliquid production venue として使えるか。
 
 ## 追加調査での補正
 
