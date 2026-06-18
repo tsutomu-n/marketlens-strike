@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-18_19:47 JST
-更新日: 2026-06-18_20:56 JST
+更新日: 2026-06-18_21:15 JST
 -->
 
 # Target Strategy Operations Workbench
@@ -272,6 +272,162 @@ Act してはいけないこと:
 - stage gate を飛ばす。
 
 短く言うと、MarketLens Strike の loop は「監査可能な OODA」である。現実を観測して素早く向きを変えるが、Act は artifact と gate に閉じる。
+
+### 科学的基盤としての補助レンズ
+
+この loop は、単一の万能理論ではない。
+
+実務では、次の 3 つを OODA の `Orient` と Persistent Learning Loop を強くする補助レンズとして使う。
+
+```text
+Meadows:
+  どこへ介入すると大きく効くかを見る。
+
+Argyris / Schon:
+  行動修正だけでなく、前提そのものを問い直す。
+
+Snowden / Cynefin:
+  状況が Clear / Complicated / Complex / Chaotic / Disorder のどれかを見立てる。
+```
+
+#### Meadows: Leverage Points
+
+Donella Meadows の Leverage Points は、複雑システムにおける介入点の強弱を見るために使う。
+
+この repo では、次のように読む。
+
+| Leverage level | Strategy Operations での例 |
+|---|---|
+| Parameter | threshold、lookback、position size、slippage bps |
+| Buffer / stock-flow | capital buffer、max drawdown、open position age、trade frequency |
+| Delay | data delay、signal delay、fill delay、feedback delay |
+| Feedback loop | stop condition、kill switch、paper-to-review feedback |
+| Information flow | Daily Brief、runtime observation、AI review packet、learning ledger |
+| Rules | stage policy、risk limit、no-live boundary、override rule |
+| Goal | 収益最大化ではなく、survivable learning / controlled exposure を目的にする |
+| Paradigm | backtest勝利主義から、観測・反証・小さな実験へ切り替える |
+
+重要な実務上の含意:
+
+- threshold の微調整は低レバレッジである。
+- `available_at`、情報フロー、stage policy、risk rule、目的設定の方が高レバレッジである。
+- 良い backtest を探すより、失敗が見える feedback loop を作る方が重要な場合がある。
+
+使い方:
+
+```yaml
+schema_version: strategy_learning_event.v1
+event_type: leverage_point_diagnosis
+observed_issue: repeated overfit threshold changes
+leverage_level: rules
+recommended_action: require optimizer trial ledger before further parameter changes
+auto_applied: false
+```
+
+限界:
+
+- どの介入点が効くかは文脈依存である。
+- 即時の損益予測モデルではない。
+- 高レバレッジの介入ほど、実装抵抗や判断の主観性が大きい。
+
+#### Argyris / Schon: Double-Loop Learning
+
+Double-Loop Learning は、単なる調整と前提変更を分けるために使う。
+
+この repo では、次のように分ける。
+
+| Learning type | Strategy Operations での例 |
+|---|---|
+| Single-loop | slippage bps を増やす、threshold を変える、min fills を変える |
+| Double-loop | その市場仮説は間違っていないか、対象 universe が違うのではないか、目的が収益最大化に寄りすぎていないかを問い直す |
+
+Double-loop が必要な兆候:
+
+- parameter を直しても同じ drift が出る。
+- paper で no-fill / spread 悪化が構造的に出る。
+- baseline に勝てないのに複雑化している。
+- AI / ML / GA が似た candidate を量産している。
+- operator が `HOLD` や `EXTEND` を繰り返している。
+
+使い方:
+
+```yaml
+schema_version: strategy_revision_request.v1
+reason: double_loop_review_required
+questions:
+  - Is the original market hypothesis still valid?
+  - Is the strategy optimizing backtest artifacts instead of tradable behavior?
+  - Should this strategy be retired instead of revised?
+decision_needed: HUMAN_DOUBLE_LOOP_REVIEW
+```
+
+限界:
+
+- Double-loop は強力だが、個人運用では自己正当化や防御的推論に負けやすい。
+- 定量 metric だけでは前提の誤りを発見しにくい。
+- AI review は補助になるが、人間の責任判断を置き換えない。
+
+#### Snowden / Cynefin: Sensemaking
+
+Cynefin は、状況ごとに違う行動を選ぶために使う。
+
+この repo では、Cynefin は `Orient` の分類器であり、strategy scoring engine ではない。
+
+使い方:
+
+```yaml
+schema_version: strategy_stage_decision.v1
+cynefin_domain: complex
+reason: paper smoke shows unstable fill behavior and inconsistent spread drift
+recommended_response: probe_sense_respond
+allowed_actions:
+  - extend_runtime_observation
+  - tighten_position_cap
+  - build_drift_review
+blocked_actions:
+  - micro_live_plan
+  - position_size_increase
+```
+
+実務上の対応:
+
+- Clear: validator と checklist で処理する。
+- Complicated: backtest、model review、専門分析で処理する。
+- Complex: paper smoke、small probe、runtime observation で様子を見る。
+- Chaotic: まず止める。新規注文や stage advance を止める。
+- Disorder: 状況分類ができるまで進めない。
+
+限界:
+
+- domain 分類は主観が入る。
+- Complex を Complicated と誤認すると、model score や backtest score を過信する。
+- Chaotic で分析し続けると、止血が遅れる。
+
+#### 統合した読み方
+
+3 つの補助レンズは、次の役割に分ける。
+
+| Lens | 問うこと | artifact への反映 |
+|---|---|---|
+| Meadows | どこへ介入するのが高レバレッジか | `learning_event.leverage_level`、policy adjustment proposal |
+| Argyris / Schon | 前提を変えるべきか、調整で足りるか | `revision_request.reason=double_loop_review_required` |
+| Snowden / Cynefin | 今の状況で取るべき行動様式は何か | `stage_decision.cynefin_domain`、allowed / blocked actions |
+
+科学的誠実さとして、これらを単一の検証済み予測理論とは扱わない。
+
+正しい扱い:
+
+- 補完的な診断レンズとして使う。
+- artifact に判断根拠を残す。
+- 主観が入る前提で、human review と AI/ML note を分ける。
+- 予測ではなく、観測、反証、介入、学習の質を上げるために使う。
+
+誤った扱い:
+
+- Cynefin domain を自動判定して stage advance する。
+- Double-loop と言いながら、実際は threshold 調整だけをする。
+- Meadows を使ったと言いながら、低レバレッジな parameter tuning だけを続ける。
+- AI/ML が出した物語を paradigm shift として採用する。
 
 ## 100点を待たない進行設計
 
