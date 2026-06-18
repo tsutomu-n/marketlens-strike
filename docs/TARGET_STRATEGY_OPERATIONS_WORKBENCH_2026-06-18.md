@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-18_19:47 JST
-更新日: 2026-06-18_21:30 JST
+更新日: 2026-06-18_21:37 JST
 -->
 
 # Target Strategy Operations Workbench
@@ -26,6 +26,62 @@ MarketLens Strike
 ```
 
 ここでいう operations は、本番売買の自動実行ではない。戦略を捨てる、直す、小さく paper に出す、通常観察を続ける、micro live 計画を作る、という判断を毎回 artifact として残す運用である。
+
+## 現時点の最終形
+
+2026-06-18_21:37 JST 時点での最終形は、次で固定する。
+
+```text
+MarketLens Strike
+= Human-in-the-loop Strategy Operations Workbench
+
+入力データの妥当性を契約化し、
+戦略の種を反証可能な hypothesis として記録し、
+backtest で弱い候補を落とし、
+人間レビューで進行可否を決め、
+小さく paper smoke に出し、
+通常 paper observation と drift review で現実との差を読み、
+学習イベントと revision request に戻し、
+十分な証拠がある場合だけ micro live plan を作る。
+```
+
+この最終形の中心は「戦略を自動で量産すること」ではない。中心は、入力、仮説、検証、観測、判断、修正、停止を artifact 化し、個人トレーダーが後から自分の判断を監査できる状態を作ることである。
+
+完成時にできること:
+
+1. `strategy_input_contract.v1` で、どのデータを、いつ利用可能だったものとして、どの実行前提で使うかを固定する。
+2. `strategy_idea.v1` で、戦略の種を hypothesis、baseline、invalidation、risk、required inputs 付きで記録する。
+3. Strategy Authoring / backtest artifact を作り、pack validation、comparison、stress、regime split、no-lookahead、trial ledger で弱い候補を落とす。
+4. Strategy Review packet と operator review で、人間が読んだ判断を source hash 付きで残す。
+5. Stage Policy / Decision で、paper smoke、normal paper、drift review、micro live plan の進行条件を戦略タイプごとに変えられるようにする。
+6. Paper smoke で、勝敗ではなく配線、fill、block、spread、latency、no-fill、運用負荷を見る。
+7. Normal paper observation と Drift Review で、backtest と現実の差を記録する。
+8. Learning Event / Revision Request / Learning Ledger で、実践からの学びを次の strategy spec に戻す。
+9. AI / LLM / ML / DL / GA は proposal generator または reviewer として使い、採用、許可、実行はさせない。
+10. Daily Brief で、今日見るべき候補、壊れた artifact、未処理の warning、次の action を 1 枚にまとめる。
+
+完成時にもやらないこと:
+
+- 完全自動 live trading。
+- backtest pass だけでの paper / live 移行。
+- AI / ML / GA output の自動採用。
+- human review なしの stage advance。
+- wallet / signing / exchange write の暗黙実行。
+- paper smoke pass を normal paper pass として扱うこと。
+- micro live plan ready を live execution ready と読むこと。
+
+実装順は、派手な UI や AI / ML ではなく、まず入口を固める。
+
+```text
+最初の実装 slice:
+  1. strategy_input_contract.v1
+  2. strategy-input-contract-validate
+  3. strategy_idea.v1
+  4. strategy-intake-validate
+  5. 既存 Strategy Review / backtest artifact との参照接続
+```
+
+理由は、入力契約が弱いまま strategy factory、AI review、ML / DL / GA、Cynefin UI を作ると、悪い入力と後付け仮説を高度に見せるだけになるからである。
 
 ## 正本
 

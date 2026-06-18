@@ -1,17 +1,19 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-18_19:47 JST
+更新日: 2026-06-18_21:45 JST
 -->
 
 # Next Direction Current
 
 ## 結論
 
-現時点の現実的な方向は、backtest-first / venue-neutral を維持しながら、Strategy Review の人間判断記録と paper observation の通常threshold状態を次段検証の土台にすることです。
+現時点の現実的な方向は、backtest-first / venue-neutral を維持しながら、Strategy Review の人間判断記録、paper observation の通常threshold状態、Strategy Input Contract / Idea Intake を次段検証の土台にすることです。
 
 これは確定ロードマップではありません。実装済み surface と未実装候補を混ぜず、次に狙いやすい方向、追加候補、優先しないことを分けるための current doc です。
 
 完成形の設計定義は [TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md](TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md) を読む。これは current implementation proof ではなく、個人システムトレーダー向けに stage policy、paper smoke、drift review、micro live plan gate をどう位置づけるかの target definition です。
+
+実装計画として次に読むものは [../plan/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](../plan/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md) です。これは `strategy_input_contract.v1`、`strategy_idea.v1`、validation CLI、Strategy Review への optional source connection を実装するための coder handoff です。
 
 ## 正本
 
@@ -40,9 +42,35 @@
 
 ## Implementation-Ready Candidate
 
+### Strategy Input Contract / Idea Intake
+
+次にコード実装する候補は、通常 paper の追加実行ではなく Strategy Input Contract / Idea Intake です。
+
+目的:
+
+- 入力データを path / hash だけでなく、`available_at`、revision policy、survivorship policy、execution reality 付きで契約化する。
+- 戦略の種を hypothesis、baseline、invalidation、risk、required inputs 付きで記録する。
+- Strategy Review packet から input contract と idea artifact を optional source として読めるようにする。
+
+実装計画:
+
+```text
+plan/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md
+```
+
+対象外:
+
+- Stage Policy
+- Paper Smoke
+- Drift Review
+- AI / ML / GA
+- UI
+- wallet / signing / exchange write
+- live execution
+
 ### Normal threshold paper observation continuation
 
-次に実行価値がある候補は、通常thresholdの paper observation 継続です。Strategy Review dogfood は [strategy_review/DOGFOOD_REVIEW_2026-06-16.md](strategy_review/DOGFOOD_REVIEW_2026-06-16.md) に記録済みで、paper observation status artifact も `strategy-paper-observation-status` として実装済みです。
+新しい通常観察 evidence が来た場合に実行価値がある候補は、通常thresholdの paper observation 継続です。これは次のコード実装候補ではなく、外部 evidence が来た時の運用候補です。Strategy Review dogfood は [strategy_review/DOGFOOD_REVIEW_2026-06-16.md](strategy_review/DOGFOOD_REVIEW_2026-06-16.md) に記録済みで、paper observation status artifact も `strategy-paper-observation-status` として実装済みです。
 
 目的:
 

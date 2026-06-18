@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-18_02:34 JST
+更新日: 2026-06-18_21:45 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -62,6 +62,14 @@ exchange-write path.
 現行 repo truth から見た実務的な次方向は
 [`docs/NEXT_DIRECTION_CURRENT.md`](../docs/NEXT_DIRECTION_CURRENT.md) を読む。
 `計画あり` は `実装決定` ではなく、`catalog known` は `venue enabled` ではない。
+
+## Current Unimplemented Plan
+
+現時点で次に実装する候補は Strategy Input Contract と Idea Intake です。コーダー向けの実装計画は次を読む。
+
+- [STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md)
+
+これは `Human-in-the-loop Strategy Operations Workbench` の最初の入口を固める計画です。Stage Policy、Paper Smoke、Drift Review、AI / ML / GA、UI、wallet、signing、exchange write、live execution はこの計画の対象外です。
 
 ## Historical 2026-06-10 implementation plans
 
