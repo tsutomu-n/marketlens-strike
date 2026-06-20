@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-18_02:42 JST
+更新日: 2026-06-20_16:35 JST
 -->
 
 # Strategy Research Lab
@@ -38,6 +38,8 @@
    - ユーザーが YAML で作れる売買ロジック、buy / sell signal、hold、損切、portfolio / execution 制約、未実装領域を一覧で確認する。
 12. [13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md](13_STRATEGY_ARCHETYPE_COVERAGE_MATRIX.md)
    - 生成しうる strategy archetype ごとに、対応状況、DSL surface、証拠 test、paper-only 境界を確認する。
+13. [15_CRYPTO_PERP_PERSONAL_EDGE_LAB_IMPLEMENTATION_PLAN_2026-06-20.md](15_CRYPTO_PERP_PERSONAL_EDGE_LAB_IMPLEMENTATION_PLAN_2026-06-20.md)
+   - Bitget public data、Perp universe 差分、event capture、human review、25〜250 USD の execution replay、既存 Workbench 接続までを実装する current coder handoff。
 
 2026-05-30/31 時点の Strategy Authoring progress summary と completion evidence ledger は、固定検証 snapshot を含む履歴資料として [../archive/strategy_research_lab/](../archive/strategy_research_lab/) に保存しています。
 
