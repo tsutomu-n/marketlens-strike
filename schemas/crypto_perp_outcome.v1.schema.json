@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_outcome.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "outcome_id",
+    "event_id",
+    "settled_at",
+    "horizons",
+    "near_miss_refs",
+    "known_gaps"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_outcome.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"$ref": "#/$defs/utc_second"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {"type": "array", "items": {"$ref": "#/$defs/source_ref"}},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "outcome_id": {"type": "string", "minLength": 1},
+    "event_id": {"type": "string", "minLength": 1},
+    "settled_at": {"$ref": "#/$defs/utc_second"},
+    "horizons": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/horizon"}},
+    "near_miss_refs": {"type": "array", "items": {"type": "string"}},
+    "known_gaps": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "utc_second": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "decimal_string": {
+      "type": "string",
+      "pattern": "^-?\\d+(\\.\\d+)?$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schema_version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "schema_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    },
+    "horizon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "horizon_minutes",
+        "matured",
+        "reference_price",
+        "close_price",
+        "raw_return",
+        "short_return_before_cost",
+        "long_return_before_cost",
+        "mfe_long",
+        "mae_long",
+        "mfe_short",
+        "mae_short",
+        "high_first_low_first",
+        "market_adjusted_return"
+      ],
+      "properties": {
+        "horizon_minutes": {"type": "integer", "minimum": 1},
+        "matured": {"type": "boolean"},
+        "reference_price": {"$ref": "#/$defs/decimal_string"},
+        "close_price": {"$ref": "#/$defs/decimal_string"},
+        "raw_return": {"$ref": "#/$defs/decimal_string"},
+        "short_return_before_cost": {"$ref": "#/$defs/decimal_string"},
+        "long_return_before_cost": {"$ref": "#/$defs/decimal_string"},
+        "mfe_long": {"$ref": "#/$defs/decimal_string"},
+        "mae_long": {"$ref": "#/$defs/decimal_string"},
+        "mfe_short": {"$ref": "#/$defs/decimal_string"},
+        "mae_short": {"$ref": "#/$defs/decimal_string"},
+        "high_first_low_first": {
+          "enum": ["HIGH_FIRST", "LOW_FIRST", "AMBIGUOUS", "UNKNOWN"]
+        },
+        "market_adjusted_return": {"$ref": "#/$defs/decimal_string"}
+      }
+    }
+  }
+}
