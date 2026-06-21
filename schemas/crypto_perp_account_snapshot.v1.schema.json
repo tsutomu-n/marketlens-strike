@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_account_snapshot.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "account_snapshot_id",
+    "observed_at",
+    "account_equity_usd",
+    "available_usd",
+    "unrealized_pnl_usd",
+    "margin_mode",
+    "position_mode",
+    "positions",
+    "open_orders",
+    "fee_snapshot",
+    "credential_scope_attestation"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_account_snapshot.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"$ref": "#/$defs/utc_second"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {"type": "array", "items": {"$ref": "#/$defs/source_ref"}},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "account_snapshot_id": {"type": "string", "minLength": 1},
+    "observed_at": {"$ref": "#/$defs/utc_second"},
+    "account_equity_usd": {"$ref": "#/$defs/decimal_string"},
+    "available_usd": {"$ref": "#/$defs/decimal_string"},
+    "unrealized_pnl_usd": {"$ref": "#/$defs/decimal_string"},
+    "margin_mode": {"enum": ["isolated", "crossed", "unknown"]},
+    "position_mode": {"type": "string"},
+    "positions": {"type": "array", "items": {"$ref": "#/$defs/position"}},
+    "open_orders": {"type": "array", "items": {"$ref": "#/$defs/open_order"}},
+    "fee_snapshot": {"$ref": "#/$defs/fee_snapshot"},
+    "credential_scope_attestation": {"$ref": "#/$defs/credential_scope_attestation"}
+  },
+  "$defs": {
+    "utc_second": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "decimal_string": {
+      "type": "string",
+      "pattern": "^-?\\d+(\\.\\d+)?$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schema_version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "schema_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["symbol", "hold_side", "total", "available", "margin_mode"],
+      "properties": {
+        "symbol": {"type": "string"},
+        "hold_side": {"type": "string"},
+        "total": {"$ref": "#/$defs/decimal_string"},
+        "available": {"$ref": "#/$defs/decimal_string"},
+        "margin_mode": {"type": "string"}
+      }
+    },
+    "open_order": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["symbol", "order_id", "client_oid", "side", "size", "reduce_only"],
+      "properties": {
+        "symbol": {"type": "string"},
+        "order_id": {"type": ["string", "null"]},
+        "client_oid": {"type": ["string", "null"]},
+        "side": {"type": "string"},
+        "size": {"$ref": "#/$defs/decimal_string"},
+        "reduce_only": {"type": "boolean"}
+      }
+    },
+    "fee_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maker_fee_rate", "taker_fee_rate", "source"],
+      "properties": {
+        "maker_fee_rate": {"anyOf": [{"$ref": "#/$defs/decimal_string"}, {"type": "null"}]},
+        "taker_fee_rate": {"anyOf": [{"$ref": "#/$defs/decimal_string"}, {"type": "null"}]},
+        "source": {"enum": ["account_payload", "not_provided"]}
+      }
+    },
+    "credential_scope_attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "read_enabled",
+        "trade_enabled",
+        "withdrawal_disabled_confirmed",
+        "ip_restriction_confirmed",
+        "attested_by",
+        "attested_at"
+      ],
+      "properties": {
+        "read_enabled": {"type": "boolean"},
+        "trade_enabled": {"type": "boolean"},
+        "withdrawal_disabled_confirmed": {"type": "boolean"},
+        "ip_restriction_confirmed": {"type": "boolean"},
+        "attested_by": {"type": "string", "minLength": 1},
+        "attested_at": {"$ref": "#/$defs/utc_second"}
+      }
+    }
+  }
+}
