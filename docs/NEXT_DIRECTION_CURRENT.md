@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-21_15:48 JST
+更新日: 2026-06-21_16:03 JST
 -->
 
 # Next Direction Current
@@ -19,7 +19,7 @@ T0〜T12b の実装証跡と残る対象外範囲は [STRATEGY_OPERATIONS_WORKBE
 
 Crypto Perp の新しい実装入口は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) を読む。これは旧 CP-00〜CP-10 巨大計画と旧 personal-edge ZIP を置き換える current handoff であり、最初の完成形は `Bitget public data -> event snapshot -> event card -> prospective SHORT / LONG / NO_TRADE decision -> matured outcome` です。M09 の tiny live measurement はコードと mock test までは実装対象ですが、実ネットワークでの 5〜25 USD 測定は別の明示承認がある時だけ扱います。
 
-実装順、対象ファイル、acceptance は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) を読む。M00 の current truth alignment と supersession、M01 の domain foundation / config / fail-closed CLI boundary / Hypothesis、M02 の Bitget public probe / immutable raw snapshots、M03 の universe diff / ticker snapshot / broad 15m history foundation、M04 の event capture and event card MVP-A、M05 の candidate-only high-resolution recorder、M06 の prospective decision and outcome ledger MVP-B、M07 の validation accelerator pack、M08 の credentialed read-only and order preview、M09 の tiny live execution calibration MVP-C、M10 の actual cash ledger and replay calibration は実装済みです。次の実装入口は M11 の hypothesis tournament and Workbench bridge です。M09 の実ネットワーク 5〜25 USD 測定は別の明示承認がある時だけ扱います。
+実装順、対象ファイル、acceptance は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) を読む。M00 の current truth alignment と supersession、M01 の domain foundation / config / fail-closed CLI boundary / Hypothesis、M02 の Bitget public probe / immutable raw snapshots、M03 の universe diff / ticker snapshot / broad 15m history foundation、M04 の event capture and event card MVP-A、M05 の candidate-only high-resolution recorder、M06 の prospective decision and outcome ledger MVP-B、M07 の validation accelerator pack、M08 の credentialed read-only and order preview、M09 の tiny live execution calibration MVP-C、M10 の actual cash ledger and replay calibration、M11 の hypothesis tournament and Workbench bridge は実装済みです。M09 の実ネットワーク 5〜25 USD 測定は別の明示承認がある時だけ扱います。
 
 Strategy Input Contract / Idea Intake first gate と Strategy Review optional source connection の設計は [strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md) を読む。これは `strategy_input_contract.v1`、`strategy_idea.v1`、validation CLI、`strategy-review-build --input-contract --strategy-idea` の coder handoff です。
 
