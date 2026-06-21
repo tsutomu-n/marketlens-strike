@@ -1,0 +1,16 @@
+schema_version: crypto_perp_tiny_live_measurement_config.v1
+config_id: bitget-tiny-live-measurement-mock
+created_at: "2026-06-21T06:30:00Z"
+execution_mode: mock
+requires_separate_real_network_approval: true
+env_gate: SIS_ENABLE_TINY_LIVE_MEASUREMENT
+confirm_live_required: true
+confirmation_phrase: MEASURE TINY LIVE RISK
+margin_mode: isolated
+withdrawal_disabled_api_key_required: true
+ip_restriction_required: true
+max_notional_usd: "25"
+max_open_positions: 1
+reduce_only_close_required: true
+flat_reconciliation_required: true
+auto_trading_enabled: false
