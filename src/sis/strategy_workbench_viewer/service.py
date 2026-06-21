@@ -38,6 +38,7 @@ class StrategyWorkbenchViewerOutputExistsError(StrategyWorkbenchViewerError):
 
 
 STATUS_KEYS = (
+    "cycle_status",
     "gate_status",
     "tournament_status",
     "decision_status",
@@ -53,6 +54,7 @@ STATUS_KEYS = (
 SUMMARY_KEYS = (
     "gate_id",
     "gate_status",
+    "cycle_status",
     "report_id",
     "tournament_status",
     "leader_action",
@@ -61,6 +63,10 @@ SUMMARY_KEYS = (
     "leader_actual_cash_result_usd",
     "proxy_gap_count",
     "failed_condition_count",
+    "present_stage_count",
+    "missing_artifact_path_count",
+    "known_gap_count",
+    "stop_reason_count",
     "strategy_id",
     "review_id",
     "decision_id",

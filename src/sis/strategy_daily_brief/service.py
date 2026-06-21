@@ -186,6 +186,20 @@ def _crypto_perp_gate_follow_up(payload: dict[str, Any]) -> str | None:
     return f"crypto perp tournament gate follow-up: {status}"
 
 
+def _crypto_perp_truth_cycle_follow_up(payload: dict[str, Any]) -> str | None:
+    if payload.get("schema_version") != "crypto_perp_truth_cycle_status.v1":
+        return None
+    status = payload.get("cycle_status")
+    action = payload.get("recommended_next_command")
+    if not isinstance(status, str):
+        return "missing cycle_status"
+    if status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW":
+        return "human tiny live review preparation is required before any live measurement"
+    if isinstance(action, str) and action:
+        return f"crypto perp truth-cycle follow-up: {action}"
+    return f"crypto perp truth-cycle follow-up: {status}"
+
+
 def _items_for_payload(path: Path, payload: dict[str, Any]) -> list[DailyBriefItem]:
     items: list[DailyBriefItem] = []
     schema = payload.get("schema_version")
@@ -251,6 +265,25 @@ def _items_for_payload(path: Path, payload: dict[str, Any]) -> list[DailyBriefIt
             )
         )
 
+    truth_cycle_reason = _crypto_perp_truth_cycle_follow_up(payload)
+    if truth_cycle_reason is not None:
+        severity = (
+            DailyBriefItemSeverity.INFO
+            if payload.get("cycle_status") == "READY_FOR_HUMAN_TINY_LIVE_REVIEW"
+            else DailyBriefItemSeverity.WARNING
+        )
+        items.append(
+            _item(
+                category=DailyBriefItemCategory.CRYPTO_PERP_TRUTH_CYCLE_FOLLOW_UP,
+                severity=severity,
+                path=path,
+                payload=payload,
+                reason=truth_cycle_reason,
+                status=str(payload.get("cycle_status") or ""),
+                action=str(payload.get("recommended_next_command") or ""),
+            )
+        )
+
     if (
         schema == "strategy_stage_decision.v1"
         and payload.get("decision") == "READY_FOR_DRIFT_REVIEW"
@@ -285,6 +318,9 @@ def _summary(*, scanned_count: int, items: list[DailyBriefItem]) -> DailyBriefSu
         broken_artifact_count=counts[DailyBriefItemCategory.BROKEN_ARTIFACT],
         pending_human_review_count=counts[DailyBriefItemCategory.PENDING_HUMAN_REVIEW],
         crypto_perp_gate_follow_up_count=counts[DailyBriefItemCategory.CRYPTO_PERP_GATE_FOLLOW_UP],
+        crypto_perp_truth_cycle_follow_up_count=counts[
+            DailyBriefItemCategory.CRYPTO_PERP_TRUTH_CYCLE_FOLLOW_UP
+        ],
         normal_paper_gap_count=counts[DailyBriefItemCategory.NORMAL_PAPER_GAP],
         drift_review_needed_count=counts[DailyBriefItemCategory.DRIFT_REVIEW_NEEDED],
         learning_request_pending_count=counts[DailyBriefItemCategory.LEARNING_REQUEST_PENDING],
