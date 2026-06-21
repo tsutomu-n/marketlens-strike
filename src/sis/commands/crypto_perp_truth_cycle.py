@@ -32,6 +32,19 @@ def _render_truth_cycle_status_markdown(status: CryptoPerpTruthCycleStatus) -> s
         + (f" ({stage.artifact_path})" if stage.artifact_path else "")
         for stage in status.stages
     )
+    if status.stage_checklist:
+        lines.extend(["", "## Stage Checklist", ""])
+        lines.append(
+            "| stage | status | blocks_progress | expected_cli_option | artifact_path | expected_artifact_hint |"
+        )
+        lines.append("|---|---|---|---|---|---|")
+        lines.extend(
+            "| "
+            f"`{item.stage_id}` | `{item.status}` | `{str(item.blocks_progress).lower()}` | "
+            f"`{item.expected_cli_option or ''}` | `{item.artifact_path or ''}` | "
+            f"{item.expected_artifact_hint} |"
+            for item in status.stage_checklist
+        )
     if status.stop_reasons:
         lines.extend(["", "## Stop Reasons", ""])
         lines.extend(f"- `{reason}`" for reason in status.stop_reasons)
@@ -75,6 +88,7 @@ def _render_dogfood_pack_markdown(
         f"- recommended_next_command: `{status.recommended_next_command}`",
         f"- first_stop_reason: `{status.stop_reasons[0] if status.stop_reasons else 'none'}`",
         f"- next_step_count: `{len(status.next_steps)}`",
+        f"- stage_checklist_blocker_count: `{status.summary.get('stage_checklist_blocker_count', 0)}`",
         "",
         "## Review Order",
         "",
@@ -100,6 +114,18 @@ def _render_dogfood_pack_markdown(
             f"exchange_write_allowed=`{str(step.exchange_write_allowed).lower()}` "
             f"live_order_allowed=`{str(step.live_order_allowed).lower()}`"
             for step in status.next_steps
+        ],
+        "",
+        "## Stage Checklist",
+        "",
+        "| stage | status | blocks_progress | expected_cli_option | artifact_path | expected_artifact_hint |",
+        "|---|---|---|---|---|---|",
+        *[
+            "| "
+            f"`{item.stage_id}` | `{item.status}` | `{str(item.blocks_progress).lower()}` | "
+            f"`{item.expected_cli_option or ''}` | `{item.artifact_path or ''}` | "
+            f"{item.expected_artifact_hint} |"
+            for item in status.stage_checklist
         ],
         "",
         "## Artifacts",
@@ -200,6 +226,9 @@ def register_crypto_perp_truth_cycle_commands(app: typer.Typer) -> None:
         typer.echo(f"next_step_count={len(status.next_steps)}")
         if status.next_steps:
             typer.echo(f"first_next_step={status.next_steps[0].step_id}")
+        typer.echo(
+            f"stage_checklist_blocker_count={status.summary.get('stage_checklist_blocker_count', 0)}"
+        )
         typer.echo(f"known_gap_count={len(status.known_gaps)}")
         typer.echo(f"status_path={json_path.as_posix()}")
         typer.echo(f"report_path={report_path.as_posix()}")
@@ -269,6 +298,9 @@ def register_crypto_perp_truth_cycle_commands(app: typer.Typer) -> None:
         typer.echo(f"next_step_count={len(status.next_steps)}")
         if status.next_steps:
             typer.echo(f"first_next_step={status.next_steps[0].step_id}")
+        typer.echo(
+            f"stage_checklist_blocker_count={status.summary.get('stage_checklist_blocker_count', 0)}"
+        )
         typer.echo(f"daily_brief_item_count={daily.brief.summary.total_item_count}")
         typer.echo(f"viewer_artifact_count={viewer.manifest.artifact_count}")
         typer.echo(f"pack_path={pack_path.as_posix()}")

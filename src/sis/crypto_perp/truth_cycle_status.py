@@ -276,8 +276,14 @@ def _next_steps(
 
 
 _STAGE_INPUT_HINTS: dict[str, tuple[str | None, str]] = {
-    "probe_audit": ("--probe-audit", "crypto_perp_probe_audit.v1 JSON from crypto-perp-probe-audit"),
-    "raw_refresh": ("--raw-refresh", "crypto_perp_raw_refresh.v1 JSON from crypto-perp-raw-refresh"),
+    "probe_audit": (
+        "--probe-audit",
+        "crypto_perp_probe_audit.v1 JSON from crypto-perp-probe-audit",
+    ),
+    "raw_refresh": (
+        "--raw-refresh",
+        "crypto_perp_raw_refresh.v1 JSON from crypto-perp-raw-refresh",
+    ),
     "event": ("--event", "crypto_perp_event.v1 JSON from raw refresh event_paths"),
     "decision": ("--decision", "crypto_perp_decision.v1 JSON from crypto-perp-decision-record"),
     "outcome": ("--outcome", "crypto_perp_outcome.v1 JSON from crypto-perp-outcome-record"),

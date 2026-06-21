@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_20:07 JST
+更新日: 2026-06-21_20:22 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -55,11 +55,14 @@ uv run sis crypto-perp-truth-cycle-status \
 - `human_summary`
 - `recommended_next_command`
 - `next_steps`
+- `stage_checklist`
 - `stop_reasons`
 - `known_gaps`
 - 各stageの `present` / `status`
 
 `next_steps` は `recommended_next_command` より先に読みます。`verify_artifact_path` が出ている場合は、CLIを再実行する前に指定pathやrun directoryを確認します。`requires_explicit_approval=true` が出ている場合は、このrunbookから先へは進めません。
+
+`stage_checklist` は各stageの入力表です。`blocks_progress=true` のstageを先に見ます。`expected_cli_option` は `crypto-perp-truth-cycle-status` に渡すoption名、`expected_artifact_hint` はそのstageで必要なartifact種別です。`stage_checklist` の blocker を残したまま、次のstageの勝ち筋やtiny live判断へ進めません。
 
 `status=path_not_found` は、指定したartifact pathが存在しないという意味です。`MISSING_PROBE_AUDIT` などの通常欠損と混同せず、path typo / 未生成 / 別run directoryを先に確認します。tournament gateが `NEEDS_ACTUAL_CASH` などで止まった場合は、gate status と failed condition も `stop_reasons` に出ます。
 
