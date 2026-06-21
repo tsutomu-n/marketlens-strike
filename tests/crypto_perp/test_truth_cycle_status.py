@@ -150,3 +150,33 @@ def test_truth_cycle_status_schema_and_cli(tmp_path: Path) -> None:
     report = (tmp_path / "status/truth_cycle_status.md").read_text(encoding="utf-8")
     assert "human_summary:" in report
     assert "probe audit は通過しているため" in report
+
+
+def test_truth_cycle_dogfood_pack_cli_builds_status_brief_and_viewer(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-truth-cycle-dogfood-pack",
+            "--out",
+            str(tmp_path / "data/crypto_perp/truth_cycle_dogfood"),
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "network_attempted=false" in result.stdout
+    assert "exchange_write_used=false" in result.stdout
+    assert "live_order_submitted=false" in result.stdout
+    assert "cycle_status=MISSING_PROBE_AUDIT" in result.stdout
+    assert "viewer_artifact_count=4" in result.stdout
+    root = tmp_path / "data/crypto_perp/truth_cycle_dogfood"
+    assert (root / "truth_cycle_status/truth_cycle_status.json").exists()
+    daily_report = root / "reports/strategy_daily_brief/strategy_daily_brief.md"
+    viewer_html = root / "reports/strategy_workbench_viewer/strategy_workbench_viewer.html"
+    assert daily_report.exists()
+    assert viewer_html.exists()
+    assert "crypto_perp_truth_cycle_follow_up" in daily_report.read_text(encoding="utf-8")
+    assert "path または生成済みrun directory" in viewer_html.read_text(encoding="utf-8")

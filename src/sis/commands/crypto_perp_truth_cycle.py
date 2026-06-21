@@ -9,6 +9,8 @@ from sis.crypto_perp.truth_cycle_status import (
     CryptoPerpTruthCycleStatus,
     build_truth_cycle_status,
 )
+from sis.strategy_daily_brief.service import build_strategy_daily_brief
+from sis.strategy_workbench_viewer.service import build_strategy_workbench_viewer
 
 
 def _render_truth_cycle_status_markdown(status: CryptoPerpTruthCycleStatus) -> str:
@@ -36,6 +38,39 @@ def _render_truth_cycle_status_markdown(status: CryptoPerpTruthCycleStatus) -> s
     if status.known_gaps:
         lines.extend(["", "## Known Gaps", ""])
         lines.extend(f"- `{gap}`" for gap in status.known_gaps)
+    return "\n".join(lines)
+
+
+def _render_dogfood_pack_markdown(
+    *,
+    status_path: Path,
+    status_report_path: Path,
+    daily_brief_path: Path,
+    daily_brief_report_path: Path,
+    viewer_manifest_path: Path,
+    viewer_html_path: Path,
+) -> str:
+    lines = [
+        "# Crypto Perp Truth-Cycle Dogfood Pack",
+        "",
+        "This pack is local fixture-only. It does not use network, credentials, wallet, signing, exchange write, or live orders.",
+        "",
+        "## Artifacts",
+        "",
+        f"- truth_cycle_status_json: `{status_path.as_posix()}`",
+        f"- truth_cycle_status_md: `{status_report_path.as_posix()}`",
+        f"- daily_brief_json: `{daily_brief_path.as_posix()}`",
+        f"- daily_brief_md: `{daily_brief_report_path.as_posix()}`",
+        f"- viewer_manifest_json: `{viewer_manifest_path.as_posix()}`",
+        f"- viewer_html: `{viewer_html_path.as_posix()}`",
+        "",
+        "## Boundary",
+        "",
+        "- network_attempted: `false`",
+        "- exchange_write_used: `false`",
+        "- live_order_submitted: `false`",
+        "- permits_live_order: `false`",
+    ]
     return "\n".join(lines)
 
 
@@ -118,3 +153,69 @@ def register_crypto_perp_truth_cycle_commands(app: typer.Typer) -> None:
         typer.echo(f"known_gap_count={len(status.known_gaps)}")
         typer.echo(f"status_path={json_path.as_posix()}")
         typer.echo(f"report_path={report_path.as_posix()}")
+
+    @app.command("crypto-perp-truth-cycle-dogfood-pack")
+    def crypto_perp_truth_cycle_dogfood_pack_cmd(
+        out: Path = typer.Option(
+            Path("data/crypto_perp/truth_cycle_dogfood"),
+            "--out",
+            help="Output directory for fixture-only truth-cycle dogfood artifacts.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing Daily Brief and Workbench Viewer artifacts.",
+        ),
+    ) -> None:
+        try:
+            status_dir = out / "truth_cycle_status"
+            missing_probe_audit = out / "inputs" / "missing_probe_audit.json"
+            status = build_truth_cycle_status(probe_audit_path=missing_probe_audit)
+            status_path = status_dir / "truth_cycle_status.json"
+            status_report_path = status_dir / "truth_cycle_status.md"
+            write_json_artifact(status_path, status.model_dump(mode="json"))
+            write_text_artifact(status_report_path, _render_truth_cycle_status_markdown(status))
+
+            daily = build_strategy_daily_brief(
+                data_dir=out,
+                out_dir=out / "reports" / "strategy_daily_brief",
+                replace_existing=replace_existing,
+            )
+            viewer = build_strategy_workbench_viewer(
+                artifacts=[
+                    status_path,
+                    status_report_path,
+                    daily.brief_path,
+                    daily.report_path,
+                ],
+                data_dir=out,
+                out_dir=out / "reports" / "strategy_workbench_viewer",
+                replace_existing=replace_existing,
+            )
+            pack_path = out / "dogfood_pack.md"
+            write_text_artifact(
+                pack_path,
+                _render_dogfood_pack_markdown(
+                    status_path=status_path,
+                    status_report_path=status_report_path,
+                    daily_brief_path=daily.brief_path,
+                    daily_brief_report_path=daily.report_path,
+                    viewer_manifest_path=viewer.manifest_path,
+                    viewer_html_path=viewer.html_path,
+                ),
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("status=pass")
+        typer.echo(f"cycle_status={status.cycle_status}")
+        typer.echo(f"human_summary={status.summary.get('human_summary', '')}")
+        typer.echo(f"daily_brief_item_count={daily.brief.summary.total_item_count}")
+        typer.echo(f"viewer_artifact_count={viewer.manifest.artifact_count}")
+        typer.echo(f"pack_path={pack_path.as_posix()}")
+        typer.echo(f"viewer_html_path={viewer.html_path.as_posix()}")

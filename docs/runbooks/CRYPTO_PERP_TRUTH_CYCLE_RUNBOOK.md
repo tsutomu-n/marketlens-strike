@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_19:38 JST
+更新日: 2026-06-21_19:48 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -22,6 +22,16 @@ Crypto Perp Truth-Cycle の post-MVP 実務runbookです。目的は、candidate
 - [../NEXT_DIRECTION_CURRENT.md](../NEXT_DIRECTION_CURRENT.md)
 
 ## P00: tournament rows からreportを再生成する
+
+fixture-onlyで status / Daily Brief / Workbench Viewer の読み味をまとめて確認する場合は、dogfood packを作ります。
+
+```bash
+uv run sis crypto-perp-truth-cycle-dogfood-pack \
+  --out data/crypto_perp/truth_cycle_dogfood \
+  --replace-existing
+```
+
+これは missing probe audit のfixture状態を作るだけです。public network、credential、wallet、signing、exchange write、live orderは使いません。
 
 手元にあるartifactから次に何が欠けているかだけを見る場合は、先にstatusを作ります。
 
