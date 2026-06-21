@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_18:56 JST
+更新日: 2026-06-21_19:02 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -276,6 +276,26 @@ uv run sis crypto-perp-tournament-report \
 - fill / fee / funding / cash attributionが不明
 - high / low ordering ambiguity がdecisionを左右している
 
+次に、reportをgateに通します。
+
+```bash
+uv run sis crypto-perp-tournament-gate \
+  --report data/crypto_perp/tournament/<report-id>/tournament_report.json \
+  --out data/crypto_perp/tournament_gate/<report-id> \
+  --max-largest-loss-usd 25 \
+  --max-profit-concentration 0.60 \
+  --max-operator-time-minutes 120
+```
+
+見るもの:
+
+- `gate_status`
+- `recommended_action`
+- `failed_conditions`
+- `known_gaps`
+
+`READY_FOR_HUMAN_TINY_LIVE_REVIEW` は承認準備の入口です。live実行許可ではありません。
+
 ## tiny live measurementへ進む前の境界
 
 tiny live measurement はこのrunbookの範囲外です。進むには別の明示承認が必要です。
@@ -300,7 +320,7 @@ tiny live measurement はこのrunbookの範囲外です。進むには別の明
 このrunbookや関連CLIを変更した時は次を実行します。
 
 ```bash
-uv run pytest tests/crypto_perp/test_provider_probe.py tests/crypto_perp/test_raw_refresh.py tests/crypto_perp/test_decisions.py tests/crypto_perp/test_outcomes.py tests/crypto_perp/test_tournament_rows.py tests/crypto_perp/test_tournament.py -q
+uv run pytest tests/crypto_perp/test_provider_probe.py tests/crypto_perp/test_raw_refresh.py tests/crypto_perp/test_decisions.py tests/crypto_perp/test_outcomes.py tests/crypto_perp/test_tournament_rows.py tests/crypto_perp/test_tournament.py tests/crypto_perp/test_tournament_gate.py -q
 uv run python scripts/check_cli_catalog.py
 uv run python scripts/check_current_docs.py
 ./scripts/check

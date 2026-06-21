@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_20:32 JST
-更新日: 2026-06-21_18:56 JST
+更新日: 2026-06-21_19:02 JST
 -->
 
 # marketlens-strike アプリ現状詳細ガイド
@@ -426,6 +426,7 @@ uv run sis crypto-perp-order-preview --help
 uv run sis crypto-perp-tiny-live-measurement --help
 uv run sis crypto-perp-tournament-rows-preview --help
 uv run sis crypto-perp-tournament-report --help
+uv run sis crypto-perp-tournament-gate --help
 ```
 
 できること:
@@ -441,6 +442,7 @@ uv run sis crypto-perp-tournament-report --help
 - actual cash ledger、execution replay、actual vs simulated fill bias calibrationを作る。
 - matured outcomeから、before-cost proxyの `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` rows previewを作る。
 - `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を同じevent setで比較するtournament reportをCLIで作る。
+- tournament reportから、actual cash不足、event不足、NO_TRADE leader、largest loss、profit concentration、operator timeを読んで次actionをlocal gate artifactにする。
 - tournament reportをStrategy Input ContractへつなぐWorkbench bridge helperを使う。
 
 注意:
@@ -658,6 +660,7 @@ uv run sis strategy-backtest-html-report
 | `crypto_perp_execution_replay.v1` | replay calibration | simulated fillとactual fillの差を読む |
 | `crypto_perp_tournament_rows_preview.v1` | outcomeから作る3action rows preview | before-cost proxyでありactual cashではないことをknown gaps込みで読む |
 | `crypto_perp_tournament_report.v1` | 仮説比較report | `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE`を同一event setで読む |
+| `crypto_perp_tournament_gate.v1` | tournament後のlocal gate | tiny live承認準備へ進むか、actual cash再生成 / event追加 / revisionへ戻すかを読む |
 
 ## 用語集
 
@@ -832,6 +835,10 @@ prospective decisionの後、指定した観察窓が終わってから作る結
 ### tournament
 
 同じevent setに対して複数の仮説を比べるreportです。Crypto Perpでは `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を同格に扱い、データ不足は `INCONCLUSIVE_DATA` として残します。`crypto-perp-tournament-rows-preview` が作るrowsは outcome 由来の before-cost proxy で、実約定、fee、funding、slippage込みのactual cashではありません。preview artifactをreport入力にした場合、この不足はknown gapsとしてreportへ継承されます。
+
+### tournament gate
+
+tournament reportを読んで、tiny live承認準備へ進めるか、actual cash再生成、event追加、event定義見直しへ戻すかを分けるlocal artifactです。`READY_FOR_HUMAN_TINY_LIVE_REVIEW` でも、live実行許可ではありません。
 
 ### stage policy
 
