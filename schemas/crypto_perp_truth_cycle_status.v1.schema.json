@@ -46,16 +46,7 @@
     "stages": {"type": "array", "items": {"$ref": "#/$defs/stage"}},
     "stage_checklist": {"type": "array", "items": {"$ref": "#/$defs/stage_checklist_item"}},
     "known_gaps": {"type": "array", "items": {"type": "string"}},
-    "summary": {
-      "type": "object",
-      "additionalProperties": true,
-      "required": [
-        "cycle_status",
-        "present_stage_count",
-        "known_gap_count",
-        "stop_reason_count"
-      ]
-    }
+    "summary": {"$ref": "#/$defs/summary"}
   },
   "$defs": {
     "producer": {
@@ -149,6 +140,47 @@
         "artifact_path": {"type": ["string", "null"]},
         "expected_cli_option": {"type": ["string", "null"]},
         "expected_artifact_hint": {"type": "string", "minLength": 1}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cycle_status",
+        "human_summary",
+        "present_stage_count",
+        "missing_artifact_path_count",
+        "known_gap_count",
+        "stop_reason_count",
+        "next_step_count",
+        "stage_checklist_blocker_count"
+      ],
+      "properties": {
+        "cycle_status": {
+          "enum": [
+            "MISSING_PROBE_AUDIT",
+            "BLOCKED_PROBE_QUALITY",
+            "READY_FOR_RAW_REFRESH",
+            "RAW_REFRESH_NO_EVENT",
+            "READY_FOR_DECISION",
+            "READY_FOR_OUTCOME_AFTER_MATURITY",
+            "READY_FOR_ROWS_PREVIEW",
+            "READY_FOR_TOURNAMENT_REPORT",
+            "READY_FOR_TOURNAMENT_GATE",
+            "READY_FOR_HUMAN_TINY_LIVE_REVIEW",
+            "NEEDS_MORE_EVIDENCE",
+            "NEEDS_ACTUAL_CASH",
+            "HOLD_NO_TRADE_LEADS",
+            "REVISE_OR_RETIRE"
+          ]
+        },
+        "human_summary": {"type": "string", "minLength": 1},
+        "present_stage_count": {"type": "integer", "minimum": 0},
+        "missing_artifact_path_count": {"type": "integer", "minimum": 0},
+        "known_gap_count": {"type": "integer", "minimum": 0},
+        "stop_reason_count": {"type": "integer", "minimum": 0},
+        "next_step_count": {"type": "integer", "minimum": 0},
+        "stage_checklist_blocker_count": {"type": "integer", "minimum": 0}
       }
     }
   }
