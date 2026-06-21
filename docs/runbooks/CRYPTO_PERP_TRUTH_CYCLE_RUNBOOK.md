@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_18:35 JST
+更新日: 2026-06-21_18:41 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -138,7 +138,43 @@ uv run sis crypto-perp-probe-audit \
 - credentialsを使ったartifactが混ざっている
 - auditを通さずevent候補を増やす
 
-## P03: matured outcomeを記録する
+## P03: audit済みraw snapshotからsnapshot / event候補を再生成する
+
+`crypto-perp-probe-audit` が `READY_FOR_EVENT_REFRESH` の時だけ実行します。
+
+```bash
+uv run sis crypto-perp-raw-refresh \
+  --probe data/crypto_perp/provider_probe/latest/provider_probe.json \
+  --probe-audit data/crypto_perp/probe_audit/latest/probe_audit.json \
+  --out data/crypto_perp/raw_refresh/latest
+```
+
+生成物:
+
+- `raw_refresh.json`
+- `raw_refresh.md`
+- `universe_snapshot.json`
+- `market_snapshot.json`
+- `candle_quality.json`
+- `events/<event-id>.json`。eventが無い場合は0件として残す。
+
+見るもの:
+
+- `event_count`
+- `known_gaps`
+- `universe_instrument_count`
+- `market_ticker_count`
+- `candle_bar_count`
+
+止める条件:
+
+- probe audit が `READY_FOR_EVENT_REFRESH` ではない
+- `probe_id` が probe と audit で一致しない
+- raw snapshot が欠けている
+- candle qualityに `GAP_DETECTED` / `NON_FINAL_BAR` / `INVALID_OHLC` がある
+- `NO_EVENT_DETECTED` を無理にevent化する
+
+## P04: matured outcomeを記録する
 
 観察窓が成熟したあとで outcome を記録します。
 
@@ -169,7 +205,7 @@ uv run sis crypto-perp-outcome-record \
 - books / trades の欠落を `--known-gap` に残さない
 - outcomeをdecision前に見てdecisionを作る
 
-## P04: tournament rowsを作る
+## P05: tournament rowsを作る
 
 現時点では rows は明示的なJSON / JSONLとして作ります。winnerだけを保存しません。各eventについて、同じevent setで次の3actionをそろえます。
 
@@ -186,7 +222,7 @@ uv run sis crypto-perp-outcome-record \
 - fee、funding、ruined pod、infra costがある場合はcash側に含める。
 - データ不足は行を消して隠すのではなく、reportの `INCONCLUSIVE_DATA` または `known_gaps` に残す。
 
-## P05: reportから次 action を決める
+## P06: reportから次 action を決める
 
 ```bash
 uv run sis crypto-perp-tournament-report \
@@ -239,7 +275,7 @@ tiny live measurement はこのrunbookの範囲外です。進むには別の明
 このrunbookや関連CLIを変更した時は次を実行します。
 
 ```bash
-uv run pytest tests/crypto_perp/test_provider_probe.py tests/crypto_perp/test_decisions.py tests/crypto_perp/test_outcomes.py tests/crypto_perp/test_tournament.py -q
+uv run pytest tests/crypto_perp/test_provider_probe.py tests/crypto_perp/test_raw_refresh.py tests/crypto_perp/test_decisions.py tests/crypto_perp/test_outcomes.py tests/crypto_perp/test_tournament.py -q
 uv run python scripts/check_cli_catalog.py
 uv run python scripts/check_current_docs.py
 ./scripts/check

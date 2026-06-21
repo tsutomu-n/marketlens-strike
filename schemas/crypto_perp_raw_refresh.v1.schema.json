@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_raw_refresh.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "producer",
+    "source_refs",
+    "boundary",
+    "probe_id",
+    "probe_audit_status",
+    "universe_snapshot_path",
+    "market_snapshot_path",
+    "quality_report_path",
+    "event_paths",
+    "event_count",
+    "known_gaps",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_raw_refresh.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_ref"}
+    },
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "probe_id": {"type": "string", "minLength": 1},
+    "probe_audit_status": {"const": "READY_FOR_EVENT_REFRESH"},
+    "universe_snapshot_path": {"type": "string", "minLength": 1},
+    "market_snapshot_path": {"type": "string", "minLength": 1},
+    "quality_report_path": {"type": "string", "minLength": 1},
+    "event_paths": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "event_count": {"type": "integer", "minimum": 0},
+    "known_gaps": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schema_version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "schema_version": {"const": "crypto_perp_raw_snapshot.v1"}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    }
+  }
+}

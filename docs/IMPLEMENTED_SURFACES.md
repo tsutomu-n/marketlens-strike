@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-21_18:35 JST
+更新日: 2026-06-21_18:41 JST
 -->
 
 # Implemented Surfaces
@@ -53,7 +53,7 @@ production live trading、wallet、signing、exchange write は現行 operator p
 
 | Surface | Status | Primary Evidence |
 |---|---|---|
-| Crypto Perp Truth-Cycle MVP artifact chain | implemented as local / fixture-first artifact chain, no automatic trading | `crypto-perp-probe-audit`, `crypto-perp-decision-record`, `crypto-perp-outcome-record`, `src/sis/crypto_perp/`, `schemas/crypto_perp_*.schema.json`, `tests/crypto_perp/`, `crypto-perp-*` read-only/mock-first CLI commands |
+| Crypto Perp Truth-Cycle MVP artifact chain | implemented as local / fixture-first artifact chain, no automatic trading | `crypto-perp-probe-audit`, `crypto-perp-raw-refresh`, `crypto-perp-decision-record`, `crypto-perp-outcome-record`, `src/sis/crypto_perp/`, `schemas/crypto_perp_*.schema.json`, `tests/crypto_perp/`, `crypto-perp-*` read-only/mock-first CLI commands |
 | Hypothesis tournament and Workbench bridge | tournament report implemented as local CLI; Workbench bridge as Python artifact helper | `crypto-perp-tournament-report`, `src/sis/crypto_perp/tournament.py`, `src/sis/crypto_perp/workbench_bridge.py`, `schemas/crypto_perp_tournament_report.v1.schema.json`, `tests/crypto_perp/test_tournament.py`, `tests/crypto_perp/test_workbench_bridge.py` |
 
 ## NDX Research Gates

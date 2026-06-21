@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-21_18:35 JST
+更新日: 2026-06-21_18:41 JST
 -->
 
 # Next Direction Current
@@ -30,6 +30,7 @@ Crypto Perp の新しい実装入口は [../plan/0621ここから01/marketlens-s
 - `crypto-perp-decision-record`: event JSONから outcome前の `crypto_perp_decision.v1` を作る。
 - `crypto-perp-outcome-record`: event JSONまたはevent idから `crypto_perp_outcome.v1` を作る。
 - `crypto-perp-probe-audit`: public provider probe後に、event候補へ進めるだけのendpoint / raw snapshot証拠があるかをlocal artifactで判定する。
+- `crypto-perp-raw-refresh`: audit済みprobe rawから universe snapshot、market snapshot、candle quality、event候補をlocal artifactとして再生成する。
 - `crypto-perp-tournament-report`: JSON / JSONL rowsから `crypto_perp_tournament_report.v1` とMarkdown reportを作る。
 - [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md): candidate eventからdecision / outcome / tournament reportまでの再生成手順。
 
@@ -37,9 +38,10 @@ Crypto Perp の新しい実装入口は [../plan/0621ここから01/marketlens-s
 
 1. P00: fixture / historical rowsでtournament reportを再生成し、leaderが出ない時に無理に進めない。
 2. P01: candidate eventからdecision / outcome / tournament rowsまでの生成手順をrunbook化する。現行runbookは [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md)。
-3. P02: public-network opt-inありのBitget public probeを人間実行し、`crypto-perp-probe-audit` が `READY_FOR_EVENT_REFRESH` の時だけraw snapshotとevent候補を増やす。
-4. P03: 十分なevent数がそろっても `INCONCLUSIVE_DATA` なら、thresholdやevent definitionをlearning / revision requestへ戻す。
-5. P04: `COMPLETE` かつactual cash、largest loss、profit concentration、operator timeが許容範囲に入った時だけ、tiny live measurementの承認準備に進む。
+3. P02: public-network opt-inありのBitget public probeを人間実行し、`crypto-perp-probe-audit` が `READY_FOR_EVENT_REFRESH` の時だけraw snapshotを使う。
+4. P03: `crypto-perp-raw-refresh` でaudit済みraw snapshotからuniverse / market / event候補を再生成し、event 0件やquality gapもそのまま残す。
+5. P04: 十分なevent数がそろっても `INCONCLUSIVE_DATA` なら、thresholdやevent definitionをlearning / revision requestへ戻す。
+6. P05: `COMPLETE` かつactual cash、largest loss、profit concentration、operator timeが許容範囲に入った時だけ、tiny live measurementの承認準備に進む。
 
 やらないこと:
 
