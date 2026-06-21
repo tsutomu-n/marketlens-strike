@@ -1,0 +1,33 @@
+{
+  "code": "00000",
+  "msg": "success",
+  "requestTime": 1770531054230,
+  "data": [
+    {
+      "symbol": "BTCUSDT",
+      "category": "USDT-FUTURES",
+      "baseCoin": "BTC",
+      "quoteCoin": "USDT",
+      "makerFeeRate": "0.0002",
+      "takerFeeRate": "0.0006",
+      "minOrderQty": "0.0001",
+      "maxOrderQty": "1200",
+      "pricePrecision": "1",
+      "quantityPrecision": "4",
+      "priceMultiplier": "0.1",
+      "quantityMultiplier": "0.0001",
+      "type": "perpetual",
+      "minOrderAmount": "5",
+      "maxPositionNum": "200",
+      "status": "online",
+      "offTime": "-1",
+      "limitOpenTime": "-1",
+      "launchTime": "0",
+      "fundInterval": "8",
+      "minLeverage": "1",
+      "maxLeverage": "150",
+      "symbolType": "crypto",
+      "maxMarketOrderQty": "220"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import typer
 from pydantic import ValidationError
 
 from sis.commands.strategy_authoring import _resolve_workspace_path
+from sis.crypto_perp.bitget.probe import run_provider_probe
 from sis.crypto_perp.config import load_crypto_perp_lab_config
 from sis.crypto_perp.io import write_json_artifact, write_text_artifact
 from sis.crypto_perp.models import ConfigValidationArtifact, CryptoPerpProducer, stable_hash
@@ -95,6 +96,16 @@ def register_crypto_perp_commands(app: typer.Typer) -> None:
             "--config",
             help="crypto_perp_lab_config.v1 YAML/JSON.",
         ),
+        out: Path = typer.Option(
+            Path("data/crypto_perp/provider_probe"),
+            "--out",
+            help="Output directory for provider probe artifacts.",
+        ),
+        raw_root: Path = typer.Option(
+            Path("data/crypto_perp/raw"),
+            "--raw-root",
+            help="Root directory for immutable raw public snapshots.",
+        ),
         network: bool = typer.Option(
             False,
             "--network/--no-network",
@@ -103,15 +114,31 @@ def register_crypto_perp_commands(app: typer.Typer) -> None:
     ) -> None:
         lab_config, _resolved = _load_config_for_cli(config)
         env_name = lab_config.network_policy.public_network_env_var
-        typer.echo("network_attempted=false")
         typer.echo(f"config_id={lab_config.config_id}")
         if not network or not _env_enabled(env_name):
+            typer.echo("network_attempted=false")
             typer.echo("status=blocked")
             typer.echo(f"block_reason={CryptoPerpReasonCode.PUBLIC_NETWORK_OPT_IN_REQUIRED.value}")
             raise typer.Exit(2)
-        typer.echo("status=blocked")
-        typer.echo(f"block_reason={CryptoPerpReasonCode.PROVIDER_PROBE_NOT_IMPLEMENTED_M02.value}")
-        raise typer.Exit(2)
+        try:
+            result = run_provider_probe(
+                config=lab_config,
+                out_dir=out,
+                raw_root=raw_root,
+                network_attempted=True,
+                started_at=_utc_now(),
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("network_attempted=true")
+        typer.echo("credentials_used=false")
+        typer.echo("status=pass")
+        typer.echo(f"probe_id={result.probe.probe_id}")
+        typer.echo(f"probe_path={result.probe_path.as_posix()}")
+        typer.echo(f"report_path={result.report_path.as_posix()}")
 
     @app.command("crypto-perp-refresh")
     def crypto_perp_refresh_cmd(
