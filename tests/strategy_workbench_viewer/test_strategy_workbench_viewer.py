@@ -54,7 +54,7 @@ def _crypto_perp_tournament_gate(path: Path) -> Path:
             "summary": {
                 "gate_status": "NEEDS_ACTUAL_CASH",
                 "proxy_gap_count": 1,
-                "failed_condition_count": 1,
+                "failed_condition_count": ["malformed count must not enter compact summary"],
             },
             "permits_live_order": False,
             "exchange_write_used": False,
@@ -129,6 +129,12 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
         Path("schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
     )
     Draft202012Validator(schema).validate(payload)
+    invalid_payload = json.loads(json.dumps(payload))
+    invalid_payload["source_artifacts"][2]["summary"]["first_stage_blocker"] = ["probe_audit"]
+    assert any(
+        list(error.path)[-2:] == ["summary", "first_stage_blocker"]
+        for error in Draft202012Validator(schema).iter_errors(invalid_payload)
+    )
 
     assert payload["schema_version"] == "strategy_workbench_viewer.v1"
     assert payload["artifact_count"] == 4
@@ -137,6 +143,7 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert payload["source_artifacts"][0]["status"] == "READY_FOR_PAPER_SMOKE_PLAN"
     assert payload["source_artifacts"][1]["status"] == "NEEDS_ACTUAL_CASH"
     assert payload["source_artifacts"][1]["summary"]["proxy_gap_count"] == 1
+    assert "failed_condition_count" not in payload["source_artifacts"][1]["summary"]
     assert payload["source_artifacts"][2]["status"] == "MISSING_PROBE_AUDIT"
     assert payload["source_artifacts"][2]["summary"]["stop_reason_count"] == 2
     assert payload["source_artifacts"][2]["summary"]["missing_artifact_path_count"] == 1

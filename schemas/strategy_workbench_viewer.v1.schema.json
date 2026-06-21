@@ -71,9 +71,57 @@
         "title": { "type": "string", "minLength": 1 },
         "status": { "type": ["string", "null"] },
         "boundary_violations": { "type": "array", "items": { "type": "string" } },
-        "summary": { "type": "object" },
+        "summary": { "$ref": "#/$defs/compact_summary" },
         "preview": { "type": ["string", "null"] }
       }
+    },
+    "compact_summary": {
+      "type": "object",
+      "properties": {
+        "gate_id": { "type": "string" },
+        "gate_status": { "type": "string" },
+        "cycle_status": { "type": "string" },
+        "human_summary": { "type": "string" },
+        "report_id": { "type": "string" },
+        "tournament_status": { "type": "string" },
+        "leader_action": { "type": "string" },
+        "primary_metric": { "type": "string" },
+        "event_count": { "type": "integer" },
+        "leader_actual_cash_result_usd": { "type": "number" },
+        "proxy_gap_count": { "type": "integer" },
+        "failed_condition_count": { "type": "integer" },
+        "present_stage_count": { "type": "integer" },
+        "missing_artifact_path_count": { "type": "integer" },
+        "known_gap_count": { "type": "integer" },
+        "stop_reason_count": { "type": "integer" },
+        "strategy_id": { "type": "string" },
+        "review_id": { "type": "string" },
+        "decision_id": { "type": "string" },
+        "plan_id": { "type": "string" },
+        "manifest_id": { "type": "string" },
+        "recommended_action": { "type": "string" },
+        "latest_status": { "type": "string" },
+        "open_action_count": { "type": "integer" },
+        "pending_human_review_count": { "type": "integer" },
+        "boundary_violation_count": { "type": "integer" },
+        "first_stop_reason": { "type": "string" },
+        "first_next_step": { "type": "string" },
+        "first_next_step_purpose": { "type": "string" },
+        "first_next_step_command": { "type": "string" },
+        "first_next_step_requires_explicit_approval": { "type": "boolean" },
+        "first_next_step_network_allowed": { "type": "boolean" },
+        "first_next_step_exchange_write_allowed": { "type": "boolean" },
+        "first_next_step_live_order_allowed": { "type": "boolean" },
+        "first_stage_blocker": { "type": "string" },
+        "first_stage_blocker_status": { "type": "string" },
+        "first_stage_blocker_expected_cli_option": { "type": "string" },
+        "first_stage_blocker_expected_artifact_hint": { "type": "string" },
+        "first_stage_blocker_artifact_path": { "type": "string" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/compact_summary_value" }
+    },
+    "compact_summary_value": {
+      "type": ["string", "number", "integer", "boolean"]
     }
   }
 }

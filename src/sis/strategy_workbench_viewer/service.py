@@ -80,6 +80,61 @@ SUMMARY_KEYS = (
     "boundary_violation_count",
 )
 
+SUMMARY_STRING_KEYS = frozenset(
+    {
+        "gate_id",
+        "gate_status",
+        "cycle_status",
+        "human_summary",
+        "report_id",
+        "tournament_status",
+        "leader_action",
+        "primary_metric",
+        "strategy_id",
+        "review_id",
+        "decision_id",
+        "plan_id",
+        "manifest_id",
+        "recommended_action",
+        "latest_status",
+        "first_stop_reason",
+        "first_next_step",
+        "first_next_step_purpose",
+        "first_next_step_command",
+        "first_stage_blocker",
+        "first_stage_blocker_status",
+        "first_stage_blocker_expected_cli_option",
+        "first_stage_blocker_expected_artifact_hint",
+        "first_stage_blocker_artifact_path",
+    }
+)
+
+SUMMARY_INTEGER_KEYS = frozenset(
+    {
+        "event_count",
+        "proxy_gap_count",
+        "failed_condition_count",
+        "present_stage_count",
+        "missing_artifact_path_count",
+        "known_gap_count",
+        "stop_reason_count",
+        "open_action_count",
+        "pending_human_review_count",
+        "boundary_violation_count",
+    }
+)
+
+SUMMARY_NUMBER_KEYS = frozenset({"leader_actual_cash_result_usd"})
+
+SUMMARY_BOOLEAN_KEYS = frozenset(
+    {
+        "first_next_step_requires_explicit_approval",
+        "first_next_step_network_allowed",
+        "first_next_step_exchange_write_allowed",
+        "first_next_step_live_order_allowed",
+    }
+)
+
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(microsecond=0)
@@ -112,18 +167,36 @@ def _first_status(payload: dict[str, Any]) -> str | None:
     return None
 
 
+def _compact_summary_value(key: str, value: Any) -> str | int | float | bool | None:
+    if key in SUMMARY_STRING_KEYS:
+        return value if isinstance(value, str) else None
+    if key in SUMMARY_INTEGER_KEYS:
+        return value if isinstance(value, int) and not isinstance(value, bool) else None
+    if key in SUMMARY_NUMBER_KEYS:
+        return value if isinstance(value, int | float) and not isinstance(value, bool) else None
+    if key in SUMMARY_BOOLEAN_KEYS:
+        return value if isinstance(value, bool) else None
+    if isinstance(value, str | int | float | bool):
+        return value
+    return None
+
+
+def _set_compact_summary_value(summary: dict[str, Any], key: str, value: Any) -> None:
+    compact_value = _compact_summary_value(key, value)
+    if compact_value is not None and key not in summary:
+        summary[key] = compact_value
+
+
 def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
     summary: dict[str, Any] = {}
     for key in SUMMARY_KEYS:
         value = payload.get(key)
-        if value is not None:
-            summary[key] = value
+        _set_compact_summary_value(summary, key, value)
     nested = payload.get("summary")
     if isinstance(nested, dict):
         for key in SUMMARY_KEYS:
             value = nested.get(key)
-            if value is not None and key not in summary:
-                summary[key] = value
+            _set_compact_summary_value(summary, key, value)
     stop_reasons = payload.get("stop_reasons")
     if isinstance(stop_reasons, list) and stop_reasons and "first_stop_reason" not in summary:
         summary["first_stop_reason"] = str(stop_reasons[0])
@@ -143,8 +216,7 @@ def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
                 ("live_order_allowed", "first_next_step_live_order_allowed"),
             ):
                 value = first_step.get(source_key)
-                if value is not None and summary_key not in summary:
-                    summary[summary_key] = value
+                _set_compact_summary_value(summary, summary_key, value)
     stage_checklist = payload.get("stage_checklist")
     if isinstance(stage_checklist, list):
         for item in stage_checklist:
@@ -160,8 +232,7 @@ def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
                 ("artifact_path", "first_stage_blocker_artifact_path"),
             ):
                 value = item.get(source_key)
-                if value is not None and summary_key not in summary:
-                    summary[summary_key] = value
+                _set_compact_summary_value(summary, summary_key, value)
             break
     return summary
 
