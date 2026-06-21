@@ -1,20 +1,33 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from decimal import Decimal
 import json
 import os
 from pathlib import Path
+from typing import Literal, cast
 
 import typer
 from pydantic import ValidationError
 
 from sis.commands.strategy_authoring import _resolve_workspace_path
+from sis.crypto_perp.bitget.account import (
+    CredentialScopeAttestation,
+    CryptoPerpAccountSnapshot,
+    build_account_snapshot,
+)
+from sis.crypto_perp.bitget.auth import missing_bitget_credential_env
 from sis.crypto_perp.bitget.probe import run_provider_probe
 from sis.crypto_perp.config import load_crypto_perp_lab_config
 from sis.crypto_perp.event_card import build_event_card
 from sis.crypto_perp.events import CryptoPerpEvent
 from sis.crypto_perp.io import write_json_artifact, write_text_artifact
 from sis.crypto_perp.models import ConfigValidationArtifact, CryptoPerpProducer, stable_hash
+from sis.crypto_perp.order_preview import (
+    InstrumentOrderConstraints,
+    OrderPreviewRequest,
+    build_order_preview,
+)
 from sis.crypto_perp.reason_codes import CryptoPerpReasonCode
 from sis.crypto_perp.rendering import render_event_card_markdown
 from sis.settings import get_settings
@@ -64,6 +77,34 @@ def _write_config_validation(config_path: Path, out_dir: Path) -> ConfigValidati
 
 def _env_enabled(name: str) -> bool:
     return os.getenv(name) == "1"
+
+
+def _fixture_credential_attestation() -> CredentialScopeAttestation:
+    return CredentialScopeAttestation(
+        read_enabled=True,
+        trade_enabled=False,
+        withdrawal_disabled_confirmed=True,
+        ip_restriction_confirmed=True,
+        attested_by="local-fixture",
+        attested_at=_utc_now(),
+    )
+
+
+def _fixture_account_snapshot() -> CryptoPerpAccountSnapshot:
+    return build_account_snapshot(
+        observed_at=_utc_now(),
+        account_payload={
+            "marginCoin": "USDT",
+            "available": "100",
+            "accountEquity": "100",
+            "unrealizedPL": "0",
+            "marginMode": "isolated",
+            "posMode": "one_way_mode",
+        },
+        positions_payload=[],
+        open_orders_payload=[],
+        credential_scope_attestation=_fixture_credential_attestation(),
+    )
 
 
 def register_crypto_perp_commands(app: typer.Typer) -> None:
@@ -206,3 +247,127 @@ def register_crypto_perp_commands(app: typer.Typer) -> None:
         typer.echo("status=blocked")
         typer.echo(f"block_reason={CryptoPerpReasonCode.WATCHDECK_NOT_IMPLEMENTED_M04.value}")
         raise typer.Exit(2)
+
+    @app.command("crypto-perp-account-probe")
+    def crypto_perp_account_probe_cmd(
+        config: Path = typer.Option(
+            Path("configs/crypto_perp/bitget_personal_edge_lab.yaml"),
+            "--config",
+            help="crypto_perp_lab_config.v1 YAML/JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/crypto_perp/account_probe"),
+            "--out",
+            help="Output directory for account snapshot artifacts.",
+        ),
+        fixture: bool = typer.Option(
+            True,
+            "--fixture/--no-fixture",
+            help="Use a local read-only fixture. Real credentialed network read is blocked in M08.",
+        ),
+    ) -> None:
+        lab_config, _resolved = _load_config_for_cli(config)
+        if not fixture:
+            env_name = lab_config.network_policy.credentialed_read_env_var
+            typer.echo(f"config_id={lab_config.config_id}")
+            if not _env_enabled(env_name):
+                typer.echo("network_attempted=false")
+                typer.echo("status=blocked")
+                typer.echo("block_reason=CREDENTIALED_READ_OPT_IN_REQUIRED")
+                raise typer.Exit(2)
+            missing = missing_bitget_credential_env()
+            if missing:
+                typer.echo("network_attempted=false")
+                typer.echo("status=blocked")
+                typer.echo(f"missing_env={','.join(missing)}")
+                raise typer.Exit(2)
+            typer.echo("network_attempted=false")
+            typer.echo("status=blocked")
+            typer.echo("block_reason=CREDENTIALED_READ_NETWORK_NOT_IMPLEMENTED_M08")
+            raise typer.Exit(2)
+
+        snapshot = _fixture_account_snapshot()
+        path = out / "account_snapshot.json"
+        write_json_artifact(path, snapshot.model_dump(mode="json"))
+        typer.echo("network_attempted=false")
+        typer.echo("credentials_used=false")
+        typer.echo("status=pass")
+        typer.echo(f"account_snapshot_id={snapshot.account_snapshot_id}")
+        typer.echo(f"account_snapshot_path={path.as_posix()}")
+
+    @app.command("crypto-perp-order-preview")
+    def crypto_perp_order_preview_cmd(
+        out: Path = typer.Option(
+            Path("data/crypto_perp/order_preview"),
+            "--out",
+            help="Output directory for order preview artifacts.",
+        ),
+        account_snapshot: Path | None = typer.Option(
+            None,
+            "--account-snapshot",
+            help="Optional crypto_perp_account_snapshot.v1 JSON. Fixture account is used if omitted.",
+        ),
+        event_id: str = typer.Option("event-fixture", "--event-id"),
+        decision_id: str = typer.Option("decision-fixture", "--decision-id"),
+        symbol: str = typer.Option("BTCUSDT", "--symbol"),
+        side: str = typer.Option("buy", "--side"),
+        position_side: str = typer.Option("one_way", "--position-side"),
+        notional_usd: str = typer.Option("25", "--notional-usd"),
+        reference_price: str = typer.Option("100", "--reference-price"),
+        limit_price: str = typer.Option("100", "--limit-price"),
+    ) -> None:
+        if account_snapshot is None:
+            snapshot = _fixture_account_snapshot()
+        else:
+            payload = json.loads(account_snapshot.read_text(encoding="utf-8"))
+            snapshot = CryptoPerpAccountSnapshot.model_validate(payload)
+        try:
+            if side not in {"buy", "sell"}:
+                raise ValueError("side must be buy or sell")
+            if position_side not in {"one_way", "long", "short"}:
+                raise ValueError("position_side must be one_way, long, or short")
+            side_value = cast(Literal["buy", "sell"], side)
+            position_side_value = cast(Literal["one_way", "long", "short"], position_side)
+            request = OrderPreviewRequest(
+                event_id=event_id,
+                decision_id=decision_id,
+                symbol=symbol,
+                product_type="USDT-FUTURES",
+                side=side_value,
+                position_side=position_side_value,
+                order_type="limit",
+                margin_mode="isolated",
+                margin_coin="USDT",
+                requested_notional_usd=Decimal(notional_usd),
+                reference_price=Decimal(reference_price),
+                limit_price=Decimal(limit_price),
+                leverage=1,
+            )
+            preview = build_order_preview(
+                request=request,
+                constraints=InstrumentOrderConstraints(
+                    symbol=symbol,
+                    product_type="USDT-FUTURES",
+                    price_multiplier=Decimal("0.1"),
+                    size_multiplier=Decimal("0.001"),
+                    min_order_amount=Decimal("5"),
+                    min_order_qty=Decimal("0.001"),
+                    max_market_order_qty=Decimal("10"),
+                ),
+                account_snapshot=snapshot,
+                created_at=_utc_now(),
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        path = out / "order_preview.json"
+        write_json_artifact(path, preview.model_dump(mode="json"))
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("status=pass" if preview.preview_status == "READY" else "status=blocked")
+        typer.echo(f"preview_status={preview.preview_status}")
+        typer.echo(f"would_submit_order={str(preview.would_submit_order).lower()}")
+        typer.echo(f"client_oid={preview.client_oid}")
+        typer.echo(f"order_preview_path={path.as_posix()}")
