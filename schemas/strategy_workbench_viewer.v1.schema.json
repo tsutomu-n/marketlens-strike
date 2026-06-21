@@ -116,7 +116,8 @@
         "first_stage_blocker_status": { "type": "string" },
         "first_stage_blocker_expected_cli_option": { "type": "string" },
         "first_stage_blocker_expected_artifact_hint": { "type": "string" },
-        "first_stage_blocker_artifact_path": { "type": "string" }
+        "first_stage_blocker_artifact_path": { "type": "string" },
+        "approval_boundary": { "type": "string" }
       },
       "additionalProperties": { "$ref": "#/$defs/compact_summary_value" }
     },

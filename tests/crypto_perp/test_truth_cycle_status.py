@@ -123,6 +123,60 @@ def test_truth_cycle_status_carries_gate_need_for_actual_cash(tmp_path: Path) ->
     ]
 
 
+def test_truth_cycle_status_ready_for_human_review_still_stops_for_approval(
+    tmp_path: Path,
+) -> None:
+    report = build_tournament_report(
+        report_id="report-ready",
+        generated_at="2026-06-21T09:00:00Z",
+        rows=[
+            *_rows(),
+            TournamentEventResult(
+                event_id="event-2",
+                action="REVERSAL_SHORT",
+                actual_cash_result_usd=Decimal("-1"),
+                market_adjusted_return=Decimal("-0.01"),
+                operator_time_minutes=Decimal("1"),
+            ),
+            TournamentEventResult(
+                event_id="event-2",
+                action="CONTINUATION_LONG",
+                actual_cash_result_usd=Decimal("2"),
+                market_adjusted_return=Decimal("0.02"),
+                operator_time_minutes=Decimal("1"),
+            ),
+            TournamentEventResult(
+                event_id="event-2",
+                action="NO_TRADE",
+                actual_cash_result_usd=Decimal("0"),
+                market_adjusted_return=Decimal("0"),
+                operator_time_minutes=Decimal("0"),
+            ),
+        ],
+        min_events=2,
+    )
+    gate = build_tournament_gate(report=report, created_at="2026-06-21T09:01:00Z")
+    gate_path = _write_json(tmp_path / "gate.json", gate.model_dump(mode="json"))
+
+    status = build_truth_cycle_status(tournament_gate_path=gate_path)
+
+    assert status.cycle_status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW"
+    assert status.recommended_next_command == "PREPARE_TINY_LIVE_APPROVAL_PACKET"
+    assert status.stop_reasons == []
+    assert status.summary["stage_checklist_blocker_count"] == 0
+    assert status.summary["human_summary"] == (
+        "人間のtiny live承認準備に進める可能性があるが、live実行許可ではない。"
+    )
+    assert [step.step_id for step in status.next_steps] == ["human_tiny_live_approval"]
+    approval_step = status.next_steps[0]
+    assert approval_step.command == "STOP_FOR_SEPARATE_HUMAN_APPROVAL"
+    assert approval_step.requires_explicit_approval is True
+    assert approval_step.network_allowed is False
+    assert approval_step.exchange_write_allowed is False
+    assert approval_step.live_order_allowed is False
+    assert status.boundary.permits_live_order is False
+
+
 def test_truth_cycle_status_marks_explicit_missing_artifact_path(tmp_path: Path) -> None:
     missing_probe_audit = tmp_path / "missing_probe_audit.json"
 

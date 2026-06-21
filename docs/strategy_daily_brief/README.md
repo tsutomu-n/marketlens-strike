@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:09 JST
-更新日: 2026-06-21_20:36 JST
+更新日: 2026-06-21_21:12 JST
 -->
 
 # Strategy Daily Brief
@@ -45,7 +45,8 @@ data/reports/strategy_daily_brief/
 - Daily Brief は読み取り索引です。
 - `total_item_count=0` は paper pass や live readiness ではありません。
 - `pending_human_review` や `drift_review_needed` は次に読むべき artifact の表示であり、自動実行指示ではありません。
-- `crypto_perp_gate_follow_up` は tiny live 実行許可ではありません。別の明示承認が必要です。
+- `crypto_perp_gate_follow_up` が `READY_FOR_HUMAN_TINY_LIVE_REVIEW` を示す場合でも、Daily Brief の reason は `separate human approval is required before any tiny live measurement; this is not live execution permission` として読みます。tiny live 実行許可ではありません。
+- `crypto_perp_truth_cycle_follow_up` が `READY_FOR_HUMAN_TINY_LIVE_REVIEW` を示す場合も、別承認待ちでありlive実行許可ではありません。
 - `crypto_perp_truth_cycle_follow_up` は次に読むべき欠損や停止理由の索引です。`first stage blocker: probe_audit via --probe-audit` のような表示は、先に埋める artifact / CLI option を示すだけで、public network、credential、order、live 実行許可ではありません。
 - `data/` 配下は runtime / generated state です。fresh checkout では空または存在しないことがあります。
 

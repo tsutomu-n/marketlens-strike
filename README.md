@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-20_20:41 JST
+更新日: 2026-06-21_21:22 JST
 -->
 
 # marketlens-strike
@@ -19,31 +19,33 @@ in a fresh checkout until commands are run.
 1. [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md)
 2. [docs/APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md](docs/APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md)
 3. [docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md](docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md)
-4. [docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md)
-5. [docs/STRATEGY_AND_BACKTEST_USER_GUIDE.md](docs/STRATEGY_AND_BACKTEST_USER_GUIDE.md)
-6. [docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md)
-7. [docs/CODE_STATUS.md](docs/CODE_STATUS.md)
-8. [docs/IMPLEMENTED_SURFACES.md](docs/IMPLEMENTED_SURFACES.md)
-9. [docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md](docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md)
-10. [docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md](docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
-11. [docs/NEXT_DIRECTION_CURRENT.md](docs/NEXT_DIRECTION_CURRENT.md)
-12. [docs/research/ndx/README.md](docs/research/ndx/README.md)
-13. [docs/research/ndx/09_LLM_REVIEW_GATE.md](docs/research/ndx/09_LLM_REVIEW_GATE.md)
-14. [docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md](docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md)
-15. [docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md](docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md)
-16. [docs/backtest/README.md](docs/backtest/README.md)
-17. [docs/strategy_review/README.md](docs/strategy_review/README.md)
-18. [docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
-19. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
-20. [docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md)
-21. [docs/venues/bitget_hyperliquid_capability_gate.md](docs/venues/bitget_hyperliquid_capability_gate.md)
-22. [docs/venues/read_only_capability_probe.md](docs/venues/read_only_capability_probe.md)
-23. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
-24. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-25. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-26. [docs/runbooks/README.md](docs/runbooks/README.md)
-27. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-28. [docs/trade_xyz_bot_beginner_guide.md](docs/trade_xyz_bot_beginner_guide.md)
+4. [docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md) - 正本ではない個人トレーダー目線の評価
+5. [docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) - 正本ではない利益目線の判断メモ
+6. [docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md)
+7. [docs/STRATEGY_AND_BACKTEST_USER_GUIDE.md](docs/STRATEGY_AND_BACKTEST_USER_GUIDE.md)
+8. [docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md)
+9. [docs/CODE_STATUS.md](docs/CODE_STATUS.md)
+10. [docs/IMPLEMENTED_SURFACES.md](docs/IMPLEMENTED_SURFACES.md)
+11. [docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md](docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md)
+12. [docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md](docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
+13. [docs/NEXT_DIRECTION_CURRENT.md](docs/NEXT_DIRECTION_CURRENT.md)
+14. [docs/research/ndx/README.md](docs/research/ndx/README.md)
+15. [docs/research/ndx/09_LLM_REVIEW_GATE.md](docs/research/ndx/09_LLM_REVIEW_GATE.md)
+16. [docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md](docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md)
+17. [docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md](docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md)
+18. [docs/backtest/README.md](docs/backtest/README.md)
+19. [docs/strategy_review/README.md](docs/strategy_review/README.md)
+20. [docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
+21. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
+22. [docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md](docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md)
+23. [docs/venues/bitget_hyperliquid_capability_gate.md](docs/venues/bitget_hyperliquid_capability_gate.md)
+24. [docs/venues/read_only_capability_probe.md](docs/venues/read_only_capability_probe.md)
+25. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
+26. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+27. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+28. [docs/runbooks/README.md](docs/runbooks/README.md)
+29. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+30. [docs/trade_xyz_bot_beginner_guide.md](docs/trade_xyz_bot_beginner_guide.md)
 
 The visual companion for the Trade[XYZ] beginner guide is
 [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html).

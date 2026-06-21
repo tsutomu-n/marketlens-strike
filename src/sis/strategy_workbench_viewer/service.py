@@ -106,6 +106,7 @@ SUMMARY_STRING_KEYS = frozenset(
         "first_stage_blocker_expected_cli_option",
         "first_stage_blocker_expected_artifact_hint",
         "first_stage_blocker_artifact_path",
+        "approval_boundary",
     }
 )
 
@@ -196,6 +197,16 @@ def _set_compact_summary_value(summary: dict[str, Any], key: str, value: Any) ->
 
 def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
     summary: dict[str, Any] = {}
+    schema_version = payload.get("schema_version")
+    status = payload.get("gate_status") or payload.get("cycle_status")
+    if (
+        schema_version in {"crypto_perp_tournament_gate.v1", "crypto_perp_truth_cycle_status.v1"}
+        and status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW"
+    ):
+        summary["approval_boundary"] = (
+            "separate human approval is required before any tiny live measurement; "
+            "this is not live execution permission"
+        )
     for key in SUMMARY_KEYS:
         value = payload.get(key)
         _set_compact_summary_value(summary, key, value)

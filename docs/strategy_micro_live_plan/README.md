@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:31 JST
-更新日: 2026-06-19_01:31 JST
+更新日: 2026-06-21_21:47 JST
 -->
 
 # Strategy Micro Live Plan Gate
@@ -45,6 +45,18 @@ data/strategy_micro_live_plans/<strategy-id>/
 ## Ready Status
 
 `plan_status=READY_FOR_HUMAN_MICRO_LIVE_REVIEW` は、次の条件を満たした plan artifact です。
+
+CLI stdout では、これを `status=pass` ではなく次のように表示します。
+
+```text
+status=needs_human_approval
+requires_explicit_approval=true
+permits_live_order=false
+plan_status=READY_FOR_HUMAN_MICRO_LIVE_REVIEW
+```
+
+これは plan artifact が人間レビューに回せるという意味であり、micro live execution の許可ではありません。
+blocked path でも `requires_explicit_approval=false` と `permits_live_order=false` を明示し、live permission として読めないようにします。
 
 - stage decision が `selected_stage=micro_live_plan` かつ `READY_FOR_MICRO_LIVE_PLAN`。
 - drift review が `READY_FOR_HUMAN_DRIFT_REVIEW`。

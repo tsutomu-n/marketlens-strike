@@ -11,6 +11,8 @@ def _badge_class(status: str | None, boundary_violations: list[str]) -> str:
     if status is None:
         return "neutral"
     upper = status.upper()
+    if "READY_FOR_HUMAN" in upper:
+        return "warn"
     if "READY" in upper or upper in {"PASS", "OK"}:
         return "good"
     if "NEEDS" in upper or "HOLD" in upper or "PENDING" in upper:

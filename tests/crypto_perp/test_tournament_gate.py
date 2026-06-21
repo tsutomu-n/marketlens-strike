@@ -163,7 +163,11 @@ def test_tournament_gate_schema_and_cli(tmp_path: Path) -> None:
     assert "network_attempted=false" in result.stdout
     assert "exchange_write_used=false" in result.stdout
     assert "live_order_submitted=false" in result.stdout
+    assert "status=needs_human_approval" in result.stdout
     assert "gate_status=READY_FOR_HUMAN_TINY_LIVE_REVIEW" in result.stdout
+    assert "requires_explicit_approval=true" in result.stdout
+    assert "permits_live_order=false" in result.stdout
+    assert "status=pass" not in result.stdout
     payload = json.loads((tmp_path / "gate/tournament_gate.json").read_text(encoding="utf-8"))
     schema = json.loads(
         (REPO_ROOT / "schemas/crypto_perp_tournament_gate.v1.schema.json").read_text(

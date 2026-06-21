@@ -7,7 +7,11 @@ from pydantic import ValidationError
 
 from sis.commands.strategy_authoring import _resolve_workspace_path
 from sis.settings import get_settings
-from sis.strategy_micro_live_plan.models import MicroLiveMonitoringPlan, MicroLiveRiskLimits
+from sis.strategy_micro_live_plan.models import (
+    MicroLiveMonitoringPlan,
+    MicroLivePlanStatus,
+    MicroLiveRiskLimits,
+)
 from sis.strategy_micro_live_plan.service import (
     StrategyMicroLivePlanError,
     StrategyMicroLivePlanOutputExistsError,
@@ -111,7 +115,13 @@ def register_strategy_micro_live_plan_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
 
         plan = result.plan
-        typer.echo("status=pass")
+        if plan.plan_status is MicroLivePlanStatus.READY_FOR_HUMAN_MICRO_LIVE_REVIEW:
+            typer.echo("status=needs_human_approval")
+            typer.echo("requires_explicit_approval=true")
+        else:
+            typer.echo("status=blocked")
+            typer.echo("requires_explicit_approval=false")
+        typer.echo("permits_live_order=false")
         typer.echo(f"plan_id={plan.plan_id}")
         typer.echo(f"strategy_id={plan.strategy_id}")
         typer.echo(f"plan_status={plan.plan_status.value}")

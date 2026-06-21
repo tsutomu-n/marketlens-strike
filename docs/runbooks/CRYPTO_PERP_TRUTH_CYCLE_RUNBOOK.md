@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_20:22 JST
+更新日: 2026-06-21_21:07 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -334,12 +334,15 @@ uv run sis crypto-perp-tournament-gate \
 
 見るもの:
 
+- stdoutの `status`
 - `gate_status`
 - `recommended_action`
+- `requires_explicit_approval`
+- `permits_live_order`
 - `failed_conditions`
 - `known_gaps`
 
-`READY_FOR_HUMAN_TINY_LIVE_REVIEW` は承認準備の入口です。live実行許可ではありません。
+`READY_FOR_HUMAN_TINY_LIVE_REVIEW` の時、CLI stdout は `status=needs_human_approval`、`requires_explicit_approval=true`、`permits_live_order=false` として読みます。これは承認準備の入口であり、live実行許可ではありません。`status=needs_human_approval` を `status=pass` と読み替えないでください。
 
 ## tiny live measurementへ進む前の境界
 

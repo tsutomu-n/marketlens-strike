@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_02:22 JST
-更新日: 2026-06-19_02:22 JST
+更新日: 2026-06-21_21:47 JST
 -->
 
 # Strategy Next Scale Plan
@@ -47,6 +47,17 @@ data/strategy_next_scale_plans/<strategy-id>/
 - `NEEDS_SCALE_DECISION`
 - `NEEDS_RISK_REPAIR`
 - `BLOCKED_BOUNDARY_VIOLATION`
+
+CLI stdout は `READY_FOR_HUMAN_NEXT_SCALE_REVIEW` を `status=pass` ではなく次のように表示します。
+
+```text
+status=needs_human_approval
+requires_explicit_approval=true
+permits_live_order=false
+plan_status=READY_FOR_HUMAN_NEXT_SCALE_REVIEW
+```
+
+blocked path でも `requires_explicit_approval=false` と `permits_live_order=false` を明示し、next-scale / live permission として読めないようにします。
 
 主な guard:
 

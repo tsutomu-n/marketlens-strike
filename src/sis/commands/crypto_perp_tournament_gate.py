@@ -96,12 +96,18 @@ def register_crypto_perp_tournament_gate_commands(app: typer.Typer) -> None:
         typer.echo("exchange_write_used=false")
         typer.echo("live_order_submitted=false")
         typer.echo(
-            "status=pass"
+            "status=needs_human_approval"
             if gate.gate_status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW"
             else "status=blocked"
         )
         typer.echo(f"gate_status={gate.gate_status}")
         typer.echo(f"recommended_action={gate.recommended_action}")
+        typer.echo(
+            "requires_explicit_approval=true"
+            if gate.gate_status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW"
+            else "requires_explicit_approval=false"
+        )
+        typer.echo("permits_live_order=false")
         typer.echo(f"failed_condition_count={len(gate.failed_conditions)}")
         typer.echo(f"gate_path={json_path.as_posix()}")
         typer.echo(f"report_path={report_path.as_posix()}")

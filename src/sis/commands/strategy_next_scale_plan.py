@@ -8,7 +8,11 @@ from pydantic import ValidationError
 from sis.commands.strategy_authoring import _resolve_workspace_path
 from sis.settings import get_settings
 from sis.strategy_micro_live_plan.models import MicroLiveMonitoringPlan
-from sis.strategy_next_scale_plan.models import NextScaleGuardPolicy, NextScaleRiskLimits
+from sis.strategy_next_scale_plan.models import (
+    NextScaleGuardPolicy,
+    NextScalePlanStatus,
+    NextScaleRiskLimits,
+)
 from sis.strategy_next_scale_plan.service import (
     StrategyNextScalePlanError,
     StrategyNextScalePlanOutputExistsError,
@@ -157,7 +161,13 @@ def register_strategy_next_scale_plan_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
 
         plan = result.plan
-        typer.echo("status=pass")
+        if plan.plan_status is NextScalePlanStatus.READY_FOR_HUMAN_NEXT_SCALE_REVIEW:
+            typer.echo("status=needs_human_approval")
+            typer.echo("requires_explicit_approval=true")
+        else:
+            typer.echo("status=blocked")
+            typer.echo("requires_explicit_approval=false")
+        typer.echo("permits_live_order=false")
         typer.echo(f"plan_status={plan.plan_status.value}")
         typer.echo(f"strategy_id={plan.strategy_id}")
         typer.echo(f"plan_path={result.plan_path.as_posix()}")

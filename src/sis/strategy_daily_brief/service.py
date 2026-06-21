@@ -180,7 +180,10 @@ def _crypto_perp_gate_follow_up(payload: dict[str, Any]) -> str | None:
     if not isinstance(status, str):
         return "missing gate_status"
     if status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW":
-        return "human tiny live review preparation is required before any live measurement"
+        return (
+            "separate human approval is required before any tiny live measurement; "
+            "this is not live execution permission"
+        )
     if isinstance(action, str) and action:
         return f"crypto perp tournament gate follow-up: {action}"
     return f"crypto perp tournament gate follow-up: {status}"
@@ -200,7 +203,10 @@ def _crypto_perp_truth_cycle_follow_up(payload: dict[str, Any]) -> str | None:
     if not isinstance(status, str):
         return "missing cycle_status"
     if status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW":
-        return "human tiny live review preparation is required before any live measurement"
+        return (
+            "separate human approval is required before any tiny live measurement; "
+            "this is not live execution permission"
+        )
     if first_step is not None:
         step_id = first_step.get("step_id")
         purpose = first_step.get("purpose")

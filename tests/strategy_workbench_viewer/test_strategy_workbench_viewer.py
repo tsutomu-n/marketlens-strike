@@ -62,6 +62,21 @@ def _crypto_perp_tournament_gate(path: Path) -> Path:
     )
 
 
+def _crypto_perp_ready_tournament_gate(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "crypto_perp_tournament_gate.v1",
+            "gate_id": "gate-ready",
+            "report_id": "tournament-ready",
+            "gate_status": "READY_FOR_HUMAN_TINY_LIVE_REVIEW",
+            "recommended_action": "PREPARE_TINY_LIVE_APPROVAL_PACKET",
+            "permits_live_order": False,
+            "exchange_write_used": False,
+        },
+    )
+
+
 def _crypto_perp_truth_cycle_status(path: Path) -> Path:
     return _write_json(
         path,
@@ -102,6 +117,37 @@ def _crypto_perp_truth_cycle_status(path: Path) -> Path:
                 "missing_artifact_path_count": 1,
                 "known_gap_count": 0,
                 "stop_reason_count": 2,
+            },
+            "permits_live_order": False,
+            "exchange_write_used": False,
+        },
+    )
+
+
+def _crypto_perp_ready_truth_cycle_status(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "crypto_perp_truth_cycle_status.v1",
+            "cycle_status": "READY_FOR_HUMAN_TINY_LIVE_REVIEW",
+            "recommended_next_command": "PREPARE_TINY_LIVE_APPROVAL_PACKET",
+            "next_steps": [
+                {
+                    "step_id": "human_tiny_live_approval",
+                    "purpose": "tiny live measurementへ進める前に別の明示承認を取る。",
+                    "command": "STOP_FOR_SEPARATE_HUMAN_APPROVAL",
+                    "requires_explicit_approval": True,
+                    "network_allowed": False,
+                    "exchange_write_allowed": False,
+                    "live_order_allowed": False,
+                }
+            ],
+            "stage_checklist": [],
+            "stop_reasons": [],
+            "summary": {
+                "cycle_status": "READY_FOR_HUMAN_TINY_LIVE_REVIEW",
+                "human_summary": "人間のtiny live承認準備に進める可能性があるが、live実行許可ではない。",
+                "stage_checklist_blocker_count": 0,
             },
             "permits_live_order": False,
             "exchange_write_used": False,
@@ -233,6 +279,45 @@ def test_strategy_workbench_viewer_drops_true_permission_like_next_step_flags(
     assert "first_next_step_network_allowed" not in summary
     assert summary["first_next_step_exchange_write_allowed"] is False
     assert summary["first_next_step_live_order_allowed"] is False
+
+
+def test_strategy_workbench_viewer_marks_human_tiny_live_review_as_approval_boundary(
+    tmp_path: Path,
+) -> None:
+    result = build_strategy_workbench_viewer(
+        artifacts=[
+            _crypto_perp_ready_tournament_gate(
+                tmp_path / "data/crypto_perp/tournament_gate/gate.json"
+            ),
+            _crypto_perp_ready_truth_cycle_status(
+                tmp_path / "data/crypto_perp/truth_cycle_status/status.json"
+            ),
+        ],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        Path("schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+    boundary = (
+        "separate human approval is required before any tiny live measurement; "
+        "this is not live execution permission"
+    )
+    gate_summary = payload["source_artifacts"][0]["summary"]
+    truth_summary = payload["source_artifacts"][1]["summary"]
+    assert gate_summary["approval_boundary"] == boundary
+    assert truth_summary["approval_boundary"] == boundary
+    assert truth_summary["first_next_step_requires_explicit_approval"] is True
+    assert truth_summary["first_next_step_live_order_allowed"] is False
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert boundary in html
+    assert '<span class="badge warn">READY_FOR_HUMAN_TINY_LIVE_REVIEW</span>' in html
+    assert '<span class="badge good">READY_FOR_HUMAN_TINY_LIVE_REVIEW</span>' not in html
 
 
 def test_strategy_workbench_viewer_scans_data_dir(tmp_path: Path) -> None:

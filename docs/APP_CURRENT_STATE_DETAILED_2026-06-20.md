@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_20:32 JST
-更新日: 2026-06-21_19:07 JST
+更新日: 2026-06-21_21:07 JST
 -->
 
 # marketlens-strike アプリ現状詳細ガイド
@@ -71,6 +71,7 @@ uv run python scripts/check_current_docs.py
 - Crypto Perp Truth-Cycle MVPがM11まで実装済みであること。
 - Crypto Perpはshort固定ではなく、`REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を同格に扱うこと。
 - Crypto PerpのM09 tiny live measurementはmock testまでで、実ネットワーク測定は未実行かつ別承認が必要であること。
+- Crypto Perp truth-cycle status、local-only next steps、stage checklist、fixture-only dogfood pack、Daily Brief / Workbench Viewer の blocker summaryまで実装済みであること。
 
 ## アプリの全体像
 
@@ -427,6 +428,8 @@ uv run sis crypto-perp-tiny-live-measurement --help
 uv run sis crypto-perp-tournament-rows-preview --help
 uv run sis crypto-perp-tournament-report --help
 uv run sis crypto-perp-tournament-gate --help
+uv run sis crypto-perp-truth-cycle-status --help
+uv run sis crypto-perp-truth-cycle-dogfood-pack --help
 ```
 
 できること:
@@ -443,6 +446,9 @@ uv run sis crypto-perp-tournament-gate --help
 - matured outcomeから、before-cost proxyの `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` rows previewを作る。
 - `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を同じevent setで比較するtournament reportをCLIで作る。
 - tournament reportから、actual cash不足、event不足、NO_TRADE leader、largest loss、profit concentration、operator timeを読んで次actionをlocal gate artifactにする。
+- truth-cycle statusで、missing artifact、stop reason、local-only next steps、stage checklist blockerをJSON / Markdown / stdoutにまとめる。
+- fixture-only dogfood packで、status、Daily Brief、Workbench Viewer、review markdownをまとめ、`MISSING_PROBE_AUDIT` などの状態を「次へ進む許可」と誤読しないように確認する。
+- Daily Briefで最初のnext stepと最初のstage blockerを確認対象に出し、Workbench Viewerで `first_next_step`、false-only permission flags、`first_stage_blocker` をcompact summaryとして読める。
 - tournament reportをStrategy Input ContractへつなぐWorkbench bridge helperを使う。
 
 注意:
@@ -450,6 +456,8 @@ uv run sis crypto-perp-tournament-gate --help
 この機能は、急騰後shortが勝つ前提ではありません。`REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE`、データ不足の `UNKNOWN` / `INCONCLUSIVE_DATA` を分けて扱います。primary metricは勝率やSharpeではなく、可能な範囲では `actual_cash_result_usd` です。
 
 M09のtiny live measurementは、コードとmock testはありますが、実ネットワーク測定は実行済みではありません。実行には別の明示承認、`SIS_ENABLE_TINY_LIVE_MEASUREMENT=1`、`--confirm-live`、confirmation phrase、isolated margin、withdrawal disabled API key、IP restriction、max notional 25 USD、max open positions 1、no existing position、no existing open order、reduce-only close、flat reconciliationが必要です。
+
+truth-cycle statusやWorkbench Viewerに出る `network_allowed`、`exchange_write_allowed`、`live_order_allowed` 系の値は、現行実装ではfalse-onlyの境界確認として扱います。trueのような許可値は、次へ進んでよい合図ではなく、malformed source artifactとして落とす対象です。
 
 ### 12. Execution / Paper / Bot系の状態確認ができる
 
@@ -661,6 +669,8 @@ uv run sis strategy-backtest-html-report
 | `crypto_perp_tournament_rows_preview.v1` | outcomeから作る3action rows preview | before-cost proxyでありactual cashではないことをknown gaps込みで読む |
 | `crypto_perp_tournament_report.v1` | 仮説比較report | `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE`を同一event setで読む |
 | `crypto_perp_tournament_gate.v1` | tournament後のlocal gate | tiny live承認準備へ進むか、actual cash再生成 / event追加 / revisionへ戻すかを読む。Daily Brief / Workbench Viewer でも索引対象 |
+| `crypto_perp_truth_cycle_status.v1` | truth-cycleの現在地 | missing artifact、stop reason、local-only next steps、stage checklist blocker、false-only permission flagsを読む |
+| fixture-only dogfood pack | truth-cycle表示面の読み合わせ | 実データやlive許可ではなく、status / Daily Brief / Workbench Viewerが誤読しにくいかをローカルfixtureで読む |
 
 ## 用語集
 
@@ -840,6 +850,16 @@ prospective decisionの後、指定した観察窓が終わってから作る結
 
 tournament reportを読んで、tiny live承認準備へ進めるか、actual cash再生成、event追加、event定義見直しへ戻すかを分けるlocal artifactです。`READY_FOR_HUMAN_TINY_LIVE_REVIEW` でも、live実行許可ではありません。
 
+CLI stdout の `status=needs_human_approval` は「別承認が必要」という意味です。`status=pass` やlive実行許可として読み替えません。
+
+### truth-cycle status
+
+Crypto Perp検証の現在地を読むstatus artifactです。missing artifact path、stop reason、次にローカルで確認するcommand、stage checklist blockerをまとめます。ここに出るnext stepは実行許可ではなく、特に `network_allowed=false`、`exchange_write_allowed=false`、`live_order_allowed=false` の境界を保つための索引です。
+
+### stage checklist
+
+Crypto Perpの各stageで、どのartifactやCLI optionが足りないかを読む一覧です。`blocks_progress=true` は「先にここを埋める」という意味で、次stageやtiny liveへ進む許可ではありません。
+
 ### stage policy
 
 次の段階へ進む条件を定義した設定です。たとえばpaper smoke、normal paper observation、drift reviewなどの条件を持ちます。
@@ -1013,6 +1033,9 @@ API key、secret、passphraseなどの認証情報です。存在しても、た
 | `READY_FOR_HUMAN_NEXT_SCALE_REVIEW` | next scale planを人間が読む状態 | next-scale実行許可 |
 | `backtest_passed=true` | YAML内の閾値を満たした | alpha証明 |
 | `crypto_perp_live_measurement.v1` | tiny live measurementの記録形式 | 実ネットワーク測定済みの証明 |
+| `crypto_perp_truth_cycle_status.v1` | 現在地、stop reason、local-only next step、stage blocker | network / exchange write / live order許可 |
+| `first_next_step_network_allowed=false` | viewer summary上のfalse-only境界確認 | trueに変えればnetwork実行許可になる |
+| `first_stage_blocker` | 最初に読む欠損stageの索引 | 次stageやtiny liveへ進む許可 |
 | `REVERSAL_SHORT` | 比較対象の仮説の1つ | short固定の勝ち前提 |
 | `NO_TRADE` | 取引しない判断または比較対象 | 失敗や未実装 |
 | `actual_cash_result_usd` | cash basisの主要評価値 | 単体で将来利益を保証する値 |

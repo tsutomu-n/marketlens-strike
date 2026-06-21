@@ -249,3 +249,77 @@ def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeyp
     assert "before-cost proxyではなくactual cash evidence" in report
     assert "REBUILD_WITH_ACTUAL_CASH" in report
     assert "normal_paper_gap" in report
+
+
+def test_strategy_daily_brief_human_tiny_live_review_is_not_permission(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    data_dir = tmp_path / "data"
+    _write_json(
+        data_dir / "crypto_perp/tournament_gate/tournament_gate.json",
+        {
+            "schema_version": "crypto_perp_tournament_gate.v1",
+            "gate_id": "crypto-perp-gate-ready",
+            "report_id": "crypto-perp-tournament-ready",
+            "created_at": "2026-06-21T06:00:00Z",
+            "gate_status": "READY_FOR_HUMAN_TINY_LIVE_REVIEW",
+            "recommended_action": "PREPARE_TINY_LIVE_APPROVAL_PACKET",
+            "permits_live_order": False,
+            "exchange_write_used": False,
+        },
+    )
+    _write_json(
+        data_dir / "crypto_perp/truth_cycle_status/truth_cycle_status.json",
+        {
+            "schema_version": "crypto_perp_truth_cycle_status.v1",
+            "cycle_status": "READY_FOR_HUMAN_TINY_LIVE_REVIEW",
+            "recommended_next_command": "PREPARE_TINY_LIVE_APPROVAL_PACKET",
+            "next_steps": [
+                {
+                    "step_id": "human_tiny_live_approval",
+                    "purpose": "tiny live measurementへ進める前に別の明示承認を取る。",
+                    "command": "STOP_FOR_SEPARATE_HUMAN_APPROVAL",
+                    "requires_explicit_approval": True,
+                    "network_allowed": False,
+                    "exchange_write_allowed": False,
+                    "live_order_allowed": False,
+                }
+            ],
+            "stage_checklist": [],
+            "stop_reasons": [],
+            "summary": {
+                "cycle_status": "READY_FOR_HUMAN_TINY_LIVE_REVIEW",
+                "present_stage_count": 8,
+                "missing_artifact_path_count": 0,
+                "known_gap_count": 0,
+                "stop_reason_count": 0,
+                "stage_checklist_blocker_count": 0,
+            },
+            "permits_live_order": False,
+            "exchange_write_used": False,
+        },
+    )
+
+    result = build_strategy_daily_brief(
+        data_dir=data_dir,
+        out_dir=tmp_path / "data/reports/strategy_daily_brief",
+    )
+
+    expected_reason = (
+        "separate human approval is required before any tiny live measurement; "
+        "this is not live execution permission"
+    )
+    reasons = {
+        (item.category.value, item.reason)
+        for item in result.brief.items
+        if item.category.value
+        in {"crypto_perp_gate_follow_up", "crypto_perp_truth_cycle_follow_up"}
+    }
+    assert ("crypto_perp_gate_follow_up", expected_reason) in reasons
+    assert ("crypto_perp_truth_cycle_follow_up", expected_reason) in reasons
+    report = result.report_path.read_text(encoding="utf-8")
+    assert expected_reason in report
+    assert "STOP_FOR_SEPARATE_HUMAN_APPROVAL" in report
+    assert result.brief.live_allowed is False

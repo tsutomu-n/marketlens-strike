@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from sis.commands.strategy_authoring import _resolve_workspace_path
 from sis.settings import get_settings
-from sis.strategy_scale_decision.models import ScaleDecisionPolicy
+from sis.strategy_scale_decision.models import ScaleDecisionPolicy, ScaleDecisionStatus
 from sis.strategy_scale_decision.service import (
     StrategyScaleDecisionError,
     StrategyScaleDecisionOutputExistsError,
@@ -101,7 +101,13 @@ def register_strategy_scale_decision_commands(app: typer.Typer) -> None:
             raise typer.Exit(2) from exc
 
         decision = result.decision
-        typer.echo("status=pass")
+        if decision.decision_status is ScaleDecisionStatus.READY_FOR_HUMAN_SCALE_REVIEW:
+            typer.echo("status=needs_human_approval")
+            typer.echo("requires_explicit_approval=true")
+        else:
+            typer.echo("status=blocked")
+            typer.echo("requires_explicit_approval=false")
+        typer.echo("permits_live_order=false")
         typer.echo(f"decision_status={decision.decision_status.value}")
         typer.echo(f"recommended_action={decision.recommended_action.value}")
         typer.echo(f"strategy_id={decision.strategy_id}")
