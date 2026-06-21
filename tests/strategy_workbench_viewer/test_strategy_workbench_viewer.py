@@ -80,6 +80,17 @@ def _crypto_perp_truth_cycle_status(path: Path) -> Path:
                     "live_order_allowed": False,
                 },
             ],
+            "stage_checklist": [
+                {
+                    "stage_id": "probe_audit",
+                    "status": "path_not_found",
+                    "present": False,
+                    "blocks_progress": True,
+                    "artifact_path": "data/crypto_perp/inputs/missing_probe_audit.json",
+                    "expected_cli_option": "--probe-audit",
+                    "expected_artifact_hint": "crypto_perp_probe_audit.v1 JSON from crypto-perp-probe-audit",
+                }
+            ],
             "stop_reasons": [
                 "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND",
                 "PROBE_AUDIT_REQUIRED_BEFORE_EVENT_REFRESH",
@@ -130,6 +141,15 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert payload["source_artifacts"][2]["summary"]["stop_reason_count"] == 2
     assert payload["source_artifacts"][2]["summary"]["missing_artifact_path_count"] == 1
     assert payload["source_artifacts"][2]["summary"]["first_next_step"] == "verify_artifact_path"
+    assert payload["source_artifacts"][2]["summary"]["first_stage_blocker"] == "probe_audit"
+    assert (
+        payload["source_artifacts"][2]["summary"]["first_stage_blocker_expected_cli_option"]
+        == "--probe-audit"
+    )
+    assert (
+        payload["source_artifacts"][2]["summary"]["first_stage_blocker_expected_artifact_hint"]
+        == "crypto_perp_probe_audit.v1 JSON from crypto-perp-probe-audit"
+    )
     assert (
         payload["source_artifacts"][2]["summary"]["first_next_step_command"]
         == "verify the specified artifact path before rerunning status"
@@ -150,6 +170,8 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert "paper / live 実行許可ではありません" in html
     assert "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND" in html
     assert "verify_artifact_path" in html
+    assert "first_stage_blocker" in html
+    assert "--probe-audit" in html
     assert "first_next_step_live_order_allowed" in html
     assert "path または生成済みrun directory" in html
     assert "<script>alert(1)</script>" not in html

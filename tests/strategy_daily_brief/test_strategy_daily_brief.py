@@ -180,6 +180,17 @@ def _write_fixtures(data_dir: Path) -> None:
                     "live_order_allowed": False,
                 }
             ],
+            "stage_checklist": [
+                {
+                    "stage_id": "outcome",
+                    "status": "present",
+                    "present": True,
+                    "blocks_progress": True,
+                    "artifact_path": "data/crypto_perp/outcome/latest/outcome.json",
+                    "expected_cli_option": "--outcome",
+                    "expected_artifact_hint": "crypto_perp_outcome.v1 JSON from crypto-perp-outcome-record",
+                }
+            ],
             "stop_reasons": [
                 "GATE_STATUS_NEEDS_ACTUAL_CASH",
                 "GATE_FAILED_CONDITION_no_proxy_known_gap",
@@ -234,6 +245,7 @@ def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeyp
     assert "crypto_perp_gate_follow_up" in report
     assert "crypto_perp_truth_cycle_follow_up" in report
     assert "rebuild_actual_cash_basis" in report
+    assert "first stage blocker: outcome via --outcome" in report
     assert "before-cost proxyではなくactual cash evidence" in report
     assert "REBUILD_WITH_ACTUAL_CASH" in report
     assert "normal_paper_gap" in report

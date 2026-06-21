@@ -191,6 +191,7 @@ def _crypto_perp_truth_cycle_follow_up(payload: dict[str, Any]) -> str | None:
         return None
     status = payload.get("cycle_status")
     first_step = _first_next_step(payload)
+    first_blocker = _first_stage_blocker(payload)
     action = (
         first_step.get("command")
         if first_step is not None
@@ -204,8 +205,15 @@ def _crypto_perp_truth_cycle_follow_up(payload: dict[str, Any]) -> str | None:
         step_id = first_step.get("step_id")
         purpose = first_step.get("purpose")
         if isinstance(step_id, str) and step_id:
+            blocker_text = _stage_blocker_text(first_blocker)
             if isinstance(purpose, str) and purpose:
+                if blocker_text:
+                    return (
+                        f"crypto perp truth-cycle next step: {step_id} - {purpose}; {blocker_text}"
+                    )
                 return f"crypto perp truth-cycle next step: {step_id} - {purpose}"
+            if blocker_text:
+                return f"crypto perp truth-cycle next step: {step_id}; {blocker_text}"
             return f"crypto perp truth-cycle next step: {step_id}"
     if isinstance(action, str) and action:
         return f"crypto perp truth-cycle follow-up: {action}"
@@ -220,6 +228,28 @@ def _first_next_step(payload: dict[str, Any]) -> dict[str, Any] | None:
     if not isinstance(first_step, dict):
         return None
     return first_step
+
+
+def _first_stage_blocker(payload: dict[str, Any]) -> dict[str, Any] | None:
+    stage_checklist = payload.get("stage_checklist")
+    if not isinstance(stage_checklist, list):
+        return None
+    for item in stage_checklist:
+        if isinstance(item, dict) and item.get("blocks_progress") is True:
+            return item
+    return None
+
+
+def _stage_blocker_text(item: dict[str, Any] | None) -> str | None:
+    if item is None:
+        return None
+    stage_id = item.get("stage_id")
+    expected_cli_option = item.get("expected_cli_option")
+    if isinstance(stage_id, str) and stage_id:
+        if isinstance(expected_cli_option, str) and expected_cli_option:
+            return f"first stage blocker: {stage_id} via {expected_cli_option}"
+        return f"first stage blocker: {stage_id}"
+    return None
 
 
 def _items_for_payload(path: Path, payload: dict[str, Any]) -> list[DailyBriefItem]:

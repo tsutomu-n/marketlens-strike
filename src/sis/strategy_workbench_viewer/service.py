@@ -145,6 +145,24 @@ def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
                 value = first_step.get(source_key)
                 if value is not None and summary_key not in summary:
                     summary[summary_key] = value
+    stage_checklist = payload.get("stage_checklist")
+    if isinstance(stage_checklist, list):
+        for item in stage_checklist:
+            if not isinstance(item, dict) or item.get("blocks_progress") is not True:
+                continue
+            stage_id = item.get("stage_id")
+            if isinstance(stage_id, str) and stage_id and "first_stage_blocker" not in summary:
+                summary["first_stage_blocker"] = stage_id
+            for source_key, summary_key in (
+                ("status", "first_stage_blocker_status"),
+                ("expected_cli_option", "first_stage_blocker_expected_cli_option"),
+                ("expected_artifact_hint", "first_stage_blocker_expected_artifact_hint"),
+                ("artifact_path", "first_stage_blocker_artifact_path"),
+            ):
+                value = item.get(source_key)
+                if value is not None and summary_key not in summary:
+                    summary[summary_key] = value
+            break
     return summary
 
 
