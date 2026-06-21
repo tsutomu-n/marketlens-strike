@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_execution_replay.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "replay_id",
+    "event_id",
+    "side",
+    "requested_qty",
+    "requested_notional_usd",
+    "filled_qty",
+    "unfilled_qty",
+    "fill_status",
+    "entry_vwap",
+    "entry_book_side",
+    "latency_seconds",
+    "depth_levels_consumed",
+    "known_gaps"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_execution_replay.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"$ref": "#/$defs/utc_second"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {"type": "array", "items": {"type": "object"}},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "replay_id": {"type": "string", "minLength": 1},
+    "event_id": {"type": "string", "minLength": 1},
+    "side": {"enum": ["buy", "sell"]},
+    "requested_qty": {"$ref": "#/$defs/decimal_string"},
+    "requested_notional_usd": {
+      "anyOf": [{"$ref": "#/$defs/decimal_string"}, {"type": "null"}]
+    },
+    "filled_qty": {"$ref": "#/$defs/decimal_string"},
+    "unfilled_qty": {"$ref": "#/$defs/decimal_string"},
+    "fill_status": {"enum": ["FILLED", "UNFILLABLE"]},
+    "entry_vwap": {
+      "anyOf": [{"$ref": "#/$defs/decimal_string"}, {"type": "null"}]
+    },
+    "entry_book_side": {"enum": ["bid", "ask"]},
+    "latency_seconds": {"type": "integer", "minimum": 0},
+    "depth_levels_consumed": {"type": "integer", "minimum": 0},
+    "known_gaps": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "utc_second": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "decimal_string": {
+      "type": "string",
+      "pattern": "^-?\\d+(\\.\\d+)?$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    }
+  }
+}
