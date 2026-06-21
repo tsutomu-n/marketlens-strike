@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-21_19:02 JST
+更新日: 2026-06-21_19:15 JST
 -->
 
 # Next Direction Current
@@ -27,6 +27,7 @@ Crypto Perp の新しい実装入口は [../plan/0621ここから01/marketlens-s
 
 実装済みの次入口:
 
+- `crypto-perp-truth-cycle-status`: 手元のprobe audit / raw refresh / event / decision / outcome / rows / report / gate artifactを読み、次に欠けているlocal step、stop reason、known gapsを出す。network / order / live permissionではない。
 - `crypto-perp-decision-record`: event JSONから outcome前の `crypto_perp_decision.v1` を作る。
 - `crypto-perp-outcome-record`: event JSONまたはevent idから `crypto_perp_outcome.v1` を作る。
 - `crypto-perp-probe-audit`: public provider probe後に、event候補へ進めるだけのendpoint / raw snapshot証拠があるかをlocal artifactで判定する。

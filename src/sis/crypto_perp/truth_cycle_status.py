@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -43,9 +43,7 @@ class TruthCycleStage(BaseModel):
 class CryptoPerpTruthCycleStatus(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["crypto_perp_truth_cycle_status.v1"] = (
-        TRUTH_CYCLE_STATUS_SCHEMA_VERSION
-    )
+    schema_version: Literal["crypto_perp_truth_cycle_status.v1"] = TRUTH_CYCLE_STATUS_SCHEMA_VERSION
     artifact_id: str
     producer: CryptoPerpProducer
     boundary: CryptoPerpBoundary = Field(default_factory=CryptoPerpBoundary)
@@ -151,7 +149,11 @@ def _status_and_next(
             "HOLD_NO_TRADE_LEADS",
             "REVISE_OR_RETIRE",
         }:
-            return gate_status, str(tournament_gate.get("recommended_action") or ""), []
+            return (
+                cast(TruthCycleStatus, gate_status),
+                str(tournament_gate.get("recommended_action") or ""),
+                [],
+            )
         return "REVISE_OR_RETIRE", "inspect_tournament_gate_artifact", ["UNKNOWN_GATE_STATUS"]
 
     if tournament_report is not None:
@@ -256,7 +258,9 @@ def build_truth_cycle_status(
         _stage("tournament_report", tournament_report_path, tournament_report),
         _stage("tournament_gate", tournament_gate_path, tournament_gate),
     ]
-    known_gaps = _known_gaps(probe_audit, raw_refresh, rows_preview, tournament_report, tournament_gate)
+    known_gaps = _known_gaps(
+        probe_audit, raw_refresh, rows_preview, tournament_report, tournament_gate
+    )
     summary = {
         "cycle_status": cycle_status,
         "present_stage_count": sum(1 for stage in stages if stage.present),

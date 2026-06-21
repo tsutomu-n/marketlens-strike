@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_19:02 JST
+更新日: 2026-06-21_19:15 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -22,6 +22,30 @@ Crypto Perp Truth-Cycle の post-MVP 実務runbookです。目的は、candidate
 - [../NEXT_DIRECTION_CURRENT.md](../NEXT_DIRECTION_CURRENT.md)
 
 ## P00: tournament rows からreportを再生成する
+
+手元にあるartifactから次に何が欠けているかだけを見る場合は、先にstatusを作ります。
+
+```bash
+uv run sis crypto-perp-truth-cycle-status \
+  --probe-audit data/crypto_perp/probe_audit/latest/probe_audit.json \
+  --raw-refresh data/crypto_perp/raw_refresh/latest/raw_refresh.json \
+  --out data/crypto_perp/truth_cycle_status/latest
+```
+
+生成物:
+
+- `truth_cycle_status.json`
+- `truth_cycle_status.md`
+
+見るもの:
+
+- `cycle_status`
+- `recommended_next_command`
+- `stop_reasons`
+- `known_gaps`
+- 各stageの `present` / `status`
+
+これは既存artifactを読むだけです。public network、credential、wallet、signing、exchange write、live orderは使いません。
 
 既存の rows JSON / JSONL がある場合、まずtournament reportだけを再生成します。
 
@@ -321,6 +345,7 @@ tiny live measurement はこのrunbookの範囲外です。進むには別の明
 
 ```bash
 uv run pytest tests/crypto_perp/test_provider_probe.py tests/crypto_perp/test_raw_refresh.py tests/crypto_perp/test_decisions.py tests/crypto_perp/test_outcomes.py tests/crypto_perp/test_tournament_rows.py tests/crypto_perp/test_tournament.py tests/crypto_perp/test_tournament_gate.py -q
+uv run pytest tests/crypto_perp/test_truth_cycle_status.py -q
 uv run python scripts/check_cli_catalog.py
 uv run python scripts/check_current_docs.py
 ./scripts/check

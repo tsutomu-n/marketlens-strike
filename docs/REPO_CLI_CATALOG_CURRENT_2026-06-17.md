@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-21_19:02 JST
+更新日: 2026-06-21_19:15 JST
 -->
 
 # Repo CLI Catalog Current
@@ -133,8 +133,9 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-tournament-gate`
 - `crypto-perp-tournament-report`
 - `crypto-perp-tournament-rows-preview`
+- `crypto-perp-truth-cycle-status`
 
-M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。`crypto-perp-tournament-gate` は report を読んで next action を分けるlocal gateであり、live order permissionではありません。
+M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。`crypto-perp-tournament-gate` は report を読んで next action を分けるlocal gateであり、live order permissionではありません。`crypto-perp-truth-cycle-status` は既存artifactから次に欠けているlocal stepとstop reasonを出すだけで、network / order / live permissionではありません。
 
 ### Trade[XYZ] / Quotes / Data Readiness
 
