@@ -55,6 +55,7 @@ SUMMARY_KEYS = (
     "gate_id",
     "gate_status",
     "cycle_status",
+    "human_summary",
     "report_id",
     "tournament_status",
     "leader_action",

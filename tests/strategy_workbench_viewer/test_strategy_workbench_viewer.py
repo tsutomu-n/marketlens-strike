@@ -75,6 +75,7 @@ def _crypto_perp_truth_cycle_status(path: Path) -> Path:
             ],
             "summary": {
                 "cycle_status": "MISSING_PROBE_AUDIT",
+                "human_summary": "指定された probe audit artifact が見つからないため、path または生成済みrun directoryを先に確認する。",
                 "present_stage_count": 0,
                 "missing_artifact_path_count": 1,
                 "known_gap_count": 0,
@@ -121,12 +122,17 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
         payload["source_artifacts"][2]["summary"]["first_stop_reason"]
         == "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND"
     )
+    assert (
+        "path または生成済みrun directory"
+        in payload["source_artifacts"][2]["summary"]["human_summary"]
+    )
 
     html = result.html_path.read_text(encoding="utf-8")
     HTMLParser().feed(html)
     assert "Strategy Workbench Viewer" in html
     assert "paper / live 実行許可ではありません" in html
     assert "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND" in html
+    assert "path または生成済みrun directory" in html
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
 
