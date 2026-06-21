@@ -98,6 +98,9 @@ def test_truth_cycle_status_carries_gate_need_for_actual_cash(tmp_path: Path) ->
 
     assert status.cycle_status == "NEEDS_ACTUAL_CASH"
     assert status.recommended_next_command == "REBUILD_WITH_ACTUAL_CASH"
+    assert status.summary["human_summary"] == (
+        "before-cost proxyやcash attribution不足があるため、actual cash basisへ作り直す。"
+    )
     assert "GATE_STATUS_NEEDS_ACTUAL_CASH" in status.stop_reasons
     assert "GATE_FAILED_CONDITION_no_proxy_known_gap" in status.stop_reasons
     assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in status.known_gaps
@@ -135,6 +138,7 @@ def test_truth_cycle_status_schema_and_cli(tmp_path: Path) -> None:
     assert "exchange_write_used=false" in result.stdout
     assert "live_order_submitted=false" in result.stdout
     assert "cycle_status=READY_FOR_RAW_REFRESH" in result.stdout
+    assert "human_summary=probe audit は通過しているため" in result.stdout
     payload = json.loads((tmp_path / "status/truth_cycle_status.json").read_text(encoding="utf-8"))
     schema = json.loads(
         (REPO_ROOT / "schemas/crypto_perp_truth_cycle_status.v1.schema.json").read_text(
@@ -143,4 +147,6 @@ def test_truth_cycle_status_schema_and_cli(tmp_path: Path) -> None:
     )
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(payload)
-    assert (tmp_path / "status/truth_cycle_status.md").exists()
+    report = (tmp_path / "status/truth_cycle_status.md").read_text(encoding="utf-8")
+    assert "human_summary:" in report
+    assert "probe audit は通過しているため" in report

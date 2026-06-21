@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_19:23 JST
+更新日: 2026-06-21_19:38 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -40,6 +40,7 @@ uv run sis crypto-perp-truth-cycle-status \
 見るもの:
 
 - `cycle_status`
+- `human_summary`
 - `recommended_next_command`
 - `stop_reasons`
 - `known_gaps`

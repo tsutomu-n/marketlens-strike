@@ -153,6 +153,40 @@ def _gate_stop_reasons(gate: dict[str, Any], gate_status: str) -> list[str]:
     return list(dict.fromkeys(reasons))
 
 
+def _human_summary(cycle_status: TruthCycleStatus, stop_reasons: list[str]) -> str:
+    if cycle_status == "MISSING_PROBE_AUDIT":
+        if any(reason.endswith("_ARTIFACT_PATH_NOT_FOUND") for reason in stop_reasons):
+            return "指定された probe audit artifact が見つからないため、path または生成済みrun directoryを先に確認する。"
+        return "probe audit が未指定または未生成のため、event refresh 前に public probe 証拠をauditする。"
+    if cycle_status == "BLOCKED_PROBE_QUALITY":
+        return "probe品質が不足しているため、raw refreshへ進まず public probe の欠損を修復する。"
+    if cycle_status == "READY_FOR_RAW_REFRESH":
+        return "probe audit は通過しているため、audit済みraw snapshotからlocal artifactを再生成できる。"
+    if cycle_status == "RAW_REFRESH_NO_EVENT":
+        return "raw refresh は完了したがevent候補がないため、無理にevent化せずknown gapsや閾値を確認する。"
+    if cycle_status == "READY_FOR_DECISION":
+        return "event候補があるため、outcomeを見る前にprospective decisionを記録する。"
+    if cycle_status == "READY_FOR_OUTCOME_AFTER_MATURITY":
+        return "decisionは記録済みのため、観察窓が成熟してからoutcomeを記録する。"
+    if cycle_status == "READY_FOR_ROWS_PREVIEW":
+        return "matured outcomeから3action rows previewを作れるが、actual cash evidenceではない点を残す。"
+    if cycle_status == "READY_FOR_TOURNAMENT_REPORT":
+        return "rows previewからtournament reportを作れるが、proxy gapをactual cashとして扱わない。"
+    if cycle_status == "READY_FOR_TOURNAMENT_GATE":
+        return (
+            "tournament reportをgateに通し、tiny live承認準備へ進めるかをlocal artifactで判定する。"
+        )
+    if cycle_status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW":
+        return "人間のtiny live承認準備に進める可能性があるが、live実行許可ではない。"
+    if cycle_status == "NEEDS_ACTUAL_CASH":
+        return "before-cost proxyやcash attribution不足があるため、actual cash basisへ作り直す。"
+    if cycle_status == "NEEDS_MORE_EVIDENCE":
+        return "event数や証拠が不足しているため、追加観測なしに勝ち筋へ進めない。"
+    if cycle_status == "HOLD_NO_TRADE_LEADS":
+        return "NO_TRADEが優位なため、trade実行ではなく見送り継続を基本に確認する。"
+    return "条件違反または損失/集中リスクがあるため、event定義や仮説を修正または廃止する。"
+
+
 def _status_and_next(
     *,
     probe_audit: dict[str, Any] | None,
@@ -290,6 +324,7 @@ def build_truth_cycle_status(
     stop_reasons = list(dict.fromkeys([*_missing_path_stop_reasons(stages), *stop_reasons]))
     summary = {
         "cycle_status": cycle_status,
+        "human_summary": _human_summary(cycle_status, stop_reasons),
         "present_stage_count": sum(1 for stage in stages if stage.present),
         "missing_artifact_path_count": sum(
             1 for stage in stages if stage.status == "path_not_found"

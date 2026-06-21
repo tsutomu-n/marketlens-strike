@@ -16,6 +16,7 @@ def _render_truth_cycle_status_markdown(status: CryptoPerpTruthCycleStatus) -> s
         "# Crypto Perp Truth-Cycle Status",
         "",
         f"- cycle_status: `{status.cycle_status}`",
+        f"- human_summary: {status.summary.get('human_summary', '')}",
         f"- recommended_next_command: `{status.recommended_next_command}`",
         "- permits_live_order: `false`",
         "- exchange_write_used: `false`",
@@ -112,6 +113,7 @@ def register_crypto_perp_truth_cycle_commands(app: typer.Typer) -> None:
         typer.echo("live_order_submitted=false")
         typer.echo("status=pass")
         typer.echo(f"cycle_status={status.cycle_status}")
+        typer.echo(f"human_summary={status.summary.get('human_summary', '')}")
         typer.echo(f"recommended_next_command={status.recommended_next_command}")
         typer.echo(f"known_gap_count={len(status.known_gaps)}")
         typer.echo(f"status_path={json_path.as_posix()}")
