@@ -1,0 +1,4 @@
+exchange,symbol,timestamp,local_timestamp,id,side,price,amount
+bitget-futures,BTCUSDT,1733011200000000,1733011200000100,t1,buy,100,1
+bitget-futures,BTCUSDT,1733011201000000,1733011201000200,t2,sell,101,2
+bitget-futures,BTCUSDT,1733011202000000,1733011202000300,t3,buy,99,1
