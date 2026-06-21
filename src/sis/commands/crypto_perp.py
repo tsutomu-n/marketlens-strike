@@ -120,18 +120,30 @@ def _fixture_account_snapshot() -> CryptoPerpAccountSnapshot:
     )
 
 
-def _read_tournament_rows(path: Path) -> list[TournamentEventResult]:
+def _read_tournament_rows(path: Path) -> tuple[list[TournamentEventResult], list[str], str | None]:
     text = path.read_text(encoding="utf-8")
     rows_payload: object
+    known_gaps: list[str] = []
+    schema_version: str | None = None
     try:
         rows_payload = json.loads(text)
     except json.JSONDecodeError:
         rows_payload = [json.loads(line) for line in text.splitlines() if line.strip()]
     if isinstance(rows_payload, dict):
+        raw_schema_version = rows_payload.get("schema_version")
+        if isinstance(raw_schema_version, str):
+            schema_version = raw_schema_version
+        raw_known_gaps = rows_payload.get("known_gaps")
+        if isinstance(raw_known_gaps, list):
+            known_gaps = [str(gap) for gap in raw_known_gaps if str(gap).strip()]
         rows_payload = rows_payload.get("rows")
     if not isinstance(rows_payload, list):
         raise ValueError("rows input must be a JSON array, JSON object with rows, or JSONL")
-    return [TournamentEventResult.model_validate(row) for row in rows_payload]
+    return (
+        [TournamentEventResult.model_validate(row) for row in rows_payload],
+        known_gaps,
+        schema_version,
+    )
 
 
 def _render_tournament_report_markdown(report: CryptoPerpTournamentReport) -> str:
@@ -162,6 +174,9 @@ def _render_tournament_report_markdown(report: CryptoPerpTournamentReport) -> st
     if report.inconclusive_reasons:
         lines.extend(["", "## Inconclusive Reasons", ""])
         lines.extend(f"- `{reason}`" for reason in report.inconclusive_reasons)
+    if report.known_gaps:
+        lines.extend(["", "## Known Gaps", ""])
+        lines.extend(f"- `{gap}`" for gap in report.known_gaps)
     lines.extend(
         [
             "",
@@ -724,20 +739,22 @@ def register_crypto_perp_commands(app: typer.Typer) -> None:
         ),
     ) -> None:
         try:
-            row_list = _read_tournament_rows(rows)
+            row_list, source_known_gaps, source_schema_version = _read_tournament_rows(rows)
             source_text = rows.read_text(encoding="utf-8")
+            combined_known_gaps = list(dict.fromkeys([*source_known_gaps, *(known_gap or [])]))
+            source_ref = {
+                "path": rows.as_posix(),
+                "sha256": "sha256:" + stable_hash([source_text]),
+            }
+            if source_schema_version:
+                source_ref["schema_version"] = source_schema_version
             report = build_tournament_report(
                 report_id=report_id,
                 generated_at=_utc_now(),
                 rows=row_list,
                 min_events=min_events,
-                source_refs=[
-                    {
-                        "path": rows.as_posix(),
-                        "sha256": "sha256:" + stable_hash([source_text]),
-                    }
-                ],
-                known_gaps=known_gap or [],
+                source_refs=[source_ref],
+                known_gaps=combined_known_gaps,
             )
         except Exception as exc:
             typer.echo("status=fail")

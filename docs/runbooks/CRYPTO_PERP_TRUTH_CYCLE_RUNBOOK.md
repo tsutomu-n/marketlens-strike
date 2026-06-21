@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_18:41 JST
+更新日: 2026-06-21_18:56 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -207,7 +207,30 @@ uv run sis crypto-perp-outcome-record \
 
 ## P05: tournament rowsを作る
 
-現時点では rows は明示的なJSON / JSONLとして作ります。winnerだけを保存しません。各eventについて、同じevent setで次の3actionをそろえます。
+outcome artifactから、tournament reportへ渡す3action rowsのpreviewを作れます。
+
+```bash
+uv run sis crypto-perp-tournament-rows-preview \
+  --outcome data/crypto_perp/outcomes/<event-id>/<outcome-id>.json \
+  --out data/crypto_perp/tournament_rows_preview/<event-id> \
+  --notional-usd 25 \
+  --operator-time-minutes 2
+```
+
+生成物:
+
+- `tournament_rows_preview.json`
+- `tournament_rows.jsonl`
+- `tournament_rows_preview.md`
+
+注意:
+
+- これは `outcome_before_cost_proxy` です。実約定、fee、funding、slippage込みのactual cashではありません。
+- `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` と `FEES_FUNDING_AND_FILL_SLIPPAGE_NOT_INCLUDED` をknown gapとして残します。
+- `NO_TRADE` はcash 0として明示します。失敗扱いしません。
+- `tournament_rows_preview.json` を `crypto-perp-tournament-report --rows` に渡すと、previewのknown gapsはreportへ継承されます。
+
+手で作る場合も、winnerだけを保存しません。各eventについて、同じevent setで次の3actionをそろえます。
 
 ```json
 {"event_id":"event-1","action":"REVERSAL_SHORT","actual_cash_result_usd":"-1.20","market_adjusted_return":"-0.02","operator_time_minutes":"3","near_miss":false}
@@ -221,12 +244,13 @@ uv run sis crypto-perp-outcome-record \
 - `actual_cash_result_usd` をprimary metricにする。
 - fee、funding、ruined pod、infra costがある場合はcash側に含める。
 - データ不足は行を消して隠すのではなく、reportの `INCONCLUSIVE_DATA` または `known_gaps` に残す。
+- before-cost proxy rowsを実cashとして扱わない。
 
 ## P06: reportから次 action を決める
 
 ```bash
 uv run sis crypto-perp-tournament-report \
-  --rows data/crypto_perp/tournament/rows.jsonl \
+  --rows data/crypto_perp/tournament_rows_preview/<event-id>/tournament_rows_preview.json \
   --out data/crypto_perp/tournament/<report-id> \
   --report-id <report-id> \
   --min-events 10 \
@@ -238,6 +262,7 @@ uv run sis crypto-perp-tournament-report \
 - `tournament_status=COMPLETE`
 - event set が3actionで一致している
 - `actual_cash_result_usd` がprimary metric
+- `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` が残っているreportをactual cash evidenceとして扱っていない
 - largest loss が許容範囲
 - profit concentration が極端ではない
 - operator time が継続可能
@@ -275,7 +300,7 @@ tiny live measurement はこのrunbookの範囲外です。進むには別の明
 このrunbookや関連CLIを変更した時は次を実行します。
 
 ```bash
-uv run pytest tests/crypto_perp/test_provider_probe.py tests/crypto_perp/test_raw_refresh.py tests/crypto_perp/test_decisions.py tests/crypto_perp/test_outcomes.py tests/crypto_perp/test_tournament.py -q
+uv run pytest tests/crypto_perp/test_provider_probe.py tests/crypto_perp/test_raw_refresh.py tests/crypto_perp/test_decisions.py tests/crypto_perp/test_outcomes.py tests/crypto_perp/test_tournament_rows.py tests/crypto_perp/test_tournament.py -q
 uv run python scripts/check_cli_catalog.py
 uv run python scripts/check_current_docs.py
 ./scripts/check

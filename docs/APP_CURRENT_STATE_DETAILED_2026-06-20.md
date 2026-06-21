@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_20:32 JST
-更新日: 2026-06-21_18:41 JST
+更新日: 2026-06-21_18:56 JST
 -->
 
 # marketlens-strike アプリ現状詳細ガイド
@@ -424,6 +424,7 @@ uv run sis crypto-perp-outcome-record --help
 uv run sis crypto-perp-account-probe --help
 uv run sis crypto-perp-order-preview --help
 uv run sis crypto-perp-tiny-live-measurement --help
+uv run sis crypto-perp-tournament-rows-preview --help
 uv run sis crypto-perp-tournament-report --help
 ```
 
@@ -438,6 +439,7 @@ uv run sis crypto-perp-tournament-report --help
 - credential redactionつきのread-only account snapshotと、exchange writeしないorder previewを作る。
 - mock-onlyのtiny live measurement artifact、reduce-only close preview、flat reconciliationを扱う。
 - actual cash ledger、execution replay、actual vs simulated fill bias calibrationを作る。
+- matured outcomeから、before-cost proxyの `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` rows previewを作る。
 - `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を同じevent setで比較するtournament reportをCLIで作る。
 - tournament reportをStrategy Input ContractへつなぐWorkbench bridge helperを使う。
 
@@ -654,6 +656,7 @@ uv run sis strategy-backtest-html-report
 | `crypto_perp_live_measurement.v1` | tiny live measurement記録 | mock / live区分、guard、reduce-only close、flat reconciliationを読む |
 | `crypto_perp_cash_ledger.v1` | actual cash ledger | 実損益、fee、funding、cash basisを読む |
 | `crypto_perp_execution_replay.v1` | replay calibration | simulated fillとactual fillの差を読む |
+| `crypto_perp_tournament_rows_preview.v1` | outcomeから作る3action rows preview | before-cost proxyでありactual cashではないことをknown gaps込みで読む |
 | `crypto_perp_tournament_report.v1` | 仮説比較report | `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE`を同一event setで読む |
 
 ## 用語集
@@ -828,7 +831,7 @@ prospective decisionの後、指定した観察窓が終わってから作る結
 
 ### tournament
 
-同じevent setに対して複数の仮説を比べるreportです。Crypto Perpでは `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を同格に扱い、データ不足は `INCONCLUSIVE_DATA` として残します。
+同じevent setに対して複数の仮説を比べるreportです。Crypto Perpでは `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を同格に扱い、データ不足は `INCONCLUSIVE_DATA` として残します。`crypto-perp-tournament-rows-preview` が作るrowsは outcome 由来の before-cost proxy で、実約定、fee、funding、slippage込みのactual cashではありません。preview artifactをreport入力にした場合、この不足はknown gapsとしてreportへ継承されます。
 
 ### stage policy
 

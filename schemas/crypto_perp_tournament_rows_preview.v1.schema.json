@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_tournament_rows_preview.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "producer",
+    "boundary",
+    "event_id",
+    "outcome_id",
+    "primary_metric_source",
+    "rows",
+    "known_gaps",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_tournament_rows_preview.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "producer": {"$ref": "#/$defs/producer"},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "event_id": {"type": "string", "minLength": 1},
+    "outcome_id": {"type": "string", "minLength": 1},
+    "primary_metric_source": {"const": "outcome_before_cost_proxy"},
+    "rows": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/row"},
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": ["action"],
+            "properties": {"action": {"const": "REVERSAL_SHORT"}}
+          },
+          "minContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": ["action"],
+            "properties": {"action": {"const": "CONTINUATION_LONG"}}
+          },
+          "minContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": ["action"],
+            "properties": {"action": {"const": "NO_TRADE"}}
+          },
+          "minContains": 1
+        }
+      ]
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "action",
+        "actual_cash_result_usd",
+        "market_adjusted_return",
+        "operator_time_minutes",
+        "near_miss"
+      ],
+      "properties": {
+        "event_id": {"type": "string", "minLength": 1},
+        "action": {"enum": ["REVERSAL_SHORT", "CONTINUATION_LONG", "NO_TRADE"]},
+        "actual_cash_result_usd": {"type": "string"},
+        "market_adjusted_return": {"type": "string"},
+        "operator_time_minutes": {"type": "string"},
+        "near_miss": {"type": "boolean"}
+      }
+    }
+  }
+}

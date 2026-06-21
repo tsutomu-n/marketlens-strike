@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-21_18:41 JST
+更新日: 2026-06-21_18:50 JST
 -->
 
 # Current State
@@ -63,7 +63,7 @@
 - live order preview / 注文候補生成の正式 command surface。
 - Alpaca credentials ありの API connectivity smoke。
 - Strategy Review や backtest validation からの paper / live permission。
-- Crypto Perp Truth-Cycle MVP は M11 時点で Bitget public provider probe、immutable raw snapshot、probe audit、raw refresh、universe diff、ticker market snapshot、15m candle finality、gap / non-final bar quality guard、slow / fast / near-miss event detection、direction-neutral event artifact、event card rendering、candidate-only raw-first WS capture manifest、book checksum / sequence guard、atomic gzip JSONL segments、prospective decision ledger、matured outcome ledger、Tardis-style parser/book/VWAP golden fixture、OSS adoption notes、pybotters separate spike workspace、Freqtrade external sidecar boundary、Hummingbot Bitget connector notes、credential redaction、read-only account snapshot、non-writing order preview、deterministic clientOid、mock-only tiny live measurement gate、query-before-resubmit state logic、reduce-only close preview、flat reconciliation、actual cash ledger、direction-neutral execution replay、actual vs simulated fill bias calibration、REVERSAL_SHORT / CONTINUATION_LONG / NO_TRADE tournament、`crypto-perp-probe-audit` / `crypto-perp-raw-refresh` / `crypto-perp-decision-record` / `crypto-perp-outcome-record` / `crypto-perp-tournament-report` CLI、Strategy Input Contract export、Strategy Workbench Viewer compact summary までです。M09 の実ネットワーク測定は未実行です。
+- Crypto Perp Truth-Cycle MVP は M11 時点で Bitget public provider probe、immutable raw snapshot、probe audit、raw refresh、universe diff、ticker market snapshot、15m candle finality、gap / non-final bar quality guard、slow / fast / near-miss event detection、direction-neutral event artifact、event card rendering、candidate-only raw-first WS capture manifest、book checksum / sequence guard、atomic gzip JSONL segments、prospective decision ledger、matured outcome ledger、Tardis-style parser/book/VWAP golden fixture、OSS adoption notes、pybotters separate spike workspace、Freqtrade external sidecar boundary、Hummingbot Bitget connector notes、credential redaction、read-only account snapshot、non-writing order preview、deterministic clientOid、mock-only tiny live measurement gate、query-before-resubmit state logic、reduce-only close preview、flat reconciliation、actual cash ledger、direction-neutral execution replay、actual vs simulated fill bias calibration、REVERSAL_SHORT / CONTINUATION_LONG / NO_TRADE tournament、outcome before-cost proxy tournament rows preview、`crypto-perp-probe-audit` / `crypto-perp-raw-refresh` / `crypto-perp-decision-record` / `crypto-perp-outcome-record` / `crypto-perp-tournament-rows-preview` / `crypto-perp-tournament-report` CLI、Strategy Input Contract export、Strategy Workbench Viewer compact summary までです。M09 の実ネットワーク測定は未実行です。
 - Crypto Perp の tiny live measurement 実行。M09 の実ネットワーク実行は別の明示承認、isolated margin、withdrawal disabled API key、IP restriction、max notional 25 USD、flat reconciliation が揃うまで行わない。
 
 ## 外部入力待ち

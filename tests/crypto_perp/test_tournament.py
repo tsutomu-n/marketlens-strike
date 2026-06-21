@@ -182,6 +182,49 @@ def test_crypto_perp_tournament_report_cli_writes_json_and_markdown(tmp_path: Pa
     assert "automatic_trading: `false`" in markdown
 
 
+def test_crypto_perp_tournament_report_cli_carries_preview_known_gaps(
+    tmp_path: Path,
+) -> None:
+    rows_path = tmp_path / "tournament_rows_preview.json"
+    rows_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "crypto_perp_tournament_rows_preview.v1",
+                "rows": [row.model_dump(mode="json") for row in _rows()],
+                "known_gaps": [
+                    "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH",
+                    "FEES_FUNDING_AND_FILL_SLIPPAGE_NOT_INCLUDED",
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-tournament-report",
+            "--rows",
+            str(rows_path),
+            "--out",
+            str(tmp_path / "out"),
+            "--report-id",
+            "preview-report",
+            "--min-events",
+            "2",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads((tmp_path / "out/tournament_report.json").read_text(encoding="utf-8"))
+    assert payload["source_refs"][0]["schema_version"] == "crypto_perp_tournament_rows_preview.v1"
+    assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in payload["known_gaps"]
+    assert "FEES_FUNDING_AND_FILL_SLIPPAGE_NOT_INCLUDED" in payload["known_gaps"]
+    markdown = (tmp_path / "out/tournament_report.md").read_text(encoding="utf-8")
+    assert "## Known Gaps" in markdown
+    assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in markdown
+
+
 def test_crypto_perp_tournament_report_cli_rejects_mismatched_event_sets(
     tmp_path: Path,
 ) -> None:

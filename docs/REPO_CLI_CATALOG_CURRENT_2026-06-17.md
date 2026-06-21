@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-21_18:41 JST
+更新日: 2026-06-21_18:47 JST
 -->
 
 # Repo CLI Catalog Current
@@ -131,6 +131,7 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-order-preview`
 - `crypto-perp-tiny-live-measurement`
 - `crypto-perp-tournament-report`
+- `crypto-perp-tournament-rows-preview`
 
 M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。
 
