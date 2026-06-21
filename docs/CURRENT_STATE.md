@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-20_20:41 JST
+更新日: 2026-06-21_13:24 JST
 -->
 
 # Current State
@@ -18,6 +18,7 @@
 - backtest 結果を HTML / JS で見る入口は `uv run sis strategy-backtest-html-report`。生成先は `data/reports/strategy_backtest_html_report.html` と `data/research/backtest_html_report/strategy_backtest_html_report.json`。
 - 専門用語を減らして「できること / できないこと」を読む場合は [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) を読む。
 - 実務的な次方向と外部入力時の再確認は [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) を読む。
+- Crypto Perp の current implementation handoff は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) を読む。これは旧 CP-00〜CP-10 巨大計画を置き換え、最初は Bitget public data から event snapshot / event card / prospective decision / matured outcome までを作る計画です。
 - `READ_ONLY_GO`、Strategy Review の `READY_FOR_HUMAN_REVIEW`、backtest pack validation `PASS` は、paper execution permission、alpha proof、live readiness ではない。
 - `data/` は runtime / generated state。fresh checkout では必要な artifact を再生成する。
 
@@ -40,6 +41,7 @@
 | Strategy Lifecycle / paper observation status を見る | [strategy_lifecycle/README.md](strategy_lifecycle/README.md) |
 | venue capability boundary を見る | [venues/read_only_capability_probe.md](venues/read_only_capability_probe.md) |
 | operator 手順を見る | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) と [runbooks/README.md](runbooks/README.md) |
+| Crypto Perp Truth-Cycle MVP の実装順を読む | [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) |
 
 ## 境界
 
@@ -60,6 +62,8 @@
 - live order preview / 注文候補生成の正式 command surface。
 - Alpaca credentials ありの API connectivity smoke。
 - Strategy Review や backtest validation からの paper / live permission。
+- Crypto Perp Truth-Cycle MVP の code / schema / CLI surface。M00 時点では current plan routing だけで、M01 以降の実装が必要。
+- Crypto Perp の tiny live measurement 実行。M09 の実ネットワーク実行は別の明示承認、isolated margin、withdrawal disabled API key、IP restriction、max notional 25 USD、flat reconciliation が揃うまで行わない。
 
 ## 外部入力待ち
 

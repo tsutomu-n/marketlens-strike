@@ -1,0 +1,66 @@
+schema_version: crypto_perp_lab_config.v1
+provider:
+  id: bitget
+  base_url: https://api.bitget.com
+  product_type: USDT-FUTURES
+  timeout_seconds: 10
+  max_requests_per_second: 5
+network_policy:
+  public_network_default_allowed: false
+  credentialed_read_default_allowed: false
+  exchange_write_default_allowed: false
+heartbeat:
+  instrument_interval_seconds: 300
+  ticker_interval_seconds: 30
+  candle_interval: 15m
+  candle_backfill_hours: 336
+  finalized_lag_seconds: 5
+universe:
+  allowed_statuses: [online]
+  min_listing_age_days_for_measurement: 7
+  max_spread_bps_for_measurement: 35
+  hard_exclude_by_market_cap: false
+screening:
+  cadence_seconds: 60
+  dedupe_minutes: 360
+  max_alerts_per_hour: 5
+  detectors:
+    slow_pump_74h_v1:
+      enabled: true
+      return_74h_min: 0.04
+      quote_turnover_impulse_74h_min: 0.15
+    fast_pump_1h_v1:
+      enabled: true
+      return_60m_abs_min: 0.05
+      robust_return_z_min: 4.0
+      turnover_percentile_min: 0.99
+    near_miss_v1:
+      enabled: true
+      lower_bound_fraction: 0.80
+candidate_capture:
+  max_concurrent: 5
+  duration_minutes: 360
+  max_duration_minutes: 1440
+  one_minute_backfill_hours: 48
+  channels: [trade, books1, books15]
+  reconnect_max_delay_seconds: 30
+outcomes:
+  horizons_minutes: [5, 15, 60, 240, 720, 1440]
+execution_replay:
+  notionals_usd: [5, 10, 25, 50, 100, 250]
+  latency_seconds: [5, 15, 30, 60]
+  fallback_maker_rate: 0.0002
+  fallback_taker_rate: 0.0006
+  primary_order_style: taker_taker
+  do_not_extrapolate_book_depth: true
+capital:
+  capital_ceiling_usd: 3000
+  lifetime_experiment_budget_usd: 300
+  allow_top_up: false
+  primary_objective: CASH_EXTRACTION
+boundary:
+  permits_live_order: false
+  live_conversion_allowed: false
+  wallet_used: false
+  signing_used: false
+  exchange_write_used: false

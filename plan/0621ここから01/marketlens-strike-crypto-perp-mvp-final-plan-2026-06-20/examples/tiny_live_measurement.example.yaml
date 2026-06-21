@@ -1,0 +1,28 @@
+schema_version: crypto_perp_tiny_live_config.v1
+enabled: false
+venue: bitget
+product_type: USDT-FUTURES
+measurement:
+  min_notional_usd: 5
+  max_notional_usd: 25
+  max_open_positions: 1
+  margin_mode: isolated
+  leverage: 1
+  allow_market_order: true
+  allow_limit_order: false
+  require_reduce_only_close: true
+  require_flat_before_entry: true
+  preview_expiry_seconds: 60
+  max_order_attempts: 1
+  query_after_timeout_attempts: 3
+  query_after_timeout_interval_seconds: 2
+capital:
+  capital_ceiling_usd: 3000
+  lifetime_experiment_budget_usd: 300
+  allow_top_up: false
+credentials:
+  require_withdrawal_disabled_attestation: true
+  require_ip_restriction_attestation: true
+boundary:
+  auto_strategy_execution_allowed: false
+  scale_up_allowed: false

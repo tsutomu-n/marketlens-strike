@@ -76,7 +76,10 @@ CURRENT_DOC_DIRS = (
 
 PLAN_ROUTING_ALLOWED_FILES = ("plan/README.md",)
 
-PLAN_ROUTING_ALLOWED_PREFIXES = ("plan/archive/",)
+PLAN_ROUTING_ALLOWED_PREFIXES = (
+    "plan/archive/",
+    "plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/",
+)
 
 EXCLUDED_DOC_PREFIXES = (
     "docs/archive/",

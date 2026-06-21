@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-19_02:28 JST
+更新日: 2026-06-21_13:24 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -62,6 +62,14 @@ exchange-write path.
 現行 repo truth から見た実務的な次方向は
 [`docs/NEXT_DIRECTION_CURRENT.md`](../docs/NEXT_DIRECTION_CURRENT.md) を読む。
 `計画あり` は `実装決定` ではなく、`catalog known` は `venue enabled` ではない。
+
+## Current 2026-06-20 Crypto Perp Truth-Cycle MVP Plan
+
+Crypto Perp の current implementation handoff は [0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) を読む。これは旧 `Crypto Perp Personal Edge Lab Implementation Plan`、旧 `marketlens-strike-crypto-perp-personal-edge-plan-2026-06-20.zip`、旧 CP-00〜CP-10 をそのまま実装する指示を置き換える。
+
+実装順は [0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) の M00 から進める。最初の完成形は Bitget public data から event snapshot、event card、prospective SHORT / LONG / NO_TRADE decision、matured outcome までです。M09 の tiny live measurement はコードと mock test までは実装対象だが、実ネットワークの live measurement は別の明示承認が必要です。
+
+この plan は production live trading、全銘柄 L2 常時保存、Strategy Lab v2 全面移行、Svelte UI 先行、ML/LLM optimizer 先行、reference venue 先行実装、自動戦略発注 daemon、通常 CI での network 使用、secret の log / artifact 保存を許可しない。
 
 ## Current Strategy Operations First Slices
 

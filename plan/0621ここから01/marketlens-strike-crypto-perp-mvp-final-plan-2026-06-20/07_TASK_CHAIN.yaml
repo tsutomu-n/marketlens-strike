@@ -1,0 +1,292 @@
+schema_version: marketlens_crypto_perp_task_chain.v2
+plan_id: crypto-perp-truth-cycle-mvp-2026-06-20
+supersedes:
+  - crypto-perp-personal-edge-lab-cp00-cp10
+  - marketlens-strike-crypto-perp-personal-edge-plan-2026-06-20.zip
+rules:
+  one_task_per_pr: true
+  network_in_ci: false
+  live_execution_requires_separate_approval: true
+  default_external_network_allowed: false
+  max_new_or_heavily_edited_python_lines: 800
+  source_of_truth:
+    - src
+    - tests
+    - schemas
+    - configs
+    - pyproject.toml
+    - uv.lock
+    - CLI help
+
+tasks:
+  - id: M00
+    title: Current truth alignment and supersession
+    depends_on: []
+    files:
+      modify:
+        - docs/strategy_research_lab/README.md
+        - docs/NEXT_DIRECTION_CURRENT.md
+        - docs/CURRENT_STATE.md
+        - scripts/check_current_docs.py
+        - plan/README.md
+    verify:
+      - uv run python scripts/check_current_docs.py
+      - ./scripts/check
+    done:
+      - Old large plan cannot be mistaken for current implementation instruction
+      - Current docs link to this plan
+
+  - id: M01
+    title: Domain foundation, config, CLI, Hypothesis
+    depends_on: [M00]
+    files:
+      create:
+        - src/sis/crypto_perp/__init__.py
+        - src/sis/crypto_perp/config.py
+        - src/sis/crypto_perp/models.py
+        - src/sis/crypto_perp/io.py
+        - src/sis/crypto_perp/clock.py
+        - src/sis/crypto_perp/reason_codes.py
+        - src/sis/commands/crypto_perp.py
+        - configs/crypto_perp/bitget_personal_edge_lab.yaml
+        - schemas/crypto_perp_lab_config.v1.schema.json
+        - tests/crypto_perp/test_config.py
+        - tests/crypto_perp/property/test_common_invariants.py
+      modify:
+        - src/sis/cli.py
+        - pyproject.toml
+        - uv.lock
+        - docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md
+    verify:
+      - uv run pytest tests/crypto_perp/test_config.py -q
+      - uv run python scripts/check_cli_catalog.py
+      - ./scripts/check
+    done:
+      - Network is default-deny
+      - All normal boundaries are false
+      - Config passes Pydantic and JSON Schema
+
+  - id: M02
+    title: Bitget public probe and immutable raw snapshots
+    depends_on: [M01]
+    files:
+      create:
+        - src/sis/crypto_perp/bitget/client.py
+        - src/sis/crypto_perp/bitget/public_api.py
+        - src/sis/crypto_perp/bitget/normalizers.py
+        - src/sis/crypto_perp/bitget/probe.py
+        - src/sis/crypto_perp/raw_store.py
+        - schemas/crypto_perp_provider_probe.v1.schema.json
+        - tests/crypto_perp/test_bitget_client.py
+        - tests/crypto_perp/test_bitget_normalizers.py
+        - tests/crypto_perp/test_provider_probe.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_bitget_client.py tests/crypto_perp/test_provider_probe.py -q
+      - ./scripts/check
+    done:
+      - Fixture probe covers instruments tickers candles OI funding
+      - Explicit public-network opt-in is required
+      - Documentation/runtime anomalies are persisted
+
+  - id: M03
+    title: Universe diff, ticker snapshot, broad 15m history
+    depends_on: [M02]
+    files:
+      create:
+        - src/sis/crypto_perp/universe.py
+        - src/sis/crypto_perp/heartbeat.py
+        - src/sis/crypto_perp/bars.py
+        - src/sis/crypto_perp/quality.py
+        - schemas/crypto_perp_universe_snapshot.v1.schema.json
+        - schemas/crypto_perp_market_snapshot.v1.schema.json
+        - tests/crypto_perp/test_universe.py
+        - tests/crypto_perp/test_bars.py
+        - tests/crypto_perp/test_quality.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_universe.py tests/crypto_perp/test_bars.py tests/crypto_perp/test_quality.py -q
+      - ./scripts/check
+    done:
+      - Add remove status fee precision and funding interval changes are detected
+      - Gaps and non-final bars cannot generate events
+      - Partial response cannot become mass removal
+
+  - id: M04
+    title: Event capture and event card MVP-A
+    depends_on: [M03]
+    files:
+      create:
+        - src/sis/crypto_perp/features.py
+        - src/sis/crypto_perp/events.py
+        - src/sis/crypto_perp/event_card.py
+        - src/sis/crypto_perp/rendering.py
+        - schemas/crypto_perp_event.v1.schema.json
+        - tests/crypto_perp/test_features.py
+        - tests/crypto_perp/test_events.py
+        - tests/crypto_perp/test_event_card.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_features.py tests/crypto_perp/test_events.py tests/crypto_perp/test_event_card.py -q
+      - ./scripts/check
+    done:
+      - Slow 74h fast 1h and near-miss events exist
+      - Event has no hard-coded trade direction
+      - Future mutation does not change detection features
+
+  - id: M05
+    title: Candidate-only high-resolution recorder
+    depends_on: [M04]
+    files:
+      create:
+        - src/sis/crypto_perp/recorder.py
+        - src/sis/crypto_perp/ws_protocol.py
+        - src/sis/crypto_perp/book.py
+        - src/sis/crypto_perp/segments.py
+        - schemas/crypto_perp_capture_manifest.v1.schema.json
+        - tests/crypto_perp/test_recorder.py
+        - tests/crypto_perp/test_ws_protocol.py
+        - tests/crypto_perp/test_book.py
+        - tests/crypto_perp/test_segments.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_recorder.py tests/crypto_perp/test_ws_protocol.py tests/crypto_perp/test_book.py -q
+      - ./scripts/check
+    done:
+      - Raw-first trade and book capture works
+      - Gap/checksum failure invalidates the book
+      - Restart and atomic segment recovery work
+
+  - id: M06
+    title: Prospective decision and outcome ledger MVP-B
+    depends_on: [M05]
+    files:
+      create:
+        - src/sis/crypto_perp/decisions.py
+        - src/sis/crypto_perp/outcomes.py
+        - schemas/crypto_perp_decision.v1.schema.json
+        - schemas/crypto_perp_outcome.v1.schema.json
+        - tests/crypto_perp/test_decisions.py
+        - tests/crypto_perp/test_outcomes.py
+        - tests/crypto_perp/property/test_decision_time.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_decisions.py tests/crypto_perp/test_outcomes.py -q
+      - ./scripts/check
+    done:
+      - Decision is immutable and pre-outcome
+      - Long short no-trade are direction-neutral
+      - Ambiguous OHLC ordering is not optimistically resolved
+
+  - id: M07
+    title: Validation accelerator pack
+    depends_on: [M06]
+    files:
+      create:
+        - tools/oss_spikes/pybotters_bitget/README.md
+        - tools/oss_spikes/pybotters_bitget/pyproject.toml
+        - tools/external_validation/freqtrade/README.md
+        - tools/external_validation/freqtrade/compose.yaml
+        - scripts/download_tardis_bitget_fixture.py
+        - docs/references/crypto_perp/OSS_ADOPTION_DECISIONS.md
+        - docs/references/crypto_perp/HUMMINGBOT_BITGET_CONNECTOR_NOTES.md
+        - docs/references/crypto_perp/COMPETITION_PROTOCOL.md
+        - tests/crypto_perp/test_tardis_golden.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_tardis_golden.py -q
+      - ./scripts/check
+    done:
+      - Tardis golden fixture is reproducible
+      - pybotters decision is based on soak evidence
+      - Freqtrade remains an external advisory sidecar
+      - GPL source is not copied into core
+
+  - id: M08
+    title: Credentialed read-only and order preview
+    depends_on: [M07]
+    files:
+      create:
+        - src/sis/crypto_perp/bitget/auth.py
+        - src/sis/crypto_perp/bitget/account.py
+        - src/sis/crypto_perp/order_preview.py
+        - src/sis/crypto_perp/idempotency.py
+        - schemas/crypto_perp_account_snapshot.v1.schema.json
+        - schemas/crypto_perp_order_preview.v1.schema.json
+        - tests/crypto_perp/test_bitget_auth.py
+        - tests/crypto_perp/test_account_snapshot.py
+        - tests/crypto_perp/test_order_preview.py
+        - tests/crypto_perp/property/test_rounding.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_bitget_auth.py tests/crypto_perp/test_order_preview.py -q
+      - ./scripts/check
+    done:
+      - Secrets are redacted
+      - Isolated mode and flat account are required
+      - Preview cannot submit an order
+      - ClientOid is deterministic and valid
+
+  - id: M09
+    title: Tiny live execution calibration MVP-C
+    depends_on: [M08]
+    requires_user_approval: true
+    files:
+      create:
+        - src/sis/crypto_perp/tiny_live.py
+        - src/sis/crypto_perp/reconciliation.py
+        - src/sis/commands/crypto_perp_live.py
+        - configs/crypto_perp/tiny_live_measurement.yaml
+        - schemas/crypto_perp_live_measurement.v1.schema.json
+        - tests/crypto_perp/test_tiny_live.py
+        - tests/crypto_perp/test_reconciliation.py
+        - tests/crypto_perp/property/test_order_state_machine.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_tiny_live.py tests/crypto_perp/test_reconciliation.py -q
+      - ./scripts/check
+    done:
+      - One-shot 5 to 25 USD measurement is technically bounded
+      - Timeout uses query-before-resubmit
+      - Close is reduce-only and flat is reconciled
+      - Success does not enable automatic trading
+
+  - id: M10
+    title: Actual cash ledger and replay calibration
+    depends_on: [M09]
+    files:
+      create:
+        - src/sis/crypto_perp/cash_ledger.py
+        - src/sis/crypto_perp/replay.py
+        - src/sis/crypto_perp/calibration.py
+        - schemas/crypto_perp_cash_ledger.v1.schema.json
+        - schemas/crypto_perp_execution_replay.v1.schema.json
+        - tests/crypto_perp/test_cash_ledger.py
+        - tests/crypto_perp/test_replay.py
+        - tests/crypto_perp/test_calibration.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_cash_ledger.py tests/crypto_perp/test_replay.py tests/crypto_perp/test_calibration.py -q
+      - ./scripts/check
+    done:
+      - All deposits and ruined pods remain in cash result
+      - Replay is direction-neutral and never extrapolates depth
+      - Actual versus simulated bias is reported
+
+  - id: M11
+    title: Hypothesis tournament and Workbench bridge
+    depends_on: [M10]
+    files:
+      create:
+        - src/sis/crypto_perp/tournament.py
+        - src/sis/crypto_perp/workbench_bridge.py
+        - schemas/crypto_perp_tournament_report.v1.schema.json
+        - tests/crypto_perp/test_tournament.py
+        - tests/crypto_perp/test_workbench_bridge.py
+      modify:
+        - docs/CURRENT_STATE.md
+        - docs/IMPLEMENTED_SURFACES.md
+        - docs/NEXT_DIRECTION_CURRENT.md
+        - docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md
+        - scripts/check_current_docs.py
+    verify:
+      - uv run pytest tests/crypto_perp/test_tournament.py tests/crypto_perp/test_workbench_bridge.py -q
+      - uv run python scripts/check_cli_catalog.py
+      - uv run python scripts/check_current_docs.py
+      - ./scripts/check
+    done:
+      - Reversal continuation and no-trade use the same event set
+      - Actual cash is primary
+      - Insufficient evidence is INCONCLUSIVE
+      - Existing Strategy Input and Viewer can consume the evidence

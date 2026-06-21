@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-19_02:28 JST
+更新日: 2026-06-21_13:24 JST
 -->
 
 # Next Direction Current
@@ -16,6 +16,10 @@
 完成形を実装完了まで閉じるための作業順、対象ファイル、テスト方針、完了条件は [STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md](STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md) を読む。これは、現時点の target definition だけでは実装契約として不足している部分を補う current plan です。
 
 T0〜T12b の実装証跡と残る対象外範囲は [STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md](STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md) を読む。
+
+Crypto Perp の新しい実装入口は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) を読む。これは旧 CP-00〜CP-10 巨大計画と旧 personal-edge ZIP を置き換える current handoff であり、最初の完成形は `Bitget public data -> event snapshot -> event card -> prospective SHORT / LONG / NO_TRADE decision -> matured outcome` です。M09 の tiny live measurement はコードと mock test までは実装対象ですが、実ネットワークでの 5〜25 USD 測定は別の明示承認がある時だけ扱います。
+
+実装順、対象ファイル、acceptance は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) を読む。M00 は current truth alignment と supersession だけで、M01 以降に `src/sis/crypto_perp/`、config、schema、CLI、Hypothesis を順番に追加する。
 
 Strategy Input Contract / Idea Intake first gate と Strategy Review optional source connection の設計は [strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md) を読む。これは `strategy_input_contract.v1`、`strategy_idea.v1`、validation CLI、`strategy-review-build --input-contract --strategy-idea` の coder handoff です。
 
@@ -237,7 +241,7 @@ uv run sis strategy-paper-observation-cycle \
 - paper bridge validation
 - Strategy Case registry
 - UI
-- credentialed Bitget read-only network probe
+- Crypto Perp 計画外の credentialed Bitget read-only network probe。Crypto Perp Truth-Cycle MVP 内の M08 は、M00〜M07 の後に別 task として扱う。
 - credentialed Hyperliquid read-only network probe
 - Bitget demo order lifecycle
 - production venue schema widening
