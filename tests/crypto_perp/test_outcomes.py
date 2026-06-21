@@ -5,11 +5,14 @@ from pathlib import Path
 from decimal import Decimal
 
 from jsonschema import Draft202012Validator
+from typer.testing import CliRunner
 
+from sis.cli import app
 from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+runner = CliRunner()
 
 
 def test_outcome_settles_long_and_short_returns_direction_neutrally() -> None:
@@ -115,3 +118,72 @@ def test_outcome_dump_matches_schema() -> None:
 
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(outcome.model_dump(mode="json"))
+
+
+def test_crypto_perp_outcome_record_cli_writes_matured_outcome(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-outcome-record",
+            "--event-id",
+            "event-1",
+            "--out",
+            str(tmp_path / "outcomes"),
+            "--horizon-minutes",
+            "60",
+            "--reference-price",
+            "100",
+            "--close-price",
+            "105",
+            "--high-price",
+            "110",
+            "--low-price",
+            "95",
+            "--market-return",
+            "0.01",
+            "--observed-high-low-order",
+            "HIGH_FIRST",
+            "--known-gap",
+            "books15_missing",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "network_attempted=false" in result.stdout
+    assert "exchange_write_used=false" in result.stdout
+    assert "event_id=event-1" in result.stdout
+
+    outcome_path_line = next(
+        line for line in result.stdout.splitlines() if line.startswith("outcome_path=")
+    )
+    outcome_path = Path(outcome_path_line.split("=", 1)[1])
+    payload = json.loads(outcome_path.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == "crypto_perp_outcome.v1"
+    assert payload["boundary"]["exchange_write_used"] is False
+    assert payload["horizons"][0]["long_return_before_cost"] == "0.05"
+    assert payload["horizons"][0]["short_return_before_cost"] == "-0.05"
+    assert payload["horizons"][0]["high_first_low_first"] == "HIGH_FIRST"
+    assert payload["known_gaps"] == ["books15_missing"]
+
+
+def test_crypto_perp_outcome_record_cli_requires_event_id_or_event() -> None:
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-outcome-record",
+            "--horizon-minutes",
+            "60",
+            "--reference-price",
+            "100",
+            "--close-price",
+            "101",
+            "--high-price",
+            "102",
+            "--low-price",
+            "99",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "status=fail" in result.stdout
+    assert "event_id is required" in result.stdout

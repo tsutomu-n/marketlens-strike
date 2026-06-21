@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-21_16:03 JST
+更新日: 2026-06-21_18:35 JST
 -->
 
 # Repo CLI Catalog Current
@@ -121,13 +121,17 @@ uv run python scripts/check_current_docs.py
 
 - `crypto-perp-config-validate`
 - `crypto-perp-probe`
+- `crypto-perp-probe-audit`
 - `crypto-perp-refresh`
 - `crypto-perp-watchdeck`
+- `crypto-perp-decision-record`
+- `crypto-perp-outcome-record`
 - `crypto-perp-account-probe`
 - `crypto-perp-order-preview`
 - `crypto-perp-tiny-live-measurement`
+- `crypto-perp-tournament-report`
 
-M10/M11 の cash ledger、execution replay、calibration、hypothesis tournament、Workbench bridge は Python/schema artifact surface として実装し、このcatalogに追加する新しいpublic CLIはありません。
+M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。
 
 ### Trade[XYZ] / Quotes / Data Readiness
 

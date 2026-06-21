@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-21_16:03 JST
+更新日: 2026-06-21_18:35 JST
 -->
 
 # Next Direction Current
@@ -20,6 +20,34 @@ T0〜T12b の実装証跡と残る対象外範囲は [STRATEGY_OPERATIONS_WORKBE
 Crypto Perp の新しい実装入口は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) を読む。これは旧 CP-00〜CP-10 巨大計画と旧 personal-edge ZIP を置き換える current handoff であり、最初の完成形は `Bitget public data -> event snapshot -> event card -> prospective SHORT / LONG / NO_TRADE decision -> matured outcome` です。M09 の tiny live measurement はコードと mock test までは実装対象ですが、実ネットワークでの 5〜25 USD 測定は別の明示承認がある時だけ扱います。
 
 実装順、対象ファイル、acceptance は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) を読む。M00 の current truth alignment と supersession、M01 の domain foundation / config / fail-closed CLI boundary / Hypothesis、M02 の Bitget public probe / immutable raw snapshots、M03 の universe diff / ticker snapshot / broad 15m history foundation、M04 の event capture and event card MVP-A、M05 の candidate-only high-resolution recorder、M06 の prospective decision and outcome ledger MVP-B、M07 の validation accelerator pack、M08 の credentialed read-only and order preview、M09 の tiny live execution calibration MVP-C、M10 の actual cash ledger and replay calibration、M11 の hypothesis tournament and Workbench bridge は実装済みです。M09 の実ネットワーク 5〜25 USD 測定は別の明示承認がある時だけ扱います。
+
+## Crypto Perp Post-MVP Practical Loop
+
+利益目的に向けた次の現実的なループは、勝ち筋を先に決めることではなく、同じevent setで `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` をactual cash basisで比較し、データ不足を `INCONCLUSIVE_DATA` として残すことです。
+
+実装済みの次入口:
+
+- `crypto-perp-decision-record`: event JSONから outcome前の `crypto_perp_decision.v1` を作る。
+- `crypto-perp-outcome-record`: event JSONまたはevent idから `crypto_perp_outcome.v1` を作る。
+- `crypto-perp-probe-audit`: public provider probe後に、event候補へ進めるだけのendpoint / raw snapshot証拠があるかをlocal artifactで判定する。
+- `crypto-perp-tournament-report`: JSON / JSONL rowsから `crypto_perp_tournament_report.v1` とMarkdown reportを作る。
+- [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md): candidate eventからdecision / outcome / tournament reportまでの再生成手順。
+
+次に進める順番:
+
+1. P00: fixture / historical rowsでtournament reportを再生成し、leaderが出ない時に無理に進めない。
+2. P01: candidate eventからdecision / outcome / tournament rowsまでの生成手順をrunbook化する。現行runbookは [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md)。
+3. P02: public-network opt-inありのBitget public probeを人間実行し、`crypto-perp-probe-audit` が `READY_FOR_EVENT_REFRESH` の時だけraw snapshotとevent候補を増やす。
+4. P03: 十分なevent数がそろっても `INCONCLUSIVE_DATA` なら、thresholdやevent definitionをlearning / revision requestへ戻す。
+5. P04: `COMPLETE` かつactual cash、largest loss、profit concentration、operator timeが許容範囲に入った時だけ、tiny live measurementの承認準備に進む。
+
+やらないこと:
+
+- `REVERSAL_SHORT` を勝ち前提にする。
+- `NO_TRADE` を失敗扱いにする。
+- backtestやfixtureだけで利益があると断定する。
+- M09のmock testを実ネットワーク測定済みとして扱う。
+- tiny live承認なしにcredentialed write、注文、daemon、自動売買へ進む。
 
 Strategy Input Contract / Idea Intake first gate と Strategy Review optional source connection の設計は [strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md) を読む。これは `strategy_input_contract.v1`、`strategy_idea.v1`、validation CLI、`strategy-review-build --input-contract --strategy-idea` の coder handoff です。
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_21:52 JST
-更新日: 2026-06-17_21:52 JST
+更新日: 2026-06-21_18:29 JST
 -->
 
 # Domain Runbooks
@@ -17,6 +17,7 @@
 | [TRADE_XYZ_RUNBOOK.md](TRADE_XYZ_RUNBOOK.md) | Trade[XYZ] collection、historical archive、account fee、pure backtest の手順 |
 | [STRATEGY_RESEARCH_RUNBOOK.md](STRATEGY_RESEARCH_RUNBOOK.md) | Strategy Research Lab、backtest-first baseline、Bitget demo local smoke、Alpaca smoke の手順 |
 | [PAPER_EXECUTION_RUNBOOK.md](PAPER_EXECUTION_RUNBOOK.md) | Paper operations、read-only execution artifacts、legacy live evidence、daemon、micro-live boundary の手順 |
+| [CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md) | Crypto Perp candidate event から decision / outcome / tournament report までの再生成手順 |
 
 ## Reading Rule
 

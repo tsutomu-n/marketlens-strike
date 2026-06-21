@@ -6,11 +6,14 @@ from pathlib import Path
 
 import pytest
 from jsonschema import Draft202012Validator
+from typer.testing import CliRunner
 
+from sis.cli import app
 from sis.crypto_perp.tournament import TournamentEventResult, build_tournament_report
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+runner = CliRunner()
 
 
 def _rows() -> list[TournamentEventResult]:
@@ -137,3 +140,71 @@ def test_tournament_dump_matches_schema() -> None:
 
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(report.model_dump(mode="json"))
+
+
+def test_crypto_perp_tournament_report_cli_writes_json_and_markdown(tmp_path: Path) -> None:
+    rows_path = tmp_path / "rows.jsonl"
+    rows_path.write_text(
+        "\n".join(json.dumps(row.model_dump(mode="json")) for row in _rows()) + "\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-tournament-report",
+            "--rows",
+            str(rows_path),
+            "--out",
+            str(tmp_path / "out"),
+            "--report-id",
+            "tournament-cli",
+            "--min-events",
+            "2",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "network_attempted=false" in result.stdout
+    assert "exchange_write_used=false" in result.stdout
+    assert "tournament_status=COMPLETE" in result.stdout
+    assert "leader_action=CONTINUATION_LONG" in result.stdout
+
+    report_path = tmp_path / "out/tournament_report.json"
+    markdown_path = tmp_path / "out/tournament_report.md"
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == "crypto_perp_tournament_report.v1"
+    assert payload["primary_metric"] == "actual_cash_result_usd"
+    assert payload["leader_action"] == "CONTINUATION_LONG"
+    assert payload["source_refs"][0]["path"] == rows_path.as_posix()
+    markdown = markdown_path.read_text(encoding="utf-8")
+    assert "Crypto Perp Tournament Report" in markdown
+    assert "automatic_trading: `false`" in markdown
+
+
+def test_crypto_perp_tournament_report_cli_rejects_mismatched_event_sets(
+    tmp_path: Path,
+) -> None:
+    rows = [row for row in _rows() if not (row.event_id == "event-2" and row.action == "NO_TRADE")]
+    rows_path = tmp_path / "rows.json"
+    rows_path.write_text(
+        json.dumps([row.model_dump(mode="json") for row in rows]),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-tournament-report",
+            "--rows",
+            str(rows_path),
+            "--out",
+            str(tmp_path / "out"),
+            "--min-events",
+            "2",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "status=fail" in result.stdout
+    assert "same event set" in result.stdout

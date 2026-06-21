@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_probe_audit.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "producer",
+    "boundary",
+    "probe_id",
+    "audit_status",
+    "required_endpoints",
+    "present_endpoints",
+    "missing_endpoints",
+    "zero_row_endpoints",
+    "failed_endpoints",
+    "missing_capabilities",
+    "raw_snapshot_count",
+    "missing_raw_snapshot_paths",
+    "next_actions",
+    "known_gaps",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_probe_audit.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "producer": {"$ref": "#/$defs/producer"},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "probe_id": {"type": "string", "minLength": 1},
+    "audit_status": {"enum": ["READY_FOR_EVENT_REFRESH", "BLOCKED_PROBE_QUALITY"]},
+    "required_endpoints": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "present_endpoints": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "missing_endpoints": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "zero_row_endpoints": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "failed_endpoints": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "missing_capabilities": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "raw_snapshot_count": {"type": "integer", "minimum": 0},
+    "missing_raw_snapshot_paths": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "next_actions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    }
+  }
+}

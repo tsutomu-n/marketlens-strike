@@ -6,12 +6,38 @@ from decimal import Decimal
 
 from jsonschema import Draft202012Validator
 import pytest
+from typer.testing import CliRunner
 
+from sis.cli import app
 from sis.crypto_perp.decisions import build_decision
+from sis.crypto_perp.events import detect_event
+from sis.crypto_perp.features import EventDetectorConfig
 from sis.crypto_perp.models import CryptoPerpAction
+from sis.crypto_perp.quality import validate_candle_series
+from .test_features import make_bars, ticker
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+runner = CliRunner()
+
+
+def _write_event(tmp_path: Path) -> Path:
+    bars = make_bars(["100"] * 591 + ["105"], ["1000"] * 296 + ["1200"] * 296)
+    event = detect_event(
+        provider_id="bitget",
+        native_symbol="BTCUSDT",
+        canonical_symbol="BTCUSDT",
+        bars=bars,
+        ticker=ticker(),
+        quality_report=validate_candle_series(bars, interval="15m"),
+        universe_snapshot_id="universe-1",
+        market_snapshot_id="market-1",
+        detector_config=EventDetectorConfig(),
+    )
+    assert event is not None
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps(event.model_dump(mode="json")), encoding="utf-8")
+    return event_path
 
 
 def test_decision_is_immutable_pre_outcome_and_direction_neutral() -> None:
@@ -87,3 +113,67 @@ def test_decision_dump_matches_schema() -> None:
 
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(decision.model_dump(mode="json"))
+
+
+def test_crypto_perp_decision_record_cli_writes_prospective_artifact(tmp_path: Path) -> None:
+    event_path = _write_event(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-decision-record",
+            "--event",
+            str(event_path),
+            "--action",
+            "NO_TRADE",
+            "--out",
+            str(tmp_path / "decisions"),
+            "--actor-type",
+            "human",
+            "--actor-id",
+            "operator-1",
+            "--size-cap-usd",
+            "0",
+            "--reason-code",
+            "insufficient_evidence",
+            "--notes",
+            "prospective no-trade",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "network_attempted=false" in result.stdout
+    assert "exchange_write_used=false" in result.stdout
+    assert "action=NO_TRADE" in result.stdout
+
+    decision_path_line = next(
+        line for line in result.stdout.splitlines() if line.startswith("decision_path=")
+    )
+    decision_path = Path(decision_path_line.split("=", 1)[1])
+    payload = json.loads(decision_path.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == "crypto_perp_decision.v1"
+    assert payload["action"] == "NO_TRADE"
+    assert payload["boundary"]["exchange_write_used"] is False
+    assert payload["source_event_path"] == event_path.as_posix()
+    assert "outcome" not in payload
+
+
+def test_crypto_perp_decision_record_cli_rejects_invalid_actor(tmp_path: Path) -> None:
+    event_path = _write_event(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-decision-record",
+            "--event",
+            str(event_path),
+            "--action",
+            "REVERSAL_SHORT",
+            "--actor-type",
+            "bot",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "status=fail" in result.stdout
+    assert "actor_type must be system or human" in result.stdout
