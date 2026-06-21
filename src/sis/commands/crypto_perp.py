@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 import os
 from pathlib import Path
 
@@ -10,9 +11,12 @@ from pydantic import ValidationError
 from sis.commands.strategy_authoring import _resolve_workspace_path
 from sis.crypto_perp.bitget.probe import run_provider_probe
 from sis.crypto_perp.config import load_crypto_perp_lab_config
+from sis.crypto_perp.event_card import build_event_card
+from sis.crypto_perp.events import CryptoPerpEvent
 from sis.crypto_perp.io import write_json_artifact, write_text_artifact
 from sis.crypto_perp.models import ConfigValidationArtifact, CryptoPerpProducer, stable_hash
 from sis.crypto_perp.reason_codes import CryptoPerpReasonCode
+from sis.crypto_perp.rendering import render_event_card_markdown
 from sis.settings import get_settings
 
 
@@ -175,8 +179,24 @@ def register_crypto_perp_commands(app: typer.Typer) -> None:
             "--config",
             help="crypto_perp_lab_config.v1 YAML/JSON.",
         ),
+        event_path: Path | None = typer.Option(
+            None,
+            "--event",
+            help="Render a crypto_perp_event.v1 JSON artifact as an event card.",
+        ),
         top: int = typer.Option(20, "--top", help="Maximum cards to display."),
     ) -> None:
+        if event_path is not None:
+            try:
+                event_payload = json.loads(event_path.read_text(encoding="utf-8"))
+                event = CryptoPerpEvent.model_validate(event_payload)
+            except Exception as exc:
+                typer.echo("status=fail")
+                typer.echo(f"error={exc}")
+                raise typer.Exit(2) from exc
+            typer.echo(render_event_card_markdown(build_event_card(event)))
+            return
+
         lab_config, _resolved = _load_config_for_cli(config)
         if top <= 0:
             typer.echo("status=fail")
