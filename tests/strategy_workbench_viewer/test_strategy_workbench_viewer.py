@@ -109,6 +109,30 @@ def _crypto_perp_truth_cycle_status(path: Path) -> Path:
     )
 
 
+def _malformed_crypto_perp_truth_cycle_status(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "crypto_perp_truth_cycle_status.v1",
+            "cycle_status": "MISSING_PROBE_AUDIT",
+            "next_steps": [
+                {
+                    "step_id": "bad_network_permission",
+                    "purpose": "malformed input must not grant network permission.",
+                    "command": "bad command",
+                    "requires_explicit_approval": False,
+                    "network_allowed": True,
+                    "exchange_write_allowed": False,
+                    "live_order_allowed": False,
+                },
+            ],
+            "summary": {"cycle_status": "MISSING_PROBE_AUDIT"},
+            "permits_live_order": False,
+            "exchange_write_used": False,
+        },
+    )
+
+
 def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Path) -> None:
     result = build_strategy_workbench_viewer(
         artifacts=[
@@ -183,6 +207,32 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert "path または生成済みrun directory" in html
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+
+
+def test_strategy_workbench_viewer_drops_true_permission_like_next_step_flags(
+    tmp_path: Path,
+) -> None:
+    result = build_strategy_workbench_viewer(
+        artifacts=[
+            _malformed_crypto_perp_truth_cycle_status(
+                tmp_path / "data/crypto_perp/truth_cycle_status/status.json"
+            ),
+        ],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        Path("schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+    summary = payload["source_artifacts"][0]["summary"]
+    assert summary["first_next_step"] == "bad_network_permission"
+    assert "first_next_step_network_allowed" not in summary
+    assert summary["first_next_step_exchange_write_allowed"] is False
+    assert summary["first_next_step_live_order_allowed"] is False
 
 
 def test_strategy_workbench_viewer_scans_data_dir(tmp_path: Path) -> None:

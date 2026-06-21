@@ -129,6 +129,11 @@ SUMMARY_NUMBER_KEYS = frozenset({"leader_actual_cash_result_usd"})
 SUMMARY_BOOLEAN_KEYS = frozenset(
     {
         "first_next_step_requires_explicit_approval",
+    }
+)
+
+SUMMARY_FALSE_ONLY_KEYS = frozenset(
+    {
         "first_next_step_network_allowed",
         "first_next_step_exchange_write_allowed",
         "first_next_step_live_order_allowed",
@@ -176,6 +181,8 @@ def _compact_summary_value(key: str, value: Any) -> str | int | float | bool | N
         return value if isinstance(value, int | float) and not isinstance(value, bool) else None
     if key in SUMMARY_BOOLEAN_KEYS:
         return value if isinstance(value, bool) else None
+    if key in SUMMARY_FALSE_ONLY_KEYS:
+        return value if value is False else None
     if isinstance(value, str | int | float | bool):
         return value
     return None
