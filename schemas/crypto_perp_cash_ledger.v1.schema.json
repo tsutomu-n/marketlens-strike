@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_cash_ledger.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "ledger_id",
+    "observed_at",
+    "entries",
+    "pod_summaries",
+    "total_deposits_usd",
+    "total_withdrawals_usd",
+    "total_realized_pnl_usd",
+    "total_fees_usd",
+    "total_funding_usd",
+    "total_infra_cost_usd",
+    "total_ruin_usd",
+    "actual_cash_result_usd",
+    "known_gaps"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_cash_ledger.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"$ref": "#/$defs/utc_second"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {"type": "array", "items": {"type": "object"}},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "ledger_id": {"type": "string", "minLength": 1},
+    "observed_at": {"$ref": "#/$defs/utc_second"},
+    "entries": {"type": "array", "items": {"$ref": "#/$defs/ledger_entry"}},
+    "pod_summaries": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/pod_summary"}
+    },
+    "total_deposits_usd": {"$ref": "#/$defs/decimal_string"},
+    "total_withdrawals_usd": {"$ref": "#/$defs/decimal_string"},
+    "total_realized_pnl_usd": {"$ref": "#/$defs/decimal_string"},
+    "total_fees_usd": {"$ref": "#/$defs/decimal_string"},
+    "total_funding_usd": {"$ref": "#/$defs/decimal_string"},
+    "total_infra_cost_usd": {"$ref": "#/$defs/decimal_string"},
+    "total_ruin_usd": {"$ref": "#/$defs/decimal_string"},
+    "actual_cash_result_usd": {"$ref": "#/$defs/decimal_string"},
+    "known_gaps": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "utc_second": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "decimal_string": {
+      "type": "string",
+      "pattern": "^-?\\d+(\\.\\d+)?$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    },
+    "ledger_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_id",
+        "pod_id",
+        "event_id",
+        "entry_type",
+        "amount_usd",
+        "occurred_at",
+        "ruined"
+      ],
+      "properties": {
+        "entry_id": {"type": "string", "minLength": 1},
+        "pod_id": {"type": "string", "minLength": 1},
+        "event_id": {"type": ["string", "null"]},
+        "entry_type": {
+          "enum": ["DEPOSIT", "WITHDRAWAL", "REALIZED_PNL", "FEE", "FUNDING", "INFRA_COST", "POD_RUIN"]
+        },
+        "amount_usd": {"$ref": "#/$defs/decimal_string"},
+        "occurred_at": {"$ref": "#/$defs/utc_second"},
+        "ruined": {"type": "boolean"}
+      }
+    },
+    "pod_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pod_id",
+        "entry_count",
+        "total_deposits_usd",
+        "total_withdrawals_usd",
+        "total_realized_pnl_usd",
+        "total_fees_usd",
+        "total_funding_usd",
+        "total_infra_cost_usd",
+        "total_ruin_usd",
+        "actual_cash_result_usd",
+        "ruined"
+      ],
+      "properties": {
+        "pod_id": {"type": "string", "minLength": 1},
+        "entry_count": {"type": "integer", "minimum": 0},
+        "total_deposits_usd": {"$ref": "#/$defs/decimal_string"},
+        "total_withdrawals_usd": {"$ref": "#/$defs/decimal_string"},
+        "total_realized_pnl_usd": {"$ref": "#/$defs/decimal_string"},
+        "total_fees_usd": {"$ref": "#/$defs/decimal_string"},
+        "total_funding_usd": {"$ref": "#/$defs/decimal_string"},
+        "total_infra_cost_usd": {"$ref": "#/$defs/decimal_string"},
+        "total_ruin_usd": {"$ref": "#/$defs/decimal_string"},
+        "actual_cash_result_usd": {"$ref": "#/$defs/decimal_string"},
+        "ruined": {"type": "boolean"}
+      }
+    }
+  }
+}
