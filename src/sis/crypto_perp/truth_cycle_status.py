@@ -40,6 +40,18 @@ class TruthCycleStage(BaseModel):
     details: dict[str, Any] = Field(default_factory=dict)
 
 
+class TruthCycleNextStep(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    step_id: str
+    purpose: str
+    command: str
+    requires_explicit_approval: bool = False
+    network_allowed: bool = False
+    exchange_write_allowed: bool = False
+    live_order_allowed: bool = False
+
+
 class CryptoPerpTruthCycleStatus(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -49,6 +61,7 @@ class CryptoPerpTruthCycleStatus(BaseModel):
     boundary: CryptoPerpBoundary = Field(default_factory=CryptoPerpBoundary)
     cycle_status: TruthCycleStatus
     recommended_next_command: str
+    next_steps: list[TruthCycleNextStep]
     stop_reasons: list[str]
     stages: list[TruthCycleStage]
     known_gaps: list[str]
@@ -185,6 +198,68 @@ def _human_summary(cycle_status: TruthCycleStatus, stop_reasons: list[str]) -> s
     if cycle_status == "HOLD_NO_TRADE_LEADS":
         return "NO_TRADEが優位なため、trade実行ではなく見送り継続を基本に確認する。"
     return "条件違反または損失/集中リスクがあるため、event定義や仮説を修正または廃止する。"
+
+
+def _next_steps(
+    *,
+    cycle_status: TruthCycleStatus,
+    recommended_next_command: str,
+    stop_reasons: list[str],
+) -> list[TruthCycleNextStep]:
+    steps: list[TruthCycleNextStep] = []
+    if any(reason.endswith("_ARTIFACT_PATH_NOT_FOUND") for reason in stop_reasons):
+        steps.append(
+            TruthCycleNextStep(
+                step_id="verify_artifact_path",
+                purpose="指定したartifact pathまたはrun directoryが正しいかを確認する。",
+                command="verify the specified artifact path before rerunning status",
+            )
+        )
+    if cycle_status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW":
+        steps.append(
+            TruthCycleNextStep(
+                step_id="human_tiny_live_approval",
+                purpose="tiny live measurementへ進める前に別の明示承認を取る。",
+                command="STOP_FOR_SEPARATE_HUMAN_APPROVAL",
+                requires_explicit_approval=True,
+            )
+        )
+        return steps
+    if stop_reasons and cycle_status not in {
+        "READY_FOR_RAW_REFRESH",
+        "READY_FOR_DECISION",
+        "READY_FOR_OUTCOME_AFTER_MATURITY",
+        "READY_FOR_ROWS_PREVIEW",
+        "READY_FOR_TOURNAMENT_REPORT",
+        "READY_FOR_TOURNAMENT_GATE",
+    }:
+        steps.append(
+            TruthCycleNextStep(
+                step_id="resolve_stop_reasons",
+                purpose="stop_reasonsを解消するまで次段階へ進めない。",
+                command="inspect stop_reasons and fix the blocking evidence first",
+            )
+        )
+    if recommended_next_command and recommended_next_command not in {
+        "STOP_FOR_SEPARATE_HUMAN_APPROVAL",
+        "REBUILD_WITH_ACTUAL_CASH",
+    }:
+        steps.append(
+            TruthCycleNextStep(
+                step_id="recommended_local_next_command",
+                purpose="現在のartifact状態から見た次のlocal/read-only候補。",
+                command=recommended_next_command,
+            )
+        )
+    if cycle_status == "NEEDS_ACTUAL_CASH":
+        steps.append(
+            TruthCycleNextStep(
+                step_id="rebuild_actual_cash_basis",
+                purpose="before-cost proxyではなくactual cash evidenceでrows/report/gateを作り直す。",
+                command="REBUILD_WITH_ACTUAL_CASH",
+            )
+        )
+    return steps
 
 
 def _status_and_next(
@@ -332,11 +407,25 @@ def build_truth_cycle_status(
         "known_gap_count": len(known_gaps),
         "stop_reason_count": len(stop_reasons),
     }
+    next_steps = _next_steps(
+        cycle_status=cycle_status,
+        recommended_next_command=next_command,
+        stop_reasons=stop_reasons,
+    )
+    summary["next_step_count"] = len(next_steps)
     return CryptoPerpTruthCycleStatus(
-        artifact_id=stable_hash(["crypto-perp-truth-cycle-status", summary, known_gaps]),
+        artifact_id=stable_hash(
+            [
+                "crypto-perp-truth-cycle-status",
+                summary,
+                known_gaps,
+                [step.model_dump(mode="json") for step in next_steps],
+            ]
+        ),
         producer=CryptoPerpProducer(command=producer_command),
         cycle_status=cycle_status,
         recommended_next_command=next_command,
+        next_steps=next_steps,
         stop_reasons=stop_reasons,
         stages=stages,
         known_gaps=known_gaps,

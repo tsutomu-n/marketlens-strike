@@ -10,6 +10,7 @@
     "boundary",
     "cycle_status",
     "recommended_next_command",
+    "next_steps",
     "stop_reasons",
     "stages",
     "known_gaps",
@@ -39,6 +40,7 @@
       ]
     },
     "recommended_next_command": {"type": "string"},
+    "next_steps": {"type": "array", "items": {"$ref": "#/$defs/next_step"}},
     "stop_reasons": {"type": "array", "items": {"type": "string"}},
     "stages": {"type": "array", "items": {"$ref": "#/$defs/stage"}},
     "known_gaps": {"type": "array", "items": {"type": "string"}},
@@ -101,6 +103,28 @@
         "schema_version": {"type": ["string", "null"]},
         "status": {"type": "string", "minLength": 1},
         "details": {"type": "object", "additionalProperties": true}
+      }
+    },
+    "next_step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step_id",
+        "purpose",
+        "command",
+        "requires_explicit_approval",
+        "network_allowed",
+        "exchange_write_allowed",
+        "live_order_allowed"
+      ],
+      "properties": {
+        "step_id": {"type": "string", "minLength": 1},
+        "purpose": {"type": "string", "minLength": 1},
+        "command": {"type": "string", "minLength": 1},
+        "requires_explicit_approval": {"type": "boolean"},
+        "network_allowed": {"type": "boolean"},
+        "exchange_write_allowed": {"const": false},
+        "live_order_allowed": {"const": false}
       }
     }
   }

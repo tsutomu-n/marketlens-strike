@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_19:54 JST
+更新日: 2026-06-21_20:07 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -33,7 +33,7 @@ uv run sis crypto-perp-truth-cycle-dogfood-pack \
 
 これは missing probe audit のfixture状態を作るだけです。public network、credential、wallet、signing、exchange write、live orderは使いません。
 
-最初に `dogfood_pack.md` の `Review Order` と `Stop Decision` を読みます。fixture packで `MISSING_PROBE_AUDIT` が出る場合は、実runでも probe / probe audit artifact path を先に確認し、勝ち筋やtiny liveの話へ進めません。
+最初に `dogfood_pack.md` の `Review Order`、`Stop Decision`、`Next Steps` を読みます。fixture packで `MISSING_PROBE_AUDIT` が出る場合は、実runでも probe / probe audit artifact path を先に確認し、勝ち筋やtiny liveの話へ進めません。`Next Steps` の `network_allowed`、`exchange_write_allowed`、`live_order_allowed` は、このpackから何を許可していないかを確認するために読みます。
 
 手元にあるartifactから次に何が欠けているかだけを見る場合は、先にstatusを作ります。
 
@@ -54,9 +54,12 @@ uv run sis crypto-perp-truth-cycle-status \
 - `cycle_status`
 - `human_summary`
 - `recommended_next_command`
+- `next_steps`
 - `stop_reasons`
 - `known_gaps`
 - 各stageの `present` / `status`
+
+`next_steps` は `recommended_next_command` より先に読みます。`verify_artifact_path` が出ている場合は、CLIを再実行する前に指定pathやrun directoryを確認します。`requires_explicit_approval=true` が出ている場合は、このrunbookから先へは進めません。
 
 `status=path_not_found` は、指定したartifact pathが存在しないという意味です。`MISSING_PROBE_AUDIT` などの通常欠損と混同せず、path typo / 未生成 / 別run directoryを先に確認します。tournament gateが `NEEDS_ACTUAL_CASH` などで止まった場合は、gate status と failed condition も `stop_reasons` に出ます。
 

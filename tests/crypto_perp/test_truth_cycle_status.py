@@ -70,6 +70,8 @@ def test_truth_cycle_status_starts_with_probe_audit() -> None:
     assert status.cycle_status == "MISSING_PROBE_AUDIT"
     assert "crypto-perp-probe-audit" in status.recommended_next_command
     assert "PROBE_AUDIT_REQUIRED_BEFORE_EVENT_REFRESH" in status.stop_reasons
+    assert status.next_steps[0].step_id == "resolve_stop_reasons"
+    assert status.next_steps[0].live_order_allowed is False
     assert status.boundary.exchange_write_used is False
 
 
@@ -81,6 +83,8 @@ def test_truth_cycle_status_moves_from_ready_audit_to_raw_refresh(tmp_path: Path
     assert status.cycle_status == "READY_FOR_RAW_REFRESH"
     assert "crypto-perp-raw-refresh" in status.recommended_next_command
     assert status.summary["present_stage_count"] == 1
+    assert status.summary["next_step_count"] == 1
+    assert status.next_steps[0].step_id == "recommended_local_next_command"
 
 
 def test_truth_cycle_status_carries_gate_need_for_actual_cash(tmp_path: Path) -> None:
@@ -104,6 +108,10 @@ def test_truth_cycle_status_carries_gate_need_for_actual_cash(tmp_path: Path) ->
     assert "GATE_STATUS_NEEDS_ACTUAL_CASH" in status.stop_reasons
     assert "GATE_FAILED_CONDITION_no_proxy_known_gap" in status.stop_reasons
     assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in status.known_gaps
+    assert [step.step_id for step in status.next_steps] == [
+        "resolve_stop_reasons",
+        "rebuild_actual_cash_basis",
+    ]
 
 
 def test_truth_cycle_status_marks_explicit_missing_artifact_path(tmp_path: Path) -> None:
@@ -117,6 +125,7 @@ def test_truth_cycle_status_marks_explicit_missing_artifact_path(tmp_path: Path)
     assert probe_stage.status == "path_not_found"
     assert probe_stage.details == {"path_exists": False}
     assert status.summary["missing_artifact_path_count"] == 1
+    assert status.next_steps[0].step_id == "verify_artifact_path"
 
 
 def test_truth_cycle_status_schema_and_cli(tmp_path: Path) -> None:
@@ -139,6 +148,8 @@ def test_truth_cycle_status_schema_and_cli(tmp_path: Path) -> None:
     assert "live_order_submitted=false" in result.stdout
     assert "cycle_status=READY_FOR_RAW_REFRESH" in result.stdout
     assert "human_summary=probe audit は通過しているため" in result.stdout
+    assert "next_step_count=1" in result.stdout
+    assert "first_next_step=recommended_local_next_command" in result.stdout
     payload = json.loads((tmp_path / "status/truth_cycle_status.json").read_text(encoding="utf-8"))
     schema = json.loads(
         (REPO_ROOT / "schemas/crypto_perp_truth_cycle_status.v1.schema.json").read_text(
@@ -147,9 +158,12 @@ def test_truth_cycle_status_schema_and_cli(tmp_path: Path) -> None:
     )
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(payload)
+    assert payload["next_steps"][0]["exchange_write_allowed"] is False
+    assert payload["next_steps"][0]["live_order_allowed"] is False
     report = (tmp_path / "status/truth_cycle_status.md").read_text(encoding="utf-8")
     assert "human_summary:" in report
     assert "probe audit は通過しているため" in report
+    assert "## Next Steps" in report
 
 
 def test_truth_cycle_dogfood_pack_cli_builds_status_brief_and_viewer(
@@ -171,6 +185,7 @@ def test_truth_cycle_dogfood_pack_cli_builds_status_brief_and_viewer(
     assert "exchange_write_used=false" in result.stdout
     assert "live_order_submitted=false" in result.stdout
     assert "cycle_status=MISSING_PROBE_AUDIT" in result.stdout
+    assert "first_next_step=verify_artifact_path" in result.stdout
     assert "viewer_artifact_count=4" in result.stdout
     root = tmp_path / "data/crypto_perp/truth_cycle_dogfood"
     assert (root / "truth_cycle_status/truth_cycle_status.json").exists()
@@ -183,6 +198,9 @@ def test_truth_cycle_dogfood_pack_cli_builds_status_brief_and_viewer(
     pack_text = pack_report.read_text(encoding="utf-8")
     assert "## Review Order" in pack_text
     assert "## Stop Decision" in pack_text
+    assert "## Next Steps" in pack_text
+    assert "verify_artifact_path" in pack_text
+    assert "live_order_allowed=`false`" in pack_text
     assert "MISSING_PROBE_AUDIT" in pack_text
     assert "stop and verify the provider probe / probe audit artifact path first" in pack_text
     assert "crypto_perp_truth_cycle_follow_up" in daily_report.read_text(encoding="utf-8")

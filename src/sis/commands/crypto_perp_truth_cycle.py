@@ -35,6 +35,18 @@ def _render_truth_cycle_status_markdown(status: CryptoPerpTruthCycleStatus) -> s
     if status.stop_reasons:
         lines.extend(["", "## Stop Reasons", ""])
         lines.extend(f"- `{reason}`" for reason in status.stop_reasons)
+    if status.next_steps:
+        lines.extend(["", "## Next Steps", ""])
+        lines.extend(
+            "- "
+            f"`{step.step_id}`: {step.purpose} "
+            f"command=`{step.command}` "
+            f"requires_explicit_approval=`{str(step.requires_explicit_approval).lower()}` "
+            f"network_allowed=`{str(step.network_allowed).lower()}` "
+            f"exchange_write_allowed=`{str(step.exchange_write_allowed).lower()}` "
+            f"live_order_allowed=`{str(step.live_order_allowed).lower()}`"
+            for step in status.next_steps
+        )
     if status.known_gaps:
         lines.extend(["", "## Known Gaps", ""])
         lines.extend(f"- `{gap}`" for gap in status.known_gaps)
@@ -62,6 +74,7 @@ def _render_dogfood_pack_markdown(
         f"- human_summary: {status.summary.get('human_summary', '')}",
         f"- recommended_next_command: `{status.recommended_next_command}`",
         f"- first_stop_reason: `{status.stop_reasons[0] if status.stop_reasons else 'none'}`",
+        f"- next_step_count: `{len(status.next_steps)}`",
         "",
         "## Review Order",
         "",
@@ -75,6 +88,19 @@ def _render_dogfood_pack_markdown(
         "- If `cycle_status` is `MISSING_PROBE_AUDIT`, stop and verify the provider probe / probe audit artifact path first.",
         "- If `cycle_status` is `NEEDS_ACTUAL_CASH`, stop and rebuild rows from actual cash evidence before considering measurement.",
         "- If `cycle_status` is `READY_FOR_HUMAN_TINY_LIVE_REVIEW`, stop for separate human approval; this pack is still not live permission.",
+        "",
+        "## Next Steps",
+        "",
+        *[
+            "- "
+            f"`{step.step_id}`: {step.purpose} "
+            f"command=`{step.command}` "
+            f"requires_explicit_approval=`{str(step.requires_explicit_approval).lower()}` "
+            f"network_allowed=`{str(step.network_allowed).lower()}` "
+            f"exchange_write_allowed=`{str(step.exchange_write_allowed).lower()}` "
+            f"live_order_allowed=`{str(step.live_order_allowed).lower()}`"
+            for step in status.next_steps
+        ],
         "",
         "## Artifacts",
         "",
@@ -171,6 +197,9 @@ def register_crypto_perp_truth_cycle_commands(app: typer.Typer) -> None:
         typer.echo(f"cycle_status={status.cycle_status}")
         typer.echo(f"human_summary={status.summary.get('human_summary', '')}")
         typer.echo(f"recommended_next_command={status.recommended_next_command}")
+        typer.echo(f"next_step_count={len(status.next_steps)}")
+        if status.next_steps:
+            typer.echo(f"first_next_step={status.next_steps[0].step_id}")
         typer.echo(f"known_gap_count={len(status.known_gaps)}")
         typer.echo(f"status_path={json_path.as_posix()}")
         typer.echo(f"report_path={report_path.as_posix()}")
@@ -237,6 +266,9 @@ def register_crypto_perp_truth_cycle_commands(app: typer.Typer) -> None:
         typer.echo("status=pass")
         typer.echo(f"cycle_status={status.cycle_status}")
         typer.echo(f"human_summary={status.summary.get('human_summary', '')}")
+        typer.echo(f"next_step_count={len(status.next_steps)}")
+        if status.next_steps:
+            typer.echo(f"first_next_step={status.next_steps[0].step_id}")
         typer.echo(f"daily_brief_item_count={daily.brief.summary.total_item_count}")
         typer.echo(f"viewer_artifact_count={viewer.manifest.artifact_count}")
         typer.echo(f"pack_path={pack_path.as_posix()}")
