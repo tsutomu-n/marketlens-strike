@@ -1,0 +1,74 @@
+schema_version: crypto_perp_lab_config.v1
+config_id: bitget-personal-edge-lab
+created_at: "2026-06-21T04:00:00Z"
+provider:
+  provider_id: bitget
+  product_type: USDT-FUTURES
+  base_url: https://api.bitget.com
+network_policy:
+  default_external_network_allowed: false
+  public_network_env_var: SIS_ALLOW_PUBLIC_NETWORK
+  credentialed_read_env_var: SIS_ALLOW_CREDENTIALED_READ
+  tiny_live_env_var: SIS_ENABLE_TINY_LIVE_MEASUREMENT
+heartbeat:
+  instruments_interval_seconds: 300
+  tickers_interval_seconds: 30
+  open_interest_interval_seconds: 60
+universe:
+  quote_asset: USDT
+  require_online_status: true
+  min_listing_age_hours: 24
+screening:
+  history_backfill_hours: 336
+  candle_interval: 15m
+  slow_window_hours: 74
+  slow_return_threshold: "0.04"
+  slow_turnover_impulse_threshold: "0.15"
+  fast_window_minutes: 60
+  fast_abs_return_floor: "0.03"
+  fast_robust_z_threshold: "3.0"
+  fast_turnover_percentile_threshold: "0.95"
+candidate_capture:
+  max_concurrent_captures: 5
+  duration_minutes: 360
+  channels:
+    - trades
+    - books1
+    - books15
+  channel_limit_per_connection: 50
+outcomes:
+  horizon_minutes:
+    - 5
+    - 15
+    - 60
+    - 240
+    - 720
+    - 1440
+execution_replay:
+  notional_grid_usd:
+    - "5"
+    - "10"
+    - "25"
+    - "50"
+    - "100"
+    - "250"
+  latency_grid_seconds:
+    - 5
+    - 15
+    - 30
+    - 60
+capital:
+  capital_ceiling_usd: "3000"
+  lifetime_experiment_budget_usd: "300"
+  measurement_notional_min_usd: "5"
+  measurement_notional_max_usd: "25"
+  allow_top_up: false
+  max_open_positions: 1
+boundary:
+  permits_live_order: false
+  live_conversion_allowed: false
+  wallet_used: false
+  signing_used: false
+  exchange_write_used: false
+  live_order_submitted: false
+

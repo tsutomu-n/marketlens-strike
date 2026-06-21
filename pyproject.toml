@@ -49,6 +49,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+  "hypothesis>=6",
   "pyrefly>=1.0.0",
   "pytest>=8",
   "pytest-httpx>=0.36.2",
