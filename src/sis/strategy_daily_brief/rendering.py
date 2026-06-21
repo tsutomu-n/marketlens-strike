@@ -13,6 +13,8 @@ def render_strategy_daily_brief_markdown(brief: StrategyDailyBrief) -> str:
         f"- total_item_count: `{summary.total_item_count}`",
         f"- broken_artifact_count: `{summary.broken_artifact_count}`",
         f"- pending_human_review_count: `{summary.pending_human_review_count}`",
+        f"- crypto_perp_gate_follow_up_count: `{summary.crypto_perp_gate_follow_up_count}`",
+        f"- crypto_perp_truth_cycle_follow_up_count: `{summary.crypto_perp_truth_cycle_follow_up_count}`",
         f"- normal_paper_gap_count: `{summary.normal_paper_gap_count}`",
         f"- drift_review_needed_count: `{summary.drift_review_needed_count}`",
         f"- learning_request_pending_count: `{summary.learning_request_pending_count}`",

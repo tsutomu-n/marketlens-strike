@@ -219,6 +219,8 @@ def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeyp
     Draft202012Validator(_schema()).validate(payload)
     report = result.report_path.read_text(encoding="utf-8")
     assert "Strategy Daily Brief" in report
+    assert "crypto_perp_truth_cycle_follow_up_count: `1`" in report
     assert "crypto_perp_gate_follow_up" in report
     assert "crypto_perp_truth_cycle_follow_up" in report
+    assert "REBUILD_WITH_ACTUAL_CASH" in report
     assert "normal_paper_gap" in report

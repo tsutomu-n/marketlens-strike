@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:09 JST
-更新日: 2026-06-21_19:27 JST
+更新日: 2026-06-21_19:33 JST
 -->
 
 # Strategy Daily Brief
@@ -29,7 +29,7 @@ data/reports/strategy_daily_brief/
 
 ## 見るもの
 
-`strategy_daily_brief.v1` は次を一覧化します。
+`strategy_daily_brief.v1` は次を一覧化します。Markdown summary には Crypto Perp gate / truth-cycle follow-up の件数も出ます。
 
 - `broken_artifact`: JSON として読めない、または `schema_version` がない artifact。
 - `pending_human_review`: `READY_FOR_HUMAN_*`、`READY_FOR_HUMAN_MICRO_LIVE_REVIEW`、`READY_FOR_HUMAN_SCALE_REVIEW`、`READY_FOR_HUMAN_NEXT_SCALE_REVIEW`、`LIVE_OBSERVATION_INGESTED`、`BLOCKED_CANARY`、`HUMAN_REVIEW_REQUIRED` など、人間判断が必要な artifact。

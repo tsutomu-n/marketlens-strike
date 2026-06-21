@@ -117,11 +117,16 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert payload["source_artifacts"][2]["status"] == "MISSING_PROBE_AUDIT"
     assert payload["source_artifacts"][2]["summary"]["stop_reason_count"] == 2
     assert payload["source_artifacts"][2]["summary"]["missing_artifact_path_count"] == 1
+    assert (
+        payload["source_artifacts"][2]["summary"]["first_stop_reason"]
+        == "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND"
+    )
 
     html = result.html_path.read_text(encoding="utf-8")
     HTMLParser().feed(html)
     assert "Strategy Workbench Viewer" in html
     assert "paper / live 実行許可ではありません" in html
+    assert "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND" in html
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
 

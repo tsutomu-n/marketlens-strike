@@ -123,6 +123,9 @@ def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
             value = nested.get(key)
             if value is not None and key not in summary:
                 summary[key] = value
+    stop_reasons = payload.get("stop_reasons")
+    if isinstance(stop_reasons, list) and stop_reasons and "first_stop_reason" not in summary:
+        summary["first_stop_reason"] = str(stop_reasons[0])
     return summary
 
 
