@@ -38,6 +38,7 @@ class StrategyWorkbenchViewerOutputExistsError(StrategyWorkbenchViewerError):
 
 
 STATUS_KEYS = (
+    "tournament_status",
     "decision_status",
     "plan_status",
     "ingest_status",
@@ -49,6 +50,12 @@ STATUS_KEYS = (
 )
 
 SUMMARY_KEYS = (
+    "report_id",
+    "tournament_status",
+    "leader_action",
+    "primary_metric",
+    "event_count",
+    "leader_actual_cash_result_usd",
     "strategy_id",
     "review_id",
     "decision_id",
