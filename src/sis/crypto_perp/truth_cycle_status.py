@@ -52,6 +52,18 @@ class TruthCycleNextStep(BaseModel):
     live_order_allowed: bool = False
 
 
+class TruthCycleStageChecklistItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stage_id: str
+    status: str
+    present: bool
+    blocks_progress: bool
+    artifact_path: str | None = None
+    expected_cli_option: str | None = None
+    expected_artifact_hint: str
+
+
 class CryptoPerpTruthCycleStatus(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -64,6 +76,7 @@ class CryptoPerpTruthCycleStatus(BaseModel):
     next_steps: list[TruthCycleNextStep]
     stop_reasons: list[str]
     stages: list[TruthCycleStage]
+    stage_checklist: list[TruthCycleStageChecklistItem]
     known_gaps: list[str]
     summary: dict[str, Any]
 
@@ -262,6 +275,78 @@ def _next_steps(
     return steps
 
 
+_STAGE_INPUT_HINTS: dict[str, tuple[str | None, str]] = {
+    "probe_audit": ("--probe-audit", "crypto_perp_probe_audit.v1 JSON from crypto-perp-probe-audit"),
+    "raw_refresh": ("--raw-refresh", "crypto_perp_raw_refresh.v1 JSON from crypto-perp-raw-refresh"),
+    "event": ("--event", "crypto_perp_event.v1 JSON from raw refresh event_paths"),
+    "decision": ("--decision", "crypto_perp_decision.v1 JSON from crypto-perp-decision-record"),
+    "outcome": ("--outcome", "crypto_perp_outcome.v1 JSON from crypto-perp-outcome-record"),
+    "tournament_rows_preview": (
+        "--rows-preview",
+        "crypto_perp_tournament_rows_preview.v1 JSON from crypto-perp-tournament-rows-preview",
+    ),
+    "tournament_report": (
+        "--tournament-report",
+        "crypto_perp_tournament_report.v1 JSON from crypto-perp-tournament-report",
+    ),
+    "tournament_gate": (
+        "--tournament-gate",
+        "crypto_perp_tournament_gate.v1 JSON from crypto-perp-tournament-gate",
+    ),
+}
+
+
+def _blocking_stage_id(
+    *,
+    cycle_status: TruthCycleStatus,
+    event: dict[str, Any] | None,
+) -> str | None:
+    if cycle_status in {"MISSING_PROBE_AUDIT", "BLOCKED_PROBE_QUALITY"}:
+        return "probe_audit"
+    if cycle_status in {"READY_FOR_RAW_REFRESH", "RAW_REFRESH_NO_EVENT"}:
+        return "raw_refresh"
+    if cycle_status == "READY_FOR_DECISION":
+        return "decision" if event is not None else "event"
+    if cycle_status == "READY_FOR_OUTCOME_AFTER_MATURITY":
+        return "outcome"
+    if cycle_status == "READY_FOR_ROWS_PREVIEW":
+        return "tournament_rows_preview"
+    if cycle_status == "READY_FOR_TOURNAMENT_REPORT":
+        return "tournament_report"
+    if cycle_status == "READY_FOR_TOURNAMENT_GATE":
+        return "tournament_gate"
+    if cycle_status == "NEEDS_ACTUAL_CASH":
+        return "outcome"
+    if cycle_status in {"NEEDS_MORE_EVIDENCE", "HOLD_NO_TRADE_LEADS", "REVISE_OR_RETIRE"}:
+        return "tournament_gate"
+    return None
+
+
+def _stage_checklist(
+    *,
+    stages: list[TruthCycleStage],
+    cycle_status: TruthCycleStatus,
+    event: dict[str, Any] | None,
+) -> list[TruthCycleStageChecklistItem]:
+    blocking_stage_id = _blocking_stage_id(cycle_status=cycle_status, event=event)
+    checklist: list[TruthCycleStageChecklistItem] = []
+    for stage in stages:
+        expected_cli_option, expected_artifact_hint = _STAGE_INPUT_HINTS[stage.stage_id]
+        checklist.append(
+            TruthCycleStageChecklistItem(
+                stage_id=stage.stage_id,
+                status=stage.status,
+                present=stage.present,
+                blocks_progress=stage.status == "path_not_found"
+                or stage.stage_id == blocking_stage_id,
+                artifact_path=stage.artifact_path,
+                expected_cli_option=expected_cli_option,
+                expected_artifact_hint=expected_artifact_hint,
+            )
+        )
+    return checklist
+
+
 def _status_and_next(
     *,
     probe_audit: dict[str, Any] | None,
@@ -412,7 +497,15 @@ def build_truth_cycle_status(
         recommended_next_command=next_command,
         stop_reasons=stop_reasons,
     )
+    stage_checklist = _stage_checklist(
+        stages=stages,
+        cycle_status=cycle_status,
+        event=event,
+    )
     summary["next_step_count"] = len(next_steps)
+    summary["stage_checklist_blocker_count"] = sum(
+        1 for item in stage_checklist if item.blocks_progress
+    )
     return CryptoPerpTruthCycleStatus(
         artifact_id=stable_hash(
             [
@@ -420,6 +513,7 @@ def build_truth_cycle_status(
                 summary,
                 known_gaps,
                 [step.model_dump(mode="json") for step in next_steps],
+                [item.model_dump(mode="json") for item in stage_checklist],
             ]
         ),
         producer=CryptoPerpProducer(command=producer_command),
@@ -428,6 +522,7 @@ def build_truth_cycle_status(
         next_steps=next_steps,
         stop_reasons=stop_reasons,
         stages=stages,
+        stage_checklist=stage_checklist,
         known_gaps=known_gaps,
         summary=summary,
     )

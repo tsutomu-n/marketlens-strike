@@ -13,6 +13,7 @@
     "next_steps",
     "stop_reasons",
     "stages",
+    "stage_checklist",
     "known_gaps",
     "summary"
   ],
@@ -43,6 +44,7 @@
     "next_steps": {"type": "array", "items": {"$ref": "#/$defs/next_step"}},
     "stop_reasons": {"type": "array", "items": {"type": "string"}},
     "stages": {"type": "array", "items": {"$ref": "#/$defs/stage"}},
+    "stage_checklist": {"type": "array", "items": {"$ref": "#/$defs/stage_checklist_item"}},
     "known_gaps": {"type": "array", "items": {"type": "string"}},
     "summary": {
       "type": "object",
@@ -125,6 +127,28 @@
         "network_allowed": {"type": "boolean"},
         "exchange_write_allowed": {"const": false},
         "live_order_allowed": {"const": false}
+      }
+    },
+    "stage_checklist_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage_id",
+        "status",
+        "present",
+        "blocks_progress",
+        "artifact_path",
+        "expected_cli_option",
+        "expected_artifact_hint"
+      ],
+      "properties": {
+        "stage_id": {"type": "string", "minLength": 1},
+        "status": {"type": "string", "minLength": 1},
+        "present": {"type": "boolean"},
+        "blocks_progress": {"type": "boolean"},
+        "artifact_path": {"type": ["string", "null"]},
+        "expected_cli_option": {"type": ["string", "null"]},
+        "expected_artifact_hint": {"type": "string", "minLength": 1}
       }
     }
   }
