@@ -174,9 +174,16 @@ def test_truth_cycle_dogfood_pack_cli_builds_status_brief_and_viewer(
     assert "viewer_artifact_count=4" in result.stdout
     root = tmp_path / "data/crypto_perp/truth_cycle_dogfood"
     assert (root / "truth_cycle_status/truth_cycle_status.json").exists()
+    pack_report = root / "dogfood_pack.md"
     daily_report = root / "reports/strategy_daily_brief/strategy_daily_brief.md"
     viewer_html = root / "reports/strategy_workbench_viewer/strategy_workbench_viewer.html"
+    assert pack_report.exists()
     assert daily_report.exists()
     assert viewer_html.exists()
+    pack_text = pack_report.read_text(encoding="utf-8")
+    assert "## Review Order" in pack_text
+    assert "## Stop Decision" in pack_text
+    assert "MISSING_PROBE_AUDIT" in pack_text
+    assert "stop and verify the provider probe / probe audit artifact path first" in pack_text
     assert "crypto_perp_truth_cycle_follow_up" in daily_report.read_text(encoding="utf-8")
     assert "path または生成済みrun directory" in viewer_html.read_text(encoding="utf-8")

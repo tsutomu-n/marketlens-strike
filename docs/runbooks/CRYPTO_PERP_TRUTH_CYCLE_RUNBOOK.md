@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_19:48 JST
+更新日: 2026-06-21_19:54 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -32,6 +32,8 @@ uv run sis crypto-perp-truth-cycle-dogfood-pack \
 ```
 
 これは missing probe audit のfixture状態を作るだけです。public network、credential、wallet、signing、exchange write、live orderは使いません。
+
+最初に `dogfood_pack.md` の `Review Order` と `Stop Decision` を読みます。fixture packで `MISSING_PROBE_AUDIT` が出る場合は、実runでも probe / probe audit artifact path を先に確認し、勝ち筋やtiny liveの話へ進めません。
 
 手元にあるartifactから次に何が欠けているかだけを見る場合は、先にstatusを作ります。
 
