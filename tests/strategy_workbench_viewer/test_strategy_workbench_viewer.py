@@ -69,6 +69,17 @@ def _crypto_perp_truth_cycle_status(path: Path) -> Path:
             "schema_version": "crypto_perp_truth_cycle_status.v1",
             "cycle_status": "MISSING_PROBE_AUDIT",
             "recommended_next_command": "uv run sis crypto-perp-probe-audit --probe <provider_probe.json> --out <probe-audit-dir>",
+            "next_steps": [
+                {
+                    "step_id": "verify_artifact_path",
+                    "purpose": "指定したartifact pathまたはrun directoryが正しいかを確認する。",
+                    "command": "verify the specified artifact path before rerunning status",
+                    "requires_explicit_approval": False,
+                    "network_allowed": False,
+                    "exchange_write_allowed": False,
+                    "live_order_allowed": False,
+                },
+            ],
             "stop_reasons": [
                 "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND",
                 "PROBE_AUDIT_REQUIRED_BEFORE_EVENT_REFRESH",
@@ -118,6 +129,12 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert payload["source_artifacts"][2]["status"] == "MISSING_PROBE_AUDIT"
     assert payload["source_artifacts"][2]["summary"]["stop_reason_count"] == 2
     assert payload["source_artifacts"][2]["summary"]["missing_artifact_path_count"] == 1
+    assert payload["source_artifacts"][2]["summary"]["first_next_step"] == "verify_artifact_path"
+    assert (
+        payload["source_artifacts"][2]["summary"]["first_next_step_command"]
+        == "verify the specified artifact path before rerunning status"
+    )
+    assert payload["source_artifacts"][2]["summary"]["first_next_step_live_order_allowed"] is False
     assert (
         payload["source_artifacts"][2]["summary"]["first_stop_reason"]
         == "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND"
@@ -132,6 +149,8 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert "Strategy Workbench Viewer" in html
     assert "paper / live 実行許可ではありません" in html
     assert "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND" in html
+    assert "verify_artifact_path" in html
+    assert "first_next_step_live_order_allowed" in html
     assert "path または生成済みrun directory" in html
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html

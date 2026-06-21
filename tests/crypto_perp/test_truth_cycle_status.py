@@ -203,5 +203,10 @@ def test_truth_cycle_dogfood_pack_cli_builds_status_brief_and_viewer(
     assert "live_order_allowed=`false`" in pack_text
     assert "MISSING_PROBE_AUDIT" in pack_text
     assert "stop and verify the provider probe / probe audit artifact path first" in pack_text
-    assert "crypto_perp_truth_cycle_follow_up" in daily_report.read_text(encoding="utf-8")
-    assert "path または生成済みrun directory" in viewer_html.read_text(encoding="utf-8")
+    daily_text = daily_report.read_text(encoding="utf-8")
+    viewer_text = viewer_html.read_text(encoding="utf-8")
+    assert "crypto_perp_truth_cycle_follow_up" in daily_text
+    assert "verify_artifact_path" in daily_text
+    assert "path または生成済みrun directory" in viewer_text
+    assert "first_next_step" in viewer_text
+    assert "first_next_step_live_order_allowed" in viewer_text

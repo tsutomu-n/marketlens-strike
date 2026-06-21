@@ -127,6 +127,24 @@ def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
     stop_reasons = payload.get("stop_reasons")
     if isinstance(stop_reasons, list) and stop_reasons and "first_stop_reason" not in summary:
         summary["first_stop_reason"] = str(stop_reasons[0])
+    next_steps = payload.get("next_steps")
+    if isinstance(next_steps, list) and next_steps:
+        first_step = next_steps[0]
+        if isinstance(first_step, dict):
+            step_id = first_step.get("step_id")
+            if isinstance(step_id, str) and step_id and "first_next_step" not in summary:
+                summary["first_next_step"] = step_id
+            for source_key, summary_key in (
+                ("purpose", "first_next_step_purpose"),
+                ("command", "first_next_step_command"),
+                ("requires_explicit_approval", "first_next_step_requires_explicit_approval"),
+                ("network_allowed", "first_next_step_network_allowed"),
+                ("exchange_write_allowed", "first_next_step_exchange_write_allowed"),
+                ("live_order_allowed", "first_next_step_live_order_allowed"),
+            ):
+                value = first_step.get(source_key)
+                if value is not None and summary_key not in summary:
+                    summary[summary_key] = value
     return summary
 
 

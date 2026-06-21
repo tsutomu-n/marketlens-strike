@@ -169,6 +169,17 @@ def _write_fixtures(data_dir: Path) -> None:
             "schema_version": "crypto_perp_truth_cycle_status.v1",
             "cycle_status": "NEEDS_ACTUAL_CASH",
             "recommended_next_command": "REBUILD_WITH_ACTUAL_CASH",
+            "next_steps": [
+                {
+                    "step_id": "rebuild_actual_cash_basis",
+                    "purpose": "before-cost proxyではなくactual cash evidenceでrows/report/gateを作り直す。",
+                    "command": "REBUILD_WITH_ACTUAL_CASH",
+                    "requires_explicit_approval": False,
+                    "network_allowed": False,
+                    "exchange_write_allowed": False,
+                    "live_order_allowed": False,
+                }
+            ],
             "stop_reasons": [
                 "GATE_STATUS_NEEDS_ACTUAL_CASH",
                 "GATE_FAILED_CONDITION_no_proxy_known_gap",
@@ -222,5 +233,7 @@ def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeyp
     assert "crypto_perp_truth_cycle_follow_up_count: `1`" in report
     assert "crypto_perp_gate_follow_up" in report
     assert "crypto_perp_truth_cycle_follow_up" in report
+    assert "rebuild_actual_cash_basis" in report
+    assert "before-cost proxyではなくactual cash evidence" in report
     assert "REBUILD_WITH_ACTUAL_CASH" in report
     assert "normal_paper_gap" in report

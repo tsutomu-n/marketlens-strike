@@ -190,14 +190,36 @@ def _crypto_perp_truth_cycle_follow_up(payload: dict[str, Any]) -> str | None:
     if payload.get("schema_version") != "crypto_perp_truth_cycle_status.v1":
         return None
     status = payload.get("cycle_status")
-    action = payload.get("recommended_next_command")
+    first_step = _first_next_step(payload)
+    action = (
+        first_step.get("command")
+        if first_step is not None
+        else payload.get("recommended_next_command")
+    )
     if not isinstance(status, str):
         return "missing cycle_status"
     if status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW":
         return "human tiny live review preparation is required before any live measurement"
+    if first_step is not None:
+        step_id = first_step.get("step_id")
+        purpose = first_step.get("purpose")
+        if isinstance(step_id, str) and step_id:
+            if isinstance(purpose, str) and purpose:
+                return f"crypto perp truth-cycle next step: {step_id} - {purpose}"
+            return f"crypto perp truth-cycle next step: {step_id}"
     if isinstance(action, str) and action:
         return f"crypto perp truth-cycle follow-up: {action}"
     return f"crypto perp truth-cycle follow-up: {status}"
+
+
+def _first_next_step(payload: dict[str, Any]) -> dict[str, Any] | None:
+    next_steps = payload.get("next_steps")
+    if not isinstance(next_steps, list) or not next_steps:
+        return None
+    first_step = next_steps[0]
+    if not isinstance(first_step, dict):
+        return None
+    return first_step
 
 
 def _items_for_payload(path: Path, payload: dict[str, Any]) -> list[DailyBriefItem]:
@@ -267,6 +289,8 @@ def _items_for_payload(path: Path, payload: dict[str, Any]) -> list[DailyBriefIt
 
     truth_cycle_reason = _crypto_perp_truth_cycle_follow_up(payload)
     if truth_cycle_reason is not None:
+        first_step = _first_next_step(payload)
+        first_step_command = first_step.get("command") if first_step is not None else None
         severity = (
             DailyBriefItemSeverity.INFO
             if payload.get("cycle_status") == "READY_FOR_HUMAN_TINY_LIVE_REVIEW"
@@ -280,7 +304,7 @@ def _items_for_payload(path: Path, payload: dict[str, Any]) -> list[DailyBriefIt
                 payload=payload,
                 reason=truth_cycle_reason,
                 status=str(payload.get("cycle_status") or ""),
-                action=str(payload.get("recommended_next_command") or ""),
+                action=str(first_step_command or payload.get("recommended_next_command") or ""),
             )
         )
 
