@@ -4,7 +4,9 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
 from jsonschema import Draft202012Validator
+from pydantic import ValidationError
 
 from sis.backtest.artifact_io import sha256_file, write_json_object
 from sis.crypto_perp.tournament import TournamentEventResult, build_tournament_report
@@ -75,6 +77,28 @@ def test_workbench_bridge_exports_strategy_input_contract(tmp_path: Path) -> Non
     assert payload["sources"][0]["schema_version"] == "crypto_perp_tournament_report.v1"
     assert payload["sources"][0]["execution_reality"]["includes_fills"] is True
     assert payload["boundary"]["permits_live_order"] is False
+
+
+@pytest.mark.parametrize(
+    ("report_path", "report_sha256"),
+    [
+        ("/abs/data/crypto_perp/tournament.json", "sha256:" + "a" * 64),
+        ("data/secrets/crypto_perp/tournament.json", "sha256:" + "a" * 64),
+        ("data/crypto_perp/tournament.json", "a" * 64),
+    ],
+)
+def test_workbench_bridge_rejects_unsafe_strategy_input_source(
+    report_path: str, report_sha256: str
+) -> None:
+    with pytest.raises(ValidationError):
+        build_tournament_strategy_input_contract(
+            report=_report(),
+            report_path=report_path,
+            report_sha256=report_sha256,
+            instruments=["BTCUSDT"],
+            timeframe="15m",
+            created_at="2026-06-21T07:01:00Z",
+        )
 
 
 def test_existing_workbench_viewer_consumes_tournament_json(tmp_path: Path) -> None:

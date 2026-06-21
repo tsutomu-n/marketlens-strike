@@ -214,6 +214,8 @@ def build_tournament_report(
     known_gaps: Sequence[str] | None = None,
     producer_command: str = "crypto-perp-tournament-report",
 ) -> CryptoPerpTournamentReport:
+    if min_events <= 0:
+        raise ValueError("min_events must be positive")
     generated = ensure_utc_aware("generated_at", generated_at)
     row_list = list(rows)
     event_set = _validate_same_event_set(row_list)

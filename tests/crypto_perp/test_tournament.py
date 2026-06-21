@@ -112,6 +112,16 @@ def test_tournament_rejects_mismatched_event_sets() -> None:
         )
 
 
+def test_tournament_rejects_non_positive_min_events() -> None:
+    with pytest.raises(ValueError, match="min_events must be positive"):
+        build_tournament_report(
+            report_id="tournament-1",
+            generated_at="2026-06-21T07:00:00Z",
+            rows=_rows(),
+            min_events=0,
+        )
+
+
 def test_tournament_dump_matches_schema() -> None:
     report = build_tournament_report(
         report_id="tournament-1",
