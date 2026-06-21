@@ -1,0 +1,9 @@
+services:
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable
+    network_mode: "none"
+    working_dir: /freqtrade
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ../../../data:/marketlens/data:ro
+    command: ["--help"]

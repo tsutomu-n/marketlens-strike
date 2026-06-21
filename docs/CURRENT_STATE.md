@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-21_15:00 JST
+更新日: 2026-06-21_15:10 JST
 -->
 
 # Current State
@@ -62,7 +62,7 @@
 - live order preview / 注文候補生成の正式 command surface。
 - Alpaca credentials ありの API connectivity smoke。
 - Strategy Review や backtest validation からの paper / live permission。
-- Crypto Perp Truth-Cycle MVP は M06 時点で Bitget public provider probe、immutable raw snapshot、universe diff、ticker market snapshot、15m candle finality、gap / non-final bar quality guard、slow / fast / near-miss event detection、direction-neutral event artifact、event card rendering、candidate-only raw-first WS capture manifest、book checksum / sequence guard、atomic gzip JSONL segments、prospective decision ledger、matured outcome ledger までです。M07 以降の validation accelerator / credentialed read-only / tiny live measurement はまだ未実装です。
+- Crypto Perp Truth-Cycle MVP は M07 時点で Bitget public provider probe、immutable raw snapshot、universe diff、ticker market snapshot、15m candle finality、gap / non-final bar quality guard、slow / fast / near-miss event detection、direction-neutral event artifact、event card rendering、candidate-only raw-first WS capture manifest、book checksum / sequence guard、atomic gzip JSONL segments、prospective decision ledger、matured outcome ledger、Tardis-style parser/book/VWAP golden fixture、OSS adoption notes、pybotters separate spike workspace、Freqtrade external sidecar boundary、Hummingbot Bitget connector notes までです。M08 以降の credentialed read-only / order preview / tiny live measurement はまだ未実装です。
 - Crypto Perp の tiny live measurement 実行。M09 の実ネットワーク実行は別の明示承認、isolated margin、withdrawal disabled API key、IP restriction、max notional 25 USD、flat reconciliation が揃うまで行わない。
 
 ## 外部入力待ち
