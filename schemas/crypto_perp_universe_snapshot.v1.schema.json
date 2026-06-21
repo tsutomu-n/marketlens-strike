@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_universe_snapshot.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "snapshot_id",
+    "provider_id",
+    "product_type",
+    "observed_at",
+    "response_complete",
+    "instruments",
+    "eligibility",
+    "diff"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_universe_snapshot.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"$ref": "#/$defs/utc_second"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {"type": "array", "items": {"$ref": "#/$defs/source_ref"}},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "snapshot_id": {"type": "string", "minLength": 1},
+    "provider_id": {"const": "bitget"},
+    "product_type": {"const": "USDT-FUTURES"},
+    "observed_at": {"$ref": "#/$defs/utc_second"},
+    "response_complete": {"type": "boolean"},
+    "instruments": {"type": "array", "items": {"$ref": "#/$defs/instrument"}},
+    "eligibility": {"type": "array", "items": {"$ref": "#/$defs/eligibility"}},
+    "diff": {"$ref": "#/$defs/diff"}
+  },
+  "$defs": {
+    "utc_second": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schema_version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "schema_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    },
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "native_symbol",
+        "canonical_symbol",
+        "base_asset",
+        "quote_asset",
+        "type",
+        "status",
+        "launch_time",
+        "off_time",
+        "limit_open_time",
+        "maker_fee_rate",
+        "taker_fee_rate",
+        "price_precision",
+        "quantity_precision",
+        "price_multiplier",
+        "quantity_multiplier",
+        "min_order_qty",
+        "min_order_amount",
+        "max_market_order_qty",
+        "min_leverage",
+        "max_leverage",
+        "funding_interval_hours",
+        "metadata_hash"
+      ],
+      "properties": {
+        "native_symbol": {"type": "string"},
+        "canonical_symbol": {"type": "string"},
+        "base_asset": {"type": "string"},
+        "quote_asset": {"type": "string"},
+        "type": {"type": "string"},
+        "status": {"type": "string"},
+        "launch_time": {"type": "string"},
+        "off_time": {"type": "string"},
+        "limit_open_time": {"type": "string"},
+        "maker_fee_rate": {"type": "string"},
+        "taker_fee_rate": {"type": "string"},
+        "price_precision": {"type": "string"},
+        "quantity_precision": {"type": "string"},
+        "price_multiplier": {"type": "string"},
+        "quantity_multiplier": {"type": "string"},
+        "min_order_qty": {"type": "string"},
+        "min_order_amount": {"type": "string"},
+        "max_market_order_qty": {"type": "string"},
+        "min_leverage": {"type": "string"},
+        "max_leverage": {"type": "string"},
+        "funding_interval_hours": {"type": "string"},
+        "metadata_hash": {"type": "string", "minLength": 1}
+      }
+    },
+    "eligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "native_symbol",
+        "eligible_for_screening",
+        "eligible_for_measurement",
+        "liquidity_band",
+        "reason_codes"
+      ],
+      "properties": {
+        "native_symbol": {"type": "string"},
+        "eligible_for_screening": {"type": "boolean"},
+        "eligible_for_measurement": {"type": "boolean"},
+        "liquidity_band": {"type": "string"},
+        "reason_codes": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "removed", "status_changed", "metadata_changed"],
+      "properties": {
+        "added": {"type": "array", "items": {"type": "string"}},
+        "removed": {"type": "array", "items": {"type": "string"}},
+        "status_changed": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/status_change"}
+        },
+        "metadata_changed": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/metadata_change"}
+        }
+      }
+    },
+    "status_change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["native_symbol", "previous", "current"],
+      "properties": {
+        "native_symbol": {"type": "string"},
+        "previous": {"type": "string"},
+        "current": {"type": "string"}
+      }
+    },
+    "metadata_change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["native_symbol", "changed_fields"],
+      "properties": {
+        "native_symbol": {"type": "string"},
+        "changed_fields": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}
