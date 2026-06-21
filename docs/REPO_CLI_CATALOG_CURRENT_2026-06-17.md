@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-21_15:24 JST
+更新日: 2026-06-21_15:35 JST
 -->
 
 # Repo CLI Catalog Current
@@ -125,6 +125,7 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-watchdeck`
 - `crypto-perp-account-probe`
 - `crypto-perp-order-preview`
+- `crypto-perp-tiny-live-measurement`
 
 ### Trade[XYZ] / Quotes / Data Readiness
 

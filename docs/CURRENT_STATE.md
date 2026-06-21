@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-21_15:25 JST
+更新日: 2026-06-21_15:35 JST
 -->
 
 # Current State
@@ -62,7 +62,7 @@
 - live order preview / 注文候補生成の正式 command surface。
 - Alpaca credentials ありの API connectivity smoke。
 - Strategy Review や backtest validation からの paper / live permission。
-- Crypto Perp Truth-Cycle MVP は M08 時点で Bitget public provider probe、immutable raw snapshot、universe diff、ticker market snapshot、15m candle finality、gap / non-final bar quality guard、slow / fast / near-miss event detection、direction-neutral event artifact、event card rendering、candidate-only raw-first WS capture manifest、book checksum / sequence guard、atomic gzip JSONL segments、prospective decision ledger、matured outcome ledger、Tardis-style parser/book/VWAP golden fixture、OSS adoption notes、pybotters separate spike workspace、Freqtrade external sidecar boundary、Hummingbot Bitget connector notes、credential redaction、read-only account snapshot、non-writing order preview、deterministic clientOid までです。M09 以降の tiny live measurement / actual cash ledger / Workbench bridge はまだ未実装です。
+- Crypto Perp Truth-Cycle MVP は M09 時点で Bitget public provider probe、immutable raw snapshot、universe diff、ticker market snapshot、15m candle finality、gap / non-final bar quality guard、slow / fast / near-miss event detection、direction-neutral event artifact、event card rendering、candidate-only raw-first WS capture manifest、book checksum / sequence guard、atomic gzip JSONL segments、prospective decision ledger、matured outcome ledger、Tardis-style parser/book/VWAP golden fixture、OSS adoption notes、pybotters separate spike workspace、Freqtrade external sidecar boundary、Hummingbot Bitget connector notes、credential redaction、read-only account snapshot、non-writing order preview、deterministic clientOid、mock-only tiny live measurement gate、query-before-resubmit state logic、reduce-only close preview、flat reconciliation までです。M10 以降の actual cash ledger / replay calibration / Workbench bridge はまだ未実装です。M09 の実ネットワーク測定は未実行です。
 - Crypto Perp の tiny live measurement 実行。M09 の実ネットワーク実行は別の明示承認、isolated margin、withdrawal disabled API key、IP restriction、max notional 25 USD、flat reconciliation が揃うまで行わない。
 
 ## 外部入力待ち
