@@ -40,5 +40,5 @@ def test_strategy_daily_brief_cli_success(tmp_path: Path, monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "status=pass" in result.stdout
-    assert "scanned_json_count=11" in result.stdout
+    assert "scanned_json_count=12" in result.stdout
     assert "boundary_violation_count=1" in result.stdout

@@ -62,11 +62,38 @@ def _crypto_perp_tournament_gate(path: Path) -> Path:
     )
 
 
+def _crypto_perp_truth_cycle_status(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "crypto_perp_truth_cycle_status.v1",
+            "cycle_status": "MISSING_PROBE_AUDIT",
+            "recommended_next_command": "uv run sis crypto-perp-probe-audit --probe <provider_probe.json> --out <probe-audit-dir>",
+            "stop_reasons": [
+                "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND",
+                "PROBE_AUDIT_REQUIRED_BEFORE_EVENT_REFRESH",
+            ],
+            "summary": {
+                "cycle_status": "MISSING_PROBE_AUDIT",
+                "present_stage_count": 0,
+                "missing_artifact_path_count": 1,
+                "known_gap_count": 0,
+                "stop_reason_count": 2,
+            },
+            "permits_live_order": False,
+            "exchange_write_used": False,
+        },
+    )
+
+
 def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Path) -> None:
     result = build_strategy_workbench_viewer(
         artifacts=[
             _stage_decision(tmp_path / "data/strategy_stage/stage.json"),
             _crypto_perp_tournament_gate(tmp_path / "data/crypto_perp/tournament_gate/gate.json"),
+            _crypto_perp_truth_cycle_status(
+                tmp_path / "data/crypto_perp/truth_cycle_status/status.json"
+            ),
             _unsafe_review(tmp_path / "data/strategy_reviews/review.md"),
         ],
         data_dir=tmp_path / "data",
@@ -81,12 +108,15 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     Draft202012Validator(schema).validate(payload)
 
     assert payload["schema_version"] == "strategy_workbench_viewer.v1"
-    assert payload["artifact_count"] == 3
+    assert payload["artifact_count"] == 4
     assert payload["paper_execution_allowed"] is False
     assert payload["live_allowed"] is False
     assert payload["source_artifacts"][0]["status"] == "READY_FOR_PAPER_SMOKE_PLAN"
     assert payload["source_artifacts"][1]["status"] == "NEEDS_ACTUAL_CASH"
     assert payload["source_artifacts"][1]["summary"]["proxy_gap_count"] == 1
+    assert payload["source_artifacts"][2]["status"] == "MISSING_PROBE_AUDIT"
+    assert payload["source_artifacts"][2]["summary"]["stop_reason_count"] == 2
+    assert payload["source_artifacts"][2]["summary"]["missing_artifact_path_count"] == 1
 
     html = result.html_path.read_text(encoding="utf-8")
     HTMLParser().feed(html)
@@ -99,6 +129,7 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
 def test_strategy_workbench_viewer_scans_data_dir(tmp_path: Path) -> None:
     _stage_decision(tmp_path / "data/a/stage.json")
     _crypto_perp_tournament_gate(tmp_path / "data/a/gate.json")
+    _crypto_perp_truth_cycle_status(tmp_path / "data/a/truth_cycle_status.json")
     _unsafe_review(tmp_path / "data/b/review.md")
 
     result = build_strategy_workbench_viewer(
@@ -108,5 +139,5 @@ def test_strategy_workbench_viewer_scans_data_dir(tmp_path: Path) -> None:
         replace_existing=True,
     )
 
-    assert result.manifest.artifact_count == 3
+    assert result.manifest.artifact_count == 4
     assert result.html_path.exists()

@@ -163,6 +163,27 @@ def _write_fixtures(data_dir: Path) -> None:
             "exchange_write_used": False,
         },
     )
+    _write_json(
+        data_dir / "crypto_perp/truth_cycle_status/truth_cycle_status.json",
+        {
+            "schema_version": "crypto_perp_truth_cycle_status.v1",
+            "cycle_status": "NEEDS_ACTUAL_CASH",
+            "recommended_next_command": "REBUILD_WITH_ACTUAL_CASH",
+            "stop_reasons": [
+                "GATE_STATUS_NEEDS_ACTUAL_CASH",
+                "GATE_FAILED_CONDITION_no_proxy_known_gap",
+            ],
+            "summary": {
+                "cycle_status": "NEEDS_ACTUAL_CASH",
+                "present_stage_count": 2,
+                "missing_artifact_path_count": 0,
+                "known_gap_count": 1,
+                "stop_reason_count": 2,
+            },
+            "permits_live_order": False,
+            "exchange_write_used": False,
+        },
+    )
     (data_dir / "broken").mkdir(parents=True, exist_ok=True)
     (data_dir / "broken/not_json.json").write_text("{", encoding="utf-8")
 
@@ -181,13 +202,15 @@ def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeyp
     assert "broken_artifact" in categories
     assert "pending_human_review" in categories
     assert "crypto_perp_gate_follow_up" in categories
+    assert "crypto_perp_truth_cycle_follow_up" in categories
     assert "normal_paper_gap" in categories
     assert "drift_review_needed" in categories
     assert "learning_request_pending" in categories
     assert "boundary_violation" in categories
-    assert result.brief.summary.scanned_json_count == 11
+    assert result.brief.summary.scanned_json_count == 12
     assert result.brief.summary.broken_artifact_count >= 1
     assert result.brief.summary.crypto_perp_gate_follow_up_count == 1
+    assert result.brief.summary.crypto_perp_truth_cycle_follow_up_count == 1
     assert result.brief.summary.boundary_violation_count == 1
     assert result.brief.paper_execution_allowed is False
     assert result.brief.live_allowed is False
@@ -197,4 +220,5 @@ def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeyp
     report = result.report_path.read_text(encoding="utf-8")
     assert "Strategy Daily Brief" in report
     assert "crypto_perp_gate_follow_up" in report
+    assert "crypto_perp_truth_cycle_follow_up" in report
     assert "normal_paper_gap" in report
