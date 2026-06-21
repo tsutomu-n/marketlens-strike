@@ -115,7 +115,7 @@
         "purpose": {"type": "string", "minLength": 1},
         "command": {"type": "string", "minLength": 1},
         "requires_explicit_approval": {"type": "boolean"},
-        "network_allowed": {"type": "boolean"},
+        "network_allowed": {"const": false},
         "exchange_write_allowed": {"const": false},
         "live_order_allowed": {"const": false}
       }

@@ -47,9 +47,9 @@ class TruthCycleNextStep(BaseModel):
     purpose: str
     command: str
     requires_explicit_approval: bool = False
-    network_allowed: bool = False
-    exchange_write_allowed: bool = False
-    live_order_allowed: bool = False
+    network_allowed: Literal[False] = False
+    exchange_write_allowed: Literal[False] = False
+    live_order_allowed: Literal[False] = False
 
 
 class TruthCycleStageChecklistItem(BaseModel):

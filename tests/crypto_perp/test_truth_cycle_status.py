@@ -176,6 +176,13 @@ def test_truth_cycle_status_schema_and_cli(tmp_path: Path) -> None:
         list(error.path)[-2:] == ["summary", "stage_checklist_blocker_count"]
         for error in Draft202012Validator(schema).iter_errors(invalid_payload)
     )
+    invalid_payload = json.loads(json.dumps(payload))
+    invalid_payload["next_steps"][0]["network_allowed"] = True
+    assert any(
+        list(error.path) == ["next_steps", 0, "network_allowed"]
+        for error in Draft202012Validator(schema).iter_errors(invalid_payload)
+    )
+    assert payload["next_steps"][0]["network_allowed"] is False
     assert payload["next_steps"][0]["exchange_write_allowed"] is False
     assert payload["next_steps"][0]["live_order_allowed"] is False
     assert payload["stage_checklist"][0]["expected_cli_option"] == "--probe-audit"
