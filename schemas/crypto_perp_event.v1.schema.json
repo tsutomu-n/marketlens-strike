@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_event.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "event_id",
+    "event_family",
+    "provider_id",
+    "native_symbol",
+    "canonical_symbol",
+    "first_detected_at",
+    "information_cutoff_at",
+    "universe_snapshot_id",
+    "market_snapshot_id",
+    "detector_version",
+    "detector_config_hash",
+    "features_at_detection",
+    "market_context",
+    "data_quality",
+    "capture_request",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_event.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"$ref": "#/$defs/utc_second"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {"type": "array", "items": {"$ref": "#/$defs/source_ref"}},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "event_id": {"type": "string", "minLength": 1},
+    "event_family": {"enum": ["slow_pump_74h_v1", "fast_pump_1h_v1", "near_miss_v1"]},
+    "provider_id": {"const": "bitget"},
+    "native_symbol": {"type": "string"},
+    "canonical_symbol": {"type": "string"},
+    "first_detected_at": {"$ref": "#/$defs/utc_second"},
+    "information_cutoff_at": {"$ref": "#/$defs/utc_second"},
+    "universe_snapshot_id": {"type": "string", "minLength": 1},
+    "market_snapshot_id": {"type": "string", "minLength": 1},
+    "detector_version": {"type": "string", "minLength": 1},
+    "detector_config_hash": {"type": "string", "minLength": 1},
+    "features_at_detection": {"$ref": "#/$defs/features"},
+    "market_context": {"$ref": "#/$defs/market_context"},
+    "data_quality": {"$ref": "#/$defs/data_quality"},
+    "capture_request": {"$ref": "#/$defs/capture_request"},
+    "status": {
+      "enum": [
+        "CAPTURE_REQUESTED",
+        "CAPTURE_ACTIVE",
+        "CAPTURE_COMPLETE",
+        "INCONCLUSIVE_DATA",
+        "REJECTED_DATA_QUALITY"
+      ]
+    }
+  },
+  "$defs": {
+    "utc_second": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schema_version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "schema_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "return_15m",
+        "return_60m",
+        "return_74h",
+        "recent_turnover",
+        "previous_turnover",
+        "turnover_impulse",
+        "robust_return_z",
+        "turnover_percentile",
+        "spread_bps",
+        "mark_index_basis_bps",
+        "funding_rate",
+        "open_interest_raw"
+      ],
+      "properties": {
+        "return_15m": {"type": "string"},
+        "return_60m": {"type": "string"},
+        "return_74h": {"type": "string"},
+        "recent_turnover": {"type": "string"},
+        "previous_turnover": {"type": "string"},
+        "turnover_impulse": {"type": "string"},
+        "robust_return_z": {"type": "string"},
+        "turnover_percentile": {"type": "string"},
+        "spread_bps": {"type": "string"},
+        "mark_index_basis_bps": {"type": "string"},
+        "funding_rate": {"type": "string"},
+        "open_interest_raw": {"type": "string"}
+      }
+    },
+    "market_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "btc_return",
+        "eth_return",
+        "cross_section_median_return",
+        "breadth",
+        "market_adjusted_return"
+      ],
+      "properties": {
+        "btc_return": {"type": "string"},
+        "eth_return": {"type": "string"},
+        "cross_section_median_return": {"type": "string"},
+        "breadth": {"type": "string"},
+        "market_adjusted_return": {"type": "string"}
+      }
+    },
+    "data_quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason_codes"],
+      "properties": {
+        "status": {"enum": ["PASS", "REJECTED_DATA_QUALITY"]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "capture_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "channels", "duration_minutes"],
+      "properties": {
+        "requested": {"type": "boolean"},
+        "channels": {"type": "array", "items": {"type": "string"}},
+        "duration_minutes": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}
