@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_truth_cycle_status.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "producer",
+    "boundary",
+    "cycle_status",
+    "recommended_next_command",
+    "stop_reasons",
+    "stages",
+    "known_gaps",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_truth_cycle_status.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "producer": {"$ref": "#/$defs/producer"},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "cycle_status": {
+      "enum": [
+        "MISSING_PROBE_AUDIT",
+        "BLOCKED_PROBE_QUALITY",
+        "READY_FOR_RAW_REFRESH",
+        "RAW_REFRESH_NO_EVENT",
+        "READY_FOR_DECISION",
+        "READY_FOR_OUTCOME_AFTER_MATURITY",
+        "READY_FOR_ROWS_PREVIEW",
+        "READY_FOR_TOURNAMENT_REPORT",
+        "READY_FOR_TOURNAMENT_GATE",
+        "READY_FOR_HUMAN_TINY_LIVE_REVIEW",
+        "NEEDS_MORE_EVIDENCE",
+        "NEEDS_ACTUAL_CASH",
+        "HOLD_NO_TRADE_LEADS",
+        "REVISE_OR_RETIRE"
+      ]
+    },
+    "recommended_next_command": {"type": "string"},
+    "stop_reasons": {"type": "array", "items": {"type": "string"}},
+    "stages": {"type": "array", "items": {"$ref": "#/$defs/stage"}},
+    "known_gaps": {"type": "array", "items": {"type": "string"}},
+    "summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "cycle_status",
+        "present_stage_count",
+        "known_gap_count",
+        "stop_reason_count"
+      ]
+    }
+  },
+  "$defs": {
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "crypto-perp-truth-cycle-status"}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage_id",
+        "artifact_path",
+        "present",
+        "schema_version",
+        "status",
+        "details"
+      ],
+      "properties": {
+        "stage_id": {"type": "string", "minLength": 1},
+        "artifact_path": {"type": ["string", "null"]},
+        "present": {"type": "boolean"},
+        "schema_version": {"type": ["string", "null"]},
+        "status": {"type": "string", "minLength": 1},
+        "details": {"type": "object", "additionalProperties": true}
+      }
+    }
+  }
+}

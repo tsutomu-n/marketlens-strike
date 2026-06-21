@@ -27,6 +27,7 @@ from sis.commands.crypto_perp_tournament_gate import (
 from sis.commands.crypto_perp_tournament_rows import (
     register_crypto_perp_tournament_rows_commands,
 )
+from sis.commands.crypto_perp_truth_cycle import register_crypto_perp_truth_cycle_commands
 from sis.commands.strategy_daily_brief import register_strategy_daily_brief_commands
 from sis.commands.strategy_drift_review import register_strategy_drift_review_commands
 from sis.commands.strategy_inputs import register_strategy_input_commands
@@ -160,6 +161,7 @@ register_crypto_perp_live_commands(app)
 register_crypto_perp_raw_commands(app)
 register_crypto_perp_tournament_gate_commands(app)
 register_crypto_perp_tournament_rows_commands(app)
+register_crypto_perp_truth_cycle_commands(app)
 register_quote_commands(app, _recommended_read_order)
 register_bot_commands(app, _recommended_read_order)
 
