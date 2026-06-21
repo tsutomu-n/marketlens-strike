@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-21_15:35 JST
+更新日: 2026-06-21_16:03 JST
 -->
 
 # Repo CLI Catalog Current
@@ -126,6 +126,8 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-account-probe`
 - `crypto-perp-order-preview`
 - `crypto-perp-tiny-live-measurement`
+
+M10/M11 の cash ledger、execution replay、calibration、hypothesis tournament、Workbench bridge は Python/schema artifact surface として実装し、このcatalogに追加する新しいpublic CLIはありません。
 
 ### Trade[XYZ] / Quotes / Data Readiness
 

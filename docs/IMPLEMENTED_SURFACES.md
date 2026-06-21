@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-19_02:22 JST
+更新日: 2026-06-21_16:03 JST
 -->
 
 # Implemented Surfaces
@@ -9,7 +9,7 @@
 
 ## 結論
 
-現在の主軸は backtest-first / venue-neutral。実装済み surface は、Strategy Input Contract / Idea Intake / Stage Policy / Stage Decision / Paper Smoke Plan / Runtime Observation Ingest / Paper vs Backtest Drift Review / Strategy Learning / Authoring Update Handoff / Strategy Case Lite / Strategy Daily Brief / Strategy AI Review / Strategy Model Loop / Strategy Micro Live Plan Gate / Strategy Next Scale Plan / Strategy Live Observation / Strategy Scale Decision / Strategy Workbench Viewer / Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operation / operations audit である。
+現在の主軸は backtest-first / venue-neutral。実装済み surface は、Crypto Perp Truth-Cycle MVP artifact chain / Strategy Input Contract / Idea Intake / Stage Policy / Stage Decision / Paper Smoke Plan / Runtime Observation Ingest / Paper vs Backtest Drift Review / Strategy Learning / Authoring Update Handoff / Strategy Case Lite / Strategy Daily Brief / Strategy AI Review / Strategy Model Loop / Strategy Micro Live Plan Gate / Strategy Next Scale Plan / Strategy Live Observation / Strategy Scale Decision / Strategy Workbench Viewer / Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operation / operations audit である。
 
 production live trading、wallet、signing、exchange write は現行 operator path では許可しない。
 
@@ -48,6 +48,13 @@ production live trading、wallet、signing、exchange write は現行 operator p
 | Strategy Workbench Viewer first slice | implemented as static HTML artifact viewer, no paper/live permission | `strategy-workbench-viewer-build`, `src/sis/strategy_workbench_viewer/`, `schemas/strategy_workbench_viewer.v1.schema.json`, `tests/strategy_workbench_viewer/`, `docs/strategy_workbench_viewer/` |
 | Strategy Lifecycle review / status | implemented as local artifact review and read-only status summary | `strategy-backtest-acceptance`, `strategy-paper-observation-cycle`, `strategy-lifecycle-review`, `strategy-paper-observation-status`, `docs/strategy_lifecycle/` |
 | Strategy Review packet / operator decision record | implemented as read-only human-review packet plus non-permission decision artifact; can include optional input contract / strategy idea source artifacts | `strategy-review-build`, `strategy-review-record`, `src/sis/strategy_review/`, `schemas/strategy_review_manifest.v1.schema.json`, `schemas/operator_strategy_review.v1.schema.json`, `tests/strategy_review/`, `docs/strategy_review/` |
+
+## Crypto Perp Truth-Cycle
+
+| Surface | Status | Primary Evidence |
+|---|---|---|
+| Crypto Perp Truth-Cycle MVP artifact chain | implemented as local / fixture-first artifact chain, no automatic trading | `src/sis/crypto_perp/`, `schemas/crypto_perp_*.schema.json`, `tests/crypto_perp/`, `crypto-perp-*` read-only/mock-first CLI commands |
+| Hypothesis tournament and Workbench bridge | implemented as Python artifact helpers, no new CLI | `src/sis/crypto_perp/tournament.py`, `src/sis/crypto_perp/workbench_bridge.py`, `schemas/crypto_perp_tournament_report.v1.schema.json`, `tests/crypto_perp/test_tournament.py`, `tests/crypto_perp/test_workbench_bridge.py` |
 
 ## NDX Research Gates
 
@@ -94,6 +101,7 @@ NDX approvals do not prove alpha, backtest readiness, paper readiness, live read
 - `strategy-model-run-record` records model / optimizer results only. It does not run optimizers, edit Strategy Authoring YAML, or permit paper/live execution.
 - `strategy-next-scale-plan` creates a next scale planning artifact only. It does not permit next-scale execution or live execution.
 - `strategy-workbench-viewer-build` creates a static HTML viewer from existing artifacts only. It does not edit artifacts or permit paper/live execution.
+- Crypto Perp tournament compares `REVERSAL_SHORT`, `CONTINUATION_LONG`, and `NO_TRADE` on the same event set. `actual_cash_result_usd` is primary, and insufficient data remains `INCONCLUSIVE_DATA`.
 - `strategy-review-build` creates review artifacts only. Optional `--input-contract` and `--strategy-idea` add read-only source summaries. `strategy-review-record` records human decisions against those artifacts. Neither authorizes paper execution or live trading.
 - `READ_ONLY_GO` is not live trading ready.
 - `data/` is git-ignored runtime state and may be absent in a fresh checkout.

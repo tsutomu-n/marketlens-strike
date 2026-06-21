@@ -66,9 +66,7 @@ def test_workbench_bridge_exports_strategy_input_contract(tmp_path: Path) -> Non
     )
     payload = contract.model_dump(mode="json", exclude_none=True)
     schema = json.loads(
-        (REPO_ROOT / "schemas/strategy_input_contract.v1.schema.json").read_text(
-            encoding="utf-8"
-        )
+        (REPO_ROOT / "schemas/strategy_input_contract.v1.schema.json").read_text(encoding="utf-8")
     )
 
     Draft202012Validator(schema).validate(payload)
