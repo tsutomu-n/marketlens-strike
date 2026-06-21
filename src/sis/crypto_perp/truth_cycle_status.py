@@ -70,13 +70,15 @@ def _stage(stage_id: str, path: Path | None, payload: dict[str, Any] | None) -> 
         artifact_path=path.as_posix() if path is not None else None,
         present=payload is not None,
         schema_version=str(payload.get("schema_version")) if payload is not None else None,
-        status=_stage_status(stage_id, payload),
-        details=_stage_details(stage_id, payload),
+        status=_stage_status(stage_id, path, payload),
+        details=_stage_details(stage_id, path, payload),
     )
 
 
-def _stage_status(stage_id: str, payload: dict[str, Any] | None) -> str:
+def _stage_status(stage_id: str, path: Path | None, payload: dict[str, Any] | None) -> str:
     if payload is None:
+        if path is not None and not path.exists():
+            return "path_not_found"
         return "missing"
     if stage_id == "probe_audit":
         return str(payload.get("audit_status", "present"))
@@ -90,8 +92,12 @@ def _stage_status(stage_id: str, payload: dict[str, Any] | None) -> str:
     return "present"
 
 
-def _stage_details(stage_id: str, payload: dict[str, Any] | None) -> dict[str, Any]:
+def _stage_details(
+    stage_id: str, path: Path | None, payload: dict[str, Any] | None
+) -> dict[str, Any]:
     if payload is None:
+        if path is not None and not path.exists():
+            return {"path_exists": False}
         return {}
     if stage_id == "probe_audit":
         return {
@@ -129,6 +135,24 @@ def _known_gaps(*payloads: dict[str, Any] | None) -> list[str]:
     return list(dict.fromkeys(gaps))
 
 
+def _missing_path_stop_reasons(stages: list[TruthCycleStage]) -> list[str]:
+    return [
+        f"{stage.stage_id.upper()}_ARTIFACT_PATH_NOT_FOUND"
+        for stage in stages
+        if stage.artifact_path is not None and stage.status == "path_not_found"
+    ]
+
+
+def _gate_stop_reasons(gate: dict[str, Any], gate_status: str) -> list[str]:
+    reasons = [f"GATE_STATUS_{gate_status}"]
+    for condition in gate.get("failed_conditions") or []:
+        if isinstance(condition, dict):
+            condition_id = str(condition.get("condition_id") or "").strip()
+            if condition_id:
+                reasons.append(f"GATE_FAILED_CONDITION_{condition_id}")
+    return list(dict.fromkeys(reasons))
+
+
 def _status_and_next(
     *,
     probe_audit: dict[str, Any] | None,
@@ -152,7 +176,9 @@ def _status_and_next(
             return (
                 cast(TruthCycleStatus, gate_status),
                 str(tournament_gate.get("recommended_action") or ""),
-                [],
+                []
+                if gate_status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW"
+                else _gate_stop_reasons(tournament_gate, gate_status),
             )
         return "REVISE_OR_RETIRE", "inspect_tournament_gate_artifact", ["UNKNOWN_GATE_STATUS"]
 
@@ -261,9 +287,13 @@ def build_truth_cycle_status(
     known_gaps = _known_gaps(
         probe_audit, raw_refresh, rows_preview, tournament_report, tournament_gate
     )
+    stop_reasons = list(dict.fromkeys([*_missing_path_stop_reasons(stages), *stop_reasons]))
     summary = {
         "cycle_status": cycle_status,
         "present_stage_count": sum(1 for stage in stages if stage.present),
+        "missing_artifact_path_count": sum(
+            1 for stage in stages if stage.status == "path_not_found"
+        ),
         "known_gap_count": len(known_gaps),
         "stop_reason_count": len(stop_reasons),
     }

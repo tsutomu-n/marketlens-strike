@@ -98,7 +98,22 @@ def test_truth_cycle_status_carries_gate_need_for_actual_cash(tmp_path: Path) ->
 
     assert status.cycle_status == "NEEDS_ACTUAL_CASH"
     assert status.recommended_next_command == "REBUILD_WITH_ACTUAL_CASH"
+    assert "GATE_STATUS_NEEDS_ACTUAL_CASH" in status.stop_reasons
+    assert "GATE_FAILED_CONDITION_no_proxy_known_gap" in status.stop_reasons
     assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in status.known_gaps
+
+
+def test_truth_cycle_status_marks_explicit_missing_artifact_path(tmp_path: Path) -> None:
+    missing_probe_audit = tmp_path / "missing_probe_audit.json"
+
+    status = build_truth_cycle_status(probe_audit_path=missing_probe_audit)
+
+    assert status.cycle_status == "MISSING_PROBE_AUDIT"
+    assert "PROBE_AUDIT_ARTIFACT_PATH_NOT_FOUND" in status.stop_reasons
+    probe_stage = next(stage for stage in status.stages if stage.stage_id == "probe_audit")
+    assert probe_stage.status == "path_not_found"
+    assert probe_stage.details == {"path_exists": False}
+    assert status.summary["missing_artifact_path_count"] == 1
 
 
 def test_truth_cycle_status_schema_and_cli(tmp_path: Path) -> None:

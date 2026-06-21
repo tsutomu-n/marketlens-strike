@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_19:15 JST
+更新日: 2026-06-21_19:23 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -44,6 +44,8 @@ uv run sis crypto-perp-truth-cycle-status \
 - `stop_reasons`
 - `known_gaps`
 - 各stageの `present` / `status`
+
+`status=path_not_found` は、指定したartifact pathが存在しないという意味です。`MISSING_PROBE_AUDIT` などの通常欠損と混同せず、path typo / 未生成 / 別run directoryを先に確認します。tournament gateが `NEEDS_ACTUAL_CASH` などで止まった場合は、gate status と failed condition も `stop_reasons` に出ます。
 
 これは既存artifactを読むだけです。public network、credential、wallet、signing、exchange write、live orderは使いません。
 
