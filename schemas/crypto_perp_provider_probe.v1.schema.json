@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_provider_probe.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "probe_id",
+    "provider_id",
+    "base_url",
+    "started_at",
+    "finished_at",
+    "network_attempted",
+    "credentials_used",
+    "clock_offset_ms",
+    "endpoint_results",
+    "capabilities",
+    "documentation_anomalies"
+  ],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_provider_probe.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"$ref": "#/$defs/utc_second"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_ref"}
+    },
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "probe_id": {"type": "string", "minLength": 1},
+    "provider_id": {"const": "bitget"},
+    "base_url": {"type": "string", "pattern": "^https://.+"},
+    "started_at": {"$ref": "#/$defs/utc_second"},
+    "finished_at": {"$ref": "#/$defs/utc_second"},
+    "network_attempted": {"type": "boolean"},
+    "credentials_used": {"const": false},
+    "clock_offset_ms": {"type": ["integer", "null"]},
+    "endpoint_results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/endpoint_result"}
+    },
+    "capabilities": {"$ref": "#/$defs/capabilities"},
+    "documentation_anomalies": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "$defs": {
+    "utc_second": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schema_version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "schema_version": {"const": "crypto_perp_raw_snapshot.v1"}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      }
+    },
+    "endpoint_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "endpoint_id",
+        "method",
+        "path",
+        "params_redacted",
+        "status_code",
+        "latency_ms",
+        "response_shape_hash",
+        "row_count",
+        "observed_page_limit",
+        "pagination_behavior",
+        "rate_limit_headers",
+        "error_class",
+        "error_excerpt"
+      ],
+      "properties": {
+        "endpoint_id": {
+          "enum": ["instruments", "tickers", "candles", "open_interest", "funding_history"]
+        },
+        "method": {"const": "GET"},
+        "path": {"type": "string"},
+        "params_redacted": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        },
+        "status_code": {"type": "integer", "minimum": 0},
+        "latency_ms": {"type": "integer", "minimum": 0},
+        "response_shape_hash": {"type": ["string", "null"]},
+        "row_count": {"type": "integer", "minimum": 0},
+        "observed_page_limit": {"type": ["integer", "null"], "minimum": 1},
+        "pagination_behavior": {"type": "string", "minLength": 1},
+        "rate_limit_headers": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        },
+        "error_class": {"type": ["string", "null"]},
+        "error_excerpt": {"type": ["string", "null"]}
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instruments",
+        "tickers",
+        "candle_1m",
+        "candle_15m",
+        "mark_candle",
+        "index_candle",
+        "funding_history",
+        "open_interest",
+        "public_trade_ws",
+        "books1_ws",
+        "books15_ws"
+      ],
+      "properties": {
+        "instruments": {"type": "boolean"},
+        "tickers": {"type": "boolean"},
+        "candle_1m": {"type": "boolean"},
+        "candle_15m": {"type": "boolean"},
+        "mark_candle": {"type": "boolean"},
+        "index_candle": {"type": "boolean"},
+        "funding_history": {"type": "boolean"},
+        "open_interest": {"type": "boolean"},
+        "public_trade_ws": {"type": "boolean"},
+        "books1_ws": {"type": "boolean"},
+        "books15_ws": {"type": "boolean"}
+      }
+    }
+  }
+}

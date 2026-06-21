@@ -1,0 +1,11 @@
+{
+  "code": "00000",
+  "msg": "success",
+  "requestTime": 1754908278922,
+  "data": {
+    "resultList": [
+      {"symbol": "BTCUSDT", "fundingRate": "0.0001", "fundingRateTimestamp": "1754899200000"},
+      {"symbol": "BTCUSDT", "fundingRate": "0.0001", "fundingRateTimestamp": "1754870400000"}
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-21_13:55 JST
+更新日: 2026-06-21_14:09 JST
 -->
 
 # Current State
@@ -62,7 +62,7 @@
 - live order preview / 注文候補生成の正式 command surface。
 - Alpaca credentials ありの API connectivity smoke。
 - Strategy Review や backtest validation からの paper / live permission。
-- Crypto Perp Truth-Cycle MVP の provider probe / raw snapshot / event / decision / outcome surface。M01 時点では domain foundation、config validation、fail-closed CLI boundary、Hypothesis property test までです。
+- Crypto Perp Truth-Cycle MVP は M02 時点で Bitget public provider probe、fixture-backed normalizers、immutable raw snapshot、provider probe artifact schema までです。M03 以降の universe diff / ticker snapshot / event / decision / outcome surface はまだ未実装です。
 - Crypto Perp の tiny live measurement 実行。M09 の実ネットワーク実行は別の明示承認、isolated margin、withdrawal disabled API key、IP restriction、max notional 25 USD、flat reconciliation が揃うまで行わない。
 
 ## 外部入力待ち
