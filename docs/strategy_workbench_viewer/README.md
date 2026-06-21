@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_02:16 JST
-更新日: 2026-06-21_16:03 JST
+更新日: 2026-06-21_19:07 JST
 -->
 
 # Strategy Workbench Viewer
@@ -11,7 +11,7 @@ Strategy Workbench Viewer は、Strategy Operations Workbench の JSON / Markdow
 
 これは正本ではありません。正本は各 artifact、schema、CLI、test です。viewer は artifact を探しやすくするだけで、paper 実行、live 実行、scale-up、wallet、signing、exchange write を許可しません。
 
-Crypto Perp の `crypto_perp_tournament_report.v1` も通常の JSON artifact として読めます。viewer は `tournament_status`、`leader_action`、`primary_metric`、`event_count`、`leader_actual_cash_result_usd` などのcompact summaryを表示対象にします。
+Crypto Perp の `crypto_perp_tournament_report.v1` と `crypto_perp_tournament_gate.v1` も通常の JSON artifact として読めます。viewer は `tournament_status`、`gate_status`、`leader_action`、`primary_metric`、`event_count`、`proxy_gap_count`、`failed_condition_count`、`leader_actual_cash_result_usd` などのcompact summaryを表示対象にします。
 
 ## CLI
 
@@ -48,8 +48,8 @@ data/reports/strategy_workbench_viewer/
 - source artifact path
 - source artifact sha256
 - schema_version
-- status / decision_status / plan_status / ingest_status / tournament_status などの抜粋
-- Crypto Perp tournament の leader_action / primary_metric / event_count などのcompact summary
+- status / decision_status / plan_status / ingest_status / tournament_status / gate_status などの抜粋
+- Crypto Perp tournament / gate の leader_action / primary_metric / event_count / proxy_gap_count などのcompact summary
 - boundary violation count
 - HTML report path / hash
 - fixed false permission flags

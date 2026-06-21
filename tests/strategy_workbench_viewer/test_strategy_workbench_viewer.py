@@ -42,10 +42,31 @@ def _unsafe_review(path: Path) -> Path:
     return path
 
 
+def _crypto_perp_tournament_gate(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "crypto_perp_tournament_gate.v1",
+            "gate_id": "gate-001",
+            "report_id": "tournament-001",
+            "gate_status": "NEEDS_ACTUAL_CASH",
+            "recommended_action": "REBUILD_WITH_ACTUAL_CASH",
+            "summary": {
+                "gate_status": "NEEDS_ACTUAL_CASH",
+                "proxy_gap_count": 1,
+                "failed_condition_count": 1,
+            },
+            "permits_live_order": False,
+            "exchange_write_used": False,
+        },
+    )
+
+
 def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Path) -> None:
     result = build_strategy_workbench_viewer(
         artifacts=[
             _stage_decision(tmp_path / "data/strategy_stage/stage.json"),
+            _crypto_perp_tournament_gate(tmp_path / "data/crypto_perp/tournament_gate/gate.json"),
             _unsafe_review(tmp_path / "data/strategy_reviews/review.md"),
         ],
         data_dir=tmp_path / "data",
@@ -60,10 +81,12 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     Draft202012Validator(schema).validate(payload)
 
     assert payload["schema_version"] == "strategy_workbench_viewer.v1"
-    assert payload["artifact_count"] == 2
+    assert payload["artifact_count"] == 3
     assert payload["paper_execution_allowed"] is False
     assert payload["live_allowed"] is False
     assert payload["source_artifacts"][0]["status"] == "READY_FOR_PAPER_SMOKE_PLAN"
+    assert payload["source_artifacts"][1]["status"] == "NEEDS_ACTUAL_CASH"
+    assert payload["source_artifacts"][1]["summary"]["proxy_gap_count"] == 1
 
     html = result.html_path.read_text(encoding="utf-8")
     HTMLParser().feed(html)
@@ -75,6 +98,7 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
 
 def test_strategy_workbench_viewer_scans_data_dir(tmp_path: Path) -> None:
     _stage_decision(tmp_path / "data/a/stage.json")
+    _crypto_perp_tournament_gate(tmp_path / "data/a/gate.json")
     _unsafe_review(tmp_path / "data/b/review.md")
 
     result = build_strategy_workbench_viewer(
@@ -84,5 +108,5 @@ def test_strategy_workbench_viewer_scans_data_dir(tmp_path: Path) -> None:
         replace_existing=True,
     )
 
-    assert result.manifest.artifact_count == 2
+    assert result.manifest.artifact_count == 3
     assert result.html_path.exists()

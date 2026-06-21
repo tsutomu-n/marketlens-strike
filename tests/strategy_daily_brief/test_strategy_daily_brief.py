@@ -150,6 +150,19 @@ def _write_fixtures(data_dir: Path) -> None:
             "live_allowed": False,
         },
     )
+    _write_json(
+        data_dir / "crypto_perp/tournament_gate/tournament_gate.json",
+        {
+            "schema_version": "crypto_perp_tournament_gate.v1",
+            "gate_id": "crypto-perp-gate-001",
+            "report_id": "crypto-perp-tournament-001",
+            "created_at": "2026-06-19T06:00:00Z",
+            "gate_status": "NEEDS_ACTUAL_CASH",
+            "recommended_action": "REBUILD_WITH_ACTUAL_CASH",
+            "permits_live_order": False,
+            "exchange_write_used": False,
+        },
+    )
     (data_dir / "broken").mkdir(parents=True, exist_ok=True)
     (data_dir / "broken/not_json.json").write_text("{", encoding="utf-8")
 
@@ -167,12 +180,14 @@ def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeyp
     categories = {item.category.value for item in result.brief.items}
     assert "broken_artifact" in categories
     assert "pending_human_review" in categories
+    assert "crypto_perp_gate_follow_up" in categories
     assert "normal_paper_gap" in categories
     assert "drift_review_needed" in categories
     assert "learning_request_pending" in categories
     assert "boundary_violation" in categories
-    assert result.brief.summary.scanned_json_count == 10
+    assert result.brief.summary.scanned_json_count == 11
     assert result.brief.summary.broken_artifact_count >= 1
+    assert result.brief.summary.crypto_perp_gate_follow_up_count == 1
     assert result.brief.summary.boundary_violation_count == 1
     assert result.brief.paper_execution_allowed is False
     assert result.brief.live_allowed is False
@@ -181,4 +196,5 @@ def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeyp
     Draft202012Validator(_schema()).validate(payload)
     report = result.report_path.read_text(encoding="utf-8")
     assert "Strategy Daily Brief" in report
+    assert "crypto_perp_gate_follow_up" in report
     assert "normal_paper_gap" in report

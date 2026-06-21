@@ -17,6 +17,7 @@ DAILY_BRIEF_SCHEMA_VERSION = "strategy_daily_brief.v1"
 class DailyBriefItemCategory(StrEnum):
     BROKEN_ARTIFACT = "broken_artifact"
     PENDING_HUMAN_REVIEW = "pending_human_review"
+    CRYPTO_PERP_GATE_FOLLOW_UP = "crypto_perp_gate_follow_up"
     NORMAL_PAPER_GAP = "normal_paper_gap"
     DRIFT_REVIEW_NEEDED = "drift_review_needed"
     LEARNING_REQUEST_PENDING = "learning_request_pending"
@@ -81,6 +82,7 @@ class DailyBriefSummary(BaseModel):
     scanned_json_count: int = Field(ge=0)
     broken_artifact_count: int = Field(ge=0)
     pending_human_review_count: int = Field(ge=0)
+    crypto_perp_gate_follow_up_count: int = Field(ge=0)
     normal_paper_gap_count: int = Field(ge=0)
     drift_review_needed_count: int = Field(ge=0)
     learning_request_pending_count: int = Field(ge=0)

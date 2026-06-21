@@ -48,6 +48,7 @@
       "enum": [
         "broken_artifact",
         "pending_human_review",
+        "crypto_perp_gate_follow_up",
         "normal_paper_gap",
         "drift_review_needed",
         "learning_request_pending",
@@ -93,6 +94,7 @@
         "scanned_json_count",
         "broken_artifact_count",
         "pending_human_review_count",
+        "crypto_perp_gate_follow_up_count",
         "normal_paper_gap_count",
         "drift_review_needed_count",
         "learning_request_pending_count",
@@ -103,6 +105,7 @@
         "scanned_json_count": {"type": "integer", "minimum": 0},
         "broken_artifact_count": {"type": "integer", "minimum": 0},
         "pending_human_review_count": {"type": "integer", "minimum": 0},
+        "crypto_perp_gate_follow_up_count": {"type": "integer", "minimum": 0},
         "normal_paper_gap_count": {"type": "integer", "minimum": 0},
         "drift_review_needed_count": {"type": "integer", "minimum": 0},
         "learning_request_pending_count": {"type": "integer", "minimum": 0},

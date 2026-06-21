@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_20:32 JST
-更新日: 2026-06-21_19:02 JST
+更新日: 2026-06-21_19:07 JST
 -->
 
 # marketlens-strike アプリ現状詳細ガイド
@@ -660,7 +660,7 @@ uv run sis strategy-backtest-html-report
 | `crypto_perp_execution_replay.v1` | replay calibration | simulated fillとactual fillの差を読む |
 | `crypto_perp_tournament_rows_preview.v1` | outcomeから作る3action rows preview | before-cost proxyでありactual cashではないことをknown gaps込みで読む |
 | `crypto_perp_tournament_report.v1` | 仮説比較report | `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE`を同一event setで読む |
-| `crypto_perp_tournament_gate.v1` | tournament後のlocal gate | tiny live承認準備へ進むか、actual cash再生成 / event追加 / revisionへ戻すかを読む |
+| `crypto_perp_tournament_gate.v1` | tournament後のlocal gate | tiny live承認準備へ進むか、actual cash再生成 / event追加 / revisionへ戻すかを読む。Daily Brief / Workbench Viewer でも索引対象 |
 
 ## 用語集
 
