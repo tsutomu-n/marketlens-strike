@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_19:21 JST
-更新日: 2026-06-22_19:21 JST
+更新日: 2026-06-22_19:29 JST
 -->
 
 # Implementable Remaining Risk Detail
@@ -31,18 +31,42 @@
 - credential、network、paper order、live order、wallet、signing、exchange write をこの文書作成で実行しない。
 - profit、alpha、production readiness を主張しない。
 
+## 追加調査で修正した弱点
+
+前版の分類は大筋では正しいが、実務判断用としては次が弱かった。
+
+- `実装可能性` という列は、着手優先度や readiness と誤読されやすい。実装できるかではなく、今の前提で着手できるかを読む。
+- dogfood の証拠をどこに残すかが曖昧だった。runtime artifact は `data/` に置けるが git-ignored なので、次計画に使う判断は tracked plan doc に要約を残す必要がある。
+- `crypto-perp-tiny-live-measurement` は CLI に存在するが、help 上も mock-first であり、real network は別承認が必要である。したがって tiny live は「実装すれば進める」ではなく「承認、preflight、close、reconcile、ops drill が揃うまで実行計画にしない」と読む。
+- external API / broker / exchange を扱う次計画では、その時点の公式 docs、sandbox / demo 仕様、rate limit、permission scope を確認する必要がある。この文書では API 詳細を固定しない。
+- `ready`, `pass`, `candidate`, `review`, `plan` という語は repo 内で何度も出るが、permission ではない。次計画では stdout / JSON の `permits_live_order=false`、`exchange_write_used=false`、`requires_explicit_approval` を毎回確認する。
+
 ## 大分類
 
-| 分類 | 残る代表領域 | 実装可能性 | 今すぐ着手しない理由 |
+| 分類 | 残る代表領域 | 現時点の着手判断 | 今すぐ着手しない理由 |
 |---|---|---:|---|
-| A. Dogfood 待ち | D3 direct apply、D4 registry、D5 UI | 高い | 今回作った proposal / review / case index / viewer を実 artifact で読んだ痛みがまだ足りない |
-| B. 外部 evidence 待ち | D1 paper bridge、D2 normal paper observation | 中から高 | 新しい trading day や paper chain の実 artifact が必要 |
-| C. Credential / network 待ち | D6 Bitget、D7 Hyperliquid、D18 Alpaca | 中 | secret 管理、redaction、opt-in、no-write 境界が先に必要 |
-| D. Order lifecycle 待ち | D8 demo order、D10 preview、D11 tiny live | 中 | submit / cancel / close / reconcile の失敗時対応と明示承認が必要 |
-| E. Schema / venue 拡張待ち | D9 production venue schema widening | 中 | venue を1つに固定し、fee / funding / lot size / cost model を先に検証する必要がある |
-| F. Production / live 待ち | D12 production live、D13 wallet / signing / write | 低から中 | 技術実装よりも、権限、運用、事故時停止、監査、法務・税務境界が不足 |
-| G. 評価・採算証拠待ち | D14 optimizer、D15 profit claim、D17 replay expansion、D21 accounting | 中 | 評価設計、out-of-sample、cash reconciliation がないと見せかけの改善になる |
-| H. 運用 gate 待ち | D16 CI network、D19 freshness、D20 operations drill | 中 | 通常 CI の安定性、外部 API flake、監視、事故対応が未整理 |
+| A. Dogfood 待ち | D3 direct apply、D4 registry、D5 UI | local dogfood 後 | 今回作った proposal / review / case index / viewer を実 artifact で読んだ痛みがまだ足りない |
+| B. 外部 evidence 待ち | D1 paper bridge、D2 normal paper observation | evidence がある時だけ | 新しい trading day や paper chain の実 artifact が必要 |
+| C. Credential / network 待ち | D6 Bitget、D7 Hyperliquid、D18 Alpaca | opt-in / no-write plan 後 | secret 管理、redaction、opt-in、no-write 境界が先に必要 |
+| D. Order lifecycle 待ち | D8 demo order、D10 preview、D11 tiny live | 原則まだ着手しない | submit / cancel / close / reconcile の失敗時対応と明示承認が必要 |
+| E. Schema / venue 拡張待ち | D9 production venue schema widening | venue を1つに固定後 | fee / funding / lot size / cost model を先に検証する必要がある |
+| F. Production / live 待ち | D12 production live、D13 wallet / signing / write | 今は着手不可 | 技術実装よりも、権限、運用、事故時停止、監査、法務・税務境界が不足 |
+| G. 評価・採算証拠待ち | D14 optimizer、D15 profit claim、D17 replay expansion、D21 accounting | 評価設計後 | out-of-sample、cash reconciliation がないと見せかけの改善になる |
+| H. 運用 gate 待ち | D16 CI network、D19 freshness、D20 operations drill | dry-run 後 | 通常 CI の安定性、外部 API flake、監視、事故対応が未整理 |
+
+## 共通 Hard Stop
+
+次のどれかに当たる場合、実装計画に進まず、証拠整理または再調査で止める。
+
+- `uv run sis --help` または対象 command の `--help` と plan の前提が食い違う。
+- source artifact の schema version、path、hash、boundary flag が検証できない。
+- runtime artifact が `data/` にしかなく、次計画に使う tracked summary がない。
+- `permits_live_order=true`、`wallet_used=true`、`signing_used=true`、`exchange_write_used=true` が意図せず混入している。
+- `status=pass`、`READY_*`、`CANDIDATE`、`REVIEW` を permission と読む表現が plan に残っている。
+- credential、network、paper order、live order、wallet、signing、exchange write が、明示承認なしに task 化されている。
+- broker / exchange / external API の仕様を、最新公式 docs 確認なしに固定している。
+- normal CI で external API を叩く設計になっている。
+- raw statement、secret、account id、API response 全文など、tracked git に入れてはいけない情報の扱いが決まっていない。
 
 ## A. Dogfood 待ちの実装可能領域
 
@@ -179,7 +203,7 @@
 
 - demo account で submit / cancel / close / reconcile の lifecycle を検証する。
 - live order を出さない standard preview command を作る。
-- 5-25 USD 程度の tiny live measurement flow を、承認付きで実行可能にする。
+- 5-25 USD 程度の tiny live measurement flow は、承認付きで別計画化できる。ただし current CLI help 上の `crypto-perp-tiny-live-measurement` は mock-first で、real network は別承認が必要である。
 
 今すぐやらない理由:
 
@@ -207,7 +231,7 @@
 
 1. order preview は human-review preview で止める。
 2. demo order lifecycle は production endpoint へ向かわない guard を先に置く。
-3. tiny live は別承認があるまで実装計画だけでも進めすぎない。
+3. tiny live は別承認、D13、D19、D20、D21 が揃うまで、実行計画にも実装計画にも進めない。
 
 ## E. Schema / Venue 拡張待ちの実装可能領域
 
@@ -368,14 +392,48 @@
 2. operations drill は fixture / dry-run で先に通す。
 3. network CI は最後まで optional にする。
 
+## 証拠として残すもの
+
+次計画を作る前に、最低限これを残す。`data/` は runtime / git-ignored なので、次計画で使う判断は tracked plan doc に要約する。
+
+| 対象 | runtime artifact | tracked summary に残すこと | 残してはいけないもの |
+|---|---|---|---|
+| A. dogfood | proposal / review / case index / viewer output | command、input path、output path、decision、困った点、次に必要な変更 | raw secret、巨大 artifact 全文 |
+| B. paper evidence | paper observation status / session / review artifact | session id、trading day、`latest_normal_requirement_gaps`、`normal_thresholds_met`、smoke と normal の区別 | paper pass を live ready と読む表現 |
+| C. credential / network | redacted probe report | endpoint 種別、opt-in flag、no-write proof、redaction test、failure mode | API key、secret、account identifier 全文 |
+| D. order lifecycle | preview / demo lifecycle / reconciliation artifact | submit / cancel / close / reconcile の各結果、idempotency、failed path、stop condition | production endpoint 誤接続、未redact order/account raw |
+| E. venue schema | schema diff / capability fixture | target venue、fee / funding / lot size / min notional、cost model test | `VenueId` だけ追加した readiness 主張 |
+| F. production / live | approval / runbook / audit bundle | exact approval scope、max notional、max open positions、kill switch、revoke procedure | wallet secret、write key、実口座 raw statement |
+| G. evaluation / accounting | evaluation design / statement-derived summary | metric、baseline、OOS、fees、funding、cash movement、NO_TRADE baseline | tax-ready 断定、未加工 statement |
+| H. operations gate | dry-run report / freshness report | owner、cadence、clock skew、stale判定、incident step、recovery path | default CI external API call |
+
+## 最小確認コマンド
+
+次計画を作る直前に、少なくとも次を再確認する。古い pass count や古い handoff の値は使わない。
+
+```bash
+git status --short --branch
+uv run sis --help
+uv run sis strategy-input-feedback-proposal-build --help
+uv run sis strategy-input-feedback-proposal-review --help
+uv run sis strategy-case-index-build --help
+uv run sis strategy-workbench-viewer-build --help
+uv run sis strategy-paper-observation-status --help
+uv run sis crypto-perp-tiny-live-measurement --help
+uv run sis venue-read-only-probe --help
+uv run python scripts/check_current_docs.py
+```
+
+external API / broker / exchange を扱う計画では、上に加えて、その時点の公式 docs、sandbox / demo 仕様、permission scope、rate limit、endpoint write/read 境界を確認する。確認結果は次計画の `根拠` に書き、古い記憶や過去ログを根拠にしない。
+
 ## 次計画を作る時の優先順位
 
 推奨順:
 
-1. 今回の T0-T7 artifact を dogfood する。
-2. D1 または D2 を、外部 evidence がある時だけ別計画にする。
-3. dogfood で痛みが出た場合だけ、D3 / D4 / D5 を分けて計画する。
-4. D6 / D7 / D18 は secret redaction と opt-in no-write boundary から始める。
+1. 今回の T0-T7 artifact を dogfood し、tracked summary を残す。
+2. 外部 paper evidence が実在する場合だけ、D1 または D2 を別計画にする。存在しない場合は D1 / D2 を作らない。
+3. dogfood で痛みが出た場合だけ、D3 / D4 / D5 を分けて計画する。痛みがない場合は作らない。
+4. D6 / D7 / D18 は secret redaction と opt-in no-write boundary から始める。read-only success を後続 permission にしない。
 5. D8-D13、D19-D21 は承認、運用、freshness、accounting が揃うまで実装計画を狭く保つ。
 
 非推奨順:
@@ -394,3 +452,4 @@
 - それぞれについて、なぜ今すぐ着手しないか、絶対前提、誤謬リスク、現実的な次手を明記している。
 - live readiness、paper readiness、venue readiness、profit proof を主張していない。
 - 具体的な implementation task は [06_DEFERRED_WORK_AND_ENTRY_CRITERIA.md](06_DEFERRED_WORK_AND_ENTRY_CRITERIA.md) を正として参照している。
+- 次計画へ進む前の hard stop、証拠の残し方、最小確認コマンドを明記している。
