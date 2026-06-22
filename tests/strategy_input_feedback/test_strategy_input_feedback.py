@@ -285,3 +285,33 @@ def test_review_rejects_unknown_change_id(tmp_path: Path, monkeypatch) -> None:
             rationale="Attempt unknown approval.",
             approved_change_ids=["missing-change"],
         )
+
+
+def test_default_proposal_and_review_ids_stay_within_model_limit(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    long_strategy_id = "s" * 128
+    runtime = _runtime_observation(tmp_path)
+    contract = _source_contract(tmp_path)
+
+    proposal = build_input_feedback_proposal(
+        strategy_id=long_strategy_id,
+        runtime_observation_paths=[runtime],
+        learning_event_paths=[],
+        source_contract_path=contract,
+        out_dir=tmp_path / "data/strategy_input_feedback",
+    )
+
+    assert len(proposal.proposal.proposal_id) <= 128
+    assert "-input-feedback-" in proposal.proposal.proposal_id
+    review = build_input_feedback_review(
+        proposal_path=proposal.proposal_path,
+        out_dir=None,
+        reviewer="operator-a",
+        decision=StrategyInputFeedbackReviewDecision.APPROVE_FOR_MANUAL_CONTRACT_UPDATE,
+        rationale="Approved only as input to manual contract update.",
+        approved_change_ids=["runtime-001"],
+    )
+    assert len(review.review.review_id) <= 128
+    assert review.review.review_id.endswith("-review")

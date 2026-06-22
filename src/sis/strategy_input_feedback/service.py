@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -159,7 +160,14 @@ def _default_proposal_id(
     strategy_id: str, sources: list[StrategyInputFeedbackSourceArtifact]
 ) -> str:
     digest = "".join(source.sha256.removeprefix("sha256:")[:8] for source in sources)[:24]
-    return f"{strategy_id}-input-feedback-{digest or 'manual'}"
+    suffix = f"-input-feedback-{digest or 'manual'}"
+    return f"{strategy_id[: 128 - len(suffix)]}{suffix}"
+
+
+def _default_review_id(proposal_id: str) -> str:
+    digest = hashlib.sha256(proposal_id.encode("utf-8")).hexdigest()[:8]
+    suffix = f"-review-{digest}"
+    return f"{proposal_id[: 128 - len(suffix)]}{suffix}"
 
 
 def build_input_feedback_proposal(
@@ -286,7 +294,7 @@ def build_input_feedback_review(
         raise FileNotFoundError(f"proposal missing: {proposal_path}")
     proposal_payload = read_json_object(proposal_path)
     proposal = StrategyInputContractUpdateProposal.model_validate(proposal_payload)
-    selected_review_id = review_id or f"{proposal.proposal_id}-review"
+    selected_review_id = review_id or _default_review_id(proposal.proposal_id)
     source_proposal = StrategyInputFeedbackSourceProposal(
         proposal_path=repo_relative_path(proposal_path),
         proposal_sha256=sha256_file(proposal_path),
