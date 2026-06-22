@@ -42,7 +42,7 @@ uv run python scripts/check_current_docs.py
 | チェック | 結果 |
 |---------|------|
 | Python | 3.13.7 |
-| check_current_docs.py | pass（153 current docs） |
+| check_current_docs.py | pass（151 current docs） |
 | check_cli_catalog.py | pass（205 public CLI commands） |
 
 以下は 2026-06-20 再調査時点の古いスナップショットです。現行 proof ではないため、上の再確認コマンドで取り直した値を優先します。

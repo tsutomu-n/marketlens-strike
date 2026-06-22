@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-18_23:00 JST
-更新日: 2026-06-19_00:42 JST
+更新日: 2026-06-22_17:16 JST
 -->
 
 # Strategy Inputs
@@ -78,6 +78,6 @@ validation_expectations:
 - input contract は指定された source artifact を read-only で検査する。source artifact を生成・修正しない。
 - Strategy Review optional source connection は read-only summary です。input / idea を必須化せず、paper / live permission も出しません。
 
-## 実装計画
+## 実装履歴
 
-- [STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md)
+- [../archive/2026-06-22-doc-routing/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](../archive/2026-06-22-doc-routing/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md)

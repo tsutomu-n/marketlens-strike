@@ -40,7 +40,7 @@ git status --short --branch
 => ## main...origin/main
 
 uv run python scripts/check_current_docs.py
-=> checked 153 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok
+=> checked 151 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok
 
 uv run python scripts/check_cli_catalog.py
 => checked 205 public CLI commands against Typer registration
@@ -60,8 +60,8 @@ archive ではないが current-doc checker 対象外の Markdown/HTML: 0
 
 | 対象 | 判断 | 根拠 | 推奨作業 |
 |---|---|---|---|
-| `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | 更新 | `check_cli_catalog.py` が `189 public CLI commands` と `205 public CLI commands` の両方を含み、`pytest 1340 passed` も残る。現行確認は 205 commands。 | 固定値を当時値として明示するか、現行値をコマンド再実行方式へ置き換える。 |
-| `docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md` | 小更新 | `205 public CLI commands` の固定値がある。現在は合っているが、正本ではない判断メモなので固定値を増やし続けるべきではない。 | 固定 command count を削り、`scripts/check_cli_catalog.py` を再実行する文言へ寄せる。 |
+| `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | 更新済み | 古い `189 public CLI commands` と `pytest 1340 passed` は当時値として明示済み。現行確認は 205 commands / 151 current docs。 | 追加対応なし。 |
+| `docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md` | 更新済み | command/doc count は当時の軽量確認値であり、現行 proof ではないと明示済み。 | 追加対応なし。 |
 | `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | 更新済み | 旧本文には `docs/CURRENT_STATE.md` や `plan/README.md` を「更新」とする完了前の記述が残っていた。現 HEAD では既に historical implementation contract へ更新済み。 | この版で現時点の分類へ更新済み。 |
 | `docs/IMPLEMENTED_SURFACES.md` | 小更新候補 | 大筋はコードと一致。`crypto-perp-tiny-live-measurement` の mock/guarded surface と実ネットワーク未実行の境界は既にあるが、CLI surface 表にも一言足す余地がある。 | 必須ではない。次に Crypto Perp CLI を触る時だけ補強。 |
 | `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | 維持更新 | `scripts/check_cli_catalog.py` で 205 command と照合済み。 | CLI 追加・削除時だけ更新。 |
@@ -70,7 +70,7 @@ archive ではないが current-doc checker 対象外の Markdown/HTML: 0
 
 | 対象 | 古い内容 | 影響 | 推奨 |
 |---|---|---|---|
-| `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | `189 public CLI commands`、`pytest 1340 passed`。 | README / CURRENT_STATE から判断補助として読まれるため、現行 proof と誤読されやすい。 | 更新。少なくとも固定値は「当時の snapshot」と明記。 |
+| `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | `189 public CLI commands`、`pytest 1340 passed`。 | README / CURRENT_STATE から判断補助として読まれるため、現行 proof と誤読されやすかった。 | 当時値として明記済み。 |
 | `docs/archive/2026-06-22-doc-routing/DOGFOOD_REVIEW_2026-06-16.md` | 2026-06-16 時点の dogfood review snapshot。 | current strategy review の使い方として読むと古い。 | archive 済み。current 入口は `docs/strategy_review/README.md` と `OPERATOR_REVIEW_PACKET_RECIPE.md`。 |
 | `docs/archive/2026-06-22-doc-routing/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` | implementation plan としての長い coder handoff。対象 surface は current 実装済み。 | current root に置くと「これから実装する計画」と誤読される。 | archive 済み。current 入口は `docs/strategy_inputs/README.md`。 |
 | `docs/archive/2026-06-22-doc-routing/live_evidence_20260526_tmp_helpers/live_evidence_current_status_2026-05-26.md` | 2026-05-26 固定の live evidence status。 | 現行 operator entry と誤読される余地があった。 | archive 記録化済み。 |
