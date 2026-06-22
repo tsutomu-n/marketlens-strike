@@ -1,6 +1,7 @@
 version: 1
 name: strategy_feedback_and_case_index
 created_at_jst: "2026-06-22_17:55"
+updated_at_jst: "2026-06-22_18:16"
 objective: >-
   Implement local/offline Strategy Input Feedback proposal/review artifacts,
   Strategy Case Lite Index artifacts, and Static Workbench Viewer support,
@@ -10,6 +11,7 @@ global_constraints:
   - Do not add network calls, credentials, wallet, signing, exchange write, live order, DB registry, or server UI.
   - Do not directly edit Strategy Input Contract from generated feedback.
   - Keep artifacts local, reproducible, and source-hashed.
+  - Validate source artifacts with existing schema/model contracts; do not infer from file names alone.
   - Preserve existing Typer command, schema, and docs patterns.
 tasks:
   - id: T0
@@ -22,7 +24,7 @@ tasks:
       - Running network or venue checks.
     acceptance:
       - Current branch and dirty state are known.
-      - Existing strategy input, runtime observation, learning, case-lite, and viewer CLIs are confirmed from CLI help.
+      - Existing strategy input, runtime observation, strategy-learning-ledger-update, case-lite, and viewer CLIs are confirmed from CLI help.
     verification:
       - git status --short --branch
       - git log -1 --oneline --decorate
@@ -49,6 +51,8 @@ tasks:
       - Boundary flags cannot be true.
       - Unknown schema version fails.
       - Source artifact path, sha256, schema_version, and artifact_kind are required.
+      - Proposal status distinguishes ready-for-human-review from missing source-contract context.
+      - Review approved_change_ids must reference proposal change_id values.
     verification:
       - uv run pytest tests/strategy_input_feedback/test_strategy_input_feedback_schema.py
     destructive_level: low
@@ -71,8 +75,11 @@ tasks:
     acceptance:
       - Runtime Observation-only input can build a proposal.
       - Learning Event-only input can build a proposal.
+      - Empty source inputs fail.
       - Mixed source inputs preserve all path/hash/schema provenance.
+      - Missing --source-contract does not produce an apply-ready proposal.
       - Review command creates a decision artifact and never permits direct apply.
+      - Review command rejects approved_change_ids that are not present in the proposal.
       - New commands appear in uv run sis --help.
     verification:
       - uv run pytest tests/strategy_input_feedback
@@ -96,6 +103,7 @@ tasks:
       - Valid index fixture passes schema/model validation.
       - case_count and strategy_count mismatches fail.
       - Boundary flags cannot be true.
+      - Latest case selection is deterministic.
     verification:
       - uv run pytest tests/strategy_case_index/test_strategy_case_index_schema.py
     destructive_level: low
@@ -120,6 +128,7 @@ tasks:
       - data-dir discovery finds case-lite artifacts.
       - Duplicate artifact paths/hashes are not double-counted.
       - Missing or malformed source artifacts fail clearly.
+      - data-dir discovery ignores unrelated JSON and fails when no strategy_case_lite.v1 JSON is found.
       - New command appears in uv run sis --help.
     verification:
       - uv run pytest tests/strategy_case_index
@@ -144,6 +153,7 @@ tasks:
       - Explicit case index artifact is summarized in viewer output.
       - data-dir scan can include case index artifact.
       - HTML includes case count, strategy count, latest status, open actions, blocked reasons, and source hash.
+      - Permission true flags in case index sources are boundary violations, not displayed as permission.
       - Existing viewer artifact summaries still pass tests.
     verification:
       - uv run pytest tests/strategy_workbench_viewer/test_strategy_workbench_viewer.py

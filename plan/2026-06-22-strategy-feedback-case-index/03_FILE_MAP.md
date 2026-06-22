@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_17:55 JST
+更新日: 2026-06-22_18:16 JST
 -->
 
 # File Map
@@ -11,7 +11,7 @@
 
 - `__init__.py`: package marker。
 - `models.py`: proposal / review model、enum、boundary model。
-- `service.py`: source artifact 読み込み、hashing、proposal / review generation。
+- `service.py`: source artifact 読み込み、既存 model validation、hashing、proposal / review generation。
 - `rendering.py`: Markdown summary rendering。JSON を正にし、Markdown は補助にする。
 
 `src/sis/strategy_case_index/`
@@ -28,11 +28,14 @@
 - `register(app: typer.Typer) -> None`
 - `strategy-input-feedback-proposal-build`
 - `strategy-input-feedback-proposal-review`
+- `--runtime-observation` / `--learning-event` の少なくとも一方を必須にする。
+- `--source-contract` なしの status を apply-ready にしない。
 
 `src/sis/commands/strategy_case_index.py`
 
 - `register(app: typer.Typer) -> None`
 - `strategy-case-index-build`
+- `--data-dir` scan は `strategy_case_lite.v1` JSON だけに限定する。
 
 ## 更新する CLI root
 

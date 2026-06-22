@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_17:55 JST
+更新日: 2026-06-22_18:16 JST
 -->
 
 # Risks And Boundaries
@@ -54,16 +54,39 @@ Runtime Observation、Learning Event、Case Index、Viewer はどれも実行許
 - source path、sha256、schema version、artifact kind を必須にする。
 - output Markdown にも source hash を表示する。
 
+### R6: source contract なしの proposal が apply-ready に見える
+
+`--source-contract` を optional にすると、観察結果だけで contract 更新が確定したように見えやすい。
+
+対策:
+
+- source contract なしの場合は `READY_FOR_HUMAN_REVIEW` ではなく、source contract context 不足の status にする。
+- review artifact でも direct apply を許可しない。
+- source contract hash mismatch は必ず止める。
+
+### R7: Case Index の data-dir scan が無関係 JSON を拾う
+
+`data/` には viewer manifest、report summary、既存 index、他 domain artifact が混在する。拡張子だけで拾うと case count と strategy count が壊れる。
+
+対策:
+
+- `schema_version == "strategy_case_lite.v1"` の JSON だけを採用する。
+- case-lite 0件は success にしない。
+- latest case selection は deterministic にする。
+
 ## 抜け漏れチェック
 
 - Runtime Observation だけで動くか: 必須。
 - Learning Event だけで動くか: 必須。
 - source contract がない場合でも proposal を作れるか: 必須。
+- source contract がない proposal を apply-ready にしないか: 必須。
 - source contract がある場合に hash を残すか: 必須。
 - review で approve / reject / hold を表現できるか: 必須。
+- review の approved_change_ids が proposal change ids と整合するか: 必須。
 - direct apply をしないか: 必須。
 - case-lite artifact が複数ある場合に index できるか: 必須。
 - case-lite artifact が壊れている場合に黙って落とさないか: 必須。
+- data-dir scan が case-lite 以外を混ぜないか: 必須。
 - viewer に source hash が出るか: 必須。
 - docs / CLI catalog から新規 command を辿れるか: 必須。
 

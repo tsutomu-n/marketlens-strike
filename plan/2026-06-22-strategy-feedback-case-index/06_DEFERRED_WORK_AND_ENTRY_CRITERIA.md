@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_18:06 JST
-更新日: 2026-06-22_18:13 JST
+更新日: 2026-06-22_18:16 JST
 -->
 
 # Deferred Work And Entry Criteria

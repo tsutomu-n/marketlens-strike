@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_17:55 JST
+更新日: 2026-06-22_18:16 JST
 -->
 
 # Test And Acceptance
@@ -25,10 +25,14 @@ fixture-first、offline-only、artifact boundary-first でテストする。netw
 
 - Runtime Observation から proposal が生成される。
 - Learning Event から proposal が生成される。
+- Runtime Observation / Learning Event が両方ない場合は non-zero exit になる。
 - source artifact path / hash / schema version が残る。
+- source artifact は既存 model validation を通る。
 - boundary flags が false に固定される。
 - boundary violation source を指定すると ready proposal にならない。
+- source contract なしの proposal は apply-ready にならない。
 - review artifact は decision / approved_change_ids / required_actions を持つ。
+- unknown approved_change_id は non-zero exit または validation failure になる。
 - review artifact は direct apply を許可しない。
 - missing source は non-zero exit になる。
 
@@ -45,8 +49,10 @@ fixture-first、offline-only、artifact boundary-first でテストする。netw
 - 2件以上の case-lite artifact から index が作れる。
 - strategy_id ごとの summary が作られる。
 - duplicate case path / hash は重複 count しない。
+- latest case selection は deterministic である。
 - missing file は non-zero exit になる。
 - malformed JSON は non-zero exit になる。
+- unrelated JSON only の data-dir は non-zero exit になる。
 - boundary flags が false に固定される。
 
 ### Workbench Viewer
@@ -59,6 +65,7 @@ fixture-first、offline-only、artifact boundary-first でテストする。netw
 
 - case index artifact が viewer summary に入る。
 - HTML に case count、strategy count、latest status、open actions、blocked reasons、source hash が出る。
+- permission 系 true flag は boundary violation として出る。
 - HTML escaping が効く。
 - 既存 artifact type の rendering が壊れない。
 
@@ -73,6 +80,8 @@ uv run pytest tests/strategy_input_feedback tests/strategy_case_index tests/stra
 docs / catalog:
 
 ```bash
+uv run sis strategy-input-feedback-proposal-build --help
+uv run sis strategy-case-index-build --help
 uv run python scripts/check_current_docs.py
 uv run python scripts/check_cli_catalog.py
 ```

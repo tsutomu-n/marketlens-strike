@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_17:55 JST
+更新日: 2026-06-22_18:16 JST
 -->
 
 # Task Plan
@@ -21,7 +21,7 @@
 完了条件:
 
 - 作業ブランチ状態を把握している。
-- `strategy-input-contract-validate`、`strategy-runtime-observation-ingest`、`strategy-learning-event-build`、`strategy-case-lite-update`、`strategy-workbench-viewer-build` が現行 CLI にあることを確認する。
+- `strategy-input-contract-validate`、`strategy-runtime-observation-ingest`、`strategy-learning-ledger-update`、`strategy-case-lite-update`、`strategy-workbench-viewer-build` が現行 CLI にあることを確認する。
 
 ## T1: Strategy Input Feedback schema / models
 
@@ -44,12 +44,15 @@
 - proposed change は `change_id`、`target_section`、`recommendation`、`evidence_summary`、`source_reason`、`requires_human_review` を持つ。
 - review は `review_id`、`proposal_id`、`strategy_id`、`decision`、`approved_change_ids`、`required_actions`、`source_proposal`、`boundary` を持つ。
 - boundary は少なくとも `permits_live_order=false`、`permits_wallet=false`、`permits_signing=false`、`permits_exchange_write=false`、`auto_applied=false`、`direct_contract_edit_allowed=false` を表現する。
+- proposal status は少なくとも `READY_FOR_HUMAN_REVIEW`、`NEEDS_SOURCE_CONTRACT_CONTEXT`、`NO_CHANGES_RECOMMENDED`、`BLOCKED_BOUNDARY_VIOLATION` を分ける。
+- review decision は少なくとも `APPROVE_FOR_MANUAL_CONTRACT_UPDATE`、`REJECT`、`HOLD`、`NEEDS_FIX` を分ける。
 
 受け入れ条件:
 
 - valid fixture が schema validation を通る。
 - boundary を true にした fixture は validation または model construction で失敗する。
 - unknown schema version は失敗する。
+- `approved_change_ids` が proposal 内の `change_id` 以外を参照した review は失敗する。
 
 ## T2: Strategy Input Feedback service / CLI
 
@@ -74,8 +77,11 @@
 - `--runtime-observation` は複数指定できる。
 - `--learning-event` は複数指定できる。
 - `--source-contract` は optional にする。指定された場合は path / hash を source artifact に含める。
+- `--source-contract` がない場合、proposal status は `READY_FOR_HUMAN_REVIEW` ではなく `NEEDS_SOURCE_CONTRACT_CONTEXT` または同等の blocked / limited status にする。
+- `--runtime-observation` と `--learning-event` の両方が空なら non-zero exit にする。
 - `--out` と `--replace-existing` を既存 artifact builder の流儀に合わせる。
 - 生成時は JSON artifact と review 用 Markdown summary を出す。Markdown は補助であり、JSON を正にする。
+- source artifact は既存 Pydantic model で schema_version と boundary を検証する。単なる dict 読みだけで進めない。
 
 受け入れ条件:
 
@@ -83,7 +89,9 @@
 - Learning Event fixture だけで proposal を生成できる。
 - 両方を指定したとき、source artifact がすべて記録される。
 - source artifact が boundary violation を示す場合、proposal status は ready ではなく blocked になる。
+- source contract なしの proposal は direct update candidate として扱われない。
 - review CLI は proposal を読み、decision と required actions を含む review artifact を生成する。
+- review CLI は `approved_change_ids` と proposal の `change_id` 整合を検査する。
 - review artifact でも direct apply は許可されない。
 - `uv run sis --help` に新規 CLI が表示される。
 
@@ -104,6 +112,7 @@
 - index は `index_id`、`created_at`、`producer`、`case_count`、`strategy_count`、`cases`、`strategies`、`source_artifacts`、`boundary` を持つ。
 - case entry は `case_id`、`strategy_id`、`case_path`、`case_sha256`、`latest_status`、`artifact_count`、`timeline_count`、`open_actions`、`blocked_reasons`、`updated_at` を持つ。
 - strategy summary は strategy_id ごとに latest case と open actions を集約する。
+- latest case は `updated_at`、次に path の deterministic sort で決める。
 - boundary は live / wallet / signing / exchange write / DB persistence を許可しない。
 
 受け入れ条件:
@@ -111,6 +120,7 @@
 - valid index fixture が schema validation を通る。
 - case_count / strategy_count の不整合は失敗する。
 - boundary true は失敗する。
+- 同じ入力順で同じ index が生成される deterministic contract がある。
 
 ## T4: Strategy Case Lite Index service / CLI
 
@@ -133,7 +143,8 @@
 - `--data-dir` は optional にする。指定時は `strategy_case_lite.v1` JSON を再帰探索する。
 - `--case` と `--data-dir` の両方指定を許可するが、重複 path は hash で dedupe する。
 - `--out`、`--index-id`、`--replace-existing` を持たせる。
-- 欠損 path、schema mismatch、壊れた JSON は明示エラーにする。
+- data-dir scan は `strategy_case_lite.v1` JSON だけを採用する。任意 JSON、Markdown、viewer manifest、既存 index は採用しない。
+- 欠損 path、schema mismatch、壊れた JSON、case-lite 0件は明示エラーにする。
 - JSON index と Markdown summary を出す。
 
 受け入れ条件:
@@ -142,6 +153,7 @@
 - `--data-dir` から case-lite artifact を発見できる。
 - 同一 artifact の重複指定で二重 count しない。
 - missing file は non-zero exit になる。
+- data-dir に無関係な JSON だけがある場合は non-zero exit になる。
 - `uv run sis --help` に新規 CLI が表示される。
 
 ## T5: Static Workbench Viewer case index 表示
@@ -159,9 +171,10 @@
 実装内容:
 
 - viewer artifact summary に `strategy_case_index.v1` を追加する。
-- HTML に strategy count、case count、latest status、open actions、blocked reasons、source hash を表示する。
+- HTML に strategy count、case count、latest status、open actions、blocked reasons、latest case path、source hash を表示する。
 - 既存 summary type と HTML escaping pattern を壊さない。
 - viewer は生成済み artifact を表示するだけで、index の作成や補正をしない。
+- case index の permission 系 true flag は permission として表示せず、boundary violation として扱う。
 
 受け入れ条件:
 
@@ -169,6 +182,7 @@
 - `--data-dir` scan でも case index artifact が拾われる。
 - HTML escaping test が通る。
 - schema validation が通る。
+- existing viewer output を viewer 自身が source of truth として読まない。
 
 ## T6: docs / CLI catalog / current-doc routing 更新
 
@@ -187,7 +201,7 @@
 実装内容:
 
 - 新規 docs は hidden metadata header を付ける。
-- `scripts/check_current_docs.py` の `CURRENT_DOC_DIRS` に新規 docs directory を追加する。
+- `scripts/check_current_docs.py` の `CURRENT_DOC_DIRS` に新規 docs directory が入っているか確認し、未追加なら追加する。
 - CLI catalog に新規 command を追加する。
 - `NEXT_DIRECTION_CURRENT.md` から、P1/P2/P3 の該当 gap を実装済みに更新する。ただし paper bridge / network / live / schema widening は未実装のまま残す。
 
@@ -206,6 +220,8 @@
 実行:
 
 - `uv run sis --help`
+- `uv run sis strategy-input-feedback-proposal-build --help`
+- `uv run sis strategy-case-index-build --help`
 - `uv run python scripts/check_current_docs.py`
 - `uv run python scripts/check_cli_catalog.py`
 - `uv run pytest tests/strategy_input_feedback tests/strategy_case_index tests/strategy_workbench_viewer`
