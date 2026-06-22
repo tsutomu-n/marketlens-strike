@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_18:06 JST
-更新日: 2026-06-22_18:06 JST
+更新日: 2026-06-22_18:13 JST
 -->
 
 # Deferred Work And Entry Criteria
@@ -29,6 +29,47 @@
 `blocked by approval` は、技術的に書けそうでも、承認なしに進めないという意味。
 
 `blocked by evidence` は、コードを書くより先に実データ、生成 artifact、人間判断、または外部入力が必要という意味。
+
+## 追加調査で修正した判断
+
+- `crypto-perp-order-preview` と `crypto-perp-tiny-live-measurement` は CLI に存在する。ただし Crypto Perp 専用で、`tiny-live-measurement` は CLI help 上も mock-first / real network は別承認である。したがって「完全未実装」とは書かず、「標準 operator surface や real-network 実行は未着手」と読む。
+- `hyperliquid_perp` は current capability code では `requires_credentials=false` だが、network は disabled。したがって Hyperliquid は「credentialed」と決め打ちせず、public / address-scoped / credentialed のどれかを設計前に分ける。
+- `alpaca-smoke` は read-only command として実装済み。未着手なのは command 実装ではなく、credentials ありの fresh successful evidence と、その結果を live readiness と誤読しない運用である。
+- `bitget-demo-smoke` は credentials presence を確認できるが、current runbook では network / account read / order submit / fill sync を証明しない。
+- Python dependency 追加はこの文書更新には不要。future plan で追加する場合も、既存の `httpx` / `jsonschema` / `pyyaml` / `polars` / `duckdb` 等で足りないことを先に示す。
+
+## 依存関係
+
+計画上の依存関係は次の通り。ここを飛ばすと、実装は進んだように見えても false readiness を作る。
+
+| Lane | 先に必要なもの | 後続候補 | 進めてはいけない条件 |
+|---|---|---|---|
+| Local artifact lane | この plan の T0-T7 完了と dogfood | D3, D4, D5 | proposal / case index を実 artifact で読んでいない |
+| Paper evidence lane | D1 paper bridge validation、D2 normal paper evidence | D15 profit / readiness claim の一部 | smoke pass や same-day rerun を normal evidence として扱う |
+| Venue read-only lane | D6 Bitget、D7 Hyperliquid の read-only probe設計 | D8, D9, D10 | credential / endpoint / no-write 境界が曖昧 |
+| Venue schema lane | D9 target venue を1つに固定し、cost / fee / funding を paper-only で検証 | D10, D11 | `VenueId` だけ広げる |
+| Live measurement lane | D10 preview、D13 write-secret管理、D19 data freshness、D20 operations drill、明示承認 | D11 | mock / preview / read-only を execution proof と読む |
+| Production lane | D11 を複数回通し、D13 / D20 / D21 / monitoring / audit が揃う | D12 | T0-T7 完了や paper pass だけで production へ進む |
+| UI lane | Static Viewer dogfoodで HTML では解けない痛みが具体化 | D5 | 見た目改善だけで Svelte / server / auth を入れる |
+| Optimizer lane | D15 の評価設計と no-auto-apply 境界 | D14 | backtest metric だけで自動改善する |
+| Accounting lane | D21 cash reconciliation / fee / funding / statement突合 | D15, D12 | unreconciled PnL を profit proof として扱う |
+
+## Dependency 追加ポリシー
+
+package dependency を追加する前提条件:
+
+- 標準 library と既存 dependency で足りない理由が1文で説明できる。
+- 対象 package の Python 3.13 対応、license、maintenance 状態、lockfile 影響を確認している。
+- `pyproject.toml` と `uv.lock` の更新、focused tests、`./scripts/check` を同じ task に含める。
+- broker / exchange SDK の場合、secret redaction、retry、timeout、rate limit、no-write guard を tests に含める。
+- UI dependency の場合、D5 の entry criteria を満たし、`bun` 側の install / lock / CI impact を別 plan にする。
+- external API / broker / exchange を扱う plan は、その時点の公式 API docs と sandbox/demo仕様を確認してから task 化する。
+
+現時点で追加しないもの:
+
+- Bitget / Hyperliquid SDK。狭い read-only probe なら、まず既存 `httpx` と signed request helper の可否を評価する。
+- Svelte / Vite / Playwright。Static Viewer dogfood の不足がまだ証拠化されていない。
+- DB migration package。Case Lite Index で足りる段階では DB registry を作らない。
 
 ## D1: Paper Bridge Validation
 
@@ -173,11 +214,13 @@
 着手の絶対前提条件:
 
 - credentialed read-only network probe の別 plan がある。
+- demo と production を同じ task にしない。最初は demo read-only network smoke に限定する。
 - `BITGET_DEMO_API_KEY`、`BITGET_DEMO_API_SECRET`、`BITGET_DEMO_PASSPHRASE` など必要 credential の種類と保管場所が明確。
 - key は withdrawal disabled、IP restriction あり、read-only または demo-only に限定されている。
 - credential redaction、log redaction、artifact redaction の tests がある。
 - normal CI では network を使わない。
 - timeout、rate limit、retry、stop condition が明確。
+- `bitget-demo-smoke` の `status=configured` を network pass と読まない。
 
 着手不可の条件:
 
@@ -186,11 +229,11 @@
 - demo credential を production Bitget futures 対応として扱う。
 - CI で暗黙に外部 API を叩く。
 
-## D7: Credentialed Hyperliquid Read-only Network Probe
+## D7: Hyperliquid Read-only Network Probe
 
 残ること:
 
-- direct Hyperliquid perp の credentialed read-only network probe を設計・実装する。
+- direct Hyperliquid perp の read-only network probe を設計・実装する。
 
 この計画後の状態:
 
@@ -200,9 +243,10 @@
 着手の絶対前提条件:
 
 - Trade[XYZ] proxy と direct Hyperliquid の責務分離が plan で明確。
-- credential が必要な endpoint と不要な public endpoint が分離されている。
+- public endpoint、address-scoped read、credentialed read のどれを扱うか決める。current capability code は `hyperliquid_perp.requires_credentials=false` なので、credentialed と決め打ちしない。
 - read-only の account / open order / fill query だけに限定する。
 - secret redaction と no-write guard の tests がある。
+- address-scoped read の場合、public address は secret ではなくても privacy-sensitive として扱い、tracked docs や sample artifact に固定しない。
 - `hyperliquid_perp` を current `VenueId` に入れないまま probe するか、schema widening と同時にやるかを決めている。
 
 着手不可の条件:
@@ -267,15 +311,16 @@
 
 残ること:
 
-- live order を出さない正式な order preview / candidate generation command を作る。
+- live order を出さない正式な order preview / candidate generation command を、標準 operator surface として作るか判断する。
 
 この計画後の状態:
 
-- Crypto Perp 側には non-writing order preview や deterministic client id の実装履歴がある。
-- しかし標準 operator CLI の正式 live order preview surface は未整備。
+- Crypto Perp 側には `crypto-perp-order-preview` がある。
+- しかしこれは Crypto Perp 専用であり、venue-neutral / standard operator の正式 live order preview surface ではない。
 
 着手の絶対前提条件:
 
+- 対象を Crypto Perp 専用 preview の改善にするのか、venue-neutral standard preview にするのかを先に決める。
 - preview が live order ではないことを schema / CLI stdout / docs で固定する。
 - input artifact、risk limit、account state read、venue id、client id、idempotency、query-before-resubmit の設計がある。
 - output が submit-ready ではなく human-review preview で止まる。
@@ -296,11 +341,16 @@
 この計画後の状態:
 
 - Micro Live Plan / Live Observation / Scale Decision artifact は存在する。
+- `crypto-perp-tiny-live-measurement` は存在するが、CLI help 上は mock mode のみが実装済みで、real network は別承認が必要。
 - 実 tiny live execution は未実行。
 
 着手の絶対前提条件:
 
+- D10 の preview と D13 の write-secret 管理方針が先に揃っている。
+- D19 の data freshness / venue quality gate と D20 の operations drill が先に揃っている。
+- 対象 venue の read-only account snapshot / open order / position probe が実行前に通っている。
 - separate explicit approval がある。
+- `SIS_ENABLE_TINY_LIVE_MEASUREMENT=1`、`--confirm-live`、confirmation phrase が揃っている。
 - isolated margin account を使う。
 - withdrawal disabled API key を使う。
 - IP restriction がある。
@@ -411,6 +461,7 @@
 
 - transaction cost、slippage、funding、fees、latency、operator time を含めた評価設計がある。
 - out-of-sample、walk-forward、forward paper、actual cash のどれを証拠にするか決めている。
+- D21 の cash reconciliation が、少なくとも評価対象期間について成立している。
 - loss concentration、drawdown、largest loss、profit concentration、NO_TRADE baseline を見る。
 - insufficient data を `INCONCLUSIVE_DATA` として止める運用がある。
 - profit claim と implementation readiness を別文書に分ける。
@@ -476,8 +527,8 @@
 
 この計画後の状態:
 
-- local/offline artifact workflow のまま。
-- external broker connectivity は未証明。
+- `alpaca-smoke` command は read-only surface として実装済み。
+- ただし credentials ありの fresh successful artifact と、その結果を live readiness と誤読しない運用は未証明。
 
 着手の絶対前提条件:
 
@@ -492,6 +543,84 @@
 - stale market data を live connectivity と読む。
 - broker connectivity を live trading readiness と扱う。
 
+## D19: Data Freshness / Venue Quality / Time Sync Gate
+
+残ること:
+
+- live measurement や profit claim の前に、データ鮮度、取引時間、venue quality、clock / exchange time、funding / fee / spread の前提を gate 化する。
+
+この計画後の状態:
+
+- Case Index と Viewer は artifact を見やすくする。
+- しかし source freshness や venue quality の新しい証拠は増えない。
+
+着手の絶対前提条件:
+
+- 対象 venue と symbol が1つに固定されている。
+- market session / funding window / exchange maintenance / stale data 判定が明確。
+- latest bars、order book、ticker、funding、fees、spread、min notional、lot size の取得元と hash が残る。
+- local clock と exchange timestamp のズレを検出する。
+- stale / empty / low confidence を pass と読まない。
+- normal CI では external API を叩かない。
+
+着手不可の条件:
+
+- old artifact の再利用だけで fresh と主張する。
+- free feed の empty bars を provider failure と短絡する。
+- data freshness gate なしに tiny live や profit proof へ進む。
+
+## D20: Operations Drill / Incident Response / Reconciliation
+
+残ること:
+
+- tiny live や production に進む前の、operator drill、kill switch、cancel / close / reconcile、incident response、audit bundle の実運用確認。
+
+この計画後の状態:
+
+- operations / audit / remediation surface は多数ある。
+- しかし live measurement で必要な実運用 drill は未完了。
+
+着手の絶対前提条件:
+
+- kill switch、schedule cancel、reduce-only close、flat reconciliation の手順が written runbook と fixture / dry-run で確認されている。
+- monitoring owner、monitoring cadence、alert path、manual stop procedure が決まっている。
+- open order / position / fill / balance の read-only snapshot を、実行前後で比較できる。
+- failed submit、partial fill、cancel reject、close reject、network timeout の対応が書かれている。
+- `export-state` / `restore-state` 相当の recovery path を dry-run で確認している。
+- `operations-bundle` / audit pack / relevant reports を保存する場所が決まっている。
+
+着手不可の条件:
+
+- emergency close や reconciliation が手順化されていない。
+- monitoring owner が曖昧。
+- execution artifact はあるが、operator が何を見るかが決まっていない。
+
+## D21: Cash Reconciliation / Accounting / Statement Evidence
+
+残ること:
+
+- actual cash、fees、funding、入出金、残高、実現損益、未実現損益、exchange statement を突合し、profit / loss を運用上読める形にする。
+
+この計画後の状態:
+
+- Crypto Perp や Strategy artifact は actual cash 風の値や tournament report を扱える。
+- しかし broker / exchange statement と口座残高まで含む accounting proof は未着手。
+
+着手の絶対前提条件:
+
+- 対象 account、対象 venue、対象期間、対象 currency が1つに固定されている。
+- exchange / broker statement、fills、fees、funding、deposits、withdrawals、cash balance を入手できる。
+- realized PnL、unrealized PnL、fees、funding、cash movement を分ける。
+- raw statement をそのまま tracked git に入れない方針がある。
+- 税務・会計判断は repo の自動判定ではなく、人間確認に回す境界がある。
+
+着手不可の条件:
+
+- before-cost proxy rows を actual cash として扱う。
+- exchange statement なしに profit proof を作る。
+- fees / funding / deposits / withdrawals を損益から分けない。
+- tax-ready report と operational PnL report を同じものとして扱う。
+
 ## 実務上の優先順位
 
 次に実装へ進むなら、今回の T0-T7 の後にすぐ大きな UI / DB / live へ飛ばない。
@@ -502,6 +631,6 @@
 2. 生成した proposal / review / case index / viewer を実 artifact で dogfood する。
 3. D1 / D2 の paper bridge と normal paper observation を、外部 evidence がある時だけ進める。
 4. D3 / D4 / D5 は、dogfood で不足が見えてから分けて計画する。
-5. D6 以降の credential / network / order / live 系は、承認と safety prerequisites が揃うまで計画だけでも先走らない。
+5. D6 以降の credential / network / order / live 系は、承認、D19、D20、D13、D21 が揃うまで計画だけでも先走らない。
 
 最初に選ぶなら D1 または D2。理由は、現行主軸が backtest-first / venue-neutral で、local artifact workflow の次に必要なのは live ではなく paper / evidence の再確認だから。
