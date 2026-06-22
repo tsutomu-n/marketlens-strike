@@ -15,18 +15,19 @@ CURRENT_DOC_FILES = (
     "docs/CURRENT_STATE.md",
     "docs/APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md",
     "docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md",
+    "docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md",
+    "docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md",
     "docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md",
     "docs/STRATEGY_AND_BACKTEST_USER_GUIDE.md",
     "docs/CODE_STATUS.md",
     "docs/IMPLEMENTED_SURFACES.md",
     "docs/MIGRATION_HISTORY.md",
     "docs/NEXT_DIRECTION_CURRENT.md",
-    "docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md",
-    "docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md",
+    "docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md",
     "docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md",
     "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md",
     "docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md",
-    "docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md",
+    "docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md",
     "docs/DOCS_LINT_POLICY_2026-05-30.md",
     "docs/OPERATIONS_RUNBOOK.md",
     "docs/LONG_RUNNING_SCRIPT_OPERATION_RUNBOOK_2026-06-05.md",
@@ -70,16 +71,14 @@ CURRENT_DOC_DIRS = (
     "docs/strategy_research_lab",
     "docs/runbooks",
     "docs/venues",
+    "docs/references/crypto_perp",
     "docs/algo/strategy_factory",
     "docs/algo/obsidian_note_rewrites_2026-05-29",
 )
 
 PLAN_ROUTING_ALLOWED_FILES = ("plan/README.md",)
 
-PLAN_ROUTING_ALLOWED_PREFIXES = (
-    "plan/archive/",
-    "plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/",
-)
+PLAN_ROUTING_ALLOWED_PREFIXES = ("plan/archive/",)
 
 EXCLUDED_DOC_PREFIXES = (
     "docs/archive/",

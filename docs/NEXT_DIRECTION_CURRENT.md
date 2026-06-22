@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-21_19:15 JST
+更新日: 2026-06-22_14:47 JST
 -->
 
 # Next Direction Current
@@ -13,13 +13,13 @@
 
 完成形の設計定義は [TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md](TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md) を読む。これは current implementation proof ではなく、個人システムトレーダー向けに stage policy、paper smoke、drift review、micro live plan gate をどう位置づけるかの target definition です。
 
-完成形を実装完了まで閉じるための作業順、対象ファイル、テスト方針、完了条件は [STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md](STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md) を読む。これは、現時点の target definition だけでは実装契約として不足している部分を補う current plan です。
+完成形を実装完了まで閉じるために使った作業順、対象ファイル、テスト方針、完了条件は [archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md](archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md) に historical plan として移動済みです。現行利用では `IMPLEMENTED_SURFACES.md` と各 domain README を先に読みます。
 
-T0〜T12b の実装証跡と残る対象外範囲は [STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md](STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md) を読む。
+T0〜T12b の実装証跡と残る対象外範囲は [archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md](archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md) に historical audit として残します。
 
-Crypto Perp の新しい実装入口は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) を読む。これは旧 CP-00〜CP-10 巨大計画と旧 personal-edge ZIP を置き換える current handoff であり、最初の完成形は `Bitget public data -> event snapshot -> event card -> prospective SHORT / LONG / NO_TRADE decision -> matured outcome` です。M09 の tiny live measurement はコードと mock test までは実装対象ですが、実ネットワークでの 5〜25 USD 測定は別の明示承認がある時だけ扱います。
+Crypto Perp の実装済み handoff は [../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) に historical implementation contract として残します。現行の入口は下の post-MVP practical loop と [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md) です。M09 の実ネットワーク 5〜25 USD 測定は別の明示承認がある時だけ扱います。
 
-実装順、対象ファイル、acceptance は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) を読む。M00 の current truth alignment と supersession、M01 の domain foundation / config / fail-closed CLI boundary / Hypothesis、M02 の Bitget public probe / immutable raw snapshots、M03 の universe diff / ticker snapshot / broad 15m history foundation、M04 の event capture and event card MVP-A、M05 の candidate-only high-resolution recorder、M06 の prospective decision and outcome ledger MVP-B、M07 の validation accelerator pack、M08 の credentialed read-only and order preview、M09 の tiny live execution calibration MVP-C、M10 の actual cash ledger and replay calibration、M11 の hypothesis tournament and Workbench bridge は実装済みです。M09 の実ネットワーク 5〜25 USD 測定は別の明示承認がある時だけ扱います。
+実装順、対象ファイル、acceptance の履歴は [../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) を読む。M00 の current truth alignment と supersession、M01 の domain foundation / config / fail-closed CLI boundary / Hypothesis、M02 の Bitget public probe / immutable raw snapshots、M03 の universe diff / ticker snapshot / broad 15m history foundation、M04 の event capture and event card MVP-A、M05 の candidate-only high-resolution recorder、M06 の prospective decision and outcome ledger MVP-B、M07 の validation accelerator pack、M08 の credentialed read-only and order preview、M09 の tiny live execution calibration MVP-C、M10 の actual cash ledger and replay calibration、M11 の hypothesis tournament and Workbench bridge は実装済みです。M09 の実ネットワーク 5〜25 USD 測定は別の明示承認がある時だけ扱います。
 
 ## Crypto Perp Post-MVP Practical Loop
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-21_21:22 JST
+更新日: 2026-06-22_14:47 JST
 -->
 
 # Current State
@@ -13,13 +13,13 @@
 - 技術者向けではない利用者目線の説明は [APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md](APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md) を読む。
 - アプリの全体像、できること、できないこと、専門用語の説明を一枚で読む場合は [APP_CURRENT_STATE_DETAILED_2026-06-20.md](APP_CURRENT_STATE_DETAILED_2026-06-20.md) を読む。
 - 個人向け・利益目線で誤読しやすい点を見る場合は [AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md) と [AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) を読む。どちらも正本ではなく判断補助です。
-- いま使える主要 surface は Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operations / operations audit。詳細は [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) を読む。
+- いま使える主要 surface は Crypto Perp Truth-Cycle MVP artifact chain / Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operations / operations audit。詳細は [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) を読む。
 - AI / Codex が戦略作成と backtest を迷わず扱う入口は [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) を読む。
 - 人間が戦略、YAML、backtest 結果、次の確認を専門用語少なめで読む入口は [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) を読む。
 - backtest 結果を HTML / JS で見る入口は `uv run sis strategy-backtest-html-report`。生成先は `data/reports/strategy_backtest_html_report.html` と `data/research/backtest_html_report/strategy_backtest_html_report.json`。
 - 専門用語を減らして「できること / できないこと」を読む場合は [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) を読む。
 - 実務的な次方向と外部入力時の再確認は [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) を読む。
-- Crypto Perp の current implementation handoff は [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) を読む。これは旧 CP-00〜CP-10 巨大計画を置き換え、最初は Bitget public data から event snapshot / event card / prospective decision / matured outcome までを作る計画です。
+- Crypto Perp の日常運用は [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md) を読む。実装済み plan package は [../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) に historical implementation contract として移動済みです。
 - `READ_ONLY_GO`、Strategy Review の `READY_FOR_HUMAN_REVIEW`、backtest pack validation `PASS` は、paper execution permission、alpha proof、live readiness ではない。
 - `data/` は runtime / generated state。fresh checkout では必要な artifact を再生成する。
 
@@ -45,7 +45,7 @@
 | venue capability boundary を見る | [venues/read_only_capability_probe.md](venues/read_only_capability_probe.md) |
 | operator 手順を見る | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) と [runbooks/README.md](runbooks/README.md) |
 | Crypto Perp のeventからtournament reportまでを再生成する | [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md) |
-| Crypto Perp Truth-Cycle MVP の実装順を読む | [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) |
+| Crypto Perp Truth-Cycle MVP の実装履歴を読む | [../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) |
 
 ## 境界
 

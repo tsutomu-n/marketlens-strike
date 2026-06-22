@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-18_02:56 JST
+更新日: 2026-06-22_14:47 JST
 -->
 
 # Documentation Archive
@@ -13,7 +13,7 @@ Current docs:
 - `docs/CODE_STATUS.md`
 - `docs/OPERATIONS_RUNBOOK.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
-- `docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md`
+- `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md`
 
 Archived on 2026-05-25:
 
@@ -103,5 +103,12 @@ Archived on 2026-06-18:
 - `docs/backtest/BACKTEST_TO_PAPER_OBSERVATION_EVIDENCE_MAP_2026-06-15.md` -> `docs/archive/backtest/`
 - `docs/strategy_research_lab/12_STRATEGY_AUTHORING_PROGRESS_SUMMARY_2026-05-30.md` -> `docs/archive/strategy_research_lab/`
 - `docs/strategy_research_lab/14_COMPLETION_EVIDENCE_LEDGER.md` -> `docs/archive/strategy_research_lab/`
+
+Archived on 2026-06-22:
+
+- `docs/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md` -> `docs/archive/2026-06-22-doc-routing/`
+- `docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md` -> `docs/archive/2026-06-22-doc-routing/`
+- `docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md` -> `docs/archive/2026-06-22-doc-routing/`
+- `plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/` -> `plan/archive/2026-06-22-crypto-perp-mvp-implemented/`
 
 Do not treat archived documents as current requirements.

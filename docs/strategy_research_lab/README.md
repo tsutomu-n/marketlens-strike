@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:09 JST
-更新日: 2026-06-21_13:24 JST
+更新日: 2026-06-22_14:47 JST
 -->
 
 # Strategy Research Lab
@@ -47,7 +47,7 @@
 
 Strategy Research Lab は、戦略アイデアを直接 order に変える機構ではありません。戦略仮説を schema 化し、signal、trial、candidate、promotion decision を経由して、再検証必須の paper-only preview に変換する機構です。
 
-Crypto Perp の新しい実装入口は、Strategy Lab v2 全面移行ではなく、別系統の current handoff である [Crypto Perp Truth-Cycle MVP 最終実装ハンドオフ](../../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) を正本にします。実装順は [07_TASK_CHAIN.yaml](../../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) の M00 から進めます。旧 CP-00〜CP-10 の巨大計画、全銘柄 L2 常時保存、Strategy Lab v2 全面移行、Svelte UI 先行、ML/LLM optimizer 先行、自動戦略発注は現行入口ではありません。
+Crypto Perp の実装済み handoff は、Strategy Lab v2 全面移行ではなく、別系統の historical implementation contract である [Crypto Perp Truth-Cycle MVP 最終実装ハンドオフ](../../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) に archive 済みです。実装順は [07_TASK_CHAIN.yaml](../../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) の M00-M11 として完了済みです。旧 CP-00〜CP-10 の巨大計画、全銘柄 L2 常時保存、Strategy Lab v2 全面移行、Svelte UI 先行、ML/LLM optimizer 先行、自動戦略発注は現行入口ではありません。
 
 ## 現行 artifact chain
 

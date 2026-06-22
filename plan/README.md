@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-21_13:24 JST
+更新日: 2026-06-22_14:47 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -63,11 +63,11 @@ exchange-write path.
 [`docs/NEXT_DIRECTION_CURRENT.md`](../docs/NEXT_DIRECTION_CURRENT.md) を読む。
 `計画あり` は `実装決定` ではなく、`catalog known` は `venue enabled` ではない。
 
-## Current 2026-06-20 Crypto Perp Truth-Cycle MVP Plan
+## Historical implemented 2026-06-20 Crypto Perp Truth-Cycle MVP Plan
 
-Crypto Perp の current implementation handoff は [0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) を読む。これは旧 `Crypto Perp Personal Edge Lab Implementation Plan`、旧 `marketlens-strike-crypto-perp-personal-edge-plan-2026-06-20.zip`、旧 CP-00〜CP-10 をそのまま実装する指示を置き換える。
+Crypto Perp の implementation handoff は [archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) に archive 済みです。これは旧 `Crypto Perp Personal Edge Lab Implementation Plan`、旧 `marketlens-strike-crypto-perp-personal-edge-plan-2026-06-20.zip`、旧 CP-00〜CP-10 をそのまま実装する指示を置き換えた historical implementation contract です。
 
-実装順は [0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) の M00 から進める。最初の完成形は Bitget public data から event snapshot、event card、prospective SHORT / LONG / NO_TRADE decision、matured outcome までです。M09 の tiny live measurement はコードと mock test までは実装対象だが、実ネットワークの live measurement は別の明示承認が必要です。
+実装順は [archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml](archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/07_TASK_CHAIN.yaml) の M00-M11 として完了済みです。現行の日常運用は `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`、`docs/IMPLEMENTED_SURFACES.md`、CLI help、生成 artifact を先に読みます。M09 の実ネットワーク live measurement は別の明示承認が必要です。
 
 この plan は production live trading、全銘柄 L2 常時保存、Strategy Lab v2 全面移行、Svelte UI 先行、ML/LLM optimizer 先行、reference venue 先行実装、自動戦略発注 daemon、通常 CI での network 使用、secret の log / artifact 保存を許可しない。
 
@@ -96,9 +96,9 @@ Strategy Stage Policy / Decision first slice、Strategy Paper Smoke Plan first s
 
 これらは `Human-in-the-loop Strategy Operations Workbench` の最初の入口、stage decision、paper smoke plan、runtime observation ingest、drift review、learning / revision request / revision request review、case timeline、daily brief、AI review、model / optimizer ledger、micro live plan、next scale plan、live observation、scale decision、static viewer の土台です。Svelte UI、wallet、signing、exchange write、live execution はまだ別計画が必要です。
 
-完成形を実装完了まで閉じるための current plan は [../docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md](../docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md) です。対象ファイル、テスト方針、完了条件はこの文書を使う。
+完成形を実装完了まで閉じるために使った plan は [../docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md](../docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md) に archive 済みです。対象ファイル、テスト方針、完了条件は implementation history として読みます。
 
-T0〜T12b の実装証跡と対象外範囲は [../docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md](../docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md) を読む。
+T0〜T12b の実装証跡と対象外範囲は [../docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md](../docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md) を読む。
 
 ## Historical 2026-06-10 implementation plans
 

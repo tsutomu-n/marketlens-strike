@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_20:32 JST
-更新日: 2026-06-21_21:07 JST
+更新日: 2026-06-22_14:47 JST
 -->
 
 # marketlens-strike アプリ現状詳細ガイド
@@ -26,8 +26,8 @@
 - `docs/STRATEGY_AND_BACKTEST_USER_GUIDE.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
 - `docs/OPERATIONS_RUNBOOK.md`
-- `docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md`
-- `plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/`
+- `docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md`
+- `plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/`
 - `src/sis/cli.py`
 - `src/sis/commands/`
 - `src/sis/crypto_perp/`
@@ -1032,7 +1032,7 @@ API key、secret、passphraseなどの認証情報です。存在しても、た
 | `READY_FOR_HUMAN_SCALE_REVIEW` | scale判断を人間が読む状態 | scale-up実行許可 |
 | `READY_FOR_HUMAN_NEXT_SCALE_REVIEW` | next scale planを人間が読む状態 | next-scale実行許可 |
 | `backtest_passed=true` | YAML内の閾値を満たした | alpha証明 |
-| `crypto_perp_live_measurement.v1` | tiny live measurementの記録形式 | 実ネットワーク測定済みの証明 |
+| `crypto_perp_live_measurement.v1` | tiny live measurementの記録形式。mock / live区分、approval、guard、reconciliationを読む | 実ネットワーク測定済みの証明 |
 | `crypto_perp_truth_cycle_status.v1` | 現在地、stop reason、local-only next step、stage blocker | network / exchange write / live order許可 |
 | `first_next_step_network_allowed=false` | viewer summary上のfalse-only境界確認 | trueに変えればnetwork実行許可になる |
 | `first_stage_blocker` | 最初に読む欠損stageの索引 | 次stageやtiny liveへ進む許可 |
@@ -1057,7 +1057,7 @@ API key、secret、passphraseなどの認証情報です。存在しても、た
 | Strategy Research Lab | [strategy_research_lab/README.md](strategy_research_lab/README.md) |
 | NDX研究 | [research/ndx/README.md](research/ndx/README.md) |
 | Paper observation / lifecycle | [strategy_lifecycle/README.md](strategy_lifecycle/README.md) |
-| Crypto Perp Truth-Cycle MVP | [../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) |
+| Crypto Perp Truth-Cycle MVP 実装履歴 | [../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md](../plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/00_READ_ME_FIRST.md) |
 | Operations | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) |
 | Trade[XYZ]初心者向け | [trade_xyz_bot_beginner_guide.md](trade_xyz_bot_beginner_guide.md) |
 

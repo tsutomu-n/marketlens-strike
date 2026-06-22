@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_12:00 JST
-更新日: 2026-06-21_21:41 JST
+更新日: 2026-06-22_14:47 JST
 -->
 
 # Agent Assessment: Individual Trader Lens
@@ -70,7 +70,7 @@ uv run python scripts/check_current_docs.py
 | JSON Schema | 121 |
 | 公開 CLI | 189（当時値。現在は上の再確認結果を優先） |
 
-Workbench first slice T0–T12b 完了は `docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md` の記述。**監査 doc の「完了」は first slice の契約完了であり、live 実戦完了ではない**。Crypto Perp についても、truth-cycle status、stage checklist、dogfood pack、Daily Brief / Workbench Viewer summary が増えたことは「読みやすくなった」という意味であり、live readinessではない。
+Workbench first slice T0–T12b 完了は `docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md` の historical audit に残す。**監査 doc の「完了」は first slice の契約完了であり、live 実戦完了ではない**。Crypto Perp についても、truth-cycle status、stage checklist、dogfood pack、Daily Brief / Workbench Viewer summary が増えたことは「読みやすくなった」という意味であり、live readinessではない。
 
 ---
 
@@ -285,7 +285,7 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 | 実装 catalog | `IMPLEMENTED_SURFACES.md` | CLI の存在リスト |
 | 境界 | `CURRENT_STATE.md` | できないこと |
 | 運用の泥 | `NEXT_DIRECTION_CURRENT.md` | trading day・session 使い回し不可 |
-| 監査スナップショット | `STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md` | 日付固定。再実行で変わるものは pytest 件数等 |
+| 監査スナップショット | `docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md` | 日付固定。再実行で変わるものは pytest 件数等 |
 | 実行結果 | `data/**` | 環境依存。最も具体的 |
 
 ---
@@ -320,7 +320,7 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 
 ### ドキュメント
 
-`AGENTS.md`, `README.md`, `docs/CURRENT_STATE.md`, `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`, `docs/IMPLEMENTED_SURFACES.md`, `docs/CODE_STATUS.md`, `docs/ARCHITECTURE_AND_PHASES.md`, `docs/NEXT_DIRECTION_CURRENT.md`, `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md`, `docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md`, `docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md`, `docs/strategy_research_lab/09_STRATEGY_AUTHOR_GUIDE.md`, `docs/strategy_micro_live_plan/README.md`
+`AGENTS.md`, `README.md`, `docs/CURRENT_STATE.md`, `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`, `docs/IMPLEMENTED_SURFACES.md`, `docs/CODE_STATUS.md`, `docs/ARCHITECTURE_AND_PHASES.md`, `docs/NEXT_DIRECTION_CURRENT.md`, `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md`, `docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md`, `docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md`, `docs/strategy_research_lab/09_STRATEGY_AUTHOR_GUIDE.md`, `docs/strategy_micro_live_plan/README.md`
 
 ### コード・設定・データ
 
