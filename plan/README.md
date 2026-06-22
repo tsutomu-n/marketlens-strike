@@ -75,7 +75,7 @@ Crypto Perp の implementation handoff は [archive/2026-06-22-crypto-perp-mvp-i
 
 Strategy Input Contract / Idea Intake first gate と Strategy Review optional source connection は実装済みです。コーダー向けの設計と acceptance は次を読む。
 
-- [../docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](../docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md)
+- [../docs/archive/2026-06-22-doc-routing/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](../docs/archive/2026-06-22-doc-routing/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md)
 
 Strategy Stage Policy / Decision first slice、Strategy Paper Smoke Plan first slice、Strategy Runtime Observation Ingest first slice、Paper vs Backtest Drift Review first slice、Strategy Learning / Revision Request / Revision Request Review first slice、Strategy Case Lite、Daily Brief、AI Review、Model Loop、Micro Live Plan、Next Scale Plan、Live Observation、Scale Decision、Static Workbench Viewer も実装済みです。現行の使い方は次を読む。
 

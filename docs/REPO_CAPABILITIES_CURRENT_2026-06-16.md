@@ -1165,7 +1165,7 @@ uv run python scripts/check_cli_catalog.py
 
 - [strategy_review/README.md](strategy_review/README.md)
 - [strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
-- [strategy_review/DOGFOOD_REVIEW_2026-06-16.md](strategy_review/DOGFOOD_REVIEW_2026-06-16.md)
+- [archive/2026-06-22-doc-routing/DOGFOOD_REVIEW_2026-06-16.md](archive/2026-06-22-doc-routing/DOGFOOD_REVIEW_2026-06-16.md)
 
 ### 2-1. Backtest 結果を人間と AI が読みやすくする入口が増えた
 
