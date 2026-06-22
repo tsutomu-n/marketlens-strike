@@ -314,4 +314,4 @@ def test_default_proposal_and_review_ids_stay_within_model_limit(
         approved_change_ids=["runtime-001"],
     )
     assert len(review.review.review_id) <= 128
-    assert review.review.review_id.endswith("-review")
+    assert "-review-" in review.review.review_id
