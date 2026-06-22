@@ -46,9 +46,17 @@ STATUS_KEYS = (
     "ingest_status",
     "review_status",
     "status",
+    "decision",
     "validation_status",
     "readiness_status",
     "recommended_action",
+)
+
+LATEST_STATUS_AS_ARTIFACT_STATUS_SCHEMAS = frozenset(
+    {
+        "strategy_case_lite.v1",
+        "strategy_case_index.v1",
+    }
 )
 
 SUMMARY_KEYS = (
@@ -69,7 +77,9 @@ SUMMARY_KEYS = (
     "known_gap_count",
     "stop_reason_count",
     "strategy_id",
+    "proposal_id",
     "review_id",
+    "decision",
     "decision_id",
     "plan_id",
     "manifest_id",
@@ -83,6 +93,16 @@ SUMMARY_KEYS = (
     "strategy_count",
     "latest_case_path",
     "case_index_source_hash",
+    "source_proposal_status",
+    "proposed_change_count",
+    "approved_change_count",
+    "required_action_count",
+    "manual_contract_update_input_allowed",
+    "requires_human_contract_update",
+    "direct_contract_edit_allowed",
+    "auto_applied",
+    "paper_execution_allowed",
+    "live_allowed",
     "first_open_action",
     "first_blocked_reason",
 )
@@ -98,7 +118,9 @@ SUMMARY_STRING_KEYS = frozenset(
         "leader_action",
         "primary_metric",
         "strategy_id",
+        "proposal_id",
         "review_id",
+        "decision",
         "decision_id",
         "plan_id",
         "manifest_id",
@@ -117,6 +139,7 @@ SUMMARY_STRING_KEYS = frozenset(
         "index_id",
         "latest_case_path",
         "case_index_source_hash",
+        "source_proposal_status",
         "first_open_action",
         "first_blocked_reason",
     }
@@ -136,6 +159,9 @@ SUMMARY_INTEGER_KEYS = frozenset(
         "boundary_violation_count",
         "case_count",
         "strategy_count",
+        "proposed_change_count",
+        "approved_change_count",
+        "required_action_count",
     }
 )
 
@@ -144,6 +170,12 @@ SUMMARY_NUMBER_KEYS = frozenset({"leader_actual_cash_result_usd"})
 SUMMARY_BOOLEAN_KEYS = frozenset(
     {
         "first_next_step_requires_explicit_approval",
+        "manual_contract_update_input_allowed",
+        "requires_human_contract_update",
+        "direct_contract_edit_allowed",
+        "auto_applied",
+        "paper_execution_allowed",
+        "live_allowed",
     }
 )
 
@@ -184,6 +216,17 @@ def _first_status(payload: dict[str, Any]) -> str | None:
         value = payload.get(key)
         if isinstance(value, str) and value:
             return value
+    return None
+
+
+def _artifact_status(payload: dict[str, Any], summary: dict[str, Any]) -> str | None:
+    status = _first_status(payload)
+    if status is not None:
+        return status
+    if payload.get("schema_version") in LATEST_STATUS_AS_ARTIFACT_STATUS_SCHEMAS:
+        latest_status = summary.get("latest_status")
+        if isinstance(latest_status, str) and latest_status:
+            return latest_status
     return None
 
 
@@ -265,6 +308,22 @@ def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
                 _set_compact_summary_value(
                     summary, "case_index_source_hash", first_source.get("sha256")
                 )
+    if schema_version == "strategy_input_contract_update_proposal.v1":
+        proposed_changes = payload.get("proposed_changes")
+        if isinstance(proposed_changes, list):
+            _set_compact_summary_value(summary, "proposed_change_count", len(proposed_changes))
+    if schema_version == "strategy_input_contract_update_review.v1":
+        approved_change_ids = payload.get("approved_change_ids")
+        if isinstance(approved_change_ids, list):
+            _set_compact_summary_value(summary, "approved_change_count", len(approved_change_ids))
+        required_actions = payload.get("required_actions")
+        if isinstance(required_actions, list):
+            _set_compact_summary_value(summary, "required_action_count", len(required_actions))
+        source_proposal = payload.get("source_proposal")
+        if isinstance(source_proposal, dict):
+            _set_compact_summary_value(
+                summary, "source_proposal_status", source_proposal.get("proposal_status")
+            )
     stop_reasons = payload.get("stop_reasons")
     if isinstance(stop_reasons, list) and stop_reasons and "first_stop_reason" not in summary:
         summary["first_stop_reason"] = str(stop_reasons[0])
@@ -320,6 +379,7 @@ def _json_title(path: Path, payload: dict[str, Any]) -> str:
 def _source_from_json(path: Path, artifact_key: str) -> ViewerSourceArtifact:
     payload = read_json_object(path)
     violations = boundary_true_paths(payload)
+    summary = _compact_summary(payload)
     return ViewerSourceArtifact(
         artifact_key=artifact_key,
         path=_display_path(path),
@@ -327,9 +387,9 @@ def _source_from_json(path: Path, artifact_key: str) -> ViewerSourceArtifact:
         artifact_format=ViewerArtifactFormat.JSON,
         schema_version=detect_json_schema_version(path),
         title=_json_title(path, payload),
-        status=_first_status(payload),
+        status=_artifact_status(payload, summary),
         boundary_violations=violations,
-        summary=_compact_summary(payload),
+        summary=summary,
         preview=json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)[:6000],
     )
 

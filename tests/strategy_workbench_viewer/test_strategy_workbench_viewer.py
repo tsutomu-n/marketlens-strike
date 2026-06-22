@@ -200,6 +200,66 @@ def _crypto_perp_ready_truth_cycle_status(path: Path) -> Path:
     )
 
 
+def _input_feedback_review(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_input_contract_update_review.v1",
+            "review_id": "proposal-runtime-review",
+            "proposal_id": "proposal-runtime",
+            "strategy_id": "ndx-breakout-001",
+            "reviewed_at": "2026-06-22T09:10:00Z",
+            "producer": {"tool": "sis", "command": "strategy-input-feedback-proposal-review"},
+            "reviewer": "operator-a",
+            "decision": "HOLD",
+            "rationale": "Hold before any manual contract update.",
+            "approved_change_ids": [],
+            "required_actions": [
+                "Choose a human-approved manual contract update target before applying changes."
+            ],
+            "source_proposal": {
+                "proposal_path": "data/strategy_input_feedback/proposal-runtime.json",
+                "proposal_sha256": "sha256:" + "a" * 64,
+                "proposal_id": "proposal-runtime",
+                "proposal_status": "READY_FOR_HUMAN_REVIEW",
+                "proposed_change_ids": ["runtime-001"],
+                "proposed_change_count": 1,
+                "auto_applied": False,
+                "direct_contract_edit_allowed": False,
+                "paper_execution_allowed": False,
+                "live_allowed": False,
+            },
+            "manual_contract_update_input_allowed": False,
+            "requires_human_contract_update": True,
+            "auto_applied": False,
+            "direct_contract_edit_allowed": False,
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+            "feedback_boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "permits_wallet": False,
+                "permits_signing": False,
+                "permits_exchange_write": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+                "paper_execution_allowed": False,
+                "live_allowed": False,
+                "auto_applied": False,
+                "direct_contract_edit_allowed": False,
+            },
+        },
+    )
+
+
 def _malformed_crypto_perp_truth_cycle_status(path: Path) -> Path:
     return _write_json(
         path,
@@ -414,6 +474,7 @@ def test_strategy_workbench_viewer_summarizes_strategy_case_index(
         (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
     )
     Draft202012Validator(schema).validate(payload)
+    assert payload["source_artifacts"][0]["status"] == "READY_FOR_HUMAN_REVIEW"
     summary = payload["source_artifacts"][0]["summary"]
     assert summary["index_id"] == "viewer-index"
     assert summary["case_count"] == 1
@@ -427,9 +488,81 @@ def test_strategy_workbench_viewer_summarizes_strategy_case_index(
     html = result.html_path.read_text(encoding="utf-8")
     assert "case_count" in html
     assert "strategy_count" in html
+    assert '<span class="badge warn">READY_FOR_HUMAN_REVIEW</span>' in html
     assert "READY_FOR_HUMAN_REVIEW" in html
     assert "REVISE_STRATEGY" in html
     assert "runtime_no_fill_rate_within_limit" in html
+
+
+def test_strategy_workbench_viewer_uses_case_lite_latest_status_as_status_badge(
+    tmp_path: Path,
+) -> None:
+    case = _case_lite(
+        tmp_path / "data/strategy_cases/ndx-breakout-001/case-a.json",
+        strategy_id="ndx-breakout-001",
+        case_id="case-a",
+        updated_at="2026-06-22T09:00:00Z",
+        latest_status="READY_FOR_HUMAN_REVIEW",
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=[case],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+    assert payload["source_artifacts"][0]["status"] == "READY_FOR_HUMAN_REVIEW"
+    assert payload["source_artifacts"][0]["summary"]["latest_status"] == "READY_FOR_HUMAN_REVIEW"
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert '<span class="badge warn">READY_FOR_HUMAN_REVIEW</span>' in html
+    assert '<span class="badge neutral">n/a</span>' not in html
+
+
+def test_strategy_workbench_viewer_uses_input_feedback_review_decision_as_status_badge(
+    tmp_path: Path,
+) -> None:
+    review = _input_feedback_review(
+        tmp_path / "data/strategy_input_feedback/proposal-runtime-review.json"
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=[review],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+    source = payload["source_artifacts"][0]
+    assert source["status"] == "HOLD"
+    assert source["summary"]["decision"] == "HOLD"
+    assert source["summary"]["proposal_id"] == "proposal-runtime"
+    assert source["summary"]["review_id"] == "proposal-runtime-review"
+    assert source["summary"]["source_proposal_status"] == "READY_FOR_HUMAN_REVIEW"
+    assert source["summary"]["approved_change_count"] == 0
+    assert source["summary"]["required_action_count"] == 1
+    assert source["summary"]["manual_contract_update_input_allowed"] is False
+    assert source["summary"]["requires_human_contract_update"] is True
+    assert source["summary"]["direct_contract_edit_allowed"] is False
+    assert source["summary"]["auto_applied"] is False
+    assert source["summary"]["paper_execution_allowed"] is False
+    assert source["summary"]["live_allowed"] is False
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert '<span class="badge warn">HOLD</span>' in html
+    assert "manual_contract_update_input_allowed" in html
+    assert '<span class="badge neutral">n/a</span>' not in html
 
 
 def test_strategy_workbench_viewer_scans_case_index_and_marks_boundary_violation(
