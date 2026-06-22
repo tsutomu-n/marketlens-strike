@@ -1,9 +1,13 @@
 <!--
 作成日: 2026-06-22_19:50 JST
-更新日: 2026-06-22_20:16 JST
+更新日: 2026-06-22_20:37 JST
 -->
 
 # Local Dogfood Existing Artifact Inventory
+
+## 現在の読み方
+
+この文書は、Loop 01 以前の初期棚卸しを含む。Loop 01-07 の実行後に生成された `data/local_dogfood/2026-06-22-*` を含めて対象選定する場合は、[17_LOCAL_DOGFOOD_SELECTION_CATALOG.md](17_LOCAL_DOGFOOD_SELECTION_CATALOG.md) を優先して読む。
 
 ## 結論
 

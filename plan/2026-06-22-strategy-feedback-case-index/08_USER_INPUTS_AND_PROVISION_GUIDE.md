@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_19:34 JST
-更新日: 2026-06-22_19:39 JST
+更新日: 2026-06-22_20:37 JST
 -->
 
 # User Inputs And Provision Guide
@@ -8,6 +8,16 @@
 ## 結論
 
 次に進めるために、最初に必要なのは credential や live 承認ではない。まず必要なのは、どの lane を進めるかの指定と、その lane の根拠になる artifact / evidence である。
+
+現在のユーザー回答は次の通り。
+
+- 必須 1: `Local dogfood`
+- 必須 2: `unknown`
+- 必須 3: Codex 推奨で既存 artifact を棚卸しして候補提示
+- 必須 4: 未決
+- 必須 5: 未決
+
+この回答状態で選ぶための詳細カタログは [17_LOCAL_DOGFOOD_SELECTION_CATALOG.md](17_LOCAL_DOGFOOD_SELECTION_CATALOG.md) を読む。必須 4 と必須 5 が未決の間は、credential、network、paper order、live order、wallet、signing、exchange write、secret、account raw data、statement raw data は扱わない。
 
 推奨する最初の進め方は、今回追加した local / offline surface を実 artifact で dogfood すること。つまり `Strategy Input Feedback`、`Strategy Case Index`、`Strategy Workbench Viewer` を実データで読み、次に direct apply、registry、UI、paper bridge のどれが本当に必要かを確認する。
 
