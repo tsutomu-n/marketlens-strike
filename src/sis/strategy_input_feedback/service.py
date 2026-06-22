@@ -122,11 +122,17 @@ def _runtime_change(index: int, payload: dict[str, Any]) -> StrategyInputFeedbac
     summary: dict[str, Any] = raw_summary if isinstance(raw_summary, dict) else {}
     no_fill = summary.get("no_fill_count", 0)
     blocked = summary.get("blocked_count", 0)
+    quote_age = summary.get("max_observed_quote_age_ms")
     spread = summary.get("max_observed_spread_bps")
+    pnl_available = summary.get("pnl_available")
+    pnl_unavailable_reason = summary.get("pnl_unavailable_reason")
     evidence = (
         f"runtime ingest_status={payload.get('ingest_status')}; "
         f"no_fill_count={no_fill}; blocked_count={blocked}; "
-        f"max_observed_spread_bps={spread}"
+        f"max_observed_quote_age_ms={quote_age}; "
+        f"max_observed_spread_bps={spread}; "
+        f"pnl_available={pnl_available}; "
+        f"pnl_unavailable_reason={pnl_unavailable_reason}"
     )
     return StrategyInputFeedbackProposedChange(
         change_id=f"runtime-{index:03d}",

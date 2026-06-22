@@ -77,6 +77,9 @@ SUMMARY_KEYS = (
     "known_gap_count",
     "stop_reason_count",
     "strategy_id",
+    "first_observed_at",
+    "last_observed_at",
+    "pnl_unavailable_reason",
     "proposal_id",
     "review_id",
     "decision",
@@ -93,6 +96,17 @@ SUMMARY_KEYS = (
     "strategy_count",
     "latest_case_path",
     "case_index_source_hash",
+    "ledger_entry_count",
+    "paper_order_count",
+    "paper_fill_count",
+    "no_fill_count",
+    "blocked_count",
+    "unique_intent_count",
+    "unique_symbol_count",
+    "max_observed_quote_age_ms",
+    "filled_notional_usd_total",
+    "max_observed_spread_bps",
+    "pnl_available",
     "source_proposal_status",
     "proposed_change_count",
     "approved_change_count",
@@ -118,6 +132,9 @@ SUMMARY_STRING_KEYS = frozenset(
         "leader_action",
         "primary_metric",
         "strategy_id",
+        "first_observed_at",
+        "last_observed_at",
+        "pnl_unavailable_reason",
         "proposal_id",
         "review_id",
         "decision",
@@ -162,10 +179,24 @@ SUMMARY_INTEGER_KEYS = frozenset(
         "proposed_change_count",
         "approved_change_count",
         "required_action_count",
+        "ledger_entry_count",
+        "paper_order_count",
+        "paper_fill_count",
+        "no_fill_count",
+        "blocked_count",
+        "unique_intent_count",
+        "unique_symbol_count",
+        "max_observed_quote_age_ms",
     }
 )
 
-SUMMARY_NUMBER_KEYS = frozenset({"leader_actual_cash_result_usd"})
+SUMMARY_NUMBER_KEYS = frozenset(
+    {
+        "leader_actual_cash_result_usd",
+        "filled_notional_usd_total",
+        "max_observed_spread_bps",
+    }
+)
 
 SUMMARY_BOOLEAN_KEYS = frozenset(
     {
@@ -176,6 +207,7 @@ SUMMARY_BOOLEAN_KEYS = frozenset(
         "auto_applied",
         "paper_execution_allowed",
         "live_allowed",
+        "pnl_available",
     }
 )
 

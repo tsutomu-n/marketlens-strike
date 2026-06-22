@@ -66,7 +66,12 @@ def _runtime_observation(tmp_path: Path, *, boundary_violation: bool = False) ->
             "no_fill_count": 1,
             "unique_intent_count": 2,
             "unique_symbol_count": 1,
+            "max_observed_quote_age_ms": 1048982067,
+            "max_observed_spread_bps": 0.332474441027346,
             "pnl_available": False,
+            "pnl_unavailable_reason": (
+                "ledger rows do not include realized_pnl_usd, paper_pnl_usd, or pnl_usd"
+            ),
             "block_reasons": {"LATEST_QUOTE_MISSING": 1},
             "status_counts": {"blocked": 1, "paper_no_fill": 1},
             "order_lifecycle_counts": {"blocked": 1, "paper_no_fill": 1},
@@ -189,6 +194,13 @@ def test_runtime_observation_without_contract_builds_context_limited_proposal(
 
     assert result.proposal.status.value == "NEEDS_SOURCE_CONTRACT_CONTEXT"
     assert result.proposal.proposed_changes[0].change_id == "runtime-001"
+    assert "max_observed_quote_age_ms=1048982067" in (
+        result.proposal.proposed_changes[0].evidence_summary
+    )
+    assert "pnl_available=False" in result.proposal.proposed_changes[0].evidence_summary
+    assert "ledger rows do not include realized_pnl_usd" in (
+        result.proposal.proposed_changes[0].evidence_summary
+    )
     assert result.proposal.source_artifacts[0].schema_version == (
         "strategy_runtime_observation_manifest.v1"
     )

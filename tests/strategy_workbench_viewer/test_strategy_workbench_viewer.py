@@ -260,6 +260,49 @@ def _input_feedback_review(path: Path) -> Path:
     )
 
 
+def _runtime_observation_manifest(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_runtime_observation_manifest.v1",
+            "strategy_id": "ndx_open_gap_residual_v1",
+            "created_at": "2026-06-22T10:00:00Z",
+            "producer": {"tool": "sis", "command": "strategy-runtime-observation-ingest"},
+            "ingest_status": "INGESTED",
+            "summary": {
+                "block_reasons": {},
+                "blocked_count": 0,
+                "filled_notional_usd_total": 20000.0,
+                "first_observed_at": "2026-06-17T11:07:10.330218+00:00",
+                "last_observed_at": "2026-06-17T11:13:45.220224+00:00",
+                "ledger_entry_count": 20,
+                "max_observed_quote_age_ms": 1048982067,
+                "max_observed_spread_bps": 0.332474441027346,
+                "no_fill_count": 0,
+                "order_lifecycle_counts": {"paper_filled": 20},
+                "paper_fill_count": 20,
+                "paper_order_count": 20,
+                "pnl_available": False,
+                "pnl_unavailable_reason": (
+                    "ledger rows do not include realized_pnl_usd, paper_pnl_usd, or pnl_usd"
+                ),
+                "status_counts": {"paper_filled": 20},
+                "unique_intent_count": 1,
+                "unique_symbol_count": 1,
+            },
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+        },
+    )
+
+
 def _malformed_crypto_perp_truth_cycle_status(path: Path) -> Path:
     return _write_json(
         path,
@@ -563,6 +606,54 @@ def test_strategy_workbench_viewer_uses_input_feedback_review_decision_as_status
     assert '<span class="badge warn">HOLD</span>' in html
     assert "manual_contract_update_input_allowed" in html
     assert '<span class="badge neutral">n/a</span>' not in html
+
+
+def test_strategy_workbench_viewer_summarizes_runtime_observation_execution_reality(
+    tmp_path: Path,
+) -> None:
+    observation = _runtime_observation_manifest(
+        tmp_path / "data/strategy_runtime_observation/strategy_runtime_observation_manifest.json"
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=[observation],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+    source = payload["source_artifacts"][0]
+    assert source["status"] == "INGESTED"
+    assert source["summary"]["strategy_id"] == "ndx_open_gap_residual_v1"
+    assert source["summary"]["ledger_entry_count"] == 20
+    assert source["summary"]["paper_order_count"] == 20
+    assert source["summary"]["paper_fill_count"] == 20
+    assert source["summary"]["no_fill_count"] == 0
+    assert source["summary"]["blocked_count"] == 0
+    assert source["summary"]["unique_intent_count"] == 1
+    assert source["summary"]["unique_symbol_count"] == 1
+    assert source["summary"]["filled_notional_usd_total"] == 20000.0
+    assert source["summary"]["max_observed_quote_age_ms"] == 1048982067
+    assert source["summary"]["max_observed_spread_bps"] == 0.332474441027346
+    assert source["summary"]["pnl_available"] is False
+    assert (
+        source["summary"]["pnl_unavailable_reason"]
+        == "ledger rows do not include realized_pnl_usd, paper_pnl_usd, or pnl_usd"
+    )
+    assert source["summary"]["first_observed_at"] == "2026-06-17T11:07:10.330218+00:00"
+    assert source["summary"]["last_observed_at"] == "2026-06-17T11:13:45.220224+00:00"
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert '<span class="badge neutral">INGESTED</span>' in html
+    assert "max_observed_quote_age_ms" in html
+    assert "1048982067" in html
+    assert "pnl_available" in html
+    assert "ledger rows do not include realized_pnl_usd" in html
 
 
 def test_strategy_workbench_viewer_scans_case_index_and_marks_boundary_violation(
