@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_17:55 JST
+更新日: 2026-06-22_18:00 JST
 -->
 
 # Implementation Contract
@@ -12,6 +12,16 @@ Strategy Operations Workbench の post-MVP gap を、実行権限を増やさず
 具体的には、既存の `strategy_runtime_observation_manifest.v1` と `strategy_learning_event.v1` から Strategy Input Contract 更新候補を作り、人間レビューで止める。その後、既存の `strategy_case_lite.v1` を複数 case で一覧化し、Static Workbench Viewer でレビューしやすくする。
 
 この実装は alpha 証明、paper readiness、live readiness、account readiness、wallet readiness、exchange-write readiness を一切主張しない。
+
+## 制約
+
+- local/offline artifact workflow に限定する。
+- network、credential、secret、account state、paper order、live order、wallet、signing、exchange write は扱わない。
+- Strategy Input Contract の直接編集、自動 patch、自動適用を実装しない。
+- Case Index は再生成可能な派生 artifact とし、DB registry、merge policy、conflict resolution を実装しない。
+- Viewer は existing static HTML generation の改善に限定し、server UI や Svelte UI を実装しない。
+- 既存 command / schema / docs の命名と boundary pattern を優先する。
+- 新規または大きく編集する Python file は 800 行以下に保つ。
 
 ## 実装スコープ
 
