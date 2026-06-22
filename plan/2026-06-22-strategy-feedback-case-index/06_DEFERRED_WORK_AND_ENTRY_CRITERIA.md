@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_18:06 JST
-更新日: 2026-06-22_18:16 JST
+更新日: 2026-06-22_18:36 JST
 -->
 
 # Deferred Work And Entry Criteria
@@ -141,7 +141,7 @@ package dependency を追加する前提条件:
 - approved / rejected / hold の review sample が存在する。
 - conflict handling、backup、rollback、diff format、human approval step が仕様化されている。
 - 自動適用しない mode と、手動確認後にだけ patch する mode が分かれている。
-- source contract の hash mismatch を必ず止める設計になっている。
+- source contract 内の declared source hash / columns / timestamp 検査は既存 `strategy-input-contract-validate` か、同等に明示された validation artifact で止める設計になっている。
 
 着手不可の条件:
 

@@ -78,6 +78,13 @@ SUMMARY_KEYS = (
     "open_action_count",
     "pending_human_review_count",
     "boundary_violation_count",
+    "index_id",
+    "case_count",
+    "strategy_count",
+    "latest_case_path",
+    "case_index_source_hash",
+    "first_open_action",
+    "first_blocked_reason",
 )
 
 SUMMARY_STRING_KEYS = frozenset(
@@ -107,6 +114,11 @@ SUMMARY_STRING_KEYS = frozenset(
         "first_stage_blocker_expected_artifact_hint",
         "first_stage_blocker_artifact_path",
         "approval_boundary",
+        "index_id",
+        "latest_case_path",
+        "case_index_source_hash",
+        "first_open_action",
+        "first_blocked_reason",
     }
 )
 
@@ -122,6 +134,8 @@ SUMMARY_INTEGER_KEYS = frozenset(
         "open_action_count",
         "pending_human_review_count",
         "boundary_violation_count",
+        "case_count",
+        "strategy_count",
     }
 )
 
@@ -215,6 +229,42 @@ def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
         for key in SUMMARY_KEYS:
             value = nested.get(key)
             _set_compact_summary_value(summary, key, value)
+    if schema_version == "strategy_case_index.v1":
+        _set_compact_summary_value(summary, "index_id", payload.get("index_id"))
+        _set_compact_summary_value(summary, "case_count", payload.get("case_count"))
+        _set_compact_summary_value(summary, "strategy_count", payload.get("strategy_count"))
+        cases = payload.get("cases")
+        if isinstance(cases, list) and cases:
+            case_items = [case for case in cases if isinstance(case, dict)]
+            if case_items:
+                latest_case = sorted(
+                    case_items,
+                    key=lambda case: (
+                        str(case.get("updated_at") or ""),
+                        str(case.get("case_path") or ""),
+                    ),
+                )[-1]
+                _set_compact_summary_value(
+                    summary, "latest_status", latest_case.get("latest_status")
+                )
+                _set_compact_summary_value(
+                    summary, "latest_case_path", latest_case.get("case_path")
+                )
+                open_actions = latest_case.get("open_actions")
+                if isinstance(open_actions, list) and open_actions:
+                    _set_compact_summary_value(summary, "first_open_action", str(open_actions[0]))
+                blocked_reasons = latest_case.get("blocked_reasons")
+                if isinstance(blocked_reasons, list) and blocked_reasons:
+                    _set_compact_summary_value(
+                        summary, "first_blocked_reason", str(blocked_reasons[0])
+                    )
+        source_artifacts = payload.get("source_artifacts")
+        if isinstance(source_artifacts, list) and source_artifacts:
+            first_source = source_artifacts[0]
+            if isinstance(first_source, dict):
+                _set_compact_summary_value(
+                    summary, "case_index_source_hash", first_source.get("sha256")
+                )
     stop_reasons = payload.get("stop_reasons")
     if isinstance(stop_reasons, list) and stop_reasons and "first_stop_reason" not in summary:
         summary["first_stop_reason"] = str(stop_reasons[0])

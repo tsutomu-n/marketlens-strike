@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_case_index.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "index_id",
+    "created_at",
+    "producer",
+    "case_count",
+    "strategy_count",
+    "cases",
+    "strategies",
+    "source_artifacts",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary",
+    "index_boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_case_index.v1"},
+    "index_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-case-index-build"}
+      },
+      "additionalProperties": false
+    },
+    "case_count": {"type": "integer", "minimum": 0},
+    "strategy_count": {"type": "integer", "minimum": 0},
+    "cases": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/case_entry"}
+    },
+    "strategies": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/strategy_summary"}
+    },
+    "source_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/source_artifact"}
+    },
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/stage_boundary"},
+    "index_boundary": {"$ref": "#/$defs/index_boundary"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "case_entry": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "strategy_id",
+        "case_path",
+        "case_sha256",
+        "artifact_count",
+        "timeline_count",
+        "open_actions",
+        "blocked_reasons",
+        "updated_at"
+      ],
+      "properties": {
+        "case_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "case_path": {"$ref": "#/$defs/safe_path"},
+        "case_sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "latest_status": {"type": ["string", "null"]},
+        "artifact_count": {"type": "integer", "minimum": 0},
+        "timeline_count": {"type": "integer", "minimum": 0},
+        "open_actions": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "blocked_reasons": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "updated_at": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    },
+    "strategy_summary": {
+      "type": "object",
+      "required": [
+        "strategy_id",
+        "case_count",
+        "latest_case_id",
+        "latest_case_path",
+        "open_actions",
+        "blocked_reasons"
+      ],
+      "properties": {
+        "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "case_count": {"type": "integer", "minimum": 0},
+        "latest_case_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "latest_case_path": {"$ref": "#/$defs/safe_path"},
+        "latest_status": {"type": ["string", "null"]},
+        "open_actions": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "blocked_reasons": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_artifact": {
+      "type": "object",
+      "required": ["path", "sha256", "schema_version"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safe_path"},
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "schema_version": {"const": "strategy_case_lite.v1"}
+      },
+      "additionalProperties": false
+    },
+    "safe_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+    },
+    "stage_boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "index_boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "paper_execution_allowed",
+        "live_allowed",
+        "db_persistence_allowed"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "paper_execution_allowed": {"const": false},
+        "live_allowed": {"const": false},
+        "db_persistence_allowed": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  }
+}
+

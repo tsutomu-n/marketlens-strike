@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_18:16 JST
+更新日: 2026-06-22_18:36 JST
 -->
 
 # Risks And Boundaries
@@ -62,7 +62,8 @@ Runtime Observation、Learning Event、Case Index、Viewer はどれも実行許
 
 - source contract なしの場合は `READY_FOR_HUMAN_REVIEW` ではなく、source contract context 不足の status にする。
 - review artifact でも direct apply を許可しない。
-- source contract hash mismatch は必ず止める。
+- `--source-contract` がある場合は `StrategyInputContract` model validation を通す。
+- contract 内の declared source hash / columns / timestamp 検査は既存 `strategy-input-contract-validate` の責務として分け、この計画では暗黙に再実装しない。
 
 ### R7: Case Index の data-dir scan が無関係 JSON を拾う
 
@@ -72,6 +73,8 @@ Runtime Observation、Learning Event、Case Index、Viewer はどれも実行許
 
 - `schema_version == "strategy_case_lite.v1"` の JSON だけを採用する。
 - case-lite 0件は success にしない。
+- explicit `--case` は case-lite 以外を fail にする。
+- data-dir scan は schema_version が違う JSON を無視し、schema_version が `strategy_case_lite.v1` の壊れた JSON を fail にする。
 - latest case selection は deterministic にする。
 
 ## 抜け漏れチェック
@@ -81,6 +84,7 @@ Runtime Observation、Learning Event、Case Index、Viewer はどれも実行許
 - source contract がない場合でも proposal を作れるか: 必須。
 - source contract がない proposal を apply-ready にしないか: 必須。
 - source contract がある場合に hash を残すか: 必須。
+- source contract の内部 source validation をこの計画で再実装していないことを docs に明記したか: 必須。
 - review で approve / reject / hold を表現できるか: 必須。
 - review の approved_change_ids が proposal change ids と整合するか: 必須。
 - direct apply をしないか: 必須。

@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-22_17:16 JST
+更新日: 2026-06-22_18:55 JST
 -->
 
 # Next Direction Current
 
 ## 結論
 
-現時点の現実的な方向は、backtest-first / venue-neutral を維持しながら、実装済みの Strategy Input Contract / Idea Intake first gate、Strategy Review の人間判断記録、Strategy Stage Policy / Decision first slice、Strategy Paper Smoke Plan first slice、Strategy Runtime Observation Ingest first slice、Paper vs Backtest Drift Review first slice、Strategy Learning / Revision Request first slice、Strategy Case Lite first slice、Strategy Daily Brief first slice、Strategy AI Review first slice、Strategy Model Loop first slice、Strategy Micro Live Plan Gate first slice、Strategy Next Scale Plan first slice、Strategy Live Observation first slice、Strategy Scale Decision first slice、Strategy Workbench Viewer first slice、paper observation の通常threshold状態を次段検証の土台にすることです。
+現時点の現実的な方向は、backtest-first / venue-neutral を維持しながら、実装済みの Strategy Input Contract / Idea Intake first gate、Strategy Input Feedback proposal / review、Strategy Review の人間判断記録、Strategy Stage Policy / Decision first slice、Strategy Paper Smoke Plan first slice、Strategy Runtime Observation Ingest first slice、Paper vs Backtest Drift Review first slice、Strategy Learning / Revision Request first slice、Strategy Case Lite first slice、Strategy Case Index、Strategy Daily Brief first slice、Strategy AI Review first slice、Strategy Model Loop first slice、Strategy Micro Live Plan Gate first slice、Strategy Next Scale Plan first slice、Strategy Live Observation first slice、Strategy Scale Decision first slice、Strategy Workbench Viewer first slice、paper observation の通常threshold状態を次段検証の土台にすることです。
 
 これは確定ロードマップではありません。実装済み surface と未実装候補を混ぜず、次に狙いやすい方向、追加候補、優先しないことを分けるための current doc です。
 
@@ -56,6 +56,8 @@ Crypto Perp の実装済み handoff は [../plan/archive/2026-06-22-crypto-perp-
 
 Strategy Input Contract / Idea Intake first gate と Strategy Review optional source connection の設計履歴は [archive/2026-06-22-doc-routing/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md](archive/2026-06-22-doc-routing/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md) を読む。これは実装済み slice の historical coder handoff です。現行の使い方は [strategy_inputs/README.md](strategy_inputs/README.md) を読む。
 
+Strategy Input Feedback の使い方は [strategy_input_feedback/README.md](strategy_input_feedback/README.md) を読む。これは `strategy_input_contract_update_proposal.v1`、`strategy_input_contract_update_review.v1`、`strategy-input-feedback-proposal-build`、`strategy-input-feedback-proposal-review` の current surface です。Strategy Input Contract の自動編集ではありません。
+
 Strategy Stage Policy / Decision の使い方は [strategy_stage/README.md](strategy_stage/README.md) を読む。これは `strategy_stage_policy.v1`、`strategy_stage_policy_validation.v1`、`strategy_stage_decision.v1`、`strategy-stage-policy-validate`、`strategy-stage-decision` の current surface です。
 
 Strategy Paper Smoke Plan の使い方は [strategy_paper_smoke/README.md](strategy_paper_smoke/README.md) を読む。これは `strategy_paper_smoke_plan.v1` と `strategy-paper-smoke-plan` の current surface です。
@@ -67,6 +69,8 @@ Paper vs Backtest Drift Review の使い方は [strategy_drift_review/README.md]
 Strategy Learning の使い方は [strategy_learning/README.md](strategy_learning/README.md) を読む。これは `strategy_learning_event.v1`、`strategy_revision_request.v1`、`strategy_revision_request_review.v1`、`strategy_authoring_update_handoff.v1`、`strategy-learning-ledger-update`、`strategy-revision-request-build`、`strategy-revision-request-review`、`strategy-authoring-update-handoff` の current surface です。
 
 Strategy Case Lite の使い方は [strategy_case_lite/README.md](strategy_case_lite/README.md) を読む。これは `strategy_case_lite.v1` と `strategy-case-lite-update` の current surface です。
+
+Strategy Case Index の使い方は [strategy_case_index/README.md](strategy_case_index/README.md) を読む。これは `strategy_case_index.v1` と `strategy-case-index-build` の current surface です。DB registry ではなく、複数 case-lite artifact を読む read-only index です。
 
 Strategy Daily Brief の使い方は [strategy_daily_brief/README.md](strategy_daily_brief/README.md) を読む。これは `strategy_daily_brief.v1` と `strategy-daily-brief` の current surface です。
 
@@ -82,7 +86,7 @@ Strategy Live Observation の使い方は [strategy_live_observation/README.md](
 
 Strategy Scale Decision の使い方は [strategy_scale_decision/README.md](strategy_scale_decision/README.md) を読む。これは `strategy_scale_decision.v1` と `strategy-scale-decision` の current surface です。
 
-Strategy Workbench Viewer の使い方は [strategy_workbench_viewer/README.md](strategy_workbench_viewer/README.md) を読む。これは `strategy_workbench_viewer.v1` と `strategy-workbench-viewer-build` の current surface です。
+Strategy Workbench Viewer の使い方は [strategy_workbench_viewer/README.md](strategy_workbench_viewer/README.md) を読む。これは `strategy_workbench_viewer.v1` と `strategy-workbench-viewer-build` の current surface です。`strategy_case_index.v1` の compact summary も表示できます。
 
 ## 正本
 
@@ -125,7 +129,8 @@ Strategy Workbench Viewer の使い方は [strategy_workbench_viewer/README.md](
 
 残 task:
 
-- Runtime Observation を Strategy Input Contract へ自動反映する処理は未実装。
+- Runtime Observation / Learning Event から Strategy Input Contract 更新候補を作る proposal / review artifact は実装済み。
+- Strategy Input Contract を自動編集する処理は未実装。
 
 対象外:
 
@@ -186,7 +191,7 @@ Runtime Observation Ingest first slice は実装済みです。
 
 残 task:
 
-- Runtime observation を Strategy Input Contract へ自動反映する処理は未実装。
+- Runtime observation を Strategy Input Contract へ自動反映する処理は未実装。現行 surface は [strategy_input_feedback/README.md](strategy_input_feedback/README.md) の proposal / review artifact まで。
 
 実務上の注意:
 

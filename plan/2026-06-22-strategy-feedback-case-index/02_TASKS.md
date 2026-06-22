@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_18:16 JST
+更新日: 2026-06-22_18:36 JST
 -->
 
 # Task Plan
@@ -77,11 +77,13 @@
 - `--runtime-observation` は複数指定できる。
 - `--learning-event` は複数指定できる。
 - `--source-contract` は optional にする。指定された場合は path / hash を source artifact に含める。
-- `--source-contract` がない場合、proposal status は `READY_FOR_HUMAN_REVIEW` ではなく `NEEDS_SOURCE_CONTRACT_CONTEXT` または同等の blocked / limited status にする。
+- `--source-contract` がない場合、proposal status は `NEEDS_SOURCE_CONTRACT_CONTEXT` に固定し、`READY_FOR_HUMAN_REVIEW` にしない。
+- `--source-contract` がある場合は `StrategyInputContract` model validation を行う。contract 内の declared source hash / columns / timestamp 検査をこの service 内に再実装しない。必要なら利用者は先に `strategy-input-contract-validate` を実行する。
 - `--runtime-observation` と `--learning-event` の両方が空なら non-zero exit にする。
 - `--out` と `--replace-existing` を既存 artifact builder の流儀に合わせる。
 - 生成時は JSON artifact と review 用 Markdown summary を出す。Markdown は補助であり、JSON を正にする。
 - source artifact は既存 Pydantic model で schema_version と boundary を検証する。単なる dict 読みだけで進めない。
+- review の `approved_change_ids` 整合性は schema 単体では保証できないため、model には source proposal summary を入れ、service / CLI で proposal の `change_id` set と突合する。
 
 受け入れ条件:
 
@@ -92,6 +94,7 @@
 - source contract なしの proposal は direct update candidate として扱われない。
 - review CLI は proposal を読み、decision と required actions を含む review artifact を生成する。
 - review CLI は `approved_change_ids` と proposal の `change_id` 整合を検査する。
+- `NEEDS_FIX` decision は `required_actions` 空を拒否する。`REJECT` / `HOLD` で `approved_change_ids` がある場合も拒否する。
 - review artifact でも direct apply は許可されない。
 - `uv run sis --help` に新規 CLI が表示される。
 
@@ -141,10 +144,12 @@
 - `strategy-case-index-build` CLI を追加する。
 - `--case` は複数指定できる。
 - `--data-dir` は optional にする。指定時は `strategy_case_lite.v1` JSON を再帰探索する。
-- `--case` と `--data-dir` の両方指定を許可するが、重複 path は hash で dedupe する。
+- `--case` と `--data-dir` の両方指定を許可するが、同一 path と同一 hash を deterministic に dedupe する。hash が同じ場合は path sort で先頭を代表にする。
 - `--out`、`--index-id`、`--replace-existing` を持たせる。
 - data-dir scan は `strategy_case_lite.v1` JSON だけを採用する。任意 JSON、Markdown、viewer manifest、既存 index は採用しない。
-- 欠損 path、schema mismatch、壊れた JSON、case-lite 0件は明示エラーにする。
+- explicit `--case` の欠損 path、schema mismatch、壊れた JSON は明示エラーにする。
+- data-dir scan は schema_version が違う JSON を無視する。ただし schema_version が `strategy_case_lite.v1` の壊れた JSON / model validation failure は明示エラーにする。
+- case-lite 0件は明示エラーにする。
 - JSON index と Markdown summary を出す。
 
 受け入れ条件:
@@ -153,6 +158,7 @@
 - `--data-dir` から case-lite artifact を発見できる。
 - 同一 artifact の重複指定で二重 count しない。
 - missing file は non-zero exit になる。
+- explicit `--case` に case-lite 以外を渡すと non-zero exit になる。
 - data-dir に無関係な JSON だけがある場合は non-zero exit になる。
 - `uv run sis --help` に新規 CLI が表示される。
 
@@ -165,16 +171,17 @@
 - `src/sis/strategy_workbench_viewer/models.py`
 - `src/sis/strategy_workbench_viewer/service.py`
 - `src/sis/strategy_workbench_viewer/rendering.py`
-- `schemas/strategy_workbench_viewer.v1.schema.json`
+- `schemas/strategy_workbench_viewer.v1.schema.json`（manifest shape を変える場合のみ）
 - `tests/strategy_workbench_viewer/test_strategy_workbench_viewer.py`
 
 実装内容:
 
 - viewer artifact summary に `strategy_case_index.v1` を追加する。
-- HTML に strategy count、case count、latest status、open actions、blocked reasons、latest case path、source hash を表示する。
+- HTML に strategy count、case count、latest status、open actions、blocked reasons、latest case path、source hash を表示する。実装は既存 `ViewerSourceArtifact.summary` の compact summary 経由を第一候補にする。
 - 既存 summary type と HTML escaping pattern を壊さない。
 - viewer は生成済み artifact を表示するだけで、index の作成や補正をしない。
 - case index の permission 系 true flag は permission として表示せず、boundary violation として扱う。
+- `StrategyWorkbenchViewerManifest` の shape を変えない場合、`schemas/strategy_workbench_viewer.v1.schema.json` は更新しない。テストで schema validation が既存のまま通ることを確認する。
 
 受け入れ条件:
 
@@ -182,6 +189,7 @@
 - `--data-dir` scan でも case index artifact が拾われる。
 - HTML escaping test が通る。
 - schema validation が通る。
+- viewer manifest schema を変更しない場合は、既存 schema のまま case index artifact を含む manifest が validation を通る。
 - existing viewer output を viewer 自身が source of truth として読まない。
 
 ## T6: docs / CLI catalog / current-doc routing 更新

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_18:16 JST
+更新日: 2026-06-22_18:36 JST
 -->
 
 # File Map
@@ -25,7 +25,7 @@
 
 `src/sis/commands/strategy_input_feedback.py`
 
-- `register(app: typer.Typer) -> None`
+- `register_strategy_input_feedback_commands(app: typer.Typer) -> None`
 - `strategy-input-feedback-proposal-build`
 - `strategy-input-feedback-proposal-review`
 - `--runtime-observation` / `--learning-event` の少なくとも一方を必須にする。
@@ -33,7 +33,7 @@
 
 `src/sis/commands/strategy_case_index.py`
 
-- `register(app: typer.Typer) -> None`
+- `register_strategy_case_index_commands(app: typer.Typer) -> None`
 - `strategy-case-index-build`
 - `--data-dir` scan は `strategy_case_lite.v1` JSON だけに限定する。
 
@@ -63,7 +63,8 @@
 
 `schemas/strategy_workbench_viewer.v1.schema.json`
 
-- viewer summary に case index summary を追加する場合のみ更新する。
+- viewer manifest shape を変更する場合のみ更新する。
+- 既存 schema は `summary` を object として受けるため、case index 用 compact summary key を追加するだけなら更新しない。
 - 既存 artifact summary の後方互換性を壊さない。
 
 ## 新規 tests

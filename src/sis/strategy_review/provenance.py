@@ -26,6 +26,9 @@ BOUNDARY_TRUE_KEYS = {
     "live_order_submitted",
     "credentials_used",
     "external_api_used",
+    "paper_execution_allowed",
+    "live_allowed",
+    "db_persistence_allowed",
 }
 SECRET_PATH_SEGMENTS = {
     ".env",

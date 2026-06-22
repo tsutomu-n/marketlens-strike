@@ -17,6 +17,7 @@ from sis.commands.remediation import register_remediation_commands
 from sis.commands.research import register_research_commands
 from sis.commands.strategy_authoring import register_strategy_authoring_commands
 from sis.commands.strategy_ai_review import register_strategy_ai_review_commands
+from sis.commands.strategy_case_index import register_strategy_case_index_commands
 from sis.commands.strategy_case_lite import register_strategy_case_lite_commands
 from sis.commands.crypto_perp import register_crypto_perp_commands
 from sis.commands.crypto_perp_live import register_crypto_perp_live_commands
@@ -30,6 +31,7 @@ from sis.commands.crypto_perp_tournament_rows import (
 from sis.commands.crypto_perp_truth_cycle import register_crypto_perp_truth_cycle_commands
 from sis.commands.strategy_daily_brief import register_strategy_daily_brief_commands
 from sis.commands.strategy_drift_review import register_strategy_drift_review_commands
+from sis.commands.strategy_input_feedback import register_strategy_input_feedback_commands
 from sis.commands.strategy_inputs import register_strategy_input_commands
 from sis.commands.strategy_learning import register_strategy_learning_commands
 from sis.commands.strategy_model_loop import register_strategy_model_loop_commands
@@ -141,6 +143,7 @@ register_probe_commands(app)
 register_research_commands(app, _recommended_read_order)
 register_strategy_authoring_commands(app)
 register_strategy_input_commands(app)
+register_strategy_input_feedback_commands(app)
 register_strategy_review_commands(app)
 register_strategy_stage_commands(app)
 register_strategy_paper_smoke_commands(app)
@@ -148,6 +151,7 @@ register_strategy_runtime_observation_commands(app)
 register_strategy_drift_review_commands(app)
 register_strategy_learning_commands(app)
 register_strategy_case_lite_commands(app)
+register_strategy_case_index_commands(app)
 register_strategy_daily_brief_commands(app)
 register_strategy_ai_review_commands(app)
 register_strategy_model_loop_commands(app)

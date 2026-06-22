@@ -6,7 +6,11 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
+from sis.strategy_case_index.service import build_strategy_case_index
 from sis.strategy_workbench_viewer.service import build_strategy_workbench_viewer
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _write_json(path: Path, payload: dict) -> Path:
@@ -28,6 +32,47 @@ def _stage_decision(path: Path) -> Path:
             "wallet_used": False,
             "signing_used": False,
             "exchange_write_used": False,
+        },
+    )
+
+
+def _case_lite(
+    path: Path,
+    *,
+    strategy_id: str,
+    case_id: str,
+    updated_at: str,
+    latest_status: str,
+    open_actions: list[str] | None = None,
+    blocked_reasons: list[str] | None = None,
+) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_case_lite.v1",
+            "strategy_id": strategy_id,
+            "case_id": case_id,
+            "updated_at": updated_at,
+            "producer": {"tool": "sis", "command": "strategy-case-lite-update"},
+            "source_artifacts": [],
+            "timeline": [],
+            "summary": {
+                "artifact_count": 1,
+                "timeline_count": 1,
+                "latest_status": latest_status,
+                "open_actions": open_actions or [],
+                "blocked_reasons": blocked_reasons or [],
+                "latest_source_hashes": {},
+            },
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
         },
     )
 
@@ -196,7 +241,7 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
 
     payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     schema = json.loads(
-        Path("schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
     )
     Draft202012Validator(schema).validate(payload)
     invalid_payload = json.loads(json.dumps(payload))
@@ -271,7 +316,7 @@ def test_strategy_workbench_viewer_drops_true_permission_like_next_step_flags(
 
     payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     schema = json.loads(
-        Path("schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
     )
     Draft202012Validator(schema).validate(payload)
     summary = payload["source_artifacts"][0]["summary"]
@@ -300,7 +345,7 @@ def test_strategy_workbench_viewer_marks_human_tiny_live_review_as_approval_boun
 
     payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     schema = json.loads(
-        Path("schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
     )
     Draft202012Validator(schema).validate(payload)
     boundary = (
@@ -335,3 +380,109 @@ def test_strategy_workbench_viewer_scans_data_dir(tmp_path: Path) -> None:
 
     assert result.manifest.artifact_count == 4
     assert result.html_path.exists()
+
+
+def test_strategy_workbench_viewer_summarizes_strategy_case_index(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    case = _case_lite(
+        tmp_path / "data/strategy_cases/ndx-breakout-001/case-a.json",
+        strategy_id="ndx-breakout-001",
+        case_id="case-a",
+        updated_at="2026-06-22T09:00:00Z",
+        latest_status="READY_FOR_HUMAN_REVIEW",
+        open_actions=["REVISE_STRATEGY"],
+        blocked_reasons=["runtime_no_fill_rate_within_limit"],
+    )
+    index = build_strategy_case_index(
+        case_paths=[case],
+        data_dir=None,
+        out_dir=tmp_path / "data/strategy_case_index",
+        index_id="viewer-index",
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=[index.index_path],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+    summary = payload["source_artifacts"][0]["summary"]
+    assert summary["index_id"] == "viewer-index"
+    assert summary["case_count"] == 1
+    assert summary["strategy_count"] == 1
+    assert summary["latest_status"] == "READY_FOR_HUMAN_REVIEW"
+    assert summary["latest_case_path"] == "data/strategy_cases/ndx-breakout-001/case-a.json"
+    assert summary["first_open_action"] == "REVISE_STRATEGY"
+    assert summary["first_blocked_reason"] == "runtime_no_fill_rate_within_limit"
+    assert summary["case_index_source_hash"].startswith("sha256:")
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert "case_count" in html
+    assert "strategy_count" in html
+    assert "READY_FOR_HUMAN_REVIEW" in html
+    assert "REVISE_STRATEGY" in html
+    assert "runtime_no_fill_rate_within_limit" in html
+
+
+def test_strategy_workbench_viewer_scans_case_index_and_marks_boundary_violation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    malformed_index = _write_json(
+        tmp_path / "data/strategy_case_index/malformed_index.json",
+        {
+            "schema_version": "strategy_case_index.v1",
+            "index_id": "malformed-index",
+            "created_at": "2026-06-22T09:00:00Z",
+            "producer": {"tool": "sis", "command": "strategy-case-index-build"},
+            "case_count": 0,
+            "strategy_count": 0,
+            "cases": [],
+            "strategies": [],
+            "source_artifacts": [],
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+            "index_boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+                "paper_execution_allowed": False,
+                "live_allowed": False,
+                "db_persistence_allowed": True,
+            },
+        },
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=None,
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    assert payload["artifact_count"] == 1
+    assert (
+        payload["source_artifacts"][0]["path"] == malformed_index.relative_to(tmp_path).as_posix()
+    )
+    assert payload["source_artifacts"][0]["boundary_violations"] == [
+        "index_boundary.db_persistence_allowed"
+    ]
+    assert payload["boundary_violation_count"] == 1

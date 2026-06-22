@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_18:16 JST
+更新日: 2026-06-22_18:36 JST
 -->
 
 # Test And Acceptance
@@ -31,8 +31,12 @@ fixture-first、offline-only、artifact boundary-first でテストする。netw
 - boundary flags が false に固定される。
 - boundary violation source を指定すると ready proposal にならない。
 - source contract なしの proposal は apply-ready にならない。
+- source contract ありの場合は `StrategyInputContract` model validation を通す。
+- source contract 内の declared source hash / columns / timestamp 検査はこの計画の proposal service では再実装しない。必要なら既存 `strategy-input-contract-validate` の出力を別計画で接続する。
 - review artifact は decision / approved_change_ids / required_actions を持つ。
 - unknown approved_change_id は non-zero exit または validation failure になる。
+- `NEEDS_FIX` で `required_actions` 空は失敗する。
+- `REJECT` / `HOLD` で `approved_change_ids` がある場合は失敗する。
 - review artifact は direct apply を許可しない。
 - missing source は non-zero exit になる。
 
@@ -52,6 +56,8 @@ fixture-first、offline-only、artifact boundary-first でテストする。netw
 - latest case selection は deterministic である。
 - missing file は non-zero exit になる。
 - malformed JSON は non-zero exit になる。
+- explicit `--case` の schema mismatch は non-zero exit になる。
+- data-dir scan は schema_version が違う JSON を無視し、schema_version が `strategy_case_lite.v1` の壊れた JSON は失敗する。
 - unrelated JSON only の data-dir は non-zero exit になる。
 - boundary flags が false に固定される。
 
@@ -67,6 +73,7 @@ fixture-first、offline-only、artifact boundary-first でテストする。netw
 - HTML に case count、strategy count、latest status、open actions、blocked reasons、source hash が出る。
 - permission 系 true flag は boundary violation として出る。
 - HTML escaping が効く。
+- viewer manifest schema を変更しない場合は、既存 schema のまま case index artifact を含む manifest が validation を通る。
 - 既存 artifact type の rendering が壊れない。
 
 ## 検証コマンド

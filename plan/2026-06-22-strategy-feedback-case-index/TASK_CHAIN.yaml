@@ -1,7 +1,7 @@
 version: 1
 name: strategy_feedback_and_case_index
 created_at_jst: "2026-06-22_17:55"
-updated_at_jst: "2026-06-22_18:16"
+updated_at_jst: "2026-06-22_18:36"
 objective: >-
   Implement local/offline Strategy Input Feedback proposal/review artifacts,
   Strategy Case Lite Index artifacts, and Static Workbench Viewer support,
@@ -52,7 +52,7 @@ tasks:
       - Unknown schema version fails.
       - Source artifact path, sha256, schema_version, and artifact_kind are required.
       - Proposal status distinguishes ready-for-human-review from missing source-contract context.
-      - Review approved_change_ids must reference proposal change_id values.
+      - Review model shape records source proposal context, while service/CLI rejects approved_change_ids outside the proposal change_id set.
     verification:
       - uv run pytest tests/strategy_input_feedback/test_strategy_input_feedback_schema.py
     destructive_level: low
@@ -78,8 +78,10 @@ tasks:
       - Empty source inputs fail.
       - Mixed source inputs preserve all path/hash/schema provenance.
       - Missing --source-contract does not produce an apply-ready proposal.
+      - Present --source-contract is validated as StrategyInputContract, but declared source hash/column/timestamp validation remains the responsibility of strategy-input-contract-validate.
       - Review command creates a decision artifact and never permits direct apply.
       - Review command rejects approved_change_ids that are not present in the proposal.
+      - Review command rejects NEEDS_FIX without required_actions and rejects approved_change_ids on REJECT or HOLD.
       - New commands appear in uv run sis --help.
     verification:
       - uv run pytest tests/strategy_input_feedback
@@ -128,7 +130,9 @@ tasks:
       - data-dir discovery finds case-lite artifacts.
       - Duplicate artifact paths/hashes are not double-counted.
       - Missing or malformed source artifacts fail clearly.
+      - Explicit --case schema mismatch fails.
       - data-dir discovery ignores unrelated JSON and fails when no strategy_case_lite.v1 JSON is found.
+      - data-dir discovery fails if a JSON advertises strategy_case_lite.v1 but cannot validate as StrategyCaseLite.
       - New command appears in uv run sis --help.
     verification:
       - uv run pytest tests/strategy_case_index
@@ -143,7 +147,7 @@ tasks:
       - src/sis/strategy_workbench_viewer/models.py
       - src/sis/strategy_workbench_viewer/service.py
       - src/sis/strategy_workbench_viewer/rendering.py
-      - schemas/strategy_workbench_viewer.v1.schema.json
+      - schemas/strategy_workbench_viewer.v1.schema.json (only if manifest shape changes)
       - tests/strategy_workbench_viewer/test_strategy_workbench_viewer.py
     out_of_scope:
       - Svelte UI.
@@ -154,6 +158,7 @@ tasks:
       - data-dir scan can include case index artifact.
       - HTML includes case count, strategy count, latest status, open actions, blocked reasons, and source hash.
       - Permission true flags in case index sources are boundary violations, not displayed as permission.
+      - Existing viewer manifest schema still validates if manifest shape is unchanged.
       - Existing viewer artifact summaries still pass tests.
     verification:
       - uv run pytest tests/strategy_workbench_viewer/test_strategy_workbench_viewer.py

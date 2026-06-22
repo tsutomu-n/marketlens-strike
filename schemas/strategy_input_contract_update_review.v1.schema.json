@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_input_contract_update_review.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "review_id",
+    "proposal_id",
+    "strategy_id",
+    "reviewed_at",
+    "producer",
+    "reviewer",
+    "decision",
+    "rationale",
+    "approved_change_ids",
+    "required_actions",
+    "source_proposal",
+    "manual_contract_update_input_allowed",
+    "requires_human_contract_update",
+    "auto_applied",
+    "direct_contract_edit_allowed",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary",
+    "feedback_boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_input_contract_update_review.v1"},
+    "review_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "proposal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "strategy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "reviewed_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "reviewer": {"type": "string", "minLength": 1},
+    "decision": {
+      "enum": ["APPROVE_FOR_MANUAL_CONTRACT_UPDATE", "REJECT", "HOLD", "NEEDS_FIX"]
+    },
+    "rationale": {"type": "string", "minLength": 1},
+    "approved_change_ids": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
+    },
+    "required_actions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "source_proposal": {"$ref": "#/$defs/source_proposal"},
+    "manual_contract_update_input_allowed": {"type": "boolean"},
+    "requires_human_contract_update": {"const": true},
+    "auto_applied": {"const": false},
+    "direct_contract_edit_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/stage_boundary"},
+    "feedback_boundary": {"$ref": "#/$defs/feedback_boundary"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "source_proposal": {
+      "type": "object",
+      "required": [
+        "proposal_path",
+        "proposal_sha256",
+        "proposal_id",
+        "proposal_status",
+        "proposed_change_ids",
+        "proposed_change_count",
+        "auto_applied",
+        "direct_contract_edit_allowed",
+        "paper_execution_allowed",
+        "live_allowed"
+      ],
+      "properties": {
+        "proposal_path": {"$ref": "#/$defs/safe_path"},
+        "proposal_sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "proposal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "proposal_status": {
+          "enum": [
+            "READY_FOR_HUMAN_REVIEW",
+            "NEEDS_SOURCE_CONTRACT_CONTEXT",
+            "NO_CHANGES_RECOMMENDED",
+            "BLOCKED_BOUNDARY_VIOLATION"
+          ]
+        },
+        "proposed_change_ids": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
+        },
+        "proposed_change_count": {"type": "integer", "minimum": 0},
+        "auto_applied": {"const": false},
+        "direct_contract_edit_allowed": {"const": false},
+        "paper_execution_allowed": {"const": false},
+        "live_allowed": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "safe_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+    },
+    "stage_boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "feedback_boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "permits_wallet",
+        "permits_signing",
+        "permits_exchange_write",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "paper_execution_allowed",
+        "live_allowed",
+        "auto_applied",
+        "direct_contract_edit_allowed"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "permits_wallet": {"const": false},
+        "permits_signing": {"const": false},
+        "permits_exchange_write": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "paper_execution_allowed": {"const": false},
+        "live_allowed": {"const": false},
+        "auto_applied": {"const": false},
+        "direct_contract_edit_allowed": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  }
+}
+
