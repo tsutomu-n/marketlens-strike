@@ -60,6 +60,8 @@ CURRENT_DOC_DIRS = (
     "docs/strategy_drift_review",
     "docs/strategy_learning",
     "docs/strategy_case_lite",
+    "docs/strategy_input_feedback",
+    "docs/strategy_case_index",
     "docs/strategy_daily_brief",
     "docs/strategy_ai_review",
     "docs/strategy_model_loop",
@@ -74,11 +76,15 @@ CURRENT_DOC_DIRS = (
     "docs/references/crypto_perp",
     "docs/algo/strategy_factory",
     "docs/algo/obsidian_note_rewrites_2026-05-29",
+    "plan/2026-06-22-strategy-feedback-case-index",
 )
 
 PLAN_ROUTING_ALLOWED_FILES = ("plan/README.md",)
 
-PLAN_ROUTING_ALLOWED_PREFIXES = ("plan/archive/",)
+PLAN_ROUTING_ALLOWED_PREFIXES = (
+    "plan/2026-06-22-strategy-feedback-case-index/",
+    "plan/archive/",
+)
 
 EXCLUDED_DOC_PREFIXES = (
     "docs/archive/",

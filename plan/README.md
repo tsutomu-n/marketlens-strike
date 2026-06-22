@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-06-22_17:16 JST
+更新日: 2026-06-22_17:55 JST
 -->
 
 # marketlens-strike implementation planning docs
@@ -62,6 +62,14 @@ exchange-write path.
 現行 repo truth から見た実務的な次方向は
 [`docs/NEXT_DIRECTION_CURRENT.md`](../docs/NEXT_DIRECTION_CURRENT.md) を読む。
 `計画あり` は `実装決定` ではなく、`catalog known` は `venue enabled` ではない。
+
+## Active implementation plan
+
+Strategy Runtime Observation / Strategy Learning Event から Strategy Input Contract 更新候補を作り、Strategy Case Lite を index 化し、既存 Static Workbench Viewer で見やすくする local/offline 計画は次を読む。
+
+- [2026-06-22-strategy-feedback-case-index/00_READ_ME_FIRST.md](2026-06-22-strategy-feedback-case-index/00_READ_ME_FIRST.md)
+
+この計画は paper bridge、credentialed network probe、demo order lifecycle、production schema widening、wallet、signing、exchange write、live order を許可しない。
 
 ## Historical implemented 2026-06-20 Crypto Perp Truth-Cycle MVP Plan
 
