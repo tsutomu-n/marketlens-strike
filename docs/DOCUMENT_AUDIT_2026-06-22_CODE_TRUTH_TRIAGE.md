@@ -1,47 +1,37 @@
 <!--
 作成日: 2026-06-22_14:29 JST
-更新日: 2026-06-22_14:55 JST
+更新日: 2026-06-22_17:10 JST
 -->
 
 # Document Audit 2026-06-22 Code Truth Triage
 
 ## 結論
 
-コード、テスト、schema、config、CLI help を正にすると、current docs は大きく壊れていない。`scripts/check_current_docs.py` と CLI catalog は通っている。
+コード、テスト、schema、config、CLI help を正にすると、current docs の機械的な破損は見つからない。
 
-2026-06-22_14:47 JST に、主な整理対象のうち archive 移動と current-doc checker 対象整理を実行済み。
+ただし、次の整理対象は残る。
 
-実行済み:
+1. `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` は古い固定値を含むため更新対象。
+2. `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` と `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` は現行利用には重く、短い入口文書へ作り直す候補。
+3. `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` と `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` は current root に残すより archive 化が自然。
+4. tracked `.tmp/live_evidence_*` は現行 operator entry ではないため、削除または archive 記録化の判断対象。
 
-1. 実装済みになった Crypto Perp MVP plan package を archive へ移動。
-2. Strategy Operations Workbench completion plan / audit と旧 2026-06-17 docs audit を archive へ移動。
-3. README / CURRENT_STATE / NEXT_DIRECTION / plan README の導線を、現行 runbook / implemented surfaces / historical archive へ更新。
-4. assessment docs と `docs/references/crypto_perp/` を current-doc checker 対象へ追加。
-
-残る判断対象:
-
-- `.tmp/live_evidence_*` の tracked helper を今後も残すか、別の archive / scripts へ移すか。
-
-## 確認した正本
+## 今回確認した正本
 
 - `git status --short --branch`
 - `uv run sis --help`
 - `uv run python scripts/check_current_docs.py`
 - `uv run python scripts/check_cli_catalog.py`
-- `src/sis/cli.py`
-- `src/sis/commands/crypto_perp*.py`
-- `src/sis/commands/strategy_daily_brief.py`
-- `src/sis/commands/strategy_workbench_viewer.py`
-- `src/sis/crypto_perp/`
-- `tests/crypto_perp/`
-- `schemas/crypto_perp_*.schema.json`
+- `scripts/check_current_docs.py`
+- `README.md`
 - `docs/CURRENT_STATE.md`
 - `docs/IMPLEMENTED_SURFACES.md`
 - `docs/NEXT_DIRECTION_CURRENT.md`
+- `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
 - `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`
 - `docs/strategy_daily_brief/README.md`
 - `docs/strategy_workbench_viewer/README.md`
-- `plan/README.md`
 
 ## 実行結果
 
@@ -55,93 +45,80 @@ uv run python scripts/check_current_docs.py
 uv run python scripts/check_cli_catalog.py
 => checked 205 public CLI commands against Typer registration
 
-./scripts/check
-=> passed; pytest 1484 passed in 66.69s
+uv run sis --help command count check
+=> 205
 ```
 
-tracked doc / plan の粗い数:
+tracked current docs の粗い確認:
 
 ```text
-docs/plan/README/AGENTS related tracked Markdown/HTML files: 611
-docs/plan tracked Markdown/YAML/JSON/HTML outside docs/archive and plan/archive: 298
-archive ではないが current-doc checker 対象外の Markdown/HTML: 0 after this cleanup
-```
-
-archive ではないが current-doc checker 対象外だったため、今回 current-doc checker 対象に追加:
-
-```text
-docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md
-docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md
-docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md
-docs/references/crypto_perp/COMPETITION_PROTOCOL.md
-docs/references/crypto_perp/HUMMINGBOT_BITGET_CONNECTOR_NOTES.md
-docs/references/crypto_perp/OSS_ADOPTION_DECISIONS.md
-```
-
-tracked `.tmp`:
-
-```text
-.tmp/live_evidence_20260526_2245_cron_once.sh
-.tmp/live_evidence_20260526_2245_guard.sh
-.tmp/live_evidence_20260526_2245_status.sh
-.tmp/live_evidence_20260527_cron_cleanup.sh
-.tmp/live_evidence_20260527_recovery_watchdog.sh
-.tmp/live_evidence_current_status_2026-05-26.md
+docs/plan tracked Markdown/HTML outside docs/archive and plan/archive: 294
+archive ではないが current-doc checker 対象外の Markdown/HTML: 0
 ```
 
 ## 更新できるドキュメント
 
-| 対象 | 判断 | 理由 | 次の作業 |
+| 対象 | 判断 | 根拠 | 推奨作業 |
 |---|---|---|---|
-| `docs/CURRENT_STATE.md` | 更新 | Crypto Perp の導線がまだ `current implementation handoff` 寄り。コード上は M00-M11 実装済みで、日常運用は runbook / CLI / artifact を読む段階 | plan package を archive に寄せる場合、文言を `implemented plan / historical implementation contract` に変える |
-| `README.md` | 更新 | Read First に assessment docs が入っているが、正本ではなく checker 対象外。Crypto Perp plan も実装済み扱いへ変えたい | assessment を残すなら `判断補助` として別枠化。Crypto Perp は runbook / implemented surfaces を上位へ |
-| `plan/README.md` | 更新 | `Current 2026-06-20 Crypto Perp Truth-Cycle MVP Plan` が実装済み後も current implementation handoff として残る | `Historical implemented Crypto Perp MVP plan` に変え、archive 移動先を案内 |
-| `scripts/check_current_docs.py` | 更新 | current-doc checker は plan package を routing allow しているが、plan package 本文は current docs として lint しない | plan archive 後に allowed prefix を archive 側へ変更し、root plan の再混入を止める |
-| `docs/IMPLEMENTED_SURFACES.md` | 小更新候補 | 大筋は合っている。`crypto-perp-tiny-live-measurement` の mock/guarded CLI surface と実ネットワーク未実行の境界をもう少し明示してもよい | current wording を薄く補うだけでよい |
-| `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` | 小更新候補 | Crypto Perp artifact/schema の説明は概ね現行。ただし `crypto_perp_live_measurement.v1` を「実ネットワーク測定済みの証明」と誤読しない補強余地あり | `mock artifact もあり、実測済みかは payload と approval/reconciliation を読む` と追記 |
-| `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | 維持更新 | `scripts/check_cli_catalog.py` で 205 command と照合済み。Crypto Perp CLI 群も登録済み | command 追加時だけ更新 |
+| `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | 更新 | `check_cli_catalog.py` が `189 public CLI commands` と `205 public CLI commands` の両方を含み、`pytest 1340 passed` も残る。現行確認は 205 commands。 | 固定値を当時値として明示するか、現行値をコマンド再実行方式へ置き換える。 |
+| `docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md` | 小更新 | `205 public CLI commands` の固定値がある。現在は合っているが、正本ではない判断メモなので固定値を増やし続けるべきではない。 | 固定 command count を削り、`scripts/check_cli_catalog.py` を再実行する文言へ寄せる。 |
+| `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | 更新済み | 旧本文には `docs/CURRENT_STATE.md` や `plan/README.md` を「更新」とする完了前の記述が残っていた。現 HEAD では既に historical implementation contract へ更新済み。 | この版で現時点の分類へ更新済み。 |
+| `docs/IMPLEMENTED_SURFACES.md` | 小更新候補 | 大筋はコードと一致。`crypto-perp-tiny-live-measurement` の mock/guarded surface と実ネットワーク未実行の境界は既にあるが、CLI surface 表にも一言足す余地がある。 | 必須ではない。次に Crypto Perp CLI を触る時だけ補強。 |
+| `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | 維持更新 | `scripts/check_cli_catalog.py` で 205 command と照合済み。 | CLI 追加・削除時だけ更新。 |
 
-## アーカイブしたほうがいいドキュメント
+## 古い内容があるドキュメント
 
-| 対象 | 判断 | 理由 | 推奨移動先 |
+| 対象 | 古い内容 | 影響 | 推奨 |
 |---|---|---|---|
-| `plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/` | archive 済み | M00-M11 は実装済み。今は実装開始用 handoff ではなく、実装履歴と acceptance 証跡 | `plan/archive/2026-06-22-crypto-perp-mvp-implemented/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/` |
-| `docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md` | archive 済み | completion plan は first slice 実装前/実装中の契約。現行利用者は `IMPLEMENTED_SURFACES.md` と各 domain README を読む方が安全 | `docs/archive/2026-06-22-doc-routing/` |
-| `docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md` | archive 済み | 監査記録として有用だが固定 pytest 件数 `1340 passed` を含む historical completion audit。current proof ではない | `docs/archive/2026-06-22-doc-routing/` |
-| `docs/archive/2026-06-22-doc-routing/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md` | archive 済み | 今回の 2026-06-22 audit で置き換えたため旧 audit は historical checklist | `docs/archive/2026-06-22-doc-routing/` |
+| `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | `189 public CLI commands`、`pytest 1340 passed`。 | README / CURRENT_STATE から判断補助として読まれるため、現行 proof と誤読されやすい。 | 更新。少なくとも固定値は「当時の snapshot」と明記。 |
+| `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` | 2026-06-16 時点の dogfood review snapshot。 | current strategy review の使い方として読むと古い。 | archive 化。current 入口は `docs/strategy_review/README.md` と `OPERATOR_REVIEW_PACKET_RECIPE.md`。 |
+| `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` | implementation plan としての長い coder handoff。対象 surface は current 実装済み。 | current root に置くと「これから実装する計画」と誤読される。 | archive 化、または `README.md` から必要部分だけ残す。 |
+| `.tmp/live_evidence_current_status_2026-05-26.md` | 2026-05-26 固定の live evidence status。 | `.tmp` だが tracked。現行 operator entry と誤読される余地がある。 | archive 記録化または tracked 解除。 |
 
-## 維持するが整理したほうがいいドキュメント
+## 作り直したほうがいいドキュメント
 
-| 対象 | 判断 | 理由 | 次の作業 |
+| 対象 | 判断 | 理由 | 作り直し方 |
 |---|---|---|---|
-| `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | current-doc checker 対象化済み | README / CURRENT_STATE から読まれる判断補助。正本ではないため README では Judgment Notes へ下げた | 固定値は当時値として読む。current proof にはしない |
-| `docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md` | current-doc checker 対象化済み | 利益目線メモとして有用。正本ではないため README では Judgment Notes へ下げた | 固定値は当時値として読む。current proof にはしない |
-| `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` | current-doc checker 対象化済み | target definition として参照価値はあるが、current implementation proof ではない | completion plan link は archive 先へ更新済み |
-| `docs/references/crypto_perp/` | current-doc checker 対象化済み | Crypto Perp M07 の reference notes。外部ページ参照は drift しうるが、MVP 実装判断の証跡として有用 | `docs/references/crypto_perp/README.md` を追加済み |
-| `.tmp/live_evidence_*.sh` / `.tmp/live_evidence_current_status_2026-05-26.md` | 整理 | `.gitignore` では意図的 tracked 扱いだが、日付固定の one-off helper / historical status。現行 operator entry ではない | 必要なら `scripts/` へ汎用化。不要なら archive docs へ記録して tracked から外す |
+| `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` | 作り直し候補 | 2064 行の target definition。本人も「この target definition だけでは、コーダーが全 task を完了できる粒度ではない」と明記している。current proof ではない。 | 5-10 ページ相当の target overview に圧縮し、詳細版は archive へ移す。 |
+| `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | 作り直し候補 | 1387 行。CLI catalog は分離済みだが、capability overview と履歴差分がまだ同居している。 | `CURRENT_STATE`、`IMPLEMENTED_SURFACES`、domain README への index に薄く作り直す。詳細履歴は archive。 |
+| `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` | 将来の作り直し候補 | 1085 行。利用者向け detail と schema / artifact 辞書が同居している。内容は概ねコードと一致。 | すぐには不要。次回 UI /利用者導線整理時に user guide と technical glossary を分離する。 |
+| `docs/algo/obsidian_note_rewrites_2026-05-29/**` | 作り直し候補 | current-doc checker 対象だが、実装正本というより研究ノート再編物。 | 現行 Strategy Lab / Strategy Authoring に直結する index だけ残し、元ノート集は archive へ寄せる。 |
 
-## 触らないほうがいいもの
+## 削除・アーカイブしてもよいドキュメント / tracked file
+
+| 対象 | 判断 | 理由 | 推奨先 |
+|---|---|---|---|
+| `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` | archive | dogfood snapshot。current 操作手順は別 README にある。 | `docs/archive/2026-06-22-doc-routing/` など。 |
+| `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` | archive | implementation plan は完了後の current root に残す優先度が低い。 | `docs/archive/2026-06-22-doc-routing/` など。 |
+| `.tmp/live_evidence_20260526_2245_*.sh` / `.tmp/live_evidence_20260527_*.sh` | 削除または archive 記録化 | 日付固定の one-off helper。現行 runbook / scripts ではない。 | 必要なら docs archive に記録し、tracked `.tmp` から外す。 |
+| `.tmp/live_evidence_current_status_2026-05-26.md` | archive | 日付固定 status。current proof ではない。 | `docs/archive/` 側へ移すか、既存 archive history に統合。 |
+| `docs/archive/**` | 触らない | historical context としてすでに分離済み。 | 削除は不要。current proof として読まない。 |
+| `plan/archive/**` | 触らない | implementation history として分離済み。 | 削除は不要。current proof として読まない。 |
+
+## 現行のまま維持してよいドキュメント
 
 | 対象 | 理由 |
 |---|---|
-| `docs/archive/**` | historical context。current proof としては読まない前提が既にある |
-| `plan/archive/**` | implementation history。plan routing guard で root 再混入を止めている |
-| `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md` | 現行 post-MVP 手順としてコードと合っている |
-| `docs/strategy_daily_brief/README.md` | 2026-06-22 更新済みで、Daily Brief の Crypto Perp approval boundary がコードと合っている |
-| `docs/strategy_workbench_viewer/README.md` | Crypto Perp compact summary と false-only permission flags がコードと合っている |
+| `README.md` | Read First / Judgment Notes / Historical References の分離が現行意図と合う。 |
+| `docs/CURRENT_STATE.md` | fixed pass count を持たず、実装済み Crypto Perp plan を historical contract として扱っている。 |
+| `docs/NEXT_DIRECTION_CURRENT.md` | Crypto Perp Post-MVP practical loop と未実行 tiny live 境界が明確。 |
+| `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md` | `READY_FOR_HUMAN_TINY_LIVE_REVIEW` を approval boundary として扱い、live permission として読ませない。 |
+| `docs/strategy_daily_brief/README.md` | Crypto Perp gate / truth-cycle follow-up の reason が明示されている。 |
+| `docs/strategy_workbench_viewer/README.md` | compact summary と false-only permission flags の境界が現行コードと合う。 |
+| `docs/APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md` | 非技術者向け入口として役割が明確。 |
+| `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | CLI catalog checker と対応している。 |
 
-## 推奨実行順
-
-1. [x] Crypto Perp MVP plan package を archive へ移し、`plan/README.md` と `scripts/check_current_docs.py` の plan routing を更新する。
-2. [x] `docs/CURRENT_STATE.md`、`README.md`、`docs/NEXT_DIRECTION_CURRENT.md` の Crypto Perp 文言を、実装済み plan / post-MVP runbook / CLI surface へ寄せる。
-3. [x] completion plan / audit を archive へ移し、`README.md` / `CURRENT_STATE.md` / `IMPLEMENTED_SURFACES.md` から current proof として読まれないようにする。
-4. [x] assessment docs を current-doc checker 対象に残し、README では Judgment Notes へ下げる。
-5. [x] `docs/references/crypto_perp/README.md` を作り、reference notes を current-doc checker 対象に入れる。
-6. [ ] tracked `.tmp/live_evidence_*` を現行運用に必要か判断し、不要なら archive または tracked 解除を検討する。
-
-## 残リスク
+## 抜け・漏れ・誤謬リスク
 
 - archive 配下の本文正誤は今回の対象外。archive は historical context として残す前提。
 - `data/` runtime artifact freshness は今回の正本にしていない。fresh checkout では再生成が必要。
-- 外部サイトを参照する Crypto Perp reference docs は、2026-06-21 時点の調査メモであり、現在の外部ページ内容までは再確認していない。
+- 外部サイトを参照する Crypto Perp reference docs は、今回 live web 再確認していない。コード上の参照・境界としてだけ確認した。
+- `docs/AGENT_ASSESSMENT_*` は判断補助として有用だが、current proof にしない運用が必須。
 - 実ネットワークの Crypto Perp tiny live measurement は未実行。別の明示承認、isolated margin、withdrawal disabled API key、IP restriction、max notional 25 USD、max open positions 1、reduce-only close、flat reconciliation がない限り扱わない。
+
+## 次の実行順
+
+1. `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` の古い固定値を更新または当時値へ明示変更する。
+2. `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` と `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` を archive する。
+3. tracked `.tmp/live_evidence_*` を残すか、archive 記録化して tracked 解除するか決める。
+4. その後に `uv run python scripts/check_current_docs.py` と `./scripts/check` を再実行する。

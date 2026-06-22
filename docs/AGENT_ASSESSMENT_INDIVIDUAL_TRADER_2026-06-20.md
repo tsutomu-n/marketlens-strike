@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_12:00 JST
-更新日: 2026-06-22_14:47 JST
+更新日: 2026-06-22_17:16 JST
 -->
 
 # Agent Assessment: Individual Trader Lens
@@ -37,15 +37,15 @@ uv run python scripts/check_current_docs.py
 ./scripts/check
 ```
 
-2026-06-21_20:58 JST の軽量再確認:
+2026-06-22_17:10 JST の軽量再確認:
 
 | チェック | 結果 |
 |---------|------|
 | Python | 3.13.7 |
-| check_current_docs.py | pass（148 current docs） |
+| check_current_docs.py | pass（153 current docs） |
 | check_cli_catalog.py | pass（205 public CLI commands） |
 
-2026-06-20 再調査時点の古いスナップショット:
+以下は 2026-06-20 再調査時点の古いスナップショットです。現行 proof ではないため、上の再確認コマンドで取り直した値を優先します。
 
 ```bash
 ./scripts/check
@@ -57,10 +57,10 @@ uv run python scripts/check_current_docs.py
 |---------|------|
 | ruff check / format | pass |
 | check_current_docs.py | pass |
-| check_cli_catalog.py | pass（189 public CLI commands） |
+| check_cli_catalog.py | pass（189 public CLI commands、当時値） |
 | pyrefly | pass |
 | ty | pass |
-| pytest | **1340 passed** |
+| pytest | **1340 passed**（当時値） |
 
 機械カウント（`src/sis/**/*.py`, `schemas/*.json`）:
 
@@ -68,7 +68,7 @@ uv run python scripts/check_current_docs.py
 |------|-----|
 | Python ソース行数 | 103,677 |
 | JSON Schema | 121 |
-| 公開 CLI | 189（当時値。現在は上の再確認結果を優先） |
+| 公開 CLI | 189（当時値。現在は上の再確認コマンドの結果を優先） |
 
 Workbench first slice T0–T12b 完了は `docs/archive/2026-06-22-doc-routing/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md` の historical audit に残す。**監査 doc の「完了」は first slice の契約完了であり、live 実戦完了ではない**。Crypto Perp についても、truth-cycle status、stage checklist、dogfood pack、Daily Brief / Workbench Viewer summary が増えたことは「読みやすくなった」という意味であり、live readinessではない。
 
