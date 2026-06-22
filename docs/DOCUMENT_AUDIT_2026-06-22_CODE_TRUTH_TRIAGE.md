@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_14:29 JST
-更新日: 2026-06-22_17:10 JST
+更新日: 2026-06-22_17:16 JST
 -->
 
 # Document Audit 2026-06-22 Code Truth Triage
@@ -13,8 +13,8 @@
 
 1. `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` は古い固定値を含むため更新対象。
 2. `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` と `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` は現行利用には重く、短い入口文書へ作り直す候補。
-3. `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` と `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` は current root に残すより archive 化が自然。
-4. tracked `.tmp/live_evidence_*` は現行 operator entry ではないため、削除または archive 記録化の判断対象。
+3. `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` と `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` は archive 済み。
+4. tracked `.tmp/live_evidence_*` は archive 記録化済み。現行 operator entry ではない。
 
 ## 今回確認した正本
 
@@ -71,9 +71,9 @@ archive ではないが current-doc checker 対象外の Markdown/HTML: 0
 | 対象 | 古い内容 | 影響 | 推奨 |
 |---|---|---|---|
 | `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | `189 public CLI commands`、`pytest 1340 passed`。 | README / CURRENT_STATE から判断補助として読まれるため、現行 proof と誤読されやすい。 | 更新。少なくとも固定値は「当時の snapshot」と明記。 |
-| `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` | 2026-06-16 時点の dogfood review snapshot。 | current strategy review の使い方として読むと古い。 | archive 化。current 入口は `docs/strategy_review/README.md` と `OPERATOR_REVIEW_PACKET_RECIPE.md`。 |
-| `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` | implementation plan としての長い coder handoff。対象 surface は current 実装済み。 | current root に置くと「これから実装する計画」と誤読される。 | archive 化、または `README.md` から必要部分だけ残す。 |
-| `.tmp/live_evidence_current_status_2026-05-26.md` | 2026-05-26 固定の live evidence status。 | `.tmp` だが tracked。現行 operator entry と誤読される余地がある。 | archive 記録化または tracked 解除。 |
+| `docs/archive/2026-06-22-doc-routing/DOGFOOD_REVIEW_2026-06-16.md` | 2026-06-16 時点の dogfood review snapshot。 | current strategy review の使い方として読むと古い。 | archive 済み。current 入口は `docs/strategy_review/README.md` と `OPERATOR_REVIEW_PACKET_RECIPE.md`。 |
+| `docs/archive/2026-06-22-doc-routing/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` | implementation plan としての長い coder handoff。対象 surface は current 実装済み。 | current root に置くと「これから実装する計画」と誤読される。 | archive 済み。current 入口は `docs/strategy_inputs/README.md`。 |
+| `docs/archive/2026-06-22-doc-routing/live_evidence_20260526_tmp_helpers/live_evidence_current_status_2026-05-26.md` | 2026-05-26 固定の live evidence status。 | 現行 operator entry と誤読される余地があった。 | archive 記録化済み。 |
 
 ## 作り直したほうがいいドキュメント
 
@@ -88,10 +88,9 @@ archive ではないが current-doc checker 対象外の Markdown/HTML: 0
 
 | 対象 | 判断 | 理由 | 推奨先 |
 |---|---|---|---|
-| `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` | archive | dogfood snapshot。current 操作手順は別 README にある。 | `docs/archive/2026-06-22-doc-routing/` など。 |
-| `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` | archive | implementation plan は完了後の current root に残す優先度が低い。 | `docs/archive/2026-06-22-doc-routing/` など。 |
-| `.tmp/live_evidence_20260526_2245_*.sh` / `.tmp/live_evidence_20260527_*.sh` | 削除または archive 記録化 | 日付固定の one-off helper。現行 runbook / scripts ではない。 | 必要なら docs archive に記録し、tracked `.tmp` から外す。 |
-| `.tmp/live_evidence_current_status_2026-05-26.md` | archive | 日付固定 status。current proof ではない。 | `docs/archive/` 側へ移すか、既存 archive history に統合。 |
+| `docs/archive/2026-06-22-doc-routing/DOGFOOD_REVIEW_2026-06-16.md` | archive 済み | dogfood snapshot。current 操作手順は別 README にある。 | 追加対応なし。 |
+| `docs/archive/2026-06-22-doc-routing/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` | archive 済み | implementation plan は完了後の current root に残す優先度が低い。 | 追加対応なし。 |
+| `docs/archive/2026-06-22-doc-routing/live_evidence_20260526_tmp_helpers/` | archive 記録化済み | 日付固定の one-off helper。現行 runbook / scripts ではない。 | 追加対応なし。 |
 | `docs/archive/**` | 触らない | historical context としてすでに分離済み。 | 削除は不要。current proof として読まない。 |
 | `plan/archive/**` | 触らない | implementation history として分離済み。 | 削除は不要。current proof として読まない。 |
 
@@ -119,6 +118,5 @@ archive ではないが current-doc checker 対象外の Markdown/HTML: 0
 ## 次の実行順
 
 1. `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` の古い固定値を更新または当時値へ明示変更する。
-2. `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` と `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` を archive する。
-3. tracked `.tmp/live_evidence_*` を残すか、archive 記録化して tracked 解除するか決める。
-4. その後に `uv run python scripts/check_current_docs.py` と `./scripts/check` を再実行する。
+2. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` と `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` を短い current overview へ作り直すか判断する。
+3. その後に `uv run python scripts/check_current_docs.py` と `./scripts/check` を再実行する。
