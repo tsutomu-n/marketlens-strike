@@ -20,6 +20,7 @@ from sis.strategy_workbench_viewer.models import (
     ViewerSourceArtifact,
 )
 from sis.strategy_workbench_viewer.rendering import render_strategy_workbench_viewer_html
+from sis.strategy_workbench_viewer.summary import artifact_status, compact_summary
 
 
 @dataclass(frozen=True)
@@ -35,189 +36,6 @@ class StrategyWorkbenchViewerError(ValueError):
 
 class StrategyWorkbenchViewerOutputExistsError(StrategyWorkbenchViewerError):
     pass
-
-
-STATUS_KEYS = (
-    "cycle_status",
-    "gate_status",
-    "tournament_status",
-    "decision_status",
-    "plan_status",
-    "ingest_status",
-    "review_status",
-    "status",
-    "decision",
-    "validation_status",
-    "readiness_status",
-    "recommended_action",
-)
-
-LATEST_STATUS_AS_ARTIFACT_STATUS_SCHEMAS = frozenset(
-    {
-        "strategy_case_lite.v1",
-        "strategy_case_index.v1",
-    }
-)
-
-SUMMARY_KEYS = (
-    "gate_id",
-    "gate_status",
-    "cycle_status",
-    "human_summary",
-    "report_id",
-    "tournament_status",
-    "leader_action",
-    "primary_metric",
-    "event_count",
-    "leader_actual_cash_result_usd",
-    "proxy_gap_count",
-    "failed_condition_count",
-    "present_stage_count",
-    "missing_artifact_path_count",
-    "known_gap_count",
-    "stop_reason_count",
-    "strategy_id",
-    "first_observed_at",
-    "last_observed_at",
-    "pnl_unavailable_reason",
-    "proposal_id",
-    "review_id",
-    "decision",
-    "decision_id",
-    "plan_id",
-    "manifest_id",
-    "recommended_action",
-    "latest_status",
-    "open_action_count",
-    "pending_human_review_count",
-    "boundary_violation_count",
-    "index_id",
-    "case_count",
-    "strategy_count",
-    "latest_case_path",
-    "case_index_source_hash",
-    "ledger_entry_count",
-    "paper_order_count",
-    "paper_fill_count",
-    "no_fill_count",
-    "blocked_count",
-    "unique_intent_count",
-    "unique_symbol_count",
-    "max_observed_quote_age_ms",
-    "filled_notional_usd_total",
-    "max_observed_spread_bps",
-    "pnl_available",
-    "source_proposal_status",
-    "proposed_change_count",
-    "approved_change_count",
-    "required_action_count",
-    "manual_contract_update_input_allowed",
-    "requires_human_contract_update",
-    "direct_contract_edit_allowed",
-    "auto_applied",
-    "paper_execution_allowed",
-    "live_allowed",
-    "first_open_action",
-    "first_blocked_reason",
-)
-
-SUMMARY_STRING_KEYS = frozenset(
-    {
-        "gate_id",
-        "gate_status",
-        "cycle_status",
-        "human_summary",
-        "report_id",
-        "tournament_status",
-        "leader_action",
-        "primary_metric",
-        "strategy_id",
-        "first_observed_at",
-        "last_observed_at",
-        "pnl_unavailable_reason",
-        "proposal_id",
-        "review_id",
-        "decision",
-        "decision_id",
-        "plan_id",
-        "manifest_id",
-        "recommended_action",
-        "latest_status",
-        "first_stop_reason",
-        "first_next_step",
-        "first_next_step_purpose",
-        "first_next_step_command",
-        "first_stage_blocker",
-        "first_stage_blocker_status",
-        "first_stage_blocker_expected_cli_option",
-        "first_stage_blocker_expected_artifact_hint",
-        "first_stage_blocker_artifact_path",
-        "approval_boundary",
-        "index_id",
-        "latest_case_path",
-        "case_index_source_hash",
-        "source_proposal_status",
-        "first_open_action",
-        "first_blocked_reason",
-    }
-)
-
-SUMMARY_INTEGER_KEYS = frozenset(
-    {
-        "event_count",
-        "proxy_gap_count",
-        "failed_condition_count",
-        "present_stage_count",
-        "missing_artifact_path_count",
-        "known_gap_count",
-        "stop_reason_count",
-        "open_action_count",
-        "pending_human_review_count",
-        "boundary_violation_count",
-        "case_count",
-        "strategy_count",
-        "proposed_change_count",
-        "approved_change_count",
-        "required_action_count",
-        "ledger_entry_count",
-        "paper_order_count",
-        "paper_fill_count",
-        "no_fill_count",
-        "blocked_count",
-        "unique_intent_count",
-        "unique_symbol_count",
-        "max_observed_quote_age_ms",
-    }
-)
-
-SUMMARY_NUMBER_KEYS = frozenset(
-    {
-        "leader_actual_cash_result_usd",
-        "filled_notional_usd_total",
-        "max_observed_spread_bps",
-    }
-)
-
-SUMMARY_BOOLEAN_KEYS = frozenset(
-    {
-        "first_next_step_requires_explicit_approval",
-        "manual_contract_update_input_allowed",
-        "requires_human_contract_update",
-        "direct_contract_edit_allowed",
-        "auto_applied",
-        "paper_execution_allowed",
-        "live_allowed",
-        "pnl_available",
-    }
-)
-
-SUMMARY_FALSE_ONLY_KEYS = frozenset(
-    {
-        "first_next_step_network_allowed",
-        "first_next_step_exchange_write_allowed",
-        "first_next_step_live_order_allowed",
-    }
-)
 
 
 def _utc_now() -> datetime:
@@ -243,159 +61,6 @@ def _scan_artifacts(data_dir: Path) -> list[Path]:
     return sorted(paths)
 
 
-def _first_status(payload: dict[str, Any]) -> str | None:
-    for key in STATUS_KEYS:
-        value = payload.get(key)
-        if isinstance(value, str) and value:
-            return value
-    return None
-
-
-def _artifact_status(payload: dict[str, Any], summary: dict[str, Any]) -> str | None:
-    status = _first_status(payload)
-    if status is not None:
-        return status
-    if payload.get("schema_version") in LATEST_STATUS_AS_ARTIFACT_STATUS_SCHEMAS:
-        latest_status = summary.get("latest_status")
-        if isinstance(latest_status, str) and latest_status:
-            return latest_status
-    return None
-
-
-def _compact_summary_value(key: str, value: Any) -> str | int | float | bool | None:
-    if key in SUMMARY_STRING_KEYS:
-        return value if isinstance(value, str) else None
-    if key in SUMMARY_INTEGER_KEYS:
-        return value if isinstance(value, int) and not isinstance(value, bool) else None
-    if key in SUMMARY_NUMBER_KEYS:
-        return value if isinstance(value, int | float) and not isinstance(value, bool) else None
-    if key in SUMMARY_BOOLEAN_KEYS:
-        return value if isinstance(value, bool) else None
-    if key in SUMMARY_FALSE_ONLY_KEYS:
-        return value if value is False else None
-    if isinstance(value, str | int | float | bool):
-        return value
-    return None
-
-
-def _set_compact_summary_value(summary: dict[str, Any], key: str, value: Any) -> None:
-    compact_value = _compact_summary_value(key, value)
-    if compact_value is not None and key not in summary:
-        summary[key] = compact_value
-
-
-def _compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
-    summary: dict[str, Any] = {}
-    schema_version = payload.get("schema_version")
-    status = payload.get("gate_status") or payload.get("cycle_status")
-    if (
-        schema_version in {"crypto_perp_tournament_gate.v1", "crypto_perp_truth_cycle_status.v1"}
-        and status == "READY_FOR_HUMAN_TINY_LIVE_REVIEW"
-    ):
-        summary["approval_boundary"] = (
-            "separate human approval is required before any tiny live measurement; "
-            "this is not live execution permission"
-        )
-    for key in SUMMARY_KEYS:
-        value = payload.get(key)
-        _set_compact_summary_value(summary, key, value)
-    nested = payload.get("summary")
-    if isinstance(nested, dict):
-        for key in SUMMARY_KEYS:
-            value = nested.get(key)
-            _set_compact_summary_value(summary, key, value)
-    if schema_version == "strategy_case_index.v1":
-        _set_compact_summary_value(summary, "index_id", payload.get("index_id"))
-        _set_compact_summary_value(summary, "case_count", payload.get("case_count"))
-        _set_compact_summary_value(summary, "strategy_count", payload.get("strategy_count"))
-        cases = payload.get("cases")
-        if isinstance(cases, list) and cases:
-            case_items = [case for case in cases if isinstance(case, dict)]
-            if case_items:
-                latest_case = sorted(
-                    case_items,
-                    key=lambda case: (
-                        str(case.get("updated_at") or ""),
-                        str(case.get("case_path") or ""),
-                    ),
-                )[-1]
-                _set_compact_summary_value(
-                    summary, "latest_status", latest_case.get("latest_status")
-                )
-                _set_compact_summary_value(
-                    summary, "latest_case_path", latest_case.get("case_path")
-                )
-                open_actions = latest_case.get("open_actions")
-                if isinstance(open_actions, list) and open_actions:
-                    _set_compact_summary_value(summary, "first_open_action", str(open_actions[0]))
-                blocked_reasons = latest_case.get("blocked_reasons")
-                if isinstance(blocked_reasons, list) and blocked_reasons:
-                    _set_compact_summary_value(
-                        summary, "first_blocked_reason", str(blocked_reasons[0])
-                    )
-        source_artifacts = payload.get("source_artifacts")
-        if isinstance(source_artifacts, list) and source_artifacts:
-            first_source = source_artifacts[0]
-            if isinstance(first_source, dict):
-                _set_compact_summary_value(
-                    summary, "case_index_source_hash", first_source.get("sha256")
-                )
-    if schema_version == "strategy_input_contract_update_proposal.v1":
-        proposed_changes = payload.get("proposed_changes")
-        if isinstance(proposed_changes, list):
-            _set_compact_summary_value(summary, "proposed_change_count", len(proposed_changes))
-    if schema_version == "strategy_input_contract_update_review.v1":
-        approved_change_ids = payload.get("approved_change_ids")
-        if isinstance(approved_change_ids, list):
-            _set_compact_summary_value(summary, "approved_change_count", len(approved_change_ids))
-        required_actions = payload.get("required_actions")
-        if isinstance(required_actions, list):
-            _set_compact_summary_value(summary, "required_action_count", len(required_actions))
-        source_proposal = payload.get("source_proposal")
-        if isinstance(source_proposal, dict):
-            _set_compact_summary_value(
-                summary, "source_proposal_status", source_proposal.get("proposal_status")
-            )
-    stop_reasons = payload.get("stop_reasons")
-    if isinstance(stop_reasons, list) and stop_reasons and "first_stop_reason" not in summary:
-        summary["first_stop_reason"] = str(stop_reasons[0])
-    next_steps = payload.get("next_steps")
-    if isinstance(next_steps, list) and next_steps:
-        first_step = next_steps[0]
-        if isinstance(first_step, dict):
-            step_id = first_step.get("step_id")
-            if isinstance(step_id, str) and step_id and "first_next_step" not in summary:
-                summary["first_next_step"] = step_id
-            for source_key, summary_key in (
-                ("purpose", "first_next_step_purpose"),
-                ("command", "first_next_step_command"),
-                ("requires_explicit_approval", "first_next_step_requires_explicit_approval"),
-                ("network_allowed", "first_next_step_network_allowed"),
-                ("exchange_write_allowed", "first_next_step_exchange_write_allowed"),
-                ("live_order_allowed", "first_next_step_live_order_allowed"),
-            ):
-                value = first_step.get(source_key)
-                _set_compact_summary_value(summary, summary_key, value)
-    stage_checklist = payload.get("stage_checklist")
-    if isinstance(stage_checklist, list):
-        for item in stage_checklist:
-            if not isinstance(item, dict) or item.get("blocks_progress") is not True:
-                continue
-            stage_id = item.get("stage_id")
-            if isinstance(stage_id, str) and stage_id and "first_stage_blocker" not in summary:
-                summary["first_stage_blocker"] = stage_id
-            for source_key, summary_key in (
-                ("status", "first_stage_blocker_status"),
-                ("expected_cli_option", "first_stage_blocker_expected_cli_option"),
-                ("expected_artifact_hint", "first_stage_blocker_expected_artifact_hint"),
-                ("artifact_path", "first_stage_blocker_artifact_path"),
-            ):
-                value = item.get(source_key)
-                _set_compact_summary_value(summary, summary_key, value)
-            break
-    return summary
-
-
 def _json_title(path: Path, payload: dict[str, Any]) -> str:
     schema_version = payload.get("schema_version")
     strategy_id = payload.get("strategy_id")
@@ -411,7 +76,7 @@ def _json_title(path: Path, payload: dict[str, Any]) -> str:
 def _source_from_json(path: Path, artifact_key: str) -> ViewerSourceArtifact:
     payload = read_json_object(path)
     violations = boundary_true_paths(payload)
-    summary = _compact_summary(payload)
+    summary = compact_summary(payload)
     return ViewerSourceArtifact(
         artifact_key=artifact_key,
         path=_display_path(path),
@@ -419,7 +84,7 @@ def _source_from_json(path: Path, artifact_key: str) -> ViewerSourceArtifact:
         artifact_format=ViewerArtifactFormat.JSON,
         schema_version=detect_json_schema_version(path),
         title=_json_title(path, payload),
-        status=_artifact_status(payload, summary),
+        status=artifact_status(payload, summary),
         boundary_violations=violations,
         summary=summary,
         preview=json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)[:6000],

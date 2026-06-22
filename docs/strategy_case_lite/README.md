@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:02 JST
-更新日: 2026-06-22_20:20 JST
+更新日: 2026-06-22_21:23 JST
 -->
 
 # Strategy Case Lite
@@ -52,6 +52,10 @@ uv run sis strategy-case-lite-update \
 - `strategy_backtest_suite_result.v1`
 - `strategy_backtest_comparison.v1`
 - `strategy_review_manifest.v1`
+- `strategy_input_contract_update_proposal.v1`
+- `strategy_input_contract_update_review.v1`
+
+Input Feedback proposal / review を含めると、proposal の最初の recommendation と review の最初の required action を open action として拾います。`HOLD`、`REJECT`、`NEEDS_FIX` review は blocked reason に入り、`NEEDS_SOURCE_CONTRACT_CONTEXT` / `BLOCKED_BOUNDARY_VIOLATION` proposal も blocked reason に入ります。これは case の実行許可ではなく、manual review の未解決事項を一覧から見落とさないための表示です。
 
 ## Artifact
 

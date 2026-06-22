@@ -62,6 +62,8 @@
         "strategy_backtest_suite_result",
         "strategy_backtest_comparison",
         "strategy_review_manifest",
+        "strategy_input_contract_update_proposal",
+        "strategy_input_contract_update_review",
         "generic"
       ]
     },

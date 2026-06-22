@@ -45,6 +45,7 @@ def _case_lite(
     latest_status: str,
     open_actions: list[str] | None = None,
     blocked_reasons: list[str] | None = None,
+    source_artifacts: list[dict] | None = None,
 ) -> Path:
     return _write_json(
         path,
@@ -54,11 +55,11 @@ def _case_lite(
             "case_id": case_id,
             "updated_at": updated_at,
             "producer": {"tool": "sis", "command": "strategy-case-lite-update"},
-            "source_artifacts": [],
+            "source_artifacts": source_artifacts or [],
             "timeline": [],
             "summary": {
-                "artifact_count": 1,
-                "timeline_count": 1,
+                "artifact_count": len(source_artifacts or []) or 1,
+                "timeline_count": len(source_artifacts or []) or 1,
                 "latest_status": latest_status,
                 "open_actions": open_actions or [],
                 "blocked_reasons": blocked_reasons or [],
@@ -260,6 +261,71 @@ def _input_feedback_review(path: Path) -> Path:
     )
 
 
+def _input_feedback_proposal(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_input_contract_update_proposal.v1",
+            "proposal_id": "proposal-runtime",
+            "strategy_id": "ndx-breakout-001",
+            "created_at": "2026-06-22T09:05:00Z",
+            "producer": {"tool": "sis", "command": "strategy-input-feedback-proposal-build"},
+            "status": "READY_FOR_HUMAN_REVIEW",
+            "source_artifacts": [
+                {
+                    "artifact_kind": "runtime_observation",
+                    "path": "data/strategy_runtime_observation/obs.json",
+                    "sha256": "sha256:" + "a" * 64,
+                    "schema_version": "strategy_runtime_observation_manifest.v1",
+                }
+            ],
+            "proposed_changes": [
+                {
+                    "change_id": "runtime-001",
+                    "target_section": "execution_reality",
+                    "recommendation": "Review runtime observation evidence.",
+                    "evidence_summary": (
+                        "runtime ingest_status=INGESTED; no_fill_count=0; "
+                        "blocked_count=0; max_observed_quote_age_ms=1048982067; "
+                        "max_observed_spread_bps=0.332474441027346; "
+                        "pnl_available=False; pnl_unavailable_reason=ledger rows do not "
+                        "include realized_pnl_usd, paper_pnl_usd, or pnl_usd"
+                    ),
+                    "source_reason": "runtime_observation:INGESTED",
+                    "requires_human_review": True,
+                }
+            ],
+            "blocked_reasons": [],
+            "requires_human_review": True,
+            "auto_applied": False,
+            "direct_contract_edit_allowed": False,
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+            "feedback_boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "permits_wallet": False,
+                "permits_signing": False,
+                "permits_exchange_write": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+                "paper_execution_allowed": False,
+                "live_allowed": False,
+                "auto_applied": False,
+                "direct_contract_edit_allowed": False,
+            },
+        },
+    )
+
+
 def _runtime_observation_manifest(path: Path) -> Path:
     return _write_json(
         path,
@@ -303,6 +369,175 @@ def _runtime_observation_manifest(path: Path) -> Path:
     )
 
 
+def _strategy_authoring_backtest_result(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_authoring_backtest_result.v1",
+            "strategy_id": "trend_pullback_user_v1",
+            "paper_only": True,
+            "live_order_submitted": False,
+            "summary": {
+                "backtest_passed": True,
+                "aggregate_metrics": {
+                    "trade_count": 7,
+                    "total_return": 0.004662409768745324,
+                    "max_drawdown": 0.0,
+                },
+                "capital": {
+                    "net_pnl_usd": 46.62409768745324,
+                    "ending_equity_usd": 10046.624097687452,
+                    "max_drawdown_loss_usd": 0.0,
+                },
+                "executed_count": 7,
+                "blocked_count": 0,
+            },
+        },
+    )
+
+
+def _strategy_backtest_pack_validation(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_backtest_pack_validation.v1",
+            "decision": "PASS",
+            "paper_only": True,
+            "live_order_submitted": False,
+            "summary": {
+                "check_count": 206,
+                "passed_count": 206,
+                "failed_count": 0,
+                "locked_dependency_added": False,
+                "external_framework_policy_decision": (
+                    "complete_without_locked_external_dependency"
+                ),
+            },
+        },
+    )
+
+
+def _strategy_backtest_pack(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_backtest_pack.v1",
+            "paper_only": True,
+            "live_order_submitted": False,
+            "permits_live_order": False,
+            "wallet_used": False,
+            "exchange_write_used": False,
+            "artifacts": {f"artifact_{index}": {"exists": True} for index in range(45)},
+            "summary": {
+                "capital": {
+                    "net_pnl_usd": 46.62409768745324,
+                    "ending_equity_usd": 10046.624097687452,
+                    "max_drawdown_loss_usd": 0.0,
+                },
+                "external_engine_run": False,
+                "external_result_count": 9,
+                "suite_method_count": 5,
+                "suite_passed_count": 5,
+                "suite_run_count": 5,
+            },
+            "external_framework_policy": {
+                "decision": "complete_without_locked_external_dependency",
+                "external_adapters_required_for_completion": False,
+                "locked_dependency_added": False,
+                "standard_engine": "strategy_authoring_native",
+            },
+        },
+    )
+
+
+def _strategy_backtest_suite_result(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_backtest_suite_result.v1",
+            "suite_id": "trend_pullback_backtest_suite_v1",
+            "paper_only": True,
+            "live_order_submitted": False,
+            "permits_live_order": False,
+            "wallet_used": False,
+            "exchange_write_used": False,
+            "aggregate": {
+                "run_count": 5,
+                "passed_count": 5,
+                "failed_count": 0,
+                "trade_count": 35,
+                "total_return": 0.023312048843726618,
+                "cost_drag_bps": 35.0,
+            },
+            "method_matrix": {
+                "method_count": 5,
+                "counts_by_method": {
+                    "single_window": 1,
+                    "walk_forward:trading_day": 1,
+                },
+            },
+            "best_run": {
+                "run_id": "000-single_window_120m",
+                "method_id": "single_window",
+                "case_id": "single_window_120m",
+                "summary": {
+                    "aggregate_metrics": {
+                        "trade_count": 7,
+                        "total_return": 0.004662409768745324,
+                    }
+                },
+            },
+        },
+    )
+
+
+def _strategy_backtest_comparison(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_backtest_comparison.v1",
+            "comparison_id": "sha256:7d6c82dc19a0296565effedc365817451fcb7fad73cd6018ae75a92993037803",
+            "permits_live_order": False,
+            "wallet_used": False,
+            "exchange_write_used": False,
+            "method_results": [{}, {}],
+            "external_results": [{} for _ in range(9)],
+            "framework_adapters": [{} for _ in range(9)],
+            "native_result": {
+                "strategy_id": "trend_pullback_user_v1",
+                "trade_count": 7,
+                "total_return": 0.004662409768745324,
+                "backtest_passed": True,
+            },
+            "comparison_diagnostics": {
+                "suite_best_runs": [
+                    {
+                        "method_id": "single_window",
+                        "case_id": "single_window_120m",
+                        "total_return": 0.004662409768745324,
+                        "trade_count": 7,
+                    }
+                ],
+                "suite_failed_runs": [],
+                "threshold_failures": [],
+                "weakest_eras": [
+                    {
+                        "era": "2026-01-05",
+                        "total_return": 0.0019993404303773055,
+                        "trade_count": 3,
+                    }
+                ],
+            },
+            "portfolio_comparison": {"framework_id": "bt", "run_status": "skipped"},
+            "metric_extension": {
+                "framework_id": "empyrical_reloaded",
+                "metric_status": "skipped",
+            },
+            "report_extension": {"framework_id": "quantstats", "report_status": "skipped"},
+        },
+    )
+
+
 def _malformed_crypto_perp_truth_cycle_status(path: Path) -> Path:
     return _write_json(
         path,
@@ -323,6 +558,58 @@ def _malformed_crypto_perp_truth_cycle_status(path: Path) -> Path:
             "summary": {"cycle_status": "MISSING_PROBE_AUDIT"},
             "permits_live_order": False,
             "exchange_write_used": False,
+        },
+    )
+
+
+def _strategy_daily_brief(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_daily_brief.v1",
+            "data_dir": "data/crypto_perp/truth_cycle_dogfood_check",
+            "generated_at": "2026-06-21T11:02:25Z",
+            "producer": {"tool": "sis", "command": "strategy-daily-brief"},
+            "live_allowed": False,
+            "paper_execution_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+            "summary": {
+                "scanned_json_count": 3,
+                "total_item_count": 1,
+                "broken_artifact_count": 0,
+                "pending_human_review_count": 0,
+                "crypto_perp_gate_follow_up_count": 0,
+                "crypto_perp_truth_cycle_follow_up_count": 1,
+                "normal_paper_gap_count": 0,
+                "drift_review_needed_count": 0,
+                "learning_request_pending_count": 0,
+                "boundary_violation_count": 0,
+            },
+            "items": [
+                {
+                    "category": "crypto_perp_truth_cycle_follow_up",
+                    "severity": "warning",
+                    "status": "MISSING_PROBE_AUDIT",
+                    "schema_version": "crypto_perp_truth_cycle_status.v1",
+                    "action": "uv run sis crypto-perp-probe-audit --probe <provider_probe.json> --out <probe-audit-dir>",
+                    "reason": "crypto perp truth-cycle follow-up: uv run sis crypto-perp-probe-audit --probe <provider_probe.json> --out <probe-audit-dir>",
+                    "path": "data/crypto_perp/truth_cycle_dogfood_check/truth_cycle_status/truth_cycle_status.json",
+                    "sha256": "sha256:22505768a896e3f89d98c2e84da721192f1e500fd033b4333631f46a01bff20e",
+                }
+            ],
+            "source_artifacts": [
+                {
+                    "path": "data/crypto_perp/truth_cycle_dogfood_check/truth_cycle_status/truth_cycle_status.json",
+                    "schema_version": "crypto_perp_truth_cycle_status.v1",
+                    "sha256": "sha256:22505768a896e3f89d98c2e84da721192f1e500fd033b4333631f46a01bff20e",
+                }
+            ],
         },
     )
 
@@ -401,6 +688,61 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert "path または生成済みrun directory" in html
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+
+
+def test_strategy_workbench_viewer_summarizes_strategy_daily_brief_follow_up(
+    tmp_path: Path,
+) -> None:
+    brief = _strategy_daily_brief(
+        tmp_path / "data/crypto_perp/reports/strategy_daily_brief/strategy_daily_brief.json"
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=[brief],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+
+    source = payload["source_artifacts"][0]
+    assert source["schema_version"] == "strategy_daily_brief.v1"
+    assert source["summary"]["scanned_json_count"] == 3
+    assert source["summary"]["total_item_count"] == 1
+    assert source["summary"]["broken_artifact_count"] == 0
+    assert source["summary"]["crypto_perp_truth_cycle_follow_up_count"] == 1
+    assert source["summary"]["normal_paper_gap_count"] == 0
+    assert source["summary"]["drift_review_needed_count"] == 0
+    assert source["summary"]["learning_request_pending_count"] == 0
+    assert source["summary"]["paper_execution_allowed"] is False
+    assert source["summary"]["live_allowed"] is False
+    assert source["summary"]["first_brief_item_category"] == "crypto_perp_truth_cycle_follow_up"
+    assert source["summary"]["first_brief_item_severity"] == "warning"
+    assert source["summary"]["first_brief_item_status"] == "MISSING_PROBE_AUDIT"
+    assert (
+        source["summary"]["first_brief_item_schema_version"] == "crypto_perp_truth_cycle_status.v1"
+    )
+    assert source["summary"]["first_brief_item_action"] == (
+        "uv run sis crypto-perp-probe-audit --probe <provider_probe.json> --out <probe-audit-dir>"
+    )
+    assert source["summary"]["first_brief_item_reason"] == (
+        "crypto perp truth-cycle follow-up: uv run sis crypto-perp-probe-audit "
+        "--probe <provider_probe.json> --out <probe-audit-dir>"
+    )
+    assert source["summary"]["first_brief_item_path"] == (
+        "data/crypto_perp/truth_cycle_dogfood_check/truth_cycle_status/truth_cycle_status.json"
+    )
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert "crypto_perp_truth_cycle_follow_up_count" in html
+    assert "first_brief_item_action" in html
+    assert "MISSING_PROBE_AUDIT" in html
+    assert "&lt;provider_probe.json&gt;" in html
 
 
 def test_strategy_workbench_viewer_drops_true_permission_like_next_step_flags(
@@ -546,6 +888,22 @@ def test_strategy_workbench_viewer_uses_case_lite_latest_status_as_status_badge(
         case_id="case-a",
         updated_at="2026-06-22T09:00:00Z",
         latest_status="READY_FOR_HUMAN_REVIEW",
+        open_actions=["REVISE_STRATEGY"],
+        blocked_reasons=["runtime_no_fill_rate_within_limit"],
+        source_artifacts=[
+            {
+                "artifact_type": "strategy_backtest_pack_validation",
+                "path": "data/research/backtest_pack/strategy_backtest_pack_validation.json",
+                "schema_version": "strategy_backtest_pack_validation.v1",
+                "sha256": "sha256:0ffbc5d4e2af667c5a8a792274d1e7ca033fbdec24212d857687ef03a26147b6",
+            },
+            {
+                "artifact_type": "strategy_review_manifest",
+                "path": "data/strategy_reviews/current/review_manifest.json",
+                "schema_version": "strategy_review_manifest.v1",
+                "sha256": "sha256:0bee2b89c6bbc7eb05ef2d0be2b0972a65cfc4d9d23b11a95569d12774f0bb21",
+            },
+        ],
     )
 
     result = build_strategy_workbench_viewer(
@@ -562,9 +920,33 @@ def test_strategy_workbench_viewer_uses_case_lite_latest_status_as_status_badge(
     Draft202012Validator(schema).validate(payload)
     assert payload["source_artifacts"][0]["status"] == "READY_FOR_HUMAN_REVIEW"
     assert payload["source_artifacts"][0]["summary"]["latest_status"] == "READY_FOR_HUMAN_REVIEW"
+    assert payload["source_artifacts"][0]["summary"]["artifact_count"] == 2
+    assert payload["source_artifacts"][0]["summary"]["timeline_count"] == 2
+    assert (
+        payload["source_artifacts"][0]["summary"]["first_source_artifact_type"]
+        == "strategy_backtest_pack_validation"
+    )
+    assert (
+        payload["source_artifacts"][0]["summary"]["first_source_artifact_hash"]
+        == "sha256:0ffbc5d4e2af667c5a8a792274d1e7ca033fbdec24212d857687ef03a26147b6"
+    )
+    assert (
+        payload["source_artifacts"][0]["summary"]["first_source_artifact_path"]
+        == "data/research/backtest_pack/strategy_backtest_pack_validation.json"
+    )
+    assert payload["source_artifacts"][0]["summary"]["first_open_action"] == "REVISE_STRATEGY"
+    assert (
+        payload["source_artifacts"][0]["summary"]["first_blocked_reason"]
+        == "runtime_no_fill_rate_within_limit"
+    )
 
     html = result.html_path.read_text(encoding="utf-8")
     assert '<span class="badge warn">READY_FOR_HUMAN_REVIEW</span>' in html
+    assert "artifact_count" in html
+    assert "first_source_artifact_type" in html
+    assert "strategy_backtest_pack_validation" in html
+    assert "first_open_action" in html
+    assert "runtime_no_fill_rate_within_limit" in html
     assert '<span class="badge neutral">n/a</span>' not in html
 
 
@@ -606,6 +988,49 @@ def test_strategy_workbench_viewer_uses_input_feedback_review_decision_as_status
     assert '<span class="badge warn">HOLD</span>' in html
     assert "manual_contract_update_input_allowed" in html
     assert '<span class="badge neutral">n/a</span>' not in html
+
+
+def test_strategy_workbench_viewer_summarizes_input_feedback_proposal_evidence(
+    tmp_path: Path,
+) -> None:
+    proposal = _input_feedback_proposal(
+        tmp_path / "data/strategy_input_feedback/proposal-runtime.json"
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=[proposal],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+    source = payload["source_artifacts"][0]
+    assert source["status"] == "READY_FOR_HUMAN_REVIEW"
+    assert source["summary"]["proposal_id"] == "proposal-runtime"
+    assert source["summary"]["proposed_change_count"] == 1
+    assert source["summary"]["first_proposed_change_target_section"] == "execution_reality"
+    assert source["summary"]["first_proposed_change_source_reason"] == (
+        "runtime_observation:INGESTED"
+    )
+    assert (
+        "max_observed_quote_age_ms=1048982067"
+        in (source["summary"]["first_proposed_change_evidence_summary"])
+    )
+    assert "pnl_available=False" in source["summary"]["first_proposed_change_evidence_summary"]
+    assert (
+        "ledger rows do not include realized_pnl_usd"
+        in (source["summary"]["first_proposed_change_evidence_summary"])
+    )
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert '<span class="badge warn">READY_FOR_HUMAN_REVIEW</span>' in html
+    assert "first_proposed_change_evidence_summary" in html
+    assert "max_observed_quote_age_ms=1048982067" in html
 
 
 def test_strategy_workbench_viewer_summarizes_runtime_observation_execution_reality(
@@ -654,6 +1079,133 @@ def test_strategy_workbench_viewer_summarizes_runtime_observation_execution_real
     assert "1048982067" in html
     assert "pnl_available" in html
     assert "ledger rows do not include realized_pnl_usd" in html
+
+
+def test_strategy_workbench_viewer_summarizes_backtest_result_and_pack_validation(
+    tmp_path: Path,
+) -> None:
+    backtest = _strategy_authoring_backtest_result(
+        tmp_path / "data/research/strategy_backtest_metrics.json"
+    )
+    validation = _strategy_backtest_pack_validation(
+        tmp_path / "data/research/backtest_pack/strategy_backtest_pack_validation.json"
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=[backtest, validation],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+
+    backtest_source = payload["source_artifacts"][0]
+    assert backtest_source["summary"]["strategy_id"] == "trend_pullback_user_v1"
+    assert backtest_source["summary"]["backtest_passed"] is True
+    assert backtest_source["summary"]["trade_count"] == 7
+    assert backtest_source["summary"]["total_return"] == 0.004662409768745324
+    assert backtest_source["summary"]["net_pnl_usd"] == 46.62409768745324
+    assert backtest_source["summary"]["max_drawdown"] == 0.0
+    assert backtest_source["summary"]["paper_only"] is True
+    assert backtest_source["summary"]["live_order_submitted"] is False
+
+    validation_source = payload["source_artifacts"][1]
+    assert validation_source["status"] == "PASS"
+    assert validation_source["summary"]["decision"] == "PASS"
+    assert validation_source["summary"]["check_count"] == 206
+    assert validation_source["summary"]["passed_count"] == 206
+    assert validation_source["summary"]["failed_count"] == 0
+    assert validation_source["summary"]["locked_dependency_added"] is False
+    assert (
+        validation_source["summary"]["external_framework_policy_decision"]
+        == "complete_without_locked_external_dependency"
+    )
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert "backtest_passed" in html
+    assert "trade_count" in html
+    assert "net_pnl_usd" in html
+    assert "locked_dependency_added" in html
+    assert "complete_without_locked_external_dependency" in html
+
+
+def test_strategy_workbench_viewer_summarizes_backtest_pack_suite_and_comparison(
+    tmp_path: Path,
+) -> None:
+    pack = _strategy_backtest_pack(tmp_path / "data/research/backtest_pack/pack.json")
+    suite = _strategy_backtest_suite_result(tmp_path / "data/research/backtest_suite/suite.json")
+    comparison = _strategy_backtest_comparison(
+        tmp_path / "data/research/backtest_compare/comparison.json"
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=[pack, suite, comparison],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+
+    pack_summary = payload["source_artifacts"][0]["summary"]
+    assert pack_summary["pack_artifact_count"] == 45
+    assert pack_summary["suite_method_count"] == 5
+    assert pack_summary["suite_run_count"] == 5
+    assert pack_summary["suite_passed_count"] == 5
+    assert pack_summary["external_result_count"] == 9
+    assert pack_summary["external_engine_run"] is False
+    assert pack_summary["net_pnl_usd"] == 46.62409768745324
+    assert pack_summary["external_framework_policy_decision"] == (
+        "complete_without_locked_external_dependency"
+    )
+    assert pack_summary["standard_engine"] == "strategy_authoring_native"
+    assert pack_summary["locked_dependency_added"] is False
+    assert pack_summary["external_adapters_required_for_completion"] is False
+
+    suite_summary = payload["source_artifacts"][1]["summary"]
+    assert suite_summary["suite_id"] == "trend_pullback_backtest_suite_v1"
+    assert suite_summary["method_count"] == 5
+    assert suite_summary["run_count"] == 5
+    assert suite_summary["passed_count"] == 5
+    assert suite_summary["failed_count"] == 0
+    assert suite_summary["trade_count"] == 35
+    assert suite_summary["total_return"] == 0.023312048843726618
+    assert suite_summary["cost_drag_bps"] == 35.0
+    assert suite_summary["best_run_id"] == "000-single_window_120m"
+    assert suite_summary["best_run_method_id"] == "single_window"
+    assert suite_summary["best_run_total_return"] == 0.004662409768745324
+    assert suite_summary["best_run_trade_count"] == 7
+
+    comparison_summary = payload["source_artifacts"][2]["summary"]
+    assert comparison_summary["comparison_id"].startswith("sha256:")
+    assert comparison_summary["method_result_count"] == 2
+    assert comparison_summary["external_result_count"] == 9
+    assert comparison_summary["framework_adapter_count"] == 9
+    assert comparison_summary["native_total_return"] == 0.004662409768745324
+    assert comparison_summary["native_trade_count"] == 7
+    assert comparison_summary["suite_failed_run_count"] == 0
+    assert comparison_summary["threshold_failure_count"] == 0
+    assert comparison_summary["suite_best_run_method_id"] == "single_window"
+    assert comparison_summary["weakest_era"] == "2026-01-05"
+    assert comparison_summary["weakest_era_total_return"] == 0.0019993404303773055
+    assert comparison_summary["portfolio_run_status"] == "skipped"
+    assert comparison_summary["metric_status"] == "skipped"
+    assert comparison_summary["report_status"] == "skipped"
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert "pack_artifact_count" in html
+    assert "suite_best_run_method_id" in html
+    assert "weakest_era_total_return" in html
+    assert "portfolio_run_status" in html
 
 
 def test_strategy_workbench_viewer_scans_case_index_and_marks_boundary_violation(

@@ -32,6 +32,8 @@ class StrategyCaseArtifactType(StrEnum):
     BACKTEST_SUITE_RESULT = "strategy_backtest_suite_result"
     BACKTEST_COMPARISON = "strategy_backtest_comparison"
     STRATEGY_REVIEW_MANIFEST = "strategy_review_manifest"
+    STRATEGY_INPUT_CONTRACT_UPDATE_PROPOSAL = "strategy_input_contract_update_proposal"
+    STRATEGY_INPUT_CONTRACT_UPDATE_REVIEW = "strategy_input_contract_update_review"
     GENERIC = "generic"
 
 

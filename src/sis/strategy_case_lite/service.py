@@ -72,6 +72,12 @@ def _artifact_type_for(schema_version: str | None) -> StrategyCaseArtifactType:
         "strategy_backtest_suite_result.v1": StrategyCaseArtifactType.BACKTEST_SUITE_RESULT,
         "strategy_backtest_comparison.v1": StrategyCaseArtifactType.BACKTEST_COMPARISON,
         "strategy_review_manifest.v1": StrategyCaseArtifactType.STRATEGY_REVIEW_MANIFEST,
+        "strategy_input_contract_update_proposal.v1": (
+            StrategyCaseArtifactType.STRATEGY_INPUT_CONTRACT_UPDATE_PROPOSAL
+        ),
+        "strategy_input_contract_update_review.v1": (
+            StrategyCaseArtifactType.STRATEGY_INPUT_CONTRACT_UPDATE_REVIEW
+        ),
     }.get(schema_version or "", StrategyCaseArtifactType.GENERIC)
 
 
@@ -90,9 +96,58 @@ def _blocked_reasons(payload: dict[str, Any]) -> list[str]:
             condition_id = condition.get("condition_id")
             if isinstance(condition_id, str) and condition_id:
                 reasons.append(condition_id)
+    schema_version = payload.get("schema_version")
+    status = payload.get("status")
+    if schema_version == "strategy_input_contract_update_proposal.v1" and status in {
+        "NEEDS_SOURCE_CONTRACT_CONTEXT",
+        "BLOCKED_BOUNDARY_VIOLATION",
+    }:
+        reasons.append(f"strategy_input_feedback_proposal:{status}")
+    decision = payload.get("decision")
+    if schema_version == "strategy_input_contract_update_review.v1" and decision in {
+        "HOLD",
+        "REJECT",
+        "NEEDS_FIX",
+    }:
+        reasons.append(f"strategy_input_feedback_review:{decision}")
     for path in boundary_true_paths(payload):
         reasons.append(f"boundary:{path}")
     return sorted(set(reasons))
+
+
+def _first_list_string(payload: dict[str, Any], key: str) -> str | None:
+    values = payload.get(key)
+    if not isinstance(values, list):
+        return None
+    for value in values:
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _first_proposed_change_string(payload: dict[str, Any], key: str) -> str | None:
+    changes = payload.get("proposed_changes")
+    if not isinstance(changes, list):
+        return None
+    for change in changes:
+        if not isinstance(change, dict):
+            continue
+        value = change.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _action(payload: dict[str, Any]) -> str | None:
+    direct_action = _first_string(payload, ("recommended_action", "next_action", "request_status"))
+    if direct_action is not None:
+        return direct_action
+    schema_version = payload.get("schema_version")
+    if schema_version == "strategy_input_contract_update_proposal.v1":
+        return _first_proposed_change_string(payload, "recommendation")
+    if schema_version == "strategy_input_contract_update_review.v1":
+        return _first_list_string(payload, "required_actions")
+    return None
 
 
 def _timeline_entry(path: Path) -> StrategyCaseTimelineEntry:
@@ -123,7 +178,7 @@ def _timeline_entry(path: Path) -> StrategyCaseTimelineEntry:
                 "validation_status",
             ),
         ),
-        action=_first_string(payload, ("recommended_action", "next_action", "request_status")),
+        action=_action(payload),
         blocked_reasons=_blocked_reasons(payload),
     )
 

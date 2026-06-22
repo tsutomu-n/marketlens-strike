@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_18:55 JST
-更新日: 2026-06-22_20:24 JST
+更新日: 2026-06-22_21:12 JST
 -->
 
 # Strategy Input Feedback
@@ -58,6 +58,8 @@ uv run sis strategy-input-feedback-proposal-review \
 - `strategy_input_contract_update_review.v1`
 
 proposal は source artifact の path、sha256、schema_version、artifact_kind を保持します。source artifact は既存 Pydantic model で検証します。ただし boundary true が混入した source は ready proposal ではなく `BLOCKED_BOUNDARY_VIOLATION` として止めます。
+
+Runtime Observation 由来の proposal は、`evidence_summary` に `ingest_status`、no-fill count、blocked count、最大 quote age、最大 spread、PnL 利用可否、PnL がない理由を入れます。これは実行許可ではなく、stale quote や PnL 不足を manual review で見落とさないための要約です。
 
 `--source-contract` は `StrategyInputContract` model validation を行います。contract 内の各 source file の存在、declared sha256、column、timestamp 検査は既存 `strategy-input-contract-validate` の責務です。この command 内では再実装しません。
 

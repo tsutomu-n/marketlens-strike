@@ -158,6 +158,125 @@ def _strategy_review_manifest(tmp_path: Path) -> Path:
     )
 
 
+def _input_feedback_proposal(tmp_path: Path) -> Path:
+    return _write_json(
+        tmp_path / "data/strategy_input_feedback/proposal.json",
+        {
+            "schema_version": "strategy_input_contract_update_proposal.v1",
+            "proposal_id": "proposal-runtime",
+            "strategy_id": "ndx-breakout-001",
+            "created_at": "2026-06-22T09:05:00Z",
+            "producer": {"tool": "sis", "command": "strategy-input-feedback-proposal-build"},
+            "status": "READY_FOR_HUMAN_REVIEW",
+            "source_artifacts": [
+                {
+                    "artifact_kind": "runtime_observation",
+                    "path": "data/strategy_runtime_observation/obs.json",
+                    "sha256": "sha256:" + "a" * 64,
+                    "schema_version": "strategy_runtime_observation_manifest.v1",
+                }
+            ],
+            "proposed_changes": [
+                {
+                    "change_id": "runtime-001",
+                    "target_section": "execution_reality",
+                    "recommendation": "Review runtime observation evidence.",
+                    "evidence_summary": "pnl_available=False; max_observed_quote_age_ms=1048982067",
+                    "source_reason": "runtime_observation:INGESTED",
+                    "requires_human_review": True,
+                }
+            ],
+            "blocked_reasons": [],
+            "requires_human_review": True,
+            "auto_applied": False,
+            "direct_contract_edit_allowed": False,
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+            "feedback_boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "permits_wallet": False,
+                "permits_signing": False,
+                "permits_exchange_write": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+                "paper_execution_allowed": False,
+                "live_allowed": False,
+                "auto_applied": False,
+                "direct_contract_edit_allowed": False,
+            },
+        },
+    )
+
+
+def _input_feedback_review(tmp_path: Path) -> Path:
+    return _write_json(
+        tmp_path / "data/strategy_input_feedback/proposal-review.json",
+        {
+            "schema_version": "strategy_input_contract_update_review.v1",
+            "review_id": "proposal-runtime-review",
+            "proposal_id": "proposal-runtime",
+            "strategy_id": "ndx-breakout-001",
+            "reviewed_at": "2026-06-22T09:10:00Z",
+            "producer": {"tool": "sis", "command": "strategy-input-feedback-proposal-review"},
+            "reviewer": "operator-a",
+            "decision": "HOLD",
+            "rationale": "Hold because PnL is unavailable and quote age is stale.",
+            "approved_change_ids": [],
+            "required_actions": [
+                "Choose a human-approved manual contract update target before applying runtime-001."
+            ],
+            "source_proposal": {
+                "proposal_path": "data/strategy_input_feedback/proposal.json",
+                "proposal_sha256": "sha256:" + "b" * 64,
+                "proposal_id": "proposal-runtime",
+                "proposal_status": "READY_FOR_HUMAN_REVIEW",
+                "proposed_change_ids": ["runtime-001"],
+                "proposed_change_count": 1,
+                "auto_applied": False,
+                "direct_contract_edit_allowed": False,
+                "paper_execution_allowed": False,
+                "live_allowed": False,
+            },
+            "manual_contract_update_input_allowed": False,
+            "requires_human_contract_update": True,
+            "auto_applied": False,
+            "direct_contract_edit_allowed": False,
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+            "feedback_boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "permits_wallet": False,
+                "permits_signing": False,
+                "permits_exchange_write": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+                "paper_execution_allowed": False,
+                "live_allowed": False,
+                "auto_applied": False,
+                "direct_contract_edit_allowed": False,
+            },
+        },
+    )
+
+
 def test_strategy_case_lite_builds_schema_valid_timeline(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     stage = _stage_decision(tmp_path)
@@ -231,3 +350,35 @@ def test_strategy_case_lite_accepts_backtest_and_review_artifacts(
     assert payload["summary"]["latest_source_hashes"]["strategy_review_manifest"].startswith(
         "sha256:"
     )
+
+
+def test_strategy_case_lite_summarizes_input_feedback_hold_review(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    proposal = _input_feedback_proposal(tmp_path)
+    review = _input_feedback_review(tmp_path)
+
+    result = build_strategy_case_lite(
+        strategy_id="ndx-breakout-001",
+        artifact_paths=[proposal, review],
+        out_dir=tmp_path / "data/strategy_cases",
+    )
+
+    assert result.case.summary.latest_status == "HOLD"
+    assert result.case.summary.open_actions == [
+        "Choose a human-approved manual contract update target before applying runtime-001.",
+        "Review runtime observation evidence.",
+    ]
+    assert result.case.summary.blocked_reasons == ["strategy_input_feedback_review:HOLD"]
+    assert result.case.timeline[0].artifact_type.value == (
+        "strategy_input_contract_update_proposal"
+    )
+    assert result.case.timeline[1].artifact_type.value == ("strategy_input_contract_update_review")
+    assert result.case.timeline[0].action == "Review runtime observation evidence."
+    assert result.case.timeline[1].action == (
+        "Choose a human-approved manual contract update target before applying runtime-001."
+    )
+
+    payload = json.loads(result.case_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_schema()).validate(payload)

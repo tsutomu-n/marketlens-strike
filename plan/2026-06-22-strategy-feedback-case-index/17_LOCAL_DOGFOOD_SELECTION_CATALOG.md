@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_20:37 JST
-更新日: 2026-06-22_20:46 JST
+更新日: 2026-06-22_21:39 JST
 -->
 
 # Local Dogfood Selection Catalog
@@ -23,6 +23,10 @@
 推奨は `trend_pullback_user_v1` を第一候補にすること。理由は、local/offline のまま `Strategy Case Lite`、`Strategy Case Index`、`Workbench Viewer` をすでに生成できており、backtest / review artifact も多いから。
 
 `ndx_open_gap_residual_v1` は第二候補。`Strategy Input Feedback` の proposal / review まで通っているが、paper observation 寄りで、quote age stale や PnL 不足などの現実的な保留理由も含む。
+
+2026-06-22_21:33 JST 時点の補足: Loop 08-14 で B は追加 dogfood 済み。Viewer、Input Feedback proposal、Case Lite、Case Index は `HOLD` / `NEEDS_SOURCE_CONTRACT_CONTEXT` / `pnl_available=false` / `max_observed_quote_age_ms=1048982067` を一覧で見落としにくい表示に更新した。B は「進める候補」ではなく、いったん completion audit 済みの dogfood slice として読む。
+
+2026-06-22_21:39 JST 時点の補足: `strategy_id=unknown` から選ぶためのファイル単位の詳細棚卸しは [26_LOCAL_DOGFOOD_UNKNOWN_TARGET_FULL_INVENTORY.md](26_LOCAL_DOGFOOD_UNKNOWN_TARGET_FULL_INVENTORY.md) を正として読む。この文書は高レベル catalog として残す。
 
 Crypto Perp truth-cycle は第三候補。Viewer / Daily Brief の読みやすさ確認には使えるが、今回の Strategy Input Feedback / Case Index plan の中心ではない。
 
@@ -317,6 +321,14 @@ Local dogfood に近い report:
 | Viewer HTML | `data/local_dogfood/2026-06-22-ndx-open-gap/viewer/strategy_workbench_viewer.html` | static HTML | NDX viewer |
 | Viewer manifest | `data/local_dogfood/2026-06-22-ndx-open-gap/viewer/strategy_workbench_viewer_manifest.json` | `schema_version=strategy_workbench_viewer.v1`; `viewer_id=ndx-open-gap-local-dogfood-viewer` | Viewer manifest |
 
+Loop 14 後の current read:
+
+- Runtime Observation は `pnl_available=false`、`max_observed_quote_age_ms=1048982067`、`paper_fill_count=20` を Viewer summary に出す。
+- Source contract なし proposal は `NEEDS_SOURCE_CONTRACT_CONTEXT`。
+- Source contract あり proposal は `READY_FOR_HUMAN_REVIEW` だが、review は `HOLD`。
+- Case Lite / Case Index は `latest_status=HOLD`、first open action と first blocked reason を持つ。
+- `manual_contract_update_input_allowed=false`、`auto_applied=false`、`direct_contract_edit_allowed=false`、`paper_execution_allowed=false`、`live_allowed=false` は維持。
+
 ### 元になった active artifact
 
 | 種類 | path | 重要 field / 状態 | 読み方 |
@@ -347,10 +359,9 @@ Local dogfood に近い report:
 
 ### この候補で次にできること
 
-1. source contract あり / なし proposal の違いを見る。
-2. `HOLD` review の理由が Viewer / report で分かりやすいか確認する。
-3. Runtime Observation の stale quote age と PnL 不足を、Case Lite / Viewer でどこまで表現できるか確認する。
-4. Paper evidence lane へ進むか、Local dogfood だけで止めるか判断する。
+1. Loop 08-14 の差分を completion audit し、local dogfood slice として固める。
+2. Paper evidence lane へ進むか、Local dogfood だけで止めるか判断する。
+3. manual contract update に進む場合は、別途ユーザー承認済みの更新対象と方針を用意する。
 
 ### この候補で今やらないこと
 

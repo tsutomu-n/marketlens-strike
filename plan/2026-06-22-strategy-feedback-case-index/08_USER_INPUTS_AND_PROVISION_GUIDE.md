@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_19:34 JST
-更新日: 2026-06-22_20:37 JST
+更新日: 2026-06-22_22:05 JST
 -->
 
 # User Inputs And Provision Guide
@@ -17,7 +17,7 @@
 - 必須 4: 未決
 - 必須 5: 未決
 
-この回答状態で選ぶための詳細カタログは [17_LOCAL_DOGFOOD_SELECTION_CATALOG.md](17_LOCAL_DOGFOOD_SELECTION_CATALOG.md) を読む。必須 4 と必須 5 が未決の間は、credential、network、paper order、live order、wallet、signing、exchange write、secret、account raw data、statement raw data は扱わない。
+この回答状態で選ぶための高レベルカタログは [17_LOCAL_DOGFOOD_SELECTION_CATALOG.md](17_LOCAL_DOGFOOD_SELECTION_CATALOG.md) を読む。`unknown` から選ぶための詳細な現物棚卸しは [26_LOCAL_DOGFOOD_UNKNOWN_TARGET_FULL_INVENTORY.md](26_LOCAL_DOGFOOD_UNKNOWN_TARGET_FULL_INVENTORY.md) を読む。今回の回答条件に合わせて、いまある active artifact をより網羅的に選択用へ並べた最新版は [29_LOCAL_DOGFOOD_ALL_CURRENT_SELECTION_INVENTORY.md](29_LOCAL_DOGFOOD_ALL_CURRENT_SELECTION_INVENTORY.md) を読む。必須 4 と必須 5 が未決の間は、credential、network、paper order、live order、wallet、signing、exchange write、secret、account raw data、statement raw data は扱わない。
 
 推奨する最初の進め方は、今回追加した local / offline surface を実 artifact で dogfood すること。つまり `Strategy Input Feedback`、`Strategy Case Index`、`Strategy Workbench Viewer` を実データで読み、次に direct apply、registry、UI、paper bridge のどれが本当に必要かを確認する。
 
