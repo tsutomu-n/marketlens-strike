@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_18:55 JST
-更新日: 2026-06-22_18:55 JST
+更新日: 2026-06-22_20:24 JST
 -->
 
 # Strategy Input Feedback
@@ -10,6 +10,8 @@
 Strategy Input Feedback は、Runtime Observation と Learning Event を読み、Strategy Input Contract 更新候補と人間レビュー artifact を作る local/offline surface です。
 
 これは自動反映ではありません。Strategy Input Contract を直接編集せず、`auto_applied=false` と `direct_contract_edit_allowed=false` を維持します。paper 実行、live 実行、wallet、signing、exchange write も許可しません。
+
+backtest-only artifact は、この command の proposal 入力ではありません。`strategy-case-lite-update --artifact` で backtest result、backtest pack、review manifest を Case Lite / Case Index に入れることはできますが、それだけでは Strategy Input Feedback proposal は作れません。
 
 ## CLI
 
@@ -27,6 +29,15 @@ uv run sis strategy-input-feedback-proposal-build \
 `--runtime-observation` と `--learning-event` は複数指定できます。少なくとも一方が必要です。
 
 `--source-contract` がない場合、proposal は `NEEDS_SOURCE_CONTRACT_CONTEXT` になります。これは更新候補の文脈が足りない review-only proposal であり、apply-ready ではありません。
+
+`--source-contract` だけを渡しても proposal は作れません。現行CLIは次で止まります。
+
+```text
+status=fail
+error=at least one --runtime-observation or --learning-event is required
+```
+
+つまり、Strategy Input Contract は proposal の文脈であり、proposal の発火源ではありません。発火源は Runtime Observation または Learning Event です。
 
 review を作る:
 
@@ -58,6 +69,7 @@ proposal は source artifact の path、sha256、schema_version、artifact_kind 
 - paper / live execution permission ではない。
 - wallet、signing、exchange write を使わない。
 - source contract validation artifact を proposal に接続する flow は別計画。
+- backtest-only Case Lite / Case Index は Input Feedback proposal の入力ではない。
 
 ## 検証
 

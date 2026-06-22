@@ -1,7 +1,7 @@
 version: 1
 name: strategy_feedback_and_case_index
 created_at_jst: "2026-06-22_17:55"
-updated_at_jst: "2026-06-22_18:36"
+updated_at_jst: "2026-06-22_20:24"
 objective: >-
   Implement local/offline Strategy Input Feedback proposal/review artifacts,
   Strategy Case Lite Index artifacts, and Static Workbench Viewer support,
@@ -163,11 +163,40 @@ tasks:
     verification:
       - uv run pytest tests/strategy_workbench_viewer/test_strategy_workbench_viewer.py
     destructive_level: low
+  - id: T4A
+    title: Strategy Case Lite additional artifact input
+    goal: Allow read-only backtest, review, and validation artifacts to be included in Strategy Case Lite timelines and indexed through Strategy Case Index.
+    depends_on:
+      - T0
+    target_files:
+      - src/sis/strategy_case_lite/models.py
+      - src/sis/strategy_case_lite/service.py
+      - src/sis/commands/strategy_case_lite.py
+      - schemas/strategy_case_lite.v1.schema.json
+      - tests/strategy_case_lite/test_strategy_case_lite.py
+      - tests/strategy_case_lite/test_strategy_case_lite_cli.py
+      - docs/strategy_case_lite/README.md
+    out_of_scope:
+      - Treating backtest-only artifacts as paper or live readiness.
+      - Generating Strategy Input Feedback proposals from backtest-only artifacts.
+      - Creating runtime observation from unrelated paper sessions.
+    acceptance:
+      - strategy-case-lite-update --help includes --artifact.
+      - --artifact accepts additional JSON artifacts.
+      - Known backtest, review, and input-validation schemas are recorded as typed artifacts instead of generic.
+      - Unknown schemas still fall back to generic.
+      - Generated Case Lite remains schema-valid and read-only.
+      - trend_pullback_user_v1 backtest-only artifacts can be summarized into Case Lite and indexed by Strategy Case Index.
+    verification:
+      - uv run pytest tests/strategy_case_lite
+      - uv run sis strategy-case-lite-update --help
+    destructive_level: low
   - id: T6
     title: Current docs and CLI catalog
     goal: Make new surfaces discoverable without overstating readiness.
     depends_on:
       - T2
+      - T4A
       - T5
     target_files:
       - docs/strategy_input_feedback/README.md
@@ -202,6 +231,6 @@ tasks:
       - Final report includes generated sample artifact paths.
       - Final report states no live/network/wallet/signing/exchange-write work was done.
     verification:
-      - uv run pytest tests/strategy_input_feedback tests/strategy_case_index tests/strategy_workbench_viewer
+      - uv run pytest tests/strategy_case_lite tests/strategy_input_feedback tests/strategy_case_index tests/strategy_workbench_viewer
       - ./scripts/check
     destructive_level: none

@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-06-19_01:02 JST
-更新日: 2026-06-19_02:22 JST
+更新日: 2026-06-22_20:20 JST
 -->
 
 # Strategy Case Lite
 
 ## 結論
 
-`strategy-case-lite-update` は、同じ strategy の stage decision、runtime observation、drift review、learning event、revision request、authoring update handoff、micro live plan、live observation、scale decision、next scale plan を読み、軽量な case timeline を作る first slice です。
+`strategy-case-lite-update` は、同じ strategy の stage decision、runtime observation、drift review、learning event、revision request、authoring update handoff、micro live plan、live observation、scale decision、next scale plan、追加の JSON artifact を読み、軽量な case timeline を作る first slice です。
 
 これは registry の最終形ではありません。まず個人運用で artifact を探し回らないように、source path / hash / schema version / status / action / blocked reason を strategy 単位に束ねます。
 
@@ -25,6 +25,7 @@ uv run sis strategy-case-lite-update \
   --live-observation data/strategy_live_observations/<strategy-id>/strategy_live_observation_manifest.json \
   --scale-decision data/strategy_scale_decisions/<strategy-id>/strategy_scale_decision.json \
   --next-scale-plan data/strategy_next_scale_plans/<strategy-id>/strategy_next_scale_plan.json \
+  --artifact data/research/strategy_backtest_metrics.json \
   --out data/strategy_cases
 ```
 
@@ -40,6 +41,17 @@ uv run sis strategy-case-lite-update \
 - `--live-observation`
 - `--scale-decision`
 - `--next-scale-plan`
+- `--artifact`
+
+`--artifact` は追加の JSON artifact 用です。既知 schema は型付き artifact として記録し、未知 schema は `generic` として記録します。現時点で型付きになる追加 schema は次です。
+
+- `strategy_input_contract_validation.v1`
+- `strategy_authoring_backtest_result.v1`
+- `strategy_backtest_pack.v1`
+- `strategy_backtest_pack_validation.v1`
+- `strategy_backtest_suite_result.v1`
+- `strategy_backtest_comparison.v1`
+- `strategy_review_manifest.v1`
 
 ## Artifact
 

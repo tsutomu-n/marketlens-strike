@@ -25,6 +25,13 @@ class StrategyCaseArtifactType(StrEnum):
     LIVE_OBSERVATION = "strategy_live_observation_manifest"
     SCALE_DECISION = "strategy_scale_decision"
     NEXT_SCALE_PLAN = "strategy_next_scale_plan"
+    INPUT_CONTRACT_VALIDATION = "strategy_input_contract_validation"
+    AUTHORING_BACKTEST_RESULT = "strategy_authoring_backtest_result"
+    BACKTEST_PACK = "strategy_backtest_pack"
+    BACKTEST_PACK_VALIDATION = "strategy_backtest_pack_validation"
+    BACKTEST_SUITE_RESULT = "strategy_backtest_suite_result"
+    BACKTEST_COMPARISON = "strategy_backtest_comparison"
+    STRATEGY_REVIEW_MANIFEST = "strategy_review_manifest"
     GENERIC = "generic"
 
 

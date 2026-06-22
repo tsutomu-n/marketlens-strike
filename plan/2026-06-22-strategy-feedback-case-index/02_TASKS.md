@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_18:36 JST
+更新日: 2026-06-22_20:24 JST
 -->
 
 # Task Plan
@@ -191,6 +191,46 @@
 - schema validation が通る。
 - viewer manifest schema を変更しない場合は、既存 schema のまま case index artifact を含む manifest が validation を通る。
 - existing viewer output を viewer 自身が source of truth として読まない。
+
+## T4A: Strategy Case Lite additional artifact input
+
+目的: backtest-only / review / validation artifact を Case Lite の read-only timeline に入れ、Case Index へ接続できるようにする。
+
+対象ファイル:
+
+- `src/sis/strategy_case_lite/models.py`
+- `src/sis/strategy_case_lite/service.py`
+- `src/sis/commands/strategy_case_lite.py`
+- `schemas/strategy_case_lite.v1.schema.json`
+- `tests/strategy_case_lite/test_strategy_case_lite.py`
+- `tests/strategy_case_lite/test_strategy_case_lite_cli.py`
+- `docs/strategy_case_lite/README.md`
+
+実装内容:
+
+- `strategy-case-lite-update` に `--artifact` を追加する。
+- `--artifact` は追加の JSON artifact を受け取る。
+- known schema は typed artifact として扱う。
+- unknown schema は既存 `generic` として扱う。
+- 少なくとも次の schema を typed artifact にする。
+  - `strategy_input_contract_validation.v1`
+  - `strategy_authoring_backtest_result.v1`
+  - `strategy_backtest_pack.v1`
+  - `strategy_backtest_pack_validation.v1`
+  - `strategy_backtest_suite_result.v1`
+  - `strategy_backtest_comparison.v1`
+  - `strategy_review_manifest.v1`
+- `status` top-level key も timeline status 候補として読む。
+- boundary は既存通り paper / live / wallet / signing / exchange write を許可しない。
+
+受け入れ条件:
+
+- `strategy-case-lite-update --help` に `--artifact` が表示される。
+- backtest result と strategy review manifest を `--artifact` で渡して Case Lite を生成できる。
+- generated Case Lite は `strategy_case_lite.v1` schema validation を通る。
+- typed artifact が `latest_source_hashes` で `generic` に潰れない。
+- `trend_pullback_user_v1` の backtest-only artifact を Case Lite / Case Index に通せる。
+- backtest-only Case Lite は paper / live readiness として扱わない。
 
 ## T6: docs / CLI catalog / current-doc routing 更新
 

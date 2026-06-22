@@ -78,6 +78,15 @@ def register_strategy_case_lite_commands(app: typer.Typer) -> None:
             dir_okay=False,
             help="strategy_next_scale_plan.v1 JSON. Repeat for multiple artifacts.",
         ),
+        artifact: list[Path] | None = typer.Option(
+            None,
+            "--artifact",
+            dir_okay=False,
+            help=(
+                "Additional JSON artifact. Known schemas are typed; "
+                "unknown schemas are recorded as generic."
+            ),
+        ),
         out: Path = typer.Option(
             Path("data/strategy_cases"),
             "--out",
@@ -106,6 +115,7 @@ def register_strategy_case_lite_commands(app: typer.Typer) -> None:
             *(live_observation or []),
             *(scale_decision or []),
             *(next_scale_plan or []),
+            *(artifact or []),
         ]
         try:
             result = build_strategy_case_lite(

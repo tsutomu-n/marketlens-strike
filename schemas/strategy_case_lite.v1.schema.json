@@ -55,6 +55,13 @@
         "strategy_live_observation_manifest",
         "strategy_scale_decision",
         "strategy_next_scale_plan",
+        "strategy_input_contract_validation",
+        "strategy_authoring_backtest_result",
+        "strategy_backtest_pack",
+        "strategy_backtest_pack_validation",
+        "strategy_backtest_suite_result",
+        "strategy_backtest_comparison",
+        "strategy_review_manifest",
         "generic"
       ]
     },

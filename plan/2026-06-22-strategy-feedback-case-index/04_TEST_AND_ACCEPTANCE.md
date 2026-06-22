@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_18:36 JST
+更新日: 2026-06-22_20:24 JST
 -->
 
 # Test And Acceptance
@@ -61,6 +61,22 @@ fixture-first、offline-only、artifact boundary-first でテストする。netw
 - unrelated JSON only の data-dir は non-zero exit になる。
 - boundary flags が false に固定される。
 
+### Strategy Case Lite additional artifact input
+
+対象:
+
+- `tests/strategy_case_lite/test_strategy_case_lite.py`
+- `tests/strategy_case_lite/test_strategy_case_lite_cli.py`
+
+確認:
+
+- `strategy-case-lite-update --help` に `--artifact` が表示される。
+- `--artifact` で backtest result と strategy review manifest を渡して Case Lite を生成できる。
+- known schema が typed artifact として timeline に入る。
+- generated Case Lite が `strategy_case_lite.v1` schema validation を通る。
+- `latest_status` が review manifest の `review_status` から取れる。
+- paper / live / wallet / signing / exchange write は許可されない。
+
 ### Workbench Viewer
 
 対象:
@@ -82,6 +98,7 @@ fixture-first、offline-only、artifact boundary-first でテストする。netw
 
 ```bash
 uv run pytest tests/strategy_input_feedback tests/strategy_case_index tests/strategy_workbench_viewer
+uv run pytest tests/strategy_case_lite tests/strategy_input_feedback tests/strategy_case_index tests/strategy_workbench_viewer
 ```
 
 docs / catalog:

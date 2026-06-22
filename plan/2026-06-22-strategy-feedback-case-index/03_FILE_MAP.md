@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_18:36 JST
+更新日: 2026-06-22_20:24 JST
 -->
 
 # File Map
@@ -106,6 +106,12 @@
 
 ## 更新する existing docs
 
+`docs/strategy_case_lite/README.md`
+
+- `--artifact` option を追加する。
+- known schema は typed artifact、unknown schema は `generic` になることを明記する。
+- backtest-only Case Lite が paper / live readiness ではないことを維持する。
+
 `docs/strategy_workbench_viewer/README.md`
 
 - case index 表示に対応した説明を追加する。
@@ -127,6 +133,30 @@
 `scripts/check_current_docs.py`
 
 - `docs/strategy_input_feedback` と `docs/strategy_case_index` を current doc dirs に追加する。
+
+## 更新する既存 Case Lite surface
+
+`src/sis/strategy_case_lite/models.py`
+
+- `StrategyCaseArtifactType` に backtest / review / input validation 系の typed artifact を追加する。
+
+`src/sis/strategy_case_lite/service.py`
+
+- schema_version から known artifact type を判定する mapping を追加する。
+- top-level `status` を timeline status 候補に追加する。
+
+`src/sis/commands/strategy_case_lite.py`
+
+- `strategy-case-lite-update --artifact` を追加する。
+
+`schemas/strategy_case_lite.v1.schema.json`
+
+- typed artifact enum を追加する。
+
+`tests/strategy_case_lite/`
+
+- `--artifact` help と CLI success を追加する。
+- backtest result / strategy review manifest が schema-valid Case Lite になることを確認する。
 
 ## 触らないファイル
 

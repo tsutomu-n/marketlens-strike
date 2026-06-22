@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_19:50 JST
-更新日: 2026-06-22_19:50 JST
+更新日: 2026-06-22_20:16 JST
 -->
 
 # Local Dogfood Existing Artifact Inventory
@@ -112,6 +112,12 @@ active `data/` から抽出できた `strategy_id` は次の2つ。
 - `data/research/strategy_authoring_bundle_result.json`
 - `data/research/backtest_compare/strategy_backtest_comparison.json`
 - `data/research/backtest_portfolio/strategy_backtest_portfolio_comparison.json`
+
+Loop 03 補足:
+
+- `data/research/strategy_signals.jsonl` の行は `trend_pullback_user_v1` だが、現在の active `data/research/strategy_signal_manifest.json` は `ndx_open_gap_residual_v1` を指している。
+- `trend_pullback_user_v1` の source contract には、active root の signal manifest ではなく、backtest pack 内に固定された `data/research/backtest_pack/source_artifacts/research/strategy_signal_manifest.json` を使う。
+- この補正後の current result は [12_LOCAL_DOGFOOD_LOOP_03_TREND_PULLBACK_RESULTS.md](12_LOCAL_DOGFOOD_LOOP_03_TREND_PULLBACK_RESULTS.md) を読む。
 
 `ndx_open_gap_residual_v1` の主な path:
 

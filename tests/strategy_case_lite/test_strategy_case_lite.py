@@ -131,6 +131,33 @@ def _next_scale_plan(tmp_path: Path) -> Path:
     )
 
 
+def _backtest_result(tmp_path: Path) -> Path:
+    return _write_json(
+        tmp_path / "data/research/strategy_backtest_metrics.json",
+        {
+            "schema_version": "strategy_authoring_backtest_result.v1",
+            "strategy_id": "trend_pullback_user_v1",
+            "created_at": "2026-06-18T00:00:00Z",
+            "summary": {"backtest_passed": True},
+            "paper_only": True,
+            "live_order_submitted": False,
+        },
+    )
+
+
+def _strategy_review_manifest(tmp_path: Path) -> Path:
+    return _write_json(
+        tmp_path / "data/strategy_reviews/dogfood-current/review_manifest.json",
+        {
+            "schema_version": "strategy_review_manifest.v1",
+            "review_id": "dogfood-current",
+            "created_at": "2026-06-18T01:00:00Z",
+            "review_status": "READY_FOR_HUMAN_REVIEW",
+            "source_artifacts": [],
+        },
+    )
+
+
 def test_strategy_case_lite_builds_schema_valid_timeline(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     stage = _stage_decision(tmp_path)
@@ -175,3 +202,32 @@ def test_strategy_case_lite_builds_schema_valid_timeline(tmp_path: Path, monkeyp
     report = result.report_path.read_text(encoding="utf-8")
     assert "Strategy Case Lite" in report
     assert "REVISE_STRATEGY" in report
+
+
+def test_strategy_case_lite_accepts_backtest_and_review_artifacts(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    backtest = _backtest_result(tmp_path)
+    review = _strategy_review_manifest(tmp_path)
+
+    result = build_strategy_case_lite(
+        strategy_id="trend_pullback_user_v1",
+        artifact_paths=[backtest, review],
+        out_dir=tmp_path / "data/strategy_cases",
+    )
+
+    assert result.case.strategy_id == "trend_pullback_user_v1"
+    assert result.case.summary.artifact_count == 2
+    assert result.case.summary.latest_status == "READY_FOR_HUMAN_REVIEW"
+    assert result.case.timeline[0].artifact_type.value == "strategy_authoring_backtest_result"
+    assert result.case.timeline[1].artifact_type.value == "strategy_review_manifest"
+
+    payload = json.loads(result.case_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_schema()).validate(payload)
+    assert payload["summary"]["latest_source_hashes"][
+        "strategy_authoring_backtest_result"
+    ].startswith("sha256:")
+    assert payload["summary"]["latest_source_hashes"]["strategy_review_manifest"].startswith(
+        "sha256:"
+    )

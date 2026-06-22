@@ -65,6 +65,13 @@ def _artifact_type_for(schema_version: str | None) -> StrategyCaseArtifactType:
         "strategy_live_observation_manifest.v1": StrategyCaseArtifactType.LIVE_OBSERVATION,
         "strategy_scale_decision.v1": StrategyCaseArtifactType.SCALE_DECISION,
         "strategy_next_scale_plan.v1": StrategyCaseArtifactType.NEXT_SCALE_PLAN,
+        "strategy_input_contract_validation.v1": StrategyCaseArtifactType.INPUT_CONTRACT_VALIDATION,
+        "strategy_authoring_backtest_result.v1": StrategyCaseArtifactType.AUTHORING_BACKTEST_RESULT,
+        "strategy_backtest_pack.v1": StrategyCaseArtifactType.BACKTEST_PACK,
+        "strategy_backtest_pack_validation.v1": StrategyCaseArtifactType.BACKTEST_PACK_VALIDATION,
+        "strategy_backtest_suite_result.v1": StrategyCaseArtifactType.BACKTEST_SUITE_RESULT,
+        "strategy_backtest_comparison.v1": StrategyCaseArtifactType.BACKTEST_COMPARISON,
+        "strategy_review_manifest.v1": StrategyCaseArtifactType.STRATEGY_REVIEW_MANIFEST,
     }.get(schema_version or "", StrategyCaseArtifactType.GENERIC)
 
 
@@ -105,6 +112,7 @@ def _timeline_entry(path: Path) -> StrategyCaseTimelineEntry:
             payload,
             (
                 "decision",
+                "status",
                 "review_status",
                 "ingest_status",
                 "event_type",
