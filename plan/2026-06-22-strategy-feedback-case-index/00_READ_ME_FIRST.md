@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_17:55 JST
-更新日: 2026-06-22_17:55 JST
+更新日: 2026-06-22_18:06 JST
 -->
 
 # Strategy Feedback And Case Index Plan
@@ -14,7 +14,8 @@
 3. [03_FILE_MAP.md](03_FILE_MAP.md)
 4. [04_TEST_AND_ACCEPTANCE.md](04_TEST_AND_ACCEPTANCE.md)
 5. [05_RISKS_AND_BOUNDARIES.md](05_RISKS_AND_BOUNDARIES.md)
-6. `TASK_CHAIN.yaml`
+6. [06_DEFERRED_WORK_AND_ENTRY_CRITERIA.md](06_DEFERRED_WORK_AND_ENTRY_CRITERIA.md)
+7. `TASK_CHAIN.yaml`
 
 この計画で作るものは、Strategy Operations の次の小さい実装単位です。
 
