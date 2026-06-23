@@ -85,6 +85,7 @@ def current_contract(repo_root: Path, ignored_paths: set[str] | None = None) -> 
     contract: dict[str, Any] = {
         "schema_version": 1,
         "head_short": _git_stdout(repo_root, ["rev-parse", "--short", "HEAD"]).strip(),
+        "head_oneline": _git_stdout(repo_root, ["log", "-1", "--oneline", "--decorate"]).strip(),
         "branch_line": branch_line,
         "tracked_dirty_files": [],
         "untracked_files": [],
@@ -165,6 +166,11 @@ def verify_contract(expected: dict[str, Any], actual: dict[str, Any]) -> list[st
         errors.append(
             f"head_mismatch: expected {expected.get('head_short')} got {actual.get('head_short')}"
         )
+    if expected.get("head_oneline") and expected.get("head_oneline") != actual.get("head_oneline"):
+        errors.append(
+            "head_oneline_mismatch: "
+            f"expected {expected.get('head_oneline')} got {actual.get('head_oneline')}"
+        )
     if expected.get("branch_line") != actual.get("branch_line"):
         errors.append(
             f"branch_line_mismatch: expected {expected.get('branch_line')} "
@@ -244,7 +250,123 @@ def _replace_scalar(lines: list[str], key: str, value: str) -> list[str]:
     return [replacement, *lines]
 
 
-def refresh_handoff_contract(path: Path, contract: dict[str, Any]) -> None:
+def _contract_file_paths(contract: dict[str, Any], key: str) -> list[str]:
+    value = contract.get(key)
+    if not isinstance(value, list):
+        return []
+    paths: list[str] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        path = item.get("path")
+        if isinstance(path, str):
+            paths.append(path)
+    return sorted(paths)
+
+
+def _contract_state_summary(contract: dict[str, Any]) -> str:
+    dirty_paths = _contract_file_paths(contract, "tracked_dirty_files")
+    untracked_paths = _contract_file_paths(contract, "untracked_files")
+    return f"tracked_dirty={len(dirty_paths)}, untracked={len(untracked_paths)}"
+
+
+def _contract_path_summary(contract: dict[str, Any]) -> str:
+    dirty_paths = _contract_file_paths(contract, "tracked_dirty_files")
+    untracked_paths = _contract_file_paths(contract, "untracked_files")
+    parts: list[str] = []
+    if dirty_paths:
+        parts.append("tracked_dirty=" + ",".join(dirty_paths))
+    if untracked_paths:
+        parts.append("untracked=" + ",".join(untracked_paths))
+    return "; ".join(parts) if parts else "empty"
+
+
+def _replace_body_line(lines: list[str], prefix: str, replacement: str) -> list[str]:
+    for index, line in enumerate(lines):
+        if line.startswith(prefix):
+            return [*lines[:index], replacement, *lines[index + 1 :]]
+    return [*lines, replacement]
+
+
+def _replace_line_after_heading(
+    lines: list[str],
+    heading: str,
+    prefix: str,
+    replacement: str,
+) -> list[str]:
+    in_section = False
+    for index, line in enumerate(lines):
+        if line == heading:
+            in_section = True
+            continue
+        if in_section and line.startswith("## "):
+            return lines
+        if in_section and line.startswith(prefix):
+            return [*lines[:index], replacement, *lines[index + 1 :]]
+    return lines
+
+
+def _refresh_handoff_body(
+    lines: list[str],
+    contract: dict[str, Any],
+    verification_note: str | None = None,
+) -> list[str]:
+    branch_line = str(contract.get("branch_line") or "")
+    head = str(contract.get("head_oneline") or contract.get("head_short") or "")
+    state_summary = _contract_state_summary(contract)
+    path_summary = _contract_path_summary(contract)
+    result = lines
+    result = _replace_body_line(
+        result,
+        "Restart-ready when:",
+        "Restart-ready when: "
+        f"A1 shows `{branch_line}`, A2 shows `{head}`, and "
+        "`uv run python scripts/verify_restart_contract.py` reports "
+        f"restart contract ok for {state_summary}.",
+    )
+    result = _replace_body_line(
+        result,
+        "Decision Summary:",
+        "Decision Summary: User-action-free next-work planning is captured in tracked "
+        "plan docs, and this restart artifact captures the current local docs diff. "
+        "This remains a local/offline planning workflow only; paper/live/account/"
+        "wallet/signing/exchange-write/profit readiness is not claimed.",
+    )
+    result = _replace_line_after_heading(
+        result,
+        "## A2",
+        "Expect:",
+        f"Expect: `{head}`",
+    )
+    result = _replace_body_line(
+        result,
+        "[FACT git-status] status =>",
+        f"[FACT git-status] status => {branch_line}",
+    )
+    result = _replace_body_line(
+        result,
+        "[FACT git-diff] worktree_diff_stat =>",
+        f"[FACT git-diff] worktree_diff_stat => {path_summary}",
+    )
+    result = _replace_body_line(
+        result,
+        "[FACT git-log] head =>",
+        f"[FACT git-log] head => {head}",
+    )
+    if verification_note:
+        result = _replace_body_line(
+            result,
+            "[FACT verification] latest_known_full_check =>",
+            f"[FACT verification] latest_known_full_check => {verification_note}",
+        )
+    return result
+
+
+def refresh_handoff_contract(
+    path: Path,
+    contract: dict[str, Any],
+    verification_note: str | None = None,
+) -> None:
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
     if not lines or lines[0] != "---":
@@ -263,8 +385,24 @@ def refresh_handoff_contract(path: Path, contract: dict[str, Any]) -> None:
     frontmatter = _remove_top_level_key(frontmatter, "restart_contract_json")
     timestamp = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d_%H:%M JST")
     frontmatter = _replace_scalar(frontmatter, "updated_at_jst", timestamp)
+    frontmatter = _replace_scalar(
+        frontmatter,
+        "current_task",
+        "User-action-free next-work plan docs are in progress on "
+        f"{contract.get('branch_line', 'unknown branch')} at "
+        f"{contract.get('head_short', 'unknown HEAD')}; restart contract captures "
+        "the current tracked/untracked docs diff.",
+    )
+    frontmatter = _replace_scalar(
+        frontmatter,
+        "done_when",
+        "A1 confirms the branch line, A2 confirms the current HEAD, "
+        "verify_restart_contract reports ok for the current local diff, and "
+        "current-docs check passes before reporting completion.",
+    )
     frontmatter.append("restart_contract_json: |")
     frontmatter.extend(f"  {line}" for line in _json_contract(contract).splitlines())
+    body = _refresh_handoff_body(body, contract, verification_note=verification_note)
 
     new_text = "\n".join(["---", *frontmatter, "---", *body]) + "\n"
     temp_path = path.with_name(f".{path.name}.tmp")
@@ -306,6 +444,10 @@ def main() -> int:
     parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
     parser.add_argument("--print-current-contract", action="store_true")
     parser.add_argument("--refresh-contract", action="store_true")
+    parser.add_argument(
+        "--verification-note",
+        help="Optional latest verification note to refresh in HANDOFF body.",
+    )
     args = parser.parse_args()
 
     repo_root = args.repo_root.resolve()
@@ -317,7 +459,7 @@ def main() -> int:
         print(_json_contract(actual))
         return 0
     if args.refresh_contract:
-        refresh_handoff_contract(handoff_path, actual)
+        refresh_handoff_contract(handoff_path, actual, verification_note=args.verification_note)
         print(f"refreshed restart contract: {handoff_path}")
         return 0
 

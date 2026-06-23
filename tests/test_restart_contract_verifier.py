@@ -70,6 +70,28 @@ def _verify(repo: Path, handoff: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _refresh(
+    repo: Path,
+    handoff: Path,
+    verification_note: str | None = None,
+) -> subprocess.CompletedProcess[str]:
+    command = [
+        sys.executable,
+        str(SCRIPT),
+        "--repo-root",
+        str(repo),
+        "--handoff",
+        str(handoff),
+        "--refresh-contract",
+    ]
+    if verification_note is not None:
+        command.extend(["--verification-note", verification_note])
+    return _run(
+        command,
+        repo,
+    )
+
+
 def test_restart_contract_verifier_accepts_matching_dirty_and_untracked_state(
     tmp_path: Path,
 ) -> None:
@@ -121,3 +143,57 @@ def test_restart_contract_verifier_reports_fingerprint_mismatch(tmp_path: Path) 
 
     assert result.returncode == 1
     assert "fingerprint_mismatch: tracked.txt" in result.stdout
+
+
+def test_refresh_contract_updates_stale_handoff_body_restart_lines(tmp_path: Path) -> None:
+    repo = _init_repo(tmp_path)
+    (repo / "tracked.txt").write_text("changed\n", encoding="utf-8")
+    (repo / "untracked.txt").write_text("local\n", encoding="utf-8")
+    stale_contract = {
+        "branch_line": "## stale",
+        "head_short": "stale",
+        "schema_version": 1,
+        "tracked_dirty_files": [],
+        "untracked_files": [],
+    }
+    handoff = _write_handoff(repo, stale_contract)
+    handoff.write_text(
+        handoff.read_text(encoding="utf-8")
+        + "\n".join(
+            [
+                "# 1. Restart Contract",
+                "",
+                "Restart-ready when: A2 shows `stale-head`.",
+                "",
+                "# 2. Action Queue",
+                "",
+                "## A2",
+                "Kind: inspect",
+                "Expect: `stale-head`",
+                "",
+                "# 3. Verified Facts",
+                "",
+                "[FACT git-status] status => stale-status",
+                "[FACT git-diff] worktree_diff_stat => empty",
+                "[FACT git-log] head => stale-head",
+                "[FACT verification] latest_known_full_check => stale-check",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    _refresh(repo, handoff, verification_note="./scripts/check passed; pytest 999 passed")
+
+    text = handoff.read_text(encoding="utf-8")
+    head = _git(repo, "log", "-1", "--oneline", "--decorate")
+    assert f"A2 shows `{head}`" in text
+    assert f"Expect: `{head}`" in text
+    assert f"[FACT git-log] head => {head}" in text
+    assert (
+        "[FACT verification] latest_known_full_check => ./scripts/check passed; pytest 999 passed"
+    ) in text
+    assert "stale-head" not in text
+    assert "stale-check" not in text
+    assert "tracked.txt" in text
+    assert "untracked.txt" in text
