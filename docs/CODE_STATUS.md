@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-17_22:40 JST
+更新日: 2026-06-23_22:44 JST
 -->
 
 # Code Status
@@ -22,7 +22,7 @@
 | 目的 | 読むもの |
 |---|---|
 | repo が何をできるか専門用語少なめで知る | [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) |
-| repo が何をできるか技術詳細で知る | [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) |
+| repo が何をできるか技術寄りの入口で知る | [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) |
 | public CLI command catalog を見る | [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md) |
 | 実装済み surface を見る | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) |
 | PR migration 履歴を見る | [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md) |

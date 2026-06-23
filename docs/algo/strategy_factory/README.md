@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-29_22:07 JST
-更新日: 2026-06-18_02:42 JST
+更新日: 2026-06-23_22:39 JST
 -->
 
 # Strategy Factory
@@ -83,5 +83,5 @@ Factory docs は候補設計の入口です。実装済み artifact chain へ進
 - 実装済み Strategy Lab 仕様: `../../strategy_research_lab/README.md`
 - Strategy Lab schema: `../../strategy_research_lab/01_SCHEMA_CONTRACTS_FOR_TRADING_STRATEGIES.md`
 - Strategy Lab artifact flow: `../../strategy_research_lab/02_ARTIFACT_FLOW_AND_LINEAGE.md`
-- 原ノート再構成: `../obsidian_note_rewrites_2026-05-29/`
-- signal設計付録: `../obsidian_note_rewrites_2026-05-29/appendix_materials/12_SIGNAL_DESIGN_PLAYBOOK.md`
+- 原ノート再構成: `../../archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/`
+- signal設計付録: `../../archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/12_SIGNAL_DESIGN_PLAYBOOK.md`

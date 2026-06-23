@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_12:00 JST
-更新日: 2026-06-22_17:16 JST
+更新日: 2026-06-23_22:44 JST
 -->
 
 # Agent Assessment: Individual Trader Lens
@@ -143,12 +143,12 @@ Workbench first slice T0–T12b 完了は `docs/archive/2026-06-22-doc-routing/S
 
 ### 公式の自己定位（doc 原文の要約）
 
-`docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md`:
+`docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` と旧詳細版 `docs/archive/2026-06-23-doc-triage/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18_FULL.md`:
 
 - 完全自動売買 bot ではない
 - 個人システムトレーダー向け Human-in-the-loop Strategy Operations Workbench
 - 「弱い候補を早く捨て、残った候補だけを小さく現実へ近づける運用装置」
-- 実務評価で「方向性 80/100」「旧い入力定義 55/100」など自己採点あり
+- 旧詳細版には、実務評価で「方向性 80/100」「旧い入力定義 55/100」などの自己採点があった。現 root 版は短い target overview。
 
 ### 二重構造（doc と生成物の縫い目）
 
@@ -281,7 +281,7 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 
 | 層 | ファイル | 注意 |
 |----|---------|------|
-| 完成形の設計 | `TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` | 現状証明ではない。自己採点あり |
+| 完成形の設計 | `TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` | 現状証明ではない。旧詳細版は archive に退避済み |
 | 実装 catalog | `IMPLEMENTED_SURFACES.md` | CLI の存在リスト |
 | 境界 | `CURRENT_STATE.md` | できないこと |
 | 運用の泥 | `NEXT_DIRECTION_CURRENT.md` | trading day・session 使い回し不可 |

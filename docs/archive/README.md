@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-22_14:47 JST
+更新日: 2026-06-23_22:39 JST
 -->
 
 # Documentation Archive
@@ -110,5 +110,11 @@ Archived on 2026-06-22:
 - `docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_PLAN_2026-06-19.md` -> `docs/archive/2026-06-22-doc-routing/`
 - `docs/STRATEGY_OPERATIONS_WORKBENCH_COMPLETION_AUDIT_2026-06-19.md` -> `docs/archive/2026-06-22-doc-routing/`
 - `plan/0621ここから01/marketlens-strike-crypto-perp-mvp-final-plan-2026-06-20/` -> `plan/archive/2026-06-22-crypto-perp-mvp-implemented/`
+
+Archived on 2026-06-23:
+
+- long `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` detail version -> `docs/archive/2026-06-23-doc-triage/REPO_CAPABILITIES_CURRENT_2026-06-16_FULL.md`
+- long `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` target definition -> `docs/archive/2026-06-23-doc-triage/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18_FULL.md`
+- `docs/algo/obsidian_note_rewrites_2026-05-29/` -> `docs/archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/`
 
 Do not treat archived documents as current requirements.

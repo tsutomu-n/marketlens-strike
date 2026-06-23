@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-30_11:55 JST
-更新日: 2026-06-22_14:47 JST
+更新日: 2026-06-23_22:39 JST
 -->
 
 # Docs Lint Policy 2026-05-30
@@ -47,7 +47,7 @@ docs/algo/EXPERIMENT_SCORECARD.md
 docs/algo/RESEARCH_VALIDATION_PLAYBOOK.md
 docs/algo/SOURCE_NOTES_INDEX.md
 docs/algo/strategy_factory/**
-docs/algo/obsidian_note_rewrites_2026-05-29/**
+docs/archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/**
 docs/backtest/**
 docs/research/ndx/**
 docs/strategy_lifecycle/**

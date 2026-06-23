@@ -75,7 +75,6 @@ CURRENT_DOC_DIRS = (
     "docs/venues",
     "docs/references/crypto_perp",
     "docs/algo/strategy_factory",
-    "docs/algo/obsidian_note_rewrites_2026-05-29",
     "plan/2026-06-22-strategy-feedback-case-index",
 )
 

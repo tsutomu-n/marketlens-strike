@@ -74,7 +74,10 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert '"docs/runbooks"' in script
     assert '"docs/research/ndx"' in script
     assert '"docs/algo/strategy_factory"' in script
-    assert '"docs/algo/obsidian_note_rewrites_2026-05-29"' in script
+    assert '"docs/algo/obsidian_note_rewrites_2026-05-29"' not in script
+    assert "../archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29" in _read(
+        "docs/algo/README.md"
+    )
     assert '"docs/archive/"' in script
     assert '"docs/algo/obsidian_note_copies/"' in script
     assert '"docs/algo/obsidian_note_rewrites_2026-05-28/"' in script

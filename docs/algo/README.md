@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-28_20:41 JST
-更新日: 2026-06-18_02:42 JST
+更新日: 2026-06-23_22:39 JST
 -->
 
 # Algo Strategy Docs
@@ -28,9 +28,9 @@
    - バックテスト、walk-forward、Monte Carlo、リーク検査、捨て条件を確認する。
 9. [SOURCE_NOTES_INDEX.md](SOURCE_NOTES_INDEX.md)
    - どのObsidianノートに由来するか、どのノートを除外したかを確認する。
-10. [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/)
-   - 原ノート24本を、原本なしで読める厚さに再構成した版。誤り補正、追加調査、戦略部品化を含む。
-   - 図表、部品カード、売買発生シグナル設計、artifact例、テンプレートは [obsidian_note_rewrites_2026-05-29/appendix_materials/](obsidian_note_rewrites_2026-05-29/appendix_materials/) を見る。
+10. Historical source rewrites
+   - 原ノート24本の批判的リライトは historical research notes として [../archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/](../archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/) に移動済み。
+   - 図表、部品カード、売買発生シグナル設計、artifact例、テンプレートは [../archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/](../archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/appendix_materials/) を見る。
 
 ## 正本と参照元
 
@@ -38,7 +38,7 @@
 - 実装済み Strategy Lab 正本: `src/sis/research/strategy_lab/` と [../strategy_research_lab/](../strategy_research_lab/)。
 - Strategy Lab 現行能力: [../strategy_research_lab/08_CURRENT_CAPABILITIES.md](../strategy_research_lab/08_CURRENT_CAPABILITIES.md)。
 - 一次参照: [../archive/2026-06-08-doc-routing/algo/obsidian_note_copies/](../archive/2026-06-08-doc-routing/algo/obsidian_note_copies/) にある実ノートコピー。
-- 再構成参照: [obsidian_note_rewrites_2026-05-29/](obsidian_note_rewrites_2026-05-29/) にある原ノートの批判的リライト。
+- 再構成参照: [../archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/](../archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/) にある原ノートの批判的リライト。これは current implementation proof ではない。
 - 旧再構成: [../archive/2026-06-08-doc-routing/algo/obsidian_note_rewrites_2026-05-28/](../archive/2026-06-08-doc-routing/algo/obsidian_note_rewrites_2026-05-28/) は薄い初版として残すが、通常は使わない。
 - 旧docs: [../archive/2026-05-28-algo-doc-refresh/](../archive/2026-05-28-algo-doc-refresh/) に退避済み。
 
