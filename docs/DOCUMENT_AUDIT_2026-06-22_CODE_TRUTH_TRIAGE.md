@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-22_14:29 JST
-更新日: 2026-06-22_17:16 JST
+更新日: 2026-06-23_10:33 JST
 -->
 
 # Document Audit 2026-06-22 Code Truth Triage
@@ -9,16 +9,17 @@
 
 コード、テスト、schema、config、CLI help を正にすると、current docs の機械的な破損は見つからない。
 
-ただし、次の整理対象は残る。
+ただし、次の整理対象は残る。ここにある件数や pass 数は、作業時点のスナップショットであり、current proof ではない。現行値は `uv run python scripts/check_current_docs.py`、`uv run python scripts/check_cli_catalog.py`、`./scripts/check` で取り直す。
 
-1. `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` は古い固定値を含むため更新対象。
-2. `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` と `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` は現行利用には重く、短い入口文書へ作り直す候補。
+1. `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` と `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` は現行利用には重く、短い入口文書へ作り直す候補。
+2. `docs/algo/obsidian_note_rewrites_2026-05-29/**` は current-doc checker 対象だが、研究ノート再編物として archive 分離を検討できる。
 3. `docs/strategy_inputs/STRATEGY_INPUT_CONTRACT_AND_IDEA_INTAKE_IMPLEMENTATION_PLAN_2026-06-18.md` と `docs/strategy_review/DOGFOOD_REVIEW_2026-06-16.md` は archive 済み。
-4. tracked `.tmp/live_evidence_*` は archive 記録化済み。現行 operator entry ではない。
+4. 旧 `.tmp/live_evidence_*` helper は archive 記録化済み。現行 tracked `.tmp` entry ではなく、operator entry でもない。
 
 ## 今回確認した正本
 
 - `git status --short --branch`
+- `./scripts/check`
 - `uv run sis --help`
 - `uv run python scripts/check_current_docs.py`
 - `uv run python scripts/check_cli_catalog.py`
@@ -40,16 +41,19 @@ git status --short --branch
 => ## main...origin/main
 
 uv run python scripts/check_current_docs.py
-=> checked 151 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok
+=> checked 186 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok
 
 uv run python scripts/check_cli_catalog.py
-=> checked 205 public CLI commands against Typer registration
+=> checked 208 public CLI commands against Typer registration
 
 uv run sis --help command count check
-=> 205
+=> `scripts/check_cli_catalog.py` の Typer 登録照合を優先する
+
+./scripts/check
+=> passed; pytest 1529 passed in 67.33s
 ```
 
-tracked current docs の粗い確認:
+tracked current docs の粗い確認。これは当時の整理用カウントであり、現在の対象数は `scripts/check_current_docs.py` の出力を優先する:
 
 ```text
 docs/plan tracked Markdown/HTML outside docs/archive and plan/archive: 294
@@ -60,11 +64,11 @@ archive ではないが current-doc checker 対象外の Markdown/HTML: 0
 
 | 対象 | 判断 | 根拠 | 推奨作業 |
 |---|---|---|---|
-| `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | 更新済み | 古い `189 public CLI commands` と `pytest 1340 passed` は当時値として明示済み。現行確認は 205 commands / 151 current docs。 | 追加対応なし。 |
+| `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | 更新済み | 古い `189 public CLI commands` と `pytest 1340 passed` は当時値として明示済み。2026-06-23_10:30 JST の軽量確認は 208 commands / 186 current docs。 | 追加対応なし。 |
 | `docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md` | 更新済み | command/doc count は当時の軽量確認値であり、現行 proof ではないと明示済み。 | 追加対応なし。 |
 | `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | 更新済み | 旧本文には `docs/CURRENT_STATE.md` や `plan/README.md` を「更新」とする完了前の記述が残っていた。現 HEAD では既に historical implementation contract へ更新済み。 | この版で現時点の分類へ更新済み。 |
 | `docs/IMPLEMENTED_SURFACES.md` | 小更新候補 | 大筋はコードと一致。`crypto-perp-tiny-live-measurement` の mock/guarded surface と実ネットワーク未実行の境界は既にあるが、CLI surface 表にも一言足す余地がある。 | 必須ではない。次に Crypto Perp CLI を触る時だけ補強。 |
-| `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | 維持更新 | `scripts/check_cli_catalog.py` で 205 command と照合済み。 | CLI 追加・削除時だけ更新。 |
+| `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | 維持更新 | `scripts/check_cli_catalog.py` で 208 command と照合済み。 | CLI 追加・削除時だけ更新。 |
 
 ## 古い内容があるドキュメント
 
@@ -117,6 +121,6 @@ archive ではないが current-doc checker 対象外の Markdown/HTML: 0
 
 ## 次の実行順
 
-1. `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` の古い固定値を更新または当時値へ明示変更する。
-2. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` と `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` を短い current overview へ作り直すか判断する。
-3. その後に `uv run python scripts/check_current_docs.py` と `./scripts/check` を再実行する。
+1. `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` と `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` を短い current overview へ作り直すか判断する。
+2. `docs/algo/obsidian_note_rewrites_2026-05-29/**` を current docs に置き続けるか、研究ノート archive として分離するか判断する。
+3. その後に `uv run python scripts/check_current_docs.py` と必要に応じて `./scripts/check` を再実行する。
