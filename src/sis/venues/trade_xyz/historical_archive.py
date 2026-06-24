@@ -1,76 +1,51 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-import csv
 from datetime import UTC, date, datetime, timedelta
-import json
-import os
 from pathlib import Path
-import shlex
 import shutil
 import subprocess
-from typing import Any, Callable, cast
+from typing import Any, cast
 
-from sis.models import InstrumentSpec
 from sis.storage.jsonl_store import append_jsonl
 from sis.storage.jsonl_store import read_json
 from sis.storage.jsonl_store import write_json
 from sis.storage.normalize import normalize_quotes
+from sis.venues.trade_xyz import historical_archive_normalization
+from sis.venues.trade_xyz.historical_archive_transfer import (
+    HYPERLIQUID_ARCHIVE_BUCKET,
+    CommandRunner,
+    HistoricalL2ArchiveRequest,
+    PreflightRunner,
+)
+from sis.venues.trade_xyz.historical_archive_transfer import (
+    aws_download_command_status,
+    decompress_lz4,
+    download_command,
+    historical_archive_preflight_error,
+    historical_archive_preflight_status,
+    run_command,
+)
 from sis.venues.trade_xyz.normalizer import payload_hash
 from sis.venues.trade_xyz.normalizer import quote_from_l2_book
 from sis.venues.trade_xyz.registry import load_trade_xyz_registry
 
-HYPERLIQUID_ARCHIVE_BUCKET = "s3://hyperliquid-archive"
 HISTORICAL_L2_ARCHIVE_SOURCE = "hyperliquid_archive.market_data.l2Book"
 HISTORICAL_ASSET_CTXS_ARCHIVE_SOURCE = "hyperliquid_archive.asset_ctxs"
 HISTORICAL_QUOTE_SOURCE = "hyperliquid_archive.l2Book+asset_ctxs"
 
-
-@dataclass(frozen=True)
-class HistoricalL2ArchiveRequest:
-    coin: str
-    date: date
-    hour: int
-    data_type: str = "l2Book"
-
-    def __post_init__(self) -> None:
-        if not self.coin:
-            raise ValueError("coin is required")
-        if self.hour < 0 or self.hour > 23:
-            raise ValueError("hour must be between 0 and 23")
-        if self.data_type != "l2Book":
-            raise ValueError("only l2Book historical archive collection is supported")
-
-    @property
-    def date_part(self) -> str:
-        return self.date.strftime("%Y%m%d")
-
-    @property
-    def s3_uri(self) -> str:
-        return (
-            f"{HYPERLIQUID_ARCHIVE_BUCKET}/market_data/"
-            f"{self.date_part}/{self.hour}/{self.data_type}/{self.coin}.lz4"
-        )
-
-    @property
-    def output_relative_path(self) -> Path:
-        return (
-            Path("raw/historical_archive/hyperliquid/market_data")
-            / self.date_part
-            / str(self.hour)
-            / self.data_type
-            / self.coin
-        )
-
-
-def _run_command(command: list[str]) -> None:
-    completed = subprocess.run(command, check=False)
-    if completed.returncode != 0:
-        raise RuntimeError(f"command failed with exit {completed.returncode}: {' '.join(command)}")
-
-
-CommandRunner = Callable[[list[str]], None]
-PreflightRunner = Callable[[list[str]], tuple[int, str, str]]
+_normalize_symbol = historical_archive_normalization.normalize_symbol
+_source_ts_ms_from_payload = historical_archive_normalization.source_ts_ms_from_payload
+_extract_l2_payload = historical_archive_normalization.extract_l2_payload
+_load_l2_rows = historical_archive_normalization.load_l2_rows
+_coerce_asset_ctx_value = historical_archive_normalization.coerce_asset_ctx_value
+_load_asset_ctxs = historical_archive_normalization.load_asset_ctxs
+_resolve_instrument = historical_archive_normalization.resolve_instrument
+_archive_quote_output_path = historical_archive_normalization.archive_quote_output_path
+_run_command = run_command
+_download_command = download_command
+_historical_archive_preflight_status = historical_archive_preflight_status
+_historical_archive_preflight_error = historical_archive_preflight_error
+_decompress_lz4 = decompress_lz4
 
 
 def _date_range(start: date, end: date) -> list[date]:
@@ -82,56 +57,6 @@ def _date_range(start: date, end: date) -> list[date]:
         values.append(current)
         current += timedelta(days=1)
     return values
-
-
-def aws_download_command_status() -> dict[str, Any]:
-    configured = os.environ.get("SIS_AWS_COMMAND")
-    if configured:
-        prefix = shlex.split(configured)
-        return {
-            "available": bool(prefix),
-            "source": "SIS_AWS_COMMAND",
-            "path": prefix[0] if prefix else None,
-            "command_prefix": prefix,
-            "requires_network_for_tool_install": False,
-        }
-    aws_path = shutil.which("aws")
-    if aws_path is not None:
-        return {
-            "available": True,
-            "source": "system_aws",
-            "path": aws_path,
-            "command_prefix": [aws_path],
-            "requires_network_for_tool_install": False,
-        }
-    uv_path = shutil.which("uv")
-    if uv_path is not None:
-        return {
-            "available": True,
-            "source": "uv_awscli_fallback",
-            "path": uv_path,
-            "command_prefix": [uv_path, "run", "--with", "awscli", "aws"],
-            "requires_network_for_tool_install": True,
-        }
-    return {
-        "available": False,
-        "source": "missing",
-        "path": None,
-        "command_prefix": ["aws"],
-        "requires_network_for_tool_install": False,
-    }
-
-
-def _download_command(s3_uri: str, destination: Path) -> list[str]:
-    return [
-        *aws_download_command_status()["command_prefix"],
-        "s3",
-        "cp",
-        s3_uri,
-        str(destination),
-        "--request-payer",
-        "requester",
-    ]
 
 
 def check_hyperliquid_historical_archive_preflight(
@@ -178,177 +103,6 @@ def check_hyperliquid_historical_archive_preflight(
         manifest,
     )
     return manifest
-
-
-def _historical_archive_preflight_status(data_dir: Path) -> dict[str, Any]:
-    path = data_dir / "manifests/trade_xyz_historical_archive_preflight_manifest.json"
-    if not path.exists():
-        return {
-            "path": str(path),
-            "exists": False,
-            "status": None,
-            "return_code": None,
-            "aws_command_source": None,
-        }
-    payload = read_json(path)
-    if not isinstance(payload, dict):
-        return {
-            "path": str(path),
-            "exists": True,
-            "status": "invalid",
-            "return_code": None,
-            "aws_command_source": None,
-        }
-    payload = cast(dict[str, Any], payload)
-    return {
-        "path": str(path),
-        "exists": True,
-        "status": payload.get("status"),
-        "return_code": payload.get("return_code"),
-        "aws_command_source": payload.get("aws_command_source"),
-    }
-
-
-def _historical_archive_preflight_error(status: dict[str, Any]) -> str | None:
-    if status.get("status") == "pass":
-        return None
-    if not status.get("exists"):
-        return (
-            "historical archive AWS preflight has not been run; run "
-            "`uv run sis check-trade-xyz-historical-archive-preflight` before --execute"
-        )
-    return (
-        "historical archive AWS preflight has not passed; configure AWS credentials or "
-        'SIS_AWS_COMMAND="aws --profile <profile>", then rerun '
-        "`uv run sis check-trade-xyz-historical-archive-preflight`"
-    )
-
-
-def _decompress_lz4(source: Path, destination: Path) -> None:
-    lz4 = shutil.which("lz4")
-    if lz4 is None:
-        raise RuntimeError(
-            "lz4 executable not found; install lz4 before decompressing archive data"
-        )
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    _run_command([lz4, "-d", "-f", str(source), str(destination)])
-
-
-def _normalize_symbol(value: str | None) -> str | None:
-    if not value:
-        return None
-    return value.removeprefix("xyz:").upper()
-
-
-def _source_ts_ms_from_payload(payload: dict[str, Any]) -> int | None:
-    for key in ("time", "ts", "timestamp"):
-        value = payload.get(key)
-        if isinstance(value, bool):
-            continue
-        if isinstance(value, int):
-            return value
-        if isinstance(value, str) and value.isdigit():
-            return int(value)
-    return None
-
-
-def _extract_l2_payload(row: dict[str, Any]) -> dict[str, Any] | None:
-    if isinstance(row.get("levels"), list):
-        return row
-    for key in ("data", "book", "l2Book", "payload"):
-        value = row.get(key)
-        if isinstance(value, dict) and isinstance(value.get("levels"), list):
-            return value
-    return None
-
-
-def _load_l2_rows(path: Path) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
-            if not line.strip():
-                continue
-            payload = json.loads(line)
-            if isinstance(payload, dict):
-                rows.append(payload)
-    return rows
-
-
-def _coerce_asset_ctx_value(value: str) -> Any:
-    stripped = value.strip()
-    if not stripped:
-        return None
-    try:
-        return json.loads(stripped)
-    except json.JSONDecodeError:
-        return stripped
-
-
-def _load_asset_ctxs(path: Path | None) -> dict[str, dict[str, Any]]:
-    if path is None or not path.exists():
-        return {}
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        sample = handle.read(4096)
-        handle.seek(0)
-        if sample.lstrip().startswith(("{", "[")):
-            payload = json.load(handle)
-            items = payload if isinstance(payload, list) else payload.get("ctxs", [])
-            result: dict[str, dict[str, Any]] = {}
-            for item in items if isinstance(items, list) else []:
-                if not isinstance(item, dict):
-                    continue
-                symbol = _normalize_symbol(
-                    str(
-                        item.get("coin")
-                        or item.get("name")
-                        or item.get("symbol")
-                        or item.get("canonical_symbol")
-                        or ""
-                    )
-                )
-                if symbol:
-                    result[symbol] = item
-            return result
-        reader = csv.DictReader(handle)
-        result: dict[str, dict[str, Any]] = {}
-        for row in reader:
-            symbol = _normalize_symbol(
-                row.get("coin")
-                or row.get("name")
-                or row.get("symbol")
-                or row.get("canonical_symbol")
-                or ""
-            )
-            if not symbol:
-                continue
-            if row.get("ctx"):
-                parsed_ctx = _coerce_asset_ctx_value(str(row["ctx"]))
-                if isinstance(parsed_ctx, dict):
-                    result[symbol] = parsed_ctx
-                    continue
-            result[symbol] = {
-                key: _coerce_asset_ctx_value(value)
-                for key, value in row.items()
-                if value is not None and value != ""
-            }
-        return result
-
-
-def _resolve_instrument(
-    instruments: list[InstrumentSpec],
-    *,
-    canonical_symbol: str | None,
-    coin: str | None,
-) -> InstrumentSpec:
-    by_symbol = {item.canonical_symbol.upper(): item for item in instruments}
-    by_coin = {str(item.coin).upper(): item for item in instruments if item.coin}
-    if canonical_symbol and canonical_symbol.upper() in by_symbol:
-        return by_symbol[canonical_symbol.upper()]
-    if coin and coin.upper() in by_coin:
-        return by_coin[coin.upper()]
-    if coin and (normalized := _normalize_symbol(coin)) and normalized in by_symbol:
-        return by_symbol[normalized]
-    raise ValueError("historical archive symbol was not found in Trade[XYZ] registry")
 
 
 def collect_hyperliquid_historical_l2_archive(
@@ -767,13 +521,6 @@ def execute_hyperliquid_historical_archive_bulk_plan(
         manifest,
     )
     return manifest
-
-
-def _archive_quote_output_path(data_dir: Path, item: dict[str, Any]) -> Path:
-    date_part = str(item.get("date") or "unknown").replace("-", "")
-    hour = str(item.get("hour") if item.get("hour") is not None else "unknown")
-    coin = str(item.get("coin") or "unknown").replace("/", "_").replace(":", "_")
-    return data_dir / "raw/quotes/trade_xyz" / f"historical_archive_{date_part}_{hour}_{coin}.jsonl"
 
 
 def normalize_historical_archive_to_trade_xyz_quotes(

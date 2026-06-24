@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime, timedelta
 import hashlib
 import os
@@ -12,11 +11,21 @@ from typing import Any, cast
 
 from sis.storage.jsonl_store import read_json
 from sis.storage.jsonl_store import write_json
+from sis.venues.trade_xyz.collection_status_inventory import raw_quote_inventory
+from sis.venues.trade_xyz import collection_status_progress
+from sis.venues.trade_xyz.collection_status_report import render_collection_status_report
 from sis.venues.trade_xyz.collection_config import DEFAULT_COLLECTION_CONFIG_PATH
 from sis.venues.trade_xyz.collection_config import load_trade_xyz_data_collection_config
 from sis.venues.trade_xyz.coverage import build_trade_xyz_quote_coverage_manifest
 from sis.venues.trade_xyz.historical_archive import aws_download_command_status
 from sis.venues.trade_xyz.readiness import build_trade_xyz_data_readiness_manifest
+
+_coverage_progress = collection_status_progress.coverage_progress
+_parse_generated_at = collection_status_progress.parse_generated_at
+_progress_since_previous = collection_status_progress.progress_since_previous
+_cycle_command = collection_status_progress.cycle_command
+_raw_quote_inventory = raw_quote_inventory
+_render_collection_status_report = render_collection_status_report
 
 
 def _load_object(path: Path) -> dict[str, Any] | None:
@@ -24,270 +33,6 @@ def _load_object(path: Path) -> dict[str, Any] | None:
         return None
     payload = read_json(path)
     return cast(dict[str, Any], payload) if isinstance(payload, dict) else None
-
-
-def _raw_quote_inventory(raw_quotes_root: Path, *, generated_at: datetime) -> dict[str, Any]:
-    quote_dir = raw_quotes_root / "trade_xyz"
-    files = sorted(quote_dir.glob("*.jsonl"))
-    total_rows = 0
-    traceable_rows = 0
-    untraceable_rows = 0
-    malformed_rows = 0
-    missing_symbol_rows = 0
-    symbol_counts: dict[str, int] = {}
-    source_counts: dict[str, int] = {}
-    latest_path: Path | None = None
-    latest_mtime: float | None = None
-    per_file: list[dict[str, Any]] = []
-    for path in files:
-        row_count = 0
-        traceable_count = 0
-        file_malformed_rows = 0
-        file_missing_symbol_rows = 0
-        file_symbol_counts: dict[str, int] = {}
-        file_source_counts: dict[str, int] = {}
-        with path.open("r", encoding="utf-8") as handle:
-            lines = [line for line in handle if line.strip()]
-        for line in lines:
-            row_count += 1
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                malformed_rows += 1
-                file_malformed_rows += 1
-                continue
-            if not isinstance(row, dict):
-                malformed_rows += 1
-                file_malformed_rows += 1
-                continue
-            if row.get("raw_payload_ref") is None:
-                untraceable_rows += 1
-            else:
-                traceable_count += 1
-            symbol = (
-                row.get("canonical_symbol")
-                or row.get("symbol")
-                or row.get("asset_symbol")
-                or row.get("coin")
-            )
-            if isinstance(symbol, str) and symbol.strip():
-                symbol_key = symbol.strip().upper()
-            else:
-                symbol_key = "<missing>"
-                missing_symbol_rows += 1
-                file_missing_symbol_rows += 1
-            source = row.get("source")
-            source_key = (
-                source.strip() if isinstance(source, str) and source.strip() else "<missing>"
-            )
-            symbol_counts[symbol_key] = symbol_counts.get(symbol_key, 0) + 1
-            file_symbol_counts[symbol_key] = file_symbol_counts.get(symbol_key, 0) + 1
-            source_counts[source_key] = source_counts.get(source_key, 0) + 1
-            file_source_counts[source_key] = file_source_counts.get(source_key, 0) + 1
-        total_rows += row_count
-        traceable_rows += traceable_count
-        stat = path.stat()
-        if latest_mtime is None or stat.st_mtime > latest_mtime:
-            latest_mtime = stat.st_mtime
-            latest_path = path
-        per_file.append(
-            {
-                "path": str(path),
-                "row_count": row_count,
-                "traceable_row_count": traceable_count,
-                "untraceable_row_count": row_count - traceable_count,
-                "malformed_row_count": file_malformed_rows,
-                "missing_symbol_row_count": file_missing_symbol_rows,
-                "symbol_counts": dict(sorted(file_symbol_counts.items())),
-                "source_counts": dict(sorted(file_source_counts.items())),
-                "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat(),
-            }
-        )
-    latest_file_modified_at = (
-        datetime.fromtimestamp(latest_mtime, tz=UTC) if latest_mtime is not None else None
-    )
-    latest_file_age_seconds = (
-        max(0.0, (generated_at - latest_file_modified_at).total_seconds())
-        if latest_file_modified_at is not None
-        else None
-    )
-    untraceable_rows = total_rows - traceable_rows
-    return {
-        "raw_quotes_root": str(raw_quotes_root),
-        "file_count": len(files),
-        "row_count": total_rows,
-        "traceable_row_count": traceable_rows,
-        "untraceable_row_count": untraceable_rows,
-        "malformed_row_count": malformed_rows,
-        "missing_symbol_row_count": missing_symbol_rows,
-        "symbol_counts": dict(sorted(symbol_counts.items())),
-        "source_counts": dict(sorted(source_counts.items())),
-        "latest_file": str(latest_path) if latest_path is not None else None,
-        "latest_file_modified_at": latest_file_modified_at.isoformat()
-        if latest_file_modified_at is not None
-        else None,
-        "latest_file_age_seconds": latest_file_age_seconds,
-        "files": per_file,
-    }
-
-
-def _format_counts(counts: dict[str, int]) -> str:
-    return ",".join(f"{key}:{value}" for key, value in sorted(counts.items()))
-
-
-def _coverage_progress(coverage: dict[str, Any] | None) -> dict[str, Any]:
-    if coverage is None:
-        return {
-            "coverage_passed": False,
-            "reason": "missing trade_xyz_quote_coverage_manifest.json",
-            "symbols": {},
-            "estimated_max_collection_days_required": None,
-            "min_span_days": None,
-            "max_span_days": None,
-            "max_remaining_days_exact": None,
-            "completion_ratio_by_span": None,
-            "slowest_symbols": [],
-        }
-    per_symbol_value = coverage.get("per_symbol")
-    per_symbol = (
-        cast(dict[str, Any], per_symbol_value) if isinstance(per_symbol_value, dict) else {}
-    )
-    symbols: dict[str, Any] = {}
-    max_days = 0
-    min_span_days: float | None = None
-    max_span_days = 0.0
-    max_remaining_days_exact = 0.0
-    slowest_symbols: list[str] = []
-    for symbol, item in sorted(per_symbol.items()):
-        if not isinstance(item, dict):
-            continue
-        min_days = float(item.get("min_days_required") or 0.0)
-        span_days = float(item.get("span_days") or 0.0)
-        remaining = max(0.0, min_days - span_days)
-        remaining_ceiling = int(remaining) if remaining.is_integer() else int(remaining) + 1
-        max_days = max(max_days, remaining_ceiling)
-        max_span_days = max(max_span_days, span_days)
-        min_span_days = span_days if min_span_days is None else min(min_span_days, span_days)
-        if remaining > max_remaining_days_exact:
-            max_remaining_days_exact = remaining
-            slowest_symbols = [symbol]
-        elif remaining == max_remaining_days_exact:
-            slowest_symbols.append(symbol)
-        symbols[symbol] = {
-            "coverage_status": item.get("coverage_status"),
-            "row_count": item.get("row_count"),
-            "raw_row_count": item.get("raw_row_count"),
-            "span_days": span_days,
-            "min_days_required": min_days,
-            "max_gap_seconds": item.get("max_gap_seconds"),
-            "estimated_collection_days_required": remaining_ceiling,
-            "insufficient_reasons": item.get("insufficient_reasons", []),
-            "missing_rates": item.get("missing_rates", {}),
-            "excluded_missing_raw_payload_ref_count": item.get(
-                "excluded_missing_raw_payload_ref_count"
-            ),
-        }
-    return {
-        "coverage_passed": bool(coverage.get("coverage_passed")),
-        "traceable_only": coverage.get("traceable_only"),
-        "row_count": coverage.get("row_count"),
-        "raw_row_count": coverage.get("raw_row_count"),
-        "excluded_missing_raw_payload_ref_count": coverage.get(
-            "excluded_missing_raw_payload_ref_count"
-        ),
-        "raw_payload_ref_missing_rate_all_rows": coverage.get(
-            "raw_payload_ref_missing_rate_all_rows"
-        ),
-        "estimated_max_collection_days_required": max_days,
-        "min_span_days": min_span_days,
-        "max_span_days": max_span_days,
-        "max_remaining_days_exact": max_remaining_days_exact,
-        "completion_ratio_by_span": (
-            max_span_days / max(max_span_days + max_remaining_days_exact, 1e-12)
-        ),
-        "slowest_symbols": slowest_symbols,
-        "symbols": symbols,
-    }
-
-
-def _parse_generated_at(value: Any) -> datetime | None:
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        parsed = datetime.fromisoformat(value)
-    except ValueError:
-        return None
-    return parsed.astimezone(UTC) if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
-
-
-def _progress_since_previous(
-    previous_status: dict[str, Any] | None,
-    *,
-    generated_at: datetime,
-    raw_inventory: dict[str, Any],
-    coverage: dict[str, Any],
-    collector_process: dict[str, Any],
-    latest_file_stale: bool,
-    interval_seconds: int,
-) -> dict[str, Any]:
-    if previous_status is None:
-        return {
-            "previous_status_exists": False,
-            "seconds_since_previous_status": None,
-            "row_count_delta": None,
-            "traceable_row_count_delta": None,
-            "status": "unknown_no_previous_status",
-            "warnings": [],
-        }
-    previous_generated_at = _parse_generated_at(previous_status.get("generated_at"))
-    previous_inventory_value = previous_status.get("raw_quote_inventory")
-    previous_inventory = (
-        cast(dict[str, Any], previous_inventory_value)
-        if isinstance(previous_inventory_value, dict)
-        else {}
-    )
-    previous_rows = int(previous_inventory.get("row_count") or 0)
-    previous_traceable = int(previous_inventory.get("traceable_row_count") or 0)
-    current_rows = int(raw_inventory.get("row_count") or 0)
-    current_traceable = int(raw_inventory.get("traceable_row_count") or 0)
-    seconds_since_previous = (
-        max(0.0, (generated_at - previous_generated_at).total_seconds())
-        if previous_generated_at is not None
-        else None
-    )
-    row_delta = current_rows - previous_rows
-    traceable_delta = current_traceable - previous_traceable
-    warnings: list[str] = []
-    if latest_file_stale:
-        warnings.append("latest_file_stale")
-    if not collector_process.get("running") and not coverage.get("coverage_passed"):
-        warnings.append("collector_not_running_while_coverage_incomplete")
-    if (
-        collector_process.get("running")
-        and seconds_since_previous is not None
-        and seconds_since_previous >= interval_seconds * 2
-        and traceable_delta <= 0
-    ):
-        warnings.append("no_traceable_row_growth_since_previous_status")
-    return {
-        "previous_status_exists": True,
-        "seconds_since_previous_status": seconds_since_previous,
-        "row_count_delta": row_delta,
-        "traceable_row_count_delta": traceable_delta,
-        "status": "warning" if warnings else "collecting_ok",
-        "warnings": warnings,
-    }
-
-
-def _cycle_command(symbols: list[str], *, duration_minutes: int, interval_seconds: int) -> str:
-    command = (
-        "uv run sis collect-trade-xyz-data-cycle "
-        f"--collection-config {DEFAULT_COLLECTION_CONFIG_PATH} "
-        f"--duration-minutes {duration_minutes} --interval-seconds {interval_seconds}"
-    )
-    if symbols:
-        command += f" --symbols {','.join(symbols)}"
-    return command
 
 
 def _runtime_prerequisites() -> dict[str, Any]:
@@ -1037,127 +782,14 @@ def build_trade_xyz_collection_status(
     write_json(data_dir / "ops/trade_xyz_collection_status.json", status)
 
     report_path = data_dir / "reports/trade_xyz_collection_status.md"
-    lines = [
-        "# Trade[XYZ] Collection Status",
-        "",
-        f"- decision: {status['decision']}",
-        f"- backtest_data_ready: {status['backtest_data_ready']}",
-        f"- readiness_decision: {status['readiness_decision']}",
-        f"- fail_count: {status['fail_count']}",
-        f"- known_gap_count: {status['known_gap_count']}",
-        f"- failing_requirements: {','.join(readiness_requirements['fail'])}",
-        f"- known_gap_requirements: {','.join(readiness_requirements['known_gap'])}",
-        f"- funding_events_status: {readiness_details.get('funding_events', {}).get('status')}",
-        f"- funding_events_skipped: {readiness_details.get('funding_events', {}).get('skipped')}",
-        "- oracle_timestamp_provenance_status: "
-        f"{readiness_details.get('oracle_timestamp_provenance', {}).get('status')}",
-        "- oracle_ts_missing_rate: "
-        f"{readiness_details.get('oracle_timestamp_provenance', {}).get('oracle_ts_missing_rate')}",
-        "- oracle_freshness_proxy_observed_rate: "
-        f"{(readiness_details.get('oracle_timestamp_provenance', {}).get('oracle_freshness_proxy') or {}).get('observed_rate')}",
-        f"- signal_candles_status: {readiness_details.get('signal_candles', {}).get('status')}",
-        "- signal_candles_missing_symbols: "
-        f"{','.join(readiness_details.get('signal_candles', {}).get('missing_symbols') or [])}",
-        "- signal_candles_missing_intervals: "
-        f"{','.join(readiness_details.get('signal_candles', {}).get('missing_intervals') or [])}",
-        "- signal_candles_request_error_count: "
-        f"{readiness_details.get('signal_candles', {}).get('request_error_count')}",
-        f"- coverage_passed: {progress['coverage_passed']}",
-        f"- latest_file_stale: {status['latest_file_stale']}",
-        f"- collector_running: {status['collector_process']['running']}",
-        f"- collector_process_count: {status['collector_process']['process_count']}",
-        f"- supervisor_running: {status['supervisor_process']['running']}",
-        f"- supervisor_process_count: {status['supervisor_process']['process_count']}",
-        f"- cycle_lock_stale: {status['locks']['cycle']['stale']}",
-        f"- supervisor_lock_stale: {status['locks']['supervisor']['stale']}",
-        f"- aws_cli_available: {status['runtime_prerequisites']['aws_cli']['available']}",
-        f"- aws_command_source: {status['runtime_prerequisites']['aws_cli']['source']}",
-        f"- historical_archive_preflight_status: {status['historical_archive_preflight']['status']}",
-        f"- historical_archive_preflight_return_code: {status['historical_archive_preflight']['return_code']}",
-        "- historical_archive_bulk_plan_exists: "
-        f"{status['historical_archive_artifacts']['bulk_plan']['exists']}",
-        "- historical_archive_bulk_plan_estimated_total_object_count: "
-        f"{status['historical_archive_artifacts']['bulk_plan']['estimated_total_object_count']}",
-        "- historical_archive_bulk_execution_status: "
-        f"{status['historical_archive_artifacts']['bulk_execution']['status']}",
-        "- historical_archive_bulk_execution_dry_run: "
-        f"{status['historical_archive_artifacts']['bulk_execution']['dry_run']}",
-        "- historical_archive_bulk_execution_selected_object_count: "
-        f"{status['historical_archive_artifacts']['bulk_execution']['selected_object_count']}",
-        "- historical_archive_bulk_execution_downloaded_object_count: "
-        f"{status['historical_archive_artifacts']['bulk_execution']['downloaded_object_count']}",
-        "- historical_archive_bulk_execution_command_error_count: "
-        f"{status['historical_archive_artifacts']['bulk_execution']['command_error_count']}",
-        "- historical_archive_bulk_normalization_status: "
-        f"{status['historical_archive_artifacts']['bulk_normalization']['status']}",
-        "- historical_archive_bulk_normalization_normalized_file_count: "
-        f"{status['historical_archive_artifacts']['bulk_normalization']['normalized_file_count']}",
-        f"- ws_capture_manifest_exists: {status['ws_artifacts']['capture']['exists']}",
-        f"- ws_capture_row_count: {status['ws_artifacts']['capture']['row_count']}",
-        f"- ws_capture_error_count: {status['ws_artifacts']['capture']['error_count']}",
-        f"- ws_capture_reconnect_count: {status['ws_artifacts']['capture']['reconnect_count']}",
-        f"- ws_quality_manifest_exists: {status['ws_artifacts']['quality']['exists']}",
-        f"- ws_quality_status: {status['ws_artifacts']['quality']['status']}",
-        f"- ws_quality_row_count: {status['ws_artifacts']['quality']['row_count']}",
-        f"- ws_rest_parity_manifest_exists: {status['ws_artifacts']['rest_parity']['exists']}",
-        f"- ws_rest_parity_status: {status['ws_artifacts']['rest_parity']['status']}",
-        "- ws_rest_parity_missing_rest_symbols: "
-        f"{','.join(status['ws_artifacts']['rest_parity']['missing_rest_symbols'])}",
-        f"- lz4_available: {status['runtime_prerequisites']['lz4']['available']}",
-        f"- account_fee_user_address_configured: {status['account_fee_prerequisites']['configured']}",
-        f"- account_fee_manifest_exists: {status['account_fee_artifact']['exists']}",
-        f"- account_fee_manifest_status: {status['account_fee_artifact']['status']}",
-        f"- account_fee_manifest_user_matches_env: {status['account_fee_artifact']['matches_configured_user']}",
-        f"- account_fee_user_taker_fee_bps: {status['account_fee_artifact']['user_taker_fee_bps']}",
-        f"- account_fee_user_maker_fee_bps: {status['account_fee_artifact']['user_maker_fee_bps']}",
-        f"- progress_status: {status['progress_since_previous_status']['status']}",
-        "- traceable_row_count_delta: "
-        f"{status['progress_since_previous_status']['traceable_row_count_delta']}",
-        f"- latest_file_age_seconds: {status['raw_quote_inventory']['latest_file_age_seconds']}",
-        f"- traceable_rows: {status['raw_quote_inventory']['traceable_row_count']}",
-        f"- untraceable_rows: {status['raw_quote_inventory']['untraceable_row_count']}",
-        f"- malformed_rows: {status['raw_quote_inventory']['malformed_row_count']}",
-        f"- missing_symbol_rows: {status['raw_quote_inventory']['missing_symbol_row_count']}",
-        f"- raw_symbol_counts: {_format_counts(status['raw_quote_inventory']['symbol_counts'])}",
-        f"- raw_source_counts: {_format_counts(status['raw_quote_inventory']['source_counts'])}",
-        f"- coverage_min_span_days: {progress['min_span_days']}",
-        f"- coverage_max_remaining_days_exact: {progress['max_remaining_days_exact']}",
-        f"- coverage_completion_ratio_by_span: {progress['completion_ratio_by_span']}",
-        f"- coverage_slowest_symbols: {','.join(progress['slowest_symbols'])}",
-        "",
-        "## Next Actions",
-        "",
-    ]
-    if status["next_actions"]:
-        for action in status["next_actions"]:
-            lines.append(f"- key: {action['key']}")
-            if action.get("status") is not None:
-                lines.append(f"  - status: {action['status']}")
-            if action.get("blocked_by"):
-                lines.append(f"  - blocked_by: {','.join(action['blocked_by'])}")
-            for command_key in (
-                "plan_command",
-                "preflight_command",
-                "preflight_status",
-                "preflight_return_code",
-                "dry_run_command",
-                "execute_command",
-                "command",
-                "follow_up_command",
-                "final_check_command",
-            ):
-                command_value = action.get(command_key)
-                if command_value:
-                    lines.append(f"  - {command_key}: `{command_value}`")
-            if action.get("env_var"):
-                lines.append(f"  - env_var: {action['env_var']}")
-                lines.append(f"  - env_configured: {action.get('env_configured')}")
-            if action.get("user_address_sha256"):
-                lines.append(f"  - user_address_sha256: {action['user_address_sha256']}")
-    else:
-        lines.append("- none")
+    report = _render_collection_status_report(
+        status=status,
+        progress=progress,
+        readiness_requirements=readiness_requirements,
+        readiness_details=readiness_details,
+    )
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    report_path.write_text(report, encoding="utf-8")
     status["report_path"] = str(report_path)
     write_json(data_dir / "ops/trade_xyz_collection_status.json", status)
     return status
