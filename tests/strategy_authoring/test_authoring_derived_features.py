@@ -1055,9 +1055,7 @@ def test_return_transform_expression_computes_path_ops() -> None:
         "ewm_mean",
         "rsi",
     }
-    assert result.get_column("pct").to_list() == pytest.approx(
-        [None, 0.1, -0.1, 0.2222222222, 0.0]
-    )
+    assert result.get_column("pct").to_list() == pytest.approx([None, 0.1, -0.1, 0.2222222222, 0.0])
     assert result.get_column("log").to_list() == pytest.approx(
         [None, 0.0953101798, -0.1053605157, 0.2006706955, 0.0]
     )
@@ -1065,9 +1063,7 @@ def test_return_transform_expression_computes_path_ops() -> None:
     assert result.get_column("ret2").to_list() == pytest.approx(
         [None, None, -0.01, 0.1, 0.2222222222]
     )
-    assert result.get_column("ewm").to_list() == pytest.approx(
-        [100.0, 105.0, 102.0, 111.5, 116.25]
-    )
+    assert result.get_column("ewm").to_list() == pytest.approx([100.0, 105.0, 102.0, 111.5, 116.25])
     assert result.get_column("rsi3").to_list() == pytest.approx(
         [None, None, 47.619047619, 74.4186046512, 66.6666666667]
     )

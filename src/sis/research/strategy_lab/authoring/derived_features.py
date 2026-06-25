@@ -35,6 +35,10 @@ from sis.research.strategy_lab.authoring.derived_quality import (
     QUALITY_DERIVED_OPS,
     quality_expression,
 )
+from sis.research.strategy_lab.authoring.derived_return_transforms import (
+    RETURN_TRANSFORM_DERIVED_OPS,
+    return_transform_expression,
+)
 from sis.research.strategy_lab.authoring.derived_timestamp_features import (
     TIMESTAMP_DERIVED_OPS,
     timestamp_expression,
@@ -112,38 +116,8 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
         expr = volume_indicator_expression(feature)
     elif feature.op in TIMESTAMP_DERIVED_OPS:
         expr = timestamp_expression(feature)
-    elif feature.op == "pct_change":
-        previous = first.shift(1).over("canonical_symbol")
-        expr = (first - previous) / safe_denominator(previous)
-    elif feature.op == "log_return":
-        previous = first.shift(1).over("canonical_symbol")
-        expr = (first / safe_denominator(previous)).log()
-    elif feature.op == "lag":
-        expr = first.shift(feature.window or 1).over("canonical_symbol")
-    elif feature.op == "rolling_return":
-        previous = first.shift(feature.window or 1).over("canonical_symbol")
-        expr = (first / safe_denominator(previous)) - 1.0
-    elif feature.op == "ewm_mean":
-        expr = first.ewm_mean(span=feature.window or 1, adjust=False, min_samples=1).over(
-            "canonical_symbol"
-        )
-    elif feature.op == "rsi":
-        delta = first.diff().over("canonical_symbol")
-        gain = pl.when(delta > 0).then(delta).otherwise(0.0)
-        loss = pl.when(delta < 0).then(-delta).otherwise(0.0)
-        average_gain = gain.rolling_mean(
-            window_size=feature.window or 1, min_samples=feature.window or 1
-        ).over("canonical_symbol")
-        average_loss = loss.rolling_mean(
-            window_size=feature.window or 1, min_samples=feature.window or 1
-        ).over("canonical_symbol")
-        expr = (
-            pl.when((average_loss == 0) & (average_gain > 0))
-            .then(100.0)
-            .when((average_loss == 0) & (average_gain == 0))
-            .then(50.0)
-            .otherwise(100.0 - (100.0 / (1.0 + (average_gain / average_loss))))
-        )
+    elif feature.op in RETURN_TRANSFORM_DERIVED_OPS:
+        expr = return_transform_expression(feature)
     elif feature.op == "rolling_min":
         expr = first.rolling_min(window_size=feature.window or 1, min_samples=1).over(
             "canonical_symbol"
