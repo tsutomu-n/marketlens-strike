@@ -6,16 +6,15 @@ from typing import Any, Literal
 from sis.research.strategy_lab.authoring.compiler.common import (
     _matching_regime_override,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import (
-    _exit_bps,
-    _minutes_value,
-)
+from sis.research.strategy_lab.authoring.compiler.signal_ids import _signal_id
+from sis.research.strategy_lab.authoring.compiler.signal_selection import _tail_bucket
 from sis.research.strategy_lab.authoring.compiler.signal_sizing import (
     _signal_notional_usd,
     _signal_position_weight,
 )
-from sis.research.strategy_lab.authoring.compiler.signal_ids import _signal_id
-from sis.research.strategy_lab.authoring.compiler.signal_selection import _tail_bucket
+from sis.research.strategy_lab.authoring.compiler.trade_bracket_fields import (
+    _trade_bracket_fields,
+)
 from sis.research.strategy_lab.authoring.compiler.trade_execution_fields import (
     _trade_execution_fields,
 )
@@ -100,28 +99,7 @@ def _trade_signal_row(
         "quote_ref": None,
         "tracking_ref": None,
         **exit_fields,
-        "bracket_type": spec.rules.bracket.bracket_type if spec.rules.bracket.enabled else "none",
-        "bracket_time_stop_minutes": _minutes_value(
-            row,
-            fixed=spec.rules.bracket.time_stop_minutes if spec.rules.bracket.enabled else None,
-            column=(
-                spec.rules.bracket.time_stop_minutes_column if spec.rules.bracket.enabled else None
-            ),
-        ),
-        "bracket_break_even_after_bps": _exit_bps(
-            row,
-            fixed=spec.rules.bracket.break_even_after_bps if spec.rules.bracket.enabled else None,
-            column=(
-                spec.rules.bracket.break_even_after_bps_column
-                if spec.rules.bracket.enabled
-                else None
-            ),
-        ),
-        "bracket_break_even_after_partial_take_profit": (
-            spec.rules.bracket.break_even_after_partial_take_profit
-            if spec.rules.bracket.enabled
-            else False
-        ),
+        **_trade_bracket_fields(row=row, bracket=spec.rules.bracket),
         **order_fields,
         **execution_fields,
         "position_weight": position_weight

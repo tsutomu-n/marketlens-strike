@@ -6,47 +6,16 @@ from typing import Any
 from sis.research.strategy_lab.authoring.compiler.marker_defaults import (
     _marker_trade_control_defaults,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import _sizing_value
-from sis.research.strategy_lab.authoring.compiler.signal_ids import _signal_id
-from sis.research.strategy_lab.authoring.contracts.base import _stable_digest
+from sis.research.strategy_lab.authoring.compiler.marker_position_fields import (
+    _marker_add_fields,
+    _marker_rebalance_fields,
+    _marker_reduce_fields,
+)
+from sis.research.strategy_lab.authoring.compiler.marker_signal_base import (
+    _marker_signal_base,
+)
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.specs import SymbolBinding
-
-
-def _marker_signal_base(
-    *,
-    spec: StrategyAuthoringSpec,
-    row: dict[str, Any],
-    binding: SymbolBinding,
-    generated_at: datetime,
-    side: str,
-) -> dict[str, Any]:
-    return {
-        "schema_version": "strategy_signal.v1",
-        "signal_id": _signal_id(spec, row, binding, side=side),
-        "generated_at": generated_at,
-        "strategy_id": spec.experiment.strategy_id,
-        "strategy_family": spec.experiment.strategy_family,
-        "strategy_version": spec.experiment.strategy_version,
-        "trial_id": None,
-        "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
-        "ts_signal": row["ts"],
-        "timeframe": spec.rules.timeframe,
-        "execution_venue": binding.execution_venue,
-        "execution_symbol": binding.execution_symbol,
-        "real_market_symbol": binding.real_market_symbol,
-        "side": side,
-        "raw_score": None,
-        "rank_score": None,
-        "percentile_rank": None,
-        "tail_bucket": "none",
-        "confidence": 0.0,
-        "source_confidence": row.get("source_confidence"),
-        "venue_quality_score": row.get("venue_quality_score"),
-        "feature_snapshot_ref": None,
-        "quote_ref": None,
-        "tracking_ref": None,
-    }
 
 
 def _close_signal_row(
@@ -108,11 +77,7 @@ def _reduce_signal_row(
             side="reduce",
         ),
         **_marker_trade_control_defaults(),
-        "reduce_fraction": _sizing_value(
-            row,
-            fixed=spec.rules.exit.reduce_fraction,
-            column=spec.rules.exit.reduce_fraction_column,
-        ),
+        **_marker_reduce_fields(row=row, spec=spec),
         "reason_codes": [spec.rules.reduce_reason_code],
         "block_reasons": [],
     }
@@ -134,11 +99,7 @@ def _add_signal_row(
             side="add",
         ),
         **_marker_trade_control_defaults(),
-        "add_fraction": _sizing_value(
-            row,
-            fixed=spec.rules.exit.add_fraction,
-            column=spec.rules.exit.add_fraction_column,
-        ),
+        **_marker_add_fields(row=row, spec=spec),
         "reason_codes": [spec.rules.add_reason_code],
         "block_reasons": [],
     }
@@ -160,16 +121,7 @@ def _rebalance_signal_row(
             side="rebalance",
         ),
         **_marker_trade_control_defaults(),
-        "rebalance_target_fraction": _sizing_value(
-            row,
-            fixed=spec.rules.exit.rebalance_target_fraction,
-            column=spec.rules.exit.rebalance_target_fraction_column,
-        ),
-        "rebalance_min_delta_fraction": _sizing_value(
-            row,
-            fixed=spec.rules.exit.rebalance_min_delta_fraction,
-            column=spec.rules.exit.rebalance_min_delta_fraction_column,
-        ),
+        **_marker_rebalance_fields(row=row, spec=spec),
         "reason_codes": [spec.rules.rebalance_reason_code],
         "block_reasons": [],
     }

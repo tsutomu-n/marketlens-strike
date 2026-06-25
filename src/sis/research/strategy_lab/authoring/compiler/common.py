@@ -3,14 +3,14 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from sis.research.strategy_lab.authoring.contracts.base import (
-    DEFAULT_EXIT_PRIORITY,
-)
 from sis.research.strategy_lab.authoring.compiler.signal_ids import _compiled_signal_id
 from sis.research.strategy_lab.authoring.compiler.signal_selection import _entry_passes
+from sis.research.strategy_lab.authoring.compiler.trade_block_neutral_fields import (
+    _blocked_trade_neutral_fields,
+)
+from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 from sis.research.strategy_lab.authoring.contracts.multi_leg import RegimeOverride
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
-from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 
 
 def _float_or_default(value: object, default: float) -> float:
@@ -79,49 +79,7 @@ def _block_trade_row(
     blocked["side"] = "none"
     blocked["signal_id"] = _compiled_signal_id(spec, blocked, side="none")
     blocked["confidence"] = 0.0
-    blocked["stop_loss_bps"] = None
-    blocked["take_profit_bps"] = None
-    blocked["min_reward_risk_ratio"] = row.get("min_reward_risk_ratio")
-    blocked["reward_risk_ratio"] = row.get("reward_risk_ratio")
-    blocked["trailing_stop_bps"] = None
-    blocked["trailing_stop_activation_bps"] = None
-    blocked["partial_take_profit_bps"] = None
-    blocked["partial_exit_fraction"] = None
-    blocked["min_holding_minutes"] = None
-    blocked["max_holding_minutes"] = None
-    blocked["exit_priority"] = DEFAULT_EXIT_PRIORITY
-    blocked["exit_on_opposite_signal"] = False
-    blocked["bracket_type"] = "none"
-    blocked["bracket_time_stop_minutes"] = None
-    blocked["bracket_break_even_after_bps"] = None
-    blocked["bracket_break_even_after_partial_take_profit"] = False
-    blocked["entry_order_type"] = "market"
-    blocked["entry_limit_offset_bps"] = None
-    blocked["entry_stop_offset_bps"] = None
-    blocked["entry_timeout_minutes"] = None
-    blocked["entry_time_in_force"] = "gtc"
-    blocked["entry_post_only"] = False
-    blocked["entry_reduce_only"] = False
-    blocked["slippage_bps"] = 0.0
-    blocked["max_fill_fraction"] = 0.0
-    blocked["min_fill_fraction"] = None
-    blocked["max_spread_bps"] = None
-    blocked["min_depth_usd"] = None
-    blocked["depth_column"] = None
-    blocked["depth_participation_rate"] = 0.0
-    blocked["max_latency_ms"] = None
-    blocked["latency_ms"] = None
-    blocked["min_queue_position_score"] = None
-    blocked["queue_position_score"] = None
-    blocked["min_borrow_availability_ratio"] = None
-    blocked["borrow_availability_ratio"] = None
-    blocked["max_borrow_cost_bps"] = None
-    blocked["borrow_cost_bps"] = None
-    blocked["position_weight"] = 0.0
-    blocked["notional_usd"] = None
-    blocked["_cross_sectional_group"] = row.get("_cross_sectional_group")
-    blocked["_portfolio_group"] = row.get("_portfolio_group")
-    blocked["_portfolio_turnover_weight"] = row.get("_portfolio_turnover_weight")
+    blocked.update(_blocked_trade_neutral_fields(row))
     blocked["reason_codes"] = [spec.rules.hold_reason_code]
     blocked["block_reasons"] = [*list(row.get("block_reasons") or []), block_reason]
     return blocked
