@@ -8,6 +8,12 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _position_weight_value,
     _signal_timestamp,
 )
+from sis.research.strategy_lab.authoring.compiler.position_state import (
+    _clamped_position_fraction,
+    _compact_active_positions,
+    _non_negative_position_value,
+    _reduce_active_side,
+)
 from sis.research.strategy_lab.authoring.compiler.signal_ids import _compiled_signal_id
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 
@@ -26,37 +32,6 @@ def _apply_position_state_limits(
     horizon_minutes = position.holding_horizon_minutes or spec.backtest.label_horizon_minutes
     active_by_symbol: dict[str, list[tuple[datetime, str, float]]] = {}
     selected: list[dict[str, Any]] = []
-
-    def compact_active(
-        active: list[tuple[datetime, str, float]], weight: float
-    ) -> list[tuple[datetime, str, float]]:
-        if weight <= 0:
-            return []
-        end_at = max(
-            (item_end_at for item_end_at, _item_side, _item_weight in active), default=None
-        )
-        if end_at is None:
-            return []
-        sides = [item_side for _item_end_at, item_side, item_weight in active if item_weight > 0]
-        side = sides[0] if sides else "long"
-        return [(end_at, side, weight)]
-
-    def reduce_active_side(
-        active: list[tuple[datetime, str, float]], side: str, fraction: float
-    ) -> list[tuple[datetime, str, float]]:
-        total = sum(weight for _end_at, active_side, weight in active if active_side == side)
-        to_reduce = total * min(max(fraction, 0.0), 1.0)
-        updated: list[tuple[datetime, str, float]] = []
-        for end_at, active_side, weight in active:
-            if active_side != side or to_reduce <= 0:
-                updated.append((end_at, active_side, weight))
-                continue
-            reduced = min(weight, to_reduce)
-            remaining = weight - reduced
-            to_reduce -= reduced
-            if remaining > 0:
-                updated.append((end_at, active_side, remaining))
-        return updated
 
     for row in sorted(rows, key=lambda item: (item["ts_signal"], item["signal_id"])):
         if row.get("side") == "none":
@@ -83,18 +58,12 @@ def _apply_position_state_limits(
             if side == "close":
                 active_by_symbol[symbol] = []
             elif side == "reduce" and open_weight > 0:
-                reduce_fraction = row.get("reduce_fraction")
-                fraction = (
-                    min(max(float(reduce_fraction), 0.0), 1.0)
-                    if isinstance(reduce_fraction, int | float)
-                    else 1.0
+                fraction = _clamped_position_fraction(row.get("reduce_fraction"))
+                active_by_symbol[symbol] = _compact_active_positions(
+                    active, open_weight * (1.0 - fraction)
                 )
-                active_by_symbol[symbol] = compact_active(active, open_weight * (1.0 - fraction))
             elif side == "add" and open_weight > 0:
-                add_fraction = row.get("add_fraction")
-                added_weight = (
-                    max(float(add_fraction), 0.0) if isinstance(add_fraction, int | float) else 1.0
-                )
+                added_weight = _non_negative_position_value(row.get("add_fraction"), default=1.0)
                 if (
                     position.max_open_position_weight_per_symbol is not None
                     and open_weight + added_weight > position.max_open_position_weight_per_symbol
@@ -103,13 +72,12 @@ def _apply_position_state_limits(
                         _block_trade_row(row, spec=spec, block_reason="position_open_weight_limit")
                     )
                     continue
-                active_by_symbol[symbol] = compact_active(active, open_weight + added_weight)
+                active_by_symbol[symbol] = _compact_active_positions(
+                    active, open_weight + added_weight
+                )
             elif side == "rebalance" and open_weight > 0:
-                target_fraction = row.get("rebalance_target_fraction")
-                target_weight = (
-                    max(float(target_fraction), 0.0)
-                    if isinstance(target_fraction, int | float)
-                    else open_weight
+                target_weight = _non_negative_position_value(
+                    row.get("rebalance_target_fraction"), default=open_weight
                 )
                 if (
                     position.max_open_position_weight_per_symbol is not None
@@ -119,7 +87,7 @@ def _apply_position_state_limits(
                         _block_trade_row(row, spec=spec, block_reason="position_open_weight_limit")
                     )
                     continue
-                active_by_symbol[symbol] = compact_active(active, target_weight)
+                active_by_symbol[symbol] = _compact_active_positions(active, target_weight)
             selected.append(row)
             continue
 
@@ -138,13 +106,8 @@ def _apply_position_state_limits(
                     )
                 )
                 continue
-            reduce_fraction = row.get("reduce_fraction")
-            fraction = (
-                min(max(float(reduce_fraction), 0.0), 1.0)
-                if isinstance(reduce_fraction, int | float)
-                else 1.0
-            )
-            active_by_symbol[symbol] = reduce_active_side(active, opposing_side, fraction)
+            fraction = _clamped_position_fraction(row.get("reduce_fraction"))
+            active_by_symbol[symbol] = _reduce_active_side(active, opposing_side, fraction)
             reduce_row = dict(row)
             reduce_row["side"] = "reduce"
             reduce_row["signal_id"] = _compiled_signal_id(spec, reduce_row, side="reduce")

@@ -5,13 +5,14 @@ from typing import Any, Literal
 
 from sis.research.strategy_lab.authoring.compiler.common import (
     _matching_regime_override,
-    _signal_notional_usd,
-    _signal_position_weight,
 )
 from sis.research.strategy_lab.authoring.compiler.row_values import (
     _exit_bps,
     _minutes_value,
-    _optional_float_from_row,
+)
+from sis.research.strategy_lab.authoring.compiler.signal_sizing import (
+    _signal_notional_usd,
+    _signal_position_weight,
 )
 from sis.research.strategy_lab.authoring.compiler.signal_ids import _signal_id
 from sis.research.strategy_lab.authoring.compiler.signal_selection import _tail_bucket
@@ -20,6 +21,9 @@ from sis.research.strategy_lab.authoring.compiler.trade_execution_fields import 
 )
 from sis.research.strategy_lab.authoring.compiler.trade_exit_fields import _trade_exit_fields
 from sis.research.strategy_lab.authoring.compiler.trade_order_fields import _trade_order_fields
+from sis.research.strategy_lab.authoring.compiler.trade_portfolio_fields import (
+    _trade_portfolio_fields,
+)
 from sis.research.strategy_lab.authoring.contracts.base import _stable_digest
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.specs import SymbolBinding
@@ -126,61 +130,7 @@ def _trade_signal_row(
         "notional_usd": notional_usd
         if notional_usd is not None
         else _signal_notional_usd(row, spec),
-        "_cross_sectional_group": row.get(spec.rules.cross_sectional.group_column)
-        if spec.rules.cross_sectional.group_column is not None
-        else None,
-        "_allocation_volatility": row.get(spec.rules.portfolio.allocation_volatility_column)
-        if spec.rules.portfolio.allocation_volatility_column is not None
-        else None,
-        "_allocation_beta": row.get(spec.rules.portfolio.allocation_beta_column)
-        if spec.rules.portfolio.allocation_beta_column is not None
-        else None,
-        "_portfolio_target_total_position_weight": _optional_float_from_row(
-            row, spec.rules.portfolio.target_total_position_weight_column
-        )
-        if spec.rules.portfolio.target_total_position_weight_column is not None
-        else None,
-        "_portfolio_max_total_position_weight": _optional_float_from_row(
-            row, spec.rules.portfolio.max_total_position_weight_column
-        )
-        if spec.rules.portfolio.max_total_position_weight_column is not None
-        else None,
-        "_portfolio_max_long_position_weight": _optional_float_from_row(
-            row, spec.rules.portfolio.max_long_position_weight_column
-        )
-        if spec.rules.portfolio.max_long_position_weight_column is not None
-        else None,
-        "_portfolio_max_short_position_weight": _optional_float_from_row(
-            row, spec.rules.portfolio.max_short_position_weight_column
-        )
-        if spec.rules.portfolio.max_short_position_weight_column is not None
-        else None,
-        "_portfolio_max_abs_net_position_weight": _optional_float_from_row(
-            row, spec.rules.portfolio.max_abs_net_position_weight_column
-        )
-        if spec.rules.portfolio.max_abs_net_position_weight_column is not None
-        else None,
-        "_portfolio_max_symbol_position_weight": _optional_float_from_row(
-            row, spec.rules.portfolio.max_symbol_position_weight_column
-        )
-        if spec.rules.portfolio.max_symbol_position_weight_column is not None
-        else None,
-        "_portfolio_max_group_position_weight": _optional_float_from_row(
-            row, spec.rules.portfolio.max_group_position_weight_column
-        )
-        if spec.rules.portfolio.max_group_position_weight_column is not None
-        else None,
-        "_portfolio_max_group_abs_net_position_weight": _optional_float_from_row(
-            row, spec.rules.portfolio.max_group_abs_net_position_weight_column
-        )
-        if spec.rules.portfolio.max_group_abs_net_position_weight_column is not None
-        else None,
-        "_portfolio_group": row.get(spec.rules.portfolio.group_column)
-        if spec.rules.portfolio.group_column is not None
-        else None,
-        "_portfolio_turnover_weight": row.get(spec.rules.portfolio.turnover_weight_column)
-        if spec.rules.portfolio.turnover_weight_column is not None
-        else None,
+        **_trade_portfolio_fields(row=row, spec=spec),
         "reason_codes": effective_reason_codes,
         "block_reasons": [],
     }

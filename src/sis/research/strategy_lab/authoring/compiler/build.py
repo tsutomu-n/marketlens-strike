@@ -22,6 +22,8 @@ from sis.research.strategy_lab.authoring.compiler.guards import (
     _apply_reward_risk_gate,
     _apply_stop_target_width_gate,
     _apply_temporal_selection,
+)
+from sis.research.strategy_lab.authoring.compiler.guard_block_reasons import (
     _data_guard_block_reason,
     _event_window_block_reason,
     _feature_timestamp,
