@@ -2,9 +2,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports import readiness_snapshot_navigation
+from sis.reports.readiness_snapshot_inputs import execution_adapter_fields
+from sis.reports.readiness_snapshot_markdown import render_readiness_snapshot_markdown
+from sis.reports.readiness_snapshot_order import readiness_snapshot_recommended_read_order
+from sis.reports.readiness_snapshot_status import (
+    backtest_ready as backtest_is_ready,
+    execution_ready as execution_is_ready,
+    live_evidence_ready as live_evidence_is_ready,
+    operations_ready as operations_is_ready,
+    phase_candidate,
+)
 from sis.reports.summary_normalizers import (
     execution_comparison_flat_fields,
     execution_diagnostics_flat_fields,
@@ -13,7 +22,6 @@ from sis.reports.summary_normalizers import (
     execution_snapshot_flat_fields,
     execution_state_comparison_flat_fields,
     execution_drift_overview_flat_fields,
-    latest_execution_lineage_flat_lines,
     normalize_execution_comparison_summary,
     normalize_execution_diagnostics_summary,
     normalize_execution_gap_history_summary,
@@ -24,14 +32,13 @@ from sis.reports.summary_normalizers import (
     normalize_phase_gate_summary,
     latest_execution_lineage_fields_from_summary,
     phase_gate_flat_fields,
-    phase_gate_issue_preview_lines,
 )
 from sis.storage.jsonl_store import write_json
 
 
 _remediation_fields_from_sources = readiness_snapshot_navigation.remediation_fields_from_sources
-_report_path_for_summary = readiness_snapshot_navigation.report_path_for_summary
-_live_evidence_report_path = readiness_snapshot_navigation.live_evidence_report_path
+_restart_pointers_from_paths = readiness_snapshot_navigation.restart_pointers_from_paths
+_artifacts_from_paths = readiness_snapshot_navigation.artifacts_from_paths
 _related_reports = readiness_snapshot_navigation.related_reports
 _quick_navigation = readiness_snapshot_navigation.quick_navigation
 
@@ -99,218 +106,15 @@ def build_readiness_snapshot(
     backtest = safe_read_json_dict(backtest_metrics_summary_path)
     live_evidence = safe_read_json_dict(live_evidence_summary_path)
     operations = safe_read_json_dict(operations_dashboard_summary_path)
-    execution_adapter_fields = {
-        key: operations.get(key)
-        for key in (
-            "execution_balance_status_venue",
-            "execution_balance_status_currency",
-            "execution_balance_status_equity",
-            "execution_balance_status_available_cash",
-            "execution_balance_status_margin_used",
-            "execution_balance_status_notional_usd",
-            "execution_balance_status_unrealized_pnl",
-            "execution_balance_status_cumulative_rollover_usd",
-            "execution_balance_status_snapshot_exists",
-            "execution_balance_status_report_path",
-            "execution_fill_status_venue",
-            "execution_fill_status_fills_count",
-            "execution_fill_status_latest_fill_id",
-            "execution_fill_status_latest_fill_order_id",
-            "execution_fill_status_latest_fill_symbol",
-            "execution_fill_status_latest_fill_side",
-            "execution_fill_status_latest_fill_quantity",
-            "execution_fill_status_latest_fill_price",
-            "execution_fill_status_latest_fill_status",
-            "execution_fill_status_latest_fill_ts_fill",
-            "execution_fill_status_report_path",
-            "execution_order_status_venue",
-            "execution_order_status_order_id",
-            "execution_order_status_status",
-            "execution_order_status_symbol",
-            "execution_order_status_side",
-            "execution_order_status_quantity",
-            "execution_order_status_report_path",
-            "execution_cancel_order_target",
-            "execution_cancel_order_status",
-            "execution_cancel_order_report_path",
-            "execution_close_position_target",
-            "execution_close_position_status",
-            "execution_close_position_report_path",
-            "execution_reconcile_positions_matched",
-            "execution_reconcile_positions_missing_in_adapter_count",
-            "execution_reconcile_positions_missing_in_internal_count",
-            "execution_reconcile_positions_report_path",
-            "execution_read_only_surfaces_venue_count",
-            "execution_read_only_surfaces_with_balance_snapshot_count",
-            "execution_read_only_surfaces_with_positions_snapshot_count",
-            "execution_read_only_surfaces_with_fills_snapshot_count",
-            "execution_read_only_surfaces_with_order_status_snapshot_count",
-            "execution_read_only_surfaces_reconciled_venue_count",
-            "execution_read_only_surfaces_with_positions_financial_totals_count",
-            "execution_read_only_surfaces_with_positions_rollover_metrics_count",
-            "execution_read_only_surfaces_with_positions_protection_metrics_count",
-            "execution_read_only_surfaces_with_positions_leverage_metrics_count",
-            "execution_read_only_surfaces_with_positions_return_metrics_count",
-            "execution_read_only_surfaces_with_positions_day_trade_metrics_count",
-            "execution_read_only_surfaces_with_positions_limit_metrics_count",
-            "execution_read_only_surfaces_with_positions_quantity_metrics_count",
-            "execution_read_only_surfaces_positions_notional_usd_total",
-            "execution_read_only_surfaces_positions_unrealized_pnl_usd_total",
-            "execution_read_only_surfaces_positions_collateral_used_usd_total",
-            "execution_read_only_surfaces_positions_max_withdrawable_usd_total",
-            "execution_read_only_surfaces_positions_cumulative_rollover_usd_total",
-            "execution_read_only_surfaces_positions_with_liquidation_price_count",
-            "execution_read_only_surfaces_positions_with_take_profit_count",
-            "execution_read_only_surfaces_positions_with_stop_loss_count",
-            "execution_read_only_surfaces_positions_day_trade_count",
-            "execution_read_only_surfaces_positions_average_leverage",
-            "execution_read_only_surfaces_positions_average_return_on_equity",
-            "execution_read_only_surfaces_positions_max_leverage",
-            "execution_read_only_surfaces_positions_total_quantity",
-            "execution_read_only_surfaces_positions_total_realized_pnl",
-            "execution_read_only_surfaces_latest_positions_server_time_ms",
-            "execution_read_only_surfaces_latest_positions_open_timestamp_ms",
-            "execution_read_only_surfaces_latest_positions_updated_at",
-            "execution_read_only_surfaces_latest_positions_client_ts",
-            "execution_read_only_surfaces_report_path",
-            "daemon_manifest_mode",
-            "daemon_manifest_command",
-            "daemon_manifest_state_store_path",
-            "daemon_manifest_report_path",
-            "daemon_loop_status",
-            "daemon_loop_cycles_requested",
-            "daemon_loop_cycles_completed",
-            "daemon_loop_latest_event_status",
-            "daemon_loop_latest_event_exit_code",
-            "daemon_loop_path",
-            "daemon_loop_events_path",
-            "daemon_loop_report_path",
-            "notification_outbox_status",
-            "notification_outbox_sink",
-            "notification_outbox_level",
-            "notification_outbox_title",
-            "notification_outbox_source",
-            "notification_outbox_path",
-            "notification_outbox_latest_path",
-            "notification_outbox_report_path",
-            "state_export_snapshot_path",
-            "state_export_audit_overall_status",
-            "state_export_phase_gate_decision",
-            "state_export_readiness_next_phase_candidate",
-            "state_export_report_path",
-            "state_restore_restored",
-            "state_restore_snapshot_path",
-            "state_restore_audit_overall_status",
-            "state_restore_phase_gate_decision",
-            "state_restore_report_path",
-        )
-    }
+    execution_adapter_summary_fields = execution_adapter_fields(operations)
     remediation_fields = _remediation_fields_from_sources(current_state, operations)
-    restart_pointers = {
-        "readiness_snapshot_report": str(out_path) if out_path is not None else None,
-        "current_state_index_report": _report_path_for_summary(
-            current_state_index_path,
-            "current_state_index.md",
-        ),
-        "remediation_planner_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_planner_summary.json")
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_planner_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_planner.md",
-        ),
-        "remediation_execution_plan_summary": (
-            str(
-                operations_dashboard_summary_path.parent / "remediation_execution_plan_summary.json"
-            )
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_execution_plan_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_execution_plan.md",
-        ),
-        "remediation_session_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_session_summary.json")
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_session_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_session.md",
-        ),
-        "remediation_session_checkpoint_summary": (
-            str(
-                operations_dashboard_summary_path.parent
-                / "remediation_session_checkpoint_summary.json"
-            )
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_session_checkpoint_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_session_checkpoint.md",
-        ),
-        "remediation_scoreboard_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_scoreboard_summary.json")
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_scoreboard_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_scoreboard.md",
-        ),
-        "execution_balance_status_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_balance_status.md",
-        ),
-        "execution_fill_status_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_fill_status.md",
-        ),
-        "execution_order_status_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_order_status.md",
-        ),
-        "execution_cancel_order_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_cancel_order.md",
-        ),
-        "execution_close_position_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_close_position.md",
-        ),
-        "execution_reconcile_positions_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_reconcile_positions.md",
-        ),
-        "daemon_manifest_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "daemon_manifest.md",
-        ),
-        "daemon_loop_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "daemon_loop.md",
-        ),
-        "notification_outbox_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "notification_outbox.md",
-        ),
-        "state_export_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "state_export.md",
-        ),
-        "state_restore_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "state_restore.md",
-        ),
-        "live_evidence_report": _live_evidence_report_path(
-            live_evidence_summary_path,
-            live_evidence,
-        ),
-    }
+    restart_pointers = _restart_pointers_from_paths(
+        out_path=out_path,
+        current_state_index_path=current_state_index_path,
+        operations_dashboard_summary_path=operations_dashboard_summary_path,
+        live_evidence_summary_path=live_evidence_summary_path,
+        live_evidence=live_evidence,
+    )
     phase_gate_review_report_path = phase_gate_fields.get("phase_gate_review_report_path")
     quick_navigation = _quick_navigation(
         restart_pointers,
@@ -320,114 +124,37 @@ def build_readiness_snapshot(
         restart_pointers,
         phase_gate_review_report_path,
     )
-    artifacts = {
-        "current_state_index": str(current_state_index_path) if current_state_index_path else None,
-        "phase_gate_summary": str(phase_gate_summary_path) if phase_gate_summary_path else None,
-        "execution_snapshot_summary": str(execution_snapshot_summary_path)
-        if execution_snapshot_summary_path
-        else None,
-        "execution_venue_comparison_summary": (
-            str(execution_venue_comparison_summary_path)
-            if execution_venue_comparison_summary_path
-            else None
-        ),
-        "execution_venue_diagnostics_summary": (
-            str(execution_venue_diagnostics_summary_path)
-            if execution_venue_diagnostics_summary_path
-            else None
-        ),
-        "execution_gap_history_summary": (
-            str(execution_gap_history_summary_path) if execution_gap_history_summary_path else None
-        ),
-        "execution_state_comparison_history_summary": (
-            str(execution_state_comparison_history_summary_path)
-            if execution_state_comparison_history_summary_path
-            else None
-        ),
-        "execution_snapshot_drift_history_summary": (
-            str(execution_snapshot_drift_history_summary_path)
-            if execution_snapshot_drift_history_summary_path
-            else None
-        ),
-        "execution_drift_overview_summary": (
-            str(execution_drift_overview_summary_path)
-            if execution_drift_overview_summary_path
-            else None
-        ),
-        "backtest_metrics_summary": str(backtest_metrics_summary_path)
-        if backtest_metrics_summary_path
-        else None,
-        "live_evidence_summary": str(live_evidence_summary_path)
-        if live_evidence_summary_path
-        else None,
-        "operations_dashboard_summary": str(operations_dashboard_summary_path)
-        if operations_dashboard_summary_path
-        else None,
-        "live_evidence_report": restart_pointers.get("live_evidence_report"),
-        **restart_pointers,
-    }
-    recommended_read_order_items = recommended_read_order(
-        [
-            "data/ops/readiness_snapshot.json",
-            "data/reports/readiness_snapshot.md",
-            "data/ops/current_state_index.json",
-            "data/reports/current_state_index.md",
-            "data/reports/remediation_scoreboard.md",
-            "data/reports/remediation_session_checkpoint.md",
-            "data/reports/remediation_session.md",
-            "data/reports/remediation_execution_plan.md",
-            "data/reports/remediation_planner.md",
-            "data/ops/phase_gate_review_summary.json",
-            "data/ops/execution_snapshot_summary.json",
-            "data/ops/execution_venue_comparison_summary.json",
-            "data/ops/execution_venue_diagnostics_summary.json",
-            "data/ops/execution_gap_history_summary.json",
-            "data/ops/execution_state_comparison_history_summary.json",
-            "data/ops/execution_snapshot_drift_history_summary.json",
-            "data/ops/execution_drift_overview_summary.json",
-            "data/reports/execution_balance_status.md",
-            "data/reports/execution_fill_status.md",
-            "data/reports/execution_order_status.md",
-            "data/reports/execution_cancel_order.md",
-            "data/reports/execution_close_position.md",
-            "data/reports/execution_reconcile_positions.md",
-            "data/reports/daemon_manifest.md",
-            "data/reports/daemon_loop.md",
-            "data/reports/notification_outbox.md",
-            "data/reports/state_export.md",
-            "data/reports/state_restore.md",
-            "docs/live_evidence_reports/live_evidence_report_<run_id>.md",
-            "data/research/backtest_metrics_summary.json",
-        ]
+    artifacts = _artifacts_from_paths(
+        current_state_index_path=current_state_index_path,
+        phase_gate_summary_path=phase_gate_summary_path,
+        execution_snapshot_summary_path=execution_snapshot_summary_path,
+        execution_venue_comparison_summary_path=execution_venue_comparison_summary_path,
+        execution_venue_diagnostics_summary_path=execution_venue_diagnostics_summary_path,
+        execution_gap_history_summary_path=execution_gap_history_summary_path,
+        execution_state_comparison_history_summary_path=execution_state_comparison_history_summary_path,
+        execution_snapshot_drift_history_summary_path=execution_snapshot_drift_history_summary_path,
+        execution_drift_overview_summary_path=execution_drift_overview_summary_path,
+        backtest_metrics_summary_path=backtest_metrics_summary_path,
+        live_evidence_summary_path=live_evidence_summary_path,
+        operations_dashboard_summary_path=operations_dashboard_summary_path,
+        restart_pointers=restart_pointers,
     )
+    recommended_read_order_items = readiness_snapshot_recommended_read_order()
 
     phase2_entry_allowed = bool(phase_gate_fields.get("phase2_entry_allowed"))
-    execution_ready = (
-        execution_snapshot_fields.get("execution_overall_status") == "ok"
-        and int(execution_snapshot_fields.get("execution_venue_count") or 0) > 0
-        and execution_comparison_fields.get("execution_comparison_all_registries_present") is True
-        and execution_diagnostics_fields.get("execution_diagnostics_status") == "ok"
-        and int(execution_gap_history_fields.get("execution_gap_history_entry_count") or 0) > 0
-        and int(
-            execution_state_comparison_fields.get("execution_state_comparison_mismatching_count")
-            or 0
-        )
-        == 0
-        and int(
-            execution_snapshot_drift_fields.get(
-                "execution_snapshot_drift_mismatching_snapshot_count"
-            )
-            or 0
-        )
-        == 0
-        and execution_drift_fields.get("execution_drift_overview_status") == "ok"
+    execution_ready = execution_is_ready(
+        execution_snapshot_fields=execution_snapshot_fields,
+        execution_comparison_fields=execution_comparison_fields,
+        execution_diagnostics_fields=execution_diagnostics_fields,
+        execution_gap_history_fields=execution_gap_history_fields,
+        execution_state_comparison_fields=execution_state_comparison_fields,
+        execution_snapshot_drift_fields=execution_snapshot_drift_fields,
+        execution_drift_fields=execution_drift_fields,
     )
-    backtest_ready = int(backtest.get("total_trade_count") or 0) > 0
-    live_evidence_ready = live_evidence.get("decision") in {
-        "GO",
-        "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST",
-    }
-    operations_ready = operations.get("overall_status") == "ok"
+    backtest_ready = backtest_is_ready(backtest)
+    live_evidence_ready = live_evidence_is_ready(live_evidence)
+    operations_ready = operations_is_ready(operations)
+    next_phase_candidate = phase_candidate(phase2_entry_allowed)
 
     summary = {
         "overall_status": current_state.get("overall_status") or operations.get("overall_status"),
@@ -472,10 +199,10 @@ def build_readiness_snapshot(
         "operations_ready": operations_ready,
         "operations_overall_status": operations.get("overall_status"),
         "research_quality_report_exists": current_state.get("research_quality_report_exists"),
-        "next_phase_candidate": "Phase 2" if phase2_entry_allowed else "Stay Phase 1",
-        "readiness_next_phase_candidate": "Phase 2" if phase2_entry_allowed else "Stay Phase 1",
+        "next_phase_candidate": next_phase_candidate,
+        "readiness_next_phase_candidate": next_phase_candidate,
         "readiness_execution_ready": execution_ready,
-        **execution_adapter_fields,
+        **execution_adapter_summary_fields,
         **remediation_fields,
         "quick_navigation": quick_navigation,
         "restart_pointers": restart_pointers,
@@ -484,342 +211,7 @@ def build_readiness_snapshot(
         "recommended_read_order": recommended_read_order_items,
     }
 
-    lines = [
-        "# Readiness Snapshot",
-        "",
-        "## Overall",
-        "",
-        f"- overall_status: {summary['overall_status']}",
-        f"- next_phase_candidate: {summary['next_phase_candidate']}",
-        "",
-        "## Phase Gate",
-        "",
-        f"- phase_gate_decision: {summary['phase_gate_decision']}",
-        f"- phase2_entry_allowed: {summary['phase2_entry_allowed']}",
-        f"- phase2_entry_reason: {summary['phase2_entry_reason']}",
-        f"- phase_gate_reason: {summary['phase_gate_reason']}",
-        f"- phase_gate_strict_validation_passed: {summary['phase_gate_strict_validation_passed']}",
-        f"- phase_gate_strict_validation_issue_count: {summary['phase_gate_strict_validation_issue_count']}",
-        f"- phase_gate_checked_files: {summary['phase_gate_checked_files']}",
-        f"- phase_gate_review_report_path: {summary['phase_gate_review_report_path']}",
-        "",
-        "## Strict Validation Preview",
-        "",
-    ]
-    validation_issue_previews = phase_gate_issue_preview_lines(summary)
-    if validation_issue_previews:
-        lines.extend(f"- {item}" for item in validation_issue_previews)
-    else:
-        lines.append("- issues: none")
-    lines.extend(["", "## Readiness Flags", ""])
-    lines.extend(
-        [
-            f"- execution_ready: {summary['execution_ready']}",
-            f"- backtest_ready: {summary['backtest_ready']}",
-            f"- live_evidence_ready: {summary['live_evidence_ready']}",
-            f"- operations_ready: {summary['operations_ready']}",
-            f"- research_quality_report_exists: {summary['research_quality_report_exists']}",
-        ]
-    )
-    lines.extend(["", "## Execution Adapter Surfaces", ""])
-    lines.extend(
-        [
-            f"- execution_balance_status_venue: {summary.get('execution_balance_status_venue')}",
-            f"- execution_balance_status_currency: {summary.get('execution_balance_status_currency')}",
-            f"- execution_balance_status_equity: {summary.get('execution_balance_status_equity')}",
-            f"- execution_balance_status_available_cash: {summary.get('execution_balance_status_available_cash')}",
-            f"- execution_balance_status_margin_used: {summary.get('execution_balance_status_margin_used')}",
-            f"- execution_balance_status_notional_usd: {summary.get('execution_balance_status_notional_usd')}",
-            f"- execution_balance_status_unrealized_pnl: {summary.get('execution_balance_status_unrealized_pnl')}",
-            f"- execution_balance_status_cumulative_rollover_usd: {summary.get('execution_balance_status_cumulative_rollover_usd')}",
-            f"- execution_fill_status_venue: {summary.get('execution_fill_status_venue')}",
-            f"- execution_fill_status_fills_count: {summary.get('execution_fill_status_fills_count')}",
-            f"- execution_fill_status_latest_fill_id: {summary.get('execution_fill_status_latest_fill_id')}",
-            f"- execution_fill_status_latest_fill_order_id: {summary.get('execution_fill_status_latest_fill_order_id')}",
-            f"- execution_fill_status_latest_fill_symbol: {summary.get('execution_fill_status_latest_fill_symbol')}",
-            f"- execution_fill_status_latest_fill_side: {summary.get('execution_fill_status_latest_fill_side')}",
-            f"- execution_fill_status_latest_fill_quantity: {summary.get('execution_fill_status_latest_fill_quantity')}",
-            f"- execution_fill_status_latest_fill_price: {summary.get('execution_fill_status_latest_fill_price')}",
-            f"- execution_fill_status_latest_fill_status: {summary.get('execution_fill_status_latest_fill_status')}",
-            f"- execution_fill_status_latest_fill_ts_fill: {summary.get('execution_fill_status_latest_fill_ts_fill')}",
-            f"- execution_order_status_venue: {summary.get('execution_order_status_venue')}",
-            f"- execution_order_status_order_id: {summary.get('execution_order_status_order_id')}",
-            f"- execution_order_status_status: {summary.get('execution_order_status_status')}",
-            f"- execution_order_status_symbol: {summary.get('execution_order_status_symbol')}",
-            f"- execution_order_status_side: {summary.get('execution_order_status_side')}",
-            f"- execution_order_status_quantity: {summary.get('execution_order_status_quantity')}",
-            f"- execution_cancel_order_target: {summary.get('execution_cancel_order_target')}",
-            f"- execution_cancel_order_status: {summary.get('execution_cancel_order_status')}",
-            f"- execution_close_position_target: {summary.get('execution_close_position_target')}",
-            f"- execution_close_position_status: {summary.get('execution_close_position_status')}",
-            f"- execution_reconcile_positions_matched: {summary.get('execution_reconcile_positions_matched')}",
-            (
-                "- execution_reconcile_positions_missing_in_adapter_count: "
-                f"{summary.get('execution_reconcile_positions_missing_in_adapter_count')}"
-            ),
-            (
-                "- execution_reconcile_positions_missing_in_internal_count: "
-                f"{summary.get('execution_reconcile_positions_missing_in_internal_count')}"
-            ),
-            f"- execution_read_only_surfaces_venue_count: {summary.get('execution_read_only_surfaces_venue_count')}",
-            (
-                "- execution_read_only_surfaces_with_balance_snapshot_count: "
-                f"{summary.get('execution_read_only_surfaces_with_balance_snapshot_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_positions_snapshot_count: "
-                f"{summary.get('execution_read_only_surfaces_with_positions_snapshot_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_fills_snapshot_count: "
-                f"{summary.get('execution_read_only_surfaces_with_fills_snapshot_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_order_status_snapshot_count: "
-                f"{summary.get('execution_read_only_surfaces_with_order_status_snapshot_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_reconciled_venue_count: "
-                f"{summary.get('execution_read_only_surfaces_reconciled_venue_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_positions_financial_totals_count: "
-                f"{summary.get('execution_read_only_surfaces_with_positions_financial_totals_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_positions_rollover_metrics_count: "
-                f"{summary.get('execution_read_only_surfaces_with_positions_rollover_metrics_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_positions_protection_metrics_count: "
-                f"{summary.get('execution_read_only_surfaces_with_positions_protection_metrics_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_positions_leverage_metrics_count: "
-                f"{summary.get('execution_read_only_surfaces_with_positions_leverage_metrics_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_positions_return_metrics_count: "
-                f"{summary.get('execution_read_only_surfaces_with_positions_return_metrics_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_positions_day_trade_metrics_count: "
-                f"{summary.get('execution_read_only_surfaces_with_positions_day_trade_metrics_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_positions_limit_metrics_count: "
-                f"{summary.get('execution_read_only_surfaces_with_positions_limit_metrics_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_with_positions_quantity_metrics_count: "
-                f"{summary.get('execution_read_only_surfaces_with_positions_quantity_metrics_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_notional_usd_total: "
-                f"{summary.get('execution_read_only_surfaces_positions_notional_usd_total')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_unrealized_pnl_usd_total: "
-                f"{summary.get('execution_read_only_surfaces_positions_unrealized_pnl_usd_total')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_collateral_used_usd_total: "
-                f"{summary.get('execution_read_only_surfaces_positions_collateral_used_usd_total')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_max_withdrawable_usd_total: "
-                f"{summary.get('execution_read_only_surfaces_positions_max_withdrawable_usd_total')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_cumulative_rollover_usd_total: "
-                f"{summary.get('execution_read_only_surfaces_positions_cumulative_rollover_usd_total')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_with_liquidation_price_count: "
-                f"{summary.get('execution_read_only_surfaces_positions_with_liquidation_price_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_with_take_profit_count: "
-                f"{summary.get('execution_read_only_surfaces_positions_with_take_profit_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_with_stop_loss_count: "
-                f"{summary.get('execution_read_only_surfaces_positions_with_stop_loss_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_day_trade_count: "
-                f"{summary.get('execution_read_only_surfaces_positions_day_trade_count')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_average_leverage: "
-                f"{summary.get('execution_read_only_surfaces_positions_average_leverage')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_average_return_on_equity: "
-                f"{summary.get('execution_read_only_surfaces_positions_average_return_on_equity')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_max_leverage: "
-                f"{summary.get('execution_read_only_surfaces_positions_max_leverage')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_total_quantity: "
-                f"{summary.get('execution_read_only_surfaces_positions_total_quantity')}"
-            ),
-            (
-                "- execution_read_only_surfaces_positions_total_realized_pnl: "
-                f"{summary.get('execution_read_only_surfaces_positions_total_realized_pnl')}"
-            ),
-            (
-                "- execution_read_only_surfaces_latest_positions_server_time_ms: "
-                f"{summary.get('execution_read_only_surfaces_latest_positions_server_time_ms')}"
-            ),
-            (
-                "- execution_read_only_surfaces_latest_positions_open_timestamp_ms: "
-                f"{summary.get('execution_read_only_surfaces_latest_positions_open_timestamp_ms')}"
-            ),
-            (
-                "- execution_read_only_surfaces_latest_positions_updated_at: "
-                f"{summary.get('execution_read_only_surfaces_latest_positions_updated_at')}"
-            ),
-            (
-                "- execution_read_only_surfaces_latest_positions_client_ts: "
-                f"{summary.get('execution_read_only_surfaces_latest_positions_client_ts')}"
-            ),
-            f"- execution_read_only_surfaces_report_path: {summary.get('execution_read_only_surfaces_report_path')}",
-        ]
-    )
-    lines.extend(["", "## State And Daemon Surfaces", ""])
-    lines.extend(
-        [
-            f"- daemon_manifest_mode: {summary.get('daemon_manifest_mode')}",
-            f"- daemon_manifest_command: {summary.get('daemon_manifest_command')}",
-            f"- daemon_manifest_state_store_path: {summary.get('daemon_manifest_state_store_path')}",
-            f"- daemon_loop_status: {summary.get('daemon_loop_status')}",
-            f"- daemon_loop_cycles_completed: {summary.get('daemon_loop_cycles_completed')}",
-            f"- daemon_loop_latest_event_status: {summary.get('daemon_loop_latest_event_status')}",
-            f"- daemon_loop_report_path: {summary.get('daemon_loop_report_path')}",
-            f"- notification_outbox_status: {summary.get('notification_outbox_status')}",
-            f"- notification_outbox_sink: {summary.get('notification_outbox_sink')}",
-            f"- notification_outbox_level: {summary.get('notification_outbox_level')}",
-            f"- notification_outbox_report_path: {summary.get('notification_outbox_report_path')}",
-            f"- state_export_snapshot_path: {summary.get('state_export_snapshot_path')}",
-            f"- state_export_audit_overall_status: {summary.get('state_export_audit_overall_status')}",
-            f"- state_export_phase_gate_decision: {summary.get('state_export_phase_gate_decision')}",
-            (
-                "- state_export_readiness_next_phase_candidate: "
-                f"{summary.get('state_export_readiness_next_phase_candidate')}"
-            ),
-            f"- state_restore_restored: {summary.get('state_restore_restored')}",
-            f"- state_restore_snapshot_path: {summary.get('state_restore_snapshot_path')}",
-            f"- state_restore_audit_overall_status: {summary.get('state_restore_audit_overall_status')}",
-            f"- state_restore_phase_gate_decision: {summary.get('state_restore_phase_gate_decision')}",
-        ]
-    )
-    lines.extend(["", "## Restart Pointers", ""])
-    for key, value in restart_pointers.items():
-        lines.append(f"- {key}: {value}")
-    lines.extend(["", "## Quick Navigation", ""])
-    for key, value in quick_navigation.items():
-        lines.append(f"- {key}: {value}")
-    lines.extend(["", "## Related Reports", ""])
-    for key, value in related_reports.items():
-        lines.append(f"- {key}: {value}")
-    lines.extend(["", "## Latest Execution Lineage", ""])
-    lines.extend(latest_execution_lineage_flat_lines(summary))
-    lines.extend(["", "## Current Remediation Queue", ""])
-    lines.extend(
-        [
-            f"- timeline_latest_remediation_planner_status: {summary.get('timeline_latest_remediation_planner_status')}",
-            f"- timeline_latest_remediation_planner_next_best_command: {summary.get('timeline_latest_remediation_planner_next_best_command')}",
-            (
-                "- timeline_latest_remediation_planner_feedback_priority_reason: "
-                f"{summary.get('timeline_latest_remediation_planner_feedback_priority_reason')}"
-            ),
-            f"- timeline_latest_remediation_execution_plan_status: {summary.get('timeline_latest_remediation_execution_plan_status')}",
-            f"- timeline_latest_remediation_execution_plan_next_action_command: {summary.get('timeline_latest_remediation_execution_plan_next_action_command')}",
-            (
-                "- timeline_latest_remediation_execution_plan_feedback_priority_reason: "
-                f"{summary.get('timeline_latest_remediation_execution_plan_feedback_priority_reason')}"
-            ),
-            f"- timeline_latest_remediation_session_status: {summary.get('timeline_latest_remediation_session_status')}",
-            f"- timeline_latest_remediation_session_next_pending_command: {summary.get('timeline_latest_remediation_session_next_pending_command')}",
-            (
-                "- timeline_latest_remediation_session_feedback_priority_reason: "
-                f"{summary.get('timeline_latest_remediation_session_feedback_priority_reason')}"
-            ),
-            f"- timeline_latest_remediation_checkpoint_status: {summary.get('timeline_latest_remediation_checkpoint_status')}",
-            f"- timeline_latest_remediation_checkpoint_next_action_command: {summary.get('timeline_latest_remediation_checkpoint_next_action_command')}",
-            (
-                "- timeline_latest_remediation_checkpoint_feedback_priority_reason: "
-                f"{summary.get('timeline_latest_remediation_checkpoint_feedback_priority_reason')}"
-            ),
-            f"- timeline_latest_remediation_scoreboard_status: {summary.get('timeline_latest_remediation_scoreboard_status')}",
-            f"- timeline_latest_remediation_scoreboard_next_action_command: {summary.get('timeline_latest_remediation_scoreboard_next_action_command')}",
-            (
-                "- timeline_latest_remediation_scoreboard_feedback_priority_reason: "
-                f"{summary.get('timeline_latest_remediation_scoreboard_feedback_priority_reason')}"
-            ),
-        ]
-    )
-    lines.extend(["", "## Current State Metrics", ""])
-    lines.extend(
-        [
-            f"- execution_overall_status: {summary['execution_overall_status']}",
-            f"- execution_venue_count: {summary['execution_venue_count']}",
-            f"- execution_comparison_all_registries_present: {summary['execution_comparison_all_registries_present']}",
-            f"- execution_diagnostics_status: {summary['execution_diagnostics_status']}",
-            f"- execution_balance_gap_detected: {summary['execution_balance_gap_detected']}",
-            f"- execution_fills_gap_detected: {summary['execution_fills_gap_detected']}",
-            f"- execution_gap_history_entry_count: {summary['execution_gap_history_entry_count']}",
-            f"- execution_gap_history_latest_status: {summary['execution_gap_history_latest_status']}",
-            f"- execution_gap_history_latest_diagnostics_status: {summary['execution_gap_history_latest_diagnostics_status']}",
-            f"- execution_state_comparison_entry_count: {summary['execution_state_comparison_entry_count']}",
-            (
-                "- execution_state_comparison_latest_status_match: "
-                f"{summary['execution_state_comparison_latest_status_match']}"
-            ),
-            (
-                "- execution_state_comparison_mismatching_count: "
-                f"{summary['execution_state_comparison_mismatching_count']}"
-            ),
-            f"- execution_snapshot_drift_entry_count: {summary['execution_snapshot_drift_entry_count']}",
-            (
-                "- execution_snapshot_drift_latest_status_match: "
-                f"{summary['execution_snapshot_drift_latest_status_match']}"
-            ),
-            (
-                "- execution_snapshot_drift_mismatching_snapshot_count: "
-                f"{summary['execution_snapshot_drift_mismatching_snapshot_count']}"
-            ),
-            f"- execution_drift_overview_status: {summary['execution_drift_overview_status']}",
-            (
-                "- execution_drift_overview_diagnostics_alignment_match: "
-                f"{summary['execution_drift_overview_diagnostics_alignment_match']}"
-            ),
-            (
-                "- execution_drift_overview_state_comparison_mismatching_count: "
-                f"{summary['execution_drift_overview_state_comparison_mismatching_count']}"
-            ),
-            (
-                "- execution_drift_overview_snapshot_drift_mismatching_snapshot_count: "
-                f"{summary['execution_drift_overview_snapshot_drift_mismatching_snapshot_count']}"
-            ),
-            f"- backtest_total_trade_count: {summary['backtest_total_trade_count']}",
-            f"- live_evidence_status: {summary['live_evidence_status']}",
-            f"- live_evidence_decision: {summary['live_evidence_decision']}",
-            f"- live_evidence_report_path: {summary['live_evidence_report_path']}",
-            f"- operations_overall_status: {summary['operations_overall_status']}",
-        ]
-    )
-    lines.extend(["", "## Artifact Paths", ""])
-    for key, value in artifacts.items():
-        lines.append(f"- {key}: {value}")
-    lines.extend(["", "## Recommended Read Order", ""])
-    lines.extend(f"- {item}" for item in recommended_read_order_items)
-    lines.append("")
-
-    text = "\n".join(lines)
+    text = render_readiness_snapshot_markdown(summary)
     if out_path is not None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(text, encoding="utf-8")

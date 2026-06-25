@@ -6,7 +6,8 @@ from pathlib import Path
 
 import typer
 
-from sis.commands.crypto_perp import _fixture_account_snapshot, _utc_now
+from sis.commands.crypto_perp import _utc_now
+from sis.commands.crypto_perp_account import build_fixture_account_snapshot
 from sis.crypto_perp.io import write_json_artifact
 from sis.crypto_perp.order_preview import (
     InstrumentOrderConstraints,
@@ -44,7 +45,7 @@ def register_crypto_perp_live_commands(app: typer.Typer) -> None:
             typer.echo("block_reason=REAL_NETWORK_TINY_LIVE_REQUIRES_SEPARATE_APPROVAL")
             raise typer.Exit(2)
 
-        read_only_account = _fixture_account_snapshot()
+        read_only_account = build_fixture_account_snapshot(utc_now_fn=_utc_now)
         account = read_only_account.model_copy(
             update={
                 "credential_scope_attestation": read_only_account.credential_scope_attestation.model_copy(
