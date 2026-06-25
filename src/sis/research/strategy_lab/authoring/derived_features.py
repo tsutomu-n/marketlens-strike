@@ -35,6 +35,10 @@ from sis.research.strategy_lab.authoring.derived_quality import (
     QUALITY_DERIVED_OPS,
     quality_expression,
 )
+from sis.research.strategy_lab.authoring.derived_timestamp_features import (
+    TIMESTAMP_DERIVED_OPS,
+    timestamp_expression,
+)
 from sis.research.strategy_lab.authoring.derived_trend_indicators import (
     TREND_INDICATOR_DERIVED_OPS,
     trend_indicator_expression,
@@ -106,14 +110,8 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
         expr = trend_indicator_expression(feature)
     elif feature.op in VOLUME_INDICATOR_DERIVED_OPS:
         expr = volume_indicator_expression(feature)
-    elif feature.op == "ts_weekday":
-        expr = first.dt.weekday() - 1
-    elif feature.op == "ts_hour":
-        expr = first.dt.hour()
-    elif feature.op == "ts_month":
-        expr = first.dt.month()
-    elif feature.op == "ts_day":
-        expr = first.dt.day()
+    elif feature.op in TIMESTAMP_DERIVED_OPS:
+        expr = timestamp_expression(feature)
     elif feature.op == "pct_change":
         previous = first.shift(1).over("canonical_symbol")
         expr = (first - previous) / safe_denominator(previous)

@@ -39,6 +39,14 @@ from sis.research.strategy_lab.authoring.derived_quality import (
     QUALITY_DERIVED_OPS,
     quality_expression,
 )
+from sis.research.strategy_lab.authoring.derived_return_transforms import (
+    RETURN_TRANSFORM_DERIVED_OPS,
+    return_transform_expression,
+)
+from sis.research.strategy_lab.authoring.derived_timestamp_features import (
+    TIMESTAMP_DERIVED_OPS,
+    timestamp_expression,
+)
 from sis.research.strategy_lab.authoring.derived_trend_indicators import (
     TREND_INDICATOR_DERIVED_OPS,
     trend_indicator_expression,
@@ -964,4 +972,102 @@ def test_volume_indicator_expression_computes_volume_ops() -> None:
     assert result.get_column("obv").to_list() == pytest.approx([0.0, 1500.0, 300.0, 2100.0, 2100.0])
     assert result.get_column("vol_z").to_list() == pytest.approx(
         [None, 0.7071067812, -0.1324532357, 1.0, -0.8728715609]
+    )
+
+
+def test_timestamp_expression_computes_calendar_ops() -> None:
+    from datetime import datetime, timedelta, timezone
+
+    start = datetime(2026, 1, 5, 13, tzinfo=timezone.utc)
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ"],
+            "ts": [start, start + timedelta(hours=3), start + timedelta(hours=25)],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            timestamp_expression(
+                DerivedFeature(name="weekday", op="ts_weekday", columns=["ts"])
+            ).alias("weekday"),
+            timestamp_expression(DerivedFeature(name="hour", op="ts_hour", columns=["ts"])).alias(
+                "hour"
+            ),
+            timestamp_expression(DerivedFeature(name="month", op="ts_month", columns=["ts"])).alias(
+                "month"
+            ),
+            timestamp_expression(DerivedFeature(name="day", op="ts_day", columns=["ts"])).alias(
+                "day"
+            ),
+        ]
+    )
+
+    assert TIMESTAMP_DERIVED_OPS == {
+        "ts_weekday",
+        "ts_hour",
+        "ts_month",
+        "ts_day",
+    }
+    assert result.get_column("weekday").to_list() == [0, 0, 1]
+    assert result.get_column("hour").to_list() == [13, 16, 14]
+    assert result.get_column("month").to_list() == [1, 1, 1]
+    assert result.get_column("day").to_list() == [5, 5, 6]
+
+
+def test_return_transform_expression_computes_path_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ", "QQQ", "QQQ"],
+            "ts": [1, 2, 3, 4, 5],
+            "close": [100.0, 110.0, 99.0, 121.0, 121.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            return_transform_expression(
+                DerivedFeature(name="pct", op="pct_change", columns=["close"])
+            ).alias("pct"),
+            return_transform_expression(
+                DerivedFeature(name="log", op="log_return", columns=["close"])
+            ).alias("log"),
+            return_transform_expression(
+                DerivedFeature(name="lag2", op="lag", columns=["close"], window=2)
+            ).alias("lag2"),
+            return_transform_expression(
+                DerivedFeature(name="ret2", op="rolling_return", columns=["close"], window=2)
+            ).alias("ret2"),
+            return_transform_expression(
+                DerivedFeature(name="ewm", op="ewm_mean", columns=["close"], window=3)
+            ).alias("ewm"),
+            return_transform_expression(
+                DerivedFeature(name="rsi3", op="rsi", columns=["close"], window=3)
+            ).alias("rsi3"),
+        ]
+    )
+
+    assert RETURN_TRANSFORM_DERIVED_OPS == {
+        "pct_change",
+        "log_return",
+        "lag",
+        "rolling_return",
+        "ewm_mean",
+        "rsi",
+    }
+    assert result.get_column("pct").to_list() == pytest.approx(
+        [None, 0.1, -0.1, 0.2222222222, 0.0]
+    )
+    assert result.get_column("log").to_list() == pytest.approx(
+        [None, 0.0953101798, -0.1053605157, 0.2006706955, 0.0]
+    )
+    assert result.get_column("lag2").to_list() == pytest.approx([None, None, 100.0, 110.0, 99.0])
+    assert result.get_column("ret2").to_list() == pytest.approx(
+        [None, None, -0.01, 0.1, 0.2222222222]
+    )
+    assert result.get_column("ewm").to_list() == pytest.approx(
+        [100.0, 105.0, 102.0, 111.5, 116.25]
+    )
+    assert result.get_column("rsi3").to_list() == pytest.approx(
+        [None, None, 47.619047619, 74.4186046512, 66.6666666667]
     )
