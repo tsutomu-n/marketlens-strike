@@ -11,6 +11,10 @@ from sis.research.strategy_lab.authoring.derived_cross_sectional import (
     CROSS_SECTIONAL_DERIVED_OPS,
     cross_sectional_expression,
 )
+from sis.research.strategy_lab.authoring.derived_drawdown import (
+    DRAWDOWN_DERIVED_OPS,
+    drawdown_expression,
+)
 from sis.research.strategy_lab.authoring.derived_execution_costs import (
     EXECUTION_COST_DERIVED_OPS,
     execution_cost_expression,
@@ -475,3 +479,55 @@ def test_quality_expression_computes_quality_ensemble_and_capacity_ops() -> None
     assert result.get_column("turnover").to_list() == pytest.approx([0.05, None, 0.5])
     assert result.get_column("capacity").to_list() == pytest.approx([0.2, None, 0.5])
     assert result.get_column("crowding").to_list() == pytest.approx([0.48, 0.4, 0.0])
+
+
+def test_drawdown_expression_computes_path_dependent_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ", "QQQ", "QQQ"],
+            "ts": [1, 2, 3, 4, 5],
+            "price": [100.0, 120.0, 90.0, 110.0, 80.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            drawdown_expression(
+                DerivedFeature(
+                    name="current_drawdown",
+                    op="drawdown_from_peak",
+                    columns=["price"],
+                    window=3,
+                )
+            ).alias("current_drawdown"),
+            drawdown_expression(
+                DerivedFeature(
+                    name="worst_drawdown",
+                    op="rolling_max_drawdown",
+                    columns=["price"],
+                    window=3,
+                )
+            ).alias("worst_drawdown"),
+            drawdown_expression(
+                DerivedFeature(
+                    name="duration",
+                    op="drawdown_duration",
+                    columns=["price"],
+                    window=3,
+                )
+            ).alias("duration"),
+        ]
+    )
+
+    assert DRAWDOWN_DERIVED_OPS == {
+        "drawdown_from_peak",
+        "rolling_max_drawdown",
+        "drawdown_duration",
+    }
+    assert result.get_column("current_drawdown").to_list() == pytest.approx(
+        [0.0, 0.0, -0.25, -0.0833333333, -0.2727272727]
+    )
+    assert result.get_column("worst_drawdown").to_list() == pytest.approx(
+        [0.0, 0.0, -0.25, -0.25, -0.2727272727]
+    )
+    assert result.get_column("duration").to_list() == pytest.approx([0.0, 0.0, 1.0, 2.0, 1.0])

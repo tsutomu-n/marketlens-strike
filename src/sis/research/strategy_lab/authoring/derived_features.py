@@ -11,6 +11,10 @@ from sis.research.strategy_lab.authoring.derived_cross_sectional import (
     CROSS_SECTIONAL_DERIVED_OPS,
     cross_sectional_expression,
 )
+from sis.research.strategy_lab.authoring.derived_drawdown import (
+    DRAWDOWN_DERIVED_OPS,
+    drawdown_expression,
+)
 from sis.research.strategy_lab.authoring.derived_execution_costs import (
     EXECUTION_COST_DERIVED_OPS,
     execution_cost_expression,
@@ -525,25 +529,8 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
         expr = execution_cost_expression(feature)
     elif feature.op in QUALITY_DERIVED_OPS:
         expr = quality_expression(feature)
-    elif feature.op == "drawdown_from_peak":
-        rolling_peak = first.rolling_max(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-        expr = (first / safe_denominator(rolling_peak)) - 1.0
-    elif feature.op == "rolling_max_drawdown":
-        rolling_peak = first.rolling_max(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-        drawdown = (first / safe_denominator(rolling_peak)) - 1.0
-        expr = drawdown.rolling_min(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-    elif feature.op == "drawdown_duration":
-        expr = first.rolling_map(
-            lambda values: len(values) - 1 - int(values.arg_max() or 0),
-            window_size=feature.window or 1,
-            min_samples=1,
-        ).over("canonical_symbol")
+    elif feature.op in DRAWDOWN_DERIVED_OPS:
+        expr = drawdown_expression(feature)
     else:
         raise StrategyAuthoringValidationError(f"Unsupported derived feature op: {feature.op}")
     if feature.fill_null is not None:
