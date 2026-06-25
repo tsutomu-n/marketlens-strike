@@ -7,8 +7,8 @@ from typing import Any, Literal, cast
 
 import polars as pl
 
-from sis.research.strategy_lab.authoring.compiler.common import _float_or_default, _stable_digest
-from sis.research.strategy_lab.authoring.contracts.base import DEFAULT_EXIT_PRIORITY
+from sis.research.strategy_lab.authoring.compiler.common import _float_or_default
+from sis.research.strategy_lab.authoring.contracts.base import DEFAULT_EXIT_PRIORITY, _stable_digest
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.authoring.scorecard import _paper_preview_scorecard_summary
 from sis.research.strategy_lab.candidates import TradeCandidate

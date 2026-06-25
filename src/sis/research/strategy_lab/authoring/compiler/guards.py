@@ -5,11 +5,13 @@ from typing import Any
 
 from sis.research.strategy_lab.authoring.compiler.common import (
     _block_trade_row,
+    _reward_risk_ratio,
+    _signal_timestamp,
+)
+from sis.research.strategy_lab.authoring.compiler.row_values import (
     _non_negative_value,
     _optional_float_from_row,
     _positive_integer_value,
-    _reward_risk_ratio,
-    _signal_timestamp,
     _sizing_value,
     _unit_interval_value,
 )

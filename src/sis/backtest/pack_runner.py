@@ -22,16 +22,16 @@ from sis.backtest.report_extension import build_strategy_backtest_report_extensi
 from sis.backtest.rolling_stability import build_strategy_backtest_rolling_stability
 from sis.backtest.stress import build_strategy_backtest_stress
 from sis.backtest.trial_ledger import build_strategy_backtest_trial_ledger
-from sis.research.strategy_lab.authoring.backtest import (
-    run_authoring_backtest,
+from sis.research.strategy_lab.authoring.backtest import run_authoring_backtest
+from sis.research.strategy_lab.authoring.backtest_outputs import (
     write_authoring_backtest_outputs,
 )
-from sis.research.strategy_lab.authoring.backtest_suite import (
-    run_backtest_suite,
+from sis.research.strategy_lab.authoring.backtest_suite import run_backtest_suite
+from sis.research.strategy_lab.authoring.backtest_suite_outputs import (
     write_backtest_suite_outputs,
 )
-from sis.research.strategy_lab.authoring.bundle import (
-    run_authoring_bundle,
+from sis.research.strategy_lab.authoring.bundle import run_authoring_bundle
+from sis.research.strategy_lab.authoring.bundle_outputs import (
     write_authoring_bundle_outputs,
 )
 from sis.research.strategy_lab.authoring.compiler.artifacts import (

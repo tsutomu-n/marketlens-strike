@@ -5,10 +5,10 @@ from typing import Any
 
 from sis.research.strategy_lab.authoring.compiler.common import (
     _block_trade_row,
-    _compiled_signal_id,
     _position_weight_value,
     _signal_timestamp,
 )
+from sis.research.strategy_lab.authoring.compiler.signal_ids import _compiled_signal_id
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 
 

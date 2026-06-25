@@ -7,6 +7,10 @@ import pytest
 
 from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 from sis.research.strategy_lab.authoring.contracts.derived import DerivedFeature
+from sis.research.strategy_lab.authoring.derived_arithmetic import (
+    ARITHMETIC_DERIVED_OPS,
+    arithmetic_expression,
+)
 from sis.research.strategy_lab.authoring.derived_bands_channels import (
     BANDS_CHANNEL_DERIVED_OPS,
     bands_channel_expression,
@@ -43,9 +47,25 @@ from sis.research.strategy_lab.authoring.derived_return_transforms import (
     RETURN_TRANSFORM_DERIVED_OPS,
     return_transform_expression,
 )
+from sis.research.strategy_lab.authoring.derived_relative_correlation import (
+    RELATIVE_CORRELATION_DERIVED_OPS,
+    relative_correlation_expression,
+)
+from sis.research.strategy_lab.authoring.derived_rolling_stats import (
+    ROLLING_STAT_DERIVED_OPS,
+    rolling_stat_expression,
+)
+from sis.research.strategy_lab.authoring.derived_rolling_risk_stats import (
+    ROLLING_RISK_STAT_DERIVED_OPS,
+    rolling_risk_stat_expression,
+)
 from sis.research.strategy_lab.authoring.derived_timestamp_features import (
     TIMESTAMP_DERIVED_OPS,
     timestamp_expression,
+)
+from sis.research.strategy_lab.authoring.derived_trend_transforms import (
+    TREND_TRANSFORM_DERIVED_OPS,
+    trend_transform_expression,
 )
 from sis.research.strategy_lab.authoring.derived_trend_indicators import (
     TREND_INDICATOR_DERIVED_OPS,
@@ -127,6 +147,89 @@ def test_derived_expression_rejects_unsupported_constructed_op() -> None:
 
     with pytest.raises(StrategyAuthoringValidationError, match="Unsupported derived feature op"):
         derived_expression(feature)
+
+
+def test_arithmetic_expression_computes_scalar_arithmetic_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "left": [10.0, -4.0],
+            "right": [2.0, 0.0],
+            "third": [3.0, 5.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            arithmetic_expression(
+                DerivedFeature(
+                    name="add",
+                    op="add",
+                    columns=["left", "right", "third"],
+                    value=1.0,
+                )
+            ).alias("add"),
+            arithmetic_expression(
+                DerivedFeature(name="sub", op="sub", columns=["left", "right"])
+            ).alias("sub"),
+            arithmetic_expression(
+                DerivedFeature(name="mul", op="mul", columns=["left", "right"], value=2.0)
+            ).alias("mul"),
+            arithmetic_expression(
+                DerivedFeature(name="div_value", op="div", columns=["left"], value=2.0)
+            ).alias("div_value"),
+            arithmetic_expression(
+                DerivedFeature(name="ratio", op="ratio", columns=["left", "right"])
+            ).alias("ratio"),
+            arithmetic_expression(
+                DerivedFeature(name="diff", op="diff", columns=["left", "right"])
+            ).alias("diff"),
+            arithmetic_expression(
+                DerivedFeature(name="pct_diff", op="pct_diff", columns=["left", "right"])
+            ).alias("pct_diff"),
+            arithmetic_expression(DerivedFeature(name="abs", op="abs", columns=["left"])).alias(
+                "abs"
+            ),
+            arithmetic_expression(DerivedFeature(name="neg", op="neg", columns=["left"])).alias(
+                "neg"
+            ),
+            arithmetic_expression(
+                DerivedFeature(name="max", op="max", columns=["left", "right"], value=3.0)
+            ).alias("max"),
+            arithmetic_expression(
+                DerivedFeature(name="min", op="min", columns=["left", "right"], value=-5.0)
+            ).alias("min"),
+            arithmetic_expression(
+                DerivedFeature(name="mean", op="mean", columns=["left", "right"], value=3.0)
+            ).alias("mean"),
+        ]
+    )
+
+    assert ARITHMETIC_DERIVED_OPS == {
+        "add",
+        "sub",
+        "mul",
+        "div",
+        "ratio",
+        "diff",
+        "pct_diff",
+        "abs",
+        "neg",
+        "max",
+        "min",
+        "mean",
+    }
+    assert result.get_column("add").to_list() == pytest.approx([16.0, 2.0])
+    assert result.get_column("sub").to_list() == pytest.approx([8.0, -4.0])
+    assert result.get_column("mul").to_list() == pytest.approx([40.0, -0.0])
+    assert result.get_column("div_value").to_list() == pytest.approx([5.0, -2.0])
+    assert result.get_column("ratio").to_list() == pytest.approx([5.0, None])
+    assert result.get_column("diff").to_list() == pytest.approx([8.0, -4.0])
+    assert result.get_column("pct_diff").to_list() == pytest.approx([4.0, None])
+    assert result.get_column("abs").to_list() == pytest.approx([10.0, 4.0])
+    assert result.get_column("neg").to_list() == pytest.approx([-10.0, 4.0])
+    assert result.get_column("max").to_list() == pytest.approx([10.0, 3.0])
+    assert result.get_column("min").to_list() == pytest.approx([-5.0, -5.0])
+    assert result.get_column("mean").to_list() == pytest.approx([5.0, -0.3333333333])
 
 
 def test_cross_sectional_expression_ranks_and_standardizes_by_timestamp() -> None:
@@ -1066,4 +1169,345 @@ def test_return_transform_expression_computes_path_ops() -> None:
     assert result.get_column("ewm").to_list() == pytest.approx([100.0, 105.0, 102.0, 111.5, 116.25])
     assert result.get_column("rsi3").to_list() == pytest.approx(
         [None, None, 47.619047619, 74.4186046512, 66.6666666667]
+    )
+
+
+def test_trend_transform_expression_computes_residual_one_column_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ", "QQQ", "QQQ"],
+            "ts": [1, 2, 3, 4, 5],
+            "ret": [0.01, -0.02, 0.03, 0.04, 0.02],
+            "close": [100.0, 102.0, 101.0, 105.0, 110.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            trend_transform_expression(
+                DerivedFeature(name="cum", op="cumulative_return", columns=["ret"])
+            ).alias("cum"),
+            trend_transform_expression(
+                DerivedFeature(name="slope2", op="slope", columns=["close"], window=2)
+            ).alias("slope2"),
+            trend_transform_expression(
+                DerivedFeature(
+                    name="fade3",
+                    op="mean_reversion_score",
+                    columns=["close"],
+                    window=3,
+                )
+            ).alias("fade3"),
+            trend_transform_expression(
+                DerivedFeature(
+                    name="dist3",
+                    op="distance_from_ma",
+                    columns=["close"],
+                    window=3,
+                )
+            ).alias("dist3"),
+        ]
+    )
+
+    assert TREND_TRANSFORM_DERIVED_OPS == {
+        "cumulative_return",
+        "slope",
+        "mean_reversion_score",
+        "distance_from_ma",
+    }
+    assert result.get_column("cum").to_list() == pytest.approx(
+        [0.01, -0.0102, 0.019494, 0.06027376, 0.0814792352]
+    )
+    assert result.get_column("slope2").to_list() == pytest.approx([None, None, 0.5, 1.5, 4.5])
+    assert result.get_column("fade3").to_list() == pytest.approx(
+        [None, -0.7071067812, -0.0, -1.1208970766, -1.0349097793]
+    )
+    assert result.get_column("dist3").to_list() == pytest.approx(
+        [0.0, 0.0099009901, 0.0, 0.0227272727, 0.0443037975]
+    )
+
+
+def test_relative_correlation_expression_computes_relative_and_correlation_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ", "QQQ", "QQQ"],
+            "ts": [1, 2, 3, 4, 5],
+            "asset": [0.01, 0.02, 0.03, 0.06, 0.05],
+            "benchmark": [0.01, 0.02, 0.03, 0.04, 0.03],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            relative_correlation_expression(
+                DerivedFeature(
+                    name="corr",
+                    op="rolling_corr",
+                    columns=["asset", "benchmark"],
+                    window=5,
+                )
+            ).alias("corr"),
+            relative_correlation_expression(
+                DerivedFeature(
+                    name="beta",
+                    op="rolling_beta",
+                    columns=["asset", "benchmark"],
+                    window=5,
+                )
+            ).alias("beta"),
+            relative_correlation_expression(
+                DerivedFeature(
+                    name="spread_z",
+                    op="rolling_spread_zscore",
+                    columns=["asset", "benchmark"],
+                    window=5,
+                )
+            ).alias("spread_z"),
+            relative_correlation_expression(
+                DerivedFeature(
+                    name="tracking_error",
+                    op="tracking_error",
+                    columns=["asset", "benchmark"],
+                    window=5,
+                    value=1.0,
+                )
+            ).alias("tracking_error"),
+            relative_correlation_expression(
+                DerivedFeature(
+                    name="information_ratio",
+                    op="information_ratio",
+                    columns=["asset", "benchmark"],
+                    window=5,
+                    value=1.0,
+                )
+            ).alias("information_ratio"),
+            relative_correlation_expression(
+                DerivedFeature(
+                    name="autocorr",
+                    op="rolling_autocorr",
+                    columns=["asset"],
+                    window=5,
+                )
+            ).alias("autocorr"),
+        ]
+    )
+
+    assert RELATIVE_CORRELATION_DERIVED_OPS == {
+        "rolling_corr",
+        "rolling_beta",
+        "rolling_spread_zscore",
+        "tracking_error",
+        "information_ratio",
+        "rolling_autocorr",
+    }
+    assert result.get_column("corr").to_list() == pytest.approx(
+        [None, 1.0, 1.0, 0.9561828875, 0.9305008558]
+    )
+    assert result.get_column("beta").to_list() == pytest.approx([None, 1.0, 1.0, 1.6, 1.6923076923])
+    assert result.get_column("spread_z").to_list() == pytest.approx(
+        [None, None, None, 1.5, 1.095445115]
+    )
+    assert result.get_column("tracking_error").to_list() == pytest.approx(
+        [None, 0.0, 0.0, 0.01, 0.0109544512]
+    )
+    assert result.get_column("information_ratio").to_list() == pytest.approx(
+        [None, None, None, 0.5, 0.7302967433]
+    )
+    assert result.get_column("autocorr").to_list() == pytest.approx(
+        [None, None, 2.4494897428, 1.7457431219, 1.0951417936]
+    )
+
+
+def test_rolling_stat_expression_computes_generic_rolling_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ", "QQQ", "QQQ"],
+            "ts": [1, 2, 3, 4, 5],
+            "value": [3.0, 1.0, 4.0, 1.0, 5.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            rolling_stat_expression(
+                DerivedFeature(name="roll_min", op="rolling_min", columns=["value"], window=3)
+            ).alias("roll_min"),
+            rolling_stat_expression(
+                DerivedFeature(name="roll_max", op="rolling_max", columns=["value"], window=3)
+            ).alias("roll_max"),
+            rolling_stat_expression(
+                DerivedFeature(name="roll_sum", op="rolling_sum", columns=["value"], window=3)
+            ).alias("roll_sum"),
+            rolling_stat_expression(
+                DerivedFeature(name="roll_mean", op="rolling_mean", columns=["value"], window=3)
+            ).alias("roll_mean"),
+            rolling_stat_expression(
+                DerivedFeature(name="roll_std", op="rolling_std", columns=["value"], window=3)
+            ).alias("roll_std"),
+            rolling_stat_expression(
+                DerivedFeature(name="roll_z", op="rolling_zscore", columns=["value"], window=3)
+            ).alias("roll_z"),
+            rolling_stat_expression(
+                DerivedFeature(
+                    name="pct_rank",
+                    op="rolling_percentile_rank",
+                    columns=["value"],
+                    window=3,
+                )
+            ).alias("pct_rank"),
+        ]
+    )
+
+    assert ROLLING_STAT_DERIVED_OPS == {
+        "rolling_min",
+        "rolling_max",
+        "rolling_sum",
+        "rolling_mean",
+        "rolling_std",
+        "rolling_zscore",
+        "rolling_percentile_rank",
+    }
+    assert result.get_column("roll_min").to_list() == pytest.approx([3.0, 1.0, 1.0, 1.0, 1.0])
+    assert result.get_column("roll_max").to_list() == pytest.approx([3.0, 3.0, 4.0, 4.0, 5.0])
+    assert result.get_column("roll_sum").to_list() == pytest.approx([3.0, 4.0, 8.0, 6.0, 10.0])
+    assert result.get_column("roll_mean").to_list() == pytest.approx(
+        [3.0, 2.0, 2.6666666667, 2.0, 3.3333333333]
+    )
+    assert result.get_column("roll_std").to_list() == pytest.approx(
+        [None, 1.4142135624, 1.5275252317, 1.7320508076, 2.0816659995]
+    )
+    assert result.get_column("roll_z").to_list() == pytest.approx(
+        [None, -0.7071067812, 0.8728715609, -0.5773502692, 0.800640769]
+    )
+    assert result.get_column("pct_rank").to_list() == pytest.approx(
+        [1.0, 0.5, 1.0, 0.6666666667, 1.0]
+    )
+
+
+def test_rolling_risk_stat_expression_computes_moment_and_risk_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ", "QQQ", "QQQ"],
+            "ts": [1, 2, 3, 4, 5],
+            "ret": [0.02, -0.01, 0.03, -0.02, 0.04],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            rolling_risk_stat_expression(
+                DerivedFeature(name="vol", op="rolling_volatility", columns=["ret"], window=5)
+            ).alias("vol"),
+            rolling_risk_stat_expression(
+                DerivedFeature(name="skew", op="rolling_skew", columns=["ret"], window=5)
+            ).alias("skew"),
+            rolling_risk_stat_expression(
+                DerivedFeature(name="kurt", op="rolling_kurtosis", columns=["ret"], window=5)
+            ).alias("kurt"),
+            rolling_risk_stat_expression(
+                DerivedFeature(
+                    name="ann_vol",
+                    op="annualized_volatility",
+                    columns=["ret"],
+                    window=5,
+                    value=4.0,
+                )
+            ).alias("ann_vol"),
+            rolling_risk_stat_expression(
+                DerivedFeature(
+                    name="realized_var",
+                    op="realized_variance",
+                    columns=["ret"],
+                    window=5,
+                )
+            ).alias("realized_var"),
+            rolling_risk_stat_expression(
+                DerivedFeature(
+                    name="downside_vol",
+                    op="downside_volatility",
+                    columns=["ret"],
+                    window=5,
+                )
+            ).alias("downside_vol"),
+            rolling_risk_stat_expression(
+                DerivedFeature(
+                    name="sharpe",
+                    op="sharpe_like",
+                    columns=["ret"],
+                    window=5,
+                    value=4.0,
+                )
+            ).alias("sharpe"),
+            rolling_risk_stat_expression(
+                DerivedFeature(
+                    name="sortino",
+                    op="sortino_like",
+                    columns=["ret"],
+                    window=5,
+                    value=4.0,
+                )
+            ).alias("sortino"),
+            rolling_risk_stat_expression(
+                DerivedFeature(name="kelly", op="kelly_fraction", columns=["ret"], window=5)
+            ).alias("kelly"),
+            rolling_risk_stat_expression(
+                DerivedFeature(
+                    name="var20", op="historical_var", columns=["ret"], window=5, value=0.2
+                )
+            ).alias("var20"),
+            rolling_risk_stat_expression(
+                DerivedFeature(
+                    name="es20",
+                    op="expected_shortfall",
+                    columns=["ret"],
+                    window=5,
+                    value=0.2,
+                )
+            ).alias("es20"),
+        ]
+    )
+
+    assert ROLLING_RISK_STAT_DERIVED_OPS == {
+        "rolling_volatility",
+        "rolling_skew",
+        "rolling_kurtosis",
+        "annualized_volatility",
+        "realized_variance",
+        "downside_volatility",
+        "sharpe_like",
+        "sortino_like",
+        "kelly_fraction",
+        "historical_var",
+        "expected_shortfall",
+    }
+    assert result.get_column("vol").to_list() == pytest.approx(
+        [None, 0.0212132034, 0.02081666, 0.0238047614, 0.0258843582]
+    )
+    assert result.get_column("skew").to_list() == pytest.approx(
+        [None, None, -0.5280049792, 0.0, -0.2436882574]
+    )
+    assert result.get_column("kurt").to_list() == pytest.approx(
+        [None, None, None, -1.7785467128, -1.6031410114]
+    )
+    assert result.get_column("ann_vol").to_list() == pytest.approx(
+        [None, 0.0424264069, 0.04163332, 0.0476095229, 0.0517687164]
+    )
+    assert result.get_column("realized_var").to_list() == pytest.approx(
+        [0.0004, 0.00025, 0.0004666667, 0.00045, 0.00068]
+    )
+    assert result.get_column("downside_vol").to_list() == pytest.approx(
+        [None, 0.0070710678, 0.0057735027, 0.0095742711, 0.0089442719]
+    )
+    assert result.get_column("sharpe").to_list() == pytest.approx(
+        [None, 0.4714045208, 1.2810252304, 0.4200840252, 0.9272008911]
+    )
+    assert result.get_column("sortino").to_list() == pytest.approx(
+        [None, 1.4142135624, 4.6188021535, 1.0444659357, 2.683281573]
+    )
+    assert result.get_column("kelly").to_list() == pytest.approx(
+        [None, 11.1111111111, 30.7692307692, 8.8235294118, 17.9104477612]
+    )
+    assert result.get_column("var20").to_list() == pytest.approx([-0.02, 0.01, 0.01, 0.01, 0.01])
+    assert result.get_column("es20").to_list() == pytest.approx(
+        [-0.02, -0.005, -0.005, 0.0033333333, 0.0033333333]
     )

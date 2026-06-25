@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime
-from itertools import product
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any
 
 import polars as pl
 
@@ -13,14 +11,17 @@ from sis.research.strategy_lab.authoring.compiler.artifacts import (
     strategy_signals_to_research_signals,
 )
 from sis.research.strategy_lab.authoring.compiler.build import build_authoring_signals
-from sis.research.strategy_lab.authoring.contracts.base import (
-    StrategyAuthoringValidationError,
-    _stable_digest,
+from sis.research.strategy_lab.authoring.backtest_optimizer import (
+    _evaluate_pass_thresholds,
+    _nested_get,
+    _optimizer_sort_value,
+    _optimizer_variants,
+    _resolve_selection_direction,
 )
-from sis.research.strategy_lab.authoring.contracts.spec import (
-    StrategyAuthoringBundleSpec,
-    StrategyAuthoringSpec,
+from sis.research.strategy_lab.authoring.backtest_outputs import (
+    write_authoring_backtest_outputs as write_authoring_backtest_outputs,
 )
+from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.authoring.evaluation_window import (
     apply_evaluation_window,
     capital_metrics,
@@ -29,7 +30,6 @@ from sis.research.strategy_lab.authoring.evaluation_window import (
 )
 from sis.research.strategy_lab.authoring.scorecard import (
     _increment_count,
-    _metrics_json,
     _strategy_scorecard,
 )
 from sis.research.strategy_lab.authoring.validation import _resolve_path
@@ -242,264 +242,6 @@ def _aggregate_backtest_metrics(metrics: list[Any]) -> dict[str, float | int | N
     }
 
 
-def _aggregate_bundle_multi_leg_group_metrics(
-    members: list[dict[str, Any]],
-) -> dict[str, float | int | None]:
-    group_metrics = [
-        (member, member["summary"].get("multi_leg_group_metrics"))
-        for member in members
-        if isinstance(member["summary"].get("multi_leg_group_metrics"), dict)
-        and int(member["summary"]["multi_leg_group_metrics"].get("group_count") or 0) > 0
-    ]
-    if not group_metrics:
-        return {
-            "member_count": 0,
-            "group_count": 0,
-            "executed_group_count": 0,
-            "complete_group_count": 0,
-            "incomplete_group_count": 0,
-            "expected_leg_count": 0,
-            "executed_leg_count": 0,
-            "weighted_total_return": 0.0,
-            "weighted_cost_drag_bps": 0.0,
-            "weighted_avg_group_return": None,
-            "weighted_win_rate": None,
-            "worst_group_return": None,
-            "weighted_max_drawdown": None,
-            "weighted_profit_factor": None,
-            "weighted_avg_leg_return_imbalance": None,
-            "total_notional_usd": 0.0,
-            "weighted_notional_return": None,
-        }
-
-    weighted_total_return = 0.0
-    weighted_cost_drag_bps = 0.0
-    total_notional_usd = 0.0
-    weighted_avg_group_return_values: list[float] = []
-    weighted_win_rate_values: list[float] = []
-    weighted_drawdowns: list[float] = []
-    weighted_profit_factors: list[float] = []
-    weighted_leg_return_imbalances: list[float] = []
-    weighted_notional_returns: list[float] = []
-    worst_group_returns: list[float] = []
-    totals = {
-        "member_count": len(group_metrics),
-        "group_count": 0,
-        "executed_group_count": 0,
-        "complete_group_count": 0,
-        "incomplete_group_count": 0,
-        "expected_leg_count": 0,
-        "executed_leg_count": 0,
-    }
-    for member, metrics in group_metrics:
-        weight = float(member["effective_allocation_weight"])
-        totals["group_count"] += int(metrics.get("group_count") or 0)
-        totals["executed_group_count"] += int(metrics.get("executed_group_count") or 0)
-        totals["complete_group_count"] += int(metrics.get("complete_group_count") or 0)
-        totals["incomplete_group_count"] += int(metrics.get("incomplete_group_count") or 0)
-        totals["expected_leg_count"] += int(metrics.get("expected_leg_count") or 0)
-        totals["executed_leg_count"] += int(metrics.get("executed_leg_count") or 0)
-        weighted_total_return += float(metrics.get("total_return") or 0.0) * weight
-        weighted_cost_drag_bps += float(metrics.get("cost_drag_bps") or 0.0) * weight
-        total_notional_usd += float(metrics.get("total_notional_usd") or 0.0)
-        if metrics.get("avg_group_return") is not None:
-            weighted_avg_group_return_values.append(float(metrics["avg_group_return"]) * weight)
-        if metrics.get("win_rate") is not None:
-            weighted_win_rate_values.append(float(metrics["win_rate"]) * weight)
-        if metrics.get("worst_group_return") is not None:
-            worst_group_returns.append(float(metrics["worst_group_return"]) * weight)
-        if metrics.get("max_drawdown") is not None:
-            weighted_drawdowns.append(float(metrics["max_drawdown"]) * weight)
-        if metrics.get("profit_factor") is not None:
-            weighted_profit_factors.append(float(metrics["profit_factor"]) * weight)
-        if metrics.get("avg_leg_return_imbalance") is not None:
-            weighted_leg_return_imbalances.append(
-                float(metrics["avg_leg_return_imbalance"]) * weight
-            )
-        if metrics.get("notional_weighted_total_return") is not None:
-            weighted_notional_returns.append(
-                float(metrics["notional_weighted_total_return"]) * weight
-            )
-
-    return {
-        **totals,
-        "weighted_total_return": weighted_total_return,
-        "weighted_cost_drag_bps": weighted_cost_drag_bps,
-        "weighted_avg_group_return": (
-            sum(weighted_avg_group_return_values) if weighted_avg_group_return_values else None
-        ),
-        "weighted_win_rate": sum(weighted_win_rate_values) if weighted_win_rate_values else None,
-        "worst_group_return": min(worst_group_returns) if worst_group_returns else None,
-        "weighted_max_drawdown": min(weighted_drawdowns) if weighted_drawdowns else None,
-        "weighted_profit_factor": (
-            sum(weighted_profit_factors) if weighted_profit_factors else None
-        ),
-        "weighted_avg_leg_return_imbalance": (
-            sum(weighted_leg_return_imbalances) if weighted_leg_return_imbalances else None
-        ),
-        "total_notional_usd": total_notional_usd,
-        "weighted_notional_return": (
-            sum(weighted_notional_returns) if weighted_notional_returns else None
-        ),
-    }
-
-
-def _aggregate_bundle_metrics(members: list[dict[str, Any]]) -> dict[str, Any]:
-    if not members:
-        return {
-            "member_count": 0,
-            "trade_count": 0,
-            "weighted_total_return": 0.0,
-            "max_drawdown": None,
-            "cost_drag_bps": 0.0,
-            "multi_leg_group_metrics": _aggregate_bundle_multi_leg_group_metrics([]),
-        }
-    weighted_total_return = 0.0
-    max_drawdowns: list[float] = []
-    trade_count = 0
-    cost_drag_bps = 0.0
-    for member in members:
-        weight = float(member["effective_allocation_weight"])
-        metrics = member["summary"]["aggregate_metrics"]
-        weighted_total_return += float(metrics.get("total_return") or 0.0) * weight
-        if metrics.get("max_drawdown") is not None:
-            max_drawdowns.append(float(metrics["max_drawdown"]) * weight)
-        trade_count += int(metrics.get("trade_count") or 0)
-        cost_drag_bps += float(metrics.get("cost_drag_bps") or 0.0) * weight
-    return {
-        "member_count": len(members),
-        "trade_count": trade_count,
-        "weighted_total_return": weighted_total_return,
-        "max_drawdown": min(max_drawdowns) if max_drawdowns else None,
-        "cost_drag_bps": cost_drag_bps,
-        "multi_leg_group_metrics": _aggregate_bundle_multi_leg_group_metrics(members),
-    }
-
-
-def _cap_bundle_weights(
-    raw_weights: dict[int, float], max_total_allocation_weight: float | None
-) -> dict[int, float]:
-    total = sum(raw_weights.values())
-    if total <= 0:
-        return {index: 0.0 for index in raw_weights}
-    scale = (
-        min(1.0, max_total_allocation_weight / total)
-        if max_total_allocation_weight is not None
-        else 1.0
-    )
-    return {index: weight * scale for index, weight in raw_weights.items()}
-
-
-def _risk_parity_risk_value(member: dict[str, Any]) -> float:
-    metrics = member["summary"]["aggregate_metrics"]
-    drawdown = metrics.get("max_drawdown")
-    if drawdown is None:
-        return 1.0
-    return max(abs(float(drawdown)), 0.0001)
-
-
-def _bundle_effective_weights(
-    bundle: StrategyAuthoringBundleSpec, member_results: list[dict[str, Any]]
-) -> dict[int, float]:
-    if not member_results:
-        return {}
-    if bundle.portfolio.allocation_method == "equal_weight":
-        raw = {int(member["member_index"]): 1.0 / len(member_results) for member in member_results}
-    elif bundle.portfolio.allocation_method == "risk_parity":
-        inverse_risk = {
-            int(member["member_index"]): 1.0 / _risk_parity_risk_value(member)
-            for member in member_results
-        }
-        total_inverse = sum(inverse_risk.values())
-        raw = {
-            index: (weight / total_inverse if total_inverse > 0 else 0.0)
-            for index, weight in inverse_risk.items()
-        }
-    else:
-        raw = {
-            index: member.allocation_weight
-            for index, member in enumerate(bundle.members)
-            if member.enabled
-        }
-    return _cap_bundle_weights(raw, bundle.portfolio.max_total_allocation_weight)
-
-
-def _threshold_actual(summary: dict[str, Any], metric_name: str) -> float | int | None:
-    aggregate_metrics = summary.get("aggregate_metrics")
-    if isinstance(aggregate_metrics, dict) and metric_name in aggregate_metrics:
-        value = aggregate_metrics.get(metric_name)
-    else:
-        current: Any = summary
-        for part in metric_name.split("."):
-            if not isinstance(current, dict):
-                return None
-            current = current.get(part)
-        value = current
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, int | float):
-        return value
-    return None
-
-
-def _threshold_passes(metric_name: str, actual: float | int | None, threshold: float) -> bool:
-    if actual is None:
-        return False
-    if _metric_lower_is_better(metric_name):
-        return float(actual) <= threshold
-    return float(actual) >= threshold
-
-
-def _metric_lower_is_better(metric_name: str) -> bool:
-    lower_is_better = {
-        "cost_drag_bps",
-        "stale_rejected_count",
-        "halt_rejected_count",
-        "blocked_count",
-        "no_signal_count",
-        "entry_order_unfilled_count",
-        "multi_leg_group_metrics.incomplete_group_count",
-        "multi_leg_group_metrics.cost_drag_bps",
-    }
-    if metric_name in lower_is_better:
-        return True
-    leaf = metric_name.rsplit(".", maxsplit=1)[-1]
-    lower_leaf_suffixes = (
-        "_cost_bps",
-        "_drag_bps",
-        "_imbalance",
-        "_imbalance_bps",
-        "_rejected_count",
-        "_blocked_count",
-        "_unfilled_count",
-    )
-    return leaf.endswith(lower_leaf_suffixes) or leaf.startswith(("incomplete_", "rejected_"))
-
-
-def _resolve_selection_direction(
-    direction: str, metric_name: str
-) -> Literal["maximize", "minimize"]:
-    if direction == "auto":
-        return "minimize" if _metric_lower_is_better(metric_name) else "maximize"
-    if direction in {"maximize", "minimize"}:
-        return cast(Literal["maximize", "minimize"], direction)
-    raise StrategyAuthoringValidationError(f"unsupported selection_direction: {direction}")
-
-
-def _evaluate_pass_thresholds(
-    spec: StrategyAuthoringSpec, summary: dict[str, Any]
-) -> dict[str, dict[str, float | int | bool | None]]:
-    results: dict[str, dict[str, float | int | bool | None]] = {}
-    for metric_name, threshold in spec.backtest.pass_thresholds.items():
-        actual = _threshold_actual(summary, metric_name)
-        results[metric_name] = {
-            "actual": actual,
-            "threshold": threshold,
-            "passed": _threshold_passes(metric_name, actual, threshold),
-        }
-    return results
-
-
 def _era_key(value: object, era_unit: str) -> str:
     ts = value if isinstance(value, datetime) else datetime.fromisoformat(str(value))
     if era_unit == "month":
@@ -537,56 +279,6 @@ def _walk_forward_eras(
             }
         )
     return eras
-
-
-def _set_path(payload: dict[str, Any], dotted_path: str, value: float | int | str) -> None:
-    current: dict[str, Any] = payload
-    parts = dotted_path.split(".")
-    for part in parts[:-1]:
-        next_item = current.setdefault(part, {})
-        if not isinstance(next_item, dict):
-            raise StrategyAuthoringValidationError(f"Cannot set optimizer path: {dotted_path}")
-        current = next_item
-    current[parts[-1]] = value
-
-
-def _nested_get(payload: dict[str, Any], dotted_path: str) -> Any:
-    current: Any = payload
-    for part in dotted_path.split("."):
-        if not isinstance(current, dict):
-            return None
-        current = current.get(part)
-    return current
-
-
-def _optimizer_sort_value(item: dict[str, Any], metric_name: str, *, maximize: bool) -> float:
-    value = _threshold_actual(item, metric_name)
-    if value is None:
-        return float("-inf") if maximize else float("inf")
-    return float(value)
-
-
-def _optimizer_variants(spec: StrategyAuthoringSpec) -> list[tuple[str, StrategyAuthoringSpec]]:
-    sweep = spec.optimizer.parameter_sweep
-    if not sweep:
-        return []
-    paths = sorted(sweep)
-    combinations = list(product(*(sweep[path] for path in paths)))
-    if len(combinations) > spec.optimizer.max_variants:
-        raise StrategyAuthoringValidationError(
-            f"optimizer variants exceed max_variants: {len(combinations)} > {spec.optimizer.max_variants}"
-        )
-    variants: list[tuple[str, StrategyAuthoringSpec]] = []
-    base_payload = spec.model_dump(mode="json")
-    for index, values in enumerate(combinations):
-        payload = json.loads(json.dumps(base_payload))
-        payload["optimizer"]["parameter_sweep"] = {}
-        parameters = dict(zip(paths, values, strict=True))
-        for path, value in parameters.items():
-            _set_path(payload, path, value)
-        variant = StrategyAuthoringSpec.model_validate(payload)
-        variants.append((f"variant-{index:03d}-{_stable_digest(parameters)}", variant))
-    return variants
 
 
 def _run_authoring_backtest_once(
@@ -673,67 +365,3 @@ def run_authoring_backtest(
         }
     summary["strategy_scorecard"] = _strategy_scorecard(spec, frame, summary)
     return metrics, summary
-
-
-def write_authoring_backtest_outputs(
-    spec: StrategyAuthoringSpec, metrics: list[Any], summary: dict[str, Any], *, data_dir: Path
-) -> dict[str, Path]:
-    metrics_path = data_dir / "research/strategy_backtest_metrics.json"
-    report_path = data_dir / "reports/strategy_backtest_report.md"
-    metrics_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = _metrics_json(metrics, summary, spec)
-    metrics_path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
-    )
-    rows = "\n".join(
-        f"| {item.venue} | {item.canonical_symbol} | {item.trade_count} | {item.total_return:.6f} | {item.max_drawdown:.6f} | {item.cost_drag_bps:.2f} |"
-        for item in metrics
-    )
-    scorecard = summary.get("strategy_scorecard") or {}
-    capital = summary.get("capital") or {}
-    scorecard_lines = (
-        "\n".join(
-            f"- {name}: {count}"
-            for name, count in (scorecard.get("derived_feature_ops") or {}).items()
-        )
-        or "- none"
-    )
-    block_reason_lines = (
-        "\n".join(
-            f"- {name}: {count}"
-            for name, count in (scorecard.get("block_reason_counts") or {}).items()
-        )
-        or "- none"
-    )
-    report_path.write_text(
-        "# Strategy Authoring Backtest Report\n\n"
-        "paper_only: true\n\n"
-        f"- strategy_id: {spec.experiment.strategy_id}\n"
-        f"- source_signal_count: {summary.get('source_signal_count')}\n"
-        f"- evaluation_signal_count: {summary.get('evaluation_signal_count')}\n"
-        f"- evaluation_start_at: {summary.get('evaluation_window', {}).get('evaluation_start_at')}\n"
-        f"- evaluation_end_at: {summary.get('evaluation_window', {}).get('evaluation_end_at')}\n"
-        f"- signals_considered: {summary.get('signals_considered')}\n"
-        f"- executed_count: {summary.get('executed_count')}\n"
-        f"- pass_min_trade_count: {summary.get('pass_min_trade_count')}\n\n"
-        f"- pass_all_thresholds: {summary.get('pass_all_thresholds')}\n"
-        f"- backtest_passed: {summary.get('backtest_passed')}\n\n"
-        "## Capital\n\n"
-        f"- initial_capital_usd: {capital.get('initial_capital_usd')}\n"
-        f"- net_pnl_usd: {capital.get('net_pnl_usd')}\n"
-        f"- ending_equity_usd: {capital.get('ending_equity_usd')}\n"
-        f"- max_drawdown_loss_usd: {capital.get('max_drawdown_loss_usd')}\n\n"
-        "## Strategy Scorecard\n\n"
-        f"- derived_feature_count: {scorecard.get('derived_feature_count', 0)}\n"
-        f"- failed_thresholds: {scorecard.get('failed_thresholds', [])}\n\n"
-        "### Derived Feature Ops\n\n"
-        f"{scorecard_lines}\n\n"
-        "### Signal Block Reasons\n\n"
-        f"{block_reason_lines}\n\n"
-        "| Venue | Symbol | Trades | Total Return | Max Drawdown | Cost Drag bps |\n"
-        "|---|---:|---:|---:|---:|---:|\n"
-        f"{rows}\n",
-        encoding="utf-8",
-    )
-    return {"metrics": metrics_path, "report": report_path}

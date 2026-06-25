@@ -4,19 +4,21 @@ from datetime import datetime
 from typing import Any, Literal
 
 from sis.research.strategy_lab.authoring.compiler.common import (
-    _entry_type_value,
-    _minutes_value,
-    _multi_leg_group_id,
-    _non_negative_bps_value,
-    _non_negative_value,
-    _optional_bool_from_row,
     _resolve_leg_side,
     _signal_notional_usd,
     _signal_position_weight,
+)
+from sis.research.strategy_lab.authoring.compiler.row_values import (
+    _entry_type_value,
+    _minutes_value,
+    _non_negative_bps_value,
+    _non_negative_value,
+    _optional_bool_from_row,
     _sizing_value,
     _time_in_force_value,
     _unit_interval_value,
 )
+from sis.research.strategy_lab.authoring.compiler.signal_ids import _multi_leg_group_id
 from sis.research.strategy_lab.authoring.compiler.trade_rows import _trade_signal_row
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.specs import SymbolBinding
