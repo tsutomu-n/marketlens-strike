@@ -9,7 +9,12 @@ from sis.research.strategy_lab.authoring.compiler.common import (
 from sis.research.strategy_lab.authoring.compiler.multi_leg_overrides import (
     _multi_leg_execution_overrides,
     _multi_leg_exit_overrides,
+)
+from sis.research.strategy_lab.authoring.compiler.multi_leg_order_overrides import (
     _multi_leg_order_overrides,
+)
+from sis.research.strategy_lab.authoring.compiler.multi_leg_sizing import (
+    _multi_leg_sizing_fields,
 )
 from sis.research.strategy_lab.authoring.compiler.row_values import _sizing_value
 from sis.research.strategy_lab.authoring.compiler.signal_sizing import (
@@ -49,23 +54,12 @@ def _multi_leg_signal_rows(
     for index, leg in enumerate(spec.rules.multi_leg.legs):
         binding = bindings[leg.real_market_symbol]
         leg_side = _resolve_leg_side(base_side, leg.side)
-        leg_weight_multiplier = _sizing_value(
-            row,
-            fixed=leg.position_weight,
-            column=leg.position_weight_column,
+        sizing_fields = _multi_leg_sizing_fields(
+            row=row,
+            leg=leg,
+            base_weight=base_weight,
+            base_notional=base_notional,
         )
-        leg_weight = (base_weight if base_weight is not None else 1.0) * (
-            leg_weight_multiplier if leg_weight_multiplier is not None else 1.0
-        )
-        leg_notional = _sizing_value(
-            row,
-            fixed=leg.notional_usd,
-            column=leg.notional_usd_column,
-        )
-        if leg_notional is None and base_notional is not None:
-            leg_notional = base_notional * (
-                leg_weight_multiplier if leg_weight_multiplier is not None else leg.position_weight
-            )
         exit_overrides = _multi_leg_exit_overrides(row=row, leg=leg)
         order_overrides = _multi_leg_order_overrides(
             row=row,
@@ -83,8 +77,8 @@ def _multi_leg_signal_rows(
                 generated_at=generated_at,
                 raw_score=raw_score,
                 rank=rank,
-                position_weight=leg_weight,
-                notional_usd=leg_notional,
+                position_weight=sizing_fields["position_weight"],
+                notional_usd=sizing_fields["notional_usd"],
                 exit_overrides=exit_overrides,
                 order_overrides=order_overrides,
                 execution_overrides=execution_overrides,

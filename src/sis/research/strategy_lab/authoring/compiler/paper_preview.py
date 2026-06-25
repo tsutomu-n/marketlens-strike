@@ -12,16 +12,20 @@ from sis.research.strategy_lab.authoring.compiler.paper_preview_candidates impor
 from sis.research.strategy_lab.authoring.compiler.paper_preview_intent_outputs import (
     _write_empty_paper_intent_preview_outputs,
 )
+from sis.research.strategy_lab.authoring.compiler.paper_preview_outputs import (
+    _paper_preview_candidate_pack,
+    _paper_preview_promotion_decision,
+)
 from sis.research.strategy_lab.authoring.compiler.paper_preview_run_context import (
     _paper_preview_run_context,
 )
 from sis.research.strategy_lab.authoring.compiler.paper_preview_trial import (
     _paper_preview_trial_record,
 )
+from sis.research.strategy_lab.authoring.compiler.paper_preview_trial_ledger import (
+    _append_paper_preview_trial_record_once,
+)
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
-from sis.research.strategy_lab.paper_candidate_pack import PaperCandidatePack
-from sis.research.strategy_lab.promotion_decision import PromotionDecision
-from sis.research.strategy_lab.trial_ledger import TrialLedger
 
 
 def write_authoring_paper_preview_outputs(
@@ -43,11 +47,10 @@ def write_authoring_paper_preview_outputs(
         selected_signal_ids=context.selected_signal_ids,
         selected=context.selected,
     )
-    ledger_path = data_dir / "research/trial_ledger.jsonl"
-    ledger = TrialLedger(ledger_path)
-    existing_ids = {item.trial_id for item in ledger.read_all()}
-    if record.trial_id not in existing_ids:
-        ledger.append(record)
+    ledger_path = _append_paper_preview_trial_record_once(
+        data_dir=data_dir,
+        record=record,
+    )
 
     candidates, selected_candidate_ids, rejected_candidate_ids = _paper_preview_candidates(
         spec=spec,
@@ -58,42 +61,24 @@ def write_authoring_paper_preview_outputs(
         rejection_reasons=record.rejection_reasons,
     )
 
-    pack = PaperCandidatePack(
-        schema_version="paper_candidate_pack.v1",
-        pack_id=f"paper-pack-{context.run_id}",
-        generated_at=now,
-        evaluation_plan_id="strategy_authoring_v1",
-        data_snapshot_id="data-snap-current",
-        feature_snapshot_id="feature-snap-current",
-        trial_group_id=context.trial_group_id,
+    pack = _paper_preview_candidate_pack(
+        spec=spec,
+        context=context,
         candidates=candidates,
         selected_candidate_ids=selected_candidate_ids,
         rejected_candidate_ids=rejected_candidate_ids,
-        selection_policy={
-            "source": "strategy_authoring",
-            "default_decision": spec.promotion.default_decision,
-        },
-        reason_codes=["strategy_authoring_v1"],
-        block_reasons=[] if context.selected else record.rejection_reasons,
+        rejection_reasons=record.rejection_reasons,
+        generated_at=now,
     )
     pack_path = data_dir / "research/paper_candidate_pack.json"
     pack_path.parent.mkdir(parents=True, exist_ok=True)
     pack_path.write_text(pack.model_dump_json(indent=2), encoding="utf-8")
 
-    decision = PromotionDecision(
-        schema_version="promotion_decision.v1",
-        promotion_id=f"promotion-{context.run_id}",
+    decision = _paper_preview_promotion_decision(
+        spec=spec,
+        context=context,
+        pack=pack,
         generated_at=now,
-        source_pack_id=pack.pack_id,
-        reviewer=None,
-        from_stage="strategy_lab",
-        to_stage="paper_observation",
-        decision=spec.promotion.default_decision,
-        required_evidence=["trial_ledger", "paper_candidate_pack", "strategy_scorecard"],
-        observed_evidence=["trial_ledger", "paper_candidate_pack", "strategy_scorecard"],
-        approval_reasons=[],
-        rejection_reasons=["operator_review_required"],
-        scorecard_summary=context.scorecard_summary,
     )
     decision_path = data_dir / "research/promotion_decision.json"
     decision_path.write_text(decision.model_dump_json(indent=2), encoding="utf-8")

@@ -8,19 +8,19 @@ import polars as pl
 from sis.research.strategy_lab.authoring.compiler.build_row_context import (
     _row_symbol_binding,
 )
+from sis.research.strategy_lab.authoring.compiler.build_entry_signal_rows import (
+    _entry_signal_rows,
+)
 from sis.research.strategy_lab.authoring.compiler.build_trade_block_reasons import (
     _trade_block_reason_for_row,
 )
 from sis.research.strategy_lab.authoring.compiler.marker_dispatch import _marker_rule_signal_row
 from sis.research.strategy_lab.authoring.compiler.marker_state_rows import _hold_signal_row
-from sis.research.strategy_lab.authoring.compiler.multi_leg_rows import _multi_leg_signal_rows
 from sis.research.strategy_lab.authoring.compiler.signal_selection import (
     _rank_score,
     _score,
     _selected_side,
 )
-from sis.research.strategy_lab.authoring.compiler.trade_block_rows import _blocked_trade_signal_row
-from sis.research.strategy_lab.authoring.compiler.trade_rows import _trade_signal_row
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 
 
@@ -69,42 +69,17 @@ def _build_signal_rows(
             symbol=symbol,
             cooldown_until_by_symbol=risk_throttle_cooldown_until_by_symbol,
         )
-        if block_reason is not None:
-            rows.append(
-                _blocked_trade_signal_row(
-                    spec=spec,
-                    row=row,
-                    binding=binding,
-                    side=signal_side,
-                    generated_at=generated_at,
-                    raw_score=raw_score,
-                    rank=rank,
-                    block_reason=block_reason,
-                )
+        rows.extend(
+            _entry_signal_rows(
+                spec=spec,
+                row=row,
+                binding=binding,
+                bindings=bindings,
+                side=signal_side,
+                generated_at=generated_at,
+                raw_score=raw_score,
+                rank=rank,
+                block_reason=block_reason,
             )
-            continue
-        if spec.rules.multi_leg.enabled:
-            rows.extend(
-                _multi_leg_signal_rows(
-                    spec=spec,
-                    row=row,
-                    bindings=bindings,
-                    base_side=signal_side,
-                    generated_at=generated_at,
-                    raw_score=raw_score,
-                    rank=rank,
-                )
-            )
-        else:
-            rows.append(
-                _trade_signal_row(
-                    spec=spec,
-                    row=row,
-                    binding=binding,
-                    side=signal_side,
-                    generated_at=generated_at,
-                    raw_score=raw_score,
-                    rank=rank,
-                )
-            )
+        )
     return rows

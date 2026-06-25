@@ -1,6 +1,8 @@
 from sis.research.strategy_lab.authoring.compiler.multi_leg_overrides import (
     _multi_leg_execution_overrides,
     _multi_leg_exit_overrides,
+)
+from sis.research.strategy_lab.authoring.compiler.multi_leg_order_overrides import (
     _multi_leg_order_overrides,
 )
 from sis.research.strategy_lab.authoring.contracts.multi_leg import MultiLegEntry

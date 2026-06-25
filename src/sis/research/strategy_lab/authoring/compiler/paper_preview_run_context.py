@@ -5,7 +5,7 @@ from typing import Any
 
 import polars as pl
 
-from sis.research.strategy_lab.authoring.compiler.paper_preview_candidates import (
+from sis.research.strategy_lab.authoring.compiler.paper_preview_selected_rows import (
     _paper_preview_selected_rows,
 )
 from sis.research.strategy_lab.authoring.contracts.base import _stable_digest

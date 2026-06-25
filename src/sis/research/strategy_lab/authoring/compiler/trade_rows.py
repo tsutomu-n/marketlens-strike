@@ -6,12 +6,6 @@ from typing import Any, Literal
 from sis.research.strategy_lab.authoring.compiler.common import (
     _matching_regime_override,
 )
-from sis.research.strategy_lab.authoring.compiler.signal_ids import _signal_id
-from sis.research.strategy_lab.authoring.compiler.signal_selection import _tail_bucket
-from sis.research.strategy_lab.authoring.compiler.signal_sizing import (
-    _signal_notional_usd,
-    _signal_position_weight,
-)
 from sis.research.strategy_lab.authoring.compiler.trade_bracket_fields import (
     _trade_bracket_fields,
 )
@@ -19,11 +13,22 @@ from sis.research.strategy_lab.authoring.compiler.trade_execution_fields import 
     _trade_execution_fields,
 )
 from sis.research.strategy_lab.authoring.compiler.trade_exit_fields import _trade_exit_fields
+from sis.research.strategy_lab.authoring.compiler.trade_identity_fields import (
+    _trade_identity_fields,
+)
 from sis.research.strategy_lab.authoring.compiler.trade_order_fields import _trade_order_fields
 from sis.research.strategy_lab.authoring.compiler.trade_portfolio_fields import (
     _trade_portfolio_fields,
 )
-from sis.research.strategy_lab.authoring.contracts.base import _stable_digest
+from sis.research.strategy_lab.authoring.compiler.trade_reason_fields import (
+    _trade_reason_fields,
+)
+from sis.research.strategy_lab.authoring.compiler.trade_score_fields import (
+    _trade_score_fields,
+)
+from sis.research.strategy_lab.authoring.compiler.trade_sizing_fields import (
+    _trade_sizing_fields,
+)
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.specs import SymbolBinding
 
@@ -49,9 +54,6 @@ def _trade_signal_row(
     reason_codes: list[str] | None = None,
 ) -> dict[str, Any]:
     regime = _matching_regime_override(row, spec)
-    effective_reason_codes = reason_codes or [spec.rules.reason_code]
-    if regime is not None:
-        effective_reason_codes = [*effective_reason_codes, f"regime:{regime.name}"]
     order_fields = _trade_order_fields(
         row=row, order=spec.rules.order, order_overrides=order_overrides
     )
@@ -70,45 +72,28 @@ def _trade_signal_row(
         exit_overrides=exit_overrides,
     )
     return {
-        "schema_version": "strategy_signal.v1",
-        "signal_id": _signal_id(spec, row, binding, side=side),
-        "generated_at": generated_at,
-        "strategy_id": spec.experiment.strategy_id,
-        "strategy_family": spec.experiment.strategy_family,
-        "strategy_version": spec.experiment.strategy_version,
-        "trial_id": None,
-        "parameter_hash": _stable_digest(spec.model_dump(mode="json")),
-        "ts_signal": row["ts"],
-        "timeframe": spec.rules.timeframe,
-        "execution_venue": binding.execution_venue,
-        "execution_symbol": binding.execution_symbol,
-        "real_market_symbol": binding.real_market_symbol,
-        "multi_leg_group_id": multi_leg_group_id,
-        "multi_leg_leg_index": multi_leg_leg_index,
-        "multi_leg_leg_count": multi_leg_leg_count,
-        "multi_leg_anchor_real_market_symbol": multi_leg_anchor_real_market_symbol,
-        "side": side,
-        "raw_score": raw_score,
-        "rank_score": rank,
-        "percentile_rank": rank,
-        "tail_bucket": _tail_bucket(rank),
-        "confidence": spec.rules.confidence,
-        "source_confidence": row.get("source_confidence"),
-        "venue_quality_score": row.get("venue_quality_score"),
-        "feature_snapshot_ref": None,
-        "quote_ref": None,
-        "tracking_ref": None,
+        **_trade_identity_fields(
+            spec=spec,
+            row=row,
+            binding=binding,
+            side=side,
+            generated_at=generated_at,
+            multi_leg_group_id=multi_leg_group_id,
+            multi_leg_leg_index=multi_leg_leg_index,
+            multi_leg_leg_count=multi_leg_leg_count,
+            multi_leg_anchor_real_market_symbol=multi_leg_anchor_real_market_symbol,
+        ),
+        **_trade_score_fields(spec=spec, row=row, raw_score=raw_score, rank=rank),
         **exit_fields,
         **_trade_bracket_fields(row=row, bracket=spec.rules.bracket),
         **order_fields,
         **execution_fields,
-        "position_weight": position_weight
-        if position_weight is not None
-        else _signal_position_weight(row, spec),
-        "notional_usd": notional_usd
-        if notional_usd is not None
-        else _signal_notional_usd(row, spec),
+        **_trade_sizing_fields(
+            spec=spec,
+            row=row,
+            position_weight=position_weight,
+            notional_usd=notional_usd,
+        ),
         **_trade_portfolio_fields(row=row, spec=spec),
-        "reason_codes": effective_reason_codes,
-        "block_reasons": [],
+        **_trade_reason_fields(spec=spec, regime=regime, reason_codes=reason_codes),
     }
