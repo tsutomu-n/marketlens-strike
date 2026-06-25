@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
 
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
-from sis.reports import paper_operations_remediation
 from sis.reports import paper_operations_runbook_paths
+from sis.reports.paper_operations_runbook_remediation import (
+    build_paper_operations_runbook_remediation_context,
+)
 from sis.reports.summary_normalizers import (
-    compare_signal_snapshots,
     execution_comparison_flat_fields,
     execution_diagnostics_flat_fields,
     execution_gap_history_flat_fields,
@@ -29,37 +29,12 @@ from sis.reports.summary_normalizers import (
     phase_gate_flat_fields,
     phase_gate_issue_preview_lines,
     readiness_flat_fields,
-    recommend_remediation_actions,
-    signal_observed_sources_by_reason,
-    signal_source_confidence,
 )
 from sis.storage.jsonl_store import write_json
 
-RemediationStep = paper_operations_remediation.RemediationStep
-_artifact_recovery_commands = paper_operations_remediation.artifact_recovery_commands
-_remediation_order = paper_operations_remediation.remediation_order
-_remediation_success_criteria = paper_operations_remediation.remediation_success_criteria
-_remediation_preflight_commands = paper_operations_remediation.remediation_preflight_commands
-_remediation_postcheck_commands = paper_operations_remediation.remediation_postcheck_commands
-_remediation_preflight_expected_outputs = (
-    paper_operations_remediation.remediation_preflight_expected_outputs
-)
-_remediation_execute_expected_outputs = (
-    paper_operations_remediation.remediation_execute_expected_outputs
-)
-_remediation_postcheck_pass_signals = (
-    paper_operations_remediation.remediation_postcheck_pass_signals
-)
-_remediation_signal_snapshot_before = (
-    paper_operations_remediation.remediation_signal_snapshot_before
-)
-_remediation_signal_snapshot_target = (
-    paper_operations_remediation.remediation_signal_snapshot_target
-)
 _report_path_for_summary = paper_operations_runbook_paths.report_path_for_summary
 _related_reports = paper_operations_runbook_paths.related_reports
 _quick_navigation = paper_operations_runbook_paths.quick_navigation
-_required_artifact_paths = paper_operations_runbook_paths.required_artifact_paths
 
 
 def build_paper_operations_runbook(

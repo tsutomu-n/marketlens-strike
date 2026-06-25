@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Callable
 
 import polars as pl
 import yaml
@@ -15,13 +14,31 @@ from sis.core.context import DecisionContext
 from sis.core.decision import DecisionRecord, RiskDecision, StrategyDecision
 from sis.core.execution_plan import ExecutionPlan
 from sis.paper.fills import PaperFill, write_fills_parquet
+from sis.paper.observations import (
+    paper_observation_payload,
+    write_observation,
+)
+from sis.paper.operation_summaries import (
+    read_audit_dashboard_summary as _read_audit_dashboard_summary,
+    read_audit_bundle_summary as _read_audit_bundle_summary,
+    read_audit_summary as _read_audit_summary,
+    read_execution_comparison_summary as _read_execution_comparison_summary,
+    read_execution_diagnostics_summary as _read_execution_diagnostics_summary,
+    read_execution_drift_overview_summary as _read_execution_drift_overview_summary,
+    read_execution_gap_history_summary as _read_execution_gap_history_summary,
+    read_execution_snapshot_drift_summary as _read_execution_snapshot_drift_summary,
+    read_execution_state_comparison_summary as _read_execution_state_comparison_summary,
+    read_execution_summary as _read_execution_summary,
+    read_operations_bundle_manifest as _read_operations_bundle_manifest,
+    read_phase_gate_summary as _read_phase_gate_summary,
+    read_readiness_summary as _read_readiness_summary,
+)
 from sis.paper.orders import PaperOrder, write_orders_parquet
 from sis.paper.portfolio import PaperPortfolio, PaperPosition, write_positions_parquet
 from sis.paper.report import build_daily_paper_report
 from sis.risk.halt_policy import load_halt_policy
 from sis.research.strategy_lab.paper_intent_preview import PaperIntentPreview
 from sis.reports.summary_normalizers import (
-    audit_summary_fields,
     execution_comparison_flat_fields,
     execution_drift_overview_flat_fields,
     execution_diagnostics_flat_fields,
@@ -30,20 +47,11 @@ from sis.reports.summary_normalizers import (
     execution_snapshot_flat_fields,
     execution_state_comparison_flat_fields,
     merged_latest_execution_payload_and_fields,
-    normalize_execution_comparison_summary,
-    normalize_execution_diagnostics_summary,
-    normalize_execution_drift_overview_summary,
-    normalize_execution_gap_history_summary,
-    normalize_execution_snapshot_drift_summary,
-    normalize_execution_snapshot_summary,
-    normalize_execution_state_comparison_summary,
     normalize_phase_gate_summary,
-    normalize_readiness_summary,
     phase_gate_flat_fields,
     readiness_flat_fields,
 )
 from sis.state.store import StateStore
-from sis.storage.jsonl_store import read_json
 from sis.venues.suitability import (
     VENUE_REQUIRES_RESIDUAL_VALIDATION_AND_OPERATOR_PROMOTION,
     is_ndx_qqq_family,
@@ -72,29 +80,6 @@ class PaperFromIntentsSummary:
     fills_path: Path
     positions_path: Path
     observation_ledger_path: Path
-
-
-def _read_json_dict(path: Path) -> dict:
-    if not path.exists():
-        return {}
-    payload = read_json(path)
-    return payload if isinstance(payload, dict) else {}
-
-
-def _read_normalized_summary(
-    *,
-    data_dir: Path,
-    summary_path: Path,
-    report_path: str | None,
-    normalizer: Callable[[dict], dict],
-) -> dict:
-    payload = _read_json_dict(summary_path)
-    if report_path is not None:
-        payload = {
-            **payload,
-            "report_path": str(data_dir / report_path),
-        }
-    return normalizer(payload)
 
 
 def _load_portfolio(store: StateStore) -> PaperPortfolio:
@@ -155,68 +140,6 @@ def _action_for_intent(intent: PaperIntentPreview) -> str:
     return "skip"
 
 
-def _write_observation(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
-
-
-def _quote_age_ms(now: datetime, quote_ts: datetime | None) -> int | None:
-    if quote_ts is None:
-        return None
-    return int((now - quote_ts).total_seconds() * 1000)
-
-
-def _paper_observation_payload(
-    *,
-    intent: PaperIntentPreview,
-    status: str,
-    now: datetime,
-    block_reasons: list[str],
-    quote: dict | None = None,
-    quote_ts: datetime | None = None,
-    order: PaperOrder | None = None,
-    fill: PaperFill | None = None,
-) -> dict:
-    quantity = float(intent.quantity or 1.0)
-    notional = intent.notional_usd
-    if notional is None and fill is not None:
-        notional = float(fill.price) * quantity
-    return {
-        "created_at": now.isoformat(),
-        "intent_id": intent.intent_id,
-        "candidate_id": intent.candidate_id,
-        "venue": intent.execution_venue,
-        "execution_symbol": intent.execution_symbol,
-        "real_market_symbol": intent.real_market_symbol,
-        "status": status,
-        "block_reasons": block_reasons,
-        "quote_ts": quote_ts.isoformat() if quote_ts is not None else None,
-        "quote_age_ms": _quote_age_ms(now, quote_ts),
-        "market_status": str(quote.get("market_status", "unknown")) if quote else None,
-        "is_tradable": bool(quote.get("is_tradable")) if quote else None,
-        "spread_bps": float(quote["spread_bps"])
-        if quote and quote.get("spread_bps") is not None
-        else None,
-        "source_confidence": float(quote["source_confidence"])
-        if quote and quote.get("source_confidence") is not None
-        else None,
-        "venue_quality_score": float(quote["venue_quality_score"])
-        if quote and quote.get("venue_quality_score") is not None
-        else None,
-        "notional_usd": notional,
-        "quantity": quantity,
-        "order_id": order.order_id if order else None,
-        "fill_id": fill.fill_id if fill else None,
-        "source_operator_promotion_path": intent.operator_promotion_path,
-        "source_operator_promotion_hash": intent.operator_promotion_hash,
-        "live_order_submitted": False,
-        "wallet_used": False,
-        "exchange_write_used": False,
-        "venue_write_used": False,
-    }
-
-
 def run_paper_from_intents(
     data_dir: Path,
     *,
@@ -255,9 +178,9 @@ def run_paper_from_intents(
             block_reasons.append("LATEST_QUOTE_MISSING")
         if block_reasons or quote is None:
             blocked_count += 1
-            _write_observation(
+            write_observation(
                 selected_observation_ledger_path,
-                _paper_observation_payload(
+                paper_observation_payload(
                     intent=intent,
                     status="blocked",
                     now=now,
@@ -322,9 +245,9 @@ def run_paper_from_intents(
         )
         if fill is None:
             blocked_count += 1
-            _write_observation(
+            write_observation(
                 selected_observation_ledger_path,
-                _paper_observation_payload(
+                paper_observation_payload(
                     intent=intent,
                     status="blocked",
                     now=now,
@@ -337,9 +260,9 @@ def run_paper_from_intents(
         orders.append(order)
         fills.append(fill)
         portfolio.apply_fill(fill)
-        _write_observation(
+        write_observation(
             selected_observation_ledger_path,
-            _paper_observation_payload(
+            paper_observation_payload(
                 intent=intent,
                 status="paper_filled",
                 now=now,
@@ -367,119 +290,6 @@ def run_paper_from_intents(
         fills_path=fills_path,
         positions_path=positions_path,
         observation_ledger_path=selected_observation_ledger_path,
-    )
-
-
-def _read_audit_summary(data_dir: Path) -> dict:
-    audit_dashboard_path = data_dir / "ops/audit_dashboard_summary.json"
-    audit_bundle_path = data_dir / "ops/audit_bundle_manifest.json"
-    audit_dashboard = _read_json_dict(audit_dashboard_path)
-    audit_bundle = _read_json_dict(audit_bundle_path)
-    return audit_summary_fields(audit_dashboard, audit_bundle)
-
-
-def _read_audit_dashboard_summary(data_dir: Path) -> dict:
-    audit_dashboard_path = data_dir / "ops/audit_dashboard_summary.json"
-    return _read_json_dict(audit_dashboard_path)
-
-
-def _read_audit_bundle_summary(data_dir: Path) -> dict:
-    audit_bundle_path = data_dir / "ops/audit_bundle_manifest.json"
-    return _read_json_dict(audit_bundle_path)
-
-
-def _read_operations_bundle_manifest(data_dir: Path) -> dict:
-    bundle_path = data_dir / "ops/operations_bundle_manifest.json"
-    return _read_json_dict(bundle_path)
-
-
-def _read_phase_gate_summary(data_dir: Path) -> dict:
-    phase_gate_path = data_dir / "ops/phase_gate_review_summary.json"
-    return _read_normalized_summary(
-        data_dir=data_dir,
-        summary_path=phase_gate_path,
-        report_path=None,
-        normalizer=normalize_phase_gate_summary,
-    )
-
-
-def _read_execution_drift_overview_summary(data_dir: Path) -> dict:
-    overview_path = data_dir / "ops/execution_drift_overview_summary.json"
-    return _read_normalized_summary(
-        data_dir=data_dir,
-        summary_path=overview_path,
-        report_path="reports/execution_drift_overview.md",
-        normalizer=normalize_execution_drift_overview_summary,
-    )
-
-
-def _read_execution_summary(data_dir: Path) -> dict:
-    summary_path = data_dir / "ops/execution_snapshot_summary.json"
-    return _read_normalized_summary(
-        data_dir=data_dir,
-        summary_path=summary_path,
-        report_path="reports/execution_snapshot.md",
-        normalizer=normalize_execution_snapshot_summary,
-    )
-
-
-def _read_execution_comparison_summary(data_dir: Path) -> dict:
-    summary_path = data_dir / "ops/execution_venue_comparison_summary.json"
-    return _read_normalized_summary(
-        data_dir=data_dir,
-        summary_path=summary_path,
-        report_path="reports/execution_venue_comparison.md",
-        normalizer=normalize_execution_comparison_summary,
-    )
-
-
-def _read_execution_diagnostics_summary(data_dir: Path) -> dict:
-    summary_path = data_dir / "ops/execution_venue_diagnostics_summary.json"
-    return _read_normalized_summary(
-        data_dir=data_dir,
-        summary_path=summary_path,
-        report_path="reports/execution_venue_diagnostics.md",
-        normalizer=normalize_execution_diagnostics_summary,
-    )
-
-
-def _read_execution_gap_history_summary(data_dir: Path) -> dict:
-    summary_path = data_dir / "ops/execution_gap_history_summary.json"
-    return _read_normalized_summary(
-        data_dir=data_dir,
-        summary_path=summary_path,
-        report_path="reports/execution_gap_history.md",
-        normalizer=normalize_execution_gap_history_summary,
-    )
-
-
-def _read_execution_state_comparison_summary(data_dir: Path) -> dict:
-    summary_path = data_dir / "ops/execution_state_comparison_history_summary.json"
-    return _read_normalized_summary(
-        data_dir=data_dir,
-        summary_path=summary_path,
-        report_path="reports/execution_state_comparison_history.md",
-        normalizer=normalize_execution_state_comparison_summary,
-    )
-
-
-def _read_execution_snapshot_drift_summary(data_dir: Path) -> dict:
-    summary_path = data_dir / "ops/execution_snapshot_drift_history_summary.json"
-    return _read_normalized_summary(
-        data_dir=data_dir,
-        summary_path=summary_path,
-        report_path="reports/execution_snapshot_drift_history.md",
-        normalizer=normalize_execution_snapshot_drift_summary,
-    )
-
-
-def _read_readiness_summary(data_dir: Path) -> dict:
-    readiness_path = data_dir / "ops/readiness_snapshot.json"
-    return _read_normalized_summary(
-        data_dir=data_dir,
-        summary_path=readiness_path,
-        report_path=None,
-        normalizer=normalize_readiness_summary,
     )
 
 

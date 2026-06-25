@@ -7,7 +7,7 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _override_value,
     _regime_value,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import (
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import (
     _exit_bps,
     _sizing_value,
 )

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from sis.research.strategy_lab.authoring.compiler.common import _block_trade_row
+from sis.research.strategy_lab.authoring.compiler.trade_blocking import _block_trade_row
 from sis.research.strategy_lab.authoring.compiler.trade_rows import _trade_signal_row
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.specs import SymbolBinding

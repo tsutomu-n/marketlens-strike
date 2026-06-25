@@ -5,7 +5,7 @@ from typing import Any
 from sis.research.strategy_lab.authoring.compiler.trade_exit_bracket_fields import (
     _trade_exit_bracket_fields,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import (
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import (
     _minutes_value,
     _sizing_value,
 )

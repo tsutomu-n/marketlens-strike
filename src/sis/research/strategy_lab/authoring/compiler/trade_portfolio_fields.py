@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sis.research.strategy_lab.authoring.compiler.row_values import _optional_float_from_row
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import _optional_float_from_row
 
 
 def _trade_portfolio_fields(*, row: dict[str, Any], spec: Any) -> dict[str, Any]:

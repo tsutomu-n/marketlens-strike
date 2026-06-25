@@ -7,7 +7,7 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _exit_override_column,
     _regime_value,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import _exit_bps
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import _exit_bps
 
 
 def _trade_exit_take_profit_fields(

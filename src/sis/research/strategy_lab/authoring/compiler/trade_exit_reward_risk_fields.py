@@ -7,7 +7,7 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _exit_override_column,
     _regime_value,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import _sizing_value
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import _sizing_value
 
 
 def _trade_exit_reward_risk_fields(

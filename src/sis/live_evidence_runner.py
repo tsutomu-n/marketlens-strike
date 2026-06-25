@@ -5,7 +5,6 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
-from enum import Enum
 from pathlib import Path
 
 import typer
@@ -23,8 +22,20 @@ from sis.live_evidence_manifest import (
     terminal_outcome,
     write_manifest,
 )
+from sis.live_evidence_artifacts import (
+    build_artifact_paths as _build_artifact_paths,
+    latest_evidence_card_path as _latest_evidence_card_path,
+    row_count as _row_count,
+)
+from sis.live_evidence_collection_gates import (
+    CollectionGateResult,
+    evaluate_collection_volume as _evaluate_collection_volume,
+    expected_metadata_rows as _expected_metadata_rows,
+)
+from sis.live_evidence_operation_summaries import read_live_evidence_operation_summaries
+from sis.live_evidence_restart_pointers import build_live_evidence_restart_pointers
 from sis.market_calendar import market_session_window
-from sis.reports.loaders import normalized_summary, safe_read_json_dict
+from sis.reports.loaders import safe_read_json_dict
 from sis.reports.live_evidence_report import (
     default_followup_output_path,
     default_html_output_path,
@@ -36,15 +47,7 @@ from sis.reports.live_evidence_report import (
 from sis.reports.quote_diagnostics import build_quote_diagnostics
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
-    latest_execution_lineage_fields_from_summary,
-    normalize_execution_comparison_summary,
-    normalize_execution_diagnostics_summary,
-    normalize_execution_gap_history_summary,
-    normalize_execution_snapshot_summary,
-    normalize_execution_snapshot_drift_summary,
-    normalize_execution_state_comparison_summary,
     execution_drift_overview_flat_fields,
-    normalize_execution_drift_overview_summary,
     normalize_phase_gate_summary,
     normalize_readiness_summary,
     phase_gate_flat_fields,
@@ -53,19 +56,6 @@ from sis.reports.summary_normalizers import (
 from sis.settings import get_settings
 
 app = typer.Typer(no_args_is_help=True)
-
-
-class CollectionGateResult(str, Enum):
-    PASS = "pass"
-    RETRYABLE_LOW_VOLUME = "retryable_low_volume"
-    HARD_FAIL = "hard_fail"
-
-
-def _read_evidence_card_summary(manifest: LiveEvidenceManifest) -> dict:
-    evidence_card_path = manifest.artifacts.get("evidence_card")
-    if isinstance(evidence_card_path, str) and evidence_card_path:
-        return safe_read_json_dict(Path(evidence_card_path))
-    return {}
 
 
 def _apply_evidence_card_summary(manifest: LiveEvidenceManifest, payload: dict) -> None:
@@ -110,10 +100,15 @@ def today_utc() -> str:
 
 
 def row_count(path: Path) -> int:
-    if not path.exists():
-        return 0
-    with path.open(encoding="utf-8") as f:
-        return sum(1 for line in f if line.strip())
+    return _row_count(path)
+
+
+def latest_evidence_card_path(data_dir: Path) -> Path | None:
+    return _latest_evidence_card_path(data_dir)
+
+
+def build_artifact_paths(data_dir: Path, day: str) -> dict[str, str | None]:
+    return _build_artifact_paths(data_dir, day)
 
 
 def _require_artifact_path(artifacts: dict[str, str | None], key: str) -> Path:
@@ -124,8 +119,7 @@ def _require_artifact_path(artifacts: dict[str, str | None], key: str) -> Path:
 
 
 def expected_metadata_rows(duration_minutes: int, metadata_interval_seconds: int) -> int:
-    snapshots = max(1, (duration_minutes * 60) // metadata_interval_seconds)
-    return max(1, (snapshots * 8 + 9) // 10)
+    return _expected_metadata_rows(duration_minutes, metadata_interval_seconds)
 
 
 def evaluate_collection_volume(
@@ -134,11 +128,11 @@ def evaluate_collection_volume(
     pricing_rows_delta: int,
     min_metadata_rows: int,
 ) -> CollectionGateResult:
-    if pricing_rows_delta <= 0 or metadata_rows_delta <= 0:
-        return CollectionGateResult.HARD_FAIL
-    if metadata_rows_delta < min_metadata_rows:
-        return CollectionGateResult.RETRYABLE_LOW_VOLUME
-    return CollectionGateResult.PASS
+    return _evaluate_collection_volume(
+        metadata_rows_delta=metadata_rows_delta,
+        pricing_rows_delta=pricing_rows_delta,
+        min_metadata_rows=min_metadata_rows,
+    )
 
 
 def log_step(message: str) -> None:
@@ -173,11 +167,6 @@ def run_subprocess(command: list[str], *, retryable: bool) -> None:
     if retryable:
         raise RetryableStepError(error)
     raise PermanentStepError(error)
-
-
-def latest_evidence_card_path(data_dir: Path) -> Path | None:
-    paths = sorted((data_dir / "evidence").glob("evidence_card_*.json"))
-    return paths[-1] if paths else None
 
 
 def quote_diagnostics_payload(data_dir: Path) -> list[dict]:
@@ -237,20 +226,6 @@ def parse_key_values(text: str) -> dict[str, str]:
     return values
 
 
-def build_artifact_paths(data_dir: Path, day: str) -> dict[str, str | None]:
-    evidence_path = latest_evidence_card_path(data_dir)
-    return {
-        "sidecar_metadata": str(data_dir / f"raw/sidecar/gtrade/{day}.jsonl"),
-        "sidecar_pricing": str(data_dir / f"raw/sidecar/gtrade-pricing/{day}.jsonl"),
-        "raw_quotes": str(data_dir / f"raw/quotes/gtrade/{day}.jsonl"),
-        "normalized_quotes": str(data_dir / "normalized/quotes.parquet"),
-        "cost_matrix": str(data_dir / "research/venue_cost_matrix.csv"),
-        "backtest_metrics": str(data_dir / "research/backtest_metrics.json"),
-        "go_no_go_report": str(data_dir / "research/go_no_go_report.md"),
-        "evidence_card": str(evidence_path) if evidence_path else None,
-    }
-
-
 def default_manifest_summary_path(run_id: str) -> Path:
     return Path("logs/live_evidence/summaries") / f"live_evidence_summary_{run_id}.json"
 
@@ -267,57 +242,17 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
             out_path = default_manifest_summary_path(manifest.run_id)
     else:
         out_path = summary_path
-    execution_summary_path = Path(manifest.data_dir) / "ops/execution_snapshot_summary.json"
-    execution_summary = normalized_summary(
-        execution_summary_path,
-        normalize_execution_snapshot_summary,
-    )
-    execution_comparison_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_venue_comparison_summary.json"
-    )
-    execution_comparison_summary = normalized_summary(
-        execution_comparison_summary_path,
-        normalize_execution_comparison_summary,
-    )
-    execution_diagnostics_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_venue_diagnostics_summary.json"
-    )
-    execution_diagnostics_summary = normalized_summary(
-        execution_diagnostics_summary_path,
-        normalize_execution_diagnostics_summary,
-    )
-    execution_gap_history_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_gap_history_summary.json"
-    )
-    execution_gap_history_summary = normalized_summary(
-        execution_gap_history_summary_path,
-        normalize_execution_gap_history_summary,
-    )
-    execution_state_comparison_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_state_comparison_history_summary.json"
-    )
-    execution_state_comparison_summary = normalized_summary(
-        execution_state_comparison_summary_path,
-        normalize_execution_state_comparison_summary,
-    )
-    execution_snapshot_drift_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_snapshot_drift_history_summary.json"
-    )
-    execution_snapshot_drift_summary = normalized_summary(
-        execution_snapshot_drift_summary_path,
-        normalize_execution_snapshot_drift_summary,
-    )
-    execution_drift_overview_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_drift_overview_summary.json"
-    )
-    execution_drift_overview_summary = normalized_summary(
-        execution_drift_overview_summary_path,
-        normalize_execution_drift_overview_summary,
-    )
-    readiness_summary_path = Path(manifest.data_dir) / "ops/readiness_snapshot.json"
-    readiness_summary = safe_read_json_dict(readiness_summary_path)
-    evidence_card_summary = _read_evidence_card_summary(manifest)
-    latest_execution_lineage = latest_execution_lineage_fields_from_summary(evidence_card_summary)
+    data_dir = Path(manifest.data_dir)
+    summaries = read_live_evidence_operation_summaries(data_dir=data_dir, manifest=manifest)
+    execution_summary = summaries.execution_summary
+    execution_comparison_summary = summaries.execution_comparison_summary
+    execution_diagnostics_summary = summaries.execution_diagnostics_summary
+    execution_gap_history_summary = summaries.execution_gap_history_summary
+    execution_state_comparison_summary = summaries.execution_state_comparison_summary
+    execution_snapshot_drift_summary = summaries.execution_snapshot_drift_summary
+    execution_drift_overview_summary = summaries.execution_drift_overview_summary
+    readiness_summary = summaries.readiness_summary
+    latest_execution_lineage = summaries.latest_execution_lineage
     normalized_phase_gate_summary = normalize_phase_gate_summary(manifest.phase_gate_summary)
     normalized_readiness_summary = normalize_readiness_summary(readiness_summary)
     normalized_execution_drift_overview_summary = execution_drift_overview_summary
@@ -326,62 +261,10 @@ def write_manifest_summary(manifest_path: Path, summary_path: Path | None = None
     execution_drift_fields = execution_drift_overview_flat_fields(
         normalized_execution_drift_overview_summary
     )
-    remediation_report_root = Path(manifest.data_dir) / "reports"
-    remediation_summary_root = Path(manifest.data_dir) / "ops"
-    live_report_root = Path("docs/live_evidence_reports")
-    restart_pointers = {
-        "readiness_snapshot_summary": str(readiness_summary_path),
-        "readiness_snapshot_report": str(remediation_report_root / "readiness_snapshot.md"),
-        "current_state_index_summary": str(remediation_summary_root / "current_state_index.json"),
-        "current_state_index_report": str(remediation_report_root / "current_state_index.md"),
-        "remediation_planner_summary": str(
-            remediation_summary_root / "remediation_planner_summary.json"
-        ),
-        "remediation_planner_report": str(remediation_report_root / "remediation_planner.md"),
-        "remediation_execution_plan_summary": str(
-            remediation_summary_root / "remediation_execution_plan_summary.json"
-        ),
-        "remediation_execution_plan_report": str(
-            remediation_report_root / "remediation_execution_plan.md"
-        ),
-        "remediation_session_summary": str(
-            remediation_summary_root / "remediation_session_summary.json"
-        ),
-        "remediation_session_report": str(remediation_report_root / "remediation_session.md"),
-        "remediation_session_checkpoint_summary": str(
-            remediation_summary_root / "remediation_session_checkpoint_summary.json"
-        ),
-        "remediation_session_checkpoint_report": str(
-            remediation_report_root / "remediation_session_checkpoint.md"
-        ),
-        "remediation_scoreboard_summary": str(
-            remediation_summary_root / "remediation_scoreboard_summary.json"
-        ),
-        "remediation_scoreboard_report": str(remediation_report_root / "remediation_scoreboard.md"),
-        "remediation_evaluator_summary": str(
-            remediation_summary_root / "remediation_evaluator_summary.json"
-        ),
-        "remediation_evaluator_report": str(remediation_report_root / "remediation_evaluator.md"),
-        "remediation_evidence_summary": str(
-            remediation_summary_root / "remediation_evidence_summary.json"
-        ),
-        "remediation_evidence_report": str(remediation_report_root / "remediation_evidence.md"),
-        "remediation_command_results_summary": str(
-            remediation_summary_root / "remediation_command_results_summary.json"
-        ),
-        "remediation_command_results_report": str(
-            remediation_report_root / "remediation_command_results.md"
-        ),
-        "live_evidence_report": str(
-            live_report_root / f"live_evidence_report_{manifest.run_id}.md"
-        ),
-        "live_evidence_report_html": str(
-            live_report_root / f"live_evidence_report_{manifest.run_id}.html"
-        ),
-        "live_evidence_followup_report": str(
-            live_report_root / f"live_evidence_followup_{manifest.run_id}.md"
-        ),
-    }
+    restart_pointers = build_live_evidence_restart_pointers(
+        data_dir=data_dir,
+        run_id=manifest.run_id,
+    )
     payload = {
         "run_id": manifest.run_id,
         "status": manifest.status.value,
@@ -434,63 +317,22 @@ def write_reports_for_manifest(
 
     from sis.reports.live_evidence_report import build_live_evidence_report_data
 
-    audit_dashboard_path = Path(manifest.data_dir) / "ops/audit_dashboard_summary.json"
-    audit_bundle_path = Path(manifest.data_dir) / "ops/audit_bundle_manifest.json"
+    data_dir = Path(manifest.data_dir)
+    summaries = read_live_evidence_operation_summaries(data_dir=data_dir, manifest=manifest)
+    audit_dashboard_path = data_dir / "ops/audit_dashboard_summary.json"
+    audit_bundle_path = data_dir / "ops/audit_bundle_manifest.json"
     audit_dashboard = safe_read_json_dict(audit_dashboard_path)
     audit_bundle = safe_read_json_dict(audit_bundle_path)
-    phase_gate_path = Path(manifest.data_dir) / "ops/phase_gate_review_summary.json"
-    phase_gate_summary = safe_read_json_dict(phase_gate_path)
-    execution_summary_path = Path(manifest.data_dir) / "ops/execution_snapshot_summary.json"
-    execution_summary = normalized_summary(
-        execution_summary_path,
-        normalize_execution_snapshot_summary,
-    )
-    execution_comparison_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_venue_comparison_summary.json"
-    )
-    execution_comparison_summary = normalized_summary(
-        execution_comparison_summary_path,
-        normalize_execution_comparison_summary,
-    )
-    execution_diagnostics_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_venue_diagnostics_summary.json"
-    )
-    execution_diagnostics_summary = normalized_summary(
-        execution_diagnostics_summary_path,
-        normalize_execution_diagnostics_summary,
-    )
-    execution_gap_history_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_gap_history_summary.json"
-    )
-    execution_gap_history_summary = normalized_summary(
-        execution_gap_history_summary_path,
-        normalize_execution_gap_history_summary,
-    )
-    execution_state_comparison_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_state_comparison_history_summary.json"
-    )
-    execution_state_comparison_summary = normalized_summary(
-        execution_state_comparison_summary_path,
-        normalize_execution_state_comparison_summary,
-    )
-    execution_snapshot_drift_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_snapshot_drift_history_summary.json"
-    )
-    execution_snapshot_drift_summary = normalized_summary(
-        execution_snapshot_drift_summary_path,
-        normalize_execution_snapshot_drift_summary,
-    )
-    execution_drift_overview_summary_path = (
-        Path(manifest.data_dir) / "ops/execution_drift_overview_summary.json"
-    )
-    execution_drift_overview_summary = normalized_summary(
-        execution_drift_overview_summary_path,
-        normalize_execution_drift_overview_summary,
-    )
-    readiness_summary_path = Path(manifest.data_dir) / "ops/readiness_snapshot.json"
-    readiness_summary = safe_read_json_dict(readiness_summary_path)
-    evidence_card_summary = _read_evidence_card_summary(manifest)
-    latest_execution_lineage = latest_execution_lineage_fields_from_summary(evidence_card_summary)
+    phase_gate_summary = summaries.phase_gate_summary
+    execution_summary = summaries.execution_summary
+    execution_comparison_summary = summaries.execution_comparison_summary
+    execution_diagnostics_summary = summaries.execution_diagnostics_summary
+    execution_gap_history_summary = summaries.execution_gap_history_summary
+    execution_state_comparison_summary = summaries.execution_state_comparison_summary
+    execution_snapshot_drift_summary = summaries.execution_snapshot_drift_summary
+    execution_drift_overview_summary = summaries.execution_drift_overview_summary
+    readiness_summary = summaries.readiness_summary
+    latest_execution_lineage = summaries.latest_execution_lineage
     audit_summary = audit_summary_fields(
         audit_dashboard if isinstance(audit_dashboard, dict) else {},
         audit_bundle if isinstance(audit_bundle, dict) else {},

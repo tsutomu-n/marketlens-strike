@@ -7,7 +7,7 @@ from sis.research.strategy_lab.authoring.compiler.order_row_values import (
     _optional_bool_from_row,
     _time_in_force_value,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import (
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import (
     _minutes_value,
     _non_negative_bps_value,
 )

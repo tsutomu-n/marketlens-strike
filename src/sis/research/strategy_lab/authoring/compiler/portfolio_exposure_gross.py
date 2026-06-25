@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from sis.research.strategy_lab.authoring.compiler.common import _position_weight_value
+from sis.research.strategy_lab.authoring.compiler.portfolio_weight_values import (
+    _position_weight_value,
+)
 from sis.research.strategy_lab.authoring.contracts.risk_controls import PortfolioRules
 
 

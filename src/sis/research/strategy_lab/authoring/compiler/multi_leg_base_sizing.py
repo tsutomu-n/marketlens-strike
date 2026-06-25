@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from sis.research.strategy_lab.authoring.compiler.row_values import _sizing_value
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import _sizing_value
 from sis.research.strategy_lab.authoring.compiler.signal_sizing import (
     _signal_notional_usd,
     _signal_position_weight,

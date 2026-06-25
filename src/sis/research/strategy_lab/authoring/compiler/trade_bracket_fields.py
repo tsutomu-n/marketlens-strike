@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sis.research.strategy_lab.authoring.compiler.row_values import (
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import (
     _exit_bps,
     _minutes_value,
 )

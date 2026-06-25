@@ -4,8 +4,8 @@ from pathlib import Path
 
 from sis.research.strategy_lab.authoring.contracts.core import Condition
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
+from sis.research.strategy_lab.authoring.required_columns import _required_columns
 from sis.research.strategy_lab.authoring.validation import (
-    _required_columns,
     _resolve_path,
     validate_authoring_inputs,
 )

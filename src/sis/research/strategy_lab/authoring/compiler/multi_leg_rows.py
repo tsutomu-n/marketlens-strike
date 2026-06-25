@@ -3,24 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from sis.research.strategy_lab.authoring.compiler.common import (
-    _resolve_leg_side,
-)
 from sis.research.strategy_lab.authoring.compiler.multi_leg_base_sizing import (
     _multi_leg_base_sizing,
 )
-from sis.research.strategy_lab.authoring.compiler.multi_leg_overrides import (
-    _multi_leg_execution_overrides,
-    _multi_leg_exit_overrides,
-)
-from sis.research.strategy_lab.authoring.compiler.multi_leg_order_overrides import (
-    _multi_leg_order_overrides,
-)
-from sis.research.strategy_lab.authoring.compiler.multi_leg_sizing import (
-    _multi_leg_sizing_fields,
+from sis.research.strategy_lab.authoring.compiler.multi_leg_signal_row import (
+    _multi_leg_signal_row,
 )
 from sis.research.strategy_lab.authoring.compiler.signal_ids import _multi_leg_group_id
-from sis.research.strategy_lab.authoring.compiler.trade_rows import _trade_signal_row
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.research.strategy_lab.specs import SymbolBinding
 
@@ -42,44 +31,24 @@ def _multi_leg_signal_rows(
     anchor_symbol = spec.rules.multi_leg.anchor_real_market_symbol
     for index, leg in enumerate(spec.rules.multi_leg.legs):
         binding = bindings[leg.real_market_symbol]
-        leg_side = _resolve_leg_side(base_side, leg.side)
-        sizing_fields = _multi_leg_sizing_fields(
-            row=row,
-            leg=leg,
-            base_weight=base_sizing.position_weight,
-            base_notional=base_sizing.notional_usd,
-        )
-        exit_overrides = _multi_leg_exit_overrides(row=row, leg=leg)
-        order_overrides = _multi_leg_order_overrides(
-            row=row,
-            leg=leg,
-            default_entry_type=spec.rules.order.entry_type,
-            default_time_in_force=spec.rules.order.time_in_force,
-        )
-        execution_overrides = _multi_leg_execution_overrides(row=row, leg=leg)
         rows.append(
-            _trade_signal_row(
+            _multi_leg_signal_row(
                 spec=spec,
                 row=row,
                 binding=binding,
-                side=leg_side,
+                leg=leg,
+                base_side=base_side,
                 generated_at=generated_at,
                 raw_score=raw_score,
                 rank=rank,
-                position_weight=sizing_fields["position_weight"],
-                notional_usd=sizing_fields["notional_usd"],
-                exit_overrides=exit_overrides,
-                order_overrides=order_overrides,
-                execution_overrides=execution_overrides,
-                multi_leg_group_id=group_id,
-                multi_leg_leg_index=index + 1,
-                multi_leg_leg_count=leg_count,
-                multi_leg_anchor_real_market_symbol=anchor_symbol,
-                reason_codes=[
-                    spec.rules.reason_code,
-                    "multi_leg",
-                    leg.reason_code or f"leg_{index + 1}",
-                ],
+                base_weight=base_sizing.position_weight,
+                base_notional=base_sizing.notional_usd,
+                group_id=group_id,
+                leg_index=index + 1,
+                leg_count=leg_count,
+                anchor_symbol=anchor_symbol,
+                default_entry_type=spec.rules.order.entry_type,
+                default_time_in_force=spec.rules.order.time_in_force,
             )
         )
     return rows

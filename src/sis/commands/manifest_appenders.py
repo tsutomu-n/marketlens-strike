@@ -2,31 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sis.ops.manifest_chain import (
-    append_operation_manifest,
-    create_operation_manifest,
-    latest_operation_manifest,
-)
 from sis.paper.runner import PaperRunSummary, run_paper_step
-from sis.commands.runtime_context import (
-    _execution_comparison_note_lines,
-    _execution_diagnostics_note_lines,
-    _execution_drift_note_lines,
-    _execution_gap_history_note_lines,
-    _execution_snapshot_drift_note_lines,
-    _execution_state_comparison_note_lines,
-    _execution_summary_note_lines,
-    _phase_gate_note_lines,
-    _read_execution_comparison_schedule_summary,
-    _read_execution_diagnostics_schedule_summary,
-    _read_execution_drift_overview_schedule_summary,
-    _read_execution_gap_history_schedule_summary,
-    _read_execution_schedule_summary,
-    _read_execution_snapshot_drift_schedule_summary,
-    _read_execution_state_comparison_schedule_summary,
-    _read_phase_gate_schedule_summary,
-    _read_readiness_schedule_summary,
-    _readiness_note_lines,
+from sis.commands.operation_manifest_append import append_command_operation_manifest
+from sis.commands.operation_manifest_notes import (
+    operations_manifest_context_note_lines,
+    remediation_manifest_context_note_lines,
 )
 
 
@@ -52,43 +32,21 @@ def _append_paper_operations_cycle_manifest(
     fills_count: int,
     open_positions: int,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    execution = _read_execution_schedule_summary(settings_data_dir)
-    execution_comparison = _read_execution_comparison_schedule_summary(settings_data_dir)
-    execution_diagnostics = _read_execution_diagnostics_schedule_summary(settings_data_dir)
-    gap_history = _read_execution_gap_history_schedule_summary(settings_data_dir)
-    state_comparison = _read_execution_state_comparison_schedule_summary(settings_data_dir)
-    snapshot_drift = _read_execution_snapshot_drift_schedule_summary(settings_data_dir)
-    drift_overview = _read_execution_drift_overview_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="paper_operations_cycle",
         mode="paper",
         command="uv run sis paper-operations-cycle",
         status="completed" if monitoring_status == "ok" else monitoring_status,
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"orders={orders_count}",
             f"fills={fills_count}",
             f"open_positions={open_positions}",
             f"monitoring_status={monitoring_status}",
-            *_execution_summary_note_lines(execution),
-            *_execution_comparison_note_lines(execution_comparison),
-            *_execution_diagnostics_note_lines(execution_diagnostics),
-            *_execution_gap_history_note_lines(gap_history),
-            *_execution_state_comparison_note_lines(state_comparison),
-            *_execution_snapshot_drift_note_lines(snapshot_drift),
-            *_execution_drift_note_lines(drift_overview),
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *operations_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_operations_snapshot_manifest(
@@ -98,41 +56,19 @@ def _append_operations_snapshot_manifest(
     overall_status: str | None,
     cycle_count: int | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    execution = _read_execution_schedule_summary(settings_data_dir)
-    execution_comparison = _read_execution_comparison_schedule_summary(settings_data_dir)
-    execution_diagnostics = _read_execution_diagnostics_schedule_summary(settings_data_dir)
-    gap_history = _read_execution_gap_history_schedule_summary(settings_data_dir)
-    state_comparison = _read_execution_state_comparison_schedule_summary(settings_data_dir)
-    snapshot_drift = _read_execution_snapshot_drift_schedule_summary(settings_data_dir)
-    drift_overview = _read_execution_drift_overview_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="operations_snapshot",
         mode="ops",
         command="uv run sis operations-bundle",
         status=overall_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(manifest_path)],
         notes=[
             f"overall_status={overall_status}",
             f"cycle_count={cycle_count}",
-            *_execution_summary_note_lines(execution),
-            *_execution_comparison_note_lines(execution_comparison),
-            *_execution_diagnostics_note_lines(execution_diagnostics),
-            *_execution_gap_history_note_lines(gap_history),
-            *_execution_state_comparison_note_lines(state_comparison),
-            *_execution_snapshot_drift_note_lines(snapshot_drift),
-            *_execution_drift_note_lines(drift_overview),
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *operations_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_operations_audit_snapshot_manifest(
@@ -142,41 +78,19 @@ def _append_operations_audit_snapshot_manifest(
     overall_status: str | None,
     timeline_latest_operation: str | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    execution = _read_execution_schedule_summary(settings_data_dir)
-    execution_comparison = _read_execution_comparison_schedule_summary(settings_data_dir)
-    execution_diagnostics = _read_execution_diagnostics_schedule_summary(settings_data_dir)
-    gap_history = _read_execution_gap_history_schedule_summary(settings_data_dir)
-    state_comparison = _read_execution_state_comparison_schedule_summary(settings_data_dir)
-    snapshot_drift = _read_execution_snapshot_drift_schedule_summary(settings_data_dir)
-    drift_overview = _read_execution_drift_overview_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="operations_audit_snapshot",
         mode="ops",
         command="uv run sis operations-audit-pack",
         status=overall_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(manifest_path)],
         notes=[
             f"overall_status={overall_status}",
             f"timeline_latest_operation={timeline_latest_operation}",
-            *_execution_summary_note_lines(execution),
-            *_execution_comparison_note_lines(execution_comparison),
-            *_execution_diagnostics_note_lines(execution_diagnostics),
-            *_execution_gap_history_note_lines(gap_history),
-            *_execution_state_comparison_note_lines(state_comparison),
-            *_execution_snapshot_drift_note_lines(snapshot_drift),
-            *_execution_drift_note_lines(drift_overview),
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *operations_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_audit_bundle_snapshot_manifest(
@@ -186,41 +100,19 @@ def _append_audit_bundle_snapshot_manifest(
     overall_status: str | None,
     timeline_latest_operation: str | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    execution = _read_execution_schedule_summary(settings_data_dir)
-    execution_comparison = _read_execution_comparison_schedule_summary(settings_data_dir)
-    execution_diagnostics = _read_execution_diagnostics_schedule_summary(settings_data_dir)
-    gap_history = _read_execution_gap_history_schedule_summary(settings_data_dir)
-    state_comparison = _read_execution_state_comparison_schedule_summary(settings_data_dir)
-    snapshot_drift = _read_execution_snapshot_drift_schedule_summary(settings_data_dir)
-    drift_overview = _read_execution_drift_overview_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="audit_bundle_snapshot",
         mode="ops",
         command="uv run sis audit-bundle",
         status=overall_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(manifest_path)],
         notes=[
             f"overall_status={overall_status}",
             f"timeline_latest_operation={timeline_latest_operation}",
-            *_execution_summary_note_lines(execution),
-            *_execution_comparison_note_lines(execution_comparison),
-            *_execution_diagnostics_note_lines(execution_diagnostics),
-            *_execution_gap_history_note_lines(gap_history),
-            *_execution_state_comparison_note_lines(state_comparison),
-            *_execution_snapshot_drift_note_lines(snapshot_drift),
-            *_execution_drift_note_lines(drift_overview),
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *operations_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_remediation_planner_manifest(
@@ -233,18 +125,12 @@ def _append_remediation_planner_manifest(
     next_feedback_priority_reason: str | None,
     planned_step_count: int | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="remediation_planner_dry_run",
         mode="ops",
         command="uv run sis remediation-planner",
         status=planner_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"planner_status={planner_status}",
@@ -252,11 +138,9 @@ def _append_remediation_planner_manifest(
             f"planned_step_count={planned_step_count}",
             f"next_best_command={next_best_command}",
             f"next_feedback_priority_reason={next_feedback_priority_reason}",
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *remediation_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_remediation_execution_plan_manifest(
@@ -268,29 +152,21 @@ def _append_remediation_execution_plan_manifest(
     next_action_feedback_priority_reason: str | None,
     planned_action_count: int | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="remediation_execution_plan_dry_run",
         mode="ops",
         command="uv run sis remediation-execution-plan",
         status=execution_plan_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"execution_plan_status={execution_plan_status}",
             f"planned_action_count={planned_action_count}",
             f"next_action_command={next_action_command}",
             f"next_action_feedback_priority_reason={next_action_feedback_priority_reason}",
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *remediation_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_remediation_session_manifest(
@@ -303,18 +179,12 @@ def _append_remediation_session_manifest(
     next_pending_feedback_priority_reason: str | None,
     pending_action_count: int | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="remediation_session_dry_run",
         mode="ops",
         command="uv run sis remediation-session",
         status=session_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"session_status={session_status}",
@@ -322,11 +192,9 @@ def _append_remediation_session_manifest(
             f"next_pending_command={next_pending_command}",
             f"next_pending_stage_signal_confidence={next_pending_stage_signal_confidence}",
             f"next_pending_feedback_priority_reason={next_pending_feedback_priority_reason}",
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *remediation_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_remediation_session_checkpoint_manifest(
@@ -339,18 +207,12 @@ def _append_remediation_session_checkpoint_manifest(
     next_action_feedback_priority_reason: str | None,
     pending_action_count: int | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="remediation_session_checkpoint",
         mode="ops",
         command="uv run sis remediation-session-checkpoint",
         status=checkpoint_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"checkpoint_status={checkpoint_status}",
@@ -358,11 +220,9 @@ def _append_remediation_session_checkpoint_manifest(
             f"next_action_command={next_action_command}",
             f"next_action_stage_signal_confidence={next_action_stage_signal_confidence}",
             f"next_action_feedback_priority_reason={next_action_feedback_priority_reason}",
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *remediation_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_remediation_scoreboard_manifest(
@@ -375,18 +235,12 @@ def _append_remediation_scoreboard_manifest(
     next_action_feedback_priority_reason: str | None,
     completion_rate: float | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="remediation_scoreboard",
         mode="ops",
         command="uv run sis remediation-scoreboard",
         status=scoreboard_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"scoreboard_status={scoreboard_status}",
@@ -394,11 +248,9 @@ def _append_remediation_scoreboard_manifest(
             f"next_action_command={next_action_command}",
             f"next_action_stage_signal_confidence={next_action_stage_signal_confidence}",
             f"next_action_feedback_priority_reason={next_action_feedback_priority_reason}",
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *remediation_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_remediation_evaluator_manifest(
@@ -409,28 +261,20 @@ def _append_remediation_evaluator_manifest(
     next_action_key: str | None,
     auto_fail_count: int | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="remediation_evaluator",
         mode="ops",
         command="uv run sis remediation-evaluator",
         status=evaluator_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"evaluator_status={evaluator_status}",
             f"auto_fail_count={auto_fail_count}",
             f"next_action_key={next_action_key}",
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *remediation_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_remediation_evidence_manifest(
@@ -441,28 +285,20 @@ def _append_remediation_evidence_manifest(
     next_manual_review_action_key: str | None,
     manual_review_action_count: int | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="remediation_evidence",
         mode="ops",
         command="uv run sis remediation-evidence",
         status=evidence_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"evidence_status={evidence_status}",
             f"manual_review_action_count={manual_review_action_count}",
             f"next_manual_review_action_key={next_manual_review_action_key}",
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *remediation_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_remediation_command_results_manifest(
@@ -473,28 +309,20 @@ def _append_remediation_command_results_manifest(
     next_unobserved_action_key: str | None,
     missing_observation_count: int | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="remediation_command_results",
         mode="ops",
         command="uv run sis remediation-command-results",
         status=command_results_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(summary_path)],
         notes=[
             f"command_results_status={command_results_status}",
             f"missing_observation_count={missing_observation_count}",
             f"next_unobserved_action_key={next_unobserved_action_key}",
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *remediation_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)
 
 
 def _append_remediation_evidence_ingest_manifest(
@@ -505,25 +333,17 @@ def _append_remediation_evidence_ingest_manifest(
     checkpoint_status: str | None,
     exit_code: int | None,
 ) -> Path:
-    chain_path = settings_data_dir / "ops/operation_manifests.jsonl"
-    parent = latest_operation_manifest(chain_path)
-    phase_gate = _read_phase_gate_schedule_summary(settings_data_dir)
-    readiness = _read_readiness_schedule_summary(settings_data_dir)
-    manifest = create_operation_manifest(
+    return append_command_operation_manifest(
+        settings_data_dir,
         operation="remediation_evidence_ingest",
         mode="ops",
         command="uv run sis remediation-evidence-ingest",
         status=checkpoint_status or "unknown",
-        parent_run_id=str(parent.get("run_id"))
-        if isinstance(parent, dict) and parent.get("run_id")
-        else None,
         artifacts=[str(checkpoint_summary_path)],
         notes=[
             f"action_key={action_key}",
             f"checkpoint_status={checkpoint_status}",
             f"exit_code={exit_code}",
-            *_readiness_note_lines(readiness),
-            *_phase_gate_note_lines(phase_gate),
+            *remediation_manifest_context_note_lines(settings_data_dir),
         ],
     )
-    return append_operation_manifest(chain_path, manifest)

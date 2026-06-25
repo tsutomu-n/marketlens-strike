@@ -6,7 +6,7 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _matching_regime_override,
     _regime_value,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import (
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import (
     _optional_float_from_row,
     _sizing_value,
 )

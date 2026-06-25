@@ -3,16 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sis.research.strategy_lab.authoring.compiler.marker_defaults import (
-    _marker_trade_control_defaults,
+from sis.research.strategy_lab.authoring.compiler.marker_action_row import (
+    _marker_action_signal_row,
 )
 from sis.research.strategy_lab.authoring.compiler.marker_position_fields import (
     _marker_add_fields,
     _marker_rebalance_fields,
     _marker_reduce_fields,
-)
-from sis.research.strategy_lab.authoring.compiler.marker_signal_base import (
-    _marker_signal_base,
 )
 from sis.research.strategy_lab.authoring.compiler.marker_state_rows import (
     _close_signal_row as _close_signal_row,
@@ -29,19 +26,15 @@ def _reduce_signal_row(
     binding: SymbolBinding,
     generated_at: datetime,
 ) -> dict[str, Any]:
-    return {
-        **_marker_signal_base(
-            spec=spec,
-            row=row,
-            binding=binding,
-            generated_at=generated_at,
-            side="reduce",
-        ),
-        **_marker_trade_control_defaults(),
-        **_marker_reduce_fields(row=row, spec=spec),
-        "reason_codes": [spec.rules.reduce_reason_code],
-        "block_reasons": [],
-    }
+    return _marker_action_signal_row(
+        spec=spec,
+        row=row,
+        binding=binding,
+        generated_at=generated_at,
+        side="reduce",
+        position_fields=_marker_reduce_fields(row=row, spec=spec),
+        reason_code=spec.rules.reduce_reason_code,
+    )
 
 
 def _add_signal_row(
@@ -51,19 +44,15 @@ def _add_signal_row(
     binding: SymbolBinding,
     generated_at: datetime,
 ) -> dict[str, Any]:
-    return {
-        **_marker_signal_base(
-            spec=spec,
-            row=row,
-            binding=binding,
-            generated_at=generated_at,
-            side="add",
-        ),
-        **_marker_trade_control_defaults(),
-        **_marker_add_fields(row=row, spec=spec),
-        "reason_codes": [spec.rules.add_reason_code],
-        "block_reasons": [],
-    }
+    return _marker_action_signal_row(
+        spec=spec,
+        row=row,
+        binding=binding,
+        generated_at=generated_at,
+        side="add",
+        position_fields=_marker_add_fields(row=row, spec=spec),
+        reason_code=spec.rules.add_reason_code,
+    )
 
 
 def _rebalance_signal_row(
@@ -73,16 +62,12 @@ def _rebalance_signal_row(
     binding: SymbolBinding,
     generated_at: datetime,
 ) -> dict[str, Any]:
-    return {
-        **_marker_signal_base(
-            spec=spec,
-            row=row,
-            binding=binding,
-            generated_at=generated_at,
-            side="rebalance",
-        ),
-        **_marker_trade_control_defaults(),
-        **_marker_rebalance_fields(row=row, spec=spec),
-        "reason_codes": [spec.rules.rebalance_reason_code],
-        "block_reasons": [],
-    }
+    return _marker_action_signal_row(
+        spec=spec,
+        row=row,
+        binding=binding,
+        generated_at=generated_at,
+        side="rebalance",
+        position_fields=_marker_rebalance_fields(row=row, spec=spec),
+        reason_code=spec.rules.rebalance_reason_code,
+    )

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from sis.research.strategy_lab.authoring.compiler.common import _float_or_default
+from sis.research.strategy_lab.authoring.compiler.paper_preview_numeric_values import (
+    _float_or_default,
+)
 
 
 def _paper_preview_execution_fields(*, row: dict[str, Any], selected: bool) -> dict[str, Any]:

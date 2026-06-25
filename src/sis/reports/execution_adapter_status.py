@@ -2,93 +2,19 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
-from typing import Mapping
+from typing import Mapping, cast
 
 from sis.execution.base import AdapterActionResult, AdapterFillSnapshot, AdapterOrderStatus
-from sis.reports.doc_paths import recommended_read_order
+from sis.reports.execution_adapter_status_navigation import (
+    execution_adapter_recommended_read_order as _recommended_read_order,
+    quick_navigation as _quick_navigation,
+    related_reports as _related_reports,
+)
+from sis.reports.execution_adapter_status_surfaces import (
+    build_execution_read_only_surfaces_summary,
+)
 from sis.state.reconciliation import ReconciliationResult
 from sis.storage.jsonl_store import write_json
-
-
-def _recommended_read_order() -> list[str]:
-    return recommended_read_order(
-        [
-            "data/reports/execution_snapshot.md",
-            "data/ops/current_state_index.json",
-            "data/ops/readiness_snapshot.json",
-            "data/ops/phase_gate_review_summary.json",
-        ]
-    )
-
-
-def _quick_navigation(out_path: Path | None) -> dict[str, str]:
-    if out_path is None:
-        return {}
-    reports_dir = out_path.parent
-    return {
-        "execution_adapter_report": str(out_path),
-        "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
-        "current_state_index_report": str(reports_dir / "current_state_index.md"),
-        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
-        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
-        "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
-    }
-
-
-def _related_reports(out_path: Path | None) -> dict[str, str]:
-    if out_path is None:
-        return {}
-    reports_dir = out_path.parent
-    return {
-        "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
-        "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
-        "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
-        "execution_drift_overview_report": str(reports_dir / "execution_drift_overview.md"),
-        "operations_dashboard_report": str(reports_dir / "operations_dashboard.md"),
-        "current_state_index_report": str(reports_dir / "current_state_index.md"),
-        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
-        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
-        "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
-        "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
-    }
-
-
-def _as_float(value: object) -> float | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int | float):
-        return float(value)
-    if isinstance(value, str):
-        text = value.strip()
-        if not text:
-            return None
-        try:
-            return float(text)
-        except ValueError:
-            return None
-    return None
-
-
-def _as_int(value: object) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        return int(value)
-    if isinstance(value, str):
-        text = value.strip()
-        if not text:
-            return None
-        try:
-            return int(text)
-        except ValueError:
-            return None
-    return None
 
 
 def _write_report(
@@ -350,199 +276,44 @@ def build_execution_read_only_surfaces_report(
     out_path: Path | None = None,
     summary_path: Path | None = None,
 ) -> str:
-    venues = [dict(item) for item in venue_surfaces]
-    venue_count = len(venues)
-    with_balance_snapshot_count = sum(bool(item.get("balance_snapshot_exists")) for item in venues)
-    with_positions_snapshot_count = sum(
-        bool(item.get("positions_snapshot_exists")) for item in venues
+    summary = build_execution_read_only_surfaces_summary(
+        venue_surfaces=venue_surfaces,
+        out_path=out_path,
     )
-    with_fills_snapshot_count = sum(bool(item.get("fills_snapshot_exists")) for item in venues)
-    with_order_status_snapshot_count = sum(
-        bool(item.get("order_status_snapshot_exists")) for item in venues
-    )
-    unavailable_venue_count = sum(
-        item.get("collector_status") in {"not_connected", "unavailable"} for item in venues
-    )
-    reconciled_venue_count = sum(item.get("reconcile_matched") is not None for item in venues)
-    with_positions_financial_totals_count = sum(
-        item.get("positions_notional_usd_total") is not None for item in venues
-    )
-    with_positions_rollover_metrics_count = sum(
-        item.get("positions_cumulative_rollover_usd_total") is not None for item in venues
-    )
-    with_positions_protection_metrics_count = sum(
-        item.get("positions_with_liquidation_price_count") is not None for item in venues
-    )
-    with_positions_leverage_metrics_count = sum(
-        item.get("positions_average_leverage") is not None for item in venues
-    )
-    with_positions_return_metrics_count = sum(
-        item.get("positions_average_return_on_equity") is not None for item in venues
-    )
-    with_positions_day_trade_metrics_count = sum(
-        item.get("positions_day_trade_count") is not None for item in venues
-    )
-    with_positions_limit_metrics_count = sum(
-        item.get("positions_max_leverage") is not None for item in venues
-    )
-    with_positions_quantity_metrics_count = sum(
-        item.get("positions_total_quantity") is not None for item in venues
-    )
-    positions_notional_usd_total = sum(
-        value
-        for item in venues
-        if (value := _as_float(item.get("positions_notional_usd_total"))) is not None
-    )
-    positions_unrealized_pnl_usd_total = sum(
-        value
-        for item in venues
-        if (value := _as_float(item.get("positions_unrealized_pnl_usd_total"))) is not None
-    )
-    positions_collateral_used_usd_total = sum(
-        value
-        for item in venues
-        if (value := _as_float(item.get("positions_collateral_used_usd_total"))) is not None
-    )
-    positions_max_withdrawable_usd_total = sum(
-        value
-        for item in venues
-        if (value := _as_float(item.get("positions_max_withdrawable_usd_total"))) is not None
-    )
-    positions_cumulative_rollover_usd_total = sum(
-        value
-        for item in venues
-        if (value := _as_float(item.get("positions_cumulative_rollover_usd_total"))) is not None
-    )
-    positions_with_liquidation_price_count = sum(
-        value
-        for item in venues
-        if (value := _as_int(item.get("positions_with_liquidation_price_count"))) is not None
-    )
-    positions_with_take_profit_count = sum(
-        value
-        for item in venues
-        if (value := _as_int(item.get("positions_with_take_profit_count"))) is not None
-    )
-    positions_with_stop_loss_count = sum(
-        value
-        for item in venues
-        if (value := _as_int(item.get("positions_with_stop_loss_count"))) is not None
-    )
-    positions_day_trade_count = sum(
-        value
-        for item in venues
-        if (value := _as_int(item.get("positions_day_trade_count"))) is not None
-    )
-    latest_positions_server_time_ms = max(
-        (
-            value
-            for item in venues
-            if (value := _as_int(item.get("positions_server_time_ms"))) is not None
-        ),
-        default=None,
-    )
-    positions_average_leverage = (
-        sum(
-            value
-            for item in venues
-            if (value := _as_float(item.get("positions_average_leverage"))) is not None
-        )
-        / with_positions_leverage_metrics_count
-        if with_positions_leverage_metrics_count
-        else None
-    )
-    positions_average_return_on_equity = (
-        sum(
-            value
-            for item in venues
-            if (value := _as_float(item.get("positions_average_return_on_equity"))) is not None
-        )
-        / with_positions_return_metrics_count
-        if with_positions_return_metrics_count
-        else None
-    )
-    positions_max_leverage = max(
-        (
-            value
-            for item in venues
-            if (value := _as_float(item.get("positions_max_leverage"))) is not None
-        ),
-        default=None,
-    )
-    positions_total_quantity = sum(
-        value
-        for item in venues
-        if (value := _as_float(item.get("positions_total_quantity"))) is not None
-    )
-    positions_total_realized_pnl = sum(
-        value
-        for item in venues
-        if (value := _as_float(item.get("positions_total_realized_pnl"))) is not None
-    )
-    latest_positions_open_timestamp_ms = max(
-        (
-            value
-            for item in venues
-            if (value := _as_int(item.get("positions_latest_open_timestamp_ms"))) is not None
-        ),
-        default=None,
-    )
-    latest_positions_updated_at = max(
-        (
-            str(item.get("positions_latest_updated_at"))
-            for item in venues
-            if item.get("positions_latest_updated_at") is not None
-        ),
-        default=None,
-    )
-    latest_positions_client_ts = max(
-        (
-            str(item.get("positions_client_ts"))
-            for item in venues
-            if item.get("positions_client_ts") is not None
-        ),
-        default=None,
-    )
-    summary = {
-        "venue_count": venue_count,
-        "venues": venues,
-        "with_balance_snapshot_count": with_balance_snapshot_count,
-        "with_positions_snapshot_count": with_positions_snapshot_count,
-        "with_fills_snapshot_count": with_fills_snapshot_count,
-        "with_order_status_snapshot_count": with_order_status_snapshot_count,
-        "unavailable_venue_count": unavailable_venue_count,
-        "reconciled_venue_count": reconciled_venue_count,
-        "with_positions_financial_totals_count": with_positions_financial_totals_count,
-        "with_positions_rollover_metrics_count": with_positions_rollover_metrics_count,
-        "with_positions_protection_metrics_count": with_positions_protection_metrics_count,
-        "with_positions_leverage_metrics_count": with_positions_leverage_metrics_count,
-        "with_positions_return_metrics_count": with_positions_return_metrics_count,
-        "with_positions_day_trade_metrics_count": with_positions_day_trade_metrics_count,
-        "with_positions_limit_metrics_count": with_positions_limit_metrics_count,
-        "with_positions_quantity_metrics_count": with_positions_quantity_metrics_count,
-        "positions_notional_usd_total": positions_notional_usd_total,
-        "positions_unrealized_pnl_usd_total": positions_unrealized_pnl_usd_total,
-        "positions_collateral_used_usd_total": positions_collateral_used_usd_total,
-        "positions_max_withdrawable_usd_total": positions_max_withdrawable_usd_total,
-        "positions_cumulative_rollover_usd_total": positions_cumulative_rollover_usd_total,
-        "positions_with_liquidation_price_count": positions_with_liquidation_price_count,
-        "positions_with_take_profit_count": positions_with_take_profit_count,
-        "positions_with_stop_loss_count": positions_with_stop_loss_count,
-        "positions_day_trade_count": positions_day_trade_count,
-        "positions_average_leverage": positions_average_leverage,
-        "positions_average_return_on_equity": positions_average_return_on_equity,
-        "positions_max_leverage": positions_max_leverage,
-        "positions_total_quantity": positions_total_quantity,
-        "positions_total_realized_pnl": positions_total_realized_pnl,
-        "latest_positions_server_time_ms": latest_positions_server_time_ms,
-        "latest_positions_open_timestamp_ms": latest_positions_open_timestamp_ms,
-        "latest_positions_updated_at": latest_positions_updated_at,
-        "latest_positions_client_ts": latest_positions_client_ts,
-        "execution_read_only_surfaces_report_path": str(out_path) if out_path is not None else None,
-        "recommended_read_order": _recommended_read_order(),
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
-    }
+    venues = cast(list[dict[str, object]], summary["venues"])
+    venue_count = summary["venue_count"]
+    with_balance_snapshot_count = summary["with_balance_snapshot_count"]
+    with_positions_snapshot_count = summary["with_positions_snapshot_count"]
+    with_fills_snapshot_count = summary["with_fills_snapshot_count"]
+    with_order_status_snapshot_count = summary["with_order_status_snapshot_count"]
+    unavailable_venue_count = summary["unavailable_venue_count"]
+    reconciled_venue_count = summary["reconciled_venue_count"]
+    with_positions_financial_totals_count = summary["with_positions_financial_totals_count"]
+    with_positions_rollover_metrics_count = summary["with_positions_rollover_metrics_count"]
+    with_positions_protection_metrics_count = summary["with_positions_protection_metrics_count"]
+    with_positions_leverage_metrics_count = summary["with_positions_leverage_metrics_count"]
+    with_positions_return_metrics_count = summary["with_positions_return_metrics_count"]
+    with_positions_day_trade_metrics_count = summary["with_positions_day_trade_metrics_count"]
+    with_positions_limit_metrics_count = summary["with_positions_limit_metrics_count"]
+    with_positions_quantity_metrics_count = summary["with_positions_quantity_metrics_count"]
+    positions_notional_usd_total = summary["positions_notional_usd_total"]
+    positions_unrealized_pnl_usd_total = summary["positions_unrealized_pnl_usd_total"]
+    positions_collateral_used_usd_total = summary["positions_collateral_used_usd_total"]
+    positions_max_withdrawable_usd_total = summary["positions_max_withdrawable_usd_total"]
+    positions_cumulative_rollover_usd_total = summary["positions_cumulative_rollover_usd_total"]
+    positions_with_liquidation_price_count = summary["positions_with_liquidation_price_count"]
+    positions_with_take_profit_count = summary["positions_with_take_profit_count"]
+    positions_with_stop_loss_count = summary["positions_with_stop_loss_count"]
+    positions_day_trade_count = summary["positions_day_trade_count"]
+    positions_average_leverage = summary["positions_average_leverage"]
+    positions_average_return_on_equity = summary["positions_average_return_on_equity"]
+    positions_max_leverage = summary["positions_max_leverage"]
+    positions_total_quantity = summary["positions_total_quantity"]
+    positions_total_realized_pnl = summary["positions_total_realized_pnl"]
+    latest_positions_server_time_ms = summary["latest_positions_server_time_ms"]
+    latest_positions_open_timestamp_ms = summary["latest_positions_open_timestamp_ms"]
+    latest_positions_updated_at = summary["latest_positions_updated_at"]
+    latest_positions_client_ts = summary["latest_positions_client_ts"]
     detail_lines = [
         f"- venue_count: {venue_count}",
         f"- with_balance_snapshot_count: {with_balance_snapshot_count}",

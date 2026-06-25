@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Iterable
 
-from sis.research.strategy_lab.authoring.compiler.common import _position_weight_value
+from sis.research.strategy_lab.authoring.compiler.portfolio_weight_values import (
+    _position_weight_value,
+)
 
 
 def _neutral_allocated_rows(

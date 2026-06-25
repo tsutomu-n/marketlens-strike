@@ -12,6 +12,9 @@ from sis.research.strategy_lab.authoring.compiler.paper_preview_candidates impor
 from sis.research.strategy_lab.authoring.compiler.paper_preview_intent_outputs import (
     _write_empty_paper_intent_preview_outputs,
 )
+from sis.research.strategy_lab.authoring.compiler.paper_preview_output_writers import (
+    _write_paper_preview_json_outputs,
+)
 from sis.research.strategy_lab.authoring.compiler.paper_preview_outputs import (
     _paper_preview_candidate_pack,
     _paper_preview_promotion_decision,
@@ -70,9 +73,6 @@ def write_authoring_paper_preview_outputs(
         rejection_reasons=record.rejection_reasons,
         generated_at=now,
     )
-    pack_path = data_dir / "research/paper_candidate_pack.json"
-    pack_path.parent.mkdir(parents=True, exist_ok=True)
-    pack_path.write_text(pack.model_dump_json(indent=2), encoding="utf-8")
 
     decision = _paper_preview_promotion_decision(
         spec=spec,
@@ -80,8 +80,7 @@ def write_authoring_paper_preview_outputs(
         pack=pack,
         generated_at=now,
     )
-    decision_path = data_dir / "research/promotion_decision.json"
-    decision_path.write_text(decision.model_dump_json(indent=2), encoding="utf-8")
+    json_paths = _write_paper_preview_json_outputs(data_dir=data_dir, pack=pack, decision=decision)
 
     intent_paths = _write_empty_paper_intent_preview_outputs(
         data_dir=data_dir,
@@ -90,7 +89,6 @@ def write_authoring_paper_preview_outputs(
     )
     return {
         "trial_ledger": ledger_path,
-        "paper_candidate_pack": pack_path,
-        "promotion_decision": decision_path,
+        **json_paths,
         **intent_paths,
     }

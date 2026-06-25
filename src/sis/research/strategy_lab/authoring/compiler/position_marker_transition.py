@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from sis.research.strategy_lab.authoring.compiler.common import _block_trade_row
 from sis.research.strategy_lab.authoring.compiler.position_state import (
     ActivePosition,
     _clamped_position_fraction,
     _compact_active_positions,
     _non_negative_position_value,
 )
+from sis.research.strategy_lab.authoring.compiler.trade_blocking import _block_trade_row
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 
 

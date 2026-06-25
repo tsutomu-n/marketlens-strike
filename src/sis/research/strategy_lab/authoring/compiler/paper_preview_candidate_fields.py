@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal, cast
 
-from sis.research.strategy_lab.authoring.compiler.common import _float_or_default
+from sis.research.strategy_lab.authoring.compiler.paper_preview_numeric_values import (
+    _float_or_default,
+)
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 from sis.venues.ids import VenueId
 

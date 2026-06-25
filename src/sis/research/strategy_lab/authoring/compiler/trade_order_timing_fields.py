@@ -7,7 +7,7 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _override_value,
 )
 from sis.research.strategy_lab.authoring.compiler.order_row_values import _time_in_force_value
-from sis.research.strategy_lab.authoring.compiler.row_values import _minutes_value
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import _minutes_value
 from sis.research.strategy_lab.authoring.contracts.base import (
     StrategyAuthoringValidationError,
 )

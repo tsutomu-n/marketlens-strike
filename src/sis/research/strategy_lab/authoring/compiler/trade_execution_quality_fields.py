@@ -7,7 +7,7 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _override_value,
     _regime_value,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import _sizing_value
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import _sizing_value
 from sis.research.strategy_lab.authoring.compiler.trade_execution_latency_queue_fields import (
     _trade_execution_latency_queue_fields,
 )

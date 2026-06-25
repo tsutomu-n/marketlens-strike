@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sis.research.strategy_lab.authoring.compiler.common import _signal_timestamp
+from sis.research.strategy_lab.authoring.compiler.signal_timestamps import _signal_timestamp
 
 
 def _record_temporal_selected_signal(

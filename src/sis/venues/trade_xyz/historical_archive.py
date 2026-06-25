@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from pathlib import Path
 import shutil
 import subprocess
@@ -11,8 +11,21 @@ from sis.storage.jsonl_store import read_json
 from sis.storage.jsonl_store import write_json
 from sis.storage.normalize import normalize_quotes
 from sis.venues.trade_xyz import historical_archive_normalization
+from sis.venues.trade_xyz.historical_archive_bulk_normalization import (
+    select_bulk_quote_normalization_candidates,
+)
+from sis.venues.trade_xyz.historical_archive_bulk_execution_manifest import (
+    build_bulk_execution_manifest,
+)
+from sis.venues.trade_xyz.historical_archive_manifest import (
+    build_asset_ctxs_archive_manifest,
+)
+from sis.venues.trade_xyz.historical_archive_manifest import build_l2_archive_manifest
+from sis.venues.trade_xyz.historical_archive_quote_rows import (
+    HISTORICAL_QUOTE_SOURCE,
+    build_historical_archive_quote_row,
+)
 from sis.venues.trade_xyz.historical_archive_transfer import (
-    HYPERLIQUID_ARCHIVE_BUCKET,
     CommandRunner,
     HistoricalL2ArchiveRequest,
     PreflightRunner,
@@ -20,43 +33,29 @@ from sis.venues.trade_xyz.historical_archive_transfer import (
 from sis.venues.trade_xyz.historical_archive_transfer import (
     aws_download_command_status,
     decompress_lz4,
-    download_command,
     historical_archive_preflight_error,
     historical_archive_preflight_status,
     run_command,
 )
-from sis.venues.trade_xyz.normalizer import payload_hash
-from sis.venues.trade_xyz.normalizer import quote_from_l2_book
+from sis.venues.trade_xyz.historical_archive_bulk_plan import (
+    build_bulk_plan_items,
+    date_range,
+    select_bulk_execution_candidates,
+)
 from sis.venues.trade_xyz.registry import load_trade_xyz_registry
 
 HISTORICAL_L2_ARCHIVE_SOURCE = "hyperliquid_archive.market_data.l2Book"
 HISTORICAL_ASSET_CTXS_ARCHIVE_SOURCE = "hyperliquid_archive.asset_ctxs"
-HISTORICAL_QUOTE_SOURCE = "hyperliquid_archive.l2Book+asset_ctxs"
 
 _normalize_symbol = historical_archive_normalization.normalize_symbol
-_source_ts_ms_from_payload = historical_archive_normalization.source_ts_ms_from_payload
-_extract_l2_payload = historical_archive_normalization.extract_l2_payload
 _load_l2_rows = historical_archive_normalization.load_l2_rows
 _coerce_asset_ctx_value = historical_archive_normalization.coerce_asset_ctx_value
 _load_asset_ctxs = historical_archive_normalization.load_asset_ctxs
 _resolve_instrument = historical_archive_normalization.resolve_instrument
-_archive_quote_output_path = historical_archive_normalization.archive_quote_output_path
 _run_command = run_command
-_download_command = download_command
 _historical_archive_preflight_status = historical_archive_preflight_status
 _historical_archive_preflight_error = historical_archive_preflight_error
 _decompress_lz4 = decompress_lz4
-
-
-def _date_range(start: date, end: date) -> list[date]:
-    if end < start:
-        raise ValueError("end date must be >= start date")
-    values: list[date] = []
-    current = start
-    while current <= end:
-        values.append(current)
-        current += timedelta(days=1)
-    return values
 
 
 def check_hyperliquid_historical_archive_preflight(
@@ -115,51 +114,29 @@ def collect_hyperliquid_historical_l2_archive(
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     generated = generated_at or datetime.now(UTC)
-    relative_output = request.output_relative_path
-    lz4_path = data_dir / relative_output.with_suffix(".lz4")
-    decompressed_path = data_dir / relative_output.with_suffix(".jsonl")
-    manifest_path = data_dir / "manifests/trade_xyz_historical_l2_archive_manifest.json"
     aws_status = aws_download_command_status()
-
-    download_command = _download_command(request.s3_uri, lz4_path)
-    manifest: dict[str, Any] = {
-        "schema_version": "trade_xyz_historical_l2_archive_manifest.v1",
-        "generated_at": generated.isoformat(),
-        "source": HISTORICAL_L2_ARCHIVE_SOURCE,
-        "s3_uri": request.s3_uri,
-        "coin": request.coin,
-        "date": request.date.isoformat(),
-        "hour": request.hour,
-        "requester_pays_acknowledged": acknowledge_requester_pays,
-        "dry_run": dry_run,
-        "decompress_requested": decompress,
-        "aws_available": aws_status["available"],
-        "aws_command_source": aws_status["source"],
-        "aws_command_prefix": aws_status["command_prefix"],
-        "aws_requires_network_for_tool_install": aws_status["requires_network_for_tool_install"],
-        "raw_lz4_path": str(lz4_path),
-        "decompressed_path": str(decompressed_path) if decompress else None,
-        "download_command": download_command,
-        "status": "planned",
-        "notes": [
-            "Hyperliquid historical l2Book archive is requester-pays S3 data.",
-            "Archive uploads are approximately monthly and may be missing or stale.",
-            "Raw archive data is not normalized into quote snapshots by this command.",
-        ],
-    }
+    plan = build_l2_archive_manifest(
+        data_dir=data_dir,
+        request=request,
+        acknowledge_requester_pays=acknowledge_requester_pays,
+        dry_run=dry_run,
+        decompress=decompress,
+        generated_at=generated,
+    )
+    manifest = plan.manifest
 
     if dry_run:
-        write_json(manifest_path, manifest)
+        write_json(plan.manifest_path, manifest)
         return manifest
     if not acknowledge_requester_pays:
         manifest["status"] = "blocked_requires_requester_pays_ack"
-        write_json(manifest_path, manifest)
+        write_json(plan.manifest_path, manifest)
         raise ValueError(
             "historical L2 archive is requester-pays; pass --acknowledge-requester-pays to download"
         )
     if not aws_status["available"]:
         manifest["status"] = "blocked_missing_aws_command"
-        write_json(manifest_path, manifest)
+        write_json(plan.manifest_path, manifest)
         raise RuntimeError(
             "aws command not found; install aws CLI, install uv, or set SIS_AWS_COMMAND"
         )
@@ -167,20 +144,20 @@ def collect_hyperliquid_historical_l2_archive(
     manifest["preflight"] = preflight_status
     if preflight_error := _historical_archive_preflight_error(preflight_status):
         manifest["status"] = "blocked_preflight_failed"
-        write_json(manifest_path, manifest)
+        write_json(plan.manifest_path, manifest)
         raise RuntimeError(preflight_error)
 
-    lz4_path.parent.mkdir(parents=True, exist_ok=True)
-    _run_command(download_command)
+    plan.lz4_path.parent.mkdir(parents=True, exist_ok=True)
+    _run_command(plan.download_command)
     manifest["status"] = "downloaded"
-    manifest["raw_lz4_bytes"] = lz4_path.stat().st_size if lz4_path.exists() else None
+    manifest["raw_lz4_bytes"] = plan.lz4_path.stat().st_size if plan.lz4_path.exists() else None
     if decompress:
-        _decompress_lz4(lz4_path, decompressed_path)
+        _decompress_lz4(plan.lz4_path, plan.decompressed_path)
         manifest["status"] = "downloaded_and_decompressed"
         manifest["decompressed_bytes"] = (
-            decompressed_path.stat().st_size if decompressed_path.exists() else None
+            plan.decompressed_path.stat().st_size if plan.decompressed_path.exists() else None
         )
-    write_json(manifest_path, manifest)
+    write_json(plan.manifest_path, manifest)
     return manifest
 
 
@@ -194,51 +171,29 @@ def collect_hyperliquid_historical_asset_ctxs_archive(
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     generated = generated_at or datetime.now(UTC)
-    date_part = archive_date.strftime("%Y%m%d")
-    s3_uri = f"{HYPERLIQUID_ARCHIVE_BUCKET}/asset_ctxs/{date_part}.csv.lz4"
-    relative_output = Path("raw/historical_archive/hyperliquid/asset_ctxs") / f"{date_part}.csv"
-    lz4_path = data_dir / relative_output.with_suffix(".csv.lz4")
-    decompressed_path = data_dir / relative_output
-    manifest_path = data_dir / "manifests/trade_xyz_historical_asset_ctxs_archive_manifest.json"
     aws_status = aws_download_command_status()
-
-    download_command = _download_command(s3_uri, lz4_path)
-    manifest: dict[str, Any] = {
-        "schema_version": "trade_xyz_historical_asset_ctxs_archive_manifest.v1",
-        "generated_at": generated.isoformat(),
-        "source": HISTORICAL_ASSET_CTXS_ARCHIVE_SOURCE,
-        "s3_uri": s3_uri,
-        "date": archive_date.isoformat(),
-        "requester_pays_acknowledged": acknowledge_requester_pays,
-        "dry_run": dry_run,
-        "decompress_requested": decompress,
-        "aws_available": aws_status["available"],
-        "aws_command_source": aws_status["source"],
-        "aws_command_prefix": aws_status["command_prefix"],
-        "aws_requires_network_for_tool_install": aws_status["requires_network_for_tool_install"],
-        "raw_lz4_path": str(lz4_path),
-        "decompressed_path": str(decompressed_path) if decompress else None,
-        "download_command": download_command,
-        "status": "planned",
-        "notes": [
-            "Hyperliquid historical asset_ctxs archive is requester-pays S3 data.",
-            "Archive uploads are approximately monthly and may be missing or stale.",
-            "Asset contexts help recover mark/oracle/funding context for historical L2 data.",
-        ],
-    }
+    plan = build_asset_ctxs_archive_manifest(
+        data_dir=data_dir,
+        archive_date=archive_date,
+        acknowledge_requester_pays=acknowledge_requester_pays,
+        dry_run=dry_run,
+        decompress=decompress,
+        generated_at=generated,
+    )
+    manifest = plan.manifest
     if dry_run:
-        write_json(manifest_path, manifest)
+        write_json(plan.manifest_path, manifest)
         return manifest
     if not acknowledge_requester_pays:
         manifest["status"] = "blocked_requires_requester_pays_ack"
-        write_json(manifest_path, manifest)
+        write_json(plan.manifest_path, manifest)
         raise ValueError(
             "historical asset_ctxs archive is requester-pays; pass "
             "--acknowledge-requester-pays to download"
         )
     if not aws_status["available"]:
         manifest["status"] = "blocked_missing_aws_command"
-        write_json(manifest_path, manifest)
+        write_json(plan.manifest_path, manifest)
         raise RuntimeError(
             "aws command not found; install aws CLI, install uv, or set SIS_AWS_COMMAND"
         )
@@ -246,20 +201,20 @@ def collect_hyperliquid_historical_asset_ctxs_archive(
     manifest["preflight"] = preflight_status
     if preflight_error := _historical_archive_preflight_error(preflight_status):
         manifest["status"] = "blocked_preflight_failed"
-        write_json(manifest_path, manifest)
+        write_json(plan.manifest_path, manifest)
         raise RuntimeError(preflight_error)
 
-    lz4_path.parent.mkdir(parents=True, exist_ok=True)
-    _run_command(download_command)
+    plan.lz4_path.parent.mkdir(parents=True, exist_ok=True)
+    _run_command(plan.download_command)
     manifest["status"] = "downloaded"
-    manifest["raw_lz4_bytes"] = lz4_path.stat().st_size if lz4_path.exists() else None
+    manifest["raw_lz4_bytes"] = plan.lz4_path.stat().st_size if plan.lz4_path.exists() else None
     if decompress:
-        _decompress_lz4(lz4_path, decompressed_path)
+        _decompress_lz4(plan.lz4_path, plan.decompressed_path)
         manifest["status"] = "downloaded_and_decompressed"
         manifest["decompressed_bytes"] = (
-            decompressed_path.stat().st_size if decompressed_path.exists() else None
+            plan.decompressed_path.stat().st_size if plan.decompressed_path.exists() else None
         )
-    write_json(manifest_path, manifest)
+    write_json(plan.manifest_path, manifest)
     return manifest
 
 
@@ -280,43 +235,14 @@ def build_hyperliquid_historical_archive_bulk_plan(
     if invalid_hours:
         raise ValueError(f"hours must be between 0 and 23: {invalid_hours}")
     generated = generated_at or datetime.now(UTC)
-    dates = _date_range(start_date, end_date)
-    l2_items: list[dict[str, Any]] = []
-    asset_ctx_items: list[dict[str, Any]] = []
-
-    for current_date in dates:
-        date_part = current_date.strftime("%Y%m%d")
-        if include_asset_ctxs:
-            s3_uri = f"{HYPERLIQUID_ARCHIVE_BUCKET}/asset_ctxs/{date_part}.csv.lz4"
-            destination = (
-                data_dir / "raw/historical_archive/hyperliquid/asset_ctxs" / f"{date_part}.csv.lz4"
-            )
-            asset_ctx_items.append(
-                {
-                    "date": current_date.isoformat(),
-                    "s3_uri": s3_uri,
-                    "destination": str(destination),
-                    "decompressed_path": str(destination.with_suffix("")),
-                    "download_command": _download_command(s3_uri, destination),
-                }
-            )
-        for hour in effective_hours:
-            for coin in coins:
-                request = HistoricalL2ArchiveRequest(coin=coin, date=current_date, hour=hour)
-                destination = data_dir / request.output_relative_path.with_suffix(".lz4")
-                l2_items.append(
-                    {
-                        "date": current_date.isoformat(),
-                        "hour": hour,
-                        "coin": coin,
-                        "s3_uri": request.s3_uri,
-                        "destination": str(destination),
-                        "decompressed_path": str(
-                            (data_dir / request.output_relative_path).with_suffix(".jsonl")
-                        ),
-                        "download_command": _download_command(request.s3_uri, destination),
-                    }
-                )
+    dates = date_range(start_date, end_date)
+    l2_items, asset_ctx_items = build_bulk_plan_items(
+        data_dir=data_dir,
+        coins=coins,
+        dates=dates,
+        hours=effective_hours,
+        include_asset_ctxs=include_asset_ctxs,
+    )
 
     manifest = {
         "schema_version": "trade_xyz_historical_archive_bulk_plan_manifest.v1",
@@ -385,29 +311,13 @@ def execute_hyperliquid_historical_archive_bulk_plan(
             "lz4 executable not found; install lz4 before decompressing archive data"
         )
 
-    candidates: list[dict[str, Any]] = []
-    if include_asset_ctxs:
-        asset_ctx_objects = plan.get("asset_ctx_objects")
-        for item in (
-            cast(list[object], asset_ctx_objects) if isinstance(asset_ctx_objects, list) else []
-        ):
-            if isinstance(item, dict):
-                candidates.append({"kind": "asset_ctxs", **cast(dict[str, Any], item)})
-    if include_l2:
-        l2_objects = plan.get("l2_objects")
-        for item in cast(list[object], l2_objects) if isinstance(l2_objects, list) else []:
-            if isinstance(item, dict):
-                candidates.append({"kind": "l2", **cast(dict[str, Any], item)})
-    selected: list[dict[str, Any]] = []
-    skipped_existing = 0
-    for item in candidates:
-        destination = Path(str(item.get("destination") or ""))
-        if skip_existing and destination.exists():
-            skipped_existing += 1
-            continue
-        selected.append(item)
-        if max_objects is not None and len(selected) >= max_objects:
-            break
+    candidates, selected, skipped_existing = select_bulk_execution_candidates(
+        plan,
+        include_l2=include_l2,
+        include_asset_ctxs=include_asset_ctxs,
+        skip_existing=skip_existing,
+        max_objects=max_objects,
+    )
 
     preflight_status = _historical_archive_preflight_status(data_dir)
     preflight_error = (
@@ -417,39 +327,26 @@ def execute_hyperliquid_historical_archive_bulk_plan(
     )
     if preflight_error is not None:
         generated = generated_at or datetime.now(UTC)
-        manifest = {
-            "schema_version": "trade_xyz_historical_archive_bulk_execution_manifest.v1",
-            "generated_at": generated.isoformat(),
-            "source": "hyperliquid_archive.bulk_execution",
-            "plan_path": str(effective_plan_path),
-            "dry_run": dry_run,
-            "requester_pays_acknowledged": acknowledge_requester_pays,
-            "aws_available": aws_status["available"],
-            "aws_command_source": aws_status["source"],
-            "aws_command_prefix": aws_status["command_prefix"],
-            "aws_requires_network_for_tool_install": aws_status[
-                "requires_network_for_tool_install"
-            ],
-            "include_l2": include_l2,
-            "include_asset_ctxs": include_asset_ctxs,
-            "skip_existing": skip_existing,
-            "decompress_requested": decompress,
-            "max_objects": max_objects,
-            "candidate_object_count": len(candidates),
-            "selected_object_count": len(selected),
-            "skipped_existing_count": skipped_existing,
-            "downloaded_object_count": 0,
-            "decompressed_object_count": 0,
-            "command_error_count": 0,
-            "command_errors": [],
-            "selected_objects": selected,
-            "preflight": preflight_status,
-            "status": "blocked_preflight_failed",
-            "notes": [
-                "Bulk execution was blocked before download because AWS preflight did not pass.",
-                "Run check-trade-xyz-historical-archive-preflight after configuring AWS credentials.",
-            ],
-        }
+        manifest = build_bulk_execution_manifest(
+            generated=generated,
+            plan_path=effective_plan_path,
+            dry_run=dry_run,
+            acknowledge_requester_pays=acknowledge_requester_pays,
+            aws_status=aws_status,
+            include_l2=include_l2,
+            include_asset_ctxs=include_asset_ctxs,
+            skip_existing=skip_existing,
+            decompress=decompress,
+            max_objects=max_objects,
+            candidates=candidates,
+            selected=selected,
+            skipped_existing=skipped_existing,
+            downloaded=0,
+            decompressed=0,
+            command_errors=[],
+            preflight_status=preflight_status,
+            blocked_preflight=True,
+        )
         write_json(
             data_dir / "manifests/trade_xyz_historical_archive_bulk_execution_manifest.json",
             manifest,
@@ -480,42 +377,25 @@ def execute_hyperliquid_historical_archive_bulk_plan(
                 break
 
     generated = generated_at or datetime.now(UTC)
-    manifest = {
-        "schema_version": "trade_xyz_historical_archive_bulk_execution_manifest.v1",
-        "generated_at": generated.isoformat(),
-        "source": "hyperliquid_archive.bulk_execution",
-        "plan_path": str(effective_plan_path),
-        "dry_run": dry_run,
-        "requester_pays_acknowledged": acknowledge_requester_pays,
-        "aws_available": aws_status["available"],
-        "aws_command_source": aws_status["source"],
-        "aws_command_prefix": aws_status["command_prefix"],
-        "aws_requires_network_for_tool_install": aws_status["requires_network_for_tool_install"],
-        "include_l2": include_l2,
-        "include_asset_ctxs": include_asset_ctxs,
-        "skip_existing": skip_existing,
-        "decompress_requested": decompress,
-        "max_objects": max_objects,
-        "candidate_object_count": len(candidates),
-        "selected_object_count": len(selected),
-        "skipped_existing_count": skipped_existing,
-        "downloaded_object_count": downloaded,
-        "decompressed_object_count": decompressed,
-        "command_error_count": len(command_errors),
-        "command_errors": command_errors,
-        "selected_objects": selected,
-        "preflight": preflight_status,
-        "status": "planned"
-        if dry_run
-        else "completed_with_errors"
-        if command_errors
-        else "completed",
-        "notes": [
-            "Bulk execution reads a prebuilt requester-pays plan and never infers extra S3 objects.",
-            "Use max_objects to download in small batches before running the full plan.",
-            "Downloaded archive data still requires quote normalization before readiness coverage changes.",
-        ],
-    }
+    manifest = build_bulk_execution_manifest(
+        generated=generated,
+        plan_path=effective_plan_path,
+        dry_run=dry_run,
+        acknowledge_requester_pays=acknowledge_requester_pays,
+        aws_status=aws_status,
+        include_l2=include_l2,
+        include_asset_ctxs=include_asset_ctxs,
+        skip_existing=skip_existing,
+        decompress=decompress,
+        max_objects=max_objects,
+        candidates=candidates,
+        selected=selected,
+        skipped_existing=skipped_existing,
+        downloaded=downloaded,
+        decompressed=decompressed,
+        command_errors=command_errors,
+        preflight_status=preflight_status,
+    )
     write_json(
         data_dir / "manifests/trade_xyz_historical_archive_bulk_execution_manifest.json",
         manifest,
@@ -566,56 +446,22 @@ def normalize_historical_archive_to_trade_xyz_quotes(
     }
     missing_asset_ctx_count = 0
     for row in archive_rows:
-        if not isinstance(row, dict):
-            skipped["invalid_json_object"] += 1
+        result = build_historical_archive_quote_row(
+            row=row,
+            instrument=instrument,
+            effective_coin=effective_coin,
+            asset_ctx=asset_ctx,
+            output_path=effective_output_path,
+            row_index=rows_written,
+        )
+        if result.skip_reason is not None:
+            skipped[result.skip_reason] += 1
             continue
-        payload = _extract_l2_payload(row)
-        if payload is None:
-            skipped["missing_levels"] += 1
-            continue
-        source_ts_ms = _source_ts_ms_from_payload(payload) or _source_ts_ms_from_payload(row)
-        if source_ts_ms is None:
-            skipped["missing_source_ts_ms"] += 1
-            continue
-        if "time" not in payload:
-            payload = {**payload, "time": source_ts_ms}
-        quote_ts = datetime.fromtimestamp(source_ts_ms / 1000, tz=UTC)
-        row_asset_ctx = asset_ctx
-        if row_asset_ctx is None:
+        if result.missing_asset_ctx:
             missing_asset_ctx_count += 1
-        quote = quote_from_l2_book(
-            canonical_symbol=instrument.canonical_symbol,
-            coin=effective_coin,
-            asset_id=instrument.asset_id,
-            real_market_symbol=instrument.real_market_symbol,
-            payload=payload,
-            asset_ctx=row_asset_ctx,
-            fee_mode=instrument.fee_mode,
-            taker_fee_bps=instrument.taker_fee_bps,
-            maker_fee_bps=instrument.maker_fee_bps,
-            source=HISTORICAL_QUOTE_SOURCE,
-            now=quote_ts,
-        )
-        combined_payload = {
-            "l2Book": payload,
-            "assetCtx": row_asset_ctx,
-            "archive_row": row,
-        }
-        block_reasons = list(quote.block_reasons)
-        if row_asset_ctx is None:
-            block_reasons.append("BLOCK_HISTORICAL_ASSET_CTX_MISSING")
-        block_reasons = list(dict.fromkeys(block_reasons))
-        quote = quote.model_copy(
-            update={
-                "source_ts_ms": source_ts_ms,
-                "raw_payload_sha256": payload_hash(combined_payload),
-                "raw_payload": combined_payload,
-                "raw_payload_ref": f"{effective_output_path}#row={rows_written}",
-                "is_tradable": quote.is_tradable and row_asset_ctx is not None,
-                "block_reasons": block_reasons,
-            }
-        )
-        append_jsonl(effective_output_path, quote.model_dump(mode="json"))
+        if result.quote is None:
+            continue
+        append_jsonl(effective_output_path, result.quote)
         rows_written += 1
 
     normalized_path = data_dir / "normalized/quotes.parquet"
@@ -681,65 +527,30 @@ def normalize_historical_archive_bulk_to_trade_xyz_quotes(
         raise ValueError(f"historical archive bulk plan is not an object: {effective_plan_path}")
     plan = cast(dict[str, Any], plan)
 
-    asset_ctx_by_date: dict[str, Path] = {}
-    asset_ctx_objects = plan.get("asset_ctx_objects")
-    for item in (
-        cast(list[object], asset_ctx_objects) if isinstance(asset_ctx_objects, list) else []
-    ):
-        if not isinstance(item, dict):
-            continue
-        item = cast(dict[str, Any], item)
-        archive_date = str(item.get("date") or "")
-        decompressed_path = item.get("decompressed_path")
-        if archive_date and isinstance(decompressed_path, str):
-            path = Path(decompressed_path)
-            if path.exists():
-                asset_ctx_by_date[archive_date] = path
-
     generated = generated_at or datetime.now(UTC)
     normalized_files: list[dict[str, Any]] = []
-    skipped: dict[str, int] = {
-        "missing_l2_jsonl": 0,
-        "missing_asset_ctxs": 0,
-        "raw_quote_output_exists": 0,
-    }
     errors: list[dict[str, Any]] = []
-    l2_objects = plan.get("l2_objects")
-    for item in cast(list[object], l2_objects) if isinstance(l2_objects, list) else []:
-        if not isinstance(item, dict):
-            continue
-        item = cast(dict[str, Any], item)
-        l2_path_value = item.get("decompressed_path")
-        if not isinstance(l2_path_value, str):
-            skipped["missing_l2_jsonl"] += 1
-            continue
-        l2_path = Path(l2_path_value)
-        if not l2_path.exists():
-            skipped["missing_l2_jsonl"] += 1
-            continue
-        archive_date = str(item.get("date") or "")
-        asset_ctxs_path = asset_ctx_by_date.get(archive_date)
-        if asset_ctxs_path is None:
-            skipped["missing_asset_ctxs"] += 1
-        output_path = _archive_quote_output_path(data_dir, item)
-        if skip_existing_raw_quotes and output_path.exists():
-            skipped["raw_quote_output_exists"] += 1
-            continue
+    candidates, skipped = select_bulk_quote_normalization_candidates(
+        data_dir=data_dir,
+        plan=plan,
+        skip_existing_raw_quotes=skip_existing_raw_quotes,
+    )
+    for candidate in candidates:
         try:
             child = normalize_historical_archive_to_trade_xyz_quotes(
                 data_dir=data_dir,
-                l2_jsonl_path=l2_path,
+                l2_jsonl_path=candidate.l2_path,
                 registry_path=registry_path,
-                asset_ctxs_path=asset_ctxs_path,
-                coin=str(item.get("coin") or "") or None,
-                output_path=output_path,
+                asset_ctxs_path=candidate.asset_ctxs_path,
+                coin=candidate.coin,
+                output_path=candidate.output_path,
                 normalize=False,
                 generated_at=generated,
             )
         except (FileNotFoundError, ValueError) as exc:
             errors.append(
                 {
-                    "l2_jsonl_path": str(l2_path),
+                    "l2_jsonl_path": str(candidate.l2_path),
                     "error": f"{type(exc).__name__}: {exc}",
                 }
             )

@@ -7,9 +7,9 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _exit_override_column,
     _regime_value,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import (
-    _exit_bps,
-    _sizing_value,
+from sis.research.strategy_lab.authoring.compiler.row_numeric_values import _exit_bps
+from sis.research.strategy_lab.authoring.compiler.trade_exit_partial_fields import (
+    _trade_exit_partial_fields,
 )
 
 
@@ -49,38 +49,10 @@ def _trade_exit_trailing_partial_fields(
                 exit_rules.trailing_stop_activation_bps_column,
             ),
         ),
-        "partial_take_profit_bps": _exit_bps(
-            row,
-            fixed=_exit_override(
-                exit_overrides,
-                "partial_take_profit_bps",
-                _regime_value(
-                    regime,
-                    "partial_take_profit_bps",
-                    exit_rules.partial_take_profit_bps,
-                ),
-            ),
-            column=_exit_override_column(
-                exit_overrides,
-                "partial_take_profit_bps",
-                exit_rules.partial_take_profit_bps_column,
-            ),
-        ),
-        "partial_exit_fraction": _sizing_value(
-            row,
-            fixed=_exit_override(
-                exit_overrides,
-                "partial_exit_fraction",
-                _regime_value(
-                    regime,
-                    "partial_exit_fraction",
-                    exit_rules.partial_exit_fraction,
-                ),
-            ),
-            column=_exit_override_column(
-                exit_overrides,
-                "partial_exit_fraction",
-                exit_rules.partial_exit_fraction_column,
-            ),
+        **_trade_exit_partial_fields(
+            row=row,
+            exit_rules=exit_rules,
+            regime=regime,
+            exit_overrides=exit_overrides,
         ),
     }

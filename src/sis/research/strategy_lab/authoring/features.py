@@ -13,7 +13,7 @@ from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoring
 from sis.research.strategy_lab.authoring.derived_features import (
     apply_derived_features as _apply_derived_features,
 )
-from sis.research.strategy_lab.authoring.validation import _all_conditions
+from sis.research.strategy_lab.authoring.required_columns import _all_conditions
 
 __all__ = ["_apply_derived_features"]
 
