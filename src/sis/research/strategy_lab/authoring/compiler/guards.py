@@ -7,26 +7,17 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _block_trade_row,
     _signal_timestamp,
 )
-from sis.research.strategy_lab.authoring.compiler.reward_risk import _reward_risk_ratio
+from sis.research.strategy_lab.authoring.compiler.reward_risk_gate import (
+    _apply_reward_risk_gate as _apply_reward_risk_gate,
+)
 from sis.research.strategy_lab.authoring.compiler.stop_target_width import (
     _apply_stop_target_width_gate as _apply_stop_target_width_gate,
 )
+from sis.research.strategy_lab.authoring.compiler.temporal_selection_state import (
+    _record_temporal_selected_signal,
+)
 from sis.research.strategy_lab.authoring.contracts.risk_controls import TemporalRules
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
-
-
-def _apply_reward_risk_gate(row: dict[str, Any], spec: StrategyAuthoringSpec) -> dict[str, Any]:
-    minimum = row.get("min_reward_risk_ratio")
-    if minimum is None or row.get("side") not in {"long", "short"}:
-        return row
-    ratio = _reward_risk_ratio(row)
-    row["min_reward_risk_ratio"] = minimum
-    row["reward_risk_ratio"] = ratio
-    if ratio is None:
-        return _block_trade_row(row, spec=spec, block_reason="reward_risk_ratio_missing")
-    if ratio < minimum:
-        return _block_trade_row(row, spec=spec, block_reason="reward_risk_ratio_too_low")
-    return row
 
 
 def _temporal_block_reason(
@@ -87,10 +78,10 @@ def _apply_temporal_selection(
             selected.append(_block_trade_row(row, spec=spec, block_reason=reason))
             continue
 
-        ts_signal = _signal_timestamp(row)
-        symbol = str(row["execution_symbol"])
-        last_signal_by_symbol[symbol] = ts_signal
-        day_key = (symbol, ts_signal.date())
-        count_by_symbol_day[day_key] = count_by_symbol_day.get(day_key, 0) + 1
+        _record_temporal_selected_signal(
+            row,
+            last_signal_by_symbol=last_signal_by_symbol,
+            count_by_symbol_day=count_by_symbol_day,
+        )
         selected.append(row)
     return selected

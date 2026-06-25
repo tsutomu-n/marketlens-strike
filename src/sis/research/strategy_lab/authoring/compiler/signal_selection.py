@@ -2,11 +2,21 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 from sis.research.strategy_lab.authoring.contracts.core import EntryRules, ScoreRules
 from sis.research.strategy_lab.authoring.contracts.spec import AuthoringRules
 from sis.research.strategy_lab.authoring.features import _condition_passes
 from sis.research.strategy_lab.authoring.compiler.signal_model_score import _model_score_value
+from sis.research.strategy_lab.authoring.compiler.signal_score_helpers import (
+    _rank_score as _rank_score,
+    _score_value as _score_value,
+    _tail_bucket as _tail_bucket,
+)
+from sis.research.strategy_lab.authoring.compiler.signal_side_column import (
+    _side_from_column as _side_from_column,
+)
+from sis.research.strategy_lab.authoring.compiler.signal_weighted_score import (
+    _weighted_score_value,
+)
 
 
 def _entry_passes(row: dict[str, Any], entry: EntryRules) -> bool:
@@ -21,51 +31,15 @@ def _entry_passes(row: dict[str, Any], entry: EntryRules) -> bool:
 def _score(row: dict[str, Any], score: ScoreRules) -> float | None:
     if not score.enabled:
         return None
-    total = 0.0
-    used = False
-    for term in score.weighted_sum:
-        value = row.get(term.column)
-        if isinstance(value, int | float):
-            total += float(value) * term.weight
-            used = True
+    weighted_value = _weighted_score_value(row, score.weighted_sum)
+    total = weighted_value if weighted_value is not None else 0.0
+    used = weighted_value is not None
     if score.model_score is not None:
         model_value = _model_score_value(row, score.model_score)
         if model_value is not None:
             total += model_value
             used = True
     return total if used else None
-
-
-def _rank_score(raw_score: float | None) -> float | None:
-    if raw_score is None:
-        return None
-    return max(0.0, min(1.0, raw_score))
-
-
-def _tail_bucket(rank_score: float | None) -> str:
-    if rank_score is None:
-        return "none"
-    if rank_score >= 0.8:
-        return "top"
-    if rank_score <= 0.2:
-        return "bottom"
-    return "middle"
-
-
-def _score_value(row: dict[str, Any]) -> float | None:
-    value = row.get("raw_score")
-    return float(value) if isinstance(value, int | float) else None
-
-
-def _side_from_column(row: dict[str, Any], column: str) -> Literal["long", "short", "none"]:
-    value = str(row.get(column) or "").strip().lower()
-    if value in {"buy", "bull", "long"}:
-        return "long"
-    if value in {"sell", "bear", "short"}:
-        return "short"
-    if value in {"", "hold", "none", "skip", "flat"}:
-        return "none"
-    raise StrategyAuthoringValidationError(f"Unsupported side value in {column}: {value}")
 
 
 def _selected_side(

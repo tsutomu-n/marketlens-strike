@@ -6,17 +6,12 @@ from typing import Any, Literal
 from sis.research.strategy_lab.authoring.compiler.common import (
     _matching_regime_override,
 )
-from sis.research.strategy_lab.authoring.compiler.trade_bracket_fields import (
-    _trade_bracket_fields,
+from sis.research.strategy_lab.authoring.compiler.trade_control_fields import (
+    _trade_control_fields,
 )
-from sis.research.strategy_lab.authoring.compiler.trade_execution_fields import (
-    _trade_execution_fields,
-)
-from sis.research.strategy_lab.authoring.compiler.trade_exit_fields import _trade_exit_fields
 from sis.research.strategy_lab.authoring.compiler.trade_identity_fields import (
     _trade_identity_fields,
 )
-from sis.research.strategy_lab.authoring.compiler.trade_order_fields import _trade_order_fields
 from sis.research.strategy_lab.authoring.compiler.trade_portfolio_fields import (
     _trade_portfolio_fields,
 )
@@ -54,23 +49,6 @@ def _trade_signal_row(
     reason_codes: list[str] | None = None,
 ) -> dict[str, Any]:
     regime = _matching_regime_override(row, spec)
-    order_fields = _trade_order_fields(
-        row=row, order=spec.rules.order, order_overrides=order_overrides
-    )
-    execution_fields = _trade_execution_fields(
-        row=row,
-        execution=spec.rules.execution,
-        regime=regime,
-        execution_overrides=execution_overrides,
-    )
-    reduce_only = bool(order_fields["entry_reduce_only"])
-    exit_fields = _trade_exit_fields(
-        row=row,
-        exit_rules=spec.rules.exit,
-        reduce_only=reduce_only,
-        regime=regime,
-        exit_overrides=exit_overrides,
-    )
     return {
         **_trade_identity_fields(
             spec=spec,
@@ -84,10 +62,14 @@ def _trade_signal_row(
             multi_leg_anchor_real_market_symbol=multi_leg_anchor_real_market_symbol,
         ),
         **_trade_score_fields(spec=spec, row=row, raw_score=raw_score, rank=rank),
-        **exit_fields,
-        **_trade_bracket_fields(row=row, bracket=spec.rules.bracket),
-        **order_fields,
-        **execution_fields,
+        **_trade_control_fields(
+            row=row,
+            spec=spec,
+            regime=regime,
+            exit_overrides=exit_overrides,
+            order_overrides=order_overrides,
+            execution_overrides=execution_overrides,
+        ),
         **_trade_sizing_fields(
             spec=spec,
             row=row,

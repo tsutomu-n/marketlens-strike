@@ -6,6 +6,9 @@ from typing import Any, Literal
 from sis.research.strategy_lab.authoring.compiler.common import (
     _resolve_leg_side,
 )
+from sis.research.strategy_lab.authoring.compiler.multi_leg_base_sizing import (
+    _multi_leg_base_sizing,
+)
 from sis.research.strategy_lab.authoring.compiler.multi_leg_overrides import (
     _multi_leg_execution_overrides,
     _multi_leg_exit_overrides,
@@ -15,11 +18,6 @@ from sis.research.strategy_lab.authoring.compiler.multi_leg_order_overrides impo
 )
 from sis.research.strategy_lab.authoring.compiler.multi_leg_sizing import (
     _multi_leg_sizing_fields,
-)
-from sis.research.strategy_lab.authoring.compiler.row_values import _sizing_value
-from sis.research.strategy_lab.authoring.compiler.signal_sizing import (
-    _signal_notional_usd,
-    _signal_position_weight,
 )
 from sis.research.strategy_lab.authoring.compiler.signal_ids import _multi_leg_group_id
 from sis.research.strategy_lab.authoring.compiler.trade_rows import _trade_signal_row
@@ -37,16 +35,7 @@ def _multi_leg_signal_rows(
     raw_score: float | None,
     rank: float | None,
 ) -> list[dict[str, Any]]:
-    base_weight = _sizing_value(
-        row,
-        fixed=_signal_position_weight(row, spec),
-        column=None,
-    )
-    base_notional = _sizing_value(
-        row,
-        fixed=_signal_notional_usd(row, spec),
-        column=None,
-    )
+    base_sizing = _multi_leg_base_sizing(row=row, spec=spec)
     rows: list[dict[str, Any]] = []
     group_id = _multi_leg_group_id(spec, row, base_side=base_side)
     leg_count = len(spec.rules.multi_leg.legs)
@@ -57,8 +46,8 @@ def _multi_leg_signal_rows(
         sizing_fields = _multi_leg_sizing_fields(
             row=row,
             leg=leg,
-            base_weight=base_weight,
-            base_notional=base_notional,
+            base_weight=base_sizing.position_weight,
+            base_notional=base_sizing.notional_usd,
         )
         exit_overrides = _multi_leg_exit_overrides(row=row, leg=leg)
         order_overrides = _multi_leg_order_overrides(
