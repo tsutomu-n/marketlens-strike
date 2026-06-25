@@ -39,6 +39,10 @@ from sis.research.strategy_lab.authoring.derived_quality import (
     QUALITY_DERIVED_OPS,
     quality_expression,
 )
+from sis.research.strategy_lab.authoring.derived_trend_indicators import (
+    TREND_INDICATOR_DERIVED_OPS,
+    trend_indicator_expression,
+)
 
 
 def test_apply_derived_features_computes_representative_ops() -> None:
@@ -798,3 +802,122 @@ def test_bands_channel_expression_computes_price_envelope_ops() -> None:
     assert result.get_column("kel_width").to_list() == pytest.approx(
         [8 / 9, 1.0, 0.8484848485, 0.8533333333]
     )
+
+
+def test_trend_indicator_expression_computes_trend_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ", "QQQ", "QQQ"],
+            "ts": [1, 2, 3, 4, 5],
+            "high": [101.0, 102.0, 104.0, 106.0, 108.0],
+            "low": [99.0, 100.0, 101.0, 103.0, 105.0],
+            "close": [100.0, 101.0, 103.0, 105.0, 107.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            trend_indicator_expression(
+                DerivedFeature(
+                    name="ich_conv",
+                    op="ichimoku_conversion",
+                    columns=["high", "low"],
+                    window=3,
+                )
+            ).alias("ich_conv"),
+            trend_indicator_expression(
+                DerivedFeature(
+                    name="ich_base",
+                    op="ichimoku_base",
+                    columns=["high", "low"],
+                    window=4,
+                )
+            ).alias("ich_base"),
+        ]
+    ).with_columns(
+        [
+            trend_indicator_expression(
+                DerivedFeature(
+                    name="ich_a",
+                    op="ichimoku_span_a",
+                    columns=["ich_conv", "ich_base"],
+                )
+            ).alias("ich_a"),
+            trend_indicator_expression(
+                DerivedFeature(
+                    name="ich_b",
+                    op="ichimoku_span_b",
+                    columns=["high", "low"],
+                    window=5,
+                )
+            ).alias("ich_b"),
+            trend_indicator_expression(
+                DerivedFeature(
+                    name="macd",
+                    op="macd_line",
+                    columns=["close"],
+                    window=2,
+                    value=4.0,
+                )
+            ).alias("macd"),
+            trend_indicator_expression(
+                DerivedFeature(
+                    name="stoch_k",
+                    op="stochastic_k",
+                    columns=["high", "low", "close"],
+                    window=3,
+                )
+            ).alias("stoch_k"),
+            trend_indicator_expression(
+                DerivedFeature(
+                    name="adx",
+                    op="adx",
+                    columns=["high", "low", "close"],
+                    window=3,
+                )
+            ).alias("adx"),
+        ]
+    )
+    result = result.with_columns(
+        trend_indicator_expression(
+            DerivedFeature(
+                name="stoch_d",
+                op="stochastic_d",
+                columns=["stoch_k"],
+                window=2,
+            )
+        ).alias("stoch_d")
+    )
+
+    assert TREND_INDICATOR_DERIVED_OPS == {
+        "ichimoku_conversion",
+        "ichimoku_base",
+        "ichimoku_span_b",
+        "ichimoku_span_a",
+        "macd_line",
+        "stochastic_k",
+        "stochastic_d",
+        "adx",
+    }
+    assert result.get_column("ich_conv").to_list() == pytest.approx(
+        [100.0, 100.5, 101.5, 103.0, 104.5]
+    )
+    assert result.get_column("ich_base").to_list() == pytest.approx(
+        [100.0, 100.5, 101.5, 102.5, 104.0]
+    )
+    assert result.get_column("ich_a").to_list() == pytest.approx(
+        [100.0, 100.5, 101.5, 102.75, 104.25]
+    )
+    assert result.get_column("ich_b").to_list() == pytest.approx(
+        [100.0, 100.5, 101.5, 102.5, 103.5]
+    )
+    assert result.get_column("macd").to_list() == pytest.approx(
+        [0.0, 0.2666666667, 0.7822222222, 1.2100740741, 1.506291358]
+    )
+    assert result.get_column("stoch_k").to_list() == pytest.approx(
+        [50.0, 66.6666666667, 80.0, 83.3333333333, 85.7142857143]
+    )
+    assert result.get_column("stoch_d").to_list() == pytest.approx(
+        [50.0, 58.3333333333, 73.3333333333, 81.6666666667, 84.5238095238]
+    )
+    assert result.get_column("adx").to_list() == pytest.approx([None, 100.0, 100.0, 100.0, 100.0])

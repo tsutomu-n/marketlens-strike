@@ -35,6 +35,10 @@ from sis.research.strategy_lab.authoring.derived_quality import (
     QUALITY_DERIVED_OPS,
     quality_expression,
 )
+from sis.research.strategy_lab.authoring.derived_trend_indicators import (
+    TREND_INDICATOR_DERIVED_OPS,
+    trend_indicator_expression,
+)
 
 
 def literal_or_col(feature: DerivedFeature, index: int = 1) -> pl.Expr:
@@ -94,77 +98,8 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
         expr = pl.mean_horizontal(expressions)
     elif feature.op in BANDS_CHANNEL_DERIVED_OPS:
         expr = bands_channel_expression(feature)
-    elif feature.op in {"ichimoku_conversion", "ichimoku_base", "ichimoku_span_b"}:
-        high = pl.col(feature.columns[0])
-        low = pl.col(feature.columns[1])
-        high_max = high.rolling_max(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-        low_min = low.rolling_min(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-        expr = (high_max + low_min) / 2.0
-    elif feature.op == "ichimoku_span_a":
-        expr = (pl.col(feature.columns[0]) + pl.col(feature.columns[1])) / 2.0
-    elif feature.op == "macd_line":
-        fast = first.ewm_mean(span=feature.window or 1, adjust=False, min_samples=1).over(
-            "canonical_symbol"
-        )
-        slow_span = int(feature.value or 1)
-        slow = first.ewm_mean(span=slow_span, adjust=False, min_samples=1).over("canonical_symbol")
-        expr = fast - slow
-    elif feature.op in {"stochastic_k", "adx"}:
-        high = pl.col(feature.columns[0])
-        low = pl.col(feature.columns[1])
-        close = pl.col(feature.columns[2])
-        if feature.op == "stochastic_k":
-            low_min = low.rolling_min(window_size=feature.window or 1, min_samples=1).over(
-                "canonical_symbol"
-            )
-            high_max = high.rolling_max(window_size=feature.window or 1, min_samples=1).over(
-                "canonical_symbol"
-            )
-            expr = 100.0 * (close - low_min) / safe_denominator(high_max - low_min)
-        else:
-            previous_close = close.shift(1).over("canonical_symbol")
-            true_range = pl.max_horizontal(
-                [
-                    high - low,
-                    (high - previous_close).abs(),
-                    (low - previous_close).abs(),
-                ]
-            )
-            up_move = high - high.shift(1).over("canonical_symbol")
-            down_move = low.shift(1).over("canonical_symbol") - low
-            plus_dm = pl.when((up_move > down_move) & (up_move > 0.0)).then(up_move).otherwise(0.0)
-            minus_dm = (
-                pl.when((down_move > up_move) & (down_move > 0.0)).then(down_move).otherwise(0.0)
-            )
-            atr = true_range.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
-                "canonical_symbol"
-            )
-            plus_di = (
-                100.0
-                * plus_dm.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
-                    "canonical_symbol"
-                )
-                / safe_denominator(atr)
-            )
-            minus_di = (
-                100.0
-                * minus_dm.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
-                    "canonical_symbol"
-                )
-                / safe_denominator(atr)
-            )
-            dx = 100.0 * (plus_di - minus_di).abs() / safe_denominator(plus_di + minus_di)
-            expr = dx.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
-                "canonical_symbol"
-            )
-    elif feature.op == "stochastic_d":
-        expr = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
+    elif feature.op in TREND_INDICATOR_DERIVED_OPS:
+        expr = trend_indicator_expression(feature)
     elif feature.op == "obv":
         close = pl.col(feature.columns[0])
         volume = pl.col(feature.columns[1])
