@@ -7,6 +7,10 @@ import polars as pl
 from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 from sis.research.strategy_lab.authoring.contracts.derived import DerivedFeature
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
+from sis.research.strategy_lab.authoring.derived_bands_channels import (
+    BANDS_CHANNEL_DERIVED_OPS,
+    bands_channel_expression,
+)
 from sis.research.strategy_lab.authoring.derived_cross_sectional import (
     CROSS_SECTIONAL_DERIVED_OPS,
     cross_sectional_expression,
@@ -18,6 +22,10 @@ from sis.research.strategy_lab.authoring.derived_drawdown import (
 from sis.research.strategy_lab.authoring.derived_execution_costs import (
     EXECUTION_COST_DERIVED_OPS,
     execution_cost_expression,
+)
+from sis.research.strategy_lab.authoring.derived_external_signals import (
+    EXTERNAL_SIGNAL_DERIVED_OPS,
+    external_signal_expression,
 )
 from sis.research.strategy_lab.authoring.derived_liquidity import (
     LIQUIDITY_DERIVED_OPS,
@@ -84,92 +92,8 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
         if feature.value is not None:
             expressions.append(pl.lit(feature.value))
         expr = pl.mean_horizontal(expressions)
-    elif feature.op in {"true_range", "atr"}:
-        high = pl.col(feature.columns[0])
-        low = pl.col(feature.columns[1])
-        close = pl.col(feature.columns[2])
-        previous_close = close.shift(1).over("canonical_symbol")
-        true_range = pl.max_horizontal(
-            [
-                high - low,
-                (high - previous_close).abs(),
-                (low - previous_close).abs(),
-            ]
-        )
-        expr = (
-            true_range.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
-                "canonical_symbol"
-            )
-            if feature.op == "atr"
-            else true_range
-        )
-    elif feature.op in {
-        "bollinger_upper",
-        "bollinger_lower",
-        "bollinger_width",
-        "bollinger_percent_b",
-    }:
-        multiplier = feature.value if feature.value is not None else 2.0
-        mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-        std = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
-            "canonical_symbol"
-        )
-        upper = mean + (std * multiplier)
-        lower = mean - (std * multiplier)
-        if feature.op == "bollinger_upper":
-            expr = upper
-        elif feature.op == "bollinger_lower":
-            expr = lower
-        elif feature.op == "bollinger_width":
-            expr = (upper - lower) / safe_denominator(mean)
-        else:
-            expr = (first - lower) / safe_denominator(upper - lower)
-    elif feature.op in {"donchian_upper", "donchian_lower", "donchian_mid", "donchian_width"}:
-        high = pl.col(feature.columns[0])
-        low = pl.col(feature.columns[1])
-        upper = high.rolling_max(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-        lower = low.rolling_min(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-        if feature.op == "donchian_upper":
-            expr = upper
-        elif feature.op == "donchian_lower":
-            expr = lower
-        elif feature.op == "donchian_mid":
-            expr = (upper + lower) / 2.0
-        else:
-            expr = (upper - lower) / safe_denominator((upper + lower) / 2.0)
-    elif feature.op in {"keltner_upper", "keltner_lower", "keltner_width"}:
-        high = pl.col(feature.columns[0])
-        low = pl.col(feature.columns[1])
-        close = pl.col(feature.columns[2])
-        multiplier = feature.value if feature.value is not None else 2.0
-        previous_close = close.shift(1).over("canonical_symbol")
-        true_range = pl.max_horizontal(
-            [
-                high - low,
-                (high - previous_close).abs(),
-                (low - previous_close).abs(),
-            ]
-        )
-        center = close.ewm_mean(span=feature.window or 1, adjust=False, min_samples=1).over(
-            "canonical_symbol"
-        )
-        atr = true_range.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-        upper = center + (atr * multiplier)
-        lower = center - (atr * multiplier)
-        if feature.op == "keltner_upper":
-            expr = upper
-        elif feature.op == "keltner_lower":
-            expr = lower
-        else:
-            expr = (upper - lower) / safe_denominator(center)
+    elif feature.op in BANDS_CHANNEL_DERIVED_OPS:
+        expr = bands_channel_expression(feature)
     elif feature.op in {"ichimoku_conversion", "ichimoku_base", "ichimoku_span_b"}:
         high = pl.col(feature.columns[0])
         low = pl.col(feature.columns[1])
@@ -503,26 +427,8 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
         expr = covariance / safe_denominator((variance_first * variance_lagged).sqrt())
     elif feature.op in LIQUIDITY_DERIVED_OPS:
         expr = liquidity_expression(feature)
-    elif feature.op == "net_exchange_flow":
-        second = pl.col(feature.columns[1])
-        expr = first - second
-    elif feature.op == "onchain_activity_ratio":
-        second = pl.col(feature.columns[1])
-        expr = first / safe_denominator(second)
-    elif feature.op == "sentiment_weighted_score":
-        second = pl.col(feature.columns[1])
-        expr = first * second
-    elif feature.op == "event_surprise":
-        second = pl.col(feature.columns[1])
-        expr = first - second
-    elif feature.op == "fundamental_value_gap":
-        second = pl.col(feature.columns[1])
-        expr = (first - second) / safe_denominator(second)
-    elif feature.op == "risk_adjusted_score":
-        second = pl.col(feature.columns[1])
-        expr = first / safe_denominator(second.abs())
-    elif feature.op == "inverse_volatility_weight":
-        expr = 1.0 / safe_denominator(first)
+    elif feature.op in EXTERNAL_SIGNAL_DERIVED_OPS:
+        expr = external_signal_expression(feature)
     elif feature.op in CROSS_SECTIONAL_DERIVED_OPS:
         expr = cross_sectional_expression(feature)
     elif feature.op in EXECUTION_COST_DERIVED_OPS:

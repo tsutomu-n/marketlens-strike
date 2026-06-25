@@ -7,6 +7,10 @@ import pytest
 
 from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 from sis.research.strategy_lab.authoring.contracts.derived import DerivedFeature
+from sis.research.strategy_lab.authoring.derived_bands_channels import (
+    BANDS_CHANNEL_DERIVED_OPS,
+    bands_channel_expression,
+)
 from sis.research.strategy_lab.authoring.derived_cross_sectional import (
     CROSS_SECTIONAL_DERIVED_OPS,
     cross_sectional_expression,
@@ -18,6 +22,10 @@ from sis.research.strategy_lab.authoring.derived_drawdown import (
 from sis.research.strategy_lab.authoring.derived_execution_costs import (
     EXECUTION_COST_DERIVED_OPS,
     execution_cost_expression,
+)
+from sis.research.strategy_lab.authoring.derived_external_signals import (
+    EXTERNAL_SIGNAL_DERIVED_OPS,
+    external_signal_expression,
 )
 from sis.research.strategy_lab.authoring.derived_features import (
     apply_derived_features,
@@ -531,3 +539,262 @@ def test_drawdown_expression_computes_path_dependent_ops() -> None:
         [0.0, 0.0, -0.25, -0.25, -0.2727272727]
     )
     assert result.get_column("duration").to_list() == pytest.approx([0.0, 0.0, 1.0, 2.0, 1.0])
+
+
+def test_external_signal_expression_computes_signal_and_score_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "exchange_inflow": [300.0, 100.0],
+            "exchange_outflow": [200.0, 250.0],
+            "active_addresses": [900.0, 100.0],
+            "active_address_baseline": [1000.0, 0.0],
+            "sentiment_score": [0.3, -0.4],
+            "sentiment_confidence": [0.8, 0.5],
+            "reported_eps": [1.9, 2.4],
+            "expected_eps": [2.0, 2.0],
+            "fair_value": [101.0, 90.0],
+            "research_close": [100.0, 0.0],
+            "factor_score": [0.2, -0.3],
+            "factor_volatility": [0.3, -0.6],
+            "forecast_volatility": [0.5, 0.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            external_signal_expression(
+                DerivedFeature(
+                    name="net_flow",
+                    op="net_exchange_flow",
+                    columns=["exchange_inflow", "exchange_outflow"],
+                )
+            ).alias("net_flow"),
+            external_signal_expression(
+                DerivedFeature(
+                    name="activity",
+                    op="onchain_activity_ratio",
+                    columns=["active_addresses", "active_address_baseline"],
+                )
+            ).alias("activity"),
+            external_signal_expression(
+                DerivedFeature(
+                    name="sentiment",
+                    op="sentiment_weighted_score",
+                    columns=["sentiment_score", "sentiment_confidence"],
+                )
+            ).alias("sentiment"),
+            external_signal_expression(
+                DerivedFeature(
+                    name="surprise",
+                    op="event_surprise",
+                    columns=["reported_eps", "expected_eps"],
+                )
+            ).alias("surprise"),
+            external_signal_expression(
+                DerivedFeature(
+                    name="value_gap",
+                    op="fundamental_value_gap",
+                    columns=["fair_value", "research_close"],
+                )
+            ).alias("value_gap"),
+            external_signal_expression(
+                DerivedFeature(
+                    name="risk_score",
+                    op="risk_adjusted_score",
+                    columns=["factor_score", "factor_volatility"],
+                )
+            ).alias("risk_score"),
+            external_signal_expression(
+                DerivedFeature(
+                    name="inv_vol",
+                    op="inverse_volatility_weight",
+                    columns=["forecast_volatility"],
+                )
+            ).alias("inv_vol"),
+        ]
+    )
+
+    assert EXTERNAL_SIGNAL_DERIVED_OPS == {
+        "net_exchange_flow",
+        "onchain_activity_ratio",
+        "sentiment_weighted_score",
+        "event_surprise",
+        "fundamental_value_gap",
+        "risk_adjusted_score",
+        "inverse_volatility_weight",
+    }
+    assert result.get_column("net_flow").to_list() == pytest.approx([100.0, -150.0])
+    assert result.get_column("activity").to_list() == pytest.approx([0.9, None])
+    assert result.get_column("sentiment").to_list() == pytest.approx([0.24, -0.2])
+    assert result.get_column("surprise").to_list() == pytest.approx([-0.1, 0.4])
+    assert result.get_column("value_gap").to_list() == pytest.approx([0.01, None])
+    assert result.get_column("risk_score").to_list() == pytest.approx([2 / 3, -0.5])
+    assert result.get_column("inv_vol").to_list() == pytest.approx([2.0, None])
+
+
+def test_bands_channel_expression_computes_price_envelope_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ", "QQQ"],
+            "ts": [1, 2, 3, 4],
+            "high": [10.0, 12.0, 13.0, 15.0],
+            "low": [8.0, 9.0, 11.0, 12.0],
+            "close": [9.0, 11.0, 12.0, 14.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            bands_channel_expression(
+                DerivedFeature(
+                    name="tr",
+                    op="true_range",
+                    columns=["high", "low", "close"],
+                    window=3,
+                )
+            ).alias("tr"),
+            bands_channel_expression(
+                DerivedFeature(name="atr", op="atr", columns=["high", "low", "close"], window=3)
+            ).alias("atr"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="bb_upper",
+                    op="bollinger_upper",
+                    columns=["close"],
+                    window=3,
+                    value=2.0,
+                )
+            ).alias("bb_upper"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="bb_lower",
+                    op="bollinger_lower",
+                    columns=["close"],
+                    window=3,
+                    value=2.0,
+                )
+            ).alias("bb_lower"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="bb_width",
+                    op="bollinger_width",
+                    columns=["close"],
+                    window=3,
+                    value=2.0,
+                )
+            ).alias("bb_width"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="bb_percent_b",
+                    op="bollinger_percent_b",
+                    columns=["close"],
+                    window=3,
+                    value=2.0,
+                )
+            ).alias("bb_percent_b"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="don_upper",
+                    op="donchian_upper",
+                    columns=["high", "low"],
+                    window=3,
+                )
+            ).alias("don_upper"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="don_lower",
+                    op="donchian_lower",
+                    columns=["high", "low"],
+                    window=3,
+                )
+            ).alias("don_lower"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="don_mid",
+                    op="donchian_mid",
+                    columns=["high", "low"],
+                    window=3,
+                )
+            ).alias("don_mid"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="don_width",
+                    op="donchian_width",
+                    columns=["high", "low"],
+                    window=3,
+                )
+            ).alias("don_width"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="kel_upper",
+                    op="keltner_upper",
+                    columns=["high", "low", "close"],
+                    window=3,
+                    value=2.0,
+                )
+            ).alias("kel_upper"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="kel_lower",
+                    op="keltner_lower",
+                    columns=["high", "low", "close"],
+                    window=3,
+                    value=2.0,
+                )
+            ).alias("kel_lower"),
+            bands_channel_expression(
+                DerivedFeature(
+                    name="kel_width",
+                    op="keltner_width",
+                    columns=["high", "low", "close"],
+                    window=3,
+                    value=2.0,
+                )
+            ).alias("kel_width"),
+        ]
+    )
+
+    assert BANDS_CHANNEL_DERIVED_OPS == {
+        "true_range",
+        "atr",
+        "bollinger_upper",
+        "bollinger_lower",
+        "bollinger_width",
+        "bollinger_percent_b",
+        "donchian_upper",
+        "donchian_lower",
+        "donchian_mid",
+        "donchian_width",
+        "keltner_upper",
+        "keltner_lower",
+        "keltner_width",
+    }
+    assert result.get_column("tr").to_list() == pytest.approx([2.0, 3.0, 2.0, 3.0])
+    assert result.get_column("atr").to_list() == pytest.approx(
+        [2.0, 2.5, 2.3333333333, 2.6666666667]
+    )
+    assert result.get_column("bb_upper").to_list() == pytest.approx(
+        [None, 12.8284271247, 13.72171713, 15.3883837966]
+    )
+    assert result.get_column("bb_lower").to_list() == pytest.approx(
+        [None, 7.1715728753, 7.6116162034, 9.27828287]
+    )
+    assert result.get_column("bb_width").to_list() == pytest.approx(
+        [None, 0.5656854249, 0.5728219619, 0.4954135886]
+    )
+    assert result.get_column("bb_percent_b").to_list() == pytest.approx(
+        [None, 0.6767766953, 0.7182178902, 0.7727723628]
+    )
+    assert result.get_column("don_upper").to_list() == pytest.approx([10.0, 12.0, 13.0, 15.0])
+    assert result.get_column("don_lower").to_list() == pytest.approx([8.0, 8.0, 8.0, 9.0])
+    assert result.get_column("don_mid").to_list() == pytest.approx([9.0, 10.0, 10.5, 12.0])
+    assert result.get_column("don_width").to_list() == pytest.approx([2 / 9, 0.4, 10 / 21, 0.5])
+    assert result.get_column("kel_upper").to_list() == pytest.approx(
+        [13.0, 15.0, 15.6666666667, 17.8333333333]
+    )
+    assert result.get_column("kel_lower").to_list() == pytest.approx(
+        [5.0, 5.0, 6.3333333333, 7.1666666667]
+    )
+    assert result.get_column("kel_width").to_list() == pytest.approx(
+        [8 / 9, 1.0, 0.8484848485, 0.8533333333]
+    )
