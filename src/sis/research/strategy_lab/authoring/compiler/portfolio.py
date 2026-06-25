@@ -27,6 +27,9 @@ from sis.research.strategy_lab.authoring.compiler.portfolio_limit_resolution imp
 from sis.research.strategy_lab.authoring.compiler.portfolio_turnover import (
     _apply_portfolio_turnover_budget as _apply_portfolio_turnover_budget_impl,
 )
+from sis.research.strategy_lab.authoring.compiler.portfolio_signal_limit import (
+    _apply_portfolio_signal_limit as _apply_portfolio_signal_limit_impl,
+)
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 
 
@@ -40,6 +43,12 @@ def _apply_portfolio_turnover_budget(
     rows: list[dict[str, Any]], spec: StrategyAuthoringSpec
 ) -> list[dict[str, Any]]:
     return _apply_portfolio_turnover_budget_impl(rows, spec)
+
+
+def _apply_portfolio_signal_limit(
+    rows: list[dict[str, Any]], spec: StrategyAuthoringSpec
+) -> list[dict[str, Any]]:
+    return _apply_portfolio_signal_limit_impl(rows, spec)
 
 
 def _apply_portfolio_exposure_limits(
