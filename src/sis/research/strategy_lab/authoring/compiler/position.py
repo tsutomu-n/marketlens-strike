@@ -8,13 +8,15 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _position_weight_value,
     _signal_timestamp,
 )
-from sis.research.strategy_lab.authoring.compiler.position_state import (
-    _clamped_position_fraction,
-    _compact_active_positions,
-    _non_negative_position_value,
-    _reduce_active_side,
+from sis.research.strategy_lab.authoring.compiler.position_entry_limits import (
+    _position_entry_limit_block_reason,
 )
-from sis.research.strategy_lab.authoring.compiler.signal_ids import _compiled_signal_id
+from sis.research.strategy_lab.authoring.compiler.position_marker_transition import (
+    _apply_position_marker_transition,
+)
+from sis.research.strategy_lab.authoring.compiler.position_reduce_only_transition import (
+    _apply_reduce_only_entry_transition,
+)
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
 
 
@@ -50,111 +52,37 @@ def _apply_position_state_limits(
         side = str(row.get("side") or "")
 
         if side in {"close", "reduce", "add", "rebalance"}:
-            if position.require_open_position_for_markers and open_weight <= 0:
-                selected.append(
-                    _block_trade_row(row, spec=spec, block_reason="position_marker_without_open")
-                )
-                continue
-            if side == "close":
-                active_by_symbol[symbol] = []
-            elif side == "reduce" and open_weight > 0:
-                fraction = _clamped_position_fraction(row.get("reduce_fraction"))
-                active_by_symbol[symbol] = _compact_active_positions(
-                    active, open_weight * (1.0 - fraction)
-                )
-            elif side == "add" and open_weight > 0:
-                added_weight = _non_negative_position_value(row.get("add_fraction"), default=1.0)
-                if (
-                    position.max_open_position_weight_per_symbol is not None
-                    and open_weight + added_weight > position.max_open_position_weight_per_symbol
-                ):
-                    selected.append(
-                        _block_trade_row(row, spec=spec, block_reason="position_open_weight_limit")
-                    )
-                    continue
-                active_by_symbol[symbol] = _compact_active_positions(
-                    active, open_weight + added_weight
-                )
-            elif side == "rebalance" and open_weight > 0:
-                target_weight = _non_negative_position_value(
-                    row.get("rebalance_target_fraction"), default=open_weight
-                )
-                if (
-                    position.max_open_position_weight_per_symbol is not None
-                    and target_weight > position.max_open_position_weight_per_symbol
-                ):
-                    selected.append(
-                        _block_trade_row(row, spec=spec, block_reason="position_open_weight_limit")
-                    )
-                    continue
-                active_by_symbol[symbol] = _compact_active_positions(active, target_weight)
-            selected.append(row)
+            selected_row, updated_active = _apply_position_marker_transition(
+                row=row,
+                spec=spec,
+                active=active,
+                open_weight=open_weight,
+            )
+            active_by_symbol[symbol] = updated_active
+            selected.append(selected_row)
             continue
 
         weight = abs(_position_weight_value(row))
         if row.get("entry_reduce_only") and side in {"long", "short"}:
-            opposing_side = "short" if side == "long" else "long"
-            opposing_weight = sum(
-                active_weight
-                for _end_at, active_side, active_weight in active
-                if active_side == opposing_side
+            selected_row, updated_active = _apply_reduce_only_entry_transition(
+                row=row,
+                spec=spec,
+                active=active,
+                side=side,
             )
-            if opposing_weight <= 0:
-                selected.append(
-                    _block_trade_row(
-                        row, spec=spec, block_reason="position_reduce_only_without_opposing_open"
-                    )
-                )
-                continue
-            fraction = _clamped_position_fraction(row.get("reduce_fraction"))
-            active_by_symbol[symbol] = _reduce_active_side(active, opposing_side, fraction)
-            reduce_row = dict(row)
-            reduce_row["side"] = "reduce"
-            reduce_row["signal_id"] = _compiled_signal_id(spec, reduce_row, side="reduce")
-            reduce_row["position_weight"] = 0.0
-            reduce_row["notional_usd"] = None
-            reduce_row["reason_codes"] = [*list(row.get("reason_codes") or []), "reduce_only"]
-            selected.append(reduce_row)
+            active_by_symbol[symbol] = updated_active
+            selected.append(selected_row)
             continue
-        if not position.allow_opposing_open_positions and side in {"long", "short"}:
-            opposing_side = "short" if side == "long" else "long"
-            opposing_weight = sum(
-                active_weight
-                for _end_at, active_side, active_weight in active
-                if active_side == opposing_side
-            )
-            if opposing_weight > 0:
-                selected.append(
-                    _block_trade_row(row, spec=spec, block_reason="position_opposing_open_position")
-                )
-                continue
-        if not position.allow_pyramiding and side in {"long", "short"}:
-            same_side_weight = sum(
-                active_weight
-                for _end_at, active_side, active_weight in active
-                if active_side == side
-            )
-            if same_side_weight > 0:
-                selected.append(
-                    _block_trade_row(row, spec=spec, block_reason="position_pyramiding_not_allowed")
-                )
-                continue
 
-        if (
-            position.max_open_signals_per_symbol is not None
-            and len(active) >= position.max_open_signals_per_symbol
-        ):
-            selected.append(
-                _block_trade_row(row, spec=spec, block_reason="position_open_signal_limit")
-            )
-            continue
-        if (
-            position.max_open_position_weight_per_symbol is not None
-            and open_weight + weight > position.max_open_position_weight_per_symbol
-        ):
-            selected.append(
-                _block_trade_row(row, spec=spec, block_reason="position_open_weight_limit")
-            )
+        block_reason = _position_entry_limit_block_reason(
+            position=position,
+            active=active,
+            open_weight=open_weight,
+            side=side,
+            weight=weight,
+        )
+        if block_reason is not None:
+            selected.append(_block_trade_row(row, spec=spec, block_reason=block_reason))
             continue
 
         active.append((ts_signal + timedelta(minutes=horizon_minutes), side, weight))

@@ -1,94 +1,21 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from sis.research.strategy_lab.authoring.compiler.event_window_guards import (
+    _event_window_block_reason as _event_window_block_reason,
+    _feature_timestamp as _feature_timestamp,
+    _parse_event_ts as _parse_event_ts,
+)
+from sis.research.strategy_lab.authoring.compiler.risk_throttle_guards import (
+    _risk_throttle_block_reason as _risk_throttle_block_reason,
+)
 from sis.research.strategy_lab.authoring.compiler.row_values import (
     _non_negative_value,
     _optional_float_from_row,
-    _positive_integer_value,
-    _sizing_value,
     _unit_interval_value,
 )
-from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
-
-
-def _parse_event_ts(value: object) -> datetime | None:
-    if isinstance(value, datetime):
-        return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
-    if isinstance(value, str) and value.strip():
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise StrategyAuthoringValidationError(
-                f"Invalid event window timestamp value: {value!r}"
-            ) from exc
-        return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
-    return None
-
-
-def _event_window_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec) -> str | None:
-    if not spec.rules.event_windows:
-        return None
-    ts_value = row.get("ts")
-    if not isinstance(ts_value, datetime):
-        raise StrategyAuthoringValidationError(f"Unsupported event window ts value: {ts_value!r}")
-    ts_signal = ts_value if ts_value.tzinfo is not None else ts_value.replace(tzinfo=timezone.utc)
-    for event_window in spec.rules.event_windows:
-        event_ts = _parse_event_ts(row.get(event_window.event_ts_column))
-        reason = event_window.block_reason or f"event_window_{event_window.name}"
-        if event_ts is None:
-            if event_window.mode == "allow":
-                return f"{reason}_missing"
-            continue
-        start = event_ts - timedelta(minutes=event_window.before_minutes)
-        end = event_ts + timedelta(minutes=event_window.after_minutes)
-        in_window = start <= ts_signal <= end
-        if event_window.mode == "allow" and not in_window:
-            return f"{reason}_outside"
-        if event_window.mode == "block" and in_window:
-            return reason
-    return None
-
-
-def _risk_throttle_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec) -> str | None:
-    throttle = spec.rules.risk_throttle
-    if not throttle.enabled:
-        return None
-    drawdown = _optional_float_from_row(row, throttle.max_drawdown_column)
-    drawdown_floor = _sizing_value(
-        row,
-        fixed=throttle.max_drawdown_floor,
-        column=throttle.max_drawdown_floor_column,
-    )
-    if drawdown is not None and drawdown_floor is not None and drawdown <= drawdown_floor:
-        return "risk_throttle_max_drawdown"
-    daily_loss = _optional_float_from_row(row, throttle.daily_loss_column)
-    daily_loss_floor = _sizing_value(
-        row,
-        fixed=throttle.daily_loss_floor,
-        column=throttle.daily_loss_floor_column,
-    )
-    if daily_loss is not None and daily_loss_floor is not None and daily_loss <= daily_loss_floor:
-        return "risk_throttle_daily_loss"
-    loss_streak = _optional_float_from_row(row, throttle.loss_streak_column)
-    max_loss_streak = _positive_integer_value(
-        row,
-        fixed=throttle.max_loss_streak,
-        column=throttle.max_loss_streak_column,
-        field_name="rules.risk_throttle.max_loss_streak",
-    )
-    if loss_streak is not None and max_loss_streak is not None and loss_streak >= max_loss_streak:
-        return "risk_throttle_loss_streak"
-    return None
-
-
-def _feature_timestamp(row: dict[str, Any]) -> datetime:
-    ts = _parse_event_ts(row.get("ts"))
-    if ts is None:
-        raise StrategyAuthoringValidationError(f"Unsupported feature ts value: {row.get('ts')!r}")
-    return ts
 
 
 def _data_guard_block_reason(row: dict[str, Any], spec: StrategyAuthoringSpec) -> str | None:

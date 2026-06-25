@@ -2,15 +2,19 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from sis.research.strategy_lab.authoring.compiler.row_values import (
+from sis.research.strategy_lab.authoring.compiler.order_row_values import (
     _entry_type_value,
+    _optional_bool_from_row,
+    _time_in_force_value,
+)
+from sis.research.strategy_lab.authoring.compiler.row_values import (
     _minutes_value,
     _non_negative_bps_value,
     _non_negative_value,
-    _optional_bool_from_row,
-    _sizing_value,
-    _time_in_force_value,
     _unit_interval_value,
+)
+from sis.research.strategy_lab.authoring.compiler.multi_leg_execution_overrides import (
+    _multi_leg_execution_overrides as _multi_leg_execution_overrides,
 )
 
 
@@ -97,64 +101,3 @@ def _multi_leg_order_overrides(
         if value is not None:
             order_overrides[field_name] = value
     return order_overrides
-
-
-def _multi_leg_execution_overrides(*, row: dict[str, Any], leg: Any) -> dict[str, Any]:
-    execution_overrides: dict[str, Any] = {}
-    for field_name in (
-        "slippage_bps",
-        "max_spread_bps",
-        "min_depth_usd",
-        "max_latency_ms",
-        "max_borrow_cost_bps",
-        "max_tax_drag_bps",
-        "max_turnover_pressure",
-        "max_capacity_usage_ratio",
-        "max_correlation_crowding_score",
-    ):
-        value = _non_negative_value(
-            row,
-            fixed=getattr(leg, field_name),
-            column=getattr(leg, f"{field_name}_column"),
-            field_name=f"rules.multi_leg.legs[].{field_name}",
-        )
-        if value is not None:
-            execution_overrides[field_name] = value
-    for field_name in (
-        "max_fill_fraction",
-        "min_fill_fraction",
-        "depth_participation_rate",
-        "min_queue_position_score",
-        "min_borrow_availability_ratio",
-    ):
-        value = _unit_interval_value(
-            row,
-            fixed=getattr(leg, field_name),
-            column=getattr(leg, f"{field_name}_column", None),
-            field_name=f"rules.multi_leg.legs[].{field_name}",
-        )
-        if value is not None:
-            execution_overrides[field_name] = value
-    min_fee_edge_bps = _sizing_value(
-        row,
-        fixed=leg.min_fee_edge_bps,
-        column=leg.min_fee_edge_bps_column,
-    )
-    if min_fee_edge_bps is not None:
-        execution_overrides["min_fee_edge_bps"] = min_fee_edge_bps
-    for field_name in (
-        "depth_column",
-        "latency_column",
-        "queue_position_score_column",
-        "borrow_availability_column",
-        "borrow_cost_column",
-        "tax_drag_column",
-        "turnover_pressure_column",
-        "capacity_usage_column",
-        "correlation_crowding_column",
-        "fee_edge_column",
-    ):
-        value = getattr(leg, field_name)
-        if value is not None:
-            execution_overrides[field_name] = value
-    return execution_overrides

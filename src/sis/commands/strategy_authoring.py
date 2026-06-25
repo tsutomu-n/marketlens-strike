@@ -36,6 +36,8 @@ from sis.research.strategy_lab.authoring.compiler.artifacts import (
 from sis.research.strategy_lab.authoring.compiler.build import build_authoring_signals
 from sis.research.strategy_lab.authoring.compiler.paper_preview import (
     write_authoring_paper_preview_outputs,
+)
+from sis.research.strategy_lab.authoring.compiler.run_summary import (
     write_authoring_run_summary,
 )
 from sis.research.strategy_lab.authoring.contracts.base import (

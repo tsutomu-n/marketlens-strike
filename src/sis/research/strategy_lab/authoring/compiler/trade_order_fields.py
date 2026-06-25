@@ -6,12 +6,16 @@ from sis.research.strategy_lab.authoring.compiler.common import (
     _override_column,
     _override_value,
 )
-from sis.research.strategy_lab.authoring.compiler.row_values import (
+from sis.research.strategy_lab.authoring.compiler.order_row_values import (
     _entry_type_value,
+    _time_in_force_value,
+)
+from sis.research.strategy_lab.authoring.compiler.row_values import (
     _minutes_value,
     _non_negative_bps_value,
-    _optional_bool_from_row,
-    _time_in_force_value,
+)
+from sis.research.strategy_lab.authoring.compiler.trade_order_boolean_fields import (
+    _order_boolean_value,
 )
 from sis.research.strategy_lab.authoring.contracts.base import (
     StrategyAuthoringValidationError,
@@ -24,18 +28,12 @@ def _trade_order_fields(
     order: Any,
     order_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    reduce_only = (
-        _optional_bool_from_row(
-            row,
-            _override_column(order_overrides, "reduce_only", order.reduce_only_column),
-        )
-        if _override_column(order_overrides, "reduce_only", order.reduce_only_column) is not None
-        else None
-    )
-    reduce_only = (
-        _override_value(order_overrides, "reduce_only", order.reduce_only)
-        if reduce_only is None
-        else reduce_only
+    reduce_only = _order_boolean_value(
+        row=row,
+        order=order,
+        order_overrides=order_overrides,
+        value_attr="reduce_only",
+        column_attr="reduce_only_column",
     )
     entry_timeout_minutes = _minutes_value(
         row,
@@ -83,18 +81,12 @@ def _trade_order_fields(
             "rules.order.stop_offset_bps or stop_offset_bps_column is required "
             "when row entry_type is stop_market"
         )
-    post_only = (
-        _optional_bool_from_row(
-            row,
-            _override_column(order_overrides, "post_only", order.post_only_column),
-        )
-        if _override_column(order_overrides, "post_only", order.post_only_column) is not None
-        else None
-    )
-    post_only = (
-        _override_value(order_overrides, "post_only", order.post_only)
-        if post_only is None
-        else post_only
+    post_only = _order_boolean_value(
+        row=row,
+        order=order,
+        order_overrides=order_overrides,
+        value_attr="post_only",
+        column_attr="post_only_column",
     )
     if post_only and entry_order_type != "limit":
         raise StrategyAuthoringValidationError(

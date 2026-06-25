@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import math
 from typing import Any, Literal
 
 from sis.research.strategy_lab.authoring.contracts.base import StrategyAuthoringValidationError
 from sis.research.strategy_lab.authoring.contracts.core import EntryRules, ScoreRules
 from sis.research.strategy_lab.authoring.contracts.spec import AuthoringRules
 from sis.research.strategy_lab.authoring.features import _condition_passes
+from sis.research.strategy_lab.authoring.compiler.signal_model_score import _model_score_value
 
 
 def _entry_passes(row: dict[str, Any], entry: EntryRules) -> bool:
@@ -29,28 +29,9 @@ def _score(row: dict[str, Any], score: ScoreRules) -> float | None:
             total += float(value) * term.weight
             used = True
     if score.model_score is not None:
-        model_total = score.model_score.intercept
-        model_used = False
-        for term in score.model_score.coefficients:
-            value = row.get(term.column)
-            if not isinstance(value, int | float) and score.model_score.missing_value is not None:
-                value = score.model_score.missing_value
-            if isinstance(value, int | float):
-                model_total += float(value) * term.weight
-                model_used = True
-        if model_used:
-            if score.model_score.activation == "sigmoid":
-                if model_total >= 0:
-                    z = math.exp(-model_total)
-                    model_total = 1.0 / (1.0 + z)
-                else:
-                    z = math.exp(model_total)
-                    model_total = z / (1.0 + z)
-            elif score.model_score.activation == "tanh":
-                model_total = math.tanh(model_total)
-            elif score.model_score.activation == "clamp_0_1":
-                model_total = max(0.0, min(1.0, model_total))
-            total += model_total
+        model_value = _model_score_value(row, score.model_score)
+        if model_value is not None:
+            total += model_value
             used = True
     return total if used else None
 

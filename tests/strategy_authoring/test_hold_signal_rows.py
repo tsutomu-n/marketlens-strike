@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sis.research.strategy_lab.authoring.compiler.marker_rows import (
-    _hold_signal_row,
+from sis.research.strategy_lab.authoring.compiler.marker_signal_base import (
     _marker_signal_base,
+)
+from sis.research.strategy_lab.authoring.compiler.marker_state_rows import (
+    _hold_signal_row,
 )
 
 from .helpers import _feature_rows, _write_data, _write_spec, load_authoring_spec

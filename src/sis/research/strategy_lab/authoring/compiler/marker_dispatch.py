@@ -5,10 +5,12 @@ from typing import Any
 
 from sis.research.strategy_lab.authoring.compiler.marker_rows import (
     _add_signal_row,
-    _close_signal_row,
-    _hold_signal_row,
     _rebalance_signal_row,
     _reduce_signal_row,
+)
+from sis.research.strategy_lab.authoring.compiler.marker_state_rows import (
+    _close_signal_row,
+    _hold_signal_row,
 )
 from sis.research.strategy_lab.authoring.compiler.signal_selection import _entry_passes
 from sis.research.strategy_lab.authoring.contracts.spec import StrategyAuthoringSpec
