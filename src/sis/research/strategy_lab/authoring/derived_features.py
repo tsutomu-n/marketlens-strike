@@ -39,6 +39,10 @@ from sis.research.strategy_lab.authoring.derived_trend_indicators import (
     TREND_INDICATOR_DERIVED_OPS,
     trend_indicator_expression,
 )
+from sis.research.strategy_lab.authoring.derived_volume_indicators import (
+    VOLUME_INDICATOR_DERIVED_OPS,
+    volume_indicator_expression,
+)
 
 
 def literal_or_col(feature: DerivedFeature, index: int = 1) -> pl.Expr:
@@ -100,20 +104,8 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
         expr = bands_channel_expression(feature)
     elif feature.op in TREND_INDICATOR_DERIVED_OPS:
         expr = trend_indicator_expression(feature)
-    elif feature.op == "obv":
-        close = pl.col(feature.columns[0])
-        volume = pl.col(feature.columns[1])
-        delta = close.diff().over("canonical_symbol")
-        signed_volume = pl.when(delta > 0).then(volume).when(delta < 0).then(-volume).otherwise(0.0)
-        expr = signed_volume.cum_sum().over("canonical_symbol")
-    elif feature.op == "volume_zscore":
-        mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
-            "canonical_symbol"
-        )
-        std = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
-            "canonical_symbol"
-        )
-        expr = (first - mean) / safe_denominator(std)
+    elif feature.op in VOLUME_INDICATOR_DERIVED_OPS:
+        expr = volume_indicator_expression(feature)
     elif feature.op == "ts_weekday":
         expr = first.dt.weekday() - 1
     elif feature.op == "ts_hour":

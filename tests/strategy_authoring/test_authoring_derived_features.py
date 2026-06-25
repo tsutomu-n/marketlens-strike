@@ -43,6 +43,10 @@ from sis.research.strategy_lab.authoring.derived_trend_indicators import (
     TREND_INDICATOR_DERIVED_OPS,
     trend_indicator_expression,
 )
+from sis.research.strategy_lab.authoring.derived_volume_indicators import (
+    VOLUME_INDICATOR_DERIVED_OPS,
+    volume_indicator_expression,
+)
 
 
 def test_apply_derived_features_computes_representative_ops() -> None:
@@ -921,3 +925,43 @@ def test_trend_indicator_expression_computes_trend_ops() -> None:
         [50.0, 58.3333333333, 73.3333333333, 81.6666666667, 84.5238095238]
     )
     assert result.get_column("adx").to_list() == pytest.approx([None, 100.0, 100.0, 100.0, 100.0])
+
+
+def test_volume_indicator_expression_computes_volume_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "canonical_symbol": ["QQQ", "QQQ", "QQQ", "QQQ", "QQQ"],
+            "ts": [1, 2, 3, 4, 5],
+            "close": [100.0, 102.0, 101.0, 103.0, 103.0],
+            "volume": [1000.0, 1500.0, 1200.0, 1800.0, 900.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            volume_indicator_expression(
+                DerivedFeature(
+                    name="obv",
+                    op="obv",
+                    columns=["close", "volume"],
+                )
+            ).alias("obv"),
+            volume_indicator_expression(
+                DerivedFeature(
+                    name="vol_z",
+                    op="volume_zscore",
+                    columns=["volume"],
+                    window=3,
+                )
+            ).alias("vol_z"),
+        ]
+    )
+
+    assert VOLUME_INDICATOR_DERIVED_OPS == {
+        "obv",
+        "volume_zscore",
+    }
+    assert result.get_column("obv").to_list() == pytest.approx([0.0, 1500.0, 300.0, 2100.0, 2100.0])
+    assert result.get_column("vol_z").to_list() == pytest.approx(
+        [None, 0.7071067812, -0.1324532357, 1.0, -0.8728715609]
+    )
