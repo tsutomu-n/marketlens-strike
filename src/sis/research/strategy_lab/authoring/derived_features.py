@@ -15,6 +15,14 @@ from sis.research.strategy_lab.authoring.derived_execution_costs import (
     EXECUTION_COST_DERIVED_OPS,
     execution_cost_expression,
 )
+from sis.research.strategy_lab.authoring.derived_liquidity import (
+    LIQUIDITY_DERIVED_OPS,
+    liquidity_expression,
+)
+from sis.research.strategy_lab.authoring.derived_quality import (
+    QUALITY_DERIVED_OPS,
+    quality_expression,
+)
 
 
 def literal_or_col(feature: DerivedFeature, index: int = 1) -> pl.Expr:
@@ -489,33 +497,8 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
             window_size=feature.window or 1, min_samples=2
         ).over("canonical_symbol") - (mean_lagged * mean_lagged)
         expr = covariance / safe_denominator((variance_first * variance_lagged).sqrt())
-    elif feature.op == "order_flow_imbalance":
-        second = pl.col(feature.columns[1])
-        expr = (first - second) / safe_denominator(first + second)
-    elif feature.op == "liquidity_depth_ratio":
-        second = pl.col(feature.columns[1])
-        expr = first / safe_denominator(second)
-    elif feature.op == "spread_bps":
-        ask = pl.col(feature.columns[1])
-        midpoint = (first + ask) / 2.0
-        expr = (ask - first) / safe_denominator(midpoint) * 10_000.0
-    elif feature.op == "funding_bps":
-        expr = first * 10_000.0
-    elif feature.op == "carry_adjusted_return":
-        second = pl.col(feature.columns[1])
-        expr = first - second
-    elif feature.op == "vol_risk_premium":
-        second = pl.col(feature.columns[1])
-        expr = first - second
-    elif feature.op == "put_call_skew":
-        second = pl.col(feature.columns[1])
-        expr = first - second
-    elif feature.op == "liquidity_stress":
-        ask = pl.col(feature.columns[1])
-        depth = pl.col(feature.columns[2])
-        midpoint = (first + ask) / 2.0
-        spread_bps = (ask - first) / safe_denominator(midpoint) * 10_000.0
-        expr = spread_bps / safe_denominator(depth)
+    elif feature.op in LIQUIDITY_DERIVED_OPS:
+        expr = liquidity_expression(feature)
     elif feature.op == "net_exchange_flow":
         second = pl.col(feature.columns[1])
         expr = first - second
@@ -540,22 +523,8 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
         expr = cross_sectional_expression(feature)
     elif feature.op in EXECUTION_COST_DERIVED_OPS:
         expr = execution_cost_expression(feature)
-    elif feature.op == "freshness_score":
-        max_age = feature.value if feature.value is not None else 1.0
-        raw = 1.0 - (first / safe_denominator(pl.lit(max_age)))
-        expr = pl.when(raw < 0.0).then(0.0).when(raw > 1.0).then(1.0).otherwise(raw)
-    elif feature.op == "staleness_bps":
-        multiplier = feature.value if feature.value is not None else 1.0
-        expr = first * multiplier
-    elif feature.op == "data_quality_blend":
-        expr = pl.mean_horizontal([pl.col(column) for column in feature.columns])
-    elif feature.op == "ensemble_vote_count":
-        expr = pl.sum_horizontal([pl.col(column) for column in feature.columns])
-    elif feature.op == "ensemble_vote_ratio":
-        expr = pl.mean_horizontal([pl.col(column) for column in feature.columns])
-    elif feature.op == "regime_transition_score":
-        second = pl.col(feature.columns[1])
-        expr = first - second
+    elif feature.op in QUALITY_DERIVED_OPS:
+        expr = quality_expression(feature)
     elif feature.op == "drawdown_from_peak":
         rolling_peak = first.rolling_max(window_size=feature.window or 1, min_samples=1).over(
             "canonical_symbol"
@@ -575,15 +544,6 @@ def derived_expression(feature: DerivedFeature) -> pl.Expr:
             window_size=feature.window or 1,
             min_samples=1,
         ).over("canonical_symbol")
-    elif feature.op == "turnover_pressure":
-        second = pl.col(feature.columns[1])
-        expr = first / safe_denominator(second)
-    elif feature.op == "capacity_usage_ratio":
-        second = pl.col(feature.columns[1])
-        expr = first / safe_denominator(second)
-    elif feature.op == "correlation_crowding_score":
-        second = pl.col(feature.columns[1])
-        expr = first * second
     else:
         raise StrategyAuthoringValidationError(f"Unsupported derived feature op: {feature.op}")
     if feature.fill_null is not None:

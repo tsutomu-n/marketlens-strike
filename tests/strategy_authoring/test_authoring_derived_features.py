@@ -19,6 +19,14 @@ from sis.research.strategy_lab.authoring.derived_features import (
     apply_derived_features,
     derived_expression,
 )
+from sis.research.strategy_lab.authoring.derived_liquidity import (
+    LIQUIDITY_DERIVED_OPS,
+    liquidity_expression,
+)
+from sis.research.strategy_lab.authoring.derived_quality import (
+    QUALITY_DERIVED_OPS,
+    quality_expression,
+)
 
 
 def test_apply_derived_features_computes_representative_ops() -> None:
@@ -262,3 +270,208 @@ def test_execution_cost_expression_computes_execution_constraint_ops() -> None:
     assert result.get_column("borrow_availability").to_list() == pytest.approx([0.5, None])
     assert result.get_column("tax_drag").to_list() == pytest.approx([200.0, -600.0])
     assert result.get_column("rebalance").to_list() == pytest.approx([0.2, 0.35])
+
+
+def test_liquidity_expression_computes_flow_carry_and_vol_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "bid_size": [1300.0, 0.0],
+            "ask_size": [700.0, 0.0],
+            "bid_depth_usd": [2_000_000.0, 10.0],
+            "ask_depth_usd": [1_000_000.0, 0.0],
+            "best_bid": [99.95, 100.0],
+            "best_ask": [100.05, 101.0],
+            "depth_1pct_usd": [2_000_000.0, 0.0],
+            "research_return": [0.004, -0.001],
+            "funding_rate": [0.00005, 0.0001],
+            "implied_vol": [0.32, 0.20],
+            "realized_vol": [0.24, 0.25],
+            "put_iv": [0.35, 0.21],
+            "call_iv": [0.29, 0.23],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            liquidity_expression(
+                DerivedFeature(
+                    name="flow",
+                    op="order_flow_imbalance",
+                    columns=["bid_size", "ask_size"],
+                )
+            ).alias("flow"),
+            liquidity_expression(
+                DerivedFeature(
+                    name="depth_ratio",
+                    op="liquidity_depth_ratio",
+                    columns=["bid_depth_usd", "ask_depth_usd"],
+                )
+            ).alias("depth_ratio"),
+            liquidity_expression(
+                DerivedFeature(
+                    name="spread",
+                    op="spread_bps",
+                    columns=["best_bid", "best_ask"],
+                )
+            ).alias("spread"),
+            liquidity_expression(
+                DerivedFeature(name="funding", op="funding_bps", columns=["funding_rate"])
+            ).alias("funding"),
+            liquidity_expression(
+                DerivedFeature(
+                    name="carry",
+                    op="carry_adjusted_return",
+                    columns=["research_return", "funding_rate"],
+                )
+            ).alias("carry"),
+            liquidity_expression(
+                DerivedFeature(
+                    name="vrp",
+                    op="vol_risk_premium",
+                    columns=["implied_vol", "realized_vol"],
+                )
+            ).alias("vrp"),
+            liquidity_expression(
+                DerivedFeature(name="skew", op="put_call_skew", columns=["put_iv", "call_iv"])
+            ).alias("skew"),
+            liquidity_expression(
+                DerivedFeature(
+                    name="stress",
+                    op="liquidity_stress",
+                    columns=["best_bid", "best_ask", "depth_1pct_usd"],
+                )
+            ).alias("stress"),
+        ]
+    )
+
+    assert LIQUIDITY_DERIVED_OPS == {
+        "order_flow_imbalance",
+        "liquidity_depth_ratio",
+        "spread_bps",
+        "funding_bps",
+        "carry_adjusted_return",
+        "vol_risk_premium",
+        "put_call_skew",
+        "liquidity_stress",
+    }
+    assert result.get_column("flow").to_list() == pytest.approx([0.3, None])
+    assert result.get_column("depth_ratio").to_list() == pytest.approx([2.0, None])
+    assert result.get_column("spread").to_list() == pytest.approx([10.0, 99.5024875622])
+    assert result.get_column("funding").to_list() == pytest.approx([0.5, 1.0])
+    assert result.get_column("carry").to_list() == pytest.approx([0.00395, -0.0011])
+    assert result.get_column("vrp").to_list() == pytest.approx([0.08, -0.05])
+    assert result.get_column("skew").to_list() == pytest.approx([0.06, -0.02])
+    assert result.get_column("stress").to_list() == pytest.approx([0.000005, None])
+
+
+def test_quality_expression_computes_quality_ensemble_and_capacity_ops() -> None:
+    frame = pl.DataFrame(
+        {
+            "feature_age_minutes": [5.0, 30.0, 40.0],
+            "source_confidence": [0.9, 0.7, 0.5],
+            "venue_quality_score": [0.8, 0.6, 0.4],
+            "lineage_completeness": [1.0, 0.5, 0.3],
+            "trend_vote": [1.0, 0.0, 1.0],
+            "mean_reversion_vote": [1.0, 1.0, 0.0],
+            "event_vote": [0.0, 0.0, 0.0],
+            "current_regime_score": [0.7, 0.4, 0.1],
+            "previous_regime_score": [0.3, 0.5, 0.1],
+            "trade_notional_usd": [100_000.0, 50_000.0, 10.0],
+            "average_daily_volume_usd": [2_000_000.0, 0.0, 20.0],
+            "target_notional_usd": [200_000.0, 50_000.0, 10.0],
+            "strategy_capacity_usd": [1_000_000.0, 0.0, 20.0],
+            "average_pair_corr": [0.4, 0.8, 0.0],
+            "gross_exposure": [1.2, 0.5, 0.0],
+        }
+    )
+
+    result = frame.with_columns(
+        [
+            quality_expression(
+                DerivedFeature(
+                    name="freshness",
+                    op="freshness_score",
+                    columns=["feature_age_minutes"],
+                    value=30.0,
+                )
+            ).alias("freshness"),
+            quality_expression(
+                DerivedFeature(
+                    name="stale",
+                    op="staleness_bps",
+                    columns=["feature_age_minutes"],
+                    value=0.2,
+                )
+            ).alias("stale"),
+            quality_expression(
+                DerivedFeature(
+                    name="quality",
+                    op="data_quality_blend",
+                    columns=["source_confidence", "venue_quality_score", "lineage_completeness"],
+                )
+            ).alias("quality"),
+            quality_expression(
+                DerivedFeature(
+                    name="votes",
+                    op="ensemble_vote_count",
+                    columns=["trend_vote", "mean_reversion_vote", "event_vote"],
+                )
+            ).alias("votes"),
+            quality_expression(
+                DerivedFeature(
+                    name="vote_ratio",
+                    op="ensemble_vote_ratio",
+                    columns=["trend_vote", "mean_reversion_vote", "event_vote"],
+                )
+            ).alias("vote_ratio"),
+            quality_expression(
+                DerivedFeature(
+                    name="regime",
+                    op="regime_transition_score",
+                    columns=["current_regime_score", "previous_regime_score"],
+                )
+            ).alias("regime"),
+            quality_expression(
+                DerivedFeature(
+                    name="turnover",
+                    op="turnover_pressure",
+                    columns=["trade_notional_usd", "average_daily_volume_usd"],
+                )
+            ).alias("turnover"),
+            quality_expression(
+                DerivedFeature(
+                    name="capacity",
+                    op="capacity_usage_ratio",
+                    columns=["target_notional_usd", "strategy_capacity_usd"],
+                )
+            ).alias("capacity"),
+            quality_expression(
+                DerivedFeature(
+                    name="crowding",
+                    op="correlation_crowding_score",
+                    columns=["average_pair_corr", "gross_exposure"],
+                )
+            ).alias("crowding"),
+        ]
+    )
+
+    assert QUALITY_DERIVED_OPS == {
+        "freshness_score",
+        "staleness_bps",
+        "data_quality_blend",
+        "ensemble_vote_count",
+        "ensemble_vote_ratio",
+        "regime_transition_score",
+        "turnover_pressure",
+        "capacity_usage_ratio",
+        "correlation_crowding_score",
+    }
+    assert result.get_column("freshness").to_list() == pytest.approx([0.8333333333, 0.0, 0.0])
+    assert result.get_column("stale").to_list() == pytest.approx([1.0, 6.0, 8.0])
+    assert result.get_column("quality").to_list() == pytest.approx([0.9, 0.6, 0.4])
+    assert result.get_column("votes").to_list() == pytest.approx([2.0, 1.0, 1.0])
+    assert result.get_column("vote_ratio").to_list() == pytest.approx([2 / 3, 1 / 3, 1 / 3])
+    assert result.get_column("regime").to_list() == pytest.approx([0.4, -0.1, 0.0])
+    assert result.get_column("turnover").to_list() == pytest.approx([0.05, None, 0.5])
+    assert result.get_column("capacity").to_list() == pytest.approx([0.2, None, 0.5])
+    assert result.get_column("crowding").to_list() == pytest.approx([0.48, 0.4, 0.0])
