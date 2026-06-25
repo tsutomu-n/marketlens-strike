@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 import json
 from pathlib import Path
 from typing import Any
 
 from sis.research.ndx.artifacts import read_json, sha256_file, sha256_json, utc_now_iso, write_json
+from sis.research.strategy_lifecycle.paper_observation_sessions import (
+    dict_field as _dict_field,
+    latest_normal_requirement_gaps as _latest_normal_requirement_gaps,
+    latest_session as _latest_session,
+    session_decision as _session_decision,
+    session_id as _session_id,
+    session_sort_key as _session_sort_key,
+    string_field as _string_field,
+    string_list as _string_list,
+)
 
 PASS = "PASS_PAPER_OBSERVATION_REVIEW"
 NEEDS_MORE = "NEEDS_MORE_PAPER_OBSERVATION"
@@ -455,114 +464,6 @@ def _next_action(observation_state: str) -> str:
     if observation_state == "paper_observation_stopped":
         return "review_stop_reason"
     return "manual_review_required"
-
-
-def _latest_session(sessions: list[dict[str, Any]]) -> dict[str, Any] | None:
-    return sessions[-1] if sessions else None
-
-
-def _session_sort_key(session: dict[str, Any]) -> tuple[datetime, str]:
-    created_at = str(session.get("created_at") or "")
-    try:
-        parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-    except ValueError:
-        parsed = datetime.min.replace(tzinfo=timezone.utc)
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed, str(session.get("session_id") or "")
-
-
-def _session_decision(session: dict[str, Any] | None) -> str:
-    return str(session.get("review_decision") or "") if session else ""
-
-
-def _session_id(session: dict[str, Any] | None) -> str:
-    return str(session.get("session_id") or "") if session else ""
-
-
-def _latest_normal_requirement_gaps(session: dict[str, Any] | None) -> dict[str, Any]:
-    if session is None:
-        return {
-            "session_id": "",
-            "available": False,
-            "fills": _count_gap(observed=0, required=0),
-            "trading_days": _count_gap(observed=0, required=0),
-            "timestamp_quality": {
-                "observed": "",
-                "required": "complete",
-                "met": False,
-            },
-        }
-    thresholds = _dict_field(session, "thresholds")
-    metrics = _dict_field(session, "metrics")
-    required_fills = _int_field(thresholds, "min_fills_for_pass")
-    required_days = _int_field(thresholds, "min_trading_days_for_pass")
-    observed_fills = _int_field(metrics, "fills_count")
-    observed_days = _int_field(metrics, "trading_day_count")
-    timestamp_quality = str(metrics.get("timestamp_quality") or "")
-    return {
-        "session_id": _session_id(session),
-        "available": True,
-        "fills": _count_gap(observed=observed_fills, required=required_fills),
-        "trading_days": _count_gap(observed=observed_days, required=required_days),
-        "timestamp_quality": {
-            "observed": timestamp_quality,
-            "required": "complete",
-            "met": timestamp_quality == "complete",
-        },
-    }
-
-
-def _count_gap(*, observed: int, required: int) -> dict[str, int | bool]:
-    return {
-        "observed": observed,
-        "required": required,
-        "remaining": max(required - observed, 0),
-        "met": required > 0 and observed >= required,
-    }
-
-
-def _string_field(payload: dict[str, Any] | None, key: str) -> str:
-    if not isinstance(payload, dict):
-        return ""
-    value = payload.get(key)
-    return str(value) if value is not None else ""
-
-
-def _string_list(payload: dict[str, Any] | None, key: str) -> list[str]:
-    if not isinstance(payload, dict):
-        return []
-    value = payload.get(key)
-    if not isinstance(value, list):
-        return []
-    return [str(item) for item in value]
-
-
-def _dict_field(payload: dict[str, Any] | None, key: str) -> dict[str, Any]:
-    if not isinstance(payload, dict):
-        return {}
-    value = payload.get(key)
-    return value if isinstance(value, dict) else {}
-
-
-def _int_field(payload: dict[str, Any] | None, key: str) -> int:
-    if not isinstance(payload, dict):
-        return 0
-    value = payload.get(key)
-    if isinstance(value, bool) or value is None:
-        return 0
-    if isinstance(value, int):
-        parsed = value
-    elif isinstance(value, float):
-        parsed = int(value)
-    elif isinstance(value, str):
-        try:
-            parsed = int(value)
-        except ValueError:
-            return 0
-    else:
-        return 0
-    return max(parsed, 0)
 
 
 def _artifact_issue(*, name: str, path: str, error: str) -> dict[str, str]:

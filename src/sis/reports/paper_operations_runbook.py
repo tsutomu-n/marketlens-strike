@@ -1,34 +1,19 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
-from sis.reports.loaders import normalized_summary, safe_read_json_dict
+from sis.reports.loaders import safe_read_json_dict
 from sis.reports import paper_operations_runbook_paths
 from sis.reports.paper_operations_runbook_remediation import (
     build_paper_operations_runbook_remediation_context,
 )
+from sis.reports.paper_operations_runbook_summary import (
+    build_paper_operations_runbook_base_summary,
+)
 from sis.reports.summary_normalizers import (
-    execution_comparison_flat_fields,
-    execution_diagnostics_flat_fields,
-    execution_gap_history_flat_fields,
-    execution_snapshot_flat_fields,
-    execution_snapshot_drift_flat_fields,
-    execution_state_comparison_flat_fields,
-    execution_drift_overview_flat_fields,
     latest_execution_lineage_flat_lines,
-    normalize_execution_comparison_summary,
-    normalize_execution_diagnostics_summary,
-    normalize_execution_gap_history_summary,
-    normalize_execution_snapshot_drift_summary,
-    normalize_execution_snapshot_summary,
-    normalize_execution_state_comparison_summary,
-    normalize_execution_drift_overview_summary,
-    normalize_phase_gate_summary,
-    normalize_readiness_summary,
-    latest_execution_lineage_fields_from_summary,
-    phase_gate_flat_fields,
     phase_gate_issue_preview_lines,
-    readiness_flat_fields,
 )
 from sis.storage.jsonl_store import write_json
 
@@ -61,249 +46,55 @@ def build_paper_operations_runbook(
     scheduled_run = safe_read_json_dict(scheduled_run_path)
     daemon_manifest = safe_read_json_dict(daemon_manifest_path)
     monitoring = safe_read_json_dict(monitoring_snapshot_path)
-    execution = normalized_summary(
-        execution_snapshot_summary_path,
-        normalize_execution_snapshot_summary,
+    execution = safe_read_json_dict(execution_snapshot_summary_path)
+    execution_comparison = safe_read_json_dict(execution_venue_comparison_summary_path)
+    execution_diagnostics = safe_read_json_dict(execution_venue_diagnostics_summary_path)
+    execution_gap_history = safe_read_json_dict(execution_gap_history_summary_path)
+    execution_state_comparison = safe_read_json_dict(
+        execution_state_comparison_history_summary_path
     )
-    execution_comparison = normalized_summary(
-        execution_venue_comparison_summary_path,
-        normalize_execution_comparison_summary,
-    )
-    execution_diagnostics = normalized_summary(
-        execution_venue_diagnostics_summary_path,
-        normalize_execution_diagnostics_summary,
-    )
-    execution_gap_history = normalized_summary(
-        execution_gap_history_summary_path,
-        normalize_execution_gap_history_summary,
-    )
-    execution_state_comparison = normalized_summary(
-        execution_state_comparison_history_summary_path,
-        normalize_execution_state_comparison_summary,
-    )
-    execution_snapshot_drift = normalized_summary(
-        execution_snapshot_drift_history_summary_path,
-        normalize_execution_snapshot_drift_summary,
-    )
-    execution_drift_overview = normalized_summary(
-        execution_drift_overview_summary_path,
-        normalize_execution_drift_overview_summary,
-    )
-    readiness = normalized_summary(readiness_summary_path, normalize_readiness_summary)
-    phase_gate = normalized_summary(phase_gate_summary_path, normalize_phase_gate_summary)
+    execution_snapshot_drift = safe_read_json_dict(execution_snapshot_drift_history_summary_path)
+    execution_drift_overview = safe_read_json_dict(execution_drift_overview_summary_path)
+    readiness = safe_read_json_dict(readiness_summary_path)
+    phase_gate = safe_read_json_dict(phase_gate_summary_path)
     dashboard = safe_read_json_dict(ops_dashboard_summary_path)
-    latest_execution_lineage = latest_execution_lineage_fields_from_summary(dashboard)
-    execution_snapshot_fields = execution_snapshot_flat_fields(execution)
-    execution_comparison_fields = execution_comparison_flat_fields(execution_comparison)
-    execution_diagnostics_fields = execution_diagnostics_flat_fields(execution_diagnostics)
-    execution_gap_history_fields = execution_gap_history_flat_fields(execution_gap_history)
-    execution_state_comparison_fields = execution_state_comparison_flat_fields(
-        execution_state_comparison
-    )
-    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(execution_snapshot_drift)
-    execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
-    readiness_fields = readiness_flat_fields(readiness)
-    phase_gate_fields = phase_gate_flat_fields(phase_gate)
 
-    summary = {
-        "scheduled_run_type": scheduled_run.get("run_type"),
-        "scheduled_for": scheduled_run.get("scheduled_for"),
-        "scheduled_command": scheduled_run.get("command"),
-        "scheduled_run_path": str(scheduled_run_path) if scheduled_run_path is not None else None,
-        "daemon_manifest_path": str(daemon_manifest_path)
-        if daemon_manifest_path is not None
-        else None,
-        "monitoring_snapshot_path": str(monitoring_snapshot_path)
-        if monitoring_snapshot_path is not None
-        else None,
-        "execution_snapshot_summary_path": (
-            str(execution_snapshot_summary_path)
-            if execution_snapshot_summary_path is not None
-            else None
-        ),
-        "execution_venue_comparison_summary_path": (
-            str(execution_venue_comparison_summary_path)
-            if execution_venue_comparison_summary_path is not None
-            else None
-        ),
-        "execution_venue_diagnostics_summary_path": (
-            str(execution_venue_diagnostics_summary_path)
-            if execution_venue_diagnostics_summary_path is not None
-            else None
-        ),
-        "execution_gap_history_summary_path": (
-            str(execution_gap_history_summary_path)
-            if execution_gap_history_summary_path is not None
-            else None
-        ),
-        "execution_state_comparison_history_summary_path": (
-            str(execution_state_comparison_history_summary_path)
-            if execution_state_comparison_history_summary_path is not None
-            else None
-        ),
-        "execution_snapshot_drift_history_summary_path": (
-            str(execution_snapshot_drift_history_summary_path)
-            if execution_snapshot_drift_history_summary_path is not None
-            else None
-        ),
-        "execution_drift_overview_summary_path": (
-            str(execution_drift_overview_summary_path)
-            if execution_drift_overview_summary_path is not None
-            else None
-        ),
-        "readiness_summary_path": str(readiness_summary_path)
-        if readiness_summary_path is not None
-        else None,
-        "phase_gate_summary_path": str(phase_gate_summary_path)
-        if phase_gate_summary_path is not None
-        else None,
-        "ops_dashboard_summary_path": str(ops_dashboard_summary_path)
-        if ops_dashboard_summary_path is not None
-        else None,
-        "daemon_mode": daemon_manifest.get("mode"),
-        "monitoring_status": monitoring.get("status"),
-        "phase_gate_summary": phase_gate,
-        "readiness_summary": readiness,
-        "execution_summary": execution,
-        "execution_comparison_summary": execution_comparison,
-        "execution_diagnostics_summary": execution_diagnostics,
-        "execution_gap_history_summary": execution_gap_history,
-        "execution_state_comparison_summary": execution_state_comparison,
-        "execution_snapshot_drift_summary": execution_snapshot_drift,
-        "execution_drift_overview_summary": execution_drift_overview,
-        **latest_execution_lineage,
-        **execution_snapshot_fields,
-        **execution_comparison_fields,
-        **execution_diagnostics_fields,
-        **execution_gap_history_fields,
-        **execution_state_comparison_fields,
-        **execution_snapshot_drift_fields,
-        **execution_drift_fields,
-        **readiness_fields,
-        **phase_gate_fields,
-        **{
-            key: value
-            for key, value in dashboard.items()
-            if isinstance(key, str) and key.startswith("timeline_latest_remediation_")
-        },
-        "dashboard_status": dashboard.get("overall_status"),
-    }
-    required_artifact_paths = _required_artifact_paths(summary)
-    missing_required_artifact_paths = [
-        key for key, value in required_artifact_paths.items() if not value
-    ]
-    artifact_recovery_commands = _artifact_recovery_commands(missing_required_artifact_paths)
-    remediation_order = _remediation_order(
-        summary,
-        missing_required_artifact_paths,
-        artifact_recovery_commands,
-    )
-    remediation_success_criteria = {
-        item["reason"]: _remediation_success_criteria(str(item["reason"]))
-        for item in remediation_order
-    }
-    remediation_preflight_commands = {
-        item["reason"]: _remediation_preflight_commands(str(item["reason"]))
-        for item in remediation_order
-    }
-    remediation_postcheck_commands = {
-        item["reason"]: _remediation_postcheck_commands(str(item["reason"]))
-        for item in remediation_order
-    }
-    remediation_preflight_expected_outputs = {
-        item["reason"]: _remediation_preflight_expected_outputs(str(item["reason"]))
-        for item in remediation_order
-    }
-    remediation_execute_expected_outputs = {
-        item["reason"]: _remediation_execute_expected_outputs(str(item["reason"]))
-        for item in remediation_order
-    }
-    remediation_postcheck_pass_signals = {
-        item["reason"]: _remediation_postcheck_pass_signals(str(item["reason"]))
-        for item in remediation_order
-    }
-    remediation_signal_snapshots_before = {
-        item["reason"]: _remediation_signal_snapshot_before(str(item["reason"]), summary)
-        for item in remediation_order
-    }
-    remediation_signal_snapshots_target = {
-        item["reason"]: _remediation_signal_snapshot_target(str(item["reason"]))
-        for item in remediation_order
-    }
-    previous_signal_snapshots_value = prior_summary.get("remediation_signal_snapshots_before")
-    previous_signal_snapshots = (
-        cast(dict[str, Any], previous_signal_snapshots_value)
-        if isinstance(previous_signal_snapshots_value, dict)
-        else {}
-    )
-    remediation_signal_snapshot_diffs = {
-        item["reason"]: compare_signal_snapshots(
-            previous_signal_snapshots.get(str(item["reason"])),
-            remediation_signal_snapshots_before.get(str(item["reason"])),
-            remediation_signal_snapshots_target.get(str(item["reason"])),
-        )
-        for item in remediation_order
-    }
-    previous_recommendations_value = prior_summary.get("remediation_recommendations")
-    previous_recommendations = (
-        cast(dict[str, Any], previous_recommendations_value)
-        if isinstance(previous_recommendations_value, dict)
-        else {}
+    summary = build_paper_operations_runbook_base_summary(
+        scheduled_run_path=scheduled_run_path,
+        daemon_manifest_path=daemon_manifest_path,
+        monitoring_snapshot_path=monitoring_snapshot_path,
+        execution_snapshot_summary_path=execution_snapshot_summary_path,
+        execution_venue_comparison_summary_path=execution_venue_comparison_summary_path,
+        execution_venue_diagnostics_summary_path=execution_venue_diagnostics_summary_path,
+        execution_gap_history_summary_path=execution_gap_history_summary_path,
+        execution_state_comparison_history_summary_path=execution_state_comparison_history_summary_path,
+        execution_snapshot_drift_history_summary_path=execution_snapshot_drift_history_summary_path,
+        execution_drift_overview_summary_path=execution_drift_overview_summary_path,
+        readiness_summary_path=readiness_summary_path,
+        phase_gate_summary_path=phase_gate_summary_path,
+        ops_dashboard_summary_path=ops_dashboard_summary_path,
+        scheduled_run=scheduled_run,
+        daemon_manifest=daemon_manifest,
+        monitoring=monitoring,
+        execution=execution,
+        execution_comparison=execution_comparison,
+        execution_diagnostics=execution_diagnostics,
+        execution_gap_history=execution_gap_history,
+        execution_state_comparison=execution_state_comparison,
+        execution_snapshot_drift=execution_snapshot_drift,
+        execution_drift_overview=execution_drift_overview,
+        readiness=readiness,
+        phase_gate=phase_gate,
+        dashboard=dashboard,
     )
     current_planner_summary = safe_read_json_dict(remediation_planner_summary_path)
     current_evaluator_summary = safe_read_json_dict(remediation_evaluator_summary_path)
-    current_planner_entries_value = current_planner_summary.get("entries")
-    current_planner_entries = (
-        cast(list[object], current_planner_entries_value)
-        if isinstance(current_planner_entries_value, list)
-        else []
+    remediation_context = build_paper_operations_runbook_remediation_context(
+        summary=summary,
+        prior_summary=prior_summary,
+        planner_summary=current_planner_summary,
+        evaluator_summary=current_evaluator_summary,
     )
-    current_provenance_hints = {
-        str(cast(dict[str, Any], item).get("reason")): cast(dict[str, Any], item)
-        for item in current_planner_entries
-        if isinstance(item, dict)
-        and cast(dict[str, Any], item).get("source") == "paper_operations_runbook"
-        and cast(dict[str, Any], item).get("reason")
-    }
-    current_signal_provenance_hints = signal_observed_sources_by_reason(
-        current_evaluator_summary,
-        source="paper_operations_runbook",
-    )
-    remediation_recommendations = {
-        str(item["reason"]): recommend_remediation_actions(
-            remediation_signal_snapshot_diffs.get(str(item["reason"])),
-            preflight_commands=remediation_preflight_commands.get(str(item["reason"]), []),
-            execute_commands=item.get("commands"),
-            postcheck_commands=remediation_postcheck_commands.get(str(item["reason"]), []),
-            source_confidence=(
-                current_provenance_hints.get(str(item["reason"]), {}).get("source_confidence")
-                if isinstance(current_provenance_hints.get(str(item["reason"])), dict)
-                else (
-                    previous_recommendations.get(str(item["reason"]), {}).get("source_confidence")
-                    if isinstance(previous_recommendations.get(str(item["reason"])), dict)
-                    else None
-                )
-            ),
-            source_policy=(
-                current_provenance_hints.get(str(item["reason"]), {}).get("source_policy")
-                if isinstance(current_provenance_hints.get(str(item["reason"])), dict)
-                else (
-                    previous_recommendations.get(str(item["reason"]), {}).get("source_policy")
-                    if isinstance(previous_recommendations.get(str(item["reason"])), dict)
-                    else None
-                )
-            ),
-            execute_signal_confidence=signal_source_confidence(
-                current_signal_provenance_hints.get(str(item["reason"])),
-                remediation_execute_expected_outputs.get(str(item["reason"]), []),
-            ),
-            postcheck_signal_confidence=signal_source_confidence(
-                current_signal_provenance_hints.get(str(item["reason"])),
-                remediation_postcheck_pass_signals.get(str(item["reason"]), []),
-            ),
-        )
-        for item in remediation_order
-    }
     summary["remediation_planner_summary_path"] = (
         str(remediation_planner_summary_path)
         if remediation_planner_summary_path is not None
@@ -314,21 +105,48 @@ def build_paper_operations_runbook(
         if remediation_evaluator_summary_path is not None
         else None
     )
-    summary["required_artifact_paths"] = required_artifact_paths
-    summary["missing_required_artifact_paths"] = missing_required_artifact_paths
-    summary["artifact_recovery_commands"] = artifact_recovery_commands
-    summary["remediation_order"] = remediation_order
-    summary["remediation_success_criteria"] = remediation_success_criteria
-    summary["remediation_preflight_commands"] = remediation_preflight_commands
-    summary["remediation_postcheck_commands"] = remediation_postcheck_commands
-    summary["remediation_preflight_expected_outputs"] = remediation_preflight_expected_outputs
-    summary["remediation_execute_expected_outputs"] = remediation_execute_expected_outputs
-    summary["remediation_postcheck_pass_signals"] = remediation_postcheck_pass_signals
-    summary["remediation_signal_snapshots_before"] = remediation_signal_snapshots_before
-    summary["remediation_signal_snapshots_target"] = remediation_signal_snapshots_target
-    summary["remediation_signal_snapshots_previous"] = previous_signal_snapshots
-    summary["remediation_signal_snapshot_diffs"] = remediation_signal_snapshot_diffs
-    summary["remediation_recommendations"] = remediation_recommendations
+    summary.update(remediation_context)
+    required_artifact_paths = cast(
+        dict[str, str | None], remediation_context["required_artifact_paths"]
+    )
+    missing_required_artifact_paths = cast(
+        list[str], remediation_context["missing_required_artifact_paths"]
+    )
+    artifact_recovery_commands = cast(
+        dict[str, list[str]], remediation_context["artifact_recovery_commands"]
+    )
+    remediation_order = cast(list[dict[str, Any]], remediation_context["remediation_order"])
+    remediation_success_criteria = cast(
+        dict[str, list[str]], remediation_context["remediation_success_criteria"]
+    )
+    remediation_preflight_commands = cast(
+        dict[str, list[str]], remediation_context["remediation_preflight_commands"]
+    )
+    remediation_postcheck_commands = cast(
+        dict[str, list[str]], remediation_context["remediation_postcheck_commands"]
+    )
+    remediation_preflight_expected_outputs = cast(
+        dict[str, list[str]], remediation_context["remediation_preflight_expected_outputs"]
+    )
+    remediation_execute_expected_outputs = cast(
+        dict[str, list[str]], remediation_context["remediation_execute_expected_outputs"]
+    )
+    remediation_postcheck_pass_signals = cast(
+        dict[str, list[str]], remediation_context["remediation_postcheck_pass_signals"]
+    )
+    remediation_signal_snapshots_before = cast(
+        dict[str, dict[str, object]], remediation_context["remediation_signal_snapshots_before"]
+    )
+    remediation_signal_snapshots_target = cast(
+        dict[str, dict[str, object]], remediation_context["remediation_signal_snapshots_target"]
+    )
+    remediation_signal_snapshot_diffs = cast(
+        dict[str, dict[str, dict[str, object]]],
+        remediation_context["remediation_signal_snapshot_diffs"],
+    )
+    remediation_recommendations = cast(
+        dict[str, dict[str, Any]], remediation_context["remediation_recommendations"]
+    )
     summary["paper_operations_runbook_report_path"] = (
         str(out_path) if out_path is not None else None
     )

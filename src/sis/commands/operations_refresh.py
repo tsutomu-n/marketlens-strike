@@ -6,6 +6,16 @@ from typing import Any, Callable, cast
 import typer
 from loguru import logger
 
+from sis.commands.operations_refresh_payloads import (
+    remediation_command_results_manifest_fields,
+    remediation_evaluator_manifest_fields,
+    remediation_evidence_manifest_fields,
+    remediation_execution_plan_manifest_fields,
+    remediation_planner_manifest_fields,
+    remediation_scoreboard_manifest_fields,
+    remediation_session_checkpoint_manifest_fields,
+    remediation_session_manifest_fields,
+)
 from sis.settings import get_settings
 from sis.storage.jsonl_store import read_json
 
@@ -255,87 +265,19 @@ def register_operations_refresh_commands(
         remediation_planner_chain_out = _append_remediation_planner_manifest(
             settings.data_dir,
             summary_path=remediation_planner_summary_out,
-            planner_status=remediation_planner_payload.get("planner_status")
-            if isinstance(remediation_planner_payload, dict)
-            else None,
-            rerun_trend=(
-                remediation_planner_payload.get("planner_rerun_diff", {}).get("trend")
-                if isinstance(remediation_planner_payload, dict)
-                and isinstance(remediation_planner_payload.get("planner_rerun_diff"), dict)
-                else None
-            ),
-            next_best_command=remediation_planner_payload.get("next_best_command")
-            if isinstance(remediation_planner_payload, dict)
-            else None,
-            next_feedback_priority_reason=(
-                remediation_planner_payload.get("entries", [{}])[0].get("feedback_priority_reason")
-                if isinstance(remediation_planner_payload, dict)
-                and isinstance(remediation_planner_payload.get("entries"), list)
-                and remediation_planner_payload.get("entries")
-                else None
-            ),
-            planned_step_count=remediation_planner_payload.get("planned_step_count")
-            if isinstance(remediation_planner_payload, dict)
-            else None,
+            **remediation_planner_manifest_fields(remediation_planner_payload),
         )
         remediation_execution_plan_payload = _read_json_dict(remediation_execution_plan_summary_out)
         remediation_execution_plan_chain_out = _append_remediation_execution_plan_manifest(
             settings.data_dir,
             summary_path=remediation_execution_plan_summary_out,
-            execution_plan_status=(
-                remediation_execution_plan_payload.get("execution_plan_status")
-                if isinstance(remediation_execution_plan_payload, dict)
-                else None
-            ),
-            next_action_command=(
-                remediation_execution_plan_payload.get("next_action_command")
-                if isinstance(remediation_execution_plan_payload, dict)
-                else None
-            ),
-            next_action_feedback_priority_reason=(
-                remediation_execution_plan_payload.get("actions", [{}])[0].get(
-                    "feedback_priority_reason"
-                )
-                if isinstance(remediation_execution_plan_payload, dict)
-                and isinstance(remediation_execution_plan_payload.get("actions"), list)
-                and remediation_execution_plan_payload.get("actions")
-                else None
-            ),
-            planned_action_count=(
-                remediation_execution_plan_payload.get("planned_action_count")
-                if isinstance(remediation_execution_plan_payload, dict)
-                else None
-            ),
+            **remediation_execution_plan_manifest_fields(remediation_execution_plan_payload),
         )
         remediation_session_payload = _read_json_dict(remediation_session_summary_out)
         remediation_session_chain_out = _append_remediation_session_manifest(
             settings.data_dir,
             summary_path=remediation_session_summary_out,
-            session_status=(
-                remediation_session_payload.get("session_status")
-                if isinstance(remediation_session_payload, dict)
-                else None
-            ),
-            next_pending_command=(
-                remediation_session_payload.get("next_pending_command")
-                if isinstance(remediation_session_payload, dict)
-                else None
-            ),
-            next_pending_stage_signal_confidence=(
-                remediation_session_payload.get("next_pending_stage_signal_confidence")
-                if isinstance(remediation_session_payload, dict)
-                else None
-            ),
-            next_pending_feedback_priority_reason=(
-                remediation_session_payload.get("next_pending_feedback_priority_reason")
-                if isinstance(remediation_session_payload, dict)
-                else None
-            ),
-            pending_action_count=(
-                remediation_session_payload.get("pending_action_count")
-                if isinstance(remediation_session_payload, dict)
-                else None
-            ),
+            **remediation_session_manifest_fields(remediation_session_payload),
         )
         remediation_session_checkpoint_payload = _read_json_dict(
             remediation_session_checkpoint_summary_out
@@ -343,119 +285,27 @@ def register_operations_refresh_commands(
         remediation_session_checkpoint_chain_out = _append_remediation_session_checkpoint_manifest(
             settings.data_dir,
             summary_path=remediation_session_checkpoint_summary_out,
-            checkpoint_status=(
-                remediation_session_checkpoint_payload.get("checkpoint_status")
-                if isinstance(remediation_session_checkpoint_payload, dict)
-                else None
-            ),
-            next_action_command=(
-                remediation_session_checkpoint_payload.get("next_action_command")
-                if isinstance(remediation_session_checkpoint_payload, dict)
-                else None
-            ),
-            next_action_stage_signal_confidence=(
-                remediation_session_checkpoint_payload.get("next_action_stage_signal_confidence")
-                if isinstance(remediation_session_checkpoint_payload, dict)
-                else None
-            ),
-            next_action_feedback_priority_reason=(
-                next(
-                    (
-                        item.get("feedback_priority_reason")
-                        for item in remediation_session_checkpoint_payload.get("actions", [])
-                        if isinstance(item, dict)
-                        and item.get("command")
-                        == remediation_session_checkpoint_payload.get("next_action_command")
-                    ),
-                    None,
-                )
-                if isinstance(remediation_session_checkpoint_payload, dict)
-                else None
-            ),
-            pending_action_count=(
-                remediation_session_checkpoint_payload.get("pending_action_count")
-                if isinstance(remediation_session_checkpoint_payload, dict)
-                else None
+            **remediation_session_checkpoint_manifest_fields(
+                remediation_session_checkpoint_payload
             ),
         )
         remediation_scoreboard_payload = _read_json_dict(remediation_scoreboard_summary_out)
         remediation_scoreboard_chain_out = _append_remediation_scoreboard_manifest(
             settings.data_dir,
             summary_path=remediation_scoreboard_summary_out,
-            scoreboard_status=(
-                remediation_scoreboard_payload.get("scoreboard_status")
-                if isinstance(remediation_scoreboard_payload, dict)
-                else None
-            ),
-            next_action_command=(
-                remediation_scoreboard_payload.get("next_action_command")
-                if isinstance(remediation_scoreboard_payload, dict)
-                else None
-            ),
-            next_action_stage_signal_confidence=(
-                remediation_scoreboard_payload.get("next_action_stage_signal_confidence")
-                if isinstance(remediation_scoreboard_payload, dict)
-                else None
-            ),
-            next_action_feedback_priority_reason=(
-                next(
-                    (
-                        item.get("feedback_priority_reason")
-                        for item in remediation_scoreboard_payload.get("actions", [])
-                        if isinstance(item, dict)
-                        and item.get("command")
-                        == remediation_scoreboard_payload.get("next_action_command")
-                    ),
-                    None,
-                )
-                if isinstance(remediation_scoreboard_payload, dict)
-                else None
-            ),
-            completion_rate=(
-                remediation_scoreboard_payload.get("completion_rate")
-                if isinstance(remediation_scoreboard_payload, dict)
-                else None
-            ),
+            **remediation_scoreboard_manifest_fields(remediation_scoreboard_payload),
         )
         remediation_evaluator_payload = _read_json_dict(remediation_evaluator_summary_out)
         remediation_evaluator_chain_out = _append_remediation_evaluator_manifest(
             settings.data_dir,
             summary_path=remediation_evaluator_summary_out,
-            evaluator_status=(
-                remediation_evaluator_payload.get("evaluator_status")
-                if isinstance(remediation_evaluator_payload, dict)
-                else None
-            ),
-            next_action_key=(
-                remediation_evaluator_payload.get("next_action_key")
-                if isinstance(remediation_evaluator_payload, dict)
-                else None
-            ),
-            auto_fail_count=(
-                remediation_evaluator_payload.get("auto_fail_count")
-                if isinstance(remediation_evaluator_payload, dict)
-                else None
-            ),
+            **remediation_evaluator_manifest_fields(remediation_evaluator_payload),
         )
         remediation_evidence_payload = _read_json_dict(remediation_evidence_summary_out)
         remediation_evidence_chain_out = _append_remediation_evidence_manifest(
             settings.data_dir,
             summary_path=remediation_evidence_summary_out,
-            evidence_status=(
-                remediation_evidence_payload.get("evidence_status")
-                if isinstance(remediation_evidence_payload, dict)
-                else None
-            ),
-            next_manual_review_action_key=(
-                remediation_evidence_payload.get("next_manual_review_action_key")
-                if isinstance(remediation_evidence_payload, dict)
-                else None
-            ),
-            manual_review_action_count=(
-                remediation_evidence_payload.get("manual_review_action_count")
-                if isinstance(remediation_evidence_payload, dict)
-                else None
-            ),
+            **remediation_evidence_manifest_fields(remediation_evidence_payload),
         )
         remediation_command_results_payload = _read_json_dict(
             remediation_command_results_summary_out
@@ -463,21 +313,7 @@ def register_operations_refresh_commands(
         remediation_command_results_chain_out = _append_remediation_command_results_manifest(
             settings.data_dir,
             summary_path=remediation_command_results_summary_out,
-            command_results_status=(
-                remediation_command_results_payload.get("command_results_status")
-                if isinstance(remediation_command_results_payload, dict)
-                else None
-            ),
-            next_unobserved_action_key=(
-                remediation_command_results_payload.get("next_unobserved_action_key")
-                if isinstance(remediation_command_results_payload, dict)
-                else None
-            ),
-            missing_observation_count=(
-                remediation_command_results_payload.get("missing_observation_count")
-                if isinstance(remediation_command_results_payload, dict)
-                else None
-            ),
+            **remediation_command_results_manifest_fields(remediation_command_results_payload),
         )
         gap_history_out, gap_history_summary_out, _gap_history_text = _write_execution_gap_history(
             settings.data_dir

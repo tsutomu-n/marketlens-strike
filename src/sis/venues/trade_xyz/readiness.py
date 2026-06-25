@@ -4,14 +4,16 @@ from datetime import UTC, datetime
 import hashlib
 import os
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 from sis.storage.jsonl_store import read_json
 from sis.storage.jsonl_store import write_json
 from sis.venues.trade_xyz.readiness_next_actions import build_next_actions as _build_next_actions
+from sis.venues.trade_xyz.readiness_requirements import RequirementStatus
+from sis.venues.trade_xyz.readiness_requirements import dict_or_empty as _dict_or_empty
+from sis.venues.trade_xyz.readiness_requirements import nonzero_counts as _nonzero_counts
+from sis.venues.trade_xyz.readiness_requirements import requirement as _requirement
 from sis.venues.trade_xyz.registry import load_trade_xyz_registry
-
-RequirementStatus = Literal["pass", "fail", "known_gap"]
 
 
 def _load_manifest(path: Path) -> tuple[dict[str, Any] | None, str | None]:
@@ -21,27 +23,6 @@ def _load_manifest(path: Path) -> tuple[dict[str, Any] | None, str | None]:
     if not isinstance(payload, dict):
         return None, f"manifest is not an object: {path}"
     return cast(dict[str, Any], payload), None
-
-
-def _dict_or_empty(value: object) -> dict[str, Any]:
-    return cast(dict[str, Any], value) if isinstance(value, dict) else {}
-
-
-def _requirement(
-    *,
-    key: str,
-    status: RequirementStatus,
-    evidence_path: Path | None,
-    details: dict[str, Any] | None = None,
-    reason: str | None = None,
-) -> dict[str, Any]:
-    return {
-        "key": key,
-        "status": status,
-        "evidence_path": str(evidence_path) if evidence_path is not None else None,
-        "reason": reason,
-        "details": details or {},
-    }
 
 
 def _configured_account_fee_user_hash() -> str | None:
@@ -118,20 +99,6 @@ def _reference_requirement(data_dir: Path) -> dict[str, Any]:
             "funding_skipped": payload.get("funding_skipped", {}),
         },
     )
-
-
-def _nonzero_counts(payload: Any) -> dict[str, int]:
-    if not isinstance(payload, dict):
-        return {}
-    counts: dict[str, int] = {}
-    for key, value in payload.items():
-        try:
-            count = int(value or 0)
-        except (TypeError, ValueError):
-            continue
-        if count > 0:
-            counts[str(key)] = count
-    return counts
 
 
 def _funding_requirement(data_dir: Path) -> dict[str, Any]:

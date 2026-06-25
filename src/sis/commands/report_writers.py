@@ -32,6 +32,7 @@ from sis.reports.remediation_planner import build_remediation_planner
 from sis.reports.remediation_scoreboard import build_remediation_scoreboard
 from sis.reports.remediation_session import build_remediation_session
 from sis.reports.remediation_session_checkpoint import build_remediation_session_checkpoint
+from sis.commands.report_writer_common import write_operation_chain_report
 
 
 def _write_ops_review(settings_data_dir: Path) -> tuple[Path, Path, str]:
@@ -145,47 +146,39 @@ def _write_paper_operations_runbook(settings_data_dir: Path) -> tuple[Path, Path
 
 
 def _write_paper_cycle_history(settings_data_dir: Path) -> tuple[Path, Path, str]:
-    out = settings_data_dir / "reports/paper_cycle_history_report.md"
-    summary_out = settings_data_dir / "ops/paper_cycle_history_summary.json"
-    text = build_paper_cycle_history_report(
-        operation_chain_path=settings_data_dir / "ops/operation_manifests.jsonl",
-        out_path=out,
-        summary_path=summary_out,
+    return write_operation_chain_report(
+        settings_data_dir=settings_data_dir,
+        report_filename="paper_cycle_history_report.md",
+        summary_filename="paper_cycle_history_summary.json",
+        build_report=build_paper_cycle_history_report,
     )
-    return out, summary_out, text
 
 
 def _write_execution_gap_history(settings_data_dir: Path) -> tuple[Path, Path, str]:
-    out = settings_data_dir / "reports/execution_gap_history.md"
-    summary_out = settings_data_dir / "ops/execution_gap_history_summary.json"
-    text = build_execution_gap_history_report(
-        operation_chain_path=settings_data_dir / "ops/operation_manifests.jsonl",
-        out_path=out,
-        summary_path=summary_out,
+    return write_operation_chain_report(
+        settings_data_dir=settings_data_dir,
+        report_filename="execution_gap_history.md",
+        summary_filename="execution_gap_history_summary.json",
+        build_report=build_execution_gap_history_report,
     )
-    return out, summary_out, text
 
 
 def _write_execution_state_comparison_history(settings_data_dir: Path) -> tuple[Path, Path, str]:
-    out = settings_data_dir / "reports/execution_state_comparison_history.md"
-    summary_out = settings_data_dir / "ops/execution_state_comparison_history_summary.json"
-    text = build_execution_state_comparison_history_report(
-        operation_chain_path=settings_data_dir / "ops/operation_manifests.jsonl",
-        out_path=out,
-        summary_path=summary_out,
+    return write_operation_chain_report(
+        settings_data_dir=settings_data_dir,
+        report_filename="execution_state_comparison_history.md",
+        summary_filename="execution_state_comparison_history_summary.json",
+        build_report=build_execution_state_comparison_history_report,
     )
-    return out, summary_out, text
 
 
 def _write_execution_snapshot_drift_history(settings_data_dir: Path) -> tuple[Path, Path, str]:
-    out = settings_data_dir / "reports/execution_snapshot_drift_history.md"
-    summary_out = settings_data_dir / "ops/execution_snapshot_drift_history_summary.json"
-    text = build_execution_snapshot_drift_history_report(
-        operation_chain_path=settings_data_dir / "ops/operation_manifests.jsonl",
-        out_path=out,
-        summary_path=summary_out,
+    return write_operation_chain_report(
+        settings_data_dir=settings_data_dir,
+        report_filename="execution_snapshot_drift_history.md",
+        summary_filename="execution_snapshot_drift_history_summary.json",
+        build_report=build_execution_snapshot_drift_history_report,
     )
-    return out, summary_out, text
 
 
 def _write_execution_drift_overview(settings_data_dir: Path) -> tuple[Path, Path, str]:
@@ -402,14 +395,12 @@ def _write_operations_bundle(settings_data_dir: Path) -> tuple[Path, Path, str]:
 
 
 def _write_operations_timeline(settings_data_dir: Path) -> tuple[Path, Path, str]:
-    out = settings_data_dir / "reports/operations_timeline_report.md"
-    summary_out = settings_data_dir / "ops/operations_timeline_summary.json"
-    text = build_operations_timeline_report(
-        operation_chain_path=settings_data_dir / "ops/operation_manifests.jsonl",
-        out_path=out,
-        summary_path=summary_out,
+    return write_operation_chain_report(
+        settings_data_dir=settings_data_dir,
+        report_filename="operations_timeline_report.md",
+        summary_filename="operations_timeline_summary.json",
+        build_report=build_operations_timeline_report,
     )
-    return out, summary_out, text
 
 
 def _write_operations_audit_pack(settings_data_dir: Path) -> tuple[Path, Path, str]:
@@ -444,14 +435,12 @@ def _write_operations_audit_pack(settings_data_dir: Path) -> tuple[Path, Path, s
 
 
 def _write_audit_timeline(settings_data_dir: Path) -> tuple[Path, Path, str]:
-    out = settings_data_dir / "reports/audit_timeline_report.md"
-    summary_out = settings_data_dir / "ops/audit_timeline_summary.json"
-    text = build_audit_timeline_report(
-        operation_chain_path=settings_data_dir / "ops/operation_manifests.jsonl",
-        out_path=out,
-        summary_path=summary_out,
+    return write_operation_chain_report(
+        settings_data_dir=settings_data_dir,
+        report_filename="audit_timeline_report.md",
+        summary_filename="audit_timeline_summary.json",
+        build_report=build_audit_timeline_report,
     )
-    return out, summary_out, text
 
 
 def _write_audit_dashboard(settings_data_dir: Path) -> tuple[Path, Path, str]:

@@ -20,7 +20,11 @@ from sis.venues.trade_xyz.historical_archive_bulk_execution_manifest import (
 from sis.venues.trade_xyz.historical_archive_manifest import (
     build_asset_ctxs_archive_manifest,
 )
+from sis.venues.trade_xyz.historical_archive_download import execute_archive_manifest_plan
 from sis.venues.trade_xyz.historical_archive_manifest import build_l2_archive_manifest
+from sis.venues.trade_xyz.historical_archive_preflight_manifest import (
+    build_historical_archive_preflight_manifest,
+)
 from sis.venues.trade_xyz.historical_archive_quote_rows import (
     HISTORICAL_QUOTE_SOURCE,
     build_historical_archive_quote_row,
@@ -78,25 +82,15 @@ def check_hyperliquid_historical_archive_preflight(
         return_code = completed.returncode
         stdout = completed.stdout
         stderr = completed.stderr
-    manifest = {
-        "schema_version": "trade_xyz_historical_archive_preflight_manifest.v1",
-        "generated_at": generated.isoformat(),
-        "source": "hyperliquid_archive.preflight",
-        "data_dir": str(data_dir),
-        "aws_available": aws_status["available"],
-        "aws_command_source": aws_status["source"],
-        "aws_command_prefix": aws_status["command_prefix"],
-        "aws_requires_network_for_tool_install": aws_status["requires_network_for_tool_install"],
-        "preflight_command": command,
-        "return_code": return_code,
-        "status": "pass" if return_code == 0 else "fail",
-        "stdout": stdout.strip(),
-        "stderr": stderr.strip(),
-        "notes": [
-            "This preflight checks AWS identity before requester-pays archive download.",
-            "It does not download historical archive objects.",
-        ],
-    }
+    manifest = build_historical_archive_preflight_manifest(
+        generated=generated,
+        data_dir=data_dir,
+        aws_status=aws_status,
+        command=command,
+        return_code=return_code,
+        stdout=stdout,
+        stderr=stderr,
+    )
     write_json(
         data_dir / "manifests/trade_xyz_historical_archive_preflight_manifest.json",
         manifest,
@@ -123,42 +117,21 @@ def collect_hyperliquid_historical_l2_archive(
         decompress=decompress,
         generated_at=generated,
     )
-    manifest = plan.manifest
-
-    if dry_run:
-        write_json(plan.manifest_path, manifest)
-        return manifest
-    if not acknowledge_requester_pays:
-        manifest["status"] = "blocked_requires_requester_pays_ack"
-        write_json(plan.manifest_path, manifest)
-        raise ValueError(
+    return execute_archive_manifest_plan(
+        data_dir=data_dir,
+        plan=plan,
+        acknowledge_requester_pays=acknowledge_requester_pays,
+        dry_run=dry_run,
+        decompress=decompress,
+        aws_status=aws_status,
+        requester_pays_error=(
             "historical L2 archive is requester-pays; pass --acknowledge-requester-pays to download"
-        )
-    if not aws_status["available"]:
-        manifest["status"] = "blocked_missing_aws_command"
-        write_json(plan.manifest_path, manifest)
-        raise RuntimeError(
-            "aws command not found; install aws CLI, install uv, or set SIS_AWS_COMMAND"
-        )
-    preflight_status = _historical_archive_preflight_status(data_dir)
-    manifest["preflight"] = preflight_status
-    if preflight_error := _historical_archive_preflight_error(preflight_status):
-        manifest["status"] = "blocked_preflight_failed"
-        write_json(plan.manifest_path, manifest)
-        raise RuntimeError(preflight_error)
-
-    plan.lz4_path.parent.mkdir(parents=True, exist_ok=True)
-    _run_command(plan.download_command)
-    manifest["status"] = "downloaded"
-    manifest["raw_lz4_bytes"] = plan.lz4_path.stat().st_size if plan.lz4_path.exists() else None
-    if decompress:
-        _decompress_lz4(plan.lz4_path, plan.decompressed_path)
-        manifest["status"] = "downloaded_and_decompressed"
-        manifest["decompressed_bytes"] = (
-            plan.decompressed_path.stat().st_size if plan.decompressed_path.exists() else None
-        )
-    write_json(plan.manifest_path, manifest)
-    return manifest
+        ),
+        command_runner=_run_command,
+        decompress_lz4_fn=_decompress_lz4,
+        preflight_status_fn=_historical_archive_preflight_status,
+        preflight_error_fn=_historical_archive_preflight_error,
+    )
 
 
 def collect_hyperliquid_historical_asset_ctxs_archive(
@@ -180,42 +153,22 @@ def collect_hyperliquid_historical_asset_ctxs_archive(
         decompress=decompress,
         generated_at=generated,
     )
-    manifest = plan.manifest
-    if dry_run:
-        write_json(plan.manifest_path, manifest)
-        return manifest
-    if not acknowledge_requester_pays:
-        manifest["status"] = "blocked_requires_requester_pays_ack"
-        write_json(plan.manifest_path, manifest)
-        raise ValueError(
+    return execute_archive_manifest_plan(
+        data_dir=data_dir,
+        plan=plan,
+        acknowledge_requester_pays=acknowledge_requester_pays,
+        dry_run=dry_run,
+        decompress=decompress,
+        aws_status=aws_status,
+        requester_pays_error=(
             "historical asset_ctxs archive is requester-pays; pass "
             "--acknowledge-requester-pays to download"
-        )
-    if not aws_status["available"]:
-        manifest["status"] = "blocked_missing_aws_command"
-        write_json(plan.manifest_path, manifest)
-        raise RuntimeError(
-            "aws command not found; install aws CLI, install uv, or set SIS_AWS_COMMAND"
-        )
-    preflight_status = _historical_archive_preflight_status(data_dir)
-    manifest["preflight"] = preflight_status
-    if preflight_error := _historical_archive_preflight_error(preflight_status):
-        manifest["status"] = "blocked_preflight_failed"
-        write_json(plan.manifest_path, manifest)
-        raise RuntimeError(preflight_error)
-
-    plan.lz4_path.parent.mkdir(parents=True, exist_ok=True)
-    _run_command(plan.download_command)
-    manifest["status"] = "downloaded"
-    manifest["raw_lz4_bytes"] = plan.lz4_path.stat().st_size if plan.lz4_path.exists() else None
-    if decompress:
-        _decompress_lz4(plan.lz4_path, plan.decompressed_path)
-        manifest["status"] = "downloaded_and_decompressed"
-        manifest["decompressed_bytes"] = (
-            plan.decompressed_path.stat().st_size if plan.decompressed_path.exists() else None
-        )
-    write_json(plan.manifest_path, manifest)
-    return manifest
+        ),
+        command_runner=_run_command,
+        decompress_lz4_fn=_decompress_lz4,
+        preflight_status_fn=_historical_archive_preflight_status,
+        preflight_error_fn=_historical_archive_preflight_error,
+    )
 
 
 def build_hyperliquid_historical_archive_bulk_plan(

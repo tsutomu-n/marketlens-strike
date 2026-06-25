@@ -17,9 +17,7 @@ def test_runbook_remediation_context_builds_order_diffs_and_recommendations() ->
         "execution_state_comparison_history_summary_path": (
             "data/ops/execution_state_comparison.json"
         ),
-        "execution_snapshot_drift_history_summary_path": (
-            "data/ops/execution_snapshot_drift.json"
-        ),
+        "execution_snapshot_drift_history_summary_path": ("data/ops/execution_snapshot_drift.json"),
         "execution_drift_overview_summary_path": "data/ops/execution_drift_overview.json",
         "readiness_summary_path": "data/ops/readiness.json",
         "phase_gate_summary_path": "data/ops/phase_gate.json",
@@ -101,9 +99,10 @@ def test_runbook_remediation_context_builds_order_diffs_and_recommendations() ->
         "uv run sis phase-gate-review",
         "uv run sis paper-operations-runbook",
     ]
-    assert context["remediation_signal_snapshots_previous"] == prior_summary[
-        "remediation_signal_snapshots_before"
-    ]
+    assert (
+        context["remediation_signal_snapshots_previous"]
+        == prior_summary["remediation_signal_snapshots_before"]
+    )
     assert context["remediation_signal_snapshot_diffs"]["execution_drift_unresolved"][
         "execution_state_comparison_mismatching_count"
     ] == {
@@ -121,9 +120,10 @@ def test_runbook_remediation_context_builds_order_diffs_and_recommendations() ->
         "source_policy": "direct_observation_priority",
         "execute_signal_confidence": "low",
     }
-    assert context["remediation_recommendations"]["strict_validation_failed"][
-        "source_confidence"
-    ] == "medium"
+    assert (
+        context["remediation_recommendations"]["strict_validation_failed"]["source_confidence"]
+        == "medium"
+    )
 
 
 def test_runbook_remediation_context_handles_empty_order() -> None:
@@ -138,9 +138,7 @@ def test_runbook_remediation_context_handles_empty_order() -> None:
         "execution_state_comparison_history_summary_path": (
             "data/ops/execution_state_comparison.json"
         ),
-        "execution_snapshot_drift_history_summary_path": (
-            "data/ops/execution_snapshot_drift.json"
-        ),
+        "execution_snapshot_drift_history_summary_path": ("data/ops/execution_snapshot_drift.json"),
         "execution_drift_overview_summary_path": "data/ops/execution_drift_overview.json",
         "readiness_summary_path": "data/ops/readiness.json",
         "phase_gate_summary_path": "data/ops/phase_gate.json",

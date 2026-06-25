@@ -7,6 +7,7 @@ from typing import Any, Callable, Protocol, cast
 import typer
 from loguru import logger
 
+from sis.commands.ops_read_order_echo import echo_recommended_read_order
 from sis.ops.alerts import queue_notification, write_alert
 from sis.ops.daemon import (
     create_daemon_manifest,
@@ -210,8 +211,7 @@ def register_ops_commands(
         typer.echo(f"daily_loss_reason={loss_status.reason}")
         typer.echo(f"exposure_allowed={exposure_status.allowed}")
         typer.echo(f"exposure_reason={exposure_status.reason}")
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("daemon-manifest")
     def daemon_manifest_cmd(
@@ -235,8 +235,7 @@ def register_ops_commands(
         logger.info("written: {}", out)
         typer.echo(f"run_id={manifest.run_id}")
         typer.echo(f"mode={manifest.mode}")
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("daemon-dry-run")
     def daemon_dry_run_cmd(
@@ -283,8 +282,7 @@ def register_ops_commands(
         typer.echo(f"status={result.status}")
         typer.echo(f"scheduled_for={result.scheduled_for}")
         typer.echo(f"operation_chain={result.operation_chain_path}")
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("daemon-run")
     def daemon_run_cmd(
@@ -344,8 +342,7 @@ def register_ops_commands(
         typer.echo(f"daemon_loop_summary_path={daemon_loop_summary}")
         typer.echo(f"daemon_loop_events_path={result.event_log_path}")
         typer.echo(f"operation_chain={result.operation_chain_path}")
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("export-state")
     def export_state_cmd(
@@ -370,8 +367,7 @@ def register_ops_commands(
             phase_gate = payload.get("phase_gate_summary")
             if isinstance(phase_gate, dict):
                 echo_phase_gate_summary_fn(normalize_phase_gate_summary_fn(phase_gate))
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("restore-state")
     def restore_state_cmd(
@@ -402,8 +398,7 @@ def register_ops_commands(
             phase_gate = payload.get("phase_gate_summary")
             if isinstance(phase_gate, dict):
                 echo_phase_gate_summary_fn(normalize_phase_gate_summary_fn(phase_gate))
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("monitoring-status")
     def monitoring_status_cmd(
@@ -442,8 +437,7 @@ def register_ops_commands(
             f"readiness_next_phase_candidate={snapshot.get('readiness_next_phase_candidate')}"
         )
         typer.echo(f"readiness_execution_ready={snapshot.get('readiness_execution_ready')}")
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("kill-switch")
     def kill_switch_cmd(
@@ -468,8 +462,7 @@ def register_ops_commands(
         )
         typer.echo(f"enabled={status['enabled']}")
         typer.echo(f"path={status['path']}")
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("schedule-run")
     def schedule_run_cmd(
@@ -500,8 +493,7 @@ def register_ops_commands(
         logger.info("written: {}", out)
         typer.echo(f"run_type={run.run_type}")
         typer.echo(f"scheduled_for={run.scheduled_for.isoformat()}")
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("render-alert")
     def render_alert_cmd(
@@ -531,8 +523,7 @@ def register_ops_commands(
         )
         logger.info("written: {}", out)
         typer.echo(rendered_text)
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("notification-outbox")
     def notification_outbox_cmd(
@@ -609,5 +600,4 @@ def register_ops_commands(
         typer.echo(f"notification_outbox_report_path={report_path}")
         typer.echo(f"notification_outbox_summary_path={summary_path}")
         typer.echo(f"operation_chain={operation_chain_path}")
-        for index, item in enumerate(recommended_read_order_fn(settings.data_dir), start=1):
-            typer.echo(f"recommended_read_order_{index}={item}")
+        echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
