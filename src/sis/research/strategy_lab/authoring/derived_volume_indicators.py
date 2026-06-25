@@ -26,7 +26,5 @@ def volume_indicator_expression(feature: DerivedFeature) -> pl.Expr:
     mean = first.rolling_mean(window_size=feature.window or 1, min_samples=1).over(
         "canonical_symbol"
     )
-    std = first.rolling_std(window_size=feature.window or 1, min_samples=2).over(
-        "canonical_symbol"
-    )
+    std = first.rolling_std(window_size=feature.window or 1, min_samples=2).over("canonical_symbol")
     return (first - mean) / _safe_denominator(std)
