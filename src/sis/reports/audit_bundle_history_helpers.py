@@ -33,6 +33,92 @@ def reports_dir(operation_chain_path: Path | None) -> Path | None:
     return base / "reports"
 
 
+def report_path_fields(
+    *,
+    out_path: Path | None,
+    reports_dir: Path | None,
+) -> dict[str, object]:
+    return {
+        "audit_bundle_history_report_path": str(out_path) if out_path is not None else None,
+        "audit_timeline_report_path": str(reports_dir / "audit_timeline.md")
+        if reports_dir
+        else None,
+        "audit_dashboard_report_path": str(reports_dir / "audit_dashboard.md")
+        if reports_dir
+        else None,
+        "audit_bundle_report_path": str(reports_dir / "audit_bundle_manifest.md")
+        if reports_dir
+        else None,
+        "operations_audit_pack_report_path": str(reports_dir / "operations_audit_pack.md")
+        if reports_dir
+        else None,
+        "current_state_index_report_path": str(reports_dir / "current_state_index.md")
+        if reports_dir
+        else None,
+        "readiness_snapshot_report_path": str(reports_dir / "readiness_snapshot.md")
+        if reports_dir
+        else None,
+        "remediation_scoreboard_report_path": str(reports_dir / "remediation_scoreboard.md")
+        if reports_dir
+        else None,
+    }
+
+
+SUMMARY_SECTION_KEYS = (
+    "snapshot_count",
+    "ok_count",
+    "latest_status",
+    "latest_run_id",
+    "latest_created_at",
+    "latest_execution_overall_status",
+    "latest_execution_venue_count",
+    "latest_execution_comparison_all_registries_present",
+    "latest_execution_gap_history_status",
+    "latest_execution_drift_overview_status",
+    "latest_execution_drift_overview_diagnostics_alignment_match",
+    "latest_execution_drift_overview_state_comparison_mismatching_count",
+    "latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count",
+    "latest_execution_gap_history_diagnostics_status",
+    "latest_execution_state_comparison_status_match",
+    "latest_execution_state_comparison_mismatching_count",
+    "latest_remediation_planner_status",
+    "latest_remediation_planner_next_best_command",
+    "latest_remediation_planner_feedback_priority_reason",
+    "latest_remediation_execution_plan_status",
+    "latest_remediation_execution_plan_next_action_command",
+    "latest_remediation_execution_plan_feedback_priority_reason",
+    "latest_remediation_session_status",
+    "latest_remediation_session_next_pending_command",
+    "latest_remediation_session_feedback_priority_reason",
+    "latest_remediation_checkpoint_status",
+    "latest_remediation_checkpoint_next_action_command",
+    "latest_remediation_checkpoint_feedback_priority_reason",
+    "latest_remediation_scoreboard_status",
+    "latest_remediation_scoreboard_next_action_command",
+    "latest_remediation_scoreboard_feedback_priority_reason",
+    "latest_readiness_next_phase",
+    "latest_readiness_execution_ready",
+    "latest_phase_gate_decision",
+    "latest_phase2_entry_allowed",
+    "latest_phase_gate_reason",
+    "latest_phase_gate_strict_validation_passed",
+    "latest_phase_gate_strict_validation_issue_count",
+    "latest_phase_gate_checked_files",
+    "latest_phase_gate_review_report_path",
+    "execution_overall_status",
+    "execution_venue_count",
+)
+
+
+def summary_section_lines(summary: dict[str, object]) -> list[str]:
+    return [
+        "## Summary",
+        "",
+        *[f"- {key}: {summary[key]}" for key in SUMMARY_SECTION_KEYS],
+        "",
+    ]
+
+
 def quick_navigation(summary: dict[str, object]) -> dict[str, str]:
     items = (
         ("audit_bundle_history_report", summary.get("audit_bundle_history_report_path")),

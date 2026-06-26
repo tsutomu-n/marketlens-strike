@@ -11,6 +11,9 @@ from sis.backtest.artifact_io import read_json_object, sha256_file
 from sis.strategy_drift_review.models import PaperVsBacktestDriftReview
 from sis.strategy_inputs.io import read_mapping_file, write_json_artifact, write_text_artifact
 from sis.strategy_learning.service_helpers import (
+    authoring_spec_strategy_metadata as _authoring_spec_strategy_metadata,
+)
+from sis.strategy_learning.service_helpers import (
     authoring_update_tasks_for_request as _authoring_update_tasks,
 )
 from sis.strategy_learning.service_helpers import event_type_for_review as _event_type_for
@@ -26,6 +29,9 @@ from sis.strategy_learning.service_helpers import requested_changes_for_events a
 from sis.strategy_learning.service_helpers import (
     reviewed_at_value as _reviewed_at_value,
 )
+from sis.strategy_learning.service_helpers import (
+    revision_request_review_source as _revision_request_review_source,
+)
 from sis.strategy_learning.service_helpers import revision_reason_for_events as _revision_reason
 from sis.strategy_learning.service_helpers import revision_status_for_events as _revision_status
 from sis.strategy_learning.service_helpers import source_stage_for_review as _source_stage_for
@@ -39,7 +45,6 @@ from sis.strategy_learning.models import (
     LearningRecommendedAction,
     LearningSourceArtifact,
     RevisionRequestReviewDecision,
-    RevisionRequestReviewSource,
     StrategyLearningEvent,
     StrategyAuthoringUpdateHandoff,
     StrategyRevisionRequest,
@@ -283,17 +288,10 @@ def record_revision_request_review(
             f"revision request review already exists: {repo_relative_path(review_path)}"
         )
 
-    source = RevisionRequestReviewSource(
+    source = _revision_request_review_source(
         revision_request_path=repo_relative_path(revision_request_path),
         revision_request_sha256=sha256_file(revision_request_path),
-        revision_request_id=request.revision_request_id,
-        request_status=request.request_status,
-        requested_change_count=len(request.requested_changes),
-        source_learning_event_count=len(request.source_learning_event_ids),
-        auto_applied=request.auto_applied,
-        direct_spec_edit_allowed=request.direct_spec_edit_allowed,
-        paper_execution_allowed=request.paper_execution_allowed,
-        live_allowed=request.live_allowed,
+        request=request,
     )
     review = StrategyRevisionRequestReview(
         revision_request_id=request.revision_request_id,
@@ -350,14 +348,9 @@ def build_authoring_update_handoff(
             f"authoring update handoff already exists: {repo_relative_path(handoff_path)}"
         )
 
-    authoring_strategy_id_raw = authoring_payload.get("strategy_id")
-    authoring_strategy_id = (
-        authoring_strategy_id_raw.strip()
-        if isinstance(authoring_strategy_id_raw, str) and authoring_strategy_id_raw.strip()
-        else None
-    )
-    strategy_id_matches = (
-        request.strategy_id == authoring_strategy_id if authoring_strategy_id is not None else None
+    authoring_metadata = _authoring_spec_strategy_metadata(
+        authoring_payload=authoring_payload,
+        expected_strategy_id=request.strategy_id,
     )
 
     handoff = StrategyAuthoringUpdateHandoff(
@@ -384,8 +377,8 @@ def build_authoring_update_handoff(
         authoring_spec_path=repo_relative_path(authoring_spec_path),
         authoring_spec_sha256=sha256_file(authoring_spec_path),
         authoring_spec_schema_version=detect_json_schema_version(authoring_spec_path),
-        authoring_spec_strategy_id=authoring_strategy_id,
-        strategy_id_matches_authoring_spec=strategy_id_matches,
+        authoring_spec_strategy_id=authoring_metadata.strategy_id,
+        strategy_id_matches_authoring_spec=authoring_metadata.strategy_id_matches,
     )
 
     write_json_artifact(handoff_path, handoff.model_dump(mode="json", exclude_none=True))

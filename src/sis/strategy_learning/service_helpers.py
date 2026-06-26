@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Literal
 
@@ -13,6 +14,7 @@ from sis.strategy_learning.models import (
     LearningEventType,
     LearningRecommendedAction,
     RevisionRequestReviewDecision,
+    RevisionRequestReviewSource,
     RevisionRequestStatus,
     StrategyLearningEvent,
     StrategyRevisionRequest,
@@ -20,6 +22,12 @@ from sis.strategy_learning.models import (
 )
 from sis.strategy_review.provenance import boundary_true_paths
 from sis.strategy_runtime_observation.models import RuntimeObservationSourceStage
+
+
+@dataclass(frozen=True)
+class AuthoringSpecStrategyMetadata:
+    strategy_id: str | None
+    strategy_id_matches: bool | None
 
 
 def event_type_for_review(review: PaperVsBacktestDriftReview) -> LearningEventType:
@@ -122,6 +130,26 @@ def requested_changes_for_events(events: list[StrategyLearningEvent]) -> list[st
     return list(dict.fromkeys(changes))
 
 
+def revision_request_review_source(
+    *,
+    revision_request_path: str,
+    revision_request_sha256: str,
+    request: StrategyRevisionRequest,
+) -> RevisionRequestReviewSource:
+    return RevisionRequestReviewSource(
+        revision_request_path=revision_request_path,
+        revision_request_sha256=revision_request_sha256,
+        revision_request_id=request.revision_request_id,
+        request_status=request.request_status,
+        requested_change_count=len(request.requested_changes),
+        source_learning_event_count=len(request.source_learning_event_ids),
+        auto_applied=request.auto_applied,
+        direct_spec_edit_allowed=request.direct_spec_edit_allowed,
+        paper_execution_allowed=request.paper_execution_allowed,
+        live_allowed=request.live_allowed,
+    )
+
+
 def reviewed_at_value(reviewed_at: datetime | None) -> datetime:
     value = reviewed_at or datetime.now(timezone.utc).replace(microsecond=0)
     if value.tzinfo is None:
@@ -149,6 +177,24 @@ def handoff_status_for_payloads(
     ):
         return AuthoringUpdateHandoffStatus.NEEDS_REVISION_REVIEW_APPROVAL
     return AuthoringUpdateHandoffStatus.READY_FOR_HUMAN_AUTHORING_UPDATE
+
+
+def authoring_spec_strategy_metadata(
+    *,
+    authoring_payload: dict[str, Any],
+    expected_strategy_id: str,
+) -> AuthoringSpecStrategyMetadata:
+    strategy_id_raw = authoring_payload.get("strategy_id")
+    strategy_id = (
+        strategy_id_raw.strip()
+        if isinstance(strategy_id_raw, str) and strategy_id_raw.strip()
+        else None
+    )
+    strategy_id_matches = expected_strategy_id == strategy_id if strategy_id is not None else None
+    return AuthoringSpecStrategyMetadata(
+        strategy_id=strategy_id,
+        strategy_id_matches=strategy_id_matches,
+    )
 
 
 def authoring_update_tasks_for_request(request: StrategyRevisionRequest) -> list[str]:

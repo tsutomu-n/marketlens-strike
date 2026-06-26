@@ -7,7 +7,9 @@ from sis.reports.audit_bundle_history_helpers import (
 )
 from sis.reports.audit_bundle_history_helpers import quick_navigation as _quick_navigation
 from sis.reports.audit_bundle_history_helpers import related_reports as _related_reports
+from sis.reports.audit_bundle_history_helpers import report_path_fields as _report_path_fields
 from sis.reports.audit_bundle_history_helpers import reports_dir as _reports_dir
+from sis.reports.audit_bundle_history_helpers import summary_section_lines as _summary_section_lines
 from sis.reports.loaders import normalized_summary
 from sis.reports.summary_normalizers import (
     latest_execution_lineage_from_notes,
@@ -57,28 +59,7 @@ def build_audit_bundle_history_report(
         **latest_execution_lineage,
         **latest_note_fields,
         **execution_snapshot_fields,
-        "audit_bundle_history_report_path": str(out_path) if out_path is not None else None,
-        "audit_timeline_report_path": str(reports_dir / "audit_timeline.md")
-        if reports_dir
-        else None,
-        "audit_dashboard_report_path": str(reports_dir / "audit_dashboard.md")
-        if reports_dir
-        else None,
-        "audit_bundle_report_path": str(reports_dir / "audit_bundle_manifest.md")
-        if reports_dir
-        else None,
-        "operations_audit_pack_report_path": (
-            str(reports_dir / "operations_audit_pack.md") if reports_dir else None
-        ),
-        "current_state_index_report_path": str(reports_dir / "current_state_index.md")
-        if reports_dir
-        else None,
-        "readiness_snapshot_report_path": str(reports_dir / "readiness_snapshot.md")
-        if reports_dir
-        else None,
-        "remediation_scoreboard_report_path": (
-            str(reports_dir / "remediation_scoreboard.md") if reports_dir else None
-        ),
+        **_report_path_fields(out_path=out_path, reports_dir=reports_dir),
     }
     quick_navigation = _quick_navigation(summary)
     related_reports = _related_reports(summary)
@@ -94,84 +75,7 @@ def build_audit_bundle_history_report(
     lines = [
         "# Audit Bundle History Report",
         "",
-        "## Summary",
-        "",
-        f"- snapshot_count: {summary['snapshot_count']}",
-        f"- ok_count: {summary['ok_count']}",
-        f"- latest_status: {summary['latest_status']}",
-        f"- latest_run_id: {summary['latest_run_id']}",
-        f"- latest_created_at: {summary['latest_created_at']}",
-        f"- latest_execution_overall_status: {summary['latest_execution_overall_status']}",
-        f"- latest_execution_venue_count: {summary['latest_execution_venue_count']}",
-        (
-            "- latest_execution_comparison_all_registries_present: "
-            f"{summary['latest_execution_comparison_all_registries_present']}"
-        ),
-        f"- latest_execution_gap_history_status: {summary['latest_execution_gap_history_status']}",
-        f"- latest_execution_drift_overview_status: {summary['latest_execution_drift_overview_status']}",
-        (
-            "- latest_execution_drift_overview_diagnostics_alignment_match: "
-            f"{summary['latest_execution_drift_overview_diagnostics_alignment_match']}"
-        ),
-        (
-            "- latest_execution_drift_overview_state_comparison_mismatching_count: "
-            f"{summary['latest_execution_drift_overview_state_comparison_mismatching_count']}"
-        ),
-        (
-            "- latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count: "
-            f"{summary['latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count']}"
-        ),
-        (
-            "- latest_execution_gap_history_diagnostics_status: "
-            f"{summary['latest_execution_gap_history_diagnostics_status']}"
-        ),
-        (
-            "- latest_execution_state_comparison_status_match: "
-            f"{summary['latest_execution_state_comparison_status_match']}"
-        ),
-        (
-            "- latest_execution_state_comparison_mismatching_count: "
-            f"{summary['latest_execution_state_comparison_mismatching_count']}"
-        ),
-        f"- latest_remediation_planner_status: {summary['latest_remediation_planner_status']}",
-        f"- latest_remediation_planner_next_best_command: {summary['latest_remediation_planner_next_best_command']}",
-        f"- latest_remediation_planner_feedback_priority_reason: {summary['latest_remediation_planner_feedback_priority_reason']}",
-        f"- latest_remediation_execution_plan_status: {summary['latest_remediation_execution_plan_status']}",
-        f"- latest_remediation_execution_plan_next_action_command: {summary['latest_remediation_execution_plan_next_action_command']}",
-        (
-            "- latest_remediation_execution_plan_feedback_priority_reason: "
-            f"{summary['latest_remediation_execution_plan_feedback_priority_reason']}"
-        ),
-        f"- latest_remediation_session_status: {summary['latest_remediation_session_status']}",
-        f"- latest_remediation_session_next_pending_command: {summary['latest_remediation_session_next_pending_command']}",
-        f"- latest_remediation_session_feedback_priority_reason: {summary['latest_remediation_session_feedback_priority_reason']}",
-        f"- latest_remediation_checkpoint_status: {summary['latest_remediation_checkpoint_status']}",
-        f"- latest_remediation_checkpoint_next_action_command: {summary['latest_remediation_checkpoint_next_action_command']}",
-        (
-            "- latest_remediation_checkpoint_feedback_priority_reason: "
-            f"{summary['latest_remediation_checkpoint_feedback_priority_reason']}"
-        ),
-        f"- latest_remediation_scoreboard_status: {summary['latest_remediation_scoreboard_status']}",
-        f"- latest_remediation_scoreboard_next_action_command: {summary['latest_remediation_scoreboard_next_action_command']}",
-        (
-            "- latest_remediation_scoreboard_feedback_priority_reason: "
-            f"{summary['latest_remediation_scoreboard_feedback_priority_reason']}"
-        ),
-        f"- latest_readiness_next_phase: {summary['latest_readiness_next_phase']}",
-        f"- latest_readiness_execution_ready: {summary['latest_readiness_execution_ready']}",
-        f"- latest_phase_gate_decision: {summary['latest_phase_gate_decision']}",
-        f"- latest_phase2_entry_allowed: {summary['latest_phase2_entry_allowed']}",
-        f"- latest_phase_gate_reason: {summary['latest_phase_gate_reason']}",
-        f"- latest_phase_gate_strict_validation_passed: {summary['latest_phase_gate_strict_validation_passed']}",
-        (
-            "- latest_phase_gate_strict_validation_issue_count: "
-            f"{summary['latest_phase_gate_strict_validation_issue_count']}"
-        ),
-        f"- latest_phase_gate_checked_files: {summary['latest_phase_gate_checked_files']}",
-        f"- latest_phase_gate_review_report_path: {summary['latest_phase_gate_review_report_path']}",
-        f"- execution_overall_status: {summary['execution_overall_status']}",
-        f"- execution_venue_count: {summary['execution_venue_count']}",
-        "",
+        *_summary_section_lines(summary),
     ]
     lines.extend(["## Quick Navigation", ""])
     for key, value in quick_navigation.items():

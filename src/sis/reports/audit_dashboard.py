@@ -2,12 +2,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from sis.reports.audit_dashboard_navigation import quick_navigation as _quick_navigation
+from sis.reports.audit_dashboard_navigation import related_reports as _related_reports
+from sis.reports.audit_dashboard_sections import (
+    audit_coverage_section_lines as _audit_coverage_section_lines,
+    artifact_summaries_section_lines as _artifact_summaries_section_lines,
+    strict_validation_preview_section_lines as _strict_validation_preview_section_lines,
+)
+from sis.reports.audit_dashboard_sections import overall_section_lines as _overall_section_lines
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
     audit_bundle_history_flat_fields,
     audit_timeline_flat_fields,
-    latest_execution_flat_lines,
     execution_comparison_flat_fields,
     execution_diagnostics_flat_fields,
     execution_gap_history_flat_fields,
@@ -26,93 +33,9 @@ from sis.reports.summary_normalizers import (
     normalize_phase_gate_summary,
     normalize_readiness_summary,
     phase_gate_flat_fields,
-    phase_gate_issue_preview_lines,
     readiness_flat_fields,
 )
 from sis.storage.jsonl_store import write_json
-
-
-def _report_path_for_summary(path: Path | None, report_name: str) -> str | None:
-    if path is None:
-        return None
-    base = path.parent.parent if path.parent.name == "ops" else path.parent
-    return str(base / "reports" / report_name)
-
-
-def _quick_navigation(summary: dict[str, object]) -> dict[str, str]:
-    phase_gate_summary_path_value = summary.get("phase_gate_summary_path")
-    phase_gate_summary_path = (
-        Path(phase_gate_summary_path_value)
-        if isinstance(phase_gate_summary_path_value, str)
-        else None
-    )
-    items = (
-        ("audit_dashboard_report", summary.get("audit_dashboard_report_path")),
-        (
-            "current_state_index_report",
-            _report_path_for_summary(phase_gate_summary_path, "current_state_index.md"),
-        ),
-        (
-            "readiness_snapshot_report",
-            _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md"),
-        ),
-        ("phase_gate_review_report", summary.get("phase_gate_review_report_path")),
-        (
-            "remediation_scoreboard_report",
-            _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md"),
-        ),
-        (
-            "operations_audit_pack_report",
-            _report_path_for_summary(phase_gate_summary_path, "operations_audit_pack.md"),
-        ),
-    )
-    return {key: value for key, value in items if isinstance(value, str) and value}
-
-
-def _related_reports(summary: dict[str, object]) -> dict[str, str]:
-    phase_gate_summary_path_value = summary.get("phase_gate_summary_path")
-    phase_gate_summary_path = (
-        Path(phase_gate_summary_path_value)
-        if isinstance(phase_gate_summary_path_value, str)
-        else None
-    )
-    items = (
-        ("audit_dashboard_report", summary.get("audit_dashboard_report_path")),
-        (
-            "operations_dashboard_report",
-            _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md"),
-        ),
-        (
-            "current_state_index_report",
-            _report_path_for_summary(phase_gate_summary_path, "current_state_index.md"),
-        ),
-        (
-            "readiness_snapshot_report",
-            _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md"),
-        ),
-        ("phase_gate_review_report", summary.get("phase_gate_review_report_path")),
-        (
-            "operations_bundle_report",
-            _report_path_for_summary(phase_gate_summary_path, "operations_bundle_manifest.md"),
-        ),
-        (
-            "audit_bundle_report",
-            _report_path_for_summary(phase_gate_summary_path, "audit_bundle_manifest.md"),
-        ),
-        (
-            "operations_audit_pack_report",
-            _report_path_for_summary(phase_gate_summary_path, "operations_audit_pack.md"),
-        ),
-        (
-            "paper_operations_runbook_report",
-            _report_path_for_summary(phase_gate_summary_path, "paper_operations_runbook.md"),
-        ),
-        (
-            "remediation_scoreboard_report",
-            _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md"),
-        ),
-    )
-    return {key: value for key, value in items if isinstance(value, str) and value}
 
 
 def build_audit_dashboard(
@@ -281,26 +204,7 @@ def build_audit_dashboard(
     lines = [
         "# Audit Dashboard",
         "",
-        "## Overall",
-        "",
-        f"- overall_status: {summary['overall_status']}",
-        f"- bundle_status: {summary['bundle_status']}",
-        f"- audit_pack_status: {summary['audit_pack_status']}",
-        f"- timeline_latest_operation: {summary['timeline_latest_operation']}",
-        f"- timeline_latest_status: {summary['timeline_latest_status']}",
-        *latest_execution_flat_lines(
-            overall_status=summary.get("timeline_latest_execution_overall_status"),
-            venue_count=summary.get("timeline_latest_execution_venue_count"),
-            all_registries_present=summary.get(
-                "timeline_latest_execution_comparison_all_registries_present"
-            ),
-            overall_status_label="timeline_latest_execution_overall_status",
-            venue_count_label="timeline_latest_execution_venue_count",
-            all_registries_present_label=(
-                "timeline_latest_execution_comparison_all_registries_present"
-            ),
-        ),
-        "",
+        *_overall_section_lines(summary),
         "## Quick Navigation",
         "",
     ]
@@ -309,88 +213,7 @@ def build_audit_dashboard(
     lines.extend(
         [
             "",
-            "## Audit Coverage",
-            "",
-            f"- audit_entry_count: {summary['audit_entry_count']}",
-            f"- operations_snapshot_count: {summary['operations_snapshot_count']}",
-            f"- operations_audit_snapshot_count: {summary['operations_audit_snapshot_count']}",
-            f"- audit_bundle_snapshot_count: {summary['audit_bundle_snapshot_count']}",
-            f"- cycle_count: {summary['cycle_count']}",
-            f"- completed_cycle_count: {summary['completed_cycle_count']}",
-            f"- bundle_history_snapshot_count: {summary['bundle_history_snapshot_count']}",
-            f"- bundle_history_ok_count: {summary['bundle_history_ok_count']}",
-            *latest_execution_flat_lines(
-                overall_status=summary.get("bundle_history_latest_execution_overall_status"),
-                venue_count=summary.get("bundle_history_latest_execution_venue_count"),
-                all_registries_present=summary.get(
-                    "bundle_history_latest_execution_comparison_all_registries_present"
-                ),
-                overall_status_label="bundle_history_latest_execution_overall_status",
-                venue_count_label="bundle_history_latest_execution_venue_count",
-                all_registries_present_label=(
-                    "bundle_history_latest_execution_comparison_all_registries_present"
-                ),
-            ),
-            f"- execution_overall_status: {summary['execution_overall_status']}",
-            f"- execution_venue_count: {summary['execution_venue_count']}",
-            f"- execution_comparison_all_registries_present: {summary['execution_comparison_all_registries_present']}",
-            f"- execution_diagnostics_status: {summary['execution_diagnostics_status']}",
-            f"- execution_balance_gap_detected: {summary['execution_balance_gap_detected']}",
-            f"- execution_fills_gap_detected: {summary['execution_fills_gap_detected']}",
-            f"- execution_gap_history_entry_count: {summary['execution_gap_history_entry_count']}",
-            f"- execution_gap_history_latest_status: {summary['execution_gap_history_latest_status']}",
-            f"- execution_gap_history_latest_diagnostics_status: {summary['execution_gap_history_latest_diagnostics_status']}",
-            f"- execution_state_comparison_entry_count: {summary['execution_state_comparison_entry_count']}",
-            (
-                "- execution_state_comparison_latest_status_match: "
-                f"{summary['execution_state_comparison_latest_status_match']}"
-            ),
-            (
-                "- execution_state_comparison_mismatching_count: "
-                f"{summary['execution_state_comparison_mismatching_count']}"
-            ),
-            f"- execution_snapshot_drift_entry_count: {summary['execution_snapshot_drift_entry_count']}",
-            (
-                "- execution_snapshot_drift_latest_status_match: "
-                f"{summary['execution_snapshot_drift_latest_status_match']}"
-            ),
-            (
-                "- execution_snapshot_drift_mismatching_snapshot_count: "
-                f"{summary['execution_snapshot_drift_mismatching_snapshot_count']}"
-            ),
-            f"- execution_drift_overview_status: {summary['execution_drift_overview_status']}",
-            (
-                "- execution_drift_overview_diagnostics_alignment_match: "
-                f"{summary['execution_drift_overview_diagnostics_alignment_match']}"
-            ),
-            (
-                "- execution_drift_overview_state_comparison_mismatching_count: "
-                f"{summary['execution_drift_overview_state_comparison_mismatching_count']}"
-            ),
-            (
-                "- execution_drift_overview_snapshot_drift_mismatching_snapshot_count: "
-                f"{summary['execution_drift_overview_snapshot_drift_mismatching_snapshot_count']}"
-            ),
-            f"- readiness_next_phase_candidate: {summary['readiness_next_phase_candidate']}",
-            f"- readiness_execution_ready: {summary['readiness_execution_ready']}",
-            f"- timeline_latest_remediation_planner_status: {summary['timeline_latest_remediation_planner_status']}",
-            f"- timeline_latest_remediation_planner_next_best_command: {summary['timeline_latest_remediation_planner_next_best_command']}",
-            f"- timeline_latest_remediation_execution_plan_status: {summary['timeline_latest_remediation_execution_plan_status']}",
-            f"- timeline_latest_remediation_execution_plan_next_action_command: {summary['timeline_latest_remediation_execution_plan_next_action_command']}",
-            f"- timeline_latest_remediation_session_status: {summary['timeline_latest_remediation_session_status']}",
-            f"- timeline_latest_remediation_session_next_pending_command: {summary['timeline_latest_remediation_session_next_pending_command']}",
-            f"- timeline_latest_remediation_checkpoint_status: {summary['timeline_latest_remediation_checkpoint_status']}",
-            f"- timeline_latest_remediation_checkpoint_next_action_command: {summary['timeline_latest_remediation_checkpoint_next_action_command']}",
-            f"- timeline_latest_remediation_scoreboard_status: {summary['timeline_latest_remediation_scoreboard_status']}",
-            f"- timeline_latest_remediation_scoreboard_next_action_command: {summary['timeline_latest_remediation_scoreboard_next_action_command']}",
-            f"- phase_gate_decision: {summary['phase_gate_decision']}",
-            f"- phase2_entry_allowed: {summary['phase2_entry_allowed']}",
-            f"- phase_gate_reason: {summary['phase_gate_reason']}",
-            f"- phase_gate_strict_validation_passed: {summary['phase_gate_strict_validation_passed']}",
-            f"- phase_gate_strict_validation_issue_count: {summary['phase_gate_strict_validation_issue_count']}",
-            f"- phase_gate_checked_files: {summary['phase_gate_checked_files']}",
-            f"- phase_gate_review_report_path: {summary['phase_gate_review_report_path']}",
-            "",
+            *_audit_coverage_section_lines(summary),
             "## Related Reports",
             "",
         ]
@@ -400,25 +223,10 @@ def build_audit_dashboard(
     lines.extend(
         [
             "",
-            "## Strict Validation Preview",
-            "",
+            *_strict_validation_preview_section_lines(summary),
+            *_artifact_summaries_section_lines(artifacts),
         ]
     )
-    validation_issue_previews = phase_gate_issue_preview_lines(summary)
-    if validation_issue_previews:
-        lines.extend(f"- {item}" for item in validation_issue_previews)
-    else:
-        lines.append("- issues: none")
-    lines.extend(
-        [
-            "",
-            "## Artifact Summaries",
-            "",
-        ]
-    )
-    for key, value in artifacts.items():
-        lines.append(f"- {key}: {value}")
-    lines.append("")
 
     text = "\n".join(lines).rstrip() + "\n"
     if out_path is not None:

@@ -6,7 +6,9 @@ from sis.reports.audit_bundle_history_helpers import note_value
 from sis.reports.audit_bundle_history_helpers import note_values
 from sis.reports.audit_bundle_history_helpers import quick_navigation
 from sis.reports.audit_bundle_history_helpers import related_reports
+from sis.reports.audit_bundle_history_helpers import report_path_fields
 from sis.reports.audit_bundle_history_helpers import reports_dir
+from sis.reports.audit_bundle_history_helpers import summary_section_lines
 from sis.reports.audit_bundle_history_helpers import latest_note_summary_fields
 
 
@@ -70,6 +72,92 @@ def test_related_reports_preserves_expected_order_and_filters_missing_values() -
         "phase_gate_review_report": "reports/phase.md",
         "remediation_scoreboard_report": "reports/scoreboard.md",
     }
+
+
+def test_report_path_fields_build_expected_history_related_paths() -> None:
+    fields = report_path_fields(
+        out_path=Path("data/reports/audit_bundle_history.md"),
+        reports_dir=Path("data/reports"),
+    )
+
+    assert fields == {
+        "audit_bundle_history_report_path": "data/reports/audit_bundle_history.md",
+        "audit_timeline_report_path": "data/reports/audit_timeline.md",
+        "audit_dashboard_report_path": "data/reports/audit_dashboard.md",
+        "audit_bundle_report_path": "data/reports/audit_bundle_manifest.md",
+        "operations_audit_pack_report_path": "data/reports/operations_audit_pack.md",
+        "current_state_index_report_path": "data/reports/current_state_index.md",
+        "readiness_snapshot_report_path": "data/reports/readiness_snapshot.md",
+        "remediation_scoreboard_report_path": "data/reports/remediation_scoreboard.md",
+    }
+
+
+def test_report_path_fields_preserve_none_without_report_directory() -> None:
+    assert report_path_fields(out_path=None, reports_dir=None) == {
+        "audit_bundle_history_report_path": None,
+        "audit_timeline_report_path": None,
+        "audit_dashboard_report_path": None,
+        "audit_bundle_report_path": None,
+        "operations_audit_pack_report_path": None,
+        "current_state_index_report_path": None,
+        "readiness_snapshot_report_path": None,
+        "remediation_scoreboard_report_path": None,
+    }
+
+
+def test_summary_section_lines_preserve_exact_field_order_and_format() -> None:
+    expected_keys = (
+        "snapshot_count",
+        "ok_count",
+        "latest_status",
+        "latest_run_id",
+        "latest_created_at",
+        "latest_execution_overall_status",
+        "latest_execution_venue_count",
+        "latest_execution_comparison_all_registries_present",
+        "latest_execution_gap_history_status",
+        "latest_execution_drift_overview_status",
+        "latest_execution_drift_overview_diagnostics_alignment_match",
+        "latest_execution_drift_overview_state_comparison_mismatching_count",
+        "latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count",
+        "latest_execution_gap_history_diagnostics_status",
+        "latest_execution_state_comparison_status_match",
+        "latest_execution_state_comparison_mismatching_count",
+        "latest_remediation_planner_status",
+        "latest_remediation_planner_next_best_command",
+        "latest_remediation_planner_feedback_priority_reason",
+        "latest_remediation_execution_plan_status",
+        "latest_remediation_execution_plan_next_action_command",
+        "latest_remediation_execution_plan_feedback_priority_reason",
+        "latest_remediation_session_status",
+        "latest_remediation_session_next_pending_command",
+        "latest_remediation_session_feedback_priority_reason",
+        "latest_remediation_checkpoint_status",
+        "latest_remediation_checkpoint_next_action_command",
+        "latest_remediation_checkpoint_feedback_priority_reason",
+        "latest_remediation_scoreboard_status",
+        "latest_remediation_scoreboard_next_action_command",
+        "latest_remediation_scoreboard_feedback_priority_reason",
+        "latest_readiness_next_phase",
+        "latest_readiness_execution_ready",
+        "latest_phase_gate_decision",
+        "latest_phase2_entry_allowed",
+        "latest_phase_gate_reason",
+        "latest_phase_gate_strict_validation_passed",
+        "latest_phase_gate_strict_validation_issue_count",
+        "latest_phase_gate_checked_files",
+        "latest_phase_gate_review_report_path",
+        "execution_overall_status",
+        "execution_venue_count",
+    )
+    summary = {key: f"value-{index}" for index, key in enumerate(expected_keys)}
+
+    assert summary_section_lines(summary) == [
+        "## Summary",
+        "",
+        *[f"- {key}: value-{index}" for index, key in enumerate(expected_keys)],
+        "",
+    ]
 
 
 def test_latest_note_summary_fields_preserve_nested_and_flat_note_outputs() -> None:

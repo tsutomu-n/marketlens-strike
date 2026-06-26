@@ -16,6 +16,7 @@ from sis.strategy_learning.models import (
     StrategyRevisionRequestReview,
 )
 from sis.strategy_learning.service_helpers import authoring_update_tasks_for_request
+from sis.strategy_learning.service_helpers import authoring_spec_strategy_metadata
 from sis.strategy_learning.service_helpers import event_type_for_review
 from sis.strategy_learning.service_helpers import finding_for_review
 from sis.strategy_learning.service_helpers import handoff_status_for_payloads
@@ -23,6 +24,7 @@ from sis.strategy_learning.service_helpers import impact_for_review
 from sis.strategy_learning.service_helpers import recommended_action_for_review
 from sis.strategy_learning.service_helpers import requested_changes_for_events
 from sis.strategy_learning.service_helpers import reviewed_at_value
+from sis.strategy_learning.service_helpers import revision_request_review_source
 from sis.strategy_learning.service_helpers import revision_reason_for_events
 from sis.strategy_learning.service_helpers import revision_status_for_events
 from sis.strategy_learning.service_helpers import source_stage_for_review
@@ -242,6 +244,28 @@ def test_revision_helpers_prioritize_status_reason_and_requested_changes() -> No
     ]
 
 
+def test_revision_request_review_source_preserves_request_metadata_and_boundaries() -> None:
+    request = _revision_request()
+    sha256 = "sha256:" + "d" * 64
+
+    source = revision_request_review_source(
+        revision_request_path="data/revision_request.json",
+        revision_request_sha256=sha256,
+        request=request,
+    )
+
+    assert source.revision_request_path == "data/revision_request.json"
+    assert source.revision_request_sha256 == sha256
+    assert source.revision_request_id == "revise-001"
+    assert source.request_status is RevisionRequestStatus.READY_FOR_HUMAN_REVIEW
+    assert source.requested_change_count == 2
+    assert source.source_learning_event_count == 1
+    assert source.auto_applied is False
+    assert source.direct_spec_edit_allowed is False
+    assert source.paper_execution_allowed is False
+    assert source.live_allowed is False
+
+
 def test_reviewed_at_value_normalizes_to_utc() -> None:
     assert reviewed_at_value(datetime(2026, 6, 20, 9, 0)) == datetime(
         2026, 6, 20, 9, 0, tzinfo=timezone.utc
@@ -291,3 +315,37 @@ def test_handoff_status_and_authoring_tasks_preserve_manual_boundaries() -> None
         "Run Strategy Authoring validation after editing.",
         "Run a fresh backtest and build a new review packet before any stage decision.",
     ]
+
+
+def test_authoring_spec_strategy_metadata_normalizes_and_matches_strategy_id() -> None:
+    matched = authoring_spec_strategy_metadata(
+        authoring_payload={"strategy_id": " ndx-breakout-001 "},
+        expected_strategy_id="ndx-breakout-001",
+    )
+    mismatched = authoring_spec_strategy_metadata(
+        authoring_payload={"strategy_id": "other-strategy"},
+        expected_strategy_id="ndx-breakout-001",
+    )
+    blank = authoring_spec_strategy_metadata(
+        authoring_payload={"strategy_id": "   "},
+        expected_strategy_id="ndx-breakout-001",
+    )
+    missing = authoring_spec_strategy_metadata(
+        authoring_payload={},
+        expected_strategy_id="ndx-breakout-001",
+    )
+    non_string = authoring_spec_strategy_metadata(
+        authoring_payload={"strategy_id": 123},
+        expected_strategy_id="ndx-breakout-001",
+    )
+
+    assert matched.strategy_id == "ndx-breakout-001"
+    assert matched.strategy_id_matches is True
+    assert mismatched.strategy_id == "other-strategy"
+    assert mismatched.strategy_id_matches is False
+    assert blank.strategy_id is None
+    assert blank.strategy_id_matches is None
+    assert missing.strategy_id is None
+    assert missing.strategy_id_matches is None
+    assert non_string.strategy_id is None
+    assert non_string.strategy_id_matches is None
