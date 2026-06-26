@@ -6,7 +6,7 @@ from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports import operations_dashboard_navigation
 from sis.reports.operations_dashboard_fields import (
-    execution_adapter_fields as _execution_adapter_fields,
+    execution_adapter_status_fields as _execution_adapter_status_fields,
     read_only_surface_fields as _read_only_surface_fields,
     state_daemon_fields as _state_daemon_fields,
 )
@@ -136,87 +136,13 @@ def build_operations_dashboard(
     )
     execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(execution_snapshot_drift)
     execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
-    execution_balance_fields = _execution_adapter_fields(
-        execution_balance_status,
-        prefix="execution_balance_status",
-        mapping={
-            "venue": "venue",
-            "currency": "currency",
-            "equity": "equity",
-            "available_cash": "available_cash",
-            "margin_used": "margin_used",
-            "notional_usd": "notional_usd",
-            "unrealized_pnl": "unrealized_pnl",
-            "cumulative_rollover_usd": "cumulative_rollover_usd",
-            "snapshot_exists": "balance_snapshot_exists",
-            "report_path": "balance_status_report_path",
-        },
-    )
-    execution_fill_fields = _execution_adapter_fields(
-        execution_fill_status,
-        prefix="execution_fill_status",
-        mapping={
-            "venue": "venue",
-            "fills_count": "fills_count",
-            "latest_fill_id": "latest_fill_id",
-            "latest_fill_order_id": "latest_fill_order_id",
-            "latest_fill_symbol": "latest_fill_symbol",
-            "latest_fill_side": "latest_fill_side",
-            "latest_fill_quantity": "latest_fill_quantity",
-            "latest_fill_price": "latest_fill_price",
-            "latest_fill_status": "latest_fill_status",
-            "latest_fill_ts_fill": "latest_fill_ts_fill",
-            "report_path": "fill_status_report_path",
-        },
-    )
-    execution_order_fields = _execution_adapter_fields(
-        execution_order_status,
-        prefix="execution_order_status",
-        mapping={
-            "venue": "venue",
-            "order_id": "order_id",
-            "status": "status",
-            "symbol": "symbol",
-            "side": "side",
-            "quantity": "quantity",
-            "report_path": "order_status_report_path",
-        },
-    )
-    execution_cancel_fields = _execution_adapter_fields(
-        execution_cancel_order,
-        prefix="execution_cancel_order",
-        mapping={
-            "venue": "venue",
-            "action": "action",
-            "target": "target",
-            "success": "success",
-            "status": "status",
-            "report_path": "cancel_order_report_path",
-        },
-    )
-    execution_close_fields = _execution_adapter_fields(
-        execution_close_position,
-        prefix="execution_close_position",
-        mapping={
-            "venue": "venue",
-            "action": "action",
-            "target": "target",
-            "success": "success",
-            "status": "status",
-            "report_path": "close_position_report_path",
-        },
-    )
-    execution_reconcile_fields = _execution_adapter_fields(
-        execution_reconcile_positions,
-        prefix="execution_reconcile_positions",
-        mapping={
-            "venue": "venue",
-            "run_id": "run_id",
-            "matched": "matched",
-            "missing_in_adapter_count": "missing_in_adapter_count",
-            "missing_in_internal_count": "missing_in_internal_count",
-            "report_path": "reconcile_positions_report_path",
-        },
+    execution_adapter_fields = _execution_adapter_status_fields(
+        balance_status=execution_balance_status,
+        fill_status=execution_fill_status,
+        order_status=execution_order_status,
+        cancel_order=execution_cancel_order,
+        close_position=execution_close_position,
+        reconcile_positions=execution_reconcile_positions,
     )
     execution_read_only_surface_fields = _read_only_surface_fields(execution_read_only_surfaces)
     state_daemon_fields = _state_daemon_fields(
@@ -291,12 +217,7 @@ def build_operations_dashboard(
         **execution_state_comparison_fields,
         **execution_snapshot_drift_fields,
         **execution_drift_fields,
-        **execution_balance_fields,
-        **execution_fill_fields,
-        **execution_order_fields,
-        **execution_cancel_fields,
-        **execution_close_fields,
-        **execution_reconcile_fields,
+        **execution_adapter_fields,
         **execution_read_only_surface_fields,
         **state_daemon_fields,
         **audit_dashboard_fields,

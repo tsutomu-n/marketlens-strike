@@ -1,0 +1,115 @@
+from sis.reports.execution_venue_diagnostics_markdown import (
+    execution_venue_diagnostics_report_lines,
+)
+
+
+def test_execution_venue_diagnostics_report_lines_renders_navigation_and_overview() -> None:
+    lines = execution_venue_diagnostics_report_lines(
+        summary={
+            "overall_status": "degraded",
+            "venue_count": 2,
+            "diagnostics_reason": None,
+            "diagnostics_root_source": None,
+            "registry_gap_detected": False,
+            "balance_gap_detected": True,
+            "positions_snapshot_gap_detected": True,
+            "fills_gap_detected": True,
+            "order_status_gap_detected": False,
+            "currency_mismatch_detected": False,
+            "shared_balance_currency": "USD",
+            "equity_span": 5.0,
+            "positions_count_span": 2,
+            "fills_count_span": 1,
+            "order_status_count_span": 1,
+            "quick_navigation": {"execution_venue_diagnostics_report": "data/reports/evd.md"},
+            "related_reports": {"operations_dashboard_report": "data/reports/ops.md"},
+            "recommended_read_order": ["docs/CURRENT_STATE.md", "data/ops/evd.json"],
+        }
+    )
+
+    assert lines == [
+        "# Execution Venue Diagnostics",
+        "",
+        "## Quick Navigation",
+        "",
+        "- execution_venue_diagnostics_report: data/reports/evd.md",
+        "",
+        "## Related Reports",
+        "",
+        "- operations_dashboard_report: data/reports/ops.md",
+        "",
+        "## Overview",
+        "",
+        "- overall_status: degraded",
+        "- venue_count: 2",
+        "- diagnostics_reason: None",
+        "- diagnostics_root_source: None",
+        "- registry_gap_detected: False",
+        "- balance_gap_detected: True",
+        "- positions_snapshot_gap_detected: True",
+        "- fills_gap_detected: True",
+        "- order_status_gap_detected: False",
+        "- currency_mismatch_detected: False",
+        "- shared_balance_currency: USD",
+        "- equity_span: 5.0",
+        "- positions_count_span: 2",
+        "- fills_count_span: 1",
+        "- order_status_count_span: 1",
+        "",
+        "## Recommended Read Order",
+        "",
+        "- docs/CURRENT_STATE.md",
+        "- data/ops/evd.json",
+        "",
+    ]
+
+
+def test_execution_venue_diagnostics_report_lines_omits_empty_navigation() -> None:
+    lines = execution_venue_diagnostics_report_lines(
+        summary={
+            "overall_status": "degraded",
+            "venue_count": 0,
+            "diagnostics_reason": "source_execution_snapshot_empty",
+            "diagnostics_root_source": "execution_snapshot_summary.venues=[]",
+            "registry_gap_detected": True,
+            "balance_gap_detected": True,
+            "positions_snapshot_gap_detected": True,
+            "fills_gap_detected": True,
+            "order_status_gap_detected": True,
+            "currency_mismatch_detected": False,
+            "shared_balance_currency": None,
+            "equity_span": None,
+            "positions_count_span": None,
+            "fills_count_span": None,
+            "order_status_count_span": None,
+            "quick_navigation": {},
+            "related_reports": {},
+            "recommended_read_order": [],
+        }
+    )
+
+    assert lines == [
+        "# Execution Venue Diagnostics",
+        "",
+        "## Overview",
+        "",
+        "- overall_status: degraded",
+        "- venue_count: 0",
+        "- diagnostics_reason: source_execution_snapshot_empty",
+        "- diagnostics_root_source: execution_snapshot_summary.venues=[]",
+        "- registry_gap_detected: True",
+        "- balance_gap_detected: True",
+        "- positions_snapshot_gap_detected: True",
+        "- fills_gap_detected: True",
+        "- order_status_gap_detected: True",
+        "- currency_mismatch_detected: False",
+        "- shared_balance_currency: None",
+        "- equity_span: None",
+        "- positions_count_span: None",
+        "- fills_count_span: None",
+        "- order_status_count_span: None",
+        "",
+        "## Recommended Read Order",
+        "",
+        "",
+    ]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sis.reports.operations_dashboard_fields import (
     execution_adapter_fields,
+    execution_adapter_status_fields,
     read_only_surface_fields,
     state_daemon_fields,
 )
@@ -41,6 +42,81 @@ def test_execution_adapter_fields_preserves_missing_keys_as_none() -> None:
         "execution_order_status_venue": "paper",
         "execution_order_status_status": None,
     }
+
+
+def test_execution_adapter_status_fields_projects_all_adapter_summaries() -> None:
+    fields = execution_adapter_status_fields(
+        balance_status={
+            "venue": "paper",
+            "currency": "USD",
+            "equity": 1500.0,
+            "balance_status_report_path": "data/reports/execution_balance_status.md",
+        },
+        fill_status={
+            "venue": "paper",
+            "fills_count": 3,
+            "latest_fill_symbol": "AAPL",
+            "fill_status_report_path": "data/reports/execution_fill_status.md",
+        },
+        order_status={
+            "venue": "paper",
+            "order_id": "order-1",
+            "status": "open",
+            "order_status_report_path": "data/reports/execution_order_status.md",
+        },
+        cancel_order={
+            "venue": "paper",
+            "action": "cancel",
+            "success": True,
+            "cancel_order_report_path": "data/reports/execution_cancel_order.md",
+        },
+        close_position={
+            "venue": "paper",
+            "action": "close",
+            "status": "closed",
+            "close_position_report_path": "data/reports/execution_close_position.md",
+        },
+        reconcile_positions={
+            "venue": "paper",
+            "run_id": "run-1",
+            "matched": False,
+            "reconcile_positions_report_path": ("data/reports/execution_reconcile_positions.md"),
+        },
+    )
+
+    assert fields["execution_balance_status_venue"] == "paper"
+    assert fields["execution_balance_status_currency"] == "USD"
+    assert fields["execution_balance_status_equity"] == 1500.0
+    assert (
+        fields["execution_balance_status_report_path"] == "data/reports/execution_balance_status.md"
+    )
+    assert fields["execution_fill_status_fills_count"] == 3
+    assert fields["execution_fill_status_latest_fill_symbol"] == "AAPL"
+    assert fields["execution_order_status_order_id"] == "order-1"
+    assert fields["execution_order_status_status"] == "open"
+    assert fields["execution_cancel_order_action"] == "cancel"
+    assert fields["execution_cancel_order_success"] is True
+    assert fields["execution_close_position_status"] == "closed"
+    assert fields["execution_reconcile_positions_run_id"] == "run-1"
+    assert fields["execution_reconcile_positions_matched"] is False
+
+
+def test_execution_adapter_status_fields_preserves_missing_values_as_none() -> None:
+    fields = execution_adapter_status_fields(
+        balance_status={},
+        fill_status={},
+        order_status={},
+        cancel_order={},
+        close_position={},
+        reconcile_positions={},
+    )
+
+    assert fields["execution_balance_status_venue"] is None
+    assert fields["execution_fill_status_latest_fill_id"] is None
+    assert fields["execution_order_status_status"] is None
+    assert fields["execution_cancel_order_success"] is None
+    assert fields["execution_close_position_target"] is None
+    assert fields["execution_reconcile_positions_missing_in_internal_count"] is None
 
 
 def test_read_only_surface_fields_projects_counts_totals_and_latest_position_keys() -> None:

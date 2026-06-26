@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
-from sis.reports import operations_bundle_navigation
+from sis.reports import operations_bundle_artifacts, operations_bundle_navigation
 from sis.reports.summary_normalizers import (
     execution_comparison_flat_fields,
     execution_diagnostics_flat_fields,
@@ -35,6 +34,8 @@ from sis.storage.jsonl_store import write_json
 _report_path_for_summary = operations_bundle_navigation.report_path_for_summary
 _quick_navigation = operations_bundle_navigation.quick_navigation
 _related_reports = operations_bundle_navigation.related_reports
+_artifact_paths = operations_bundle_artifacts.artifact_paths
+_recommended_read_order_items = operations_bundle_artifacts.recommended_read_order_items
 
 
 def build_operations_bundle_manifest(
@@ -141,70 +142,27 @@ def build_operations_bundle_manifest(
         **phase_gate_fields,
         "phase_gate_review_report_path": phase_gate_fields.get("phase_gate_review_report_path"),
         "operations_bundle_report_path": str(out_path) if out_path is not None else None,
-        "artifacts": {
-            "monitoring_summary": str(monitoring_summary_path) if monitoring_summary_path else None,
-            "ops_review_summary": str(ops_review_summary_path) if ops_review_summary_path else None,
-            "dashboard_summary": str(dashboard_summary_path) if dashboard_summary_path else None,
-            "execution_snapshot_summary": str(execution_snapshot_summary_path)
-            if execution_snapshot_summary_path
-            else None,
-            "execution_venue_comparison_summary": (
-                str(execution_venue_comparison_summary_path)
-                if execution_venue_comparison_summary_path
-                else None
+        "artifacts": _artifact_paths(
+            monitoring_summary_path=monitoring_summary_path,
+            ops_review_summary_path=ops_review_summary_path,
+            dashboard_summary_path=dashboard_summary_path,
+            execution_snapshot_summary_path=execution_snapshot_summary_path,
+            execution_venue_comparison_summary_path=execution_venue_comparison_summary_path,
+            execution_venue_diagnostics_summary_path=execution_venue_diagnostics_summary_path,
+            execution_gap_history_summary_path=execution_gap_history_summary_path,
+            execution_state_comparison_history_summary_path=(
+                execution_state_comparison_history_summary_path
             ),
-            "execution_venue_diagnostics_summary": (
-                str(execution_venue_diagnostics_summary_path)
-                if execution_venue_diagnostics_summary_path
-                else None
+            execution_snapshot_drift_history_summary_path=(
+                execution_snapshot_drift_history_summary_path
             ),
-            "execution_gap_history_summary": (
-                str(execution_gap_history_summary_path)
-                if execution_gap_history_summary_path
-                else None
-            ),
-            "execution_state_comparison_history_summary": (
-                str(execution_state_comparison_history_summary_path)
-                if execution_state_comparison_history_summary_path
-                else None
-            ),
-            "execution_snapshot_drift_history_summary": (
-                str(execution_snapshot_drift_history_summary_path)
-                if execution_snapshot_drift_history_summary_path
-                else None
-            ),
-            "execution_drift_overview_summary": (
-                str(execution_drift_overview_summary_path)
-                if execution_drift_overview_summary_path
-                else None
-            ),
-            "readiness_summary": str(readiness_summary_path) if readiness_summary_path else None,
-            "runbook_summary": str(runbook_summary_path) if runbook_summary_path else None,
-            "paper_cycle_history_summary": str(paper_cycle_history_summary_path)
-            if paper_cycle_history_summary_path
-            else None,
-            "phase_gate_summary": str(phase_gate_summary_path) if phase_gate_summary_path else None,
-        },
-        "recommended_read_order": recommended_read_order(
-            [
-                "data/ops/execution_snapshot_summary.json",
-                "data/ops/execution_venue_comparison_summary.json",
-                "data/ops/execution_venue_diagnostics_summary.json",
-                "data/ops/execution_gap_history_summary.json",
-                "data/ops/execution_state_comparison_history_summary.json",
-                "data/ops/execution_snapshot_drift_history_summary.json",
-                "data/ops/execution_drift_overview_summary.json",
-                "data/ops/readiness_snapshot.json",
-                "data/ops/operations_dashboard_summary.json",
-                "data/ops/audit_dashboard_summary.json",
-                "data/ops/operations_bundle_manifest.json",
-                "data/ops/audit_bundle_manifest.json",
-                "data/reports/operations_dashboard.md",
-                "data/reports/audit_dashboard.md",
-                "data/reports/operations_audit_pack.md",
-                "data/reports/paper_operations_runbook.md",
-            ]
+            execution_drift_overview_summary_path=execution_drift_overview_summary_path,
+            readiness_summary_path=readiness_summary_path,
+            runbook_summary_path=runbook_summary_path,
+            paper_cycle_history_summary_path=paper_cycle_history_summary_path,
+            phase_gate_summary_path=phase_gate_summary_path,
         ),
+        "recommended_read_order": _recommended_read_order_items(),
     }
     quick_navigation = _quick_navigation(phase_gate_summary_path, out_path)
     related_reports = _related_reports(phase_gate_summary_path, out_path)

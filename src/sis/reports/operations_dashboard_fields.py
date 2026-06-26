@@ -16,6 +16,114 @@ def execution_adapter_fields(
     }
 
 
+BALANCE_STATUS_FIELD_MAPPING = {
+    "venue": "venue",
+    "currency": "currency",
+    "equity": "equity",
+    "available_cash": "available_cash",
+    "margin_used": "margin_used",
+    "notional_usd": "notional_usd",
+    "unrealized_pnl": "unrealized_pnl",
+    "cumulative_rollover_usd": "cumulative_rollover_usd",
+    "snapshot_exists": "balance_snapshot_exists",
+    "report_path": "balance_status_report_path",
+}
+
+FILL_STATUS_FIELD_MAPPING = {
+    "venue": "venue",
+    "fills_count": "fills_count",
+    "latest_fill_id": "latest_fill_id",
+    "latest_fill_order_id": "latest_fill_order_id",
+    "latest_fill_symbol": "latest_fill_symbol",
+    "latest_fill_side": "latest_fill_side",
+    "latest_fill_quantity": "latest_fill_quantity",
+    "latest_fill_price": "latest_fill_price",
+    "latest_fill_status": "latest_fill_status",
+    "latest_fill_ts_fill": "latest_fill_ts_fill",
+    "report_path": "fill_status_report_path",
+}
+
+ORDER_STATUS_FIELD_MAPPING = {
+    "venue": "venue",
+    "order_id": "order_id",
+    "status": "status",
+    "symbol": "symbol",
+    "side": "side",
+    "quantity": "quantity",
+    "report_path": "order_status_report_path",
+}
+
+CANCEL_ORDER_FIELD_MAPPING = {
+    "venue": "venue",
+    "action": "action",
+    "target": "target",
+    "success": "success",
+    "status": "status",
+    "report_path": "cancel_order_report_path",
+}
+
+CLOSE_POSITION_FIELD_MAPPING = {
+    "venue": "venue",
+    "action": "action",
+    "target": "target",
+    "success": "success",
+    "status": "status",
+    "report_path": "close_position_report_path",
+}
+
+RECONCILE_POSITIONS_FIELD_MAPPING = {
+    "venue": "venue",
+    "run_id": "run_id",
+    "matched": "matched",
+    "missing_in_adapter_count": "missing_in_adapter_count",
+    "missing_in_internal_count": "missing_in_internal_count",
+    "report_path": "reconcile_positions_report_path",
+}
+
+
+def execution_adapter_status_fields(
+    *,
+    balance_status: object,
+    fill_status: object,
+    order_status: object,
+    cancel_order: object,
+    close_position: object,
+    reconcile_positions: object,
+) -> dict[str, object]:
+    return {
+        **execution_adapter_fields(
+            balance_status,
+            prefix="execution_balance_status",
+            mapping=BALANCE_STATUS_FIELD_MAPPING,
+        ),
+        **execution_adapter_fields(
+            fill_status,
+            prefix="execution_fill_status",
+            mapping=FILL_STATUS_FIELD_MAPPING,
+        ),
+        **execution_adapter_fields(
+            order_status,
+            prefix="execution_order_status",
+            mapping=ORDER_STATUS_FIELD_MAPPING,
+        ),
+        **execution_adapter_fields(
+            cancel_order,
+            prefix="execution_cancel_order",
+            mapping=CANCEL_ORDER_FIELD_MAPPING,
+        ),
+        **execution_adapter_fields(
+            close_position,
+            prefix="execution_close_position",
+            mapping=CLOSE_POSITION_FIELD_MAPPING,
+        ),
+        **execution_adapter_fields(
+            reconcile_positions,
+            prefix="execution_reconcile_positions",
+            mapping=RECONCILE_POSITIONS_FIELD_MAPPING,
+        ),
+    }
+
+
 READ_ONLY_SURFACE_FIELD_MAPPING = (
     ("execution_read_only_surfaces_venue_count", "venue_count"),
     ("execution_read_only_surfaces_with_balance_snapshot_count", "with_balance_snapshot_count"),
