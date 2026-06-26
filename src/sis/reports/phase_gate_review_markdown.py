@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sis.reports import phase_gate_review_markdown_values
+from sis.reports import phase_gate_review_markdown_tables, phase_gate_review_markdown_values
 from sis.reports.summary_normalizers import latest_execution_lineage_flat_lines
 
 _classification_counts = phase_gate_review_markdown_values.classification_counts
@@ -11,6 +11,11 @@ _as_dict_list = phase_gate_review_markdown_values.as_dict_list
 _as_mapping = phase_gate_review_markdown_values.as_mapping
 _as_str_dict = phase_gate_review_markdown_values.as_str_dict
 _as_list_mapping = phase_gate_review_markdown_values.as_list_mapping
+_diagnostics_table_lines = phase_gate_review_markdown_tables.diagnostics_table_lines
+_execution_drift_classification_lines = (
+    phase_gate_review_markdown_tables.execution_drift_classification_lines
+)
+_venue_decision_lines = phase_gate_review_markdown_tables.venue_decision_lines
 
 
 def render_phase_gate_review_markdown(summary: dict[str, Any]) -> str:
@@ -262,38 +267,10 @@ def render_phase_gate_review_markdown(summary: dict[str, Any]) -> str:
         lines.extend(["", "- issues: none"])
 
     lines.extend(["", "## Diagnostics", ""])
-    lines.append(
-        "| symbol | available | rows | tradable_rate | stale_rate | l2_only_rate | fee_mode_unknown_rate | missing_mark_price_rate | missing_index_price_rate | spread_p90_bps |"
-    )
-    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
-    for item in diagnostics:
-        items = _as_dict_list(item.get("items"))
-        diagnostic = items[0] if items else {}
-        lines.append(
-            "| {symbol} | {available} | {rows} | {tradable_rate} | {stale_rate} | {l2_only} | {fee_unknown} | {missing_mark} | {missing_index} | {spread_p90} |".format(
-                symbol=item.get("symbol", ""),
-                available=item.get("available", ""),
-                rows=diagnostic.get("rows", ""),
-                tradable_rate=diagnostic.get("tradable_rate", ""),
-                stale_rate=diagnostic.get("stale_rate", ""),
-                l2_only=diagnostic.get("l2_only_rate", ""),
-                fee_unknown=diagnostic.get("fee_mode_unknown_rate", ""),
-                missing_mark=diagnostic.get("missing_mark_price_rate", ""),
-                missing_index=diagnostic.get("missing_index_price_rate", ""),
-                spread_p90=diagnostic.get("spread_p90_bps", ""),
-            )
-        )
+    lines.extend(_diagnostics_table_lines(diagnostics))
 
     lines.extend(["", "## Venue Decisions", ""])
-    if venue_decisions:
-        lines.append("| venue | decision | main_blocker |")
-        lines.append("| --- | --- | --- |")
-        for item in venue_decisions:
-            lines.append(
-                f"| {item.get('venue', '')} | {item.get('decision', '')} | {item.get('main_blocker', '') or ''} |"
-            )
-    else:
-        lines.append("- venue_decisions: unavailable")
+    lines.extend(_venue_decision_lines(venue_decisions))
 
     lines.extend(["", "## Execution Snapshot", ""])
     lines.append(f"- execution_overall_status: {summary['execution_overall_status']}")
@@ -365,28 +342,7 @@ def render_phase_gate_review_markdown(summary: dict[str, Any]) -> str:
 
     lines.extend(["", "## Execution Drift Classification", ""])
     classifications = _as_dict_list(summary.get("execution_drift_classifications"))
-    if classifications:
-        lines.append(
-            "| signal | observed | expected | classification | reason | root_source | derived_from | recommended_next_action |"
-        )
-        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
-        for item in classifications:
-            lines.append(
-                "| {signal} | {observed} | {expected} | {classification} | {reason} | {root_source} | {derived_from} | {recommended_next_action} |".format(
-                    signal=item.get("signal", ""),
-                    observed=item.get("observed", ""),
-                    expected=item.get("expected", ""),
-                    classification=item.get("classification", ""),
-                    reason=str(item.get("reason", "")).replace("|", "/"),
-                    root_source=str(item.get("root_source", "")).replace("|", "/"),
-                    derived_from=str(item.get("derived_from", "")).replace("|", "/"),
-                    recommended_next_action=str(item.get("recommended_next_action", "")).replace(
-                        "|", "/"
-                    ),
-                )
-            )
-    else:
-        lines.append("- execution_drift_classifications: none")
+    lines.extend(_execution_drift_classification_lines(classifications))
 
     lines.extend(["", "## Next Actions", ""])
     if next_actions:

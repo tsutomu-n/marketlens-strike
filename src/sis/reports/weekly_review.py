@@ -27,23 +27,13 @@ from sis.reports.summary_normalizers import (
     readiness_flat_fields,
 )
 from sis.reports import weekly_review_navigation
-
-_LEGACY_BACKTEST_SYMBOLS = frozenset({"QQQ", "SPY", "XAU", "NDX_EQUIV", "SPX_EQUIV"})
-
-
-def _canonical_symbols(metrics_rows: list[dict[str, object]]) -> list[str]:
-    return sorted(
-        {
-            str(symbol)
-            for row in metrics_rows
-            for symbol in [row.get("canonical_symbol")]
-            if isinstance(symbol, str) and symbol
-        }
-    )
+from sis.reports import weekly_review_symbols
 
 
 _quick_navigation = weekly_review_navigation.quick_navigation
 _related_reports = weekly_review_navigation.related_reports
+_canonical_symbols = weekly_review_symbols.canonical_symbols
+_backtest_symbol_scope = weekly_review_symbols.backtest_symbol_scope
 
 
 def build_weekly_review_report(
@@ -90,14 +80,9 @@ def build_weekly_review_report(
         else:
             lines.append("- status: unavailable")
         if symbols:
-            backtest_symbol_scope = (
-                "historical_or_legacy_symbols"
-                if set(symbols) & _LEGACY_BACKTEST_SYMBOLS
-                else "current_or_non_legacy_symbols"
-            )
             lines.extend(
                 [
-                    f"- backtest_symbol_scope: {backtest_symbol_scope}",
+                    f"- backtest_symbol_scope: {_backtest_symbol_scope(symbols)}",
                     (
                         "- interpretation: Backtest Metrics Snapshot is a historical/backtest "
                         "input and is not the current Trade[XYZ] symbol universe."

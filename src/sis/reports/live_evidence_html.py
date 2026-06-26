@@ -1,8 +1,17 @@
 from __future__ import annotations
 
-import html
 from typing import Any
 
+from sis.reports.live_evidence_html_rows import (
+    backtest_rows as _backtest_rows,
+    cost_rows as _cost_rows,
+    diagnostics_rows as _diagnostics_rows,
+    escaped_lines_pre as _escaped_lines_pre,
+    escape_html_value as _escape_html_value,
+    list_items as _list_items,
+    validation_items as _validation_items,
+    venue_decision_rows as _venue_decision_rows,
+)
 from sis.reports.live_evidence_sections import (
     latest_execution_lineage_flat_values as _latest_execution_lineage_flat_values,
     latest_execution_lineage_html_metrics as _latest_execution_lineage_html_metrics,
@@ -58,74 +67,16 @@ def render_live_evidence_html(data: Any) -> str:
     )
 
     def esc(value: object) -> str:
-        return html.escape("" if value is None else str(value))
+        return _escape_html_value(value)
 
-    venue_rows = "\n".join(
-        (
-            "<tr>"
-            f"<td>{esc(item.get('venue'))}</td>"
-            f"<td>{esc(item.get('decision'))}</td>"
-            f"<td>{esc(item.get('main_blocker'))}</td>"
-            "</tr>"
-        )
-        for item in data.venue_decisions
-        if isinstance(item, dict)
-    )
-    diag_rows = "\n".join(
-        (
-            "<tr>"
-            f"<td>{esc(item.symbol)}</td>"
-            f"<td>{item.rows}</td>"
-            f"<td>{item.market_open_rows}</td>"
-            f"<td>{item.tradable_rate:.4f}</td>"
-            f"<td>{item.stale_rate:.4f}</td>"
-            f"<td>{item.missing_mark_price_rate:.4f}</td>"
-            f"<td>{item.missing_index_price_rate:.4f}</td>"
-            f"<td>{esc(item.oracle_age_p90_ms)}</td>"
-            f"<td>{esc(item.spread_p90_bps)}</td>"
-            "</tr>"
-        )
-        for item in data.quote_diagnostics
-    )
-    cost_rows = "\n".join(
-        (
-            "<tr>"
-            f"<td>{esc(row.get('venue'))}</td>"
-            f"<td>{esc(row.get('symbol'))}</td>"
-            f"<td>{esc(row.get('stale_rate'))}</td>"
-            f"<td>{esc(row.get('tradable_rate'))}</td>"
-            f"<td>{esc(row.get('spread_p90_bps'))}</td>"
-            f"<td>{esc(row.get('holding_cost_4h_bps'))}</td>"
-            f"<td>{esc(row.get('notes'))}</td>"
-            "</tr>"
-        )
-        for row in data.cost_rows
-    )
-    backtest_rows = "\n".join(
-        (
-            "<tr>"
-            f"<td>{esc(row.get('venue'))}</td>"
-            f"<td>{esc(row.get('canonical_symbol'))}</td>"
-            f"<td>{esc(row.get('trade_count'))}</td>"
-            f"<td>{esc(row.get('avg_trade_return'))}</td>"
-            f"<td>{esc(row.get('cost_drag_bps'))}</td>"
-            f"<td>{esc(row.get('stale_rejected_count'))}</td>"
-            f"<td>{esc(row.get('halt_rejected_count'))}</td>"
-            "</tr>"
-        )
-        for row in data.backtest_metrics
-    )
-    blocker_items = "".join(f"<li>{esc(item)}</li>" for item in data.blockers) or "<li>none</li>"
-    next_action_items = (
-        "".join(f"<li>{esc(item)}</li>" for item in data.next_actions) or "<li>none</li>"
-    )
-    validation_items = (
-        "".join(
-            f"<li>{esc(issue.path)}: {esc(issue.message)}</li>" for issue in data.validation.issues
-        )
-        or "<li>none</li>"
-    )
-    log_tail = html.escape("\n".join(data.log_tail))
+    venue_rows = _venue_decision_rows(data.venue_decisions)
+    diag_rows = _diagnostics_rows(data.quote_diagnostics)
+    cost_rows = _cost_rows(data.cost_rows)
+    backtest_rows = _backtest_rows(data.backtest_metrics)
+    blocker_items = _list_items(data.blockers)
+    next_action_items = _list_items(data.next_actions)
+    validation_items = _validation_items(data.validation.issues)
+    log_tail = _escaped_lines_pre(data.log_tail)
     audit_summary_flat = audit_summary_fields(data.audit_summary, data.audit_summary)
 
     return f"""<!DOCTYPE html>

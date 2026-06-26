@@ -5,12 +5,15 @@ from typing import cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.reports import remediation_execution_plan_navigation
-from sis.reports.summary_normalizers import source_confidence_for_observed_sources
+from sis.reports import remediation_execution_plan_verification as _verification
 from sis.storage.jsonl_store import write_json
 
 
 _quick_navigation = remediation_execution_plan_navigation.quick_navigation
 _related_reports = remediation_execution_plan_navigation.related_reports
+_flatten_observed_sources = _verification.flatten_observed_sources
+_verification_confidence = _verification.verification_confidence
+_ordered_verification = _verification.ordered_verification
 
 
 def _source_summaries(planner_summary: dict[str, object]) -> dict[str, dict[str, object]]:
@@ -33,54 +36,6 @@ def _reason_values(source_summary: dict[str, object], field: str, reason: str) -
         return []
     values = cast(dict[str, object], values_by_reason).get(reason)
     return cast(list[object], values) if isinstance(values, list) else []
-
-
-def _flatten_observed_sources(value: object) -> list[str]:
-    if isinstance(value, str):
-        return [value]
-    if isinstance(value, dict):
-        flattened: list[str] = []
-        for nested in value.values():
-            flattened.extend(_flatten_observed_sources(nested))
-        return flattened
-    if isinstance(value, list):
-        flattened: list[str] = []
-        for nested in value:
-            flattened.extend(_flatten_observed_sources(nested))
-        return flattened
-    return []
-
-
-def _verification_confidence(signal_observed_sources: object, verification: list[str]) -> str:
-    if not isinstance(signal_observed_sources, dict) or not verification:
-        return "unknown"
-    signal_sources = cast(dict[str, object], signal_observed_sources)
-    flattened: list[str] = []
-    for signal in verification:
-        if not isinstance(signal, str):
-            continue
-        flattened.extend(_flatten_observed_sources(signal_sources.get(signal)))
-    values = [str(source) for source in flattened if isinstance(source, str)]
-    if not values:
-        return "unknown"
-    rank_map = {"high": 0, "medium": 1, "low": 2, "unknown": 3}
-    reverse_rank_map = {0: "high", 1: "medium", 2: "low", 3: "unknown"}
-    normalized = [
-        source_confidence_for_observed_sources([source]) or "unknown" for source in values
-    ]
-    return reverse_rank_map[max(rank_map.get(value, 3) for value in normalized)]
-
-
-def _ordered_verification(signal_observed_sources: object, verification: list[str]) -> list[str]:
-    if not isinstance(signal_observed_sources, dict):
-        return verification
-    rank_map = {"unknown": 0, "low": 1, "medium": 2, "high": 3}
-
-    def _sort_key(signal: str) -> tuple[int, str]:
-        confidence = _verification_confidence(signal_observed_sources, [signal])
-        return (rank_map.get(confidence, 0), signal)
-
-    return sorted([value for value in verification if isinstance(value, str)], key=_sort_key)
 
 
 def _stage_order(

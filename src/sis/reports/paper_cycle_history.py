@@ -3,46 +3,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
+from sis.reports import paper_cycle_history_latest
 from sis.reports import paper_cycle_history_navigation
-from sis.reports.summary_normalizers import (
-    latest_execution_lineage_from_notes,
-    phase_gate_issue_note_previews,
-)
+from sis.reports import paper_cycle_history_notes
 from sis.storage.jsonl_store import read_jsonl, write_json
 
 
 _quick_navigation = paper_cycle_history_navigation.quick_navigation
 _related_reports = paper_cycle_history_navigation.related_reports
-
-
-def _note_value(notes: list[object], prefix: str) -> str | None:
-    for item in notes:
-        text = str(item)
-        if text.startswith(prefix):
-            return text.removeprefix(prefix)
-    return None
-
-
-def _note_counts(items: list[dict[str, object]], prefix: str) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for item in items:
-        notes = item.get("notes", [])
-        if not isinstance(notes, list):
-            continue
-        value = _note_value(cast(list[object], notes), prefix)
-        if value is None:
-            continue
-        counts[value] = counts.get(value, 0) + 1
-    return counts
-
-
-def _note_values(notes: list[object], prefix: str) -> list[str]:
-    values: list[str] = []
-    for item in notes:
-        text = str(item)
-        if text.startswith(prefix):
-            values.append(text.removeprefix(prefix))
-    return values
+_note_value = paper_cycle_history_notes.note_value
+_note_counts = paper_cycle_history_notes.note_counts
+_latest_note_fields = paper_cycle_history_latest.latest_note_fields
 
 
 def build_paper_cycle_history_report(
@@ -61,80 +32,7 @@ def build_paper_cycle_history_report(
     completed_count = sum(1 for item in cycles if str(item.get("status")) == "completed")
     latest = cycles[-1] if cycles else {}
     latest_notes = latest.get("notes", []) if isinstance(latest, dict) else []
-    latest_execution_diagnostics_status = (
-        _note_value(latest_notes, "execution_diagnostics_status=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_execution_drift_overview_status = (
-        _note_value(latest_notes, "execution_drift_overview_status=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_execution_drift_overview_diagnostics_alignment_match = (
-        _note_value(latest_notes, "execution_drift_overview_diagnostics_alignment_match=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_execution_drift_overview_state_comparison_mismatching_count = (
-        _note_value(latest_notes, "execution_drift_overview_state_comparison_mismatching_count=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count = (
-        _note_value(
-            latest_notes,
-            "execution_drift_overview_snapshot_drift_mismatching_snapshot_count=",
-        )
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_readiness_next_phase = (
-        _note_value(latest_notes, "readiness_next_phase=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_readiness_execution_ready = (
-        _note_value(latest_notes, "readiness_execution_ready=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_phase_gate_decision = (
-        _note_value(latest_notes, "phase_gate_decision=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_phase2_entry_allowed = (
-        _note_value(latest_notes, "phase2_entry_allowed=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_phase_gate_reason = (
-        _note_value(latest_notes, "phase_gate_reason=") if isinstance(latest_notes, list) else None
-    )
-    latest_phase_gate_strict_validation_passed = (
-        _note_value(latest_notes, "phase_gate_strict_validation_passed=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_phase_gate_strict_validation_issue_count = (
-        _note_value(latest_notes, "phase_gate_strict_validation_issue_count=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_phase_gate_checked_files = (
-        _note_value(latest_notes, "phase_gate_checked_files=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_phase_gate_review_report_path = (
-        _note_value(latest_notes, "phase_gate_review_report_path=")
-        if isinstance(latest_notes, list)
-        else None
-    )
-    latest_phase_gate_issue_previews = (
-        phase_gate_issue_note_previews(latest_notes) if isinstance(latest_notes, list) else []
-    )
+    latest_note_fields = _latest_note_fields(latest_notes if isinstance(latest_notes, list) else [])
 
     total_orders = 0
     total_fills = 0
@@ -169,8 +67,6 @@ def build_paper_cycle_history_report(
     )
     phase_gate_checked_files_values = _note_counts(cycles, "phase_gate_checked_files=")
 
-    latest_execution_lineage = latest_execution_lineage_from_notes(latest_notes)
-
     summary = {
         "cycle_count": len(cycles),
         "completed_count": completed_count,
@@ -179,57 +75,52 @@ def build_paper_cycle_history_report(
         "latest_created_at": latest.get("created_at"),
         "total_orders": total_orders,
         "total_fills": total_fills,
-        **latest_execution_lineage,
+        **latest_note_fields,
         "latest_execution_diagnostics_summary": {
-            "execution_diagnostics_status": latest_execution_diagnostics_status,
+            "execution_diagnostics_status": latest_note_fields[
+                "latest_execution_diagnostics_status"
+            ],
         },
         "latest_execution_drift_overview_summary": {
-            "execution_drift_overview_status": latest_execution_drift_overview_status,
+            "execution_drift_overview_status": latest_note_fields[
+                "latest_execution_drift_overview_status"
+            ],
             "execution_drift_overview_diagnostics_alignment_match": (
-                latest_execution_drift_overview_diagnostics_alignment_match
+                latest_note_fields["latest_execution_drift_overview_diagnostics_alignment_match"]
             ),
             "execution_drift_overview_state_comparison_mismatching_count": (
-                latest_execution_drift_overview_state_comparison_mismatching_count
+                latest_note_fields[
+                    "latest_execution_drift_overview_state_comparison_mismatching_count"
+                ]
             ),
             "execution_drift_overview_snapshot_drift_mismatching_snapshot_count": (
-                latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count
+                latest_note_fields[
+                    "latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count"
+                ]
             ),
         },
         "latest_readiness_summary": {
-            "readiness_next_phase_candidate": latest_readiness_next_phase,
-            "readiness_execution_ready": latest_readiness_execution_ready,
+            "readiness_next_phase_candidate": latest_note_fields["latest_readiness_next_phase"],
+            "readiness_execution_ready": latest_note_fields["latest_readiness_execution_ready"],
         },
         "latest_phase_gate_summary": {
-            "phase_gate_decision": latest_phase_gate_decision,
-            "phase2_entry_allowed": latest_phase2_entry_allowed,
-            "phase_gate_reason": latest_phase_gate_reason,
-            "phase_gate_strict_validation_passed": latest_phase_gate_strict_validation_passed,
-            "phase_gate_strict_validation_issue_count": latest_phase_gate_strict_validation_issue_count,
-            "phase_gate_checked_files": latest_phase_gate_checked_files,
-            "phase_gate_review_report_path": latest_phase_gate_review_report_path,
-            "phase_gate_strict_validation_issues": latest_phase_gate_issue_previews,
+            "phase_gate_decision": latest_note_fields["latest_phase_gate_decision"],
+            "phase2_entry_allowed": latest_note_fields["latest_phase2_entry_allowed"],
+            "phase_gate_reason": latest_note_fields["latest_phase_gate_reason"],
+            "phase_gate_strict_validation_passed": latest_note_fields[
+                "latest_phase_gate_strict_validation_passed"
+            ],
+            "phase_gate_strict_validation_issue_count": latest_note_fields[
+                "latest_phase_gate_strict_validation_issue_count"
+            ],
+            "phase_gate_checked_files": latest_note_fields["latest_phase_gate_checked_files"],
+            "phase_gate_review_report_path": latest_note_fields[
+                "latest_phase_gate_review_report_path"
+            ],
+            "phase_gate_strict_validation_issues": latest_note_fields[
+                "latest_phase_gate_issue_previews"
+            ],
         },
-        "latest_execution_diagnostics_status": latest_execution_diagnostics_status,
-        "latest_execution_drift_overview_status": latest_execution_drift_overview_status,
-        "latest_execution_drift_overview_diagnostics_alignment_match": (
-            latest_execution_drift_overview_diagnostics_alignment_match
-        ),
-        "latest_execution_drift_overview_state_comparison_mismatching_count": (
-            latest_execution_drift_overview_state_comparison_mismatching_count
-        ),
-        "latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count": (
-            latest_execution_drift_overview_snapshot_drift_mismatching_snapshot_count
-        ),
-        "latest_readiness_next_phase": latest_readiness_next_phase,
-        "latest_readiness_execution_ready": latest_readiness_execution_ready,
-        "latest_phase_gate_decision": latest_phase_gate_decision,
-        "latest_phase2_entry_allowed": latest_phase2_entry_allowed,
-        "latest_phase_gate_reason": latest_phase_gate_reason,
-        "latest_phase_gate_strict_validation_passed": latest_phase_gate_strict_validation_passed,
-        "latest_phase_gate_strict_validation_issue_count": latest_phase_gate_strict_validation_issue_count,
-        "latest_phase_gate_checked_files": latest_phase_gate_checked_files,
-        "latest_phase_gate_review_report_path": latest_phase_gate_review_report_path,
-        "latest_phase_gate_issue_previews": latest_phase_gate_issue_previews,
         "diagnostics_status_counts": diagnostics_status_counts,
         "drift_overview_status_counts": drift_overview_status_counts,
         "drift_overview_diagnostics_alignment_counts": drift_overview_diagnostics_alignment_counts,
@@ -248,13 +139,20 @@ def build_paper_cycle_history_report(
         "phase_gate_checked_files_values": phase_gate_checked_files_values,
         "paper_cycle_history_report_path": str(out_path) if out_path is not None else None,
         "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path, latest_phase_gate_review_report_path),
+        "related_reports": _related_reports(
+            out_path,
+            latest_note_fields["latest_phase_gate_review_report_path"],
+        ),
     }
     quick_navigation = _quick_navigation(out_path)
-    related_reports = _related_reports(out_path, latest_phase_gate_review_report_path)
+    related_reports = _related_reports(
+        out_path,
+        latest_note_fields["latest_phase_gate_review_report_path"],
+    )
+    latest_phase_gate_issue_previews_value = summary.get("latest_phase_gate_issue_previews")
     latest_phase_gate_issue_previews = (
-        summary["latest_phase_gate_issue_previews"]
-        if isinstance(summary.get("latest_phase_gate_issue_previews"), list)
+        cast(list[object], latest_phase_gate_issue_previews_value)
+        if isinstance(latest_phase_gate_issue_previews_value, list)
         else []
     )
     summary["quick_navigation"] = quick_navigation

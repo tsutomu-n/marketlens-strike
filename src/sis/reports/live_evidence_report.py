@@ -10,6 +10,7 @@ from typing import Any
 from sis.reports import live_evidence_html as _live_evidence_html
 from sis.reports import live_evidence_followup as _live_evidence_followup
 from sis.reports import live_evidence_markdown_sections as _live_evidence_markdown_sections
+from sis.reports import live_evidence_report_artifacts as _live_evidence_artifacts
 from sis.reports import live_evidence_report_inputs as _live_evidence_inputs
 from sis.reports import live_evidence_report_tables as _live_evidence_report_tables
 from sis.reports.quote_diagnostics import QuoteDiagnostic, build_quote_diagnostics
@@ -28,6 +29,7 @@ from sis.reports.summary_normalizers import (
 from sis.validation.artifacts import ValidationSummary, validate_artifacts
 
 RunStatus = _live_evidence_inputs.RunStatus
+LiveEvidenceArtifacts = _live_evidence_artifacts.LiveEvidenceArtifacts
 
 default_followup_output_path = _live_evidence_followup.default_followup_output_path
 default_html_output_path = _live_evidence_followup.default_html_output_path
@@ -35,6 +37,7 @@ render_live_evidence_followup = _live_evidence_followup.render_live_evidence_fol
 render_live_evidence_html = _live_evidence_html.render_live_evidence_html
 summary_markdown_lines = _live_evidence_markdown_sections.summary_markdown_lines
 detail_markdown_lines = _live_evidence_report_tables.detail_markdown_lines
+build_live_evidence_artifacts = _live_evidence_artifacts.build_live_evidence_artifacts
 parse_run_status = _live_evidence_inputs.parse_run_status
 parse_manifest_status = _live_evidence_inputs.parse_manifest_status
 load_manifest_payload = _live_evidence_inputs.load_manifest_payload
@@ -47,18 +50,6 @@ _load_cost_rows = _live_evidence_inputs.load_cost_rows
 _load_backtest_metrics = _live_evidence_inputs.load_backtest_metrics
 _started_finished = _live_evidence_inputs.started_finished
 default_markdown_output_path = _live_evidence_inputs.default_markdown_output_path
-
-
-@dataclass(frozen=True)
-class LiveEvidenceArtifacts:
-    sidecar_metadata: Path
-    sidecar_pricing: Path
-    raw_quotes: Path
-    normalized_quotes: Path
-    cost_matrix: Path
-    backtest_metrics: Path
-    go_no_go_report: Path
-    evidence_card: Path | None
 
 
 @dataclass(frozen=True)
@@ -149,39 +140,11 @@ def build_live_evidence_report_data(
         manifest.get("artifacts", {}) if isinstance(manifest.get("artifacts"), dict) else {}
     )
     today_utc = datetime.now(timezone.utc).date().isoformat()
-    evidence_card_path = artifact_paths.get("evidence_card")
-    evidence_card = (
-        Path(evidence_card_path)
-        if isinstance(evidence_card_path, str) and evidence_card_path
-        else _latest_evidence_card(data_dir)
-    )
-    artifacts = LiveEvidenceArtifacts(
-        sidecar_metadata=Path(
-            artifact_paths.get(
-                "sidecar_metadata", data_dir / f"raw/sidecar/gtrade/{today_utc}.jsonl"
-            )
-        ),
-        sidecar_pricing=Path(
-            artifact_paths.get(
-                "sidecar_pricing", data_dir / f"raw/sidecar/gtrade-pricing/{today_utc}.jsonl"
-            )
-        ),
-        raw_quotes=Path(
-            artifact_paths.get("raw_quotes", data_dir / f"raw/quotes/gtrade/{today_utc}.jsonl")
-        ),
-        normalized_quotes=Path(
-            artifact_paths.get("normalized_quotes", data_dir / "normalized/quotes.parquet")
-        ),
-        cost_matrix=Path(
-            artifact_paths.get("cost_matrix", data_dir / "research/venue_cost_matrix.csv")
-        ),
-        backtest_metrics=Path(
-            artifact_paths.get("backtest_metrics", data_dir / "research/backtest_metrics.json")
-        ),
-        go_no_go_report=Path(
-            artifact_paths.get("go_no_go_report", data_dir / "research/go_no_go_report.md")
-        ),
-        evidence_card=evidence_card,
+    artifacts = build_live_evidence_artifacts(
+        data_dir=data_dir,
+        artifact_paths=artifact_paths,
+        today_utc=today_utc,
+        fallback_evidence_card=_latest_evidence_card(data_dir),
     )
     manifest_status = parse_manifest_status(manifest_path)
     resolved_status = (
@@ -189,7 +152,7 @@ def build_live_evidence_report_data(
         or manifest_status
         or (parse_run_status(log_path) if log_path is not None else "running")
     )
-    evidence_payload = load_manifest_payload(evidence_card)
+    evidence_payload = load_manifest_payload(artifacts.evidence_card)
     venue_decisions = (
         evidence_payload.get("venue_decisions", []) if isinstance(evidence_payload, dict) else []
     )

@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from sis.reports.readiness_snapshot_markdown_sections import (
+    overall_section_lines,
+    phase_gate_section_lines,
+    readiness_flags_section_lines,
+)
 from sis.reports.summary_normalizers import (
     latest_execution_lineage_flat_lines,
     phase_gate_issue_preview_lines,
@@ -18,21 +23,9 @@ def render_readiness_snapshot_markdown(summary: dict[str, Any]) -> str:
     lines = [
         "# Readiness Snapshot",
         "",
-        "## Overall",
+        *overall_section_lines(summary),
         "",
-        f"- overall_status: {summary['overall_status']}",
-        f"- next_phase_candidate: {summary['next_phase_candidate']}",
-        "",
-        "## Phase Gate",
-        "",
-        f"- phase_gate_decision: {summary['phase_gate_decision']}",
-        f"- phase2_entry_allowed: {summary['phase2_entry_allowed']}",
-        f"- phase2_entry_reason: {summary['phase2_entry_reason']}",
-        f"- phase_gate_reason: {summary['phase_gate_reason']}",
-        f"- phase_gate_strict_validation_passed: {summary['phase_gate_strict_validation_passed']}",
-        f"- phase_gate_strict_validation_issue_count: {summary['phase_gate_strict_validation_issue_count']}",
-        f"- phase_gate_checked_files: {summary['phase_gate_checked_files']}",
-        f"- phase_gate_review_report_path: {summary['phase_gate_review_report_path']}",
+        *phase_gate_section_lines(summary),
         "",
         "## Strict Validation Preview",
         "",
@@ -42,16 +35,7 @@ def render_readiness_snapshot_markdown(summary: dict[str, Any]) -> str:
         lines.extend(f"- {item}" for item in validation_issue_previews)
     else:
         lines.append("- issues: none")
-    lines.extend(["", "## Readiness Flags", ""])
-    lines.extend(
-        [
-            f"- execution_ready: {summary['execution_ready']}",
-            f"- backtest_ready: {summary['backtest_ready']}",
-            f"- live_evidence_ready: {summary['live_evidence_ready']}",
-            f"- operations_ready: {summary['operations_ready']}",
-            f"- research_quality_report_exists: {summary['research_quality_report_exists']}",
-        ]
-    )
+    lines.extend(["", *readiness_flags_section_lines(summary)])
     lines.extend(["", "## Execution Adapter Surfaces", ""])
     lines.extend(
         [

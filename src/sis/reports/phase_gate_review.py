@@ -4,9 +4,10 @@ from pathlib import Path
 from typing import Any, cast
 
 from sis.reports.doc_paths import recommended_read_order
-from sis.reports.loaders import normalized_summary, safe_read_json_dict
+from sis.reports.loaders import safe_read_json_dict
 from sis.reports import phase_gate_diagnostics
 from sis.reports import phase_gate_review_decisions
+from sis.reports import phase_gate_review_inputs
 from sis.reports import phase_gate_review_paths
 from sis.reports.phase_gate_remediation import (
     artifact_recovery_commands as _artifact_recovery_commands,
@@ -24,14 +25,6 @@ from sis.reports.phase_gate_remediation import (
 from sis.reports.phase_gate_review_markdown import render_phase_gate_review_markdown
 from sis.reports.summary_normalizers import (
     compare_signal_snapshots,
-    execution_comparison_flat_fields,
-    execution_diagnostics_flat_fields,
-    execution_gap_history_flat_fields,
-    execution_snapshot_flat_fields,
-    execution_snapshot_drift_flat_fields,
-    execution_state_comparison_flat_fields,
-    execution_drift_overview_flat_fields,
-    normalize_execution_drift_overview_summary,
     latest_execution_lineage_fields_from_summary,
     recommend_remediation_actions,
     signal_observed_sources_by_reason,
@@ -113,27 +106,19 @@ def build_phase_gate_review(
     manifest_payload = safe_read_json_dict(manifest_path)
     evidence_card_path = _latest_path(data_dir / "evidence", "evidence_card_*.json")
     evidence_payload = safe_read_json_dict(evidence_card_path)
-    execution_summary = safe_read_json_dict(execution_snapshot_summary_path)
-    execution_comparison = safe_read_json_dict(execution_venue_comparison_summary_path)
-    execution_diagnostics = safe_read_json_dict(execution_venue_diagnostics_summary_path)
-    execution_gap_history = safe_read_json_dict(execution_gap_history_summary_path)
-    execution_state_comparison = safe_read_json_dict(
-        execution_state_comparison_history_summary_path
+    execution_inputs = phase_gate_review_inputs.load_phase_gate_execution_inputs(
+        execution_snapshot_summary_path=execution_snapshot_summary_path,
+        execution_venue_comparison_summary_path=execution_venue_comparison_summary_path,
+        execution_venue_diagnostics_summary_path=execution_venue_diagnostics_summary_path,
+        execution_gap_history_summary_path=execution_gap_history_summary_path,
+        execution_state_comparison_history_summary_path=(
+            execution_state_comparison_history_summary_path
+        ),
+        execution_snapshot_drift_history_summary_path=(
+            execution_snapshot_drift_history_summary_path
+        ),
+        execution_drift_overview_summary_path=execution_drift_overview_summary_path,
     )
-    execution_snapshot_drift = safe_read_json_dict(execution_snapshot_drift_history_summary_path)
-    execution_drift_overview = normalized_summary(
-        execution_drift_overview_summary_path,
-        normalize_execution_drift_overview_summary,
-    )
-    execution_snapshot_fields = execution_snapshot_flat_fields(execution_summary)
-    execution_comparison_fields = execution_comparison_flat_fields(execution_comparison)
-    execution_diagnostics_fields = execution_diagnostics_flat_fields(execution_diagnostics)
-    execution_gap_history_fields = execution_gap_history_flat_fields(execution_gap_history)
-    execution_state_comparison_fields = execution_state_comparison_flat_fields(
-        execution_state_comparison
-    )
-    execution_snapshot_drift_fields = execution_snapshot_drift_flat_fields(execution_snapshot_drift)
-    execution_drift_fields = execution_drift_overview_flat_fields(execution_drift_overview)
     latest_execution_lineage = latest_execution_lineage_fields_from_summary(evidence_payload)
     collector_gate = _read_only_collector_gate(data_dir)
 
@@ -281,13 +266,7 @@ def build_phase_gate_review(
         "venue_decisions": venue_decisions if isinstance(venue_decisions, list) else [],
         "blockers": blockers if isinstance(blockers, list) else [],
         "next_actions": next_actions if isinstance(next_actions, list) else [],
-        **execution_snapshot_fields,
-        **execution_comparison_fields,
-        **execution_diagnostics_fields,
-        **execution_gap_history_fields,
-        **execution_state_comparison_fields,
-        **execution_snapshot_drift_fields,
-        **execution_drift_fields,
+        **execution_inputs.flat_fields,
         **latest_execution_lineage,
         **collector_gate,
         "diagnostics_symbols": list(diagnostics_symbols),
