@@ -6,6 +6,7 @@ from sis.reports.execution_adapter_status_navigation import (
     execution_adapter_recommended_read_order,
     quick_navigation,
     related_reports,
+    report_context,
 )
 
 
@@ -60,3 +61,21 @@ def test_execution_adapter_related_reports_uses_expected_report_order() -> None:
 def test_execution_adapter_navigation_handles_missing_output_path() -> None:
     assert quick_navigation(None) == {}
     assert related_reports(None) == {}
+
+
+def test_execution_adapter_report_context_includes_read_order_and_navigation() -> None:
+    out_path = Path("data/reports/execution_balance_status.md")
+
+    assert report_context(out_path) == {
+        "recommended_read_order": execution_adapter_recommended_read_order(),
+        "quick_navigation": quick_navigation(out_path),
+        "related_reports": related_reports(out_path),
+    }
+
+
+def test_execution_adapter_report_context_preserves_missing_output_shape() -> None:
+    assert report_context(None) == {
+        "recommended_read_order": execution_adapter_recommended_read_order(),
+        "quick_navigation": {},
+        "related_reports": {},
+    }

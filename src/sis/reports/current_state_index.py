@@ -40,6 +40,8 @@ _report_path_for_summary = current_state_index_navigation.report_path_for_summar
 _live_evidence_report_path = current_state_index_navigation.live_evidence_report_path
 _related_reports = current_state_index_navigation.related_reports
 _quick_navigation = current_state_index_navigation.quick_navigation
+_restart_pointers = current_state_index_navigation.restart_pointers
+_artifacts_from_paths = current_state_index_navigation.artifacts_from_paths
 
 
 def build_current_state_index(
@@ -125,141 +127,12 @@ def build_current_state_index(
     )
     backtest_metrics_summary = safe_read_json_dict(backtest_metrics_summary_path)
     live_evidence_summary = safe_read_json_dict(live_evidence_summary_path)
-    restart_pointers = {
-        "current_state_index_report": str(out_path) if out_path is not None else None,
-        "readiness_snapshot_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "readiness_snapshot.md",
-        ),
-        "remediation_planner_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_planner_summary.json")
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_planner_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_planner.md",
-        ),
-        "remediation_execution_plan_summary": (
-            str(
-                operations_dashboard_summary_path.parent / "remediation_execution_plan_summary.json"
-            )
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_execution_plan_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_execution_plan.md",
-        ),
-        "remediation_session_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_session_summary.json")
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_session_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_session.md",
-        ),
-        "remediation_session_checkpoint_summary": (
-            str(
-                operations_dashboard_summary_path.parent
-                / "remediation_session_checkpoint_summary.json"
-            )
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_session_checkpoint_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_session_checkpoint.md",
-        ),
-        "remediation_scoreboard_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_scoreboard_summary.json")
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_scoreboard_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_scoreboard.md",
-        ),
-        "remediation_evaluator_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_evaluator_summary.json")
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_evaluator_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_evaluator.md",
-        ),
-        "remediation_evidence_summary": (
-            str(operations_dashboard_summary_path.parent / "remediation_evidence_summary.json")
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_evidence_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_evidence.md",
-        ),
-        "remediation_command_results_summary": (
-            str(
-                operations_dashboard_summary_path.parent
-                / "remediation_command_results_summary.json"
-            )
-            if operations_dashboard_summary_path is not None
-            else None
-        ),
-        "remediation_command_results_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "remediation_command_results.md",
-        ),
-        "execution_balance_status_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_balance_status.md",
-        ),
-        "execution_fill_status_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_fill_status.md",
-        ),
-        "execution_order_status_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_order_status.md",
-        ),
-        "execution_cancel_order_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_cancel_order.md",
-        ),
-        "execution_close_position_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_close_position.md",
-        ),
-        "execution_reconcile_positions_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "execution_reconcile_positions.md",
-        ),
-        "daemon_manifest_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "daemon_manifest.md",
-        ),
-        "daemon_loop_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "daemon_loop.md",
-        ),
-        "notification_outbox_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "notification_outbox.md",
-        ),
-        "state_export_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "state_export.md",
-        ),
-        "state_restore_report": _report_path_for_summary(
-            operations_dashboard_summary_path,
-            "state_restore.md",
-        ),
-        "live_evidence_report": _live_evidence_report_path(
-            live_evidence_summary_path,
-            live_evidence_summary,
-        ),
-    }
+    restart_pointers = _restart_pointers(
+        operations_dashboard_summary_path=operations_dashboard_summary_path,
+        live_evidence_summary_path=live_evidence_summary_path,
+        live_evidence_summary=live_evidence_summary,
+        out_path=out_path,
+    )
     phase_gate_review_report_path = phase_gate_fields.get("phase_gate_review_report_path")
     quick_navigation = _quick_navigation(
         restart_pointers,
@@ -269,63 +142,24 @@ def build_current_state_index(
         restart_pointers,
         phase_gate_review_report_path,
     )
-    artifacts = {
-        "operations_dashboard_summary": str(operations_dashboard_summary_path)
-        if operations_dashboard_summary_path
-        else None,
-        "operations_bundle_manifest": str(operations_bundle_manifest_path)
-        if operations_bundle_manifest_path
-        else None,
-        "audit_dashboard_summary": str(audit_dashboard_summary_path)
-        if audit_dashboard_summary_path
-        else None,
-        "audit_bundle_manifest": str(audit_bundle_manifest_path)
-        if audit_bundle_manifest_path
-        else None,
-        "phase_gate_summary": str(phase_gate_summary_path) if phase_gate_summary_path else None,
-        "execution_snapshot_summary": str(execution_snapshot_summary_path)
-        if execution_snapshot_summary_path
-        else None,
-        "execution_venue_comparison_summary": (
-            str(execution_venue_comparison_summary_path)
-            if execution_venue_comparison_summary_path
-            else None
-        ),
-        "execution_venue_diagnostics_summary": (
-            str(execution_venue_diagnostics_summary_path)
-            if execution_venue_diagnostics_summary_path
-            else None
-        ),
-        "execution_gap_history_summary": (
-            str(execution_gap_history_summary_path) if execution_gap_history_summary_path else None
-        ),
-        "execution_state_comparison_history_summary": (
-            str(execution_state_comparison_history_summary_path)
-            if execution_state_comparison_history_summary_path
-            else None
-        ),
-        "execution_snapshot_drift_history_summary": (
-            str(execution_snapshot_drift_history_summary_path)
-            if execution_snapshot_drift_history_summary_path
-            else None
-        ),
-        "execution_drift_overview_summary": (
-            str(execution_drift_overview_summary_path)
-            if execution_drift_overview_summary_path
-            else None
-        ),
-        "backtest_metrics_summary": str(backtest_metrics_summary_path)
-        if backtest_metrics_summary_path
-        else None,
-        "live_evidence_summary": str(live_evidence_summary_path)
-        if live_evidence_summary_path
-        else None,
-        "live_evidence_report": restart_pointers.get("live_evidence_report"),
-        "research_quality_report": str(research_quality_report_path)
-        if research_quality_report_path
-        else None,
-        **restart_pointers,
-    }
+    artifacts = _artifacts_from_paths(
+        operations_dashboard_summary_path=operations_dashboard_summary_path,
+        operations_bundle_manifest_path=operations_bundle_manifest_path,
+        audit_dashboard_summary_path=audit_dashboard_summary_path,
+        audit_bundle_manifest_path=audit_bundle_manifest_path,
+        phase_gate_summary_path=phase_gate_summary_path,
+        execution_snapshot_summary_path=execution_snapshot_summary_path,
+        execution_venue_comparison_summary_path=execution_venue_comparison_summary_path,
+        execution_venue_diagnostics_summary_path=execution_venue_diagnostics_summary_path,
+        execution_gap_history_summary_path=execution_gap_history_summary_path,
+        execution_state_comparison_history_summary_path=execution_state_comparison_history_summary_path,
+        execution_snapshot_drift_history_summary_path=execution_snapshot_drift_history_summary_path,
+        execution_drift_overview_summary_path=execution_drift_overview_summary_path,
+        backtest_metrics_summary_path=backtest_metrics_summary_path,
+        live_evidence_summary_path=live_evidence_summary_path,
+        research_quality_report_path=research_quality_report_path,
+        restart_pointers=restart_pointers,
+    )
     recommended_read_order_items = recommended_read_order(
         [
             "data/ops/current_state_index.json",

@@ -46,3 +46,11 @@ def related_reports(out_path: Path | None) -> dict[str, str]:
         "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
         "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
     }
+
+
+def report_context(out_path: Path | None) -> dict[str, object]:
+    return {
+        "recommended_read_order": execution_adapter_recommended_read_order(),
+        "quick_navigation": quick_navigation(out_path),
+        "related_reports": related_reports(out_path),
+    }

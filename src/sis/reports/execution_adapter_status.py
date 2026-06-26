@@ -7,8 +7,7 @@ from typing import Mapping, cast
 from sis.execution.base import AdapterActionResult, AdapterFillSnapshot, AdapterOrderStatus
 from sis.reports.execution_adapter_status_navigation import (
     execution_adapter_recommended_read_order as _recommended_read_order,
-    quick_navigation as _quick_navigation,
-    related_reports as _related_reports,
+    report_context as _report_context,
 )
 from sis.reports.execution_adapter_status_surfaces import (
     build_execution_read_only_surfaces_summary,
@@ -68,9 +67,7 @@ def build_balance_status_report(
         "cumulative_rollover_usd": balance.get("cumulative_rollover_usd"),
         "balance_snapshot_exists": balance.get("balance_snapshot_exists"),
         "balance_status_report_path": str(out_path) if out_path is not None else None,
-        "recommended_read_order": _recommended_read_order(),
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        **_report_context(out_path),
     }
     return _write_report(
         title="Execution Balance Status",
@@ -115,9 +112,7 @@ def build_fill_status_report(
         "latest_fill_status": rows[0]["status"] if rows else None,
         "latest_fill_ts_fill": rows[0]["ts_fill"] if rows else None,
         "fill_status_report_path": str(out_path) if out_path is not None else None,
-        "recommended_read_order": _recommended_read_order(),
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        **_report_context(out_path),
     }
     detail_lines = [
         f"- venue: {summary['venue']}",
@@ -169,9 +164,7 @@ def build_order_status_report(
         "status": status.status,
         "notes": status.notes,
         "order_status_report_path": str(out_path) if out_path is not None else None,
-        "recommended_read_order": _recommended_read_order(),
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        **_report_context(out_path),
     }
     return _write_report(
         title="Execution Order Status",
@@ -206,9 +199,7 @@ def build_action_status_report(
         "status": result.status,
         "notes": result.notes,
         report_key: str(out_path) if out_path is not None else None,
-        "recommended_read_order": _recommended_read_order(),
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        **_report_context(out_path),
     }
     return _write_report(
         title=title,
@@ -245,9 +236,7 @@ def build_reconcile_positions_report(
         "missing_in_internal_count": len(result.missing_in_internal),
         "state_store_path": state_store_path,
         "reconcile_positions_report_path": str(out_path) if out_path is not None else None,
-        "recommended_read_order": _recommended_read_order(),
-        "quick_navigation": _quick_navigation(out_path),
-        "related_reports": _related_reports(out_path),
+        **_report_context(out_path),
     }
     detail_lines = [
         f"- venue: {summary['venue']}",
