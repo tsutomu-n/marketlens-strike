@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-26_23:16 JST
+更新日: 2026-06-27_07:30 JST
 -->
 
 # marketlens-strike
@@ -35,7 +35,7 @@ in a fresh checkout until commands are run.
 17. [docs/strategy_review/README.md](docs/strategy_review/README.md)
 18. [docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
 19. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
-20. [docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md](docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md)
+20. [docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md](docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md)
 21. [docs/venues/bitget_hyperliquid_capability_gate.md](docs/venues/bitget_hyperliquid_capability_gate.md)
 22. [docs/venues/read_only_capability_probe.md](docs/venues/read_only_capability_probe.md)
 23. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
