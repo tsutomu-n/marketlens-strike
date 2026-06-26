@@ -5,6 +5,11 @@ from pathlib import Path
 from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports import operations_dashboard_navigation
+from sis.reports.operations_dashboard_fields import (
+    execution_adapter_fields as _execution_adapter_fields,
+    read_only_surface_fields as _read_only_surface_fields,
+    state_daemon_fields as _state_daemon_fields,
+)
 from sis.reports.operations_dashboard_markdown import render_operations_dashboard_markdown
 from sis.reports.summary_normalizers import (
     audit_summary_fields,
@@ -37,14 +42,6 @@ from sis.storage.jsonl_store import write_json
 _report_path_for_summary = operations_dashboard_navigation.report_path_for_summary
 _quick_navigation = operations_dashboard_navigation.quick_navigation
 _related_reports = operations_dashboard_navigation.related_reports
-
-
-def _execution_adapter_fields(
-    source: dict[str, object], *, prefix: str, mapping: dict[str, str]
-) -> dict[str, object]:
-    if not isinstance(source, dict):
-        return {}
-    return {f"{prefix}_{target}": source.get(source_key) for target, source_key in mapping.items()}
 
 
 def build_operations_dashboard(
@@ -221,141 +218,14 @@ def build_operations_dashboard(
             "report_path": "reconcile_positions_report_path",
         },
     )
-    execution_read_only_surface_fields = {
-        "execution_read_only_surfaces_venue_count": execution_read_only_surfaces.get("venue_count"),
-        "execution_read_only_surfaces_with_balance_snapshot_count": execution_read_only_surfaces.get(
-            "with_balance_snapshot_count"
-        ),
-        "execution_read_only_surfaces_with_positions_snapshot_count": execution_read_only_surfaces.get(
-            "with_positions_snapshot_count"
-        ),
-        "execution_read_only_surfaces_with_fills_snapshot_count": execution_read_only_surfaces.get(
-            "with_fills_snapshot_count"
-        ),
-        "execution_read_only_surfaces_with_order_status_snapshot_count": execution_read_only_surfaces.get(
-            "with_order_status_snapshot_count"
-        ),
-        "execution_read_only_surfaces_reconciled_venue_count": execution_read_only_surfaces.get(
-            "reconciled_venue_count"
-        ),
-        "execution_read_only_surfaces_with_positions_financial_totals_count": execution_read_only_surfaces.get(
-            "with_positions_financial_totals_count"
-        ),
-        "execution_read_only_surfaces_with_positions_rollover_metrics_count": execution_read_only_surfaces.get(
-            "with_positions_rollover_metrics_count"
-        ),
-        "execution_read_only_surfaces_with_positions_protection_metrics_count": execution_read_only_surfaces.get(
-            "with_positions_protection_metrics_count"
-        ),
-        "execution_read_only_surfaces_with_positions_leverage_metrics_count": execution_read_only_surfaces.get(
-            "with_positions_leverage_metrics_count"
-        ),
-        "execution_read_only_surfaces_with_positions_return_metrics_count": execution_read_only_surfaces.get(
-            "with_positions_return_metrics_count"
-        ),
-        "execution_read_only_surfaces_with_positions_day_trade_metrics_count": execution_read_only_surfaces.get(
-            "with_positions_day_trade_metrics_count"
-        ),
-        "execution_read_only_surfaces_with_positions_limit_metrics_count": execution_read_only_surfaces.get(
-            "with_positions_limit_metrics_count"
-        ),
-        "execution_read_only_surfaces_with_positions_quantity_metrics_count": execution_read_only_surfaces.get(
-            "with_positions_quantity_metrics_count"
-        ),
-        "execution_read_only_surfaces_positions_notional_usd_total": execution_read_only_surfaces.get(
-            "positions_notional_usd_total"
-        ),
-        "execution_read_only_surfaces_positions_unrealized_pnl_usd_total": execution_read_only_surfaces.get(
-            "positions_unrealized_pnl_usd_total"
-        ),
-        "execution_read_only_surfaces_positions_collateral_used_usd_total": execution_read_only_surfaces.get(
-            "positions_collateral_used_usd_total"
-        ),
-        "execution_read_only_surfaces_positions_max_withdrawable_usd_total": execution_read_only_surfaces.get(
-            "positions_max_withdrawable_usd_total"
-        ),
-        "execution_read_only_surfaces_positions_cumulative_rollover_usd_total": execution_read_only_surfaces.get(
-            "positions_cumulative_rollover_usd_total"
-        ),
-        "execution_read_only_surfaces_positions_with_liquidation_price_count": execution_read_only_surfaces.get(
-            "positions_with_liquidation_price_count"
-        ),
-        "execution_read_only_surfaces_positions_with_take_profit_count": execution_read_only_surfaces.get(
-            "positions_with_take_profit_count"
-        ),
-        "execution_read_only_surfaces_positions_with_stop_loss_count": execution_read_only_surfaces.get(
-            "positions_with_stop_loss_count"
-        ),
-        "execution_read_only_surfaces_positions_day_trade_count": execution_read_only_surfaces.get(
-            "positions_day_trade_count"
-        ),
-        "execution_read_only_surfaces_positions_average_leverage": execution_read_only_surfaces.get(
-            "positions_average_leverage"
-        ),
-        "execution_read_only_surfaces_positions_average_return_on_equity": execution_read_only_surfaces.get(
-            "positions_average_return_on_equity"
-        ),
-        "execution_read_only_surfaces_positions_max_leverage": execution_read_only_surfaces.get(
-            "positions_max_leverage"
-        ),
-        "execution_read_only_surfaces_positions_total_quantity": execution_read_only_surfaces.get(
-            "positions_total_quantity"
-        ),
-        "execution_read_only_surfaces_positions_total_realized_pnl": execution_read_only_surfaces.get(
-            "positions_total_realized_pnl"
-        ),
-        "execution_read_only_surfaces_latest_positions_server_time_ms": execution_read_only_surfaces.get(
-            "latest_positions_server_time_ms"
-        ),
-        "execution_read_only_surfaces_latest_positions_open_timestamp_ms": execution_read_only_surfaces.get(
-            "latest_positions_open_timestamp_ms"
-        ),
-        "execution_read_only_surfaces_latest_positions_updated_at": execution_read_only_surfaces.get(
-            "latest_positions_updated_at"
-        ),
-        "execution_read_only_surfaces_latest_positions_client_ts": execution_read_only_surfaces.get(
-            "latest_positions_client_ts"
-        ),
-        "execution_read_only_surfaces_report_path": execution_read_only_surfaces.get(
-            "execution_read_only_surfaces_report_path"
-        ),
-    }
-    state_daemon_fields = {
-        "daemon_manifest_mode": daemon_manifest.get("mode"),
-        "daemon_manifest_command": daemon_manifest.get("command"),
-        "daemon_manifest_state_store_path": daemon_manifest.get("state_store_path"),
-        "daemon_manifest_report_path": daemon_manifest.get("daemon_manifest_report_path"),
-        "daemon_loop_status": daemon_loop.get("status"),
-        "daemon_loop_cycles_requested": daemon_loop.get("cycles_requested"),
-        "daemon_loop_cycles_completed": daemon_loop.get("cycles_completed"),
-        "daemon_loop_latest_event_status": daemon_loop.get("latest_event_status"),
-        "daemon_loop_latest_event_exit_code": daemon_loop.get("latest_event_exit_code"),
-        "daemon_loop_path": daemon_loop.get("daemon_loop_path"),
-        "daemon_loop_events_path": daemon_loop.get("daemon_loop_events_path"),
-        "daemon_loop_report_path": daemon_loop.get("daemon_loop_report_path"),
-        "notification_outbox_status": notification_outbox.get("status"),
-        "notification_outbox_sink": notification_outbox.get("sink"),
-        "notification_outbox_level": notification_outbox.get("level"),
-        "notification_outbox_title": notification_outbox.get("title"),
-        "notification_outbox_source": notification_outbox.get("source"),
-        "notification_outbox_path": notification_outbox.get("outbox_path"),
-        "notification_outbox_latest_path": notification_outbox.get("latest_path"),
-        "notification_outbox_report_path": notification_outbox.get(
-            "notification_outbox_report_path"
-        ),
-        "state_export_snapshot_path": state_export.get("snapshot_path"),
-        "state_export_audit_overall_status": state_export.get("audit_overall_status"),
-        "state_export_phase_gate_decision": state_export.get("phase_gate_decision"),
-        "state_export_readiness_next_phase_candidate": state_export.get(
-            "readiness_next_phase_candidate"
-        ),
-        "state_export_report_path": state_export.get("state_export_report_path"),
-        "state_restore_restored": state_restore.get("restored"),
-        "state_restore_snapshot_path": state_restore.get("snapshot_path"),
-        "state_restore_audit_overall_status": state_restore.get("audit_overall_status"),
-        "state_restore_phase_gate_decision": state_restore.get("phase_gate_decision"),
-        "state_restore_report_path": state_restore.get("state_restore_report_path"),
-    }
+    execution_read_only_surface_fields = _read_only_surface_fields(execution_read_only_surfaces)
+    state_daemon_fields = _state_daemon_fields(
+        daemon_manifest=daemon_manifest,
+        daemon_loop=daemon_loop,
+        notification_outbox=notification_outbox,
+        state_export=state_export,
+        state_restore=state_restore,
+    )
     ops_review_fields = ops_review_flat_fields(ops_review)
     audit_dashboard_fields = audit_dashboard_flat_fields(audit_dashboard)
     audit_bundle_fields = audit_bundle_flat_fields(audit_bundle)

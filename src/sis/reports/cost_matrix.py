@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import polars as pl
 
+from sis.reports import cost_matrix_navigation
 from sis.storage.jsonl_store import read_json, read_jsonl, write_json
 
 
@@ -425,34 +426,8 @@ def build_cost_matrix_from_quotes(
     matrix.write_csv(out_path)
 
 
-def _quick_navigation(out_path: Path | None) -> dict[str, str]:
-    if out_path is None:
-        return {}
-    reports_dir = out_path.parent
-    return {
-        "venue_cost_matrix_report": str(out_path),
-        "current_state_index_report": str(reports_dir / "current_state_index.md"),
-        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
-        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
-        "live_evidence_report": str(reports_dir.parent / "docs/live_evidence_reports/latest.md"),
-    }
-
-
-def _related_reports(out_path: Path | None) -> dict[str, str]:
-    if out_path is None:
-        return {}
-    reports_dir = out_path.parent
-    return {
-        "venue_cost_matrix_report": str(out_path),
-        "quote_diagnostics_report": str(reports_dir / "quote_diagnostics.md"),
-        "execution_snapshot_report": str(reports_dir / "execution_snapshot.md"),
-        "execution_venue_comparison_report": str(reports_dir / "execution_venue_comparison.md"),
-        "execution_venue_diagnostics_report": str(reports_dir / "execution_venue_diagnostics.md"),
-        "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
-        "go_no_go_report": str(reports_dir.parent / "research/go_no_go_report.md"),
-        "current_state_index_report": str(reports_dir / "current_state_index.md"),
-        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
-    }
+_quick_navigation = cost_matrix_navigation.quick_navigation
+_related_reports = cost_matrix_navigation.related_reports
 
 
 def build_cost_matrix_report(
