@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-26_22:25 JST
-更新日: 2026-06-26_22:27 JST
+更新日: 2026-06-26_22:31 JST
 -->
 
 # Final Summary
@@ -9,14 +9,16 @@
 
 徹底的なリファクタリングやディレクトリ構造の整理を行い、今後の開発快適性と拡張性、ロバスト性を向上させる。
 
-This summary uses the practical completion bar requested on 2026-06-26: not perfect cleanup, but good enough to merge into `main` and resume new feature development.
+This summary uses the practical completion bar requested on 2026-06-26: not perfect cleanup, but good enough to merge into `main` and resume new feature development. The refactor branch was fast-forward merged into local `main` after the readiness review.
 
 ## Working Branch
 
-- Branch: `refactor/backtest-primitives`
-- Latest reviewed head before this document: `5434bd3`
-- Relationship to `main`: `git rev-list --left-right --count main...HEAD` reported `0 32`
-- Working tree at review: clean
+- Refactor branch: `refactor/backtest-primitives`
+- Merge target: local `main`
+- Latest reviewed refactor head before the final summary: `5434bd3`
+- Final summary commit before merge: `6a060f8`
+- Merge method: fast-forward into local `main`
+- Working tree after merge: clean
 
 ## Achieved
 
@@ -25,7 +27,7 @@ This summary uses the practical completion bar requested on 2026-06-26: not perf
 - Preserved public CLI registration and command catalog according to `scripts/check`.
 - Preserved the documented paper/live safety boundary: these refactor checks do not claim paper, live, account, wallet, signing, exchange-write, production trading, or profit readiness.
 - Kept `.ai-work/` ignored for local AI working state.
-- Reached a clean branch state suitable for final merge review.
+- Reached a clean branch state suitable for final merge review, then fast-forward merged into local `main`.
 
 ## Main Changed Areas
 
@@ -41,7 +43,7 @@ This summary uses the practical completion bar requested on 2026-06-26: not perf
 
 ## Merge Readiness Evidence
 
-- `git status --short --branch --untracked-files=all`: clean on `refactor/backtest-primitives`
+- `git status --short --branch --untracked-files=all`: clean on `refactor/backtest-primitives` before merge
 - `git diff --check main...HEAD`: passed
 - `git diff --shortstat main...HEAD`: `894 files changed, 79927 insertions(+), 34809 deletions(-)`
 - `git diff --name-status main...HEAD`: `815 A`, `79 M`, no file deletions
@@ -76,23 +78,25 @@ This summary uses the practical completion bar requested on 2026-06-26: not perf
 
 - No live market, paper trading, wallet, signing, exchange write, deployment, or external API checks were run.
 - No manual browser or rendered-doc visual review was run.
-- No actual merge into `main` was performed.
+- No live market, paper trading, wallet, signing, exchange write, deployment, or external API checks were run.
+- No manual browser or rendered-doc visual review was run.
+- No remote push of `main` was performed by the agent.
 
 ## Residual Risks
 
-- The diff is large: 894 files changed relative to `main`. Even with the full automated gate passing, the merge should still receive a final human/code-owner review.
+- The diff was large before merge: 894 files changed relative to `main`. Even with the full automated gate passing, a human/code-owner review remains useful before remote push or release.
 - This work improves structure and test coverage, but it does not prove trading readiness or strategy alpha.
 - Some command and report modules remain large enough to refactor later, but they do not block resuming feature development.
 
 ## User Judgment Needed
 
-- Decide whether to merge `refactor/backtest-primitives` into `main`.
+- Decide whether to push local `main` to its remote.
 - Decide whether future cleanup should continue as follow-up passes after feature work resumes.
 
 ## Rollback
 
 - Do not partially revert individual extracted helper modules unless a specific regression is found.
-- If the merge causes an unexpected regression, revert the merge commit from `main` as a unit.
+- If the fast-forward merge causes an unexpected regression after push, revert the merged commit range or reset a protected recovery branch to the pre-merge `main` commit after explicit operator approval.
 - The branch head before this final-summary document was `5434bd3`.
 
 ## Next Considerations
