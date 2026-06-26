@@ -3,6 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from sis.reports.loaders import safe_read_json_dict
+from sis.reports.remediation_evaluator_observation_fields import (
+    collect_mapped_observations,
+)
 from sis.reports import remediation_evaluator_observation_core as _observation_core
 from sis.reports import remediation_evaluator_paths as _evaluator_paths
 from sis.reports.remediation_evaluator_report_observations import (
@@ -107,22 +110,13 @@ def dashboard_bundle_summary_observations(
     }
     for path in _evaluator_paths.dashboard_bundle_summary_paths(planner).values():
         summary = safe_read_json_dict(path)
-        for source_key, target_key in field_map.items():
-            if target_key in observed_fields or source_key not in summary:
-                continue
-            value = summary.get(source_key)
-            if value is None:
-                continue
-            if source_key == "phase_gate_strict_validation_issues":
-                previews = _issue_preview_values(value)
-                if previews:
-                    observed_fields["phase_gate_issue_previews"] = previews
-                    observed_fields[target_key] = value
-                continue
-            normalized = value if isinstance(value, (bool, int)) else _coerce_value(str(value))
-            observed_fields[target_key] = normalized
-            if isinstance(normalized, int):
-                observed_counts[target_key] = normalized
+        observed_fields, observed_counts = collect_mapped_observations(
+            summary,
+            field_map,
+            observed_fields=observed_fields,
+            observed_counts=observed_counts,
+            issue_preview_source_keys={"phase_gate_strict_validation_issues"},
+        )
     return apply_aliases(observed_fields, observed_counts)
 
 
@@ -158,16 +152,12 @@ def ops_review_observations(planner: dict) -> tuple[dict[str, object], dict[str,
         "phase_gate_checked_files": "phase_gate_checked_files",
         "phase_gate_review_report_path": "phase_gate_review_report_path",
     }
-    for source_key, target_key in field_map.items():
-        if source_key not in summary:
-            continue
-        value = summary.get(source_key)
-        if value is None:
-            continue
-        normalized = value if isinstance(value, (bool, int)) else _coerce_value(str(value))
-        observed_fields[target_key] = normalized
-        if isinstance(normalized, int):
-            observed_counts[target_key] = normalized
+    observed_fields, observed_counts = collect_mapped_observations(
+        summary,
+        field_map,
+        observed_fields=observed_fields,
+        observed_counts=observed_counts,
+    )
     issue_previews = _issue_preview_values(summary.get("phase_gate_strict_validation_issues"))
     if issue_previews:
         observed_fields["phase_gate_issue_previews"] = issue_previews
@@ -225,16 +215,12 @@ def current_state_index_observations(planner: dict) -> tuple[dict[str, object], 
         "live_evidence_decision": "live_evidence_decision",
         "live_evidence_run_id": "live_evidence_run_id",
     }
-    for source_key, target_key in field_map.items():
-        if source_key not in summary:
-            continue
-        value = summary.get(source_key)
-        if value is None:
-            continue
-        normalized = value if isinstance(value, (bool, int)) else _coerce_value(str(value))
-        observed_fields[target_key] = normalized
-        if isinstance(normalized, int):
-            observed_counts[target_key] = normalized
+    observed_fields, observed_counts = collect_mapped_observations(
+        summary,
+        field_map,
+        observed_fields=observed_fields,
+        observed_counts=observed_counts,
+    )
     issue_previews = _issue_preview_values(summary.get("phase_gate_strict_validation_issues"))
     if issue_previews:
         observed_fields["phase_gate_issue_previews"] = issue_previews
@@ -253,16 +239,12 @@ def live_evidence_summary_observations(planner: dict) -> tuple[dict[str, object]
         "phase_gate_reason": "phase_gate_reason",
         "phase_gate_checked_files": "phase_gate_checked_files",
     }
-    for source_key, target_key in top_level_field_map.items():
-        if source_key not in summary:
-            continue
-        value = summary.get(source_key)
-        if value is None:
-            continue
-        normalized = value if isinstance(value, (bool, int)) else _coerce_value(str(value))
-        observed_fields[target_key] = normalized
-        if isinstance(normalized, int):
-            observed_counts[target_key] = normalized
+    observed_fields, observed_counts = collect_mapped_observations(
+        summary,
+        top_level_field_map,
+        observed_fields=observed_fields,
+        observed_counts=observed_counts,
+    )
     blockers = summary.get("blockers")
     if isinstance(blockers, list) and blockers:
         observed_fields["blockers"] = [str(item) for item in blockers]
@@ -271,23 +253,19 @@ def live_evidence_summary_observations(planner: dict) -> tuple[dict[str, object]
         observed_fields["next_actions"] = [str(item) for item in next_actions]
     phase_gate_summary = summary.get("phase_gate_summary")
     if isinstance(phase_gate_summary, dict):
-        for source_key, target_key in {
-            "decision": "phase_gate_decision",
-            "phase2_entry_allowed": "phase2_entry_allowed",
-            "phase_gate_reason": "phase_gate_reason",
-            "strict_validation_passed": "phase_gate_strict_validation_passed",
-            "strict_validation_issue_count": "phase_gate_strict_validation_issue_count",
-            "checked_files": "phase_gate_checked_files",
-        }.items():
-            if source_key not in phase_gate_summary:
-                continue
-            value = phase_gate_summary.get(source_key)
-            if value is None:
-                continue
-            normalized = value if isinstance(value, (bool, int)) else _coerce_value(str(value))
-            observed_fields[target_key] = normalized
-            if isinstance(normalized, int):
-                observed_counts[target_key] = normalized
+        observed_fields, observed_counts = collect_mapped_observations(
+            phase_gate_summary,
+            {
+                "decision": "phase_gate_decision",
+                "phase2_entry_allowed": "phase2_entry_allowed",
+                "phase_gate_reason": "phase_gate_reason",
+                "strict_validation_passed": "phase_gate_strict_validation_passed",
+                "strict_validation_issue_count": "phase_gate_strict_validation_issue_count",
+                "checked_files": "phase_gate_checked_files",
+            },
+            observed_fields=observed_fields,
+            observed_counts=observed_counts,
+        )
     readiness_summary = summary.get("readiness_summary")
     if isinstance(readiness_summary, dict):
         for source_key, target_key in {
@@ -360,21 +338,13 @@ def timeline_summary_observations(planner: dict) -> tuple[dict[str, object], dic
     }
     for path in _evaluator_paths.timeline_summary_paths(planner).values():
         timeline_summary = safe_read_json_dict(path)
-        for source_key, target_key in field_map.items():
-            if target_key in observed_fields or source_key not in timeline_summary:
-                continue
-            value = timeline_summary.get(source_key)
-            if value is None:
-                continue
-            if source_key == "latest_phase_gate_issue_previews":
-                previews = _issue_preview_values(value)
-                if previews:
-                    observed_fields[target_key] = previews
-                continue
-            normalized = _coerce_value(str(value))
-            observed_fields[target_key] = normalized
-            if isinstance(normalized, int):
-                observed_counts[target_key] = normalized
+        observed_fields, observed_counts = collect_mapped_observations(
+            timeline_summary,
+            field_map,
+            observed_fields=observed_fields,
+            observed_counts=observed_counts,
+            issue_preview_source_keys={"latest_phase_gate_issue_previews"},
+        )
     return apply_aliases(observed_fields, observed_counts)
 
 

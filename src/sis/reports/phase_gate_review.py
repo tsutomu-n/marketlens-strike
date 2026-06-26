@@ -7,8 +7,10 @@ from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import safe_read_json_dict
 from sis.reports import phase_gate_diagnostics
 from sis.reports import phase_gate_review_decisions
+from sis.reports import phase_gate_review_diagnostics
 from sis.reports import phase_gate_review_inputs
 from sis.reports import phase_gate_review_paths
+from sis.reports import phase_gate_review_pr12
 from sis.reports.phase_gate_remediation import (
     artifact_recovery_commands as _artifact_recovery_commands,
     execution_drift_classifications as _execution_drift_classifications,
@@ -30,7 +32,6 @@ from sis.reports.summary_normalizers import (
     signal_observed_sources_by_reason,
     signal_source_confidence,
 )
-from sis.reports.quote_diagnostics import build_quote_diagnostics
 from sis.storage.jsonl_store import write_json
 from sis.validation.artifacts import validate_artifacts
 
@@ -43,12 +44,17 @@ _trade_xyz_diagnostic_blockers = phase_gate_diagnostics.trade_xyz_diagnostic_blo
 PHASE2_ALLOWED_DECISIONS = phase_gate_review_decisions.PHASE2_ALLOWED_DECISIONS
 _trade_xyz_artifacts_present = phase_gate_review_decisions.trade_xyz_artifacts_present
 _phase2_entry_allowed = phase_gate_review_decisions.phase2_entry_allowed
+_phase_gate_quote_diagnostics = phase_gate_review_diagnostics.phase_gate_quote_diagnostics
 _reports_dir = phase_gate_review_paths.reports_dir
 _quick_navigation = phase_gate_review_paths.quick_navigation
 _related_reports = phase_gate_review_paths.related_reports
 _latest_path = phase_gate_review_paths.latest_path
 _read_only_collector_gate = phase_gate_review_paths.read_only_collector_gate
 _required_artifact_paths = phase_gate_review_paths.required_artifact_paths
+_pr12_fresh_read_only_smoke_completed = phase_gate_review_pr12.pr12_fresh_read_only_smoke_completed
+_pr12_fresh_read_only_smoke_next_actions = (
+    phase_gate_review_pr12.pr12_fresh_read_only_smoke_next_actions
+)
 
 
 def _as_str_list(value: object) -> list[str]:
@@ -85,22 +91,11 @@ def build_phase_gate_review(
     spread_thresholds = _load_spread_thresholds()
     prior_summary = safe_read_json_dict(summary_path)
     has_trade_xyz_artifacts = _trade_xyz_artifacts_present(data_dir)
-    diagnostics: list[dict] = []
-    for symbol in diagnostics_symbols:
-        items = build_quote_diagnostics(
-            data_dir / "raw/quotes",
-            venue="trade_xyz",
-            symbol=symbol,
-            stale_thresholds_ms=stale_thresholds,
-            latest_only=True,
-        )
-        diagnostics.append(
-            {
-                "symbol": symbol,
-                "available": bool(items),
-                "items": [item.__dict__.copy() for item in items],
-            }
-        )
+    diagnostics: list[dict[str, Any]] = _phase_gate_quote_diagnostics(
+        data_dir,
+        diagnostics_symbols=diagnostics_symbols,
+        stale_thresholds_ms=stale_thresholds,
+    )
 
     manifest_path = _latest_path(Path("logs/live_evidence/manifests"), "live_evidence_*.json")
     manifest_payload = safe_read_json_dict(manifest_path)
@@ -171,19 +166,7 @@ def build_phase_gate_review(
             }
         ]
         blockers = [] if decision != "NO_GO" else trade_xyz_blockers
-        pr12_summary = safe_read_json_dict(data_dir / "ops/pr12_fresh_read_only_smoke_summary.json")
-        pr12_observed_window = pr12_summary.get("observed_window_seconds")
-        pr12_observed_window_ok = (
-            isinstance(pr12_observed_window, int | float)
-            and not isinstance(pr12_observed_window, bool)
-            and pr12_observed_window >= 3600
-        )
-        pr12_completed = (
-            pr12_summary.get("final_decision") == "READ_ONLY_GO"
-            and pr12_observed_window_ok
-            and pr12_summary.get("next_action") == "none"
-        )
-        next_actions = [] if pr12_completed else ["run_pr12_fresh_read_only_smoke"]
+        next_actions = _pr12_fresh_read_only_smoke_next_actions(data_dir)
     else:
         decision = "NO_GO"
         venue_decisions = [

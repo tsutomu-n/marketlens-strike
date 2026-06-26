@@ -5,6 +5,7 @@ from typing import cast
 
 from sis.reports.loaders import safe_read_json_dict
 from sis.reports import remediation_execution_plan_navigation
+from sis.reports import remediation_execution_plan_stages
 from sis.reports import remediation_execution_plan_verification as _verification
 from sis.storage.jsonl_store import write_json
 
@@ -14,6 +15,9 @@ _related_reports = remediation_execution_plan_navigation.related_reports
 _flatten_observed_sources = _verification.flatten_observed_sources
 _verification_confidence = _verification.verification_confidence
 _ordered_verification = _verification.ordered_verification
+_stage_order = remediation_execution_plan_stages.stage_order
+_execution_plan_status = remediation_execution_plan_stages.execution_plan_status
+_feedback_priority_rank = remediation_execution_plan_stages.feedback_priority_rank
 
 
 def _source_summaries(planner_summary: dict[str, object]) -> dict[str, dict[str, object]]:
@@ -36,63 +40,6 @@ def _reason_values(source_summary: dict[str, object], field: str, reason: str) -
         return []
     values = cast(dict[str, object], values_by_reason).get(reason)
     return cast(list[object], values) if isinstance(values, list) else []
-
-
-def _stage_order(
-    status: object,
-    trend: object,
-    source_confidence: object,
-    *,
-    feedback_priority_reason: object,
-    execute_signal_confidence: str,
-    postcheck_signal_confidence: str,
-) -> list[str]:
-    status_value = str(status or "")
-    trend_value = str(trend or "")
-    confidence_value = str(source_confidence or "unknown")
-    feedback_value = str(feedback_priority_reason or "no_feedback")
-    if status_value == "matched":
-        return ["post_check"]
-    if feedback_value in {"evaluation_failed", "manual_review_pending", "partial_verification"}:
-        return ["preflight", "execute", "post_check"]
-    if execute_signal_confidence in {"low", "unknown"} or postcheck_signal_confidence in {
-        "low",
-        "unknown",
-    }:
-        return ["preflight", "execute", "post_check"]
-    if confidence_value in {"low", "unknown"}:
-        return ["preflight", "execute", "post_check"]
-    if status_value in {"regressed", "stalled"} or trend_value in {"regressed", "new"}:
-        return ["preflight", "execute", "post_check"]
-    if status_value == "improving":
-        return ["execute", "post_check"]
-    return ["execute", "post_check"]
-
-
-def _execution_plan_status(entries: list[dict]) -> str:
-    statuses = [str(item.get("recommendation_status")) for item in entries]
-    if not entries:
-        return "no_actions"
-    if any(status == "regressed" for status in statuses):
-        return "regressed"
-    if any(status == "stalled" for status in statuses):
-        return "stalled"
-    if any(status == "improving" for status in statuses):
-        return "in_progress"
-    if all(status == "matched" for status in statuses):
-        return "postcheck_only"
-    return "planned"
-
-
-def _feedback_priority_rank(reason: object) -> int:
-    return {
-        "evaluation_failed": 0,
-        "manual_review_pending": 1,
-        "partial_verification": 2,
-        "missing_command_observation": 3,
-        "verification_passed": 4,
-        "no_feedback": 5,
-    }.get(str(reason or "no_feedback"), 5)
 
 
 def build_remediation_execution_plan(
