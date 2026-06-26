@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-23_22:39 JST
+更新日: 2026-06-26_23:21 JST
 -->
 
 # Documentation Archive
@@ -13,6 +13,7 @@ Current docs:
 - `docs/CODE_STATUS.md`
 - `docs/OPERATIONS_RUNBOOK.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
+- `docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md`
 - `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md`
 
 Archived on 2026-05-25:
@@ -116,5 +117,9 @@ Archived on 2026-06-23:
 - long `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` detail version -> `docs/archive/2026-06-23-doc-triage/REPO_CAPABILITIES_CURRENT_2026-06-16_FULL.md`
 - long `docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md` target definition -> `docs/archive/2026-06-23-doc-triage/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18_FULL.md`
 - `docs/algo/obsidian_note_rewrites_2026-05-29/` -> `docs/archive/2026-06-23-doc-triage/algo/obsidian_note_rewrites_2026-05-29/`
+
+Archived on 2026-06-26:
+
+- `docs/plans/pass_376_*.md` through `docs/plans/pass_409_*.md` -> `docs/archive/2026-06-26-refactor-backtest-primitives-plans/`
 
 Do not treat archived documents as current requirements.

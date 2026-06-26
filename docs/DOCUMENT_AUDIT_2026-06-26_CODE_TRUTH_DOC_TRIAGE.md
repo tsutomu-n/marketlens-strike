@@ -1,19 +1,19 @@
 <!--
 作成日: 2026-06-26_23:16 JST
-更新日: 2026-06-26_23:16 JST
+更新日: 2026-06-26_23:21 JST
 -->
 
 # Document Audit 2026-06-26 Code Truth Doc Triage
 
 ## 結論
 
-2026-06-26_23:16 JST 時点の `main` / `a9faf8a` を基準に、コード、CLI、schema、tests、docs checker を正として docs を見直した。
+2026-06-26_23:16 JST 時点の `main` / `a9faf8a` を基準に、コード、CLI、schema、tests、docs checker を正として docs を見直した。2026-06-26_23:21 JST に、最優先の archive 移動を実行済み。
 
-今すぐ新機能開発を再開する障害になる docs 破損は見つからない。`uv run python scripts/check_current_docs.py` は current docs 160 件を通し、`uv run python scripts/check_cli_catalog.py` は Typer 登録の public CLI 208 件を通している。
+今すぐ新機能開発を再開する障害になる docs 破損は見つからない。`uv run python scripts/check_current_docs.py` は current docs 161 件を通し、`uv run python scripts/check_cli_catalog.py` は Typer 登録の public CLI 208 件を通している。
 
 ただし、docs の整理余地は残る。優先度順では、次の 4 点を扱うのがよい。
 
-1. `docs/plans/pass_376_*.md` から `docs/plans/pass_409_*.md` までの 34 件は、既に `main` へ取り込まれた `refactor/backtest-primitives` 作業計画なので、current docs ではなく実装履歴として `docs/archive/` へ移す候補。
+1. `docs/plans/pass_376_*.md` から `docs/plans/pass_409_*.md` までの 34 件は、既に `main` へ取り込まれた `refactor/backtest-primitives` 作業計画なので、`docs/archive/2026-06-26-refactor-backtest-primitives-plans/` へ移動済み。
 2. `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` は過去 audit として有用だが、HEAD・当時の確認値・完了済み判断を含むため、今後はこの文書を最新版の docs triage 入口にする。
 3. `docs/AGENT_ASSESSMENT_*_2026-06-20.md` は判断補助として有用だが、古い CLI/docs/pytest count を含む。本文内で当時値と明示されているため緊急修正は不要。ただし README / CURRENT_STATE から読まれるので、次回更新時に「現行値は必ず再実行」とさらに目立たせる余地がある。
 4. `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` は 1 本に説明を集めすぎている。コードとの矛盾は今回見つけていないが、非技術者向け guide、技術 glossary、surface catalog に分け直す候補。
@@ -47,7 +47,7 @@ git log -1 --oneline --decorate
 => a9faf8a (HEAD -> main, origin/main, origin/HEAD) docs: update final summary after merge
 
 uv run python scripts/check_current_docs.py
-=> checked 160 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok
+=> checked 161 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok
 
 uv run python scripts/check_cli_catalog.py
 => checked 208 public CLI commands against Typer registration
@@ -56,12 +56,12 @@ git ls-files docs | wc -l
 => 356
 ```
 
-tracked docs の粗い分布:
+tracked docs の粗い分布。これは 2026-06-26_23:21 JST の archive 移動後の値:
 
 ```text
-docs/archive: 194 files
-docs/plans: 34 files
-docs/(root): 24 files
+docs/archive: 228 files
+docs/plans: 0 files
+docs/(root): 25 files
 docs/strategy_research_lab: 23 files
 docs/algo: 20 files
 docs/research: 18 files
@@ -94,7 +94,7 @@ docs/runbooks: 6 files
 
 | 対象 | 古い内容 | 誤読リスク | 推奨 |
 |---|---|---|---|
-| `docs/plans/pass_376_operations_audit_pack_navigation.md` から `docs/plans/pass_409_execution_venue_diagnostics_markdown.md` | `refactor/backtest-primitives` branch 前提、実装前 pass plan、当時の対象ファイル、当時の検証計画。 | 既に `main` に fast-forward merge 済みなのに、これから同 branch で続ける作業と誤読しやすい。 | 34 件まとめて `docs/archive/2026-06-26-refactor-backtest-primitives-plans/` へ移す候補。 |
+| `docs/archive/2026-06-26-refactor-backtest-primitives-plans/pass_376_operations_audit_pack_navigation.md` から `docs/archive/2026-06-26-refactor-backtest-primitives-plans/pass_409_execution_venue_diagnostics_markdown.md` | `refactor/backtest-primitives` branch 前提、実装前 pass plan、当時の対象ファイル、当時の検証計画。 | current docs としては誤読しやすかったが、archive 移動済みなので現行導線からは外れた。 | 追加対応なし。 |
 | `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | `f40241c` HEAD、2026-06-23 の軽量確認値、当時の整理完了状態。 | 最新 audit として読むと HEAD と経緯が古い。 | historical audit として残し、この文書を最新版にする。 |
 | `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | `1340 passed`、`189 public CLI commands`、`205 public CLI commands`、`151 current docs`。 | 結論だけ拾うと現行能力値と誤読される。 | 本文内の「現行 proof ではない」を維持。現時点では削除しない。 |
 | `docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md` | `205 public CLI commands`、`148 current docs`。 | 実用判断の補助文書なので、古い数値が一人歩きしやすい。 | 再実行 command を正として扱う。固定値更新は不要。 |
@@ -114,7 +114,7 @@ docs/runbooks: 6 files
 
 | 対象 | 判断 | 根拠 | 推奨 |
 |---|---|---|---|
-| `docs/plans/pass_376_*.md` から `docs/plans/pass_409_*.md` | アーカイブ候補 | 34 件すべて refactor branch 上の pass plan。現在は `main` / `a9faf8a` へ統合済み。current-doc checker の current docs には含まれていない。 | `docs/archive/2026-06-26-refactor-backtest-primitives-plans/` へ移動。削除より archive が安全。 |
+| `docs/archive/2026-06-26-refactor-backtest-primitives-plans/pass_376_*.md` から `pass_409_*.md` | アーカイブ済み | 34 件すべて refactor branch 上の pass plan。現在は `main` / `a9faf8a` へ統合済み。current-doc checker の current docs には含まれていない。 | 削除せず historical implementation plan として読む。 |
 | `plan/0607ここからの計画2/*.zip`、`plan/0608ここからの計画/**/*.zip`、`plan/0621ここから01/*.zip` | 削除候補、または archive manifest 化候補 | `git ls-files plan` には出ない untracked ZIP。current checker の対象外。現行実装・検証の正本ではない。 | 中身を使う予定がなければ削除候補。残すなら `plan/archive/` に manifest 付きで移す。 |
 | `docs/archive/**` | 追加削除は不要 | すでに historical context として隔離済み。current docs から正本扱いしない運用がある。 | 原則そのまま。さらに軽くしたい時だけ古い archive bundle を別保管へ移す。 |
 | `plan/archive/**` | 追加削除は不要 | implementation history として隔離済み。`scripts/check_current_docs.py` の plan routing でも許可されている。 | 原則そのまま。現行計画として読まない。 |
@@ -138,9 +138,9 @@ docs/runbooks: 6 files
 
 ## 実装するなら重要度順
 
-1. `docs/plans/pass_376_*.md` から `pass_409_*.md` までを archive へ移す。
+1. `docs/plans/pass_376_*.md` から `pass_409_*.md` までを archive へ移す。2026-06-26_23:21 JST 実行済み。
    - 理由: 現在の branch / next action と誤読されやすく、34 件まとまって docs root に残っているため。
-   - 検証: `uv run python scripts/check_current_docs.py`、`rg -n "refactor/backtest-primitives" docs --glob '!docs/archive/**'`。
+   - 検証: `uv run python scripts/check_current_docs.py`、`find docs/plans -maxdepth 1 -type f -name 'pass_*.md' | wc -l`、`find docs/archive/2026-06-26-refactor-backtest-primitives-plans -maxdepth 1 -type f -name 'pass_*.md' | wc -l`。
 2. `docs/final-summary.md` の重複行だけ直す。
    - 理由: 内容は有用だが、小さな重複がある。
    - 検証: `uv run python scripts/check_current_docs.py`。
@@ -164,4 +164,4 @@ docs/runbooks: 6 files
 
 現時点で main にマージ済みの新機能開発を再開するなら、docs 側で必須の修正はない。
 
-ただし、読み間違いを減らす実務上の次手は `docs/plans/pass_376..409` の archive 移動である。これはコード挙動に触れず、docs currentness を上げる低リスク作業になる。
+読み間違いを減らす最優先の次手だった `docs/plans/pass_376..409` の archive 移動は完了した。残る改善は、`docs/final-summary.md` の重複行修正、`docs/AGENT_ASSESSMENT_*` の冒頭強調、`docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` の将来分割であり、新機能開発再開のブロッカーではない。
