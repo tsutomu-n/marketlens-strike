@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from sis.models import Decision, GoNoGoCriterion, GoNoGoReport, VenueDecision
+from sis.reports import go_no_go_costs
 from sis.reports.go_no_go_markdown import write_go_no_go_markdown
 from sis.reports.loaders import safe_read_json_dict_list
 from sis.storage.jsonl_store import read_json
@@ -12,6 +13,11 @@ MAX_STALE_RATE = 0.05
 MIN_TRADABLE_RATE = 0.95
 MAX_SPREAD_P90_BPS = 25.0
 __all__ = ["build_go_no_go_report", "write_go_no_go_markdown"]
+
+_cost_matrix_rows = go_no_go_costs.cost_matrix_rows
+_threshold_result = go_no_go_costs.threshold_result
+_holding_cost_result = go_no_go_costs.holding_cost_result
+_venue_cost_rows = go_no_go_costs.venue_cost_rows
 
 
 def latest_positions_sidecar(root: Path) -> Path | None:
@@ -72,60 +78,11 @@ def _backtest_expected_value_result(path: Path) -> str:
     return "NO_GO"
 
 
-def _cost_matrix_rows(path: Path) -> list[dict[str, str | None]]:
-    if not path.exists():
-        return []
-    import csv
-
-    with path.open(encoding="utf-8", newline="") as f:
-        return list(csv.DictReader(f))
-
-
-def _threshold_result(
-    rows: list[dict[str, str | None]],
-    column: str,
-    *,
-    maximum: float | None = None,
-    minimum: float | None = None,
-) -> str:
-    values: list[float] = []
-    for row in rows:
-        value = row.get(column)
-        if value in {None, ""}:
-            return "MISSING"
-        if value is None:
-            return "MISSING"
-        values.append(float(value))
-    if not values:
-        return "MISSING"
-    if maximum is not None and any(value > maximum for value in values):
-        return "NO_GO"
-    if minimum is not None and any(value < minimum for value in values):
-        return "NO_GO"
-    return "PASS"
-
-
-def _holding_cost_result(rows: list[dict[str, str | None]]) -> str:
-    if not rows:
-        return "MISSING"
-    required = ("holding_cost_4h_bps", "holding_cost_24h_bps", "holding_cost_72h_bps")
-    completed = [all(row.get(column) not in {None, ""} for column in required) for row in rows]
-    if all(completed):
-        return "PASS"
-    if any(completed):
-        return "PARTIAL"
-    return "MISSING"
-
-
 def _first_blocker(checks: list[GoNoGoCriterion]) -> str | None:
     for item in checks:
         if item.result in {"MISSING", "REQUIRES_PROBE", "NOT_DONE", "NO_GO", "PARTIAL"}:
             return item.criterion
     return None
-
-
-def _venue_cost_rows(rows: list[dict[str, str | None]], venue: str) -> list[dict[str, str | None]]:
-    return [row for row in rows if row.get("venue") == venue]
 
 
 def _has_trade_xyz_artifacts(data_dir: Path) -> bool:

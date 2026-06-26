@@ -4,6 +4,7 @@ from pathlib import Path
 
 from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
+from sis.reports import operations_bundle_navigation
 from sis.reports.summary_normalizers import (
     execution_comparison_flat_fields,
     execution_diagnostics_flat_fields,
@@ -31,87 +32,9 @@ from sis.reports.summary_normalizers import (
 from sis.storage.jsonl_store import write_json
 
 
-def _report_path_for_summary(path: Path | None, report_name: str) -> str | None:
-    if path is None:
-        return None
-    base = path.parent.parent if path.parent.name == "ops" else path.parent
-    return str(base / "reports" / report_name)
-
-
-def _quick_navigation(
-    phase_gate_summary_path: Path | None, out_path: Path | None
-) -> dict[str, str]:
-    items = (
-        ("operations_bundle_report", str(out_path) if out_path is not None else None),
-        (
-            "operations_dashboard_report",
-            _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md"),
-        ),
-        (
-            "current_state_index_report",
-            _report_path_for_summary(phase_gate_summary_path, "current_state_index.md"),
-        ),
-        (
-            "readiness_snapshot_report",
-            _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md"),
-        ),
-        (
-            "phase_gate_review_report",
-            _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md"),
-        ),
-        (
-            "paper_operations_runbook_report",
-            _report_path_for_summary(phase_gate_summary_path, "paper_operations_runbook.md"),
-        ),
-        (
-            "remediation_scoreboard_report",
-            _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md"),
-        ),
-    )
-    return {key: value for key, value in items if isinstance(value, str) and value}
-
-
-def _related_reports(phase_gate_summary_path: Path | None, out_path: Path | None) -> dict[str, str]:
-    items = (
-        ("operations_bundle_report", str(out_path) if out_path is not None else None),
-        (
-            "operations_dashboard_report",
-            _report_path_for_summary(phase_gate_summary_path, "operations_dashboard.md"),
-        ),
-        (
-            "audit_dashboard_report",
-            _report_path_for_summary(phase_gate_summary_path, "audit_dashboard.md"),
-        ),
-        (
-            "operations_audit_pack_report",
-            _report_path_for_summary(phase_gate_summary_path, "operations_audit_pack.md"),
-        ),
-        (
-            "ops_review_report",
-            _report_path_for_summary(phase_gate_summary_path, "ops_review_report.md"),
-        ),
-        (
-            "current_state_index_report",
-            _report_path_for_summary(phase_gate_summary_path, "current_state_index.md"),
-        ),
-        (
-            "readiness_snapshot_report",
-            _report_path_for_summary(phase_gate_summary_path, "readiness_snapshot.md"),
-        ),
-        (
-            "phase_gate_review_report",
-            _report_path_for_summary(phase_gate_summary_path, "phase_gate_review.md"),
-        ),
-        (
-            "paper_operations_runbook_report",
-            _report_path_for_summary(phase_gate_summary_path, "paper_operations_runbook.md"),
-        ),
-        (
-            "remediation_scoreboard_report",
-            _report_path_for_summary(phase_gate_summary_path, "remediation_scoreboard.md"),
-        ),
-    )
-    return {key: value for key, value in items if isinstance(value, str) and value}
+_report_path_for_summary = operations_bundle_navigation.report_path_for_summary
+_quick_navigation = operations_bundle_navigation.quick_navigation
+_related_reports = operations_bundle_navigation.related_reports
 
 
 def build_operations_bundle_manifest(

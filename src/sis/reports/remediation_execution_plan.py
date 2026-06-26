@@ -4,43 +4,13 @@ from pathlib import Path
 from typing import cast
 
 from sis.reports.loaders import safe_read_json_dict
+from sis.reports import remediation_execution_plan_navigation
 from sis.reports.summary_normalizers import source_confidence_for_observed_sources
 from sis.storage.jsonl_store import write_json
 
 
-def _quick_navigation(out_path: Path | None) -> dict[str, str]:
-    if out_path is None:
-        return {}
-    reports_dir = out_path.parent
-    return {
-        "remediation_execution_plan_report": str(out_path),
-        "remediation_session_report": str(reports_dir / "remediation_session.md"),
-        "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
-        "remediation_planner_report": str(reports_dir / "remediation_planner.md"),
-        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
-    }
-
-
-def _related_reports(out_path: Path | None) -> dict[str, str]:
-    if out_path is None:
-        return {}
-    reports_dir = out_path.parent
-    return {
-        "remediation_execution_plan_report": str(out_path),
-        "remediation_planner_report": str(reports_dir / "remediation_planner.md"),
-        "remediation_session_report": str(reports_dir / "remediation_session.md"),
-        "remediation_session_checkpoint_report": str(
-            reports_dir / "remediation_session_checkpoint.md"
-        ),
-        "remediation_scoreboard_report": str(reports_dir / "remediation_scoreboard.md"),
-        "remediation_evaluator_report": str(reports_dir / "remediation_evaluator.md"),
-        "remediation_evidence_report": str(reports_dir / "remediation_evidence.md"),
-        "remediation_command_results_report": str(reports_dir / "remediation_command_results.md"),
-        "phase_gate_review_report": str(reports_dir / "phase_gate_review.md"),
-        "paper_operations_runbook_report": str(reports_dir / "paper_operations_runbook.md"),
-        "current_state_index_report": str(reports_dir / "current_state_index.md"),
-        "readiness_snapshot_report": str(reports_dir / "readiness_snapshot.md"),
-    }
+_quick_navigation = remediation_execution_plan_navigation.quick_navigation
+_related_reports = remediation_execution_plan_navigation.related_reports
 
 
 def _source_summaries(planner_summary: dict[str, object]) -> dict[str, dict[str, object]]:

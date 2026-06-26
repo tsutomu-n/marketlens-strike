@@ -1,8 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
+from sis.reports import phase_gate_review_markdown_values
 from sis.reports.summary_normalizers import latest_execution_lineage_flat_lines
+
+_classification_counts = phase_gate_review_markdown_values.classification_counts
+_as_str_list = phase_gate_review_markdown_values.as_str_list
+_as_dict_list = phase_gate_review_markdown_values.as_dict_list
+_as_mapping = phase_gate_review_markdown_values.as_mapping
+_as_str_dict = phase_gate_review_markdown_values.as_str_dict
+_as_list_mapping = phase_gate_review_markdown_values.as_list_mapping
 
 
 def render_phase_gate_review_markdown(summary: dict[str, Any]) -> str:
@@ -414,36 +422,3 @@ def render_phase_gate_review_markdown(summary: dict[str, Any]) -> str:
     lines.extend(["", "## Recommended Read Order", ""])
     lines.extend(f"- {item}" for item in recommended_read_order_items)
     return "\n".join(lines) + "\n"
-
-
-def _classification_counts(summary: dict[str, Any]) -> dict[str, object]:
-    value = summary.get("execution_drift_classification_counts")
-    return cast(dict[str, object], value) if isinstance(value, dict) else {}
-
-
-def _as_str_list(value: object) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    return [item for item in value if isinstance(item, str)]
-
-
-def _as_dict_list(value: object) -> list[dict[str, object]]:
-    if not isinstance(value, list):
-        return []
-    return [cast(dict[str, object], item) for item in value if isinstance(item, dict)]
-
-
-def _as_mapping(value: object) -> dict[str, object]:
-    return cast(dict[str, object], value) if isinstance(value, dict) else {}
-
-
-def _as_str_dict(value: object) -> dict[str, str]:
-    if not isinstance(value, dict):
-        return {}
-    return {str(key): item for key, item in value.items() if isinstance(item, str)}
-
-
-def _as_list_mapping(value: object) -> dict[str, list[str]]:
-    if not isinstance(value, dict):
-        return {}
-    return {str(key): _as_str_list(item) for key, item in value.items()}
