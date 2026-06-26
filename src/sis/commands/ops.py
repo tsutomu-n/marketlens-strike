@@ -2,12 +2,35 @@ from __future__ import annotations
 
 import shlex
 from pathlib import Path
-from typing import Any, Callable, Protocol, cast
+from typing import Callable, Protocol
 
 import typer
 from loguru import logger
 
+from sis.commands.ops_alert_echo import echo_alert_output
+from sis.commands.ops_daemon_echo import (
+    echo_daemon_dry_run,
+    echo_daemon_loop,
+    echo_daemon_manifest,
+)
+from sis.commands.ops_kill_switch_echo import echo_kill_switch_status
+from sis.commands.ops_notification_echo import echo_notification_outbox
 from sis.commands.ops_read_order_echo import echo_recommended_read_order
+from sis.commands.ops_schedule_echo import echo_schedule_run
+from sis.commands.ops_state_echo import (
+    dict_or_empty,
+    echo_state_restore_ack,
+    echo_state_snapshot_export,
+    echo_state_snapshot_summaries,
+)
+from sis.commands.ops_status_echo import (
+    echo_execution_drift_status,
+    echo_healthcheck_artifact_status,
+    echo_healthcheck_base_status,
+    echo_healthcheck_risk_limits,
+    echo_monitoring_base_status,
+    echo_readiness_status,
+)
 from sis.ops.alerts import queue_notification, write_alert
 from sis.ops.daemon import (
     create_daemon_manifest,
@@ -32,10 +55,6 @@ from sis.settings import get_settings
 from sis.storage.jsonl_store import read_json
 from sis.state.recovery import export_state_snapshot, restore_state_snapshot
 from sis.state.store import StateStore
-
-
-def _dict_or_empty(value: object) -> dict[str, Any]:
-    return cast(dict[str, Any], value) if isinstance(value, dict) else {}
 
 
 class _StateStoreFactory(Protocol):
@@ -184,33 +203,20 @@ def register_ops_commands(
             out_path=settings.data_dir / "reports/ops_healthcheck.md",
             summary_path=settings.data_dir / "ops/ops_healthcheck_summary.json",
         )
-        typer.echo(f"status={health['status']}")
-        typer.echo(f"kill_switch_enabled={health['kill_switch_enabled']}")
-        typer.echo(f"decision_summary_exists={health['decision_summary_exists']}")
+        echo_healthcheck_base_status(health)
         echo_audit_summary_fn(health)
         echo_phase_gate_summary_fn(health)
-        typer.echo(
-            f"execution_drift_overview_status={health.get('execution_drift_overview_status')}"
+        echo_execution_drift_status(health)
+        echo_readiness_status(health)
+        echo_healthcheck_artifact_status(
+            reconciliation_store_present=health["reconciliation_store_present"]
         )
-        typer.echo(
-            "execution_drift_overview_diagnostics_alignment_match="
-            f"{health.get('execution_drift_overview_diagnostics_alignment_match')}"
+        echo_healthcheck_risk_limits(
+            daily_loss_allowed=loss_status.allowed,
+            daily_loss_reason=loss_status.reason,
+            exposure_allowed=exposure_status.allowed,
+            exposure_reason=exposure_status.reason,
         )
-        typer.echo(
-            "execution_drift_overview_state_comparison_mismatching_count="
-            f"{health.get('execution_drift_overview_state_comparison_mismatching_count')}"
-        )
-        typer.echo(
-            "execution_drift_overview_snapshot_drift_mismatching_snapshot_count="
-            f"{health.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count')}"
-        )
-        typer.echo(f"readiness_next_phase_candidate={health.get('readiness_next_phase_candidate')}")
-        typer.echo(f"readiness_execution_ready={health.get('readiness_execution_ready')}")
-        typer.echo(f"reconciliation_store_present={health['reconciliation_store_present']}")
-        typer.echo(f"daily_loss_allowed={loss_status.allowed}")
-        typer.echo(f"daily_loss_reason={loss_status.reason}")
-        typer.echo(f"exposure_allowed={exposure_status.allowed}")
-        typer.echo(f"exposure_reason={exposure_status.reason}")
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("daemon-manifest")
@@ -233,8 +239,7 @@ def register_ops_commands(
         out = write_daemon_manifest(settings.data_dir / "ops/daemon_manifest.json", manifest)
         write_daemon_manifest_artifacts_fn(settings.data_dir)
         logger.info("written: {}", out)
-        typer.echo(f"run_id={manifest.run_id}")
-        typer.echo(f"mode={manifest.mode}")
+        echo_daemon_manifest(manifest)
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("daemon-dry-run")
@@ -278,10 +283,7 @@ def register_ops_commands(
         logger.info("written: {}", result.daemon_manifest_path)
         logger.info("written: {}", result.dry_run_snapshot_path)
         logger.info("appended: {}", result.operation_chain_path)
-        typer.echo(f"run_id={result.run_id}")
-        typer.echo(f"status={result.status}")
-        typer.echo(f"scheduled_for={result.scheduled_for}")
-        typer.echo(f"operation_chain={result.operation_chain_path}")
+        echo_daemon_dry_run(result)
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("daemon-run")
@@ -319,7 +321,7 @@ def register_ops_commands(
         daemon_loop_report = settings.data_dir / "reports/daemon_loop.md"
         daemon_loop_summary = settings.data_dir / "ops/daemon_loop_summary.json"
         snapshot_payload = read_json(result.loop_snapshot_path)
-        snapshot_dict = _dict_or_empty(snapshot_payload)
+        snapshot_dict = dict_or_empty(snapshot_payload)
         build_daemon_loop_report(
             snapshot=snapshot_dict,
             snapshot_path=str(result.loop_snapshot_path),
@@ -333,15 +335,11 @@ def register_ops_commands(
         logger.info("written: {}", daemon_loop_report)
         logger.info("written: {}", daemon_loop_summary)
         logger.info("appended: {}", result.operation_chain_path)
-        typer.echo(f"run_id={result.run_id}")
-        typer.echo(f"status={result.status}")
-        typer.echo(f"cycles_requested={result.cycles_requested}")
-        typer.echo(f"cycles_completed={result.cycles_completed}")
-        typer.echo(f"daemon_loop_path={result.loop_snapshot_path}")
-        typer.echo(f"daemon_loop_report_path={daemon_loop_report}")
-        typer.echo(f"daemon_loop_summary_path={daemon_loop_summary}")
-        typer.echo(f"daemon_loop_events_path={result.event_log_path}")
-        typer.echo(f"operation_chain={result.operation_chain_path}")
+        echo_daemon_loop(
+            result,
+            report_path=daemon_loop_report,
+            summary_path=daemon_loop_summary,
+        )
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("export-state")
@@ -356,17 +354,16 @@ def register_ops_commands(
         store = state_store_fn(settings.data_dir, state_path)
         out = export_state_snapshot(store, settings.data_dir / "state/state_snapshot.json")
         logger.info("written: {}", out)
-        typer.echo(str(out))
+        echo_state_snapshot_export(out)
         payload = read_json(out)
         if isinstance(payload, dict):
-            payload = _dict_or_empty(payload)
             write_state_export_artifacts_fn(settings.data_dir, state_store_path=store.path)
-            audit = payload.get("audit_summary")
-            if isinstance(audit, dict):
-                echo_audit_summary_fn(audit)
-            phase_gate = payload.get("phase_gate_summary")
-            if isinstance(phase_gate, dict):
-                echo_phase_gate_summary_fn(normalize_phase_gate_summary_fn(phase_gate))
+            echo_state_snapshot_summaries(
+                payload,
+                normalize_phase_gate_summary=normalize_phase_gate_summary_fn,
+                echo_audit_summary=echo_audit_summary_fn,
+                echo_phase_gate_summary=echo_phase_gate_summary_fn,
+            )
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("restore-state")
@@ -389,15 +386,14 @@ def register_ops_commands(
                 state_store_path=store.path,
                 restored=True,
             )
-        typer.echo("restored=true")
+        echo_state_restore_ack(restored=True)
         if isinstance(payload, dict):
-            payload = _dict_or_empty(payload)
-            audit = payload.get("audit_summary")
-            if isinstance(audit, dict):
-                echo_audit_summary_fn(audit)
-            phase_gate = payload.get("phase_gate_summary")
-            if isinstance(phase_gate, dict):
-                echo_phase_gate_summary_fn(normalize_phase_gate_summary_fn(phase_gate))
+            echo_state_snapshot_summaries(
+                payload,
+                normalize_phase_gate_summary=normalize_phase_gate_summary_fn,
+                echo_audit_summary=echo_audit_summary_fn,
+                echo_phase_gate_summary=echo_phase_gate_summary_fn,
+            )
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("monitoring-status")
@@ -411,32 +407,11 @@ def register_ops_commands(
         settings = get_settings()
         out, snapshot = write_monitoring_snapshot_fn(settings.data_dir, state_path)
         logger.info("written: {}", out)
-        typer.echo(f"status={snapshot['status']}")
-        typer.echo(f"decision_summary_exists={snapshot['decision_summary_exists']}")
-        typer.echo(f"weekly_review_exists={snapshot['weekly_review_exists']}")
-        typer.echo(f"daily_pnl_exists={snapshot['daily_pnl_exists']}")
-        typer.echo(f"operation_chain_exists={snapshot['operation_chain_exists']}")
+        echo_monitoring_base_status(snapshot)
         echo_audit_summary_fn(snapshot)
         echo_phase_gate_summary_fn(snapshot)
-        typer.echo(
-            f"execution_drift_overview_status={snapshot.get('execution_drift_overview_status')}"
-        )
-        typer.echo(
-            "execution_drift_overview_diagnostics_alignment_match="
-            f"{snapshot.get('execution_drift_overview_diagnostics_alignment_match')}"
-        )
-        typer.echo(
-            "execution_drift_overview_state_comparison_mismatching_count="
-            f"{snapshot.get('execution_drift_overview_state_comparison_mismatching_count')}"
-        )
-        typer.echo(
-            "execution_drift_overview_snapshot_drift_mismatching_snapshot_count="
-            f"{snapshot.get('execution_drift_overview_snapshot_drift_mismatching_snapshot_count')}"
-        )
-        typer.echo(
-            f"readiness_next_phase_candidate={snapshot.get('readiness_next_phase_candidate')}"
-        )
-        typer.echo(f"readiness_execution_ready={snapshot.get('readiness_execution_ready')}")
+        echo_execution_drift_status(snapshot)
+        echo_readiness_status(snapshot)
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("kill-switch")
@@ -460,8 +435,7 @@ def register_ops_commands(
             out_path=settings.data_dir / "reports/ops_kill_switch.md",
             summary_path=settings.data_dir / "ops/ops_kill_switch_summary.json",
         )
-        typer.echo(f"enabled={status['enabled']}")
-        typer.echo(f"path={status['path']}")
+        echo_kill_switch_status(status)
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("schedule-run")
@@ -491,8 +465,7 @@ def register_ops_commands(
             summary_path=settings.data_dir / "ops/ops_scheduled_run_summary.json",
         )
         logger.info("written: {}", out)
-        typer.echo(f"run_type={run.run_type}")
-        typer.echo(f"scheduled_for={run.scheduled_for.isoformat()}")
+        echo_schedule_run(run)
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("render-alert")
@@ -522,7 +495,7 @@ def register_ops_commands(
             summary_path=settings.data_dir / "ops/ops_alert_summary.json",
         )
         logger.info("written: {}", out)
-        typer.echo(rendered_text)
+        echo_alert_output(rendered_text)
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)
 
     @app.command("notification-outbox")
@@ -592,12 +565,12 @@ def register_ops_commands(
         logger.info("written: {}", report_path)
         logger.info("written: {}", summary_path)
         logger.info("appended: {}", operation_chain_path)
-        typer.echo(f"notification_id={record['notification_id']}")
-        typer.echo(f"status={record['status']}")
-        typer.echo(f"sink={record['sink']}")
-        typer.echo(f"outbox_path={outbox_path}")
-        typer.echo(f"latest_path={latest_path}")
-        typer.echo(f"notification_outbox_report_path={report_path}")
-        typer.echo(f"notification_outbox_summary_path={summary_path}")
-        typer.echo(f"operation_chain={operation_chain_path}")
+        echo_notification_outbox(
+            record,
+            outbox_path=outbox_path,
+            latest_path=latest_path,
+            report_path=report_path,
+            summary_path=summary_path,
+            operation_chain_path=operation_chain_path,
+        )
         echo_recommended_read_order(settings.data_dir, recommended_read_order_fn)

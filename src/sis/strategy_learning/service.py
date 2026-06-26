@@ -2,27 +2,44 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import ValidationError
 
 from sis.backtest.artifact_io import read_json_object, sha256_file
-from sis.strategy_drift_review.models import (
-    DriftReviewAction,
-    DriftReviewStatus,
-    PaperVsBacktestDriftReview,
-)
+from sis.strategy_drift_review.models import PaperVsBacktestDriftReview
 from sis.strategy_inputs.io import read_mapping_file, write_json_artifact, write_text_artifact
+from sis.strategy_learning.service_helpers import (
+    authoring_update_tasks_for_request as _authoring_update_tasks,
+)
+from sis.strategy_learning.service_helpers import event_type_for_review as _event_type_for
+from sis.strategy_learning.service_helpers import finding_for_review as _finding_for
+from sis.strategy_learning.service_helpers import (
+    handoff_status_for_payloads as _handoff_status,
+)
+from sis.strategy_learning.service_helpers import impact_for_review as _impact_for
+from sis.strategy_learning.service_helpers import (
+    recommended_action_for_review as _recommended_action_for,
+)
+from sis.strategy_learning.service_helpers import requested_changes_for_events as _requested_changes
+from sis.strategy_learning.service_helpers import (
+    reviewed_at_value as _reviewed_at_value,
+)
+from sis.strategy_learning.service_helpers import revision_reason_for_events as _revision_reason
+from sis.strategy_learning.service_helpers import revision_status_for_events as _revision_status
+from sis.strategy_learning.service_helpers import source_stage_for_review as _source_stage_for
+from sis.strategy_learning.service_ledger import (
+    LearningLedgerIOError as _LearningLedgerIOError,
+)
+from sis.strategy_learning.service_ledger import read_learning_ledger as _read_learning_ledger
+from sis.strategy_learning.service_ledger import write_learning_ledger as _write_learning_ledger
 from sis.strategy_learning.models import (
-    AuthoringUpdateHandoffStatus,
     LearningEventType,
     LearningRecommendedAction,
     LearningSourceArtifact,
     RevisionRequestReviewDecision,
     RevisionRequestReviewSource,
-    RevisionRequestStatus,
     StrategyLearningEvent,
     StrategyAuthoringUpdateHandoff,
     StrategyRevisionRequest,
@@ -39,7 +56,6 @@ from sis.strategy_review.provenance import (
     detect_json_schema_version,
     repo_relative_path,
 )
-from sis.strategy_runtime_observation.models import RuntimeObservationSourceStage
 from sis.strategy_stage.models import StageProducer
 
 
@@ -123,101 +139,15 @@ def _read_revision_request_review(
         raise StrategyLearningError(f"invalid revision request review: {exc}") from exc
 
 
-def _event_type_for(review: PaperVsBacktestDriftReview) -> LearningEventType:
-    if review.review_status is DriftReviewStatus.BLOCKED_BOUNDARY_VIOLATION:
-        return LearningEventType.ARTIFACT_BOUNDARY_VIOLATION
-    if review.recommended_action is DriftReviewAction.EXTEND_OBSERVATION:
-        return LearningEventType.INSUFFICIENT_OBSERVATION
-    if review.recommended_action is DriftReviewAction.REVISE_STRATEGY:
-        return LearningEventType.EXECUTION_ASSUMPTION_UPDATE
-    return LearningEventType.HUMAN_REVIEW_REQUIRED
-
-
-def _recommended_action_for(review: PaperVsBacktestDriftReview) -> LearningRecommendedAction:
-    if review.recommended_action is DriftReviewAction.REPAIR_ARTIFACTS:
-        return LearningRecommendedAction.REPAIR_ARTIFACTS
-    if review.recommended_action is DriftReviewAction.EXTEND_OBSERVATION:
-        return LearningRecommendedAction.EXTEND_OBSERVATION
-    if review.recommended_action is DriftReviewAction.REVISE_STRATEGY:
-        return LearningRecommendedAction.REVISE_STRATEGY
-    return LearningRecommendedAction.REVIEW_MANUALLY
-
-
-def _finding_for(review: PaperVsBacktestDriftReview) -> str:
-    failed = [condition.condition_id for condition in review.failed_conditions]
-    if failed:
-        return "Drift review failed conditions: " + ", ".join(failed)
-    if review.warning_conditions:
-        warnings = [condition.condition_id for condition in review.warning_conditions]
-        return "Drift review warning conditions: " + ", ".join(warnings)
-    return f"Drift review recommended action is {review.recommended_action.value}."
-
-
-def _impact_for(review: PaperVsBacktestDriftReview) -> str:
-    if review.recommended_action is DriftReviewAction.REVISE_STRATEGY:
-        return "Runtime behavior may invalidate execution assumptions used by the backtest."
-    if review.recommended_action is DriftReviewAction.EXTEND_OBSERVATION:
-        return "Current runtime evidence is too thin to justify a strategy revision or advancement."
-    if review.recommended_action is DriftReviewAction.REPAIR_ARTIFACTS:
-        return "Source artifacts are not safe to use until boundary violations are repaired."
-    return "A human must review the drift evidence before changing the strategy."
-
-
-def _source_stage_for(
-    review: PaperVsBacktestDriftReview,
-) -> RuntimeObservationSourceStage | Literal["drift_review"]:
-    if review.runtime_summary is None:
-        return "drift_review"
-    return review.runtime_summary.source_stage
-
-
 def _read_ledger(path: Path) -> list[StrategyLearningEvent]:
-    if not path.exists():
-        return []
-    events: list[StrategyLearningEvent] = []
-    for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-        stripped = line.strip()
-        if not stripped:
-            continue
-        try:
-            payload = json.loads(stripped)
-        except json.JSONDecodeError as exc:
-            raise StrategyLearningError(f"invalid learning ledger JSONL at {path}:{index}") from exc
-        events.append(StrategyLearningEvent.model_validate(payload))
-    return events
-
-
-def _authoring_update_tasks(request: StrategyRevisionRequest) -> list[str]:
-    tasks = [
-        "Open the current Strategy Authoring YAML and review it before editing.",
-        "Apply only the approved revision request changes in a separate human edit.",
-    ]
-    tasks.extend(f"Review requested change: {change}" for change in request.requested_changes)
-    tasks.extend(
-        [
-            "Run Strategy Authoring validation after editing.",
-            "Run a fresh backtest and build a new review packet before any stage decision.",
-        ]
-    )
-    return list(dict.fromkeys(tasks))
+    try:
+        return _read_learning_ledger(path)
+    except _LearningLedgerIOError as exc:
+        raise StrategyLearningError(str(exc)) from exc
 
 
 def _write_ledger(path: Path, events: list[StrategyLearningEvent]) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = path.parent / f".{path.name}.tmp"
-    try:
-        tmp_path.write_text(
-            "".join(
-                json.dumps(event.model_dump(mode="json"), ensure_ascii=False, sort_keys=True) + "\n"
-                for event in events
-            ),
-            encoding="utf-8",
-        )
-        tmp_path.replace(path)
-    finally:
-        if tmp_path.exists():
-            tmp_path.unlink()
-    return path
+    return _write_learning_ledger(path, events)
 
 
 def update_learning_ledger(
@@ -285,56 +215,6 @@ def update_learning_ledger(
     )
 
 
-def _revision_status(events: list[StrategyLearningEvent]) -> RevisionRequestStatus:
-    if any(
-        event.recommended_action is LearningRecommendedAction.REPAIR_ARTIFACTS for event in events
-    ):
-        return RevisionRequestStatus.BLOCKED_BOUNDARY_VIOLATION
-    if any(
-        event.recommended_action is LearningRecommendedAction.REVISE_STRATEGY for event in events
-    ):
-        return RevisionRequestStatus.READY_FOR_HUMAN_REVIEW
-    return RevisionRequestStatus.NO_REVISION_REQUIRED
-
-
-def _revision_reason(events: list[StrategyLearningEvent]) -> str:
-    if any(
-        event.recommended_action is LearningRecommendedAction.REPAIR_ARTIFACTS for event in events
-    ):
-        return "artifact_boundary_violation"
-    if any("runtime_no_fill_rate_within_limit" in event.finding for event in events):
-        return "no_fill_drift"
-    if any("runtime_blocked_rate_within_limit" in event.finding for event in events):
-        return "blocked_drift"
-    if any("runtime_spread_within_limit" in event.finding for event in events):
-        return "spread_drift"
-    if any(
-        event.recommended_action is LearningRecommendedAction.EXTEND_OBSERVATION for event in events
-    ):
-        return "insufficient_observation"
-    return "human_review_required"
-
-
-def _requested_changes(events: list[StrategyLearningEvent]) -> list[str]:
-    changes: list[str] = []
-    for event in events:
-        if event.recommended_action is LearningRecommendedAction.REVISE_STRATEGY:
-            changes.append("Review and revise execution assumptions before the next backtest.")
-            if "runtime_no_fill_rate_within_limit" in event.finding:
-                changes.append("Add or tighten no-fill / no-trade conditions.")
-            if "runtime_blocked_rate_within_limit" in event.finding:
-                changes.append("Investigate block reasons and revise entry or risk filters.")
-            if "runtime_spread_within_limit" in event.finding:
-                changes.append("Revise spread or slippage assumptions before authoring update.")
-        elif event.recommended_action is LearningRecommendedAction.EXTEND_OBSERVATION:
-            changes.append("Extend paper observation before changing the strategy.")
-        elif event.recommended_action is LearningRecommendedAction.REPAIR_ARTIFACTS:
-            changes.append("Repair source artifact boundary violations before using this evidence.")
-        else:
-            changes.append("Human review required before deciding whether to revise authoring.")
-    return list(dict.fromkeys(changes))
-
-
 def build_revision_request(
     *,
     strategy_id: str,
@@ -374,13 +254,6 @@ def build_revision_request(
     return RevisionRequestBuildResult(
         request=request, request_path=request_path, report_path=report_path
     )
-
-
-def _reviewed_at_value(reviewed_at: datetime | None) -> datetime:
-    value = reviewed_at or _utc_now()
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
 
 
 def record_revision_request_review(
@@ -441,28 +314,6 @@ def record_revision_request_review(
     return RevisionRequestReviewRecordResult(
         review=review, review_path=review_path, report_path=report_path
     )
-
-
-def _handoff_status(
-    *,
-    request_payload: dict[str, Any],
-    review_payload: dict[str, Any],
-    authoring_payload: dict[str, Any],
-    review: StrategyRevisionRequestReview,
-) -> AuthoringUpdateHandoffStatus:
-    boundary_violations = [
-        *boundary_true_paths(request_payload),
-        *boundary_true_paths(review_payload),
-        *boundary_true_paths(authoring_payload),
-    ]
-    if boundary_violations:
-        return AuthoringUpdateHandoffStatus.BLOCKED_BOUNDARY_VIOLATION
-    if (
-        review.decision is not RevisionRequestReviewDecision.APPROVE_FOR_AUTHORING_UPDATE
-        or not review.authoring_update_input_allowed
-    ):
-        return AuthoringUpdateHandoffStatus.NEEDS_REVISION_REVIEW_APPROVAL
-    return AuthoringUpdateHandoffStatus.READY_FOR_HUMAN_AUTHORING_UPDATE
 
 
 def build_authoring_update_handoff(

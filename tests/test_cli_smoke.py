@@ -1166,6 +1166,38 @@ def test_daemon_run_cli_bounded(tmp_path) -> None:
     assert latest["status"] == "completed"
 
 
+def test_daemon_dry_run_cli(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    env = {"SIS_DATA_DIR": str(data_dir)}
+
+    result = runner.invoke(
+        app,
+        [
+            "daemon-dry-run",
+            "--mode",
+            "paper",
+            "--command",
+            "uv run sis paper-step",
+            "--every-minutes",
+            "15",
+        ],
+        env=env,
+    )
+
+    assert result.exit_code == 0
+    assert "status=planned" in result.stdout
+    assert "scheduled_for=" in result.stdout
+    assert "operation_chain=" in result.stdout
+    assert "recommended_read_order_1=docs/CURRENT_STATE.md" in result.stdout
+    assert (data_dir / "ops/daemon_manifest.json").exists()
+    assert (data_dir / "ops/scheduled_run.json").exists()
+    assert (data_dir / "ops/daemon_dry_run.json").exists()
+    latest = latest_operation_manifest(data_dir / "ops/operation_manifests.jsonl")
+    assert latest is not None
+    assert latest["operation"] == "daemon_dry_run"
+    assert latest["status"] == "planned"
+
+
 def test_monitoring_status_and_comparison_report_cli(tmp_path) -> None:
     data_dir = tmp_path / "data"
     env = {"SIS_DATA_DIR": str(data_dir)}

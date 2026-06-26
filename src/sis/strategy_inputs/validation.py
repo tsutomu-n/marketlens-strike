@@ -3,13 +3,23 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
-import polars as pl
 from pydantic import ValidationError
 
 from sis.backtest.artifact_io import sha256_file
 from sis.strategy_inputs.io import read_mapping_file, write_json_artifact, write_text_artifact
+from sis.strategy_inputs.validation_helpers import (
+    contract_id_from_payload as _contract_id_from_payload,
+)
+from sis.strategy_inputs.validation_helpers import (
+    idea_id_from_payload as _idea_id_from_payload,
+)
+from sis.strategy_inputs.validation_helpers import missing_mapping as _missing_mapping
+from sis.strategy_inputs.validation_helpers import (
+    missing_non_empty_list as _missing_non_empty_list,
+)
+from sis.strategy_inputs.validation_helpers import missing_text as _missing_text
+from sis.strategy_inputs.validation_source_checks import source_data_checks as _source_data_checks
 from sis.strategy_inputs.models import (
     IdeaIntakeDecision,
     InputContractRef,
@@ -18,7 +28,6 @@ from sis.strategy_inputs.models import (
     ProducerInfo,
     SourceValidationResult,
     SourceValidationStatus,
-    SourceValidationExpectations,
     StrategyIdea,
     StrategyInputBoundary,
     StrategyInputContract,
@@ -57,142 +66,6 @@ class StrategyInputOutputExistsError(StrategyInputValidationError):
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(microsecond=0)
-
-
-def _contract_id_from_payload(payload: dict[str, Any]) -> str:
-    value = payload.get("contract_id")
-    return value if isinstance(value, str) and value else "unknown"
-
-
-def _idea_id_from_payload(payload: dict[str, Any]) -> str:
-    value = payload.get("idea_id")
-    return value if isinstance(value, str) and value else "unknown"
-
-
-def _missing_text(payload: dict[str, Any], key: str) -> bool:
-    value = payload.get(key)
-    return not isinstance(value, str) or not value.strip()
-
-
-def _missing_non_empty_list(payload: dict[str, Any], key: str) -> bool:
-    value = payload.get(key)
-    return not isinstance(value, list) or not value
-
-
-def _missing_mapping(payload: dict[str, Any], key: str) -> bool:
-    value = payload.get(key)
-    return not isinstance(value, dict) or not value
-
-
-def _parse_datetime_value(value: Any) -> datetime | None:
-    if value is None:
-        return None
-    if isinstance(value, datetime):
-        parsed = value
-    elif isinstance(value, str):
-        text = value.strip()
-        if not text:
-            return None
-        try:
-            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
-        except ValueError:
-            return None
-    else:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
-
-
-def _serialize_observed_timestamp(value: datetime | None) -> str | None:
-    if value is None:
-        return None
-    return value.replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def _scan_source_frame(path: Path) -> pl.LazyFrame:
-    suffix = path.suffix.lower()
-    if suffix == ".csv":
-        return pl.scan_csv(path)
-    if suffix in {".jsonl", ".ndjson"}:
-        return pl.scan_ndjson(path)
-    if suffix == ".parquet":
-        return pl.scan_parquet(path)
-    raise StrategyInputValidationError(
-        f"column validation supports only CSV, JSONL/NDJSON, or Parquet: {path}"
-    )
-
-
-def _source_data_checks(
-    *,
-    source_path: Path,
-    expectations: SourceValidationExpectations | None,
-) -> tuple[bool, list[str], bool | None, str | None, bool | None, str | None]:
-    if expectations is None:
-        return True, [], None, None, None, None
-    try:
-        frame = _scan_source_frame(source_path)
-        columns = set(frame.collect_schema().names())
-    except Exception as exc:
-        return False, [], None, None, None, f"failed to read source columns: {exc}"
-
-    expected_columns = set(expectations.required_columns)
-    if expectations.timestamp_column is not None:
-        expected_columns.add(expectations.timestamp_column)
-    if expectations.available_at_column is not None:
-        expected_columns.add(expectations.available_at_column)
-
-    missing_columns = sorted(column for column in expected_columns if column not in columns)
-    available_at_column_present = (
-        None
-        if expectations.available_at_column is None
-        else expectations.available_at_column in columns
-    )
-    if missing_columns:
-        return False, missing_columns, None, None, available_at_column_present, None
-
-    timestamp_check_passed: bool | None = None
-    max_observed_timestamp: str | None = None
-    if expectations.timestamp_column is not None and expectations.max_allowed_timestamp is not None:
-        try:
-            result: Any = frame.select(
-                pl.col(expectations.timestamp_column).max().alias("max_ts")
-            ).collect()
-            observed = result["max_ts"][0]
-        except Exception as exc:
-            return (
-                False,
-                [],
-                None,
-                None,
-                available_at_column_present,
-                (f"failed to read timestamp column: {exc}"),
-            )
-        max_observed = _parse_datetime_value(observed)
-        max_allowed = expectations.max_allowed_timestamp
-        if max_allowed.tzinfo is None:
-            max_allowed = max_allowed.replace(tzinfo=timezone.utc)
-        max_allowed = max_allowed.astimezone(timezone.utc)
-        timestamp_check_passed = max_observed is not None and max_observed <= max_allowed
-        max_observed_timestamp = _serialize_observed_timestamp(max_observed)
-        if max_observed is None:
-            return (
-                False,
-                [],
-                False,
-                None,
-                available_at_column_present,
-                ("timestamp column max value is not parseable as datetime"),
-            )
-
-    return (
-        not missing_columns and (timestamp_check_passed is not False),
-        missing_columns,
-        timestamp_check_passed,
-        max_observed_timestamp,
-        available_at_column_present,
-        None,
-    )
 
 
 def _write_input_validation_outputs(
@@ -310,22 +183,17 @@ def validate_strategy_input_contract(
             continue
         actual_sha256 = sha256_file(source_path)
         hash_matches = source.declared_sha256 is None or source.declared_sha256 == actual_sha256
-        (
-            source_data_valid,
-            missing_columns,
-            timestamp_check_passed,
-            max_observed_timestamp,
-            available_at_column_present,
-            data_error,
-        ) = _source_data_checks(
+        source_data_check = _source_data_checks(
             source_path=source_path,
             expectations=source.validation_expectations,
         )
+        missing_columns = source_data_check.missing_columns
+        timestamp_check_passed = source_data_check.timestamp_check_passed
         if missing_columns:
             column_check_failure_count += 1
         if timestamp_check_passed is False:
             timestamp_violation_count += 1
-        source_valid = hash_matches and source_data_valid
+        source_valid = hash_matches and source_data_check.valid
         if not source_valid:
             if source.required:
                 invalid_required_count += 1
@@ -347,8 +215,8 @@ def validate_strategy_input_contract(
             errors.append("MISSING_REQUIRED_COLUMN: " + ", ".join(missing_columns))
         if timestamp_check_passed is False:
             errors.append("FUTURE_DATA_VIOLATION: max source timestamp exceeds allowed timestamp")
-        if data_error:
-            errors.append(data_error)
+        if source_data_check.data_error:
+            errors.append(source_data_check.data_error)
         source_results.append(
             SourceValidationResult(
                 source_id=source.source_id,
@@ -368,8 +236,8 @@ def validate_strategy_input_contract(
                 else None,
                 missing_columns=missing_columns,
                 timestamp_check_passed=timestamp_check_passed,
-                max_observed_timestamp=max_observed_timestamp,
-                available_at_column_present=available_at_column_present,
+                max_observed_timestamp=source_data_check.max_observed_timestamp,
+                available_at_column_present=source_data_check.available_at_column_present,
                 error="; ".join(errors) if errors else None,
             )
         )
