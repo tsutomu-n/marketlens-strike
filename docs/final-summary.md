@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-26_22:25 JST
-更新日: 2026-06-26_22:31 JST
+更新日: 2026-06-26_23:30 JST
 -->
 
 # Final Summary
@@ -76,8 +76,6 @@ This summary uses the practical completion bar requested on 2026-06-26: not perf
 
 ## Unrun Checks
 
-- No live market, paper trading, wallet, signing, exchange write, deployment, or external API checks were run.
-- No manual browser or rendered-doc visual review was run.
 - No live market, paper trading, wallet, signing, exchange write, deployment, or external API checks were run.
 - No manual browser or rendered-doc visual review was run.
 - No remote push of `main` was performed by the agent.
