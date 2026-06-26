@@ -6,6 +6,7 @@ from typing import Any, cast
 from sis.reports.doc_paths import recommended_read_order
 from sis.reports.loaders import normalized_summary, safe_read_json_dict
 from sis.reports import phase_gate_diagnostics
+from sis.reports import phase_gate_review_decisions
 from sis.reports import phase_gate_review_paths
 from sis.reports.phase_gate_remediation import (
     artifact_recovery_commands as _artifact_recovery_commands,
@@ -41,19 +42,14 @@ from sis.storage.jsonl_store import write_json
 from sis.validation.artifacts import validate_artifacts
 
 
-PHASE2_ALLOWED_DECISIONS = {
-    "GO",
-    "CONDITIONAL_GO_NEEDS_SIGNAL_BACKTEST",
-    "READ_ONLY_GO",
-    "PAPER_GO",
-    "CONDITIONAL_INDEX_ONLY",
-}
-
 _load_stale_thresholds = phase_gate_diagnostics.load_stale_thresholds
 _load_spread_thresholds = phase_gate_diagnostics.load_spread_thresholds
 _spread_threshold_for_symbol = phase_gate_diagnostics.spread_threshold_for_symbol
 _trade_xyz_diagnostic_healthy = phase_gate_diagnostics.trade_xyz_diagnostic_healthy
 _trade_xyz_diagnostic_blockers = phase_gate_diagnostics.trade_xyz_diagnostic_blockers
+PHASE2_ALLOWED_DECISIONS = phase_gate_review_decisions.PHASE2_ALLOWED_DECISIONS
+_trade_xyz_artifacts_present = phase_gate_review_decisions.trade_xyz_artifacts_present
+_phase2_entry_allowed = phase_gate_review_decisions.phase2_entry_allowed
 _reports_dir = phase_gate_review_paths.reports_dir
 _quick_navigation = phase_gate_review_paths.quick_navigation
 _related_reports = phase_gate_review_paths.related_reports
@@ -95,11 +91,7 @@ def build_phase_gate_review(
     stale_thresholds = _load_stale_thresholds()
     spread_thresholds = _load_spread_thresholds()
     prior_summary = safe_read_json_dict(summary_path)
-    has_trade_xyz_artifacts = (
-        (data_dir / "registry/trade_xyz_instrument_registry.json").exists()
-        or (data_dir / "ops/trade_xyz_quote_collection_summary.json").exists()
-        or _latest_path(data_dir / "raw/quotes/trade_xyz", "*.jsonl") is not None
-    )
+    has_trade_xyz_artifacts = _trade_xyz_artifacts_present(data_dir)
     diagnostics: list[dict] = []
     for symbol in diagnostics_symbols:
         items = build_quote_diagnostics(
@@ -220,12 +212,11 @@ def build_phase_gate_review(
         next_actions = ["collect_trade_xyz_read_only_evidence"]
         individual_stock_decision = "unknown"
         index_only_decision = "unknown"
-    phase2_entry_allowed = bool(
-        strict_validation_passed
-        and diagnostics_all_available
-        and collector_gate["read_only_collector_gate_passed"] is True
-        and isinstance(decision, str)
-        and decision in PHASE2_ALLOWED_DECISIONS
+    phase2_entry_allowed = _phase2_entry_allowed(
+        strict_validation_passed=strict_validation_passed,
+        diagnostics_all_available=diagnostics_all_available,
+        collector_gate=collector_gate,
+        decision=decision,
     )
 
     summary = {
