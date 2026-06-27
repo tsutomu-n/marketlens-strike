@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
@@ -21,12 +21,13 @@ from sis.crypto_perp.source_availability import CryptoPerpSourceAvailability
 
 
 EDGE_SCORE_SCHEMA_VERSION = "crypto_perp_edge_score.v1"
+EdgeActionName = Literal["REVERSAL_SHORT", "CONTINUATION_LONG", "NO_TRADE", "UNKNOWN"]
 
 
 class EdgeActionScore(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    action: Literal["REVERSAL_SHORT", "CONTINUATION_LONG", "NO_TRADE", "UNKNOWN"]
+    action: EdgeActionName
     score: DecimalValue
     rank: int = Field(ge=1)
     reasons: list[str]
@@ -49,7 +50,7 @@ class CryptoPerpEdgeScore(BaseModel):
     edge_score_id: str
     event_id: str
     information_cutoff_at: datetime
-    selected_action: Literal["REVERSAL_SHORT", "CONTINUATION_LONG", "NO_TRADE", "UNKNOWN"]
+    selected_action: EdgeActionName
     action_scores: list[EdgeActionScore]
     why_no_trade: list[str]
     known_gaps: list[str]
@@ -80,7 +81,7 @@ def _ranked_score_rows(
     ordered = sorted(scores.items(), key=lambda item: item[1], reverse=True)
     return [
         EdgeActionScore(
-            action=action.value,
+            action=cast(EdgeActionName, action.value),
             score=score,
             rank=index + 1,
             reasons=[f"deterministic_rule_score_bps={decimal_to_json_string(score)}"],
@@ -139,7 +140,7 @@ def build_edge_score(
             known_gaps,
         ]
     )
-    summary = {
+    summary: dict[str, object] = {
         "event_id": feature_pack.event_id,
         "selected_action": selected.value,
         "known_gap_count": len(known_gaps),
@@ -157,7 +158,7 @@ def build_edge_score(
         edge_score_id=edge_score_id,
         event_id=feature_pack.event_id,
         information_cutoff_at=feature_pack.information_cutoff_at,
-        selected_action=selected.value,
+        selected_action=cast(EdgeActionName, selected.value),
         action_scores=action_scores,
         why_no_trade=why_no_trade,
         known_gaps=known_gaps,

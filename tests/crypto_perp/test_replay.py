@@ -138,9 +138,7 @@ def test_replay_slice_dump_matches_schema() -> None:
         included_sources=["event"],
     )
     schema = json.loads(
-        (REPO_ROOT / "schemas/crypto_perp_replay_slice.v1.schema.json").read_text(
-            encoding="utf-8"
-        )
+        (REPO_ROOT / "schemas/crypto_perp_replay_slice.v1.schema.json").read_text(encoding="utf-8")
     )
 
     Draft202012Validator.check_schema(schema)

@@ -53,7 +53,9 @@ def _extend_profit_readiness_lines(
                 ),
                 EventCardLine(
                     label="can_compute_actual_cash",
-                    value=str(getattr(source_availability, "can_compute_actual_cash", False)).lower(),
+                    value=str(
+                        getattr(source_availability, "can_compute_actual_cash", False)
+                    ).lower(),
                 ),
             ]
         )

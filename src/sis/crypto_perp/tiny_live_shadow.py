@@ -33,9 +33,7 @@ class TinyLiveShadowCheck(BaseModel):
 class CryptoPerpTinyLiveShadow(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["crypto_perp_tiny_live_shadow.v1"] = (
-        TINY_LIVE_SHADOW_SCHEMA_VERSION
-    )
+    schema_version: Literal["crypto_perp_tiny_live_shadow.v1"] = TINY_LIVE_SHADOW_SCHEMA_VERSION
     artifact_id: str
     created_at: datetime
     producer: CryptoPerpProducer
@@ -115,18 +113,39 @@ def build_tiny_live_shadow(
             order_preview.requested_notional_usd,
             f"<= {max_notional_usd}",
         ),
-        _check("account_margin_isolated", account_snapshot.margin_mode == "isolated", account_snapshot.margin_mode, "isolated"),
-        _check("order_margin_isolated", order_preview.margin_mode == "isolated", order_preview.margin_mode, "isolated"),
-        _check("flat_precheck_positions", all(position.total == 0 for position in account_snapshot.positions), len(account_snapshot.positions), "all position total == 0"),
-        _check("flat_precheck_open_orders", not account_snapshot.open_orders, len(account_snapshot.open_orders), "0"),
-        _check("order_preview_ready", order_preview.preview_status == "READY", order_preview.preview_status, "READY"),
+        _check(
+            "account_margin_isolated",
+            account_snapshot.margin_mode == "isolated",
+            account_snapshot.margin_mode,
+            "isolated",
+        ),
+        _check(
+            "order_margin_isolated",
+            order_preview.margin_mode == "isolated",
+            order_preview.margin_mode,
+            "isolated",
+        ),
+        _check(
+            "flat_precheck_positions",
+            all(position.total == 0 for position in account_snapshot.positions),
+            len(account_snapshot.positions),
+            "all position total == 0",
+        ),
+        _check(
+            "flat_precheck_open_orders",
+            not account_snapshot.open_orders,
+            len(account_snapshot.open_orders),
+            "0",
+        ),
+        _check(
+            "order_preview_ready",
+            order_preview.preview_status == "READY",
+            order_preview.preview_status,
+            "READY",
+        ),
         _check("credential_values_redacted", True, True, True),
     ]
-    blockers = [
-        f"TINY_LIVE_SHADOW_FAILED_{check.check_id}"
-        for check in checks
-        if not check.passed
-    ]
+    blockers = [f"TINY_LIVE_SHADOW_FAILED_{check.check_id}" for check in checks if not check.passed]
     known_gaps = ["SHADOW_MEASUREMENT_NOT_LIVE_ORDER"]
     if account_snapshot.credential_scope_attestation.trade_enabled:
         known_gaps.append("TRADE_ENABLED_ATTESTED_BUT_NOT_USED_BY_SHADOW")

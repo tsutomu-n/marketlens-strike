@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-27_18:28 JST
+更新日: 2026-06-27_19:20 JST
 -->
 
 # Repo CLI Catalog Current
@@ -133,6 +133,13 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-outcome-record`
 - `crypto-perp-account-probe`
 - `crypto-perp-order-preview`
+- `crypto-perp-source-availability`
+- `crypto-perp-replay-slice`
+- `crypto-perp-feature-pack`
+- `crypto-perp-edge-score`
+- `crypto-perp-tournament-rows-v2`
+- `crypto-perp-bias-guard`
+- `crypto-perp-tiny-live-shadow`
 - `crypto-perp-tiny-live-measurement`
 - `crypto-perp-tournament-gate`
 - `crypto-perp-tournament-report`
@@ -140,7 +147,7 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-truth-cycle-dogfood-pack`
 - `crypto-perp-truth-cycle-status`
 
-M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。`crypto-perp-tournament-gate` は report を読んで next action を分けるlocal gateであり、live order permissionではありません。`crypto-perp-truth-cycle-status` は既存artifactから次に欠けているlocal stepとstop reasonを出すだけで、network / order / live permissionではありません。`crypto-perp-truth-cycle-dogfood-pack` は fixture-only の status / Daily Brief / Workbench Viewer pack を生成するlocal確認入口です。
+M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。profit-readiness 追加層は `crypto-perp-source-availability`、`crypto-perp-replay-slice`、`crypto-perp-feature-pack`、`crypto-perp-edge-score`、`crypto-perp-tournament-rows-v2`、`crypto-perp-bias-guard`、`crypto-perp-tiny-live-shadow` で local artifact を作ります。`crypto-perp-tournament-gate` は report を読んで next action を分けるlocal gateであり、live order permissionではありません。`crypto-perp-truth-cycle-status` は既存artifactから次に欠けているlocal stepとstop reasonを出すだけで、network / order / live permissionではありません。`crypto-perp-truth-cycle-dogfood-pack` は fixture-only の status / Daily Brief / Workbench Viewer pack を生成するlocal確認入口です。
 
 ### Trade[XYZ] / Quotes / Data Readiness
 

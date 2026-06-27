@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-27_18:28 JST
+更新日: 2026-06-27_19:20 JST
 -->
 
 # Implemented Surfaces
@@ -57,6 +57,9 @@ production live trading、wallet、signing、exchange write は現行 operator p
 |---|---|---|
 | Crypto Perp Truth-Cycle MVP artifact chain | implemented as local / fixture-first artifact chain, no automatic trading | `crypto-perp-probe-audit`, `crypto-perp-raw-refresh`, `crypto-perp-decision-record`, `crypto-perp-outcome-record`, `crypto-perp-truth-cycle-status`, `src/sis/crypto_perp/`, `schemas/crypto_perp_*.schema.json`, `tests/crypto_perp/`, `crypto-perp-*` read-only/mock-first CLI commands |
 | Outcome-to-tournament rows preview | implemented as matured outcome to 3action before-cost proxy rows, no actual cash claim | `crypto-perp-tournament-rows-preview`, `src/sis/crypto_perp/tournament_rows.py`, `schemas/crypto_perp_tournament_rows_preview.v1.schema.json`, `tests/crypto_perp/test_tournament_rows.py` |
+| Profit-readiness source / replay / feature / edge layer | implemented as local evidence artifacts, no ML claim and no source zero-fill | `crypto-perp-source-availability`, `crypto-perp-replay-slice`, `crypto-perp-feature-pack`, `crypto-perp-edge-score`, `src/sis/crypto_perp/source_availability.py`, `src/sis/crypto_perp/replay.py`, `src/sis/crypto_perp/features.py`, `src/sis/crypto_perp/edge_scorer.py`, `schemas/crypto_perp_source_availability.v1.schema.json`, `schemas/crypto_perp_replay_slice.v1.schema.json`, `schemas/crypto_perp_feature_pack.v1.schema.json`, `schemas/crypto_perp_edge_score.v1.schema.json`, `tests/crypto_perp/` |
+| Cost-aware tournament rows and bias guard | implemented as estimate/stress rows and sample/bias guard, not actual cash proof | `crypto-perp-tournament-rows-v2`, `crypto-perp-bias-guard`, `src/sis/crypto_perp/tournament_rows.py`, `src/sis/crypto_perp/bias_guards.py`, `schemas/crypto_perp_tournament_rows.v2.schema.json`, `schemas/crypto_perp_bias_guard.v1.schema.json`, `tests/crypto_perp/test_tournament_rows.py`, `tests/crypto_perp/test_bias_guards.py` |
+| Tiny-live shadow measurement | implemented as non-order preflight artifact, always false for live permission and exchange write | `crypto-perp-tiny-live-shadow`, `src/sis/crypto_perp/tiny_live_shadow.py`, `schemas/crypto_perp_tiny_live_shadow.v1.schema.json`, `tests/crypto_perp/test_tiny_live_shadow.py` |
 | Hypothesis tournament and Workbench bridge | tournament report implemented as local CLI; Workbench bridge as Python artifact helper | `crypto-perp-tournament-report`, `src/sis/crypto_perp/tournament.py`, `src/sis/crypto_perp/workbench_bridge.py`, `schemas/crypto_perp_tournament_report.v1.schema.json`, `tests/crypto_perp/test_tournament.py`, `tests/crypto_perp/test_workbench_bridge.py` |
 | Tournament gate decision | implemented as local threshold gate, no tiny live execution permission | `crypto-perp-tournament-gate`, `src/sis/crypto_perp/tournament_gate.py`, `schemas/crypto_perp_tournament_gate.v1.schema.json`, `tests/crypto_perp/test_tournament_gate.py` |
 
@@ -109,6 +112,7 @@ NDX approvals do not prove alpha, backtest readiness, paper readiness, live read
 - `strategy-next-scale-plan` creates a next scale planning artifact only. It does not permit next-scale execution or live execution.
 - `strategy-workbench-viewer-build` creates a static HTML viewer from existing artifacts only. It can summarize `strategy_case_index.v1`, but does not edit artifacts, persist registry state, or permit paper/live execution.
 - Crypto Perp tournament compares `REVERSAL_SHORT`, `CONTINUATION_LONG`, and `NO_TRADE` on the same event set. `actual_cash_result_usd` is primary, and insufficient data remains `INCONCLUSIVE_DATA`. Rows produced by `crypto-perp-tournament-rows-preview` are `outcome_before_cost_proxy`, not actual cash evidence, and preview known gaps are carried into reports when the preview artifact is used as input.
+- Crypto Perp profit-readiness rows v2 use `cost_adjusted_cash_estimate_usd` and `stress_cash_estimate_usd`. They do not populate `actual_cash_result_usd` unless actual cash evidence is supplied.
 - `crypto-perp-truth-cycle-status` reads existing Crypto Perp artifacts and reports the next missing local step, stop reasons, and known gaps. It does not fetch network data or permit live execution.
 - `crypto-perp-tournament-gate` creates a local gate artifact only. `READY_FOR_HUMAN_TINY_LIVE_REVIEW` is not live execution permission and still requires separate explicit approval; CLI stdout reports this as `status=needs_human_approval`, not `status=pass`.
 - `strategy-review-build` creates review artifacts only. Optional `--input-contract` and `--strategy-idea` add read-only source summaries. `strategy-review-record` records human decisions against those artifacts. Neither authorizes paper execution or live trading.

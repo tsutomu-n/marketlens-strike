@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-21_21:07 JST
+更新日: 2026-06-27_19:20 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -20,6 +20,8 @@ Crypto Perp Truth-Cycle の post-MVP 実務runbookです。目的は、candidate
 - [../CURRENT_STATE.md](../CURRENT_STATE.md)
 - [../IMPLEMENTED_SURFACES.md](../IMPLEMENTED_SURFACES.md)
 - [../NEXT_DIRECTION_CURRENT.md](../NEXT_DIRECTION_CURRENT.md)
+- [../crypto_perp/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md](../crypto_perp/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md)
+- [../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md)
 
 ## P00: tournament rows からreportを再生成する
 
@@ -41,6 +43,10 @@ uv run sis crypto-perp-truth-cycle-dogfood-pack \
 uv run sis crypto-perp-truth-cycle-status \
   --probe-audit data/crypto_perp/probe_audit/latest/probe_audit.json \
   --raw-refresh data/crypto_perp/raw_refresh/latest/raw_refresh.json \
+  --source-availability data/crypto_perp/source_availability/latest/source_availability.json \
+  --edge-score data/crypto_perp/edge_score/latest/edge_score.json \
+  --rows-v2 data/crypto_perp/tournament_rows_v2/latest/tournament_rows_v2.json \
+  --bias-guard data/crypto_perp/bias_guard/latest/bias_guard.json \
   --out data/crypto_perp/truth_cycle_status/latest
 ```
 
@@ -58,6 +64,7 @@ uv run sis crypto-perp-truth-cycle-status \
 - `stage_checklist`
 - `stop_reasons`
 - `known_gaps`
+- `operator_decision`
 - 各stageの `present` / `status`
 
 `next_steps` は `recommended_next_command` より先に読みます。`verify_artifact_path` が出ている場合は、CLIを再実行する前に指定pathやrun directoryを確認します。`requires_explicit_approval=true` が出ている場合は、このrunbookから先へは進めません。
@@ -293,6 +300,65 @@ uv run sis crypto-perp-tournament-rows-preview \
 
 ## P06: reportから次 action を決める
 
+profit-readiness 層で source availability、replay slice、feature pack、edge score、cost-aware rows、bias guardを作る場合は、次の順で local artifact を作ります。
+
+```bash
+uv run sis crypto-perp-source-availability \
+  --event data/crypto_perp/events/<event-id>/event.json \
+  --available-source bars \
+  --available-source ticker \
+  --available-source funding \
+  --row-count bars=592 \
+  --out data/crypto_perp/source_availability/<event-id>
+
+uv run sis crypto-perp-replay-slice \
+  --event data/crypto_perp/events/<event-id>/event.json \
+  --included-source event \
+  --included-source bars \
+  --row-count bars=592 \
+  --out data/crypto_perp/replay_slice/<event-id>
+
+uv run sis crypto-perp-feature-pack \
+  --event data/crypto_perp/events/<event-id>/event.json \
+  --source-availability data/crypto_perp/source_availability/<event-id>/source_availability.json \
+  --out data/crypto_perp/feature_pack/<event-id>
+
+uv run sis crypto-perp-edge-score \
+  --feature-pack data/crypto_perp/feature_pack/<event-id>/feature_pack.json \
+  --source-availability data/crypto_perp/source_availability/<event-id>/source_availability.json \
+  --out data/crypto_perp/edge_score/<event-id>
+
+uv run sis crypto-perp-tournament-rows-v2 \
+  --outcome data/crypto_perp/outcomes/<event-id>/<outcome-id>.json \
+  --notional-usd 25 \
+  --fee-rate 0.0006 \
+  --funding-rate 0 \
+  --slippage-bps 2 \
+  --operator-time-minutes 2 \
+  --operator-hourly-cost-usd 60 \
+  --out data/crypto_perp/tournament_rows_v2/<event-id>
+
+uv run sis crypto-perp-bias-guard \
+  --rows-v2 data/crypto_perp/tournament_rows_v2/<event-id>/tournament_rows_v2.json \
+  --min-events-for-pbo 30 \
+  --fold-count 0 \
+  --out data/crypto_perp/bias_guard/<event-id>
+```
+
+見るもの:
+
+- `source_availability.can_compute_*`
+- `feature_pack.known_gaps`
+- `edge_score.selected_action` と `why_no_trade`
+- `tournament_rows_v2.rows[].cost_adjusted_cash_estimate_usd`
+- `tournament_rows_v2.rows[].stress_cash_estimate_usd`
+- `tournament_rows_v2.rows[].evidence_level`
+- `bias_guard.guard_status`
+- `bias_guard.pbo_status`
+- `bias_guard.stop_reasons`
+
+`crypto-perp-tournament-rows-v2` は estimate surface です。`actual_cash_result_usd` は actual cash evidence が渡された場合だけ使い、通常の outcome 由来 rows では `null` のまま読みます。
+
 ```bash
 uv run sis crypto-perp-tournament-report \
   --rows data/crypto_perp/tournament_rows_preview/<event-id>/tournament_rows_preview.json \
@@ -347,6 +413,18 @@ uv run sis crypto-perp-tournament-gate \
 ## tiny live measurementへ進む前の境界
 
 tiny live measurement はこのrunbookの範囲外です。進むには別の明示承認が必要です。
+
+承認前の非発注 preflight だけを shadow artifact にする場合は、次を使います。
+
+```bash
+uv run sis crypto-perp-tiny-live-shadow \
+  --account data/crypto_perp/account_probe/latest/account_snapshot.json \
+  --order-preview data/crypto_perp/order_preview/latest/order_preview.json \
+  --out data/crypto_perp/tiny_live_shadow/latest \
+  --max-notional-usd 25
+```
+
+この artifact は `exchange_write_used=false`、`live_order_submitted=false`、`permits_live_order=false` を必ず満たします。`preflight_status=PASS` でも実発注許可ではありません。
 
 最低条件:
 

@@ -1,9 +1,86 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-27_18:32 JST
+更新日: 2026-06-27_19:20 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Crypto Perp Profit-Readiness Evidence Layer
+
+Completed on branch `ai/crypto-perp-profit-readiness-20260627-1901`.
+
+Achieved:
+
+- Added current plan, surface inventory, and acceptance vocabulary under `docs/crypto_perp/`.
+- Added local source availability, replay slice, feature pack, deterministic edge score, cost-aware tournament rows v2, bias guard, and tiny-live shadow surfaces.
+- Added public local CLI entries: `crypto-perp-source-availability`, `crypto-perp-replay-slice`, `crypto-perp-feature-pack`, `crypto-perp-edge-score`, `crypto-perp-tournament-rows-v2`, `crypto-perp-bias-guard`, and `crypto-perp-tiny-live-shadow`.
+- Kept `actual_cash_result_usd` separate from `before_cost_proxy_usd`, `cost_adjusted_cash_estimate_usd`, and `stress_cash_estimate_usd`.
+- Kept missing OFI / trade sign / depth sources as known gaps instead of zero-filling them.
+- Added `operator_decision` summary support to `crypto_perp_truth_cycle_status.v1`.
+- Updated Workbench bridge execution reality so proxy-gap reports are not marked as including fills/slippage.
+- Updated current docs, CLI catalog, and the Crypto Perp runbook.
+- Did not add dependencies, external API calls, credential writes, exchange writes, live orders, daemon behavior, or automatic trading.
+
+Main files changed:
+
+- `docs/crypto_perp/`
+- `docs/plans/crypto_perp_profit_readiness_execution_2026-06-27.md`
+- `src/sis/crypto_perp/source_availability.py`
+- `src/sis/crypto_perp/replay.py`
+- `src/sis/crypto_perp/features.py`
+- `src/sis/crypto_perp/edge_scorer.py`
+- `src/sis/crypto_perp/tournament_rows.py`
+- `src/sis/crypto_perp/bias_guards.py`
+- `src/sis/crypto_perp/tiny_live_shadow.py`
+- `src/sis/crypto_perp/truth_cycle_status.py`
+- `src/sis/crypto_perp/workbench_bridge.py`
+- `src/sis/commands/crypto_perp_profit_readiness.py`
+- `schemas/crypto_perp_*.schema.json`
+- `tests/crypto_perp/`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp -q` -> 177 passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 216 public CLI commands.
+- `uv run python scripts/check_current_docs.py` -> checked 184 current docs.
+- `uv run sis crypto-perp-source-availability --help`
+- `uv run sis crypto-perp-tournament-rows-v2 --help`
+- `uv run sis crypto-perp-tiny-live-shadow --help`
+- `uv run sis crypto-perp-truth-cycle-status --help`
+- `git diff --check`
+- `./scripts/check` -> 2803 passed.
+
+Not run:
+
+- External Bitget/public network probes.
+- Credentialed read-only calls.
+- Exchange writes or live order calls.
+- Real tiny-live measurement.
+
+Remaining work:
+
+- Feed real event/outcome/cash-ledger artifacts through the new estimate surfaces before any human tiny-live review.
+- Use actual cash evidence only when cash ledger or live measurement artifacts exist.
+
+User decisions required:
+
+None for this slice.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required. Existing Truth-Cycle MVP v1 artifacts remain valid; profit-readiness artifacts are additional local surfaces.
+
+Rollback:
+
+Revert the profit-readiness docs, schema, model, CLI, tests, and status/workbench summary changes from this addendum.
 
 ## Latest Addendum: PR-AI-LOOP-01 Structured AI Review Findings
 

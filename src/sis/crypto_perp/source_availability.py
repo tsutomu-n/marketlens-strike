@@ -93,7 +93,9 @@ def _infer_available(
     if source_id == "bars":
         return any(_source_ref_matches(ref, ("candle", "candles", "bar")) for ref in refs)
     if source_id == "ticker":
-        return any(_source_ref_matches(ref, ("ticker", "tickers", "market_snapshot")) for ref in refs)
+        return any(
+            _source_ref_matches(ref, ("ticker", "tickers", "market_snapshot")) for ref in refs
+        )
     if source_id == "funding":
         return event.features_at_detection.funding_rate != ""
     return False
@@ -107,8 +109,12 @@ def _status(
     row_counts: Mapping[str, int],
     source_refs: Sequence[dict[str, str]],
 ) -> SourceAvailabilityStatus:
-    available = _infer_available(source_id, event=event, provided=provided)
     row_count = row_counts.get(source_id)
+    available = (
+        row_count > 0
+        if row_count is not None
+        else _infer_available(source_id, event=event, provided=provided)
+    )
     refs = [
         dict(ref)
         for ref in source_refs
@@ -118,6 +124,9 @@ def _status(
         refs = _source_refs_from_event(event)
     reason = "available" if available else f"{source_id.upper()}_SOURCE_MISSING"
     if available and row_count == 0:
+        available = False
+        reason = f"{source_id.upper()}_ROW_COUNT_ZERO"
+    if row_count == 0:
         available = False
         reason = f"{source_id.upper()}_ROW_COUNT_ZERO"
     return SourceAvailabilityStatus(

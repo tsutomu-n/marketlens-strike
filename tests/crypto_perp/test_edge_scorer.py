@@ -43,7 +43,13 @@ def test_edge_scorer_schema_accepts_artifact() -> None:
     availability = build_source_availability(
         event=event,
         created_at="2026-06-27T10:00:00Z",
-        available_sources={"books": True, "trades": True},
+        available_sources={
+            "bars": True,
+            "ticker": True,
+            "funding": True,
+            "books": True,
+            "trades": True,
+        },
         row_counts={"books": 10, "trades": 10},
     )
     feature_pack = build_feature_pack(
@@ -57,9 +63,7 @@ def test_edge_scorer_schema_accepts_artifact() -> None:
         created_at="2026-06-27T10:02:00Z",
     )
     schema = json.loads(
-        (REPO_ROOT / "schemas/crypto_perp_edge_score.v1.schema.json").read_text(
-            encoding="utf-8"
-        )
+        (REPO_ROOT / "schemas/crypto_perp_edge_score.v1.schema.json").read_text(encoding="utf-8")
     )
 
     Draft202012Validator.check_schema(schema)

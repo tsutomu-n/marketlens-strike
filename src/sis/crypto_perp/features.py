@@ -275,13 +275,15 @@ def build_feature_pack(
             event.event_id,
             serialize_utc_z(event.information_cutoff_at),
             features.model_dump(mode="json"),
-            decimal_to_json_string(trade_sign_imbalance) if trade_sign_imbalance is not None else None,
+            decimal_to_json_string(trade_sign_imbalance)
+            if trade_sign_imbalance is not None
+            else None,
             decimal_to_json_string(ofi) if ofi is not None else None,
             decimal_to_json_string(depth_10bps) if depth_10bps is not None else None,
             computed_gaps,
         ]
     )
-    summary = {
+    summary: dict[str, object] = {
         "event_id": event.event_id,
         "optional_feature_count": len(optional_features),
         "known_gap_count": len(computed_gaps),

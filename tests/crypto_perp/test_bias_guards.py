@@ -64,9 +64,7 @@ def test_bias_guard_schema_accepts_artifact() -> None:
         max_profit_concentration=Decimal("1"),
     )
     schema = json.loads(
-        (REPO_ROOT / "schemas/crypto_perp_bias_guard.v1.schema.json").read_text(
-            encoding="utf-8"
-        )
+        (REPO_ROOT / "schemas/crypto_perp_bias_guard.v1.schema.json").read_text(encoding="utf-8")
     )
 
     Draft202012Validator.check_schema(schema)

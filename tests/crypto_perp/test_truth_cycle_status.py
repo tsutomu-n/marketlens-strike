@@ -9,6 +9,9 @@ from typer.testing import CliRunner
 
 from sis.cli import app
 from sis.crypto_perp.tournament import TournamentEventResult, build_tournament_report
+from sis.crypto_perp.bias_guards import build_bias_guard
+from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
+from sis.crypto_perp.tournament_rows import build_cost_aware_tournament_rows
 from sis.crypto_perp.tournament_gate import build_tournament_gate
 from sis.crypto_perp.truth_cycle_status import build_truth_cycle_status
 
@@ -246,6 +249,45 @@ def test_truth_cycle_status_schema_and_cli(tmp_path: Path) -> None:
     assert "## Next Steps" in report
     assert "## Stage Checklist" in report
     assert "--raw-refresh" in report
+
+
+def test_truth_cycle_status_carries_profit_readiness_operator_decision(
+    tmp_path: Path,
+) -> None:
+    outcome = build_outcome(
+        event_id="event-1",
+        settled_at="2026-06-27T10:00:00Z",
+        horizons=[
+            OutcomePriceWindow(
+                horizon_minutes=60,
+                matured=True,
+                reference_price=Decimal("100"),
+                close_price=Decimal("110"),
+                high_price=Decimal("111"),
+                low_price=Decimal("99"),
+            )
+        ],
+    )
+    rows_v2 = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-27T10:01:00Z",
+        notional_usd=Decimal("25"),
+    )
+    guard = build_bias_guard(
+        rows=rows_v2.rows,
+        created_at="2026-06-27T10:02:00Z",
+        min_events_for_pbo=30,
+        fold_count=0,
+    )
+    rows_path = _write_json(tmp_path / "rows_v2.json", rows_v2.model_dump(mode="json"))
+    guard_path = _write_json(tmp_path / "bias_guard.json", guard.model_dump(mode="json"))
+
+    status = build_truth_cycle_status(rows_v2_path=rows_path, bias_guard_path=guard_path)
+
+    assert status.operator_decision["cost_aware_rows_present"] is True
+    assert status.operator_decision["bias_guard_status"] == "BLOCKED"
+    assert status.operator_decision["pbo_status"] == "NOT_ESTIMABLE"
+    assert "BIAS_GUARD_FAILED_sample_sufficient_for_pbo" in status.stop_reasons
 
 
 def test_truth_cycle_dogfood_pack_cli_builds_status_brief_and_viewer(

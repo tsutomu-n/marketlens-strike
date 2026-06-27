@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-27_18:28 JST
+更新日: 2026-06-27_19:20 JST
 -->
 
 # Next Direction Current
@@ -28,13 +28,21 @@ Crypto Perp の実装済み handoff は [../plan/archive/2026-06-22-crypto-perp-
 実装済みの次入口:
 
 - `crypto-perp-truth-cycle-status`: 手元のprobe audit / raw refresh / event / decision / outcome / rows / report / gate artifactを読み、次に欠けているlocal step、stop reason、known gapsを出す。network / order / live permissionではない。
+- `crypto-perp-source-availability`: eventごとに bars / ticker / funding / trades / books / replay / cash ledger / live measurement の可用性をlocal artifactにする。欠損sourceは0埋めしない。
+- `crypto-perp-replay-slice`: eventの `information_cutoff_at` 以前のsource refs / row counts / min-max timestampを記録する。future dataを含めない。
+- `crypto-perp-feature-pack`: `event_return`、`turnover_impulse`、`spread_bps`、`mark_index_basis_bps`、`funding_rate` と optional feature の欠損をaction決定から分離して出す。
+- `crypto-perp-edge-score`: deterministic ruleで `REVERSAL_SHORT` / `CONTINUATION_LONG` / `NO_TRADE` / `UNKNOWN` を比較する。ML予測ではない。
 - `crypto-perp-decision-record`: event JSONから outcome前の `crypto_perp_decision.v1` を作る。
 - `crypto-perp-outcome-record`: event JSONまたはevent idから `crypto_perp_outcome.v1` を作る。
 - `crypto-perp-probe-audit`: public provider probe後に、event候補へ進めるだけのendpoint / raw snapshot証拠があるかをlocal artifactで判定する。
 - `crypto-perp-raw-refresh`: audit済みprobe rawから universe snapshot、market snapshot、candle quality、event候補をlocal artifactとして再生成する。
 - `crypto-perp-tournament-rows-preview`: matured outcomeから `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` の3action rows previewを作る。これは before-cost proxy であり、actual cash実績ではない。
+- `crypto-perp-tournament-rows-v2`: matured outcomeから fee / funding / slippage / operator time を控除した `cost_adjusted_cash_estimate_usd` と `stress_cash_estimate_usd` を作る。actual cashではない。
 - `crypto-perp-tournament-report`: JSON / JSONL rowsから `crypto_perp_tournament_report.v1` とMarkdown reportを作る。
+- `crypto-perp-bias-guard`: sample不足を `pbo_status=NOT_ESTIMABLE` として出し、lookahead / recursive warmup / stress loss / concentrationを止める。
+- `crypto-perp-tiny-live-shadow`: 実発注せず、25 USD cap / isolated / flat / order preview ready を確認する shadow artifact を作る。`permits_live_order=false`。
 - `crypto-perp-tournament-gate`: reportから proxy gap、event不足、NO_TRADE leader、largest loss、profit concentration、operator time を読んで、次actionをlocal artifactに分ける。live order permissionではない。
+- [crypto_perp/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md](crypto_perp/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md): profit-readiness追加層の current plan。
 - [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md): candidate eventからdecision / outcome / tournament reportまでの再生成手順。
 
 次に進める順番:

@@ -149,7 +149,11 @@ class CostAwareTournamentRow(BaseModel):
     def serialize_decimal(self, value: Decimal | None) -> str | None:
         if value is None:
             return None
-        return str(value.normalize()) if value != value.to_integral() else str(value.quantize(Decimal("1")))
+        return (
+            str(value.normalize())
+            if value != value.to_integral()
+            else str(value.quantize(Decimal("1")))
+        )
 
 
 class CryptoPerpTournamentRowsV2(BaseModel):
@@ -162,9 +166,7 @@ class CryptoPerpTournamentRowsV2(BaseModel):
     source_refs: list[dict[str, str]]
     boundary: CryptoPerpBoundary = Field(default_factory=CryptoPerpBoundary)
     row_set_id: str
-    primary_metric: Literal["cost_adjusted_cash_estimate_usd"] = (
-        "cost_adjusted_cash_estimate_usd"
-    )
+    primary_metric: Literal["cost_adjusted_cash_estimate_usd"] = "cost_adjusted_cash_estimate_usd"
     event_set: list[str]
     rows: list[CostAwareTournamentRow]
     known_gaps: list[str]
@@ -234,9 +236,13 @@ def _cost_aware_row(
         else Decimal("0")
     )
     cost_adjusted = before_cost_proxy_usd - fee - funding - slippage - operator_cost
-    stress = before_cost_proxy_usd - fee - funding - (
-        slippage * stress_slippage_multiplier
-    ) - operator_cost
+    stress = (
+        before_cost_proxy_usd
+        - fee
+        - funding
+        - (slippage * stress_slippage_multiplier)
+        - operator_cost
+    )
     known_gaps = list(extra_known_gaps)
     if actual_cash_result_usd is None and is_trade:
         known_gaps.append("ACTUAL_CASH_RESULT_NOT_AVAILABLE")
@@ -251,7 +257,9 @@ def _cost_aware_row(
         operator_time_cost_usd=operator_cost,
         cost_adjusted_cash_estimate_usd=cost_adjusted,
         stress_cash_estimate_usd=stress,
-        evidence_level="actual_cash" if actual_cash_result_usd is not None else "cost_adjusted_estimate",
+        evidence_level="actual_cash"
+        if actual_cash_result_usd is not None
+        else "cost_adjusted_estimate",
         actual_cash_result_usd=actual_cash_result_usd,
         market_adjusted_return=market_adjusted_return,
         operator_time_minutes=operator_time_minutes if is_trade else Decimal("0"),
@@ -317,11 +325,7 @@ def _rows_for_outcome(
 def _leader_action(rows: Sequence[CostAwareTournamentRow]) -> TournamentAction | None:
     by_action: dict[TournamentAction, Decimal] = {
         action: sum(
-            (
-                row.cost_adjusted_cash_estimate_usd
-                for row in rows
-                if row.action == action
-            ),
+            (row.cost_adjusted_cash_estimate_usd for row in rows if row.action == action),
             Decimal("0"),
         )
         for action in TOURNAMENT_ACTIONS
@@ -391,11 +395,7 @@ def build_cost_aware_tournament_rows(
     )
     leader_total = (
         sum(
-            (
-                row.cost_adjusted_cash_estimate_usd
-                for row in rows
-                if row.action == leader
-            ),
+            (row.cost_adjusted_cash_estimate_usd for row in rows if row.action == leader),
             Decimal("0"),
         )
         if leader is not None

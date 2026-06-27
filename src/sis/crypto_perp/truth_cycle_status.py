@@ -212,7 +212,9 @@ def _operator_decision(
         stop_reasons.extend(str(reason) for reason in bias_guard.get("stop_reasons") or [])
         known_gaps.extend(str(gap) for gap in bias_guard.get("known_gaps") or [])
     if not stop_reasons and rows_v2 is not None and bias_guard is not None:
-        decision["next_command"] = "uv run sis crypto-perp-tiny-live-shadow --account <account_snapshot.json> --order-preview <order_preview.json> --out <shadow-dir>"
+        decision["next_command"] = (
+            "uv run sis crypto-perp-tiny-live-shadow --account <account_snapshot.json> --order-preview <order_preview.json> --out <shadow-dir>"
+        )
     decision["stop_reasons"] = list(dict.fromkeys(stop_reasons))
     decision["known_gaps"] = list(dict.fromkeys(known_gaps))
     return decision

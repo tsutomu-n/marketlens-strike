@@ -60,7 +60,11 @@ class CryptoPerpBiasGuard(BaseModel):
 
     @field_serializer("max_profit_concentration")
     def serialize_decimal(self, value: Decimal) -> str:
-        return str(value.normalize()) if value != value.to_integral() else str(value.quantize(Decimal("1")))
+        return (
+            str(value.normalize())
+            if value != value.to_integral()
+            else str(value.quantize(Decimal("1")))
+        )
 
 
 def _check(check_id: str, passed: bool, observed: object, required: object) -> BiasGuardCheck:
@@ -76,7 +80,9 @@ def _event_set(rows: Sequence[CostAwareTournamentRow]) -> list[str]:
     return sorted({row.event_id for row in rows})
 
 
-def _profit_concentration(rows: Sequence[CostAwareTournamentRow], action: TournamentAction) -> Decimal:
+def _profit_concentration(
+    rows: Sequence[CostAwareTournamentRow], action: TournamentAction
+) -> Decimal:
     values = [row.cost_adjusted_cash_estimate_usd for row in rows if row.action == action]
     positives = [value for value in values if value > 0]
     total = sum(positives, Decimal("0"))
@@ -86,7 +92,9 @@ def _profit_concentration(rows: Sequence[CostAwareTournamentRow], action: Tourna
 
 
 def _max_concentration(rows: Sequence[CostAwareTournamentRow]) -> Decimal:
-    return max((_profit_concentration(rows, action) for action in TOURNAMENT_ACTIONS), default=Decimal("0"))
+    return max(
+        (_profit_concentration(rows, action) for action in TOURNAMENT_ACTIONS), default=Decimal("0")
+    )
 
 
 def build_bias_guard(
@@ -119,9 +127,19 @@ def build_bias_guard(
     min_stress = min(row.stress_cash_estimate_usd for row in rows if row.action != "NO_TRADE")
     concentration = _max_concentration(rows)
     checks = [
-        _check("same_event_set_has_three_actions", len(rows) == event_count * 3, len(rows), event_count * 3),
+        _check(
+            "same_event_set_has_three_actions",
+            len(rows) == event_count * 3,
+            len(rows),
+            event_count * 3,
+        ),
         _check("lookahead_absent", not lookahead_violation, lookahead_violation, False),
-        _check("recursive_warmup_absent", not recursive_warmup_violation, recursive_warmup_violation, False),
+        _check(
+            "recursive_warmup_absent",
+            not recursive_warmup_violation,
+            recursive_warmup_violation,
+            False,
+        ),
         _check("sample_sufficient_for_pbo", pbo_status == "ESTIMATED", pbo_status, "ESTIMATED"),
         _check("stress_cash_non_negative", min_stress >= 0, min_stress, ">= 0"),
         _check(

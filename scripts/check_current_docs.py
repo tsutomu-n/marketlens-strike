@@ -82,6 +82,7 @@ CURRENT_DOC_DIRS = (
     "docs/strategy_idea_candidates",
     "docs/plans",
     "docs/runbooks",
+    "docs/crypto_perp",
     "docs/venues",
     "docs/references/crypto_perp",
     "docs/algo/strategy_factory",

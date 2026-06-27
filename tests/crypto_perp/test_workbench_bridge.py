@@ -118,3 +118,34 @@ def test_existing_workbench_viewer_consumes_tournament_json(tmp_path: Path) -> N
     assert source.status == "COMPLETE"
     assert source.summary["leader_action"] == "CONTINUATION_LONG"
     assert source.summary["primary_metric"] == "actual_cash_result_usd"
+
+
+def test_workbench_bridge_does_not_mark_proxy_gap_report_as_including_fills(
+    tmp_path: Path,
+) -> None:
+    report = build_tournament_report(
+        report_id="tournament-proxy",
+        generated_at="2026-06-21T07:00:00Z",
+        rows=_report().rows,
+        min_events=2,
+        known_gaps=[
+            "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH",
+            "FEES_FUNDING_AND_FILL_SLIPPAGE_NOT_INCLUDED",
+        ],
+    )
+    report_path = tmp_path / "data/crypto_perp/tournament_proxy.json"
+    write_json_object(report_path, report.model_dump(mode="json"))
+
+    contract = build_tournament_strategy_input_contract(
+        report=report,
+        report_path="data/crypto_perp/tournament_proxy.json",
+        report_sha256=sha256_file(report_path),
+        instruments=["BTCUSDT"],
+        timeframe="15m",
+        created_at="2026-06-21T07:01:00Z",
+    )
+
+    reality = contract.sources[0].execution_reality
+    assert reality.includes_fills is False
+    assert reality.includes_slippage is False
+    assert reality.assumed_order_type == "crypto_perp_estimate_or_before_cost_proxy"
