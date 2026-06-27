@@ -9,6 +9,8 @@ from typing import Any
 
 from sis.backtest.artifact_io import read_json_object, sha256_file
 from sis.strategy_ai_review.models import (
+    AIReviewContextEntryValue,
+    AIReviewContextSection,
     AIReviewPacketReference,
     AIReviewPacketStatus,
     AIReviewRecommendation,
@@ -39,6 +41,8 @@ SAFE_FALSE_BOUNDARY_KEYS = {
     "signing_used",
     "credentials_used",
 }
+
+STRATEGY_CASE_LITE_SCHEMA_VERSION = "strategy_case_lite.v1"
 
 
 @dataclass(frozen=True)
@@ -120,6 +124,68 @@ def _source_summary(path: Path, payload: dict[str, Any]) -> AIReviewSourceSummar
     )
 
 
+def _optional_int(payload: dict[str, Any], key: str) -> int | None:
+    value = payload.get(key)
+    if isinstance(value, int):
+        return value
+    return None
+
+
+def _optional_string_list(payload: dict[str, Any], key: str) -> list[str] | None:
+    value = payload.get(key)
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    return None
+
+
+def _strategy_case_lite_context(
+    path: Path, payload: dict[str, Any]
+) -> AIReviewContextSection | None:
+    summary = payload.get("summary")
+    if not isinstance(summary, dict):
+        return None
+
+    entries: dict[str, AIReviewContextEntryValue] = {}
+    for key in ("strategy_id", "case_id", "updated_at"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            entries[key] = value.strip()
+
+    for key in ("artifact_count", "timeline_count"):
+        value = _optional_int(summary, key)
+        if value is not None:
+            entries[key] = value
+
+    latest_status = summary.get("latest_status")
+    if latest_status is None or isinstance(latest_status, str):
+        entries["latest_status"] = latest_status.strip() if isinstance(latest_status, str) else None
+
+    for key in ("open_actions", "blocked_reasons"):
+        value = _optional_string_list(summary, key)
+        if value is not None:
+            entries[key] = value
+
+    if not entries:
+        return None
+
+    return AIReviewContextSection(
+        section_type="strategy_case_lite_summary",
+        title="Strategy Case Lite Summary",
+        source_path=repo_relative_path(path),
+        schema_version=STRATEGY_CASE_LITE_SCHEMA_VERSION,
+        entries=entries,
+    )
+
+
+def _context_sections_for_source(
+    path: Path, payload: dict[str, Any]
+) -> list[AIReviewContextSection]:
+    if payload.get("schema_version") != STRATEGY_CASE_LITE_SCHEMA_VERSION:
+        return []
+    section = _strategy_case_lite_context(path, payload)
+    return [section] if section is not None else []
+
+
 def _packet_status(source_count: int, sensitive_count: int) -> AIReviewPacketStatus:
     if source_count == 0:
         return AIReviewPacketStatus.NO_SOURCES
@@ -142,16 +208,21 @@ def build_ai_review_packet(
         raise FileNotFoundError(f"source artifact missing: {missing[0]}")
 
     summaries: list[AIReviewSourceSummary] = []
+    context_sections: list[AIReviewContextSection] = []
     sensitive_count = 0
     for path in source_paths:
         payload = read_json_object(path)
-        if _has_sensitive_key(payload):
+        has_sensitive_key = _has_sensitive_key(payload)
+        if has_sensitive_key:
             sensitive_count += 1
+        else:
+            context_sections.extend(_context_sections_for_source(path, payload))
         summaries.append(_source_summary(path, payload))
 
     ai_input_hash = _hash_payload(
         {
             "source_summaries": [summary.model_dump(mode="json") for summary in summaries],
+            "context_sections": [section.model_dump(mode="json") for section in context_sections],
             "review_questions": review_questions or [],
         }
     )
@@ -161,6 +232,7 @@ def build_ai_review_packet(
         producer=StageProducer(command="strategy-ai-review-packet-build"),
         packet_status=_packet_status(len(summaries), sensitive_count),
         source_summaries=summaries,
+        context_sections=context_sections,
         sensitive_source_count=sensitive_count,
         review_questions=review_questions or [],
         ai_input_hash=ai_input_hash,

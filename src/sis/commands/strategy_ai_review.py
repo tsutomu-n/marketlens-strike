@@ -72,6 +72,7 @@ def register_strategy_ai_review_commands(app: typer.Typer) -> None:
         typer.echo("status=pass")
         typer.echo(f"packet_status={packet.packet_status.value}")
         typer.echo(f"source_count={len(packet.source_summaries)}")
+        typer.echo(f"context_section_count={len(packet.context_sections)}")
         typer.echo(f"sensitive_source_count={packet.sensitive_source_count}")
         typer.echo(f"packet_path={result.packet_path.as_posix()}")
         typer.echo(f"report_path={result.report_path.as_posix()}")

@@ -29,10 +29,37 @@ def _safe_source(tmp_path: Path) -> Path:
         {
             "schema_version": "strategy_case_lite.v1",
             "strategy_id": "ndx-breakout-001",
+            "case_id": "ndx-breakout-001",
             "updated_at": "2026-06-19T01:00:00Z",
+            "source_artifacts": [
+                {
+                    "artifact_type": "strategy_stage_decision",
+                    "path": "data/internal/full-stage-decision.json",
+                    "sha256": "sha256:" + "1" * 64,
+                    "schema_version": "strategy_stage_decision.v1",
+                }
+            ],
+            "timeline": [
+                {
+                    "artifact_type": "strategy_stage_decision",
+                    "path": "data/internal/full-stage-decision.json",
+                    "sha256": "sha256:" + "1" * 64,
+                    "schema_version": "strategy_stage_decision.v1",
+                    "event_time": "2026-06-19T00:55:00Z",
+                    "status": "READY_FOR_HUMAN_DRIFT_REVIEW",
+                    "action": "REVISE_STRATEGY",
+                    "blocked_reasons": [],
+                }
+            ],
             "summary": {
+                "artifact_count": 1,
+                "timeline_count": 1,
                 "latest_status": "READY_FOR_HUMAN_DRIFT_REVIEW",
                 "open_actions": ["REVISE_STRATEGY"],
+                "blocked_reasons": [],
+                "latest_source_hashes": {
+                    "strategy_stage_decision": "sha256:" + "1" * 64,
+                },
             },
             "wallet_used": False,
             "exchange_write_used": False,
@@ -54,11 +81,51 @@ def test_ai_review_packet_uses_safe_summary_not_full_payload(tmp_path: Path, mon
     assert result.packet.sensitive_source_count == 0
     assert result.packet.permission_allowed is False
     assert result.packet.source_summaries[0].strategy_id == "ndx-breakout-001"
+    assert len(result.packet.context_sections) == 1
+    context = result.packet.context_sections[0]
+    assert context.section_type == "strategy_case_lite_summary"
+    assert context.entries == {
+        "strategy_id": "ndx-breakout-001",
+        "case_id": "ndx-breakout-001",
+        "updated_at": "2026-06-19T01:00:00Z",
+        "artifact_count": 1,
+        "timeline_count": 1,
+        "latest_status": "READY_FOR_HUMAN_DRIFT_REVIEW",
+        "open_actions": ["REVISE_STRATEGY"],
+        "blocked_reasons": [],
+    }
     payload = json.loads(result.packet_path.read_text(encoding="utf-8"))
     Draft202012Validator(_schema("strategy_ai_review_packet.v1.schema.json")).validate(payload)
     serialized = json.dumps(payload, sort_keys=True)
-    assert "summary" not in serialized
-    assert "open_actions" not in serialized
+    assert "source_artifacts" not in serialized
+    assert '"timeline":' not in serialized
+    assert "latest_source_hashes" not in serialized
+    assert "data/internal/full-stage-decision.json" not in serialized
+
+
+def test_ai_review_packet_does_not_contextualize_unknown_schema(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    source = _write_json(
+        tmp_path / "data/unknown.json",
+        {
+            "schema_version": "unknown_payload.v1",
+            "strategy_id": "ndx-breakout-001",
+            "summary": {"would_leak_if_generic": "do not include"},
+        },
+    )
+
+    result = build_ai_review_packet(
+        source_paths=[source],
+        out_dir=tmp_path / "data/strategy_ai_reviews/ndx-breakout-001",
+    )
+
+    assert result.packet.packet_status.value == "READY_FOR_AI_REVIEW"
+    assert result.packet.context_sections == []
+    serialized = result.packet_path.read_text(encoding="utf-8")
+    assert "would_leak_if_generic" not in serialized
+    assert "do not include" not in serialized
 
 
 def test_ai_review_packet_blocks_sensitive_source_without_leaking_value(

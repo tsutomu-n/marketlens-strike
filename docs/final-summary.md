@@ -1,9 +1,74 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-27_14:51 JST
+更新日: 2026-06-27_16:28 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: PR-AI-LOOP-00 Safe AI Review Context Sections
+
+Completed on branch `ai/strategy-idea-candidates-20260627-1116`.
+
+Achieved:
+
+- Added `context_sections` to `strategy_ai_review_packet.v1`.
+- Added first allowlist extractor for `strategy_case_lite.v1` summary context only.
+- Kept full source payload out of packet output.
+- Kept unknown schema payload out of `context_sections`.
+- Kept sensitive source behavior as `BLOCKED_SENSITIVE_SOURCE`.
+- Kept `paper_execution_allowed=false`, `live_allowed=false`, and `permission_allowed=false`.
+- Did not execute external AI API calls, auto prompt runs, auto fixes, paper operations, live operations, wallet, signing, or exchange write.
+
+Main files changed:
+
+- `schemas/strategy_ai_review_packet.v1.schema.json`
+- `src/sis/strategy_ai_review/models.py`
+- `src/sis/strategy_ai_review/service.py`
+- `src/sis/strategy_ai_review/rendering.py`
+- `src/sis/commands/strategy_ai_review.py`
+- `tests/strategy_ai_review/`
+- `docs/strategy_ai_review/README.md`
+- `docs/plans/strategy_ai_review_context_sections_pr_ai_loop_00_2026-06-27.md`
+
+Verification:
+
+- `uv run pytest tests/strategy_ai_review -q`
+- `uv run ruff check src/sis/strategy_ai_review src/sis/commands/strategy_ai_review.py tests/strategy_ai_review`
+- `uv run ruff format --check src/sis/strategy_ai_review src/sis/commands/strategy_ai_review.py tests/strategy_ai_review`
+- `uv run sis strategy-ai-review-packet-build --help`
+- `uv run python scripts/check_current_docs.py`
+- `uv run sis strategy-ai-review-packet-build --source data/strategy_cases/pr-ai-loop-00/strategy_case_lite.json --review-question "What should a human inspect next?" --out data/strategy_ai_reviews/pr-ai-loop-00`
+- `./scripts/check`
+
+Not run:
+
+- `strategy-ai-review-note-record` execution.
+- External AI API calls.
+
+Remaining work:
+
+- Decide later whether additional known schemas should get explicit `context_sections` allowlists.
+- Note recording remains a separate step after an AI response exists.
+
+User decisions required:
+
+None for this slice.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Revert the `strategy_ai_review` context section model/schema/service/rendering/test/docs changes and this addendum.
 
 ## Goal
 

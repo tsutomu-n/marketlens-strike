@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-06-19_01:17 JST
-更新日: 2026-06-19_01:17 JST
+更新日: 2026-06-27_16:24 JST
 -->
 
 # Strategy AI Review
 
 ## 結論
 
-Strategy AI Review は、LLM に渡してよい最小限の source summary packet を作り、AI の回答を human review 用 note として記録する first slice です。
+Strategy AI Review は、LLM に渡してよい最小限の source summary と allowlisted context sections を作り、AI の回答を human review 用 note として記録する first slice です。
 
 AI は proposal / critique の補助であり、採用、paper execution、live execution、Strategy Authoring YAML 自動編集を許可しません。
 
@@ -36,7 +36,20 @@ uv run sis strategy-ai-review-note-record \
 - `strategy_ai_review_note.json`
 - `strategy_ai_review_note.md`
 
-Packet は full source payload を入れません。source path、sha256、schema_version、strategy_id、status、action の summary だけを含めます。
+Packet は full source payload を入れません。source path、sha256、schema_version、strategy_id、status、action の summary と、known schema allowlist から作る `context_sections` だけを含めます。
+
+現時点の `context_sections` allowlist は `strategy_case_lite.v1` の summary section だけです。含める値は次に限定します。
+
+- strategy_id
+- case_id
+- updated_at
+- artifact_count
+- timeline_count
+- latest_status
+- open_actions
+- blocked_reasons
+
+`source_artifacts`、`timeline`、`latest_source_hashes`、unknown schema の任意 payload は `context_sections` に入れません。
 
 secret / credential / account detail / wallet / exchange write 系の source が見つかった場合、packet は `BLOCKED_SENSITIVE_SOURCE` になり、AI に渡す ready state にはしません。
 
