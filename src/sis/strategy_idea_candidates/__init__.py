@@ -12,6 +12,11 @@ from sis.strategy_idea_candidates.models import (
     StrategyIdeaCandidate,
     StrategyIdeaCandidateSet,
 )
+from sis.strategy_idea_candidates.operator_review import (
+    StrategyIdeaCandidateOperatorReviewWriteResult,
+    render_strategy_idea_candidate_operator_review_markdown,
+    write_strategy_idea_candidate_operator_review,
+)
 from sis.strategy_idea_candidates.policies import (
     StrategyIdeaCandidatePolicyValidationResult,
     validate_split_and_leakage_policy,
@@ -26,12 +31,15 @@ __all__ = [
     "CandidateDecision",
     "CandidateSetStatus",
     "StrategyIdeaCandidateGeneratorConfig",
+    "StrategyIdeaCandidateOperatorReviewWriteResult",
     "StrategyIdeaCandidatePolicyValidationResult",
     "StrategyIdeaCandidate",
     "StrategyIdeaCandidateSet",
     "build_blocked_candidate_set_from_input_evidence",
     "build_deterministic_candidate_set_from_input_evidence",
     "export_shortlisted_strategy_ideas",
+    "render_strategy_idea_candidate_operator_review_markdown",
     "validate_split_and_leakage_policy",
+    "write_strategy_idea_candidate_operator_review",
     "write_strategy_idea_candidate_set",
 ]

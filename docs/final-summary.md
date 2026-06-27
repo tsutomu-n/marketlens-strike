@@ -7,7 +7,7 @@
 
 ## Goal
 
-Implement the first safe slices of the Strategy Idea Candidate Generation Pipeline: candidate-set contract, Python validation, C4 deterministic generator Python API, C5 split/leakage policy validation API, deterministic JSON/Markdown writer, input-evidence blocking, shortlist export sidecar, docs, and focused tests.
+Implement the first safe slices of the Strategy Idea Candidate Generation Pipeline: candidate-set contract, Python validation, C4 deterministic generator Python API, C5 split/leakage policy validation API, C10 operator review Markdown surface, deterministic JSON/Markdown writer, input-evidence blocking, shortlist export sidecar, docs, and focused tests.
 
 ## Branch
 
@@ -22,6 +22,7 @@ Implement the first safe slices of the Strategy Idea Candidate Generation Pipeli
 - Added C4 deterministic generator Python API with fixed family IDs, finite parameter grids, stable `parameter_grid_hash`, candidate cap recording, duplicate rejection recording, and full candidate inventory.
 - Added `parameter_grids`, `candidate_cap`, and `cap_rejection_count` to `strategy_idea_candidate_set.v1`.
 - Added C5 split/leakage policy validation API for time-window ordering, sealed-test non-use, source available-at boundary, and purge / embargo policy records.
+- Added C10 operator review Markdown surface for exploration counts, rejection reasons, selection policy, known gaps, policy validation, and false boundary flags.
 - Added blocked input-evidence candidate set builder for non-PASS input contract validation.
 - Added shortlist export to strict `strategy_idea.v1` draft JSON while keeping candidate set path/hash in the sidecar manifest.
 - Added tests for schema validation, Python invariant validation, writer determinism, export, and intake validation integration.
@@ -37,6 +38,7 @@ Implement the first safe slices of the Strategy Idea Candidate Generation Pipeli
 - `docs/strategy_idea_candidates/GOAL_AND_GLOSSARY.md`
 - `docs/plans/strategy_idea_candidates_c4_generator_2026-06-27.md`
 - `docs/plans/strategy_idea_candidates_c5_policy_validation_2026-06-27.md`
+- `docs/plans/strategy_idea_candidates_c10_operator_review_2026-06-27.md`
 - `docs/plans/strategy_idea_candidates_p0a_c2_c3_c8_2026-06-27.md`
 - `docs/STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md`
 - `README.md`
@@ -63,7 +65,7 @@ None for this slice.
 - C5 full split engine beyond policy validation API.
 - C6 selection-adjusted metrics beyond `NOT_IMPLEMENTED`.
 - C9 Strategy Lab / backtest bridge.
-- C10 dedicated operator review surface.
+- C10 richer review packet beyond Markdown surface.
 - Public CLI after writer/export behavior is stable.
 
 ## User Decisions Required
