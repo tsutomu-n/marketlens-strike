@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-28_07:24 JST
+更新日: 2026-06-28_07:49 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -303,6 +303,73 @@ uv run sis crypto-perp-tournament-rows-preview \
 - before-cost proxy rowsを実cashとして扱わない。
 
 ## P06: reportから次 action を決める
+
+PR-I2 local automation は、実 event / matured outcome / actual cash ledger が無い状態を成功扱いにしません。dogfood/status/viewer は profit evidence ではありません。まず inventory / plan で、ローカルに進められるかを確認します。
+
+```bash
+uv run sis crypto-perp-profit-readiness-inventory \
+  --data-dir data/crypto_perp \
+  --out data/crypto_perp/artifact_inventory/latest
+
+uv run sis crypto-perp-profit-readiness-plan \
+  --inventory data/crypto_perp/artifact_inventory/latest/inventory.json \
+  --out data/crypto_perp/profit_readiness_plan/latest
+```
+
+止まる条件:
+
+- `inventory_status=BLOCKED_MISSING_EVENT_OR_OUTCOME`: real event または matured outcome が無い。
+- `plan_status=BLOCKED_MULTIPLE_EVENT_OR_OUTCOME_CANDIDATES`: 複数候補があり、自動選択しない。
+
+event/outcome が1件ずつに絞れている場合だけ、plan の command chain または次の local runner を使います。
+
+```bash
+uv run sis crypto-perp-profit-readiness-run-local \
+  --event data/crypto_perp/events/<event-id>/event.json \
+  --outcome data/crypto_perp/outcomes/<event-id>/<outcome-id>.json \
+  --notional-usd 25 \
+  --out data/crypto_perp/profit_readiness_run/<event-id>
+```
+
+actual cash tournament rows は cash ledger と assignment からだけ作ります。preview / estimate / dogfood artifact から actual cash rows を作りません。
+
+```bash
+uv run sis crypto-perp-cash-ledger \
+  --entries data/crypto_perp/cash/entries.jsonl \
+  --ledger-id <ledger-id> \
+  --observed-at 2026-06-21T07:00:00Z \
+  --out data/crypto_perp/cash_ledger/<ledger-id>
+
+uv run sis crypto-perp-actual-cash-rows-build \
+  --ledger data/crypto_perp/cash_ledger/<ledger-id>/cash_ledger.json \
+  --assignment data/crypto_perp/cash/assignment.json \
+  --out data/crypto_perp/tournament/<report-id>/actual_cash_rows
+```
+
+assignment は `event_id`、`action`、`pod_id` を明示します。`NO_TRADE` は `pod_id=null` と cash 0 を許可します。`REVERSAL_SHORT` / `CONTINUATION_LONG` は ledger entry が無ければ失敗し、0埋めしません。
+
+actual-cash report / gate / review packet / readiness は次の順で進めます。ready になっても live order permission ではなく、明示承認待ちの資料です。
+
+```bash
+uv run sis crypto-perp-actual-cash-report-gate \
+  --rows data/crypto_perp/tournament/<report-id>/actual_cash_rows/actual_cash_rows.jsonl \
+  --report-id <report-id> \
+  --min-events 10 \
+  --out data/crypto_perp/tournament/<report-id>/report_gate
+
+uv run sis crypto-perp-tiny-live-review-packet \
+  --report data/crypto_perp/tournament/<report-id>/report_gate/tournament_report.json \
+  --gate data/crypto_perp/tournament/<report-id>/report_gate/tournament_gate.json \
+  --out data/crypto_perp/tiny_live_review_packet/<report-id>
+
+uv run sis crypto-perp-tiny-live-shadow-readiness \
+  --packet data/crypto_perp/tiny_live_review_packet/<report-id>/review_packet.json \
+  --account data/crypto_perp/account/<snapshot-id>/account_snapshot.json \
+  --order-preview data/crypto_perp/order_preview/<preview-id>/order_preview.json \
+  --out data/crypto_perp/tiny_live_shadow_readiness/<report-id>
+```
+
+`crypto-perp-tiny-live-shadow-readiness` は shadow 実行や real measurement をしません。出力は `live_order_allowed=false`、`exchange_write_allowed=false`、`requires_explicit_approval=true` 固定です。
 
 profit-readiness 層で source availability、replay slice、feature pack、edge score、cost-aware rows、bias guardを作る場合は、次の順で local artifact を作ります。
 
