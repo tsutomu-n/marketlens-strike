@@ -1,9 +1,49 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_08:23 JST
+更新日: 2026-06-28_08:26 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Crypto Perp Plan Archive
+
+Completed on branch `ai/docs-code-truth-triage-20260628-0818`.
+
+Achieved:
+
+- Moved Crypto Perp profit-readiness evidence plan and run plan to `docs/archive/2026-06-28-merged-plans/`.
+- Updated `docs/CURRENT_STATE.md`, `docs/NEXT_DIRECTION_CURRENT.md`, `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`, and `docs/crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md` so current routing uses runbook, vocabulary, surface inventory, CLI help, schema, and tests instead of old plan docs.
+- Updated docs triage and archive README with the new archive routing.
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 170 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 224 public CLI commands.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+None for the Crypto Perp plan-doc residual risk.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No. Files were moved to archive, not deleted.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required.
+
+Rollback:
+
+Move the archived Crypto Perp plan docs back to `docs/crypto_perp/` and revert the current-routing updates.
 
 ## Latest Addendum: Strategy AI Review Plan Archive
 

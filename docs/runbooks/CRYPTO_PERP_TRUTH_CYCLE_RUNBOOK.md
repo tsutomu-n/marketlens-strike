@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-28_07:49 JST
+更新日: 2026-06-28_08:26 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -20,7 +20,7 @@ Crypto Perp Truth-Cycle の post-MVP 実務runbookです。目的は、candidate
 - [../CURRENT_STATE.md](../CURRENT_STATE.md)
 - [../IMPLEMENTED_SURFACES.md](../IMPLEMENTED_SURFACES.md)
 - [../NEXT_DIRECTION_CURRENT.md](../NEXT_DIRECTION_CURRENT.md)
-- [../crypto_perp/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md](../crypto_perp/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md)
+- [../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md](../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md)
 - [../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md)
 
 ## P00: tournament rows からreportを再生成する

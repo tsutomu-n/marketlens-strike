@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-27_19:20 JST
+更新日: 2026-06-28_08:26 JST
 -->
 
 # Next Direction Current
@@ -42,7 +42,8 @@ Crypto Perp の実装済み handoff は [../plan/archive/2026-06-22-crypto-perp-
 - `crypto-perp-bias-guard`: sample不足を `pbo_status=NOT_ESTIMABLE` として出し、lookahead / recursive warmup / stress loss / concentrationを止める。
 - `crypto-perp-tiny-live-shadow`: 実発注せず、25 USD cap / isolated / flat / order preview ready を確認する shadow artifact を作る。`permits_live_order=false`。
 - `crypto-perp-tournament-gate`: reportから proxy gap、event不足、NO_TRADE leader、largest loss、profit concentration、operator time を読んで、次actionをlocal artifactに分ける。live order permissionではない。
-- [crypto_perp/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md](crypto_perp/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md): profit-readiness追加層の current plan。
+- [crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md](crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md): profit-readiness追加層の current surface map。
+- [crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md): actual cash / proxy / estimate の語彙境界。
 - [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md): candidate eventからdecision / outcome / tournament reportまでの再生成手順。
 
 次に進める順番:
