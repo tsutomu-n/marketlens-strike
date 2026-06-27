@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_10:36 JST
-更新日: 2026-06-27_10:36 JST
+更新日: 2026-06-27_10:54 JST
 -->
 
 # Strategy Idea Generation Pre-Implementation Audit 2026-06-27
@@ -10,6 +10,13 @@
 実装へ進めてよい。ただし、進めてよいのは P0 の artifact / schema / docs / fixture test までです。データ mining、ML、LLM によるアイデア生成、依存関係追加にはまだ進まない。
 
 現実的な最初の目的は、「良い戦略を作る」ではなく、「入力データから作られた未検証候補を、探索履歴・棄却候補・入力 hash・時刻境界つきで保存し、既存 gate に渡す前に誤読を止める」ことです。
+
+最終 product goal と次の shippable milestone は分ける。
+
+- 最終 product goal: 入力データから未検証の戦略アイデア候補を生成し、探索全量、棄却理由、source hash、時刻境界、split / leakage policy を保存したうえで、shortlist だけを既存 intake / authoring / backtest / review chain に渡せるようにする。
+- 次の shippable milestone: `strategy_idea_candidate_set.v1` の schema、Python validation、fixture tests、docs を作り、危険な candidate artifact を通さない contract を固定する。
+
+P2 以降を今から細かく切りすぎない。P0A の schema / validator で実際の field shape が固まるまで、mining logic、ML、統計依存、existing intake export の詳細設計は provisional とする。
 
 この事前監査で修正する判断は次です。
 
@@ -261,23 +268,33 @@ scikit-learn 公式の `TimeSeriesSplit` は time-ordered data の train/test in
 
 ## 実装できる重要度順
 
-### P0A: schema と fixture
+### P0A: schema、Python validation、fixture
 
 対象:
 
 - `schemas/strategy_idea_candidate_set.v1.schema.json`
+- `src/sis/strategy_idea_candidates/`
 - `tests/strategy_idea_candidates/`
 - `docs/strategy_idea_candidates/README.md`
 
 完了条件:
 
-- valid fixture が schema を通る。
+- valid fixture が JSON Schema と Python validation を通る。
 - live / paper / auto promote 系 flag が true なら落ちる。
 - `candidate_count_total` と `candidate_count_shortlisted + candidate_count_rejected` の不整合を落とす。
+- selected / rejected の ID 重複や存在しない candidate ID を落とす。
+- `candidate_inventory` が selected だけの success-only artifact なら落とす。
 - `success_only_reporting=true` を落とす。
 - `uses_sealed_test_for_selection=true` を落とす。
 - `source_artifact_sha256` 欠落を落とす。
 - `label_window` / `prediction_horizon` 欠落を落とす。
+- `feature_available_at_policy` / `purge_policy` / `embargo_policy` 欠落を落とす。
+
+注意:
+
+- JSON Schema だけで cross-field invariant を完結させようとしない。既存 `strategy_model_loop` と同じく、schema と Pydantic/Python model validation を併用する。
+- P0A は public CLI を必須にしない。CLI は P0B 以降で、artifact writer の shape が固まってから追加する方が安全です。
+- P0A は real market data を要求しない。fixture は synthetic / minimal でよいが、source hash、label window、available-at、selection policy、boundary を省略しない。
 
 ### P0B: artifact writer
 
@@ -333,7 +350,8 @@ scikit-learn 公式の `TimeSeriesSplit` は time-ordered data の train/test in
 実装 readiness:
 
 - P0 schema / docs / fixture test: ready with assumptions
-- P0 artifact writer: ready after schema acceptance
+- P0 Python validation: ready with assumptions
+- P0 artifact writer: ready after schema and Python validation acceptance
 - P1 deterministic template generator: ready after P0 artifact writer
 - P2 statistical evaluation: not yet; P0/P1 artifact が先
 - P3 ML-derived candidates: not yet
@@ -370,5 +388,6 @@ external:
 - dependency dry-run は resolver 確認であり、実 import / runtime test ではない。
 - 実装時点で package version と wheel availability は変わり得る。
 - P0 schema の exact required field は実装時に tests と一緒に固定する必要がある。
-- JSON Schema だけでは cross-field invariant を全部表現しづらい。`candidate_count_total` 整合や selected / rejected の重複検査は Python validation も併用する可能性が高い。
+- JSON Schema だけでは cross-field invariant を全部表現しづらい。`candidate_count_total` 整合、selected / rejected の重複、candidate inventory と summary の整合は P0A の Python validation で扱う。
+- P2 以降の詳細計画は、P0A の field shape と validation model が固まるまで固定しすぎない方がよい。
 - 研究論文で推奨される DSR / PBO / White Reality Check / SPA を P0 に入れると過剰実装になる。P0 は「未補正を未補正と表示し、探索全量を消さない」ことを優先する。

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_09:53 JST
-更新日: 2026-06-27_10:36 JST
+更新日: 2026-06-27_10:54 JST
 -->
 
 # Strategy Idea Generation Research 2026-06-27
@@ -21,7 +21,7 @@
 
 依存関係の追加判断は [STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md) を読む。結論は、P0 / P1 では依存追加なし、P2 で `scipy` を optional extra として検討、ML / GBDT / hyperparameter search 系は candidate artifact と search ledger の後です。
 
-実装直前の用語衝突、schema 必須項目、TimeSeriesSplit の限界、`mlfinlab` / `mlfinpy` / TA 系依存の追加調査による修正判断は [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md) を読む。実装へ進めてよいのは P0 の artifact / schema / docs / fixture test までで、mining logic と依存追加はまだ対象外です。
+実装直前の用語衝突、schema 必須項目、TimeSeriesSplit の限界、`mlfinlab` / `mlfinpy` / TA 系依存の追加調査による修正判断は [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md) を読む。実装へ進めてよいのは P0 の artifact / schema / Python validation / docs / fixture test までで、mining logic と依存追加はまだ対象外です。
 
 ## 調査質問
 
@@ -372,8 +372,8 @@ Numerai:
 
 ## 次にやること
 
-実装へ進めるなら、最初の task は `strategy_idea_candidate_set.v1` schema と docs / tests です。データ mining logic より前に、探索履歴を保存する artifact 契約を作る。
+実装へ進めるなら、最初の task は `strategy_idea_candidate_set.v1` schema、Python validation、docs / tests です。データ mining logic より前に、探索履歴を保存する artifact 契約を作る。
 
 依存追加は最初の task には含めない。統計補強が必要になった段階で、`scipy` を optional extra として検討する。
 
-P0 の実装前には [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md) の `Readiness Verdict` を優先し、schema / fixture / docs に限定する。
+P0 の実装前には [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md) の `Readiness Verdict` を優先し、schema / Python validation / fixture / docs に限定する。
