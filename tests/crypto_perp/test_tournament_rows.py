@@ -9,9 +9,12 @@ from jsonschema import Draft202012Validator, ValidationError
 from typer.testing import CliRunner
 
 from sis.cli import app
-from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
+from sis.crypto_perp.outcomes import CryptoPerpOutcome, OutcomePriceWindow, build_outcome
 from sis.crypto_perp.tournament import TournamentEventResult, build_tournament_report
-from sis.crypto_perp.tournament_rows import build_tournament_rows_preview
+from sis.crypto_perp.tournament_rows import (
+    build_cost_aware_tournament_rows,
+    build_tournament_rows_preview,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -183,3 +186,60 @@ def test_crypto_perp_tournament_rows_preview_cli_rejects_unmatured_outcome(
     assert result.exit_code == 2
     assert "status=fail" in result.stdout
     assert "matured horizon" in result.stdout
+
+
+def test_cost_aware_tournament_rows_v2_separates_estimate_from_actual_cash() -> None:
+    outcome = build_outcome(
+        event_id="event-1",
+        settled_at="2026-06-21T06:00:00Z",
+        horizons=[
+            OutcomePriceWindow(
+                horizon_minutes=60,
+                matured=True,
+                reference_price=Decimal("100"),
+                close_price=Decimal("105"),
+                high_price=Decimal("110"),
+                low_price=Decimal("95"),
+            )
+        ],
+    )
+
+    row_set = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-27T10:00:00Z",
+        notional_usd=Decimal("25"),
+        fee_rate=Decimal("0.001"),
+        slippage_bps=Decimal("2"),
+        operator_time_minutes=Decimal("3"),
+        operator_hourly_cost_usd=Decimal("60"),
+    )
+
+    assert [row.action for row in row_set.rows] == [
+        "REVERSAL_SHORT",
+        "CONTINUATION_LONG",
+        "NO_TRADE",
+    ]
+    continuation = next(row for row in row_set.rows if row.action == "CONTINUATION_LONG")
+    assert continuation.before_cost_proxy_usd == Decimal("1.25")
+    assert continuation.actual_cash_result_usd is None
+    assert continuation.cost_adjusted_cash_estimate_usd < continuation.before_cost_proxy_usd
+    assert continuation.evidence_level == "cost_adjusted_estimate"
+    assert "ESTIMATE_NOT_ACTUAL_CASH" in continuation.known_gaps
+
+
+def test_cost_aware_tournament_rows_v2_schema_accepts_artifact(tmp_path: Path) -> None:
+    outcome_payload = json.loads(_outcome_path(tmp_path).read_text(encoding="utf-8"))
+    outcome = CryptoPerpOutcome.model_validate(outcome_payload)
+    row_set = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-27T10:00:00Z",
+        notional_usd=Decimal("25"),
+    )
+    schema = json.loads(
+        (REPO_ROOT / "schemas/crypto_perp_tournament_rows.v2.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    Draft202012Validator.check_schema(schema)
+    Draft202012Validator(schema).validate(row_set.model_dump(mode="json"))

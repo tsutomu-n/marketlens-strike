@@ -12,8 +12,10 @@ from sis.crypto_perp.replay import (
     DepthLevel,
     ReplayOrderRequest,
     build_replay_grid_requests,
+    build_replay_slice,
     replay_order,
 )
+from .test_event_card import _event
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -111,3 +113,35 @@ def test_replay_dump_matches_schema() -> None:
 
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(result.model_dump(mode="json"))
+
+
+def test_replay_slice_keeps_cutoff_and_rejects_future_data() -> None:
+    event = _event()
+
+    replay_slice = build_replay_slice(
+        event=event,
+        created_at="2026-06-27T10:00:00Z",
+        included_sources=["event", "bars"],
+        row_counts={"bars": 592},
+        max_ts=event.information_cutoff_at,
+    )
+
+    assert replay_slice.event_id == event.event_id
+    assert replay_slice.information_cutoff_at == event.information_cutoff_at
+    assert replay_slice.summary["future_data_included"] is False
+
+
+def test_replay_slice_dump_matches_schema() -> None:
+    replay_slice = build_replay_slice(
+        event=_event(),
+        created_at="2026-06-27T10:00:00Z",
+        included_sources=["event"],
+    )
+    schema = json.loads(
+        (REPO_ROOT / "schemas/crypto_perp_replay_slice.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    Draft202012Validator.check_schema(schema)
+    Draft202012Validator(schema).validate(replay_slice.model_dump(mode="json"))

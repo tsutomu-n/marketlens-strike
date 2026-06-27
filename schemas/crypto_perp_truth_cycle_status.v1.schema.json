@@ -14,6 +14,7 @@
     "stop_reasons",
     "stages",
     "stage_checklist",
+    "operator_decision",
     "known_gaps",
     "summary"
   ],
@@ -45,6 +46,7 @@
     "stop_reasons": {"type": "array", "items": {"type": "string"}},
     "stages": {"type": "array", "items": {"$ref": "#/$defs/stage"}},
     "stage_checklist": {"type": "array", "items": {"$ref": "#/$defs/stage_checklist_item"}},
+    "operator_decision": {"type": "object", "additionalProperties": true},
     "known_gaps": {"type": "array", "items": {"type": "string"}},
     "summary": {"$ref": "#/$defs/summary"}
   },
@@ -152,6 +154,7 @@
         "missing_artifact_path_count",
         "known_gap_count",
         "stop_reason_count",
+        "operator_decision_stop_reason_count",
         "next_step_count",
         "stage_checklist_blocker_count"
       ],
@@ -179,6 +182,7 @@
         "missing_artifact_path_count": {"type": "integer", "minimum": 0},
         "known_gap_count": {"type": "integer", "minimum": 0},
         "stop_reason_count": {"type": "integer", "minimum": 0},
+        "operator_decision_stop_reason_count": {"type": "integer", "minimum": 0},
         "next_step_count": {"type": "integer", "minimum": 0},
         "stage_checklist_blocker_count": {"type": "integer", "minimum": 0}
       }

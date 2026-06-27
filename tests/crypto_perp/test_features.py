@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from sis.crypto_perp.bars import CandleBar, build_candle_bars, interval_to_milliseconds
-from sis.crypto_perp.features import EventDetectorConfig, compute_event_features
+from sis.crypto_perp.events import detect_event
+from sis.crypto_perp.features import EventDetectorConfig, build_feature_pack, compute_event_features
 from sis.crypto_perp.heartbeat import MarketTickerSnapshot
+from sis.crypto_perp.quality import validate_candle_series
+from sis.crypto_perp.source_availability import build_source_availability
 
 
 def make_bars(closes: list[str], turnovers: list[str]) -> list[CandleBar]:
@@ -57,6 +60,23 @@ def ticker() -> MarketTickerSnapshot:
     )
 
 
+def _event():
+    bars = make_bars(["100"] * 591 + ["105"], ["1000"] * 296 + ["1200"] * 296)
+    event = detect_event(
+        provider_id="bitget",
+        native_symbol="BTCUSDT",
+        canonical_symbol="BTCUSDT",
+        bars=bars,
+        ticker=ticker(),
+        quality_report=validate_candle_series(bars, interval="15m"),
+        universe_snapshot_id="universe-1",
+        market_snapshot_id="market-1",
+        detector_config=EventDetectorConfig(),
+    )
+    assert event is not None
+    return event
+
+
 def test_compute_event_features_for_slow_74h_window() -> None:
     closes = ["100"] * 591 + ["105"]
     turnovers = ["1000"] * 296 + ["1200"] * 296
@@ -75,3 +95,24 @@ def test_compute_event_features_for_slow_74h_window() -> None:
     assert features.mark_index_basis_bps.startswith("96.153")
     assert features.funding_rate == "0.0001"
     assert features.open_interest_raw == "1234"
+
+
+def test_feature_pack_does_not_choose_entry_action_and_keeps_optional_missing() -> None:
+    event = _event()
+    availability = build_source_availability(
+        event=event,
+        created_at="2026-06-27T10:00:00Z",
+    )
+
+    feature_pack = build_feature_pack(
+        event=event,
+        source_availability=availability,
+        created_at="2026-06-27T10:01:00Z",
+    )
+
+    assert feature_pack.summary["sets_entry_action"] is False
+    assert feature_pack.trade_sign_imbalance is None
+    assert feature_pack.ofi is None
+    assert feature_pack.depth_10bps is None
+    assert "TRADE_SIGN_IMBALANCE_SOURCE_MISSING" in feature_pack.known_gaps
+    assert "OFI_SOURCE_MISSING" in feature_pack.known_gaps

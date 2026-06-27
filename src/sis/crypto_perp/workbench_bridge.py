@@ -19,6 +19,18 @@ from sis.strategy_inputs.models import (
 )
 
 
+_NON_ACTUAL_CASH_GAPS = {
+    "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH",
+    "FEES_FUNDING_AND_FILL_SLIPPAGE_NOT_INCLUDED",
+    "ESTIMATE_NOT_ACTUAL_CASH",
+    "ACTUAL_CASH_RESULT_NOT_AVAILABLE",
+}
+
+
+def _has_non_actual_cash_gap(report: CryptoPerpTournamentReport) -> bool:
+    return any(gap in _NON_ACTUAL_CASH_GAPS for gap in report.known_gaps)
+
+
 def build_tournament_strategy_input_contract(
     *,
     report: CryptoPerpTournamentReport,
@@ -30,6 +42,7 @@ def build_tournament_strategy_input_contract(
 ) -> StrategyInputContract:
     created = ensure_utc_aware("created_at", created_at)
     contract_id = f"crypto-perp-tournament-{stable_hash([report.report_id, report_sha256])[:16]}"
+    includes_cash_execution_reality = not _has_non_actual_cash_gap(report)
     return StrategyInputContract(
         contract_id=contract_id,
         created_at=created,
@@ -53,10 +66,14 @@ def build_tournament_strategy_input_contract(
                 revision_policy=InputRevisionPolicy.SNAPSHOT_IMMUTABLE,
                 survivorship_policy=InputSurvivorshipPolicy.NOT_APPLICABLE,
                 execution_reality=ExecutionReality(
-                    includes_fills=True,
-                    includes_slippage=True,
-                    includes_latency=True,
-                    assumed_order_type="crypto_perp_replay_or_tiny_live_measurement",
+                    includes_fills=includes_cash_execution_reality,
+                    includes_slippage=includes_cash_execution_reality,
+                    includes_latency=includes_cash_execution_reality,
+                    assumed_order_type=(
+                        "crypto_perp_cash_ledger_or_live_measurement"
+                        if includes_cash_execution_reality
+                        else "crypto_perp_estimate_or_before_cost_proxy"
+                    ),
                 ),
             )
         ],
