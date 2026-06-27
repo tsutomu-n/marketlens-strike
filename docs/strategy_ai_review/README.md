@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:17 JST
-更新日: 2026-06-27_18:28 JST
+更新日: 2026-06-28_00:27 JST
 -->
 
 # Strategy AI Review
@@ -109,7 +109,7 @@ Structured finding は次を持ちます。
 - `packet_context_section`
 - `packet_context_entry`
 
-Structured findings 作成時は、note sha256、packet sha256、`note.input_hash == packet.ai_input_hash` を検証します。`source_note.path` は入力 note artifact path を指し、raw source artifact path ではありません。`source_note` には provider、model、prompt_hash、input_hash、recommendation を保存します。`model_reasoning_effort` は structured findings へコピーしません。
+Structured findings 作成時は、note sha256、packet sha256、`note.input_hash == packet.ai_input_hash` を検証します。`source_note.path` は入力 note artifact path を指し、raw source artifact path ではありません。`source_note` には provider、model、prompt_hash、input_hash、recommendation を保存します。`model_reasoning_effort` は note にある場合だけ optional metadata としてコピーします。
 
 ## Planned AI-in-the-loop hardening
 

@@ -21,7 +21,11 @@ def _schema(name: str) -> dict:
     return json.loads((REPO_ROOT / f"schemas/{name}").read_text(encoding="utf-8"))
 
 
-def _note_path(tmp_path: Path) -> Path:
+def _note_path(
+    tmp_path: Path,
+    *,
+    model_reasoning_effort: str | None = None,
+) -> Path:
     packet = build_ai_review_packet(
         source_paths=[_safe_source(tmp_path)],
         out_dir=tmp_path / "data/strategy_ai_reviews/ndx-breakout-001",
@@ -37,6 +41,7 @@ def _note_path(tmp_path: Path) -> Path:
         ],
         limitations=["AI did not inspect raw market data."],
         recommendation=AIReviewRecommendation.HUMAN_REVIEW_REQUIRED,
+        model_reasoning_effort=model_reasoning_effort,
     )
     return note.note_path
 
@@ -82,6 +87,23 @@ def test_structured_findings_record_typed_refs_and_lineage(tmp_path: Path, monke
     assert "source_artifacts" not in serialized
     assert '"timeline":' not in serialized
     assert "latest_source_hashes" not in serialized
+
+
+def test_structured_findings_copy_optional_model_reasoning_effort(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = record_structured_findings(
+        note_path=_note_path(tmp_path, model_reasoning_effort="xhigh"),
+        structured_findings=_structured_input(),
+    )
+
+    assert result.finding_set.source_note.model_reasoning_effort == "xhigh"
+    payload = json.loads(result.finding_set_path.read_text(encoding="utf-8"))
+    assert payload["source_note"]["model_reasoning_effort"] == "xhigh"
+    Draft202012Validator(_schema("strategy_ai_review_structured_findings.v1.schema.json")).validate(
+        payload
+    )
 
 
 def test_structured_findings_reject_invalid_evidence_ref(tmp_path: Path, monkeypatch) -> None:

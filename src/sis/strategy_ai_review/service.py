@@ -421,6 +421,7 @@ def record_structured_findings(
             prompt_hash=note.prompt_hash,
             provider=note.provider,
             model=note.model,
+            model_reasoning_effort=note.model_reasoning_effort,
             recommendation=note.recommendation,
         ),
         source_packet=AIReviewPacketReference(

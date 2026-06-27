@@ -52,6 +52,7 @@
         "prompt_hash": {"$ref": "#/$defs/sha256"},
         "provider": {"type": "string", "minLength": 1},
         "model": {"type": "string", "minLength": 1},
+        "model_reasoning_effort": {"enum": ["medium", "xhigh"]},
         "recommendation": {
           "enum": [
             "HUMAN_REVIEW_REQUIRED",

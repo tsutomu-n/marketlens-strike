@@ -248,6 +248,7 @@ class AIReviewSourceNoteReference(BaseModel):
     prompt_hash: str
     provider: str
     model: str
+    model_reasoning_effort: AIReviewModelReasoningEffort | None = None
     recommendation: AIReviewRecommendation
 
     @field_validator("path")
