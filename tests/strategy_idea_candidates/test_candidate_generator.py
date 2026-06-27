@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from sis.backtest.artifact_io import sha256_file
 from sis.strategy_idea_candidates.generator import (
     CandidateFamilyId,
+    StrategyIdeaCandidateGeneratorError,
     StrategyIdeaCandidateGeneratorConfig,
     build_deterministic_candidate_set_from_input_evidence,
 )
@@ -178,3 +181,22 @@ def test_generator_blocks_non_pass_input_validation(tmp_path, monkeypatch) -> No
 
     assert candidate_set.candidate_set_status is CandidateSetStatus.BLOCKED_INPUT_EVIDENCE
     assert candidate_set.candidate_inventory == []
+
+
+def test_generator_rejects_inconsistent_pass_source_evidence(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    contract, validation = _input_evidence(tmp_path)
+    validation_payload = validation.model_dump(mode="json")
+    validation_payload["source_results"][0]["status"] = "invalid"
+    validation_payload["source_results"][0]["hash_matches"] = False
+    validation = StrategyInputContractValidation.model_validate(validation_payload)
+    validation_path = tmp_path / "data/strategy_inputs/ndx/strategy_input_contract_validation.json"
+    write_json_artifact(validation_path, validation_payload)
+
+    with pytest.raises(StrategyIdeaCandidateGeneratorError, match="invalid source evidence"):
+        build_deterministic_candidate_set_from_input_evidence(
+            contract=contract,
+            validation=validation,
+            validation_path=validation_path,
+            config=_generator_config(candidate_cap=3),
+        )

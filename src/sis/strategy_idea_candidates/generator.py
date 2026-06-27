@@ -30,8 +30,10 @@ from sis.strategy_idea_candidates.service import (
 from sis.strategy_inputs.models import (
     InputValidationStatus,
     ProducerInfo,
+    SourceValidationResult,
     SourceValidationStatus,
     StrategyInputContract,
+    StrategyInputSource,
     StrategyInputContractValidation,
 )
 from sis.strategy_review.provenance import repo_relative_path
@@ -364,6 +366,7 @@ def _source_artifacts_from_input_evidence(
     artifacts: list[CandidateSourceArtifact] = []
     for source in contract.sources:
         result = validation_by_source.get(source.source_id)
+        _validate_pass_source_evidence(source, result)
         sha256 = (result.actual_sha256 if result is not None else None) or source.declared_sha256
         if sha256 is None:
             raise StrategyIdeaCandidateGeneratorError(
@@ -385,6 +388,34 @@ def _source_artifacts_from_input_evidence(
             )
         )
     return artifacts
+
+
+def _validate_pass_source_evidence(
+    source: StrategyInputSource,
+    result: SourceValidationResult | None,
+) -> None:
+    if result is None:
+        raise StrategyIdeaCandidateGeneratorError(
+            f"invalid source evidence for PASS validation: missing result for {source.source_id}"
+        )
+    failures: list[str] = []
+    if result.status is not SourceValidationStatus.PRESENT:
+        failures.append(f"status={result.status.value}")
+    if result.hash_matches is False:
+        failures.append("hash_matches=false")
+    if not result.available_at_present:
+        failures.append("available_at_present=false")
+    if result.generated_before_available is False:
+        failures.append("generated_before_available=false")
+    if result.max_observed_timestamp is None:
+        failures.append("max_observed_timestamp=missing")
+    if source.required and result.actual_sha256 is None and source.declared_sha256 is None:
+        failures.append("source_hash=missing")
+    if failures:
+        details = ", ".join(failures)
+        raise StrategyIdeaCandidateGeneratorError(
+            f"invalid source evidence for PASS validation: {source.source_id}: {details}"
+        )
 
 
 def _primary_source_hash(source_artifacts: list[CandidateSourceArtifact]) -> str:

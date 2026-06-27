@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_10:59 JST
-更新日: 2026-06-27_11:47 JST
+更新日: 2026-06-27_14:51 JST
 -->
 
 # Strategy Idea Candidate Pipeline Checkpoints 2026-06-27
@@ -47,6 +47,7 @@
 - C2: input contract validation refs と source path / hash / status / available-at / max observed timestamp summary。
 - C3: canonical JSON と Markdown writer。JSONL / CSV は generator が実データ行を出す checkpoint まで未実装。
 - C4: deterministic generator Python API。fixed family、finite parameter grid、candidate cap、duplicate rejection、parameter grid hash を保存する。
+- C4 follow-up: `validation_status=PASS` でも source-level evidence が missing / invalid / hash mismatch / timestamp missing の場合は候補生成を拒否する。
 - C5: split / leakage policy validation API。full split engine ではなく、保存済み policy record の時刻境界と sealed-test non-use を検査する。
 - C6: metric disclosure in reports。raw metrics と selection-adjusted status を分け、raw metrics を proof と呼ばない。
 - C8: shortlist の strict `strategy_idea.v1` draft export と `strategy_idea_candidate_export_manifest.v1` sidecar。`strategy_idea.v1` schema は拡張していない。
@@ -94,7 +95,7 @@
 9. C9: Strategy Lab / backtest bridge を作る。
 10. C11: fixture E2E を通す。
 
-C4、C5 policy validation、C6 report disclosure、C10 Markdown surface、C11 fixture E2E は Python API と focused tests まで実装済み。C7 と C12 は後回しでよい。C9 は C10/C11 の後に置く。
+C4、C5 policy validation、C6 report disclosure、C10 Markdown surface、C11 fixture E2E は Python API と focused tests まで実装済み。現行実装で自動的に通す次 gate は `strategy-intake-validate` までです。C7 と C12 は後回しでよい。C9 は C10/C11 の後に置くが、Strategy Authoring spec / backtest pack への明示 contract ができるまで未実装として扱う。
 
 ## Checkpoint Details
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:38 JST
-更新日: 2026-06-27_11:47 JST
+更新日: 2026-06-27_14:51 JST
 -->
 
 # Strategy Idea Candidate Goal And Glossary
@@ -9,7 +9,7 @@
 
 現在の最終ゴールは、入力証跡つきの未検証 strategy idea candidate を生成し、探索全量と棄却理由を保存し、shortlist だけを既存 `strategy_idea.v1` draft と sidecar manifest に分けて次の gate へ渡せる candidate generation pipeline を作ることです。
 
-ただし、次に実装するゴールは最終ゴール全体ではない。C4 `Deterministic Candidate Generator v0`、C5 split / leakage policy validation API、C6 metric disclosure in reports、C10 operator review Markdown surface、C11 fixture E2E は focused tests まで実装済みです。
+ただし、次に実装するゴールは最終ゴール全体ではない。C4 `Deterministic Candidate Generator v0`、C5 split / leakage policy validation API、C6 metric disclosure in reports、C10 operator review Markdown surface、C11 fixture E2E は focused tests まで実装済みです。現行実装が自動で通す次 gate は `strategy-intake-validate` で、Strategy Authoring / backtest / Strategy Review への C9 bridge は未実装です。
 
 ## Fixed Vocabulary
 
@@ -28,6 +28,7 @@
 | rejection reason | `REJECTED` candidate を落とした理由 | 実装者向け debug note だけの任意情報 |
 | duplicate rejection reason | 同一または近すぎる signal / parameter を落とした理由 | silent dedupe |
 | input evidence | input contract validation refs と source path/hash/status/available-at/max observed timestamp | source path だけの参照 |
+| PASS source evidence guard | `validation_status=PASS` でも source-level evidence の missing / invalid / hash mismatch / timestamp missing を候補生成前に拒否する guard | validation status 文字列だけを信用すること |
 | source summary | candidate set に複製する source evidence の要約 | source file 本体の再保存 |
 | search ledger summary | family count、candidate count、trial count、parameter grid hash、peek/rerank count の summary | JSONL / CSV の行単位 ledger |
 | search ledger rows | C4 以降で実データ行が出てから追加する JSONL / CSV row output | C3 の必須 output |
@@ -92,7 +93,7 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 
 C5 以降の前に残っている正確なゴール:
 
-C4/C5/C10/C11 の pipeline evidence を前提に、selection-adjusted metrics は未実装なら `NOT_IMPLEMENTED` のまま誤読されないようにし、Strategy Lab / backtest bridge へ探索証跡を渡す。
+C4/C5/C10/C11 の pipeline evidence を前提に、selection-adjusted metrics は未実装なら `NOT_IMPLEMENTED` のまま誤読されないようにする。C9 Strategy Lab / backtest bridge は、`strategy_idea.v1` draft を Strategy Authoring spec / backtest pack へ変換する明示 contract ができるまで未実装として扱う。
 
 完了条件:
 

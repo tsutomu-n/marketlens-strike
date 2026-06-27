@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-27_11:47 JST
+更新日: 2026-06-27_14:51 JST
 -->
 
 # Final Summary
@@ -8,6 +8,8 @@
 ## Goal
 
 Implement the first safe slices of the Strategy Idea Candidate Generation Pipeline: candidate-set contract, Python validation, C4 deterministic generator Python API, C5 split/leakage policy validation API, C6 metric disclosure in reports, C10 operator review Markdown surface, C11 fixture E2E, deterministic JSON/Markdown writer, input-evidence blocking, shortlist export sidecar, docs, and focused tests.
+
+This summary covers the implemented candidate pipeline through `strategy-intake-validate`. It does not claim the downstream C9 Strategy Authoring / backtest / Strategy Review bridge is implemented.
 
 ## Branch
 
@@ -20,6 +22,7 @@ Implement the first safe slices of the Strategy Idea Candidate Generation Pipeli
 - Added validation for count mismatch, selected/rejected ID mismatch, selected-only inventory, non-PASS input evidence, missing source summaries, sealed-test selection, and paper/live/auto-promote/final boundary flags.
 - Added deterministic candidate-set JSON/Markdown writer.
 - Added C4 deterministic generator Python API with fixed family IDs, finite parameter grids, stable `parameter_grid_hash`, candidate cap recording, duplicate rejection recording, and full candidate inventory.
+- Added a PASS source evidence guard so inconsistent source-level evidence cannot produce a BUILT candidate set.
 - Added `parameter_grids`, `candidate_cap`, and `cap_rejection_count` to `strategy_idea_candidate_set.v1`.
 - Added C5 split/leakage policy validation API for time-window ordering, sealed-test non-use, source available-at boundary, and purge / embargo policy records.
 - Added C6 report disclosure separating `raw_validation_metrics` from `selection_adjusted_metrics_status` and avoiding proof language.

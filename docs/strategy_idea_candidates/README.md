@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-06-27_11:47 JST
+更新日: 2026-06-27_14:51 JST
 -->
 
 # Strategy Idea Candidates
@@ -10,6 +10,8 @@
 `strategy_idea_candidates` は、既存 `strategy_idea.v1` に渡す前の未検証候補を保存する pre-intake artifact です。
 
 この実装で使えるのは、candidate set contract、Python validation、C4 deterministic generator Python API、C5 split / leakage policy validation API、C6 metric disclosure in reports、C10 operator review Markdown surface、C11 fixture E2E、canonical JSON / Markdown writer、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から alpha を掘る evaluator、JSONL / CSV ledger、public CLI、paper / live permission はまだありません。
+
+現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring / backtest / Strategy Review への C9 bridge は未実装であり、自動変換や backtest 実行準備を完了したとは扱いません。
 
 用語、family ID、最終ゴール、次の未完了 scope は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
 
@@ -23,6 +25,7 @@
 ## 役割
 
 - input contract validation refs と source artifact path / hash / status / available-at / max observed timestamp を candidate set に複製する。
+- `validation_status=PASS` でも source-level evidence が missing / invalid / hash mismatch / timestamp missing の場合は候補生成を止める。
 - `candidate_set_status` を `BUILT`、`BLOCKED_INPUT_EVIDENCE`、`INVALID_CANDIDATE_SET` に分ける。
 - candidate-level `decision` を `SHORTLISTED` と `REJECTED` に分ける。
 - count mismatch、selected / rejected ID mismatch、selected-only inventory、sealed test selection、paper / live / auto-promote / final flag を Python validation で落とす。
