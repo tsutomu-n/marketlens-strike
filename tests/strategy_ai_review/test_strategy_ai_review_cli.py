@@ -46,6 +46,7 @@ def test_strategy_ai_review_packet_and_note_cli_success(tmp_path: Path, monkeypa
 
     assert packet_result.exit_code == 0
     assert "packet_status=READY_FOR_AI_REVIEW" in packet_result.stdout
+    assert "context_section_count=1" in packet_result.stdout
 
     note_result = runner.invoke(
         app,

@@ -9,6 +9,7 @@ def render_ai_review_packet_markdown(packet: StrategyAIReviewPacket) -> str:
         "",
         f"- packet_status: `{packet.packet_status.value}`",
         f"- source_count: `{len(packet.source_summaries)}`",
+        f"- context_section_count: `{len(packet.context_sections)}`",
         f"- sensitive_source_count: `{packet.sensitive_source_count}`",
         f"- ai_input_hash: `{packet.ai_input_hash}`",
         f"- permission_allowed: `{str(packet.permission_allowed).lower()}`",
@@ -32,6 +33,26 @@ def render_ai_review_packet_markdown(packet: StrategyAIReviewPacket) -> str:
         lines.append(
             f"| `{source.path}` | `{source.schema_version or ''}` | `{source.strategy_id or ''}` | `{source.status or ''}` | `{source.action or ''}` | `{source.sha256}` |"
         )
+    lines.extend(["", "## Context Sections", ""])
+    if packet.context_sections:
+        for section in packet.context_sections:
+            lines.extend(
+                [
+                    f"### {section.title}",
+                    "",
+                    f"- section_type: `{section.section_type}`",
+                    f"- source_path: `{section.source_path}`",
+                    f"- schema_version: `{section.schema_version}`",
+                    "",
+                    "| key | value |",
+                    "|---|---|",
+                ]
+            )
+            for key, value in section.entries.items():
+                lines.append(f"| `{key}` | `{value}` |")
+            lines.append("")
+    else:
+        lines.append("- none")
     lines.extend(
         [
             "",

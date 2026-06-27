@@ -9,6 +9,7 @@
     "producer",
     "packet_status",
     "source_summaries",
+    "context_sections",
     "sensitive_source_count",
     "review_questions",
     "ai_input_hash",
@@ -37,6 +38,10 @@
       "type": "array",
       "items": {"$ref": "#/$defs/source_summary"}
     },
+    "context_sections": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/context_section"}
+    },
     "sensitive_source_count": {"type": "integer", "minimum": 0},
     "review_questions": {
       "type": "array",
@@ -62,6 +67,50 @@
         "strategy_id": {"type": ["string", "null"]},
         "status": {"type": ["string", "null"]},
         "action": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "context_section": {
+      "type": "object",
+      "required": ["section_type", "title", "source_path", "schema_version", "entries"],
+      "properties": {
+        "section_type": {"const": "strategy_case_lite_summary"},
+        "title": {"type": "string", "minLength": 1},
+        "source_path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+        },
+        "schema_version": {"const": "strategy_case_lite.v1"},
+        "entries": {
+          "type": "object",
+          "required": [
+            "strategy_id",
+            "case_id",
+            "updated_at",
+            "artifact_count",
+            "timeline_count",
+            "latest_status",
+            "open_actions",
+            "blocked_reasons"
+          ],
+          "properties": {
+            "strategy_id": {"type": "string", "minLength": 1},
+            "case_id": {"type": "string", "minLength": 1},
+            "updated_at": {"type": "string", "minLength": 1},
+            "artifact_count": {"type": "integer", "minimum": 0},
+            "timeline_count": {"type": "integer", "minimum": 0},
+            "latest_status": {"type": ["string", "null"]},
+            "open_actions": {
+              "type": "array",
+              "items": {"type": "string", "minLength": 1}
+            },
+            "blocked_reasons": {
+              "type": "array",
+              "items": {"type": "string", "minLength": 1}
+            }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },

@@ -13,6 +13,7 @@ from sis.strategy_stage.models import StageProducer, StageSafetyBoundary
 
 AI_REVIEW_PACKET_SCHEMA_VERSION = "strategy_ai_review_packet.v1"
 AI_REVIEW_NOTE_SCHEMA_VERSION = "strategy_ai_review_note.v1"
+AIReviewContextEntryValue = str | int | list[str] | None
 
 
 class AIReviewPacketStatus(StrEnum):
@@ -52,6 +53,29 @@ class AIReviewSourceSummary(BaseModel):
         return value
 
 
+class AIReviewContextSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    section_type: str
+    title: str
+    source_path: str
+    schema_version: str
+    entries: dict[str, AIReviewContextEntryValue]
+
+    @field_validator("section_type", "title", "schema_version")
+    @classmethod
+    def validate_text(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("context section text fields must not be empty")
+        return stripped
+
+    @field_validator("source_path")
+    @classmethod
+    def validate_source_path(cls, value: str) -> str:
+        return normalize_repo_relative_posix_path(value)
+
+
 class StrategyAIReviewPacket(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -61,6 +85,7 @@ class StrategyAIReviewPacket(BaseModel):
     producer: StageProducer
     packet_status: AIReviewPacketStatus
     source_summaries: list[AIReviewSourceSummary]
+    context_sections: list[AIReviewContextSection] = Field(default_factory=list)
     sensitive_source_count: int = Field(ge=0)
     review_questions: list[str] = Field(default_factory=list)
     ai_input_hash: str
