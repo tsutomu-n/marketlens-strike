@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:17 JST
-更新日: 2026-06-27_17:04 JST
+更新日: 2026-06-27_17:49 JST
 -->
 
 # Strategy AI Review
@@ -24,7 +24,8 @@ uv run sis strategy-ai-review-packet-build \
 uv run sis strategy-ai-review-note-record \
   --packet data/strategy_ai_reviews/<strategy-id>/strategy_ai_review_packet.json \
   --provider openai \
-  --model gpt-reviewer \
+  --model gpt-5.5 \
+  --model-reasoning-effort xhigh \
   --prompt-hash sha256:<64hex> \
   --finding "Return drift should be reviewed by a human." \
   --limitation "AI did not inspect raw market data." \
@@ -59,6 +60,7 @@ Note は次を必須にします。
 
 - provider
 - model
+- prompt / review 時の reasoning effort は、使った場合のみ `model_reasoning_effort` に記録する
 - prompt hash
 - input hash
 - limitations
@@ -67,6 +69,8 @@ Note は次を必須にします。
 - disagreements
 - `auto_applied=false`
 - `permission_allowed=false`
+
+`model` には `gpt-5.5` のような model id を入れ、`medium` / `xhigh` は `--model-reasoning-effort` で分けます。通常の packet 確認や note record は `medium`、schema / boundary / omission risk review は `xhigh` を使います。
 
 ## Planned AI-in-the-loop hardening
 

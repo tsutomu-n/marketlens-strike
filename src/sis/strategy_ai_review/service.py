@@ -11,6 +11,7 @@ from sis.backtest.artifact_io import read_json_object, sha256_file
 from sis.strategy_ai_review.models import (
     AIReviewContextEntryValue,
     AIReviewContextSection,
+    AIReviewModelReasoningEffort,
     AIReviewPacketReference,
     AIReviewPacketStatus,
     AIReviewRecommendation,
@@ -254,6 +255,7 @@ def record_ai_review_note(
     packet_path: Path,
     provider: str,
     model: str,
+    model_reasoning_effort: AIReviewModelReasoningEffort | None = None,
     prompt_hash: str,
     findings: list[str],
     limitations: list[str],
@@ -278,6 +280,7 @@ def record_ai_review_note(
         ),
         provider=provider,
         model=model,
+        model_reasoning_effort=model_reasoning_effort,
         prompt_hash=prompt_hash,
         input_hash=packet.ai_input_hash,
         limitations=limitations,

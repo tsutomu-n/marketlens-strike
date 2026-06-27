@@ -1,9 +1,73 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-27_16:28 JST
+更新日: 2026-06-27_17:53 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Strategy AI Review Reasoning Effort
+
+Completed on branch `ai/strategy-ai-review-reasoning-effort-20260627-1748`.
+
+Achieved:
+
+- Added optional `model_reasoning_effort` to `strategy_ai_review_note.v1`.
+- Added `--model-reasoning-effort medium|xhigh` to `strategy-ai-review-note-record`.
+- Kept `model` as the model id, for example `gpt-5.5`.
+- Updated note Markdown rendering to show `model_reasoning_effort`.
+- Re-recorded the local PR-AI-LOOP-00 runtime note as `provider=codex-cli`, `model=gpt-5.5`, `model_reasoning_effort=xhigh`.
+- Kept `auto_applied=false`, `permission_allowed=false`, `paper_execution_allowed=false`, and `live_allowed=false`.
+
+Main files changed:
+
+- `schemas/strategy_ai_review_note.v1.schema.json`
+- `src/sis/strategy_ai_review/models.py`
+- `src/sis/strategy_ai_review/service.py`
+- `src/sis/strategy_ai_review/rendering.py`
+- `src/sis/commands/strategy_ai_review.py`
+- `tests/strategy_ai_review/`
+- `docs/strategy_ai_review/README.md`
+- `docs/plans/strategy_ai_review_reasoning_effort_2026-06-27.md`
+
+Verification:
+
+- `uv run pytest tests/strategy_ai_review -q`
+- `uv run ruff check src/sis/strategy_ai_review src/sis/commands/strategy_ai_review.py tests/strategy_ai_review`
+- `uv run ruff format --check src/sis/strategy_ai_review src/sis/commands/strategy_ai_review.py tests/strategy_ai_review`
+- `uv run sis strategy-ai-review-note-record --help`
+- `uv run python scripts/check_current_docs.py`
+- `uv run python` schema validation for `data/strategy_ai_reviews/pr-ai-loop-00/strategy_ai_review_note.json`
+- `./scripts/check`
+
+Not run:
+
+- External AI API calls.
+- Automatic prompt execution beyond this manual Codex review session.
+- Paper/live operations.
+
+Remaining work:
+
+- Decide whether PR-AI-LOOP-01 should promote `model_reasoning_effort` into structured findings metadata or keep it note-level only.
+
+User decisions required:
+
+None for this slice.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required. Existing notes without `model_reasoning_effort` remain valid.
+
+Rollback:
+
+Revert the `model_reasoning_effort` schema/model/service/CLI/rendering/test/docs changes and this addendum.
 
 ## Latest Addendum: PR-AI-LOOP-00 Safe AI Review Context Sections
 

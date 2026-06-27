@@ -164,6 +164,7 @@ def test_ai_review_note_records_hashes_and_no_permission(tmp_path: Path, monkeyp
         packet_path=packet.packet_path,
         provider="openai",
         model="gpt-reviewer",
+        model_reasoning_effort="xhigh",
         prompt_hash=PROMPT_HASH,
         findings=["Return drift should be reviewed by a human."],
         limitations=["AI did not inspect raw market data."],
@@ -173,7 +174,9 @@ def test_ai_review_note_records_hashes_and_no_permission(tmp_path: Path, monkeyp
 
     assert result.note.input_hash == packet.packet.ai_input_hash
     assert result.note.prompt_hash == PROMPT_HASH
+    assert result.note.model_reasoning_effort == "xhigh"
     assert result.note.auto_applied is False
     assert result.note.permission_allowed is False
     payload = json.loads(result.note_path.read_text(encoding="utf-8"))
+    assert payload["model_reasoning_effort"] == "xhigh"
     Draft202012Validator(_schema("strategy_ai_review_note.v1.schema.json")).validate(payload)

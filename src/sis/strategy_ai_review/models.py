@@ -30,6 +30,11 @@ class AIReviewRecommendation(StrEnum):
     NO_ACTION = "NO_ACTION"
 
 
+class AIReviewModelReasoningEffort(StrEnum):
+    MEDIUM = "medium"
+    XHIGH = "xhigh"
+
+
 class AIReviewSourceSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -147,6 +152,7 @@ class StrategyAIReviewNote(BaseModel):
     source_packet: AIReviewPacketReference
     provider: str
     model: str
+    model_reasoning_effort: AIReviewModelReasoningEffort | None = None
     prompt_hash: str
     input_hash: str
     limitations: list[str]

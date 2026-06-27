@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from sis.commands.strategy_authoring import _resolve_workspace_path
 from sis.settings import get_settings
-from sis.strategy_ai_review.models import AIReviewRecommendation
+from sis.strategy_ai_review.models import AIReviewModelReasoningEffort, AIReviewRecommendation
 from sis.strategy_ai_review.service import (
     StrategyAIReviewError,
     StrategyAIReviewOutputExistsError,
@@ -89,6 +89,11 @@ def register_strategy_ai_review_commands(app: typer.Typer) -> None:
         ),
         provider: str = typer.Option(..., "--provider", help="AI provider name."),
         model: str = typer.Option(..., "--model", help="AI model name."),
+        model_reasoning_effort: AIReviewModelReasoningEffort | None = typer.Option(
+            None,
+            "--model-reasoning-effort",
+            help="AI model reasoning effort used for the review.",
+        ),
         prompt_hash: str = typer.Option(
             ...,
             "--prompt-hash",
@@ -132,6 +137,7 @@ def register_strategy_ai_review_commands(app: typer.Typer) -> None:
                 packet_path=_resolve_workspace_path(packet, settings.data_dir),
                 provider=provider,
                 model=model,
+                model_reasoning_effort=model_reasoning_effort,
                 prompt_hash=prompt_hash,
                 findings=finding,
                 limitations=limitation,
@@ -158,6 +164,8 @@ def register_strategy_ai_review_commands(app: typer.Typer) -> None:
         typer.echo("status=pass")
         typer.echo(f"note_id={note.note_id}")
         typer.echo(f"recommendation={note.recommendation.value}")
+        if note.model_reasoning_effort is not None:
+            typer.echo(f"model_reasoning_effort={note.model_reasoning_effort.value}")
         typer.echo(f"auto_applied={str(note.auto_applied).lower()}")
         typer.echo(f"permission_allowed={str(note.permission_allowed).lower()}")
         typer.echo(f"note_path={result.note_path.as_posix()}")

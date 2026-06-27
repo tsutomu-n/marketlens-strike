@@ -72,6 +72,7 @@ def render_ai_review_note_markdown(note: StrategyAIReviewNote) -> str:
         "",
         f"- provider: `{note.provider}`",
         f"- model: `{note.model}`",
+        f"- model_reasoning_effort: `{note.model_reasoning_effort.value if note.model_reasoning_effort is not None else ''}`",
         f"- recommendation: `{note.recommendation.value}`",
         f"- prompt_hash: `{note.prompt_hash}`",
         f"- input_hash: `{note.input_hash}`",

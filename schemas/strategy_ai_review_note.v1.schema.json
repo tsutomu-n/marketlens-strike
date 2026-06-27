@@ -50,6 +50,7 @@
     },
     "provider": {"type": "string", "minLength": 1},
     "model": {"type": "string", "minLength": 1},
+    "model_reasoning_effort": {"enum": ["medium", "xhigh"]},
     "prompt_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
     "input_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
     "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}},

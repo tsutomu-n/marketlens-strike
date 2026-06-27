@@ -28,7 +28,9 @@ def test_strategy_ai_review_note_record_help() -> None:
 
     assert result.exit_code == 0
     assert "--prompt-hash" in stdout
-    assert "--recommendation" in stdout
+    assert "--model-reason" in stdout
+    assert "[medium|xhigh]" in stdout
+    assert "AI recommendation" in stdout
 
 
 def test_strategy_ai_review_packet_and_note_cli_success(tmp_path: Path, monkeypatch) -> None:
@@ -61,6 +63,8 @@ def test_strategy_ai_review_packet_and_note_cli_success(tmp_path: Path, monkeypa
             "openai",
             "--model",
             "gpt-reviewer",
+            "--model-reasoning-effort",
+            "medium",
             "--prompt-hash",
             PROMPT_HASH,
             "--finding",
@@ -73,5 +77,6 @@ def test_strategy_ai_review_packet_and_note_cli_success(tmp_path: Path, monkeypa
     )
 
     assert note_result.exit_code == 0
+    assert "model_reasoning_effort=medium" in note_result.stdout
     assert "auto_applied=false" in note_result.stdout
     assert "permission_allowed=false" in note_result.stdout
