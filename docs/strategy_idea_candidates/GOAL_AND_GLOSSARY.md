@@ -9,7 +9,7 @@
 
 現在の最終ゴールは、入力証跡つきの未検証 strategy idea candidate を生成し、探索全量と棄却理由を保存し、shortlist だけを既存 `strategy_idea.v1` draft と sidecar manifest に分けて次の gate へ渡せる candidate generation pipeline を作ることです。
 
-ただし、次に実装するゴールは最終ゴール全体ではない。C4 `Deterministic Candidate Generator v0`、C5 split / leakage policy validation API、C10 operator review Markdown surface は focused tests まで実装済みです。
+ただし、次に実装するゴールは最終ゴール全体ではない。C4 `Deterministic Candidate Generator v0`、C5 split / leakage policy validation API、C10 operator review Markdown surface、C11 fixture E2E は focused tests まで実装済みです。
 
 ## Fixed Vocabulary
 
@@ -77,6 +77,7 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 - C4: deterministic generator Python API。fixed family、finite parameter grid、candidate cap、duplicate rejection、parameter grid hash を保存する。
 - C5: split / leakage policy validation API。time window ordering、sealed-test non-use、source available-at boundary、purge / embargo policy record を検査する。
 - C10: operator review Markdown surface。探索量、棄却理由、selection policy、known gaps、policy validation、false boundary を人間が読めるようにする。
+- C11: fixture E2E。input evidence -> candidate set -> policy validation -> operator review -> shortlist export -> intake validation を通す。
 
 未完了:
 
@@ -84,13 +85,13 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 - C6: selection-adjusted metrics。現状は `NOT_IMPLEMENTED` 表示まで。
 - C9: Strategy Lab / backtest bridge。
 - C10 richer review packet。現状は Markdown surface まで。
-- C11: public CLI / fixture E2E。
+- C11 public CLI。現状は fixture E2E まで。
 
 ## Next Goal
 
 C5 以降の前に残っている正確なゴール:
 
-C4/C5/C10 の `strategy_idea_candidate_set.v1` と review surface を前提に、selection-adjusted metrics は未実装なら `NOT_IMPLEMENTED` のまま誤読されないようにし、Strategy Lab / backtest bridge へ探索証跡を渡す。
+C4/C5/C10/C11 の pipeline evidence を前提に、selection-adjusted metrics は未実装なら `NOT_IMPLEMENTED` のまま誤読されないようにし、Strategy Lab / backtest bridge へ探索証跡を渡す。
 
 完了条件:
 

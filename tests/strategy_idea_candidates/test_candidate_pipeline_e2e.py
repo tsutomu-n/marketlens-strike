@@ -32,7 +32,9 @@ def test_candidate_generation_fixture_e2e_to_intake_validation(tmp_path, monkeyp
     source.write_text("ts,close,volume\n2026-06-17T21:00:00Z,1,100\n", encoding="utf-8")
     source_hash = sha256_file(source)
 
-    contract = StrategyInputContract.model_validate(valid_input_contract_payload(sha256=source_hash))
+    contract = StrategyInputContract.model_validate(
+        valid_input_contract_payload(sha256=source_hash)
+    )
     validation_payload = valid_input_validation_payload()
     validation_payload["source_results"][0]["actual_sha256"] = source_hash
     validation_payload["source_results"][0]["declared_sha256"] = source_hash

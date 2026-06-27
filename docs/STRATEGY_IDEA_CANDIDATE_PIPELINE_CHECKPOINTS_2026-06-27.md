@@ -41,7 +41,7 @@
 
 ## 実装状況
 
-2026-06-27_11:47 JST 時点で、fixture-level の C1 / C2 / C3 / C4 / C5 policy validation / C8 / C10 Markdown surface slice は実装済みです。
+2026-06-27_11:47 JST 時点で、fixture-level の C1 / C2 / C3 / C4 / C5 policy validation / C8 / C10 Markdown surface / C11 fixture E2E slice は実装済みです。
 
 - C1: `strategy_idea_candidate_set.v1` JSON Schema、Pydantic models、Python validation、fixture tests。
 - C2: input contract validation refs と source path / hash / status / available-at / max observed timestamp summary。
@@ -50,6 +50,7 @@
 - C5: split / leakage policy validation API。full split engine ではなく、保存済み policy record の時刻境界と sealed-test non-use を検査する。
 - C8: shortlist の strict `strategy_idea.v1` draft export と `strategy_idea_candidate_export_manifest.v1` sidecar。`strategy_idea.v1` schema は拡張していない。
 - C10: operator review Markdown surface。探索量、棄却理由、selection policy、known gaps、policy validation、false boundary を表示する。
+- C11: fixture E2E。input evidence から candidate set、policy validation、operator review、shortlist export、intake validation まで通す。
 
 未実装:
 
@@ -57,7 +58,7 @@
 - C6 selection-adjusted metrics。未実装時は `NOT_IMPLEMENTED`。
 - C9 Strategy Lab / backtest bridge。
 - C10 richer review packet。現時点では Markdown surface まで。
-- C11 public CLI E2E。
+- C11 public CLI。現時点では fixture E2E まで。
 
 ## Checkpoints
 
@@ -92,7 +93,7 @@
 9. C9: Strategy Lab / backtest bridge を作る。
 10. C11: fixture E2E を通す。
 
-C4、C5 policy validation、C10 Markdown surface は Python API と focused tests まで実装済み。C6 は C5 の後続として扱う。C7 と C12 は後回しでよい。C9 は C10 の後に置く。
+C4、C5 policy validation、C10 Markdown surface、C11 fixture E2E は Python API と focused tests まで実装済み。C6 は C5 の後続として扱う。C7 と C12 は後回しでよい。C9 は C10/C11 の後に置く。
 
 ## Checkpoint Details
 
@@ -322,7 +323,7 @@ Python validation で落とすもの:
 - C8: ready after C1-C6
 - C9: ready after C8-C10
 - C10: Markdown surface implemented with focused tests; richer review packet remains later
-- C11: ready after C8-C10
+- C11: fixture E2E implemented with focused tests; public CLI remains later
 - C12: not now
 
 ## 残リスク
