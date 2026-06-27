@@ -1,9 +1,62 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-27_20:08 JST
+更新日: 2026-06-27_23:41 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Docs Archive Triage Cleanup
+
+Completed on branch `ai/docs-archive-triage-20260627-2341`.
+
+Achieved:
+
+- Moved superseded root audit docs to `docs/archive/2026-06-27-doc-routing/`.
+- Moved completed 2026-06-27 work plans from `docs/plans/` to `docs/archive/2026-06-27-merged-plans/`.
+- Updated current docs routing so `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md` is the current docs triage entry.
+- Removed archived audit docs from `scripts/check_current_docs.py` current-doc allowlist.
+- Kept archive docs as historical snapshots, not current proof.
+
+Main files changed:
+
+- `README.md`
+- `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md`
+- `docs/DOCS_LINT_POLICY_2026-05-30.md`
+- `docs/archive/README.md`
+- `docs/final-summary.md`
+- `scripts/check_current_docs.py`
+- `docs/archive/2026-06-27-doc-routing/`
+- `docs/archive/2026-06-27-merged-plans/`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py`
+- `uv run python scripts/check_cli_catalog.py`
+- `git diff --check`
+
+Not run:
+
+- Full `./scripts/check`; this cleanup only moved docs and updated docs routing.
+
+Remaining work:
+
+- None for this cleanup.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No. Files were moved to archive, not deleted.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Move the archived docs back to their previous paths and restore the current-doc allowlist entries.
 
 ## Latest Addendum: Crypto Perp Profit-Readiness Evidence Run Plan
 
@@ -78,7 +131,7 @@ Achieved:
 Main files changed:
 
 - `docs/crypto_perp/`
-- `docs/plans/crypto_perp_profit_readiness_execution_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/crypto_perp_profit_readiness_execution_2026-06-27.md`
 - `src/sis/crypto_perp/source_availability.py`
 - `src/sis/crypto_perp/replay.py`
 - `src/sis/crypto_perp/features.py`
@@ -164,7 +217,7 @@ Main files changed:
 - `docs/IMPLEMENTED_SURFACES.md`
 - `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
 - `docs/NEXT_DIRECTION_CURRENT.md`
-- `docs/plans/strategy_ai_review_structured_findings_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/strategy_ai_review_structured_findings_2026-06-27.md`
 
 Verification:
 
@@ -229,7 +282,7 @@ Main files changed:
 - `src/sis/commands/strategy_ai_review.py`
 - `tests/strategy_ai_review/`
 - `docs/strategy_ai_review/README.md`
-- `docs/plans/strategy_ai_review_reasoning_effort_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/strategy_ai_review_reasoning_effort_2026-06-27.md`
 
 Verification:
 
@@ -294,7 +347,7 @@ Main files changed:
 - `src/sis/commands/strategy_ai_review.py`
 - `tests/strategy_ai_review/`
 - `docs/strategy_ai_review/README.md`
-- `docs/plans/strategy_ai_review_context_sections_pr_ai_loop_00_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/strategy_ai_review_context_sections_pr_ai_loop_00_2026-06-27.md`
 
 Verification:
 
@@ -372,12 +425,12 @@ This summary covers the implemented candidate pipeline through `strategy-intake-
 - `tests/strategy_idea_candidates/`
 - `docs/strategy_idea_candidates/README.md`
 - `docs/strategy_idea_candidates/GOAL_AND_GLOSSARY.md`
-- `docs/plans/strategy_idea_candidates_c4_generator_2026-06-27.md`
-- `docs/plans/strategy_idea_candidates_c5_policy_validation_2026-06-27.md`
-- `docs/plans/strategy_idea_candidates_c6_metric_disclosure_2026-06-27.md`
-- `docs/plans/strategy_idea_candidates_c10_operator_review_2026-06-27.md`
-- `docs/plans/strategy_idea_candidates_c11_fixture_e2e_2026-06-27.md`
-- `docs/plans/strategy_idea_candidates_p0a_c2_c3_c8_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/strategy_idea_candidates_c4_generator_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/strategy_idea_candidates_c5_policy_validation_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/strategy_idea_candidates_c6_metric_disclosure_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/strategy_idea_candidates_c10_operator_review_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/strategy_idea_candidates_c11_fixture_e2e_2026-06-27.md`
+- `docs/archive/2026-06-27-merged-plans/strategy_idea_candidates_p0a_c2_c3_c8_2026-06-27.md`
 - `docs/STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md`
 - `README.md`
 - `docs/CURRENT_STATE.md`

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-26_23:21 JST
+更新日: 2026-06-27_23:41 JST
 -->
 
 # Documentation Archive
@@ -13,8 +13,7 @@ Current docs:
 - `docs/CODE_STATUS.md`
 - `docs/OPERATIONS_RUNBOOK.md`
 - `docs/ARCHITECTURE_AND_PHASES.md`
-- `docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md`
-- `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md`
+- `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md`
 
 Archived on 2026-05-25:
 
@@ -121,5 +120,11 @@ Archived on 2026-06-23:
 Archived on 2026-06-26:
 
 - `docs/plans/pass_376_*.md` through `docs/plans/pass_409_*.md` -> `docs/archive/2026-06-26-refactor-backtest-primitives-plans/`
+
+Archived on 2026-06-27:
+
+- `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` -> `docs/archive/2026-06-27-doc-routing/`
+- `docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md` -> `docs/archive/2026-06-27-doc-routing/`
+- completed `docs/plans/*.md` work plans from 2026-06-27 -> `docs/archive/2026-06-27-merged-plans/`
 
 Do not treat archived documents as current requirements.
