@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_07:30 JST
-更新日: 2026-06-27_09:35 JST
+更新日: 2026-06-27_23:14 JST
 -->
 
 # Current Docs And Structure Triage 2026-06-27
@@ -11,7 +11,9 @@
 
 今の正本は `src/`、`tests/`、`schemas/`、`configs/`、`scripts/`、`.github/workflows/ci.yml`、`pyproject.toml`、`.python-version`、`uv.lock`、CLI help である。docs は入口、説明、runbook、判断補助であり、runtime 値や readiness の正本ではない。
 
-現在の docs は機械検証上は壊れていない。`scripts/check_current_docs.py` は current docs 162 件を検査し、`scripts/check_cli_catalog.py` は public CLI 208 件を Typer 登録と照合している。
+現在の docs は機械検証上は壊れていない。2026-06-27_23:14 JST 時点で、`scripts/check_current_docs.py` は current docs 185 件を検査し、`scripts/check_cli_catalog.py` は public CLI 216 件を Typer 登録と照合している。
+
+ただし、古い棚卸し文書、完了済み作業ブランチ名、当時の HEAD、当時の件数、runtime artifact snapshot は current proof ではない。2026-06-27 夜の branch cleanup 後、local/remote branch は `main` のみで、`docs/plans/` には完了済み作業計画が残っている。
 
 ただし、目的別 docs を全部読んでも「コード全体を漏れなく説明している」とは言い切らない。現行 docs は入口、operator guide、surface map としては使えるが、`src/sis/reports/`、`src/sis/commands/`、低層 helper、template、tools、sidecar、runtime data までを 1 つずつ説明する完全索引ではない。完全性が必要な作業では、この文書の read order の後に `rg`, `find`, CLI help、schema、tests を直接確認する。
 
@@ -88,7 +90,7 @@
 | `docs/references/crypto_perp/` | Crypto Perp reference / adoption decisions。 |
 | `docs/algo/` | strategy ideas / parts / factory docs。 |
 | `docs/archive/` | historical docs。current proof として読まない。 |
-| `docs/plans/` | 現在 tracked file なし。 |
+| `docs/plans/` | 完了済み作業計画 10 件。現在の proof ではなく archive 候補。 |
 | `plan/2026-06-22-strategy-feedback-case-index/` | 現在 allowlist された active plan package。 |
 | `plan/archive/` | historical plans。current proof として読まない。 |
 
@@ -119,9 +121,11 @@
 | `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | 判断補助。正本ではない。 | 残す。冒頭の非正本注意を強める余地あり。 |
 | `docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md` | 判断補助。正本ではない。 | 残す。冒頭の非正本注意を強める余地あり。 |
 | `docs/MIGRATION_HISTORY.md` | 実装履歴。正本ではない。 | 残す。current readiness へリンクしない。 |
-| `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | 過去 audit。 | 残す。最新入口にはしない。 |
-| `docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md` | 直近 audit。 | 残す。次回以降はこの文書を現在-only 入口にする。 |
+| `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | 過去 audit。`f40241c` HEAD と 2026-06-23 時点の整理を含む。 | historical audit として残す。最新入口にはしない。 |
+| `docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md` | 過去 audit。`a9faf8a` HEAD、current docs 161 件、public CLI 208 件などの当時値を含む。 | historical audit として残す。最新入口にはしない。 |
 | `docs/final-summary.md` | merge summary。 | 残す。current proof ではなく merge 時点の要約として読む。 |
+| `docs/crypto_perp/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md` | run plan。`ai/crypto-perp-profit-readiness-20260627-1901` など作業当時の branch 前提を含む。 | 計画として残す。現在の branch 状態や artifact 状態は code/CLI/artifact inventory で確認する。 |
+| `docs/plans/*.md` | 完了済み作業の implementation plan。多くが削除済み branch 名を含む。 | current proof として読まない。次の docs cleanup で archive 候補。 |
 | `docs/archive/**` | historical context。 | current proof として読まない。 |
 | `plan/archive/**` | historical implementation plan。 | current proof として読まない。 |
 | `plan/2026-06-22-strategy-feedback-case-index/` | allowlist された plan package。 | current proof ではなく、必要時だけ implementation context として読む。 |
@@ -145,11 +149,22 @@
 
 | 対象 | 今の扱い | 推奨 |
 |---|---|---|
+| `docs/plans/crypto_perp_profit_readiness_execution_2026-06-27.md` | 完了済み作業計画。 | `docs/archive/2026-06-27-merged-plans/` などへ移す候補。 |
+| `docs/plans/strategy_ai_review_context_sections_pr_ai_loop_00_2026-06-27.md` | 完了済み作業計画。 | 同上。 |
+| `docs/plans/strategy_ai_review_reasoning_effort_2026-06-27.md` | 完了済み作業計画。 | 同上。 |
+| `docs/plans/strategy_ai_review_structured_findings_2026-06-27.md` | 完了済み作業計画。 | 同上。 |
+| `docs/plans/strategy_idea_candidates_c10_operator_review_2026-06-27.md` | 完了済み作業計画。 | 同上。 |
+| `docs/plans/strategy_idea_candidates_c11_fixture_e2e_2026-06-27.md` | 完了済み作業計画。 | 同上。 |
+| `docs/plans/strategy_idea_candidates_c4_generator_2026-06-27.md` | 完了済み作業計画。 | 同上。 |
+| `docs/plans/strategy_idea_candidates_c5_policy_validation_2026-06-27.md` | 完了済み作業計画。 | 同上。 |
+| `docs/plans/strategy_idea_candidates_c6_metric_disclosure_2026-06-27.md` | 完了済み作業計画。 | 同上。 |
+| `docs/plans/strategy_idea_candidates_p0a_c2_c3_c8_2026-06-27.md` | 完了済み作業計画。 | 同上。 |
+| `docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md` | この文書に superseded された audit。 | 次の cleanup で `docs/archive/2026-06-27-doc-routing/` へ移す候補。 |
+| `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | 2026-06-22/23 時点の audit。 | 次の cleanup で archive へ移す候補。 |
 | `docs/archive/**` | archive 済み。 | 削除しない。公開配布や容量問題が出た時だけ別途 archive slimming。 |
 | `plan/archive/**` | archive 済み。 | 削除しない。current proof として読まない。 |
 | `docs/live_evidence_reports/` に生成される report | source doc ではない。 | tracked に戻す場合は archive か `data/` artifact 扱いにする。 |
 | `plan/0607ここからの計画2/*.zip`, `plan/0608ここからの計画/**/*.zip`, `plan/0621ここから01/*.zip` | untracked ZIP。 | 中身確認なしに削除しない。使わないなら別途削除判断。 |
-| 空の `docs/plans/` | tracked file なし。 | Git 上は保持不要。新しい current plan を置くなら `plan/` 側の routing と合わせる。 |
 
 ## 追加調査で見つけた抜け・漏れ
 
@@ -159,6 +174,9 @@
 - `docs/IMPLEMENTED_SURFACES.md` は実装済み surface の map として有用だが、`reports`/`commands` の helper 群を漏れなく説明する文書ではない。
 - `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` は CLI surface の catalog であり、CLI が呼ぶ内部処理の完全説明ではない。
 - archive docs は量が多く、本文正誤は current-doc checker の対象外。archive を読んで現行判断する運用は危険。
+- docs checker が通ることは、全ドキュメントの意味内容が現在値に一致することを保証しない。特に HEAD、branch 名、pass count、artifact count は snapshot として扱う。
+- `docs/plans/` の 10 件は、作業ブランチ削除後も内容上は implementation history として残っている。削除ではなく archive 移動で整理するのが安全。
+- Crypto Perp の dogfood/status artifact や手入力 outcome を profit evidence と読むリスクは docs 側にも残る。profit-readiness 判断では `data/crypto_perp` の実 event/outcome/source availability を inventory で確認する。
 
 ## 今の推奨 read order
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-27_11:27 JST
+更新日: 2026-06-27_23:14 JST
 -->
 
 # marketlens-strike
@@ -333,7 +333,7 @@ Runtime validation readback:
 - Run `uv run sis phase-gate-review` for the read-only / paper gate decision.
 - Run `uv run sis execution-drift-overview` and `uv run sis execution-snapshot --venue trade_xyz` for execution-readiness gaps.
 - Run `uv run sis readiness-snapshot` and inspect `data/manifests/trade_xyz_data_readiness_manifest.json` only as runtime artifacts, not as tracked-doc proof.
-- `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` records the current code-truth documentation checklist and the 2026-06-22 doc/archive routing cleanup.
+- `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md` records the current docs and structure triage. `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` and `docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md` are historical audit snapshots.
 - `docs/archive/2026-06-22-doc-routing/DOCUMENT_AUDIT_2026-06-17_CODE_TRUTH_CHECKLIST.md` records the previous historical docs checklist.
 
 `READ_ONLY_GO` means the read-only / paper gate is clear. It does not mean
