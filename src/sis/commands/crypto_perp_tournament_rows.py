@@ -32,7 +32,7 @@ def _render_preview_markdown(preview: CryptoPerpTournamentRowsPreview) -> str:
     ]
     for row in preview.rows:
         lines.append(
-            f"| {row.action} | {row.actual_cash_result_usd} | {row.market_adjusted_return} |"
+            f"| {row.action} | {row.cash_metric_value_usd} | {row.market_adjusted_return} |"
         )
     if preview.known_gaps:
         lines.extend(["", "## Known Gaps", ""])

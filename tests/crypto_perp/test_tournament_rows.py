@@ -66,9 +66,12 @@ def test_tournament_rows_preview_builds_three_action_rows() -> None:
         "CONTINUATION_LONG",
         "NO_TRADE",
     ]
-    assert preview.rows[0].actual_cash_result_usd == Decimal("-1.25")
-    assert preview.rows[1].actual_cash_result_usd == Decimal("1.25")
-    assert preview.rows[2].actual_cash_result_usd == Decimal("0")
+    assert preview.rows[0].actual_cash_result_usd is None
+    assert preview.rows[0].cash_metric_value_usd == Decimal("-1.25")
+    assert preview.rows[1].actual_cash_result_usd is None
+    assert preview.rows[1].cash_metric_value_usd == Decimal("1.25")
+    assert preview.rows[2].actual_cash_result_usd is None
+    assert preview.rows[2].cash_metric_value_usd == Decimal("0")
     assert {row.cash_metric_basis for row in preview.rows} == {"before_cost_proxy"}
     assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in preview.known_gaps
     assert "AMBIGUOUS_HIGH_LOW_ORDERING" in preview.known_gaps
@@ -117,6 +120,8 @@ def test_crypto_perp_tournament_rows_preview_cli_writes_jsonl_and_preview(
         "NO_TRADE",
     }
     assert {row["cash_metric_basis"] for row in rows} == {"before_cost_proxy"}
+    assert {row["actual_cash_result_usd"] for row in rows} == {None}
+    assert rows[0]["cash_metric_value_usd"] == "-1.25"
     assert "outcome_before_cost_proxy_usd" in markdown
     assert "cash_metric_basis: `before_cost_proxy`" in markdown
     assert "actual_cash" not in markdown

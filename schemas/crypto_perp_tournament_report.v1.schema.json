@@ -112,7 +112,10 @@
       "properties": {
         "event_id": {"type": "string", "minLength": 1},
         "action": {"$ref": "#/$defs/tournament_action"},
-        "actual_cash_result_usd": {"$ref": "#/$defs/decimal_string"},
+        "cash_metric_value_usd": {"$ref": "#/$defs/decimal_string"},
+        "actual_cash_result_usd": {
+          "anyOf": [{"$ref": "#/$defs/decimal_string"}, {"type": "null"}]
+        },
         "cash_metric_basis": {
           "enum": ["actual_cash", "before_cost_proxy", "cost_adjusted_estimate"]
         },
@@ -137,7 +140,10 @@
       "properties": {
         "action": {"$ref": "#/$defs/tournament_action"},
         "event_count": {"type": "integer", "minimum": 0},
-        "actual_cash_result_usd": {"$ref": "#/$defs/decimal_string"},
+        "cash_metric_value_usd": {"$ref": "#/$defs/decimal_string"},
+        "actual_cash_result_usd": {
+          "anyOf": [{"$ref": "#/$defs/decimal_string"}, {"type": "null"}]
+        },
         "largest_loss_usd": {"$ref": "#/$defs/decimal_string"},
         "profit_concentration": {"$ref": "#/$defs/decimal_string"},
         "market_adjusted_return": {"$ref": "#/$defs/decimal_string"},

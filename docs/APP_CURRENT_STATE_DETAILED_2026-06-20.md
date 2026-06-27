@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_20:32 JST
-更新日: 2026-06-28_07:07 JST
+更新日: 2026-06-28_07:24 JST
 -->
 
 # marketlens-strike アプリ現状詳細ガイド
@@ -453,7 +453,7 @@ uv run sis crypto-perp-truth-cycle-dogfood-pack --help
 
 注意:
 
-この機能は、急騰後shortが勝つ前提ではありません。`REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE`、データ不足の `UNKNOWN` / `INCONCLUSIVE_DATA` を分けて扱います。primary metricは勝率やSharpeではなく、可能な範囲では `actual_cash_result_usd` です。ただし、actual cash と読めるかは `cash_metric_basis=actual_cash` と `actual_cash=true` を合わせて確認します。preview / estimate / mixed basis は実cash証拠ではありません。
+この機能は、急騰後shortが勝つ前提ではありません。`REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE`、データ不足の `UNKNOWN` / `INCONCLUSIVE_DATA` を分けて扱います。primary metricは勝率やSharpeではなく、可能な範囲では cash metric です。比較値は `cash_metric_value_usd` を読みます。ただし、actual cash と読めるかは `cash_metric_basis=actual_cash` と `actual_cash=true` を合わせて確認します。preview / estimate / mixed basis は実cash証拠ではありません。
 
 M09のtiny live measurementは、コードとmock testはありますが、実ネットワーク測定は実行済みではありません。実行には別の明示承認、`SIS_ENABLE_TINY_LIVE_MEASUREMENT=1`、`--confirm-live`、confirmation phrase、isolated margin、withdrawal disabled API key、IP restriction、max notional 25 USD、max open positions 1、no existing position、no existing open order、reduce-only close、flat reconciliationが必要です。
 
@@ -840,7 +840,7 @@ prospective decisionの後、指定した観察窓が終わってから作る結
 
 ### actual cash
 
-実際のcash basisで見た損益です。Crypto Perpでは、可能な範囲で勝率やSharpeよりも `actual_cash_result_usd` を優先して読みます。ただし、同じ field 名に before-cost proxy が入る互換 artifact があるため、`cash_metric_basis=actual_cash` と `actual_cash=true` がそろっている時だけ実cashとして扱います。
+実際のcash basisで見た損益です。Crypto Perpでは、可能な範囲で勝率やSharpeよりも cash metric を優先して読みます。比較値は `cash_metric_value_usd`、actual cash の旧互換 alias は `actual_cash_result_usd` です。`cash_metric_basis=actual_cash` と `actual_cash=true` がそろっている時だけ実cashとして扱います。
 
 ### tournament
 
@@ -1038,7 +1038,8 @@ API key、secret、passphraseなどの認証情報です。存在しても、た
 | `first_stage_blocker` | 最初に読む欠損stageの索引 | 次stageやtiny liveへ進む許可 |
 | `REVERSAL_SHORT` | 比較対象の仮説の1つ | short固定の勝ち前提 |
 | `NO_TRADE` | 取引しない判断または比較対象 | 失敗や未実装 |
-| `actual_cash_result_usd` | `cash_metric_basis=actual_cash` かつ `actual_cash=true` の時のcash basis主要評価値 | field名だけで実cashと断定する値、または単体で将来利益を保証する値 |
+| `cash_metric_value_usd` | tournament row / score の比較値。basis は `cash_metric_basis` で読む | field名だけで実cashと断定する値 |
+| `actual_cash_result_usd` | `cash_metric_basis=actual_cash` かつ `actual_cash=true` の時だけ値を持つ旧互換alias | non-actual basisで値を期待するfield、または単体で将来利益を保証する値 |
 
 ## どの文書を読めばよいか
 

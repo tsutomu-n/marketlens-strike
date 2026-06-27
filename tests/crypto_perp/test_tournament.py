@@ -86,9 +86,12 @@ def test_tournament_compares_actions_on_same_event_set_with_actual_cash_primary(
     assert report.summary["actual_cash"] is True
     assert report.summary["leader_cash_metric_value_usd"] == Decimal("5")
     assert report.summary["leader_actual_cash_result_usd"] == Decimal("5")
+    assert report.leader_cash_metric_value_usd == Decimal("5")
+    assert report.leader_actual_cash_result_usd == Decimal("5")
 
     reversal = next(score for score in report.scores if score.action == "REVERSAL_SHORT")
     continuation = next(score for score in report.scores if score.action == "CONTINUATION_LONG")
+    assert reversal.cash_metric_value_usd == Decimal("-5")
     assert reversal.actual_cash_result_usd == Decimal("-5")
     assert reversal.largest_loss_usd == Decimal("-10")
     assert reversal.near_miss_count == 1
@@ -126,6 +129,9 @@ def test_tournament_proxy_basis_report_is_not_actual_cash() -> None:
     assert report.actual_cash is False
     assert report.leader_cash_metric_value_usd == Decimal("5")
     assert report.leader_actual_cash_result_usd is None
+    assert report.scores[1].cash_metric_value_usd == Decimal("5")
+    assert report.scores[1].actual_cash_result_usd is None
+    assert {row.actual_cash_result_usd for row in report.rows} == {None}
     assert report.summary["actual_cash"] is False
     assert report.summary["leader_actual_cash_result_usd"] is None
 
@@ -238,6 +244,9 @@ def test_crypto_perp_tournament_report_cli_writes_json_and_markdown(tmp_path: Pa
     assert payload["cash_metric_basis"] == "actual_cash"
     assert payload["primary_metric_display_name"] == "actual_cash_result_usd"
     assert payload["actual_cash"] is True
+    assert payload["leader_cash_metric_value_usd"] == "5"
+    assert payload["leader_actual_cash_result_usd"] == "5"
+    assert payload["scores"][1]["cash_metric_value_usd"] == "5"
     assert payload["leader_action"] == "CONTINUATION_LONG"
     assert payload["source_refs"][0]["path"] == rows_path.as_posix()
     markdown = markdown_path.read_text(encoding="utf-8")
@@ -285,6 +294,17 @@ def test_crypto_perp_tournament_report_cli_rejects_preview_rows_json(
     assert "PREVIEW_ROWS_NOT_ACTUAL_CASH" in result.stdout
     assert "crypto-perp-tournament-rows-v2" in result.stdout
     assert not (tmp_path / "out/tournament_report.json").exists()
+
+
+def test_tournament_report_reads_legacy_actual_cash_rows_without_cash_metric_value() -> None:
+    legacy_payload = _rows()[0].model_dump(mode="json")
+    legacy_payload.pop("cash_metric_value_usd", None)
+
+    row = TournamentEventResult.model_validate(legacy_payload)
+
+    assert row.cash_metric_basis == "actual_cash"
+    assert row.cash_metric_value_usd == Decimal("-10")
+    assert row.actual_cash_result_usd == Decimal("-10")
 
 
 def test_crypto_perp_tournament_report_cli_rejects_non_actual_cash_jsonl(

@@ -51,7 +51,7 @@ def build_tournament_rows_preview(
         TournamentEventResult(
             event_id=outcome.event_id,
             action="REVERSAL_SHORT",
-            actual_cash_result_usd=reversal_cash,
+            cash_metric_value_usd=reversal_cash,
             cash_metric_basis="before_cost_proxy",
             market_adjusted_return=-horizon.market_adjusted_return,
             operator_time_minutes=operator_time_minutes,
@@ -59,7 +59,7 @@ def build_tournament_rows_preview(
         TournamentEventResult(
             event_id=outcome.event_id,
             action="CONTINUATION_LONG",
-            actual_cash_result_usd=continuation_cash,
+            cash_metric_value_usd=continuation_cash,
             cash_metric_basis="before_cost_proxy",
             market_adjusted_return=horizon.market_adjusted_return,
             operator_time_minutes=operator_time_minutes,
@@ -67,7 +67,7 @@ def build_tournament_rows_preview(
         TournamentEventResult(
             event_id=outcome.event_id,
             action="NO_TRADE",
-            actual_cash_result_usd=Decimal("0"),
+            cash_metric_value_usd=Decimal("0"),
             cash_metric_basis="before_cost_proxy",
             market_adjusted_return=Decimal("0"),
             operator_time_minutes=Decimal("0"),

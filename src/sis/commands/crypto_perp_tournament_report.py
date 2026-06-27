@@ -86,7 +86,7 @@ def _render_tournament_report_markdown(report: CryptoPerpTournamentReport) -> st
         lines.append(
             "| "
             f"{score.action} | "
-            f"{score.actual_cash_result_usd} | "
+            f"{score.cash_metric_value_usd} | "
             f"{score.largest_loss_usd} | "
             f"{score.event_count} | "
             f"{score.near_miss_count} | "

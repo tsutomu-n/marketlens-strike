@@ -1,9 +1,73 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_07:07 JST
+更新日: 2026-06-28_07:24 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: PR-I1b Cash Metric Legacy Migration
+
+Completed on branch `ai/cash-metric-legacy-migration-20260628-0721`.
+
+Achieved:
+
+- Added `cash_metric_value_usd` as the canonical tournament row / score comparison value.
+- Kept legacy actual-cash rows readable by migrating missing `cash_metric_value_usd` from `actual_cash_result_usd` during validation.
+- Made generated non-actual rows use `actual_cash_result_usd=null`.
+- Moved tournament scoring and leader summaries to `cash_metric_value_usd`.
+- Kept `actual_cash_result_usd` and `leader_actual_cash_result_usd` populated only for actual cash basis.
+- Kept `crypto-perp-tournament-report` actual-cash-only and continued rejecting preview / non-actual rows.
+- Updated v1 schemas with optional `cash_metric_value_usd` and nullable legacy actual-cash aliases.
+- Updated runbook, vocabulary, implemented/current docs, Workbench README, and this summary.
+
+Main files changed:
+
+- `src/sis/crypto_perp/tournament.py`
+- `src/sis/crypto_perp/tournament_rows.py`
+- `src/sis/commands/crypto_perp_tournament_report.py`
+- `src/sis/commands/crypto_perp_tournament_rows.py`
+- `schemas/crypto_perp_tournament_report.v1.schema.json`
+- `schemas/crypto_perp_tournament_rows_preview.v1.schema.json`
+- `tests/crypto_perp/test_tournament.py`
+- `tests/crypto_perp/test_tournament_rows.py`
+- `docs/plans/cash-metric-legacy-migration-2026-06-28.md`
+- `docs/crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md`
+- `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`
+- `docs/IMPLEMENTED_SURFACES.md`
+- `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md`
+- `docs/strategy_workbench_viewer/README.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_tournament_rows.py tests/crypto_perp/test_tournament.py`
+- `uv run pytest tests/crypto_perp/test_tournament_rows.py tests/crypto_perp/test_tournament.py tests/crypto_perp/test_tournament_gate.py tests/crypto_perp/test_workbench_bridge.py tests/strategy_workbench_viewer/test_strategy_workbench_viewer.py -q`
+
+Pending final verification in this work session:
+
+- `uv run python scripts/check_cli_catalog.py`
+- `uv run python scripts/check_current_docs.py`
+- `git diff --check`
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No schema version bump and no required dependency change. Generated non-actual artifacts no longer populate `actual_cash_result_usd`; consumers should read `cash_metric_value_usd` plus `cash_metric_basis`.
+
+Dependency change:
+
+No.
+
+Migration:
+
+New producers should emit `cash_metric_value_usd`. Old actual-cash rows without that field remain accepted and are migrated from `actual_cash_result_usd`.
+
+Rollback:
+
+Revert this checkpoint's model/schema/test/docs changes. PR-I1a remains valid without I1b.
 
 ## Latest Addendum: PR-I1a Cash Metric Semantic Hotfix
 

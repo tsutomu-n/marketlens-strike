@@ -108,7 +108,8 @@
       "properties": {
         "event_id": {"type": "string", "minLength": 1},
         "action": {"enum": ["REVERSAL_SHORT", "CONTINUATION_LONG", "NO_TRADE"]},
-        "actual_cash_result_usd": {"type": "string"},
+        "cash_metric_value_usd": {"type": "string"},
+        "actual_cash_result_usd": {"type": ["string", "null"]},
         "cash_metric_basis": {"const": "before_cost_proxy"},
         "market_adjusted_return": {"type": "string"},
         "operator_time_minutes": {"type": "string"},

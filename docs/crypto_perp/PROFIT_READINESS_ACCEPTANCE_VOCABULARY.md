@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_19:01 JST
-更新日: 2026-06-28_07:07 JST
+更新日: 2026-06-28_07:24 JST
 -->
 
 # Crypto Perp Profit-Readiness Acceptance Vocabulary
@@ -9,7 +9,8 @@
 
 | term | use when | do not use when |
 |---|---|---|
-| `actual_cash_result_usd` | 実fill・実fee・実funding・cash ledger または live measurement artifact に接続している | outcome preview、replay、simulation、operator estimateだけの場合 |
+| `cash_metric_value_usd` | tournament row / score の正の比較値。basis は `cash_metric_basis` で読む | field 名だけで actual cash と判断する場合 |
+| `actual_cash_result_usd` | `cash_metric_basis=actual_cash` の時だけ値を持つ legacy alias。実fill・実fee・実funding・cash ledger または live measurement artifact に接続している | outcome preview、replay、simulation、operator estimateだけの場合。non-actual basis では `null` と読む |
 | `before_cost_proxy_usd` | matured outcome の return を notional に掛けただけの比較値 | fee/funding/slippage/operator cost込みの値として読む場合 |
 | `cost_adjusted_cash_estimate_usd` | fee/funding/slippage/operator time を明示的に控除した local estimate | 実現損益やfuture profit proofとして読む場合 |
 | `stress_cash_estimate_usd` | cost-adjusted estimate に追加摩擦を入れた保守値 | live permission、注文許可、利益保証として読む場合 |
@@ -37,10 +38,10 @@
 
 ## preview rows guard
 
-`crypto_perp_tournament_rows_preview.v1` は display / dogfood 用の before-cost proxy です。`actual_cash_result_usd` report の入力ではありません。
+`crypto_perp_tournament_rows_preview.v1` は display / dogfood 用の before-cost proxy です。`cash_metric_value_usd` に proxy 値を持ち、`actual_cash_result_usd` は `null` です。actual cash report の入力ではありません。
 
 - `crypto-perp-tournament-report --rows tournament_rows_preview.json` は `PREVIEW_ROWS_NOT_ACTUAL_CASH` で失敗する。
 - `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` を持つ rows は actual cash evidence として扱わない。
 - `cash_metric_basis != actual_cash` の rows は `crypto-perp-tournament-report` の CLI input として拒否する。
-- `crypto_perp_tournament_report.v1` は `primary_metric_display_name`、`cash_metric_basis`、`actual_cash`、`leader_cash_metric_value_usd` を出し、`leader_actual_cash_result_usd` は actual cash basis の時だけ値を持つ。
+- `crypto_perp_tournament_report.v1` は `primary_metric_display_name`、`cash_metric_basis`、`actual_cash`、`leader_cash_metric_value_usd` を出し、`actual_cash_result_usd` / `leader_actual_cash_result_usd` は actual cash basis の時だけ値を持つ。
 - outcome 由来の estimate / cost-aware 比較は `crypto-perp-tournament-rows-v2` を使い、actual cash が無い row の `actual_cash_result_usd` は `null` と読む。

@@ -5,7 +5,14 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
 from sis.crypto_perp.models import (
@@ -42,13 +49,29 @@ class TournamentEventResult(BaseModel):
 
     event_id: str
     action: TournamentAction
-    actual_cash_result_usd: DecimalValue
+    cash_metric_value_usd: DecimalValue
+    actual_cash_result_usd: DecimalValue | None = None
     cash_metric_basis: Literal["actual_cash", "before_cost_proxy", "cost_adjusted_estimate"] = (
         "actual_cash"
     )
     market_adjusted_return: DecimalValue
     operator_time_minutes: DecimalValue
     near_miss: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_cash_metric(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        migrated = dict(data)
+        if "cash_metric_value_usd" not in migrated and "actual_cash_result_usd" in migrated:
+            migrated["cash_metric_value_usd"] = migrated["actual_cash_result_usd"]
+        basis = migrated.get("cash_metric_basis", "actual_cash")
+        if basis == "actual_cash" and migrated.get("actual_cash_result_usd") is None:
+            migrated["actual_cash_result_usd"] = migrated.get("cash_metric_value_usd")
+        if basis != "actual_cash":
+            migrated["actual_cash_result_usd"] = None
+        return migrated
 
     @field_validator("event_id")
     @classmethod
@@ -65,8 +88,14 @@ class TournamentEventResult(BaseModel):
             raise ValueError("operator_time_minutes must be non-negative")
         return value
 
-    @field_serializer("actual_cash_result_usd", "market_adjusted_return", "operator_time_minutes")
+    @field_serializer("cash_metric_value_usd", "market_adjusted_return", "operator_time_minutes")
     def serialize_decimal(self, value: Decimal) -> str:
+        return decimal_to_json_string(value)
+
+    @field_serializer("actual_cash_result_usd")
+    def serialize_optional_decimal(self, value: Decimal | None) -> str | None:
+        if value is None:
+            return None
         return decimal_to_json_string(value)
 
 
@@ -75,7 +104,8 @@ class TournamentScore(BaseModel):
 
     action: TournamentAction
     event_count: int = Field(ge=0)
-    actual_cash_result_usd: DecimalValue
+    cash_metric_value_usd: DecimalValue
+    actual_cash_result_usd: DecimalValue | None = None
     largest_loss_usd: DecimalValue
     profit_concentration: DecimalValue
     market_adjusted_return: DecimalValue
@@ -84,12 +114,15 @@ class TournamentScore(BaseModel):
 
     @field_serializer(
         "actual_cash_result_usd",
+        "cash_metric_value_usd",
         "largest_loss_usd",
         "profit_concentration",
         "market_adjusted_return",
         "operator_time_minutes",
     )
-    def serialize_decimal(self, value: Decimal) -> str:
+    def serialize_decimal(self, value: Decimal | None) -> str | None:
+        if value is None:
+            return None
         return decimal_to_json_string(value)
 
 
@@ -185,12 +218,14 @@ def _profit_concentration(values: Sequence[Decimal]) -> Decimal:
 
 def _score(rows: Sequence[TournamentEventResult], action: TournamentAction) -> TournamentScore:
     action_rows = _rows_for_action(rows, action)
-    cash_values = [row.actual_cash_result_usd for row in action_rows]
+    cash_values = [row.cash_metric_value_usd for row in action_rows]
+    actual_cash_basis = all(row.cash_metric_basis == "actual_cash" for row in action_rows)
     largest_loss = min(cash_values) if cash_values else _ZERO
     return TournamentScore(
         action=action,
         event_count=len(action_rows),
-        actual_cash_result_usd=sum(cash_values, _ZERO),
+        cash_metric_value_usd=sum(cash_values, _ZERO),
+        actual_cash_result_usd=sum(cash_values, _ZERO) if actual_cash_basis else None,
         largest_loss_usd=largest_loss,
         profit_concentration=_profit_concentration(cash_values),
         market_adjusted_return=sum((row.market_adjusted_return for row in action_rows), _ZERO),
@@ -200,10 +235,10 @@ def _score(rows: Sequence[TournamentEventResult], action: TournamentAction) -> T
 
 
 def _leader(scores: Sequence[TournamentScore]) -> TournamentAction | None:
-    ordered = sorted(scores, key=lambda score: score.actual_cash_result_usd, reverse=True)
+    ordered = sorted(scores, key=lambda score: score.cash_metric_value_usd, reverse=True)
     if len(ordered) < 2:
         return None
-    if ordered[0].actual_cash_result_usd == ordered[1].actual_cash_result_usd:
+    if ordered[0].cash_metric_value_usd == ordered[1].cash_metric_value_usd:
         return None
     return ordered[0].action
 
@@ -232,7 +267,7 @@ def _summary(
     actual_cash: bool,
 ) -> dict[str, Any]:
     leader_score = next((score for score in scores if score.action == leader_action), None)
-    leader_value = leader_score.actual_cash_result_usd if leader_score is not None else None
+    leader_value = leader_score.cash_metric_value_usd if leader_score is not None else None
     return {
         "report_id": report_id,
         "tournament_status": tournament_status,
@@ -262,10 +297,12 @@ def build_tournament_report(
     generated = ensure_utc_aware("generated_at", generated_at)
     row_list = list(rows)
     event_set = _validate_same_event_set(row_list)
-    scores = [_score(row_list, action) for action in TOURNAMENT_ACTIONS]
     computed_gaps = list(known_gaps or [])
     cash_metric_basis = _cash_metric_basis(row_list, computed_gaps)
     actual_cash = cash_metric_basis == "actual_cash"
+    if not actual_cash:
+        row_list = [row.model_copy(update={"actual_cash_result_usd": None}) for row in row_list]
+    scores = [_score(row_list, action) for action in TOURNAMENT_ACTIONS]
     inconclusive_reasons: list[str] = []
     leader_action = _leader(scores)
     if len(event_set) < min_events:
@@ -294,7 +331,7 @@ def build_tournament_report(
         actual_cash=actual_cash,
     )
     leader_score = next((score for score in scores if score.action == leader_action), None)
-    leader_value = leader_score.actual_cash_result_usd if leader_score is not None else None
+    leader_value = leader_score.cash_metric_value_usd if leader_score is not None else None
     return CryptoPerpTournamentReport(
         artifact_id=stable_hash(
             ["crypto-perp-tournament-report-artifact", report_id, serialize_utc_z(generated)]
