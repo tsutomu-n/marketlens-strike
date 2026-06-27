@@ -102,6 +102,12 @@ def valid_candidate_set_payload() -> dict[str, Any]:
             _candidate("idea-cand-001", decision="SHORTLISTED"),
             _candidate("idea-cand-002", decision="REJECTED"),
         ],
+        "parameter_grids": {
+            "trend_momentum": [
+                {"lookback": 20, "threshold_z": 1.5},
+                {"lookback": 20, "threshold_z": 1.5},
+            ]
+        },
         "search_ledger_summary": {
             "family_count": 1,
             "candidate_count_total": 2,
@@ -109,6 +115,8 @@ def valid_candidate_set_payload() -> dict[str, Any]:
             "candidate_count_rejected": 1,
             "trial_count_total": 2,
             "parameter_grid_hash": HASH_C,
+            "candidate_cap": 1,
+            "cap_rejection_count": 0,
             "validation_peek_count": 0,
             "rerank_count": 0,
             "duplicate_rejection_count": 1,

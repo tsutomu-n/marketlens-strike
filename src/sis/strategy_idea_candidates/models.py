@@ -254,6 +254,8 @@ class SearchLedgerSummary(BaseModel):
     candidate_count_rejected: int = Field(ge=0)
     trial_count_total: int = Field(ge=0)
     parameter_grid_hash: str
+    candidate_cap: int = Field(ge=1)
+    cap_rejection_count: int = Field(ge=0, default=0)
     validation_peek_count: int = Field(ge=0)
     rerank_count: int = Field(ge=0)
     duplicate_rejection_count: int = Field(ge=0, default=0)
@@ -334,6 +336,7 @@ class StrategyIdeaCandidateSet(BaseModel):
     input_contract_validation_refs: list[InputContractValidationRef] = Field(min_length=1)
     source_artifacts: list[CandidateSourceArtifact] = Field(min_length=1)
     candidate_inventory: list[StrategyIdeaCandidate] = Field(default_factory=list)
+    parameter_grids: dict[str, list[dict[str, Any]]] = Field(min_length=1)
     search_ledger_summary: SearchLedgerSummary
     selection_policy: SelectionPolicy
     split_policy: SplitPolicy
@@ -363,6 +366,19 @@ class StrategyIdeaCandidateSet(BaseModel):
             cleaned_key = _validate_non_empty(key, label="dependency_versions key")
             cleaned_value = _validate_non_empty(raw, label="dependency_versions value")
             cleaned[cleaned_key] = cleaned_value
+        return cleaned
+
+    @field_validator("parameter_grids")
+    @classmethod
+    def validate_parameter_grids(
+        cls, value: dict[str, list[dict[str, Any]]]
+    ) -> dict[str, list[dict[str, Any]]]:
+        cleaned: dict[str, list[dict[str, Any]]] = {}
+        for key, grid in value.items():
+            cleaned_key = _validate_non_empty(key, label="parameter_grids key")
+            if not grid:
+                raise ValueError("parameter_grids entries must not be empty")
+            cleaned[cleaned_key] = grid
         return cleaned
 
     @model_validator(mode="after")

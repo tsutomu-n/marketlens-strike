@@ -142,6 +142,7 @@ def build_blocked_candidate_set_from_input_evidence(
         ],
         source_artifacts=source_artifacts,
         candidate_inventory=[],
+        parameter_grids={"blocked_input_evidence": [{}]},
         search_ledger_summary=SearchLedgerSummary(
             family_count=0,
             candidate_count_total=0,
@@ -149,6 +150,8 @@ def build_blocked_candidate_set_from_input_evidence(
             candidate_count_rejected=0,
             trial_count_total=0,
             parameter_grid_hash=ZERO_HASH,
+            candidate_cap=1,
+            cap_rejection_count=0,
             validation_peek_count=0,
             rerank_count=0,
             duplicate_rejection_count=0,

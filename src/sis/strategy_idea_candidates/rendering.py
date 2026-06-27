@@ -17,14 +17,28 @@ def render_strategy_idea_candidate_set_markdown(candidate_set: StrategyIdeaCandi
         f"- candidate_count_shortlisted: `{summary.candidate_count_shortlisted}`",
         f"- candidate_count_rejected: `{summary.candidate_count_rejected}`",
         f"- trial_count_total: `{summary.trial_count_total}`",
+        f"- candidate_cap: `{summary.candidate_cap}`",
+        f"- cap_rejection_count: `{summary.cap_rejection_count}`",
+        f"- duplicate_rejection_count: `{summary.duplicate_rejection_count}`",
         f"- success_only_reporting: `{str(summary.success_only_reporting).lower()}`",
         f"- sealed_test_used_for_selection: `{str(summary.sealed_test_used_for_selection).lower()}`",
         "",
+        "## Parameter Grids",
+        "",
+        "| family | grid_count |",
+        "|---|---|",
+    ]
+    for family, grid in sorted(candidate_set.parameter_grids.items()):
+        lines.append(f"| `{family}` | `{len(grid)}` |")
+    lines.extend(
+        [
+            "",
         "## Input Contract Validation",
         "",
         "| contract_id | validation_status | validation_path | validation_sha256 |",
         "|---|---|---|---|",
-    ]
+        ]
+    )
     for ref in candidate_set.input_contract_validation_refs:
         lines.append(
             "| "

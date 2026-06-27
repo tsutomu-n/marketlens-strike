@@ -1,6 +1,11 @@
 """Strategy idea candidate artifact helpers."""
 
 from sis.strategy_idea_candidates.export import export_shortlisted_strategy_ideas
+from sis.strategy_idea_candidates.generator import (
+    CandidateFamilyId,
+    StrategyIdeaCandidateGeneratorConfig,
+    build_deterministic_candidate_set_from_input_evidence,
+)
 from sis.strategy_idea_candidates.models import (
     CandidateDecision,
     CandidateSetStatus,
@@ -13,11 +18,14 @@ from sis.strategy_idea_candidates.service import (
 )
 
 __all__ = [
+    "CandidateFamilyId",
     "CandidateDecision",
     "CandidateSetStatus",
+    "StrategyIdeaCandidateGeneratorConfig",
     "StrategyIdeaCandidate",
     "StrategyIdeaCandidateSet",
     "build_blocked_candidate_set_from_input_evidence",
+    "build_deterministic_candidate_set_from_input_evidence",
     "export_shortlisted_strategy_ideas",
     "write_strategy_idea_candidate_set",
 ]

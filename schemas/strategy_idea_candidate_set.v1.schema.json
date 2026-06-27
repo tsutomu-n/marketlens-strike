@@ -12,6 +12,7 @@
     "input_contract_validation_refs",
     "source_artifacts",
     "candidate_inventory",
+    "parameter_grids",
     "search_ledger_summary",
     "selection_policy",
     "split_policy",
@@ -42,6 +43,7 @@
       "type": "array",
       "items": {"$ref": "#/$defs/candidate"}
     },
+    "parameter_grids": {"$ref": "#/$defs/parameter_grids"},
     "search_ledger_summary": {"$ref": "#/$defs/search_ledger_summary"},
     "selection_policy": {"$ref": "#/$defs/selection_policy"},
     "split_policy": {"$ref": "#/$defs/split_policy"},
@@ -113,6 +115,15 @@
         "end": {"type": "string", "format": "date-time"}
       },
       "additionalProperties": false
+    },
+    "parameter_grids": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {"type": "object"}
+      }
     },
     "candidate": {
       "type": "object",
@@ -218,6 +229,8 @@
         "candidate_count_rejected",
         "trial_count_total",
         "parameter_grid_hash",
+        "candidate_cap",
+        "cap_rejection_count",
         "validation_peek_count",
         "rerank_count",
         "duplicate_rejection_count",
@@ -231,6 +244,8 @@
         "candidate_count_rejected": {"type": "integer", "minimum": 0},
         "trial_count_total": {"type": "integer", "minimum": 0},
         "parameter_grid_hash": {"$ref": "#/$defs/sha256"},
+        "candidate_cap": {"type": "integer", "minimum": 1},
+        "cap_rejection_count": {"type": "integer", "minimum": 0},
         "validation_peek_count": {"type": "integer", "minimum": 0},
         "rerank_count": {"type": "integer", "minimum": 0},
         "duplicate_rejection_count": {"type": "integer", "minimum": 0},
