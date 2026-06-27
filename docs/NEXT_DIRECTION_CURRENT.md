@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_10:00 JST
-更新日: 2026-06-22_18:55 JST
+更新日: 2026-06-27_18:28 JST
 -->
 
 # Next Direction Current
@@ -74,7 +74,7 @@ Strategy Case Index の使い方は [strategy_case_index/README.md](strategy_cas
 
 Strategy Daily Brief の使い方は [strategy_daily_brief/README.md](strategy_daily_brief/README.md) を読む。これは `strategy_daily_brief.v1` と `strategy-daily-brief` の current surface です。
 
-Strategy AI Review の使い方は [strategy_ai_review/README.md](strategy_ai_review/README.md) を読む。これは `strategy_ai_review_packet.v1`、`strategy_ai_review_note.v1`、`strategy-ai-review-packet-build`、`strategy-ai-review-note-record` の current surface です。
+Strategy AI Review の使い方は [strategy_ai_review/README.md](strategy_ai_review/README.md) を読む。これは `strategy_ai_review_packet.v1`、`strategy_ai_review_note.v1`、`strategy_ai_review_structured_findings.v1`、`strategy-ai-review-packet-build`、`strategy-ai-review-note-record`、`strategy-ai-review-findings-structure` の current surface です。
 
 Strategy Model / Optimizer Loop の使い方は [strategy_model_loop/README.md](strategy_model_loop/README.md) を読む。これは `strategy_model_run.v1`、`strategy_optimizer_trial_ledger.v1`、`strategy-model-run-record` の current surface です。
 

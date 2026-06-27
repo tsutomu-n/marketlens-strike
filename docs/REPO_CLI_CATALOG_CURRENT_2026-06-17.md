@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-22_18:55 JST
+更新日: 2026-06-27_18:28 JST
 -->
 
 # Repo CLI Catalog Current
@@ -73,6 +73,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-daily-brief`
 - `strategy-ai-review-packet-build`
 - `strategy-ai-review-note-record`
+- `strategy-ai-review-findings-structure`
 - `strategy-model-run-record`
 - `strategy-micro-live-plan`
 - `strategy-next-scale-plan`
