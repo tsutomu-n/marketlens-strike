@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-23_22:44 JST
+更新日: 2026-06-27_18:28 JST
 -->
 
 # Implemented Surfaces
@@ -41,7 +41,7 @@ production live trading、wallet、signing、exchange write は現行 operator p
 | Strategy Case Lite first slice | implemented as read-only per-strategy artifact timeline, no paper/live permission | `strategy-case-lite-update`, `src/sis/strategy_case_lite/`, `schemas/strategy_case_lite.v1.schema.json`, `tests/strategy_case_lite/`, `docs/strategy_case_lite/` |
 | Strategy Case Index | implemented as read-only multi-case index over `strategy_case_lite.v1`, no DB registry or paper/live permission | `strategy-case-index-build`, `src/sis/strategy_case_index/`, `schemas/strategy_case_index.v1.schema.json`, `tests/strategy_case_index/`, `docs/strategy_case_index/` |
 | Strategy Daily Brief first slice | implemented as read-only daily artifact index, including Crypto Perp tournament gate, truth-cycle next step, and first stage blocker follow-up, no paper/live permission | `strategy-daily-brief`, `src/sis/strategy_daily_brief/`, `schemas/strategy_daily_brief.v1.schema.json`, `tests/strategy_daily_brief/`, `docs/strategy_daily_brief/` |
-| Strategy AI Review first slice | implemented as safe summary packet and AI note recorder, no auto-apply or permission | `strategy-ai-review-packet-build`, `strategy-ai-review-note-record`, `src/sis/strategy_ai_review/`, `schemas/strategy_ai_review_packet.v1.schema.json`, `schemas/strategy_ai_review_note.v1.schema.json`, `tests/strategy_ai_review/`, `docs/strategy_ai_review/` |
+| Strategy AI Review first slice | implemented as safe summary packet, AI note recorder, and structured human-review findings, no auto-apply or permission | `strategy-ai-review-packet-build`, `strategy-ai-review-note-record`, `strategy-ai-review-findings-structure`, `src/sis/strategy_ai_review/`, `schemas/strategy_ai_review_packet.v1.schema.json`, `schemas/strategy_ai_review_note.v1.schema.json`, `schemas/strategy_ai_review_structured_findings.v1.schema.json`, `tests/strategy_ai_review/`, `docs/strategy_ai_review/` |
 | Strategy Model / Optimizer Loop first slice | implemented as generic model run and all-trial ledger, no optimizer execution or auto-apply | `strategy-model-run-record`, `src/sis/strategy_model_loop/`, `schemas/strategy_model_run.v1.schema.json`, `schemas/strategy_optimizer_trial_ledger.v1.schema.json`, `tests/strategy_model_loop/`, `docs/strategy_model_loop/` |
 | Strategy Micro Live Plan Gate first slice | implemented as read-only micro live plan artifact, no live execution permission | `strategy-micro-live-plan`, `src/sis/strategy_micro_live_plan/`, `schemas/strategy_micro_live_plan.v1.schema.json`, `tests/strategy_micro_live_plan/`, `docs/strategy_micro_live_plan/` |
 | Strategy Next Scale Plan first slice | implemented as read-only post-scale-decision planning artifact, no next-scale execution permission | `strategy-next-scale-plan`, `src/sis/strategy_next_scale_plan/`, `schemas/strategy_next_scale_plan.v1.schema.json`, `tests/strategy_next_scale_plan/`, `docs/strategy_next_scale_plan/` |
@@ -103,7 +103,7 @@ NDX approvals do not prove alpha, backtest readiness, paper readiness, live read
 - `strategy-case-lite-update` creates a per-strategy timeline artifact only. It does not permit paper or live execution.
 - `strategy-case-index-build` creates a read-only index over `strategy_case_lite.v1` artifacts only. It does not persist a DB registry, merge cases, edit source cases, or permit paper/live execution.
 - `strategy-daily-brief` creates a daily read-only index of actionable artifacts only. It does not permit paper or live execution.
-- `strategy-ai-review-packet-build` and `strategy-ai-review-note-record` create AI review support artifacts only. They do not auto-apply changes or permit paper/live execution.
+- `strategy-ai-review-packet-build`, `strategy-ai-review-note-record`, and `strategy-ai-review-findings-structure` create AI review support artifacts only. They do not auto-apply changes or permit paper/live execution.
 - `strategy-model-run-record` records model / optimizer results only. It does not run optimizers, edit Strategy Authoring YAML, or permit paper/live execution.
 - `strategy-micro-live-plan`, `strategy-scale-decision`, and `strategy-next-scale-plan` create human-review planning artifacts only. `READY_FOR_HUMAN_MICRO_LIVE_REVIEW`, `READY_FOR_HUMAN_SCALE_REVIEW`, and `READY_FOR_HUMAN_NEXT_SCALE_REVIEW` are reported as `status=needs_human_approval` with `requires_explicit_approval=true` and `permits_live_order=false`, not `status=pass`; blocked paths report `status=blocked`, `requires_explicit_approval=false`, and `permits_live_order=false`.
 - `strategy-next-scale-plan` creates a next scale planning artifact only. It does not permit next-scale execution or live execution.

@@ -41,7 +41,7 @@ PR-AI-LOOP-01
 - structured finding の evidence ref は typed object とし、packet summary / context section / note finding index への参照だけにする。
 - secret / credential / wallet / signing / exchange write 系の情報を新 artifact に入れない。
 - 新依存は追加しない。
-- `model_reasoning_effort` は PR-AI-LOOP-01 の必須前提にしない。現行 main の `strategy_ai_review_note.v1` に無い前提で扱い、PR-AI-LOOP-01 では note schema を追加拡張しない。別ブランチや将来版 note に optional metadata として存在する場合だけ、互換的に copy してよい。
+- `model_reasoning_effort` は PR-AI-LOOP-01 では扱わない。PR-AI-LOOP-01 では note schema を追加拡張せず、structured findings の `source_note` には provider / model / prompt_hash / input_hash / recommendation を保存する。
 
 ## 対象ファイル
 
@@ -328,7 +328,7 @@ Strategy AI Review の note 後段だけ。packet build、note record、Strategy
 - `evidence_refs` は typed object にする。
 - `finding_id` は未指定なら自動採番する。
 - `recommended_next_action` に `REVISE` は入れない。
-- `model_reasoning_effort` は PR-AI-LOOP-01 の必須要件から外す。別ブランチや将来版 note に optional metadata として存在する場合だけ copy してよい。
+- `model_reasoning_effort` は PR-AI-LOOP-01 の必須要件から外し、structured findings には copy しない。必要なら別PRで optional model metadata として検討する。
 
 ## 破壊的変更の有無
 

@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_ai_review_structured_findings.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "finding_set_id",
+    "recorded_at",
+    "producer",
+    "finding_set_status",
+    "source_note",
+    "source_packet",
+    "findings",
+    "auto_applied",
+    "permission_allowed",
+    "paper_execution_allowed",
+    "live_allowed",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_ai_review_structured_findings.v1"},
+    "finding_set_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "strategy-ai-review-findings-structure"}
+      },
+      "additionalProperties": false
+    },
+    "finding_set_status": {"const": "RECORDED"},
+    "source_note": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256",
+        "input_hash",
+        "prompt_hash",
+        "provider",
+        "model",
+        "recommendation"
+      ],
+      "properties": {
+        "path": {"$ref": "#/$defs/repo_path"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "input_hash": {"$ref": "#/$defs/sha256"},
+        "prompt_hash": {"$ref": "#/$defs/sha256"},
+        "provider": {"type": "string", "minLength": 1},
+        "model": {"type": "string", "minLength": 1},
+        "recommendation": {
+          "enum": [
+            "HUMAN_REVIEW_REQUIRED",
+            "REJECT",
+            "REVISE",
+            "EXTEND_OBSERVATION",
+            "NO_ACTION"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_packet": {
+      "type": "object",
+      "required": ["path", "sha256", "ai_input_hash"],
+      "properties": {
+        "path": {"$ref": "#/$defs/repo_path"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "ai_input_hash": {"$ref": "#/$defs/sha256"}
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "auto_applied": {"const": false},
+    "permission_allowed": {"const": false},
+    "paper_execution_allowed": {"const": false},
+    "live_allowed": {"const": false},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "repo_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(?:^|/)\\.)(?!.*\\\\)(?!.*(?:^|/)(?:credentials|credential|secrets|secret|id_rsa|id_ed25519)(?:/|$)).+"
+    },
+    "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "finding": {
+      "type": "object",
+      "required": [
+        "finding_id",
+        "finding_type",
+        "severity",
+        "review_impact",
+        "statement",
+        "evidence_refs",
+        "recommended_next_action",
+        "limitations"
+      ],
+      "properties": {
+        "finding_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "finding_type": {
+          "enum": [
+            "SOURCE_ARTIFACT_REVIEW",
+            "OPEN_ACTION_REVIEW",
+            "CONTEXT_INSUFFICIENT",
+            "SAFETY_BOUNDARY",
+            "OVERCLAIM_RISK",
+            "OTHER"
+          ]
+        },
+        "severity": {"enum": ["INFO", "LOW", "MEDIUM", "HIGH"]},
+        "review_impact": {
+          "enum": ["INFORMATION_ONLY", "HUMAN_REVIEW_REQUIRED", "BLOCKING_CONTEXT_GAP"]
+        },
+        "statement": {"type": "string", "minLength": 1},
+        "evidence_refs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/evidence_ref"}
+        },
+        "recommended_next_action": {
+          "enum": [
+            "INSPECT_SOURCE_ARTIFACT",
+            "INSPECT_DRIFT_EVIDENCE",
+            "ADD_ALLOWLISTED_CONTEXT",
+            "RECORD_HUMAN_REVIEW",
+            "NO_ACTION"
+          ]
+        },
+        "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    "evidence_ref": {
+      "type": "object",
+      "required": ["ref_type", "index"],
+      "properties": {
+        "ref_type": {
+          "enum": [
+            "note_finding",
+            "note_limitation",
+            "packet_source_summary",
+            "packet_context_section",
+            "packet_context_entry"
+          ]
+        },
+        "index": {"type": "integer", "minimum": 0},
+        "entry_key": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
