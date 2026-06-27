@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -12,7 +11,6 @@ from sis.strategy_inputs.models import StrategyInputContract, StrategyInputContr
 from sis.strategy_inputs.io import write_json_artifact
 
 from .fixtures import (
-    copy_payload,
     valid_candidate_set_payload,
     valid_input_contract_payload,
     valid_input_validation_payload,
@@ -59,9 +57,7 @@ def test_candidate_set_rejects_success_only_inventory(tmp_path, monkeypatch) -> 
         StrategyIdeaCandidateSet.model_validate(payload)
 
 
-def test_candidate_set_rejects_built_from_non_pass_input_validation(
-    tmp_path, monkeypatch
-) -> None:
+def test_candidate_set_rejects_built_from_non_pass_input_validation(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     payload = valid_candidate_set_payload()
     payload["input_contract_validation_refs"][0]["validation_status"] = "NEEDS_FIX"

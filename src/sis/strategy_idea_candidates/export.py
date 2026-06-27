@@ -60,7 +60,9 @@ def _strategy_idea_from_candidate(
     created_at: datetime,
 ) -> StrategyIdea:
     candidate = next(
-        item for item in candidate_set.candidate_inventory if item.idea_candidate_id == idea_candidate_id
+        item
+        for item in candidate_set.candidate_inventory
+        if item.idea_candidate_id == idea_candidate_id
     )
     return StrategyIdea(
         idea_id=candidate.idea_candidate_id,
@@ -116,7 +118,9 @@ def export_shortlisted_strategy_ideas(
         raise StrategyIdeaCandidateExportError("no shortlisted candidates to export")
 
     manifest_path = out_dir / "strategy_idea_candidate_export_manifest.json"
-    idea_paths = [out_dir / f"{candidate_id}.strategy_idea.json" for candidate_id in shortlisted_ids]
+    idea_paths = [
+        out_dir / f"{candidate_id}.strategy_idea.json" for candidate_id in shortlisted_ids
+    ]
     if not replace_existing and (
         manifest_path.exists() or any(path.exists() for path in idea_paths)
     ):

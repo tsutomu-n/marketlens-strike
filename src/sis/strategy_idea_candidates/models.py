@@ -4,7 +4,14 @@ from datetime import datetime, timezone
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from sis.strategy_inputs.models import InputValidationStatus, ProducerInfo, SourceValidationStatus
 from sis.strategy_review.manifest import REVIEW_ID_PATTERN, SHA256_PATTERN
@@ -39,9 +46,7 @@ class SelectionAdjustedMetricsStatus(StrEnum):
 def _serialize_datetime(value: datetime) -> str:
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace(
-        "+00:00", "Z"
-    )
+    return value.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _validate_id(value: str, *, label: str) -> str:
@@ -393,7 +398,9 @@ class StrategyIdeaCandidateSet(BaseModel):
         _validate_unique(policy_rejected, label="rejected_candidate_ids")
         overlap = set(policy_shortlisted) & set(policy_rejected)
         if overlap:
-            raise ValueError("shortlisted_candidate_ids and rejected_candidate_ids must not overlap")
+            raise ValueError(
+                "shortlisted_candidate_ids and rejected_candidate_ids must not overlap"
+            )
         unknown_ids = (set(policy_shortlisted) | set(policy_rejected)) - inventory_ids
         if unknown_ids:
             unknown = ", ".join(sorted(unknown_ids))

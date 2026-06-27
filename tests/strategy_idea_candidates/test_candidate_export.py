@@ -23,9 +23,7 @@ def _schema(name: str) -> dict:
     return json.loads((REPO_ROOT / f"schemas/{name}").read_text(encoding="utf-8"))
 
 
-def test_shortlist_export_writes_strategy_idea_and_sidecar_manifest(
-    tmp_path, monkeypatch
-) -> None:
+def test_shortlist_export_writes_strategy_idea_and_sidecar_manifest(tmp_path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     candidate_set = StrategyIdeaCandidateSet.model_validate(valid_candidate_set_payload())
     write_result = write_strategy_idea_candidate_set(
@@ -43,15 +41,13 @@ def test_shortlist_export_writes_strategy_idea_and_sidecar_manifest(
     )
 
     manifest_payload = json.loads(export_result.manifest_path.read_text(encoding="utf-8"))
-    Draft202012Validator(_schema("strategy_idea_candidate_export_manifest.v1.schema.json")).validate(
-        manifest_payload
-    )
+    Draft202012Validator(
+        _schema("strategy_idea_candidate_export_manifest.v1.schema.json")
+    ).validate(manifest_payload)
     assert manifest_payload["candidate_set_path"] == (
         "data/strategy_idea_candidates/run-a/strategy_idea_candidate_set.json"
     )
-    assert manifest_payload["candidate_set_sha256"] == sha256_file(
-        write_result.candidate_set_path
-    )
+    assert manifest_payload["candidate_set_sha256"] == sha256_file(write_result.candidate_set_path)
 
     idea_payload = json.loads(export_result.idea_paths[0].read_text(encoding="utf-8"))
     Draft202012Validator(_schema("strategy_idea.v1.schema.json")).validate(idea_payload)

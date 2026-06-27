@@ -20,14 +20,12 @@ def test_candidate_set_writer_is_deterministic(tmp_path, monkeypatch) -> None:
         out_dir=tmp_path / "data/strategy_idea_candidates/run-b",
     )
 
-    assert first.candidate_set_path.read_text(encoding="utf-8") == second.candidate_set_path.read_text(
+    assert first.candidate_set_path.read_text(
         encoding="utf-8"
-    )
+    ) == second.candidate_set_path.read_text(encoding="utf-8")
     assert first.report_path.read_text(encoding="utf-8") == second.report_path.read_text(
         encoding="utf-8"
     )
     assert sha256_file(first.candidate_set_path) == sha256_file(second.candidate_set_path)
     assert "success_only_reporting: `false`" in first.report_path.read_text(encoding="utf-8")
-    assert "paper / live 実行許可ではありません" in first.report_path.read_text(
-        encoding="utf-8"
-    )
+    assert "paper / live 実行許可ではありません" in first.report_path.read_text(encoding="utf-8")

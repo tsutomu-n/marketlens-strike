@@ -55,6 +55,14 @@ def _same_time_window(value: datetime) -> TimeWindow:
     return TimeWindow(start=value, end=value)
 
 
+def _coerce_optional_datetime(value: str | datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return value
+
+
 def write_strategy_idea_candidate_set(
     *,
     candidate_set: StrategyIdeaCandidateSet,
@@ -109,7 +117,7 @@ def build_blocked_candidate_set_from_input_evidence(
                     result.status if result is not None else SourceValidationStatus.BLOCKED
                 ),
                 available_at=source.available_at,
-                max_observed_timestamp=(
+                max_observed_timestamp=_coerce_optional_datetime(
                     result.max_observed_timestamp if result is not None else None
                 ),
             )
