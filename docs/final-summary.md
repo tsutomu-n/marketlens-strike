@@ -1,9 +1,49 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_08:11 JST
+更新日: 2026-06-28_08:23 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Strategy AI Review Plan Archive
+
+Completed on branch `ai/docs-code-truth-triage-20260628-0818`.
+
+Achieved:
+
+- Moved the completed Strategy AI Review implementation plan to `docs/archive/2026-06-28-merged-plans/`.
+- Updated `docs/strategy_ai_review/README.md` so the current guide points to CLI help, schema, tests, and implemented behavior instead of treating the plan as the next action.
+- Updated docs triage and archive README with the new archive routing.
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 172 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 224 public CLI commands.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+- Crypto Perp plan docs still need a separate reference check before archive movement.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No. The plan was moved to archive, not deleted.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required.
+
+Rollback:
+
+Move the archived Strategy AI Review plan back to `docs/strategy_ai_review/` and revert the README / triage / archive README updates.
 
 ## Latest Addendum: Docs Triage Cleanup
 

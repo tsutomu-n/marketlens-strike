@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:17 JST
-更新日: 2026-06-28_00:27 JST
+更新日: 2026-06-28_08:23 JST
 -->
 
 # Strategy AI Review
@@ -11,7 +11,7 @@ Strategy AI Review は、LLM に渡してよい最小限の source summary と a
 
 AI は proposal / critique の補助であり、採用、paper execution、live execution、Strategy Authoring YAML 自動編集を許可しません。
 
-次に強化する AI-in-the-loop control layer の実装計画は [AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md](AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md) を読む。この計画は、外部 LLM API 実行ではなく、AI に渡してよい安全な context packet、prompt / input hash、structured finding、AI note の表示導線を追加するための coder handoff です。
+完了済みの AI-in-the-loop control layer 実装計画は [../archive/2026-06-28-merged-plans/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md](../archive/2026-06-28-merged-plans/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md) に移動済みです。現在の利用入口はこの README、CLI help、schema、tests です。
 
 ## Commands
 
@@ -111,9 +111,9 @@ Structured finding は次を持ちます。
 
 Structured findings 作成時は、note sha256、packet sha256、`note.input_hash == packet.ai_input_hash` を検証します。`source_note.path` は入力 note artifact path を指し、raw source artifact path ではありません。`source_note` には provider、model、prompt_hash、input_hash、recommendation を保存します。`model_reasoning_effort` は note にある場合だけ optional metadata としてコピーします。
 
-## Planned AI-in-the-loop hardening
+## Implemented AI-in-the-loop hardening
 
-実装計画の順序:
+実装済みの強化:
 
 ```text
 PR-AI-LOOP-00
@@ -121,14 +121,11 @@ PR-AI-LOOP-00
 
 PR-AI-LOOP-01
   Structured AI Review Findings
-
-PR-AI-LOOP-02
-  AI Review Notes into Case / Daily Brief / Workbench Viewer
 ```
 
-最初に実装する `PR-AI-LOOP-00` では、既存 packet の `source_summaries` を壊さず、known schema allowlist から短い `context_sections` を作ります。unknown schema は source summary のみに留め、secret / credential / wallet / exchange write 系 source は `BLOCKED_SENSITIVE_SOURCE` のまま止めます。
+`PR-AI-LOOP-00` は、既存 packet の `source_summaries` を壊さず、known schema allowlist から短い `context_sections` を作ります。unknown schema は source summary のみに留め、secret / credential / wallet / exchange write 系 source は `BLOCKED_SENSITIVE_SOURCE` のまま止めます。
 
-`PR-AI-LOOP-01` では、AI回答後に作った note を入力にして、human review 用の structured findings companion artifact を作ります。operator decision、stage decision、paper permission、live permission には接続しません。
+`PR-AI-LOOP-01` は、AI回答後に作った note を入力にして、human review 用の structured findings companion artifact を作ります。operator decision、stage decision、paper permission、live permission には接続しません。
 
 ## 境界
 

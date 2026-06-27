@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-28_08:11 JST
+更新日: 2026-06-28_08:23 JST
 -->
 
 # Documentation Archive
@@ -134,5 +134,6 @@ Archived on 2026-06-28:
 - `docs/plans/crypto-perp-profit-readiness-local-automation-2026-06-28.md` -> `docs/archive/2026-06-28-merged-plans/`
 - `docs/plans/docs-triage-refresh-2026-06-28.md` -> `docs/archive/2026-06-28-merged-plans/`
 - `docs/plans/docs-triage-cleanup-2026-06-28.md` -> `docs/archive/2026-06-28-merged-plans/`
+- `docs/strategy_ai_review/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md` -> `docs/archive/2026-06-28-merged-plans/`
 
 Do not treat archived documents as current requirements.
