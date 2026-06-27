@@ -1,9 +1,61 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-27_23:41 JST
+更新日: 2026-06-28_06:38 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Docs Triage Refresh
+
+Completed on branch `main`.
+
+Achieved:
+
+- Refreshed `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md` as the current docs triage artifact.
+- Added explicit 判定基準 for 更新できる / 古い内容がある / 作り直したほうがいい / 削除・アーカイブしてもよい docs.
+- Added next cleanup candidates without deleting, moving, or archiving files.
+- Expanded the 抜け・漏れ・誤謬リスク section around docs checker limits, CLI catalog limits, runtime snapshots, archive docs, and intentionally thin low-level helper docs.
+- Kept historical docs as context only and did not re-promote `docs/archive/**` or `plan/archive/**` into current proof.
+
+Main files changed:
+
+- `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md`
+- `docs/plans/docs-triage-refresh-2026-06-28.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py`
+- `uv run python scripts/check_cli_catalog.py`
+- `git diff --check`
+
+Not run:
+
+- Full `./scripts/check`; this checkpoint only updated docs and did not change code, schema, CLI routing, or checker allowlists.
+
+Remaining work:
+
+- Execute cleanup candidates only as a separate task.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No. No docs were deleted, moved, or archived.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Revert this docs triage refresh and remove the checkpoint plan.
 
 ## Latest Addendum: Docs Archive Triage Cleanup
 

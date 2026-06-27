@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_07:30 JST
-更新日: 2026-06-27_23:41 JST
+更新日: 2026-06-28_06:38 JST
 -->
 
 # Current Docs And Structure Triage 2026-06-27
@@ -11,7 +11,7 @@
 
 今の正本は `src/`、`tests/`、`schemas/`、`configs/`、`scripts/`、`.github/workflows/ci.yml`、`pyproject.toml`、`.python-version`、`uv.lock`、CLI help である。docs は入口、説明、runbook、判断補助であり、runtime 値や readiness の正本ではない。
 
-現在の docs は機械検証上は壊れていない。2026-06-27_23:41 JST 時点で、`scripts/check_current_docs.py` は current docs 173 件を検査し、`scripts/check_cli_catalog.py` は public CLI 216 件を Typer 登録と照合している。
+現在の docs は機械検証上は壊れていない。2026-06-28_06:38 JST 時点で、`scripts/check_current_docs.py` は current docs 174 件を検査し、`scripts/check_cli_catalog.py` は public CLI 216 件を Typer 登録と照合している。
 
 ただし、古い棚卸し文書、完了済み作業ブランチ名、当時の HEAD、当時の件数、runtime artifact snapshot は current proof ではない。2026-06-27 夜の branch cleanup 後、local/remote branch は `main` のみで、完了済み作業計画は `docs/archive/2026-06-27-merged-plans/` へ移動済み。
 
@@ -94,6 +94,17 @@
 | `plan/2026-06-22-strategy-feedback-case-index/` | 現在 allowlist された active plan package。 |
 | `plan/archive/` | historical plans。current proof として読まない。 |
 
+## 判定基準
+
+この分類は code-truth docs triage のための作業用 checklist であり、文書の価値判断ではない。判定時は次を優先する。
+
+| 分類 | 判定基準 | 確認元 |
+|---|---|---|
+| 更新できるドキュメント | 現行の入口、runbook、surface map、operator route、CLI/schema/test の説明として使われており、局所更新で code truth に追従できる。 | `scripts/check_current_docs.py` の current allowlist / current dir、`src/`, `tests/`, `schemas/`, CLI help。 |
+| 古い内容があるドキュメント | 作成時点の branch、HEAD、pass count、artifact snapshot、判断メモ、履歴要約を含み、現行判断では再確認が必要。 | 文書本文、archive routing、runtime artifact 参照、`git status`、CLI/checker 再実行結果。 |
+| 作り直したほうがいいドキュメント | 入口、利用者説明、技術詳細、operator 手順、capability catalog が混ざり、次の変更で局所修正より分割のほうが安全。 | 文書の役割重複、読者混在、`docs/IMPLEMENTED_SURFACES.md` と CLI catalog との重なり。 |
+| 削除・アーカイブしてもよいドキュメント | superseded audit、完了済み plan、生成 report、current routing から外れた snapshot。即削除ではなく archive 維持を基本にする。 | `docs/archive/`, `plan/archive/`, `scripts/check_current_docs.py` の excluded prefixes / legacy root paths。 |
+
 ## 更新できるドキュメント
 
 以下は現行 docs として維持し、コードや CLI が変わった時に同じ pass で更新する。
@@ -108,6 +119,7 @@
 | `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | CLI catalog として維持。 | `scripts/check_cli_catalog.py` の照合結果が変わる CLI 追加/削除時。 |
 | `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md` | docs / directory 現在地として維持。 | ディレクトリ構造、read order、分類が変わった時。 |
 | `docs/runbooks/README.md` | operator route table として維持。 | runbook が増減した時。 |
+| `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md` | Crypto Perp Truth-Cycle の operator runbook として維持。 | Crypto Perp CLI、artifact schema、manual outcome / tiny-live boundary が変わった時。 |
 | `docs/backtest/README.md` | backtest 入口として維持。 | backtest CLI、artifact schema、optional framework surface が変わった時。 |
 | `docs/research/ndx/README.md` | NDX research 入口として維持。 | NDX layer/config/CLI が変わった時。 |
 | `docs/strategy_research_lab/README.md` | Strategy Lab / Authoring 入口として維持。 | authoring schema、examples、CLI flow が変わった時。 |
@@ -157,7 +169,19 @@
 | `docs/live_evidence_reports/` に生成される report | source doc ではない。 | tracked に戻す場合は archive か `data/` artifact 扱いにする。 |
 | `plan/0607ここからの計画2/*.zip`, `plan/0608ここからの計画/**/*.zip`, `plan/0621ここから01/*.zip` | untracked ZIP。 | 中身確認なしに削除しない。使わないなら別途削除判断。 |
 
-## 追加調査で見つけた抜け・漏れ
+## 次に実行する cleanup 候補
+
+この文書の更新では削除・移動はしない。実行する場合は別タスクとして、対象を 1 group ずつ確認してから進める。
+
+| 優先 | 候補 | 実行条件 | 最小確認 |
+|---|---|---|---|
+| 1 | `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` の分割設計 | 次に利用者向け current-state docs を大きく更新する時。 | `docs/CURRENT_STATE.md`, `docs/IMPLEMENTED_SURFACES.md`, schema/tests/CLI help との差分確認。 |
+| 2 | `docs/trade_xyz_bot_beginner_guide.*` の役割分離 | venue-neutral beginner guide と Trade[XYZ] 固有 guide を分ける必要が出た時。 | 現在の default scope が venue-neutral / backtest-first であることを AGENTS と current docs で再確認。 |
+| 3 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` と `docs/IMPLEMENTED_SURFACES.md` の責務整理 | 新しい surface 追加で capability index と surface map の重複が増えた時。 | CLI catalog、schemas、tests、`src/sis/commands/` の spot check。 |
+| 4 | archive slimming | 公開配布、容量、検索ノイズが問題になった時。 | archive README、git history、current-doc checker excluded prefixes を確認。削除ではなく別 archive package を優先。 |
+| 5 | `docs/live_evidence_reports/` の generated report 扱い明確化 | tracked/generated の境界が再び曖昧になった時。 | `.gitignore`, docs checker allowlist、runtime artifact location を確認。 |
+
+## 抜け・漏れ・誤謬リスク
 
 - 以前の説明は、主要 product surface には強いが、`core`, `bot`, `real_market`, `research_protocol`, `risk`, `storage`, `tracking`, `validation`, `strategies` のような低層/補助領域を薄く扱っていた。
 - `templates/`, `tools/`, `sidecars/`, root `package.json`, `Justfile`, legacy sidecar archive は、日常入口ではないが repo 構造として存在する。完全説明を求めるなら無視できない。
@@ -165,9 +189,12 @@
 - `docs/IMPLEMENTED_SURFACES.md` は実装済み surface の map として有用だが、`reports`/`commands` の helper 群を漏れなく説明する文書ではない。
 - `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` は CLI surface の catalog であり、CLI が呼ぶ内部処理の完全説明ではない。
 - archive docs は量が多く、本文正誤は current-doc checker の対象外。archive を読んで現行判断する運用は危険。
-- docs checker が通ることは、全ドキュメントの意味内容が現在値に一致することを保証しない。特に HEAD、branch 名、pass count、artifact count は snapshot として扱う。
+- docs checker が通ることは、全ドキュメントの意味内容が現在値に一致することを保証しない。特に HEAD、branch 名、pass count、artifact count、runtime artifact value は snapshot として扱う。
+- CLI catalog が Typer 登録と一致することは、各 command wrapper の内部処理、artifact 内容、外部副作用の有無を説明し切ることを保証しない。
 - 2026-06-27 の完了済み `docs/plans/` 10 件は、作業ブランチ削除後も内容上は implementation history として残っていたため、`docs/archive/2026-06-27-merged-plans/` へ移動済み。
 - Crypto Perp の dogfood/status artifact や手入力 outcome を profit evidence と読むリスクは docs 側にも残る。profit-readiness 判断では `data/crypto_perp` の実 event/outcome/source availability を inventory で確認する。
+- `docs/archive/**` と `plan/archive/**` は historical context であり、現在の status、readiness、実装有無の根拠として使わない。
+- 低層 helper は意図的に薄くしか docs 化していない。該当領域を変更する時は、docs の網羅性を前提にせず `rg`, tests, schemas, CLI help から直接確認する。
 
 ## 今の推奨 read order
 
