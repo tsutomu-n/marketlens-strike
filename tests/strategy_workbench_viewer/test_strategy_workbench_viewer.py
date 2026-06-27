@@ -123,6 +123,38 @@ def _crypto_perp_ready_tournament_gate(path: Path) -> Path:
     )
 
 
+def _crypto_perp_proxy_tournament_report(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "crypto_perp_tournament_report.v1",
+            "report_id": "tournament-proxy",
+            "tournament_status": "COMPLETE",
+            "leader_action": "CONTINUATION_LONG",
+            "primary_metric": "actual_cash_result_usd",
+            "primary_metric_display_name": "before_cost_proxy_usd",
+            "cash_metric_basis": "before_cost_proxy",
+            "actual_cash": False,
+            "event_count": 2,
+            "leader_cash_metric_value_usd": "4",
+            "leader_actual_cash_result_usd": None,
+            "known_gaps": ["OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH"],
+            "summary": {
+                "report_id": "tournament-proxy",
+                "tournament_status": "COMPLETE",
+                "leader_action": "CONTINUATION_LONG",
+                "primary_metric": "actual_cash_result_usd",
+                "primary_metric_display_name": "before_cost_proxy_usd",
+                "cash_metric_basis": "before_cost_proxy",
+                "actual_cash": False,
+                "event_count": 2,
+                "leader_cash_metric_value_usd": "4",
+                "leader_actual_cash_result_usd": None,
+            },
+        },
+    )
+
+
 def _crypto_perp_truth_cycle_status(path: Path) -> Path:
     return _write_json(
         path,
@@ -688,6 +720,39 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert "path または生成済みrun directory" in html
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+
+
+def test_strategy_workbench_viewer_summarizes_non_actual_tournament_report(
+    tmp_path: Path,
+) -> None:
+    result = build_strategy_workbench_viewer(
+        artifacts=[
+            _crypto_perp_proxy_tournament_report(
+                tmp_path / "data/crypto_perp/tournament/tournament_report.json"
+            )
+        ],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+        replace_existing=True,
+    )
+
+    payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_workbench_viewer.v1.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema).validate(payload)
+    source = payload["source_artifacts"][0]
+    assert source["status"] == "COMPLETE"
+    assert source["summary"]["cash_metric_basis"] == "before_cost_proxy"
+    assert source["summary"]["primary_metric_display_name"] == "before_cost_proxy_usd"
+    assert source["summary"]["actual_cash"] is False
+    assert source["summary"]["leader_cash_metric_value_usd"] == "4"
+    assert "leader_actual_cash_result_usd" not in source["summary"]
+
+    html = result.html_path.read_text(encoding="utf-8")
+    assert "cash_metric_basis" in html
+    assert "before_cost_proxy" in html
+    assert "actual_cash" in html
 
 
 def test_strategy_workbench_viewer_summarizes_strategy_daily_brief_follow_up(

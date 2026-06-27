@@ -111,6 +111,23 @@ def test_tournament_gate_blocks_proxy_rows_until_actual_cash() -> None:
     assert "no_proxy_known_gap" in {condition.condition_id for condition in gate.failed_conditions}
 
 
+def test_tournament_gate_blocks_non_actual_cash_basis_without_proxy_gap() -> None:
+    report = build_tournament_report(
+        report_id="tournament-1",
+        generated_at="2026-06-21T07:00:00Z",
+        rows=[
+            row.model_copy(update={"cash_metric_basis": "before_cost_proxy"}) for row in _rows()
+        ],
+        min_events=2,
+    )
+
+    gate = build_tournament_gate(report=report, created_at="2026-06-21T08:00:00Z")
+
+    assert gate.gate_status == "NEEDS_ACTUAL_CASH"
+    assert gate.recommended_action == "REBUILD_WITH_ACTUAL_CASH"
+    assert "actual_cash_basis" in {condition.condition_id for condition in gate.failed_conditions}
+
+
 def test_tournament_gate_revises_when_loss_threshold_fails() -> None:
     report = build_tournament_report(
         report_id="tournament-1",

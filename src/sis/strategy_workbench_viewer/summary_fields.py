@@ -34,7 +34,11 @@ SUMMARY_KEYS = (
     "tournament_status",
     "leader_action",
     "primary_metric",
+    "primary_metric_display_name",
+    "cash_metric_basis",
+    "actual_cash",
     "event_count",
+    "leader_cash_metric_value_usd",
     "leader_actual_cash_result_usd",
     "proxy_gap_count",
     "failed_condition_count",
@@ -173,6 +177,9 @@ SUMMARY_STRING_KEYS = frozenset(
         "tournament_status",
         "leader_action",
         "primary_metric",
+        "primary_metric_display_name",
+        "cash_metric_basis",
+        "leader_cash_metric_value_usd",
         "strategy_id",
         "first_observed_at",
         "last_observed_at",
@@ -326,6 +333,7 @@ SUMMARY_BOOLEAN_KEYS = frozenset(
         "paper_execution_allowed",
         "live_allowed",
         "pnl_available",
+        "actual_cash",
     }
 )
 

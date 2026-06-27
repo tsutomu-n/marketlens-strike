@@ -76,9 +76,15 @@ def test_tournament_compares_actions_on_same_event_set_with_actual_cash_primary(
 
     assert report.tournament_status == "COMPLETE"
     assert report.primary_metric == "actual_cash_result_usd"
+    assert report.cash_metric_basis == "actual_cash"
+    assert report.primary_metric_display_name == "actual_cash_result_usd"
+    assert report.actual_cash is True
     assert report.event_set == ["event-1", "event-2"]
     assert report.leader_action == "CONTINUATION_LONG"
     assert report.summary["leader_action"] == "CONTINUATION_LONG"
+    assert report.summary["cash_metric_basis"] == "actual_cash"
+    assert report.summary["actual_cash"] is True
+    assert report.summary["leader_cash_metric_value_usd"] == Decimal("5")
     assert report.summary["leader_actual_cash_result_usd"] == Decimal("5")
 
     reversal = next(score for score in report.scores if score.action == "REVERSAL_SHORT")
@@ -101,6 +107,62 @@ def test_tournament_insufficient_evidence_is_inconclusive() -> None:
     assert report.leader_action is None
     assert "INCONCLUSIVE_DATA" in report.known_gaps
     assert "INSUFFICIENT_EVENT_COUNT" in report.inconclusive_reasons
+
+
+def test_tournament_proxy_basis_report_is_not_actual_cash() -> None:
+    rows = [
+        row.model_copy(update={"cash_metric_basis": "before_cost_proxy"}) for row in _rows()
+    ]
+
+    report = build_tournament_report(
+        report_id="proxy-report",
+        generated_at="2026-06-21T07:00:00Z",
+        rows=rows,
+        min_events=2,
+    )
+
+    assert report.tournament_status == "COMPLETE"
+    assert report.leader_action == "CONTINUATION_LONG"
+    assert report.cash_metric_basis == "before_cost_proxy"
+    assert report.primary_metric_display_name == "before_cost_proxy_usd"
+    assert report.actual_cash is False
+    assert report.leader_cash_metric_value_usd == Decimal("5")
+    assert report.leader_actual_cash_result_usd is None
+    assert report.summary["actual_cash"] is False
+    assert report.summary["leader_actual_cash_result_usd"] is None
+
+
+def test_tournament_known_proxy_gap_overrides_row_basis_to_non_actual() -> None:
+    report = build_tournament_report(
+        report_id="proxy-gap-report",
+        generated_at="2026-06-21T07:00:00Z",
+        rows=_rows(),
+        min_events=2,
+        known_gaps=["OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH"],
+    )
+
+    assert report.cash_metric_basis == "before_cost_proxy"
+    assert report.actual_cash is False
+    assert report.leader_actual_cash_result_usd is None
+
+
+def test_tournament_mixed_cash_metric_basis_is_inconclusive() -> None:
+    rows = _rows()
+    rows[0] = rows[0].model_copy(update={"cash_metric_basis": "before_cost_proxy"})
+
+    report = build_tournament_report(
+        report_id="mixed-report",
+        generated_at="2026-06-21T07:00:00Z",
+        rows=rows,
+        min_events=2,
+    )
+
+    assert report.tournament_status == "INCONCLUSIVE_DATA"
+    assert report.leader_action is None
+    assert report.cash_metric_basis == "mixed"
+    assert report.actual_cash is False
+    assert "MIXED_CASH_METRIC_BASIS" in report.known_gaps
+    assert "MIXED_CASH_METRIC_BASIS" in report.inconclusive_reasons
 
 
 def test_tournament_rejects_mismatched_event_sets() -> None:
@@ -175,10 +237,15 @@ def test_crypto_perp_tournament_report_cli_writes_json_and_markdown(tmp_path: Pa
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert payload["schema_version"] == "crypto_perp_tournament_report.v1"
     assert payload["primary_metric"] == "actual_cash_result_usd"
+    assert payload["cash_metric_basis"] == "actual_cash"
+    assert payload["primary_metric_display_name"] == "actual_cash_result_usd"
+    assert payload["actual_cash"] is True
     assert payload["leader_action"] == "CONTINUATION_LONG"
     assert payload["source_refs"][0]["path"] == rows_path.as_posix()
     markdown = markdown_path.read_text(encoding="utf-8")
     assert "Crypto Perp Tournament Report" in markdown
+    assert "cash_metric_basis: `actual_cash`" in markdown
+    assert "actual_cash: `true`" in markdown
     assert "automatic_trading: `false`" in markdown
 
 
@@ -219,6 +286,37 @@ def test_crypto_perp_tournament_report_cli_rejects_preview_rows_json(
     assert "status=fail" in result.stdout
     assert "PREVIEW_ROWS_NOT_ACTUAL_CASH" in result.stdout
     assert "crypto-perp-tournament-rows-v2" in result.stdout
+    assert not (tmp_path / "out/tournament_report.json").exists()
+
+
+def test_crypto_perp_tournament_report_cli_rejects_non_actual_cash_jsonl(
+    tmp_path: Path,
+) -> None:
+    rows_path = tmp_path / "rows.jsonl"
+    rows = [row.model_copy(update={"cash_metric_basis": "before_cost_proxy"}) for row in _rows()]
+    rows_path.write_text(
+        "\n".join(json.dumps(row.model_dump(mode="json")) for row in rows) + "\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-tournament-report",
+            "--rows",
+            str(rows_path),
+            "--out",
+            str(tmp_path / "out"),
+            "--report-id",
+            "proxy-report",
+            "--min-events",
+            "2",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "status=fail" in result.stdout
+    assert "PREVIEW_ROWS_NOT_ACTUAL_CASH" in result.stdout
     assert not (tmp_path / "out/tournament_report.json").exists()
 
 

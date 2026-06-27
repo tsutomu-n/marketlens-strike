@@ -69,6 +69,7 @@ def test_tournament_rows_preview_builds_three_action_rows() -> None:
     assert preview.rows[0].actual_cash_result_usd == Decimal("-1.25")
     assert preview.rows[1].actual_cash_result_usd == Decimal("1.25")
     assert preview.rows[2].actual_cash_result_usd == Decimal("0")
+    assert {row.cash_metric_basis for row in preview.rows} == {"before_cost_proxy"}
     assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in preview.known_gaps
     assert "AMBIGUOUS_HIGH_LOW_ORDERING" in preview.known_gaps
 
@@ -115,7 +116,10 @@ def test_crypto_perp_tournament_rows_preview_cli_writes_jsonl_and_preview(
         "CONTINUATION_LONG",
         "NO_TRADE",
     }
+    assert {row["cash_metric_basis"] for row in rows} == {"before_cost_proxy"}
     assert "outcome_before_cost_proxy_usd" in markdown
+    assert "cash_metric_basis: `before_cost_proxy`" in markdown
+    assert "actual_cash" not in markdown
     assert "| action | actual_cash_result_usd |" not in markdown
     report = build_tournament_report(
         report_id="preview-report",
@@ -125,6 +129,7 @@ def test_crypto_perp_tournament_rows_preview_cli_writes_jsonl_and_preview(
         known_gaps=payload["known_gaps"],
     )
     assert report.tournament_status == "COMPLETE"
+    assert report.actual_cash is False
     assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in report.known_gaps
 
 

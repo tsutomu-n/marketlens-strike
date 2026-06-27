@@ -36,6 +36,8 @@ TournamentGateRecommendedAction = Literal[
 PROXY_KNOWN_GAPS = {
     "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH",
     "FEES_FUNDING_AND_FILL_SLIPPAGE_NOT_INCLUDED",
+    "ESTIMATE_NOT_ACTUAL_CASH",
+    "ACTUAL_CASH_RESULT_NOT_AVAILABLE",
 }
 
 
@@ -139,7 +141,7 @@ def _status_and_action(
     proxy_gaps: set[str],
 ) -> tuple[TournamentGateStatus, TournamentGateRecommendedAction]:
     failed_ids = {condition.condition_id for condition in failed}
-    if proxy_gaps:
+    if proxy_gaps or "actual_cash_basis" in failed_ids:
         return "NEEDS_ACTUAL_CASH", "REBUILD_WITH_ACTUAL_CASH"
     if report.tournament_status == "INCONCLUSIVE_DATA" or "report_complete" in failed_ids:
         return "NEEDS_MORE_EVIDENCE", "COLLECT_MORE_EVENTS"
@@ -163,6 +165,7 @@ def build_tournament_gate(
     created = ensure_utc_aware("created_at", created_at)
     leader_score = _leader_score(report)
     proxy_gaps = set(report.known_gaps) & PROXY_KNOWN_GAPS
+    actual_cash_basis = report.actual_cash and report.cash_metric_basis == "actual_cash"
     largest_loss = leader_score.largest_loss_usd if leader_score is not None else Decimal("0")
     profit_concentration = (
         leader_score.profit_concentration if leader_score is not None else Decimal("0")
@@ -186,6 +189,12 @@ def build_tournament_gate(
             not proxy_gaps,
             ",".join(sorted(proxy_gaps)) or "none",
             "no outcome_before_cost proxy gaps",
+        ),
+        _condition(
+            "actual_cash_basis",
+            actual_cash_basis,
+            f"actual_cash={str(report.actual_cash).lower()}, cash_metric_basis={report.cash_metric_basis}",
+            "actual_cash=true and cash_metric_basis=actual_cash",
         ),
         _condition(
             "leader_not_no_trade",
@@ -226,6 +235,8 @@ def build_tournament_gate(
         "recommended_action": recommended_action,
         "leader_action": report.leader_action,
         "event_count": report.event_count,
+        "actual_cash": report.actual_cash,
+        "cash_metric_basis": report.cash_metric_basis,
         "proxy_gap_count": len(proxy_gaps),
         "failed_condition_count": len(failed_conditions),
     }

@@ -21,6 +21,7 @@ def _render_preview_markdown(preview: CryptoPerpTournamentRowsPreview) -> str:
         f"- event_id: `{preview.event_id}`",
         f"- outcome_id: `{preview.outcome_id}`",
         f"- primary_metric_source: `{preview.primary_metric_source}`",
+        "- cash_metric_basis: `before_cost_proxy`",
         "- permits_live_order: `false`",
         "- exchange_write_used: `false`",
         "",

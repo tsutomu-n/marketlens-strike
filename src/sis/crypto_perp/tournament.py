@@ -19,11 +19,22 @@ from sis.crypto_perp.models import (
 
 TOURNAMENT_SCHEMA_VERSION = "crypto_perp_tournament_report.v1"
 TournamentAction = Literal["REVERSAL_SHORT", "CONTINUATION_LONG", "NO_TRADE"]
+CashMetricBasis = Literal["actual_cash", "before_cost_proxy", "cost_adjusted_estimate", "mixed"]
 TOURNAMENT_ACTIONS: tuple[TournamentAction, ...] = (
     "REVERSAL_SHORT",
     "CONTINUATION_LONG",
     "NO_TRADE",
 )
+NON_ACTUAL_CASH_KNOWN_GAPS = {
+    "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH",
+    "ESTIMATE_NOT_ACTUAL_CASH",
+}
+PRIMARY_METRIC_DISPLAY_NAMES: dict[CashMetricBasis, str] = {
+    "actual_cash": "actual_cash_result_usd",
+    "before_cost_proxy": "before_cost_proxy_usd",
+    "cost_adjusted_estimate": "cost_adjusted_cash_estimate_usd",
+    "mixed": "mixed_cash_metric_basis",
+}
 
 
 class TournamentEventResult(BaseModel):
@@ -32,6 +43,9 @@ class TournamentEventResult(BaseModel):
     event_id: str
     action: TournamentAction
     actual_cash_result_usd: DecimalValue
+    cash_metric_basis: Literal["actual_cash", "before_cost_proxy", "cost_adjusted_estimate"] = (
+        "actual_cash"
+    )
     market_adjusted_return: DecimalValue
     operator_time_minutes: DecimalValue
     near_miss: bool = False
@@ -91,8 +105,13 @@ class CryptoPerpTournamentReport(BaseModel):
     report_id: str
     generated_at: datetime
     primary_metric: Literal["actual_cash_result_usd"] = "actual_cash_result_usd"
+    primary_metric_display_name: str = "actual_cash_result_usd"
+    cash_metric_basis: CashMetricBasis = "actual_cash"
+    actual_cash: bool = True
     tournament_status: Literal["COMPLETE", "INCONCLUSIVE_DATA"]
     leader_action: TournamentAction | None
+    leader_cash_metric_value_usd: DecimalValue | None = None
+    leader_actual_cash_result_usd: DecimalValue | None = None
     event_set: list[str]
     event_count: int = Field(ge=0)
     scores: list[TournamentScore]
@@ -117,6 +136,12 @@ class CryptoPerpTournamentReport(BaseModel):
     @field_serializer("created_at", "generated_at")
     def serialize_timestamp(self, value: datetime) -> str:
         return serialize_utc_z(value)
+
+    @field_serializer("leader_cash_metric_value_usd", "leader_actual_cash_result_usd")
+    def serialize_optional_decimal(self, value: Decimal | None) -> str | None:
+        if value is None:
+            return None
+        return decimal_to_json_string(value)
 
 
 _ZERO = Decimal("0")
@@ -183,6 +208,19 @@ def _leader(scores: Sequence[TournamentScore]) -> TournamentAction | None:
     return ordered[0].action
 
 
+def _cash_metric_basis(
+    rows: Sequence[TournamentEventResult], known_gaps: Sequence[str]
+) -> CashMetricBasis:
+    if any(gap in NON_ACTUAL_CASH_KNOWN_GAPS for gap in known_gaps):
+        if "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in known_gaps:
+            return "before_cost_proxy"
+        return "cost_adjusted_estimate"
+    row_bases = {row.cash_metric_basis for row in rows}
+    if len(row_bases) == 1:
+        return row_bases.pop()
+    return "mixed"
+
+
 def _summary(
     *,
     report_id: str,
@@ -190,17 +228,22 @@ def _summary(
     leader_action: TournamentAction | None,
     event_count: int,
     scores: Sequence[TournamentScore],
+    cash_metric_basis: CashMetricBasis,
+    actual_cash: bool,
 ) -> dict[str, Any]:
     leader_score = next((score for score in scores if score.action == leader_action), None)
+    leader_value = leader_score.actual_cash_result_usd if leader_score is not None else None
     return {
         "report_id": report_id,
         "tournament_status": tournament_status,
         "leader_action": leader_action,
         "primary_metric": "actual_cash_result_usd",
+        "primary_metric_display_name": PRIMARY_METRIC_DISPLAY_NAMES[cash_metric_basis],
+        "cash_metric_basis": cash_metric_basis,
+        "actual_cash": actual_cash,
         "event_count": event_count,
-        "leader_actual_cash_result_usd": (
-            leader_score.actual_cash_result_usd if leader_score is not None else None
-        ),
+        "leader_cash_metric_value_usd": leader_value,
+        "leader_actual_cash_result_usd": leader_value if actual_cash else None,
     }
 
 
@@ -220,18 +263,24 @@ def build_tournament_report(
     row_list = list(rows)
     event_set = _validate_same_event_set(row_list)
     scores = [_score(row_list, action) for action in TOURNAMENT_ACTIONS]
+    computed_gaps = list(known_gaps or [])
+    cash_metric_basis = _cash_metric_basis(row_list, computed_gaps)
+    actual_cash = cash_metric_basis == "actual_cash"
     inconclusive_reasons: list[str] = []
     leader_action = _leader(scores)
     if len(event_set) < min_events:
         inconclusive_reasons.append("INSUFFICIENT_EVENT_COUNT")
     if leader_action is None:
         inconclusive_reasons.append("TIE_ON_ACTUAL_CASH")
+    if cash_metric_basis == "mixed":
+        inconclusive_reasons.append("MIXED_CASH_METRIC_BASIS")
     tournament_status: Literal["COMPLETE", "INCONCLUSIVE_DATA"] = (
         "INCONCLUSIVE_DATA" if inconclusive_reasons else "COMPLETE"
     )
     if tournament_status == "INCONCLUSIVE_DATA":
         leader_action = None
-    computed_gaps = list(known_gaps or [])
+    if cash_metric_basis == "mixed":
+        computed_gaps.append("MIXED_CASH_METRIC_BASIS")
     if tournament_status == "INCONCLUSIVE_DATA":
         computed_gaps.append("INCONCLUSIVE_DATA")
     computed_gaps = list(dict.fromkeys(computed_gaps))
@@ -241,7 +290,11 @@ def build_tournament_report(
         leader_action=leader_action,
         event_count=len(event_set),
         scores=scores,
+        cash_metric_basis=cash_metric_basis,
+        actual_cash=actual_cash,
     )
+    leader_score = next((score for score in scores if score.action == leader_action), None)
+    leader_value = leader_score.actual_cash_result_usd if leader_score is not None else None
     return CryptoPerpTournamentReport(
         artifact_id=stable_hash(
             ["crypto-perp-tournament-report-artifact", report_id, serialize_utc_z(generated)]
@@ -251,8 +304,13 @@ def build_tournament_report(
         source_refs=list(source_refs or []),
         report_id=report_id,
         generated_at=generated,
+        primary_metric_display_name=PRIMARY_METRIC_DISPLAY_NAMES[cash_metric_basis],
+        cash_metric_basis=cash_metric_basis,
+        actual_cash=actual_cash,
         tournament_status=tournament_status,
         leader_action=leader_action,
+        leader_cash_metric_value_usd=leader_value,
+        leader_actual_cash_result_usd=leader_value if actual_cash else None,
         event_set=event_set,
         event_count=len(event_set),
         scores=scores,

@@ -31,6 +31,14 @@ def _has_non_actual_cash_gap(report: CryptoPerpTournamentReport) -> bool:
     return any(gap in _NON_ACTUAL_CASH_GAPS for gap in report.known_gaps)
 
 
+def _includes_cash_execution_reality(report: CryptoPerpTournamentReport) -> bool:
+    return (
+        report.actual_cash
+        and report.cash_metric_basis == "actual_cash"
+        and not _has_non_actual_cash_gap(report)
+    )
+
+
 def build_tournament_strategy_input_contract(
     *,
     report: CryptoPerpTournamentReport,
@@ -42,7 +50,7 @@ def build_tournament_strategy_input_contract(
 ) -> StrategyInputContract:
     created = ensure_utc_aware("created_at", created_at)
     contract_id = f"crypto-perp-tournament-{stable_hash([report.report_id, report_sha256])[:16]}"
-    includes_cash_execution_reality = not _has_non_actual_cash_gap(report)
+    includes_cash_execution_reality = _includes_cash_execution_reality(report)
     return StrategyInputContract(
         contract_id=contract_id,
         created_at=created,

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_19:01 JST
-更新日: 2026-06-27_19:01 JST
+更新日: 2026-06-28_07:07 JST
 -->
 
 # Crypto Perp Profit-Readiness Surface Inventory
@@ -11,9 +11,9 @@
 |---|---|---|
 | `crypto_perp_event.v1` | event snapshot and information cutoff | event id, cutoff, feature baseline, source refs |
 | `crypto_perp_outcome.v1` | matured outcome and before-cost direction returns | before-cost proxy input only |
-| `crypto_perp_tournament_rows_preview.v1` | matured outcome to 3action proxy rows | historical preview, not actual cash |
-| `crypto_perp_tournament_report.v1` | same-event-set action comparison | actual-cash report when actual rows are supplied; otherwise carries proxy gaps |
-| `crypto_perp_tournament_gate.v1` | local threshold gate | stop/continue classification, never live permission |
+| `crypto_perp_tournament_rows_preview.v1` | matured outcome to 3action proxy rows with `cash_metric_basis=before_cost_proxy` | historical preview, not actual cash |
+| `crypto_perp_tournament_report.v1` | same-event-set action comparison with explicit cash basis summary | actual-cash report when actual rows are supplied; non-actual or mixed basis is not profit proof |
+| `crypto_perp_tournament_gate.v1` | local threshold gate | blocks `actual_cash=false` or `cash_metric_basis != actual_cash` as `NEEDS_ACTUAL_CASH`; never live permission |
 | `crypto_perp_truth_cycle_status.v1` | artifact chain status | operator next command, stop reasons, known gaps |
 | `crypto_perp_live_measurement.v1` | mock tiny live measurement surface | not proof of real-network tiny live execution |
 | `crypto_perp_cash_ledger.v1` | cash basis ledger | only source that can support `actual_cash_result_usd` when connected |

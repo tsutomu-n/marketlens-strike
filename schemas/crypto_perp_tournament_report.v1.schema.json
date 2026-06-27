@@ -33,9 +33,18 @@
     "report_id": {"type": "string", "minLength": 1},
     "generated_at": {"$ref": "#/$defs/utc_second"},
     "primary_metric": {"const": "actual_cash_result_usd"},
+    "primary_metric_display_name": {"type": "string", "minLength": 1},
+    "cash_metric_basis": {"$ref": "#/$defs/cash_metric_basis"},
+    "actual_cash": {"type": "boolean"},
     "tournament_status": {"enum": ["COMPLETE", "INCONCLUSIVE_DATA"]},
     "leader_action": {
       "anyOf": [{"$ref": "#/$defs/tournament_action"}, {"type": "null"}]
+    },
+    "leader_cash_metric_value_usd": {
+      "anyOf": [{"$ref": "#/$defs/decimal_string"}, {"type": "null"}]
+    },
+    "leader_actual_cash_result_usd": {
+      "anyOf": [{"$ref": "#/$defs/decimal_string"}, {"type": "null"}]
     },
     "event_set": {"type": "array", "items": {"type": "string", "minLength": 1}},
     "event_count": {"type": "integer", "minimum": 0},
@@ -86,6 +95,9 @@
     "tournament_action": {
       "enum": ["REVERSAL_SHORT", "CONTINUATION_LONG", "NO_TRADE"]
     },
+    "cash_metric_basis": {
+      "enum": ["actual_cash", "before_cost_proxy", "cost_adjusted_estimate", "mixed"]
+    },
     "event_result": {
       "type": "object",
       "additionalProperties": false,
@@ -101,6 +113,9 @@
         "event_id": {"type": "string", "minLength": 1},
         "action": {"$ref": "#/$defs/tournament_action"},
         "actual_cash_result_usd": {"$ref": "#/$defs/decimal_string"},
+        "cash_metric_basis": {
+          "enum": ["actual_cash", "before_cost_proxy", "cost_adjusted_estimate"]
+        },
         "market_adjusted_return": {"$ref": "#/$defs/decimal_string"},
         "operator_time_minutes": {"$ref": "#/$defs/decimal_string"},
         "near_miss": {"type": "boolean"}
