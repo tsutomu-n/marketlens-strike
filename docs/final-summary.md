@@ -1,9 +1,69 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_07:24 JST
+更新日: 2026-06-28_07:49 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Crypto Perp Profit-Readiness Local Automation
+
+Completed on branch `ai/crypto-perp-profit-readiness-local-automation-20260628-0000`.
+
+Achieved:
+
+- Added local inventory and planner artifacts for Crypto Perp profit-readiness.
+- Added a local chain runner that writes source availability, replay slice, feature pack, edge score, rows-v2, bias guard, and run manifest in one run directory.
+- Added `crypto-perp-cash-ledger` CLI around the existing cash ledger builder.
+- Added ledger plus assignment based actual-cash rows builder. Trade actions require matching ledger entries; `NO_TRADE` can be explicit cash 0.
+- Added actual-cash report/gate helper, tiny-live human review packet builder, and tiny-live shadow readiness checker.
+- Added schemas for inventory, plan, run, actual-cash rows summary, actual-cash report/gate run, review packet, and shadow readiness.
+- Updated runbook, implemented surfaces, and CLI catalog.
+
+Main files changed:
+
+- `src/sis/crypto_perp/profit_readiness.py`
+- `src/sis/commands/crypto_perp_profit_readiness.py`
+- `schemas/crypto_perp_profit_readiness_inventory.v1.schema.json`
+- `schemas/crypto_perp_profit_readiness_plan.v1.schema.json`
+- `schemas/crypto_perp_profit_readiness_run.v1.schema.json`
+- `schemas/crypto_perp_actual_cash_rows_summary.v1.schema.json`
+- `schemas/crypto_perp_actual_cash_report_gate_run.v1.schema.json`
+- `schemas/crypto_perp_tiny_live_review_packet.v1.schema.json`
+- `schemas/crypto_perp_tiny_live_shadow_readiness.v1.schema.json`
+- `tests/crypto_perp/test_profit_readiness_local_automation.py`
+- `docs/plans/crypto-perp-profit-readiness-local-automation-2026-06-28.md`
+- `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`
+- `docs/IMPLEMENTED_SURFACES.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+
+Verification run:
+
+- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q`
+
+Remaining work:
+
+- Real event, matured outcome, and actual cash evidence collection remains outside this local automation slice.
+- If current `data/crypto_perp` only contains dogfood/status/viewer artifacts, inventory and plan intentionally stop with blocker status.
+
+User decisions required:
+
+None for this local automation slice.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Revert the new profit-readiness module, command additions, schemas, tests, and docs changes from this branch.
 
 ## Latest Addendum: PR-I1b Cash Metric Legacy Migration
 

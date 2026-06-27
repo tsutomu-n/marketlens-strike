@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
@@ -381,7 +381,15 @@ def _classify_json(path: Path, payload: Any) -> ProfitReadinessInventoryItem:
         return ProfitReadinessInventoryItem(
             path=path.as_posix(),
             schema_version=schema_version,
-            category=category,  # type: ignore[arg-type]
+            category=cast(
+                Literal[
+                    "source_availability",
+                    "rows_v2",
+                    "cash_ledger",
+                    "live_measurement",
+                ],
+                category,
+            ),
             artifact_id=str(payload.get("artifact_id")) if payload.get("artifact_id") else None,
             event_id=str(payload.get("event_id")) if payload.get("event_id") else None,
         )
@@ -611,6 +619,7 @@ def build_profit_readiness_run(
         dict.fromkeys(
             [
                 *source.known_gaps,
+                *replay.known_gaps,
                 *feature.known_gaps,
                 *edge.known_gaps,
                 *rows.known_gaps,
