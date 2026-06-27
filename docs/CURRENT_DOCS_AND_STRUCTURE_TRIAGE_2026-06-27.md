@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_07:30 JST
-更新日: 2026-06-28_06:38 JST
+更新日: 2026-06-28_08:11 JST
 -->
 
 # Current Docs And Structure Triage 2026-06-27
@@ -11,9 +11,9 @@
 
 今の正本は `src/`、`tests/`、`schemas/`、`configs/`、`scripts/`、`.github/workflows/ci.yml`、`pyproject.toml`、`.python-version`、`uv.lock`、CLI help である。docs は入口、説明、runbook、判断補助であり、runtime 値や readiness の正本ではない。
 
-現在の docs は機械検証上は壊れていない。2026-06-28_06:38 JST 時点で、`scripts/check_current_docs.py` は current docs 174 件を検査し、`scripts/check_cli_catalog.py` は public CLI 216 件を Typer 登録と照合している。
+現在の docs は機械検証上は壊れていない。2026-06-28_08:11 JST の確認では、完了済み plan の archive 移動後に `scripts/check_current_docs.py` は current docs 173 件を検査し、`scripts/check_cli_catalog.py` は public CLI 224 件を Typer 登録と照合している。件数は現時点の固定仕様ではないため、判断時は再実行結果を正とする。
 
-ただし、古い棚卸し文書、完了済み作業ブランチ名、当時の HEAD、当時の件数、runtime artifact snapshot は current proof ではない。2026-06-27 夜の branch cleanup 後、local/remote branch は `main` のみで、完了済み作業計画は `docs/archive/2026-06-27-merged-plans/` へ移動済み。
+ただし、古い棚卸し文書、完了済み作業ブランチ名、当時の HEAD、当時の件数、runtime artifact snapshot は current proof ではない。完了済み作業計画は `docs/archive/2026-06-27-merged-plans/` と `docs/archive/2026-06-28-merged-plans/` へ移動済み。
 
 ただし、目的別 docs を全部読んでも「コード全体を漏れなく説明している」とは言い切らない。現行 docs は入口、operator guide、surface map としては使えるが、`src/sis/reports/`、`src/sis/commands/`、低層 helper、template、tools、sidecar、runtime data までを 1 つずつ説明する完全索引ではない。完全性が必要な作業では、この文書の read order の後に `rg`, `find`, CLI help、schema、tests を直接確認する。
 
@@ -90,7 +90,7 @@
 | `docs/references/crypto_perp/` | Crypto Perp reference / adoption decisions。 |
 | `docs/algo/` | strategy ideas / parts / factory docs。 |
 | `docs/archive/` | historical docs。current proof として読まない。 |
-| `docs/plans/` | 現在 tracked file なし。 |
+| `docs/plans/` | active implementation plan の一時置き場。完了済み plan は `docs/archive/*-merged-plans/` へ移す。 |
 | `plan/2026-06-22-strategy-feedback-case-index/` | 現在 allowlist された active plan package。 |
 | `plan/archive/` | historical plans。current proof として読まない。 |
 
@@ -138,6 +138,7 @@
 | `docs/final-summary.md` | merge summary。 | 残す。current proof ではなく merge 時点の要約として読む。 |
 | `docs/crypto_perp/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md` | run plan。`ai/crypto-perp-profit-readiness-20260627-1901` など作業当時の branch 前提を含む。 | 計画として残す。現在の branch 状態や artifact 状態は code/CLI/artifact inventory で確認する。 |
 | `docs/archive/2026-06-27-merged-plans/*.md` | 完了済み作業の implementation plan。多くが削除済み branch 名を含む。 | archive 済み。current proof として読まない。 |
+| `docs/archive/2026-06-28-merged-plans/*.md` | 完了済み作業の implementation plan。Crypto Perp cash metric、local automation、docs triage の作業履歴を含む。 | archive 済み。current proof として読まない。 |
 | `docs/archive/**` | historical context。 | current proof として読まない。 |
 | `plan/archive/**` | historical implementation plan。 | current proof として読まない。 |
 | `plan/2026-06-22-strategy-feedback-case-index/` | allowlist された plan package。 | current proof ではなく、必要時だけ implementation context として読む。 |
@@ -162,6 +163,7 @@
 | 対象 | 今の扱い | 推奨 |
 |---|---|---|
 | `docs/archive/2026-06-27-merged-plans/*.md` | 完了済み作業計画。 | archive 済み。削除しない。 |
+| `docs/archive/2026-06-28-merged-plans/*.md` | 完了済み作業計画。 | archive 済み。削除しない。 |
 | `docs/archive/2026-06-27-doc-routing/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md` | この文書に superseded された audit。 | archive 済み。削除しない。 |
 | `docs/archive/2026-06-27-doc-routing/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | 2026-06-22/23 時点の audit。 | archive 済み。削除しない。 |
 | `docs/archive/**` | archive 済み。 | 削除しない。公開配布や容量問題が出た時だけ別途 archive slimming。 |
@@ -176,10 +178,11 @@
 | 優先 | 候補 | 実行条件 | 最小確認 |
 |---|---|---|---|
 | 1 | `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` の分割設計 | 次に利用者向け current-state docs を大きく更新する時。 | `docs/CURRENT_STATE.md`, `docs/IMPLEMENTED_SURFACES.md`, schema/tests/CLI help との差分確認。 |
-| 2 | `docs/trade_xyz_bot_beginner_guide.*` の役割分離 | venue-neutral beginner guide と Trade[XYZ] 固有 guide を分ける必要が出た時。 | 現在の default scope が venue-neutral / backtest-first であることを AGENTS と current docs で再確認。 |
-| 3 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` と `docs/IMPLEMENTED_SURFACES.md` の責務整理 | 新しい surface 追加で capability index と surface map の重複が増えた時。 | CLI catalog、schemas、tests、`src/sis/commands/` の spot check。 |
-| 4 | archive slimming | 公開配布、容量、検索ノイズが問題になった時。 | archive README、git history、current-doc checker excluded prefixes を確認。削除ではなく別 archive package を優先。 |
-| 5 | `docs/live_evidence_reports/` の generated report 扱い明確化 | tracked/generated の境界が再び曖昧になった時。 | `.gitignore`, docs checker allowlist、runtime artifact location を確認。 |
+| 2 | Crypto Perp の古い plan 系 docs の archive 判定 | current runbook / implemented surfaces との参照関係を壊さず整理できる時。 | `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`, `docs/IMPLEMENTED_SURFACES.md`, 対象 plan 本文の参照確認。 |
+| 3 | `docs/trade_xyz_bot_beginner_guide.*` の役割分離 | venue-neutral beginner guide と Trade[XYZ] 固有 guide を分ける必要が出た時。 | 現在の default scope が venue-neutral / backtest-first であることを AGENTS と current docs で再確認。 |
+| 4 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` と `docs/IMPLEMENTED_SURFACES.md` の責務整理 | 新しい surface 追加で capability index と surface map の重複が増えた時。 | CLI catalog、schemas、tests、`src/sis/commands/` の spot check。 |
+| 5 | archive slimming | 公開配布、容量、検索ノイズが問題になった時。 | archive README、git history、current-doc checker excluded prefixes を確認。削除ではなく別 archive package を優先。 |
+| 6 | `docs/live_evidence_reports/` の generated report 扱い明確化 | tracked/generated の境界が再び曖昧になった時。 | `.gitignore`, docs checker allowlist、runtime artifact location を確認。 |
 
 ## 抜け・漏れ・誤謬リスク
 
@@ -195,6 +198,7 @@
 - Crypto Perp の dogfood/status artifact や手入力 outcome を profit evidence と読むリスクは docs 側にも残る。profit-readiness 判断では `data/crypto_perp` の実 event/outcome/source availability を inventory で確認する。
 - `docs/archive/**` と `plan/archive/**` は historical context であり、現在の status、readiness、実装有無の根拠として使わない。
 - 低層 helper は意図的に薄くしか docs 化していない。該当領域を変更する時は、docs の網羅性を前提にせず `rg`, tests, schemas, CLI help から直接確認する。
+- 2026-06-28 の完了済み `docs/plans/` 5 件は、`docs/archive/2026-06-28-merged-plans/` へ移動済み。Crypto Perp の古い plan 系 docs は current runbook / implemented surfaces との参照関係を壊さないため、この cleanup では移動していない。
 
 ## 今の推奨 read order
 

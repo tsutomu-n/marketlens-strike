@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-27_23:41 JST
+更新日: 2026-06-28_08:11 JST
 -->
 
 # Documentation Archive
@@ -126,5 +126,13 @@ Archived on 2026-06-27:
 - `docs/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` -> `docs/archive/2026-06-27-doc-routing/`
 - `docs/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md` -> `docs/archive/2026-06-27-doc-routing/`
 - completed `docs/plans/*.md` work plans from 2026-06-27 -> `docs/archive/2026-06-27-merged-plans/`
+
+Archived on 2026-06-28:
+
+- `docs/plans/actual-cash-semantic-repair-2026-06-28.md` -> `docs/archive/2026-06-28-merged-plans/`
+- `docs/plans/cash-metric-legacy-migration-2026-06-28.md` -> `docs/archive/2026-06-28-merged-plans/`
+- `docs/plans/crypto-perp-profit-readiness-local-automation-2026-06-28.md` -> `docs/archive/2026-06-28-merged-plans/`
+- `docs/plans/docs-triage-refresh-2026-06-28.md` -> `docs/archive/2026-06-28-merged-plans/`
+- `docs/plans/docs-triage-cleanup-2026-06-28.md` -> `docs/archive/2026-06-28-merged-plans/`
 
 Do not treat archived documents as current requirements.

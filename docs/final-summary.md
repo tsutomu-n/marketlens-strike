@@ -1,9 +1,63 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_07:49 JST
+更新日: 2026-06-28_08:11 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Docs Triage Cleanup
+
+Completed on branch `ai/docs-triage-cleanup-20260628-0808`.
+
+Achieved:
+
+- Moved completed 2026-06-28 `docs/plans/` work plans to `docs/archive/2026-06-28-merged-plans/`.
+- Updated `docs/archive/README.md` with the 2026-06-28 archived plan paths.
+- Updated `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md` so docs / CLI counts are confirmation-time values, not fixed current truth.
+- Removed stale wording that treated `docs/plans/` as having no tracked files; it is now described as an active implementation plan staging area whose completed plans move to archive.
+- Left older Crypto Perp plan docs in place because they still need a separate reference check against the current runbook and implemented surfaces.
+
+Main files changed:
+
+- `docs/archive/2026-06-28-merged-plans/actual-cash-semantic-repair-2026-06-28.md`
+- `docs/archive/2026-06-28-merged-plans/cash-metric-legacy-migration-2026-06-28.md`
+- `docs/archive/2026-06-28-merged-plans/crypto-perp-profit-readiness-local-automation-2026-06-28.md`
+- `docs/archive/2026-06-28-merged-plans/docs-triage-refresh-2026-06-28.md`
+- `docs/archive/2026-06-28-merged-plans/docs-triage-cleanup-2026-06-28.md`
+- `docs/archive/README.md`
+- `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 173 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 224 public CLI commands.
+- `git diff --check` -> passed.
+- `find docs/plans -maxdepth 1 -type f -name '*.md'` -> no files printed.
+
+Remaining work:
+
+- Separately decide whether the older Crypto Perp plan docs under `docs/crypto_perp/` should be archived after checking their current runbook references.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No. Files were moved to archive, not deleted.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required. Historical plan readers should use `docs/archive/2026-06-28-merged-plans/`.
+
+Rollback:
+
+Move the archived 2026-06-28 plan files back to `docs/plans/` and revert the docs wording updates from this addendum.
 
 ## Latest Addendum: Crypto Perp Profit-Readiness Local Automation
 
