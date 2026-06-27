@@ -41,17 +41,18 @@
 
 ## 実装状況
 
-2026-06-27_11:47 JST 時点で、fixture-level の C1 / C2 / C3 / C4 / C8 slice は実装済みです。
+2026-06-27_11:47 JST 時点で、fixture-level の C1 / C2 / C3 / C4 / C5 policy validation / C8 slice は実装済みです。
 
 - C1: `strategy_idea_candidate_set.v1` JSON Schema、Pydantic models、Python validation、fixture tests。
 - C2: input contract validation refs と source path / hash / status / available-at / max observed timestamp summary。
 - C3: canonical JSON と Markdown writer。JSONL / CSV は generator が実データ行を出す checkpoint まで未実装。
 - C4: deterministic generator Python API。fixed family、finite parameter grid、candidate cap、duplicate rejection、parameter grid hash を保存する。
+- C5: split / leakage policy validation API。full split engine ではなく、保存済み policy record の時刻境界と sealed-test non-use を検査する。
 - C8: shortlist の strict `strategy_idea.v1` draft export と `strategy_idea_candidate_export_manifest.v1` sidecar。`strategy_idea.v1` schema は拡張していない。
 
 未実装:
 
-- C5 split engine。現時点では policy record の保存まで。
+- C5 full split engine。現時点では policy validation API まで。
 - C6 selection-adjusted metrics。未実装時は `NOT_IMPLEMENTED`。
 - C9 Strategy Lab / backtest bridge。
 - C10 専用 operator review surface。現時点では candidate set Markdown で読む。
@@ -90,7 +91,7 @@
 9. C9: Strategy Lab / backtest bridge を作る。
 10. C11: fixture E2E を通す。
 
-C4 は Python API と focused tests まで実装済み。C6 は C5 の前後で扱う。C7 と C12 は後回しでよい。C10 は C8 の直後、C9 の前に置く。
+C4 と C5 policy validation は Python API と focused tests まで実装済み。C6 は C5 の後続として扱う。C7 と C12 は後回しでよい。C10 は C8 の直後、C9 の前に置く。
 
 ## Checkpoint Details
 
@@ -314,7 +315,7 @@ Python validation で落とすもの:
 - C2: ready after C1 field shape is fixed
 - C3: ready after C1-C2
 - C4: implemented as Python API with focused tests
-- C5: ready after C4
+- C5: policy validation API implemented with focused tests; full split engine remains later
 - C6: ready after C4-C5
 - C7: not now
 - C8: ready after C1-C6

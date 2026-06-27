@@ -9,7 +9,7 @@
 
 `strategy_idea_candidates` は、既存 `strategy_idea.v1` に渡す前の未検証候補を保存する pre-intake artifact です。
 
-この実装で使えるのは、candidate set contract、Python validation、C4 deterministic generator Python API、canonical JSON / Markdown writer、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から alpha を掘る evaluator、JSONL / CSV ledger、public CLI、paper / live permission はまだありません。
+この実装で使えるのは、candidate set contract、Python validation、C4 deterministic generator Python API、C5 split / leakage policy validation API、canonical JSON / Markdown writer、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から alpha を掘る evaluator、JSONL / CSV ledger、public CLI、paper / live permission はまだありません。
 
 用語、family ID、最終ゴール、次の未完了 scope は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
 
@@ -30,6 +30,7 @@
 - `trend_momentum`、`volatility_regime`、`liquidity_spread`、`cross_sectional_rank`、`mean_reversion` の fixed family と finite parameter grid から candidate inventory を作る。
 - `parameter_grids`、stable `parameter_grid_hash`、`candidate_cap`、`cap_rejection_count`、`duplicate_rejection_count` を candidate set に保存する。
 - duplicate / cap 超過 candidate を silent drop せず、`REJECTED` と `rejection_reason` つきで inventory に残す。
+- split / leakage / purge / embargo policy record の最低限の時刻境界と sealed-test non-use を検査する。
 - shortlist だけを strict `strategy_idea.v1` draft に export し、candidate set path / hash は sidecar manifest に置く。
 
 ## 境界
@@ -49,6 +50,7 @@ from sis.strategy_idea_candidates.generator import (
     StrategyIdeaCandidateGeneratorConfig,
     build_deterministic_candidate_set_from_input_evidence,
 )
+from sis.strategy_idea_candidates.policies import validate_split_and_leakage_policy
 from sis.strategy_idea_candidates.service import (
     build_blocked_candidate_set_from_input_evidence,
     write_strategy_idea_candidate_set,

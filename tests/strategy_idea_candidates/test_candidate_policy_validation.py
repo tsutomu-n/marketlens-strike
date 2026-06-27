@@ -88,9 +88,9 @@ def test_policy_validation_rejects_candidate_label_window_in_sealed_test(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     candidate_set = _candidate_set(tmp_path).model_copy(deep=True)
-    candidate_set.candidate_inventory[0].label_window.end = (
-        candidate_set.split_policy.sealed_test_window.end
-    )
+    candidate_set.candidate_inventory[
+        0
+    ].label_window.end = candidate_set.split_policy.sealed_test_window.end
 
     result = validate_split_and_leakage_policy(candidate_set)
 
@@ -103,9 +103,9 @@ def test_policy_validation_rejects_source_observed_after_available_at(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     candidate_set = _candidate_set(tmp_path).model_copy(deep=True)
-    candidate_set.source_artifacts[0].max_observed_timestamp = (
-        candidate_set.source_artifacts[0].available_at + timedelta(seconds=1)
-    )
+    candidate_set.source_artifacts[0].max_observed_timestamp = candidate_set.source_artifacts[
+        0
+    ].available_at + timedelta(seconds=1)
 
     result = validate_split_and_leakage_policy(candidate_set)
 

@@ -9,7 +9,7 @@
 
 現在の最終ゴールは、入力証跡つきの未検証 strategy idea candidate を生成し、探索全量と棄却理由を保存し、shortlist だけを既存 `strategy_idea.v1` draft と sidecar manifest に分けて次の gate へ渡せる candidate generation pipeline を作ることです。
 
-ただし、次に実装するゴールは最終ゴール全体ではない。C4 `Deterministic Candidate Generator v0` は Python API と focused tests まで実装済みです。
+ただし、次に実装するゴールは最終ゴール全体ではない。C4 `Deterministic Candidate Generator v0` と C5 split / leakage policy validation API は focused tests まで実装済みです。
 
 ## Fixed Vocabulary
 
@@ -75,10 +75,11 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 - C3: canonical JSON / Markdown writer。
 - C8: shortlist export と sidecar manifest。
 - C4: deterministic generator Python API。fixed family、finite parameter grid、candidate cap、duplicate rejection、parameter grid hash を保存する。
+- C5: split / leakage policy validation API。time window ordering、sealed-test non-use、source available-at boundary、purge / embargo policy record を検査する。
 
 未完了:
 
-- C5: split engine。現状は policy record まで。
+- C5 full split engine。現状は policy validation API まで。
 - C6: selection-adjusted metrics。現状は `NOT_IMPLEMENTED` 表示まで。
 - C9: Strategy Lab / backtest bridge。
 - C10: dedicated operator review surface。
@@ -88,7 +89,7 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 
 C5 以降の前に残っている正確なゴール:
 
-C4 で生成した `strategy_idea_candidate_set.v1` を前提に、split / leakage / purge / embargo policy record をより検証可能な bridge へ進め、selection-adjusted metrics は未実装なら `NOT_IMPLEMENTED` のまま誤読されないようにする。
+C4/C5 の `strategy_idea_candidate_set.v1` を前提に、selection-adjusted metrics は未実装なら `NOT_IMPLEMENTED` のまま誤読されないようにし、operator review surface へ探索量、棄却数、selection policy、known gaps を渡す。
 
 完了条件:
 
