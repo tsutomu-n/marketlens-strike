@@ -71,7 +71,7 @@ def render_strategy_idea_candidate_set_markdown(candidate_set: StrategyIdeaCandi
             "",
             "## Candidate Inventory",
             "",
-            "| idea_candidate_id | decision | family | raw metrics status | reason |",
+            "| idea_candidate_id | decision | family | selection-adjusted status | reason |",
             "|---|---|---|---|---|",
         ]
     )

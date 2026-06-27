@@ -41,13 +41,14 @@
 
 ## 実装状況
 
-2026-06-27_11:47 JST 時点で、fixture-level の C1 / C2 / C3 / C4 / C5 policy validation / C8 / C10 Markdown surface / C11 fixture E2E slice は実装済みです。
+2026-06-27_11:47 JST 時点で、fixture-level の C1 / C2 / C3 / C4 / C5 policy validation / C6 report disclosure / C8 / C10 Markdown surface / C11 fixture E2E slice は実装済みです。
 
 - C1: `strategy_idea_candidate_set.v1` JSON Schema、Pydantic models、Python validation、fixture tests。
 - C2: input contract validation refs と source path / hash / status / available-at / max observed timestamp summary。
 - C3: canonical JSON と Markdown writer。JSONL / CSV は generator が実データ行を出す checkpoint まで未実装。
 - C4: deterministic generator Python API。fixed family、finite parameter grid、candidate cap、duplicate rejection、parameter grid hash を保存する。
 - C5: split / leakage policy validation API。full split engine ではなく、保存済み policy record の時刻境界と sealed-test non-use を検査する。
+- C6: metric disclosure in reports。raw metrics と selection-adjusted status を分け、raw metrics を proof と呼ばない。
 - C8: shortlist の strict `strategy_idea.v1` draft export と `strategy_idea_candidate_export_manifest.v1` sidecar。`strategy_idea.v1` schema は拡張していない。
 - C10: operator review Markdown surface。探索量、棄却理由、selection policy、known gaps、policy validation、false boundary を表示する。
 - C11: fixture E2E。input evidence から candidate set、policy validation、operator review、shortlist export、intake validation まで通す。
@@ -55,7 +56,7 @@
 未実装:
 
 - C5 full split engine。現時点では policy validation API まで。
-- C6 selection-adjusted metrics。未実装時は `NOT_IMPLEMENTED`。
+- C6 selection-adjusted metrics engine。現時点では report disclosure と `NOT_IMPLEMENTED` 表示まで。
 - C9 Strategy Lab / backtest bridge。
 - C10 richer review packet。現時点では Markdown surface まで。
 - C11 public CLI。現時点では fixture E2E まで。
@@ -93,7 +94,7 @@
 9. C9: Strategy Lab / backtest bridge を作る。
 10. C11: fixture E2E を通す。
 
-C4、C5 policy validation、C10 Markdown surface、C11 fixture E2E は Python API と focused tests まで実装済み。C6 は C5 の後続として扱う。C7 と C12 は後回しでよい。C9 は C10/C11 の後に置く。
+C4、C5 policy validation、C6 report disclosure、C10 Markdown surface、C11 fixture E2E は Python API と focused tests まで実装済み。C7 と C12 は後回しでよい。C9 は C10/C11 の後に置く。
 
 ## Checkpoint Details
 
@@ -318,7 +319,7 @@ Python validation で落とすもの:
 - C3: ready after C1-C2
 - C4: implemented as Python API with focused tests
 - C5: policy validation API implemented with focused tests; full split engine remains later
-- C6: ready after C4-C5
+- C6: report disclosure implemented with focused tests; adjusted metric engine remains later
 - C7: not now
 - C8: ready after C1-C6
 - C9: ready after C8-C10

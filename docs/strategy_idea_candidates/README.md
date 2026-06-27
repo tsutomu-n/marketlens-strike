@@ -9,7 +9,7 @@
 
 `strategy_idea_candidates` は、既存 `strategy_idea.v1` に渡す前の未検証候補を保存する pre-intake artifact です。
 
-この実装で使えるのは、candidate set contract、Python validation、C4 deterministic generator Python API、C5 split / leakage policy validation API、C10 operator review Markdown surface、C11 fixture E2E、canonical JSON / Markdown writer、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から alpha を掘る evaluator、JSONL / CSV ledger、public CLI、paper / live permission はまだありません。
+この実装で使えるのは、candidate set contract、Python validation、C4 deterministic generator Python API、C5 split / leakage policy validation API、C6 metric disclosure in reports、C10 operator review Markdown surface、C11 fixture E2E、canonical JSON / Markdown writer、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から alpha を掘る evaluator、JSONL / CSV ledger、public CLI、paper / live permission はまだありません。
 
 用語、family ID、最終ゴール、次の未完了 scope は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
 
@@ -31,6 +31,7 @@
 - `parameter_grids`、stable `parameter_grid_hash`、`candidate_cap`、`cap_rejection_count`、`duplicate_rejection_count` を candidate set に保存する。
 - duplicate / cap 超過 candidate を silent drop せず、`REJECTED` と `rejection_reason` つきで inventory に残す。
 - split / leakage / purge / embargo policy record の最低限の時刻境界と sealed-test non-use を検査する。
+- reports 上で `raw_validation_metrics` と `selection_adjusted_metrics_status` を分け、raw metrics を proof と呼ばない。
 - operator review Markdown に探索量、棄却理由、selection policy、known gaps、policy validation、false boundary を出す。
 - fixture で input evidence から candidate set、policy validation、operator review、shortlist export、intake validation まで通す。
 - shortlist だけを strict `strategy_idea.v1` draft に export し、candidate set path / hash は sidecar manifest に置く。

@@ -7,7 +7,7 @@
 
 ## Goal
 
-Implement the first safe slices of the Strategy Idea Candidate Generation Pipeline: candidate-set contract, Python validation, C4 deterministic generator Python API, C5 split/leakage policy validation API, C10 operator review Markdown surface, C11 fixture E2E, deterministic JSON/Markdown writer, input-evidence blocking, shortlist export sidecar, docs, and focused tests.
+Implement the first safe slices of the Strategy Idea Candidate Generation Pipeline: candidate-set contract, Python validation, C4 deterministic generator Python API, C5 split/leakage policy validation API, C6 metric disclosure in reports, C10 operator review Markdown surface, C11 fixture E2E, deterministic JSON/Markdown writer, input-evidence blocking, shortlist export sidecar, docs, and focused tests.
 
 ## Branch
 
@@ -22,6 +22,7 @@ Implement the first safe slices of the Strategy Idea Candidate Generation Pipeli
 - Added C4 deterministic generator Python API with fixed family IDs, finite parameter grids, stable `parameter_grid_hash`, candidate cap recording, duplicate rejection recording, and full candidate inventory.
 - Added `parameter_grids`, `candidate_cap`, and `cap_rejection_count` to `strategy_idea_candidate_set.v1`.
 - Added C5 split/leakage policy validation API for time-window ordering, sealed-test non-use, source available-at boundary, and purge / embargo policy records.
+- Added C6 report disclosure separating `raw_validation_metrics` from `selection_adjusted_metrics_status` and avoiding proof language.
 - Added C10 operator review Markdown surface for exploration counts, rejection reasons, selection policy, known gaps, policy validation, and false boundary flags.
 - Added C11 fixture E2E from input evidence through candidate set write, policy validation, operator review, shortlist export, and intake validation.
 - Added blocked input-evidence candidate set builder for non-PASS input contract validation.
@@ -39,6 +40,7 @@ Implement the first safe slices of the Strategy Idea Candidate Generation Pipeli
 - `docs/strategy_idea_candidates/GOAL_AND_GLOSSARY.md`
 - `docs/plans/strategy_idea_candidates_c4_generator_2026-06-27.md`
 - `docs/plans/strategy_idea_candidates_c5_policy_validation_2026-06-27.md`
+- `docs/plans/strategy_idea_candidates_c6_metric_disclosure_2026-06-27.md`
 - `docs/plans/strategy_idea_candidates_c10_operator_review_2026-06-27.md`
 - `docs/plans/strategy_idea_candidates_c11_fixture_e2e_2026-06-27.md`
 - `docs/plans/strategy_idea_candidates_p0a_c2_c3_c8_2026-06-27.md`

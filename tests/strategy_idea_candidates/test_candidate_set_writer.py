@@ -28,4 +28,5 @@ def test_candidate_set_writer_is_deterministic(tmp_path, monkeypatch) -> None:
     )
     assert sha256_file(first.candidate_set_path) == sha256_file(second.candidate_set_path)
     assert "success_only_reporting: `false`" in first.report_path.read_text(encoding="utf-8")
+    assert "selection-adjusted status" in first.report_path.read_text(encoding="utf-8")
     assert "paper / live 実行許可ではありません" in first.report_path.read_text(encoding="utf-8")

@@ -29,9 +29,12 @@ def test_operator_review_markdown_includes_exploration_and_boundaries() -> None:
     assert "candidate_count_rejected: `1`" in text
     assert "duplicate_rejection_count: `1`" in text
     assert "policy_validation: `PASS`" in text
+    assert "selection_adjusted_metrics_status" in text
+    assert "NOT_IMPLEMENTED" in text
     assert "selection-adjusted metrics are not implemented" in text
     assert "duplicate parameterization rejected before shortlist" in text
     assert "alpha proof" in text
+    assert "profit proof" in text
     assert "paper / live approval" in text
 
 

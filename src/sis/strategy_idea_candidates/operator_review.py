@@ -35,6 +35,10 @@ def render_strategy_idea_candidate_operator_review_markdown(
         for candidate in candidate_set.candidate_inventory
         if candidate.rejection_reason
     )
+    metric_status_counts = Counter(
+        candidate.selection_adjusted_metrics_status.value
+        for candidate in candidate_set.candidate_inventory
+    )
     policy_status = _policy_status(policy_validation)
     lines = [
         f"# Operator Review: {candidate_set.candidate_set_id}",
@@ -78,6 +82,18 @@ def render_strategy_idea_candidate_operator_review_markdown(
             lines.append(f"- `{count}` x {reason}")
     else:
         lines.append("- none recorded")
+
+    lines.extend(
+        [
+            "",
+            "## Metric Disclosure",
+            "",
+            "- raw_validation_metrics: raw only; not alpha proof or profit proof",
+            "- selection_adjusted_metrics_status counts:",
+        ]
+    )
+    for status, count in sorted(metric_status_counts.items()):
+        lines.append(f"  - `{status}`: `{count}`")
 
     lines.extend(
         [
