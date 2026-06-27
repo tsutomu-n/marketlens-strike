@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-28_06:47 JST
+更新日: 2026-06-28_07:07 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -278,6 +278,7 @@ uv run sis crypto-perp-tournament-rows-preview \
 注意:
 
 - これは `outcome_before_cost_proxy` です。実約定、fee、funding、slippage込みのactual cashではありません。
+- preview rows の各 row は `cash_metric_basis=before_cost_proxy` を持ちます。
 - `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` と `FEES_FUNDING_AND_FILL_SLIPPAGE_NOT_INCLUDED` をknown gapとして残します。
 - `NO_TRADE` はcash 0として明示します。失敗扱いしません。
 - `tournament_rows_preview.json` は display / dogfood 用です。`crypto-perp-tournament-report --rows` へ渡すと `PREVIEW_ROWS_NOT_ACTUAL_CASH` で失敗します。
@@ -286,15 +287,16 @@ uv run sis crypto-perp-tournament-rows-preview \
 手で作る場合も、winnerだけを保存しません。各eventについて、同じevent setで次の3actionをそろえます。
 
 ```json
-{"event_id":"event-1","action":"REVERSAL_SHORT","actual_cash_result_usd":"-1.20","market_adjusted_return":"-0.02","operator_time_minutes":"3","near_miss":false}
-{"event_id":"event-1","action":"CONTINUATION_LONG","actual_cash_result_usd":"0.80","market_adjusted_return":"0.01","operator_time_minutes":"3","near_miss":false}
-{"event_id":"event-1","action":"NO_TRADE","actual_cash_result_usd":"0","market_adjusted_return":"0","operator_time_minutes":"0","near_miss":false}
+{"event_id":"event-1","action":"REVERSAL_SHORT","actual_cash_result_usd":"-1.20","cash_metric_basis":"actual_cash","market_adjusted_return":"-0.02","operator_time_minutes":"3","near_miss":false}
+{"event_id":"event-1","action":"CONTINUATION_LONG","actual_cash_result_usd":"0.80","cash_metric_basis":"actual_cash","market_adjusted_return":"0.01","operator_time_minutes":"3","near_miss":false}
+{"event_id":"event-1","action":"NO_TRADE","actual_cash_result_usd":"0","cash_metric_basis":"actual_cash","market_adjusted_return":"0","operator_time_minutes":"0","near_miss":false}
 ```
 
 入力制約:
 
 - 1 event につき `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を1行ずつ入れる。
-- `actual_cash_result_usd` をprimary metricにする。
+- `cash_metric_basis=actual_cash` を明示する。未指定時は互換のため actual cash と解釈されるが、手作業JSONLでは省略しない。
+- `actual_cash_result_usd` は actual cash basis の時だけprimary cash metricとして読む。
 - fee、funding、ruined pod、infra costがある場合はcash側に含める。
 - データ不足は行を消して隠すのではなく、reportの `INCONCLUSIVE_DATA` または `known_gaps` に残す。
 - before-cost proxy rowsを実cashとして扱わない。
@@ -360,7 +362,7 @@ uv run sis crypto-perp-bias-guard \
 
 `crypto-perp-tournament-rows-v2` は estimate surface です。`actual_cash_result_usd` は actual cash evidence が渡された場合だけ使い、通常の outcome 由来 rows では `null` のまま読みます。
 
-`crypto-perp-tournament-report` に渡せるのは、caller が actual cash 責任を持つ `TournamentEventResult` JSON / JSONL です。preview rows や `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` を持つ rows は report input として使えません。
+`crypto-perp-tournament-report` に渡せるのは、caller が actual cash 責任を持つ `TournamentEventResult` JSON / JSONL です。preview rows、`OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` を持つ rows、または `cash_metric_basis != actual_cash` の rows は report input として使えません。
 
 ```bash
 uv run sis crypto-perp-tournament-report \
@@ -375,7 +377,9 @@ uv run sis crypto-perp-tournament-report \
 
 - `tournament_status=COMPLETE`
 - event set が3actionで一致している
-- `actual_cash_result_usd` がprimary metric
+- `cash_metric_basis=actual_cash`
+- `actual_cash=true`
+- `primary_metric_display_name=actual_cash_result_usd`
 - `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` が残っているrowsをreport inputとして扱っていない
 - largest loss が許容範囲
 - profit concentration が極端ではない
