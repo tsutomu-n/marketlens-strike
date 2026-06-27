@@ -78,6 +78,8 @@ CURRENT_DOC_DIRS = (
     "docs/strategy_scale_decision",
     "docs/strategy_workbench_viewer",
     "docs/strategy_research_lab",
+    "docs/strategy_idea_candidates",
+    "docs/plans",
     "docs/runbooks",
     "docs/venues",
     "docs/references/crypto_perp",

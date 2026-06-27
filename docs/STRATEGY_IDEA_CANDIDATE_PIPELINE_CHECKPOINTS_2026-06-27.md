@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_10:59 JST
-更新日: 2026-06-27_10:59 JST
+更新日: 2026-06-27_11:27 JST
 -->
 
 # Strategy Idea Candidate Pipeline Checkpoints 2026-06-27
@@ -30,10 +30,31 @@
 - `schemas/strategy_optimizer_trial_ledger.v1.schema.json`
 - `src/sis/strategy_inputs/validation.py`
 - `src/sis/commands/strategy_inputs.py`
+- `schemas/strategy_idea_candidate_set.v1.schema.json`
+- `schemas/strategy_idea_candidate_export_manifest.v1.schema.json`
+- `src/sis/strategy_idea_candidates/`
 - `src/sis/strategy_model_loop/models.py`
 - `docs/STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md`
 - `docs/STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md`
 - `docs/STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md`
+
+## 実装状況
+
+2026-06-27_11:27 JST 時点で、fixture-level の C1 / C2 / C3 / C8 slice は実装済みです。
+
+- C1: `strategy_idea_candidate_set.v1` JSON Schema、Pydantic models、Python validation、fixture tests。
+- C2: input contract validation refs と source path / hash / status / available-at / max observed timestamp summary。
+- C3: canonical JSON と Markdown writer。JSONL / CSV は generator が実データ行を出す checkpoint まで未実装。
+- C8: shortlist の strict `strategy_idea.v1` draft export と `strategy_idea_candidate_export_manifest.v1` sidecar。`strategy_idea.v1` schema は拡張していない。
+
+未実装:
+
+- C4 deterministic generator。
+- C5 split engine。現時点では policy record の保存まで。
+- C6 selection-adjusted metrics。未実装時は `NOT_IMPLEMENTED`。
+- C9 Strategy Lab / backtest bridge。
+- C10 専用 operator review surface。現時点では candidate set Markdown で読む。
+- C11 public CLI E2E。
 
 ## Checkpoints
 
@@ -42,7 +63,7 @@
 | C0 | docs baseline | 現在の調査・追補・pipeline plan を current docs に残す | current-docs check / CLI catalog / diff check が通る | docs が「実装済み」と誤読される |
 | C1 | P0A artifact contract | `strategy_idea_candidate_set.v1` を定義する | JSON Schema、Python validation、fixture tests、docs がそろう | JSON Schema だけで cross-field invariant を済ませようとする |
 | C2 | input evidence bridge | input contract validation と source evidence を候補 artifact の前提にする | required source hash、available-at、timestamp、validation status を candidate set に参照保存する | source hash / available-at / label window なしで候補を出す |
-| C3 | P0B artifact writer | 候補生成前に artifact 出力器を作る | JSON / Markdown / JSONL / CSV が deterministic に出る | selected-only output、rejection inventory 欠落 |
+| C3 | P0B artifact writer | 候補生成前に artifact 出力器を作る | canonical JSON / Markdown が deterministic に出る | selected-only output、rejection inventory 欠落 |
 | C4 | P1 deterministic generator | 少数 family から再現可能な候補を作る | family、parameter grid、candidate cap、rejection reason が保存される | LLM / ML / indicator catalog で先に探索を広げる |
 | C5 | split and leakage policy | train / validation / sealed test と leakage policy を固定する | sealed test を selection に使わない。purge / embargo policy を保存する | `TimeSeriesSplit(gap=...)` だけで leakage 対策完了扱い |
 | C6 | raw metric disclosure | raw metric を raw として記録する | raw metrics と selection-adjusted status が分かれる | raw Sharpe / return を発見や証明と呼ぶ |
@@ -64,8 +85,9 @@
 5. C4: deterministic generator を作る。
 6. C5: split and leakage policy を作る。
 7. C8: intake export を作る。
-8. C9: Strategy Lab / backtest bridge を作る。
-9. C11: fixture E2E を通す。
+8. C10: operator review surface を作る。
+9. C9: Strategy Lab / backtest bridge を作る。
+10. C11: fixture E2E を通す。
 
 C6 は C4-C5 の間か C5 後に入れる。C7 と C12 は後回しでよい。C10 は C9 と同時か直後でよい。
 
@@ -154,9 +176,8 @@ Python validation で落とすもの:
 
 - `strategy_idea_candidate_set.json`
 - `strategy_idea_candidate_set.md`
-- `candidate_search_ledger.jsonl`
-- `candidate_metrics.csv`
-- `candidate_rejections.csv`
+
+`candidate_search_ledger.jsonl`、`candidate_metrics.csv`、`candidate_rejections.csv` は C4 generator が実データ行を出してから追加する。
 
 完了条件:
 
@@ -221,7 +242,8 @@ Python validation で落とすもの:
 - `authoring_intent.auto_generate_spec=false` を維持する。
 - export draft が `strategy-intake-validate` を通る。
 - export は paper / live permission を出さない。
-- candidate set path / hash を draft の evidence / note として辿れる。
+- candidate set path / hash は `strategy_idea_candidate_export_manifest.v1` sidecar から辿れる。
+- `strategy_idea.v1` schema は探索 metadata 用に拡張しない。
 
 ### C9: Strategy Lab / backtest bridge
 
@@ -269,7 +291,9 @@ Python validation で落とすもの:
 - P0A は schema だけではない。Python validation を含める。
 - pipeline 完成は「ML/LLM 補助」ではない。fixture E2E が先。
 - defensive stats は pipeline の品質を上げるが、最短ルートの必須ではない。
-- C10 operator review surface は C9 と分ける。機械 artifact と人間の誤読防止は別問題です。
+- C3 の初期 writer は canonical JSON / Markdown に限定する。JSONL / CSV は実 generator の row output ができてから追加する。
+- C8 では `strategy_idea.v1` に candidate provenance を押し込まない。sidecar manifest に分ける。
+- C10 operator review surface は C8 の直後に置く。人間が探索量、棄却数、selection policy、known gaps を見てから Strategy Lab / backtest bridge に進める。
 
 ## Scope 外
 
@@ -292,8 +316,8 @@ Python validation で落とすもの:
 - C6: ready after C4-C5
 - C7: not now
 - C8: ready after C1-C6
-- C9: ready after C8
-- C10: ready after C9
+- C9: ready after C8-C10
+- C10: ready after C8
 - C11: ready after C8-C10
 - C12: not now
 
@@ -302,5 +326,5 @@ Python validation で落とすもの:
 - C1 の field name は実装時に tests と一緒に固定する必要がある。
 - C2 で既存 `strategy_input_contract_validation.v1` を参照するだけで足りるか、candidate set 側に source summary を複製するかは実装時に決める必要がある。推奨は path/hash/status の summary 複製です。
 - C5 の purge / embargo は最初は policy record に留め、実 split engine は別 checkpoint にしてもよい。
-- C8 で `strategy_idea.v1` に探索 metadata を押し込みすぎると schema が肥大化する。candidate set path/hash 参照を優先する。
+- C8 で `strategy_idea.v1` に探索 metadata を押し込みすぎると schema が肥大化する。sidecar manifest に candidate set path/hash を置く。
 - C11 は fixture E2E であり、実データの alpha proof ではない。
