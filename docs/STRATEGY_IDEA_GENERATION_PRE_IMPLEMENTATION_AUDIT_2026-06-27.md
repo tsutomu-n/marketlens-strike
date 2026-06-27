@@ -18,6 +18,8 @@
 
 P2 以降を今から細かく切りすぎない。P0A の schema / validator で実際の field shape が固まるまで、mining logic、ML、統計依存、existing intake export の詳細設計は provisional とする。
 
+candidate generation pipeline までの checkpoint、順序、合格条件、停止条件は [STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md](STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md) を読む。特に input contract / source evidence bridge は generator より前に扱う。
+
 この事前監査で修正する判断は次です。
 
 1. `StrategyIdeaCandidate` / `IdeaCandidateSet` は新しい pre-intake artifact。既存の `TradeCandidate`、`PaperCandidatePack`、`strategy_idea.v1` と混ぜない。

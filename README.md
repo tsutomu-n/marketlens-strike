@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-27_10:36 JST
+更新日: 2026-06-27_10:59 JST
 -->
 
 # marketlens-strike
@@ -24,30 +24,31 @@ in a fresh checkout until commands are run.
 6. [docs/FEATURE_CAPABILITY_SUMMARY_2026-06-27.md](docs/FEATURE_CAPABILITY_SUMMARY_2026-06-27.md)
 7. [docs/STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md](docs/STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md)
 8. [docs/STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](docs/STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md)
-9. [docs/STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](docs/STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md)
-10. [docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md)
-11. [docs/CODE_STATUS.md](docs/CODE_STATUS.md)
-12. [docs/IMPLEMENTED_SURFACES.md](docs/IMPLEMENTED_SURFACES.md)
-13. [docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md](docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md)
-14. [docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md](docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
-15. [docs/NEXT_DIRECTION_CURRENT.md](docs/NEXT_DIRECTION_CURRENT.md)
-16. [docs/research/ndx/README.md](docs/research/ndx/README.md)
-17. [docs/research/ndx/09_LLM_REVIEW_GATE.md](docs/research/ndx/09_LLM_REVIEW_GATE.md)
-18. [docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md](docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md)
-19. [docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md](docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md)
-20. [docs/backtest/README.md](docs/backtest/README.md)
-21. [docs/strategy_review/README.md](docs/strategy_review/README.md)
-22. [docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
-23. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
-24. [docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md](docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md)
-25. [docs/venues/bitget_hyperliquid_capability_gate.md](docs/venues/bitget_hyperliquid_capability_gate.md)
-26. [docs/venues/read_only_capability_probe.md](docs/venues/read_only_capability_probe.md)
-27. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
-28. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
-29. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
-30. [docs/runbooks/README.md](docs/runbooks/README.md)
-31. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
-32. [docs/trade_xyz_bot_beginner_guide.md](docs/trade_xyz_bot_beginner_guide.md)
+9. [docs/STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md](docs/STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md)
+10. [docs/STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](docs/STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md)
+11. [docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md)
+12. [docs/CODE_STATUS.md](docs/CODE_STATUS.md)
+13. [docs/IMPLEMENTED_SURFACES.md](docs/IMPLEMENTED_SURFACES.md)
+14. [docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md](docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md)
+15. [docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md](docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
+16. [docs/NEXT_DIRECTION_CURRENT.md](docs/NEXT_DIRECTION_CURRENT.md)
+17. [docs/research/ndx/README.md](docs/research/ndx/README.md)
+18. [docs/research/ndx/09_LLM_REVIEW_GATE.md](docs/research/ndx/09_LLM_REVIEW_GATE.md)
+19. [docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md](docs/research/ndx/10_LAYER_2_3_NDX_PREFLIGHT.md)
+20. [docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md](docs/research/ndx/11_LAYER_2_4_RESIDUAL_VALIDATION_GATE.md)
+21. [docs/backtest/README.md](docs/backtest/README.md)
+22. [docs/strategy_review/README.md](docs/strategy_review/README.md)
+23. [docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](docs/strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
+24. [docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md](docs/backtest/TRADE_XYZ_PURE_BACKTEST_V0_1.md)
+25. [docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md](docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md)
+26. [docs/venues/bitget_hyperliquid_capability_gate.md](docs/venues/bitget_hyperliquid_capability_gate.md)
+27. [docs/venues/read_only_capability_probe.md](docs/venues/read_only_capability_probe.md)
+28. [docs/strategy_research_lab/README.md](docs/strategy_research_lab/README.md)
+29. [docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md)
+30. [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+31. [docs/runbooks/README.md](docs/runbooks/README.md)
+32. [docs/ARCHITECTURE_AND_PHASES.md](docs/ARCHITECTURE_AND_PHASES.md)
+33. [docs/trade_xyz_bot_beginner_guide.md](docs/trade_xyz_bot_beginner_guide.md)
 
 ## Judgment Notes
 

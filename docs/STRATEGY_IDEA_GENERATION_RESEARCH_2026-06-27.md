@@ -23,6 +23,8 @@
 
 実装直前の用語衝突、schema 必須項目、TimeSeriesSplit の限界、`mlfinlab` / `mlfinpy` / TA 系依存の追加調査による修正判断は [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md) を読む。実装へ進めてよいのは P0 の artifact / schema / Python validation / docs / fixture test までで、mining logic と依存追加はまだ対象外です。
 
+candidate generation pipeline の checkpoint と到達順は [STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md](STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md) を読む。input contract / source evidence bridge は generator の後ではなく、artifact writer / generator の前提として扱う。
+
 ## 調査質問
 
 論文、研究、Kaggle、Numerai の知見から見て、`marketlens-strike` に「入力データから戦略アイデア候補を作る機能」を追加するのは現実的か。追加するなら、何を必須制約にすべきか。
