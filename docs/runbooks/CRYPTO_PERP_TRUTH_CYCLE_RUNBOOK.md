@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-27_19:20 JST
+更新日: 2026-06-28_06:47 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -280,7 +280,8 @@ uv run sis crypto-perp-tournament-rows-preview \
 - これは `outcome_before_cost_proxy` です。実約定、fee、funding、slippage込みのactual cashではありません。
 - `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` と `FEES_FUNDING_AND_FILL_SLIPPAGE_NOT_INCLUDED` をknown gapとして残します。
 - `NO_TRADE` はcash 0として明示します。失敗扱いしません。
-- `tournament_rows_preview.json` を `crypto-perp-tournament-report --rows` に渡すと、previewのknown gapsはreportへ継承されます。
+- `tournament_rows_preview.json` は display / dogfood 用です。`crypto-perp-tournament-report --rows` へ渡すと `PREVIEW_ROWS_NOT_ACTUAL_CASH` で失敗します。
+- outcome 由来の estimate / cost-aware 比較は `crypto-perp-tournament-rows-v2` を使います。
 
 手で作る場合も、winnerだけを保存しません。各eventについて、同じevent setで次の3actionをそろえます。
 
@@ -359,9 +360,11 @@ uv run sis crypto-perp-bias-guard \
 
 `crypto-perp-tournament-rows-v2` は estimate surface です。`actual_cash_result_usd` は actual cash evidence が渡された場合だけ使い、通常の outcome 由来 rows では `null` のまま読みます。
 
+`crypto-perp-tournament-report` に渡せるのは、caller が actual cash 責任を持つ `TournamentEventResult` JSON / JSONL です。preview rows や `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` を持つ rows は report input として使えません。
+
 ```bash
 uv run sis crypto-perp-tournament-report \
-  --rows data/crypto_perp/tournament_rows_preview/<event-id>/tournament_rows_preview.json \
+  --rows data/crypto_perp/tournament/actual_cash_rows.jsonl \
   --out data/crypto_perp/tournament/<report-id> \
   --report-id <report-id> \
   --min-events 10 \
@@ -373,7 +376,7 @@ uv run sis crypto-perp-tournament-report \
 - `tournament_status=COMPLETE`
 - event set が3actionで一致している
 - `actual_cash_result_usd` がprimary metric
-- `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` が残っているreportをactual cash evidenceとして扱っていない
+- `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` が残っているrowsをreport inputとして扱っていない
 - largest loss が許容範囲
 - profit concentration が極端ではない
 - operator time が継続可能

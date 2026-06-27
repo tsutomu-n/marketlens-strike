@@ -182,7 +182,7 @@ def test_crypto_perp_tournament_report_cli_writes_json_and_markdown(tmp_path: Pa
     assert "automatic_trading: `false`" in markdown
 
 
-def test_crypto_perp_tournament_report_cli_carries_preview_known_gaps(
+def test_crypto_perp_tournament_report_cli_rejects_preview_rows_json(
     tmp_path: Path,
 ) -> None:
     rows_path = tmp_path / "tournament_rows_preview.json"
@@ -215,14 +215,11 @@ def test_crypto_perp_tournament_report_cli_carries_preview_known_gaps(
         ],
     )
 
-    assert result.exit_code == 0, result.stdout
-    payload = json.loads((tmp_path / "out/tournament_report.json").read_text(encoding="utf-8"))
-    assert payload["source_refs"][0]["schema_version"] == "crypto_perp_tournament_rows_preview.v1"
-    assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in payload["known_gaps"]
-    assert "FEES_FUNDING_AND_FILL_SLIPPAGE_NOT_INCLUDED" in payload["known_gaps"]
-    markdown = (tmp_path / "out/tournament_report.md").read_text(encoding="utf-8")
-    assert "## Known Gaps" in markdown
-    assert "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH" in markdown
+    assert result.exit_code == 2
+    assert "status=fail" in result.stdout
+    assert "PREVIEW_ROWS_NOT_ACTUAL_CASH" in result.stdout
+    assert "crypto-perp-tournament-rows-v2" in result.stdout
+    assert not (tmp_path / "out/tournament_report.json").exists()
 
 
 def test_crypto_perp_tournament_report_cli_rejects_mismatched_event_sets(

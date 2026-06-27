@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_20:32 JST
-更新日: 2026-06-23_22:44 JST
+更新日: 2026-06-28_06:47 JST
 -->
 
 # marketlens-strike アプリ現状詳細ガイド
@@ -844,7 +844,7 @@ prospective decisionの後、指定した観察窓が終わってから作る結
 
 ### tournament
 
-同じevent setに対して複数の仮説を比べるreportです。Crypto Perpでは `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を同格に扱い、データ不足は `INCONCLUSIVE_DATA` として残します。`crypto-perp-tournament-rows-preview` が作るrowsは outcome 由来の before-cost proxy で、実約定、fee、funding、slippage込みのactual cashではありません。preview artifactをreport入力にした場合、この不足はknown gapsとしてreportへ継承されます。
+同じevent setに対して複数の仮説を比べるreportです。Crypto Perpでは `REVERSAL_SHORT`、`CONTINUATION_LONG`、`NO_TRADE` を同格に扱い、データ不足は `INCONCLUSIVE_DATA` として残します。`crypto-perp-tournament-rows-preview` が作るrowsは outcome 由来の before-cost proxy で、実約定、fee、funding、slippage込みのactual cashではありません。preview artifactをreport入力にすると、`PREVIEW_ROWS_NOT_ACTUAL_CASH` で拒否されます。
 
 ### tournament gate
 

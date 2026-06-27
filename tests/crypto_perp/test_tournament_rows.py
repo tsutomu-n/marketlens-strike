@@ -101,6 +101,7 @@ def test_crypto_perp_tournament_rows_preview_cli_writes_jsonl_and_preview(
     preview_path = tmp_path / "rows/tournament_rows_preview.json"
     rows_path = tmp_path / "rows/tournament_rows.jsonl"
     payload = json.loads(preview_path.read_text(encoding="utf-8"))
+    markdown = (tmp_path / "rows/tournament_rows_preview.md").read_text(encoding="utf-8")
     schema = json.loads(
         (REPO_ROOT / "schemas/crypto_perp_tournament_rows_preview.v1.schema.json").read_text(
             encoding="utf-8"
@@ -114,6 +115,8 @@ def test_crypto_perp_tournament_rows_preview_cli_writes_jsonl_and_preview(
         "CONTINUATION_LONG",
         "NO_TRADE",
     }
+    assert "outcome_before_cost_proxy_usd" in markdown
+    assert "| action | actual_cash_result_usd |" not in markdown
     report = build_tournament_report(
         report_id="preview-report",
         generated_at="2026-06-21T07:00:00Z",

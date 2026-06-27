@@ -14,9 +14,24 @@ from sis.crypto_perp.tournament import (
     build_tournament_report,
 )
 
+PREVIEW_ROWS_SCHEMA_VERSION = "crypto_perp_tournament_rows_preview.v1"
+PREVIEW_ROWS_NOT_ACTUAL_CASH_GAP = "OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH"
+PREVIEW_ROWS_NOT_ACTUAL_CASH_ERROR = (
+    "PREVIEW_ROWS_NOT_ACTUAL_CASH: crypto-perp-tournament-report requires actual-cash "
+    "TournamentEventResult rows. Do not feed outcome-before-cost preview rows into this report; "
+    "use crypto-perp-tournament-rows-v2 for estimates."
+)
+
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(microsecond=0)
+
+
+def _reject_preview_rows_input(schema_version: str | None, known_gaps: list[str]) -> None:
+    if schema_version == PREVIEW_ROWS_SCHEMA_VERSION:
+        raise ValueError(PREVIEW_ROWS_NOT_ACTUAL_CASH_ERROR)
+    if PREVIEW_ROWS_NOT_ACTUAL_CASH_GAP in known_gaps:
+        raise ValueError(PREVIEW_ROWS_NOT_ACTUAL_CASH_ERROR)
 
 
 def _read_tournament_rows(path: Path) -> tuple[list[TournamentEventResult], list[str], str | None]:
@@ -36,6 +51,7 @@ def _read_tournament_rows(path: Path) -> tuple[list[TournamentEventResult], list
         if isinstance(raw_known_gaps, list):
             known_gaps = [str(gap) for gap in raw_known_gaps if str(gap).strip()]
         rows_payload = rows_payload.get("rows")
+    _reject_preview_rows_input(schema_version, known_gaps)
     if not isinstance(rows_payload, list):
         raise ValueError("rows input must be a JSON array, JSON object with rows, or JSONL")
     return (
@@ -114,6 +130,7 @@ def register_crypto_perp_tournament_report_commands(app: typer.Typer) -> None:
             row_list, source_known_gaps, source_schema_version = _read_tournament_rows(rows)
             source_text = rows.read_text(encoding="utf-8")
             combined_known_gaps = list(dict.fromkeys([*source_known_gaps, *(known_gap or [])]))
+            _reject_preview_rows_input(source_schema_version, combined_known_gaps)
             source_ref = {
                 "path": rows.as_posix(),
                 "sha256": "sha256:" + stable_hash([source_text]),

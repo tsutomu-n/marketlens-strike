@@ -26,7 +26,7 @@ def _render_preview_markdown(preview: CryptoPerpTournamentRowsPreview) -> str:
         "",
         "## Rows",
         "",
-        "| action | actual_cash_result_usd | market_adjusted_return |",
+        "| action | outcome_before_cost_proxy_usd | market_adjusted_return |",
         "|---|---:|---:|",
     ]
     for row in preview.rows:

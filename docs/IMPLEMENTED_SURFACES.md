@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-27_19:20 JST
+更新日: 2026-06-28_06:47 JST
 -->
 
 # Implemented Surfaces
@@ -111,7 +111,7 @@ NDX approvals do not prove alpha, backtest readiness, paper readiness, live read
 - `strategy-micro-live-plan`, `strategy-scale-decision`, and `strategy-next-scale-plan` create human-review planning artifacts only. `READY_FOR_HUMAN_MICRO_LIVE_REVIEW`, `READY_FOR_HUMAN_SCALE_REVIEW`, and `READY_FOR_HUMAN_NEXT_SCALE_REVIEW` are reported as `status=needs_human_approval` with `requires_explicit_approval=true` and `permits_live_order=false`, not `status=pass`; blocked paths report `status=blocked`, `requires_explicit_approval=false`, and `permits_live_order=false`.
 - `strategy-next-scale-plan` creates a next scale planning artifact only. It does not permit next-scale execution or live execution.
 - `strategy-workbench-viewer-build` creates a static HTML viewer from existing artifacts only. It can summarize `strategy_case_index.v1`, but does not edit artifacts, persist registry state, or permit paper/live execution.
-- Crypto Perp tournament compares `REVERSAL_SHORT`, `CONTINUATION_LONG`, and `NO_TRADE` on the same event set. `actual_cash_result_usd` is primary, and insufficient data remains `INCONCLUSIVE_DATA`. Rows produced by `crypto-perp-tournament-rows-preview` are `outcome_before_cost_proxy`, not actual cash evidence, and preview known gaps are carried into reports when the preview artifact is used as input.
+- Crypto Perp tournament compares `REVERSAL_SHORT`, `CONTINUATION_LONG`, and `NO_TRADE` on the same event set. `actual_cash_result_usd` is primary, and insufficient data remains `INCONCLUSIVE_DATA`. Rows produced by `crypto-perp-tournament-rows-preview` are `outcome_before_cost_proxy`, not actual cash evidence, and `crypto-perp-tournament-report` rejects preview rows with `PREVIEW_ROWS_NOT_ACTUAL_CASH`.
 - Crypto Perp profit-readiness rows v2 use `cost_adjusted_cash_estimate_usd` and `stress_cash_estimate_usd`. They do not populate `actual_cash_result_usd` unless actual cash evidence is supplied.
 - `crypto-perp-truth-cycle-status` reads existing Crypto Perp artifacts and reports the next missing local step, stop reasons, and known gaps. It does not fetch network data or permit live execution.
 - `crypto-perp-tournament-gate` creates a local gate artifact only. `READY_FOR_HUMAN_TINY_LIVE_REVIEW` is not live execution permission and still requires separate explicit approval; CLI stdout reports this as `status=needs_human_approval`, not `status=pass`.

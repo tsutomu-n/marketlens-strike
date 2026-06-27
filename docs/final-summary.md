@@ -1,9 +1,67 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_06:38 JST
+更新日: 2026-06-28_06:48 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Actual Cash Semantic Repair
+
+Completed on branch `ai/actual-cash-semantic-repair-20260628-0645`.
+
+Achieved:
+
+- Added a `PREVIEW_ROWS_NOT_ACTUAL_CASH` guard to `crypto-perp-tournament-report`.
+- Rejected `crypto_perp_tournament_rows_preview.v1` and rows carrying `OUTCOME_BEFORE_COST_PROXY_NOT_ACTUAL_CASH` before report generation.
+- Kept caller-owned actual-cash JSONL / `TournamentEventResult` input working.
+- Updated preview Markdown to display `outcome_before_cost_proxy_usd` instead of `actual_cash_result_usd`.
+- Updated current docs and runbook wording so preview rows are display / dogfood only and cannot feed `crypto-perp-tournament-report`.
+
+Main files changed:
+
+- `src/sis/commands/crypto_perp_tournament_report.py`
+- `src/sis/commands/crypto_perp_tournament_rows.py`
+- `tests/crypto_perp/test_tournament.py`
+- `tests/crypto_perp/test_tournament_rows.py`
+- `docs/crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md`
+- `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`
+- `docs/IMPLEMENTED_SURFACES.md`
+- `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md`
+- `docs/plans/actual-cash-semantic-repair-2026-06-28.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_tournament.py tests/crypto_perp/test_tournament_rows.py`
+- `git diff --check`
+
+Not fully passed:
+
+- `uv run python scripts/check_current_docs.py` failed on existing tracked plan routing: `plan/0628から/0628-0623.md: tracked plan file is outside current root plan or archive routing`. This file was not changed in this checkpoint.
+
+Remaining work:
+
+- Resolve the pre-existing plan routing checker failure separately if full current-doc validation is required.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No. CLI behavior is stricter for invalid preview input, but no data or schema was deleted.
+
+Dependency change:
+
+No.
+
+Migration:
+
+Operators must stop feeding `tournament_rows_preview.json` into `crypto-perp-tournament-report`. Use actual-cash rows for reports and `crypto-perp-tournament-rows-v2` for estimates.
+
+Rollback:
+
+Revert the guard, test, preview Markdown wording, and docs changes from this addendum.
 
 ## Latest Addendum: Docs Triage Refresh
 
