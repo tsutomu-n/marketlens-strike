@@ -1,9 +1,63 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-27_19:20 JST
+更新日: 2026-06-27_20:08 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Crypto Perp Profit-Readiness Evidence Run Plan
+
+Completed on branch `ai/crypto-perp-profit-readiness-20260627-1901`.
+
+Achieved:
+
+- Added `docs/crypto_perp/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md`.
+- Confirmed the current local `data/crypto_perp` inventory has dogfood / status / Daily Brief / Workbench Viewer artifacts, but no real event, outcome, source availability, rows-v2, cash ledger, or live measurement artifact.
+- Recorded the stop result as `BLOCKED_MISSING_EVENT_OR_OUTCOME`.
+- Kept dogfood / status artifacts out of profit evidence and actual cash evidence.
+- Kept manual outcome prices, estimates, and actual cash result boundaries explicit.
+- Did not run public network, credentialed read-only, exchange write, live order, tiny-live measurement, or automatic trading operations.
+
+Main files changed:
+
+- `docs/crypto_perp/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py`
+- `git diff --check`
+
+Not run:
+
+- `uv run pytest tests/crypto_perp -q`, because no Crypto Perp implementation code changed.
+- `uv run python scripts/check_cli_catalog.py`, because no CLI catalog or command implementation changed.
+- External/public/credentialed/live operations.
+
+Remaining work:
+
+- Create or provide real event and matured outcome artifacts before trying source availability, replay slice, feature pack, rows-v2, or bias guard evidence generation.
+- Decide separately whether to approve a public Bitget probe with `SIS_ALLOW_PUBLIC_NETWORK=1`.
+
+User decisions required:
+
+- Public probe approval is required before any network-backed Crypto Perp evidence collection.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove the new run plan and this addendum.
 
 ## Latest Addendum: Crypto Perp Profit-Readiness Evidence Layer
 
