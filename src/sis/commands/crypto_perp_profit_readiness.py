@@ -12,7 +12,23 @@ from sis.crypto_perp.edge_scorer import build_edge_score
 from sis.crypto_perp.events import CryptoPerpEvent
 from sis.crypto_perp.features import CryptoPerpFeaturePack, build_feature_pack
 from sis.crypto_perp.io import write_json_artifact
+from sis.crypto_perp.io import write_text_artifact
+from sis.crypto_perp.models import stable_hash
 from sis.crypto_perp.order_preview import CryptoPerpOrderPreview
+from sis.crypto_perp.profit_readiness import (
+    ProfitReadinessInventory,
+    TinyLiveReviewPacket,
+    actual_cash_rows_from_ledger,
+    build_actual_cash_report_gate_run,
+    build_profit_readiness_inventory,
+    build_profit_readiness_plan,
+    build_profit_readiness_run,
+    build_tiny_live_review_packet,
+    build_tiny_live_shadow_readiness,
+    parse_assignments,
+    parse_cash_ledger_entries,
+    parse_tournament_rows,
+)
 from sis.crypto_perp.replay import build_replay_slice
 from sis.crypto_perp.source_availability import (
     CryptoPerpSourceAvailability,
@@ -24,7 +40,10 @@ from sis.crypto_perp.tournament_rows import (
     build_cost_aware_tournament_rows,
 )
 from sis.crypto_perp.bitget.account import CryptoPerpAccountSnapshot
+from sis.crypto_perp.cash_ledger import CryptoPerpCashLedger, build_cash_ledger
 from sis.crypto_perp.outcomes import CryptoPerpOutcome
+from sis.crypto_perp.tournament import CryptoPerpTournamentReport
+from sis.crypto_perp.tournament_gate import CryptoPerpTournamentGate
 
 
 def _utc_now() -> datetime:
@@ -36,6 +55,47 @@ def _json_object(path: Path) -> dict[str, object]:
     if not isinstance(payload, dict):
         raise ValueError(f"expected JSON object: {path}")
     return payload
+
+
+def _source_ref(path: Path, schema_version: str | None = None) -> dict[str, str]:
+    text = path.read_text(encoding="utf-8")
+    ref = {"path": path.as_posix(), "sha256": "sha256:" + stable_hash([text])}
+    if schema_version:
+        ref["schema_version"] = schema_version
+    return ref
+
+
+def _render_cash_ledger_markdown(ledger: CryptoPerpCashLedger) -> str:
+    return "\n".join(
+        [
+            "# Crypto Perp Cash Ledger",
+            "",
+            f"- ledger_id: `{ledger.ledger_id}`",
+            f"- observed_at: `{ledger.observed_at}`",
+            f"- entry_count: `{len(ledger.entries)}`",
+            f"- actual_cash_result_usd: `{ledger.actual_cash_result_usd}`",
+            "- network_attempted: `false`",
+            "- exchange_write_used: `false`",
+            "- live_order_submitted: `false`",
+        ]
+    )
+
+
+def _render_review_packet_markdown(packet: TinyLiveReviewPacket) -> str:
+    return "\n".join(
+        [
+            "# Crypto Perp Tiny-Live Review Packet",
+            "",
+            f"- packet_id: `{packet.packet_id}`",
+            f"- packet_status: `{packet.packet_status}`",
+            f"- report_id: `{packet.report_id}`",
+            f"- gate_id: `{packet.gate_id}`",
+            "- requires_explicit_approval: `true`",
+            "- live_order_allowed: `false`",
+            "- exchange_write_allowed: `false`",
+            "- approval_granted: `false`",
+        ]
+    )
 
 
 def _parse_available_sources(values: list[str] | None) -> dict[str, bool]:
@@ -68,6 +128,324 @@ def _parse_row_counts(values: list[str] | None) -> dict[str, int]:
 
 
 def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
+    @app.command("crypto-perp-profit-readiness-inventory")
+    def crypto_perp_profit_readiness_inventory_cmd(
+        data_dir: Path = typer.Option(Path("data/crypto_perp"), "--data-dir"),
+        out: Path = typer.Option(Path("data/crypto_perp/artifact_inventory/latest"), "--out"),
+    ) -> None:
+        try:
+            artifact = build_profit_readiness_inventory(data_dir=data_dir, created_at=_utc_now())
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        path = out / "inventory.json"
+        write_json_artifact(path, artifact.model_dump(mode="json"))
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo(
+            "status=pass"
+            if artifact.inventory_status == "READY_FOR_LOCAL_PLAN"
+            else "status=blocked"
+        )
+        typer.echo(f"inventory_status={artifact.inventory_status}")
+        typer.echo(f"event_count={artifact.summary['event_count']}")
+        typer.echo(f"outcome_count={artifact.summary['outcome_count']}")
+        typer.echo(f"known_gap_count={len(artifact.known_gaps)}")
+        typer.echo(f"inventory_path={path.as_posix()}")
+
+    @app.command("crypto-perp-profit-readiness-plan")
+    def crypto_perp_profit_readiness_plan_cmd(
+        inventory: Path = typer.Option(..., "--inventory"),
+        out: Path = typer.Option(Path("data/crypto_perp/profit_readiness_plan/latest"), "--out"),
+        run_out: Path = typer.Option(
+            Path("data/crypto_perp/profit_readiness_run/latest"), "--run-out"
+        ),
+        notional_usd: str = typer.Option("100", "--notional-usd"),
+    ) -> None:
+        try:
+            artifact = build_profit_readiness_plan(
+                inventory=ProfitReadinessInventory.model_validate(_json_object(inventory)),
+                created_at=_utc_now(),
+                out_dir=run_out,
+                notional_usd=Decimal(notional_usd),
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        path = out / "plan.json"
+        write_json_artifact(path, artifact.model_dump(mode="json"))
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo(
+            "status=pass" if artifact.plan_status == "READY_FOR_LOCAL_RUN" else "status=blocked"
+        )
+        typer.echo(f"plan_status={artifact.plan_status}")
+        typer.echo(f"runnable_command_count={len(artifact.runnable_commands)}")
+        typer.echo(f"blocker_count={len(artifact.blockers)}")
+        typer.echo(f"plan_path={path.as_posix()}")
+
+    @app.command("crypto-perp-profit-readiness-run-local")
+    def crypto_perp_profit_readiness_run_local_cmd(
+        event: Path = typer.Option(..., "--event"),
+        outcome: Path = typer.Option(..., "--outcome"),
+        out: Path = typer.Option(Path("data/crypto_perp/profit_readiness_run/latest"), "--out"),
+        notional_usd: str = typer.Option(..., "--notional-usd"),
+    ) -> None:
+        try:
+            event_artifact = CryptoPerpEvent.model_validate(_json_object(event))
+            outcome_artifact = CryptoPerpOutcome.model_validate(_json_object(outcome))
+            manifest = build_profit_readiness_run(
+                event=event_artifact,
+                outcome=outcome_artifact,
+                created_at=_utc_now(),
+                out=out,
+                event_path=event,
+                outcome_path=outcome,
+                notional_usd=Decimal(notional_usd),
+            )
+            # Rebuild once for concrete artifact objects and write them in the same run directory.
+            source = build_source_availability(
+                event=event_artifact,
+                created_at=manifest.created_at,
+                available_sources={"outcome": True},
+                row_counts={"outcome": 1},
+                source_refs=[_source_ref(outcome, outcome_artifact.schema_version)],
+            )
+            replay = build_replay_slice(
+                event=event_artifact,
+                created_at=manifest.created_at,
+                included_sources=["event", "outcome"],
+                row_counts={"event": 1, "outcome": 1},
+            )
+            feature = build_feature_pack(
+                event=event_artifact, source_availability=source, created_at=manifest.created_at
+            )
+            edge = build_edge_score(
+                feature_pack=feature, source_availability=source, created_at=manifest.created_at
+            )
+            rows = build_cost_aware_tournament_rows(
+                outcomes=[outcome_artifact],
+                created_at=manifest.created_at,
+                notional_usd=Decimal(notional_usd),
+                source_refs=[_source_ref(outcome, outcome_artifact.schema_version)],
+            )
+            guard = build_bias_guard(
+                rows=rows.rows,
+                created_at=manifest.created_at,
+                source_refs=[
+                    {
+                        "path": (out / "tournament_rows_v2.json").as_posix(),
+                        "sha256": rows.artifact_id,
+                        "schema_version": rows.schema_version,
+                    }
+                ],
+                known_gaps=rows.known_gaps,
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        write_json_artifact(out / "source_availability.json", source.model_dump(mode="json"))
+        write_json_artifact(out / "replay_slice.json", replay.model_dump(mode="json"))
+        write_json_artifact(out / "feature_pack.json", feature.model_dump(mode="json"))
+        write_json_artifact(out / "edge_score.json", edge.model_dump(mode="json"))
+        write_json_artifact(out / "tournament_rows_v2.json", rows.model_dump(mode="json"))
+        write_json_artifact(out / "bias_guard.json", guard.model_dump(mode="json"))
+        write_json_artifact(out / "manifest.json", manifest.model_dump(mode="json"))
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("status=pass" if manifest.status == "complete" else "status=blocked")
+        typer.echo(f"run_status={manifest.status}")
+        typer.echo(f"known_gap_count={len(manifest.known_gaps)}")
+        typer.echo(f"manifest_path={(out / 'manifest.json').as_posix()}")
+
+    @app.command("crypto-perp-cash-ledger")
+    def crypto_perp_cash_ledger_cmd(
+        entries: Path = typer.Option(..., "--entries"),
+        ledger_id: str = typer.Option(..., "--ledger-id"),
+        observed_at: str = typer.Option(..., "--observed-at"),
+        out: Path = typer.Option(Path("data/crypto_perp/cash_ledger/latest"), "--out"),
+    ) -> None:
+        try:
+            entry_list = parse_cash_ledger_entries(entries)
+            ledger = build_cash_ledger(
+                ledger_id=ledger_id,
+                observed_at=observed_at,
+                entries=entry_list,
+                source_refs=[_source_ref(entries)],
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        write_json_artifact(out / "cash_ledger.json", ledger.model_dump(mode="json"))
+        write_text_artifact(out / "cash_ledger.md", _render_cash_ledger_markdown(ledger))
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("status=pass")
+        typer.echo(f"entry_count={len(ledger.entries)}")
+        typer.echo(f"actual_cash_result_usd={ledger.actual_cash_result_usd}")
+        typer.echo(f"cash_ledger_path={(out / 'cash_ledger.json').as_posix()}")
+
+    @app.command("crypto-perp-actual-cash-rows-build")
+    def crypto_perp_actual_cash_rows_build_cmd(
+        ledger: Path = typer.Option(..., "--ledger"),
+        assignment: Path = typer.Option(..., "--assignment"),
+        out: Path = typer.Option(Path("data/crypto_perp/actual_cash_rows/latest"), "--out"),
+    ) -> None:
+        try:
+            ledger_artifact = CryptoPerpCashLedger.model_validate(_json_object(ledger))
+            assignments = parse_assignments(assignment)
+            rows_path = out / "actual_cash_rows.jsonl"
+            rows, summary = actual_cash_rows_from_ledger(
+                ledger=ledger_artifact,
+                assignments=assignments,
+                created_at=_utc_now(),
+                rows_path=rows_path,
+                source_refs=[
+                    _source_ref(ledger, ledger_artifact.schema_version),
+                    _source_ref(assignment),
+                ],
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        rows_path.parent.mkdir(parents=True, exist_ok=True)
+        rows_path.write_text(
+            "\n".join(json.dumps(row.model_dump(mode="json"), ensure_ascii=False) for row in rows)
+            + "\n",
+            encoding="utf-8",
+        )
+        write_json_artifact(out / "actual_cash_rows_summary.json", summary.model_dump(mode="json"))
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("status=pass")
+        typer.echo(f"row_count={len(rows)}")
+        typer.echo(f"actual_cash_rows_path={rows_path.as_posix()}")
+        typer.echo(f"summary_path={(out / 'actual_cash_rows_summary.json').as_posix()}")
+
+    @app.command("crypto-perp-actual-cash-report-gate")
+    def crypto_perp_actual_cash_report_gate_cmd(
+        rows: Path = typer.Option(..., "--rows"),
+        report_id: str = typer.Option(..., "--report-id"),
+        min_events: int = typer.Option(..., "--min-events", min=1),
+        out: Path = typer.Option(Path("data/crypto_perp/actual_cash_report_gate/latest"), "--out"),
+    ) -> None:
+        try:
+            row_list = parse_tournament_rows(rows)
+            artifacts = {
+                "tournament_report": (out / "tournament_report.json").as_posix(),
+                "tournament_gate": (out / "tournament_gate.json").as_posix(),
+                "manifest": (out / "manifest.json").as_posix(),
+            }
+            report, gate, manifest = build_actual_cash_report_gate_run(
+                rows=row_list,
+                report_id=report_id,
+                min_events=min_events,
+                created_at=_utc_now(),
+                source_refs=[_source_ref(rows)],
+                artifacts=artifacts,
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        write_json_artifact(out / "tournament_report.json", report.model_dump(mode="json"))
+        write_json_artifact(out / "tournament_gate.json", gate.model_dump(mode="json"))
+        write_json_artifact(out / "manifest.json", manifest.model_dump(mode="json"))
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo(
+            "status=pass" if manifest.status == "ready_for_human_review" else "status=blocked"
+        )
+        typer.echo(f"gate_status={gate.gate_status}")
+        typer.echo(f"manifest_status={manifest.status}")
+        typer.echo(f"manifest_path={(out / 'manifest.json').as_posix()}")
+
+    @app.command("crypto-perp-tiny-live-review-packet")
+    def crypto_perp_tiny_live_review_packet_cmd(
+        report: Path = typer.Option(..., "--report"),
+        gate: Path = typer.Option(..., "--gate"),
+        out: Path = typer.Option(Path("data/crypto_perp/tiny_live_review_packet/latest"), "--out"),
+    ) -> None:
+        try:
+            report_artifact = CryptoPerpTournamentReport.model_validate(_json_object(report))
+            gate_artifact = CryptoPerpTournamentGate.model_validate(_json_object(gate))
+            packet = build_tiny_live_review_packet(
+                report=report_artifact,
+                gate=gate_artifact,
+                created_at=_utc_now(),
+                source_refs=[
+                    _source_ref(report, report_artifact.schema_version),
+                    _source_ref(gate, gate_artifact.schema_version),
+                ],
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        write_json_artifact(out / "review_packet.json", packet.model_dump(mode="json"))
+        write_text_artifact(out / "review_packet.md", _render_review_packet_markdown(packet))
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("requires_explicit_approval=true")
+        typer.echo(
+            "status=pass" if packet.packet_status == "READY_FOR_HUMAN_REVIEW" else "status=blocked"
+        )
+        typer.echo(f"packet_status={packet.packet_status}")
+        typer.echo(f"review_packet_path={(out / 'review_packet.json').as_posix()}")
+
+    @app.command("crypto-perp-tiny-live-shadow-readiness")
+    def crypto_perp_tiny_live_shadow_readiness_cmd(
+        packet: Path = typer.Option(..., "--packet"),
+        account: Path = typer.Option(..., "--account"),
+        order_preview: Path = typer.Option(..., "--order-preview"),
+        out: Path = typer.Option(
+            Path("data/crypto_perp/tiny_live_shadow_readiness/latest"), "--out"
+        ),
+    ) -> None:
+        try:
+            packet_artifact = TinyLiveReviewPacket.model_validate(_json_object(packet))
+            account_artifact = CryptoPerpAccountSnapshot.model_validate(_json_object(account))
+            preview_artifact = CryptoPerpOrderPreview.model_validate(_json_object(order_preview))
+            readiness = build_tiny_live_shadow_readiness(
+                packet=packet_artifact,
+                account_snapshot=account_artifact,
+                order_preview=preview_artifact,
+                created_at=_utc_now(),
+                source_refs=[
+                    _source_ref(packet, packet_artifact.schema_version),
+                    _source_ref(account, account_artifact.schema_version),
+                    _source_ref(order_preview, preview_artifact.schema_version),
+                ],
+            )
+        except Exception as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+        write_json_artifact(out / "shadow_readiness.json", readiness.model_dump(mode="json"))
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("live_order_allowed=false")
+        typer.echo("exchange_write_allowed=false")
+        typer.echo("requires_explicit_approval=true")
+        typer.echo(
+            "status=pass" if readiness.status == "READY_FOR_TINY_LIVE_SHADOW" else "status=blocked"
+        )
+        typer.echo(f"readiness_status={readiness.status}")
+        typer.echo(f"shadow_readiness_path={(out / 'shadow_readiness.json').as_posix()}")
+
     @app.command("crypto-perp-source-availability")
     def crypto_perp_source_availability_cmd(
         event: Path = typer.Option(..., "--event", help="Source crypto_perp_event.v1 JSON."),

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crypto_perp_actual_cash_report_gate_run.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "artifact_id", "created_at", "producer", "source_refs", "boundary", "report_id", "gate_id", "status", "gate_status", "artifacts", "known_gaps", "summary"],
+  "properties": {
+    "schema_version": {"const": "crypto_perp_actual_cash_report_gate_run.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"$ref": "#/$defs/utc_second"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {"type": "array", "items": {"type": "object"}},
+    "boundary": {"$ref": "#/$defs/boundary"},
+    "report_id": {"type": "string", "minLength": 1},
+    "gate_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["ready_for_human_review", "blocked"]},
+    "gate_status": {"type": "string", "minLength": 1},
+    "artifacts": {"type": "object", "additionalProperties": {"type": "string"}},
+    "known_gaps": {"type": "array", "items": {"type": "string"}},
+    "summary": {"type": "object", "additionalProperties": true}
+  },
+  "$defs": {
+    "utc_second": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"},
+    "producer": {"type": "object", "additionalProperties": false, "required": ["tool", "command"], "properties": {"tool": {"const": "sis"}, "command": {"type": "string", "minLength": 1}}},
+    "boundary": {"type": "object", "additionalProperties": false, "required": ["permits_live_order", "live_conversion_allowed", "wallet_used", "signing_used", "exchange_write_used", "live_order_submitted"], "properties": {"permits_live_order": {"const": false}, "live_conversion_allowed": {"const": false}, "wallet_used": {"const": false}, "signing_used": {"const": false}, "exchange_write_used": {"const": false}, "live_order_submitted": {"const": false}}}
+  }
+}

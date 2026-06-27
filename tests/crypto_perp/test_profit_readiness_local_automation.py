@@ -1,0 +1,327 @@
+from __future__ import annotations
+
+from decimal import Decimal
+import json
+from pathlib import Path
+
+from jsonschema import Draft202012Validator
+from typer.testing import CliRunner
+
+from sis.cli import app
+from sis.crypto_perp.cash_ledger import CashLedgerEntry, build_cash_ledger
+from sis.crypto_perp.events import detect_event
+from sis.crypto_perp.features import EventDetectorConfig
+from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
+from sis.crypto_perp.profit_readiness import (
+    build_profit_readiness_inventory,
+    build_profit_readiness_plan,
+)
+from sis.crypto_perp.quality import validate_candle_series
+from .test_features import make_bars, ticker
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+runner = CliRunner()
+
+
+def _event():
+    bars = make_bars(["100"] * 591 + ["105"], ["1000"] * 296 + ["1200"] * 296)
+    event = detect_event(
+        provider_id="bitget",
+        native_symbol="BTCUSDT",
+        canonical_symbol="BTCUSDT",
+        bars=bars,
+        ticker=ticker(),
+        quality_report=validate_candle_series(bars, interval="15m"),
+        universe_snapshot_id="universe-1",
+        market_snapshot_id="market-1",
+        detector_config=EventDetectorConfig(),
+    )
+    assert event is not None
+    return event
+
+
+def _outcome(event_id: str):
+    return build_outcome(
+        event_id=event_id,
+        settled_at="2026-06-21T06:00:00Z",
+        horizons=[
+            OutcomePriceWindow(
+                horizon_minutes=60,
+                matured=True,
+                reference_price=Decimal("100"),
+                close_price=Decimal("105"),
+                high_price=Decimal("110"),
+                low_price=Decimal("95"),
+            )
+        ],
+    )
+
+
+def _write_json(path: Path, payload: object) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if hasattr(payload, "model_dump"):
+        payload = payload.model_dump(mode="json")
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+def _schema(name: str) -> dict[str, object]:
+    return json.loads((REPO_ROOT / "schemas" / name).read_text(encoding="utf-8"))
+
+
+def test_inventory_blocks_dogfood_only_and_records_bad_json(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "status.json",
+        {"schema_version": "crypto_perp_truth_cycle_status.v1", "artifact_id": "status-1"},
+    )
+    (tmp_path / "broken.json").write_text("{", encoding="utf-8")
+
+    inventory = build_profit_readiness_inventory(
+        data_dir=tmp_path, created_at="2026-06-21T07:00:00Z"
+    )
+
+    assert inventory.inventory_status == "BLOCKED_MISSING_EVENT_OR_OUTCOME"
+    assert inventory.summary["event_count"] == 0
+    assert inventory.summary["outcome_count"] == 0
+    assert inventory.summary["dogfood_status_viewer_count"] == 1
+    assert inventory.summary["invalid_json_count"] == 1
+    assert "BLOCKED_MISSING_EVENT_OR_OUTCOME" in inventory.known_gaps
+
+    schema = _schema("crypto_perp_profit_readiness_inventory.v1.schema.json")
+    Draft202012Validator.check_schema(schema)
+    Draft202012Validator(schema).validate(inventory.model_dump(mode="json"))
+
+
+def test_inventory_and_plan_emit_single_candidate_command(tmp_path: Path) -> None:
+    event = _event()
+    outcome = _outcome(event.event_id)
+    event_path = _write_json(tmp_path / "event.json", event)
+    outcome_path = _write_json(tmp_path / "outcome.json", outcome)
+
+    inventory = build_profit_readiness_inventory(
+        data_dir=tmp_path, created_at="2026-06-21T07:00:00Z"
+    )
+    plan = build_profit_readiness_plan(
+        inventory=inventory, created_at="2026-06-21T07:00:00Z", out_dir=tmp_path / "run"
+    )
+
+    assert inventory.inventory_status == "READY_FOR_LOCAL_PLAN"
+    assert inventory.summary["has_real_event_and_outcome"] is True
+    assert plan.plan_status == "READY_FOR_LOCAL_RUN"
+    assert plan.event_path == event_path.as_posix()
+    assert plan.outcome_path == outcome_path.as_posix()
+    assert "crypto-perp-profit-readiness-run-local" in plan.runnable_commands[0]
+
+    schema = _schema("crypto_perp_profit_readiness_plan.v1.schema.json")
+    Draft202012Validator.check_schema(schema)
+    Draft202012Validator(schema).validate(plan.model_dump(mode="json"))
+
+
+def test_plan_blocks_multiple_candidates(tmp_path: Path) -> None:
+    event = _event()
+    _write_json(tmp_path / "event-1.json", event)
+    _write_json(tmp_path / "event-2.json", event.model_copy(update={"event_id": "event-2"}))
+    _write_json(tmp_path / "outcome.json", _outcome(event.event_id))
+    inventory = build_profit_readiness_inventory(
+        data_dir=tmp_path, created_at="2026-06-21T07:00:00Z"
+    )
+
+    plan = build_profit_readiness_plan(inventory=inventory, created_at="2026-06-21T07:00:00Z")
+
+    assert plan.plan_status == "BLOCKED_MULTIPLE_EVENT_OR_OUTCOME_CANDIDATES"
+    assert "BLOCKED_MULTIPLE_EVENT_OR_OUTCOME_CANDIDATES" in plan.blockers
+    assert plan.runnable_commands == []
+
+
+def test_cash_ledger_cli_reads_json_and_actual_cash_rows_require_trade_entries(
+    tmp_path: Path,
+) -> None:
+    entries = [
+        CashLedgerEntry(
+            entry_id="pnl-short",
+            pod_id="pod-short",
+            event_id="event-1",
+            entry_type="REALIZED_PNL",
+            amount_usd=Decimal("-4"),
+            occurred_at="2026-06-21T06:10:00Z",
+        ),
+        CashLedgerEntry(
+            entry_id="pnl-long",
+            pod_id="pod-long",
+            event_id="event-1",
+            entry_type="REALIZED_PNL",
+            amount_usd=Decimal("7"),
+            occurred_at="2026-06-21T06:10:00Z",
+        ),
+    ]
+    entries_path = _write_json(
+        tmp_path / "entries.json", [entry.model_dump(mode="json") for entry in entries]
+    )
+    ledger_out = tmp_path / "ledger"
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-cash-ledger",
+            "--entries",
+            str(entries_path),
+            "--ledger-id",
+            "ledger-1",
+            "--observed-at",
+            "2026-06-21T07:00:00Z",
+            "--out",
+            str(ledger_out),
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "network_attempted=false" in result.stdout
+    ledger_path = ledger_out / "cash_ledger.json"
+    ledger_payload = json.loads(ledger_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_schema("crypto_perp_cash_ledger.v1.schema.json")).validate(ledger_payload)
+
+    assignment = [
+        {"event_id": "event-1", "action": "REVERSAL_SHORT", "pod_id": "pod-short"},
+        {"event_id": "event-1", "action": "CONTINUATION_LONG", "pod_id": "pod-long"},
+        {"event_id": "event-1", "action": "NO_TRADE", "pod_id": None},
+    ]
+    assignment_path = _write_json(tmp_path / "assignment.json", assignment)
+    rows_out = tmp_path / "rows"
+    rows_result = runner.invoke(
+        app,
+        [
+            "crypto-perp-actual-cash-rows-build",
+            "--ledger",
+            str(ledger_path),
+            "--assignment",
+            str(assignment_path),
+            "--out",
+            str(rows_out),
+        ],
+    )
+
+    assert rows_result.exit_code == 0, rows_result.stdout
+    rows = [
+        json.loads(line)
+        for line in (rows_out / "actual_cash_rows.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert {row["cash_metric_basis"] for row in rows} == {"actual_cash"}
+    assert rows[0]["actual_cash_result_usd"] == rows[0]["cash_metric_value_usd"]
+    summary = json.loads((rows_out / "actual_cash_rows_summary.json").read_text(encoding="utf-8"))
+    Draft202012Validator(_schema("crypto_perp_actual_cash_rows_summary.v1.schema.json")).validate(
+        summary
+    )
+
+    bad_assignment_path = _write_json(
+        tmp_path / "bad_assignment.json",
+        [
+            {"event_id": "event-1", "action": "REVERSAL_SHORT", "pod_id": "missing"},
+            {"event_id": "event-1", "action": "CONTINUATION_LONG", "pod_id": "pod-long"},
+            {"event_id": "event-1", "action": "NO_TRADE", "pod_id": None},
+        ],
+    )
+    bad = runner.invoke(
+        app,
+        [
+            "crypto-perp-actual-cash-rows-build",
+            "--ledger",
+            str(ledger_path),
+            "--assignment",
+            str(bad_assignment_path),
+            "--out",
+            str(tmp_path / "bad_rows"),
+        ],
+    )
+    assert bad.exit_code == 2
+    assert "has no ledger entries" in bad.stdout
+
+
+def test_report_gate_and_review_packet_keep_live_permissions_false(tmp_path: Path) -> None:
+    ledger = build_cash_ledger(
+        ledger_id="ledger-1",
+        observed_at="2026-06-21T07:00:00Z",
+        entries=[
+            CashLedgerEntry(
+                entry_id="short",
+                pod_id="pod-short",
+                event_id="event-1",
+                entry_type="REALIZED_PNL",
+                amount_usd=Decimal("-2"),
+                occurred_at="2026-06-21T06:10:00Z",
+            ),
+            CashLedgerEntry(
+                entry_id="long",
+                pod_id="pod-long",
+                event_id="event-1",
+                entry_type="REALIZED_PNL",
+                amount_usd=Decimal("4"),
+                occurred_at="2026-06-21T06:10:00Z",
+            ),
+        ],
+    )
+    ledger_path = _write_json(tmp_path / "ledger.json", ledger)
+    assignment_path = _write_json(
+        tmp_path / "assignment.json",
+        [
+            {"event_id": "event-1", "action": "REVERSAL_SHORT", "pod_id": "pod-short"},
+            {"event_id": "event-1", "action": "CONTINUATION_LONG", "pod_id": "pod-long"},
+            {"event_id": "event-1", "action": "NO_TRADE", "pod_id": None},
+        ],
+    )
+    rows_result = runner.invoke(
+        app,
+        [
+            "crypto-perp-actual-cash-rows-build",
+            "--ledger",
+            str(ledger_path),
+            "--assignment",
+            str(assignment_path),
+            "--out",
+            str(tmp_path / "rows"),
+        ],
+    )
+    assert rows_result.exit_code == 0, rows_result.stdout
+
+    report_result = runner.invoke(
+        app,
+        [
+            "crypto-perp-actual-cash-report-gate",
+            "--rows",
+            str(tmp_path / "rows/actual_cash_rows.jsonl"),
+            "--report-id",
+            "report-1",
+            "--min-events",
+            "2",
+            "--out",
+            str(tmp_path / "report_gate"),
+        ],
+    )
+    assert report_result.exit_code == 0, report_result.stdout
+    assert "status=blocked" in report_result.stdout
+    manifest = json.loads((tmp_path / "report_gate/manifest.json").read_text(encoding="utf-8"))
+    Draft202012Validator(
+        _schema("crypto_perp_actual_cash_report_gate_run.v1.schema.json")
+    ).validate(manifest)
+
+    packet_result = runner.invoke(
+        app,
+        [
+            "crypto-perp-tiny-live-review-packet",
+            "--report",
+            str(tmp_path / "report_gate/tournament_report.json"),
+            "--gate",
+            str(tmp_path / "report_gate/tournament_gate.json"),
+            "--out",
+            str(tmp_path / "packet"),
+        ],
+    )
+    assert packet_result.exit_code == 0, packet_result.stdout
+    packet = json.loads((tmp_path / "packet/review_packet.json").read_text(encoding="utf-8"))
+    assert packet["packet_status"] == "BLOCKED_BY_TOURNAMENT_GATE"
+    assert packet["requires_explicit_approval"] is True
+    assert packet["live_order_allowed"] is False
+    assert packet["exchange_write_allowed"] is False
+    Draft202012Validator(_schema("crypto_perp_tiny_live_review_packet.v1.schema.json")).validate(
+        packet
+    )
