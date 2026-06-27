@@ -9,19 +9,25 @@ from typing import Any
 
 from sis.backtest.artifact_io import read_json_object, sha256_file
 from sis.strategy_ai_review.models import (
+    AIReviewEvidenceRef,
+    AIReviewEvidenceRefType,
     AIReviewContextEntryValue,
     AIReviewContextSection,
     AIReviewModelReasoningEffort,
     AIReviewPacketReference,
     AIReviewPacketStatus,
     AIReviewRecommendation,
+    AIReviewSourceNoteReference,
     AIReviewSourceSummary,
+    AIReviewStructuredFinding,
     StrategyAIReviewNote,
     StrategyAIReviewPacket,
+    StrategyAIReviewStructuredFindings,
 )
 from sis.strategy_ai_review.rendering import (
     render_ai_review_note_markdown,
     render_ai_review_packet_markdown,
+    render_ai_review_structured_findings_markdown,
 )
 from sis.strategy_inputs.io import write_json_artifact, write_text_artifact
 from sis.strategy_review.provenance import detect_json_schema_version, repo_relative_path
@@ -57,6 +63,13 @@ class AIReviewPacketResult:
 class AIReviewNoteResult:
     note: StrategyAIReviewNote
     note_path: Path
+    report_path: Path
+
+
+@dataclass(frozen=True)
+class AIReviewStructuredFindingsResult:
+    finding_set: StrategyAIReviewStructuredFindings
+    finding_set_path: Path
     report_path: Path
 
 
@@ -297,3 +310,136 @@ def record_ai_review_note(
     write_json_artifact(note_path, note.model_dump(mode="json", exclude_none=True))
     write_text_artifact(report_path, render_ai_review_note_markdown(note))
     return AIReviewNoteResult(note=note, note_path=note_path, report_path=report_path)
+
+
+def _packet_path_from_note(note_path: Path, note: StrategyAIReviewNote) -> Path:
+    path = Path(note.source_packet.path)
+    if path.is_absolute():
+        return path
+    cwd_path = Path.cwd() / path
+    if cwd_path.exists():
+        return cwd_path
+    return note_path.parent / path
+
+
+def _load_note_and_packet(
+    note_path: Path,
+) -> tuple[StrategyAIReviewNote, str, Path, StrategyAIReviewPacket, str]:
+    note = StrategyAIReviewNote.model_validate(read_json_object(note_path))
+    note_sha256 = sha256_file(note_path)
+    packet_path = _packet_path_from_note(note_path, note)
+    if not packet_path.exists():
+        raise FileNotFoundError(f"source packet missing: {packet_path}")
+    packet_sha256 = sha256_file(packet_path)
+    if packet_sha256 != note.source_packet.sha256:
+        raise StrategyAIReviewError("packet sha256 mismatch")
+    packet = StrategyAIReviewPacket.model_validate(read_json_object(packet_path))
+    if note.input_hash != packet.ai_input_hash:
+        raise StrategyAIReviewError("note input_hash does not match packet ai_input_hash")
+    return note, note_sha256, packet_path, packet, packet_sha256
+
+
+def _validate_evidence_ref(
+    ref: AIReviewEvidenceRef,
+    *,
+    note: StrategyAIReviewNote,
+    packet: StrategyAIReviewPacket,
+) -> None:
+    if ref.ref_type == AIReviewEvidenceRefType.NOTE_FINDING:
+        if ref.entry_key is not None:
+            raise StrategyAIReviewError("entry_key must be omitted for note_finding")
+        if ref.index >= len(note.findings):
+            raise StrategyAIReviewError("note_finding index out of range")
+        return
+    if ref.ref_type == AIReviewEvidenceRefType.NOTE_LIMITATION:
+        if ref.entry_key is not None:
+            raise StrategyAIReviewError("entry_key must be omitted for note_limitation")
+        if ref.index >= len(note.limitations):
+            raise StrategyAIReviewError("note_limitation index out of range")
+        return
+    if ref.ref_type == AIReviewEvidenceRefType.PACKET_SOURCE_SUMMARY:
+        if ref.entry_key is not None:
+            raise StrategyAIReviewError("entry_key must be omitted for packet_source_summary")
+        if ref.index >= len(packet.source_summaries):
+            raise StrategyAIReviewError("packet_source_summary index out of range")
+        return
+    if ref.ref_type == AIReviewEvidenceRefType.PACKET_CONTEXT_SECTION:
+        if ref.entry_key is not None:
+            raise StrategyAIReviewError("entry_key must be omitted for packet_context_section")
+        if ref.index >= len(packet.context_sections):
+            raise StrategyAIReviewError("packet_context_section index out of range")
+        return
+    if ref.ref_type == AIReviewEvidenceRefType.PACKET_CONTEXT_ENTRY:
+        if ref.index >= len(packet.context_sections):
+            raise StrategyAIReviewError("packet_context_entry index out of range")
+        if ref.entry_key is None:
+            raise StrategyAIReviewError("entry_key is required for packet_context_entry")
+        if ref.entry_key not in packet.context_sections[ref.index].entries:
+            raise StrategyAIReviewError("entry_key not found in packet context section")
+        return
+    raise StrategyAIReviewError(f"unsupported evidence ref_type: {ref.ref_type}")
+
+
+def _structured_finding(
+    payload: dict[str, Any],
+    *,
+    index: int,
+    note: StrategyAIReviewNote,
+    packet: StrategyAIReviewPacket,
+) -> AIReviewStructuredFinding:
+    normalized = dict(payload)
+    normalized.setdefault("finding_id", f"finding-{index:03d}")
+    finding = AIReviewStructuredFinding.model_validate(normalized)
+    for ref in finding.evidence_refs:
+        _validate_evidence_ref(ref, note=note, packet=packet)
+    return finding
+
+
+def record_structured_findings(
+    *,
+    note_path: Path,
+    structured_findings: list[dict[str, Any]],
+    out_dir: Path | None = None,
+    finding_set_id: str = "ai-review-structured-findings",
+    replace_existing: bool = False,
+    recorded_at: datetime | None = None,
+) -> AIReviewStructuredFindingsResult:
+    note, note_sha256, packet_path, packet, packet_sha256 = _load_note_and_packet(note_path)
+    selected_out = out_dir or note_path.parent
+    findings = [
+        _structured_finding(payload, index=index, note=note, packet=packet)
+        for index, payload in enumerate(structured_findings, start=1)
+    ]
+    finding_set = StrategyAIReviewStructuredFindings(
+        finding_set_id=finding_set_id,
+        recorded_at=recorded_at or _utc_now(),
+        producer=StageProducer(command="strategy-ai-review-findings-structure"),
+        source_note=AIReviewSourceNoteReference(
+            path=repo_relative_path(note_path),
+            sha256=note_sha256,
+            input_hash=note.input_hash,
+            prompt_hash=note.prompt_hash,
+            provider=note.provider,
+            model=note.model,
+            recommendation=note.recommendation,
+        ),
+        source_packet=AIReviewPacketReference(
+            path=repo_relative_path(packet_path),
+            sha256=packet_sha256,
+            ai_input_hash=packet.ai_input_hash,
+        ),
+        findings=findings,
+    )
+    finding_set_path = selected_out / "strategy_ai_review_structured_findings.json"
+    report_path = selected_out / "strategy_ai_review_structured_findings.md"
+    if not replace_existing and (finding_set_path.exists() or report_path.exists()):
+        raise StrategyAIReviewOutputExistsError(
+            f"output already exists: {repo_relative_path(selected_out)}"
+        )
+    write_json_artifact(finding_set_path, finding_set.model_dump(mode="json", exclude_none=True))
+    write_text_artifact(report_path, render_ai_review_structured_findings_markdown(finding_set))
+    return AIReviewStructuredFindingsResult(
+        finding_set=finding_set,
+        finding_set_path=finding_set_path,
+        report_path=report_path,
+    )

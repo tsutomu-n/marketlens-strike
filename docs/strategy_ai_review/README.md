@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:17 JST
-更新日: 2026-06-27_17:49 JST
+更新日: 2026-06-27_18:28 JST
 -->
 
 # Strategy AI Review
@@ -30,6 +30,10 @@ uv run sis strategy-ai-review-note-record \
   --finding "Return drift should be reviewed by a human." \
   --limitation "AI did not inspect raw market data." \
   --recommendation REVISE
+
+uv run sis strategy-ai-review-findings-structure \
+  --note data/strategy_ai_reviews/<strategy-id>/strategy_ai_review_note.json \
+  --structured-finding-json docs/tmp/ai_structured_findings_input.json
 ```
 
 ## Artifacts
@@ -38,6 +42,8 @@ uv run sis strategy-ai-review-note-record \
 - `strategy_ai_review_packet.md`
 - `strategy_ai_review_note.json`
 - `strategy_ai_review_note.md`
+- `strategy_ai_review_structured_findings.json`
+- `strategy_ai_review_structured_findings.md`
 
 Packet は full source payload を入れません。source path、sha256、schema_version、strategy_id、status、action の summary と、known schema allowlist から作る `context_sections` だけを含めます。
 
@@ -72,6 +78,39 @@ Note は次を必須にします。
 
 `model` には `gpt-5.5` のような model id を入れ、`medium` / `xhigh` は `--model-reasoning-effort` で分けます。通常の packet 確認や note record は `medium`、schema / boundary / omission risk review は `xhigh` を使います。
 
+Structured findings は、既存 note を壊さない companion artifact です。`--structured-finding-json` で渡された人間作成の JSON 配列だけを記録し、AI回答の自動分類、自動プロンプト実行、自動修正はしません。
+
+Structured finding は次を持ちます。
+
+- `finding_id`
+- `finding_type`
+- `severity`
+- `review_impact`
+- `statement`
+- `evidence_refs`
+- `recommended_next_action`
+- `limitations`
+
+`evidence_refs` は string path や任意 JSON pointer ではなく、typed object だけを許可します。
+
+```json
+{
+  "ref_type": "packet_context_entry",
+  "index": 0,
+  "entry_key": "open_actions"
+}
+```
+
+許可する `ref_type` は次だけです。
+
+- `note_finding`
+- `note_limitation`
+- `packet_source_summary`
+- `packet_context_section`
+- `packet_context_entry`
+
+Structured findings 作成時は、note sha256、packet sha256、`note.input_hash == packet.ai_input_hash` を検証します。`source_note.path` は入力 note artifact path を指し、raw source artifact path ではありません。`source_note` には provider、model、prompt_hash、input_hash、recommendation を保存します。`model_reasoning_effort` は structured findings へコピーしません。
+
 ## Planned AI-in-the-loop hardening
 
 実装計画の順序:
@@ -89,6 +128,8 @@ PR-AI-LOOP-02
 
 最初に実装する `PR-AI-LOOP-00` では、既存 packet の `source_summaries` を壊さず、known schema allowlist から短い `context_sections` を作ります。unknown schema は source summary のみに留め、secret / credential / wallet / exchange write 系 source は `BLOCKED_SENSITIVE_SOURCE` のまま止めます。
 
+`PR-AI-LOOP-01` では、AI回答後に作った note を入力にして、human review 用の structured findings companion artifact を作ります。operator decision、stage decision、paper permission、live permission には接続しません。
+
 ## 境界
 
 - AI note は human review input であり、採用判定ではない。
@@ -103,5 +144,6 @@ PR-AI-LOOP-02
 uv run pytest tests/strategy_ai_review -q
 uv run sis strategy-ai-review-packet-build --help
 uv run sis strategy-ai-review-note-record --help
+uv run sis strategy-ai-review-findings-structure --help
 uv run python scripts/check_current_docs.py
 ```

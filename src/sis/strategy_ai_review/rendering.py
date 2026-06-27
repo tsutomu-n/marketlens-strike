@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from sis.strategy_ai_review.models import StrategyAIReviewNote, StrategyAIReviewPacket
+from sis.strategy_ai_review.models import (
+    StrategyAIReviewNote,
+    StrategyAIReviewPacket,
+    StrategyAIReviewStructuredFindings,
+)
 
 
 def render_ai_review_packet_markdown(packet: StrategyAIReviewPacket) -> str:
@@ -96,6 +100,64 @@ def render_ai_review_note_markdown(note: StrategyAIReviewNote) -> str:
             "",
             "- This note records AI output for human review only.",
             "- It does not auto-apply changes or permit paper/live execution.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def render_ai_review_structured_findings_markdown(
+    finding_set: StrategyAIReviewStructuredFindings,
+) -> str:
+    lines = [
+        f"# Strategy AI Review Structured Findings: {finding_set.finding_set_id}",
+        "",
+        f"- finding_set_status: `{finding_set.finding_set_status.value}`",
+        f"- source_note: `{finding_set.source_note.path}`",
+        f"- source_packet: `{finding_set.source_packet.path}`",
+        f"- finding_count: `{len(finding_set.findings)}`",
+        f"- auto_applied: `{str(finding_set.auto_applied).lower()}`",
+        f"- permission_allowed: `{str(finding_set.permission_allowed).lower()}`",
+        f"- paper_execution_allowed: `{str(finding_set.paper_execution_allowed).lower()}`",
+        f"- live_allowed: `{str(finding_set.live_allowed).lower()}`",
+        "",
+        "## Findings",
+        "",
+    ]
+    if finding_set.findings:
+        for finding in finding_set.findings:
+            lines.extend(
+                [
+                    f"### {finding.finding_id}",
+                    "",
+                    f"- finding_type: `{finding.finding_type.value}`",
+                    f"- severity: `{finding.severity.value}`",
+                    f"- review_impact: `{finding.review_impact.value}`",
+                    f"- recommended_next_action: `{finding.recommended_next_action.value}`",
+                    f"- statement: {finding.statement}",
+                    "",
+                    "#### Evidence Refs",
+                    "",
+                ]
+            )
+            for ref in finding.evidence_refs:
+                suffix = f", entry_key={ref.entry_key}" if ref.entry_key is not None else ""
+                lines.append(f"- `{ref.ref_type.value}` index={ref.index}{suffix}")
+            lines.extend(["", "#### Limitations", ""])
+            if finding.limitations:
+                lines.extend(f"- {item}" for item in finding.limitations)
+            else:
+                lines.append("- none")
+            lines.append("")
+    else:
+        lines.append("- none")
+    lines.extend(
+        [
+            "",
+            "## Boundary",
+            "",
+            "- This artifact structures existing AI review notes for human inspection.",
+            "- It does not auto-classify raw AI output, auto-apply changes, or permit paper/live execution.",
             "",
         ]
     )

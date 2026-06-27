@@ -80,3 +80,79 @@ def test_strategy_ai_review_packet_and_note_cli_success(tmp_path: Path, monkeypa
     assert "model_reasoning_effort=medium" in note_result.stdout
     assert "auto_applied=false" in note_result.stdout
     assert "permission_allowed=false" in note_result.stdout
+
+
+def test_strategy_ai_review_findings_structure_cli_success(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    packet_result = runner.invoke(
+        app,
+        [
+            "strategy-ai-review-packet-build",
+            "--source",
+            str(_safe_source(tmp_path)),
+            "--out",
+            str(tmp_path / "data/strategy_ai_reviews/ndx-breakout-001"),
+        ],
+    )
+    assert packet_result.exit_code == 0
+
+    note_result = runner.invoke(
+        app,
+        [
+            "strategy-ai-review-note-record",
+            "--packet",
+            str(
+                tmp_path
+                / "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_packet.json"
+            ),
+            "--provider",
+            "codex-cli",
+            "--model",
+            "gpt-5.5",
+            "--prompt-hash",
+            PROMPT_HASH,
+            "--finding",
+            "Inspect the referenced strategy_case_lite.v1 source artifact.",
+            "--limitation",
+            "No raw market data inspected.",
+            "--recommendation",
+            "HUMAN_REVIEW_REQUIRED",
+        ],
+    )
+    assert note_result.exit_code == 0
+
+    structured_input = tmp_path / "structured_findings_input.json"
+    structured_input.write_text(
+        """[
+  {
+    "finding_type": "SOURCE_ARTIFACT_REVIEW",
+    "severity": "MEDIUM",
+    "review_impact": "HUMAN_REVIEW_REQUIRED",
+    "statement": "Inspect the referenced strategy_case_lite.v1 source artifact.",
+    "evidence_refs": [
+      {"ref_type": "note_finding", "index": 0},
+      {"ref_type": "packet_context_entry", "index": 0, "entry_key": "open_actions"}
+    ],
+    "recommended_next_action": "INSPECT_SOURCE_ARTIFACT",
+    "limitations": ["No raw market data inspected."]
+  }
+]""",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "strategy-ai-review-findings-structure",
+            "--note",
+            str(
+                tmp_path / "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_note.json"
+            ),
+            "--structured-finding-json",
+            str(structured_input),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "finding_set_status=RECORDED" in result.stdout
+    assert "finding_count=1" in result.stdout

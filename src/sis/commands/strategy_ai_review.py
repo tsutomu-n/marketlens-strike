@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 import typer
 from pydantic import ValidationError
@@ -13,6 +15,7 @@ from sis.strategy_ai_review.service import (
     StrategyAIReviewOutputExistsError,
     build_ai_review_packet,
     record_ai_review_note,
+    record_structured_findings,
 )
 
 
@@ -78,6 +81,78 @@ def register_strategy_ai_review_commands(app: typer.Typer) -> None:
         typer.echo(f"report_path={result.report_path.as_posix()}")
         if packet.packet_status.value != "READY_FOR_AI_REVIEW":
             raise typer.Exit(2)
+
+    @app.command("strategy-ai-review-findings-structure")
+    def strategy_ai_review_findings_structure_cmd(
+        note: Path = typer.Option(
+            ...,
+            "--note",
+            dir_okay=False,
+            help="strategy_ai_review_note.v1 JSON.",
+        ),
+        structured_finding_json: Path = typer.Option(
+            ...,
+            "--structured-finding-json",
+            dir_okay=False,
+            help="JSON array of manually structured finding inputs.",
+        ),
+        out: Path | None = typer.Option(
+            None,
+            "--out",
+            help="Output directory. Defaults to note directory.",
+        ),
+        finding_set_id: str = typer.Option(
+            "ai-review-structured-findings",
+            "--finding-set-id",
+            help="Structured finding set id.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing structured finding artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            structured_input_path = _resolve_workspace_path(
+                structured_finding_json, settings.data_dir
+            )
+            raw_input: Any = json.loads(structured_input_path.read_text(encoding="utf-8"))
+            if not isinstance(raw_input, list) or not all(
+                isinstance(item, dict) for item in raw_input
+            ):
+                raise StrategyAIReviewError(
+                    "--structured-finding-json must contain a JSON array of objects"
+                )
+            result = record_structured_findings(
+                note_path=_resolve_workspace_path(note, settings.data_dir),
+                structured_findings=raw_input,
+                out_dir=_resolve_workspace_path(out, settings.data_dir)
+                if out is not None
+                else None,
+                finding_set_id=finding_set_id,
+                replace_existing=replace_existing,
+            )
+        except (
+            StrategyAIReviewOutputExistsError,
+            StrategyAIReviewError,
+            FileNotFoundError,
+            ValueError,
+            ValidationError,
+            json.JSONDecodeError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        finding_set = result.finding_set
+        typer.echo("status=pass")
+        typer.echo(f"finding_set_status={finding_set.finding_set_status.value}")
+        typer.echo(f"finding_count={len(finding_set.findings)}")
+        typer.echo(f"auto_applied={str(finding_set.auto_applied).lower()}")
+        typer.echo(f"permission_allowed={str(finding_set.permission_allowed).lower()}")
+        typer.echo(f"finding_set_path={result.finding_set_path.as_posix()}")
+        typer.echo(f"report_path={result.report_path.as_posix()}")
 
     @app.command("strategy-ai-review-note-record")
     def strategy_ai_review_note_record_cmd(
