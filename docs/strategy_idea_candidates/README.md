@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-06-27_11:27 JST
+更新日: 2026-06-27_11:38 JST
 -->
 
 # Strategy Idea Candidates
@@ -10,6 +10,8 @@
 `strategy_idea_candidates` は、既存 `strategy_idea.v1` に渡す前の未検証候補を保存する pre-intake artifact です。
 
 この実装で使えるのは、candidate set contract、Python validation、canonical JSON / Markdown writer、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から候補を掘る generator、JSONL / CSV ledger、public CLI、paper / live permission はまだありません。
+
+用語、family ID、最終ゴール、次の C4 goal は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
 
 ## 実装済み artifact
 

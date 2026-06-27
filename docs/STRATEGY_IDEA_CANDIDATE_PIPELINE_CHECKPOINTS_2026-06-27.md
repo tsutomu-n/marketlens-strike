@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_10:59 JST
-更新日: 2026-06-27_11:27 JST
+更新日: 2026-06-27_11:38 JST
 -->
 
 # Strategy Idea Candidate Pipeline Checkpoints 2026-06-27
@@ -33,6 +33,7 @@
 - `schemas/strategy_idea_candidate_set.v1.schema.json`
 - `schemas/strategy_idea_candidate_export_manifest.v1.schema.json`
 - `src/sis/strategy_idea_candidates/`
+- `docs/strategy_idea_candidates/GOAL_AND_GLOSSARY.md`
 - `src/sis/strategy_model_loop/models.py`
 - `docs/STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md`
 - `docs/STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md`
@@ -89,7 +90,7 @@
 9. C9: Strategy Lab / backtest bridge を作る。
 10. C11: fixture E2E を通す。
 
-C6 は C4-C5 の間か C5 後に入れる。C7 と C12 は後回しでよい。C10 は C9 と同時か直後でよい。
+C6 は C4-C5 の間か C5 後に入れる。C7 と C12 は後回しでよい。C10 は C8 の直後、C9 の前に置く。
 
 ## Checkpoint Details
 
