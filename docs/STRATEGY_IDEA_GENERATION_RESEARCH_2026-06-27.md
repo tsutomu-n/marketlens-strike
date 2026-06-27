@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_09:53 JST
-更新日: 2026-06-27_09:53 JST
+更新日: 2026-06-27_10:15 JST
 -->
 
 # Strategy Idea Generation Research 2026-06-27
@@ -18,6 +18,8 @@
 5. paper / live permission は絶対に出さない。候補生成の出力は常に `UNVERIFIED_CANDIDATE` として扱う。
 
 この方針なら、既存の防御側機能と整合する。一方で、探索数、holdout、future leakage、public leaderboard 的な feedback overfit を記録しない実装は、見た目の勝率を作るだけなので採用しない。
+
+依存関係の追加判断は [STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md) を読む。結論は、P0 / P1 では依存追加なし、P2 で `scipy` を optional extra として検討、ML / GBDT / hyperparameter search 系は candidate artifact と search ledger の後です。
 
 ## 調査質問
 
@@ -367,3 +369,5 @@ Numerai:
 ## 次にやること
 
 実装へ進めるなら、最初の task は `strategy_idea_candidate_set.v1` schema と docs / tests です。データ mining logic より前に、探索履歴を保存する artifact 契約を作る。
+
+依存追加は最初の task には含めない。統計補強が必要になった段階で、`scipy` を optional extra として検討する。
