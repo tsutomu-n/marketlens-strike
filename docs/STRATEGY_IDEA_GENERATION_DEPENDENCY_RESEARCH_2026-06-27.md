@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_10:15 JST
-更新日: 2026-06-27_10:15 JST
+更新日: 2026-06-27_10:36 JST
 -->
 
 # Strategy Idea Generation Dependency Research 2026-06-27
@@ -27,6 +27,7 @@
 
 - Python package の最新 version、Python 3.13 対応、transitive dependency は current。
 - 公式 docs と `uv pip install --dry-run` を 2026-06-27_10:15 JST に確認した。
+- 実装直前の追加確認は 2026-06-27_10:36 JST に [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md) へ反映した。
 - 実際に `pyproject.toml` / `uv.lock` を変更する時は、再度 `uv add --optional ...` または lock dry-run で確認する。
 
 ## repo の現在依存
@@ -67,6 +68,40 @@
 | `tsfresh` | 自動 feature extraction | 時系列 feature を大量生成できる | feature 数が増え、多重検定と data snooping が急増する。transitive dependency も重い | MVP では避ける |
 | `mlfinlab` / 類似 | finance ML 手法集 | Purged K-Fold など方向性は近い | 商用・配布・互換性・保守性が不確実。必要部分は小さく自前実装がよい | 採用しない |
 | TA indicator library | indicator catalog | すぐ候補数を増やせる | indicator explosion と似た候補の重複を招く | 初期採用しない |
+
+## 追加調査で修正した点
+
+実装前の再確認で、前回より強く書くべき依存リスクが見えた。
+
+```text
+uv pip install --dry-run mlfinlab
+=> No solution found; there are no versions of mlfinlab
+
+uv pip install --dry-run mlfinpy
+=> mlfinpy==0.1.2, numba==0.60.0, scipy==1.17.1, statsmodels==0.14.6,
+   numpy is downgraded from 2.4.6 to 1.26.4
+
+uv pip install --dry-run pandas-ta
+=> pandas-ta==0.4.71b0, numba==0.61.2,
+   numpy is downgraded from 2.4.6 to 2.2.6
+
+uv pip install --dry-run ta
+=> ta==0.11.0
+
+uv pip install --dry-run vectorbt
+=> vectorbt==1.0.0 plus 44 additional packages including ipython, ipywidgets,
+   plotly, matplotlib, numba, scikit-learn, and scipy
+```
+
+これにより、判断を次のように修正する。
+
+- `mlfinlab`: 「重い / 不確実」ではなく、現 resolver で解決不能。採用しない。
+- `mlfinpy`: PyPI 上は存在するが、現 workspace では NumPy downgrade を伴う。初期採用しない。
+- `pandas-ta`: PyPI 上は Python `>=3.12` だが、現 workspace では NumPy downgrade を伴う。初期採用しない。
+- `ta`: 単体 dry-run は小さいが、2023-11-02 release で PyPI classifiers は Python 3.6 / 3.7。初期候補生成の問題は package size より indicator explosion なので採用しない。
+- `vectorbt`: 既存 optional extra にはあるが、P0 / P1 の候補 artifact 契約には過剰。既存 extra を使う判断と新 candidate generator に採用する判断を混ぜない。
+
+`scikit-learn TimeSeriesSplit` も修正して読む。公式 docs では `gap` により train 末尾から test 前の sample を除外できるが、これは金融 label の overlapping horizon、event end time、purged split、embargo を自動で満たす証明ではない。採用する場合でも P3 以降にし、`label_window`、`prediction_horizon`、`purge_policy`、`embargo_policy` を repo 側 artifact に必須保存する。
 
 ## `uv pip install --dry-run` で確認した解決結果
 
