@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_02:16 JST
-更新日: 2026-06-22_22:22 JST
+更新日: 2026-06-28_07:07 JST
 -->
 
 # Strategy Workbench Viewer
@@ -11,7 +11,7 @@ Strategy Workbench Viewer は、Strategy Operations Workbench の JSON / Markdow
 
 これは正本ではありません。正本は各 artifact、schema、CLI、test です。viewer は artifact を探しやすくするだけで、paper 実行、live 実行、scale-up、wallet、signing、exchange write を許可しません。
 
-Crypto Perp の `crypto_perp_tournament_report.v1`、`crypto_perp_tournament_gate.v1`、`crypto_perp_truth_cycle_status.v1` も通常の JSON artifact として読めます。viewer は `tournament_status`、`gate_status`、`cycle_status`、`human_summary`、`approval_boundary`、`leader_action`、`primary_metric`、`event_count`、`proxy_gap_count`、`failed_condition_count`、`stop_reason_count`、`first_stop_reason`、`missing_artifact_path_count`、`first_next_step`、`first_next_step_network_allowed=false`、`first_stage_blocker`、`first_stage_blocker_expected_cli_option`、`leader_actual_cash_result_usd` などのcompact summaryを表示対象にします。
+Crypto Perp の `crypto_perp_tournament_report.v1`、`crypto_perp_tournament_gate.v1`、`crypto_perp_truth_cycle_status.v1` も通常の JSON artifact として読めます。viewer は `tournament_status`、`gate_status`、`cycle_status`、`human_summary`、`approval_boundary`、`leader_action`、`primary_metric`、`primary_metric_display_name`、`cash_metric_basis`、`actual_cash`、`event_count`、`leader_cash_metric_value_usd`、`leader_actual_cash_result_usd`、`proxy_gap_count`、`failed_condition_count`、`stop_reason_count`、`first_stop_reason`、`missing_artifact_path_count`、`first_next_step`、`first_next_step_network_allowed=false`、`first_stage_blocker`、`first_stage_blocker_expected_cli_option` などのcompact summaryを表示対象にします。
 
 `strategy_case_lite.v1` と `strategy_case_index.v1` は、root の `status` field がない場合でも `latest_status` を status badge として表示します。Case Lite は artifact count、timeline count、first source artifact type / path / schema / hash、first open action、first blocked reason を compact summary として表示できます。Case Index は、case count、strategy count、latest status、latest case path、first open action、first blocked reason、source hash を compact summary として表示できます。
 
@@ -61,7 +61,7 @@ data/reports/strategy_workbench_viewer/
 - source artifact sha256
 - schema_version
 - status / decision / decision_status / plan_status / ingest_status / tournament_status / gate_status / cycle_status などの抜粋
-- Crypto Perp tournament / gate / truth-cycle status の leader_action / primary_metric / event_count / proxy_gap_count / stop_reason_count / first_stop_reason / first_next_step / first_stage_blocker / human_summary などのcompact summary
+- Crypto Perp tournament / gate / truth-cycle status の leader_action / primary_metric / primary_metric_display_name / cash_metric_basis / actual_cash / leader_cash_metric_value_usd / leader_actual_cash_result_usd / event_count / proxy_gap_count / stop_reason_count / first_stop_reason / first_next_step / first_stage_blocker / human_summary などのcompact summary
 - Strategy Input Feedback proposal / review の proposal_id / decision / source_proposal_status / manual_contract_update_input_allowed / direct_contract_edit_allowed / auto_applied / paper_execution_allowed / live_allowed / first_proposed_change_evidence_summary などのcompact summary
 - Strategy Runtime Observation の ledger_entry_count / paper_order_count / paper_fill_count / no_fill_count / blocked_count / filled_notional_usd_total / max_observed_quote_age_ms / max_observed_spread_bps / pnl_available / pnl_unavailable_reason などのcompact summary
 - Strategy Backtest result / pack validation の backtest_passed / trade_count / total_return / net_pnl_usd / failed_count / locked_dependency_added などのcompact summary
@@ -81,6 +81,7 @@ data/reports/strategy_workbench_viewer/
 - paper / live execution permission ではない。
 - `first_next_step_network_allowed`、`first_next_step_exchange_write_allowed`、`first_next_step_live_order_allowed` は false の時だけ summary に出す。true は許可ではなく malformed source artifact として扱う。
 - `READY_FOR_HUMAN_TINY_LIVE_REVIEW` は warning badge と `approval_boundary` で表示する。これは承認待ちであり、live execution permission ではない。
+- Crypto Perp tournament report の `actual_cash=false` または `cash_metric_basis != actual_cash` は、Workbench bridge では fills / slippage 込み evidence として扱わない。
 - `first_stage_blocker` は先に読むべき欠損 stage の索引であり、次 stage や tiny live へ進む許可ではない。
 - `strategy_case_index.v1` は read-only case index として表示するだけで、source case artifact、DB registry、paper/live permission を作らない。
 - hidden mutable state を持たない。

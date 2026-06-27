@@ -110,9 +110,7 @@ def test_tournament_insufficient_evidence_is_inconclusive() -> None:
 
 
 def test_tournament_proxy_basis_report_is_not_actual_cash() -> None:
-    rows = [
-        row.model_copy(update={"cash_metric_basis": "before_cost_proxy"}) for row in _rows()
-    ]
+    rows = [row.model_copy(update={"cash_metric_basis": "before_cost_proxy"}) for row in _rows()]
 
     report = build_tournament_report(
         report_id="proxy-report",

@@ -115,9 +115,7 @@ def test_tournament_gate_blocks_non_actual_cash_basis_without_proxy_gap() -> Non
     report = build_tournament_report(
         report_id="tournament-1",
         generated_at="2026-06-21T07:00:00Z",
-        rows=[
-            row.model_copy(update={"cash_metric_basis": "before_cost_proxy"}) for row in _rows()
-        ],
+        rows=[row.model_copy(update={"cash_metric_basis": "before_cost_proxy"}) for row in _rows()],
         min_events=2,
     )
 

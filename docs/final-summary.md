@@ -1,9 +1,80 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_06:48 JST
+更新日: 2026-06-28_07:07 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: PR-I1a Cash Metric Semantic Hotfix
+
+Completed on branch `ai/actual-cash-semantic-repair-20260628-0645`.
+
+Achieved:
+
+- Added `cash_metric_basis` to `TournamentEventResult`, defaulting to `actual_cash` for backward compatibility.
+- Made preview rows emit `cash_metric_basis=before_cost_proxy` in JSON and JSONL.
+- Added `cash_metric_basis`, `primary_metric_display_name`, `actual_cash`, `leader_cash_metric_value_usd`, and `leader_actual_cash_result_usd` to `crypto_perp_tournament_report.v1` generation.
+- Kept schema version v1 and added fields as optional schema extensions so older artifacts remain readable.
+- Made report generation mark proxy / estimate known gaps as non-actual cash and mixed row basis as `INCONCLUSIVE_DATA`.
+- Kept `crypto-perp-tournament-report` actual-cash-only by rejecting preview schema, proxy / estimate known gaps, and `cash_metric_basis != actual_cash` rows with `PREVIEW_ROWS_NOT_ACTUAL_CASH`.
+- Made tournament gate block `actual_cash=false` or `cash_metric_basis != actual_cash` as `NEEDS_ACTUAL_CASH`.
+- Made Workbench bridge and viewer carry cash basis summary fields and avoid treating non-actual basis as fills/slippage-included evidence.
+- Updated runbook, vocabulary, surface inventory, implemented/current docs, Workbench README, and this summary.
+
+Main files changed:
+
+- `src/sis/crypto_perp/tournament.py`
+- `src/sis/crypto_perp/tournament_rows.py`
+- `src/sis/crypto_perp/tournament_gate.py`
+- `src/sis/crypto_perp/workbench_bridge.py`
+- `src/sis/commands/crypto_perp_tournament_report.py`
+- `src/sis/commands/crypto_perp_tournament_rows.py`
+- `src/sis/strategy_workbench_viewer/summary_fields.py`
+- `schemas/crypto_perp_tournament_report.v1.schema.json`
+- `schemas/crypto_perp_tournament_rows_preview.v1.schema.json`
+- `schemas/strategy_workbench_viewer.v1.schema.json`
+- `tests/crypto_perp/test_tournament.py`
+- `tests/crypto_perp/test_tournament_rows.py`
+- `tests/crypto_perp/test_tournament_gate.py`
+- `tests/crypto_perp/test_workbench_bridge.py`
+- `tests/strategy_workbench_viewer/test_strategy_workbench_viewer.py`
+- `docs/crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md`
+- `docs/crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md`
+- `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`
+- `docs/IMPLEMENTED_SURFACES.md`
+- `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md`
+- `docs/strategy_workbench_viewer/README.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_tournament_rows.py tests/crypto_perp/test_tournament.py tests/crypto_perp/test_tournament_gate.py tests/crypto_perp/test_workbench_bridge.py tests/strategy_workbench_viewer/test_strategy_workbench_viewer.py -q`
+
+Pending final verification in this work session:
+
+- `uv run python scripts/check_cli_catalog.py`
+- `uv run python scripts/check_current_docs.py`
+- `git diff --check`
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No. CLI behavior remains stricter for invalid non-actual cash report input, but no schema version was bumped and no existing artifact field was removed.
+
+Dependency change:
+
+No.
+
+Migration:
+
+Operators should include `cash_metric_basis=actual_cash` in manual actual-cash JSONL rows. Existing rows without the field are still interpreted as actual cash for compatibility, but preview / estimate rows must not be fed to `crypto-perp-tournament-report`.
+
+Rollback:
+
+Revert the cash basis model/schema/test/report/gate/Workbench changes from this addendum.
 
 ## Latest Addendum: Actual Cash Semantic Repair
 
