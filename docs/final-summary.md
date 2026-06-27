@@ -1,103 +1,90 @@
 <!--
-作成日: 2026-06-26_22:25 JST
-更新日: 2026-06-26_23:30 JST
+作成日: 2026-06-27_11:32 JST
+更新日: 2026-06-27_11:32 JST
 -->
 
 # Final Summary
 
 ## Goal
 
-徹底的なリファクタリングやディレクトリ構造の整理を行い、今後の開発快適性と拡張性、ロバスト性を向上させる。
+Implement the first safe slice of the Strategy Idea Candidate Generation Pipeline: candidate-set contract, Python validation, deterministic JSON/Markdown writer, input-evidence blocking, shortlist export sidecar, docs, and focused tests.
 
-This summary uses the practical completion bar requested on 2026-06-26: not perfect cleanup, but good enough to merge into `main` and resume new feature development. The refactor branch was fast-forward merged into local `main` after the readiness review.
+## Branch
 
-## Working Branch
-
-- Refactor branch: `refactor/backtest-primitives`
-- Merge target: local `main`
-- Latest reviewed refactor head before the final summary: `5434bd3`
-- Final summary commit before merge: `6a060f8`
-- Merge method: fast-forward into local `main`
-- Working tree after merge: clean
+`ai/strategy-idea-candidates-20260627-1116`
 
 ## Achieved
 
-- Split large backtest, research, command, report, and Strategy Authoring modules into smaller focused modules.
-- Added focused regression tests and import-boundary tests around the extracted helpers.
-- Preserved public CLI registration and command catalog according to `scripts/check`.
-- Preserved the documented paper/live safety boundary: these refactor checks do not claim paper, live, account, wallet, signing, exchange-write, production trading, or profit readiness.
-- Kept `.ai-work/` ignored for local AI working state.
-- Reached a clean branch state suitable for final merge review, then fast-forward merged into local `main`.
+- Added `strategy_idea_candidate_set.v1` JSON Schema and Pydantic models.
+- Added `strategy_idea_candidate_export_manifest.v1` sidecar manifest schema and models.
+- Added validation for count mismatch, selected/rejected ID mismatch, selected-only inventory, non-PASS input evidence, missing source summaries, sealed-test selection, and paper/live/auto-promote/final boundary flags.
+- Added deterministic candidate-set JSON/Markdown writer.
+- Added blocked input-evidence candidate set builder for non-PASS input contract validation.
+- Added shortlist export to strict `strategy_idea.v1` draft JSON while keeping candidate set path/hash in the sidecar manifest.
+- Added tests for schema validation, Python invariant validation, writer determinism, export, and intake validation integration.
+- Added docs for the implemented candidate contract and corrected the checkpoint doc so C3 starts with canonical JSON/Markdown only.
 
-## Main Changed Areas
+## Main Files Changed
 
-- `src/sis/backtest/`
-- `src/sis/commands/`
-- `src/sis/reports/`
-- `src/sis/research/`
-- `src/sis/research/strategy_lab/authoring/`
-- `tests/`
-- `docs/plans/`
-- `AGENTS.md`
-- `.gitignore`
+- `schemas/strategy_idea_candidate_set.v1.schema.json`
+- `schemas/strategy_idea_candidate_export_manifest.v1.schema.json`
+- `src/sis/strategy_idea_candidates/`
+- `tests/strategy_idea_candidates/`
+- `docs/strategy_idea_candidates/README.md`
+- `docs/plans/strategy_idea_candidates_p0a_c2_c3_c8_2026-06-27.md`
+- `docs/STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md`
+- `README.md`
+- `docs/CURRENT_STATE.md`
+- `scripts/check_current_docs.py`
 
-## Merge Readiness Evidence
+## Verification Run
 
-- `git status --short --branch --untracked-files=all`: clean on `refactor/backtest-primitives` before merge
-- `git diff --check main...HEAD`: passed
-- `git diff --shortstat main...HEAD`: `894 files changed, 79927 insertions(+), 34809 deletions(-)`
-- `git diff --name-status main...HEAD`: `815 A`, `79 M`, no file deletions
-- Changed top-level areas: `457 src`, `401 tests`, `34 docs`, `1 AGENTS.md`, `1 .gitignore`
-- No changed dependency, lockfile, CI, schema, runtime data, logs, or `.tmp` paths were detected in `main...HEAD`
-- `./scripts/check`: `2756 passed in 80.70s`
-- `scripts/check` also confirmed:
-  - Python 3.13.7
-  - Ruff check passed
-  - Ruff format check passed
-  - current-docs check passed
-  - CLI catalog check passed for 208 public CLI commands
-  - Pyrefly completed with 0 errors
-  - `ty check src` passed
+- `uv run pytest tests/strategy_idea_candidates`
+- `uv run ruff check src/sis/strategy_idea_candidates tests/strategy_idea_candidates`
+- `uv run ruff format --check src/sis/strategy_idea_candidates tests/strategy_idea_candidates`
+- `uv run python scripts/check_current_docs.py`
+- `uv run python scripts/check_cli_catalog.py`
+- `git diff --check`
+- `./scripts/check`
 
-## Additional Review
+## Not Run
 
-- Searched changed files for common debug leftovers: `console.log`, `debugger`, `pdb.set_trace`, `breakpoint`, skipped/xfail tests.
-- `print()` matches were reviewed in `src/sis/live_evidence_runner.py`; they are operator-facing CLI/runner output, not leftover debug code.
-- Searched changed files for secret-like terms. Matches were configuration names, documentation text, or tests that ensure secret env vars are cleared. No secret values were found.
-- Searched for generated or binary runtime artifacts in changed paths. None were found.
+None for this slice.
 
-## Destructive Changes
+## Remaining Work
 
-- No file deletions were present in `main...HEAD`.
-- No dependency changes were present.
-- No schema changes were present.
-- No CI changes were present.
-- No database, auth, deployment, or external-service behavior changes were intentionally made.
+- C4 deterministic generator.
+- JSONL / CSV search ledger rows after generator output exists.
+- C5 split engine beyond policy records.
+- C6 selection-adjusted metrics beyond `NOT_IMPLEMENTED`.
+- C9 Strategy Lab / backtest bridge.
+- C10 dedicated operator review surface.
+- Public CLI after writer/export behavior is stable.
 
-## Unrun Checks
+## User Decisions Required
 
-- No live market, paper trading, wallet, signing, exchange write, deployment, or external API checks were run.
-- No manual browser or rendered-doc visual review was run.
-- No remote push of `main` was performed by the agent.
+None for this slice.
 
-## Residual Risks
+## Destructive Change
 
-- The diff was large before merge: 894 files changed relative to `main`. Even with the full automated gate passing, a human/code-owner review remains useful before remote push or release.
-- This work improves structure and test coverage, but it does not prove trading readiness or strategy alpha.
-- Some command and report modules remain large enough to refactor later, but they do not block resuming feature development.
+No.
 
-## User Judgment Needed
+## Destructive Change Reason
 
-- Decide whether to push local `main` to its remote.
-- Decide whether future cleanup should continue as follow-up passes after feature work resumes.
+Not applicable.
+
+## Dependency Change
+
+No dependency change. `pyproject.toml` and `uv.lock` were not modified.
+
+## Migration
+
+No migration is required.
 
 ## Rollback
 
-- Do not partially revert individual extracted helper modules unless a specific regression is found.
-- If the fast-forward merge causes an unexpected regression after push, revert the merged commit range or reset a protected recovery branch to the pre-merge `main` commit after explicit operator approval.
-- The branch head before this final-summary document was `5434bd3`.
+Revert the new `strategy_idea_candidates` package, candidate schemas, tests, docs, and `scripts/check_current_docs.py` routing additions.
 
 ## Next Considerations
 
-- Prefer new feature work on top of the merged refactor base.
-- For further cleanup, continue with small scoped passes and focused tests rather than another broad unreviewed sweep.
+Start C4 only after agreeing on deterministic family templates, candidate cap, parameter grid shape, and duplicate rejection reason vocabulary.
