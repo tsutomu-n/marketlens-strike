@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_07:30 JST
-更新日: 2026-06-27_07:30 JST
+更新日: 2026-06-27_09:35 JST
 -->
 
 # Current Docs And Structure Triage 2026-06-27
@@ -12,6 +12,20 @@
 今の正本は `src/`、`tests/`、`schemas/`、`configs/`、`scripts/`、`.github/workflows/ci.yml`、`pyproject.toml`、`.python-version`、`uv.lock`、CLI help である。docs は入口、説明、runbook、判断補助であり、runtime 値や readiness の正本ではない。
 
 現在の docs は機械検証上は壊れていない。`scripts/check_current_docs.py` は current docs 162 件を検査し、`scripts/check_cli_catalog.py` は public CLI 208 件を Typer 登録と照合している。
+
+ただし、目的別 docs を全部読んでも「コード全体を漏れなく説明している」とは言い切らない。現行 docs は入口、operator guide、surface map としては使えるが、`src/sis/reports/`、`src/sis/commands/`、低層 helper、template、tools、sidecar、runtime data までを 1 つずつ説明する完全索引ではない。完全性が必要な作業では、この文書の read order の後に `rg`, `find`, CLI help、schema、tests を直接確認する。
+
+## 完全性の現実評価
+
+| 観点 | 現実的な評価 | 理由 |
+|---|---|---|
+| 今の全体像を掴む | 十分 | `README.md`, `CURRENT_STATE.md`, `IMPLEMENTED_SURFACES.md`, この文書で主要 surface と docs 導線は辿れる。 |
+| 目的別に作業を始める | 概ね十分 | backtest、NDX、Strategy Lab、Strategy Review、Crypto Perp、venue boundary は目的別 docs がある。 |
+| コード全体を漏れなく説明する | 不十分 | `src/sis/reports/` と `src/sis/commands/` だけで多数の Python files があり、docs はそれらの全関数・全 helper を列挙していない。 |
+| safety/readiness の誤読防止 | 概ね十分 | `READ_ONLY_GO`, `PASS`, `READY_FOR_HUMAN_REVIEW` を paper/live permission と読ませない記述が複数 docs にある。 |
+| runtime artifact の現在値 | 不十分、意図的 | `data/`, `logs/`, `.tmp/` は生成状態であり、docs に固定値を置かない方針。 |
+| 古い文書の排除 | 概ね十分 | archive と plan/archive は current proof ではないと明記。ただし archive 本文の意味を誤読する余地は残る。 |
+| ディレクトリ構造の完全な説明 | 改善済みだが完全ではない | 主要領域は表にあるが、低層 helper や sidecar/tools は必要時にコード確認が必要。 |
 
 ## 現在の実装構造
 
@@ -26,11 +40,30 @@
 | Crypto Perp | `src/sis/crypto_perp/`, `src/sis/crypto_perp/bitget/`, `configs/crypto_perp/` | truth-cycle artifact chain、Bitget public/account/order-preview/tiny-live guarded surfaces。 |
 | Venue / execution / paper | `src/sis/venues/`, `src/sis/execution/`, `src/sis/paper/` | Trade[XYZ] read-only surfaces、execution state、paper operation artifacts。 |
 | Reports / operations | `src/sis/reports/`, `src/sis/ops/`, `src/sis/state/` | phase gate、operations dashboard/bundle/timeline、audit/remediation/readiness reports。 |
+| Low-level domain helpers | `src/sis/core/`, `src/sis/bot/`, `src/sis/strategies/`, `src/sis/risk/`, `src/sis/tracking/`, `src/sis/validation/`, `src/sis/storage/` | 共通 model、bot preview、strategy helpers、risk/halt、tracking、validation、storage helper。目的別 docs では薄く、作業時はコードを直接読む。 |
+| Market / protocol helpers | `src/sis/real_market/`, `src/sis/research_protocol/`, `src/sis/market_calendar.py` | real market providers、research protocol、market calendar。外部入力や calendar 関連作業では docs だけに依存しない。 |
 | Schemas | `schemas/` | JSON artifact contracts。現在 143 files。 |
 | Tests | `tests/` | domain 別 pytest。`tests/backtest/`, `tests/strategy_authoring/`, `tests/crypto_perp/`, `tests/strategy_*` が主要 slice。 |
+| Templates | `templates/` | event calendar、evidence card、go/no-go report、research signals、venue cost matrix の templates。 |
+| Tooling / spikes | `tools/`, `sidecars/`, `archive/legacy_sidecars`, `package.json`, `Justfile` | external validation、OSS spikes、legacy sidecars、Bun lockfile integrity、task shortcuts。Python/uv が主導線で、Node は main app entrypoint ではない。 |
 | Runtime state | `data/`, `logs/`, `.tmp/` | generated/runtime state。fresh checkout の正本ではない。 |
 | Docs | `docs/` | current docs、runbooks、guides、reference、archive。 |
 | Plans | `plan/` | active/historical implementation contracts。current proof ではない。 |
+
+## コード正本に対する docs のカバー範囲
+
+| コード領域 | docs カバー | 実務上の扱い |
+|---|---|---|
+| `src/sis/backtest/` | 高 | `docs/backtest/README.md` と関連 docs がある。ただし helper 単位は tests/code を読む。 |
+| `src/sis/research/`, `configs/research_layer_*` | 高 | `docs/research/ndx/README.md` と layer docs がある。artifact 現在値は再実行で確認。 |
+| `src/sis/research/strategy_lab/` | 高 | `docs/strategy_research_lab/` がある。examples と schema を併読する。 |
+| `src/sis/strategy_*` | 中 | 各 `docs/strategy_*/README.md` がある。細部は schema/tests を読む。 |
+| `src/sis/crypto_perp/` | 中 | runbook と references はある。実ネットワークや tiny-live は docs だけで進めない。 |
+| `src/sis/reports/` | 中から低 | operations/audit/remediation 系 docs はあるが、report helper 全体の完全索引ではない。 |
+| `src/sis/commands/` | 中から低 | CLI catalog はあるが、command wrapper の内部詳細は docs にない。`uv run sis <command> --help` と code を確認する。 |
+| `src/sis/core/`, `bot`, `risk`, `tracking`, `validation`, `storage`, `strategies` | 低 | 補助層としてコードに存在するが、目的別 docs では薄い。変更時は tests/code 優先。 |
+| `src/sis/real_market/`, `research_protocol` | 低 | 関連 docs は断片的。外部 data/provider 作業時は code/config/tests を直接確認する。 |
+| `templates/`, `tools/`, `sidecars/` | 低 | 補助資産。日常入口ではない。使う時に現物確認する。 |
 
 ## 現在の docs 配置
 
@@ -71,6 +104,7 @@
 | `docs/IMPLEMENTED_SURFACES.md` | 実装済み surface map として維持。 | CLI、schema、tests、domain surface が増減した時。 |
 | `docs/NEXT_DIRECTION_CURRENT.md` | 次方向の入口として維持。 | 次に進める作業や外部入力 checklist が変わった時。 |
 | `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | CLI catalog として維持。 | `scripts/check_cli_catalog.py` の照合結果が変わる CLI 追加/削除時。 |
+| `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md` | docs / directory 現在地として維持。 | ディレクトリ構造、read order、分類が変わった時。 |
 | `docs/runbooks/README.md` | operator route table として維持。 | runbook が増減した時。 |
 | `docs/backtest/README.md` | backtest 入口として維持。 | backtest CLI、artifact schema、optional framework surface が変わった時。 |
 | `docs/research/ndx/README.md` | NDX research 入口として維持。 | NDX layer/config/CLI が変わった時。 |
@@ -90,6 +124,7 @@
 | `docs/final-summary.md` | merge summary。 | 残す。current proof ではなく merge 時点の要約として読む。 |
 | `docs/archive/**` | historical context。 | current proof として読まない。 |
 | `plan/archive/**` | historical implementation plan。 | current proof として読まない。 |
+| `plan/2026-06-22-strategy-feedback-case-index/` | allowlist された plan package。 | current proof ではなく、必要時だけ implementation context として読む。 |
 
 ## 作り直したほうがいいドキュメント
 
@@ -101,6 +136,8 @@
 | `docs/trade_xyz_bot_beginner_guide.md` と `docs/trade_xyz_bot_beginner_guide.html` | Trade[XYZ] 固有 guide と repo 全体の初心者入口が混ざりやすい。 | Trade[XYZ] 固有 guide と venue-neutral beginner guide を分ける。 |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md` | capability detail と operator guide が重なりやすい。 | capability reference と execution guide に分ける。 |
 | `docs/runbooks/README.md` | runbook 入口としてさらに強化できる。 | operator が目的別に辿れる route table へ整理する。 |
+| `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | capability index として使えるが、低層 helper や tools は薄い。 | 完全 catalog を目指すなら code directory / CLI / schema / tests の coverage matrix を別文書に分ける。 |
+| `docs/IMPLEMENTED_SURFACES.md` | surface map として有用だが、全 helper の索引ではない。 | 「実装済み surface」と「内部 helper catalog」を分ける。 |
 
 ## 削除・アーカイブしてもよいドキュメント
 
@@ -113,6 +150,15 @@
 | `docs/live_evidence_reports/` に生成される report | source doc ではない。 | tracked に戻す場合は archive か `data/` artifact 扱いにする。 |
 | `plan/0607ここからの計画2/*.zip`, `plan/0608ここからの計画/**/*.zip`, `plan/0621ここから01/*.zip` | untracked ZIP。 | 中身確認なしに削除しない。使わないなら別途削除判断。 |
 | 空の `docs/plans/` | tracked file なし。 | Git 上は保持不要。新しい current plan を置くなら `plan/` 側の routing と合わせる。 |
+
+## 追加調査で見つけた抜け・漏れ
+
+- 以前の説明は、主要 product surface には強いが、`core`, `bot`, `real_market`, `research_protocol`, `risk`, `storage`, `tracking`, `validation`, `strategies` のような低層/補助領域を薄く扱っていた。
+- `templates/`, `tools/`, `sidecars/`, root `package.json`, `Justfile`, legacy sidecar archive は、日常入口ではないが repo 構造として存在する。完全説明を求めるなら無視できない。
+- `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` は詳しいが、現在のコード全体の完全索引ではない。読み物としての全体説明と、実装 catalog を混ぜると誤読しやすい。
+- `docs/IMPLEMENTED_SURFACES.md` は実装済み surface の map として有用だが、`reports`/`commands` の helper 群を漏れなく説明する文書ではない。
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` は CLI surface の catalog であり、CLI が呼ぶ内部処理の完全説明ではない。
+- archive docs は量が多く、本文正誤は current-doc checker の対象外。archive を読んで現行判断する運用は危険。
 
 ## 今の推奨 read order
 
