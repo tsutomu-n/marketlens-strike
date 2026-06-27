@@ -63,6 +63,10 @@ def _render_truth_cycle_status_markdown(status: CryptoPerpTruthCycleStatus) -> s
     if status.known_gaps:
         lines.extend(["", "## Known Gaps", ""])
         lines.extend(f"- `{gap}`" for gap in status.known_gaps)
+    if status.operator_decision:
+        lines.extend(["", "## Operator Decision", ""])
+        for key, value in status.operator_decision.items():
+            lines.append(f"- {key}: `{value}`")
     return "\n".join(lines)
 
 
@@ -190,6 +194,26 @@ def register_crypto_perp_truth_cycle_commands(app: typer.Typer) -> None:
             "--tournament-gate",
             help="Optional crypto_perp_tournament_gate.v1 JSON artifact.",
         ),
+        source_availability: Path | None = typer.Option(
+            None,
+            "--source-availability",
+            help="Optional crypto_perp_source_availability.v1 JSON artifact.",
+        ),
+        edge_score: Path | None = typer.Option(
+            None,
+            "--edge-score",
+            help="Optional crypto_perp_edge_score.v1 JSON artifact.",
+        ),
+        rows_v2: Path | None = typer.Option(
+            None,
+            "--rows-v2",
+            help="Optional crypto_perp_tournament_rows.v2 JSON artifact.",
+        ),
+        bias_guard: Path | None = typer.Option(
+            None,
+            "--bias-guard",
+            help="Optional crypto_perp_bias_guard.v1 JSON artifact.",
+        ),
         out: Path = typer.Option(
             Path("data/crypto_perp/truth_cycle_status"),
             "--out",
@@ -206,6 +230,10 @@ def register_crypto_perp_truth_cycle_commands(app: typer.Typer) -> None:
                 rows_preview_path=rows_preview,
                 tournament_report_path=tournament_report,
                 tournament_gate_path=tournament_gate,
+                source_availability_path=source_availability,
+                edge_score_path=edge_score,
+                rows_v2_path=rows_v2,
+                bias_guard_path=bias_guard,
             )
         except Exception as exc:
             typer.echo("status=fail")
@@ -230,6 +258,10 @@ def register_crypto_perp_truth_cycle_commands(app: typer.Typer) -> None:
             f"stage_checklist_blocker_count={status.summary.get('stage_checklist_blocker_count', 0)}"
         )
         typer.echo(f"known_gap_count={len(status.known_gaps)}")
+        typer.echo(
+            "operator_decision_stop_reason_count="
+            f"{status.summary.get('operator_decision_stop_reason_count', 0)}"
+        )
         typer.echo(f"status_path={json_path.as_posix()}")
         typer.echo(f"report_path={report_path.as_posix()}")
 

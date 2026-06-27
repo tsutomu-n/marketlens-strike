@@ -12,6 +12,9 @@ from sis.commands.crypto_perp_account import (
 from sis.commands.crypto_perp_config import register_crypto_perp_config_commands
 from sis.commands.crypto_perp_order_preview import register_crypto_perp_order_preview_commands
 from sis.commands.crypto_perp_probe import register_crypto_perp_probe_commands
+from sis.commands.crypto_perp_profit_readiness import (
+    register_crypto_perp_profit_readiness_commands,
+)
 from sis.commands.crypto_perp_records import register_crypto_perp_record_commands
 from sis.commands.crypto_perp_status import register_crypto_perp_status_commands
 from sis.commands.crypto_perp_tournament_report import (
@@ -39,6 +42,7 @@ def _env_enabled(name: str) -> bool:
 def register_crypto_perp_commands(app: typer.Typer) -> None:
     register_crypto_perp_record_commands(app)
     register_crypto_perp_tournament_report_commands(app)
+    register_crypto_perp_profit_readiness_commands(app)
     register_crypto_perp_config_commands(
         app,
         load_config_for_cli_fn=_load_config_for_cli,

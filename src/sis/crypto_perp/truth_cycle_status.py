@@ -77,6 +77,7 @@ class CryptoPerpTruthCycleStatus(BaseModel):
     stop_reasons: list[str]
     stages: list[TruthCycleStage]
     stage_checklist: list[TruthCycleStageChecklistItem]
+    operator_decision: dict[str, Any] = Field(default_factory=dict)
     known_gaps: list[str]
     summary: dict[str, Any]
 
@@ -159,6 +160,62 @@ def _known_gaps(*payloads: dict[str, Any] | None) -> list[str]:
         for gap in payload.get("known_gaps") or []:
             gaps.append(str(gap))
     return list(dict.fromkeys(gaps))
+
+
+def _operator_decision(
+    *,
+    source_availability: dict[str, Any] | None,
+    edge_score: dict[str, Any] | None,
+    rows_v2: dict[str, Any] | None,
+    bias_guard: dict[str, Any] | None,
+) -> dict[str, Any]:
+    decision: dict[str, Any] = {
+        "source_availability_present": source_availability is not None,
+        "edge_score_present": edge_score is not None,
+        "cost_aware_rows_present": rows_v2 is not None,
+        "bias_guard_present": bias_guard is not None,
+        "next_command": "collect_missing_profit_readiness_artifacts",
+        "stop_reasons": [],
+        "known_gaps": [],
+    }
+    stop_reasons: list[str] = []
+    known_gaps: list[str] = []
+    if source_availability is not None:
+        decision["can_compute_cost_adjusted_estimate"] = source_availability.get(
+            "can_compute_cost_adjusted_estimate"
+        )
+        decision["can_compute_actual_cash"] = source_availability.get("can_compute_actual_cash")
+        known_gaps.extend(str(gap) for gap in source_availability.get("known_gaps") or [])
+    if edge_score is not None:
+        selected = str(edge_score.get("selected_action") or "UNKNOWN")
+        decision["edge_selected_action"] = selected
+        decision["why_no_trade"] = edge_score.get("why_no_trade") or []
+        known_gaps.extend(str(gap) for gap in edge_score.get("known_gaps") or [])
+        if selected in {"UNKNOWN", "NO_TRADE"}:
+            stop_reasons.append(f"EDGE_SELECTED_{selected}")
+    if rows_v2 is not None:
+        row_summary = rows_v2.get("summary") or {}
+        decision["leader_action_estimate"] = row_summary.get("leader_action")
+        decision["leader_cost_adjusted_cash_estimate_usd"] = row_summary.get(
+            "leader_cost_adjusted_cash_estimate_usd"
+        )
+        decision["no_trade_cost_adjusted_cash_estimate_usd"] = row_summary.get(
+            "no_trade_cost_adjusted_cash_estimate_usd"
+        )
+        decision["leader_beats_no_trade"] = row_summary.get("leader_beats_no_trade")
+        known_gaps.extend(str(gap) for gap in rows_v2.get("known_gaps") or [])
+        if row_summary.get("leader_beats_no_trade") is not True:
+            stop_reasons.append("NO_ACTION_ESTIMATE_BEATS_NO_TRADE")
+    if bias_guard is not None:
+        decision["bias_guard_status"] = bias_guard.get("guard_status")
+        decision["pbo_status"] = bias_guard.get("pbo_status")
+        stop_reasons.extend(str(reason) for reason in bias_guard.get("stop_reasons") or [])
+        known_gaps.extend(str(gap) for gap in bias_guard.get("known_gaps") or [])
+    if not stop_reasons and rows_v2 is not None and bias_guard is not None:
+        decision["next_command"] = "uv run sis crypto-perp-tiny-live-shadow --account <account_snapshot.json> --order-preview <order_preview.json> --out <shadow-dir>"
+    decision["stop_reasons"] = list(dict.fromkeys(stop_reasons))
+    decision["known_gaps"] = list(dict.fromkeys(known_gaps))
+    return decision
 
 
 def _missing_path_stop_reasons(stages: list[TruthCycleStage]) -> list[str]:
@@ -454,6 +511,10 @@ def build_truth_cycle_status(
     rows_preview_path: Path | None = None,
     tournament_report_path: Path | None = None,
     tournament_gate_path: Path | None = None,
+    source_availability_path: Path | None = None,
+    edge_score_path: Path | None = None,
+    rows_v2_path: Path | None = None,
+    bias_guard_path: Path | None = None,
     producer_command: str = "crypto-perp-truth-cycle-status",
 ) -> CryptoPerpTruthCycleStatus:
     probe_audit, _ = _load_json(probe_audit_path)
@@ -464,6 +525,10 @@ def build_truth_cycle_status(
     rows_preview, _ = _load_json(rows_preview_path)
     tournament_report, _ = _load_json(tournament_report_path)
     tournament_gate, _ = _load_json(tournament_gate_path)
+    source_availability, _ = _load_json(source_availability_path)
+    edge_score, _ = _load_json(edge_score_path)
+    rows_v2, _ = _load_json(rows_v2_path)
+    bias_guard, _ = _load_json(bias_guard_path)
     cycle_status, next_command, stop_reasons = _status_and_next(
         probe_audit=probe_audit,
         raw_refresh=raw_refresh,
@@ -484,10 +549,32 @@ def build_truth_cycle_status(
         _stage("tournament_report", tournament_report_path, tournament_report),
         _stage("tournament_gate", tournament_gate_path, tournament_gate),
     ]
-    known_gaps = _known_gaps(
-        probe_audit, raw_refresh, rows_preview, tournament_report, tournament_gate
+    operator_decision = _operator_decision(
+        source_availability=source_availability,
+        edge_score=edge_score,
+        rows_v2=rows_v2,
+        bias_guard=bias_guard,
     )
-    stop_reasons = list(dict.fromkeys([*_missing_path_stop_reasons(stages), *stop_reasons]))
+    known_gaps = _known_gaps(
+        probe_audit,
+        raw_refresh,
+        rows_preview,
+        tournament_report,
+        tournament_gate,
+        source_availability,
+        edge_score,
+        rows_v2,
+        bias_guard,
+    )
+    stop_reasons = list(
+        dict.fromkeys(
+            [
+                *_missing_path_stop_reasons(stages),
+                *stop_reasons,
+                *operator_decision.get("stop_reasons", []),
+            ]
+        )
+    )
     summary = {
         "cycle_status": cycle_status,
         "human_summary": _human_summary(cycle_status, stop_reasons),
@@ -497,6 +584,7 @@ def build_truth_cycle_status(
         ),
         "known_gap_count": len(known_gaps),
         "stop_reason_count": len(stop_reasons),
+        "operator_decision_stop_reason_count": len(operator_decision.get("stop_reasons", [])),
     }
     next_steps = _next_steps(
         cycle_status=cycle_status,
@@ -529,6 +617,7 @@ def build_truth_cycle_status(
         stop_reasons=stop_reasons,
         stages=stages,
         stage_checklist=stage_checklist,
+        operator_decision=operator_decision,
         known_gaps=known_gaps,
         summary=summary,
     )
