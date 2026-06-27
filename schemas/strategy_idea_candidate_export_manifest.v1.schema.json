@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_idea_candidate_export_manifest.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "created_at",
+    "producer",
+    "candidate_set_id",
+    "candidate_set_path",
+    "candidate_set_sha256",
+    "exported_ideas",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_idea_candidate_export_manifest.v1"},
+    "manifest_id": {"$ref": "#/$defs/id"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "candidate_set_id": {"$ref": "#/$defs/id"},
+    "candidate_set_path": {"type": "string", "minLength": 1},
+    "candidate_set_sha256": {"$ref": "#/$defs/sha256"},
+    "exported_ideas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/exported_idea"}
+    },
+    "boundary": {"$ref": "#/$defs/candidate_boundary"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "producer": {
+      "type": "object",
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "exported_idea": {
+      "type": "object",
+      "required": [
+        "idea_candidate_id",
+        "strategy_idea_path",
+        "strategy_idea_sha256",
+        "export_decision"
+      ],
+      "properties": {
+        "idea_candidate_id": {"$ref": "#/$defs/id"},
+        "strategy_idea_path": {"type": "string", "minLength": 1},
+        "strategy_idea_sha256": {"$ref": "#/$defs/sha256"},
+        "export_decision": {"const": "SHORTLISTED"}
+      },
+      "additionalProperties": false
+    },
+    "candidate_boundary": {
+      "type": "object",
+      "required": [
+        "permits_live_order",
+        "permits_paper_candidate",
+        "permits_paper_intent_preview",
+        "auto_promote",
+        "generated_strategy_idea_is_final",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {"const": false},
+        "permits_paper_candidate": {"const": false},
+        "permits_paper_intent_preview": {"const": false},
+        "auto_promote": {"const": false},
+        "generated_strategy_idea_is_final": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
