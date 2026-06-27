@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:38 JST
-更新日: 2026-06-27_11:38 JST
+更新日: 2026-06-27_11:47 JST
 -->
 
 # Strategy Idea Candidate Goal And Glossary
@@ -9,7 +9,7 @@
 
 現在の最終ゴールは、入力証跡つきの未検証 strategy idea candidate を生成し、探索全量と棄却理由を保存し、shortlist だけを既存 `strategy_idea.v1` draft と sidecar manifest に分けて次の gate へ渡せる candidate generation pipeline を作ることです。
 
-ただし、次に実装するゴールは最終ゴール全体ではない。次のゴールは C4 `Deterministic Candidate Generator v0` です。
+ただし、次に実装するゴールは最終ゴール全体ではない。C4 `Deterministic Candidate Generator v0` は Python API と focused tests まで実装済みです。
 
 ## Fixed Vocabulary
 
@@ -74,10 +74,10 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 - C2: input evidence bridge。
 - C3: canonical JSON / Markdown writer。
 - C8: shortlist export と sidecar manifest。
+- C4: deterministic generator Python API。fixed family、finite parameter grid、candidate cap、duplicate rejection、parameter grid hash を保存する。
 
 未完了:
 
-- C4: deterministic generator。
 - C5: split engine。現状は policy record まで。
 - C6: selection-adjusted metrics。現状は `NOT_IMPLEMENTED` 表示まで。
 - C9: Strategy Lab / backtest bridge。
@@ -86,18 +86,13 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 
 ## Next Goal
 
-C4 `Deterministic Candidate Generator v0` の正確なゴール:
+C5 以降の前に残っている正確なゴール:
 
-`PASS` 済み input evidence と generator config を受け取り、fixed candidate family、finite parameter grid、candidate cap、duplicate rejection rule から、同じ入力で同じ `strategy_idea_candidate_set.v1` を生成する Python API を実装する。
+C4 で生成した `strategy_idea_candidate_set.v1` を前提に、split / leakage / purge / embargo policy record をより検証可能な bridge へ進め、selection-adjusted metrics は未実装なら `NOT_IMPLEMENTED` のまま誤読されないようにする。
 
 完了条件:
 
-- `trend_momentum`、`volatility_regime`、`liquidity_spread`、`cross_sectional_rank`、`mean_reversion` の family templates がある。
-- `regime_filter` は standalone candidate ではなく filter metadata として扱う。
-- parameter grid は artifact に保存され、`parameter_grid_hash` が安定する。
-- candidate cap を超える候補は `REJECTED` と `rejection_reason` つきで inventory に残るか、cap 前に探索対象外として summary に明示される。
-- duplicate / near-duplicate は silent drop せず、`duplicate_rejection_count` と rejection reason に残る。
-- generator output は `write_strategy_idea_candidate_set` で canonical JSON / Markdown にできる。
+- C4 generator output は `write_strategy_idea_candidate_set` で canonical JSON / Markdown にできる。
 - `strategy_idea.v1` export は既存 sidecar manifest 方式を維持する。
 - external API、LLM、new dependency、paper/live execution は使わない。
 

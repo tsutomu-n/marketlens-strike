@@ -184,7 +184,9 @@ def build_deterministic_candidate_set_from_input_evidence(
         for parameter_set in grid:
             trial_index += 1
             candidate_id = f"cand-{trial_index:03d}-{family.value}"
-            duplicate_key = _canonical_json({"family": family.value, "parameter_set": parameter_set})
+            duplicate_key = _canonical_json(
+                {"family": family.value, "parameter_set": parameter_set}
+            )
             signal_expression = _signal_expression(family, parameter_set)
             if duplicate_key in seen_parameter_sets:
                 duplicate_rejection_count += 1
@@ -362,10 +364,7 @@ def _source_artifacts_from_input_evidence(
     artifacts: list[CandidateSourceArtifact] = []
     for source in contract.sources:
         result = validation_by_source.get(source.source_id)
-        sha256 = (
-            (result.actual_sha256 if result is not None else None)
-            or source.declared_sha256
-        )
+        sha256 = (result.actual_sha256 if result is not None else None) or source.declared_sha256
         if sha256 is None:
             raise StrategyIdeaCandidateGeneratorError(
                 f"PASS input evidence is missing source hash: {source.source_id}"

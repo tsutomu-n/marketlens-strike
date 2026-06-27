@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_10:59 JST
-更新日: 2026-06-27_11:38 JST
+更新日: 2026-06-27_11:47 JST
 -->
 
 # Strategy Idea Candidate Pipeline Checkpoints 2026-06-27
@@ -41,16 +41,16 @@
 
 ## 実装状況
 
-2026-06-27_11:27 JST 時点で、fixture-level の C1 / C2 / C3 / C8 slice は実装済みです。
+2026-06-27_11:47 JST 時点で、fixture-level の C1 / C2 / C3 / C4 / C8 slice は実装済みです。
 
 - C1: `strategy_idea_candidate_set.v1` JSON Schema、Pydantic models、Python validation、fixture tests。
 - C2: input contract validation refs と source path / hash / status / available-at / max observed timestamp summary。
 - C3: canonical JSON と Markdown writer。JSONL / CSV は generator が実データ行を出す checkpoint まで未実装。
+- C4: deterministic generator Python API。fixed family、finite parameter grid、candidate cap、duplicate rejection、parameter grid hash を保存する。
 - C8: shortlist の strict `strategy_idea.v1` draft export と `strategy_idea_candidate_export_manifest.v1` sidecar。`strategy_idea.v1` schema は拡張していない。
 
 未実装:
 
-- C4 deterministic generator。
 - C5 split engine。現時点では policy record の保存まで。
 - C6 selection-adjusted metrics。未実装時は `NOT_IMPLEMENTED`。
 - C9 Strategy Lab / backtest bridge。
@@ -83,14 +83,14 @@
 2. C1: P0A artifact contract を作る。
 3. C2: input evidence bridge を作る。
 4. C3: artifact writer を作る。
-5. C4: deterministic generator を作る。
+5. C4: deterministic generator Python API を作る。
 6. C5: split and leakage policy を作る。
 7. C8: intake export を作る。
 8. C10: operator review surface を作る。
 9. C9: Strategy Lab / backtest bridge を作る。
 10. C11: fixture E2E を通す。
 
-C6 は C4-C5 の間か C5 後に入れる。C7 と C12 は後回しでよい。C10 は C8 の直後、C9 の前に置く。
+C4 は Python API と focused tests まで実装済み。C6 は C5 の前後で扱う。C7 と C12 は後回しでよい。C10 は C8 の直後、C9 の前に置く。
 
 ## Checkpoint Details
 
@@ -195,9 +195,9 @@ Python validation で落とすもの:
 - trend / momentum
 - volatility expansion / compression
 - liquidity / spread
-- regime filter
 - cross-sectional rank
 - mean reversion
+- regime filter metadata only; standalone candidate にはしない
 
 完了条件:
 
@@ -205,6 +205,7 @@ Python validation で落とすもの:
 - candidate cap がある。
 - raw metric は raw と明記する。
 - duplicate / near-duplicate candidate の rejection reason が残る。
+- `regime_filter` は standalone candidate にしない。
 - LLM は使わない。
 - broad TA indicator library は使わない。
 
@@ -312,7 +313,7 @@ Python validation で落とすもの:
 - C1: ready with assumptions
 - C2: ready after C1 field shape is fixed
 - C3: ready after C1-C2
-- C4: ready after C3
+- C4: implemented as Python API with focused tests
 - C5: ready after C4
 - C6: ready after C4-C5
 - C7: not now

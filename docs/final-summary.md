@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-27_11:32 JST
+更新日: 2026-06-27_11:47 JST
 -->
 
 # Final Summary
 
 ## Goal
 
-Implement the first safe slice of the Strategy Idea Candidate Generation Pipeline: candidate-set contract, Python validation, deterministic JSON/Markdown writer, input-evidence blocking, shortlist export sidecar, docs, and focused tests.
+Implement the first safe slices of the Strategy Idea Candidate Generation Pipeline: candidate-set contract, Python validation, C4 deterministic generator Python API, deterministic JSON/Markdown writer, input-evidence blocking, shortlist export sidecar, docs, and focused tests.
 
 ## Branch
 
@@ -19,6 +19,8 @@ Implement the first safe slice of the Strategy Idea Candidate Generation Pipelin
 - Added `strategy_idea_candidate_export_manifest.v1` sidecar manifest schema and models.
 - Added validation for count mismatch, selected/rejected ID mismatch, selected-only inventory, non-PASS input evidence, missing source summaries, sealed-test selection, and paper/live/auto-promote/final boundary flags.
 - Added deterministic candidate-set JSON/Markdown writer.
+- Added C4 deterministic generator Python API with fixed family IDs, finite parameter grids, stable `parameter_grid_hash`, candidate cap recording, duplicate rejection recording, and full candidate inventory.
+- Added `parameter_grids`, `candidate_cap`, and `cap_rejection_count` to `strategy_idea_candidate_set.v1`.
 - Added blocked input-evidence candidate set builder for non-PASS input contract validation.
 - Added shortlist export to strict `strategy_idea.v1` draft JSON while keeping candidate set path/hash in the sidecar manifest.
 - Added tests for schema validation, Python invariant validation, writer determinism, export, and intake validation integration.
@@ -31,6 +33,8 @@ Implement the first safe slice of the Strategy Idea Candidate Generation Pipelin
 - `src/sis/strategy_idea_candidates/`
 - `tests/strategy_idea_candidates/`
 - `docs/strategy_idea_candidates/README.md`
+- `docs/strategy_idea_candidates/GOAL_AND_GLOSSARY.md`
+- `docs/plans/strategy_idea_candidates_c4_generator_2026-06-27.md`
 - `docs/plans/strategy_idea_candidates_p0a_c2_c3_c8_2026-06-27.md`
 - `docs/STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md`
 - `README.md`
@@ -53,7 +57,6 @@ None for this slice.
 
 ## Remaining Work
 
-- C4 deterministic generator.
 - JSONL / CSV search ledger rows after generator output exists.
 - C5 split engine beyond policy records.
 - C6 selection-adjusted metrics beyond `NOT_IMPLEMENTED`.
@@ -87,4 +90,4 @@ Revert the new `strategy_idea_candidates` package, candidate schemas, tests, doc
 
 ## Next Considerations
 
-Start C4 only after agreeing on deterministic family templates, candidate cap, parameter grid shape, and duplicate rejection reason vocabulary.
+Start C5/C6 only after reviewing whether policy-record-only split/leakage fields are sufficient for the next bridge.

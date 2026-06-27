@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-06-27_11:38 JST
+更新日: 2026-06-27_11:47 JST
 -->
 
 # Strategy Idea Candidates
@@ -9,9 +9,9 @@
 
 `strategy_idea_candidates` は、既存 `strategy_idea.v1` に渡す前の未検証候補を保存する pre-intake artifact です。
 
-この実装で使えるのは、candidate set contract、Python validation、canonical JSON / Markdown writer、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から候補を掘る generator、JSONL / CSV ledger、public CLI、paper / live permission はまだありません。
+この実装で使えるのは、candidate set contract、Python validation、C4 deterministic generator Python API、canonical JSON / Markdown writer、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から alpha を掘る evaluator、JSONL / CSV ledger、public CLI、paper / live permission はまだありません。
 
-用語、family ID、最終ゴール、次の C4 goal は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
+用語、family ID、最終ゴール、次の未完了 scope は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
 
 ## 実装済み artifact
 
@@ -27,6 +27,9 @@
 - candidate-level `decision` を `SHORTLISTED` と `REJECTED` に分ける。
 - count mismatch、selected / rejected ID mismatch、selected-only inventory、sealed test selection、paper / live / auto-promote / final flag を Python validation で落とす。
 - same input から deterministic な `strategy_idea_candidate_set.json` と `strategy_idea_candidate_set.md` を出す。
+- `trend_momentum`、`volatility_regime`、`liquidity_spread`、`cross_sectional_rank`、`mean_reversion` の fixed family と finite parameter grid から candidate inventory を作る。
+- `parameter_grids`、stable `parameter_grid_hash`、`candidate_cap`、`cap_rejection_count`、`duplicate_rejection_count` を candidate set に保存する。
+- duplicate / cap 超過 candidate を silent drop せず、`REJECTED` と `rejection_reason` つきで inventory に残す。
 - shortlist だけを strict `strategy_idea.v1` draft に export し、candidate set path / hash は sidecar manifest に置く。
 
 ## 境界
@@ -41,7 +44,11 @@
 ## Python API
 
 ```python
-from sis.strategy_idea_candidates.models import StrategyIdeaCandidateSet
+from sis.strategy_idea_candidates.generator import (
+    CandidateFamilyId,
+    StrategyIdeaCandidateGeneratorConfig,
+    build_deterministic_candidate_set_from_input_evidence,
+)
 from sis.strategy_idea_candidates.service import (
     build_blocked_candidate_set_from_input_evidence,
     write_strategy_idea_candidate_set,

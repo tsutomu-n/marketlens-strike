@@ -33,10 +33,10 @@ def render_strategy_idea_candidate_set_markdown(candidate_set: StrategyIdeaCandi
     lines.extend(
         [
             "",
-        "## Input Contract Validation",
-        "",
-        "| contract_id | validation_status | validation_path | validation_sha256 |",
-        "|---|---|---|---|",
+            "## Input Contract Validation",
+            "",
+            "| contract_id | validation_status | validation_path | validation_sha256 |",
+            "|---|---|---|---|",
         ]
     )
     for ref in candidate_set.input_contract_validation_refs:
