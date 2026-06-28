@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-06-27_14:51 JST
+更新日: 2026-06-28_09:19 JST
 -->
 
 # Strategy Idea Candidates
@@ -9,7 +9,7 @@
 
 `strategy_idea_candidates` は、既存 `strategy_idea.v1` に渡す前の未検証候補を保存する pre-intake artifact です。
 
-この実装で使えるのは、candidate set contract、Python validation、C4 deterministic generator Python API、C5 split / leakage policy validation API、C6 metric disclosure in reports、C10 operator review Markdown surface、C11 fixture E2E、canonical JSON / Markdown writer、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から alpha を掘る evaluator、JSONL / CSV ledger、public CLI、paper / live permission はまだありません。
+この実装で使えるのは、candidate set contract、Python validation、deterministic generator Python API、Bitget USDT-FUTURES 前提の `crypto-perp-risk-taker` profile、split / leakage policy validation API、Perp shortlist constraint validation、metric disclosure、operator review Markdown surface、fixture E2E、canonical JSON / Markdown writer、JSONL search ledger、public CLI、manual AI packet/import、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から alpha を掘る evaluator、selection-adjusted metrics engine、paper / live permission はまだありません。
 
 現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring / backtest / Strategy Review への C9 bridge は未実装であり、自動変換や backtest 実行準備を完了したとは扱いません。
 
@@ -20,6 +20,7 @@
 - `schemas/strategy_idea_candidate_set.v1.schema.json`
 - `schemas/strategy_idea_candidate_export_manifest.v1.schema.json`
 - `src/sis/strategy_idea_candidates/`
+- `src/sis/commands/strategy_idea_candidates.py`
 - `tests/strategy_idea_candidates/`
 
 ## 役割
@@ -38,14 +39,20 @@
 - operator review Markdown に探索量、棄却理由、selection policy、known gaps、policy validation、false boundary を出す。
 - fixture で input evidence から candidate set、policy validation、operator review、shortlist export、intake validation まで通す。
 - shortlist だけを strict `strategy_idea.v1` draft に export し、candidate set path / hash は sidecar manifest に置く。
+- `strategy-idea-candidates-build` で candidate set、operator review、search ledger JSONL、任意の shortlist export manifest を作る。
+- `crypto-perp-risk-taker` profile では Bitget `USDT-FUTURES`、isolated margin、USDT margin coin、leverage modeling cap 3x を既定にする。
+- Perp shortlisted candidate は `side_bias`、funding assumption、fee model ref、slippage model ref、liquidation buffer、max notional、max daily loss、kill conditions を `parameter_set` に持つ必要がある。
+- `strategy-idea-candidates-ai-packet-build` は外部 API を呼ばず、candidate set / ledger summary / Perp constraints を manual AI 用 packet にする。
+- `strategy-idea-candidates-ai-import` は manual AI response を検証し、AI候補を `source_kind=ai_generated`、`UNVERIFIED_CANDIDATE`、human shortlist required として取り込む。
 
 ## 境界
 
-- public CLI はまだありません。
 - `strategy_idea.v1` schema は拡張していません。
 - `strategy_idea_candidate_set.v1` は alpha proof、paper readiness、live readiness、注文許可ではありません。
 - `BLOCKED_INPUT_EVIDENCE` は候補生成を止めた証跡です。候補生成の成功 artifact ではありません。
-- JSONL / CSV の search ledger や metrics row output は、実 generator が行単位の探索結果を出す checkpoint まで追加しません。
+- JSONL search ledger は candidate generation の全候補 row を保存する sidecar です。raw metric や AI score を proof として扱いません。
+- AI packet/import は local/manual だけです。repo 内から AI / LLM API へ送信しません。
+- `crypto-perp-risk-taker` は quick validation estimate までの候補生成 profile であり、wallet、signing、exchange write、live order を許可しません。
 - dependency は追加していません。
 
 ## Python API
@@ -65,6 +72,28 @@ from sis.strategy_idea_candidates.service import (
     write_strategy_idea_candidate_set,
 )
 from sis.strategy_idea_candidates.export import export_shortlisted_strategy_ideas
+```
+
+## CLI
+
+```bash
+uv run sis strategy-idea-candidates-build \
+  --contract data/strategy_inputs/btc_perp/strategy_input_contract.json \
+  --validation data/strategy_inputs/btc_perp/strategy_input_contract_validation.json \
+  --profile crypto-perp-risk-taker \
+  --candidate-cap 250 \
+  --shortlist-count 10 \
+  --out data/strategy_idea_candidates/btc-perp
+
+uv run sis strategy-idea-candidates-ai-packet-build \
+  --candidate-set data/strategy_idea_candidates/btc-perp/strategy_idea_candidate_set.json \
+  --ledger data/strategy_idea_candidates/btc-perp/search_ledger.jsonl \
+  --out data/strategy_idea_candidates/btc-perp/ai_packet
+
+uv run sis strategy-idea-candidates-ai-import \
+  --packet data/strategy_idea_candidates/btc-perp/ai_packet/ai_candidate_packet.json \
+  --response data/strategy_idea_candidates/btc-perp/manual_ai_response.json \
+  --out data/strategy_idea_candidates/btc-perp/ai_import
 ```
 
 ## 検証

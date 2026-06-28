@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-28_09:04 JST
-更新日: 2026-06-28_09:04 JST
+更新日: 2026-06-28_09:19 JST
 -->
 
 # Perp Hypothesis Factory Implementation Plan
@@ -73,6 +73,19 @@ CP1-CP4
 - default Perp run が candidate set JSON/MD、operator review、search ledger JSONL、任意の export manifest を出す。
 - 全 candidate は `UNVERIFIED_CANDIDATE` で、selection-adjusted metrics は未実装なら `NOT_IMPLEMENTED` と明記される。
 - preview / estimate rows は actual-cash tournament report へ入らない。
+
+## 完了結果
+
+2026-06-28_09:19 JST 時点で CP1-CP4 は完了。CLI、Perp profile、search ledger、manual AI packet/import、docs update、focused verification まで実施済み。
+
+確認済み:
+
+- `uv run pytest tests/strategy_idea_candidates -q`
+- `uv run pytest tests/strategy_idea_candidates tests/strategy_ai_review tests/crypto_perp -q`
+- `uv run ruff check src/sis/commands/strategy_idea_candidates.py src/sis/strategy_idea_candidates tests/strategy_idea_candidates tests/crypto_perp/test_tournament_rows.py`
+- `uv run python scripts/check_current_docs.py`
+- `uv run python scripts/check_cli_catalog.py`
+- `git diff --check`
 
 ## 失敗条件
 

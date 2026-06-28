@@ -16,7 +16,9 @@ from sis.strategy_inputs.models import StrategyInputContract, StrategyInputContr
 from .fixtures import valid_input_contract_payload, valid_input_validation_payload
 
 
-def _input_evidence(tmp_path: Path) -> tuple[StrategyInputContract, StrategyInputContractValidation, Path]:
+def _input_evidence(
+    tmp_path: Path,
+) -> tuple[StrategyInputContract, StrategyInputContractValidation, Path]:
     source = tmp_path / "data/research/crypto_perp/source/BTCUSDT_15m.csv"
     source.parent.mkdir(parents=True, exist_ok=True)
     source.write_text("ts,mark,index,spread_bps\n2026-06-17T21:00:00Z,100,99,2\n", encoding="utf-8")
@@ -34,7 +36,9 @@ def _input_evidence(tmp_path: Path) -> tuple[StrategyInputContract, StrategyInpu
     validation_payload["source_results"][0]["source_id"] = "btc_usdt_perp_features"
     validation_payload["source_results"][0]["actual_sha256"] = source_hash
     validation_payload["source_results"][0]["declared_sha256"] = source_hash
-    validation_path = tmp_path / "data/strategy_inputs/btc_perp/strategy_input_contract_validation.json"
+    validation_path = (
+        tmp_path / "data/strategy_inputs/btc_perp/strategy_input_contract_validation.json"
+    )
     write_json_artifact(validation_path, validation_payload)
 
     return (
@@ -69,7 +73,24 @@ def _config() -> StrategyIdeaCandidateGeneratorConfig:
                     "max_position_notional_usd": 100,
                     "max_daily_loss_usd": 25,
                     "kill_conditions": ["spread_bps_gt_15"],
-                }
+                },
+                {
+                    "side_bias": "short",
+                    "lookback": 24,
+                    "breakout_z": 1.3,
+                    "venue": "bitget",
+                    "product_type": "USDT-FUTURES",
+                    "margin_mode": "isolated",
+                    "margin_coin": "USDT",
+                    "leverage": 2,
+                    "funding_assumption": "funding paid or received during hold is modeled",
+                    "fee_model_ref": "bitget_usdt_futures_taker_fee_estimate",
+                    "slippage_model_ref": "bps_stress_model",
+                    "liquidation_buffer_bps": 3000,
+                    "max_position_notional_usd": 100,
+                    "max_daily_loss_usd": 25,
+                    "kill_conditions": ["spread_bps_gt_15"],
+                },
             ]
         },
         label_window={

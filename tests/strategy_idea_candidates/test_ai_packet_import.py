@@ -113,9 +113,7 @@ def test_ai_packet_excludes_sensitive_and_exchange_write_fields(
     assert "exchange-write" not in combined
 
 
-def test_ai_import_records_ai_generated_candidates_and_ledger(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_ai_import_records_ai_generated_candidates_and_ledger(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     packet_path = _build_packet(tmp_path)
     packet = json.loads(packet_path.read_text(encoding="utf-8"))
@@ -141,7 +139,8 @@ def test_ai_import_records_ai_generated_candidates_and_ledger(
     assert result.exit_code == 0, result.stdout
     assert "status=pass" in result.stdout
     imported_path = (
-        tmp_path / "data/strategy_idea_candidates/btc-perp/ai_import/strategy_idea_candidate_set.json"
+        tmp_path
+        / "data/strategy_idea_candidates/btc-perp/ai_import/strategy_idea_candidate_set.json"
     )
     ledger_path = tmp_path / "data/strategy_idea_candidates/btc-perp/ai_import/search_ledger.jsonl"
     payload = json.loads(imported_path.read_text(encoding="utf-8"))
@@ -174,9 +173,7 @@ def test_ai_import_records_ai_generated_candidates_and_ledger(
             "liquidation_buffer_bps",
         ),
         (
-            lambda response: response["candidates"][0].__setitem__(
-                "permits_live_order", True
-            ),
+            lambda response: response["candidates"][0].__setitem__("permits_live_order", True),
             "live permission",
         ),
     ],

@@ -79,9 +79,7 @@ def write_strategy_idea_candidate_search_ledger(
 ) -> StrategyIdeaCandidateLedgerWriteResult:
     ledger_path = out_dir / "search_ledger.jsonl"
     if ledger_path.exists() and not replace_existing:
-        raise StrategyIdeaCandidateLedgerOutputExistsError(
-            f"output already exists: {ledger_path}"
-        )
+        raise StrategyIdeaCandidateLedgerOutputExistsError(f"output already exists: {ledger_path}")
     rows = search_ledger_rows_from_candidate_set(
         candidate_set=candidate_set,
         source_kind=source_kind,

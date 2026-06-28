@@ -21,7 +21,6 @@ from sis.strategy_idea_candidates.ledger import (
 )
 from sis.strategy_idea_candidates.models import (
     CandidateDecision,
-    CandidateSetStatus,
     SearchLedgerSummary,
     SelectionAdjustedMetricsStatus,
     SelectionPolicy,
@@ -113,9 +112,7 @@ def _candidate_summary(candidate: StrategyIdeaCandidate) -> dict[str, Any]:
         "side_bias": candidate.parameter_set.get("side_bias"),
         "product_type": candidate.parameter_set.get("product_type"),
         "parameter_set_hash": parameter_set_hash(candidate.parameter_set),
-        "selection_adjusted_metrics_status": (
-            candidate.selection_adjusted_metrics_status.value
-        ),
+        "selection_adjusted_metrics_status": (candidate.selection_adjusted_metrics_status.value),
     }
 
 
@@ -240,7 +237,9 @@ def import_ai_candidate_response(
 ) -> StrategyIdeaCandidateAIImportResult:
     packet = _read_json_object_with_message(packet_path)
     if packet.get("schema_version") != AI_PACKET_SCHEMA_VERSION:
-        raise StrategyIdeaCandidateAIError("packet schema_version must be strategy_idea_candidates_ai_packet.v1")
+        raise StrategyIdeaCandidateAIError(
+            "packet schema_version must be strategy_idea_candidates_ai_packet.v1"
+        )
     response = _read_json_object_with_message(response_path)
     prompt_hash = response.get("prompt_hash")
     if not isinstance(prompt_hash, str) or not prompt_hash.strip():
@@ -431,7 +430,10 @@ def _candidate_from_ai_response(
             hypothesis_template=_required_text(raw_candidate, "hypothesis_template"),
             mechanism_status="UNVERIFIED_AI_GENERATED",
             signal_expression=_required_text(raw_candidate, "signal_expression"),
-            parameter_set={**parameter_set, "side_bias": raw_candidate.get("side_bias") or parameter_set.get("side_bias")},
+            parameter_set={
+                **parameter_set,
+                "side_bias": raw_candidate.get("side_bias") or parameter_set.get("side_bias"),
+            },
             parameter_grid_ref=f"ai:{input_hash}",
             target_definition=template.target_definition,
             prediction_horizon=template.prediction_horizon,
@@ -439,7 +441,9 @@ def _candidate_from_ai_response(
             instruments=template.instruments,
             label_window=template.label_window,
             feature_observation_window=template.feature_observation_window,
-            feature_columns_used=_feature_columns_from_ai(raw_candidate, template.feature_columns_used),
+            feature_columns_used=_feature_columns_from_ai(
+                raw_candidate, template.feature_columns_used
+            ),
             available_at_policy=template.available_at_policy,
             source_artifact_sha256=template.source_artifact_sha256,
             trial_count_refs=[f"ai-trial-{trial_index:03d}"],
@@ -511,14 +515,18 @@ def _reject_live_permission_claims(payload: Any) -> None:
     if isinstance(payload, dict):
         for key, value in payload.items():
             lowered = str(key).lower()
-            if lowered in {
-                "permits_live_order",
-                "live_order_submitted",
-                "live_allowed",
-                "wallet_used",
-                "signing_used",
-                "exchange_write_used",
-            } and value is not False:
+            if (
+                lowered
+                in {
+                    "permits_live_order",
+                    "live_order_submitted",
+                    "live_allowed",
+                    "wallet_used",
+                    "signing_used",
+                    "exchange_write_used",
+                }
+                and value is not False
+            ):
                 raise StrategyIdeaCandidateAIError("AI response contains live permission claim")
             _reject_live_permission_claims(value)
     elif isinstance(payload, list):

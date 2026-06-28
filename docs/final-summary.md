@@ -1,9 +1,71 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_08:26 JST
+更新日: 2026-06-28_09:19 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Perp Hypothesis Factory
+
+Completed on branch `ai/perp-hypothesis-factory-20260628-0904`.
+
+Achieved:
+
+- Added `strategy-idea-candidates-build`, `strategy-idea-candidates-ai-packet-build`, and `strategy-idea-candidates-ai-import` public CLI surfaces.
+- Added Bitget USDT-FUTURES `crypto-perp-risk-taker` generation flow with isolated margin, USDT margin coin, leverage cap 3x, funding / fee / slippage / liquidation buffer metadata, and Perp shortlist constraints.
+- Added JSONL search ledger output for all candidate decisions, including rejected, cap-exceeded, duplicate, and AI-imported candidate rows.
+- Added local/manual AI packet and import flow. It does not call an AI API, and imported AI candidates remain `UNVERIFIED_CANDIDATE` requiring human shortlist.
+- Preserved the strict `strategy_idea.v1` boundary and existing sidecar manifest export. Candidate provenance remains outside the strategy idea draft.
+- Added regression coverage that `crypto-perp-tournament-report` keeps rejecting preview / estimate rows as non-actual-cash evidence.
+
+Main files changed:
+
+- `src/sis/commands/strategy_idea_candidates.py`
+- `src/sis/cli.py`
+- `src/sis/strategy_idea_candidates/generator.py`
+- `src/sis/strategy_idea_candidates/policies.py`
+- `src/sis/strategy_idea_candidates/ai.py`
+- `src/sis/strategy_idea_candidates/ledger.py`
+- `tests/strategy_idea_candidates/`
+- `tests/crypto_perp/test_tournament_rows.py`
+- `docs/strategy_idea_candidates/README.md`
+- `docs/strategy_idea_candidates/GOAL_AND_GLOSSARY.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+
+Verification:
+
+- `uv run pytest tests/strategy_idea_candidates -q` -> 39 passed.
+- `uv run pytest tests/strategy_idea_candidates tests/strategy_ai_review tests/crypto_perp -q` -> 241 passed.
+- `uv run ruff check src/sis/commands/strategy_idea_candidates.py src/sis/strategy_idea_candidates tests/strategy_idea_candidates tests/crypto_perp/test_tournament_rows.py` -> passed.
+- `uv run python scripts/check_current_docs.py` -> checked 171 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 227 public CLI commands.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+- Selection-adjusted metrics engine remains unimplemented and is still recorded as `NOT_IMPLEMENTED`.
+- Real Perp funding / fee / slippage / liquidation evaluator remains outside this slice.
+- Strategy Lab / backtest full bridge remains outside this slice.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required. Existing candidate set / strategy idea schemas remain compatible.
+
+Rollback:
+
+Remove `src/sis/commands/strategy_idea_candidates.py`, unregister the commands from `src/sis/cli.py`, and revert the strategy idea candidate AI / ledger / Perp profile changes plus related docs and tests.
 
 ## Latest Addendum: Crypto Perp Plan Archive
 

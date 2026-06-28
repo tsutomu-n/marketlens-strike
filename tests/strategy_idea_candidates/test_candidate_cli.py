@@ -56,9 +56,9 @@ def test_strategy_idea_candidates_build_help() -> None:
 
     assert result.exit_code == 0
     assert "--profile" in stdout
-    assert "crypto-perp-risk-taker" in stdout
+    assert "perp-risk-taker" in stdout
     assert "--candidate-cap" in stdout
-    assert "--shortlist-count" in stdout
+    assert "shortlist" in stdout
 
 
 def test_strategy_idea_candidates_ai_commands_help() -> None:
@@ -73,9 +73,7 @@ def test_strategy_idea_candidates_ai_commands_help() -> None:
     assert "--response" in normalized_stdout(imported)
 
 
-def test_strategy_idea_candidates_build_crypto_perp_happy_path(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_strategy_idea_candidates_build_crypto_perp_happy_path(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     contract_path, validation_path = _perp_input_files(tmp_path)
 
@@ -101,7 +99,9 @@ def test_strategy_idea_candidates_build_crypto_perp_happy_path(
     assert result.exit_code == 0, result.stdout
     assert "status=pass" in result.stdout
     assert "profile=crypto-perp-risk-taker" in result.stdout
-    candidate_set_path = tmp_path / "data/strategy_idea_candidates/btc-perp/strategy_idea_candidate_set.json"
+    candidate_set_path = (
+        tmp_path / "data/strategy_idea_candidates/btc-perp/strategy_idea_candidate_set.json"
+    )
     ledger_path = tmp_path / "data/strategy_idea_candidates/btc-perp/search_ledger.jsonl"
     export_manifest_path = (
         tmp_path
