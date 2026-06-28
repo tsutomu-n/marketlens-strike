@@ -49,6 +49,18 @@ class CandidateFamilyId(StrEnum):
     CROSS_SECTIONAL_RANK = "cross_sectional_rank"
     MEAN_REVERSION = "mean_reversion"
     REGIME_FILTER = "regime_filter"
+    PERP_MOMENTUM_CONTINUATION = "perp_momentum_continuation"
+    PERP_REVERSAL_AFTER_LIQUIDATION_MOVE = "perp_reversal_after_liquidation_move"
+    PERP_FUNDING_RATE_CARRY_FILTER = "perp_funding_rate_carry_filter"
+    PERP_BASIS_MARK_INDEX_SPREAD = "perp_basis_mark_index_spread"
+    PERP_VOLATILITY_BREAKOUT_COMPRESSION = "perp_volatility_breakout_compression"
+    PERP_LIQUIDITY_SPREAD_FILTER = "perp_liquidity_spread_filter"
+    PERP_OPEN_INTEREST_LIQUIDATION_PRESSURE = "perp_open_interest_liquidation_pressure"
+
+
+class StrategyIdeaCandidateProfile(StrEnum):
+    DEFAULT = "default"
+    CRYPTO_PERP_RISK_TAKER = "crypto-perp-risk-taker"
 
 
 class StrategyIdeaCandidateGeneratorError(ValueError):
@@ -60,6 +72,7 @@ class StrategyIdeaCandidateGeneratorConfig(BaseModel):
 
     candidate_set_id: str
     generator_version: str = GENERATOR_VERSION
+    profile: StrategyIdeaCandidateProfile = StrategyIdeaCandidateProfile.DEFAULT
     family_ids: list[CandidateFamilyId] = Field(
         default_factory=lambda: [
             CandidateFamilyId.TREND_MOMENTUM,
@@ -145,7 +158,109 @@ def default_parameter_grids() -> dict[str, list[dict[str, Any]]]:
             {"lookback": 10, "z_entry": 1.5},
             {"lookback": 20, "z_entry": 1.5},
         ],
+        CandidateFamilyId.PERP_MOMENTUM_CONTINUATION.value: [
+            _perp_parameter_set(
+                side_bias="long",
+                lookback=12,
+                breakout_z=1.0,
+                liquidation_buffer_bps=2500,
+            ),
+            _perp_parameter_set(
+                side_bias="short",
+                lookback=24,
+                breakout_z=1.2,
+                liquidation_buffer_bps=3000,
+            ),
+        ],
+        CandidateFamilyId.PERP_REVERSAL_AFTER_LIQUIDATION_MOVE.value: [
+            _perp_parameter_set(
+                side_bias="both",
+                liquidation_move_bps=150,
+                reversal_wait_bars=2,
+                liquidation_buffer_bps=3000,
+            ),
+            _perp_parameter_set(
+                side_bias="short",
+                liquidation_move_bps=250,
+                reversal_wait_bars=3,
+                liquidation_buffer_bps=3500,
+            ),
+        ],
+        CandidateFamilyId.PERP_FUNDING_RATE_CARRY_FILTER.value: [
+            _perp_parameter_set(
+                side_bias="long",
+                funding_rate_threshold_bps=-2,
+                holding_bars=8,
+                liquidation_buffer_bps=2500,
+            ),
+            _perp_parameter_set(
+                side_bias="short",
+                funding_rate_threshold_bps=2,
+                holding_bars=8,
+                liquidation_buffer_bps=2500,
+            ),
+        ],
+        CandidateFamilyId.PERP_BASIS_MARK_INDEX_SPREAD.value: [
+            _perp_parameter_set(
+                side_bias="both",
+                mark_index_spread_bps=8,
+                mean_revert_bars=4,
+                liquidation_buffer_bps=3000,
+            ),
+        ],
+        CandidateFamilyId.PERP_VOLATILITY_BREAKOUT_COMPRESSION.value: [
+            _perp_parameter_set(
+                side_bias="long",
+                compression_lookback=48,
+                expansion_z=1.5,
+                liquidation_buffer_bps=2500,
+            ),
+            _perp_parameter_set(
+                side_bias="short",
+                compression_lookback=48,
+                expansion_z=1.5,
+                liquidation_buffer_bps=2500,
+            ),
+        ],
+        CandidateFamilyId.PERP_LIQUIDITY_SPREAD_FILTER.value: [
+            _perp_parameter_set(
+                side_bias="no_trade",
+                spread_limit_bps=12,
+                depth_imbalance_limit=0.7,
+                liquidation_buffer_bps=4000,
+            ),
+        ],
+        CandidateFamilyId.PERP_OPEN_INTEREST_LIQUIDATION_PRESSURE.value: [
+            _perp_parameter_set(
+                side_bias="both",
+                oi_change_threshold_pct=3,
+                liquidation_pressure_bps=100,
+                liquidation_buffer_bps=3500,
+            ),
+        ],
     }
+
+
+def default_family_ids_for_profile(
+    profile: StrategyIdeaCandidateProfile,
+) -> list[CandidateFamilyId]:
+    if profile is StrategyIdeaCandidateProfile.CRYPTO_PERP_RISK_TAKER:
+        return [
+            CandidateFamilyId.PERP_MOMENTUM_CONTINUATION,
+            CandidateFamilyId.PERP_REVERSAL_AFTER_LIQUIDATION_MOVE,
+            CandidateFamilyId.PERP_FUNDING_RATE_CARRY_FILTER,
+            CandidateFamilyId.PERP_BASIS_MARK_INDEX_SPREAD,
+            CandidateFamilyId.PERP_VOLATILITY_BREAKOUT_COMPRESSION,
+            CandidateFamilyId.PERP_LIQUIDITY_SPREAD_FILTER,
+            CandidateFamilyId.PERP_OPEN_INTEREST_LIQUIDATION_PRESSURE,
+        ]
+    return [
+        CandidateFamilyId.TREND_MOMENTUM,
+        CandidateFamilyId.VOLATILITY_REGIME,
+        CandidateFamilyId.LIQUIDITY_SPREAD,
+        CandidateFamilyId.CROSS_SECTIONAL_RANK,
+        CandidateFamilyId.MEAN_REVERSION,
+    ]
 
 
 def build_deterministic_candidate_set_from_input_evidence(
@@ -230,6 +345,29 @@ def build_deterministic_candidate_set_from_input_evidence(
                         source_hash=source_hash,
                         trial_index=trial_index,
                         rejection_reason="candidate cap exceeded before shortlist",
+                    )
+                )
+                continue
+
+            perp_shortlist_rejection = _perp_shortlist_rejection_reason(
+                profile=config.profile,
+                parameter_set=parameter_set,
+            )
+            if perp_shortlist_rejection is not None:
+                candidates.append(
+                    _candidate(
+                        candidate_id=candidate_id,
+                        decision=CandidateDecision.REJECTED,
+                        family=family,
+                        parameter_set=parameter_set,
+                        parameter_grid_hash=parameter_grid_hash,
+                        signal_expression=signal_expression,
+                        contract=contract,
+                        config=config,
+                        timeframe=timeframe,
+                        source_hash=source_hash,
+                        trial_index=trial_index,
+                        rejection_reason=perp_shortlist_rejection,
                     )
                 )
                 continue
@@ -467,7 +605,7 @@ def _candidate(
             "duplicate_signal": rejection_reason is not None
             and rejection_reason.startswith("duplicate parameterization"),
         },
-        raw_validation_metrics={},
+        raw_validation_metrics=_raw_validation_metrics(config=config, parameter_set=parameter_set),
         selection_adjusted_metrics_status=SelectionAdjustedMetricsStatus.NOT_IMPLEMENTED,
         leakage_checks={
             "uses_sealed_test_for_selection": False,
@@ -500,6 +638,43 @@ def _signal_expression(family: CandidateFamilyId, parameter_set: dict[str, Any])
         )
     if family is CandidateFamilyId.MEAN_REVERSION:
         return f"zscore(close, {parameter_set['lookback']}) <= -{parameter_set['z_entry']}"
+    if family is CandidateFamilyId.PERP_MOMENTUM_CONTINUATION:
+        return (
+            f"mark_return_{parameter_set['lookback']}bars "
+            f"> {parameter_set['breakout_z']} * realized_volatility"
+        )
+    if family is CandidateFamilyId.PERP_REVERSAL_AFTER_LIQUIDATION_MOVE:
+        return (
+            f"abs(liquidation_move_bps) >= {parameter_set['liquidation_move_bps']} "
+            f"and wait_bars >= {parameter_set['reversal_wait_bars']}"
+        )
+    if family is CandidateFamilyId.PERP_FUNDING_RATE_CARRY_FILTER:
+        return (
+            "funding_rate_bps crosses "
+            f"{parameter_set['funding_rate_threshold_bps']} over holding_bars="
+            f"{parameter_set['holding_bars']}"
+        )
+    if family is CandidateFamilyId.PERP_BASIS_MARK_INDEX_SPREAD:
+        return (
+            "abs(mark_index_spread_bps) >= "
+            f"{parameter_set['mark_index_spread_bps']} for mean_revert_bars="
+            f"{parameter_set['mean_revert_bars']}"
+        )
+    if family is CandidateFamilyId.PERP_VOLATILITY_BREAKOUT_COMPRESSION:
+        return (
+            f"compression_lookback={parameter_set['compression_lookback']} "
+            f"and expansion_z >= {parameter_set['expansion_z']}"
+        )
+    if family is CandidateFamilyId.PERP_LIQUIDITY_SPREAD_FILTER:
+        return (
+            f"spread_bps <= {parameter_set['spread_limit_bps']} and "
+            f"depth_imbalance <= {parameter_set['depth_imbalance_limit']}"
+        )
+    if family is CandidateFamilyId.PERP_OPEN_INTEREST_LIQUIDATION_PRESSURE:
+        return (
+            f"open_interest_change_pct >= {parameter_set['oi_change_threshold_pct']} "
+            f"and liquidation_pressure_bps >= {parameter_set['liquidation_pressure_bps']}"
+        )
     raise StrategyIdeaCandidateGeneratorError(f"unsupported standalone family: {family.value}")
 
 
@@ -513,6 +688,27 @@ def _title(family: CandidateFamilyId, instruments: list[str]) -> str:
             f"{instrument_label} cross sectional rank candidate"
         ),
         CandidateFamilyId.MEAN_REVERSION: f"{instrument_label} mean reversion candidate",
+        CandidateFamilyId.PERP_MOMENTUM_CONTINUATION: (
+            f"{instrument_label} perp momentum continuation candidate"
+        ),
+        CandidateFamilyId.PERP_REVERSAL_AFTER_LIQUIDATION_MOVE: (
+            f"{instrument_label} perp reversal after liquidation move candidate"
+        ),
+        CandidateFamilyId.PERP_FUNDING_RATE_CARRY_FILTER: (
+            f"{instrument_label} perp funding-rate carry/filter candidate"
+        ),
+        CandidateFamilyId.PERP_BASIS_MARK_INDEX_SPREAD: (
+            f"{instrument_label} perp basis mark-index spread candidate"
+        ),
+        CandidateFamilyId.PERP_VOLATILITY_BREAKOUT_COMPRESSION: (
+            f"{instrument_label} perp volatility breakout/compression candidate"
+        ),
+        CandidateFamilyId.PERP_LIQUIDITY_SPREAD_FILTER: (
+            f"{instrument_label} perp liquidity/spread filter candidate"
+        ),
+        CandidateFamilyId.PERP_OPEN_INTEREST_LIQUIDATION_PRESSURE: (
+            f"{instrument_label} perp open-interest liquidation-pressure placeholder"
+        ),
     }[family]
 
 
@@ -533,6 +729,27 @@ def _hypothesis_template(family: CandidateFamilyId) -> str:
         CandidateFamilyId.MEAN_REVERSION: (
             "Overextension may partially revert over the configured horizon."
         ),
+        CandidateFamilyId.PERP_MOMENTUM_CONTINUATION: (
+            "Perp momentum may continue when mark/index behavior confirms the move after costs."
+        ),
+        CandidateFamilyId.PERP_REVERSAL_AFTER_LIQUIDATION_MOVE: (
+            "Large liquidation-driven moves may mean-revert after a fixed waiting period."
+        ),
+        CandidateFamilyId.PERP_FUNDING_RATE_CARRY_FILTER: (
+            "Funding-rate state may filter or carry directional perp exposure after costs."
+        ),
+        CandidateFamilyId.PERP_BASIS_MARK_INDEX_SPREAD: (
+            "Mark-index basis dislocation may identify short-horizon mean reversion candidates."
+        ),
+        CandidateFamilyId.PERP_VOLATILITY_BREAKOUT_COMPRESSION: (
+            "Compression followed by expansion may support a short-horizon perp breakout."
+        ),
+        CandidateFamilyId.PERP_LIQUIDITY_SPREAD_FILTER: (
+            "Spread and depth constraints may reject poor execution windows before selection."
+        ),
+        CandidateFamilyId.PERP_OPEN_INTEREST_LIQUIDATION_PRESSURE: (
+            "Open-interest and liquidation pressure may be a placeholder filter for perp stress."
+        ),
     }[family]
 
 
@@ -543,7 +760,131 @@ def _feature_columns(family: CandidateFamilyId) -> list[str]:
         CandidateFamilyId.LIQUIDITY_SPREAD: ["bid", "ask", "spread_bps"],
         CandidateFamilyId.CROSS_SECTIONAL_RANK: ["close", "universe_member_id"],
         CandidateFamilyId.MEAN_REVERSION: ["close", "zscore"],
+        CandidateFamilyId.PERP_MOMENTUM_CONTINUATION: [
+            "mark_price",
+            "index_price",
+            "realized_volatility",
+        ],
+        CandidateFamilyId.PERP_REVERSAL_AFTER_LIQUIDATION_MOVE: [
+            "liquidation_notional",
+            "mark_price",
+            "index_price",
+        ],
+        CandidateFamilyId.PERP_FUNDING_RATE_CARRY_FILTER: [
+            "funding_rate",
+            "mark_price",
+            "index_price",
+        ],
+        CandidateFamilyId.PERP_BASIS_MARK_INDEX_SPREAD: [
+            "mark_price",
+            "index_price",
+            "basis_bps",
+        ],
+        CandidateFamilyId.PERP_VOLATILITY_BREAKOUT_COMPRESSION: [
+            "mark_price",
+            "realized_volatility",
+            "spread_bps",
+        ],
+        CandidateFamilyId.PERP_LIQUIDITY_SPREAD_FILTER: [
+            "spread_bps",
+            "book_depth",
+            "depth_imbalance",
+        ],
+        CandidateFamilyId.PERP_OPEN_INTEREST_LIQUIDATION_PRESSURE: [
+            "open_interest",
+            "liquidation_notional",
+            "funding_rate",
+        ],
     }[family]
+
+
+PERP_REQUIRED_PARAMETER_FIELDS = (
+    "side_bias",
+    "venue",
+    "product_type",
+    "margin_mode",
+    "margin_coin",
+    "leverage",
+    "funding_assumption",
+    "fee_model_ref",
+    "slippage_model_ref",
+    "liquidation_buffer_bps",
+    "max_position_notional_usd",
+    "max_daily_loss_usd",
+    "kill_conditions",
+)
+
+
+def _perp_parameter_set(side_bias: str, **overrides: Any) -> dict[str, Any]:
+    parameter_set: dict[str, Any] = {
+        "side_bias": side_bias,
+        "venue": "bitget",
+        "product_type": "USDT-FUTURES",
+        "margin_mode": "isolated",
+        "margin_coin": "USDT",
+        "leverage": 3,
+        "funding_assumption": "funding paid or received during hold is modeled",
+        "fee_model_ref": "bitget_usdt_futures_taker_fee_estimate",
+        "slippage_model_ref": "bps_stress_model",
+        "liquidation_buffer_bps": 2500,
+        "max_position_notional_usd": 100,
+        "max_daily_loss_usd": 25,
+        "kill_conditions": ["spread_bps_gt_15", "funding_missing", "source_gap"],
+    }
+    parameter_set.update(overrides)
+    return parameter_set
+
+
+def _perp_shortlist_rejection_reason(
+    *,
+    profile: StrategyIdeaCandidateProfile,
+    parameter_set: dict[str, Any],
+) -> str | None:
+    if profile is not StrategyIdeaCandidateProfile.CRYPTO_PERP_RISK_TAKER:
+        return None
+    missing = [
+        field
+        for field in PERP_REQUIRED_PARAMETER_FIELDS
+        if parameter_set.get(field) in (None, "", [])
+    ]
+    failures: list[str] = []
+    if missing:
+        failures.append("missing " + ", ".join(missing))
+    if parameter_set.get("venue") != "bitget":
+        failures.append("venue must be bitget")
+    if parameter_set.get("product_type") != "USDT-FUTURES":
+        failures.append("product_type must be USDT-FUTURES")
+    if parameter_set.get("margin_mode") != "isolated":
+        failures.append("margin_mode must be isolated")
+    if parameter_set.get("margin_coin") != "USDT":
+        failures.append("margin_coin must be USDT")
+    leverage = parameter_set.get("leverage")
+    if not isinstance(leverage, int | float) or leverage <= 0 or leverage > 3:
+        failures.append("leverage must be between 1 and 3")
+    liquidation_buffer = parameter_set.get("liquidation_buffer_bps")
+    if not isinstance(liquidation_buffer, int | float) or liquidation_buffer <= 0:
+        failures.append("liquidation_buffer_bps must be positive")
+    if failures:
+        return "missing perp risk modeling fields: " + "; ".join(failures)
+    return None
+
+
+def _raw_validation_metrics(
+    *,
+    config: StrategyIdeaCandidateGeneratorConfig,
+    parameter_set: dict[str, Any],
+) -> dict[str, Any]:
+    if config.profile is not StrategyIdeaCandidateProfile.CRYPTO_PERP_RISK_TAKER:
+        return {}
+    return {
+        "metric_basis": "raw_only_not_profit_proof",
+        "selection_adjusted_metrics": "NOT_IMPLEMENTED",
+        "fee_model_ref": parameter_set.get("fee_model_ref"),
+        "funding_assumption": parameter_set.get("funding_assumption"),
+        "slippage_model_ref": parameter_set.get("slippage_model_ref"),
+        "liquidation_buffer_bps": parameter_set.get("liquidation_buffer_bps"),
+        "leverage_modeling_cap": 3,
+    }
 
 
 def _canonicalize_parameter_set(parameter_set: dict[str, Any]) -> dict[str, Any]:

@@ -6,6 +6,23 @@ from datetime import datetime, timezone
 from sis.strategy_idea_candidates.models import CandidateSetStatus, StrategyIdeaCandidateSet
 
 
+PERP_REQUIRED_PARAMETER_FIELDS = (
+    "side_bias",
+    "venue",
+    "product_type",
+    "margin_mode",
+    "margin_coin",
+    "leverage",
+    "funding_assumption",
+    "fee_model_ref",
+    "slippage_model_ref",
+    "liquidation_buffer_bps",
+    "max_position_notional_usd",
+    "max_daily_loss_usd",
+    "kill_conditions",
+)
+
+
 @dataclass(frozen=True)
 class StrategyIdeaCandidatePolicyValidationResult:
     candidate_set_id: str
@@ -73,6 +90,50 @@ def validate_split_and_leakage_policy(
                 "after label_window.end"
             )
 
+    return StrategyIdeaCandidatePolicyValidationResult(
+        candidate_set_id=candidate_set.candidate_set_id,
+        passed=not failures,
+        failures=failures,
+    )
+
+
+def validate_perp_shortlist_constraints(
+    candidate_set: StrategyIdeaCandidateSet,
+) -> StrategyIdeaCandidatePolicyValidationResult:
+    failures: list[str] = []
+    for candidate in candidate_set.candidate_inventory:
+        parameter_set = candidate.parameter_set
+        is_perp_candidate = candidate.family.startswith("perp_") or (
+            parameter_set.get("product_type") == "USDT-FUTURES"
+        )
+        if not is_perp_candidate or candidate.decision.value != "SHORTLISTED":
+            continue
+        missing = [
+            field
+            for field in PERP_REQUIRED_PARAMETER_FIELDS
+            if parameter_set.get(field) in (None, "", [])
+        ]
+        if missing:
+            failures.append(
+                f"{candidate.idea_candidate_id}: missing perp risk modeling fields "
+                + ", ".join(missing)
+            )
+        if parameter_set.get("venue") != "bitget":
+            failures.append(f"{candidate.idea_candidate_id}: venue must be bitget")
+        if parameter_set.get("product_type") != "USDT-FUTURES":
+            failures.append(f"{candidate.idea_candidate_id}: product_type must be USDT-FUTURES")
+        if parameter_set.get("margin_mode") != "isolated":
+            failures.append(f"{candidate.idea_candidate_id}: margin_mode must be isolated")
+        if parameter_set.get("margin_coin") != "USDT":
+            failures.append(f"{candidate.idea_candidate_id}: margin_coin must be USDT")
+        leverage = parameter_set.get("leverage")
+        if not isinstance(leverage, int | float) or leverage <= 0 or leverage > 3:
+            failures.append(f"{candidate.idea_candidate_id}: leverage must be between 1 and 3")
+        liquidation_buffer = parameter_set.get("liquidation_buffer_bps")
+        if not isinstance(liquidation_buffer, int | float) or liquidation_buffer <= 0:
+            failures.append(
+                f"{candidate.idea_candidate_id}: liquidation_buffer_bps must be positive"
+            )
     return StrategyIdeaCandidatePolicyValidationResult(
         candidate_set_id=candidate_set.candidate_set_id,
         passed=not failures,

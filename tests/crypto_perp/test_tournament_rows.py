@@ -256,3 +256,33 @@ def test_cost_aware_tournament_rows_v2_schema_accepts_artifact(tmp_path: Path) -
 
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(row_set.model_dump(mode="json"))
+
+
+def test_tournament_report_cli_rejects_cost_aware_estimate_rows(
+    tmp_path: Path,
+) -> None:
+    outcome_payload = json.loads(_outcome_path(tmp_path).read_text(encoding="utf-8"))
+    outcome = CryptoPerpOutcome.model_validate(outcome_payload)
+    row_set = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-27T10:00:00Z",
+        notional_usd=Decimal("25"),
+    )
+    rows_path = tmp_path / "tournament_rows_v2.json"
+    rows_path.write_text(json.dumps(row_set.model_dump(mode="json")), encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-tournament-report",
+            "--rows",
+            str(rows_path),
+            "--out",
+            str(tmp_path / "report"),
+            "--min-events",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "PREVIEW_ROWS_NOT_ACTUAL_CASH" in result.stdout
