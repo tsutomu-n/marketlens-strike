@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-06-28_09:58 JST
+更新日: 2026-06-28_10:03 JST
 -->
 
 # Strategy Idea Candidates
@@ -11,7 +11,7 @@
 
 この実装で使えるのは、candidate set contract、Python validation、deterministic generator Python API、Bitget USDT-FUTURES 前提の `crypto-perp-risk-taker` profile、split / leakage policy validation API、split materialization sidecar、Perp shortlist constraint validation、selection-adjusted metrics local engine、Perp cost estimate sidecar、operator review Markdown surface、richer review packet、Strategy Authoring preflight、fixture E2E、canonical JSON / Markdown writer、JSONL search ledger、public CLI、manual AI packet/import、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest、outcome-backed Perp estimate bridge までです。実 market data から alpha を掘る evaluator、実測 Perp cost evaluator、paper / live permission はまだありません。
 
-現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring preflight は readiness gap を列挙するだけで、Strategy Authoring spec 生成、backtest 実行準備、Strategy Review への full bridge 完了とは扱いません。
+現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring preflight は readiness gap を列挙するだけで、Strategy Authoring spec 生成、backtest 実行準備、Strategy Review への full bridge 完了とは扱いません。full bridge を実装する場合も、全候補の backtest 成功保証ではなく、候補別に spec/backtest へ進めるか machine-readable blocker を返す fail-closed 経路として扱います。
 
 用語、family ID、最終ゴール、次の未完了 scope、`Strategy Lab / backtest full bridge` の正確な定義は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
 
@@ -57,6 +57,7 @@
 - JSONL search ledger は candidate generation の全候補 row を保存する sidecar です。raw metric や AI score を proof として扱いません。
 - selection-adjusted metrics sidecar は local disclosure engine です。`AVAILABLE` は FDR 計算が可能だったことだけを示し、alpha proof や profit proof ではありません。
 - `perp_cost_estimates.json` と Perp estimate bridge は estimate artifact です。`crypto-perp-tournament-report` の actual-cash input ではありません。
+- `Strategy Lab / backtest full bridge` は未実装です。実装時は candidate-scoped spec / suite / bundle / output を使い、default TradeXYZ / QQQ example backtest を候補 proof として流用しません。
 - AI packet/import は local/manual だけです。repo 内から AI / LLM API へ送信しません。
 - `crypto-perp-risk-taker` は quick validation estimate までの候補生成 profile であり、wallet、signing、exchange write、live order を許可しません。
 - dependency は追加していません。

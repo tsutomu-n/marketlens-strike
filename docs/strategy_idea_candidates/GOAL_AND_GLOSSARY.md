@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:38 JST
-更新日: 2026-06-28_09:58 JST
+更新日: 2026-06-28_10:03 JST
 -->
 
 # Strategy Idea Candidate Goal And Glossary
@@ -42,7 +42,7 @@
 | Perp shortlist constraint | funding、fee、slippage、leverage、liquidation buffer、position loss limit、kill conditions が揃わない Perp candidate を shortlist しない guard | paper/live readiness |
 | manual AI packet | candidate set と ledger summary を人間が任意AIへ渡すための local packet | repo が外部AI APIを呼ぶ処理 |
 | AI import | manual AI response を検証し `source_kind=ai_generated` の未検証候補として取り込む処理 | AI候補の自動採用、AI scoreによる許可 |
-| Strategy Lab / backtest full bridge | shortlisted candidate を `strategy_idea.v1` draft で止めず、Strategy Authoring spec と標準 backtest pack まで、candidate lineage と検証結果つきで機械的に接続する実装済み経路 | `strategy-intake-validate` だけ、authoring preflight だけ、Perp estimate bridge、手順メモ、paper/live 許可 |
+| Strategy Lab / backtest full bridge | shortlisted candidate を `strategy_idea.v1` draft で止めず、Strategy Authoring spec と標準 backtest pack まで、candidate lineage と検証結果つきで機械的に接続する fail-closed の実装済み経路 | 全候補の backtest 成功保証、`strategy-intake-validate` だけ、authoring preflight だけ、Perp estimate bridge、手順メモ、paper/live 許可 |
 
 ## Fixed Candidate Family IDs
 
@@ -108,7 +108,9 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 
 ## C9 Strategy Lab / Backtest Full Bridge Definition
 
-`Strategy Lab / backtest full bridge` とは、shortlist 済みの `Strategy Idea Candidate` を既存の Strategy Authoring / backtest chain へ接続する local-only の実装済み経路です。単なる readiness report ではありません。
+`Strategy Lab / backtest full bridge` とは、shortlist 済みの `Strategy Idea Candidate` を既存の Strategy Authoring / backtest chain へ接続する local-only / fail-closed の実装済み経路です。単なる readiness report ではありません。
+
+現 repo で今すぐ実装できるのは v0 の fail-closed bridge です。これは「変換可能な候補だけ candidate-scoped に `strategy_authoring_spec.v1` と標準 backtest pack へ進め、変換不能・データ不足・contract 不一致は machine-readable blocker として残す」ものです。全 Perp candidate を backtest 成功まで通す generic bridge ではありません。
 
 ### Required Inputs
 
@@ -126,11 +128,23 @@ full bridge は少なくとも次を入力として読む。
 full bridge が完了したと言えるには、候補ごとに次を出力する。
 
 - `strategy_authoring_spec.v1`、または spec 化できない理由を持つ machine-readable rejection artifact
-- Strategy Authoring validation result
+- `strategy_authoring_spec.v1` を生成した場合の Strategy Authoring validation result
 - 標準 backtest pack、または backtest pack を作れない理由を持つ machine-readable blocker artifact
-- backtest pack validation result
+- 標準 backtest pack を生成した場合の backtest pack validation result
 - candidate id、candidate set path/hash、exported idea path/hash、authoring spec path/hash、backtest pack path/hash、ledger path/hash をつなぐ bridge manifest
 - Strategy Review / operator review へ渡せる source refs と known gaps
+
+### Bridge Status Values
+
+full bridge の候補別 status は、少なくとも次のように成功と blocker を分ける。`BRIDGED_BACKTEST_PACK_VALIDATED` 以外は backtest 成功ではなく、明示的な停止結果です。
+
+- `BRIDGED_BACKTEST_PACK_VALIDATED`: authoring spec 生成、Strategy Authoring validation、標準 backtest pack 生成、backtest pack validation が候補スコープで完了。
+- `BLOCKED_UNSUPPORTED_FAMILY_MAPPING`: candidate family / parameter set を既存 Strategy Authoring rule primitive に安全変換できない。
+- `BLOCKED_UNSUPPORTED_SIGNAL_EXPRESSION`: free-text `signal_expression` しかなく、allowlist mapping で rule 化できない。
+- `BLOCKED_MISSING_AUTHORING_DATA`: `feature_panel_path`、`quote_data_path`、`cost_model_path`、symbol rows、required columns のいずれかが不足。
+- `BLOCKED_AUTHORING_VALIDATION`: `strategy_authoring_spec.v1` は生成したが Strategy Authoring validation が失敗。
+- `BLOCKED_BACKTEST_PACK_GENERATION`: authoring validation 後の backtest pack 生成に失敗。
+- `BLOCKED_BACKTEST_PACK_VALIDATION`: pack は生成したが `strategy_backtest_pack_validation.v1` が `PASS` ではない。
 
 ### Required Behavior
 
@@ -139,13 +153,49 @@ full bridge は次をすべて満たす必要がある。
 1. `strategy_idea.v1` schema を探索 provenance 用に広げない。
 2. candidate id と candidate set hash を Strategy Authoring / backtest 側の manifest まで失わない。
 3. `strategy-intake-validate` を通った shortlist だけを対象にする。
-4. feature columns、signal expression、risk、execution assumptions、data requirements を `strategy_authoring_spec.v1` に変換するか、変換不能理由を明示して fail-closed にする。
+4. feature columns、risk、execution assumptions、data requirements を `strategy_authoring_spec.v1` に変換するか、変換不能理由を明示して fail-closed にする。
 5. Strategy Authoring validation を通す。
 6. backtest pack を標準 engine で生成するか、必要データ不足・contract 不一致・unsupported signal の blocker を明示する。
 7. backtest pack validation を通す。
 8. search ledger、selection-adjusted metrics status、cost estimate status、split/leakage status を review source として残す。
 9. estimate、raw metric、backtest result を alpha proof / profit proof / paper permission / live readiness と呼ばない。
 10. wallet、signing、exchange write、live order、paper execution permission を一切有効化しない。
+
+### Must Not Do
+
+full bridge 実装では次を禁止する。
+
+- `signal_expression` の自由文をコード、SQL、Polars expression、Python expression として実行または ad-hoc parse しない。変換は family / parameter_set / feature_columns_used / target_definition / timeframe / instruments の allowlist mapping だけで行う。
+- Bitget USDT-FUTURES candidate を、既存 example の TradeXYZ / QQQ authoring spec、suite、bundle、baseline data へ暗黙変換しない。
+- `strategy-backtest-pack` の default spec / suite / bundle を candidate proof として流用しない。候補別 spec、suite、bundle、out_dir、reports_dir を生成または指定する。
+- `strategy-author-run` や backtest runner の global default output を読んで候補別結果として扱わない。artifact は candidate-scoped directory に隔離し、path/hash を bridge manifest に残す。
+- authoring preflight、Perp estimate、既存 backtest pack の存在だけで `BRIDGED_BACKTEST_PACK_VALIDATED` にしない。
+- backtest validation `PASS` を paper/live/wallet/signing/exchange-write 許可にしない。
+
+### Current Repo Constraints
+
+追加調査で確認した現行制約:
+
+- `strategy_authoring_spec.v1` は `experiment.symbol_bindings`、`data.feature_panel_path`、`data.quote_data_path`、`data.cost_model_path`、`rules.entry`、`backtest` を要求する。
+- Strategy Authoring validation は feature panel の存在、required columns、confirmation panels、`canonical_symbol` rows を確認する。
+- 既存 example spec は `execution_venue: trade_xyz`、`execution_symbol: XYZ100`、`real_market_symbol: QQQ`、baseline feature / quote / cost files を前提にしている。
+- 現行 `strategy-backtest-pack` command は default spec / suite / bundle を持ち、pack runner の多くの中間 artifact は `data/research/...` と `reports/...` に書かれる。
+- したがって C9 v0 は、candidate-scoped generated spec / suite / bundle と isolated `data_dir` / `out_dir` / `reports_dir` を使うか、同等の隔離を行う Python API 経由で実装する。
+
+### Practical V0 Scope
+
+C9 v0 の実装範囲は次に限定する。
+
+1. `strategy-idea-candidates-authoring-bridge` CLI と Python API を追加する。
+2. 入力は candidate set、export manifest、search ledger、sidecar refs、authoring data mapping config とする。
+3. allowlist mapping できる candidate だけ `strategy_authoring_spec.v1`、candidate-specific suite、candidate-specific bundle を生成する。
+4. mapping できない candidate は `BLOCKED_UNSUPPORTED_FAMILY_MAPPING` または `BLOCKED_UNSUPPORTED_SIGNAL_EXPRESSION` で止める。
+5. authoring data が足りない candidate は `BLOCKED_MISSING_AUTHORING_DATA` で止める。
+6. 生成済み spec は既存 Strategy Authoring validation に通す。
+7. backtest pack は候補別 out dir へ生成し、pack validation result と hash を bridge manifest に保存する。
+8. bridge manifest は candidate id、candidate set hash、exported idea hash、authoring spec hash、suite / bundle hash、pack hash、validation hash、ledger hash、sidecar hashes、boundary false を持つ。
+
+この v0 は実装可能です。ただし、Perp 用の実データ feature / quote / cost mapping が無い候補は blocker になります。blocker を返すことも full bridge の正しい完了動作に含める。
 
 ### Not Full Bridge
 
@@ -157,6 +207,7 @@ full bridge は次をすべて満たす必要がある。
 - `strategy-idea-candidates-perp-estimate` が `crypto_perp_tournament_rows.v2` estimate を作ること。
 - 手順書、Markdown review、operator memo だけ。
 - 既存 backtest pack が別経路で存在するだけ。
+- `strategy-backtest-pack` の default example spec / suite / bundle が通ること。
 - paper observation、tiny live shadow、actual cash report、live readiness の許可。
 
 ### Completion Test
@@ -168,11 +219,20 @@ C9 を完了扱いにする最小条件は、fixture で次が通ること。
 3. `strategy-intake-validate`。
 4. bridge manifest generation。
 5. `strategy_authoring_spec.v1` generation or explicit machine-readable rejection。
-6. Strategy Authoring validation。
+6. `strategy_authoring_spec.v1` を生成した candidate の Strategy Authoring validation。
 7. backtest pack generation or explicit machine-readable blocker。
-8. backtest pack validation。
+8. backtest pack を生成した candidate の backtest pack validation。
 9. source refs に candidate set / ledger / idea / authoring / backtest hashes が残ること。
 10. paper/live/wallet/signing/exchange-write boundary が false のまま維持されること。
+
+追加で、次の negative tests を必須にする。
+
+- unsupported family は explicit blocker になり、backtest pack を成功扱いしない。
+- free-text `signal_expression` は実行・ad-hoc parse されない。
+- Bitget USDT-FUTURES candidate は TradeXYZ / QQQ example data に暗黙変換されない。
+- authoring data mapping が無い場合は `BLOCKED_MISSING_AUTHORING_DATA` になる。
+- default `strategy-backtest-pack` artifact を candidate proof として参照しない。
+- `BRIDGED_BACKTEST_PACK_VALIDATED` でも paper/live/wallet/signing/exchange-write flags は false のまま。
 
 ## Next Goal
 
