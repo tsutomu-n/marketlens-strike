@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:38 JST
-更新日: 2026-06-28_09:45 JST
+更新日: 2026-06-28_09:58 JST
 -->
 
 # Strategy Idea Candidate Goal And Glossary
@@ -42,6 +42,7 @@
 | Perp shortlist constraint | funding、fee、slippage、leverage、liquidation buffer、position loss limit、kill conditions が揃わない Perp candidate を shortlist しない guard | paper/live readiness |
 | manual AI packet | candidate set と ledger summary を人間が任意AIへ渡すための local packet | repo が外部AI APIを呼ぶ処理 |
 | AI import | manual AI response を検証し `source_kind=ai_generated` の未検証候補として取り込む処理 | AI候補の自動採用、AI scoreによる許可 |
+| Strategy Lab / backtest full bridge | shortlisted candidate を `strategy_idea.v1` draft で止めず、Strategy Authoring spec と標準 backtest pack まで、candidate lineage と検証結果つきで機械的に接続する実装済み経路 | `strategy-intake-validate` だけ、authoring preflight だけ、Perp estimate bridge、手順メモ、paper/live 許可 |
 
 ## Fixed Candidate Family IDs
 
@@ -104,6 +105,74 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 - C5 full statistical split engine。現状は validation と materialization sidecar まで。
 - C9: Strategy Lab / backtest bridge。
 - Perp funding / fee / slippage / liquidation の実測 evaluator。現状は candidate metadata と local estimate boundary まで。
+
+## C9 Strategy Lab / Backtest Full Bridge Definition
+
+`Strategy Lab / backtest full bridge` とは、shortlist 済みの `Strategy Idea Candidate` を既存の Strategy Authoring / backtest chain へ接続する local-only の実装済み経路です。単なる readiness report ではありません。
+
+### Required Inputs
+
+full bridge は少なくとも次を入力として読む。
+
+- `strategy_idea_candidate_set.v1`
+- `strategy_idea_candidate_export_manifest.v1`
+- exported `strategy_idea.v1`
+- `strategy_input_contract_validation.v1` refs
+- `search_ledger.jsonl`
+- selection metrics / Perp cost estimates / split materialization / review packet / authoring preflight sidecars
+
+### Required Outputs
+
+full bridge が完了したと言えるには、候補ごとに次を出力する。
+
+- `strategy_authoring_spec.v1`、または spec 化できない理由を持つ machine-readable rejection artifact
+- Strategy Authoring validation result
+- 標準 backtest pack、または backtest pack を作れない理由を持つ machine-readable blocker artifact
+- backtest pack validation result
+- candidate id、candidate set path/hash、exported idea path/hash、authoring spec path/hash、backtest pack path/hash、ledger path/hash をつなぐ bridge manifest
+- Strategy Review / operator review へ渡せる source refs と known gaps
+
+### Required Behavior
+
+full bridge は次をすべて満たす必要がある。
+
+1. `strategy_idea.v1` schema を探索 provenance 用に広げない。
+2. candidate id と candidate set hash を Strategy Authoring / backtest 側の manifest まで失わない。
+3. `strategy-intake-validate` を通った shortlist だけを対象にする。
+4. feature columns、signal expression、risk、execution assumptions、data requirements を `strategy_authoring_spec.v1` に変換するか、変換不能理由を明示して fail-closed にする。
+5. Strategy Authoring validation を通す。
+6. backtest pack を標準 engine で生成するか、必要データ不足・contract 不一致・unsupported signal の blocker を明示する。
+7. backtest pack validation を通す。
+8. search ledger、selection-adjusted metrics status、cost estimate status、split/leakage status を review source として残す。
+9. estimate、raw metric、backtest result を alpha proof / profit proof / paper permission / live readiness と呼ばない。
+10. wallet、signing、exchange write、live order、paper execution permission を一切有効化しない。
+
+### Not Full Bridge
+
+次は full bridge ではない。
+
+- `strategy_idea.v1` draft export だけ。
+- `strategy-intake-validate` が通ることだけ。
+- `authoring_preflight.json` が Strategy Authoring / backtest readiness gap を列挙すること。
+- `strategy-idea-candidates-perp-estimate` が `crypto_perp_tournament_rows.v2` estimate を作ること。
+- 手順書、Markdown review、operator memo だけ。
+- 既存 backtest pack が別経路で存在するだけ。
+- paper observation、tiny live shadow、actual cash report、live readiness の許可。
+
+### Completion Test
+
+C9 を完了扱いにする最小条件は、fixture で次が通ること。
+
+1. candidate set build。
+2. shortlist export。
+3. `strategy-intake-validate`。
+4. bridge manifest generation。
+5. `strategy_authoring_spec.v1` generation or explicit machine-readable rejection。
+6. Strategy Authoring validation。
+7. backtest pack generation or explicit machine-readable blocker。
+8. backtest pack validation。
+9. source refs に candidate set / ledger / idea / authoring / backtest hashes が残ること。
+10. paper/live/wallet/signing/exchange-write boundary が false のまま維持されること。
 
 ## Next Goal
 

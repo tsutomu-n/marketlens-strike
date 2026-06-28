@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-06-28_09:45 JST
+更新日: 2026-06-28_09:58 JST
 -->
 
 # Strategy Idea Candidates
@@ -13,7 +13,7 @@
 
 現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring preflight は readiness gap を列挙するだけで、Strategy Authoring spec 生成、backtest 実行準備、Strategy Review への full bridge 完了とは扱いません。
 
-用語、family ID、最終ゴール、次の未完了 scope は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
+用語、family ID、最終ゴール、次の未完了 scope、`Strategy Lab / backtest full bridge` の正確な定義は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
 
 ## 実装済み artifact
 
