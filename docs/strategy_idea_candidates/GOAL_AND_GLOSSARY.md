@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:38 JST
-更新日: 2026-06-28_10:03 JST
+更新日: 2026-06-28_10:09 JST
 -->
 
 # Strategy Idea Candidate Goal And Glossary
@@ -180,7 +180,28 @@ full bridge 実装では次を禁止する。
 - Strategy Authoring validation は feature panel の存在、required columns、confirmation panels、`canonical_symbol` rows を確認する。
 - 既存 example spec は `execution_venue: trade_xyz`、`execution_symbol: XYZ100`、`real_market_symbol: QQQ`、baseline feature / quote / cost files を前提にしている。
 - 現行 `strategy-backtest-pack` command は default spec / suite / bundle を持ち、pack runner の多くの中間 artifact は `data/research/...` と `reports/...` に書かれる。
-- したがって C9 v0 は、candidate-scoped generated spec / suite / bundle と isolated `data_dir` / `out_dir` / `reports_dir` を使うか、同等の隔離を行う Python API 経由で実装する。
+- `/home/tn/projects/prep-watchdeck` は Bitget `USDT-FUTURES` public market data の local source として使える。`var/snapshots/latest.json`、`var/snapshots/charts/latest/<SYMBOL>.json`、`data/candles_5m/date=*/candles.parquet`、`data/snapshots/date=*/*.parquet`、`data/scanner.duckdb` に Perp feature / quote / funding / open-interest proxy の材料がある。
+- `prep-watchdeck/var/watchdeck.duckdb` には service DB として `instruments`、`ticker_latest`、`candles_1m` があるが、service writer が動作中は DuckDB lock で read-only 接続できない場合がある。この場合は published snapshot / chart JSON、または `data/scanner.duckdb` / parquet を入力源にする。
+- したがって C9 v0 は、candidate-scoped generated spec / suite / bundle と isolated `data_dir` / `out_dir` / `reports_dir` を使うか、同等の隔離を行う Python API 経由で実装する。Perp data mapping は「未発見」ではなく、`prep-watchdeck` source adapter として明示実装する。
+
+### Known Local Perp Data Source: prep-watchdeck
+
+`/home/tn/projects/prep-watchdeck` から C9 v0 に渡せる mapping は次の通り。
+
+| C9 input | prep-watchdeck source | 使える列 / 値 | 境界 |
+|---|---|---|---|
+| feature panel | `var/snapshots/latest.json` rows、`data/snapshots/date=*/*.parquet`、`data/scanner.duckdb.tickers_snapshot`、`scanner_rows.row_json` | symbol、timestamp、last / analysis price、timeframe returns、turnover、volume ratio、24h range、74h price/volume features、funding bias、open interest state、data quality、coverage | latest snapshot は横断面の現在値。backtest 用履歴 panel には `data/scanner.duckdb` / parquet の時系列 materialization が必要。 |
+| quote data | `var/snapshots/charts/latest/<SYMBOL>.json`、`data/candles_5m/date=*/candles.parquet`、`data/scanner.duckdb.candles_5m`、service DB `candles_1m` | OHLCV、quote volume、5m / 15m / 1h / 4h / 24h / 74h chart bars、1m candles when service DB is readable | `var/snapshots/charts/latest` は latest 128 bars 系。厚い履歴は parquet / DuckDB を優先する。 |
+| cost estimate inputs | `var/snapshots/latest.json` rows、service DB `ticker_latest`、web `deal-check.ts` model | max leverage、funding bias / funding rate、bid / ask when service DB readable、mark / index price when service DB readable、24h quote volume、notional / fee / funding / slippage estimate formula | 板厚・実測 slippage は未実装。actual cash / measured execution cost evaluator ではなく、cost-estimate mapping として扱う。 |
+| instrument constraints | `data/scanner.duckdb.contracts`、service DB `instruments` | product type、base / quote coin、symbol status、max leverage、min trade USDT / min trade num | Bitget `USDT-FUTURES` と active/valid symbol filtering を bridge 側で再検査する。 |
+
+C9 v0 の blocker 条件は、「Perp 用 local source が無い」ではなく、次に変える。
+
+- `prep-watchdeck` source path が指定されていない。
+- 指定 source が存在しない、読めない、または required columns を満たさない。
+- service DB が lock 中で、代替 snapshot / parquet / `data/scanner.duckdb` も指定されていない。
+- candidate の symbol / timeframe / horizon に対して十分な quote history または feature history を materialize できない。
+- cost mapping が実測 slippage / order book depth を要求しているが、`prep-watchdeck` には estimate input しかない。
 
 ### Practical V0 Scope
 
@@ -195,7 +216,7 @@ C9 v0 の実装範囲は次に限定する。
 7. backtest pack は候補別 out dir へ生成し、pack validation result と hash を bridge manifest に保存する。
 8. bridge manifest は candidate id、candidate set hash、exported idea hash、authoring spec hash、suite / bundle hash、pack hash、validation hash、ledger hash、sidecar hashes、boundary false を持つ。
 
-この v0 は実装可能です。ただし、Perp 用の実データ feature / quote / cost mapping が無い候補は blocker になります。blocker を返すことも full bridge の正しい完了動作に含める。
+この v0 は実装可能です。Perp 用 feature / quote / cost-estimate mapping は `prep-watchdeck` を local source として使える。ただし、候補の symbol / timeframe / horizon に必要な履歴が materialize できない場合や、実測 order-book slippage を要求する場合は blocker になります。blocker を返すことも full bridge の正しい完了動作に含める。
 
 ### Not Full Bridge
 

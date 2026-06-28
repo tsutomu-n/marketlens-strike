@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-06-28_10:03 JST
+更新日: 2026-06-28_10:09 JST
 -->
 
 # Strategy Idea Candidates
@@ -57,7 +57,7 @@
 - JSONL search ledger は candidate generation の全候補 row を保存する sidecar です。raw metric や AI score を proof として扱いません。
 - selection-adjusted metrics sidecar は local disclosure engine です。`AVAILABLE` は FDR 計算が可能だったことだけを示し、alpha proof や profit proof ではありません。
 - `perp_cost_estimates.json` と Perp estimate bridge は estimate artifact です。`crypto-perp-tournament-report` の actual-cash input ではありません。
-- `Strategy Lab / backtest full bridge` は未実装です。実装時は candidate-scoped spec / suite / bundle / output を使い、default TradeXYZ / QQQ example backtest を候補 proof として流用しません。
+- `Strategy Lab / backtest full bridge` は未実装です。実装時は candidate-scoped spec / suite / bundle / output を使い、default TradeXYZ / QQQ example backtest を候補 proof として流用しません。Bitget Perp の local feature / quote / cost-estimate source は `/home/tn/projects/prep-watchdeck` を利用候補にしますが、同 repo は板厚・実測 slippage evaluator ではありません。
 - AI packet/import は local/manual だけです。repo 内から AI / LLM API へ送信しません。
 - `crypto-perp-risk-taker` は quick validation estimate までの候補生成 profile であり、wallet、signing、exchange write、live order を許可しません。
 - dependency は追加していません。
