@@ -459,6 +459,50 @@ def test_authoring_bridge_generates_candidate_scoped_artifacts_and_backtest_pack
     assert not (tmp_path / "data/research/backtest_pack/strategy_backtest_pack.json").exists()
 
 
+def test_authoring_bridge_relative_out_uses_existing_artifact_paths_and_clears_stale_blocker(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    prep_root = tmp_path / "prep-watchdeck"
+    _write_prep_watchdeck_root(prep_root)
+    candidate_set_path, export_manifest_path, ledger_path = _write_candidate_inputs(
+        tmp_path,
+        [
+            _candidate("cand-relative-out", family="perp_momentum_continuation"),
+            _candidate("cand-rejected", family="perp_funding_rate_carry_filter", decision="REJECTED"),
+        ],
+    )
+    candidate_dir = tmp_path / "bridge_out/cand-relative-out"
+    candidate_dir.mkdir(parents=True)
+    stale_blocker = candidate_dir / "bridge_blocker.json"
+    stale_blocker.write_text('{"status":"BLOCKED_BACKTEST_PACK"}\n', encoding="utf-8")
+
+    result = build_strategy_idea_candidate_authoring_bridge(
+        candidate_set_path=candidate_set_path,
+        export_manifest_path=export_manifest_path,
+        ledger_path=ledger_path,
+        prep_watchdeck_root=prep_root,
+        out_dir=Path("bridge_out"),
+        replace_existing=True,
+    )
+
+    assert result.manifest.summary["status_counts"] == {"BRIDGED": 1}
+    assert result.manifest.candidates[0].status == "BRIDGED"
+    assert (candidate_dir / "backtest_pack/strategy_backtest_pack.json").exists()
+    assert (
+        candidate_dir / "backtest_pack/strategy_backtest_pack_validation.json"
+    ).exists()
+    spec = load_authoring_spec(candidate_dir / "strategy_authoring_spec.yaml")
+    data_paths = [
+        Path(spec.data.feature_panel_path),
+        Path(spec.data.quote_data_path),
+        Path(spec.data.cost_model_path),
+    ]
+    assert all(path.is_absolute() for path in data_paths)
+    assert all(path.exists() for path in data_paths)
+    assert not stale_blocker.exists()
+
+
 def test_authoring_bridge_writes_blocker_for_unsupported_family(tmp_path: Path) -> None:
     prep_root = tmp_path / "prep-watchdeck"
     _write_prep_watchdeck_root(prep_root)
