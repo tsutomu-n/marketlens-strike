@@ -23,6 +23,12 @@ from sis.strategy_idea_candidates.authoring_bridge import (
     StrategyIdeaCandidateAuthoringBridgeOutputExistsError,
     build_strategy_idea_candidate_authoring_bridge,
 )
+from sis.strategy_idea_candidates.bitget_public_source import (
+    BitgetPublicSourceNetworkOptInError,
+    BitgetPublicSourceOutputExistsError,
+    BitgetPublicSourceRefreshError,
+    refresh_bitget_public_source,
+)
 from sis.strategy_idea_candidates.export import (
     StrategyIdeaCandidateExportError,
     StrategyIdeaCandidateExportResult,
@@ -84,7 +90,7 @@ from sis.strategy_inputs.models import (
     StrategyInputContract,
     StrategyInputContractValidation,
 )
-from sis.strategy_idea_candidates.models import StrategyIdeaCandidateSet
+from sis.strategy_idea_candidates.models import StrategyIdeaCandidateSet, TimeWindow
 
 
 def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
@@ -271,9 +277,7 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"report_path={write_result.report_path.as_posix()}")
         typer.echo(f"operator_review_path={review_result.report_path.as_posix()}")
         typer.echo(f"search_ledger_path={ledger_result.ledger_path.as_posix()}")
-        typer.echo(
-            f"selection_metrics_path={selection_metrics_result.report_path.as_posix()}"
-        )
+        typer.echo(f"selection_metrics_path={selection_metrics_result.report_path.as_posix()}")
         typer.echo(f"perp_cost_estimates_path={perp_cost_result.report_path.as_posix()}")
         typer.echo(f"split_materialization_path={split_result.materialization_path.as_posix()}")
         typer.echo(f"review_packet_path={review_packet_result.packet_path.as_posix()}")
@@ -523,6 +527,83 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"blocked_count={result.manifest.summary['blocked_count']}")
         typer.echo(f"manifest_path={result.manifest_path.as_posix()}")
 
+    @app.command("strategy-idea-candidates-bitget-source-refresh")
+    def strategy_idea_candidates_bitget_source_refresh_cmd(
+        symbol: list[str] = typer.Option(
+            ...,
+            "--symbol",
+            help="Bitget symbol such as BTCUSDT. Repeat for multiple symbols.",
+        ),
+        product_type: str = typer.Option(
+            "USDT-FUTURES",
+            "--product-type",
+            help="Bitget productType. Initial C9 source refresh supports USDT-FUTURES only.",
+        ),
+        granularity: str = typer.Option(
+            "5m",
+            "--granularity",
+            help="Candle granularity. Initial C9 source refresh supports 5m only.",
+        ),
+        limit: int = typer.Option(
+            200,
+            "--limit",
+            min=1,
+            help="Closed candles per symbol to materialize.",
+        ),
+        out: Path = typer.Option(
+            Path("data/strategy_idea_candidates/bitget_public_source"),
+            "--out",
+            help="Output directory. The compatible source root is written to --out/source_root.",
+        ),
+        network: bool = typer.Option(
+            False,
+            "--network/--no-network",
+            help="Attempt Bitget public REST. Also allowed by SIS_ALLOW_PUBLIC_NETWORK=1.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing source refresh artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = refresh_bitget_public_source(
+                symbols=symbol,
+                product_type=product_type,
+                granularity=granularity,
+                limit=limit,
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                network=network,
+                replace_existing=replace_existing,
+            )
+        except BitgetPublicSourceNetworkOptInError as exc:
+            typer.echo("network_attempted=false")
+            typer.echo("status=blocked")
+            typer.echo(f"block_reason={exc}")
+            raise typer.Exit(2) from exc
+        except (
+            BitgetPublicSourceRefreshError,
+            BitgetPublicSourceOutputExistsError,
+            ValueError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        row_counts = result.manifest["row_counts"]
+        typer.echo("network_attempted=true")
+        typer.echo("credentials_used=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("status=pass")
+        typer.echo(f"source_root={result.source_root.as_posix()}")
+        typer.echo(f"manifest_path={result.manifest_path.as_posix()}")
+        typer.echo(f"contracts={row_counts['contracts']}")
+        typer.echo(f"tickers_snapshot={row_counts['tickers_snapshot']}")
+        typer.echo(f"candles_5m={row_counts['candles_5m']}")
+        typer.echo(f"known_gap_count={len(result.manifest['known_gaps'])}")
+
 
 def _build_config(
     *,
@@ -553,11 +634,11 @@ def _build_config(
         target_definition="next_window_cost_adjusted_return_estimate",
         prediction_horizon="quick_validation_window",
         timeframe=contract.strategy_scope.timeframe,
-        label_window={"start": validation_end, "end": validation_end},
-        feature_observation_window={"start": train_start, "end": validation_end},
-        train_window={"start": train_start, "end": train_end},
-        validation_window={"start": validation_start, "end": validation_end},
-        sealed_test_window={"start": sealed_start, "end": sealed_start},
+        label_window=TimeWindow(start=validation_end, end=validation_end),
+        feature_observation_window=TimeWindow(start=train_start, end=validation_end),
+        train_window=TimeWindow(start=train_start, end=train_end),
+        validation_window=TimeWindow(start=validation_start, end=validation_end),
+        sealed_test_window=TimeWindow(start=sealed_start, end=sealed_start),
         generated_at=generated_at,
         available_at_policy=(
             "perp features, funding, fees, slippage, and liquidation buffer must be "

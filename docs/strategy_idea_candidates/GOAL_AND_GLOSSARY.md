@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:38 JST
-更新日: 2026-06-28_10:32 JST
+更新日: 2026-06-28_11:02 JST
 -->
 
 # Strategy Idea Candidate Goal And Glossary
@@ -9,7 +9,7 @@
 
 現在の最終ゴールは、入力証跡つきの未検証 strategy idea candidate を生成し、探索全量と棄却理由を保存し、shortlist だけを既存 `strategy_idea.v1` draft と sidecar manifest に分けて次の gate へ渡せる candidate generation pipeline を作ることです。
 
-ただし、最終ゴール全体が完了したわけではない。deterministic generator、split / leakage policy validation API、split materialization sidecar、selection-adjusted metrics local engine、Perp local cost estimate、operator review Markdown surface、richer review packet、Strategy Authoring preflight、fixture E2E、public CLI、Bitget USDT-FUTURES 用 `crypto-perp-risk-taker` profile、JSONL search ledger、manual AI packet/import、Perp estimate bridge、C9 v0 Prep Watchdeck authoring bridge は focused tests まで実装済みです。C9 v0 は対応 family に限る fail-closed bridge であり、汎用 Strategy Lab / backtest bridge と実測 Perp cost evaluator は未実装です。
+ただし、最終ゴール全体が完了したわけではない。deterministic generator、split / leakage policy validation API、split materialization sidecar、selection-adjusted metrics local engine、Perp local cost estimate、operator review Markdown surface、richer review packet、Strategy Authoring preflight、fixture E2E、public CLI、Bitget USDT-FUTURES 用 `crypto-perp-risk-taker` profile、JSONL search ledger、manual AI packet/import、Perp estimate bridge、C9 v0 Prep Watchdeck authoring bridge、repo-native Bitget public source refresh は focused tests まで実装済みです。C9 v0 は対応 family に限る fail-closed bridge であり、汎用 Strategy Lab / backtest bridge と実測 Perp cost evaluator は未実装です。
 
 ## Fixed Vocabulary
 
@@ -188,9 +188,9 @@ full bridge 実装では次を禁止する。
 - `prep-watchdeck/var/watchdeck.duckdb` には service DB として `instruments`、`ticker_latest`、`candles_1m` があるが、service writer が動作中は DuckDB lock で read-only 接続できない場合がある。この場合は published snapshot / chart JSON、または `data/scanner.duckdb` / parquet を入力源にする。
 - したがって C9 v0 は、candidate-scoped generated spec / suite / bundle と isolated `data_dir` / `out_dir` / `reports_dir` を使うか、同等の隔離を行う Python API 経由で実装する。Perp data mapping は「未発見」ではなく、`prep-watchdeck` source adapter として明示実装する。
 
-### Known Local Perp Data Source: prep-watchdeck
+### Known Local Perp Data Source: prep-watchdeck-compatible root
 
-`/home/tn/projects/prep-watchdeck` から C9 v0 に渡せる mapping は次の通り。
+`/home/tn/projects/prep-watchdeck` または `strategy-idea-candidates-bitget-source-refresh --out <run>/bitget_public_source` が作る `<run>/bitget_public_source/source_root` から C9 v0 に渡せる mapping は次の通り。repo-native refresh は `data/scanner.duckdb`、`data/candles_5m/date=*/candles.parquet`、`var/snapshots/latest.json` の互換 root を作る。
 
 | C9 input | prep-watchdeck source | 使える列 / 値 | 境界 |
 |---|---|---|---|
@@ -219,7 +219,7 @@ C9 v0 の実装済み範囲は次に限定する。
 6. backtest pack は候補別 out dir へ生成し、pack validation result を bridge manifest に保存する。
 7. bridge manifest は candidate id、candidate set hash、export manifest hash、ledger hash、candidate-scoped artifacts、boundary false を持つ。
 
-Perp 用 feature / quote / cost-estimate mapping は `prep-watchdeck` を local source として使う。ただし、候補の symbol / timeframe / horizon に必要な履歴が materialize できない場合や、実測 order-book slippage を要求する場合は blocker になります。blocker を返すことも C9 v0 の正しい完了動作に含める。
+Perp 用 feature / quote / cost-estimate mapping は `prep-watchdeck` 互換 source root を local source として使う。ただし、候補の symbol / timeframe / horizon に必要な履歴が materialize できない場合や、実測 order-book slippage を要求する場合は blocker になります。blocker を返すことも C9 v0 の正しい完了動作に含める。
 
 ### Not Full Bridge
 

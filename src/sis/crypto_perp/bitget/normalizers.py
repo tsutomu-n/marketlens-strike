@@ -34,6 +34,21 @@ def _text(row: Mapping[str, Any], key: str) -> str:
     return str(row[key])
 
 
+def _optional_text(row: Mapping[str, Any], key: str) -> str | None:
+    value = row.get(key)
+    if value is None:
+        return None
+    return str(value)
+
+
+def _first_text(row: Mapping[str, Any], keys: tuple[str, ...]) -> str | None:
+    for key in keys:
+        value = _optional_text(row, key)
+        if value is not None:
+            return value
+    return None
+
+
 def normalize_instruments(payload: Mapping[str, Any]) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for item in _data_list(payload):
@@ -61,6 +76,78 @@ def normalize_instruments(payload: Mapping[str, Any]) -> list[dict[str, str]]:
                 "min_leverage": _text(row, "minLeverage"),
                 "max_leverage": _text(row, "maxLeverage"),
                 "funding_interval_hours": _text(row, "fundInterval"),
+            }
+        )
+    return rows
+
+
+def normalize_mix_contracts(
+    payload: Mapping[str, Any], *, product_type: str
+) -> list[dict[str, str | None]]:
+    rows: list[dict[str, str | None]] = []
+    for item in _data_list(payload):
+        row = _row_mapping(item)
+        symbol = _text(row, "symbol")
+        rows.append(
+            {
+                "symbol": symbol,
+                "product_type": _optional_text(row, "productType") or product_type,
+                "base_coin": _optional_text(row, "baseCoin"),
+                "quote_coin": _optional_text(row, "quoteCoin"),
+                "symbol_type": _optional_text(row, "symbolType"),
+                "symbol_status": _optional_text(row, "symbolStatus"),
+                "min_trade_usdt": _optional_text(row, "minTradeUSDT"),
+                "max_lever": _optional_text(row, "maxLever"),
+                "is_rwa": _optional_text(row, "isRwa"),
+            }
+        )
+    return rows
+
+
+def normalize_mix_tickers(payload: Mapping[str, Any]) -> list[dict[str, str | None]]:
+    rows: list[dict[str, str | None]] = []
+    for item in _data_list(payload):
+        row = _row_mapping(item)
+        rows.append(
+            {
+                "symbol": _text(row, "symbol"),
+                "ts": _optional_text(row, "ts"),
+                "last_price": _first_text(row, ("lastPr", "lastPrice")),
+                "bid_price": _first_text(row, ("bidPr", "bid1Price")),
+                "ask_price": _first_text(row, ("askPr", "ask1Price")),
+                "change_24h": _first_text(row, ("change24h", "price24hPcnt")),
+                "usdt_volume_24h": _first_text(
+                    row,
+                    ("usdtVolume", "quoteVolume", "turnover24h"),
+                ),
+                "funding_rate": _optional_text(row, "fundingRate"),
+                "holding_amount": _first_text(row, ("holdingAmount", "openInterest")),
+            }
+        )
+    return rows
+
+
+def normalize_mix_history_candles(
+    payload: Mapping[str, Any],
+    *,
+    symbol: str,
+    granularity: str,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for item in _data_list(payload):
+        if not isinstance(item, Sequence) or isinstance(item, str) or len(item) < 7:
+            raise ValueError("Bitget history candle row must be a sequence with at least 7 fields")
+        rows.append(
+            {
+                "symbol": symbol,
+                "ts": str(item[0]),
+                "open": str(item[1]),
+                "high": str(item[2]),
+                "low": str(item[3]),
+                "close": str(item[4]),
+                "base_vol": str(item[5]),
+                "quote_vol": str(item[6]),
+                "granularity": granularity,
             }
         )
     return rows

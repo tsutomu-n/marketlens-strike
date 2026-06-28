@@ -1,9 +1,72 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_09:48 JST
+更新日: 2026-06-28_11:07 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: C9 Bitget Public Source Refresh
+
+Completed on branch `ai/c9-prep-watchdeck-bridge-20260628-1016`.
+
+Achieved:
+
+- Added `strategy-idea-candidates-bitget-source-refresh` to generate a C9 bridge compatible source root at `--out/source_root/`.
+- Added repo-native Bitget public REST fetching for contracts, tickers, and paginated closed 5m history candles.
+- Wrote `data/scanner.duckdb`, `data/candles_5m/date=*/candles.parquet`, `var/snapshots/latest.json`, and a refresh manifest with network / credential / exchange-write boundaries.
+- Kept private API, wallet, signing, order, position, balance, websocket, deep backfill, orderbook depth, measured slippage, paper permission, and live permission out of scope.
+
+Main files changed:
+
+- `src/sis/strategy_idea_candidates/bitget_public_source.py`
+- `src/sis/crypto_perp/bitget/public_api.py`
+- `src/sis/crypto_perp/bitget/normalizers.py`
+- `src/sis/commands/strategy_idea_candidates.py`
+- `tests/strategy_idea_candidates/test_bitget_public_source.py`
+- `docs/plans/strategy-idea-candidates-c9-bitget-public-source-refresh-2026-06-28.md`
+- `docs/strategy_idea_candidates/README.md`
+- `docs/strategy_idea_candidates/GOAL_AND_GLOSSARY.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+
+Verification:
+
+- `uv run pytest tests/strategy_idea_candidates/test_bitget_public_source.py -q` -> 5 passed.
+- `uv run pytest tests/strategy_idea_candidates/test_authoring_bridge.py -q` -> 5 passed.
+- `uv run pytest tests/strategy_idea_candidates -q` -> 54 passed.
+- `uv run pytest tests/crypto_perp/test_bitget_normalizers.py tests/crypto_perp/test_bitget_client.py -q` -> 10 passed.
+- `uv run sis strategy-idea-candidates-bitget-source-refresh --help` -> command help rendered.
+- `uv run python scripts/check_cli_catalog.py` -> checked 230 public CLI commands.
+- `uv run python scripts/check_current_docs.py` -> checked 174 current docs.
+- `uv run ruff check src/sis/strategy_idea_candidates/bitget_public_source.py src/sis/crypto_perp/bitget/public_api.py src/sis/crypto_perp/bitget/normalizers.py src/sis/commands/strategy_idea_candidates.py tests/strategy_idea_candidates/test_bitget_public_source.py` -> passed.
+- `uv run ruff format --check src/sis/strategy_idea_candidates/bitget_public_source.py src/sis/crypto_perp/bitget/public_api.py src/sis/crypto_perp/bitget/normalizers.py src/sis/commands/strategy_idea_candidates.py tests/strategy_idea_candidates/test_bitget_public_source.py` -> passed.
+- `uv run ty check src/sis/strategy_idea_candidates/bitget_public_source.py src/sis/crypto_perp/bitget/normalizers.py src/sis/crypto_perp/bitget/public_api.py src/sis/commands/strategy_idea_candidates.py` -> passed.
+- `uv run pyrefly check src/sis/strategy_idea_candidates/bitget_public_source.py src/sis/crypto_perp/bitget/normalizers.py src/sis/crypto_perp/bitget/public_api.py src/sis/commands/strategy_idea_candidates.py` -> 0 errors.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+- Real public network refresh still requires explicit `SIS_ALLOW_PUBLIC_NETWORK=1` or `--network`.
+- Orderbook depth, measured slippage, actual cash proof, paper permission, and live permission remain outside this slice.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required. Existing C9 authoring bridge keeps `--prep-watchdeck-root` as the compatible root input.
+
+Rollback:
+
+Remove the new source refresh module and tests, unregister `strategy-idea-candidates-bitget-source-refresh`, and revert the additive Bitget public API / normalizer / docs updates.
 
 ## Latest Addendum: Strategy Candidate Metrics And Perp Bridge
 
