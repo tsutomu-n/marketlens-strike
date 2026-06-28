@@ -19,6 +19,10 @@ from sis.strategy_idea_candidates.authoring_preflight import (
     build_strategy_idea_candidate_authoring_preflight,
     write_strategy_idea_candidate_authoring_preflight,
 )
+from sis.strategy_idea_candidates.authoring_bridge import (
+    StrategyIdeaCandidateAuthoringBridgeOutputExistsError,
+    build_strategy_idea_candidate_authoring_bridge,
+)
 from sis.strategy_idea_candidates.export import (
     StrategyIdeaCandidateExportError,
     StrategyIdeaCandidateExportResult,
@@ -444,6 +448,79 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
         typer.echo("status=pass")
         typer.echo(f"candidate_set_id={result.manifest.candidate_set_id}")
         typer.echo(f"row_set_count={len(result.row_set_paths)}")
+        typer.echo(f"manifest_path={result.manifest_path.as_posix()}")
+
+    @app.command("strategy-idea-candidates-authoring-bridge")
+    def strategy_idea_candidates_authoring_bridge_cmd(
+        candidate_set: Path = typer.Option(
+            ...,
+            "--candidate-set",
+            dir_okay=False,
+            help="strategy_idea_candidate_set.v1 JSON.",
+        ),
+        export_manifest: Path = typer.Option(
+            ...,
+            "--export-manifest",
+            dir_okay=False,
+            help="strategy_idea_candidate_export_manifest.v1 JSON.",
+        ),
+        ledger: Path = typer.Option(
+            ...,
+            "--ledger",
+            dir_okay=False,
+            help="Candidate search ledger JSONL.",
+        ),
+        prep_watchdeck_root: Path = typer.Option(
+            ...,
+            "--prep-watchdeck-root",
+            file_okay=False,
+            help="Local prep-watchdeck repository root. Read-only.",
+        ),
+        out: Path = typer.Option(
+            Path("data/strategy_idea_candidates/authoring_bridge"),
+            "--out",
+            help="Output directory for candidate-scoped authoring bridge artifacts.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_strategy_idea_candidate_authoring_bridge(
+                candidate_set_path=_resolve_workspace_path(candidate_set, settings.data_dir),
+                export_manifest_path=_resolve_workspace_path(
+                    export_manifest,
+                    settings.data_dir,
+                ),
+                ledger_path=_resolve_workspace_path(ledger, settings.data_dir),
+                prep_watchdeck_root=_resolve_workspace_path(
+                    prep_watchdeck_root,
+                    settings.data_dir,
+                ),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            StrategyIdeaCandidateAuthoringBridgeOutputExistsError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("status=pass")
+        typer.echo(f"candidate_set_id={result.manifest.candidate_set_id}")
+        typer.echo(f"bridged_count={result.manifest.summary['bridged_count']}")
+        typer.echo(f"blocked_count={result.manifest.summary['blocked_count']}")
         typer.echo(f"manifest_path={result.manifest_path.as_posix()}")
 
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-06-28_10:09 JST
+更新日: 2026-06-28_10:32 JST
 -->
 
 # Strategy Idea Candidates
@@ -9,9 +9,9 @@
 
 `strategy_idea_candidates` は、既存 `strategy_idea.v1` に渡す前の未検証候補を保存する pre-intake artifact です。
 
-この実装で使えるのは、candidate set contract、Python validation、deterministic generator Python API、Bitget USDT-FUTURES 前提の `crypto-perp-risk-taker` profile、split / leakage policy validation API、split materialization sidecar、Perp shortlist constraint validation、selection-adjusted metrics local engine、Perp cost estimate sidecar、operator review Markdown surface、richer review packet、Strategy Authoring preflight、fixture E2E、canonical JSON / Markdown writer、JSONL search ledger、public CLI、manual AI packet/import、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest、outcome-backed Perp estimate bridge までです。実 market data から alpha を掘る evaluator、実測 Perp cost evaluator、paper / live permission はまだありません。
+この実装で使えるのは、candidate set contract、Python validation、deterministic generator Python API、Bitget USDT-FUTURES 前提の `crypto-perp-risk-taker` profile、split / leakage policy validation API、split materialization sidecar、Perp shortlist constraint validation、selection-adjusted metrics local engine、Perp cost estimate sidecar、operator review Markdown surface、richer review packet、Strategy Authoring preflight、fixture E2E、canonical JSON / Markdown writer、JSONL search ledger、public CLI、manual AI packet/import、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest、outcome-backed Perp estimate bridge、C9 v0 Prep Watchdeck authoring bridge までです。実 market data から alpha を掘る evaluator、実測 Perp cost evaluator、paper / live permission はまだありません。
 
-現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring preflight は readiness gap を列挙するだけで、Strategy Authoring spec 生成、backtest 実行準備、Strategy Review への full bridge 完了とは扱いません。full bridge を実装する場合も、全候補の backtest 成功保証ではなく、候補別に spec/backtest へ進めるか machine-readable blocker を返す fail-closed 経路として扱います。
+現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring preflight は readiness gap を列挙するだけです。C9 v0 Prep Watchdeck authoring bridge は、対応 family に限って candidate-scoped spec / suite / bundle / backtest pack を生成し、変換不能・source 不足・pack 失敗は machine-readable blocker を返す fail-closed 経路です。全候補の backtest 成功保証ではありません。
 
 用語、family ID、最終ゴール、次の未完了 scope、`Strategy Lab / backtest full bridge` の正確な定義は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
 
@@ -19,6 +19,7 @@
 
 - `schemas/strategy_idea_candidate_set.v1.schema.json`
 - `schemas/strategy_idea_candidate_export_manifest.v1.schema.json`
+- `schemas/strategy_idea_candidate_authoring_bridge.v1.schema.json`
 - `src/sis/strategy_idea_candidates/`
 - `src/sis/commands/strategy_idea_candidates.py`
 - `tests/strategy_idea_candidates/`
@@ -46,6 +47,7 @@
 - selection-adjusted metrics local engine は raw p-value がある場合だけ Benjamini-Hochberg FDR を `AVAILABLE` にし、DSR / PBO / White Reality Check は必要入力が無い場合 `NOT_ESTIMABLE` と明記する。
 - Perp cost estimate は funding / fee / slippage / liquidation buffer を local parameter estimate として保存する。actual cash result ではありません。
 - `strategy-idea-candidates-perp-estimate` は shortlisted Perp candidate と `crypto_perp_outcome.v1` から candidate-scoped `crypto_perp_tournament_rows.v2` estimate を作る。
+- `strategy-idea-candidates-authoring-bridge` は shortlisted Perp candidate を `/home/tn/projects/prep-watchdeck` の local read-only source から candidate-scoped Strategy Authoring spec / suite / bundle / standard backtest pack へ変換する。
 - `strategy-idea-candidates-ai-packet-build` は外部 API を呼ばず、candidate set / ledger summary / Perp constraints を manual AI 用 packet にする。
 - `strategy-idea-candidates-ai-import` は manual AI response を検証し、AI候補を `source_kind=ai_generated`、`UNVERIFIED_CANDIDATE`、human shortlist required として取り込む。
 
@@ -57,7 +59,8 @@
 - JSONL search ledger は candidate generation の全候補 row を保存する sidecar です。raw metric や AI score を proof として扱いません。
 - selection-adjusted metrics sidecar は local disclosure engine です。`AVAILABLE` は FDR 計算が可能だったことだけを示し、alpha proof や profit proof ではありません。
 - `perp_cost_estimates.json` と Perp estimate bridge は estimate artifact です。`crypto-perp-tournament-report` の actual-cash input ではありません。
-- `Strategy Lab / backtest full bridge` は未実装です。実装時は candidate-scoped spec / suite / bundle / output を使い、default TradeXYZ / QQQ example backtest を候補 proof として流用しません。Bitget Perp の local feature / quote / cost-estimate source は `/home/tn/projects/prep-watchdeck` を利用候補にしますが、同 repo は板厚・実測 slippage evaluator ではありません。
+- C9 v0 `Strategy Lab / backtest bridge` は `perp_momentum_continuation` と `perp_funding_rate_carry_filter` だけを対応します。candidate-scoped spec / suite / bundle / output を使い、default TradeXYZ / QQQ example backtest を候補 proof として流用しません。Bitget Perp の local feature / quote / cost-estimate source は `/home/tn/projects/prep-watchdeck` を使いますが、同 repo は板厚・実測 slippage evaluator ではありません。
+- C9 v0 bridge の `venue_cost_matrix.csv` は `ESTIMATE_ONLY` です。`quotes.parquet` の bid/ask は service DB に無い場合 `spread_bps_estimate` から推定し、source manifest に残します。
 - AI packet/import は local/manual だけです。repo 内から AI / LLM API へ送信しません。
 - `crypto-perp-risk-taker` は quick validation estimate までの候補生成 profile であり、wallet、signing、exchange write、live order を許可しません。
 - dependency は追加していません。
@@ -106,6 +109,13 @@ uv run sis strategy-idea-candidates-perp-estimate \
   --candidate-set data/strategy_idea_candidates/btc-perp/strategy_idea_candidate_set.json \
   --outcome data/crypto_perp/outcomes/event-1.json \
   --out data/strategy_idea_candidates/btc-perp/perp_estimate_bridge
+
+uv run sis strategy-idea-candidates-authoring-bridge \
+  --candidate-set data/strategy_idea_candidates/btc-perp/strategy_idea_candidate_set.json \
+  --export-manifest data/strategy_idea_candidates/btc-perp/exported_strategy_ideas/strategy_idea_candidate_export_manifest.json \
+  --ledger data/strategy_idea_candidates/btc-perp/search_ledger.jsonl \
+  --prep-watchdeck-root /home/tn/projects/prep-watchdeck \
+  --out data/strategy_idea_candidates/btc-perp/authoring_bridge
 ```
 
 ## 検証

@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketlens-strike.local/schemas/strategy_idea_candidate_authoring_bridge.v1.schema.json",
+  "title": "Strategy Idea Candidate Authoring Bridge Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "created_at",
+    "producer",
+    "candidate_set_id",
+    "candidate_set_path",
+    "candidate_set_sha256",
+    "export_manifest_path",
+    "export_manifest_sha256",
+    "ledger_path",
+    "ledger_sha256",
+    "prep_watchdeck_root",
+    "candidates",
+    "summary",
+    "known_gaps",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "strategy_idea_candidate_authoring_bridge.v1"
+    },
+    "manifest_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {
+          "const": "sis"
+        },
+        "command": {
+          "const": "strategy-idea-candidates-authoring-bridge"
+        }
+      }
+    },
+    "candidate_set_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_set_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_set_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "export_manifest_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "export_manifest_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "ledger_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ledger_sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "prep_watchdeck_root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "family",
+          "status",
+          "symbols",
+          "blockers",
+          "source_statuses",
+          "artifacts"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "family": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "BRIDGED",
+              "BLOCKED_UNSUPPORTED_FAMILY_MAPPING",
+              "BLOCKED_MISSING_SOURCE_COLUMNS",
+              "BLOCKED_NO_SYMBOL_DATA",
+              "BLOCKED_UNSUPPORTED_PRODUCT_TYPE",
+              "BLOCKED_UNSUPPORTED_SIDE_BIAS",
+              "BLOCKED_BACKTEST_PACK"
+            ]
+          },
+          "symbols": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source_statuses": {
+            "type": "array",
+            "items": {
+              "enum": ["SOURCE_AVAILABLE", "SOURCE_LOCKED", "SOURCE_ERROR"]
+            }
+          },
+          "artifacts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "candidate_count",
+        "status_counts",
+        "bridged_count",
+        "blocked_count",
+        "candidate_scoped_outputs",
+        "actual_cash_result_available"
+      ],
+      "properties": {
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "bridged_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidate_scoped_outputs": {
+          "const": true
+        },
+        "actual_cash_result_available": {
+          "const": false
+        }
+      }
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "permits_live_order",
+        "permits_paper_candidate",
+        "permits_paper_intent_preview",
+        "auto_promote",
+        "generated_strategy_idea_is_final",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "permits_live_order": {
+          "const": false
+        },
+        "permits_paper_candidate": {
+          "const": false
+        },
+        "permits_paper_intent_preview": {
+          "const": false
+        },
+        "auto_promote": {
+          "const": false
+        },
+        "generated_strategy_idea_is_final": {
+          "const": false
+        },
+        "wallet_used": {
+          "const": false
+        },
+        "signing_used": {
+          "const": false
+        },
+        "exchange_write_used": {
+          "const": false
+        }
+      }
+    }
+  }
+}
