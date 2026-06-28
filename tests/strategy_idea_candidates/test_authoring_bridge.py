@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
@@ -150,7 +149,11 @@ def _candidate_set_payload(candidates: list[dict[str, Any]]) -> dict[str, Any]:
         ],
         "candidate_inventory": candidates,
         "parameter_grids": {
-            family: [candidate["parameter_set"] for candidate in candidates if candidate["family"] == family]
+            family: [
+                candidate["parameter_set"]
+                for candidate in candidates
+                if candidate["family"] == family
+            ]
             for family in families
         },
         "search_ledger_summary": {
@@ -277,7 +280,11 @@ def _write_prep_watchdeck_root(root: Path, *, include_funding: bool = True) -> N
         """
     )
     con.execute(
-        "INSERT INTO contracts VALUES ('BTCUSDT', 'USDT-FUTURES', 'BTC', 'USDT', 'perpetual', 'online', 5, 75, false, 1781726700000)"
+        """
+        INSERT INTO contracts VALUES
+        ('BTCUSDT', 'USDT-FUTURES', 'BTC', 'USDT', 'perpetual', 'online',
+         5, 75, false, 1781726700000)
+        """
     )
     ticker_columns = (
         "run_id TEXT, symbol TEXT, ts BIGINT, last_price DOUBLE, change_24h DOUBLE, "
@@ -308,7 +315,18 @@ def _write_prep_watchdeck_root(root: Path, *, include_funding: bool = True) -> N
     for index in range(8):
         ts_ms = int((start + timedelta(minutes=5 * index)).timestamp() * 1000)
         close = 100.0 + index * 1.5
-        rows.append(("BTCUSDT", ts_ms, close - 1.0, close + 0.5, close - 1.5, close, 10.0, 1000.0 + index))
+        rows.append(
+            (
+                "BTCUSDT",
+                ts_ms,
+                close - 1.0,
+                close + 0.5,
+                close - 1.5,
+                close,
+                10.0,
+                1000.0 + index,
+            )
+        )
     con.executemany("INSERT INTO candles_5m VALUES (?, ?, ?, ?, ?, ?, ?, ?)", rows)
     con.close()
     parquet_rows = [
@@ -387,7 +405,11 @@ def test_authoring_bridge_generates_candidate_scoped_artifacts_and_backtest_pack
     monkeypatch.chdir(tmp_path)
     prep_root = tmp_path / "prep-watchdeck"
     _write_prep_watchdeck_root(prep_root)
-    rejected = _candidate("cand-999-rejected", family="perp_basis_mark_index_spread", decision="REJECTED")
+    rejected = _candidate(
+        "cand-999-rejected",
+        family="perp_basis_mark_index_spread",
+        decision="REJECTED",
+    )
     candidate_set_path, export_manifest_path, ledger_path = _write_candidate_inputs(
         tmp_path,
         [
@@ -479,7 +501,11 @@ def test_authoring_bridge_blocks_missing_symbol_data(tmp_path: Path) -> None:
         tmp_path,
         [
             missing_symbol_candidate,
-            _candidate("cand-rejected", family="perp_funding_rate_carry_filter", decision="REJECTED"),
+            _candidate(
+                "cand-rejected",
+                family="perp_funding_rate_carry_filter",
+                decision="REJECTED",
+            ),
         ],
     )
 
@@ -514,7 +540,11 @@ def test_authoring_bridge_cli_help_and_no_replace_existing(tmp_path: Path, monke
         tmp_path,
         [
             _candidate("cand-001-momentum", family="perp_momentum_continuation"),
-            _candidate("cand-rejected", family="perp_funding_rate_carry_filter", decision="REJECTED"),
+            _candidate(
+                "cand-rejected",
+                family="perp_funding_rate_carry_filter",
+                decision="REJECTED",
+            ),
         ],
     )
     args = [

@@ -94,7 +94,9 @@ def load_prep_watchdeck_source(root: Path, *, symbols: list[str]) -> PrepWatchde
             snapshot_source, snapshot_quality = _read_latest_snapshot(latest_snapshot)
         except Exception as exc:
             statuses.append("SOURCE_ERROR")
-            sources.append(_source_ref("latest_snapshot_json", latest_snapshot, "SOURCE_ERROR", exc))
+            sources.append(
+                _source_ref("latest_snapshot_json", latest_snapshot, "SOURCE_ERROR", exc)
+            )
         else:
             quality.update({k: v for k, v in snapshot_quality.items() if k in normalized_symbols})
             sources.append(_source_ref("latest_snapshot_json", latest_snapshot, "READ"))

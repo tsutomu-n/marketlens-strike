@@ -584,7 +584,9 @@ def _authoring_spec(
     }
 
 
-def _entry_rules(candidate: StrategyIdeaCandidate, lookback: int) -> dict[str, list[dict[str, Any]]]:
+def _entry_rules(
+    candidate: StrategyIdeaCandidate, lookback: int
+) -> dict[str, list[dict[str, Any]]]:
     common = [
         {"column": "trade_allowed", "op": "is_true"},
         {"column": "spread_bps_estimate", "op": "lte", "value": 25.0},
@@ -746,7 +748,9 @@ def _write_blocker(
 
 
 def _candidate_symbols(candidates: list[StrategyIdeaCandidate]) -> list[str]:
-    return _normalize_symbols([symbol for candidate in candidates for symbol in candidate.instruments])
+    return _normalize_symbols(
+        [symbol for candidate in candidates for symbol in candidate.instruments]
+    )
 
 
 def _normalize_symbols(symbols: list[str]) -> list[str]:
