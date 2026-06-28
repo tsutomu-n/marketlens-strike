@@ -1,9 +1,70 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_14:18 JST
+更新日: 2026-06-28_19:09 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Crypto Perp Risk-Taker Review Artifact
+
+Completed on branch `ai/risk-taker-review-artifact-20260628-1721`.
+
+Achieved:
+
+- Added `crypto-perp-risk-taker-review` as a local-only CLI over `crypto_perp_tournament_rows.v2`, `crypto_perp_source_availability.v1`, and `crypto_perp_bias_guard.v1`.
+- Added `crypto_perp_risk_taker_review.v1` with jurisdiction, source freshness, source availability, NO_TRADE comparison, after-cost edge, stress edge, dollars per hour, largest loss, profit concentration, liquidation buffer, conditions, known gaps, and false-only boundary.
+- Kept `crypto-perp-tournament-gate` semantics unchanged.
+- Made estimate-only positive edge stop at `NEEDS_ACTUAL_CASH`, not `READY_FOR_HUMAN_RISK_REVIEW`.
+- Kept network, credential, wallet, signing, exchange-write, tiny-live, and live-order permission false.
+
+Main files changed:
+
+- `src/sis/crypto_perp/risk_taker_review.py`
+- `src/sis/commands/crypto_perp_risk_taker_review.py`
+- `src/sis/commands/crypto_perp.py`
+- `schemas/crypto_perp_risk_taker_review.v1.schema.json`
+- `tests/crypto_perp/test_risk_taker_review.py`
+- `tests/crypto_perp/test_risk_taker_review_command_registration.py`
+- `docs/plans/risk-taker-review-artifact-2026-06-28.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/IMPLEMENTED_SURFACES.md`
+- `docs/CURRENT_STATE.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_risk_taker_review.py tests/crypto_perp/test_risk_taker_review_command_registration.py tests/crypto_perp/test_tournament_gate.py tests/crypto_perp/test_tournament_rows.py -q` -> 25 passed.
+- `uv run sis crypto-perp-risk-taker-review --help` -> command help rendered.
+- `uv run python scripts/check_cli_catalog.py` -> checked 231 public CLI commands.
+- `uv run python scripts/check_current_docs.py` -> checked 180 current docs.
+- `uv run ruff check src/sis/crypto_perp/risk_taker_review.py src/sis/commands/crypto_perp_risk_taker_review.py src/sis/commands/crypto_perp.py tests/crypto_perp/test_risk_taker_review.py tests/crypto_perp/test_risk_taker_review_command_registration.py` -> passed.
+- `uv run ruff format --check src/sis/crypto_perp/risk_taker_review.py src/sis/commands/crypto_perp_risk_taker_review.py src/sis/commands/crypto_perp.py tests/crypto_perp/test_risk_taker_review.py tests/crypto_perp/test_risk_taker_review_command_registration.py` -> passed.
+- `uv run ty check src/sis/crypto_perp/risk_taker_review.py src/sis/commands/crypto_perp_risk_taker_review.py tests/crypto_perp/test_risk_taker_review.py tests/crypto_perp/test_risk_taker_review_command_registration.py` -> passed.
+- `uv run pyrefly check src/sis/crypto_perp/risk_taker_review.py src/sis/commands/crypto_perp_risk_taker_review.py tests/crypto_perp/test_risk_taker_review.py tests/crypto_perp/test_risk_taker_review_command_registration.py` -> 0 errors.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+None for this local artifact slice.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required. Existing profit-readiness local outputs can be fed into the new review CLI when the required inputs exist.
+
+Rollback:
+
+Remove the risk-taker review model, command, schema, tests, docs plan, and CLI registration entry.
 
 ## Latest Addendum: C9 Bridge Relative Out Bug Fix
 

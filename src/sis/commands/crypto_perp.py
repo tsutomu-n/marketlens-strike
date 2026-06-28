@@ -16,6 +16,9 @@ from sis.commands.crypto_perp_profit_readiness import (
     register_crypto_perp_profit_readiness_commands,
 )
 from sis.commands.crypto_perp_records import register_crypto_perp_record_commands
+from sis.commands.crypto_perp_risk_taker_review import (
+    register_crypto_perp_risk_taker_review_commands,
+)
 from sis.commands.crypto_perp_status import register_crypto_perp_status_commands
 from sis.commands.crypto_perp_tournament_report import (
     register_crypto_perp_tournament_report_commands,
@@ -43,6 +46,7 @@ def register_crypto_perp_commands(app: typer.Typer) -> None:
     register_crypto_perp_record_commands(app)
     register_crypto_perp_tournament_report_commands(app)
     register_crypto_perp_profit_readiness_commands(app)
+    register_crypto_perp_risk_taker_review_commands(app)
     register_crypto_perp_config_commands(
         app,
         load_config_for_cli_fn=_load_config_for_cli,
