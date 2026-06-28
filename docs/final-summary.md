@@ -1,9 +1,58 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_11:07 JST
+更新日: 2026-06-28_14:18 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: C9 Bridge Relative Out Bug Fix
+
+Completed on branch `ai/post-c9-bitget-source-20260628-1113`.
+
+Achieved:
+
+- Fixed C9 authoring bridge generation so relative `--out` paths can still produce `BRIDGED` candidates.
+- Wrote absolute generated data artifact paths into the bridge-generated Strategy Authoring spec.
+- Passed absolute bridge-local spec, suite, bundle, output, reports, and runtime data paths to the backtest pack runner before its repo-root `chdir`.
+- Removed stale `bridge_blocker.json` from a candidate directory after that candidate successfully becomes `BRIDGED`.
+- Kept public CLI, schema, manifest fields, and the general Strategy Authoring path resolver unchanged.
+
+Main files changed:
+
+- `src/sis/strategy_idea_candidates/authoring_bridge.py`
+- `tests/strategy_idea_candidates/test_authoring_bridge.py`
+
+Verification:
+
+- `uv run pytest tests/strategy_idea_candidates/test_authoring_bridge.py::test_authoring_bridge_relative_out_uses_existing_artifact_paths_and_clears_stale_blocker` -> 1 passed after the fix.
+- `uv run pytest tests/strategy_idea_candidates/test_authoring_bridge.py` -> 6 passed.
+- `uv run pytest tests/strategy_idea_candidates/test_bitget_public_source.py::test_generated_source_root_can_feed_authoring_bridge` -> 1 passed.
+- `uv run ruff check src/sis/strategy_idea_candidates/authoring_bridge.py tests/strategy_idea_candidates/test_authoring_bridge.py` -> passed.
+- `uv run ruff format --check src/sis/strategy_idea_candidates/authoring_bridge.py tests/strategy_idea_candidates/test_authoring_bridge.py` -> passed.
+
+Remaining work:
+
+None for this bug fix.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required. Existing successful bridge outputs do not need regeneration unless the relative `--out` bug affected that run.
+
+Rollback:
+
+Revert the authoring bridge path resolution changes and the added regression test.
 
 ## Latest Addendum: C9 Bitget Public Source Refresh
 

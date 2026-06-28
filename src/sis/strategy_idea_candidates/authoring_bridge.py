@@ -128,9 +128,7 @@ def build_strategy_idea_candidate_authoring_bridge(
             f"{export_manifest.candidate_set_id} != {candidate_set.candidate_set_id}"
         )
 
-    shortlisted_export_ids = {
-        item.idea_candidate_id for item in export_manifest.exported_ideas
-    }
+    shortlisted_export_ids = {item.idea_candidate_id for item in export_manifest.exported_ideas}
     shortlisted_candidates = [
         candidate
         for candidate in candidate_set.candidate_inventory
@@ -248,6 +246,10 @@ def _process_candidate(
             artifacts={"bridge_blocker": blocker_path.as_posix()},
         )
 
+    stale_blocker_path = candidate_dir / "bridge_blocker.json"
+    if stale_blocker_path.is_file():
+        stale_blocker_path.unlink()
+
     return StrategyIdeaCandidateAuthoringBridgeCandidate(
         candidate_id=candidate.idea_candidate_id,
         family=candidate.family,
@@ -329,7 +331,18 @@ def _write_bridged_candidate_artifacts(
     feature.write_parquet(feature_path)
     _quote_frame(candidate=candidate, feature=feature, source=source).write_parquet(quote_path)
     _cost_matrix(candidate=candidate, symbols=symbols, source=source).write_csv(cost_path)
-    write_text_artifact(spec_path, _yaml_text(_authoring_spec(candidate, symbols, candidate_dir)))
+    write_text_artifact(
+        spec_path,
+        _yaml_text(
+            _authoring_spec(
+                candidate,
+                symbols,
+                feature_panel_path=feature_path.resolve(),
+                quote_data_path=quote_path.resolve(),
+                cost_model_path=cost_path.resolve(),
+            )
+        ),
+    )
     write_text_artifact(suite_path, _yaml_text(_backtest_suite(candidate)))
     write_text_artifact(bundle_path, _yaml_text(_authoring_bundle(candidate)))
     write_json_artifact(
@@ -338,15 +351,15 @@ def _write_bridged_candidate_artifacts(
     )
     pack_result = _run_strategy_backtest_pack_from_repo_root(
         StrategyBacktestPackRunInputs(
-            spec_path=spec_path,
-            suite_path=suite_path,
-            bundle_path=bundle_path,
+            spec_path=spec_path.resolve(),
+            suite_path=suite_path.resolve(),
+            bundle_path=bundle_path.resolve(),
             label_horizon_minutes=_label_horizon_minutes(candidate),
             benchmark_series_path=None,
             benchmark_series_return_column=DEFAULT_BENCHMARK_SERIES_RETURN_COLUMN,
-            out_dir=candidate_dir / "backtest_pack",
-            reports_dir=candidate_dir / "backtest_reports",
-            data_dir=candidate_dir / "backtest_runtime_data",
+            out_dir=(candidate_dir / "backtest_pack").resolve(),
+            reports_dir=(candidate_dir / "backtest_reports").resolve(),
+            data_dir=(candidate_dir / "backtest_runtime_data").resolve(),
         )
     )
     return {
@@ -496,7 +509,12 @@ def _cost_matrix(
 
 
 def _authoring_spec(
-    candidate: StrategyIdeaCandidate, symbols: list[str], candidate_dir: Path
+    candidate: StrategyIdeaCandidate,
+    symbols: list[str],
+    *,
+    feature_panel_path: Path,
+    quote_data_path: Path,
+    cost_model_path: Path,
 ) -> dict[str, Any]:
     lookback = _positive_int(candidate.parameter_set.get("lookback"), default=1)
     side = str(candidate.parameter_set.get("side_bias") or "long").lower()
@@ -522,9 +540,9 @@ def _authoring_spec(
             "run_profile_id": "strategy_lab_research_only",
         },
         "data": {
-            "feature_panel_path": (candidate_dir / "feature_panel.parquet").as_posix(),
-            "quote_data_path": (candidate_dir / "quotes.parquet").as_posix(),
-            "cost_model_path": (candidate_dir / "venue_cost_matrix.csv").as_posix(),
+            "feature_panel_path": feature_panel_path.as_posix(),
+            "quote_data_path": quote_data_path.as_posix(),
+            "cost_model_path": cost_model_path.as_posix(),
         },
         "rules": {
             "side": side,

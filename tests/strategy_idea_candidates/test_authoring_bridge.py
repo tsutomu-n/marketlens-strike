@@ -439,9 +439,7 @@ def test_authoring_bridge_generates_candidate_scoped_artifacts_and_backtest_pack
         assert (candidate_dir / "strategy_backtest_suite.yaml").exists()
         assert (candidate_dir / "strategy_authoring_bundle.yaml").exists()
         assert (candidate_dir / "backtest_pack/strategy_backtest_pack.json").exists()
-        assert (
-            candidate_dir / "backtest_pack/strategy_backtest_pack_validation.json"
-        ).exists()
+        assert (candidate_dir / "backtest_pack/strategy_backtest_pack_validation.json").exists()
         assert load_authoring_spec(candidate_dir / "strategy_authoring_spec.yaml")
         assert load_backtest_suite_spec(candidate_dir / "strategy_backtest_suite.yaml")
         assert load_authoring_bundle_spec(candidate_dir / "strategy_authoring_bundle.yaml")
@@ -469,7 +467,9 @@ def test_authoring_bridge_relative_out_uses_existing_artifact_paths_and_clears_s
         tmp_path,
         [
             _candidate("cand-relative-out", family="perp_momentum_continuation"),
-            _candidate("cand-rejected", family="perp_funding_rate_carry_filter", decision="REJECTED"),
+            _candidate(
+                "cand-rejected", family="perp_funding_rate_carry_filter", decision="REJECTED"
+            ),
         ],
     )
     candidate_dir = tmp_path / "bridge_out/cand-relative-out"
@@ -489,9 +489,7 @@ def test_authoring_bridge_relative_out_uses_existing_artifact_paths_and_clears_s
     assert result.manifest.summary["status_counts"] == {"BRIDGED": 1}
     assert result.manifest.candidates[0].status == "BRIDGED"
     assert (candidate_dir / "backtest_pack/strategy_backtest_pack.json").exists()
-    assert (
-        candidate_dir / "backtest_pack/strategy_backtest_pack_validation.json"
-    ).exists()
+    assert (candidate_dir / "backtest_pack/strategy_backtest_pack_validation.json").exists()
     spec = load_authoring_spec(candidate_dir / "strategy_authoring_spec.yaml")
     data_paths = [
         Path(spec.data.feature_panel_path),
@@ -525,9 +523,7 @@ def test_authoring_bridge_writes_blocker_for_unsupported_family(tmp_path: Path) 
 
     assert result.manifest.candidates[0].status == "BLOCKED_UNSUPPORTED_FAMILY_MAPPING"
     blocker = json.loads(
-        (tmp_path / "bridge_out/cand-unsupported/bridge_blocker.json").read_text(
-            encoding="utf-8"
-        )
+        (tmp_path / "bridge_out/cand-unsupported/bridge_blocker.json").read_text(encoding="utf-8")
     )
     assert blocker["status"] == "BLOCKED_UNSUPPORTED_FAMILY_MAPPING"
     assert not (tmp_path / "bridge_out/cand-unsupported/strategy_authoring_spec.yaml").exists()
