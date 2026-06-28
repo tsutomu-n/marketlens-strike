@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:38 JST
-更新日: 2026-06-28_09:19 JST
+更新日: 2026-06-28_09:45 JST
 -->
 
 # Strategy Idea Candidate Goal And Glossary
@@ -9,7 +9,7 @@
 
 現在の最終ゴールは、入力証跡つきの未検証 strategy idea candidate を生成し、探索全量と棄却理由を保存し、shortlist だけを既存 `strategy_idea.v1` draft と sidecar manifest に分けて次の gate へ渡せる candidate generation pipeline を作ることです。
 
-ただし、最終ゴール全体が完了したわけではない。deterministic generator、split / leakage policy validation API、metric disclosure、operator review Markdown surface、fixture E2E、public CLI、Bitget USDT-FUTURES 用 `crypto-perp-risk-taker` profile、JSONL search ledger、manual AI packet/import は focused tests まで実装済みです。現行実装が自動で通す次 gate は `strategy-intake-validate` で、Strategy Authoring / backtest / Strategy Review への full bridge と selection-adjusted metrics engine は未実装です。
+ただし、最終ゴール全体が完了したわけではない。deterministic generator、split / leakage policy validation API、split materialization sidecar、selection-adjusted metrics local engine、Perp local cost estimate、operator review Markdown surface、richer review packet、Strategy Authoring preflight、fixture E2E、public CLI、Bitget USDT-FUTURES 用 `crypto-perp-risk-taker` profile、JSONL search ledger、manual AI packet/import、Perp estimate bridge は focused tests まで実装済みです。現行実装が自動で通す次 gate は `strategy-intake-validate` で、Strategy Authoring / backtest / Strategy Review への full bridge と実測 Perp cost evaluator は未実装です。
 
 ## Fixed Vocabulary
 
@@ -33,7 +33,7 @@
 | search ledger summary | family count、candidate count、trial count、parameter grid hash、peek/rerank count の summary | JSONL / CSV の行単位 ledger |
 | search ledger rows | C4 以降で実データ行が出てから追加する JSONL / CSV row output | C3 の必須 output |
 | raw validation metrics | raw と明示して保存する未補正 metric | 発見、証明、採用理由 |
-| selection-adjusted metrics | selection bias 補正済み metric。未実装なら `NOT_IMPLEMENTED` | raw metric の言い換え |
+| selection-adjusted metrics | local engine による補正 metric disclosure。raw p-value がある場合だけ Benjamini-Hochberg FDR を `AVAILABLE` にし、入力不足は `NOT_ESTIMABLE` | raw metric の言い換え、alpha proof、profit proof |
 | split policy | train / validation / sealed test の役割を保存する policy record | 完全な split engine の実装証明 |
 | leakage policy | available-at、purge、embargo、sealed-test non-use の policy record | no-lookahead が実証済みという主張 |
 | operator review surface | 人間が探索量、棄却数、selection policy、known gaps を読む surface | paper/live approval UI |
@@ -71,7 +71,7 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 2. 少数の fixed candidate family と finite parameter grid から `UNVERIFIED_CANDIDATE` を生成する。
 3. `candidate_count_total`、`candidate_count_shortlisted`、`candidate_count_rejected`、`candidate_inventory`、`selection_policy`、`rejection_reason` を必ず保存する。
 4. source path/hash/status、available-at、max observed timestamp、label window、prediction horizon、split policy、leakage policy、purge / embargo policy を candidate set に保存する。
-5. raw metrics と selection-adjusted metrics status を分ける。補正済み metric がない場合は `NOT_IMPLEMENTED` とする。
+5. raw metrics と selection-adjusted metrics status を分ける。engine が走っても必要入力がない場合は `NOT_ESTIMABLE` とする。
 6. operator review surface で探索量、棄却数、selection policy、known gaps を人間が読めるようにする。
 7. shortlist だけを strict `strategy_idea.v1` draft に export する。
 8. candidate set path/hash と exported idea path/hash は `strategy_idea_candidate_export_manifest.v1` sidecar に置く。
@@ -87,28 +87,29 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 - C3: canonical JSON / Markdown writer。
 - C8: shortlist export と sidecar manifest。
 - C4: deterministic generator Python API。fixed family、finite parameter grid、candidate cap、duplicate rejection、parameter grid hash を保存する。
-- C5: split / leakage policy validation API。time window ordering、sealed-test non-use、source available-at boundary、purge / embargo policy record を検査する。
-- C6: metric disclosure in reports。`raw_validation_metrics` と `selection_adjusted_metrics_status` を分け、raw metrics を proof と呼ばない。
-- C10: operator review Markdown surface。探索量、棄却理由、selection policy、known gaps、policy validation、false boundary を人間が読めるようにする。
+- C5: split / leakage policy validation API と split materialization sidecar。time window ordering、sealed-test non-use、source available-at boundary、purge / embargo policy record を検査・保存する。
+- C6: selection-adjusted metrics local engine。`raw_validation_metrics` と `selection_adjusted_metrics_status` を分け、BH FDR が可能な場合だけ `AVAILABLE`、入力不足は `NOT_ESTIMABLE` とし、raw metrics を proof と呼ばない。
+- C10: operator review Markdown surface と richer review packet。探索量、棄却理由、selection policy、known gaps、policy validation、false boundary、人間 review template を読めるようにする。
 - C11: fixture E2E。input evidence -> candidate set -> policy validation -> operator review -> shortlist export -> intake validation を通す。
 - C12: public CLI。`strategy-idea-candidates-build`、`strategy-idea-candidates-ai-packet-build`、`strategy-idea-candidates-ai-import` を追加済み。
 - C13: Bitget USDT-FUTURES Perp profile。`crypto-perp-risk-taker` family/grid、Perp risk metadata、shortlist constraint を追加済み。
 - C14: JSONL search ledger。全 candidate row に source kind、parameter hash、decision、rejection reason、selection-adjusted metrics status、sealed-test non-use を保存済み。
 - C15: manual AI packet/import。外部APIなしで packet を作り、manual AI response を検証して `ai_generated` candidate として取り込み済み。
+- C16: Perp local cost estimate。funding / fee / slippage / liquidation buffer を local parameter estimate として保存済み。
+- C17: Perp estimate bridge。shortlisted Perp candidate と `crypto_perp_outcome.v1` から candidate-scoped `crypto_perp_tournament_rows.v2` estimate を生成済み。
+- C18: Strategy Authoring preflight。`strategy_idea.v1` export availability と authoring/backtest/paper/live readiness gap を保存済み。
 
 未完了:
 
-- C5 full split engine。現状は policy validation API まで。
-- C6 selection-adjusted metrics engine。現状は report disclosure と `NOT_IMPLEMENTED` 表示まで。
+- C5 full statistical split engine。現状は validation と materialization sidecar まで。
 - C9: Strategy Lab / backtest bridge。
-- C10 richer review packet。現状は Markdown surface まで。
-- Perp funding / fee / slippage / liquidation の実測 evaluator。現状は candidate metadata と estimate boundary まで。
+- Perp funding / fee / slippage / liquidation の実測 evaluator。現状は candidate metadata と local estimate boundary まで。
 
 ## Next Goal
 
 C5 以降の前に残っている正確なゴール:
 
-C4/C5/C10/C11 の pipeline evidence を前提に、selection-adjusted metrics は未実装なら `NOT_IMPLEMENTED` のまま誤読されないようにする。C9 Strategy Lab / backtest bridge は、`strategy_idea.v1` draft を Strategy Authoring spec / backtest pack へ変換する明示 contract ができるまで未実装として扱う。
+C4/C5/C10/C11/C16/C17/C18 の pipeline evidence を前提に、selection-adjusted metrics は入力不足なら `NOT_ESTIMABLE` のまま誤読されないようにする。C9 Strategy Lab / backtest full bridge は、`strategy_idea.v1` draft を Strategy Authoring spec / backtest pack へ変換する明示 contract ができるまで未実装として扱う。
 
 完了条件:
 

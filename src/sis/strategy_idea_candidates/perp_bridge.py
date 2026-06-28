@@ -11,10 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_valid
 
 from sis.backtest.artifact_io import sha256_file
 from sis.crypto_perp.outcomes import CryptoPerpOutcome
-from sis.crypto_perp.tournament_rows import (
-    CryptoPerpTournamentRowsV2,
-    build_cost_aware_tournament_rows,
-)
+from sis.crypto_perp.tournament_rows import build_cost_aware_tournament_rows
 from sis.strategy_idea_candidates.models import (
     CandidateBoundary,
     CandidateDecision,
@@ -143,7 +140,7 @@ def build_and_write_candidate_perp_estimate_bridge(
             raise StrategyIdeaCandidatePerpEstimateBridgeOutputExistsError(
                 f"output already exists: {row_set_path}"
             )
-        write_json_artifact(row_set_path, row_set.model_dump(mode="json", exclude_none=True))
+        write_json_artifact(row_set_path, row_set.model_dump(mode="json"))
         row_set_paths.append(row_set_path)
         row_set_refs.append(
             StrategyIdeaCandidatePerpEstimateRowSetRef(

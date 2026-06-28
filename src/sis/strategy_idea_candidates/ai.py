@@ -27,7 +27,9 @@ from sis.strategy_idea_candidates.models import (
     StrategyIdeaCandidate,
     StrategyIdeaCandidateSet,
 )
+from sis.strategy_idea_candidates.perp_costs import apply_perp_cost_estimates
 from sis.strategy_idea_candidates.rendering import render_strategy_idea_candidate_set_markdown
+from sis.strategy_idea_candidates.selection_metrics import apply_selection_adjusted_metrics
 from sis.strategy_inputs.io import write_json_artifact, write_text_artifact
 from sis.strategy_review.provenance import repo_relative_path
 
@@ -175,7 +177,7 @@ def build_ai_candidate_packet(
             "candidate_count_rejected": summary.candidate_count_rejected,
             "trial_count_total": summary.trial_count_total,
             "candidate_cap": summary.candidate_cap,
-            "selection_adjusted_metrics_status": "NOT_IMPLEMENTED",
+            "selection_adjusted_metrics_status": "NOT_ESTIMABLE",
             "uses_sealed_test_for_selection": False,
         },
         "known_gaps": list(
@@ -333,6 +335,14 @@ def import_ai_candidate_response(
     imported_set = StrategyIdeaCandidateSet.model_validate(
         imported_set.model_dump(mode="json", exclude_none=True)
     )
+    imported_set, _perp_cost_report = apply_perp_cost_estimates(
+        imported_set,
+        generated_at=imported_set.generated_at,
+    )
+    imported_set, _selection_metrics_report = apply_selection_adjusted_metrics(
+        imported_set,
+        generated_at=imported_set.generated_at,
+    )
     candidate_set_path = out_dir / "strategy_idea_candidate_set.json"
     report_path = out_dir / "strategy_idea_candidate_set.md"
     if not replace_existing and (candidate_set_path.exists() or report_path.exists()):
@@ -459,7 +469,7 @@ def _candidate_from_ai_response(
                 "input_hash": input_hash,
                 "metric_basis": "ai_generated_unverified_not_profit_proof",
             },
-            selection_adjusted_metrics_status=SelectionAdjustedMetricsStatus.NOT_IMPLEMENTED,
+            selection_adjusted_metrics_status=SelectionAdjustedMetricsStatus.NOT_ESTIMABLE,
             leakage_checks={
                 "uses_sealed_test_for_selection": False,
                 "available_at_policy_recorded": True,

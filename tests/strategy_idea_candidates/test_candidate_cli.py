@@ -110,12 +110,24 @@ def test_strategy_idea_candidates_build_crypto_perp_happy_path(tmp_path: Path, m
     assert candidate_set_path.exists()
     assert ledger_path.exists()
     assert export_manifest_path.exists()
+    assert (tmp_path / "data/strategy_idea_candidates/btc-perp/selection_metrics.json").exists()
+    assert (tmp_path / "data/strategy_idea_candidates/btc-perp/perp_cost_estimates.json").exists()
+    assert (tmp_path / "data/strategy_idea_candidates/btc-perp/split_materialization.json").exists()
+    assert (
+        tmp_path
+        / "data/strategy_idea_candidates/btc-perp/review/strategy_idea_candidate_review_packet.json"
+    ).exists()
+    assert (tmp_path / "data/strategy_idea_candidates/btc-perp/authoring_preflight.json").exists()
 
     candidate_set = json.loads(candidate_set_path.read_text(encoding="utf-8"))
     assert candidate_set["producer"]["command"] == "strategy-idea-candidates-build"
     assert candidate_set["search_ledger_summary"]["candidate_cap"] == 3
     assert candidate_set["search_ledger_summary"]["candidate_count_shortlisted"] == 2
     assert candidate_set["search_ledger_summary"]["cap_rejection_count"] > 0
+    assert {
+        candidate["selection_adjusted_metrics_status"]
+        for candidate in candidate_set["candidate_inventory"]
+    } == {"NOT_ESTIMABLE"}
     assert any(
         candidate["rejection_reason"] == "candidate cap exceeded before shortlist"
         for candidate in candidate_set["candidate_inventory"]
@@ -138,6 +150,12 @@ def test_strategy_idea_candidates_build_crypto_perp_happy_path(tmp_path: Path, m
         assert parameter_set["fee_model_ref"]
         assert parameter_set["slippage_model_ref"]
         assert parameter_set["liquidation_buffer_bps"] > 0
+        assert candidate["raw_validation_metrics"]["perp_cost_estimate"][
+            "evidence_level"
+        ] == "local_parameter_estimate"
+        assert candidate["raw_validation_metrics"]["selection_adjusted_metrics"][
+            "status"
+        ] == "NOT_ESTIMABLE"
 
     ledger_rows = [
         json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines()
@@ -146,3 +164,12 @@ def test_strategy_idea_candidates_build_crypto_perp_happy_path(tmp_path: Path, m
     assert {row["source_kind"] for row in ledger_rows} == {"deterministic_generator"}
     assert {row["uses_sealed_test_for_selection"] for row in ledger_rows} == {False}
     assert any(row["decision"] == "REJECTED" for row in ledger_rows)
+
+    preflight = json.loads(
+        (tmp_path / "data/strategy_idea_candidates/btc-perp/authoring_preflight.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert preflight["summary"]["backtest_ready_count"] == 0
+    assert preflight["summary"]["paper_ready_count"] == 0
+    assert preflight["summary"]["live_ready_count"] == 0

@@ -14,8 +14,14 @@ from sis.strategy_idea_candidates.ai import (
     build_ai_candidate_packet,
     import_ai_candidate_response,
 )
+from sis.strategy_idea_candidates.authoring_preflight import (
+    StrategyIdeaCandidateAuthoringPreflightOutputExistsError,
+    build_strategy_idea_candidate_authoring_preflight,
+    write_strategy_idea_candidate_authoring_preflight,
+)
 from sis.strategy_idea_candidates.export import (
     StrategyIdeaCandidateExportError,
+    StrategyIdeaCandidateExportResult,
     StrategyIdeaCandidateExportOutputExistsError,
     export_shortlisted_strategy_ideas,
 )
@@ -34,15 +40,39 @@ from sis.strategy_idea_candidates.operator_review import (
     StrategyIdeaCandidateOperatorReviewOutputExistsError,
     write_strategy_idea_candidate_operator_review,
 )
+from sis.strategy_idea_candidates.perp_bridge import (
+    StrategyIdeaCandidatePerpEstimateBridgeOutputExistsError,
+    build_and_write_candidate_perp_estimate_bridge,
+)
+from sis.strategy_idea_candidates.perp_costs import (
+    StrategyIdeaCandidatePerpCostEstimateOutputExistsError,
+    apply_perp_cost_estimates,
+    write_strategy_idea_candidate_perp_cost_estimate_report,
+)
 from sis.strategy_idea_candidates.policies import (
     StrategyIdeaCandidatePolicyValidationResult,
     validate_perp_shortlist_constraints,
     validate_split_and_leakage_policy,
 )
+from sis.strategy_idea_candidates.review_packet import (
+    StrategyIdeaCandidateReviewPacketOutputExistsError,
+    build_strategy_idea_candidate_review_packet,
+    write_strategy_idea_candidate_review_packet,
+)
+from sis.strategy_idea_candidates.selection_metrics import (
+    StrategyIdeaCandidateSelectionMetricsOutputExistsError,
+    apply_selection_adjusted_metrics,
+    write_strategy_idea_candidate_selection_metrics_report,
+)
 from sis.strategy_idea_candidates.service import (
     StrategyIdeaCandidateSetError,
     StrategyIdeaCandidateSetOutputExistsError,
     write_strategy_idea_candidate_set,
+)
+from sis.strategy_idea_candidates.splits import (
+    StrategyIdeaCandidateSplitMaterializationOutputExistsError,
+    materialize_candidate_splits,
+    write_strategy_idea_candidate_split_materialization,
 )
 from sis.strategy_inputs.io import StrategyInputIOError, read_mapping_file
 from sis.strategy_inputs.models import (
@@ -50,6 +80,7 @@ from sis.strategy_inputs.models import (
     StrategyInputContract,
     StrategyInputContractValidation,
 )
+from sis.strategy_idea_candidates.models import StrategyIdeaCandidateSet
 
 
 def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
@@ -120,6 +151,14 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
             ).model_copy(
                 update={"producer": ProducerInfo(command="strategy-idea-candidates-build")}
             )
+            candidate_set, perp_cost_report = apply_perp_cost_estimates(
+                candidate_set,
+                generated_at=validation_model.validated_at,
+            )
+            candidate_set, selection_metrics_report = apply_selection_adjusted_metrics(
+                candidate_set,
+                generated_at=validation_model.validated_at,
+            )
             split_validation = validate_split_and_leakage_policy(candidate_set)
             perp_validation = validate_perp_shortlist_constraints(candidate_set)
             policy_validation = _combine_policy_validations(
@@ -136,6 +175,25 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
                 out_dir=out_dir,
                 replace_existing=replace_existing,
             )
+            selection_metrics_result = write_strategy_idea_candidate_selection_metrics_report(
+                report=selection_metrics_report,
+                out_dir=out_dir,
+                replace_existing=replace_existing,
+            )
+            perp_cost_result = write_strategy_idea_candidate_perp_cost_estimate_report(
+                report=perp_cost_report,
+                out_dir=out_dir,
+                replace_existing=replace_existing,
+            )
+            split_materialization = materialize_candidate_splits(
+                candidate_set,
+                generated_at=validation_model.validated_at,
+            )
+            split_result = write_strategy_idea_candidate_split_materialization(
+                materialization=split_materialization,
+                out_dir=out_dir,
+                replace_existing=replace_existing,
+            )
             review_result = write_strategy_idea_candidate_operator_review(
                 candidate_set=candidate_set,
                 out_dir=out_dir / "review",
@@ -143,6 +201,7 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
                 replace_existing=replace_existing,
             )
             export_manifest_path: Path | None = None
+            export_result: StrategyIdeaCandidateExportResult | None = None
             if export_shortlist:
                 export_result = export_shortlisted_strategy_ideas(
                     candidate_set=candidate_set,
@@ -152,6 +211,29 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
                     created_at=validation_model.validated_at,
                 )
                 export_manifest_path = export_result.manifest_path
+            authoring_preflight = build_strategy_idea_candidate_authoring_preflight(
+                candidate_set=candidate_set,
+                export_manifest=export_result.manifest if export_result is not None else None,
+                generated_at=validation_model.validated_at,
+            )
+            authoring_preflight_result = write_strategy_idea_candidate_authoring_preflight(
+                preflight=authoring_preflight,
+                out_dir=out_dir,
+                replace_existing=replace_existing,
+            )
+            review_packet = build_strategy_idea_candidate_review_packet(
+                candidate_set=candidate_set,
+                selection_metrics=selection_metrics_report,
+                perp_cost_estimates=perp_cost_report,
+                split_materialization=split_materialization,
+                policy_validation=policy_validation,
+                generated_at=validation_model.validated_at,
+            )
+            review_packet_result = write_strategy_idea_candidate_review_packet(
+                packet=review_packet,
+                out_dir=out_dir / "review",
+                replace_existing=replace_existing,
+            )
         except (
             FileNotFoundError,
             StrategyInputIOError,
@@ -160,6 +242,11 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
             StrategyIdeaCandidateSetOutputExistsError,
             StrategyIdeaCandidateLedgerOutputExistsError,
             StrategyIdeaCandidateOperatorReviewOutputExistsError,
+            StrategyIdeaCandidateSelectionMetricsOutputExistsError,
+            StrategyIdeaCandidatePerpCostEstimateOutputExistsError,
+            StrategyIdeaCandidateSplitMaterializationOutputExistsError,
+            StrategyIdeaCandidateReviewPacketOutputExistsError,
+            StrategyIdeaCandidateAuthoringPreflightOutputExistsError,
             StrategyIdeaCandidateExportError,
             StrategyIdeaCandidateExportOutputExistsError,
             ValueError,
@@ -180,6 +267,15 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"report_path={write_result.report_path.as_posix()}")
         typer.echo(f"operator_review_path={review_result.report_path.as_posix()}")
         typer.echo(f"search_ledger_path={ledger_result.ledger_path.as_posix()}")
+        typer.echo(
+            f"selection_metrics_path={selection_metrics_result.report_path.as_posix()}"
+        )
+        typer.echo(f"perp_cost_estimates_path={perp_cost_result.report_path.as_posix()}")
+        typer.echo(f"split_materialization_path={split_result.materialization_path.as_posix()}")
+        typer.echo(f"review_packet_path={review_packet_result.packet_path.as_posix()}")
+        typer.echo(
+            f"authoring_preflight_path={authoring_preflight_result.preflight_path.as_posix()}"
+        )
         if export_manifest_path is not None:
             typer.echo(f"export_manifest_path={export_manifest_path.as_posix()}")
 
@@ -290,6 +386,65 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"candidate_set_path={result.candidate_set_path.as_posix()}")
         typer.echo(f"report_path={result.report_path.as_posix()}")
         typer.echo(f"search_ledger_path={result.ledger_path.as_posix()}")
+
+    @app.command("strategy-idea-candidates-perp-estimate")
+    def strategy_idea_candidates_perp_estimate_cmd(
+        candidate_set: Path = typer.Option(
+            ...,
+            "--candidate-set",
+            dir_okay=False,
+            help="strategy_idea_candidate_set.v1 JSON.",
+        ),
+        outcome: list[Path] = typer.Option(
+            ...,
+            "--outcome",
+            help="One or more crypto_perp_outcome.v1 JSON artifacts.",
+        ),
+        out: Path = typer.Option(
+            Path("data/strategy_idea_candidates/perp_estimate_bridge"),
+            "--out",
+            help="Output directory for candidate-scoped crypto_perp_tournament_rows.v2 estimates.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            candidate_set_path = _resolve_workspace_path(candidate_set, settings.data_dir)
+            candidate_set_model = StrategyIdeaCandidateSet.model_validate(
+                read_mapping_file(candidate_set_path)
+            )
+            result = build_and_write_candidate_perp_estimate_bridge(
+                candidate_set=candidate_set_model,
+                candidate_set_path=candidate_set_path,
+                outcome_paths=[
+                    _resolve_workspace_path(path, settings.data_dir) for path in outcome
+                ],
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+                created_at=datetime.now(timezone.utc).replace(microsecond=0),
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            StrategyIdeaCandidatePerpEstimateBridgeOutputExistsError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("status=pass")
+        typer.echo(f"candidate_set_id={result.manifest.candidate_set_id}")
+        typer.echo(f"row_set_count={len(result.row_set_paths)}")
+        typer.echo(f"manifest_path={result.manifest_path.as_posix()}")
 
 
 def _build_config(

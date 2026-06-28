@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-06-28_09:19 JST
+更新日: 2026-06-28_09:45 JST
 -->
 
 # Strategy Idea Candidates
@@ -9,9 +9,9 @@
 
 `strategy_idea_candidates` は、既存 `strategy_idea.v1` に渡す前の未検証候補を保存する pre-intake artifact です。
 
-この実装で使えるのは、candidate set contract、Python validation、deterministic generator Python API、Bitget USDT-FUTURES 前提の `crypto-perp-risk-taker` profile、split / leakage policy validation API、Perp shortlist constraint validation、metric disclosure、operator review Markdown surface、fixture E2E、canonical JSON / Markdown writer、JSONL search ledger、public CLI、manual AI packet/import、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest までです。実 market data から alpha を掘る evaluator、selection-adjusted metrics engine、paper / live permission はまだありません。
+この実装で使えるのは、candidate set contract、Python validation、deterministic generator Python API、Bitget USDT-FUTURES 前提の `crypto-perp-risk-taker` profile、split / leakage policy validation API、split materialization sidecar、Perp shortlist constraint validation、selection-adjusted metrics local engine、Perp cost estimate sidecar、operator review Markdown surface、richer review packet、Strategy Authoring preflight、fixture E2E、canonical JSON / Markdown writer、JSONL search ledger、public CLI、manual AI packet/import、non-PASS input evidence の blocked artifact、shortlist の `strategy_idea.v1` draft export、sidecar manifest、outcome-backed Perp estimate bridge までです。実 market data から alpha を掘る evaluator、実測 Perp cost evaluator、paper / live permission はまだありません。
 
-現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring / backtest / Strategy Review への C9 bridge は未実装であり、自動変換や backtest 実行準備を完了したとは扱いません。
+現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring preflight は readiness gap を列挙するだけで、Strategy Authoring spec 生成、backtest 実行準備、Strategy Review への full bridge 完了とは扱いません。
 
 用語、family ID、最終ゴール、次の未完了 scope は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
 
@@ -40,8 +40,12 @@
 - fixture で input evidence から candidate set、policy validation、operator review、shortlist export、intake validation まで通す。
 - shortlist だけを strict `strategy_idea.v1` draft に export し、candidate set path / hash は sidecar manifest に置く。
 - `strategy-idea-candidates-build` で candidate set、operator review、search ledger JSONL、任意の shortlist export manifest を作る。
+- `strategy-idea-candidates-build` は `selection_metrics.json`、`perp_cost_estimates.json`、`split_materialization.json`、`review/strategy_idea_candidate_review_packet.json`、`authoring_preflight.json` も出力する。
 - `crypto-perp-risk-taker` profile では Bitget `USDT-FUTURES`、isolated margin、USDT margin coin、leverage modeling cap 3x を既定にする。
 - Perp shortlisted candidate は `side_bias`、funding assumption、fee model ref、slippage model ref、liquidation buffer、max notional、max daily loss、kill conditions を `parameter_set` に持つ必要がある。
+- selection-adjusted metrics local engine は raw p-value がある場合だけ Benjamini-Hochberg FDR を `AVAILABLE` にし、DSR / PBO / White Reality Check は必要入力が無い場合 `NOT_ESTIMABLE` と明記する。
+- Perp cost estimate は funding / fee / slippage / liquidation buffer を local parameter estimate として保存する。actual cash result ではありません。
+- `strategy-idea-candidates-perp-estimate` は shortlisted Perp candidate と `crypto_perp_outcome.v1` から candidate-scoped `crypto_perp_tournament_rows.v2` estimate を作る。
 - `strategy-idea-candidates-ai-packet-build` は外部 API を呼ばず、candidate set / ledger summary / Perp constraints を manual AI 用 packet にする。
 - `strategy-idea-candidates-ai-import` は manual AI response を検証し、AI候補を `source_kind=ai_generated`、`UNVERIFIED_CANDIDATE`、human shortlist required として取り込む。
 
@@ -51,6 +55,8 @@
 - `strategy_idea_candidate_set.v1` は alpha proof、paper readiness、live readiness、注文許可ではありません。
 - `BLOCKED_INPUT_EVIDENCE` は候補生成を止めた証跡です。候補生成の成功 artifact ではありません。
 - JSONL search ledger は candidate generation の全候補 row を保存する sidecar です。raw metric や AI score を proof として扱いません。
+- selection-adjusted metrics sidecar は local disclosure engine です。`AVAILABLE` は FDR 計算が可能だったことだけを示し、alpha proof や profit proof ではありません。
+- `perp_cost_estimates.json` と Perp estimate bridge は estimate artifact です。`crypto-perp-tournament-report` の actual-cash input ではありません。
 - AI packet/import は local/manual だけです。repo 内から AI / LLM API へ送信しません。
 - `crypto-perp-risk-taker` は quick validation estimate までの候補生成 profile であり、wallet、signing、exchange write、live order を許可しません。
 - dependency は追加していません。
@@ -94,6 +100,11 @@ uv run sis strategy-idea-candidates-ai-import \
   --packet data/strategy_idea_candidates/btc-perp/ai_packet/ai_candidate_packet.json \
   --response data/strategy_idea_candidates/btc-perp/manual_ai_response.json \
   --out data/strategy_idea_candidates/btc-perp/ai_import
+
+uv run sis strategy-idea-candidates-perp-estimate \
+  --candidate-set data/strategy_idea_candidates/btc-perp/strategy_idea_candidate_set.json \
+  --outcome data/crypto_perp/outcomes/event-1.json \
+  --out data/strategy_idea_candidates/btc-perp/perp_estimate_bridge
 ```
 
 ## 検証

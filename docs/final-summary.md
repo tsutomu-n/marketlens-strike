@@ -1,9 +1,76 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_09:19 JST
+更新日: 2026-06-28_09:48 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Strategy Candidate Metrics And Perp Bridge
+
+Completed on branch `ai/strategy-candidate-metrics-bridge-20260628-0931`.
+
+Achieved:
+
+- Fast-forward merged `ai/perp-hypothesis-factory-20260628-0904` into local `main`, then created `ai/strategy-candidate-metrics-bridge-20260628-0931`.
+- Added a local selection-adjusted metrics engine. It emits `AVAILABLE` only when raw p-values allow Benjamini-Hochberg FDR, and `NOT_ESTIMABLE` when DSR / PBO / White Reality Check inputs are missing.
+- Added local Perp cost estimate artifacts for funding, fee, slippage, stress slippage, leverage, liquidation buffer, max loss, and actual-cash absence.
+- Added split materialization sidecar preserving train / validation / sealed windows and `uses_sealed_test_for_selection=false`.
+- Added richer JSON / Markdown review packet with metric status, cost estimate summary, split summary, rejection reasons, and human review template.
+- Added Strategy Authoring preflight artifact that records `strategy_idea.v1` export availability while keeping authoring, backtest, paper, and live readiness false.
+- Added `strategy-idea-candidates-perp-estimate` to build candidate-scoped `crypto_perp_tournament_rows.v2` estimate artifacts from shortlisted Perp candidates and local outcome artifacts.
+- Kept actual-cash, wallet, signing, exchange write, paper permission, and live order boundaries false.
+
+Main files changed:
+
+- `src/sis/strategy_idea_candidates/selection_metrics.py`
+- `src/sis/strategy_idea_candidates/perp_costs.py`
+- `src/sis/strategy_idea_candidates/splits.py`
+- `src/sis/strategy_idea_candidates/review_packet.py`
+- `src/sis/strategy_idea_candidates/authoring_preflight.py`
+- `src/sis/strategy_idea_candidates/perp_bridge.py`
+- `src/sis/commands/strategy_idea_candidates.py`
+- `src/sis/strategy_idea_candidates/ai.py`
+- `src/sis/strategy_idea_candidates/generator.py`
+- `src/sis/strategy_idea_candidates/models.py`
+- `schemas/strategy_idea_candidate_set.v1.schema.json`
+- `tests/strategy_idea_candidates/`
+- `docs/strategy_idea_candidates/`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+
+Verification:
+
+- `uv run pytest tests/strategy_idea_candidates tests/strategy_ai_review tests/crypto_perp -q` -> 246 passed.
+- `uv run ruff check src/sis/strategy_idea_candidates src/sis/commands/strategy_idea_candidates.py tests/strategy_idea_candidates -q` -> passed.
+- `uv run sis strategy-idea-candidates-perp-estimate --help` -> command help rendered.
+- `uv run python scripts/check_cli_catalog.py` -> checked 228 public CLI commands.
+- `uv run python scripts/check_current_docs.py` -> checked 172 current docs.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+- Full Strategy Lab / backtest bridge remains outside this slice.
+- Real exchange-measured Perp funding / fee / slippage / liquidation evaluator remains outside this slice.
+- DSR / PBO / White Reality Check remain `NOT_ESTIMABLE` unless future artifacts supply required return distributions, fold outcome matrices, or bootstrap-ready series.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required. Fresh `strategy_idea_candidate_set.v1` artifacts may emit additive `NOT_ESTIMABLE` status.
+
+Rollback:
+
+Revert the strategy idea candidate metrics / Perp cost / bridge modules, unregister `strategy-idea-candidates-perp-estimate`, and revert the additive enum/doc/test changes.
 
 ## Latest Addendum: Perp Hypothesis Factory
 
