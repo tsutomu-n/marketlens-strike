@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-28_14:56 JST
-更新日: 2026-06-28_15:01 JST
+更新日: 2026-06-28_15:48 JST
 -->
 
 # Realistic Roadmap Current
@@ -157,6 +157,52 @@ uv run sis crypto-perp-tiny-live-shadow --help
 uv run sis crypto-perp-tiny-live-review-packet --help
 uv run sis crypto-perp-tiny-live-shadow-readiness --help
 ```
+
+## Research Notes For Implementation
+
+実装前の外部研究は、候補を増やすためではなく、候補を止める条件を強くするために使います。ここに挙げる知見は profit proof ではありません。
+
+Backtest overfitting / data snooping:
+
+- Candidate generation は複数仮説検定として扱う。`candidate_count_total`、`trial_count`、`parameter_grid_hash`、`selection_policy`、`rejection_reason` を保存しない候補評価は採用判断に使わない。
+- PBO / CSCV、Deflated Sharpe Ratio、White Reality Check、Hansen SPA は、良い backtest を証明する道具ではなく、探索後に見つかった winner が偶然であるリスクを読むための guard として扱う。
+- raw Sharpe、raw p-value、single split の勝ち、best candidate だけの report は evidence quality が低い。必要入力が足りない場合は `NOT_ESTIMABLE` または `INCONCLUSIVE_DATA` として止める。
+
+Multiple testing / factor zoo:
+
+- family と parameter grid を増やすほど、通常の有意性基準は甘くなる。新しい factor / signal は通常の t-stat や p-value だけで十分とは読まない。
+- `BRIDGED` 候補でも、bridge validation は artifact 接続の成功であって alpha proof ではない。候補全量、棄却数、失敗理由、探索量を review source として残す。
+
+Crypto perpetual futures / funding:
+
+- funding rate は perps の価格を spot に寄せる mechanism であり、単体の安定収益源とは読まない。
+- perpetual futures は満期がなく、fixed-maturity futures のような強制収束を前提にできない。`perp_funding_rate_carry_filter` は fee、funding、slippage、holding time、exit risk を同時に見る。
+- funding / basis の opportunity は transaction cost、spread reversal、forced exit、venue fragmentation に弱い。estimate は actual cash と分ける。
+
+Transaction cost / microstructure:
+
+- `crypto-perp-tournament-rows-v2` の fee、funding、slippage、operator time は必須の conservative estimate として扱う。
+- before-cost proxy を actual cash report に渡さない。cash ledger または live measurement artifact が無い限り、`actual_cash_result_usd` は証拠として使わない。
+- crypto data は venue 差、volume quality、liquidity、price discovery の差が大きい。source row count、timestamp、available-at、missing source、known gaps を candidate / event 単位で残す。
+
+Implementation consequences:
+
+- C9 bridge 後の manifest は、candidate id、family、parameter set hash、candidate set hash、export manifest hash、ledger hash、artifact paths、bridge status、blocker reason を候補単位で持つ。
+- `crypto-perp-bias-guard` は event 数、fold 数、lookahead、recursive warmup、profit concentration、largest loss を採用前の停止条件として扱う。
+- `NO_TRADE` は正式 action のまま残す。`NO_TRADE` が leader の時、trade action へ手動で差し替えない。
+- 研究論文や外部 article は実装判断の guardrail であり、この repo の候補が儲かる根拠ではない。
+
+Primary references:
+
+- Bailey, Borwein, López de Prado, Zhu, [The Probability of Backtest Overfitting](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2326253)
+- Bailey, López de Prado, [The Deflated Sharpe Ratio](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2460551)
+- White, [A Reality Check for Data Snooping](https://www.ssc.wisc.edu/~bhansen/718/White2000.pdf)
+- Hansen, [A Test for Superior Predictive Ability](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=264569)
+- Harvey, Liu, Zhu, [...and the Cross-Section of Expected Returns](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2249314)
+- He, Manela, Ross, von Wachter, [Fundamentals of Perpetual Futures](https://arxiv.org/html/2212.06888v5)
+- Bank for International Settlements, [Crypto carry](https://www.bis.org/publ/work1087.pdf)
+- Easley, O'Hara, Yang, Zhang, [Microstructure and Market Dynamics in Crypto Markets](https://stoye.economics.cornell.edu/docs/Easley_ssrn-4814346.pdf)
+- [The Two-Tiered Structure of Cryptocurrency Funding Rate Markets](https://www.mdpi.com/2227-7390/14/2/346)
 
 ## Stop Conditions
 
