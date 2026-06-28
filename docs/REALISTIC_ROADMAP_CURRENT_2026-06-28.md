@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-28_14:56 JST
-更新日: 2026-06-28_15:48 JST
+更新日: 2026-06-28_17:10 JST
 -->
 
 # Realistic Roadmap Current
@@ -203,6 +203,87 @@ Primary references:
 - Bank for International Settlements, [Crypto carry](https://www.bis.org/publ/work1087.pdf)
 - Easley, O'Hara, Yang, Zhang, [Microstructure and Market Dynamics in Crypto Markets](https://stoye.economics.cornell.edu/docs/Easley_ssrn-4814346.pdf)
 - [The Two-Tiered Structure of Cryptocurrency Funding Rate Markets](https://www.mdpi.com/2227-7390/14/2/346)
+
+## Risk-Taker Research Base For Personal Trader
+
+個人トレーダー向けの risk-taker mode は、guard を外して大きく張ることではありません。利益追求のために、期待値が残りやすい仮説へ検証速度を寄せ、損失上限、清算距離、手数料後の残り幅、operator の実行負荷を先に固定する mode です。これは live order permission ではありません。
+
+Reality check:
+
+- 個人の active trading は平均的には不利です。Barber / Odean は高回転の個人投資家ほど市場に劣後しやすいことを示し、day trader 研究でも net positive abnormal return を継続できる層はごく小さい。risk-taker mode は「自分も勝てるはず」という前提ではなく、自分の skill が費用後に残っているかを検証するものです。
+- したがって最初の profit target は `勝つこと` ではなく、`after-fee / after-funding / after-slippage / after-operator-time で NO_TRADE を上回る candidate が反復して残ること` に置きます。
+
+Practical profit metrics:
+
+- `operator_jurisdiction_status`: operator がその venue を使える地域にいるか。prohibited / unknown の場合、credentialed read、exchange write、live order、tiny-live measurement に進まない。
+- `expected_R_after_stress_cost`: stress cost 後の期待 R。0 以下なら shortlist しない。
+- `actual_cash_edge_over_no_trade_usd`: actual cash basis で `NO_TRADE` を上回った差分。proxy / estimate では代用しない。
+- `dollars_per_hour`: expected profit / operator time。手動監視が重い候補を過大評価しない。
+- `capital_tied_up_minutes`: 資金拘束時間。短期 edge でも資金拘束が長いなら個人には不利。
+- `max_adverse_excursion_R`、`max_drawdown_usd`、`largest_loss_usd`: 一撃死と連敗耐性を見る。
+- `fee_funding_slippage_breakeven_bps`: maker/taker fee、funding、spread、slippage を超えるために必要な最低値幅。
+
+Sizing and bankroll:
+
+- position size は available margin から決めない。先に `max_loss_usd`、`stop_distance_bps`、`liquidation_buffer_bps`、`max_daily_loss_usd`、`max_weekly_loss_usd` を決め、その loss budget から notional を逆算する。
+- Kelly は最大成長の理論上限として読む。実務では sample error と regime shift が大きいため、actual cash sample が揃うまで full Kelly を使わない。
+- Baker / McHale は parameter uncertainty があるなら Kelly bet を縮小すべきとする。Busseti / Ryu / Boyd は drawdown probability constraint を持つ risk-constrained Kelly を提示している。したがって artifact には `kelly_fraction_raw` より `kelly_fraction_capped`、`estimation_error_haircut`、`drawdown_probability_limit` を残す。
+- event 数が少ない時は Kelly ではなく fixed fractional / fixed loss budget を使う。candidate 単位では `risk_unit_usd`、`expected_R`、`worst_case_R`、`payoff_skew`、`time_to_invalidate_minutes`、`max_consecutive_loss_budget`、`capital_at_risk_usd` を残す。
+
+Signal families worth testing, not trusting:
+
+- Crypto 研究では time-series momentum、cross-sectional momentum、size、investor attention、短期 momentum / 長め horizon reversal、intraday momentum / reversal の証拠がある。ただしこれは平均的・過去 sample の話であり、Bitget USDT-FUTURES の今の executable edge ではありません。
+- `crypto-perp-risk-taker` では、`perp_momentum_continuation`、`perp_reversal_after_liquidation_move`、`perp_basis_mark_index_spread`、`perp_volatility_breakout_compression`、`perp_open_interest_liquidation_pressure` を high-upside family として優先できます。
+- ただし C9 v0 bridge は現時点で `perp_momentum_continuation` と `perp_funding_rate_carry_filter` だけ対応します。未対応 family は promising でも `BRIDGED` にしない。
+
+Momentum crash and regime handling:
+
+- Momentum は crash するものとして扱う。Barroso / Santa-Clara と Daniel / Moskowitz は momentum crash と volatility management の重要性を示し、crypto momentum tail 研究も severe crash と single-name concentration risk を指摘している。
+- risk-taker candidate は `volatility_state`、`panic_state`、`recent_jump_state`、`market_rebound_risk`、`single_symbol_concentration` を review source に出す。
+- high volatility / post-crash rebound / funding crowding / spread widening の時は、entry を止めるか size を落とす。勝ち筋 narrative を優先して size を維持しない。
+
+Perp-specific execution reality:
+
+- Bitget Terms of Use は prohibited countries に United States を含めています。operator が米国居住、米国領内、またはその他 prohibited location に該当する場合、Bitget は public data research / local simulation の候補 source に留め、live / credential / exchange-write venue として扱わない。
+- Perpetual futures は満期がなく、funding が spot との乖離を抑える mechanism です。funding carry は passive income ではなく、spread reversal、transaction cost、forced exit、funding interval timing に食われます。
+- Bitget の public docs では USDT-M perpetual futures の例として maker 0.02%、taker 0.06% が示され、funding fee は position value × funding rate で計算されます。実際の rate は account level / official announcements / product conditions で変わるため、実装直前に公式値を再確認します。
+- 清算は「理論上の最大損失」ではなく、手動 exit 失敗、stop 不発、gap、funding、fee、margin rule change を含む実行リスクです。Bitget docs も overleveraging と stop-loss 不在を liquidation cause として説明している。
+- Bitget API は public market data と private signed endpoints の境界があり、public market information は rate limit、private endpoint は signature / API key が必要です。risk-taker roadmap だけでは credentialed read / exchange write を許可しません。
+
+Practical selection rule:
+
+1. operator jurisdiction / venue availability が prohibited または unknown なら、実行候補にしない。合法・規約上使える venue へ移すか、research-only に落とす。
+2. source が薄い candidate は攻めない。row count、timestamp、available-at、symbol coverage、funding availability、spread / slippage source を見る。
+3. stress cost 後に `NO_TRADE` を上回らない candidate は攻めない。
+4. `expected_R_after_stress_cost` が positive でも、`largest_loss_usd`、`max_adverse_excursion_R`、`liquidation_buffer_bps`、`operator_time_minutes` が悪ければ落とす。
+5. `dollars_per_hour` が低い候補は、勝っていても個人トレーダー向きではない。
+6. actual cash sample が無い段階では、position size を大きくする理由を作らない。
+
+Better implementation target:
+
+- `crypto-perp-risk-taker` の次の改善は、候補生成量を増やすことより、risk-taker review artifact に `operator_jurisdiction_status`、`venue_terms_checked_at`、`after_cost_edge_over_no_trade`、`fee_funding_slippage_breakeven_bps`、`risk_unit_usd`、`expected_R_after_stress_cost`、`max_adverse_excursion_R`、`capital_tied_up_minutes`、`dollars_per_hour`、`volatility_state`、`panic_state`、`source_freshness_status` を出すことです。
+- tiny-live や実発注へ進む前に、actual cash ledger で `NO_TRADE` を上回る差分が複数 event で残るかを確認します。
+
+Risk-taker references:
+
+- Kelly, [A New Interpretation of Information Rate](https://www.princeton.edu/~wbialek/rome/refs/kelly_56.pdf)
+- Busseti, Ryu, Boyd, [Risk-Constrained Kelly Gambling](https://stanford.edu/~boyd/papers/kelly.html)
+- Baker, McHale, [Optimal Betting Under Parameter Uncertainty](https://ideas.repec.org/a/inm/ordeca/v10y2013i3p189-199.html)
+- Barber, Odean, [Trading is Hazardous to Your Wealth](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=219228)
+- Barber, Lee, Liu, Odean, [The Cross-Section of Speculator Skill](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=529063)
+- Liu, Tsyvinski, [Risks and Returns of Cryptocurrency](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3226952)
+- Liu, Tsyvinski, Wu, [Common Risk Factors in Cryptocurrency](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3379131)
+- Dobrynskaya, [Cryptocurrency Momentum and Reversal](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3913263)
+- Wen, Bouri, Xu, Zhao, [Intraday return predictability in the cryptocurrency markets](https://ideas.repec.org/a/eee/ecofin/v62y2022ics1062940822000833.html)
+- Barroso, Santa-Clara, [Momentum Has Its Moments](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2041429)
+- Daniel, Moskowitz, [Momentum Crashes](https://www.nber.org/papers/w20439)
+- Cheng, Deng, Wang, Yu, [Liquidation, Leverage and Optimal Margin in Bitcoin Futures Markets](https://arxiv.org/abs/2102.04591)
+- He, Manela, Ross, von Wachter, [Fundamentals of Perpetual Futures](https://arxiv.org/html/2212.06888v5)
+- [The Two-Tiered Structure of Cryptocurrency Funding Rate Markets](https://www.mdpi.com/2227-7390/14/2/346)
+- Bitget, [Terms of Use](https://www.bitget.com/support/articles/360014944032-terms-of-use)
+- Bitget, [Understanding Futures Fees](https://www.bitget.com/support/articles/12560603817155)
+- Bitget, [How to Avoid Liquidation in Futures Trading](https://www.bitget.com/support/articles/12560603808523)
+- Bitget, [API Docs](https://bitgetlimited.github.io/apidoc/en/mix/)
 
 ## Stop Conditions
 
