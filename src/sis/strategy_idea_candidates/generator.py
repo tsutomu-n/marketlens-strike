@@ -24,6 +24,7 @@ from sis.strategy_idea_candidates.models import (
     StrategyIdeaCandidateSet,
     TimeWindow,
 )
+from sis.strategy_idea_candidates.perp_costs import perp_cost_estimate_from_parameter_set
 from sis.strategy_idea_candidates.service import (
     build_blocked_candidate_set_from_input_evidence,
 )
@@ -460,7 +461,8 @@ def build_deterministic_candidate_set_from_input_evidence(
             shortlisted_candidate_ids=shortlisted_ids,
             rejected_candidate_ids=rejected_ids,
             known_gaps=[
-                "selection-adjusted metrics are NOT_IMPLEMENTED",
+                "selection-adjusted metrics engine runs locally but may be NOT_ESTIMABLE "
+                "without raw p-values, return distributions, or fold outcomes",
                 "purge and embargo are policy records only",
                 "candidate output is UNVERIFIED_CANDIDATE and not paper/live permission",
             ],
@@ -579,6 +581,16 @@ def _candidate(
     rejection_reason: str | None = None,
     shortlist_reason: str | None = None,
 ) -> StrategyIdeaCandidate:
+    raw_metrics = _raw_validation_metrics(config=config, parameter_set=parameter_set)
+    if config.profile is StrategyIdeaCandidateProfile.CRYPTO_PERP_RISK_TAKER:
+        estimate = perp_cost_estimate_from_parameter_set(
+            candidate_id=candidate_id,
+            family=family.value,
+            parameter_set=parameter_set,
+        )
+        raw_metrics["perp_cost_estimate"] = estimate.model_dump(mode="json")
+        raw_metrics["estimated_round_trip_cost_usd"] = estimate.estimated_round_trip_cost_usd
+        raw_metrics["stress_round_trip_cost_usd"] = estimate.stress_round_trip_cost_usd
     return StrategyIdeaCandidate(
         idea_candidate_id=candidate_id,
         decision=decision,
@@ -605,8 +617,8 @@ def _candidate(
             "duplicate_signal": rejection_reason is not None
             and rejection_reason.startswith("duplicate parameterization"),
         },
-        raw_validation_metrics=_raw_validation_metrics(config=config, parameter_set=parameter_set),
-        selection_adjusted_metrics_status=SelectionAdjustedMetricsStatus.NOT_IMPLEMENTED,
+        raw_validation_metrics=raw_metrics,
+        selection_adjusted_metrics_status=SelectionAdjustedMetricsStatus.NOT_ESTIMABLE,
         leakage_checks={
             "uses_sealed_test_for_selection": False,
             "available_at_policy_recorded": True,
@@ -878,7 +890,7 @@ def _raw_validation_metrics(
         return {}
     return {
         "metric_basis": "raw_only_not_profit_proof",
-        "selection_adjusted_metrics": "NOT_IMPLEMENTED",
+        "selection_adjusted_metrics": "NOT_ESTIMABLE",
         "fee_model_ref": parameter_set.get("fee_model_ref"),
         "funding_assumption": parameter_set.get("funding_assumption"),
         "slippage_model_ref": parameter_set.get("slippage_model_ref"),

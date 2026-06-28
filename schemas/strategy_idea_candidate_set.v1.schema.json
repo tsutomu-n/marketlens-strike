@@ -194,7 +194,7 @@
         "novelty_checks": {"type": "object"},
         "raw_validation_metrics": {"type": "object"},
         "selection_adjusted_metrics_status": {
-          "enum": ["NOT_IMPLEMENTED", "NOT_APPLICABLE", "AVAILABLE"]
+          "enum": ["NOT_IMPLEMENTED", "NOT_ESTIMABLE", "NOT_APPLICABLE", "AVAILABLE"]
         },
         "leakage_checks": {
           "type": "object",

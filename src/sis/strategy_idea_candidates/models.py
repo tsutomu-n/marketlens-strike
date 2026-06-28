@@ -39,6 +39,7 @@ class CandidateStatus(StrEnum):
 
 class SelectionAdjustedMetricsStatus(StrEnum):
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
+    NOT_ESTIMABLE = "NOT_ESTIMABLE"
     NOT_APPLICABLE = "NOT_APPLICABLE"
     AVAILABLE = "AVAILABLE"
 
