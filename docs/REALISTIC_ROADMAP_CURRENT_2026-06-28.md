@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-06-28_14:56 JST
-更新日: 2026-06-28_14:56 JST
+更新日: 2026-06-28_15:01 JST
 -->
 
 # Realistic Roadmap Current
 
 ## 結論
 
-次にやるべきことは、追加機能を増やすことではなく、C9 bridge 修正後に実データで再実行し、evidence quality を上げることです。
+次にやるべきことは、追加機能を増やすことではなく、C9 bridge（shortlist 済みの戦略アイデア候補を、この repo の Strategy Authoring spec / backtest pack まで候補別に接続する変換経路）修正後に実データで再実行し、evidence quality（候補判断に使う証拠の実データ性、欠損の明示、actual cash との距離の明確さ）を上げることです。
 
 backtest、Strategy Review、Workbench は判断材料です。profit proof、paper execution permission、live readiness、wallet readiness、signing readiness、exchange write readiness ではありません。
 
@@ -34,15 +34,15 @@ backtest、Strategy Review、Workbench は判断材料です。profit proof、pa
 
 ## Lane 1: Strategy Idea / C9 Bridge
 
-最短の次実務は、C9 bridge の実データ再実行です。
+最短の次実務は、C9 bridge（shortlist 済み候補を Strategy Authoring と標準 backtest pack に候補別 artifact として渡す変換経路）の実データ再実行です。
 
-1. `strategy-idea-candidates-bitget-source-refresh` で C9 bridge 互換 source root を作る。
+1. `strategy-idea-candidates-bitget-source-refresh` で C9 bridge 互換 source root（bridge が読める形式に整えた Bitget public market data の local directory）を作る。
 2. `strategy-idea-candidates-authoring-bridge` を相対 `--out` で再実行する。
-3. bridge manifest の `BRIDGED` と `BLOCKED_*` を候補単位で整理する。
-4. `BRIDGED` 候補だけを Strategy Review / Workbench に流す。
+3. bridge manifest（候補ごとに入力、出力、生成 artifact、停止理由をつなぐ一覧）の `BRIDGED`（候補別 spec / suite / bundle / backtest pack validation まで通った状態）と `BLOCKED_*`（変換不能、source 不足、validation 失敗などで止めた状態）を候補単位で整理する。
+4. `BRIDGED` 候補だけを Strategy Review / Workbench（人間レビューや静的 HTML 表示で候補の証拠を読むための surface）に流す。
 5. `BLOCKED_*` 候補は手動で成功扱いにしない。
 
-C9 v0 の対応 family は `perp_momentum_continuation` と `perp_funding_rate_carry_filter` だけです。その他の Perp family は v0 対応外として止めます。
+C9 v0（C9 bridge の最初の限定版。全候補ではなく、対応 family だけを安全に変換し、変換不能なら blocker として止める実装）の対応 family は `perp_momentum_continuation` と `perp_funding_rate_carry_filter` だけです。その他の Perp family（この repo の候補 generator が使う戦略テンプレート分類）は v0 対応外として止めます。
 
 `venue_cost_matrix.csv` は `ESTIMATE_ONLY` です。実測 slippage、実 fill、actual cash、live measurement の証拠として読んではいけません。
 
@@ -160,7 +160,7 @@ uv run sis crypto-perp-tiny-live-shadow-readiness --help
 
 ## Stop Conditions
 
-- C9 bridge が `BLOCKED_*` を返した候補を、手動で `BRIDGED` 扱いにしない。
+- C9 bridge（shortlist 済み候補を Strategy Authoring / backtest artifact に変換する経路）が `BLOCKED_*`（変換不能や source 不足などの明示的な停止結果）を返した候補を、手動で `BRIDGED`（候補別 backtest pack validation まで通った状態）扱いにしない。
 - backtest validation `PASS` を profit proof と読まない。
 - proxy / estimate rows を actual cash report に食わせない。
 - source availability が不足している event を 0 埋めで進めない。
