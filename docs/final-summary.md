@@ -1,9 +1,62 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-29_21:44 JST
+更新日: 2026-06-29_22:07 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core Hybrid Modes Docs
+
+Completed on branch `ai/profit-core-scope-docs-20260629-2102`.
+
+Achieved:
+
+- Added `docs/profit_core_hybrid_modes/` as a dedicated developer decision package for the hybrid default + attack mode plan.
+- Defined `verification_throughput` as the default mode and `risk_taker_sprint` as an isolated exploratory attack mode, not a safety bypass.
+- Split the package into developer spec, implementation checkpoints, research evidence, and risk / omission appendices.
+- Preserved actual cash, `NO_TRADE`, virtual execution, LLM negative-veto, and `BRIDGED_TECHNICAL_ONLY` boundaries.
+- Routed the package from README and `docs/CURRENT_STATE.md`.
+
+Main files changed:
+
+- `docs/profit_core_hybrid_modes/README.md`
+- `docs/profit_core_hybrid_modes/DEVELOPER_SPEC.md`
+- `docs/profit_core_hybrid_modes/IMPLEMENTATION_CHECKPOINTS.md`
+- `docs/profit_core_hybrid_modes/APPENDIX_RESEARCH_EVIDENCE.md`
+- `docs/profit_core_hybrid_modes/APPENDIX_RISKS_AND_OMISSIONS.md`
+- `README.md`
+- `docs/CURRENT_STATE.md`
+- `docs/plans/profit-core-hybrid-modes-docs-2026-06-29.md`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 184 current docs.
+- `git diff --check` -> passed.
+- `rg -n "verification_throughput|risk_taker_sprint|candidate_protocol_manifest|trial_multiplicity_account|backtest_kill_gate|virtual_execution_gate|BRIDGED_TECHNICAL_ONLY|actual_cash|NO_TRADE|LLM" README.md docs/CURRENT_STATE.md docs/profit_core_hybrid_modes docs/final-summary.md` -> passed and showed routing plus mode / artifact / boundary assertions.
+
+Remaining work:
+
+None planned for this docs slice after verification.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `docs/profit_core_hybrid_modes/` and `docs/plans/profit-core-hybrid-modes-docs-2026-06-29.md`, then revert README, `docs/CURRENT_STATE.md`, `.ai-work`, and this summary addendum.
 
 ## Latest Addendum: Edge Candidate Factory Core Docs
 

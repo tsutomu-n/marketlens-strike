@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-29_21:44 JST
+更新日: 2026-06-29_22:07 JST
 -->
 
 # marketlens-strike
@@ -60,6 +60,7 @@ misreadings after checking code, tests, schemas, CLI help, and current artifacts
 - [docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md) - 正本ではない個人トレーダー目線の評価
 - [docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) - 正本ではない利益目線の判断メモ
 - [docs/EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md](docs/EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md) - Edge Candidate Factory / Execution Evidence Core の docs-only scope-control
+- [docs/profit_core_hybrid_modes/README.md](docs/profit_core_hybrid_modes/README.md) - 本命 `verification_throughput` と隔離攻撃 `risk_taker_sprint` の開発者向け decision package
 - [docs/PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](docs/PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md) - 実装者向け Profit Core / Add-on scope-control
 - [docs/PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](docs/PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md) - 利用者向けの利益誤読防止ガイド
 
