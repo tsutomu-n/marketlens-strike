@@ -1,9 +1,60 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-29_21:02 JST
+更新日: 2026-06-29_21:44 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Edge Candidate Factory Core Docs
+
+Completed on branch `ai/profit-core-scope-docs-20260629-2102`.
+
+Achieved:
+
+- Added `docs/EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md` as docs-only scope-control for Discovery Core / Validation Core / Execution Evidence Core.
+- Revised the developer Profit Core doc so Edge Candidate Factory is Core as candidate discovery, but not profit evidence.
+- Revised the user guide to separate candidate sample, event sample, virtual forward sample, and actual cash sample.
+- Added LLM adversarial review boundaries: LLM can find blockers and structured findings, but cannot approve, calculate official metrics, judge actual cash, create orders, or rewrite strategies.
+- Routed the new scope-control doc from README and `docs/CURRENT_STATE.md`.
+
+Main files changed:
+
+- `docs/EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md`
+- `docs/PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md`
+- `docs/PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md`
+- `README.md`
+- `docs/CURRENT_STATE.md`
+- `docs/plans/profit-core-scope-docs-2026-06-29.md`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 183 current docs.
+- `git diff --check` -> passed.
+- `rg -n "Edge Candidate Factory|Discovery Core|Validation Core|Execution Evidence Core|LLM Adversarial|actual cash|virtual|NO_TRADE|cross-market|candidate sample|event sample" README.md docs/CURRENT_STATE.md docs/PROFIT_CORE_SCOPE_* docs/EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md` -> passed and showed the new routing plus sample / LLM / actual cash boundary assertions.
+
+Remaining work:
+
+None planned for this docs slice after verification.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `docs/EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md`, then revert the Profit Core docs, README, `docs/CURRENT_STATE.md`, this plan doc, and this summary addendum.
 
 ## Latest Addendum: Profit Core Scope Docs
 
