@@ -140,16 +140,10 @@ def load_prep_watchdeck_source(root: Path, *, symbols: list[str]) -> PrepWatchde
 def _read_scanner_duckdb(path: Path, symbols: list[str]) -> PrepWatchdeckBundle:
     with duckdb.connect(str(path), read_only=True) as con:
         tables = {str(row[0]) for row in con.execute("SHOW TABLES").fetchall()}
-        contracts = (
-            _read_scanner_contracts(con, symbols) if "contracts" in tables else {}
-        )
-        tickers = (
-            _read_scanner_tickers(con, symbols) if "tickers_snapshot" in tables else {}
-        )
+        contracts = _read_scanner_contracts(con, symbols) if "contracts" in tables else {}
+        tickers = _read_scanner_tickers(con, symbols) if "tickers_snapshot" in tables else {}
         candles = _read_scanner_candles(con, symbols) if "candles_5m" in tables else {}
-        quality = (
-            _read_scanner_quality(con, symbols) if "scanner_rows" in tables else {}
-        )
+        quality = _read_scanner_quality(con, symbols) if "scanner_rows" in tables else {}
     return PrepWatchdeckBundle(
         root=path.parent,
         symbols=symbols,
@@ -288,9 +282,7 @@ def _read_scanner_candles(
     return candles
 
 
-def _read_scanner_quality(
-    con: duckdb.DuckDBPyConnection, symbols: list[str]
-) -> dict[str, str]:
+def _read_scanner_quality(con: duckdb.DuckDBPyConnection, symbols: list[str]) -> dict[str, str]:
     rows = con.execute(
         f"""
         SELECT symbol, row_json::VARCHAR

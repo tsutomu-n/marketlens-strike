@@ -60,7 +60,8 @@ def build_strategy_idea_candidate_authoring_preflight(
 ) -> StrategyIdeaCandidateAuthoringPreflight:
     timestamp = _coerce_datetime(generated_at)
     export_by_candidate_id = {
-        item.idea_candidate_id: item for item in (export_manifest.exported_ideas if export_manifest else [])
+        item.idea_candidate_id: item
+        for item in (export_manifest.exported_ideas if export_manifest else [])
     }
     candidate_results: list[dict[str, Any]] = []
     for candidate in candidate_set.candidate_inventory:

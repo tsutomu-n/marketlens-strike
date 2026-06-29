@@ -85,9 +85,7 @@ def materialize_candidate_splits(
             if split.sealed_test_window is not None
             else None,
             label_window=candidate.label_window.model_dump(mode="json"),
-            feature_observation_window=candidate.feature_observation_window.model_dump(
-                mode="json"
-            ),
+            feature_observation_window=candidate.feature_observation_window.model_dump(mode="json"),
             uses_sealed_test_for_selection=False,
             purge_policy=leakage.purge_policy,
             embargo_policy=leakage.embargo_policy,

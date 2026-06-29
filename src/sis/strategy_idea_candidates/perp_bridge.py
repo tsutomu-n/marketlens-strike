@@ -202,12 +202,7 @@ def render_perp_estimate_bridge_manifest_markdown(
         "|---|---|---|",
     ]
     for ref in manifest.row_sets:
-        lines.append(
-            "| "
-            f"`{ref.candidate_id}` | "
-            f"`{ref.side_bias}` | "
-            f"`{ref.row_set_path}` |"
-        )
+        lines.append(f"| `{ref.candidate_id}` | `{ref.side_bias}` | `{ref.row_set_path}` |")
     if manifest.known_gaps:
         lines.extend(["", "## Known Gaps", ""])
         lines.extend(f"- `{gap}`" for gap in manifest.known_gaps)
