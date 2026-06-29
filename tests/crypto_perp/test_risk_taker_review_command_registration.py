@@ -8,6 +8,7 @@ from typer.testing import CliRunner
 from sis.commands.crypto_perp_risk_taker_review import (
     register_crypto_perp_risk_taker_review_commands,
 )
+from support.cli import normalized_stdout
 
 
 def test_crypto_perp_risk_taker_review_command_registers_standalone() -> None:
@@ -15,9 +16,10 @@ def test_crypto_perp_risk_taker_review_command_registers_standalone() -> None:
     register_crypto_perp_risk_taker_review_commands(app)
 
     result = CliRunner().invoke(app, ["--help"])
+    stdout = normalized_stdout(result)
 
     assert result.exit_code == 0
-    assert "crypto-perp-risk-taker-review" in result.stdout
+    assert "crypto-perp-risk-taker-review" in stdout
 
 
 def test_crypto_perp_risk_taker_review_keeps_core_options() -> None:

@@ -150,12 +150,14 @@ def test_strategy_idea_candidates_build_crypto_perp_happy_path(tmp_path: Path, m
         assert parameter_set["fee_model_ref"]
         assert parameter_set["slippage_model_ref"]
         assert parameter_set["liquidation_buffer_bps"] > 0
-        assert candidate["raw_validation_metrics"]["perp_cost_estimate"][
-            "evidence_level"
-        ] == "local_parameter_estimate"
-        assert candidate["raw_validation_metrics"]["selection_adjusted_metrics"][
-            "status"
-        ] == "NOT_ESTIMABLE"
+        assert (
+            candidate["raw_validation_metrics"]["perp_cost_estimate"]["evidence_level"]
+            == "local_parameter_estimate"
+        )
+        assert (
+            candidate["raw_validation_metrics"]["selection_adjusted_metrics"]["status"]
+            == "NOT_ESTIMABLE"
+        )
 
     ledger_rows = [
         json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines()

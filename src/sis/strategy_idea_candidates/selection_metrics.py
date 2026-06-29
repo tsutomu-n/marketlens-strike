@@ -152,7 +152,9 @@ def build_selection_adjusted_metrics_report(
     p_values: dict[str, float] = {}
     raw_values: dict[str, tuple[str, float] | None] = {}
     for candidate in candidate_set.candidate_inventory:
-        raw_values[candidate.idea_candidate_id] = _first_raw_metric(candidate.raw_validation_metrics)
+        raw_values[candidate.idea_candidate_id] = _first_raw_metric(
+            candidate.raw_validation_metrics
+        )
         p_value = _first_p_value(candidate.raw_validation_metrics)
         if p_value is not None:
             p_values[candidate.idea_candidate_id] = p_value
@@ -197,13 +199,7 @@ def build_selection_adjusted_metrics_report(
             )
         )
     counts = Counter(adjustment.status.value for adjustment in adjustments)
-    report_gaps = sorted(
-        {
-            gap
-            for adjustment in adjustments
-            for gap in adjustment.known_gaps
-        }
-    )
+    report_gaps = sorted({gap for adjustment in adjustments for gap in adjustment.known_gaps})
     if not adjustments:
         report_gaps.append("NO_CANDIDATES_TO_ADJUST")
     return StrategyIdeaCandidateSelectionMetricsReport(

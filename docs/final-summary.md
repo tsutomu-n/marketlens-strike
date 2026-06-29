@@ -1,9 +1,115 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-28_19:09 JST
+更新日: 2026-06-29_19:32 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Full Check Green CP3
+
+Completed on branch `ai/risk-taker-review-artifact-20260628-1721`.
+
+Achieved:
+
+- Fixed the remaining pyrefly blocker after CP2 by annotating `prompt_hash_by_candidate_id` as `dict[str, str | None]`.
+- Fixed the CP1 risk-taker command registration test to use `support.cli.normalized_stdout` instead of raw `result.stdout`.
+- Preserved AI import ledger behavior and CLI registration behavior.
+- Full `./scripts/check` is green.
+- Left pre-existing untracked `codex_diag.sh` untouched.
+
+Main files changed:
+
+- `src/sis/strategy_idea_candidates/ai.py`
+- `tests/crypto_perp/test_risk_taker_review_command_registration.py`
+- `docs/plans/pyrefly-prompt-hash-type-fix-2026-06-29.md`
+
+Verification:
+
+- `uv run pyrefly check src/sis/strategy_idea_candidates/ai.py` -> 0 errors.
+- `uv run ty check src/sis/strategy_idea_candidates/ai.py` -> passed.
+- `uv run ruff check src/sis/strategy_idea_candidates/ai.py` -> passed.
+- `uv run ruff format --check src/sis/strategy_idea_candidates/ai.py` -> passed.
+- `uv run pytest tests/strategy_idea_candidates/test_ai_packet_import.py -q` -> 7 passed.
+- `uv run pytest tests/test_cli_help_contract.py tests/crypto_perp/test_risk_taker_review_command_registration.py -q` -> 5 passed.
+- `./scripts/check` -> passed, including `2857 passed`.
+
+Remaining work:
+
+None for the full-check cleanup.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Revert the CP2 format-only diffs, the `ai.py` type annotation, the normalized stdout test update, and the CP2/CP3 plan/work-summary additions.
+
+## Latest Addendum: Full Check Format Cleanup CP2
+
+Completed the scoped format cleanup on branch `ai/risk-taker-review-artifact-20260628-1721`, but full `./scripts/check` is still not green because a later non-format pyrefly failure remains.
+
+Achieved:
+
+- Applied Ruff formatting to exactly the 8 files that blocked `ruff format --check`.
+- Left pre-existing untracked `codex_diag.sh` untouched.
+- Added CP2 work records and a plan document for this format cleanup.
+- Moved `./scripts/check` past the Ruff format gate.
+
+Main files changed:
+
+- `src/sis/strategy_idea_candidates/authoring_preflight.py`
+- `src/sis/strategy_idea_candidates/perp_bridge.py`
+- `src/sis/strategy_idea_candidates/perp_costs.py`
+- `src/sis/strategy_idea_candidates/prep_watchdeck_source.py`
+- `src/sis/strategy_idea_candidates/selection_metrics.py`
+- `src/sis/strategy_idea_candidates/splits.py`
+- `tests/strategy_idea_candidates/test_candidate_cli.py`
+- `tests/strategy_idea_candidates/test_metrics_costs_bridge.py`
+- `docs/plans/full-check-format-cleanup-2026-06-29.md`
+
+Verification:
+
+- `uv run ruff format --check src/sis/strategy_idea_candidates/authoring_preflight.py src/sis/strategy_idea_candidates/perp_bridge.py src/sis/strategy_idea_candidates/perp_costs.py src/sis/strategy_idea_candidates/prep_watchdeck_source.py src/sis/strategy_idea_candidates/selection_metrics.py src/sis/strategy_idea_candidates/splits.py tests/strategy_idea_candidates/test_candidate_cli.py tests/strategy_idea_candidates/test_metrics_costs_bridge.py` -> passed.
+- `uv run ruff check src/sis/strategy_idea_candidates/authoring_preflight.py src/sis/strategy_idea_candidates/perp_bridge.py src/sis/strategy_idea_candidates/perp_costs.py src/sis/strategy_idea_candidates/prep_watchdeck_source.py src/sis/strategy_idea_candidates/selection_metrics.py src/sis/strategy_idea_candidates/splits.py tests/strategy_idea_candidates/test_candidate_cli.py tests/strategy_idea_candidates/test_metrics_costs_bridge.py` -> passed.
+- `./scripts/check` -> failed at `uv run pyrefly check` after passing sync, Python version, Ruff lint, Ruff format, current-docs check, and CLI catalog check.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+- Fix the non-format pyrefly type error at `src/sis/strategy_idea_candidates/ai.py:359`: `dict[str, str]` is passed where `dict[str, str | None] | None` is expected.
+
+User decisions required:
+
+None for the format cleanup. A separate minimal checkpoint should handle the pyrefly type fix.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Revert the 8 format-only code diffs and remove the CP2 plan/work-summary additions.
 
 ## Latest Addendum: Crypto Perp Risk-Taker Review Artifact
 

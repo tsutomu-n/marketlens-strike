@@ -116,7 +116,9 @@ def apply_perp_cost_estimates(
         raw_metrics["perp_cost_estimate"] = estimate.model_dump(mode="json")
         raw_metrics["estimated_round_trip_cost_usd"] = estimate.estimated_round_trip_cost_usd
         raw_metrics["stress_round_trip_cost_usd"] = estimate.stress_round_trip_cost_usd
-        updated_candidates.append(candidate.model_copy(update={"raw_validation_metrics": raw_metrics}))
+        updated_candidates.append(
+            candidate.model_copy(update={"raw_validation_metrics": raw_metrics})
+        )
     return candidate_set.model_copy(update={"candidate_inventory": updated_candidates}), report
 
 
@@ -219,9 +221,7 @@ def perp_cost_estimate_from_parameter_set(
         stress_slippage_bps=stress_slippage_bps,
         stress_slippage_estimate_usd=round(stress_slippage, 8),
         liquidation_buffer_bps=liquidation_buffer,
-        liquidation_buffer_status="RECORDED"
-        if liquidation_buffer > 0
-        else "MISSING_OR_INVALID",
+        liquidation_buffer_status="RECORDED" if liquidation_buffer > 0 else "MISSING_OR_INVALID",
         estimated_round_trip_cost_usd=round(cost, 8),
         stress_round_trip_cost_usd=round(stress_cost, 8),
         known_gaps=list(dict.fromkeys(known_gaps)),

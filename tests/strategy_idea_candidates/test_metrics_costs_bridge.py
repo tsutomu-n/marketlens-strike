@@ -42,12 +42,14 @@ def test_selection_adjusted_metrics_computes_bh_fdr_when_p_values_exist() -> Non
     assert report.status_counts == {"AVAILABLE": 2}
     first = updated.candidate_inventory[0]
     assert first.selection_adjusted_metrics_status.value == "AVAILABLE"
-    assert first.raw_validation_metrics["selection_adjusted_metrics"][
-        "benjamini_hochberg_q_value"
-    ] == 0.02
-    assert "not_alpha_or_profit_proof" == first.raw_validation_metrics[
-        "selection_adjusted_metrics"
-    ]["proof_status"]
+    assert (
+        first.raw_validation_metrics["selection_adjusted_metrics"]["benjamini_hochberg_q_value"]
+        == 0.02
+    )
+    assert (
+        "not_alpha_or_profit_proof"
+        == first.raw_validation_metrics["selection_adjusted_metrics"]["proof_status"]
+    )
 
 
 def test_selection_adjusted_metrics_marks_missing_inputs_not_estimable() -> None:
@@ -112,9 +114,12 @@ def test_perp_cost_evaluator_records_fee_funding_slippage_and_liquidation(
     assert estimate.slippage_estimate_usd > 0
     assert estimate.liquidation_buffer_status == "RECORDED"
     assert estimate.actual_cash_result_usd is None
-    assert updated.candidate_inventory[0].raw_validation_metrics["perp_cost_estimate"][
-        "actual_cash_result_usd"
-    ] is None
+    assert (
+        updated.candidate_inventory[0].raw_validation_metrics["perp_cost_estimate"][
+            "actual_cash_result_usd"
+        ]
+        is None
+    )
 
 
 def test_perp_estimate_bridge_cli_writes_candidate_scoped_v2_rows(
@@ -167,8 +172,7 @@ def test_perp_estimate_bridge_cli_writes_candidate_scoped_v2_rows(
             "strategy-idea-candidates-perp-estimate",
             "--candidate-set",
             str(
-                tmp_path
-                / "data/strategy_idea_candidates/btc-perp/strategy_idea_candidate_set.json"
+                tmp_path / "data/strategy_idea_candidates/btc-perp/strategy_idea_candidate_set.json"
             ),
             "--outcome",
             str(outcome_path),
@@ -187,9 +191,7 @@ def test_perp_estimate_bridge_cli_writes_candidate_scoped_v2_rows(
         ).read_text(encoding="utf-8")
     )
     assert manifest["summary"]["row_set_count"] == 1
-    assert "DO_NOT_FEED_TO_CRYPTO_PERP_TOURNAMENT_REPORT_AS_ACTUAL_CASH" in manifest[
-        "known_gaps"
-    ]
+    assert "DO_NOT_FEED_TO_CRYPTO_PERP_TOURNAMENT_REPORT_AS_ACTUAL_CASH" in manifest["known_gaps"]
     row_set_path = tmp_path / manifest["row_sets"][0]["row_set_path"]
     row_set = json.loads(row_set_path.read_text(encoding="utf-8"))
     assert {row["evidence_level"] for row in row_set["rows"]} == {"cost_adjusted_estimate"}

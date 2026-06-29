@@ -349,7 +349,7 @@ def import_ai_candidate_response(
         raise StrategyIdeaCandidateAIOutputExistsError(f"output already exists: {out_dir}")
     write_json_artifact(candidate_set_path, imported_set.model_dump(mode="json", exclude_none=True))
     write_text_artifact(report_path, render_strategy_idea_candidate_set_markdown(imported_set))
-    prompt_hash_by_candidate_id = {
+    prompt_hash_by_candidate_id: dict[str, str | None] = {
         candidate.idea_candidate_id: prompt_hash for candidate in imported_candidates
     }
     ledger = write_strategy_idea_candidate_search_ledger(
