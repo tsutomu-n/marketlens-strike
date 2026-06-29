@@ -1,9 +1,59 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-29_19:32 JST
+更新日: 2026-06-29_21:02 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core Scope Docs
+
+Completed on branch `ai/profit-core-scope-docs-20260629-2102`.
+
+Achieved:
+
+- Added a developer-facing Profit Core scope-control doc.
+- Added a non-technical user guide that frames the repo as a tool for stopping false profit confidence, not auto-discovering profit.
+- Routed both docs from README `Judgment Notes`.
+- Routed both docs from `docs/CURRENT_STATE.md` conclusion and current-use table.
+- Preserved the existing practical decision note as supporting judgment context.
+
+Main files changed:
+
+- `docs/PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md`
+- `docs/PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md`
+- `README.md`
+- `docs/CURRENT_STATE.md`
+- `docs/plans/profit-core-scope-docs-2026-06-29.md`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 183 current docs.
+- `git diff --check` -> passed.
+- `rg -n "PROFIT_CORE_SCOPE|actual cash|Core|Add-on|NO_TRADE" README.md docs/CURRENT_STATE.md docs/PROFIT_CORE_SCOPE_*` -> passed and showed the new routing plus Core/Add-on/NO_TRADE assertions.
+
+Remaining work:
+
+None for this docs slice.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove the two Profit Core docs and the plan doc, then revert the README, `docs/CURRENT_STATE.md`, and this summary addendum.
 
 ## Latest Addendum: Full Check Green CP3
 

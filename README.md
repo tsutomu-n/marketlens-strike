@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-06-28_17:12 JST
+更新日: 2026-06-29_21:02 JST
 -->
 
 # marketlens-strike
@@ -59,6 +59,8 @@ misreadings after checking code, tests, schemas, CLI help, and current artifacts
 
 - [docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md) - 正本ではない個人トレーダー目線の評価
 - [docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) - 正本ではない利益目線の判断メモ
+- [docs/PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](docs/PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md) - 実装者向け Profit Core / Add-on scope-control
+- [docs/PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](docs/PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md) - 利用者向けの利益誤読防止ガイド
 
 The visual companion for the Trade[XYZ] beginner guide is
 [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html).

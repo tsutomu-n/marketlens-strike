@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-28_19:04 JST
+更新日: 2026-06-29_21:02 JST
 -->
 
 # Current State
@@ -13,6 +13,7 @@
 - 技術者向けではない利用者目線の説明は [APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md](APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md) を読む。
 - アプリの全体像、できること、できないこと、専門用語の説明を一枚で読む場合は [APP_CURRENT_STATE_DETAILED_2026-06-20.md](APP_CURRENT_STATE_DETAILED_2026-06-20.md) を読む。
 - 個人向け・利益目線で誤読しやすい点を見る場合は [AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md) と [AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) を読む。どちらも正本ではなく判断補助です。
+- 利益目線で scope を絞る場合は [PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md) と [PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md) を読む。Profit Core は actual cash evidence、cost-stress survival、kill / wait / run decision に限定し、Strategy Lab、NDX、Trade[XYZ]、Workbench、AI Review、audit/remediation は Core 判断に接続する時だけ Add-on です。
 - いま使える主要 surface は Crypto Perp Truth-Cycle MVP artifact chain / Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operations / operations audit。詳細は [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) を読む。
 - AI / Codex が戦略作成と backtest を迷わず扱う入口は [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) を読む。
 - 人間が戦略、YAML、backtest 結果、次の確認を専門用語少なめで読む入口は [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) を読む。
@@ -38,6 +39,8 @@
 | アプリの全体像、できること、専門用語を詳しく知る | [APP_CURRENT_STATE_DETAILED_2026-06-20.md](APP_CURRENT_STATE_DETAILED_2026-06-20.md) |
 | 個人トレーダー目線の現実的な評価を読む | [AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md) |
 | 利益目線でPASSやSharpeの誤読を避ける | [AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) |
+| Profit Core と Add-on の境界を実装者向けに固定する | [PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md) |
+| 利用者目線で利益誤読を避ける | [PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md) |
 | 実装済み surface を確認する | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) |
 | AI が戦略作成 / backtest を安全に操作する | [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) |
 | 人間が戦略 / backtest 結果を理解する | [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) |
