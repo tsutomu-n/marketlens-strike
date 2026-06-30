@@ -1,9 +1,57 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-30_20:36 JST
+更新日: 2026-06-30_21:30 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core Long-Horizon Goal Checkpoints
+
+Completed on branch `ai/profit-core-cp1-cp3-20260630-2036`.
+
+Achieved:
+
+- Added `docs/plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md` as the long-horizon Profit Core goal and checkpoint contract.
+- Defined the final shape as a kill-first evidence pipeline from protocol-bound candidate generation through multiplicity accounting, bridge, backtest kill gate, local/mock virtual execution gate, evidence review, risk review, explicit tiny actual-cash measurement approval, actual cash report gate, and conservative promotion / kill.
+- Corrected omissions around CP1-CP3 being implemented but not yet connected, C9 `BRIDGED` versus Profit Core `BRIDGED_TECHNICAL_ONLY`, missing protocol / multiplicity / kill-gate pipeline attachment, candidate lineage, compatibility sidecars, external venue current-doc verification, LLM overreach, and `risk_taker_sprint` promotion debt.
+- Updated `docs/profit_core_hybrid_modes/IMPLEMENTATION_CHECKPOINTS.md` so CP1-CP3 read as implemented contract parts, not future-only work.
+- Routed the long-horizon checkpoint doc from `docs/CURRENT_STATE.md`.
+
+Main files changed:
+
+- `docs/plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md`
+- `docs/CURRENT_STATE.md`
+- `docs/profit_core_hybrid_modes/IMPLEMENTATION_CHECKPOINTS.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 186 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+- This is a planning checkpoint doc only. It does not implement P1-P13.
+
+User decisions required:
+
+None for the planning doc.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `docs/plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md`, then revert the related `docs/CURRENT_STATE.md`, `docs/profit_core_hybrid_modes/IMPLEMENTATION_CHECKPOINTS.md`, and this summary addendum.
 
 ## Latest Addendum: Profit Core CP1-CP3 Implementation
 

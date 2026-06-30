@@ -1,19 +1,23 @@
 <!--
 作成日: 2026-06-29_22:07 JST
-更新日: 2026-06-29_22:07 JST
+更新日: 2026-06-30_21:30 JST
 -->
 
 # Implementation Checkpoints
 
 ## 結論
 
-最初に実装するのは 3 checkpoint だけ。
+CP1-CP3 は `2026-06-30` 時点の branch `ai/profit-core-cp1-cp3-20260630-2036` で契約部品として実装済み。ただし既存 candidate / backtest pipeline へはまだ接続されていない。
+
+実装済みの初期 contract:
 
 ```text
 CP1 candidate_protocol_manifest.v1
 CP2 trial_multiplicity_account.v1
 CP3 backtest_kill_gate.v1 thin
 ```
+
+次に進めるなら、先に P1-P3 として protocol / multiplicity / kill gate を既存 `strategy_idea_candidates` と C9 bridge / backtest pack 側へ接続する。長期 goal と checkpoint 差分は [../plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md](../plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md) を読む。
 
 `risk_taker_sprint` の広い候補生成、external venue virtual execution、LLM adversarial review は後続。ここを急ぐと false positive と実行不能候補が増える。
 

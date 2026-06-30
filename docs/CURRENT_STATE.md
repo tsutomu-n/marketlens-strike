@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-29_22:07 JST
+更新日: 2026-06-30_21:26 JST
 -->
 
 # Current State
@@ -13,7 +13,7 @@
 - 技術者向けではない利用者目線の説明は [APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md](APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md) を読む。
 - アプリの全体像、できること、できないこと、専門用語の説明を一枚で読む場合は [APP_CURRENT_STATE_DETAILED_2026-06-20.md](APP_CURRENT_STATE_DETAILED_2026-06-20.md) を読む。
 - 個人向け・利益目線で誤読しやすい点を見る場合は [AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md) と [AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) を読む。どちらも正本ではなく判断補助です。
-- 利益目線で scope を絞る場合は [EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md](EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md)、[profit_core_hybrid_modes/README.md](profit_core_hybrid_modes/README.md)、[PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md)、[PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md) を読む。Profit Core は docs-only の scope-control として Discovery Core / Validation Core / Execution Evidence Core に分け、Edge Candidate Factory は候補生成 Core だが利益証拠ではない。hybrid mode docs は `verification_throughput` を本命、`risk_taker_sprint` を隔離された攻撃モードとして扱う。v0 の外部市場は crypto perps の cross-market context feature であり、standalone trade path ではない。
+- 利益目線で scope を絞る場合は [EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md](EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md)、[profit_core_hybrid_modes/README.md](profit_core_hybrid_modes/README.md)、[PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md)、[PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md) を読む。Profit Core は docs-only の scope-control として Discovery Core / Validation Core / Execution Evidence Core に分け、Edge Candidate Factory は候補生成 Core だが利益証拠ではない。hybrid mode docs は `verification_throughput` を本命、`risk_taker_sprint` を隔離された攻撃モードとして扱う。v0 の外部市場は crypto perps の cross-market context feature であり、standalone trade path ではない。CP1-CP3 後の長期 goal / checkpoint 差分は [plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md](plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md) を読む。
 - いま使える主要 surface は Crypto Perp Truth-Cycle MVP artifact chain / Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operations / operations audit。詳細は [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) を読む。
 - AI / Codex が戦略作成と backtest を迷わず扱う入口は [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) を読む。
 - 人間が戦略、YAML、backtest 結果、次の確認を専門用語少なめで読む入口は [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) を読む。
@@ -41,6 +41,7 @@
 | 利益目線でPASSやSharpeの誤読を避ける | [AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) |
 | Edge Candidate Factory / Execution Evidence Core の境界を読む | [EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md](EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md) |
 | 本命 + 隔離攻撃 mode の開発者向け decision package を読む | [profit_core_hybrid_modes/README.md](profit_core_hybrid_modes/README.md) |
+| Profit Core の先の goal と checkpoint 差分を読む | [plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md](plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md) |
 | Profit Core と Add-on の境界を実装者向けに固定する | [PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md) |
 | 利用者目線で利益誤読を避ける | [PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md) |
 | 実装済み surface を確認する | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) |
