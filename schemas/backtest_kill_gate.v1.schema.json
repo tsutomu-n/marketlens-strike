@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "backtest_kill_gate.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "gate_id",
+    "evaluated_at",
+    "candidate_id",
+    "mode",
+    "family_id",
+    "gate_state",
+    "blocker_codes",
+    "actual_cash",
+    "permits_live_order",
+    "permits_paper_order",
+    "permits_actual_cash",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {"const": "backtest_kill_gate.v1"},
+    "gate_id": {"$ref": "#/$defs/id"},
+    "evaluated_at": {"type": "string", "format": "date-time"},
+    "candidate_id": {"$ref": "#/$defs/id"},
+    "mode": {"enum": ["verification_throughput", "risk_taker_sprint"]},
+    "family_id": {"$ref": "#/$defs/id"},
+    "gate_state": {
+      "enum": ["KILL", "INCONCLUSIVE_DATA", "RESEARCH_ONLY", "SHORTLIST_FOR_VIRTUAL"]
+    },
+    "blocker_codes": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "actual_cash": {"const": false},
+    "permits_live_order": {"const": false},
+    "permits_paper_order": {"const": false},
+    "permits_actual_cash": {"const": false},
+    "summary": {
+      "type": "object",
+      "required": [
+        "event_count",
+        "closed_trade_count",
+        "no_trade_comparison_present",
+        "after_cost_edge_over_no_trade",
+        "stress_edge_over_no_trade",
+        "source_gap_count",
+        "unexecutable_reason_count",
+        "selection_adjustment_status"
+      ],
+      "properties": {
+        "event_count": {"type": "integer", "minimum": 0},
+        "closed_trade_count": {"type": "integer", "minimum": 0},
+        "no_trade_comparison_present": {"type": "boolean"},
+        "after_cost_edge_over_no_trade": {"type": "number"},
+        "stress_edge_over_no_trade": {"type": "number"},
+        "largest_loss_usd": {"type": "number"},
+        "profit_concentration": {"type": "number"},
+        "regime_stability": {"type": "string", "minLength": 1},
+        "source_gap_count": {"type": "integer", "minimum": 0},
+        "unexecutable_reason_count": {"type": "integer", "minimum": 0},
+        "selection_adjustment_status": {"enum": ["AVAILABLE", "NOT_ESTIMABLE"]},
+        "execution_candidate": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
+  }
+}

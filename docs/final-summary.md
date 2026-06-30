@@ -1,9 +1,78 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-29_22:07 JST
+更新日: 2026-06-30_20:36 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core CP1-CP3 Implementation
+
+Completed on branch `ai/profit-core-cp1-cp3-20260630-2036`.
+
+Achieved:
+
+- Added `candidate_protocol_manifest.v1` schema and Pydantic model for fixing mode, search space, sealed holdout, source requirements, venue constraints, LLM boundary, and false live / actual-cash permissions before candidate generation.
+- Added `trial_multiplicity_account.v1` schema and Pydantic model for trial counts, family counts, parameter grid hashes, validation peek / rerank counts, BH/FDR availability, and `NOT_ESTIMABLE` states for PBO / DSR / White Reality Check when required inputs are missing.
+- Added thin `backtest_kill_gate.v1` schema and Pydantic model for `KILL`, `INCONCLUSIVE_DATA`, `RESEARCH_ONLY`, and `SHORTLIST_FOR_VIRTUAL` decisions without paper / live / actual-cash permission.
+- Added `edge-candidate-protocol-validate` as a thin local validation command. It does not generate candidates, call external venues, call LLM APIs, submit orders, or permit live / actual-cash execution.
+- Preserved `actual_cash` vs virtual / proxy / estimate boundaries, `NO_TRADE` as required comparison, success-only reporting prohibition, sealed holdout protection, `risk_taker_sprint` isolation, and `NOT_ESTIMABLE` as a valid stop result.
+
+Main files changed:
+
+- `schemas/candidate_protocol_manifest.v1.schema.json`
+- `schemas/trial_multiplicity_account.v1.schema.json`
+- `schemas/backtest_kill_gate.v1.schema.json`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/edge_candidates/protocol.py`
+- `src/sis/edge_candidates/multiplicity.py`
+- `src/sis/edge_candidates/backtest_kill_gate.py`
+- `src/sis/commands/edge_candidates.py`
+- `src/sis/cli.py`
+- `tests/edge_candidates/test_protocol_manifest.py`
+- `tests/edge_candidates/test_multiplicity_account.py`
+- `tests/edge_candidates/test_backtest_kill_gate.py`
+- `docs/plans/profit-core-cp1-cp3-implementation-2026-06-30.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_protocol_manifest.py -q` -> passed.
+- `uv run pytest tests/edge_candidates/test_multiplicity_account.py -q` -> passed.
+- `uv run pytest tests/edge_candidates/test_backtest_kill_gate.py -q` -> passed.
+- `uv run pytest tests/strategy_idea_candidates/test_candidate_set_validation.py tests/strategy_idea_candidates/test_candidate_generator.py -q` -> passed.
+- `uv run pytest tests/crypto_perp/test_tournament_gate.py tests/crypto_perp/test_bias_guards.py -q` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> passed.
+- `uv run python scripts/check_current_docs.py` -> passed.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+- `virtual_execution_gate.v1`, LLM adversarial review, Risk-Taker Sprint broad candidate generation, GA / ML, external venue adapters, Bitget / Hyperliquid / GRVT execution, tiny-live / live execution, and dependency changes remain out of scope for this goal.
+
+User decisions required:
+
+None for CP1-CP3.
+
+Pre-existing worktree state:
+
+- `docs/profit_core_hybrid_modes/APPENDIX_RESEARCH_EVIDENCE.md` had an uncommitted change before this implementation goal started.
+- `資料/意見0630.md` was untracked before this implementation goal started.
+
+Destructive change:
+
+No destructive operation or irreversible data change.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove the three new schemas, `src/sis/edge_candidates/`, `src/sis/commands/edge_candidates.py`, and `tests/edge_candidates/`; then remove the `edge_candidates` import / registration from `src/sis/cli.py` and the command bullet from `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`. Do not revert the pre-existing `APPENDIX_RESEARCH_EVIDENCE.md` or `資料/意見0630.md` changes as part of this rollback.
 
 ## Latest Addendum: Profit Core Hybrid Modes Docs
 

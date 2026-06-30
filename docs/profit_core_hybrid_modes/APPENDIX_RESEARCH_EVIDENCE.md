@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-29_22:07 JST
-更新日: 2026-06-29_22:07 JST
+更新日: 2026-06-30_20:34 JST
 -->
 
 # Appendix: Research And Evidence
@@ -20,6 +20,15 @@
 | [../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md) | `actual_cash_result_usd`、`cash_metric_basis`、`NO_TRADE`、`pbo_status=NOT_ESTIMABLE`、`tiny_live_shadow` の語彙 |
 | [../EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md](../EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md) | Discovery / Validation / Execution Evidence Core の docs-only scope-control |
 | [../PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](../PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md) | Profit Core の actual cash / NO_TRADE / LLM / Add-on 境界 |
+
+## Source material kept for later
+
+| material | 扱い |
+|---|---|
+| [../../資料/romano_wolf_stepwise.py](../../資料/romano_wolf_stepwise.py) | Romano-Wolf stepwise を Backtest Kill Gate に入れるための初期試作。今のまま Core 実装に採用しない |
+| [../../資料/romano_wolf_stepwise_2.py](../../資料/romano_wolf_stepwise_2.py) | 上記に wild bootstrap を足した試作。将来の optional statistical sidecar 候補として残す |
+
+これらは実装正本ではなく資料。採用する場合は、periodic return matrix、全候補 ledger、NO_TRADE benchmark、欠損理由、bootstrap 設定、`NOT_ESTIMABLE` 語彙を先に固定する。
 
 ## Research evidence
 

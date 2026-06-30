@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "trial_multiplicity_account.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "account_id",
+    "mode",
+    "candidate_count_total",
+    "candidate_count_shortlisted",
+    "family_count",
+    "family_trial_count",
+    "parameter_grid_hashes",
+    "effective_trial_count",
+    "correlation_cluster_count",
+    "validation_peek_count",
+    "rerank_count",
+    "sealed_test_used_for_selection",
+    "success_only_reporting",
+    "raw_p_value_count",
+    "fdr_status",
+    "pbo_status",
+    "dsr_status",
+    "white_reality_check_status",
+    "not_estimable_reasons"
+  ],
+  "properties": {
+    "schema_version": {"const": "trial_multiplicity_account.v1"},
+    "account_id": {"$ref": "#/$defs/id"},
+    "mode": {"enum": ["verification_throughput", "risk_taker_sprint"]},
+    "candidate_count_total": {"type": "integer", "minimum": 0},
+    "candidate_count_shortlisted": {"type": "integer", "minimum": 0},
+    "family_count": {"type": "integer", "minimum": 0},
+    "family_trial_count": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "parameter_grid_hashes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/sha256"}
+    },
+    "effective_trial_count": {"type": ["integer", "null"], "minimum": 0},
+    "correlation_cluster_count": {"type": ["integer", "null"], "minimum": 0},
+    "validation_peek_count": {"type": "integer", "minimum": 0},
+    "rerank_count": {"type": "integer", "minimum": 0},
+    "sealed_test_used_for_selection": {"const": false},
+    "success_only_reporting": {"const": false},
+    "raw_p_value_count": {"type": "integer", "minimum": 0},
+    "fdr_status": {"enum": ["AVAILABLE", "NOT_ESTIMABLE"]},
+    "pbo_status": {"enum": ["AVAILABLE", "NOT_ESTIMABLE"]},
+    "dsr_status": {"enum": ["AVAILABLE", "NOT_ESTIMABLE"]},
+    "white_reality_check_status": {"enum": ["AVAILABLE", "NOT_ESTIMABLE"]},
+    "not_estimable_reasons": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "candidate_protocol_manifest.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "protocol_id",
+    "mode",
+    "created_at",
+    "target_market",
+    "target_venue_family",
+    "families",
+    "parameter_spaces",
+    "objective",
+    "exclusion_rules",
+    "sealed_holdout_definition",
+    "family_event_count_policy",
+    "source_requirements",
+    "venue_execution_constraints",
+    "llm_policy",
+    "permits_actual_cash",
+    "permits_live_order"
+  ],
+  "properties": {
+    "schema_version": {"const": "candidate_protocol_manifest.v1"},
+    "protocol_id": {"$ref": "#/$defs/id"},
+    "mode": {"enum": ["verification_throughput", "risk_taker_sprint"]},
+    "mode_isolation": {"type": "boolean"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "target_market": {"type": "string", "minLength": 1},
+    "target_venue_family": {"type": "string", "minLength": 1},
+    "families": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/family"}
+    },
+    "parameter_spaces": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "object"}
+    },
+    "objective": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "exclusion_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "sealed_holdout_definition": {"$ref": "#/$defs/sealed_holdout_definition"},
+    "family_event_count_policy": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/family_event_count_policy"}
+    },
+    "source_requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/source_requirement"}
+    },
+    "venue_execution_constraints": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "llm_policy": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "permits_actual_cash": {"const": false},
+    "permits_live_order": {"const": false}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"mode": {"const": "risk_taker_sprint"}}},
+      "then": {
+        "required": ["mode_isolation"],
+        "properties": {"mode_isolation": {"const": true}}
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "family": {
+      "type": "object",
+      "required": ["family_id", "hypothesis", "generator_type"],
+      "properties": {
+        "family_id": {"$ref": "#/$defs/id"},
+        "hypothesis": {"type": "string", "minLength": 1},
+        "generator_type": {
+          "enum": [
+            "classical_rule",
+            "grammar_based",
+            "limited_random",
+            "light_ga",
+            "ranking_or_no_trade_filter"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "sealed_holdout_definition": {
+      "type": "object",
+      "required": ["window_id", "start", "end", "peek_policy"],
+      "properties": {
+        "window_id": {"$ref": "#/$defs/id"},
+        "start": {"type": "string", "format": "date-time"},
+        "end": {"type": "string", "format": "date-time"},
+        "peek_policy": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "family_event_count_policy": {
+      "type": "object",
+      "required": ["insufficient_data_state"],
+      "properties": {
+        "min_event_count_default": {"type": ["integer", "null"], "minimum": 0},
+        "insufficient_data_state": {"enum": ["INCONCLUSIVE_DATA", "RESEARCH_ONLY"]}
+      },
+      "additionalProperties": false
+    },
+    "source_requirement": {
+      "type": "object",
+      "required": ["source_id", "schema_version", "required"],
+      "properties": {
+        "source_id": {"$ref": "#/$defs/id"},
+        "schema_version": {"type": "string", "minLength": 1},
+        "required": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

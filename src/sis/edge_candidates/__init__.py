@@ -1,0 +1,11 @@
+from __future__ import annotations
+
+BACKTEST_KILL_GATE_SCHEMA_VERSION = "backtest_kill_gate.v1"
+CANDIDATE_PROTOCOL_MANIFEST_SCHEMA_VERSION = "candidate_protocol_manifest.v1"
+TRIAL_MULTIPLICITY_ACCOUNT_SCHEMA_VERSION = "trial_multiplicity_account.v1"
+
+__all__ = [
+    "BACKTEST_KILL_GATE_SCHEMA_VERSION",
+    "CANDIDATE_PROTOCOL_MANIFEST_SCHEMA_VERSION",
+    "TRIAL_MULTIPLICITY_ACCOUNT_SCHEMA_VERSION",
+]
