@@ -64,6 +64,11 @@ from sis.strategy_idea_candidates.policies import (
     validate_perp_shortlist_constraints,
     validate_split_and_leakage_policy,
 )
+from sis.strategy_idea_candidates.profit_core import (
+    ProfitCoreAttachmentError,
+    ProfitCoreAttachmentOutputExistsError,
+    write_trial_multiplicity_account_from_candidate_set,
+)
 from sis.strategy_idea_candidates.review_packet import (
     StrategyIdeaCandidateReviewPacketOutputExistsError,
     build_strategy_idea_candidate_review_packet,
@@ -474,6 +479,18 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
             dir_okay=False,
             help="Candidate search ledger JSONL.",
         ),
+        protocol_manifest: Path | None = typer.Option(
+            None,
+            "--protocol-manifest",
+            dir_okay=False,
+            help="Optional candidate_protocol_manifest.v1 JSON/YAML to trace in bridge manifest.",
+        ),
+        multiplicity_account: Path | None = typer.Option(
+            None,
+            "--multiplicity-account",
+            dir_okay=False,
+            help="Optional trial_multiplicity_account.v1 JSON/YAML to trace in bridge manifest.",
+        ),
         prep_watchdeck_root: Path = typer.Option(
             ...,
             "--prep-watchdeck-root",
@@ -500,6 +517,16 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
                     settings.data_dir,
                 ),
                 ledger_path=_resolve_workspace_path(ledger, settings.data_dir),
+                protocol_manifest_path=(
+                    _resolve_workspace_path(protocol_manifest, settings.data_dir)
+                    if protocol_manifest is not None
+                    else None
+                ),
+                multiplicity_account_path=(
+                    _resolve_workspace_path(multiplicity_account, settings.data_dir)
+                    if multiplicity_account is not None
+                    else None
+                ),
                 prep_watchdeck_root=_resolve_workspace_path(
                     prep_watchdeck_root,
                     settings.data_dir,
@@ -526,6 +553,76 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"bridged_count={result.manifest.summary['bridged_count']}")
         typer.echo(f"blocked_count={result.manifest.summary['blocked_count']}")
         typer.echo(f"manifest_path={result.manifest_path.as_posix()}")
+
+    @app.command("strategy-idea-candidates-multiplicity-account-build")
+    def strategy_idea_candidates_multiplicity_account_build_cmd(
+        candidate_set: Path = typer.Option(
+            ...,
+            "--candidate-set",
+            dir_okay=False,
+            help="strategy_idea_candidate_set.v1 JSON.",
+        ),
+        ledger: Path = typer.Option(
+            ...,
+            "--ledger",
+            dir_okay=False,
+            help="Candidate search ledger JSONL.",
+        ),
+        protocol_manifest: Path | None = typer.Option(
+            None,
+            "--protocol-manifest",
+            dir_okay=False,
+            help="Optional candidate_protocol_manifest.v1 JSON/YAML.",
+        ),
+        out: Path = typer.Option(
+            Path("data/strategy_idea_candidates/profit_core"),
+            "--out",
+            help="Output directory for trial_multiplicity_account.json.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            candidate_set_path = _resolve_workspace_path(candidate_set, settings.data_dir)
+            ledger_path = _resolve_workspace_path(ledger, settings.data_dir)
+            protocol_path = (
+                _resolve_workspace_path(protocol_manifest, settings.data_dir)
+                if protocol_manifest is not None
+                else None
+            )
+            result = write_trial_multiplicity_account_from_candidate_set(
+                candidate_set=StrategyIdeaCandidateSet.model_validate(
+                    read_mapping_file(candidate_set_path)
+                ),
+                ledger_path=ledger_path,
+                protocol_manifest_path=protocol_path,
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            ProfitCoreAttachmentError,
+            ProfitCoreAttachmentOutputExistsError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("status=pass")
+        typer.echo(f"account_id={result.account.account_id}")
+        typer.echo(f"raw_p_value_count={result.account.raw_p_value_count}")
+        typer.echo(f"fdr_status={result.account.fdr_status.value}")
+        typer.echo(f"account_path={result.account_path.as_posix()}")
 
     @app.command("strategy-idea-candidates-bitget-source-refresh")
     def strategy_idea_candidates_bitget_source_refresh_cmd(

@@ -14,6 +14,17 @@ import yaml
 from sis.backtest.artifact_io import sha256_file
 from sis.backtest.benchmark_relative import DEFAULT_BENCHMARK_SERIES_RETURN_COLUMN
 from sis.backtest.pack_runner import StrategyBacktestPackRunInputs, run_strategy_backtest_pack
+from sis.edge_candidates.backtest_kill_gate import (
+    BacktestKillGateDecision,
+    BacktestKillGateInput,
+    build_backtest_kill_gate,
+)
+from sis.edge_candidates.multiplicity import SelectionAdjustmentStatus, TrialMultiplicityAccount
+from sis.edge_candidates.protocol import (
+    CandidateProtocolManifest,
+    CandidateProtocolMode,
+    FamilyEventCountPolicy,
+)
 from sis.strategy_idea_candidates.models import (
     CandidateBoundary,
     CandidateDecision,
@@ -41,14 +52,22 @@ SUPPORTED_PRODUCT_TYPE = "USDT-FUTURES"
 AUTHORING_VENUE = "trade_xyz"
 
 BridgeStatus = Literal[
-    "BRIDGED",
-    "BLOCKED_UNSUPPORTED_FAMILY_MAPPING",
-    "BLOCKED_MISSING_SOURCE_COLUMNS",
-    "BLOCKED_NO_SYMBOL_DATA",
-    "BLOCKED_UNSUPPORTED_PRODUCT_TYPE",
-    "BLOCKED_UNSUPPORTED_SIDE_BIAS",
+    "BRIDGED_TECHNICAL_ONLY",
+    "BLOCKED_UNSUPPORTED_FAMILY",
+    "BLOCKED_MISSING_SOURCE",
     "BLOCKED_BACKTEST_PACK",
+    "BLOCKED_ECONOMIC_GATE",
+    "BLOCKED_MULTIPLICITY_ACCOUNT",
 ]
+
+
+class ProfitCoreArtifactRef(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str
+    path: str
+    sha256: str
+    artifact_id: str | None = None
 
 
 class StrategyIdeaCandidateAuthoringBridgeCandidate(BaseModel):
@@ -61,6 +80,8 @@ class StrategyIdeaCandidateAuthoringBridgeCandidate(BaseModel):
     blockers: list[str] = Field(default_factory=list)
     source_statuses: list[str] = Field(default_factory=list)
     artifacts: dict[str, str] = Field(default_factory=dict)
+    backtest_kill_gate_state: str | None = None
+    profit_core_blocker_codes: list[str] = Field(default_factory=list)
 
 
 class StrategyIdeaCandidateAuthoringBridgeManifest(BaseModel):
@@ -79,6 +100,8 @@ class StrategyIdeaCandidateAuthoringBridgeManifest(BaseModel):
     export_manifest_sha256: str
     ledger_path: str
     ledger_sha256: str
+    protocol_manifest_ref: ProfitCoreArtifactRef | None = None
+    multiplicity_account_ref: ProfitCoreArtifactRef | None = None
     prep_watchdeck_root: str
     candidates: list[StrategyIdeaCandidateAuthoringBridgeCandidate]
     summary: dict[str, Any]
@@ -106,6 +129,8 @@ def build_strategy_idea_candidate_authoring_bridge(
     candidate_set_path: Path,
     export_manifest_path: Path,
     ledger_path: Path,
+    protocol_manifest_path: Path | None = None,
+    multiplicity_account_path: Path | None = None,
     prep_watchdeck_root: Path,
     out_dir: Path,
     replace_existing: bool = False,
@@ -127,6 +152,12 @@ def build_strategy_idea_candidate_authoring_bridge(
             "export_manifest candidate_set_id does not match candidate_set: "
             f"{export_manifest.candidate_set_id} != {candidate_set.candidate_set_id}"
         )
+    protocol = _load_protocol_manifest(protocol_manifest_path)
+    multiplicity_account = _load_multiplicity_account(multiplicity_account_path)
+    _validate_multiplicity_account_matches_candidate_set(
+        candidate_set=candidate_set,
+        multiplicity_account=multiplicity_account,
+    )
 
     shortlisted_export_ids = {item.idea_candidate_id for item in export_manifest.exported_ideas}
     shortlisted_candidates = [
@@ -147,11 +178,19 @@ def build_strategy_idea_candidate_authoring_bridge(
                 candidate=candidate,
                 source=source,
                 out_dir=out_dir,
+                protocol=protocol,
+                multiplicity_account=multiplicity_account,
                 replace_existing=replace_existing,
             )
         )
 
     status_counts = Counter(item.status for item in candidate_results)
+    gate_state_counts = Counter(
+        item.backtest_kill_gate_state
+        for item in candidate_results
+        if item.backtest_kill_gate_state is not None
+    )
+    refs_attached = protocol_manifest_path is not None and multiplicity_account_path is not None
     manifest = StrategyIdeaCandidateAuthoringBridgeManifest(
         manifest_id=f"{candidate_set.candidate_set_id}-authoring-bridge",
         created_at=datetime.now(timezone.utc).replace(microsecond=0),
@@ -163,20 +202,36 @@ def build_strategy_idea_candidate_authoring_bridge(
         export_manifest_sha256=sha256_file(export_manifest_path),
         ledger_path=ledger_path.as_posix(),
         ledger_sha256=sha256_file(ledger_path),
+        protocol_manifest_ref=_artifact_ref(
+            protocol_manifest_path,
+            schema_version="candidate_protocol_manifest.v1",
+            artifact_id=protocol.protocol_id if protocol is not None else None,
+        ),
+        multiplicity_account_ref=_artifact_ref(
+            multiplicity_account_path,
+            schema_version="trial_multiplicity_account.v1",
+            artifact_id=(
+                multiplicity_account.account_id if multiplicity_account is not None else None
+            ),
+        ),
         prep_watchdeck_root=prep_watchdeck_root.as_posix(),
         candidates=candidate_results,
         summary={
             "candidate_count": len(candidate_results),
             "status_counts": dict(sorted(status_counts.items())),
-            "bridged_count": status_counts.get("BRIDGED", 0),
-            "blocked_count": len(candidate_results) - status_counts.get("BRIDGED", 0),
+            "bridged_count": status_counts.get("BRIDGED_TECHNICAL_ONLY", 0),
+            "blocked_count": len(candidate_results)
+            - status_counts.get("BRIDGED_TECHNICAL_ONLY", 0),
             "candidate_scoped_outputs": True,
             "actual_cash_result_available": False,
+            "backtest_kill_gate_state_counts": dict(sorted(gate_state_counts.items())),
+            "profit_core_ref_status": "ATTACHED" if refs_attached else "MISSING_COMPATIBILITY_REFS",
         },
         known_gaps=[
             "C9_V0_DOES_NOT_PROVE_ALPHA_OR_PROFIT",
             "PREP_WATCHDECK_COSTS_ARE_ESTIMATE_ONLY",
             "DO_NOT_FEED_PREVIEW_OR_ESTIMATE_ROWS_TO_ACTUAL_CASH_REPORT",
+            *([] if refs_attached else ["PROFIT_CORE_REFS_NOT_SUPPLIED_COMPATIBILITY_MODE"]),
         ],
     )
     write_json_artifact(manifest_path, manifest.model_dump(mode="json", exclude_none=True))
@@ -192,6 +247,8 @@ def _process_candidate(
     candidate: StrategyIdeaCandidate,
     source: PrepWatchdeckBundle,
     out_dir: Path,
+    protocol: CandidateProtocolManifest | None,
+    multiplicity_account: TrialMultiplicityAccount | None,
     replace_existing: bool,
 ) -> StrategyIdeaCandidateAuthoringBridgeCandidate:
     candidate_dir = out_dir / candidate.idea_candidate_id
@@ -201,7 +258,7 @@ def _process_candidate(
         )
     symbols = _normalize_symbols(candidate.instruments)
     status, blockers = _candidate_blockers(candidate, source, symbols)
-    if status != "BRIDGED":
+    if status != "BRIDGED_TECHNICAL_ONLY":
         blocker_path = _write_blocker(
             candidate_dir=candidate_dir,
             candidate=candidate,
@@ -221,11 +278,13 @@ def _process_candidate(
         )
 
     try:
-        artifacts = _write_bridged_candidate_artifacts(
+        artifacts, kill_gate = _write_bridged_candidate_artifacts(
             candidate_dir=candidate_dir,
             candidate=candidate,
             symbols=symbols,
             source=source,
+            protocol=protocol,
+            multiplicity_account=multiplicity_account,
         )
     except Exception as exc:
         blocker_path = _write_blocker(
@@ -253,11 +312,13 @@ def _process_candidate(
     return StrategyIdeaCandidateAuthoringBridgeCandidate(
         candidate_id=candidate.idea_candidate_id,
         family=candidate.family,
-        status="BRIDGED",
+        status="BRIDGED_TECHNICAL_ONLY",
         symbols=symbols,
         blockers=[],
         source_statuses=source.source_statuses,
         artifacts={key: path.as_posix() for key, path in artifacts.items()},
+        backtest_kill_gate_state=kill_gate.gate_state.value,
+        profit_core_blocker_codes=kill_gate.blocker_codes,
     )
 
 
@@ -268,34 +329,34 @@ def _candidate_blockers(
 ) -> tuple[BridgeStatus, list[str]]:
     if candidate.family not in SUPPORTED_FAMILIES:
         return (
-            "BLOCKED_UNSUPPORTED_FAMILY_MAPPING",
+            "BLOCKED_UNSUPPORTED_FAMILY",
             [f"unsupported C9 v0 family: {candidate.family}"],
         )
     side = str(candidate.parameter_set.get("side_bias") or "").lower()
     if side not in {"long", "short"}:
         return (
-            "BLOCKED_UNSUPPORTED_SIDE_BIAS",
+            "BLOCKED_UNSUPPORTED_FAMILY",
             [f"C9 v0 requires side_bias long or short: {side or '<missing>'}"],
         )
     product_type = str(candidate.parameter_set.get("product_type") or "")
     if product_type != SUPPORTED_PRODUCT_TYPE:
         return (
-            "BLOCKED_UNSUPPORTED_PRODUCT_TYPE",
+            "BLOCKED_UNSUPPORTED_FAMILY",
             [f"candidate product_type must be {SUPPORTED_PRODUCT_TYPE}: {product_type}"],
         )
     for symbol in symbols:
         contract = source.contracts_by_symbol.get(symbol)
         if contract is not None and contract.product_type != SUPPORTED_PRODUCT_TYPE:
             return (
-                "BLOCKED_UNSUPPORTED_PRODUCT_TYPE",
+                "BLOCKED_UNSUPPORTED_FAMILY",
                 [f"source product_type must be {SUPPORTED_PRODUCT_TYPE}: {symbol}"],
             )
         if not source.candles_by_symbol.get(symbol):
-            return "BLOCKED_NO_SYMBOL_DATA", [f"missing 5m candle rows: {symbol}"]
+            return "BLOCKED_MISSING_SOURCE", [f"missing 5m candle rows: {symbol}"]
     missing_columns = _missing_source_columns(candidate, source, symbols)
     if missing_columns:
-        return "BLOCKED_MISSING_SOURCE_COLUMNS", missing_columns
-    return "BRIDGED", []
+        return "BLOCKED_MISSING_SOURCE", missing_columns
+    return "BRIDGED_TECHNICAL_ONLY", []
 
 
 def _missing_source_columns(
@@ -318,7 +379,9 @@ def _write_bridged_candidate_artifacts(
     candidate: StrategyIdeaCandidate,
     symbols: list[str],
     source: PrepWatchdeckBundle,
-) -> dict[str, Path]:
+    protocol: CandidateProtocolManifest | None,
+    multiplicity_account: TrialMultiplicityAccount | None,
+) -> tuple[dict[str, Path], BacktestKillGateDecision]:
     candidate_dir.mkdir(parents=True, exist_ok=True)
     feature_path = candidate_dir / "feature_panel.parquet"
     quote_path = candidate_dir / "quotes.parquet"
@@ -362,7 +425,7 @@ def _write_bridged_candidate_artifacts(
             data_dir=(candidate_dir / "backtest_runtime_data").resolve(),
         )
     )
-    return {
+    artifacts = {
         "prep_watchdeck_source_manifest": source_manifest_path,
         "feature_panel": feature_path,
         "quotes": quote_path,
@@ -372,7 +435,21 @@ def _write_bridged_candidate_artifacts(
         "strategy_authoring_bundle": bundle_path,
         "backtest_pack": pack_result.pack_path,
         "backtest_pack_validation": pack_result.validation_path,
+        "backtest_stress": pack_result.stress_path,
+        "backtest_baseline_comparison": pack_result.baseline_comparison_path,
+        "backtest_benchmark_relative": pack_result.benchmark_relative_path,
     }
+    gate_path = candidate_dir / "backtest_kill_gate.json"
+    kill_gate = _build_and_write_backtest_kill_gate(
+        candidate=candidate,
+        protocol=protocol,
+        multiplicity_account=multiplicity_account,
+        baseline_comparison_path=pack_result.baseline_comparison_path,
+        stress_path=pack_result.stress_path,
+        out_path=gate_path,
+    )
+    artifacts["backtest_kill_gate"] = gate_path
+    return artifacts, kill_gate
 
 
 def _feature_panel(
@@ -717,7 +794,7 @@ def _source_manifest(
         "schema_version": AUTHORING_BRIDGE_SCHEMA_VERSION,
         "candidate_id": candidate.idea_candidate_id,
         "family": candidate.family,
-        "status": "BRIDGED",
+        "status": "BRIDGED_TECHNICAL_ONLY",
         "symbols": symbols,
         "prep_watchdeck_root": source.root.as_posix(),
         "sources": [ref.__dict__ for ref in source.sources],
@@ -763,6 +840,149 @@ def _write_blocker(
         },
     )
     return blocker_path
+
+
+def _load_protocol_manifest(path: Path | None) -> CandidateProtocolManifest | None:
+    if path is None:
+        return None
+    return CandidateProtocolManifest.model_validate(read_mapping_file(path))
+
+
+def _load_multiplicity_account(path: Path | None) -> TrialMultiplicityAccount | None:
+    if path is None:
+        return None
+    return TrialMultiplicityAccount.model_validate(read_mapping_file(path))
+
+
+def _validate_multiplicity_account_matches_candidate_set(
+    *,
+    candidate_set: StrategyIdeaCandidateSet,
+    multiplicity_account: TrialMultiplicityAccount | None,
+) -> None:
+    if multiplicity_account is None:
+        return
+    summary = candidate_set.search_ledger_summary
+    if multiplicity_account.candidate_count_total != summary.candidate_count_total:
+        raise ValueError("multiplicity account candidate_count_total mismatch")
+    if multiplicity_account.candidate_count_shortlisted != summary.candidate_count_shortlisted:
+        raise ValueError("multiplicity account candidate_count_shortlisted mismatch")
+    if multiplicity_account.sealed_test_used_for_selection is not False:
+        raise ValueError("multiplicity account sealed_test_used_for_selection must be false")
+    if multiplicity_account.success_only_reporting is not False:
+        raise ValueError("multiplicity account success_only_reporting must be false")
+
+
+def _artifact_ref(
+    path: Path | None,
+    *,
+    schema_version: str,
+    artifact_id: str | None,
+) -> ProfitCoreArtifactRef | None:
+    if path is None:
+        return None
+    return ProfitCoreArtifactRef(
+        schema_version=schema_version,
+        path=path.as_posix(),
+        sha256=sha256_file(path),
+        artifact_id=artifact_id,
+    )
+
+
+def _build_and_write_backtest_kill_gate(
+    *,
+    candidate: StrategyIdeaCandidate,
+    protocol: CandidateProtocolManifest | None,
+    multiplicity_account: TrialMultiplicityAccount | None,
+    baseline_comparison_path: Path,
+    stress_path: Path,
+    out_path: Path,
+) -> BacktestKillGateDecision:
+    baseline_payload = read_mapping_file(baseline_comparison_path)
+    stress_payload = read_mapping_file(stress_path)
+    baseline_summary = baseline_payload.get("summary") or {}
+    stress_summary = stress_payload.get("summary") or {}
+    no_trade_present, no_trade_return = _cash_no_trade_baseline(baseline_payload)
+    strategy_total_return = _float(baseline_summary.get("strategy_total_return"), default=0.0)
+    worst_stressed_return = _float(
+        stress_summary.get("worst_stressed_total_return"),
+        default=strategy_total_return,
+    )
+    event_count = _positive_int(baseline_summary.get("return_count"), default=0)
+    selection_status = _selection_adjustment_status(
+        candidate=candidate,
+        multiplicity_account=multiplicity_account,
+    )
+    gate = build_backtest_kill_gate(
+        BacktestKillGateInput(
+            candidate_id=candidate.idea_candidate_id,
+            mode=_protocol_mode(protocol),
+            family_id=candidate.family,
+            event_count=event_count,
+            closed_trade_count=event_count,
+            no_trade_comparison_present=no_trade_present,
+            after_cost_edge_over_no_trade=strategy_total_return - no_trade_return,
+            stress_edge_over_no_trade=worst_stressed_return - no_trade_return,
+            largest_loss_usd=0.0,
+            profit_concentration=0.0,
+            regime_stability="NOT_EVALUATED_C9_V0_THIN_GATE",
+            source_gap_count=0,
+            unexecutable_reason_count=0,
+            selection_adjustment_status=selection_status,
+            family_event_count_policy=_family_event_count_policy(
+                candidate=candidate,
+                protocol=protocol,
+            ),
+            execution_candidate=True,
+        ),
+        gate_id=f"{candidate.idea_candidate_id}-backtest-kill-gate",
+        evaluated_at=datetime.now(timezone.utc).replace(microsecond=0),
+    )
+    write_json_artifact(out_path, gate.model_dump(mode="json", exclude_none=True))
+    return gate
+
+
+def _cash_no_trade_baseline(payload: dict[str, Any]) -> tuple[bool, float]:
+    for row in payload.get("baselines") or []:
+        if not isinstance(row, dict):
+            continue
+        if row.get("baseline_id") != "cash_no_trade":
+            continue
+        if row.get("status") != "available":
+            return False, 0.0
+        return True, _float(row.get("total_return"), default=0.0)
+    return False, 0.0
+
+
+def _selection_adjustment_status(
+    *,
+    candidate: StrategyIdeaCandidate,
+    multiplicity_account: TrialMultiplicityAccount | None,
+) -> SelectionAdjustmentStatus:
+    if multiplicity_account is not None:
+        return multiplicity_account.fdr_status
+    status = str(candidate.selection_adjusted_metrics_status)
+    if status.endswith("AVAILABLE") or status == "AVAILABLE":
+        return SelectionAdjustmentStatus.AVAILABLE
+    return SelectionAdjustmentStatus.NOT_ESTIMABLE
+
+
+def _protocol_mode(protocol: CandidateProtocolManifest | None) -> CandidateProtocolMode:
+    return protocol.mode if protocol is not None else CandidateProtocolMode.VERIFICATION_THROUGHPUT
+
+
+def _family_event_count_policy(
+    *,
+    candidate: StrategyIdeaCandidate,
+    protocol: CandidateProtocolManifest | None,
+) -> FamilyEventCountPolicy:
+    if protocol is not None:
+        policy = protocol.family_event_count_policy.get(candidate.family)
+        if policy is not None:
+            return policy
+    return FamilyEventCountPolicy(
+        min_event_count_default=None,
+        insufficient_data_state="INCONCLUSIVE_DATA",
+    )
 
 
 def _candidate_symbols(candidates: list[StrategyIdeaCandidate]) -> list[str]:

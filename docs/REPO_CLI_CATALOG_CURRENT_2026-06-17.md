@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-30_20:36 JST
+更新日: 2026-07-01_06:33 JST
 -->
 
 # Repo CLI Catalog Current
@@ -79,6 +79,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-idea-candidates-ai-import`
 - `strategy-idea-candidates-perp-estimate`
 - `strategy-idea-candidates-authoring-bridge`
+- `strategy-idea-candidates-multiplicity-account-build`
 - `strategy-idea-candidates-bitget-source-refresh`
 - `edge-candidate-protocol-validate`
 - `strategy-model-run-record`

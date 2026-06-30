@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import duckdb
+from jsonschema import Draft202012Validator
 import polars as pl
 from typer.testing import CliRunner
 
@@ -18,7 +19,11 @@ from sis.research.strategy_lab.authoring.io import (
 from sis.strategy_idea_candidates.authoring_bridge import (
     build_strategy_idea_candidate_authoring_bridge,
 )
+from sis.strategy_idea_candidates.models import StrategyIdeaCandidateSet
 from sis.strategy_idea_candidates.prep_watchdeck_source import load_prep_watchdeck_source
+from sis.strategy_idea_candidates.profit_core import (
+    write_trial_multiplicity_account_from_candidate_set,
+)
 from sis.strategy_inputs.io import write_json_artifact
 from support.cli import normalized_stdout
 
@@ -26,6 +31,7 @@ from .fixtures import HASH_A, HASH_B, HASH_C, candidate_boundary
 
 
 runner = CliRunner()
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _candidate(
@@ -257,6 +263,76 @@ def _write_candidate_inputs(
     return candidate_set_path, export_manifest_path, ledger_path
 
 
+def _protocol_payload(candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    families = sorted({candidate["family"] for candidate in candidates})
+    return {
+        "schema_version": "candidate_protocol_manifest.v1",
+        "protocol_id": "bitget-perp-verification-001",
+        "mode": "verification_throughput",
+        "mode_isolation": False,
+        "created_at": "2026-06-18T12:45:00Z",
+        "target_market": "crypto_perp",
+        "target_venue_family": "bitget_perp",
+        "families": [
+            {
+                "family_id": family,
+                "hypothesis": f"{family} fixture protocol family",
+                "generator_type": "classical_rule",
+            }
+            for family in families
+        ],
+        "parameter_spaces": {family: {} for family in families},
+        "objective": {"benchmark": "NO_TRADE", "metric": "after_cost_edge"},
+        "exclusion_rules": ["no actual cash, live, paper, or exchange write"],
+        "sealed_holdout_definition": {
+            "window_id": "sealed-test-2026-06-18",
+            "start": "2026-06-18T00:00:00Z",
+            "end": "2026-06-18T00:00:00Z",
+            "peek_policy": "no sealed holdout selection or rerank",
+        },
+        "family_event_count_policy": {
+            family: {
+                "min_event_count_default": None,
+                "insufficient_data_state": "INCONCLUSIVE_DATA",
+            }
+            for family in families
+        },
+        "source_requirements": [
+            {
+                "source_id": "prep_watchdeck_local_fixture",
+                "schema_version": "prep_watchdeck_source_bundle.local",
+                "required": True,
+            }
+        ],
+        "venue_execution_constraints": {"actual_cash": False, "live_order": False},
+        "llm_policy": {"approval_allowed": False},
+        "permits_actual_cash": False,
+        "permits_live_order": False,
+    }
+
+
+def _write_profit_core_inputs(
+    tmp_path: Path,
+    candidates: list[dict[str, Any]],
+    *,
+    candidate_set_path: Path,
+    ledger_path: Path,
+) -> tuple[Path, Path]:
+    protocol_path = tmp_path / "candidate_inputs/candidate_protocol_manifest.json"
+    write_json_artifact(protocol_path, _protocol_payload(candidates))
+    candidate_set = StrategyIdeaCandidateSet.model_validate(
+        json.loads(candidate_set_path.read_text(encoding="utf-8"))
+    )
+    account_result = write_trial_multiplicity_account_from_candidate_set(
+        candidate_set=candidate_set,
+        ledger_path=ledger_path,
+        protocol_manifest_path=protocol_path,
+        out_dir=tmp_path / "candidate_inputs/profit_core",
+        replace_existing=True,
+    )
+    return protocol_path, account_result.account_path
+
+
 def _write_prep_watchdeck_root(root: Path, *, include_funding: bool = True) -> None:
     data = root / "data"
     snapshot_dir = root / "var/snapshots"
@@ -410,25 +486,47 @@ def test_authoring_bridge_generates_candidate_scoped_artifacts_and_backtest_pack
         family="perp_basis_mark_index_spread",
         decision="REJECTED",
     )
+    candidates = [
+        _candidate("cand-001-momentum", family="perp_momentum_continuation"),
+        _candidate("cand-002-funding", family="perp_funding_rate_carry_filter"),
+        rejected,
+    ]
     candidate_set_path, export_manifest_path, ledger_path = _write_candidate_inputs(
+        tmp_path, candidates
+    )
+    protocol_path, multiplicity_path = _write_profit_core_inputs(
         tmp_path,
-        [
-            _candidate("cand-001-momentum", family="perp_momentum_continuation"),
-            _candidate("cand-002-funding", family="perp_funding_rate_carry_filter"),
-            rejected,
-        ],
+        candidates,
+        candidate_set_path=candidate_set_path,
+        ledger_path=ledger_path,
     )
 
     result = build_strategy_idea_candidate_authoring_bridge(
         candidate_set_path=candidate_set_path,
         export_manifest_path=export_manifest_path,
         ledger_path=ledger_path,
+        protocol_manifest_path=protocol_path,
+        multiplicity_account_path=multiplicity_path,
         prep_watchdeck_root=prep_root,
         out_dir=tmp_path / "bridge_out",
         replace_existing=False,
     )
 
-    assert result.manifest.summary["status_counts"]["BRIDGED"] == 2
+    assert "BRIDGED" not in result.manifest.summary["status_counts"]
+    assert result.manifest.summary["status_counts"]["BRIDGED_TECHNICAL_ONLY"] == 2
+    assert result.manifest.summary["bridged_count"] == 2
+    assert result.manifest.protocol_manifest_ref is not None
+    assert result.manifest.multiplicity_account_ref is not None
+    assert result.manifest.summary["profit_core_ref_status"] == "ATTACHED"
+    bridge_schema = json.loads(
+        (REPO_ROOT / "schemas/strategy_idea_candidate_authoring_bridge.v1.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    Draft202012Validator.check_schema(bridge_schema)
+    Draft202012Validator(bridge_schema).validate(
+        json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    )
     for candidate_id in ["cand-001-momentum", "cand-002-funding"]:
         candidate_dir = tmp_path / "bridge_out" / candidate_id
         assert (candidate_dir / "prep_watchdeck_source_manifest.json").exists()
@@ -440,6 +538,13 @@ def test_authoring_bridge_generates_candidate_scoped_artifacts_and_backtest_pack
         assert (candidate_dir / "strategy_authoring_bundle.yaml").exists()
         assert (candidate_dir / "backtest_pack/strategy_backtest_pack.json").exists()
         assert (candidate_dir / "backtest_pack/strategy_backtest_pack_validation.json").exists()
+        gate_path = candidate_dir / "backtest_kill_gate.json"
+        assert gate_path.exists()
+        gate_payload = json.loads(gate_path.read_text(encoding="utf-8"))
+        assert gate_payload["schema_version"] == "backtest_kill_gate.v1"
+        assert gate_payload["permits_live_order"] is False
+        assert gate_payload["permits_paper_order"] is False
+        assert gate_payload["permits_actual_cash"] is False
         assert load_authoring_spec(candidate_dir / "strategy_authoring_spec.yaml")
         assert load_backtest_suite_spec(candidate_dir / "strategy_backtest_suite.yaml")
         assert load_authoring_bundle_spec(candidate_dir / "strategy_authoring_bundle.yaml")
@@ -486,8 +591,8 @@ def test_authoring_bridge_relative_out_uses_existing_artifact_paths_and_clears_s
         replace_existing=True,
     )
 
-    assert result.manifest.summary["status_counts"] == {"BRIDGED": 1}
-    assert result.manifest.candidates[0].status == "BRIDGED"
+    assert result.manifest.summary["status_counts"] == {"BRIDGED_TECHNICAL_ONLY": 1}
+    assert result.manifest.candidates[0].status == "BRIDGED_TECHNICAL_ONLY"
     assert (candidate_dir / "backtest_pack/strategy_backtest_pack.json").exists()
     assert (candidate_dir / "backtest_pack/strategy_backtest_pack_validation.json").exists()
     spec = load_authoring_spec(candidate_dir / "strategy_authoring_spec.yaml")
@@ -521,11 +626,11 @@ def test_authoring_bridge_writes_blocker_for_unsupported_family(tmp_path: Path) 
         replace_existing=False,
     )
 
-    assert result.manifest.candidates[0].status == "BLOCKED_UNSUPPORTED_FAMILY_MAPPING"
+    assert result.manifest.candidates[0].status == "BLOCKED_UNSUPPORTED_FAMILY"
     blocker = json.loads(
         (tmp_path / "bridge_out/cand-unsupported/bridge_blocker.json").read_text(encoding="utf-8")
     )
-    assert blocker["status"] == "BLOCKED_UNSUPPORTED_FAMILY_MAPPING"
+    assert blocker["status"] == "BLOCKED_UNSUPPORTED_FAMILY"
     assert not (tmp_path / "bridge_out/cand-unsupported/strategy_authoring_spec.yaml").exists()
 
 
@@ -558,7 +663,7 @@ def test_authoring_bridge_blocks_missing_symbol_data(tmp_path: Path) -> None:
         replace_existing=False,
     )
 
-    assert result.manifest.candidates[0].status == "BLOCKED_NO_SYMBOL_DATA"
+    assert result.manifest.candidates[0].status == "BLOCKED_MISSING_SOURCE"
     blocker = json.loads(
         (tmp_path / "bridge_out/cand-missing-symbol/bridge_blocker.json").read_text(
             encoding="utf-8"

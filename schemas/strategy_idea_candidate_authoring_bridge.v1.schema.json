@@ -104,13 +104,12 @@
           },
           "status": {
             "enum": [
-              "BRIDGED",
-              "BLOCKED_UNSUPPORTED_FAMILY_MAPPING",
-              "BLOCKED_MISSING_SOURCE_COLUMNS",
-              "BLOCKED_NO_SYMBOL_DATA",
-              "BLOCKED_UNSUPPORTED_PRODUCT_TYPE",
-              "BLOCKED_UNSUPPORTED_SIDE_BIAS",
-              "BLOCKED_BACKTEST_PACK"
+              "BRIDGED_TECHNICAL_ONLY",
+              "BLOCKED_UNSUPPORTED_FAMILY",
+              "BLOCKED_MISSING_SOURCE",
+              "BLOCKED_BACKTEST_PACK",
+              "BLOCKED_ECONOMIC_GATE",
+              "BLOCKED_MULTIPLICITY_ACCOUNT"
             ]
           },
           "symbols": {
@@ -138,9 +137,25 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "backtest_kill_gate_state": {
+            "enum": ["KILL", "INCONCLUSIVE_DATA", "RESEARCH_ONLY", "SHORTLIST_FOR_VIRTUAL"]
+          },
+          "profit_core_blocker_codes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         }
       }
+    },
+    "protocol_manifest_ref": {
+      "$ref": "#/$defs/profit_core_artifact_ref"
+    },
+    "multiplicity_account_ref": {
+      "$ref": "#/$defs/profit_core_artifact_ref"
     },
     "summary": {
       "type": "object",
@@ -224,6 +239,31 @@
         },
         "exchange_write_used": {
           "const": false
+        }
+      }
+    }
+  },
+  "$defs": {
+    "profit_core_artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "path", "sha256"],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "artifact_id": {
+          "type": "string",
+          "minLength": 1
         }
       }
     }

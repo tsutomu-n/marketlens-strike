@@ -1,9 +1,69 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-30_21:30 JST
+更新日: 2026-07-01_06:34 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P1-P3 Pipeline Attachment
+
+Completed on branch `ai/profit-core-p1-p3-20260701-0622`.
+
+Achieved:
+
+- Added `src/sis/strategy_idea_candidates/profit_core.py` to build and write `trial_multiplicity_account.v1` from an existing `strategy_idea_candidate_set.v1` plus `search_ledger.jsonl`.
+- Added `strategy-idea-candidates-multiplicity-account-build` for local sidecar generation without network, LLM, dependency, paper, live, tiny-live, or actual-cash scope.
+- Updated C9 authoring bridge status vocabulary so successful technical connection emits `BRIDGED_TECHNICAL_ONLY`, not `BRIDGED`.
+- Added optional protocol manifest and multiplicity account refs to authoring bridge inputs and manifest output, including path and sha256 tracing.
+- Added candidate-scoped `backtest_kill_gate.json` generation from local backtest pack artifacts. The gate records `KILL` / `INCONCLUSIVE_DATA` / `RESEARCH_ONLY` / `SHORTLIST_FOR_VIRTUAL` without granting paper, live, or actual-cash permission.
+- Updated the bridge manifest schema and tests to validate the new refs, status vocabulary, and kill-gate artifact.
+
+Main files changed:
+
+- `src/sis/strategy_idea_candidates/profit_core.py`
+- `src/sis/strategy_idea_candidates/authoring_bridge.py`
+- `src/sis/commands/strategy_idea_candidates.py`
+- `schemas/strategy_idea_candidate_authoring_bridge.v1.schema.json`
+- `tests/strategy_idea_candidates/test_profit_core_attachment.py`
+- `tests/strategy_idea_candidates/test_authoring_bridge.py`
+- `docs/plans/profit-core-p1-p3-pipeline-attachment-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/strategy_idea_candidates/test_profit_core_attachment.py tests/strategy_idea_candidates/test_authoring_bridge.py tests/edge_candidates/test_multiplicity_account.py tests/edge_candidates/test_backtest_kill_gate.py -q` -> 23 passed.
+- `uv run pytest tests/strategy_idea_candidates/test_candidate_cli.py tests/strategy_idea_candidates/test_candidate_set_validation.py tests/strategy_idea_candidates/test_candidate_generator.py tests/strategy_idea_candidates/test_metrics_costs_bridge.py -q` -> 19 passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 233 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 187 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `uv run ruff check src/sis/strategy_idea_candidates src/sis/commands/strategy_idea_candidates.py tests/strategy_idea_candidates` -> passed.
+- `uv run ruff format --check src/sis/strategy_idea_candidates src/sis/commands/strategy_idea_candidates.py tests/strategy_idea_candidates` -> passed.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+- P4+ remains out of scope: candidate factory expansion, virtual execution gate, LLM adversarial review, risk-taker sprint expansion, external venue adapters, paper/live/tiny-live, actual-cash measurement, and dependency additions.
+- Candidate set schema remains compatible; protocol / multiplicity attachment starts as sidecar and bridge refs. A future `strategy_idea_candidate_set.v2` may make those refs mandatory.
+
+User decisions required:
+
+None for P1-P3.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `src/sis/strategy_idea_candidates/profit_core.py`, remove `tests/strategy_idea_candidates/test_profit_core_attachment.py`, revert the authoring bridge / CLI / bridge schema / authoring bridge test changes, remove `docs/plans/profit-core-p1-p3-pipeline-attachment-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core Long-Horizon Goal Checkpoints
 
