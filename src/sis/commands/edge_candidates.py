@@ -12,6 +12,11 @@ from sis.edge_candidates.factory import (
     run_edge_candidate_factory,
 )
 from sis.edge_candidates.protocol import CandidateProtocolManifest
+from sis.edge_candidates.virtual_execution_gate import (
+    VirtualExecutionGateError,
+    VirtualExecutionGateOutputExistsError,
+    build_and_write_virtual_execution_gate,
+)
 from sis.settings import get_settings
 from sis.strategy_inputs.io import StrategyInputIOError, read_mapping_file
 
@@ -118,3 +123,77 @@ def register_edge_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"rejection_ledger_path={result.rejection_ledger_path.as_posix()}")
         typer.echo(f"account_path={result.multiplicity_account_path.as_posix()}")
         typer.echo(f"summary_path={result.summary_path.as_posix()}")
+
+    @app.command("edge-candidate-virtual-gate-run")
+    def edge_candidate_virtual_gate_run_cmd(
+        candidate_set: Path = typer.Option(
+            ...,
+            "--candidate-set",
+            dir_okay=False,
+            help="strategy_idea_candidate_set.v1 JSON.",
+        ),
+        factory_summary: Path = typer.Option(
+            ...,
+            "--factory-summary",
+            dir_okay=False,
+            help="edge_candidate_factory_summary.v1 JSON.",
+        ),
+        multiplicity_account: Path = typer.Option(
+            ...,
+            "--multiplicity-account",
+            dir_okay=False,
+            help="trial_multiplicity_account.v1 JSON.",
+        ),
+        backtest_kill_gate: Path = typer.Option(
+            ...,
+            "--backtest-kill-gate",
+            dir_okay=False,
+            help="candidate-scoped backtest_kill_gate.v1 JSON.",
+        ),
+        candidate_id: str = typer.Option(..., "--candidate-id"),
+        out: Path = typer.Option(
+            Path("data/edge_candidates/virtual_gate"),
+            "--out",
+            help="Output directory for virtual_execution_gate.json.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_and_write_virtual_execution_gate(
+                candidate_set_path=_resolve_workspace_path(candidate_set, settings.data_dir),
+                factory_summary_path=_resolve_workspace_path(factory_summary, settings.data_dir),
+                multiplicity_account_path=_resolve_workspace_path(
+                    multiplicity_account, settings.data_dir
+                ),
+                backtest_kill_gate_path=_resolve_workspace_path(
+                    backtest_kill_gate, settings.data_dir
+                ),
+                candidate_id=candidate_id,
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            VirtualExecutionGateError,
+            VirtualExecutionGateOutputExistsError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("status=pass")
+        typer.echo(f"candidate_id={result.gate.candidate_id}")
+        typer.echo(f"gate_state={result.gate.gate_state.value}")
+        typer.echo(f"blocker_count={len(result.gate.blocker_codes)}")
+        typer.echo(f"gate_path={result.gate_path.as_posix()}")

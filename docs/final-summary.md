@@ -1,9 +1,68 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_06:59 JST
+更新日: 2026-07-01_15:03 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P5 Virtual Execution Gate V1
+
+Completed on branch `ai/profit-core-p5-virtual-gate-20260701-1454`.
+
+Achieved:
+
+- Added `virtual_execution_gate.v1` schema and local Pydantic model for a mock order lifecycle gate.
+- Added `edge-candidate-virtual-gate-run` to consume `strategy_idea_candidate_set.v1`, P4 `edge_candidate_factory_summary.json`, `trial_multiplicity_account.v1`, and a candidate-scoped `backtest_kill_gate.v1`.
+- Implemented a deterministic local/mock lifecycle check: submit ack, partial fill, cancel ack, duplicate-submit prevention, and flat reconciliation.
+- Blocked non-shortlisted candidates, non-`SHORTLIST_FOR_VIRTUAL` backtest gates, success-only / sealed-test multiplicity violations, unexecutable candidates, duplicate submit, unknown lifecycle states, submit reject states, and reconcile mismatches.
+- Wrote `virtual_execution_gate.json` with lineage sha refs and explicit false permissions: no actual cash, paper/live order, wallet, signing, exchange write, or live submission.
+- Kept virtual output as `cash_metric_basis=virtual_exchange` and `profit_evidence=false`; no virtual PnL is emitted.
+
+Main files changed:
+
+- `schemas/virtual_execution_gate.v1.schema.json`
+- `src/sis/edge_candidates/virtual_execution_gate.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_virtual_execution_gate.py`
+- `docs/plans/profit-core-p5-virtual-execution-gate-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_virtual_execution_gate.py -q` -> 6 passed.
+- `uv run pytest tests/edge_candidates/test_factory.py tests/edge_candidates/test_backtest_kill_gate.py tests/edge_candidates/test_multiplicity_account.py -q` -> 17 passed.
+- `uv run ruff check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 235 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 189 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2889 passed`.
+
+Remaining work:
+
+- P5 remains local/mock only. External demo/testnet venues, paper/live/tiny-live, actual-cash measurement, LLM adversarial review, and P6 evidence claim diff are still out of scope.
+
+User decisions required:
+
+None for P5.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `schemas/virtual_execution_gate.v1.schema.json`, `src/sis/edge_candidates/virtual_execution_gate.py`, `tests/edge_candidates/test_virtual_execution_gate.py`, revert the edge candidate CLI / `__init__.py` additions, remove `docs/plans/profit-core-p5-virtual-execution-gate-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core P4 Edge Candidate Factory V1
 
