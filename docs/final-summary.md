@@ -1,9 +1,69 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_15:36 JST
+更新日: 2026-07-01_15:58 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P8 Risk-Taker Sprint Isolation
+
+Completed on branch `ai/profit-core-p8-risk-sprint-isolation-20260701-1538`.
+
+Achieved:
+
+- Added `profit_core_risk_taker_sprint_isolation.v1` schema and local Pydantic models for sprint isolation records.
+- Added `edge-candidate-risk-taker-sprint-isolation-record` to consume a `risk_taker_sprint` protocol, sprint candidate set, sprint search ledger, and sprint multiplicity account.
+- Recorded `output_label=SPECULATIVE_SPRINT`, `default_aggregate_inclusion_allowed=false`, and `default_aggregate_candidate_count=0`.
+- Added promotion debt that blocks direct actual-cash movement until re-registration under `verification_throughput`, no sprint holdout reuse, default multiplicity, default backtest kill gate, default virtual gate, and risk-taker review without live permission.
+- Validated that protocol and multiplicity are both `risk_taker_sprint`, candidate counts match, and search ledger candidate ids match the candidate set.
+- Constrained broad sprint generator metadata such as `light_ga` to `NO_TRADE` benchmark / ranking-or-no-trade semantics.
+- Preserved P4 behavior: `edge-candidate-factory-run` still rejects `risk_taker_sprint`.
+
+Main files changed:
+
+- `schemas/profit_core_risk_taker_sprint_isolation.v1.schema.json`
+- `src/sis/edge_candidates/risk_taker_sprint_isolation.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_risk_taker_sprint_isolation.py`
+- `docs/plans/profit-core-p8-risk-taker-sprint-isolation-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_risk_taker_sprint_isolation.py -q` -> 7 passed.
+- `uv run pytest tests/edge_candidates/test_risk_taker_sprint_isolation.py tests/edge_candidates/test_protocol_manifest.py tests/edge_candidates/test_multiplicity_account.py tests/edge_candidates/test_factory.py tests/edge_candidates/test_adversarial_review.py tests/edge_candidates/test_evidence_packet.py -q` -> 35 passed.
+- `uv run ruff check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 238 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 192 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2908 passed`.
+
+Remaining work:
+
+- P8 does not implement broad sprint candidate generation, GA/ML execution, external venue connectors, paper/live/tiny-live, actual-cash measurement, or promotion approval.
+
+User decisions required:
+
+None for P8.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `schemas/profit_core_risk_taker_sprint_isolation.v1.schema.json`, `src/sis/edge_candidates/risk_taker_sprint_isolation.py`, `tests/edge_candidates/test_risk_taker_sprint_isolation.py`, revert the edge candidate CLI / `__init__.py` additions, remove `docs/plans/profit-core-p8-risk-taker-sprint-isolation-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core P7 LLM Adversarial Review
 

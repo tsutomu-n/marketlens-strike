@@ -22,6 +22,11 @@ from sis.edge_candidates.evidence_packet import (
     build_and_write_profit_core_evidence_packet,
 )
 from sis.edge_candidates.protocol import CandidateProtocolManifest
+from sis.edge_candidates.risk_taker_sprint_isolation import (
+    RiskTakerSprintIsolationError,
+    RiskTakerSprintIsolationOutputExistsError,
+    build_and_write_risk_taker_sprint_isolation,
+)
 from sis.edge_candidates.virtual_execution_gate import (
     VirtualExecutionGateError,
     VirtualExecutionGateOutputExistsError,
@@ -388,3 +393,81 @@ def register_edge_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"finding_count={len(result.review.findings)}")
         typer.echo(f"hard_blocker_count={result.review.hard_blocker_count}")
         typer.echo(f"review_path={result.review_path.as_posix()}")
+
+    @app.command("edge-candidate-risk-taker-sprint-isolation-record")
+    def edge_candidate_risk_taker_sprint_isolation_record_cmd(
+        protocol: Path = typer.Option(
+            ...,
+            "--protocol",
+            dir_okay=False,
+            help="risk_taker_sprint candidate_protocol_manifest.v1 YAML/JSON.",
+        ),
+        candidate_set: Path = typer.Option(
+            ...,
+            "--candidate-set",
+            dir_okay=False,
+            help="risk_taker_sprint strategy_idea_candidate_set.v1 JSON.",
+        ),
+        search_ledger: Path = typer.Option(
+            ...,
+            "--search-ledger",
+            dir_okay=False,
+            help="risk_taker_sprint search ledger JSONL.",
+        ),
+        multiplicity_account: Path = typer.Option(
+            ...,
+            "--multiplicity-account",
+            dir_okay=False,
+            help="risk_taker_sprint trial_multiplicity_account.v1 JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidates/risk_taker_sprint_isolation"),
+            "--out",
+            help="Output directory for profit_core_risk_taker_sprint_isolation.json.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_and_write_risk_taker_sprint_isolation(
+                protocol_path=_resolve_workspace_path(protocol, settings.data_dir),
+                candidate_set_path=_resolve_workspace_path(candidate_set, settings.data_dir),
+                search_ledger_path=_resolve_workspace_path(search_ledger, settings.data_dir),
+                multiplicity_account_path=_resolve_workspace_path(
+                    multiplicity_account,
+                    settings.data_dir,
+                ),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            RiskTakerSprintIsolationOutputExistsError,
+            RiskTakerSprintIsolationError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        isolation = result.isolation
+        typer.echo("network_attempted=false")
+        typer.echo("status=pass")
+        typer.echo(f"mode={isolation.mode}")
+        typer.echo(f"output_label={isolation.output_label}")
+        typer.echo(
+            "default_aggregate_inclusion_allowed="
+            f"{str(isolation.default_aggregate_inclusion_allowed).lower()}"
+        )
+        typer.echo(
+            "actual_cash_direct_promotion_allowed="
+            f"{str(isolation.actual_cash_direct_promotion_allowed).lower()}"
+        )
+        typer.echo(f"promotion_debt_count={len(isolation.promotion_debt)}")
+        typer.echo(f"isolation_path={result.isolation_path.as_posix()}")

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-07-01_15:32 JST
+更新日: 2026-07-01_15:54 JST
 -->
 
 # Repo CLI Catalog Current
@@ -86,6 +86,7 @@ uv run python scripts/check_current_docs.py
 - `edge-candidate-virtual-gate-run`
 - `edge-candidate-evidence-packet-build`
 - `edge-candidate-adversarial-review-record`
+- `edge-candidate-risk-taker-sprint-isolation-record`
 - `strategy-model-run-record`
 - `strategy-micro-live-plan`
 - `strategy-next-scale-plan`
