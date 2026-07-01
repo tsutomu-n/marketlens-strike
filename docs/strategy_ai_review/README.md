@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:17 JST
-更新日: 2026-06-28_08:23 JST
+更新日: 2026-07-01_23:09 JST
 -->
 
 # Strategy AI Review
@@ -46,6 +46,8 @@ uv run sis strategy-ai-review-findings-structure \
 - `strategy_ai_review_structured_findings.md`
 
 Packet は full source payload を入れません。source path、sha256、schema_version、strategy_id、status、action の summary と、known schema allowlist から作る `context_sections` だけを含めます。
+
+新規生成 packet は `context_sections` を出します。ただし `strategy_ai_review_packet.v1` schema では、古い v1 artifact の再検証互換のため `context_sections` は required ではありません。欠けている場合は空の allowlisted context と同じ扱いで読みます。
 
 現時点の `context_sections` allowlist は `strategy_case_lite.v1` の summary section だけです。含める値は次に限定します。
 
@@ -126,6 +128,8 @@ PR-AI-LOOP-01
 `PR-AI-LOOP-00` は、既存 packet の `source_summaries` を壊さず、known schema allowlist から短い `context_sections` を作ります。unknown schema は source summary のみに留め、secret / credential / wallet / exchange write 系 source は `BLOCKED_SENSITIVE_SOURCE` のまま止めます。
 
 `PR-AI-LOOP-01` は、AI回答後に作った note を入力にして、human review 用の structured findings companion artifact を作ります。operator decision、stage decision、paper permission、live permission には接続しません。
+
+`strategy_ai_review_structured_findings.v1` は、Strategy Case Lite では known artifact type、Strategy Daily Brief では `ai_review_follow_up`、Strategy Workbench Viewer では compact summary として表示できます。これは human inspection の導線であり、AI recommendation の採用、paper execution、live execution、operator decision ではありません。
 
 ## 境界
 

@@ -285,6 +285,37 @@ def compact_summary(payload: dict[str, Any]) -> dict[str, Any]:
                         ("path", "first_brief_item_path"),
                     ),
                 )
+    if schema_version == "strategy_ai_review_structured_findings.v1":
+        _set_compact_summary_value(summary, "finding_set_id", payload.get("finding_set_id"))
+        _set_compact_summary_value(summary, "finding_set_status", payload.get("finding_set_status"))
+        findings = payload.get("findings")
+        if isinstance(findings, list):
+            _set_compact_summary_value(summary, "finding_count", len(findings))
+            first_finding = next((item for item in findings if isinstance(item, dict)), None)
+            if first_finding is not None:
+                _set_compact_summary_values(
+                    summary,
+                    first_finding,
+                    (
+                        ("finding_type", "first_finding_type"),
+                        ("severity", "first_finding_severity"),
+                        ("review_impact", "first_finding_impact"),
+                        ("recommended_next_action", "first_finding_next_action"),
+                    ),
+                )
+        source_note = payload.get("source_note")
+        if isinstance(source_note, dict):
+            _set_compact_summary_values(
+                summary,
+                source_note,
+                (
+                    ("path", "source_note_path"),
+                    ("recommendation", "source_note_recommendation"),
+                ),
+            )
+        source_packet = payload.get("source_packet")
+        if isinstance(source_packet, dict):
+            _set_compact_summary_value(summary, "source_packet_path", source_packet.get("path"))
     if schema_version == "strategy_input_contract_update_proposal.v1":
         proposed_changes = payload.get("proposed_changes")
         if isinstance(proposed_changes, list):

@@ -78,6 +78,9 @@ def _artifact_type_for(schema_version: str | None) -> StrategyCaseArtifactType:
         "strategy_input_contract_update_review.v1": (
             StrategyCaseArtifactType.STRATEGY_INPUT_CONTRACT_UPDATE_REVIEW
         ),
+        "strategy_ai_review_structured_findings.v1": (
+            StrategyCaseArtifactType.STRATEGY_AI_REVIEW_STRUCTURED_FINDINGS
+        ),
     }.get(schema_version or "", StrategyCaseArtifactType.GENERIC)
 
 
@@ -147,6 +150,15 @@ def _action(payload: dict[str, Any]) -> str | None:
         return _first_proposed_change_string(payload, "recommendation")
     if schema_version == "strategy_input_contract_update_review.v1":
         return _first_list_string(payload, "required_actions")
+    if schema_version == "strategy_ai_review_structured_findings.v1":
+        findings = payload.get("findings")
+        if isinstance(findings, list):
+            for finding in findings:
+                if not isinstance(finding, dict):
+                    continue
+                next_action = finding.get("recommended_next_action")
+                if isinstance(next_action, str) and next_action.strip():
+                    return next_action.strip()
     return None
 
 
@@ -176,6 +188,7 @@ def _timeline_entry(path: Path) -> StrategyCaseTimelineEntry:
                 "plan_status",
                 "decision_status",
                 "validation_status",
+                "finding_set_status",
             ),
         ),
         action=_action(payload),

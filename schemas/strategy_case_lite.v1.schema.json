@@ -64,6 +64,7 @@
         "strategy_review_manifest",
         "strategy_input_contract_update_proposal",
         "strategy_input_contract_update_review",
+        "strategy_ai_review_structured_findings",
         "generic"
       ]
     },

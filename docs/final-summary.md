@@ -1,9 +1,88 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-29_19:32 JST
+更新日: 2026-07-01_23:13 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Strategy AI Review Dogfood And Route
+
+Completed on branch `ai/strategy-ai-review-dogfood-route-20260701-2259`.
+
+Achieved:
+
+- Added a deterministic dogfood test for `packet -> note -> structured findings` with Markdown, permission false, lineage, and typed evidence refs checks.
+- Ran one local CLI dogfood chain into ignored runtime output `data/strategy_ai_reviews/pr-ai-dogfood-20260701/`.
+- Relaxed `strategy_ai_review_packet.v1` schema compatibility by making `context_sections` optional while keeping it in newly generated packets.
+- Routed `strategy_ai_review_structured_findings.v1` into Strategy Case Lite as a known artifact type.
+- Added `ai_review_follow_up` to Strategy Daily Brief for human inspection of structured findings.
+- Added Strategy AI Review structured findings compact summary support to Strategy Workbench Viewer.
+- Updated README docs for Strategy AI Review, Case Lite, Daily Brief, and Workbench Viewer.
+
+Main files changed:
+
+- `schemas/strategy_ai_review_packet.v1.schema.json`
+- `schemas/strategy_case_lite.v1.schema.json`
+- `schemas/strategy_daily_brief.v1.schema.json`
+- `src/sis/strategy_case_lite/models.py`
+- `src/sis/strategy_case_lite/service.py`
+- `src/sis/strategy_daily_brief/models.py`
+- `src/sis/strategy_daily_brief/service.py`
+- `src/sis/strategy_daily_brief/rendering.py`
+- `src/sis/strategy_workbench_viewer/summary.py`
+- `src/sis/strategy_workbench_viewer/summary_fields.py`
+- `tests/strategy_ai_review/`
+- `tests/strategy_case_lite/test_strategy_case_lite.py`
+- `tests/strategy_daily_brief/test_strategy_daily_brief.py`
+- `tests/strategy_workbench_viewer/test_strategy_workbench_viewer.py`
+- `docs/plans/strategy-ai-review-dogfood-route-2026-07-01.md`
+- `docs/strategy_ai_review/README.md`
+- `docs/strategy_case_lite/README.md`
+- `docs/strategy_daily_brief/README.md`
+- `docs/strategy_workbench_viewer/README.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run sis strategy-ai-review-packet-build --source data/strategy_cases/pr-ai-loop-00/strategy_case_lite.json --review-question "What should a human inspect next?" --out data/strategy_ai_reviews/pr-ai-dogfood-20260701 --packet-id pr-ai-dogfood-20260701-packet` -> `packet_status=READY_FOR_AI_REVIEW`, `source_count=1`, `context_section_count=1`.
+- `uv run sis strategy-ai-review-note-record ... --note-id pr-ai-dogfood-20260701-note` -> `recommendation=HUMAN_REVIEW_REQUIRED`, `model_reasoning_effort=xhigh`, `auto_applied=false`, `permission_allowed=false`.
+- `uv run sis strategy-ai-review-findings-structure ... --finding-set-id pr-ai-dogfood-20260701-structured-findings` -> `finding_set_status=RECORDED`, `finding_count=2`, `auto_applied=false`, `permission_allowed=false`.
+- Local JSON audit over `data/strategy_ai_reviews/pr-ai-dogfood-20260701/strategy_ai_review_structured_findings.json` -> `permission_false=true lineage=true typed_refs=true`.
+- `uv run sis strategy-case-lite-update ... --artifact data/strategy_ai_reviews/pr-ai-dogfood-20260701/strategy_ai_review_structured_findings.json` -> `latest_status=RECORDED`, `artifact_count=1`.
+- `uv run sis strategy-daily-brief --data-dir data/strategy_ai_reviews/pr-ai-dogfood-20260701 --out data/reports/strategy_daily_brief_ai_review_dogfood --replace-existing` -> `scanned_json_count=3`, `total_item_count=1`, `boundary_violation_count=0`.
+- `uv run sis strategy-workbench-viewer-build --artifact data/strategy_ai_reviews/pr-ai-dogfood-20260701/strategy_ai_review_structured_findings.json --out data/reports/strategy_workbench_viewer_ai_review_dogfood --viewer-id pr-ai-dogfood-20260701-viewer --replace-existing` -> `artifact_count=1`, `boundary_violation_count=0`.
+- `uv run pytest tests/strategy_ai_review tests/strategy_case_lite tests/strategy_daily_brief tests/strategy_workbench_viewer -q` -> 47 passed.
+- `uv run ruff check src/sis/strategy_case_lite src/sis/strategy_daily_brief src/sis/strategy_workbench_viewer tests/strategy_ai_review tests/strategy_case_lite tests/strategy_daily_brief tests/strategy_workbench_viewer` -> passed.
+- `uv run ruff format --check src/sis/strategy_case_lite src/sis/strategy_daily_brief src/sis/strategy_workbench_viewer tests/strategy_ai_review tests/strategy_case_lite tests/strategy_daily_brief tests/strategy_workbench_viewer` -> 29 files already formatted.
+- `uv run python scripts/check_current_docs.py` -> checked 183 current docs ok.
+- `uv run python scripts/check_cli_catalog.py` -> checked 231 public CLI commands.
+- CLI help audit for `strategy-ai-review-packet-build`, `strategy-ai-review-note-record`, `strategy-ai-review-findings-structure`, `strategy-case-lite-update`, `strategy-daily-brief`, and `strategy-workbench-viewer-build` -> checked 6, failed 0.
+- `git diff --check` -> passed.
+- `./scripts/check` -> Python 3.13.7, Ruff, format check, current docs, CLI catalog, Pyrefly, ty, and full Pytest passed; Pytest 2862 passed in 79.57s.
+
+Remaining work:
+
+None for this goal.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required. New packets still write `context_sections`; old `strategy_ai_review_packet.v1` artifacts without `context_sections` can validate.
+
+Rollback:
+
+Revert the Strategy AI Review dogfood tests, schema compatibility change, Case Lite / Daily Brief / Workbench route additions, README updates, plan doc, and this summary addendum. Runtime files under `data/strategy_ai_reviews/pr-ai-dogfood-20260701/` are generated and gitignored.
 
 ## Latest Addendum: Full Check Green CP3
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:09 JST
-更新日: 2026-06-22_06:29 JST
+更新日: 2026-07-01_23:09 JST
 -->
 
 # Strategy Daily Brief
@@ -38,6 +38,7 @@ data/reports/strategy_daily_brief/
 - `normal_paper_gap`: normal paper の fills / trading days gap が残っている stage decision。
 - `drift_review_needed`: `READY_FOR_DRIFT_REVIEW` の stage decision。
 - `learning_request_pending`: revision request / authoring update handoff の人間対応待ち。
+- `ai_review_follow_up`: `strategy_ai_review_structured_findings.v1` の人間確認待ち。AI finding を operator / stage / paper / live decision に昇格しません。
 - `boundary_violation`: live / wallet / signing / exchange write 系 true flag が混入した artifact。
 
 ## 境界
@@ -45,6 +46,7 @@ data/reports/strategy_daily_brief/
 - Daily Brief は読み取り索引です。
 - `total_item_count=0` は paper pass や live readiness ではありません。
 - `pending_human_review` や `drift_review_needed` は次に読むべき artifact の表示であり、自動実行指示ではありません。
+- `ai_review_follow_up` は AI review structured findings を人間が読むための索引です。AI recommendation の採用、paper execution、live execution、Strategy Authoring YAML 自動編集を許可しません。
 - `crypto_perp_gate_follow_up` が `READY_FOR_HUMAN_TINY_LIVE_REVIEW` を示す場合でも、Daily Brief の reason は `separate human approval is required before any tiny live measurement; this is not live execution permission` として読みます。tiny live 実行許可ではありません。
 - `crypto_perp_truth_cycle_follow_up` が `READY_FOR_HUMAN_TINY_LIVE_REVIEW` を示す場合も、Daily Brief の reason は `separate human approval is required before any tiny live measurement; this is not live execution permission` として読みます。tiny live 実行許可ではありません。
 - `crypto_perp_truth_cycle_follow_up` は次に読むべき欠損や停止理由の索引です。`first stage blocker: probe_audit via --probe-audit` のような表示は、先に埋める artifact / CLI option を示すだけで、public network、credential、order、live 実行許可ではありません。

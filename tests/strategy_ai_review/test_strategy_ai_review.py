@@ -128,6 +128,20 @@ def test_ai_review_packet_does_not_contextualize_unknown_schema(
     assert "do not include" not in serialized
 
 
+def test_ai_review_packet_schema_accepts_legacy_v1_without_context_sections(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = build_ai_review_packet(
+        source_paths=[_safe_source(tmp_path)],
+        out_dir=tmp_path / "data/strategy_ai_reviews/ndx-breakout-001",
+    )
+    payload = json.loads(result.packet_path.read_text(encoding="utf-8"))
+    payload.pop("context_sections")
+
+    Draft202012Validator(_schema("strategy_ai_review_packet.v1.schema.json")).validate(payload)
+
+
 def test_ai_review_packet_blocks_sensitive_source_without_leaking_value(
     tmp_path: Path, monkeypatch
 ) -> None:

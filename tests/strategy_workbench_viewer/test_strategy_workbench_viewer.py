@@ -358,6 +358,57 @@ def _input_feedback_proposal(path: Path) -> Path:
     )
 
 
+def _ai_review_structured_findings(path: Path) -> Path:
+    return _write_json(
+        path,
+        {
+            "schema_version": "strategy_ai_review_structured_findings.v1",
+            "finding_set_id": "ai-review-structured-findings",
+            "recorded_at": "2026-07-01T13:00:00Z",
+            "producer": {"tool": "sis", "command": "strategy-ai-review-findings-structure"},
+            "finding_set_status": "RECORDED",
+            "source_note": {
+                "path": "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_note.json",
+                "sha256": "sha256:" + "2" * 64,
+                "input_hash": "sha256:" + "3" * 64,
+                "prompt_hash": "sha256:" + "4" * 64,
+                "provider": "codex-cli",
+                "model": "gpt-5.5",
+                "model_reasoning_effort": "xhigh",
+                "recommendation": "HUMAN_REVIEW_REQUIRED",
+            },
+            "source_packet": {
+                "path": "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_packet.json",
+                "sha256": "sha256:" + "5" * 64,
+                "ai_input_hash": "sha256:" + "3" * 64,
+            },
+            "findings": [
+                {
+                    "finding_id": "inspect-source",
+                    "finding_type": "SOURCE_ARTIFACT_REVIEW",
+                    "severity": "MEDIUM",
+                    "review_impact": "HUMAN_REVIEW_REQUIRED",
+                    "statement": "Inspect the referenced strategy_case_lite.v1 source artifact.",
+                    "evidence_refs": [{"ref_type": "note_finding", "index": 0}],
+                    "recommended_next_action": "INSPECT_SOURCE_ARTIFACT",
+                    "limitations": ["AI did not inspect raw market data."],
+                }
+            ],
+            "auto_applied": False,
+            "permission_allowed": False,
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+        },
+    )
+
+
 def _runtime_observation_manifest(path: Path) -> Path:
     return _write_json(
         path,
@@ -720,6 +771,33 @@ def test_strategy_workbench_viewer_builds_schema_valid_static_html(tmp_path: Pat
     assert "path または生成済みrun directory" in html
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+
+
+def test_strategy_workbench_viewer_summarizes_ai_review_structured_findings(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    ai_review = _ai_review_structured_findings(
+        tmp_path
+        / "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_structured_findings.json"
+    )
+
+    result = build_strategy_workbench_viewer(
+        artifacts=[ai_review],
+        data_dir=tmp_path / "data",
+        out_dir=tmp_path / "data/reports/strategy_workbench_viewer",
+    )
+
+    source = result.manifest.source_artifacts[0]
+    assert source.status == "RECORDED"
+    assert source.summary["finding_set_id"] == "ai-review-structured-findings"
+    assert source.summary["finding_count"] == 1
+    assert source.summary["source_note_recommendation"] == "HUMAN_REVIEW_REQUIRED"
+    assert source.summary["first_finding_type"] == "SOURCE_ARTIFACT_REVIEW"
+    assert source.summary["first_finding_next_action"] == "INSPECT_SOURCE_ARTIFACT"
+    html = result.html_path.read_text(encoding="utf-8")
+    assert "source_note_recommendation" in html
+    assert "first_finding_next_action" in html
 
 
 def test_strategy_workbench_viewer_summarizes_non_actual_tournament_report(

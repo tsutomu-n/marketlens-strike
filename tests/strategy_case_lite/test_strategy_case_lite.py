@@ -277,6 +277,58 @@ def _input_feedback_review(tmp_path: Path) -> Path:
     )
 
 
+def _ai_review_structured_findings(tmp_path: Path) -> Path:
+    return _write_json(
+        tmp_path
+        / "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_structured_findings.json",
+        {
+            "schema_version": "strategy_ai_review_structured_findings.v1",
+            "finding_set_id": "ai-review-structured-findings",
+            "recorded_at": "2026-07-01T13:00:00Z",
+            "producer": {"tool": "sis", "command": "strategy-ai-review-findings-structure"},
+            "finding_set_status": "RECORDED",
+            "source_note": {
+                "path": "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_note.json",
+                "sha256": "sha256:" + "2" * 64,
+                "input_hash": "sha256:" + "3" * 64,
+                "prompt_hash": "sha256:" + "4" * 64,
+                "provider": "codex-cli",
+                "model": "gpt-5.5",
+                "model_reasoning_effort": "xhigh",
+                "recommendation": "HUMAN_REVIEW_REQUIRED",
+            },
+            "source_packet": {
+                "path": "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_packet.json",
+                "sha256": "sha256:" + "5" * 64,
+                "ai_input_hash": "sha256:" + "3" * 64,
+            },
+            "findings": [
+                {
+                    "finding_id": "inspect-source",
+                    "finding_type": "SOURCE_ARTIFACT_REVIEW",
+                    "severity": "MEDIUM",
+                    "review_impact": "HUMAN_REVIEW_REQUIRED",
+                    "statement": "Inspect the referenced strategy_case_lite.v1 source artifact.",
+                    "evidence_refs": [{"ref_type": "note_finding", "index": 0}],
+                    "recommended_next_action": "INSPECT_SOURCE_ARTIFACT",
+                    "limitations": ["AI did not inspect raw market data."],
+                }
+            ],
+            "auto_applied": False,
+            "permission_allowed": False,
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+        },
+    )
+
+
 def test_strategy_case_lite_builds_schema_valid_timeline(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     stage = _stage_decision(tmp_path)
@@ -321,6 +373,29 @@ def test_strategy_case_lite_builds_schema_valid_timeline(tmp_path: Path, monkeyp
     report = result.report_path.read_text(encoding="utf-8")
     assert "Strategy Case Lite" in report
     assert "REVISE_STRATEGY" in report
+
+
+def test_strategy_case_lite_types_ai_review_structured_findings(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    ai_review = _ai_review_structured_findings(tmp_path)
+
+    result = build_strategy_case_lite(
+        strategy_id="ndx-breakout-001",
+        artifact_paths=[ai_review],
+        out_dir=tmp_path / "data/strategy_cases",
+    )
+
+    assert result.case.timeline[0].artifact_type.value == "strategy_ai_review_structured_findings"
+    assert result.case.timeline[0].status == "RECORDED"
+    assert result.case.timeline[0].action == "INSPECT_SOURCE_ARTIFACT"
+    assert result.case.summary.open_actions == ["INSPECT_SOURCE_ARTIFACT"]
+    assert result.case.summary.latest_source_hashes[
+        "strategy_ai_review_structured_findings"
+    ].startswith("sha256:")
+    payload = json.loads(result.case_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_schema()).validate(payload)
 
 
 def test_strategy_case_lite_accepts_backtest_and_review_artifacts(

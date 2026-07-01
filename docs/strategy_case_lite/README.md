@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_01:02 JST
-更新日: 2026-06-22_21:23 JST
+更新日: 2026-07-01_23:09 JST
 -->
 
 # Strategy Case Lite
@@ -54,8 +54,11 @@ uv run sis strategy-case-lite-update \
 - `strategy_review_manifest.v1`
 - `strategy_input_contract_update_proposal.v1`
 - `strategy_input_contract_update_review.v1`
+- `strategy_ai_review_structured_findings.v1`
 
 Input Feedback proposal / review を含めると、proposal の最初の recommendation と review の最初の required action を open action として拾います。`HOLD`、`REJECT`、`NEEDS_FIX` review は blocked reason に入り、`NEEDS_SOURCE_CONTRACT_CONTEXT` / `BLOCKED_BOUNDARY_VIOLATION` proposal も blocked reason に入ります。これは case の実行許可ではなく、manual review の未解決事項を一覧から見落とさないための表示です。
+
+AI review structured findings を含めると、`finding_set_status` を status として拾い、先頭 finding の `recommended_next_action` を open action として拾います。これは human review の未確認事項を case に載せるだけで、AI recommendation の採用や paper / live permission ではありません。
 
 ## Artifact
 

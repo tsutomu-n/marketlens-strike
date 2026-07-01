@@ -119,11 +119,21 @@ def _status(payload: dict[str, Any]) -> str | None:
             "request_status",
             "handoff_status",
             "validation_status",
+            "finding_set_status",
         ),
     )
 
 
 def _action(payload: dict[str, Any]) -> str | None:
+    if payload.get("schema_version") == "strategy_ai_review_structured_findings.v1":
+        findings = payload.get("findings")
+        if isinstance(findings, list):
+            for finding in findings:
+                if not isinstance(finding, dict):
+                    continue
+                next_action = finding.get("recommended_next_action")
+                if isinstance(next_action, str) and next_action.strip():
+                    return next_action.strip()
     return _first_string(payload, ("recommended_action", "next_action", "request_status"))
 
 
@@ -169,6 +179,19 @@ def _learning_pending(payload: dict[str, Any]) -> bool:
     return (schema == "strategy_revision_request.v1" and status == "READY_FOR_HUMAN_REVIEW") or (
         schema == "strategy_authoring_update_handoff.v1"
         and status == "READY_FOR_HUMAN_AUTHORING_UPDATE"
+    )
+
+
+def _ai_review_follow_up(payload: dict[str, Any]) -> str | None:
+    if payload.get("schema_version") != "strategy_ai_review_structured_findings.v1":
+        return None
+    if payload.get("permission_allowed") is not False:
+        return "AI review structured findings have malformed permission boundary"
+    if payload.get("auto_applied") is not False:
+        return "AI review structured findings have malformed auto-apply boundary"
+    return (
+        "AI review structured findings require human inspection; this is not "
+        "operator, paper, or live permission"
     )
 
 
@@ -368,6 +391,17 @@ def _items_for_payload(path: Path, payload: dict[str, Any]) -> list[DailyBriefIt
                 reason="learning or authoring update requires human follow-up",
             )
         )
+    ai_review_reason = _ai_review_follow_up(payload)
+    if ai_review_reason is not None:
+        items.append(
+            _item(
+                category=DailyBriefItemCategory.AI_REVIEW_FOLLOW_UP,
+                severity=DailyBriefItemSeverity.WARNING,
+                path=path,
+                payload=payload,
+                reason=ai_review_reason,
+            )
+        )
     return items
 
 
@@ -384,6 +418,7 @@ def _summary(*, scanned_count: int, items: list[DailyBriefItem]) -> DailyBriefSu
         normal_paper_gap_count=counts[DailyBriefItemCategory.NORMAL_PAPER_GAP],
         drift_review_needed_count=counts[DailyBriefItemCategory.DRIFT_REVIEW_NEEDED],
         learning_request_pending_count=counts[DailyBriefItemCategory.LEARNING_REQUEST_PENDING],
+        ai_review_follow_up_count=counts[DailyBriefItemCategory.AI_REVIEW_FOLLOW_UP],
         boundary_violation_count=counts[DailyBriefItemCategory.BOUNDARY_VIOLATION],
         total_item_count=len(items),
     )

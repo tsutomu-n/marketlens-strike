@@ -210,6 +210,57 @@ def _write_fixtures(data_dir: Path) -> None:
     (data_dir / "broken/not_json.json").write_text("{", encoding="utf-8")
 
 
+def _write_ai_review_structured_findings(data_dir: Path) -> Path:
+    return _write_json(
+        data_dir
+        / "strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_structured_findings.json",
+        {
+            "schema_version": "strategy_ai_review_structured_findings.v1",
+            "finding_set_id": "ai-review-structured-findings",
+            "recorded_at": "2026-07-01T13:00:00Z",
+            "producer": {"tool": "sis", "command": "strategy-ai-review-findings-structure"},
+            "finding_set_status": "RECORDED",
+            "source_note": {
+                "path": "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_note.json",
+                "sha256": "sha256:" + "2" * 64,
+                "input_hash": "sha256:" + "3" * 64,
+                "prompt_hash": "sha256:" + "4" * 64,
+                "provider": "codex-cli",
+                "model": "gpt-5.5",
+                "recommendation": "HUMAN_REVIEW_REQUIRED",
+            },
+            "source_packet": {
+                "path": "data/strategy_ai_reviews/ndx-breakout-001/strategy_ai_review_packet.json",
+                "sha256": "sha256:" + "5" * 64,
+                "ai_input_hash": "sha256:" + "3" * 64,
+            },
+            "findings": [
+                {
+                    "finding_id": "inspect-source",
+                    "finding_type": "SOURCE_ARTIFACT_REVIEW",
+                    "severity": "MEDIUM",
+                    "review_impact": "HUMAN_REVIEW_REQUIRED",
+                    "statement": "Inspect the referenced strategy_case_lite.v1 source artifact.",
+                    "evidence_refs": [{"ref_type": "note_finding", "index": 0}],
+                    "recommended_next_action": "INSPECT_SOURCE_ARTIFACT",
+                    "limitations": ["AI did not inspect raw market data."],
+                }
+            ],
+            "auto_applied": False,
+            "permission_allowed": False,
+            "paper_execution_allowed": False,
+            "live_allowed": False,
+            "boundary": {
+                "permits_live_order": False,
+                "live_conversion_allowed": False,
+                "wallet_used": False,
+                "signing_used": False,
+                "exchange_write_used": False,
+            },
+        },
+    )
+
+
 def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     data_dir = tmp_path / "data"
@@ -249,6 +300,32 @@ def test_strategy_daily_brief_builds_schema_valid_report(tmp_path: Path, monkeyp
     assert "before-cost proxyではなくactual cash evidence" in report
     assert "REBUILD_WITH_ACTUAL_CASH" in report
     assert "normal_paper_gap" in report
+
+
+def test_strategy_daily_brief_surfaces_ai_review_follow_up(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    data_dir = tmp_path / "data"
+    _write_ai_review_structured_findings(data_dir)
+
+    result = build_strategy_daily_brief(
+        data_dir=data_dir,
+        out_dir=tmp_path / "data/reports/strategy_daily_brief",
+    )
+
+    items = [item for item in result.brief.items if item.category.value == "ai_review_follow_up"]
+    assert len(items) == 1
+    assert result.brief.summary.ai_review_follow_up_count == 1
+    assert items[0].status == "RECORDED"
+    assert items[0].action == "INSPECT_SOURCE_ARTIFACT"
+    assert items[0].reason == (
+        "AI review structured findings require human inspection; this is not "
+        "operator, paper, or live permission"
+    )
+    payload = json.loads(result.brief_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_schema()).validate(payload)
+    report = result.report_path.read_text(encoding="utf-8")
+    assert "ai_review_follow_up_count: `1`" in report
+    assert "ai_review_follow_up" in report
 
 
 def test_strategy_daily_brief_human_tiny_live_review_is_not_permission(

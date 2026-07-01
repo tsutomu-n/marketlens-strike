@@ -22,6 +22,7 @@ class DailyBriefItemCategory(StrEnum):
     NORMAL_PAPER_GAP = "normal_paper_gap"
     DRIFT_REVIEW_NEEDED = "drift_review_needed"
     LEARNING_REQUEST_PENDING = "learning_request_pending"
+    AI_REVIEW_FOLLOW_UP = "ai_review_follow_up"
     BOUNDARY_VIOLATION = "boundary_violation"
 
 
@@ -88,6 +89,7 @@ class DailyBriefSummary(BaseModel):
     normal_paper_gap_count: int = Field(ge=0)
     drift_review_needed_count: int = Field(ge=0)
     learning_request_pending_count: int = Field(ge=0)
+    ai_review_follow_up_count: int = Field(ge=0)
     boundary_violation_count: int = Field(ge=0)
     total_item_count: int = Field(ge=0)
 

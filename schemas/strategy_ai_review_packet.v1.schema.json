@@ -9,7 +9,6 @@
     "producer",
     "packet_status",
     "source_summaries",
-    "context_sections",
     "sensitive_source_count",
     "review_questions",
     "ai_input_hash",

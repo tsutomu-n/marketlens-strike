@@ -34,6 +34,7 @@ class StrategyCaseArtifactType(StrEnum):
     STRATEGY_REVIEW_MANIFEST = "strategy_review_manifest"
     STRATEGY_INPUT_CONTRACT_UPDATE_PROPOSAL = "strategy_input_contract_update_proposal"
     STRATEGY_INPUT_CONTRACT_UPDATE_REVIEW = "strategy_input_contract_update_review"
+    STRATEGY_AI_REVIEW_STRUCTURED_FINDINGS = "strategy_ai_review_structured_findings"
     GENERIC = "generic"
 
 

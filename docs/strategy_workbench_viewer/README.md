@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-19_02:16 JST
-更新日: 2026-06-28_07:24 JST
+更新日: 2026-07-01_23:09 JST
 -->
 
 # Strategy Workbench Viewer
@@ -26,6 +26,8 @@ Crypto Perp tournament では `leader_cash_metric_value_usd` が basis 付きの
 `strategy_backtest_pack.v1` では、pack artifact count、suite method / run / passed count、external result count、external framework policy、standard engine、locked dependency の有無、capital summary を表示します。`strategy_backtest_suite_result.v1` では、suite id、method count、run / pass / fail count、trade count、total return、cost drag、best run summary を表示します。`strategy_backtest_comparison.v1` では、comparison id、method / external / framework adapter count、native result、suite best run、weakest era、optional framework の skipped status を表示します。これらも読みやすさのための要約であり、外部 framework 採用、paper / live 実行、profit claim を許可しません。
 
 `strategy_daily_brief.v1` では、scanned JSON count、total item count、broken artifact count、Crypto Perp gate / truth-cycle follow-up count、normal paper gap count、drift / learning request count、first brief item の category / severity / status / schema / action / reason / path を compact summary として表示します。これは「次に確認すべき follow-up」を見つけやすくするための表示であり、follow-up action の実行許可ではありません。
+
+`strategy_ai_review_structured_findings.v1` では、finding set id / status、finding count、source note / packet path、source note recommendation、先頭 finding の type / severity / impact / next action を compact summary として表示します。これは human review input の表示であり、AI recommendation の採用、operator decision、paper / live permission ではありません。
 
 ## CLI
 
@@ -69,6 +71,7 @@ data/reports/strategy_workbench_viewer/
 - Strategy Backtest result / pack validation の backtest_passed / trade_count / total_return / net_pnl_usd / failed_count / locked_dependency_added などのcompact summary
 - Strategy Backtest pack / suite / comparison の pack_artifact_count / suite_method_count / method_count / best_run_method_id / weakest_era / optional framework skipped status などのcompact summary
 - Strategy Daily Brief の scanned_json_count / total_item_count / crypto_perp_truth_cycle_follow_up_count / first_brief_item_action / first_brief_item_reason などのcompact summary
+- Strategy AI Review structured findings の finding_set_id / finding_set_status / finding_count / source_note_recommendation / first_finding_next_action などのcompact summary
 - Strategy Case Lite / Strategy Case Index の latest_status status badge と first open action / first blocked reason
 - Strategy Case Lite の artifact_count / timeline_count / first_source_artifact_type / first_source_artifact_path / first_source_artifact_schema_version / first_source_artifact_hash などのcompact summary
 - Strategy Case Index の case_count / strategy_count / latest_status / latest_case_path / first_open_action / first_blocked_reason / case_index_source_hash などのcompact summary

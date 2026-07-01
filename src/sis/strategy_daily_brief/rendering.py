@@ -18,6 +18,7 @@ def render_strategy_daily_brief_markdown(brief: StrategyDailyBrief) -> str:
         f"- normal_paper_gap_count: `{summary.normal_paper_gap_count}`",
         f"- drift_review_needed_count: `{summary.drift_review_needed_count}`",
         f"- learning_request_pending_count: `{summary.learning_request_pending_count}`",
+        f"- ai_review_follow_up_count: `{summary.ai_review_follow_up_count}`",
         f"- boundary_violation_count: `{summary.boundary_violation_count}`",
         f"- paper_execution_allowed: `{str(brief.paper_execution_allowed).lower()}`",
         f"- live_allowed: `{str(brief.live_allowed).lower()}`",
