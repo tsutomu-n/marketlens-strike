@@ -1,0 +1,272 @@
+version: 1
+created_at_jst: "2026-07-01_21:05 JST"
+scope: "Profit Core long-horizon P0-P13 completion"
+source_plan: "docs/plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md"
+current_truth:
+  - "src/"
+  - "tests/"
+  - "schemas/"
+  - "uv run sis --help"
+global_out_of_scope:
+  - "production deploy"
+  - "paid operations"
+  - "external service data submission"
+  - "credential creation/change/use/deletion"
+  - "exchange write"
+  - "wallet/signing"
+  - "live order"
+  - "tiny-live execution"
+  - "automatic actual-cash execution"
+  - "P13 automatic protocol mutation"
+tasks:
+  - id: P0_CURRENT_STATE_RECONCILIATION
+    goal: "Reconcile current docs, CLI catalog, final summary, and handoff with code truth before implementation."
+    target_files:
+      - "docs/CURRENT_STATE.md"
+      - "docs/final-summary.md"
+      - "docs/profit_core_hybrid_modes/IMPLEMENTATION_CHECKPOINTS.md"
+      - "docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md"
+      - "./.ai_memory/HANDOFF.md"
+    out_of_scope:
+      - "behavior changes"
+      - "schema changes"
+      - "runtime artifact regeneration unless explicitly needed"
+    acceptance:
+      - "Docs distinguish implemented code from historical plans."
+      - "CLI catalog and current-doc checks pass."
+    verification:
+      - "uv run python scripts/check_cli_catalog.py"
+      - "uv run python scripts/check_current_docs.py"
+      - "git diff --check"
+    destructive_level: "none"
+
+  - id: P1_P3_PIPELINE_ATTACHMENT
+    goal: "Attach protocol and multiplicity refs to candidate artifacts, split bridge vocabulary, and connect backtest kill gate."
+    target_files:
+      - "src/sis/strategy_idea_candidates/profit_core.py"
+      - "src/sis/strategy_idea_candidates/authoring_bridge.py"
+      - "src/sis/edge_candidates/protocol.py"
+      - "src/sis/edge_candidates/multiplicity.py"
+      - "src/sis/edge_candidates/backtest_kill_gate.py"
+      - "src/sis/commands/strategy_idea_candidates.py"
+      - "tests/strategy_idea_candidates/test_profit_core_attachment.py"
+      - "tests/strategy_idea_candidates/test_authoring_bridge.py"
+      - "tests/edge_candidates/test_protocol_manifest.py"
+      - "tests/edge_candidates/test_multiplicity_account.py"
+      - "tests/edge_candidates/test_backtest_kill_gate.py"
+    out_of_scope:
+      - "candidate generator expansion"
+      - "external venue work"
+      - "LLM API"
+      - "paper/live/tiny-live execution"
+    acceptance:
+      - "Bridge success status is BRIDGED_TECHNICAL_ONLY."
+      - "Protocol and multiplicity refs plus hashes are traceable."
+      - "Backtest kill gate emits KILL, INCONCLUSIVE_DATA, RESEARCH_ONLY, or SHORTLIST_FOR_VIRTUAL without permissions."
+    verification:
+      - "uv run pytest tests/strategy_idea_candidates/test_profit_core_attachment.py tests/strategy_idea_candidates/test_authoring_bridge.py tests/edge_candidates/test_multiplicity_account.py tests/edge_candidates/test_backtest_kill_gate.py -q"
+      - "uv run sis strategy-idea-candidates-multiplicity-account-build --help"
+      - "uv run sis edge-candidate-protocol-validate --help"
+    destructive_level: "low"
+
+  - id: P4_EDGE_CANDIDATE_FACTORY
+    goal: "Create protocol-bound candidate factory for verification_throughput."
+    target_files:
+      - "src/sis/edge_candidates/factory.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_factory.py"
+      - "tests/strategy_idea_candidates/test_candidate_generator.py"
+      - "tests/strategy_idea_candidates/test_candidate_cli.py"
+    out_of_scope:
+      - "risk_taker_sprint generation"
+      - "GA/ML/Optuna"
+      - "new dependencies"
+      - "external network"
+    acceptance:
+      - "Factory cannot run without protocol manifest."
+      - "All candidates, rejections, parameters, family refs, and source refs are saved."
+      - "No best-only report."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_factory.py tests/strategy_idea_candidates/test_candidate_generator.py tests/strategy_idea_candidates/test_candidate_cli.py tests/edge_candidates/test_protocol_manifest.py -q"
+      - "uv run sis edge-candidate-factory-run --help"
+    destructive_level: "low"
+
+  - id: P5_VIRTUAL_EXECUTION_GATE
+    goal: "Add local/mock virtual execution gate without profit or live permission semantics."
+    target_files:
+      - "schemas/virtual_execution_gate.v1.schema.json"
+      - "src/sis/edge_candidates/virtual_execution_gate.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_virtual_execution_gate.py"
+    out_of_scope:
+      - "Bitget/Hyperliquid/GRVT integration"
+      - "virtual PnL as profit proof"
+      - "credentialed network"
+    acceptance:
+      - "actual_cash=false and cash_metric_basis=virtual_exchange."
+      - "Unknown state and reconcile mismatch block advancement."
+      - "live_order_submitted=false and permits_live_order=false."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_virtual_execution_gate.py tests/edge_candidates/test_factory.py tests/edge_candidates/test_backtest_kill_gate.py tests/edge_candidates/test_multiplicity_account.py -q"
+      - "uv run sis edge-candidate-virtual-gate-run --help"
+    destructive_level: "low"
+
+  - id: P6_EVIDENCE_PACKET
+    goal: "Build machine-readable evidence packet and claim diff."
+    target_files:
+      - "schemas/profit_core_evidence_packet.v1.schema.json"
+      - "src/sis/edge_candidates/evidence_packet.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_evidence_packet.py"
+    out_of_scope:
+      - "LLM API integration"
+      - "human prose as source of truth"
+    acceptance:
+      - "All input artifacts have source refs and sha256 values."
+      - "Unsupported claim, missing comparison, basis mismatch, and actual_cash overclaim are detected."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_evidence_packet.py tests/edge_candidates/test_virtual_execution_gate.py tests/edge_candidates/test_factory.py tests/edge_candidates/test_backtest_kill_gate.py tests/edge_candidates/test_multiplicity_account.py -q"
+      - "uv run sis edge-candidate-evidence-packet-build --help"
+    destructive_level: "low"
+
+  - id: P7_ADVERSARIAL_REVIEW
+    goal: "Record constrained adversarial review against evidence packet."
+    target_files:
+      - "schemas/profit_core_adversarial_review.v1.schema.json"
+      - "src/sis/edge_candidates/adversarial_review.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_adversarial_review.py"
+    out_of_scope:
+      - "LLM permission decisions"
+      - "official metric or PnL calculation by LLM"
+      - "paper/live/tiny-live approval"
+    acceptance:
+      - "Review findings are constrained vocabulary."
+      - "NO_ADDITIONAL_BLOCKER_FOUND is not approval."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_adversarial_review.py tests/edge_candidates/test_evidence_packet.py -q"
+      - "uv run sis edge-candidate-adversarial-review-record --help"
+    destructive_level: "low"
+
+  - id: P8_RISK_TAKER_SPRINT_ISOLATION
+    goal: "Isolate risk_taker_sprint outputs and force promotion debt."
+    target_files:
+      - "schemas/profit_core_risk_taker_sprint_isolation.v1.schema.json"
+      - "src/sis/edge_candidates/risk_taker_sprint_isolation.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_risk_taker_sprint_isolation.py"
+    out_of_scope:
+      - "mainline performance aggregation"
+      - "direct actual-cash promotion"
+      - "broad generator enablement in P4"
+    acceptance:
+      - "Sprint has separate ledger, holdout, and multiplicity account."
+      - "Sprint candidate cannot move directly to actual cash."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_risk_taker_sprint_isolation.py tests/edge_candidates/test_factory.py -q"
+      - "uv run sis edge-candidate-risk-taker-sprint-isolation-record --help"
+    destructive_level: "low"
+
+  - id: P9_ACTUAL_CASH_READINESS
+    goal: "Create actual-cash readiness packet as human approval input only."
+    target_files:
+      - "schemas/profit_core_actual_cash_readiness_packet.v1.schema.json"
+      - "src/sis/edge_candidates/actual_cash_readiness.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_actual_cash_readiness.py"
+    out_of_scope:
+      - "credential use"
+      - "order submit"
+      - "legal/account approval claims"
+    acceptance:
+      - "Max notional, loss, margin, IP restriction, withdrawal disabled, flat reconciliation, kill switch, and stop condition are explicit."
+      - "Packet does not permit execution."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_adversarial_review.py tests/edge_candidates/test_evidence_packet.py -q"
+      - "uv run sis edge-candidate-actual-cash-readiness-packet-build --help"
+    destructive_level: "low"
+
+  - id: P10_EXTERNAL_VENUE_ADAPTER_RECORD
+    goal: "Record external virtual/read-only venue adapter evidence with explicit boundaries."
+    target_files:
+      - "schemas/profit_core_external_venue_adapter_run.v1.schema.json"
+      - "src/sis/edge_candidates/external_venue_adapter.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_external_venue_adapter.py"
+    out_of_scope:
+      - "multiple venues at once"
+      - "credentialed writes"
+      - "demo/testnet as actual cash"
+    acceptance:
+      - "Venue docs/current verification requirement is represented."
+      - "Network opt-in and request/response artifact boundaries are explicit."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_external_venue_adapter.py tests/edge_candidates/test_virtual_execution_gate.py -q"
+      - "uv run sis edge-candidate-external-venue-adapter-record --help"
+    destructive_level: "medium_if_real_network_added_else_low"
+
+  - id: P11_TINY_ACTUAL_CASH_MEASUREMENT_RECORD
+    goal: "Record tiny actual-cash measurement evidence without submitting orders."
+    target_files:
+      - "schemas/profit_core_tiny_actual_cash_measurement.v1.schema.json"
+      - "src/sis/edge_candidates/tiny_actual_cash_measurement.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_tiny_actual_cash_measurement.py"
+    out_of_scope:
+      - "order submission"
+      - "credential use"
+      - "paper/demo/testnet rows as actual_cash"
+    acceptance:
+      - "All upstream refs are present and hash-checked where applicable."
+      - "Fill, fee, funding, cash ledger, flat reconciliation, and NO_TRADE comparison are connected by candidate/event lineage."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_tiny_actual_cash_measurement.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_external_venue_adapter.py tests/edge_candidates/test_evidence_packet.py -q"
+      - "uv run sis edge-candidate-tiny-actual-cash-measurement-record --help"
+    destructive_level: "medium_if_real_actual_cash_execution_added_else_low"
+
+  - id: P12_ACTUAL_CASH_REPORT_GATE
+    goal: "Aggregate tiny actual-cash sample into promote/wait/kill report."
+    target_files:
+      - "schemas/profit_core_actual_cash_report_gate.v1.schema.json"
+      - "src/sis/edge_candidates/actual_cash_report_gate.py"
+      - "src/sis/edge_candidates/actual_cash_report_gate_models.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_actual_cash_report_gate.py"
+    out_of_scope:
+      - "execution"
+      - "live readiness"
+      - "general profit proof from few fills"
+    acceptance:
+      - "actual_cash_edge_over_NO_TRADE is computed from P11 rows only."
+      - "Sample size, diversity, concentration, largest loss, burden, and reconciliation mismatch are reported."
+      - "wait and kill are first-class."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_actual_cash_report_gate.py tests/edge_candidates/test_tiny_actual_cash_measurement.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_evidence_packet.py tests/edge_candidates/test_external_venue_adapter.py -q"
+      - "uv run sis edge-candidate-actual-cash-report-gate --help"
+    destructive_level: "low"
+
+  - id: P13_FEEDBACK_THRESHOLD_CALIBRATION
+    goal: "Convert failure evidence into next-cycle calibration proposal only."
+    target_files:
+      - "schemas/profit_core_feedback_threshold_calibration.v1.schema.json"
+      - "src/sis/edge_candidates/feedback_calibration.py"
+      - "src/sis/commands/edge_candidates.py"
+      - "tests/edge_candidates/test_feedback_calibration.py"
+    out_of_scope:
+      - "auto-applying protocol changes"
+      - "mutating multiplicity account"
+      - "threshold changes without new accounting"
+    acceptance:
+      - "Success-only feedback is blocked."
+      - "New protocol id and multiplicity account id are required for proposed updates."
+      - "auto_applied=false and thresholds_applied=false."
+    verification:
+      - "uv run pytest tests/edge_candidates/test_feedback_calibration.py tests/edge_candidates/test_actual_cash_report_gate.py tests/edge_candidates/test_multiplicity_account.py tests/edge_candidates/test_protocol_manifest.py -q"
+      - "uv run sis edge-candidate-feedback-calibration-build --help"
+    destructive_level: "low"
+
+final_verification:
+  - "uv run python scripts/check_cli_catalog.py"
+  - "uv run python scripts/check_current_docs.py"
+  - "git diff --check"
+  - "./scripts/check"

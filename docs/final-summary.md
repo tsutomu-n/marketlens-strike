@@ -1,9 +1,68 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_20:06 JST
+更新日: 2026-07-01_21:18 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core Completion Implementation Package
+
+Completed on branch `ai/profit-core-completion-docs-20260701-2105`.
+
+Achieved:
+
+- Added `docs/plans/profit-core-completion-implementation-package-2026-07-01/` as a dedicated developer package for completing, replaying, or auditing Profit Core P0-P13.
+- Converted the long-horizon checkpoint roadmap into a coder-facing `IMPLEMENTATION_PLAN.md` with purpose, constraints, target files, implementation steps, test policy, and done conditions.
+- Added `TASK_CHAIN.yaml` with actionable tasks for P0, P1-P3, and P4-P13, including target files, out-of-scope boundaries, acceptance, verification, and destructive level.
+- Added `VERIFICATION_MATRIX.md` with focused tests, CLI help checks, current docs checks, CLI catalog checks, and final `./scripts/check`.
+- Added artifact/source/CLI/test mapping and a boundaries / risks / omissions appendix.
+- Routed the package from `docs/CURRENT_STATE.md`.
+
+Main files changed:
+
+- `docs/plans/profit-core-completion-implementation-package-2026-07-01/README.md`
+- `docs/plans/profit-core-completion-implementation-package-2026-07-01/IMPLEMENTATION_PLAN.md`
+- `docs/plans/profit-core-completion-implementation-package-2026-07-01/TASK_CHAIN.yaml`
+- `docs/plans/profit-core-completion-implementation-package-2026-07-01/VERIFICATION_MATRIX.md`
+- `docs/plans/profit-core-completion-implementation-package-2026-07-01/APPENDIX_ARTIFACT_SOURCE_MAP.md`
+- `docs/plans/profit-core-completion-implementation-package-2026-07-01/APPENDIX_BOUNDARIES_RISKS_AND_OMISSIONS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 202 current docs ok.
+- `uv run python scripts/check_cli_catalog.py` -> checked 243 public CLI commands.
+- `git diff --check` -> passed.
+- `uv run python - <<'PY' ...` V0 package existence audit -> checked 27 expected Profit Core files, missing 0.
+- `uv run python - <<'PY' ...` TASK_CHAIN YAML parse -> version 1, 12 tasks.
+- `uv run python - <<'PY' ...` CLI help audit -> checked 13 commands, failed 0.
+- `uv run pytest tests/strategy_idea_candidates/test_profit_core_attachment.py tests/strategy_idea_candidates/test_authoring_bridge.py tests/edge_candidates/test_protocol_manifest.py tests/edge_candidates/test_multiplicity_account.py tests/edge_candidates/test_backtest_kill_gate.py tests/edge_candidates/test_factory.py tests/strategy_idea_candidates/test_candidate_generator.py tests/strategy_idea_candidates/test_candidate_cli.py tests/edge_candidates/test_virtual_execution_gate.py tests/edge_candidates/test_evidence_packet.py tests/edge_candidates/test_adversarial_review.py tests/edge_candidates/test_risk_taker_sprint_isolation.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_external_venue_adapter.py tests/edge_candidates/test_tiny_actual_cash_measurement.py tests/edge_candidates/test_actual_cash_report_gate.py tests/edge_candidates/test_feedback_calibration.py -q` -> 116 passed.
+- `./scripts/check` -> Python 3.13.7, Ruff, format check, current docs, CLI catalog, Pyrefly, ty, and full Pytest passed; Pytest 2960 passed in 84.49s.
+
+Remaining work:
+
+None for this docs-only package.
+
+User decisions required:
+
+None for this docs-only package.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `docs/plans/profit-core-completion-implementation-package-2026-07-01/`, then revert the `docs/CURRENT_STATE.md` routing and this summary addendum.
 
 ## Latest Addendum: Profit Core P13 Feedback Threshold Calibration
 
