@@ -1,9 +1,70 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_15:58 JST
+更新日: 2026-07-01_16:18 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P9 Actual Cash Readiness Packet
+
+Completed on branch `ai/profit-core-p9-actual-cash-readiness-20260701-1606`.
+
+Achieved:
+
+- Added `profit_core_actual_cash_readiness_packet.v1` schema and local Pydantic models for actual-cash readiness packets.
+- Added `edge-candidate-actual-cash-readiness-packet-build` to consume P6 `profit_core_evidence_packet.v1`, P7 `profit_core_adversarial_review.v1`, a local readiness plan, and optional P8 `profit_core_risk_taker_sprint_isolation.v1`.
+- Recorded risk limits: max notional, max daily loss, max order count, max position count, and leverage cap.
+- Recorded required account and operational controls: isolated margin, withdrawal disabled, IP restriction, flat reconciliation, rollback, kill switch, and stop conditions.
+- Recorded venue terms / jurisdiction recheck as an execution-time recheck requirement, not as legal clearance.
+- Blocked packet completion on missing readiness controls, P7 hard blockers, and P8 risk-taker sprint promotion debt.
+- Rejected secret-like key material in readiness plans before artifact write.
+- Kept the packet as human approval input only with `packet_is_execution_permission=false`, `requires_human_approval=true`, and all actual-cash / credential / exchange-write / wallet / signing / live-order permissions false.
+
+Main files changed:
+
+- `schemas/profit_core_actual_cash_readiness_packet.v1.schema.json`
+- `src/sis/edge_candidates/actual_cash_readiness.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_actual_cash_readiness.py`
+- `docs/plans/profit-core-p9-actual-cash-readiness-packet-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_actual_cash_readiness.py -q` -> 7 passed.
+- `uv run pytest tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_adversarial_review.py tests/edge_candidates/test_risk_taker_sprint_isolation.py tests/edge_candidates/test_evidence_packet.py -q` -> 26 passed.
+- `uv run ruff check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 239 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 193 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2915 passed`.
+
+Remaining work:
+
+- P9 does not implement external venue adapters, credential creation/use, network calls, human approval, order submission, tiny-live measurement, actual-cash execution, cash ledger rows, or actual-cash report promotion.
+
+User decisions required:
+
+None for P9 local artifact implementation.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `schemas/profit_core_actual_cash_readiness_packet.v1.schema.json`, `src/sis/edge_candidates/actual_cash_readiness.py`, `tests/edge_candidates/test_actual_cash_readiness.py`, revert the edge candidate CLI / `__init__.py` additions, remove `docs/plans/profit-core-p9-actual-cash-readiness-packet-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core P8 Risk-Taker Sprint Isolation
 

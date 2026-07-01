@@ -6,6 +6,12 @@ import typer
 from pydantic import ValidationError
 
 from sis.commands.strategy_authoring import _resolve_workspace_path
+from sis.edge_candidates.actual_cash_readiness import (
+    ActualCashReadinessPacketError,
+    ActualCashReadinessPacketOutputExistsError,
+    ProfitCoreActualCashReadinessStatus,
+    build_and_write_actual_cash_readiness_packet,
+)
 from sis.edge_candidates.adversarial_review import (
     ProfitCoreAdversarialReviewError,
     ProfitCoreAdversarialReviewOutputExistsError,
@@ -393,6 +399,98 @@ def register_edge_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"finding_count={len(result.review.findings)}")
         typer.echo(f"hard_blocker_count={result.review.hard_blocker_count}")
         typer.echo(f"review_path={result.review_path.as_posix()}")
+
+    @app.command("edge-candidate-actual-cash-readiness-packet-build")
+    def edge_candidate_actual_cash_readiness_packet_build_cmd(
+        evidence_packet: Path = typer.Option(
+            ...,
+            "--evidence-packet",
+            dir_okay=False,
+            help="profit_core_evidence_packet.v1 JSON.",
+        ),
+        adversarial_review: Path = typer.Option(
+            ...,
+            "--adversarial-review",
+            dir_okay=False,
+            help="profit_core_adversarial_review.v1 JSON.",
+        ),
+        readiness_plan: Path = typer.Option(
+            ...,
+            "--readiness-plan",
+            dir_okay=False,
+            help="Local JSON/YAML actual-cash readiness plan.",
+        ),
+        risk_sprint_isolation: Path | None = typer.Option(
+            None,
+            "--risk-sprint-isolation",
+            dir_okay=False,
+            help="Optional profit_core_risk_taker_sprint_isolation.v1 JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidates/actual_cash_readiness"),
+            "--out",
+            help="Output directory for profit_core_actual_cash_readiness_packet.json.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_and_write_actual_cash_readiness_packet(
+                evidence_packet_path=_resolve_workspace_path(
+                    evidence_packet,
+                    settings.data_dir,
+                ),
+                adversarial_review_path=_resolve_workspace_path(
+                    adversarial_review,
+                    settings.data_dir,
+                ),
+                readiness_plan_path=_resolve_workspace_path(
+                    readiness_plan,
+                    settings.data_dir,
+                ),
+                risk_sprint_isolation_path=(
+                    _resolve_workspace_path(risk_sprint_isolation, settings.data_dir)
+                    if risk_sprint_isolation is not None
+                    else None
+                ),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            ActualCashReadinessPacketOutputExistsError,
+            ActualCashReadinessPacketError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        packet = result.packet
+        typer.echo("network_attempted=false")
+        typer.echo(f"credential_used={str(packet.credential_used).lower()}")
+        typer.echo(f"exchange_write_used={str(packet.exchange_write_used).lower()}")
+        typer.echo(f"exchange_write_allowed={str(packet.exchange_write_allowed).lower()}")
+        typer.echo(
+            f"actual_cash_execution_allowed={str(packet.actual_cash_execution_allowed).lower()}"
+        )
+        typer.echo(f"live_order_submitted={str(packet.live_order_submitted).lower()}")
+        typer.echo(
+            "status=pass"
+            if packet.readiness_status
+            is ProfitCoreActualCashReadinessStatus.PACKET_COMPLETE_REQUIRES_HUMAN_APPROVAL
+            else "status=blocked"
+        )
+        typer.echo(f"candidate_id={packet.candidate_id}")
+        typer.echo(f"readiness_status={packet.readiness_status.value}")
+        typer.echo(f"blocker_count={len(packet.blockers)}")
+        typer.echo(f"packet_path={result.packet_path.as_posix()}")
 
     @app.command("edge-candidate-risk-taker-sprint-isolation-record")
     def edge_candidate_risk_taker_sprint_isolation_record_cmd(
