@@ -1,9 +1,68 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_16:48 JST
+更新日: 2026-07-01_17:30 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P11 Tiny Actual-Cash Measurement Record
+
+Completed on branch `ai/profit-core-p11-tiny-actual-cash-record-20260701-1712`.
+
+Achieved:
+
+- Added `profit_core_tiny_actual_cash_measurement.v1` schema and local Pydantic models for tiny actual-cash measurement records.
+- Added `edge-candidate-tiny-actual-cash-measurement-record` to consume P9 readiness, P10 external venue adapter evidence, human approval, order intent, submitted order evidence, fills, fee/funding evidence, cash ledger, actual-cash rows, flat reconciliation, and stop-condition evidence.
+- Required actual-cash rows to use `cash_metric_basis=actual_cash`, include `NO_TRADE` comparison for the same event set, and reconcile to `crypto_perp_cash_ledger.actual_cash_result_usd`.
+- Blocked completion for missing human approval, incomplete upstream P9/P10 evidence, candidate lineage mismatch, non-actual-cash basis, missing `NO_TRADE`, flat reconciliation gaps, and incomplete loss / venue / credential / legal stop conditions.
+- Kept `measurement_status=RECORDED_ACTUAL_CASH_REQUIRES_REPORT_GATE` as a record-only success state; it still requires the existing actual-cash report gate before any later promotion.
+- Kept all execution side effects false: `order_submitted_by_this_command=false`, `network_attempted=false`, `credentials_used=false`, `exchange_write_used=false`, `live_order_submitted=false`, `wallet_used=false`, and `signing_used=false`.
+
+Main files changed:
+
+- `schemas/profit_core_tiny_actual_cash_measurement.v1.schema.json`
+- `src/sis/edge_candidates/tiny_actual_cash_measurement.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_tiny_actual_cash_measurement.py`
+- `docs/plans/profit-core-p11-tiny-actual-cash-measurement-record-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_tiny_actual_cash_measurement.py -q` -> 8 passed.
+- `uv run pytest tests/edge_candidates/test_tiny_actual_cash_measurement.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_external_venue_adapter.py tests/edge_candidates/test_evidence_packet.py -q` -> 29 passed.
+- `uv run ruff check src/sis/edge_candidates/tiny_actual_cash_measurement.py src/sis/commands/edge_candidates.py tests/edge_candidates/test_tiny_actual_cash_measurement.py` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates/tiny_actual_cash_measurement.py src/sis/commands/edge_candidates.py tests/edge_candidates/test_tiny_actual_cash_measurement.py` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 241 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 195 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2932 passed`.
+
+Remaining work:
+
+- P11 does not execute actual-cash orders, call external networks, create or use credentials, submit orders, reconcile live positions by itself, generate human approval, or promote results past the existing actual-cash report gate.
+
+User decisions required:
+
+None for P11 local artifact implementation.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `schemas/profit_core_tiny_actual_cash_measurement.v1.schema.json`, `src/sis/edge_candidates/tiny_actual_cash_measurement.py`, `tests/edge_candidates/test_tiny_actual_cash_measurement.py`, revert the edge candidate CLI / `__init__.py` additions, remove `docs/plans/profit-core-p11-tiny-actual-cash-measurement-record-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core P10 External Virtual Venue Adapter
 

@@ -39,6 +39,12 @@ from sis.edge_candidates.risk_taker_sprint_isolation import (
     RiskTakerSprintIsolationOutputExistsError,
     build_and_write_risk_taker_sprint_isolation,
 )
+from sis.edge_candidates.tiny_actual_cash_measurement import (
+    ProfitCoreTinyActualCashMeasurementStatus,
+    TinyActualCashMeasurementError,
+    TinyActualCashMeasurementOutputExistsError,
+    build_and_write_tiny_actual_cash_measurement,
+)
 from sis.edge_candidates.virtual_execution_gate import (
     VirtualExecutionGateError,
     VirtualExecutionGateOutputExistsError,
@@ -497,6 +503,146 @@ def register_edge_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"readiness_status={packet.readiness_status.value}")
         typer.echo(f"blocker_count={len(packet.blockers)}")
         typer.echo(f"packet_path={result.packet_path.as_posix()}")
+
+    @app.command("edge-candidate-tiny-actual-cash-measurement-record")
+    def edge_candidate_tiny_actual_cash_measurement_record_cmd(
+        readiness_packet: Path = typer.Option(
+            ...,
+            "--readiness-packet",
+            dir_okay=False,
+            help="profit_core_actual_cash_readiness_packet.v1 JSON.",
+        ),
+        external_venue_adapter: Path = typer.Option(
+            ...,
+            "--external-venue-adapter",
+            dir_okay=False,
+            help="profit_core_external_venue_adapter_run.v1 JSON.",
+        ),
+        human_approval: Path = typer.Option(
+            ...,
+            "--human-approval",
+            dir_okay=False,
+            help="Human approval artifact for tiny actual-cash measurement.",
+        ),
+        order_intent: Path = typer.Option(
+            ...,
+            "--order-intent",
+            dir_okay=False,
+            help="Already-created actual-cash order intent artifact.",
+        ),
+        submitted_order: Path = typer.Option(
+            ...,
+            "--submitted-order",
+            dir_okay=False,
+            help="Already-submitted actual exchange order evidence artifact.",
+        ),
+        fills: Path = typer.Option(
+            ...,
+            "--fills",
+            dir_okay=False,
+            help="Actual cash fill evidence artifact.",
+        ),
+        fee_funding: Path = typer.Option(
+            ...,
+            "--fee-funding",
+            dir_okay=False,
+            help="Actual cash fee/funding evidence artifact.",
+        ),
+        cash_ledger: Path = typer.Option(
+            ...,
+            "--cash-ledger",
+            dir_okay=False,
+            help="crypto_perp_cash_ledger.v1 JSON.",
+        ),
+        actual_cash_rows: Path = typer.Option(
+            ...,
+            "--actual-cash-rows",
+            dir_okay=False,
+            help="Tournament result rows JSONL/JSON with actual_cash basis and NO_TRADE rows.",
+        ),
+        flat_reconciliation: Path = typer.Option(
+            ...,
+            "--flat-reconciliation",
+            dir_okay=False,
+            help="Flat reconciliation evidence artifact.",
+        ),
+        stop_condition: Path = typer.Option(
+            ...,
+            "--stop-condition",
+            dir_okay=False,
+            help="Loss, venue, credential, legal, and respected stop-condition artifact.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidates/tiny_actual_cash_measurement"),
+            "--out",
+            help="Output directory for profit_core_tiny_actual_cash_measurement.json.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_and_write_tiny_actual_cash_measurement(
+                readiness_packet_path=_resolve_workspace_path(readiness_packet, settings.data_dir),
+                external_venue_adapter_path=_resolve_workspace_path(
+                    external_venue_adapter,
+                    settings.data_dir,
+                ),
+                human_approval_path=_resolve_workspace_path(human_approval, settings.data_dir),
+                order_intent_path=_resolve_workspace_path(order_intent, settings.data_dir),
+                submitted_order_path=_resolve_workspace_path(submitted_order, settings.data_dir),
+                fills_path=_resolve_workspace_path(fills, settings.data_dir),
+                fee_funding_path=_resolve_workspace_path(fee_funding, settings.data_dir),
+                cash_ledger_path=_resolve_workspace_path(cash_ledger, settings.data_dir),
+                actual_cash_rows_path=_resolve_workspace_path(actual_cash_rows, settings.data_dir),
+                flat_reconciliation_path=_resolve_workspace_path(
+                    flat_reconciliation,
+                    settings.data_dir,
+                ),
+                stop_condition_path=_resolve_workspace_path(stop_condition, settings.data_dir),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            TinyActualCashMeasurementOutputExistsError,
+            TinyActualCashMeasurementError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        measurement = result.measurement
+        typer.echo("network_attempted=false")
+        typer.echo("credentials_used=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("order_submitted_by_this_command=false")
+        typer.echo(
+            "status=pass"
+            if measurement.measurement_status
+            is ProfitCoreTinyActualCashMeasurementStatus.RECORDED_ACTUAL_CASH_REQUIRES_REPORT_GATE
+            else "status=blocked"
+        )
+        typer.echo(f"candidate_id={measurement.candidate_id}")
+        typer.echo(f"measurement_status={measurement.measurement_status.value}")
+        typer.echo(f"actual_cash={str(measurement.actual_cash).lower()}")
+        typer.echo(f"actual_cash_result_usd={measurement.actual_cash_result_usd}")
+        typer.echo(
+            f"no_trade_comparison_present={str(measurement.no_trade_comparison_present).lower()}"
+        )
+        typer.echo(f"flat_reconciled={str(measurement.flat_reconciled).lower()}")
+        typer.echo(
+            f"stop_conditions_respected={str(measurement.stop_conditions_respected).lower()}"
+        )
+        typer.echo(f"blocker_count={len(measurement.blockers)}")
+        typer.echo(f"measurement_path={result.measurement_path.as_posix()}")
 
     @app.command("edge-candidate-external-venue-adapter-record")
     def edge_candidate_external_venue_adapter_record_cmd(
