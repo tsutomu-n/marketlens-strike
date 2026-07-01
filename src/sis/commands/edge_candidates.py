@@ -6,6 +6,11 @@ import typer
 from pydantic import ValidationError
 
 from sis.commands.strategy_authoring import _resolve_workspace_path
+from sis.edge_candidates.adversarial_review import (
+    ProfitCoreAdversarialReviewError,
+    ProfitCoreAdversarialReviewOutputExistsError,
+    build_and_write_profit_core_adversarial_review,
+)
 from sis.edge_candidates.factory import (
     EdgeCandidateFactoryError,
     EdgeCandidateFactoryOutputExistsError,
@@ -318,3 +323,68 @@ def register_edge_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"candidate_id={result.packet.candidate_id}")
         typer.echo(f"finding_count={len(result.packet.claim_findings)}")
         typer.echo(f"packet_path={result.packet_path.as_posix()}")
+
+    @app.command("edge-candidate-adversarial-review-record")
+    def edge_candidate_adversarial_review_record_cmd(
+        evidence_packet: Path = typer.Option(
+            ...,
+            "--evidence-packet",
+            dir_okay=False,
+            help="profit_core_evidence_packet.v1 JSON.",
+        ),
+        manual_review: Path | None = typer.Option(
+            None,
+            "--manual-review",
+            dir_okay=False,
+            help="Optional JSON/YAML file containing manual adversarial findings.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidates/adversarial_review"),
+            "--out",
+            help="Output directory for profit_core_adversarial_review.json.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_and_write_profit_core_adversarial_review(
+                evidence_packet_path=_resolve_workspace_path(
+                    evidence_packet,
+                    settings.data_dir,
+                ),
+                manual_review_path=(
+                    _resolve_workspace_path(manual_review, settings.data_dir)
+                    if manual_review is not None
+                    else None
+                ),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            ProfitCoreAdversarialReviewOutputExistsError,
+            ProfitCoreAdversarialReviewError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        boundary = result.review.boundary
+        typer.echo("network_attempted=false")
+        typer.echo(f"llm_api_used={str(boundary['llm_api_used']).lower()}")
+        typer.echo(f"external_send_performed={str(boundary['external_send_performed']).lower()}")
+        typer.echo(f"approval_allowed={str(result.review.approval_allowed).lower()}")
+        typer.echo(f"permission_allowed={str(result.review.permission_allowed).lower()}")
+        typer.echo("status=pass")
+        typer.echo(f"candidate_id={result.review.candidate_id}")
+        typer.echo(f"review_status={result.review.review_status.value}")
+        typer.echo(f"finding_count={len(result.review.findings)}")
+        typer.echo(f"hard_blocker_count={result.review.hard_blocker_count}")
+        typer.echo(f"review_path={result.review_path.as_posix()}")
