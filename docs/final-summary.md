@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_17:30 JST
+更新日: 2026-07-01_18:04 JST
 -->
 
 # Final Summary
@@ -15,6 +15,7 @@ Achieved:
 - Added `edge-candidate-tiny-actual-cash-measurement-record` to consume P9 readiness, P10 external venue adapter evidence, human approval, order intent, submitted order evidence, fills, fee/funding evidence, cash ledger, actual-cash rows, flat reconciliation, and stop-condition evidence.
 - Required actual-cash rows to use `cash_metric_basis=actual_cash`, include `NO_TRADE` comparison for the same event set, and reconcile to `crypto_perp_cash_ledger.actual_cash_result_usd`.
 - Blocked completion for missing human approval, incomplete upstream P9/P10 evidence, candidate lineage mismatch, non-actual-cash basis, missing `NO_TRADE`, flat reconciliation gaps, and incomplete loss / venue / credential / legal stop conditions.
+- Hardened the record against false lineage by requiring expected P9/P10 schema versions, event-id alignment across P11 artifacts, order intent -> submitted order -> fills id alignment, submitted venue = P10 adapter venue, exactly one measured non-`NO_TRADE` action per event, cash ledger event-set alignment with no unassigned ledger entries, and fee/funding totals matching ledger entries.
 - Kept `measurement_status=RECORDED_ACTUAL_CASH_REQUIRES_REPORT_GATE` as a record-only success state; it still requires the existing actual-cash report gate before any later promotion.
 - Kept all execution side effects false: `order_submitted_by_this_command=false`, `network_attempted=false`, `credentials_used=false`, `exchange_write_used=false`, `live_order_submitted=false`, `wallet_used=false`, and `signing_used=false`.
 
@@ -31,14 +32,14 @@ Main files changed:
 
 Verification:
 
-- `uv run pytest tests/edge_candidates/test_tiny_actual_cash_measurement.py -q` -> 8 passed.
-- `uv run pytest tests/edge_candidates/test_tiny_actual_cash_measurement.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_external_venue_adapter.py tests/edge_candidates/test_evidence_packet.py -q` -> 29 passed.
+- `uv run pytest tests/edge_candidates/test_tiny_actual_cash_measurement.py -q` -> 18 passed.
+- `uv run pytest tests/edge_candidates/test_tiny_actual_cash_measurement.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_external_venue_adapter.py tests/edge_candidates/test_evidence_packet.py -q` -> 38 passed.
 - `uv run ruff check src/sis/edge_candidates/tiny_actual_cash_measurement.py src/sis/commands/edge_candidates.py tests/edge_candidates/test_tiny_actual_cash_measurement.py` -> passed.
 - `uv run ruff format --check src/sis/edge_candidates/tiny_actual_cash_measurement.py src/sis/commands/edge_candidates.py tests/edge_candidates/test_tiny_actual_cash_measurement.py` -> passed.
 - `uv run python scripts/check_cli_catalog.py` -> checked 241 public CLI commands against Typer registration.
 - `uv run python scripts/check_current_docs.py` -> checked 195 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
 - `git diff --check` -> passed.
-- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2932 passed`.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2941 passed`.
 
 Remaining work:
 

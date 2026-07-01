@@ -8,7 +8,7 @@ from jsonschema import Draft202012Validator
 from typer.testing import CliRunner
 
 from sis.cli import app
-from sis.crypto_perp.cash_ledger import CashLedgerEntry, build_cash_ledger
+from sis.crypto_perp.cash_ledger import CashLedgerEntry, CashLedgerEntryType, build_cash_ledger
 from sis.edge_candidates.tiny_actual_cash_measurement import (
     ProfitCoreTinyActualCashMeasurementStatus,
     build_and_write_tiny_actual_cash_measurement,
@@ -87,32 +87,45 @@ def _write_human_approval(tmp_path: Path, *, approved: bool = True) -> Path:
     return path
 
 
-def _write_order_intent(tmp_path: Path) -> Path:
+def _write_order_intent(
+    tmp_path: Path,
+    *,
+    event_id: str = "event-1",
+    action: str = "CONTINUATION_LONG",
+    actual_cash: bool = True,
+) -> Path:
     path = tmp_path / "order_intent.json"
     write_json_artifact(
         path,
         {
             "order_intent_id": "intent-001",
             "candidate_id": "idea-cand-001",
-            "event_id": "event-1",
-            "action": "CONTINUATION_LONG",
+            "event_id": event_id,
+            "action": action,
             "notional_usd": "10",
-            "actual_cash": True,
+            "actual_cash": actual_cash,
         },
     )
     return path
 
 
-def _write_submitted_order(tmp_path: Path, *, demo: bool = False) -> Path:
+def _write_submitted_order(
+    tmp_path: Path,
+    *,
+    demo: bool = False,
+    order_intent_id: str = "intent-001",
+    event_id: str = "event-1",
+    venue: str = "bitget",
+) -> Path:
     path = tmp_path / "submitted_order.json"
     write_json_artifact(
         path,
         {
             "order_id": "order-001",
-            "order_intent_id": "intent-001",
+            "order_intent_id": order_intent_id,
             "candidate_id": "idea-cand-001",
-            "event_id": "event-1",
-            "venue": "bitget",
+            "event_id": event_id,
+            "venue": venue,
             "source_kind": "actual_exchange_order",
             "actual_cash": not demo,
             "paper": False,
@@ -124,14 +137,19 @@ def _write_submitted_order(tmp_path: Path, *, demo: bool = False) -> Path:
     return path
 
 
-def _write_fills(tmp_path: Path) -> Path:
+def _write_fills(
+    tmp_path: Path,
+    *,
+    event_id: str = "event-1",
+    order_id: str = "order-001",
+) -> Path:
     path = tmp_path / "fills.json"
     write_json_artifact(
         path,
         {
             "candidate_id": "idea-cand-001",
-            "event_id": "event-1",
-            "order_id": "order-001",
+            "event_id": event_id,
+            "order_id": order_id,
             "actual_cash": True,
             "fills": [
                 {
@@ -146,52 +164,75 @@ def _write_fills(tmp_path: Path) -> Path:
     return path
 
 
-def _write_fee_funding(tmp_path: Path) -> Path:
+def _write_fee_funding(
+    tmp_path: Path,
+    *,
+    event_id: str = "event-1",
+    total_fees_usd: str = "-1",
+    total_funding_usd: str = "-0.5",
+) -> Path:
     path = tmp_path / "fee_funding.json"
     write_json_artifact(
         path,
         {
             "candidate_id": "idea-cand-001",
-            "event_id": "event-1",
+            "event_id": event_id,
             "actual_cash": True,
-            "total_fees_usd": "-1",
-            "total_funding_usd": "-0.5",
+            "total_fees_usd": total_fees_usd,
+            "total_funding_usd": total_funding_usd,
         },
     )
     return path
 
 
-def _write_cash_ledger(tmp_path: Path) -> Path:
+def _write_cash_ledger(
+    tmp_path: Path,
+    *,
+    event_id: str = "event-1",
+    include_unassigned_zero_entry: bool = False,
+) -> Path:
     path = tmp_path / "cash_ledger.json"
+    entries = [
+        CashLedgerEntry(
+            entry_id="pnl-001",
+            pod_id="pod-candidate",
+            event_id=event_id,
+            entry_type="REALIZED_PNL",
+            amount_usd=Decimal("8"),
+            occurred_at="2026-07-01T08:05:00Z",
+        ),
+        CashLedgerEntry(
+            entry_id="fee-001",
+            pod_id="pod-candidate",
+            event_id=event_id,
+            entry_type="FEE",
+            amount_usd=Decimal("-1"),
+            occurred_at="2026-07-01T08:05:00Z",
+        ),
+        CashLedgerEntry(
+            entry_id="funding-001",
+            pod_id="pod-candidate",
+            event_id=event_id,
+            entry_type="FUNDING",
+            amount_usd=Decimal("-0.5"),
+            occurred_at="2026-07-01T08:05:00Z",
+        ),
+    ]
+    if include_unassigned_zero_entry:
+        entries.append(
+            CashLedgerEntry(
+                entry_id="unassigned-001",
+                pod_id="pod-unassigned",
+                event_id=None,
+                entry_type=CashLedgerEntryType.INFRA_COST,
+                amount_usd=Decimal("0"),
+                occurred_at="2026-07-01T08:05:00Z",
+            )
+        )
     ledger = build_cash_ledger(
         ledger_id="ledger-001",
         observed_at="2026-07-01T08:10:00Z",
-        entries=[
-            CashLedgerEntry(
-                entry_id="pnl-001",
-                pod_id="pod-candidate",
-                event_id="event-1",
-                entry_type="REALIZED_PNL",
-                amount_usd=Decimal("8"),
-                occurred_at="2026-07-01T08:05:00Z",
-            ),
-            CashLedgerEntry(
-                entry_id="fee-001",
-                pod_id="pod-candidate",
-                event_id="event-1",
-                entry_type="FEE",
-                amount_usd=Decimal("-1"),
-                occurred_at="2026-07-01T08:05:00Z",
-            ),
-            CashLedgerEntry(
-                entry_id="funding-001",
-                pod_id="pod-candidate",
-                event_id="event-1",
-                entry_type="FUNDING",
-                amount_usd=Decimal("-0.5"),
-                occurred_at="2026-07-01T08:05:00Z",
-            ),
-        ],
+        entries=entries,
     )
     write_json_artifact(path, ledger.model_dump(mode="json"))
     return path
@@ -202,6 +243,7 @@ def _write_actual_cash_rows(
     *,
     basis: str = "actual_cash",
     include_no_trade: bool = True,
+    include_extra_trade: bool = False,
 ) -> Path:
     path = tmp_path / "actual_cash_rows.jsonl"
     rows = [
@@ -216,6 +258,19 @@ def _write_actual_cash_rows(
             "near_miss": False,
         }
     ]
+    if include_extra_trade:
+        rows.append(
+            {
+                "event_id": "event-1",
+                "action": "REVERSAL_SHORT",
+                "cash_metric_value_usd": "0",
+                "actual_cash_result_usd": "0" if basis == "actual_cash" else None,
+                "cash_metric_basis": basis,
+                "market_adjusted_return": "0",
+                "operator_time_minutes": "0",
+                "near_miss": False,
+            }
+        )
     if include_no_trade:
         rows.append(
             {
@@ -419,6 +474,175 @@ def test_tiny_actual_cash_measurement_blocks_upstream_candidate_lineage_mismatch
     assert {blocker.blocker_code for blocker in measurement.blockers} == {
         "CANDIDATE_LINEAGE_MISMATCH"
     }
+
+
+def test_tiny_actual_cash_measurement_blocks_event_lineage_mismatch(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    paths = _write_all_inputs(tmp_path)
+    paths["fills"] = _write_fills(tmp_path, event_id="event-2")
+
+    measurement = build_tiny_actual_cash_measurement(**_build_kwargs(paths))
+
+    assert (
+        measurement.measurement_status
+        == ProfitCoreTinyActualCashMeasurementStatus.BLOCKED_CANDIDATE_LINEAGE
+    )
+    assert {blocker.blocker_code for blocker in measurement.blockers} == {"EVENT_LINEAGE_MISMATCH"}
+
+
+def test_tiny_actual_cash_measurement_blocks_order_chain_mismatch(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    paths = _write_all_inputs(tmp_path)
+    paths["submitted_order"] = _write_submitted_order(
+        tmp_path,
+        order_intent_id="other-intent",
+    )
+
+    measurement = build_tiny_actual_cash_measurement(**_build_kwargs(paths))
+
+    assert (
+        measurement.measurement_status
+        == ProfitCoreTinyActualCashMeasurementStatus.BLOCKED_CANDIDATE_LINEAGE
+    )
+    assert {blocker.blocker_code for blocker in measurement.blockers} == {"ORDER_CHAIN_MISMATCH"}
+
+
+def test_tiny_actual_cash_measurement_blocks_order_intent_action_mismatch(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    paths = _write_all_inputs(tmp_path)
+    paths["order_intent"] = _write_order_intent(tmp_path, action="REVERSAL_SHORT")
+
+    measurement = build_tiny_actual_cash_measurement(**_build_kwargs(paths))
+
+    assert (
+        measurement.measurement_status
+        == ProfitCoreTinyActualCashMeasurementStatus.BLOCKED_CANDIDATE_LINEAGE
+    )
+    assert {blocker.blocker_code for blocker in measurement.blockers} == {
+        "ORDER_INTENT_ACTION_MISMATCH"
+    }
+
+
+def test_tiny_actual_cash_measurement_blocks_venue_lineage_mismatch(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    paths = _write_all_inputs(tmp_path)
+    paths["submitted_order"] = _write_submitted_order(tmp_path, venue="other-venue")
+
+    measurement = build_tiny_actual_cash_measurement(**_build_kwargs(paths))
+
+    assert (
+        measurement.measurement_status
+        == ProfitCoreTinyActualCashMeasurementStatus.BLOCKED_CANDIDATE_LINEAGE
+    )
+    assert {blocker.blocker_code for blocker in measurement.blockers} == {"VENUE_LINEAGE_MISMATCH"}
+
+
+def test_tiny_actual_cash_measurement_blocks_cash_ledger_event_mismatch(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    paths = _write_all_inputs(tmp_path)
+    paths["cash_ledger"] = _write_cash_ledger(tmp_path, event_id="event-2")
+
+    measurement = build_tiny_actual_cash_measurement(**_build_kwargs(paths))
+
+    assert (
+        measurement.measurement_status
+        == ProfitCoreTinyActualCashMeasurementStatus.BLOCKED_CANDIDATE_LINEAGE
+    )
+    assert {blocker.blocker_code for blocker in measurement.blockers} == {
+        "CASH_LEDGER_EVENT_SET_MISMATCH"
+    }
+
+
+def test_tiny_actual_cash_measurement_blocks_unassigned_cash_ledger_entry(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    paths = _write_all_inputs(tmp_path)
+    paths["cash_ledger"] = _write_cash_ledger(
+        tmp_path,
+        include_unassigned_zero_entry=True,
+    )
+
+    measurement = build_tiny_actual_cash_measurement(**_build_kwargs(paths))
+
+    assert (
+        measurement.measurement_status
+        == ProfitCoreTinyActualCashMeasurementStatus.BLOCKED_CANDIDATE_LINEAGE
+    )
+    assert {blocker.blocker_code for blocker in measurement.blockers} == {
+        "CASH_LEDGER_EVENT_SET_MISMATCH"
+    }
+
+
+def test_tiny_actual_cash_measurement_blocks_multiple_trade_actions_per_event(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    paths = _write_all_inputs(tmp_path)
+    paths["actual_cash_rows"] = _write_actual_cash_rows(tmp_path, include_extra_trade=True)
+
+    measurement = build_tiny_actual_cash_measurement(**_build_kwargs(paths))
+
+    assert (
+        measurement.measurement_status
+        == ProfitCoreTinyActualCashMeasurementStatus.BLOCKED_CANDIDATE_LINEAGE
+    )
+    assert {blocker.blocker_code for blocker in measurement.blockers} == {
+        "ACTUAL_CASH_ROWS_ACTION_SET_INVALID"
+    }
+
+
+def test_tiny_actual_cash_measurement_blocks_fee_funding_ledger_mismatch(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    paths = _write_all_inputs(tmp_path)
+    paths["fee_funding"] = _write_fee_funding(tmp_path, total_fees_usd="-2")
+
+    measurement = build_tiny_actual_cash_measurement(**_build_kwargs(paths))
+
+    assert (
+        measurement.measurement_status
+        == ProfitCoreTinyActualCashMeasurementStatus.BLOCKED_CANDIDATE_LINEAGE
+    )
+    assert {blocker.blocker_code for blocker in measurement.blockers} == {
+        "FEE_FUNDING_LEDGER_MISMATCH"
+    }
+
+
+def test_tiny_actual_cash_measurement_blocks_non_actual_cash_order_intent(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    paths = _write_all_inputs(tmp_path)
+    paths["order_intent"] = _write_order_intent(tmp_path, actual_cash=False)
+
+    measurement = build_tiny_actual_cash_measurement(**_build_kwargs(paths))
+
+    assert (
+        measurement.measurement_status
+        == ProfitCoreTinyActualCashMeasurementStatus.BLOCKED_NON_ACTUAL_CASH_BASIS
+    )
+    assert {blocker.blocker_code for blocker in measurement.blockers} == {"NON_ACTUAL_CASH_BASIS"}
 
 
 def test_tiny_actual_cash_measurement_blocks_flat_reconciliation_gap(

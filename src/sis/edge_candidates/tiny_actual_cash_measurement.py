@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 import json
 from pathlib import Path
@@ -11,7 +11,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 from sis.backtest.artifact_io import sha256_file
-from sis.crypto_perp.cash_ledger import CryptoPerpCashLedger
+from sis.crypto_perp.cash_ledger import CashLedgerEntryType, CryptoPerpCashLedger
 from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
 from sis.crypto_perp.models import ID_PATTERN, decimal_to_json_string
 from sis.crypto_perp.tournament import TournamentEventResult
@@ -342,6 +342,7 @@ def _derive_blockers(
     ledger: CryptoPerpCashLedger,
     rows: list[TournamentEventResult],
 ) -> list[TinyActualCashBlocker]:
+    event_set = _event_set(rows)
     if not _human_approval_complete(approval, candidate_id):
         return [
             _blocker(
@@ -375,8 +376,56 @@ def _derive_blockers(
                 "candidate_lineage",
             )
         ]
+    if not _event_lineage_matches(
+        event_set,
+        order_intent,
+        submitted_order,
+        fills,
+        fee_funding,
+        flat,
+        stop,
+    ):
+        return [
+            _blocker(
+                "EVENT_LINEAGE_MISMATCH",
+                "Event ids must match the actual-cash row event set across P11 input artifacts.",
+                "event_lineage",
+            )
+        ]
+    if not _order_chain_matches(order_intent, submitted_order, fills):
+        return [
+            _blocker(
+                "ORDER_CHAIN_MISMATCH",
+                "Submitted order and fills must reference the order intent and order ids.",
+                "order_lineage",
+            )
+        ]
+    if not _single_trade_action_per_event(rows):
+        return [
+            _blocker(
+                "ACTUAL_CASH_ROWS_ACTION_SET_INVALID",
+                "P11 measurement rows must contain exactly one measured non-NO_TRADE action per event.",
+                "actual_cash_rows",
+            )
+        ]
+    if not _order_intent_action_matches_rows(order_intent, rows):
+        return [
+            _blocker(
+                "ORDER_INTENT_ACTION_MISMATCH",
+                "Order intent action must match the measured non-NO_TRADE action for its event.",
+                "order_lineage",
+            )
+        ]
+    if not _venue_lineage_matches(adapter, submitted_order):
+        return [
+            _blocker(
+                "VENUE_LINEAGE_MISMATCH",
+                "Submitted order venue must match the P10 external venue adapter venue.",
+                "venue_lineage",
+            )
+        ]
     if not _submitted_order_actual_cash(submitted_order) or not _actual_cash_evidence(
-        fills, fee_funding
+        order_intent, fills, fee_funding
     ):
         return [
             _blocker(
@@ -399,6 +448,22 @@ def _derive_blockers(
                 "NO_TRADE_COMPARISON_MISSING",
                 "NO_TRADE comparison must exist for each actual cash event.",
                 "actual_cash_rows",
+            )
+        ]
+    if not _cash_ledger_event_set_matches(ledger, event_set):
+        return [
+            _blocker(
+                "CASH_LEDGER_EVENT_SET_MISMATCH",
+                "Cash ledger event ids must match the actual-cash measurement event set.",
+                "cash_ledger",
+            )
+        ]
+    if not _fee_funding_matches_ledger(fee_funding, ledger, event_set):
+        return [
+            _blocker(
+                "FEE_FUNDING_LEDGER_MISMATCH",
+                "Fee/funding evidence totals must match cash ledger fee and funding entries.",
+                "fee_funding",
             )
         ]
     rows_total = _rows_actual_cash_total(rows)
@@ -460,13 +525,62 @@ def _human_approval_complete(approval: dict[str, Any], candidate_id: str) -> boo
 
 def _upstream_complete(readiness: dict[str, Any], adapter: dict[str, Any]) -> bool:
     return (
-        readiness.get("readiness_status") == "PACKET_COMPLETE_REQUIRES_HUMAN_APPROVAL"
+        readiness.get("schema_version") == "profit_core_actual_cash_readiness_packet.v1"
+        and adapter.get("schema_version") == "profit_core_external_venue_adapter_run.v1"
+        and readiness.get("readiness_status") == "PACKET_COMPLETE_REQUIRES_HUMAN_APPROVAL"
         and adapter.get("adapter_status") == "RECORDED_EXTERNAL_READ_ONLY_REQUIRES_HUMAN_REVIEW"
     )
 
 
 def _candidate_lineage_matches(candidate_id: str, *payloads: dict[str, Any]) -> bool:
     return all(payload.get("candidate_id") == candidate_id for payload in payloads)
+
+
+def _event_lineage_matches(event_set: set[str], *payloads: dict[str, Any]) -> bool:
+    return bool(event_set) and all(_payload_event_id(payload) in event_set for payload in payloads)
+
+
+def _order_chain_matches(
+    order_intent: dict[str, Any],
+    submitted_order: dict[str, Any],
+    fills: dict[str, Any],
+) -> bool:
+    intent_id = _payload_text(order_intent, "order_intent_id")
+    order_id = _payload_text(submitted_order, "order_id")
+    if not intent_id or not order_id:
+        return False
+    if _payload_text(submitted_order, "order_intent_id") != intent_id:
+        return False
+    if _payload_text(fills, "order_id") != order_id:
+        return False
+    for fill in fills.get("fills") or []:
+        if (
+            isinstance(fill, dict)
+            and "order_id" in fill
+            and _payload_text(fill, "order_id") != order_id
+        ):
+            return False
+    return True
+
+
+def _order_intent_action_matches_rows(
+    order_intent: dict[str, Any],
+    rows: list[TournamentEventResult],
+) -> bool:
+    event_id = _payload_event_id(order_intent)
+    action = _payload_text(order_intent, "action")
+    if event_id is None or action is None or action == "NO_TRADE":
+        return False
+    measured_actions = {
+        row.action for row in rows if row.event_id == event_id and row.action != "NO_TRADE"
+    }
+    return measured_actions == {action}
+
+
+def _venue_lineage_matches(adapter: dict[str, Any], submitted_order: dict[str, Any]) -> bool:
+    venue = _payload_text(adapter, "venue")
+    submitted_venue = _payload_text(submitted_order, "venue")
+    return bool(venue and submitted_venue and venue == submitted_venue)
 
 
 def _submitted_order_actual_cash(submitted_order: dict[str, Any]) -> bool:
@@ -479,14 +593,26 @@ def _submitted_order_actual_cash(submitted_order: dict[str, Any]) -> bool:
     )
 
 
-def _actual_cash_evidence(fills: dict[str, Any], fee_funding: dict[str, Any]) -> bool:
+def _actual_cash_evidence(
+    order_intent: dict[str, Any],
+    fills: dict[str, Any],
+    fee_funding: dict[str, Any],
+) -> bool:
     return (
-        fills.get("actual_cash") is True
+        order_intent.get("actual_cash") is True
+        and order_intent.get("paper", False) is False
+        and order_intent.get("demo", False) is False
+        and order_intent.get("testnet", False) is False
+        and fills.get("actual_cash") is True
         and bool(fills.get("fills"))
         and fee_funding.get("actual_cash") is True
         and "total_fees_usd" in fee_funding
         and "total_funding_usd" in fee_funding
     )
+
+
+def _event_set(rows: list[TournamentEventResult]) -> set[str]:
+    return {row.event_id for row in rows}
 
 
 def _rows_are_actual_cash(rows: list[TournamentEventResult]) -> bool:
@@ -496,11 +622,57 @@ def _rows_are_actual_cash(rows: list[TournamentEventResult]) -> bool:
     )
 
 
+def _single_trade_action_per_event(rows: list[TournamentEventResult]) -> bool:
+    event_set = _event_set(rows)
+    return bool(event_set) and all(
+        sum(1 for row in rows if row.event_id == event_id and row.action != "NO_TRADE") == 1
+        for event_id in event_set
+    )
+
+
 def _has_no_trade_same_event_set(rows: list[TournamentEventResult]) -> bool:
     event_set = {row.event_id for row in rows}
     no_trade_events = {row.event_id for row in rows if row.action == "NO_TRADE"}
     action_events = {row.event_id for row in rows if row.action != "NO_TRADE"}
     return bool(event_set) and event_set == no_trade_events and event_set == action_events
+
+
+def _cash_ledger_event_set_matches(
+    ledger: CryptoPerpCashLedger,
+    event_set: set[str],
+) -> bool:
+    if not event_set or any(entry.event_id is None for entry in ledger.entries):
+        return False
+    ledger_event_set = {entry.event_id for entry in ledger.entries}
+    return bool(event_set) and ledger_event_set == event_set
+
+
+def _fee_funding_matches_ledger(
+    fee_funding: dict[str, Any],
+    ledger: CryptoPerpCashLedger,
+    event_set: set[str],
+) -> bool:
+    expected_fees = _decimal_from_payload(fee_funding, "total_fees_usd")
+    expected_funding = _decimal_from_payload(fee_funding, "total_funding_usd")
+    if expected_fees is None or expected_funding is None:
+        return False
+    ledger_fees = sum(
+        (
+            entry.amount_usd
+            for entry in ledger.entries
+            if entry.event_id in event_set and entry.entry_type == CashLedgerEntryType.FEE
+        ),
+        Decimal("0"),
+    )
+    ledger_funding = sum(
+        (
+            entry.amount_usd
+            for entry in ledger.entries
+            if entry.event_id in event_set and entry.entry_type == CashLedgerEntryType.FUNDING
+        ),
+        Decimal("0"),
+    )
+    return expected_fees == ledger_fees and expected_funding == ledger_funding
 
 
 def _rows_actual_cash_total(rows: list[TournamentEventResult]) -> Decimal | None:
@@ -558,6 +730,28 @@ def _candidate_id_from_readiness(readiness: dict[str, Any]) -> str:
 def _schema_version(payload: dict[str, Any]) -> str | None:
     value = payload.get("schema_version")
     return value if isinstance(value, str) and value else None
+
+
+def _payload_text(payload: dict[str, Any], key: str) -> str | None:
+    value = payload.get(key)
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def _payload_event_id(payload: dict[str, Any]) -> str | None:
+    return _payload_text(payload, "event_id")
+
+
+def _decimal_from_payload(payload: dict[str, Any], key: str) -> Decimal | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
 
 
 def _artifact_ref(
