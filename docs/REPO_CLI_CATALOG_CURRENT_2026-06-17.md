@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-07-01_06:33 JST
+更新日: 2026-07-01_06:53 JST
 -->
 
 # Repo CLI Catalog Current
@@ -82,6 +82,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-idea-candidates-multiplicity-account-build`
 - `strategy-idea-candidates-bitget-source-refresh`
 - `edge-candidate-protocol-validate`
+- `edge-candidate-factory-run`
 - `strategy-model-run-record`
 - `strategy-micro-live-plan`
 - `strategy-next-scale-plan`

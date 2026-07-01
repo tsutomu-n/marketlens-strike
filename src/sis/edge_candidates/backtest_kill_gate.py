@@ -98,6 +98,7 @@ def build_backtest_kill_gate(
     gate_id: str,
     evaluated_at: datetime | str,
 ) -> BacktestKillGateDecision:
+    evaluated_at_dt = ensure_utc_aware("evaluated_at", evaluated_at)
     blocker_codes: list[str] = []
     gate_state = BacktestKillGateState.SHORTLIST_FOR_VIRTUAL
     min_event_count = gate_input.family_event_count_policy.min_event_count_default
@@ -128,7 +129,7 @@ def build_backtest_kill_gate(
 
     return BacktestKillGateDecision(
         gate_id=gate_id,
-        evaluated_at=evaluated_at,
+        evaluated_at=evaluated_at_dt,
         candidate_id=gate_input.candidate_id,
         mode=gate_input.mode,
         family_id=gate_input.family_id,

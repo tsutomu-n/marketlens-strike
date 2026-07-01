@@ -1,9 +1,74 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_06:34 JST
+更新日: 2026-07-01_06:59 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P4 Edge Candidate Factory V1
+
+Completed on branch `ai/profit-core-p4-factory-20260701-0642`.
+
+Achieved:
+
+- Added `src/sis/edge_candidates/factory.py` as a protocol-bound wrapper around the existing deterministic candidate generator.
+- Added `edge-candidate-factory-run` to require `candidate_protocol_manifest.v1`, `strategy_input_contract.v1`, and `strategy_input_contract_validation.v1` before candidate generation.
+- Constrained P4 generation to `verification_throughput` and supported `classical_rule` / `grammar_based` family declarations only.
+- Rejected `risk_taker_sprint` and unsupported generator types before generation.
+- Converted protocol `parameter_spaces` into explicit generator grids without falling back to undeclared default families or grids.
+- Wrote the complete artifact bundle: `strategy_idea_candidate_set.json`, `strategy_idea_candidate_set.md`, `search_ledger.jsonl`, `rejection_ledger.jsonl`, `trial_multiplicity_account.json`, and `edge_candidate_factory_summary.json`.
+- Added summary fields for protocol/input/artifact refs, all candidate counts, `best_only_report=false`, unexecutable KPI, and false cash/live/exchange-write boundaries.
+- Aligned one stale Bitget public source bridge test with the current `BRIDGED_TECHNICAL_ONLY` status vocabulary.
+- Removed an unused `Tuple` import and applied Ruff formatting to two tracked Romano-Wolf reference scripts so the standard repo check can pass.
+
+Main files changed:
+
+- `src/sis/edge_candidates/factory.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_factory.py`
+- `docs/plans/profit-core-p4-edge-candidate-factory-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+- `tests/strategy_idea_candidates/test_bitget_public_source.py`
+- `資料/romano_wolf_stepwise.py`
+- `資料/romano_wolf_stepwise_2.py`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_factory.py -q` -> 4 passed.
+- `uv run pytest tests/strategy_idea_candidates/test_candidate_generator.py tests/strategy_idea_candidates/test_profit_core_attachment.py tests/strategy_idea_candidates/test_candidate_cli.py tests/edge_candidates/test_protocol_manifest.py -q` -> 16 passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 234 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 188 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `uv run ruff check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2883 passed`.
+
+Remaining work:
+
+- P4 does not implement virtual execution gate, LLM adversarial review, risk-taker sprint expansion, GA / ML, external venue adapters, paper/live/tiny-live execution, actual-cash measurement, or dependency additions.
+- `edge_candidate_factory_summary.json` is a local summary artifact in this slice; a formal schema can be added later if it becomes an inter-tool contract.
+
+User decisions required:
+
+None for P4.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `src/sis/edge_candidates/factory.py`, remove `tests/edge_candidates/test_factory.py`, revert the `src/sis/edge_candidates/__init__.py` and `src/sis/commands/edge_candidates.py` additions, remove `docs/plans/profit-core-p4-edge-candidate-factory-2026-07-01.md`, revert the CLI catalog plus this summary addendum, and restore the small standard-check-only edits in `tests/strategy_idea_candidates/test_bitget_public_source.py` and `資料/romano_wolf_stepwise*.py` if needed.
 
 ## Latest Addendum: Profit Core P1-P3 Pipeline Attachment
 

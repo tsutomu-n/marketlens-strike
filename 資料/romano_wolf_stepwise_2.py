@@ -34,8 +34,9 @@ Next improvement ideas (if you want):
 
 import polars as pl
 import numpy as np
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import warnings
+
 
 def _compute_test_stats(excess: np.ndarray, method: str = "t_stat") -> np.ndarray:
     """Compute test statistics for excess returns (T x m array)."""
@@ -53,7 +54,9 @@ def _compute_test_stats(excess: np.ndarray, method: str = "t_stat") -> np.ndarra
         raise ValueError(f"Unknown test_stat method: {method}. Use 't_stat' or 'mean_excess'.")
 
 
-def _stationary_bootstrap_indices(T: int, mean_block_length: float, rng: np.random.Generator) -> np.ndarray:
+def _stationary_bootstrap_indices(
+    T: int, mean_block_length: float, rng: np.random.Generator
+) -> np.ndarray:
     """
     Generate T indices using stationary bootstrap (Politis & Romano 1994).
     Blocks have random length ~ Geometric(p=1/mean_block_length), starting points uniform,
@@ -102,7 +105,9 @@ def _wild_bootstrap_stats(
             p2 = (np.sqrt(5) - 1) / (2 * np.sqrt(5))
             w = rng.choice([-(np.sqrt(5) - 1) / 2, (np.sqrt(5) + 1) / 2], size=T, p=[p1, p2])
         else:
-            raise ValueError(f"Unknown weights type: {weights}. Use 'rademacher', 'gaussian' or 'mammen'.")
+            raise ValueError(
+                f"Unknown weights type: {weights}. Use 'rademacher', 'gaussian' or 'mammen'."
+            )
         weighted = excess_demeaned * w[:, np.newaxis]
         boot_stats[b] = _compute_test_stats(weighted, method=method)
     return boot_stats
@@ -179,21 +184,33 @@ def romano_wolf_stepwise(
     strat_arr = returns.select([pl.col(c).cast(pl.Float64) for c in strategy_cols]).to_numpy()
 
     # Filter strategies with enough data
-    valid_mask = np.array([np.sum(~np.isnan(strat_arr[:, i])) >= min_periods for i in range(len(strategy_cols))])
+    valid_mask = np.array(
+        [np.sum(~np.isnan(strat_arr[:, i])) >= min_periods for i in range(len(strategy_cols))]
+    )
     if not np.any(valid_mask):
         warnings.warn("No strategies have sufficient observations.")
         return {
-            "decisions": pl.DataFrame({"strategy": strategy_cols, "obs_stat": np.nan, "adj_pval": 1.0, "rejected": False, "kill_reason": "INSUFFICIENT_DATA"}),
+            "decisions": pl.DataFrame(
+                {
+                    "strategy": strategy_cols,
+                    "obs_stat": np.nan,
+                    "adj_pval": 1.0,
+                    "rejected": False,
+                    "kill_reason": "INSUFFICIENT_DATA",
+                }
+            ),
             "killed_strategies": strategy_cols,
             "n_rejected": 0,
             "n_tested": len(strategy_cols),
             "summary": "All strategies killed due to insufficient data.",
-            "params": {"n_bootstrap": n_bootstrap, "alpha": alpha, "test_stat": test_stat}
+            "params": {"n_bootstrap": n_bootstrap, "alpha": alpha, "test_stat": test_stat},
         }
 
     valid_strats = [s for s, v in zip(strategy_cols, valid_mask) if v]
     if len(valid_strats) < len(strategy_cols):
-        warnings.warn(f"{len(strategy_cols) - len(valid_strats)} strategies dropped due to < {min_periods} observations.")
+        warnings.warn(
+            f"{len(strategy_cols) - len(valid_strats)} strategies dropped due to < {min_periods} observations."
+        )
 
     strat_arr = strat_arr[:, valid_mask]
     excess = strat_arr - bench_arr[:, np.newaxis]
@@ -222,7 +239,9 @@ def romano_wolf_stepwise(
             excess, method=test_stat, rng=rng, n_boot=n_bootstrap, weights=wild_weights
         )
     else:
-        raise ValueError(f"bootstrap_method must be one of 'stationary', 'wild', 'iid', got {bootstrap_method}")
+        raise ValueError(
+            f"bootstrap_method must be one of 'stationary', 'wild', 'iid', got {bootstrap_method}"
+        )
 
     # Romano-Wolf stepdown adjusted p-values (monotonic)
     # Order hypotheses by observed statistic descending (largest/most significant first)
@@ -232,7 +251,7 @@ def romano_wolf_stepwise(
     adj_p_sorted = np.ones(m)
     for k in range(m):
         # Max bootstrap statistic among the k most significant (by observed ranking)
-        cols_k = order[:k + 1]
+        cols_k = order[: k + 1]
         if k == 0:
             max_boot = np.nanmax(boot_stats, axis=1)
         else:
@@ -257,13 +276,15 @@ def romano_wolf_stepwise(
         else:
             kill_reasons.append("KILLED_BY_ROMANO_WOLF")
 
-    result_df = pl.DataFrame({
-        "strategy": valid_strats,
-        "obs_stat": obs_stats,
-        "adj_pval": adj_p,
-        "rejected": rejected,
-        "kill_reason": kill_reasons
-    })
+    result_df = pl.DataFrame(
+        {
+            "strategy": valid_strats,
+            "obs_stat": obs_stats,
+            "adj_pval": adj_p,
+            "rejected": rejected,
+            "kill_reason": kill_reasons,
+        }
+    )
 
     killed = [s for s, r in zip(valid_strats, rejected) if not r]
     n_rej = int(np.sum(rejected))
@@ -286,9 +307,10 @@ def romano_wolf_stepwise(
             "alpha": alpha,
             "test_stat": test_stat,
             "random_state": random_state,
-            "min_periods": min_periods
-        }
+            "min_periods": min_periods,
+        },
     }
+
 
 # --------------------------- Example & Quick Test ---------------------------
 if __name__ == "__main__":
@@ -305,8 +327,7 @@ if __name__ == "__main__":
     strats[:, :8] = strats[:, :8] + 0.001  # true edge group
 
     df = pl.DataFrame(
-        {"benchmark": bench}
-        | {f"candidate_{i:02d}": strats[:, i] for i in range(n_strat)}
+        {"benchmark": bench} | {f"candidate_{i:02d}": strats[:, i] for i in range(n_strat)}
     )
 
     res = romano_wolf_stepwise(
@@ -316,7 +337,7 @@ if __name__ == "__main__":
         n_bootstrap=1000,
         alpha=0.05,
         test_stat="t_stat",
-        random_state=42
+        random_state=42,
     )
 
     print(res["summary"])
@@ -327,7 +348,13 @@ if __name__ == "__main__":
 
     print("\n=== Integration note for your repo ===")
     print("In Backtest Kill Gate (after sealed_holdout / PBO / FDR):")
-    print("  rw = romano_wolf_stepwise(periodic_returns_ledger_df, candidate_list, benchmark_col=..., n_bootstrap=2000, alpha=0.10)")
-    print("  Then update trial_multiplicity_account and rejection_account with rw['killed_strategies'] and 'KILLED_BY_ROMANO_WOLF'")
+    print(
+        "  rw = romano_wolf_stepwise(periodic_returns_ledger_df, candidate_list, benchmark_col=..., n_bootstrap=2000, alpha=0.10)"
+    )
+    print(
+        "  Then update trial_multiplicity_account and rejection_account with rw['killed_strategies'] and 'KILLED_BY_ROMANO_WOLF'"
+    )
     print("  Pass only rw['decisions'].filter(pl.col('rejected')) to Virtual Execution Gate.")
-    print("This kills non-significant (after multiplicity) candidates early, reducing verification backlog and lucky winner risk.")
+    print(
+        "This kills non-significant (after multiplicity) candidates early, reducing verification backlog and lucky winner risk."
+    )
