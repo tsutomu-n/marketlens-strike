@@ -11,6 +11,11 @@ from sis.edge_candidates.factory import (
     EdgeCandidateFactoryOutputExistsError,
     run_edge_candidate_factory,
 )
+from sis.edge_candidates.evidence_packet import (
+    ProfitCoreEvidencePacketError,
+    ProfitCoreEvidencePacketOutputExistsError,
+    build_and_write_profit_core_evidence_packet,
+)
 from sis.edge_candidates.protocol import CandidateProtocolManifest
 from sis.edge_candidates.virtual_execution_gate import (
     VirtualExecutionGateError,
@@ -197,3 +202,119 @@ def register_edge_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"gate_state={result.gate.gate_state.value}")
         typer.echo(f"blocker_count={len(result.gate.blocker_codes)}")
         typer.echo(f"gate_path={result.gate_path.as_posix()}")
+
+    @app.command("edge-candidate-evidence-packet-build")
+    def edge_candidate_evidence_packet_build_cmd(
+        protocol: Path = typer.Option(
+            ...,
+            "--protocol",
+            dir_okay=False,
+            help="candidate_protocol_manifest.v1 YAML/JSON.",
+        ),
+        candidate_set: Path = typer.Option(
+            ...,
+            "--candidate-set",
+            dir_okay=False,
+            help="strategy_idea_candidate_set.v1 JSON.",
+        ),
+        bridge_manifest: Path = typer.Option(
+            ...,
+            "--bridge-manifest",
+            dir_okay=False,
+            help="strategy_idea_candidate_authoring_bridge.v1 JSON.",
+        ),
+        multiplicity_account: Path = typer.Option(
+            ...,
+            "--multiplicity-account",
+            dir_okay=False,
+            help="trial_multiplicity_account.v1 JSON.",
+        ),
+        backtest_kill_gate: Path = typer.Option(
+            ...,
+            "--backtest-kill-gate",
+            dir_okay=False,
+            help="candidate-scoped backtest_kill_gate.v1 JSON.",
+        ),
+        virtual_gate: Path = typer.Option(
+            ...,
+            "--virtual-gate",
+            dir_okay=False,
+            help="candidate-scoped virtual_execution_gate.v1 JSON.",
+        ),
+        claims: Path | None = typer.Option(
+            None,
+            "--claims",
+            dir_okay=False,
+            help="Optional JSON/YAML file containing a claims list.",
+        ),
+        risk_review_source: list[Path] | None = typer.Option(
+            None,
+            "--risk-review-source",
+            dir_okay=False,
+            help="Optional risk review source artifact. Repeat for multiple sources.",
+        ),
+        candidate_id: str = typer.Option(..., "--candidate-id"),
+        out: Path = typer.Option(
+            Path("data/edge_candidates/evidence_packet"),
+            "--out",
+            help="Output directory for profit_core_evidence_packet.json.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_and_write_profit_core_evidence_packet(
+                protocol_path=_resolve_workspace_path(protocol, settings.data_dir),
+                candidate_set_path=_resolve_workspace_path(candidate_set, settings.data_dir),
+                bridge_manifest_path=_resolve_workspace_path(
+                    bridge_manifest,
+                    settings.data_dir,
+                ),
+                multiplicity_account_path=_resolve_workspace_path(
+                    multiplicity_account,
+                    settings.data_dir,
+                ),
+                backtest_kill_gate_path=_resolve_workspace_path(
+                    backtest_kill_gate,
+                    settings.data_dir,
+                ),
+                virtual_gate_path=_resolve_workspace_path(virtual_gate, settings.data_dir),
+                claims_path=(
+                    _resolve_workspace_path(claims, settings.data_dir)
+                    if claims is not None
+                    else None
+                ),
+                risk_review_source_paths=[
+                    _resolve_workspace_path(path, settings.data_dir)
+                    for path in (risk_review_source or [])
+                ],
+                candidate_id=candidate_id,
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            ProfitCoreEvidencePacketOutputExistsError,
+            ProfitCoreEvidencePacketError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        boundary = result.packet.boundary
+        typer.echo("network_attempted=false")
+        typer.echo(f"llm_api_used={str(boundary['llm_api_used']).lower()}")
+        typer.echo(f"actual_cash={str(boundary['actual_cash']).lower()}")
+        typer.echo(f"exchange_write_used={str(boundary['production_exchange_write_used']).lower()}")
+        typer.echo(f"live_order_submitted={str(boundary['live_order_submitted']).lower()}")
+        typer.echo("status=pass")
+        typer.echo(f"candidate_id={result.packet.candidate_id}")
+        typer.echo(f"finding_count={len(result.packet.claim_findings)}")
+        typer.echo(f"packet_path={result.packet_path.as_posix()}")

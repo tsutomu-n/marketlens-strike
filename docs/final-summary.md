@@ -1,9 +1,68 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_15:03 JST
+更新日: 2026-07-01_15:22 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P6 Evidence Packet And Claim Diff
+
+Completed on branch `ai/profit-core-p6-evidence-packet-20260701-1507`.
+
+Achieved:
+
+- Added `profit_core_evidence_packet.v1` schema and local Pydantic models for machine-readable evidence packets.
+- Added `edge-candidate-evidence-packet-build` to consume protocol, candidate set, authoring bridge manifest, multiplicity account, backtest kill gate, virtual gate, optional claims, and optional risk review source refs.
+- Wrote `profit_core_evidence_packet.json` with source refs and sha256 values for all provided artifact inputs.
+- Added structured claim diff findings for unsupported claims, missing `NO_TRADE` comparison, evidence-basis mismatch, and actual-cash overclaim.
+- Preserved evidence-basis separation between backtest and `virtual_exchange`; no paper, live, tiny-live, demo/testnet, or actual-cash promotion is inferred.
+- Kept all boundary fields false for actual cash, paper/live permission, wallet, signing, exchange write, live order submission, and LLM API use.
+
+Main files changed:
+
+- `schemas/profit_core_evidence_packet.v1.schema.json`
+- `src/sis/edge_candidates/evidence_packet.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_evidence_packet.py`
+- `docs/plans/profit-core-p6-evidence-packet-claim-diff-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_evidence_packet.py -q` -> 5 passed.
+- `uv run pytest tests/edge_candidates/test_evidence_packet.py tests/edge_candidates/test_virtual_execution_gate.py tests/edge_candidates/test_factory.py tests/edge_candidates/test_backtest_kill_gate.py tests/edge_candidates/test_multiplicity_account.py -q` -> 28 passed.
+- `uv run ruff check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 236 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 190 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2894 passed`.
+
+Remaining work:
+
+- P6 does not implement LLM adversarial review, external venue connectors, demo/testnet, paper/live/tiny-live, actual-cash measurement, or profit approval.
+
+User decisions required:
+
+None for P6.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `schemas/profit_core_evidence_packet.v1.schema.json`, `src/sis/edge_candidates/evidence_packet.py`, `tests/edge_candidates/test_evidence_packet.py`, revert the edge candidate CLI / `__init__.py` additions, remove `docs/plans/profit-core-p6-evidence-packet-claim-diff-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core P5 Virtual Execution Gate V1
 
