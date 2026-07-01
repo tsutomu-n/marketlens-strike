@@ -1,9 +1,73 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_18:04 JST
+更新日: 2026-07-01_19:55 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P12 Actual Cash Report Gate
+
+Completed on branch `ai/profit-core-p12-actual-cash-report-gate-20260701-1935`.
+
+Achieved:
+
+- Added `profit_core_actual_cash_report_gate.v1` schema and local Pydantic models for Profit Core actual-cash report gate artifacts.
+- Added `edge-candidate-actual-cash-report-gate` to consume a P11 `profit_core_tiny_actual_cash_measurement.v1` artifact, verify its referenced actual-cash rows hash, verify the P9 readiness packet hash, and verify the P6 evidence packet hash.
+- Connected P12 output to candidate lineage by carrying source refs for measurement, readiness packet, evidence packet, actual-cash rows, protocol, multiplicity account, backtest kill gate, and virtual gate.
+- Computed `actual_cash_edge_over_NO_TRADE` from P11 rows only; P6/P9 refs are lineage context and do not become actual-cash proof.
+- Reported sample size, event diversity, profit concentration, largest loss, operator burden, and reconciliation mismatch.
+- Made `promote`, `wait`, and `kill` first-class decisions. `promote` requires a positive actual-cash edge over `NO_TRADE`, sufficient event count, acceptable concentration/loss/operator burden, valid reconciliation, and required lineage refs.
+- Kept evidence bases separated in the report: `actual_cash` is the promotion metric authority, while `virtual_exchange`, `simulation`, and `estimate` are non-authoritative for P12 promotion.
+- Kept all execution side effects false: `order_submitted_by_this_command=false`, `network_attempted=false`, `credentials_used=false`, `exchange_write_used=false`, `live_order_submitted=false`, `wallet_used=false`, `signing_used=false`, `permits_live_order=false`, and `permits_actual_cash_execution=false`.
+
+Main files changed:
+
+- `schemas/profit_core_actual_cash_report_gate.v1.schema.json`
+- `src/sis/edge_candidates/actual_cash_report_gate_models.py`
+- `src/sis/edge_candidates/actual_cash_report_gate.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_actual_cash_report_gate.py`
+- `docs/plans/profit-core-p12-actual-cash-report-gate-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_actual_cash_report_gate.py -q` -> 12 passed.
+- `uv run pytest tests/edge_candidates/test_actual_cash_report_gate.py tests/edge_candidates/test_tiny_actual_cash_measurement.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_evidence_packet.py -q` -> 42 passed.
+- `uv run pytest tests/edge_candidates/test_actual_cash_report_gate.py tests/edge_candidates/test_tiny_actual_cash_measurement.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_evidence_packet.py tests/edge_candidates/test_external_venue_adapter.py -q` -> 50 passed.
+- `uv run ruff check src/sis/edge_candidates/actual_cash_report_gate.py src/sis/commands/edge_candidates.py tests/edge_candidates/test_actual_cash_report_gate.py` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates/actual_cash_report_gate.py src/sis/commands/edge_candidates.py tests/edge_candidates/test_actual_cash_report_gate.py` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 242 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 196 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `uv run sis edge-candidate-actual-cash-report-gate --help` -> command help rendered with `--measurement`, `--out`, `--min-events`, threshold options, and `--replace-existing`.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2953 passed`.
+
+Remaining work:
+
+- P12 does not execute actual-cash orders, call external networks, create or use credentials, submit orders, grant tiny-live permission, grant live readiness, or perform conservative promotion beyond the local report gate artifact.
+
+User decisions required:
+
+None for P12 local artifact implementation.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `schemas/profit_core_actual_cash_report_gate.v1.schema.json`, `src/sis/edge_candidates/actual_cash_report_gate_models.py`, `src/sis/edge_candidates/actual_cash_report_gate.py`, `tests/edge_candidates/test_actual_cash_report_gate.py`, revert the edge candidate CLI / `__init__.py` additions, remove `docs/plans/profit-core-p12-actual-cash-report-gate-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core P11 Tiny Actual-Cash Measurement Record
 

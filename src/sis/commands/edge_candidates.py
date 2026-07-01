@@ -12,6 +12,13 @@ from sis.edge_candidates.actual_cash_readiness import (
     ProfitCoreActualCashReadinessStatus,
     build_and_write_actual_cash_readiness_packet,
 )
+from sis.edge_candidates.actual_cash_report_gate import (
+    ActualCashReportGateError,
+    ActualCashReportGateOutputExistsError,
+    ProfitCoreActualCashReportDecision,
+    ProfitCoreActualCashReportStatus,
+    build_and_write_actual_cash_report_gate,
+)
 from sis.edge_candidates.adversarial_review import (
     ProfitCoreAdversarialReviewError,
     ProfitCoreAdversarialReviewOutputExistsError,
@@ -643,6 +650,78 @@ def register_edge_candidate_commands(app: typer.Typer) -> None:
         )
         typer.echo(f"blocker_count={len(measurement.blockers)}")
         typer.echo(f"measurement_path={result.measurement_path.as_posix()}")
+
+    @app.command("edge-candidate-actual-cash-report-gate")
+    def edge_candidate_actual_cash_report_gate_cmd(
+        measurement: Path = typer.Option(
+            ...,
+            "--measurement",
+            dir_okay=False,
+            help="profit_core_tiny_actual_cash_measurement.v1 JSON.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidates/actual_cash_report_gate"),
+            "--out",
+            help="Output directory for profit_core_actual_cash_report_gate.json.",
+        ),
+        min_events: int = typer.Option(2, "--min-events", min=1),
+        max_largest_loss_usd: str = typer.Option("25", "--max-largest-loss-usd"),
+        max_profit_concentration: str = typer.Option("0.60", "--max-profit-concentration"),
+        max_operator_burden_minutes: str = typer.Option(
+            "120",
+            "--max-operator-burden-minutes",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_and_write_actual_cash_report_gate(
+                measurement_path=_resolve_workspace_path(measurement, settings.data_dir),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                min_events=min_events,
+                max_largest_loss_usd=max_largest_loss_usd,
+                max_profit_concentration=max_profit_concentration,
+                max_operator_burden_minutes=max_operator_burden_minutes,
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            ActualCashReportGateOutputExistsError,
+            ActualCashReportGateError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        gate = result.gate
+        typer.echo("network_attempted=false")
+        typer.echo("credentials_used=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo("order_submitted_by_this_command=false")
+        typer.echo("permits_live_order=false")
+        typer.echo("permits_actual_cash_execution=false")
+        typer.echo(
+            "status=pass"
+            if gate.report_status is ProfitCoreActualCashReportStatus.COMPLETE
+            and gate.decision is ProfitCoreActualCashReportDecision.PROMOTE
+            else "status=blocked"
+        )
+        typer.echo(f"candidate_id={gate.candidate_id}")
+        typer.echo(f"measurement_id={gate.measurement_id}")
+        typer.echo(f"report_status={gate.report_status.value}")
+        typer.echo(f"decision={gate.decision.value}")
+        typer.echo(f"promotion_allowed={str(gate.promotion_allowed).lower()}")
+        typer.echo(f"actual_cash_edge_over_NO_TRADE={gate.actual_cash_edge_over_NO_TRADE}")
+        typer.echo(f"blocker_count={len(gate.blockers)}")
+        typer.echo(f"gate_path={result.gate_path.as_posix()}")
 
     @app.command("edge-candidate-external-venue-adapter-record")
     def edge_candidate_external_venue_adapter_record_cmd(
