@@ -1,9 +1,64 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_15:22 JST
+更新日: 2026-07-01_15:33 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P7 LLM Adversarial Review
+
+Completed on branch `ai/profit-core-p7-adversarial-review-20260701-1524`.
+
+Achieved:
+
+- Added `profit_core_adversarial_review.v1` schema and local Pydantic models for Profit Core adversarial review records.
+- Added `edge-candidate-adversarial-review-record` to consume a P6 `profit_core_evidence_packet.v1` artifact and optional local/manual adversarial findings.
+- Converted P6 `claim_findings` into adversarial findings with the limited status vocabulary: `ADVERSARIAL_FINDING`, `NEEDS_MORE_EVIDENCE`, `OVERCLAIM_FLAG`, `HUMAN_REVIEW_REQUIRED`, and `NO_ADDITIONAL_BLOCKER_FOUND`.
+- Kept `NO_ADDITIONAL_BLOCKER_FOUND` as non-approval with `approval_allowed=false`.
+- Enforced that manual findings cannot set `hard_blocker`; hard blockers come only from machine-checkable P6 `BLOCKER` findings.
+- Recorded explicit false boundaries for LLM API use, external send, paper/live/tiny-live permission, gate override, strategy rewrite, PnL metric authority, and actual-cash decision.
+
+Main files changed:
+
+- `schemas/profit_core_adversarial_review.v1.schema.json`
+- `src/sis/edge_candidates/adversarial_review.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_adversarial_review.py`
+- `docs/plans/profit-core-p7-adversarial-review-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_adversarial_review.py -q` -> 7 passed.
+- `uv run pytest tests/edge_candidates/test_adversarial_review.py tests/edge_candidates/test_evidence_packet.py tests/edge_candidates/test_virtual_execution_gate.py tests/edge_candidates/test_factory.py tests/edge_candidates/test_backtest_kill_gate.py tests/edge_candidates/test_multiplicity_account.py -q` -> 35 passed.
+- `uv run ruff check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+
+Remaining work:
+
+- P7 does not implement LLM API integration, provider redaction/export, external send records, external venue connectors, paper/live/tiny-live, actual-cash measurement, or profit approval.
+
+User decisions required:
+
+None for P7.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `schemas/profit_core_adversarial_review.v1.schema.json`, `src/sis/edge_candidates/adversarial_review.py`, `tests/edge_candidates/test_adversarial_review.py`, revert the edge candidate CLI / `__init__.py` additions, remove `docs/plans/profit-core-p7-adversarial-review-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core P6 Evidence Packet And Claim Diff
 
