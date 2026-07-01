@@ -27,6 +27,12 @@ from sis.edge_candidates.evidence_packet import (
     ProfitCoreEvidencePacketOutputExistsError,
     build_and_write_profit_core_evidence_packet,
 )
+from sis.edge_candidates.external_venue_adapter import (
+    ExternalVenueAdapterRunError,
+    ExternalVenueAdapterRunOutputExistsError,
+    ProfitCoreExternalVenueAdapterStatus,
+    build_and_write_external_venue_adapter_run,
+)
 from sis.edge_candidates.protocol import CandidateProtocolManifest
 from sis.edge_candidates.risk_taker_sprint_isolation import (
     RiskTakerSprintIsolationError,
@@ -491,6 +497,71 @@ def register_edge_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"readiness_status={packet.readiness_status.value}")
         typer.echo(f"blocker_count={len(packet.blockers)}")
         typer.echo(f"packet_path={result.packet_path.as_posix()}")
+
+    @app.command("edge-candidate-external-venue-adapter-record")
+    def edge_candidate_external_venue_adapter_record_cmd(
+        virtual_gate: Path = typer.Option(
+            ...,
+            "--virtual-gate",
+            dir_okay=False,
+            help="candidate-scoped virtual_execution_gate.v1 JSON.",
+        ),
+        adapter_plan: Path = typer.Option(
+            ...,
+            "--adapter-plan",
+            dir_okay=False,
+            help="Local JSON/YAML Bitget public read-only external adapter plan.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidates/external_venue_adapter"),
+            "--out",
+            help="Output directory for profit_core_external_venue_adapter_run.json.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_and_write_external_venue_adapter_run(
+                virtual_gate_path=_resolve_workspace_path(virtual_gate, settings.data_dir),
+                adapter_plan_path=_resolve_workspace_path(adapter_plan, settings.data_dir),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            ExternalVenueAdapterRunOutputExistsError,
+            ExternalVenueAdapterRunError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        run = result.run
+        typer.echo("network_attempted=false")
+        typer.echo(f"network_opt_in={str(run.network_opt_in).lower()}")
+        typer.echo(f"credentials_used={str(run.credentials_used).lower()}")
+        typer.echo(f"external_write_used={str(run.external_write_used).lower()}")
+        typer.echo(f"order_submit_allowed={str(run.order_submit_allowed).lower()}")
+        typer.echo(f"actual_cash={str(run.actual_cash).lower()}")
+        typer.echo(
+            "status=pass"
+            if run.adapter_status
+            is ProfitCoreExternalVenueAdapterStatus.RECORDED_EXTERNAL_READ_ONLY_REQUIRES_HUMAN_REVIEW
+            else "status=blocked"
+        )
+        typer.echo(f"candidate_id={run.candidate_id}")
+        typer.echo(f"venue={run.venue}")
+        typer.echo(f"adapter_mode={run.adapter_mode}")
+        typer.echo(f"adapter_status={run.adapter_status.value}")
+        typer.echo(f"blocker_count={len(run.blockers)}")
+        typer.echo(f"run_path={result.run_path.as_posix()}")
 
     @app.command("edge-candidate-risk-taker-sprint-isolation-record")
     def edge_candidate_risk_taker_sprint_isolation_record_cmd(

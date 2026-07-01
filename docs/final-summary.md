@@ -1,9 +1,71 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_16:18 JST
+更新日: 2026-07-01_16:48 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P10 External Virtual Venue Adapter
+
+Completed on branch `ai/profit-core-p10-external-venue-adapter-20260701-1638`.
+
+Achieved:
+
+- Added `profit_core_external_venue_adapter_run.v1` schema and local Pydantic models for Bitget public read-only external adapter evidence records.
+- Added `edge-candidate-external-venue-adapter-record` to consume P5 `virtual_execution_gate.v1` and a local Bitget adapter plan.
+- Limited P10 to one venue: `venue=bitget`, `adapter_mode=public_read_only`.
+- Required current official docs verification refs for Bitget demo API credential/header boundary, Bitget request/rate-limit behavior, and Bitget terms/jurisdiction recheck.
+- Required explicit `network_opt_in=true` metadata and at least one recorded request/response summary before complete status.
+- Rejected unredacted secret-like recorded HTTP header / param / body key material before artifact write.
+- Blocked P10 complete status when the local/mock virtual gate is not `LOCAL_MOCK_VERIFIED`.
+- Kept demo/testnet/read-only output separate from actual cash with `actual_cash=false`, `demo_or_testnet_result_is_actual_cash=false`, and `profit_evidence=false`.
+- Kept all network execution, credential, external write, order submit, wallet, signing, and live-order boundary fields false in the emitted record.
+
+Main files changed:
+
+- `schemas/profit_core_external_venue_adapter_run.v1.schema.json`
+- `src/sis/edge_candidates/external_venue_adapter.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_external_venue_adapter.py`
+- `docs/plans/profit-core-p10-external-venue-adapter-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_external_venue_adapter.py -q` -> 8 passed.
+- `uv run pytest tests/edge_candidates/test_external_venue_adapter.py tests/edge_candidates/test_virtual_execution_gate.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_risk_taker_sprint_isolation.py -q` -> 28 passed.
+- `uv run ruff check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 240 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 194 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2923 passed`.
+
+Remaining work:
+
+- P10 does not perform public network fetches, credentialed reads, demo/testnet/paper/live order submission, actual-cash measurement, or external venue write. It records and validates external adapter evidence only.
+
+User decisions required:
+
+None for P10 local artifact implementation.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `schemas/profit_core_external_venue_adapter_run.v1.schema.json`, `src/sis/edge_candidates/external_venue_adapter.py`, `tests/edge_candidates/test_external_venue_adapter.py`, revert the edge candidate CLI / `__init__.py` additions, remove `docs/plans/profit-core-p10-external-venue-adapter-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core P9 Actual Cash Readiness Packet
 
