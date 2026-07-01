@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-18_01:50 JST
+更新日: 2026-07-01_20:42 JST
 -->
 
 # Architecture And Phases
@@ -22,7 +22,7 @@
 - `src/sis/execution`: `Trade[XYZ]` micro live safety code, `bitget_demo` local/mock-first adapter, and execution read-only surfaces
 - `src/sis/reports`, `src/sis/ops`, `src/sis/state`: operations, dashboards, remediation, daemon, notifications
 - `src/sis/cli.py` and `src/sis/commands/`: root Typer app registration plus feature-specific command modules
-- `archive/gtrade_ostium_legacy_archive_*.zip`: legacy gTrade/Ostium source and sidecar history
+- `/archive/`: ignored local archive area for optional legacy packages such as gTrade/Ostium source and sidecar history
 
 ## Phase Interpretation
 
@@ -53,7 +53,7 @@ current truth:
 - 現在の新規戦略評価の主軸は backtest-first / venue-neutral
 - `trade_xyz` は実装済み主要 venue だが、当面の注文口主軸ではない
 - `bitget_demo` は demo execution 検証用の venue id。production Bitget live とは分ける
-- `gtrade` / `ostium` は active implementation tree ではなく archive zip と historical artifacts として残る
+- `gtrade` / `ostium` は active implementation tree ではなく ignored local archive package と historical artifacts として残る
 - `ostium-python-sdk` は active dependency ではない
 
 ## Data Boundary

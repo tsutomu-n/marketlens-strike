@@ -347,7 +347,8 @@ production live trading is ready.
 ## Legacy Notes
 
 gTrade / Ostium source, sidecars, raw data, registry files, and dedicated tests
-were compressed into `archive/gtrade_ostium_legacy_archive_*.zip`. The active
-repo tree keeps Trade[XYZ] as an implemented read-only / research venue. Current
-strategy work should start from backtest-first and venue-neutral docs before
-returning to Trade[XYZ] readiness work.
+may be kept as a local ignored package under `archive/` when needed. The active
+repo tree does not track that compressed legacy package and does not require it
+in fresh clones. Trade[XYZ] remains an implemented read-only / research venue.
+Current strategy work should start from backtest-first and venue-neutral docs
+before returning to Trade[XYZ] readiness work.

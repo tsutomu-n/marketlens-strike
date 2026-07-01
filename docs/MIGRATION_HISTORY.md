@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-06-17_16:57 JST
+更新日: 2026-07-01_20:42 JST
 -->
 
 # Migration History
@@ -12,7 +12,7 @@
 | PR | Title | Status | Evidence |
 |---|---|---|---|
 | PR-00 | Python 3.13 migration | DONE | `pyproject.toml`, `.python-version`, `uv.lock`, `.github/workflows/ci.yml`, `scripts/check` |
-| PR-01 | Archive legacy venues | DONE | `archive/gtrade_ostium_legacy_archive_*.zip`, `package.json` legacy note, `pyproject.toml` without `ostium-python-sdk` |
+| PR-01 | Archive legacy venues | DONE | active legacy file tree removed, root `/archive/` ignored for optional local packages, `package.json` legacy note, `pyproject.toml` without `ostium-python-sdk` |
 | PR-02 | Generalize models and schemas | DONE | `src/sis/models.py`, `schemas/`, `configs/*.yaml`, `configs/instrument_registry.seed.json` |
 | PR-03 | Build Trade[XYZ] universe mapping | DONE | `src/sis/venues/trade_xyz/registry.py`, `src/sis/venues/trade_xyz/report.py`, `tests/test_trade_xyz_registry.py`, `perpDexs` fallback |
 | PR-04 | Add Trade[XYZ] read-only collector | DONE | `src/sis/venues/trade_xyz/collector.py`, `src/sis/venues/trade_xyz/normalizer.py`, `tests/test_trade_xyz_collector.py` |

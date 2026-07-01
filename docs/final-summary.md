@@ -1,9 +1,114 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_20:06 JST
+更新日: 2026-07-01_20:50 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Strategy Idea Authoring Bridge Model Split
+
+Completed on branch `ai/refactor-repo-hygiene-20260701-2042`.
+
+Achieved:
+
+- Split authoring bridge schema/model declarations into `src/sis/strategy_idea_candidates/authoring_bridge_models.py`.
+- Kept `src/sis/strategy_idea_candidates/authoring_bridge.py` as the compatibility import surface for existing command, test, and evidence packet callers.
+- Reduced `authoring_bridge.py` from 1070 lines to 998 lines while preserving CLI behavior and artifact paths.
+
+Main files changed:
+
+- `src/sis/strategy_idea_candidates/authoring_bridge.py`
+- `src/sis/strategy_idea_candidates/authoring_bridge_models.py`
+- `docs/plans/refactor-strategy-idea-authoring-bridge-models-2026-07-01.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run ruff check src/sis/strategy_idea_candidates/authoring_bridge.py src/sis/strategy_idea_candidates/authoring_bridge_models.py` -> passed.
+- `uv run pytest tests/strategy_idea_candidates/test_authoring_bridge.py tests/strategy_idea_candidates/test_bitget_public_source.py tests/edge_candidates/test_evidence_packet.py -q` -> 16 passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2961 passed`.
+
+Remaining work:
+
+- Further splits of command modules and other large source files should be separate checkpoints.
+
+User decisions required:
+
+None for this checkpoint.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Inline the moved declarations back into `authoring_bridge.py` and remove `authoring_bridge_models.py`.
+
+## Latest Addendum: Refactor Repo Hygiene Archive Cleanup
+
+Completed on branch `ai/refactor-repo-hygiene-20260701-2042`.
+
+Achieved:
+
+- Changed root `archive/` to an ignored local archive area instead of a tracked binary artifact location.
+- Replaced the machine-local absolute `資料` ignore pattern with anchored `/資料/` for portable local reference-material ignores.
+- Removed the repository's requirement for `archive/gtrade_ostium_legacy_archive_*.zip` in fresh clones.
+- Updated current docs, test expectations, package note, and implementation status wording so legacy gTrade / Ostium source is described as optional local archive material, not tracked proof.
+- Preserved `docs/archive/` and `plan/archive/` historical routing.
+
+Main files changed:
+
+- `.gitignore`
+- `tests/test_legacy_archive.py`
+- `README.md`
+- `docs/MIGRATION_HISTORY.md`
+- `docs/ARCHITECTURE_AND_PHASES.md`
+- `docs/runbooks/PAPER_EXECUTION_RUNBOOK.md`
+- `src/sis/reports/implementation_status.py`
+- `package.json`
+- `docs/plans/refactor-repo-hygiene-archive-cleanup-2026-07-01.md`
+- `docs/final-summary.md`
+- `archive/gtrade_ostium_legacy_archive_20260527_013818.zip` removed from Git index only
+
+Verification:
+
+- `uv run pytest tests/test_legacy_archive.py -q` -> 2 passed.
+- `git check-ignore --no-index -v '資料/new-local-note.md' '資料/0531-IC-Market-Stocks.md'` -> `.gitignore:71:/資料/`.
+- `uv run python scripts/check_current_docs.py` -> checked 199 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2961 passed`.
+
+Remaining work:
+
+- Further archive/history cleanup should remain scoped and avoid moving `docs/archive/` or `plan/archive/`.
+
+User decisions required:
+
+None for this checkpoint.
+
+Destructive change:
+
+No worktree deletion. The legacy zip is removed from Git tracking only and remains allowable as an ignored local file.
+
+Dependency change:
+
+No.
+
+Migration:
+
+Fresh clones no longer include the legacy compressed package. Developers who need it can keep or place it under ignored `archive/`.
+
+Rollback:
+
+Revert this addendum and related docs/test/package/status changes, then restore the legacy zip to Git tracking from history if tracked distribution is required again.
 
 ## Latest Addendum: Profit Core P13 Feedback Threshold Calibration
 

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_21:52 JST
-更新日: 2026-06-18_01:06 JST
+更新日: 2026-07-01_20:42 JST
 -->
 
 # Paper And Execution Runbook
@@ -83,7 +83,7 @@ uv run sis notification-outbox --level warn --title "Stale" --body "recollect li
 
 ## Live Evidence
 
-gTrade / Ostium の legacy collector は `archive/gtrade_ostium_legacy_archive_*.zip` に圧縮済みで、展開済み file tree は active repo から削除済み。legacy sidecar command を直接呼ぶ手順は current CLI として扱わない。
+gTrade / Ostium の legacy collector は active repo から削除済み。必要な場合だけ ignored local `/archive/` 配下に legacy package を置く。fresh clone は legacy package を含まず、legacy sidecar command を直接呼ぶ手順は current CLI として扱わない。
 
 dry-run:
 
@@ -97,7 +97,7 @@ run:
 uv run python scripts/run_live_evidence.py --duration-minutes 120 --metadata-interval-seconds 60
 ```
 
-この non-dry-run path は現在停止する。legacy gTrade/Ostium collector はZIP化済みなので、現行の収集は次のTrade[XYZ] refresh pathを使う。
+この non-dry-run path は現在停止する。legacy gTrade/Ostium collector は active repo には存在しないので、現行の収集は次のTrade[XYZ] refresh pathを使う。
 
 Trade[XYZ] refresh path:
 
