@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_15:33 JST
+更新日: 2026-07-01_15:36 JST
 -->
 
 # Final Summary
@@ -35,6 +35,10 @@ Verification:
 - `uv run pytest tests/edge_candidates/test_adversarial_review.py tests/edge_candidates/test_evidence_packet.py tests/edge_candidates/test_virtual_execution_gate.py tests/edge_candidates/test_factory.py tests/edge_candidates/test_backtest_kill_gate.py tests/edge_candidates/test_multiplicity_account.py -q` -> 35 passed.
 - `uv run ruff check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
 - `uv run ruff format --check src/sis/edge_candidates src/sis/commands/edge_candidates.py tests/edge_candidates` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 237 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 191 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2901 passed`.
 
 Remaining work:
 
