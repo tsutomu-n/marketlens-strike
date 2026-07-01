@@ -40,6 +40,12 @@ from sis.edge_candidates.external_venue_adapter import (
     ProfitCoreExternalVenueAdapterStatus,
     build_and_write_external_venue_adapter_run,
 )
+from sis.edge_candidates.feedback_calibration import (
+    FeedbackCalibrationError,
+    FeedbackCalibrationOutputExistsError,
+    ProfitCoreFeedbackCalibrationStatus,
+    build_and_write_feedback_calibration,
+)
 from sis.edge_candidates.protocol import CandidateProtocolManifest
 from sis.edge_candidates.risk_taker_sprint_isolation import (
     RiskTakerSprintIsolationError,
@@ -722,6 +728,89 @@ def register_edge_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"actual_cash_edge_over_NO_TRADE={gate.actual_cash_edge_over_NO_TRADE}")
         typer.echo(f"blocker_count={len(gate.blockers)}")
         typer.echo(f"gate_path={result.gate_path.as_posix()}")
+
+    @app.command("edge-candidate-feedback-calibration-build")
+    def edge_candidate_feedback_calibration_build_cmd(
+        protocol: Path = typer.Option(
+            ...,
+            "--protocol",
+            dir_okay=False,
+            help="candidate_protocol_manifest.v1 JSON/YAML.",
+        ),
+        multiplicity_account: Path = typer.Option(
+            ...,
+            "--multiplicity-account",
+            dir_okay=False,
+            help="trial_multiplicity_account.v1 JSON.",
+        ),
+        report_gate: Path = typer.Option(
+            ...,
+            "--report-gate",
+            dir_okay=False,
+            help="profit_core_actual_cash_report_gate.v1 JSON.",
+        ),
+        feedback_log: Path = typer.Option(
+            ...,
+            "--feedback-log",
+            dir_okay=False,
+            help="Local JSON/YAML P13 feedback log.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidates/feedback_calibration"),
+            "--out",
+            help="Output directory for profit_core_feedback_threshold_calibration.json.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing output artifacts.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        try:
+            result = build_and_write_feedback_calibration(
+                protocol_path=_resolve_workspace_path(protocol, settings.data_dir),
+                multiplicity_account_path=_resolve_workspace_path(
+                    multiplicity_account,
+                    settings.data_dir,
+                ),
+                report_gate_path=_resolve_workspace_path(report_gate, settings.data_dir),
+                feedback_log_path=_resolve_workspace_path(feedback_log, settings.data_dir),
+                out_dir=_resolve_workspace_path(out, settings.data_dir),
+                replace_existing=replace_existing,
+            )
+        except (
+            FileNotFoundError,
+            StrategyInputIOError,
+            FeedbackCalibrationOutputExistsError,
+            FeedbackCalibrationError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        calibration = result.calibration
+        typer.echo(
+            "status=pass"
+            if calibration.calibration_status
+            is ProfitCoreFeedbackCalibrationStatus.READY_FOR_NEXT_PROTOCOL_REVIEW
+            else "status=blocked"
+        )
+        typer.echo("auto_applied=false")
+        typer.echo("protocol_mutated=false")
+        typer.echo("multiplicity_account_mutated=false")
+        typer.echo("thresholds_applied=false")
+        typer.echo("network_attempted=false")
+        typer.echo("exchange_write_used=false")
+        typer.echo("live_order_submitted=false")
+        typer.echo(f"calibration_status={calibration.calibration_status.value}")
+        typer.echo(f"protocol_id={calibration.protocol_id}")
+        typer.echo(f"next_protocol_id={calibration.next_protocol_id}")
+        typer.echo(f"next_multiplicity_account_id={calibration.next_multiplicity_account_id}")
+        typer.echo(f"blocker_count={len(calibration.blockers)}")
+        typer.echo(f"calibration_path={result.calibration_path.as_posix()}")
 
     @app.command("edge-candidate-external-venue-adapter-record")
     def edge_candidate_external_venue_adapter_record_cmd(

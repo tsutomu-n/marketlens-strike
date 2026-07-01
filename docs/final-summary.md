@@ -1,9 +1,72 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-01_19:55 JST
+更新日: 2026-07-01_20:06 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core P13 Feedback Threshold Calibration
+
+Completed on branch `ai/profit-core-p13-feedback-calibration-20260701-1955`.
+
+Achieved:
+
+- Added `profit_core_feedback_threshold_calibration.v1` schema and local Pydantic models for Profit Core feedback / threshold calibration artifacts.
+- Added `edge-candidate-feedback-calibration-build` to consume a current `candidate_protocol_manifest.v1`, `trial_multiplicity_account.v1`, P12 `profit_core_actual_cash_report_gate.v1`, and a local feedback log.
+- Required P13 output to remain proposal-only: `auto_applied=false`, `protocol_mutated=false`, `multiplicity_account_mutated=false`, and `thresholds_applied=false`.
+- Blocked success-only feedback when no killed candidates, actual execution failures, or P12 blockers are present.
+- Blocked threshold / family / generator / cost / operator-burden feedback that reuses the same protocol id or same multiplicity account id.
+- Blocked holdout-peek feedback that requests same family/version reuse.
+- Required `next_validation_peek_count` to advance when threshold/family policy changes or holdout feedback are reported.
+- Preserved live / actual-cash execution boundaries with `network_attempted=false`, `exchange_write_used=false`, `live_order_submitted=false`, `permits_live_order=false`, and `permits_actual_cash_execution=false`.
+
+Main files changed:
+
+- `schemas/profit_core_feedback_threshold_calibration.v1.schema.json`
+- `src/sis/edge_candidates/feedback_calibration.py`
+- `src/sis/edge_candidates/__init__.py`
+- `src/sis/commands/edge_candidates.py`
+- `tests/edge_candidates/test_feedback_calibration.py`
+- `docs/plans/profit-core-p13-feedback-threshold-calibration-2026-07-01.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidates/test_feedback_calibration.py -q` -> 7 passed.
+- `uv run pytest tests/edge_candidates/test_feedback_calibration.py tests/edge_candidates/test_actual_cash_report_gate.py tests/edge_candidates/test_tiny_actual_cash_measurement.py tests/edge_candidates/test_actual_cash_readiness.py tests/edge_candidates/test_evidence_packet.py tests/edge_candidates/test_multiplicity_account.py tests/edge_candidates/test_protocol_manifest.py -q` -> 61 passed.
+- `uv run ruff check src/sis/edge_candidates/feedback_calibration.py src/sis/commands/edge_candidates.py tests/edge_candidates/test_feedback_calibration.py` -> passed.
+- `uv run ruff format --check src/sis/edge_candidates/feedback_calibration.py src/sis/commands/edge_candidates.py tests/edge_candidates/test_feedback_calibration.py` -> passed.
+- `uv run ty check src --python-version 3.13 --output-format concise` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> checked 243 public CLI commands against Typer registration.
+- `uv run python scripts/check_current_docs.py` -> checked 197 current docs: metadata, links, EOF, legacy roots, HTML sources, semantic drift, and plan routing ok.
+- `git diff --check` -> passed.
+- `uv run sis edge-candidate-feedback-calibration-build --help` -> command help rendered with `--protocol`, `--multiplicity-account`, `--report-gate`, `--feedback-log`, `--out`, and `--replace-existing`.
+- `./scripts/check` -> passed; includes Python 3.13.7, Ruff, current docs, CLI catalog, Pyrefly, ty, and full Pytest `2960 passed`.
+
+Remaining work:
+
+- P13 does not create the actual next protocol manifest. It produces review-ready calibration input only.
+
+User decisions required:
+
+None for P13 local artifact implementation.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Remove `schemas/profit_core_feedback_threshold_calibration.v1.schema.json`, `src/sis/edge_candidates/feedback_calibration.py`, `tests/edge_candidates/test_feedback_calibration.py`, revert the edge candidate CLI / `__init__.py` additions, remove `docs/plans/profit-core-p13-feedback-threshold-calibration-2026-07-01.md`, and revert the CLI catalog plus this summary addendum.
 
 ## Latest Addendum: Profit Core P12 Actual Cash Report Gate
 
