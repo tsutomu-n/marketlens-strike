@@ -1,0 +1,309 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "llm_adversarial_evidence_review.v1.schema.json",
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "ref_id": {
+          "title": "Ref Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref_id",
+        "schema_version",
+        "path",
+        "sha256"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "EdgeCandidateBoundary": {
+      "additionalProperties": false,
+      "properties": {
+        "paper_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Paper Execution Allowed",
+          "type": "boolean"
+        },
+        "live_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Allowed",
+          "type": "boolean"
+        },
+        "permits_live_order": {
+          "const": false,
+          "default": false,
+          "title": "Permits Live Order",
+          "type": "boolean"
+        },
+        "live_conversion_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Conversion Allowed",
+          "type": "boolean"
+        },
+        "wallet_used": {
+          "const": false,
+          "default": false,
+          "title": "Wallet Used",
+          "type": "boolean"
+        },
+        "signing_used": {
+          "const": false,
+          "default": false,
+          "title": "Signing Used",
+          "type": "boolean"
+        },
+        "exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Exchange Write Used",
+          "type": "boolean"
+        },
+        "production_exchange_write_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Allowed",
+          "type": "boolean"
+        },
+        "production_exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Used",
+          "type": "boolean"
+        },
+        "live_order_submitted": {
+          "const": false,
+          "default": false,
+          "title": "Live Order Submitted",
+          "type": "boolean"
+        },
+        "auto_promote": {
+          "const": false,
+          "default": false,
+          "title": "Auto Promote",
+          "type": "boolean"
+        }
+      },
+      "title": "EdgeCandidateBoundary",
+      "type": "object"
+    },
+    "LLMAdversarialFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": {
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "finding_type": {
+          "$ref": "#/$defs/LLMFindingType"
+        },
+        "severity": {
+          "$ref": "#/$defs/LLMFindingSeverity"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "claim_text": {
+          "title": "Claim Text",
+          "type": "string"
+        },
+        "problem": {
+          "title": "Problem",
+          "type": "string"
+        },
+        "required_fix": {
+          "title": "Required Fix",
+          "type": "string"
+        },
+        "machine_checkable": {
+          "title": "Machine Checkable",
+          "type": "boolean"
+        },
+        "hard_blocker": {
+          "title": "Hard Blocker",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "finding_id",
+        "finding_type",
+        "severity",
+        "source_ref",
+        "claim_text",
+        "problem",
+        "required_fix",
+        "machine_checkable",
+        "hard_blocker"
+      ],
+      "title": "LLMAdversarialFinding",
+      "type": "object"
+    },
+    "LLMAdversarialReviewStatus": {
+      "enum": [
+        "NO_BLOCKING_FINDING",
+        "ADVERSARIAL_FINDING",
+        "MISSING_ARTIFACT",
+        "CONTRADICTION",
+        "OVERCLAIM_FLAG",
+        "HUMAN_REVIEW_REQUIRED"
+      ],
+      "title": "LLMAdversarialReviewStatus",
+      "type": "string"
+    },
+    "LLMFindingSeverity": {
+      "enum": [
+        "hard",
+        "soft"
+      ],
+      "title": "LLMFindingSeverity",
+      "type": "string"
+    },
+    "LLMFindingType": {
+      "enum": [
+        "MISSING_ARTIFACT",
+        "CONTRADICTION",
+        "OVERCLAIM_FLAG",
+        "LEAKAGE_RISK",
+        "UNSAFE_BOUNDARY"
+      ],
+      "title": "LLMFindingType",
+      "type": "string"
+    },
+    "ProducerInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "const": "sis",
+          "default": "sis",
+          "title": "Tool",
+          "type": "string"
+        },
+        "command": {
+          "title": "Command",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "title": "ProducerInfo",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "llm_adversarial_evidence_review.v1",
+      "default": "llm_adversarial_evidence_review.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "review_id": {
+      "title": "Review Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "producer": {
+      "$ref": "#/$defs/ProducerInfo"
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "minItems": 1,
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "packet_hash": {
+      "title": "Packet Hash",
+      "type": "string"
+    },
+    "review_status": {
+      "$ref": "#/$defs/LLMAdversarialReviewStatus"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/LLMAdversarialFinding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "hard_blocker_count": {
+      "minimum": 0,
+      "title": "Hard Blocker Count",
+      "type": "integer"
+    },
+    "soft_warning_count": {
+      "minimum": 0,
+      "title": "Soft Warning Count",
+      "type": "integer"
+    },
+    "llm_approval_ignored": {
+      "const": true,
+      "default": true,
+      "title": "Llm Approval Ignored",
+      "type": "boolean"
+    },
+    "paper_execution_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Paper Execution Allowed",
+      "type": "boolean"
+    },
+    "live_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Live Allowed",
+      "type": "boolean"
+    },
+    "actual_cash_decision_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Actual Cash Decision Allowed",
+      "type": "boolean"
+    },
+    "gate_override_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Gate Override Allowed",
+      "type": "boolean"
+    },
+    "boundary": {
+      "$ref": "#/$defs/EdgeCandidateBoundary"
+    }
+  },
+  "required": [
+    "review_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "packet_hash",
+    "review_status",
+    "hard_blocker_count",
+    "soft_warning_count"
+  ],
+  "title": "LLMAdversarialEvidenceReview",
+  "type": "object"
+}

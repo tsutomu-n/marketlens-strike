@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "edge_candidate_search_ledger.v1.schema.json",
+  "$defs": {
+    "CandidateDecision": {
+      "enum": [
+        "GENERATED",
+        "REJECTED"
+      ],
+      "title": "CandidateDecision",
+      "type": "string"
+    },
+    "CandidateGateStatus": {
+      "enum": [
+        "PASS",
+        "BLOCKED",
+        "NOT_ESTIMABLE"
+      ],
+      "title": "CandidateGateStatus",
+      "type": "string"
+    },
+    "CandidatePriorScore": {
+      "additionalProperties": false,
+      "properties": {
+        "mechanism_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mechanism Score",
+          "type": "number"
+        },
+        "source_availability_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Source Availability Score",
+          "type": "number"
+        },
+        "execution_feasibility_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Execution Feasibility Score",
+          "type": "number"
+        },
+        "testability_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Testability Score",
+          "type": "number"
+        },
+        "diversity_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Diversity Score",
+          "type": "number"
+        },
+        "information_gain_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Information Gain Score",
+          "type": "number"
+        },
+        "operator_cost_penalty": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Operator Cost Penalty",
+          "type": "number"
+        },
+        "unexecutable_penalty": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Unexecutable Penalty",
+          "type": "number"
+        },
+        "overfit_surface_penalty": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Overfit Surface Penalty",
+          "type": "number"
+        },
+        "total_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Total Score",
+          "type": "number"
+        },
+        "score_basis": {
+          "const": "prior_not_profit_proof",
+          "default": "prior_not_profit_proof",
+          "title": "Score Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mechanism_score",
+        "source_availability_score",
+        "execution_feasibility_score",
+        "testability_score",
+        "diversity_score",
+        "information_gain_score",
+        "operator_cost_penalty",
+        "unexecutable_penalty",
+        "overfit_surface_penalty",
+        "total_score"
+      ],
+      "title": "CandidatePriorScore",
+      "type": "object"
+    },
+    "CandidateRowKind": {
+      "enum": [
+        "candidate",
+        "rejection",
+        "duplicate",
+        "cap_rejection",
+        "source_blocker"
+      ],
+      "title": "CandidateRowKind",
+      "type": "string"
+    },
+    "CausePrior": {
+      "enum": [
+        "FORCED_FLOW",
+        "INVENTORY_RISK_TRANSFER",
+        "SLOW_INFORMATION",
+        "CONSTRAINED_ARBITRAGE",
+        "CROWDED_POSITIONING",
+        "BEHAVIORAL_ATTENTION",
+        "ADVERSE_SELECTION",
+        "EXECUTION_FRICTION",
+        "DATA_OBSERVABILITY"
+      ],
+      "title": "CausePrior",
+      "type": "string"
+    },
+    "EdgeCandidateBoundary": {
+      "additionalProperties": false,
+      "properties": {
+        "paper_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Paper Execution Allowed",
+          "type": "boolean"
+        },
+        "live_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Allowed",
+          "type": "boolean"
+        },
+        "permits_live_order": {
+          "const": false,
+          "default": false,
+          "title": "Permits Live Order",
+          "type": "boolean"
+        },
+        "live_conversion_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Conversion Allowed",
+          "type": "boolean"
+        },
+        "wallet_used": {
+          "const": false,
+          "default": false,
+          "title": "Wallet Used",
+          "type": "boolean"
+        },
+        "signing_used": {
+          "const": false,
+          "default": false,
+          "title": "Signing Used",
+          "type": "boolean"
+        },
+        "exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Exchange Write Used",
+          "type": "boolean"
+        },
+        "production_exchange_write_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Allowed",
+          "type": "boolean"
+        },
+        "production_exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Used",
+          "type": "boolean"
+        },
+        "live_order_submitted": {
+          "const": false,
+          "default": false,
+          "title": "Live Order Submitted",
+          "type": "boolean"
+        },
+        "auto_promote": {
+          "const": false,
+          "default": false,
+          "title": "Auto Promote",
+          "type": "boolean"
+        }
+      },
+      "title": "EdgeCandidateBoundary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "edge_candidate_search_ledger.v1",
+      "default": "edge_candidate_search_ledger.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "row_kind": {
+      "$ref": "#/$defs/CandidateRowKind"
+    },
+    "family": {
+      "title": "Family",
+      "type": "string"
+    },
+    "cause_priors": {
+      "items": {
+        "$ref": "#/$defs/CausePrior"
+      },
+      "minItems": 1,
+      "title": "Cause Priors",
+      "type": "array"
+    },
+    "parameter_hash": {
+      "title": "Parameter Hash",
+      "type": "string"
+    },
+    "parameter_set": {
+      "additionalProperties": true,
+      "title": "Parameter Set",
+      "type": "object"
+    },
+    "candidate_cluster_id": {
+      "title": "Candidate Cluster Id",
+      "type": "string"
+    },
+    "similar_candidate_count": {
+      "minimum": 0,
+      "title": "Similar Candidate Count",
+      "type": "integer"
+    },
+    "candidate_prior_score": {
+      "$ref": "#/$defs/CandidatePriorScore"
+    },
+    "candidate_decision": {
+      "$ref": "#/$defs/CandidateDecision"
+    },
+    "rejection_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rejection Reason"
+    },
+    "source_requirement_status": {
+      "$ref": "#/$defs/CandidateGateStatus"
+    },
+    "execution_precheck_status": {
+      "$ref": "#/$defs/CandidateGateStatus"
+    },
+    "validation_peek_count_at_generation": {
+      "minimum": 0,
+      "title": "Validation Peek Count At Generation",
+      "type": "integer"
+    },
+    "sealed_test_used_for_selection": {
+      "const": false,
+      "default": false,
+      "title": "Sealed Test Used For Selection",
+      "type": "boolean"
+    },
+    "proof_status": {
+      "const": "not_alpha_or_profit_proof",
+      "default": "not_alpha_or_profit_proof",
+      "title": "Proof Status",
+      "type": "string"
+    },
+    "boundary": {
+      "$ref": "#/$defs/EdgeCandidateBoundary"
+    }
+  },
+  "required": [
+    "run_id",
+    "candidate_id",
+    "row_kind",
+    "family",
+    "cause_priors",
+    "parameter_hash",
+    "parameter_set",
+    "candidate_cluster_id",
+    "similar_candidate_count",
+    "candidate_prior_score",
+    "candidate_decision",
+    "source_requirement_status",
+    "execution_precheck_status",
+    "validation_peek_count_at_generation"
+  ],
+  "title": "EdgeCandidateSearchLedgerRow",
+  "type": "object"
+}

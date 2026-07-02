@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "edge_candidate_risk_actual_cash_handoff.v1.schema.json",
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "ref_id": {
+          "title": "Ref Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref_id",
+        "schema_version",
+        "path",
+        "sha256"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "EdgeCandidateBoundary": {
+      "additionalProperties": false,
+      "properties": {
+        "paper_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Paper Execution Allowed",
+          "type": "boolean"
+        },
+        "live_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Allowed",
+          "type": "boolean"
+        },
+        "permits_live_order": {
+          "const": false,
+          "default": false,
+          "title": "Permits Live Order",
+          "type": "boolean"
+        },
+        "live_conversion_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Conversion Allowed",
+          "type": "boolean"
+        },
+        "wallet_used": {
+          "const": false,
+          "default": false,
+          "title": "Wallet Used",
+          "type": "boolean"
+        },
+        "signing_used": {
+          "const": false,
+          "default": false,
+          "title": "Signing Used",
+          "type": "boolean"
+        },
+        "exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Exchange Write Used",
+          "type": "boolean"
+        },
+        "production_exchange_write_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Allowed",
+          "type": "boolean"
+        },
+        "production_exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Used",
+          "type": "boolean"
+        },
+        "live_order_submitted": {
+          "const": false,
+          "default": false,
+          "title": "Live Order Submitted",
+          "type": "boolean"
+        },
+        "auto_promote": {
+          "const": false,
+          "default": false,
+          "title": "Auto Promote",
+          "type": "boolean"
+        }
+      },
+      "title": "EdgeCandidateBoundary",
+      "type": "object"
+    },
+    "ProducerInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "const": "sis",
+          "default": "sis",
+          "title": "Tool",
+          "type": "string"
+        },
+        "command": {
+          "title": "Command",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "title": "ProducerInfo",
+      "type": "object"
+    },
+    "RiskActualCashHandoffStatus": {
+      "enum": [
+        "BLOCKED_NEEDS_ACTUAL_CASH_ROWS",
+        "READY_WITH_ACTUAL_CASH_ROWS"
+      ],
+      "title": "RiskActualCashHandoffStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "edge_candidate_risk_actual_cash_handoff.v1",
+      "default": "edge_candidate_risk_actual_cash_handoff.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "handoff_id": {
+      "title": "Handoff Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "producer": {
+      "$ref": "#/$defs/ProducerInfo"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "candidate_report_ref": {
+      "$ref": "#/$defs/ArtifactRef"
+    },
+    "search_ledger_ref": {
+      "$ref": "#/$defs/ArtifactRef"
+    },
+    "multiplicity_account_ref": {
+      "$ref": "#/$defs/ArtifactRef"
+    },
+    "backtest_kill_gate_ref": {
+      "$ref": "#/$defs/ArtifactRef"
+    },
+    "virtual_execution_gate_ref": {
+      "$ref": "#/$defs/ArtifactRef"
+    },
+    "risk_taker_review_input_status": {
+      "$ref": "#/$defs/RiskActualCashHandoffStatus"
+    },
+    "actual_cash_report_gate_input_status": {
+      "$ref": "#/$defs/RiskActualCashHandoffStatus"
+    },
+    "actual_cash_rows_required": {
+      "const": true,
+      "default": true,
+      "title": "Actual Cash Rows Required",
+      "type": "boolean"
+    },
+    "actual_cash_rows_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "virtual_or_backtest_used_as_actual_cash": {
+      "const": false,
+      "default": false,
+      "title": "Virtual Or Backtest Used As Actual Cash",
+      "type": "boolean"
+    },
+    "known_gaps": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Known Gaps",
+      "type": "array"
+    },
+    "boundary": {
+      "$ref": "#/$defs/EdgeCandidateBoundary"
+    }
+  },
+  "required": [
+    "handoff_id",
+    "created_at",
+    "producer",
+    "candidate_id",
+    "candidate_report_ref",
+    "search_ledger_ref",
+    "multiplicity_account_ref",
+    "backtest_kill_gate_ref",
+    "virtual_execution_gate_ref",
+    "risk_taker_review_input_status",
+    "actual_cash_report_gate_input_status"
+  ],
+  "title": "RiskActualCashHandoff",
+  "type": "object"
+}

@@ -1,0 +1,348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "virtual_execution_gate.v1.schema.json",
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "ref_id": {
+          "title": "Ref Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref_id",
+        "schema_version",
+        "path",
+        "sha256"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "ConditionStatus": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_ESTIMABLE",
+        "NOT_APPLICABLE"
+      ],
+      "title": "ConditionStatus",
+      "type": "string"
+    },
+    "EdgeCandidateBoundary": {
+      "additionalProperties": false,
+      "properties": {
+        "paper_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Paper Execution Allowed",
+          "type": "boolean"
+        },
+        "live_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Allowed",
+          "type": "boolean"
+        },
+        "permits_live_order": {
+          "const": false,
+          "default": false,
+          "title": "Permits Live Order",
+          "type": "boolean"
+        },
+        "live_conversion_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Conversion Allowed",
+          "type": "boolean"
+        },
+        "wallet_used": {
+          "const": false,
+          "default": false,
+          "title": "Wallet Used",
+          "type": "boolean"
+        },
+        "signing_used": {
+          "const": false,
+          "default": false,
+          "title": "Signing Used",
+          "type": "boolean"
+        },
+        "exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Exchange Write Used",
+          "type": "boolean"
+        },
+        "production_exchange_write_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Allowed",
+          "type": "boolean"
+        },
+        "production_exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Used",
+          "type": "boolean"
+        },
+        "live_order_submitted": {
+          "const": false,
+          "default": false,
+          "title": "Live Order Submitted",
+          "type": "boolean"
+        },
+        "auto_promote": {
+          "const": false,
+          "default": false,
+          "title": "Auto Promote",
+          "type": "boolean"
+        }
+      },
+      "title": "EdgeCandidateBoundary",
+      "type": "object"
+    },
+    "ExecutionEnvironment": {
+      "enum": [
+        "fixture",
+        "demo",
+        "testnet"
+      ],
+      "title": "ExecutionEnvironment",
+      "type": "string"
+    },
+    "GateCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "condition_id": {
+          "title": "Condition Id",
+          "type": "string"
+        },
+        "condition_status": {
+          "$ref": "#/$defs/ConditionStatus"
+        },
+        "observed": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Observed"
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Required"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "condition_id",
+        "condition_status",
+        "observed",
+        "required",
+        "source_ref"
+      ],
+      "title": "GateCondition",
+      "type": "object"
+    },
+    "ProducerInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "const": "sis",
+          "default": "sis",
+          "title": "Tool",
+          "type": "string"
+        },
+        "command": {
+          "title": "Command",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "title": "ProducerInfo",
+      "type": "object"
+    },
+    "VirtualExecutionGateStatus": {
+      "enum": [
+        "VIRTUAL_NOT_RUN",
+        "VIRTUAL_BLOCKED_SOURCE",
+        "VIRTUAL_BLOCKED_EXECUTION_PRECHECK",
+        "VIRTUAL_FAILED_ORDER_LIFECYCLE",
+        "VIRTUAL_FAILED_RECONCILIATION",
+        "VIRTUAL_PASSED_EXECUTION_LIFECYCLE"
+      ],
+      "title": "VirtualExecutionGateStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "virtual_execution_gate.v1",
+      "default": "virtual_execution_gate.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "gate_id": {
+      "title": "Gate Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "producer": {
+      "$ref": "#/$defs/ProducerInfo"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "execution_environment": {
+      "$ref": "#/$defs/ExecutionEnvironment"
+    },
+    "venue_id": {
+      "title": "Venue Id",
+      "type": "string"
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "order_lifecycle_summary": {
+      "additionalProperties": true,
+      "title": "Order Lifecycle Summary",
+      "type": "object"
+    },
+    "fill_ledger_summary": {
+      "additionalProperties": true,
+      "title": "Fill Ledger Summary",
+      "type": "object"
+    },
+    "reconciliation_summary": {
+      "additionalProperties": true,
+      "title": "Reconciliation Summary",
+      "type": "object"
+    },
+    "gate_status": {
+      "$ref": "#/$defs/VirtualExecutionGateStatus"
+    },
+    "recommended_action": {
+      "title": "Recommended Action",
+      "type": "string"
+    },
+    "actual_cash": {
+      "const": false,
+      "default": false,
+      "title": "Actual Cash",
+      "type": "boolean"
+    },
+    "cash_metric_basis": {
+      "const": "virtual_exchange",
+      "default": "virtual_exchange",
+      "title": "Cash Metric Basis",
+      "type": "string"
+    },
+    "exchange_write_used": {
+      "default": false,
+      "title": "Exchange Write Used",
+      "type": "boolean"
+    },
+    "production_exchange_write_used": {
+      "const": false,
+      "default": false,
+      "title": "Production Exchange Write Used",
+      "type": "boolean"
+    },
+    "permits_live_order": {
+      "const": false,
+      "default": false,
+      "title": "Permits Live Order",
+      "type": "boolean"
+    },
+    "conditions": {
+      "items": {
+        "$ref": "#/$defs/GateCondition"
+      },
+      "minItems": 1,
+      "title": "Conditions",
+      "type": "array"
+    },
+    "known_gaps": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Known Gaps",
+      "type": "array"
+    },
+    "boundary": {
+      "$ref": "#/$defs/EdgeCandidateBoundary"
+    }
+  },
+  "required": [
+    "gate_id",
+    "created_at",
+    "producer",
+    "candidate_id",
+    "execution_environment",
+    "venue_id",
+    "order_lifecycle_summary",
+    "fill_ledger_summary",
+    "reconciliation_summary",
+    "gate_status",
+    "recommended_action",
+    "conditions"
+  ],
+  "title": "VirtualExecutionGate",
+  "type": "object"
+}
