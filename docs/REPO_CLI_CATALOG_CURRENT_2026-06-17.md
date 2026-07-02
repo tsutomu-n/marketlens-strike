@@ -86,6 +86,7 @@ uv run python scripts/check_current_docs.py
 - `edge-candidate-risk-actual-cash-handoff`
 - `edge-candidate-adversarial-packet-build`
 - `edge-candidate-adversarial-import`
+- `edge-candidate-artifact-summary`
 - `strategy-model-run-record`
 - `strategy-micro-live-plan`
 - `strategy-next-scale-plan`

@@ -24,6 +24,7 @@ from sis.edge_candidate_factory.models import ArtifactRef, TrialMultiplicityAcco
 from sis.edge_candidate_factory.risk_actual_cash_handoff import (
     build_risk_actual_cash_handoff,
 )
+from sis.edge_candidate_factory.summary import build_edge_candidate_artifact_summary
 from sis.edge_candidate_factory.virtual_execution_gate import build_virtual_execution_gate
 from sis.settings import get_settings
 from sis.backtest.artifact_io import sha256_file
@@ -541,3 +542,96 @@ def register_edge_candidate_factory_commands(app: typer.Typer) -> None:
         typer.echo("gate_override_allowed=false")
         typer.echo(f"artifact_path={result.review_path.as_posix()}")
         typer.echo(f"known_gap_count={result.review.hard_blocker_count}")
+
+    @app.command("edge-candidate-artifact-summary")
+    def edge_candidate_artifact_summary_cmd(
+        candidate_report: Path | None = typer.Option(
+            None,
+            "--candidate-report",
+            dir_okay=False,
+        ),
+        backtest_kill_gate: list[Path] | None = typer.Option(
+            None,
+            "--backtest-kill-gate",
+            dir_okay=False,
+        ),
+        virtual_execution_gate: list[Path] | None = typer.Option(
+            None,
+            "--virtual-execution-gate",
+            dir_okay=False,
+        ),
+        risk_actual_cash_handoff: list[Path] | None = typer.Option(
+            None,
+            "--risk-actual-cash-handoff",
+            dir_okay=False,
+        ),
+        adversarial_review: list[Path] | None = typer.Option(
+            None,
+            "--adversarial-review",
+            dir_okay=False,
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidate_factory/artifact_summary"),
+            "--out",
+            help="Output directory for artifact summary.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing summary artifact.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        resolved_out = _resolve_workspace_path(out, settings.data_dir)
+        summary_path = resolved_out / "artifact_summary.json"
+        try:
+            if summary_path.exists() and not replace_existing:
+                raise EdgeCandidateFactoryOutputExistsError(
+                    f"output already exists: {summary_path}"
+                )
+            summary = build_edge_candidate_artifact_summary(
+                candidate_report_path=_resolve_workspace_path(candidate_report, settings.data_dir)
+                if candidate_report is not None
+                else None,
+                backtest_kill_gate_paths=[
+                    _resolve_workspace_path(path, settings.data_dir)
+                    for path in (backtest_kill_gate or [])
+                ],
+                virtual_execution_gate_paths=[
+                    _resolve_workspace_path(path, settings.data_dir)
+                    for path in (virtual_execution_gate or [])
+                ],
+                risk_actual_cash_handoff_paths=[
+                    _resolve_workspace_path(path, settings.data_dir)
+                    for path in (risk_actual_cash_handoff or [])
+                ],
+                adversarial_review_paths=[
+                    _resolve_workspace_path(path, settings.data_dir)
+                    for path in (adversarial_review or [])
+                ],
+            )
+            write_json_artifact(summary_path, summary)
+        except (
+            EdgeCandidateFactoryError,
+            EdgeCandidateFactoryOutputExistsError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            _echo_safe_stdout_prefix()
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        _echo_safe_stdout_prefix()
+        typer.echo(f"status={summary['core_status'].lower()}")
+        typer.echo(f"core_status={summary['core_status']}")
+        typer.echo(f"next_action={summary['next_action']}")
+        typer.echo(f"candidate_count_total={summary['candidate_count_total']}")
+        typer.echo(f"candidate_count_rejected={summary['candidate_count_rejected']}")
+        typer.echo(f"shortlist_for_virtual_count={summary['shortlist_for_virtual_count']}")
+        typer.echo(f"virtual_passed_count={summary['virtual_passed_count']}")
+        typer.echo(f"actual_cash_ready_count={summary['actual_cash_ready_count']}")
+        typer.echo(f"known_gap_count={summary['known_gap_count']}")
+        typer.echo("production_exchange_write_used=false")
+        typer.echo("live_order_allowed=false")
+        typer.echo(f"artifact_path={summary_path.as_posix()}")

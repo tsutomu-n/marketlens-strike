@@ -71,6 +71,15 @@ def test_edge_candidate_adversarial_commands_help() -> None:
     assert "--response" in imported_stdout
 
 
+def test_edge_candidate_artifact_summary_help() -> None:
+    result = runner.invoke(app, ["edge-candidate-artifact-summary", "--help"])
+    stdout = normalized_stdout(result)
+
+    assert result.exit_code == 0
+    assert "--candidate-report" in stdout
+    assert "virtual" in stdout
+
+
 def test_edge_candidate_factory_build_cli_writes_artifacts(
     tmp_path: Path,
     monkeypatch,
@@ -365,3 +374,32 @@ def test_edge_candidate_adversarial_cli_packet_and_import(
     assert review["review_status"] == "MISSING_ARTIFACT"
     assert review["paper_execution_allowed"] is False
     assert review["live_allowed"] is False
+
+
+def test_edge_candidate_artifact_summary_cli_writes_summary(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    missing_report = tmp_path / "missing_report.json"
+
+    result = runner.invoke(
+        app,
+        [
+            "edge-candidate-artifact-summary",
+            "--candidate-report",
+            str(missing_report),
+            "--out",
+            "data/edge_candidate_factory/summary",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "production_exchange_write_used=false" in result.stdout
+    assert "live_order_allowed=false" in result.stdout
+    assert "known_gap_count=" in result.stdout
+    summary_path = tmp_path / "data/edge_candidate_factory/summary/artifact_summary.json"
+    assert summary_path.exists()
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    assert summary["core_status"] == "MISSING_CORE_ARTIFACTS"
+    assert summary["artifacts"]["candidate_report"]["exists"] is False

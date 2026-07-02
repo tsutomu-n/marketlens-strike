@@ -43,6 +43,7 @@ from sis.edge_candidate_factory.adversarial_review import (
     build_adversarial_packet,
     import_adversarial_review,
 )
+from sis.edge_candidate_factory.summary import build_edge_candidate_artifact_summary
 from sis.edge_candidate_factory.smart_priors import (
     DEFAULT_SMART_PRIOR_CAUSE_IDS,
     DEFAULT_SMART_PRIOR_FAMILY_IDS,
@@ -81,6 +82,7 @@ __all__ = [
     "build_edge_candidate_factory_run",
     "build_adversarial_packet",
     "build_backtest_kill_gate",
+    "build_edge_candidate_artifact_summary",
     "build_risk_actual_cash_handoff",
     "build_trial_multiplicity_account",
     "build_virtual_execution_gate",

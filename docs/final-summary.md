@@ -1,9 +1,74 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-29_19:32 JST
+更新日: 2026-07-02_21:20 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core Smart Priors Implementation
+
+Completed on branch `ai/profit-core-smart-priors-20260702-1952`.
+
+Goal:
+
+Implement the PR #17 Profit Core Smart Priors plan through the user-action-free work units T1-T11.
+
+Achieved:
+
+- Added `edge_candidate_factory` artifact contracts, schemas, fixtures, and schema/model tests.
+- Added smart prior taxonomy, deterministic candidate factory, search/rejection ledgers, and trial multiplicity accounting.
+- Added local-only CLIs for candidate build, backtest kill gate, virtual execution gate, risk/actual-cash handoff, adversarial packet/import, and artifact summary.
+- Hardened C9 authoring bridge semantics so `BRIDGED` remains technical-only and not economic pass or actual-cash proof.
+- Kept backtest, virtual, handoff, and adversarial outputs from granting paper/live/actual-cash/gate override permission.
+- Added focused implementation plan docs for each checkpoint under `docs/plans/2026-07-02-profit-core-smart-priors/`.
+
+Main files changed:
+
+- `src/sis/edge_candidate_factory/`
+- `src/sis/commands/edge_candidate_factory.py`
+- `schemas/*edge_candidate*` and related v1 schemas
+- `tests/edge_candidate_factory/`
+- `docs/plans/2026-07-02-profit-core-smart-priors/`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/strategy_idea_candidates/GOAL_AND_GLOSSARY.md`
+
+Verification:
+
+- `uv run pytest tests/edge_candidate_factory -q` -> 75 passed.
+- `uv run sis edge-candidate-artifact-summary --help` -> exit 0.
+- `uv run python scripts/check_cli_catalog.py` -> checked 238 public CLI commands.
+- `uv run python scripts/check_current_docs.py` -> checked 197 current docs.
+- `uv run ruff check src/sis/edge_candidate_factory src/sis/commands/edge_candidate_factory.py tests/edge_candidate_factory` -> passed.
+- `uv run ruff format --check src/sis/edge_candidate_factory src/sis/commands/edge_candidate_factory.py tests/edge_candidate_factory` -> passed.
+- `uv run ty check src/sis/edge_candidate_factory src/sis/commands/edge_candidate_factory.py --python-version 3.13 --output-format concise` -> passed.
+- `uv run pyrefly check src/sis/edge_candidate_factory src/sis/commands/edge_candidate_factory.py` -> 0 errors.
+- `git diff --check` -> passed.
+- `./scripts/check` -> 2931 passed, 1 skipped.
+
+Remaining work:
+
+- No remaining T1-T11 work from PR #17 in this implementation slice.
+- Production/demo/testnet exchange execution, external LLM API calls, actual cash row generation, and risk/actual-cash gate execution remain explicit later work.
+
+User decisions required:
+
+None for this implementation slice.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required. New artifacts are local JSON/JSONL outputs under caller-selected output directories.
+
+Rollback:
+
+Revert the commits on `ai/profit-core-smart-priors-20260702-1952` after `82de0ef docs: tighten profit core smart priors plan`.
 
 ## Latest Addendum: Full Check Green CP3
 
