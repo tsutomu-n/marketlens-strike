@@ -11,7 +11,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from sis.backtest.artifact_io import sha256_file
 from sis.edge_candidate_factory._contracts import (
-    AdjustmentStatus,
     CandidateDecision,
     CandidateGateStatus,
     CandidateRowKind,
@@ -23,7 +22,6 @@ from sis.edge_candidate_factory.ledger import (
     write_edge_candidate_ledgers,
 )
 from sis.edge_candidate_factory.models import (
-    AdjustmentMethods,
     ArtifactRef,
     EdgeCandidateSearchLedgerRow,
     GeneratorConfig,
@@ -32,6 +30,7 @@ from sis.edge_candidate_factory.models import (
     SmartCandidatePriorReport,
     TrialMultiplicityAccount,
 )
+from sis.edge_candidate_factory.multiplicity import build_trial_multiplicity_account
 from sis.edge_candidate_factory.smart_priors import (
     build_default_candidate_card,
     default_smart_prior_family_ids,
@@ -298,37 +297,16 @@ def build_edge_candidate_factory_run(config: EdgeCandidateFactoryConfig) -> Edge
             "not alpha or profit proof",
         ],
     )
-    multiplicity_account = TrialMultiplicityAccount(
+    multiplicity_account = build_trial_multiplicity_account(
         account_id=f"{config.run_id}-multiplicity",
         created_at=generated_at,
-        producer=ProducerInfo(command="edge-candidate-factory-build"),
         source_refs=source_refs,
         candidate_run_id=config.run_id,
-        candidate_count_total=len(search_rows),
-        candidate_count_shortlisted=len(candidate_cards),
-        candidate_count_rejected=len(rejection_rows),
-        family_count=len(family_trial_counts),
-        family_trial_counts=family_trial_counts,
-        parameter_grid_hashes=[
-            stable_parameter_hash({"family": family_id, "count": count})
-            for family_id, count in sorted(family_trial_counts.items())
-        ],
-        candidate_cluster_count=len({row.candidate_cluster_id for row in search_rows}),
-        effective_trial_count_status=AdjustmentStatus.NOT_ESTIMABLE,
-        effective_trial_count=None,
+        search_ledger_rows=search_rows,
+        expected_trial_count=len(search_rows),
         validation_peek_count=0,
         rerank_count=0,
-        sealed_test_used_for_selection=False,
-        success_only_reporting=False,
-        adjustment_methods=AdjustmentMethods(
-            benjamini_hochberg_fdr=AdjustmentStatus.NOT_ESTIMABLE,
-            benjamini_yekutieli_fdr=AdjustmentStatus.NOT_ESTIMABLE,
-            pbo=AdjustmentStatus.NOT_ESTIMABLE,
-            white_reality_check=AdjustmentStatus.NOT_ESTIMABLE,
-            deflated_sharpe_ratio=AdjustmentStatus.NOT_ESTIMABLE,
-        ),
         known_gaps=[
-            "effective trial count is not estimated in T4",
             "source availability not checked in T4",
         ],
     )

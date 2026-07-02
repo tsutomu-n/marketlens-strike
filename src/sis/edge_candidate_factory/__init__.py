@@ -23,6 +23,10 @@ from sis.edge_candidate_factory.generator import (
     build_edge_candidate_factory_run,
     write_edge_candidate_factory_run,
 )
+from sis.edge_candidate_factory.multiplicity import (
+    MultiplicityAccountError,
+    build_trial_multiplicity_account,
+)
 from sis.edge_candidate_factory.smart_priors import (
     DEFAULT_SMART_PRIOR_CAUSE_IDS,
     DEFAULT_SMART_PRIOR_FAMILY_IDS,
@@ -58,8 +62,10 @@ __all__ = [
     "DEFAULT_SMART_PRIOR_FAMILY_IDS",
     "build_default_candidate_card",
     "build_edge_candidate_factory_run",
+    "build_trial_multiplicity_account",
     "default_smart_prior_families",
     "default_smart_prior_family_ids",
     "smart_prior_family_by_id",
     "write_edge_candidate_factory_run",
+    "MultiplicityAccountError",
 ]
