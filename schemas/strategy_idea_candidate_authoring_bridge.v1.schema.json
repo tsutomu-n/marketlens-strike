@@ -150,8 +150,17 @@
         "status_counts",
         "bridged_count",
         "blocked_count",
+        "technical_bridged_count",
+        "economic_gate_ready_count",
+        "economic_gate_not_evaluated_count",
+        "actual_cash_ready_count",
+        "actual_cash_missing_count",
+        "bridge_success_semantics",
+        "bridged_status_semantics",
+        "economic_gate_status",
         "candidate_scoped_outputs",
-        "actual_cash_result_available"
+        "actual_cash_result_available",
+        "default_backtest_pack_is_candidate_proof"
       ],
       "properties": {
         "candidate_count": {
@@ -173,10 +182,40 @@
           "type": "integer",
           "minimum": 0
         },
+        "technical_bridged_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "economic_gate_ready_count": {
+          "const": 0
+        },
+        "economic_gate_not_evaluated_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actual_cash_ready_count": {
+          "const": 0
+        },
+        "actual_cash_missing_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bridge_success_semantics": {
+          "const": "technical_only"
+        },
+        "bridged_status_semantics": {
+          "const": "technical_bridge_only_not_profit_proof"
+        },
+        "economic_gate_status": {
+          "const": "NOT_EVALUATED"
+        },
         "candidate_scoped_outputs": {
           "const": true
         },
         "actual_cash_result_available": {
+          "const": false
+        },
+        "default_backtest_pack_is_candidate_proof": {
           "const": false
         }
       }

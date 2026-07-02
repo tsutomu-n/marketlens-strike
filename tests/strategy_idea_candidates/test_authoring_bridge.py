@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import duckdb
+from jsonschema import Draft202012Validator
 import polars as pl
 from typer.testing import CliRunner
 
@@ -26,6 +27,11 @@ from .fixtures import HASH_A, HASH_B, HASH_C, candidate_boundary
 
 
 runner = CliRunner()
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _schema(name: str) -> dict[str, Any]:
+    return json.loads((REPO_ROOT / "schemas" / name).read_text(encoding="utf-8"))
 
 
 def _candidate(
@@ -429,6 +435,20 @@ def test_authoring_bridge_generates_candidate_scoped_artifacts_and_backtest_pack
     )
 
     assert result.manifest.summary["status_counts"]["BRIDGED"] == 2
+    Draft202012Validator(
+        _schema("strategy_idea_candidate_authoring_bridge.v1.schema.json")
+    ).validate(json.loads(result.manifest_path.read_text(encoding="utf-8")))
+    assert result.manifest.summary["technical_bridged_count"] == 2
+    assert result.manifest.summary["economic_gate_ready_count"] == 0
+    assert result.manifest.summary["economic_gate_not_evaluated_count"] == 2
+    assert result.manifest.summary["actual_cash_ready_count"] == 0
+    assert result.manifest.summary["actual_cash_missing_count"] == 2
+    assert result.manifest.summary["bridge_success_semantics"] == "technical_only"
+    assert (
+        result.manifest.summary["bridged_status_semantics"]
+        == "technical_bridge_only_not_profit_proof"
+    )
+    assert result.manifest.summary["economic_gate_status"] == "NOT_EVALUATED"
     for candidate_id in ["cand-001-momentum", "cand-002-funding"]:
         candidate_dir = tmp_path / "bridge_out" / candidate_id
         assert (candidate_dir / "prep_watchdeck_source_manifest.json").exists()
@@ -440,9 +460,18 @@ def test_authoring_bridge_generates_candidate_scoped_artifacts_and_backtest_pack
         assert (candidate_dir / "strategy_authoring_bundle.yaml").exists()
         assert (candidate_dir / "backtest_pack/strategy_backtest_pack.json").exists()
         assert (candidate_dir / "backtest_pack/strategy_backtest_pack_validation.json").exists()
-        assert load_authoring_spec(candidate_dir / "strategy_authoring_spec.yaml")
+        spec = load_authoring_spec(candidate_dir / "strategy_authoring_spec.yaml")
+        assert spec.backtest.min_trade_count == 0
+        assert spec.backtest.pass_thresholds == {}
         assert load_backtest_suite_spec(candidate_dir / "strategy_backtest_suite.yaml")
         assert load_authoring_bundle_spec(candidate_dir / "strategy_authoring_bundle.yaml")
+        source_manifest = json.loads(
+            (candidate_dir / "prep_watchdeck_source_manifest.json").read_text(encoding="utf-8")
+        )
+        assert source_manifest["bridge_success_semantics"] == "technical_only"
+        assert source_manifest["economic_gate_status"] == "NOT_EVALUATED"
+        assert source_manifest["actual_cash_ready"] is False
+        assert source_manifest["candidate_proof_status"] == "not_profit_or_actual_cash_proof"
     feature = pl.read_parquet(tmp_path / "bridge_out/cand-001-momentum/feature_panel.parquet")
     assert {
         "canonical_symbol",

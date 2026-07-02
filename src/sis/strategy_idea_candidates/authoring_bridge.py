@@ -101,6 +101,31 @@ class StrategyIdeaCandidateAuthoringBridgeOutputExistsError(ValueError):
     pass
 
 
+def _build_authoring_bridge_summary(
+    candidate_results: list[StrategyIdeaCandidateAuthoringBridgeCandidate],
+) -> dict[str, Any]:
+    status_counts = Counter(item.status for item in candidate_results)
+    candidate_count = len(candidate_results)
+    technical_bridged_count = status_counts.get("BRIDGED", 0)
+    return {
+        "candidate_count": candidate_count,
+        "status_counts": dict(sorted(status_counts.items())),
+        "bridged_count": technical_bridged_count,
+        "blocked_count": candidate_count - technical_bridged_count,
+        "technical_bridged_count": technical_bridged_count,
+        "economic_gate_ready_count": 0,
+        "economic_gate_not_evaluated_count": technical_bridged_count,
+        "actual_cash_ready_count": 0,
+        "actual_cash_missing_count": candidate_count,
+        "bridge_success_semantics": "technical_only",
+        "bridged_status_semantics": "technical_bridge_only_not_profit_proof",
+        "economic_gate_status": "NOT_EVALUATED",
+        "candidate_scoped_outputs": True,
+        "actual_cash_result_available": False,
+        "default_backtest_pack_is_candidate_proof": False,
+    }
+
+
 def build_strategy_idea_candidate_authoring_bridge(
     *,
     candidate_set_path: Path,
@@ -151,7 +176,6 @@ def build_strategy_idea_candidate_authoring_bridge(
             )
         )
 
-    status_counts = Counter(item.status for item in candidate_results)
     manifest = StrategyIdeaCandidateAuthoringBridgeManifest(
         manifest_id=f"{candidate_set.candidate_set_id}-authoring-bridge",
         created_at=datetime.now(timezone.utc).replace(microsecond=0),
@@ -165,16 +189,10 @@ def build_strategy_idea_candidate_authoring_bridge(
         ledger_sha256=sha256_file(ledger_path),
         prep_watchdeck_root=prep_watchdeck_root.as_posix(),
         candidates=candidate_results,
-        summary={
-            "candidate_count": len(candidate_results),
-            "status_counts": dict(sorted(status_counts.items())),
-            "bridged_count": status_counts.get("BRIDGED", 0),
-            "blocked_count": len(candidate_results) - status_counts.get("BRIDGED", 0),
-            "candidate_scoped_outputs": True,
-            "actual_cash_result_available": False,
-        },
+        summary=_build_authoring_bridge_summary(candidate_results),
         known_gaps=[
             "C9_V0_DOES_NOT_PROVE_ALPHA_OR_PROFIT",
+            "BRIDGED_STATUS_IS_TECHNICAL_ONLY_NOT_ECONOMIC_PASS",
             "PREP_WATCHDECK_COSTS_ARE_ESTIMATE_ONLY",
             "DO_NOT_FEED_PREVIEW_OR_ESTIMATE_ROWS_TO_ACTUAL_CASH_REPORT",
         ],
@@ -726,10 +744,17 @@ def _source_manifest(
         "source_exchange": source.snapshot_source.get("exchange") or "bitget",
         "source_product_type": source.snapshot_source.get("productType") or SUPPORTED_PRODUCT_TYPE,
         "authoring_execution_venue": AUTHORING_VENUE,
+        "bridge_success_semantics": "technical_only",
+        "bridged_status_semantics": "technical_bridge_only_not_profit_proof",
+        "economic_gate_status": "NOT_EVALUATED",
+        "economic_gate_ready": False,
+        "actual_cash_ready": False,
+        "candidate_proof_status": "not_profit_or_actual_cash_proof",
         "bid_ask_estimated_from_spread_bps": any(bid_ask_estimated),
         "cost_basis": "ESTIMATE_ONLY",
         "actual_cash_result_available": False,
         "known_gaps": [
+            "BRIDGED_STATUS_IS_TECHNICAL_ONLY_NOT_ECONOMIC_PASS",
             "ORDERBOOK_DEPTH_NOT_MEASURED",
             "SLIPPAGE_NOT_MEASURED",
             "LIQUIDATION_STREAM_NOT_AVAILABLE_IN_PREP_WATCHDECK",
