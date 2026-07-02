@@ -39,6 +39,16 @@ def test_edge_candidate_backtest_kill_gate_help() -> None:
     assert "--metrics" in stdout
 
 
+def test_edge_candidate_virtual_execution_gate_help() -> None:
+    result = runner.invoke(app, ["edge-candidate-virtual-execution-gate", "--help"])
+    stdout = normalized_stdout(result)
+
+    assert result.exit_code == 0
+    assert "--candidate-id" in stdout
+    assert "--venue-id" in stdout
+    assert "reconciliation" in stdout
+
+
 def test_edge_candidate_factory_build_cli_writes_artifacts(
     tmp_path: Path,
     monkeypatch,
@@ -195,3 +205,37 @@ def test_edge_candidate_backtest_kill_gate_cli_writes_artifact(
     Draft202012Validator(_schema("backtest_kill_gate.v1.schema.json")).validate(gate)
     assert gate["gate_status"] == "RESEARCH_ONLY"
     assert gate["boundary"]["paper_execution_allowed"] is False
+
+
+def test_edge_candidate_virtual_execution_gate_cli_writes_artifact(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "edge-candidate-virtual-execution-gate",
+            "--candidate-id",
+            "edge-cand-001",
+            "--venue-id",
+            "bitget",
+            "--out",
+            "data/edge_candidate_factory/virtual_gates",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "network_attempted=false" in result.stdout
+    assert "production_exchange_write_used=false" in result.stdout
+    assert "live_order_submitted=false" in result.stdout
+    assert "status=virtual_passed_execution_lifecycle" in result.stdout
+    gate_path = tmp_path / "data/edge_candidate_factory/virtual_gates/edge-cand-001.json"
+    assert gate_path.exists()
+    gate = json.loads(gate_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_schema("virtual_execution_gate.v1.schema.json")).validate(gate)
+    assert gate["gate_status"] == "VIRTUAL_PASSED_EXECUTION_LIFECYCLE"
+    assert gate["actual_cash"] is False
+    assert gate["cash_metric_basis"] == "virtual_exchange"
+    assert gate["production_exchange_write_used"] is False

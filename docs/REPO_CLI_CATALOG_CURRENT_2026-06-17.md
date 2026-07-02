@@ -82,6 +82,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-idea-candidates-bitget-source-refresh`
 - `edge-candidate-factory-build`
 - `edge-candidate-backtest-kill-gate`
+- `edge-candidate-virtual-execution-gate`
 - `strategy-model-run-record`
 - `strategy-micro-live-plan`
 - `strategy-next-scale-plan`

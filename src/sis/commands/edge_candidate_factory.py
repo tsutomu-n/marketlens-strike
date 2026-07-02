@@ -17,6 +17,7 @@ from sis.edge_candidate_factory.generator import (
 from sis.edge_candidate_factory.backtest_inputs import extract_backtest_metrics
 from sis.edge_candidate_factory.backtest_kill_gate import build_backtest_kill_gate
 from sis.edge_candidate_factory.models import ArtifactRef, TrialMultiplicityAccount
+from sis.edge_candidate_factory.virtual_execution_gate import build_virtual_execution_gate
 from sis.settings import get_settings
 from sis.backtest.artifact_io import sha256_file
 from sis.strategy_inputs.io import read_mapping_file, write_json_artifact
@@ -228,5 +229,74 @@ def register_edge_candidate_factory_commands(app: typer.Typer) -> None:
         _echo_safe_stdout_prefix()
         typer.echo(f"status={gate.gate_status.value.lower()}")
         typer.echo(f"gate_status={gate.gate_status.value}")
+        typer.echo(f"artifact_path={gate_path.as_posix()}")
+        typer.echo(f"known_gap_count={len(gate.known_gaps)}")
+
+    @app.command("edge-candidate-virtual-execution-gate")
+    def edge_candidate_virtual_execution_gate_cmd(
+        candidate_id: str = typer.Option(..., "--candidate-id"),
+        venue_id: str = typer.Option("bitget", "--venue-id"),
+        out: Path = typer.Option(
+            Path("data/edge_candidate_factory/virtual_execution_gate"),
+            "--out",
+            help="Output directory for virtual execution gate artifacts.",
+        ),
+        source_available: bool = typer.Option(
+            True,
+            "--source-available/--source-missing",
+        ),
+        execution_precheck_passed: bool = typer.Option(
+            True,
+            "--execution-precheck-passed/--execution-precheck-blocked",
+        ),
+        order_lifecycle_failure: bool = typer.Option(
+            False,
+            "--order-lifecycle-failure",
+            help="Fixture mode: simulate an order lifecycle failure.",
+        ),
+        reconciliation_mismatch: bool = typer.Option(
+            False,
+            "--reconciliation-mismatch",
+            help="Fixture mode: simulate a flat reconciliation mismatch.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing gate artifact.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        resolved_out = _resolve_workspace_path(out, settings.data_dir)
+        try:
+            gate = build_virtual_execution_gate(
+                gate_id=f"{candidate_id}-virtual-execution-gate",
+                created_at=datetime.now(timezone.utc).replace(microsecond=0),
+                candidate_id=candidate_id,
+                venue_id=venue_id,
+                source_available=source_available,
+                execution_precheck_passed=execution_precheck_passed,
+                partial_fill_handled=not order_lifecycle_failure,
+                flat_reconciliation_passed=not reconciliation_mismatch,
+            )
+            gate_path = resolved_out / f"{candidate_id}.json"
+            if gate_path.exists() and not replace_existing:
+                raise EdgeCandidateFactoryOutputExistsError(f"output already exists: {gate_path}")
+            write_json_artifact(gate_path, gate.model_dump(mode="json"))
+        except (
+            EdgeCandidateFactoryError,
+            EdgeCandidateFactoryOutputExistsError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            _echo_safe_stdout_prefix()
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        _echo_safe_stdout_prefix()
+        typer.echo(f"status={gate.gate_status.value.lower()}")
+        typer.echo(f"gate_status={gate.gate_status.value}")
+        typer.echo("actual_cash=false")
+        typer.echo("cash_metric_basis=virtual_exchange")
         typer.echo(f"artifact_path={gate_path.as_posix()}")
         typer.echo(f"known_gap_count={len(gate.known_gaps)}")
