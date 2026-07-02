@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-02_00:00 JST
-更新日: 2026-07-02_00:00 JST
+更新日: 2026-07-02_19:40 JST
 -->
 
 # Artifact Contracts: Profit Core Smart Priors
@@ -13,20 +13,27 @@
 
 ## 共通boundary
 
-すべての新artifactに次のboundaryを持たせる。
+すべての新artifactに、既存repoの安全検出語彙を含むboundaryを持たせる。新語彙だけに寄せない。
 
 ```json
 {
   "paper_execution_allowed": false,
   "live_allowed": false,
-  "wallet_allowed": false,
-  "signing_allowed": false,
+  "permits_live_order": false,
+  "live_conversion_allowed": false,
+  "wallet_used": false,
+  "signing_used": false,
+  "exchange_write_used": false,
   "production_exchange_write_allowed": false,
+  "production_exchange_write_used": false,
+  "live_order_submitted": false,
   "auto_promote": false
 }
 ```
 
-Virtual系artifactだけは `exchange_write_used` を持ってよい。ただし、必ず環境を分ける。
+`wallet_allowed` / `signing_allowed` のような許可語彙を追加する場合でも、既存の `wallet_used` / `signing_used` / `exchange_write_used` / `permits_live_order` を省略しない。
+
+Virtual系artifactだけは demo / testnet opt-in 時に `exchange_write_used=true` を持ってよい。ただし、必ず環境を分け、production writeやactual cashへ昇格しない。
 
 ```json
 {
@@ -351,6 +358,9 @@ multiplicity_account_ref
 backtest_refs
 gate_status
 recommended_action
+metric_extraction_status
+metric_source_refs
+metric_not_estimable_reasons
 conditions
 metrics
 known_gaps
@@ -359,7 +369,17 @@ boundary
 
 ### conditions
 
-最低限:
+最低限。booleanだけでなく、各conditionは `PASS | FAIL | NOT_ESTIMABLE | NOT_APPLICABLE` を持つ。
+
+```text
+condition_id
+condition_status
+observed
+required
+source_ref
+```
+
+必須condition id:
 
 ```text
 source_available
@@ -392,6 +412,8 @@ validation_peek_count
 candidate_cluster_count
 effective_trial_count
 ```
+
+`metrics` の各値は、既存artifactから抽出できない場合に推定で埋めない。値を `null` にし、該当conditionを `NOT_ESTIMABLE` にする。
 
 ## Schema 5: `virtual_execution_gate.v1`
 
@@ -456,7 +478,48 @@ production_exchange_write_not_used
 
 `virtual_execution_gate.v1` はprofit proofではない。PnLを保存する場合でも、`cash_metric_basis=virtual_exchange` とし、actual cashへの変換を禁止する。
 
-## Schema 6: `llm_adversarial_evidence_review.v1`
+## Schema 6: `edge_candidate_risk_actual_cash_handoff.v1`
+
+### 目的
+
+既存Risk-Taker Review / Actual Cash Report Gateへ進める時に、virtual/backtest evidenceをactual cash evidenceとして誤送信しない。
+
+### status
+
+```text
+BLOCKED_NEEDS_ACTUAL_CASH_ROWS
+READY_WITH_ACTUAL_CASH_ROWS
+```
+
+### 必須field
+
+```text
+schema_version = edge_candidate_risk_actual_cash_handoff.v1
+handoff_id
+created_at
+producer
+candidate_id
+candidate_report_ref
+search_ledger_ref
+multiplicity_account_ref
+backtest_kill_gate_ref
+virtual_execution_gate_ref
+risk_taker_review_input_status
+actual_cash_report_gate_input_status
+actual_cash_rows_required=true
+actual_cash_rows_ref
+virtual_or_backtest_used_as_actual_cash=false
+known_gaps
+boundary
+```
+
+### 禁止
+
+- `virtual_execution_gate.v1` を actual cash rows として扱う。
+- `backtest_kill_gate.v1` を actual cash rows として扱う。
+- actual cash rowsが無いのに `crypto-perp-actual-cash-report-gate` をreadyにする。
+
+## Schema 7: `llm_adversarial_evidence_review.v1`
 
 ### 目的
 
@@ -552,6 +615,8 @@ data/edge_candidate_factory/<run_id>/trial_multiplicity_account.json
 data/edge_candidate_factory/<run_id>/candidate_rejections.jsonl
 data/edge_candidate_factory/<run_id>/backtest_kill_gate/<candidate_id>.json
 data/edge_candidate_factory/<run_id>/virtual_execution_gate/<candidate_id>.json
+data/edge_candidate_factory/<run_id>/risk_actual_cash_handoff/<candidate_id>.json
+data/edge_candidate_factory/<run_id>/adversarial_review/
 ```
 
 `data/` はgit-ignored runtime state。tracked test fixturesは `tests/fixtures/edge_candidate_factory/` に置く。
@@ -564,6 +629,7 @@ data/edge_candidate_factory/<run_id>/virtual_execution_gate/<candidate_id>.json
 2. shortlistだけを `strategy_idea_candidate_set.v1` または `strategy_idea.v1` draftへexportできる。
 3. C9 bridgeへ渡す場合は candidate set path/hash と ledger path/hash を失わない。
 4. `crypto-perp-risk-taker-review` へ渡す前に、Virtual Execution Gate と Backtest Kill Gate のknown gapsをsource refsとして残す。
+5. `crypto-perp-actual-cash-report-gate` へ渡す前に、既存 actual-cash rows builder のrows refを必須にする。
 
 ## Acceptance invariants
 
@@ -576,4 +642,5 @@ Python validationで必ず落とすもの:
 - virtual cash basisをactual cashへ昇格するfield。
 - missing source refsなのに `SHORTLIST_FOR_VIRTUAL`。
 - C9 bridge technical statusだけで economic pass を出すartifact。
+- virtual/backtest artifactをactual cash rowsとして扱うartifact。
 - LLM approval fieldをgate resultとして扱うartifact。

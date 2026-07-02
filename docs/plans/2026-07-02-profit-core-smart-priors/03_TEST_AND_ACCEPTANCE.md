@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-02_00:00 JST
-更新日: 2026-07-02_00:00 JST
+更新日: 2026-07-02_19:40 JST
 -->
 
 # Test And Acceptance Plan: Profit Core Smart Priors
@@ -22,6 +22,7 @@
 - `trial_multiplicity_account.v1`
 - `backtest_kill_gate.v1`
 - `virtual_execution_gate.v1`
+- `edge_candidate_risk_actual_cash_handoff.v1`
 - `llm_adversarial_evidence_review.v1`
 
 必須テスト:
@@ -32,6 +33,7 @@ extra field fails
 permission true flag fails
 missing source refs fail when required
 virtual actual_cash=true fails
+virtual_or_backtest_used_as_actual_cash=true fails
 LLM approval override fails
 ```
 
@@ -178,7 +180,27 @@ unsupported family still writes blocker
 source missing still writes blocker
 ```
 
-### L7: LLM Adversarial Evidence Review tests
+### L7: Risk / Actual Cash handoff tests
+
+目的: virtual/backtest evidenceをactual cash evidenceとして既存gateへ誤送信しないことを確認する。
+
+必須テスト:
+
+```text
+virtual and backtest refs alone -> BLOCKED_NEEDS_ACTUAL_CASH_ROWS
+actual cash rows missing -> actual cash report gate command is not recommended
+actual cash rows ref present -> READY_WITH_ACTUAL_CASH_ROWS
+virtual_or_backtest_used_as_actual_cash=true fails validation
+candidate id and gate refs are preserved
+```
+
+想定ファイル:
+
+```text
+tests/edge_candidate_factory/test_risk_actual_cash_handoff.py
+```
+
+### L8: LLM Adversarial Evidence Review tests
 
 目的: LLM reviewがapprovalではなくnegative-vetoに限定されることを確認する。
 
@@ -199,7 +221,7 @@ non-machine-checkable finding remains soft warning
 tests/edge_candidate_factory/test_adversarial_review.py
 ```
 
-### L8: CLI tests
+### L9: CLI tests
 
 目的: public commandsがoperatorに危険な誤読をさせないstdoutを出すことを確認する。
 
@@ -208,6 +230,10 @@ tests/edge_candidate_factory/test_adversarial_review.py
 ```text
 edge-candidate-factory-run --help works
 edge-candidate-backtest-kill-gate --help works
+edge-candidate-virtual-execution-gate --help works
+edge-candidate-risk-actual-cash-handoff --help works
+edge-candidate-adversarial-packet-build --help works
+edge-candidate-adversarial-import --help works
 edge-candidate-artifact-summary --help works
 network_attempted=false emitted in local mode
 production_exchange_write_used=false emitted before virtual network mode
@@ -255,6 +281,8 @@ var/snapshots/latest.json
 6. virtual execution normal lifecycle。
 7. virtual execution reconciliation mismatch。
 8. LLM adversarial response with overclaim。
+9. actual cash handoff without actual cash rows。
+10. actual cash handoff with fixture actual cash rows ref。
 
 ## Acceptance matrix
 
@@ -268,17 +296,17 @@ var/snapshots/latest.json
 | Backtest Kill Gate | backtest pass alone cannot advance | L4 |
 | Bridge | technical bridge not economic pass | L6 |
 | Virtual Gate | lifecycle pass is not profit proof | L5 |
-| LLM Review | LLM cannot approve or override gate | L7 |
-| CLI | safe stdout fields emitted | L8 |
+| Risk / Actual Cash Handoff | virtual/backtest cannot become actual cash rows | L7 |
+| LLM Review | LLM cannot approve or override gate | L8 |
+| CLI | safe stdout fields emitted | L9 |
 
 ## Definition of Done by task
 
 ### T1 done
 
 ```bash
-uv run sis --help
-uv run python scripts/check_cli_catalog.py
-uv run ruff check src/sis/edge_candidate_factory src/sis/commands/edge_candidate_factory.py
+uv run python -c "import sis.edge_candidate_factory"
+uv run ruff check src/sis/edge_candidate_factory tests/edge_candidate_factory
 ```
 
 ### T2 done
@@ -312,6 +340,7 @@ uv run pytest tests/edge_candidate_factory/test_ledger.py -q
 
 ```bash
 uv run pytest tests/edge_candidate_factory/test_backtest_kill_gate.py -q
+uv run pytest tests/edge_candidate_factory/test_backtest_inputs.py -q
 ```
 
 ### T7 done
@@ -324,12 +353,28 @@ uv run pytest tests/strategy_idea_candidates/test_authoring_bridge.py -q
 
 ```bash
 uv run pytest tests/edge_candidate_factory/test_virtual_execution_gate.py -q
+uv run pytest tests/edge_candidate_factory/test_cli.py -q
 ```
 
 ### T9 done
 
 ```bash
+uv run pytest tests/edge_candidate_factory/test_risk_actual_cash_handoff.py -q
+uv run pytest tests/edge_candidate_factory/test_cli.py -q
+```
+
+### T10 done
+
+```bash
 uv run pytest tests/edge_candidate_factory/test_adversarial_review.py -q
+uv run pytest tests/edge_candidate_factory/test_cli.py -q
+```
+
+### T11 done
+
+```bash
+uv run pytest tests/edge_candidate_factory/test_summary.py -q
+uv run pytest tests/edge_candidate_factory/test_cli.py -q
 ```
 
 ### Final done
@@ -359,6 +404,7 @@ uv run pytest -q
 - sealed testをselectionに使っている。
 - C9 technical bridgeをeconomic passにしている。
 - virtual PnLをactual cashにしている。
+- virtual/backtest artifactをactual cash rowsとしてhandoffしている。
 - virtual gateがflat reconciliationを見ていない。
 - LLM outputがpermissionやgate overrideを持つ。
 - Addon resultがCore statusを上書きする。

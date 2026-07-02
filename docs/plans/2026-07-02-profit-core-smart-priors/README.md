@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-02_00:00 JST
-更新日: 2026-07-02_00:00 JST
+更新日: 2026-07-02_19:40 JST
 -->
 
 # Profit Core Smart Priors Implementation Plan
@@ -9,12 +9,13 @@
 
 次に実装するべきものは、単体の候補生成強化ではない。`marketlens-strike` の次Coreは、Smart Edge Candidate Factory、探索会計、候補別bridge、Backtest Kill Gate、Virtual Execution Gate、Risk-Taker Review、Actual Cash Report Gate を1本の検証throughputとして接続することです。
 
-ただし、最初から全機能を大きく作らない。最初の実装単位は次の4つです。
+ただし、最初から全機能を大きく作らない。最初の実装単位は次の5つです。
 
 1. `Smart Prior Generator v0`: feature list ではなく、flow cause から候補を作る。
 2. `Trial Multiplicity Account v0`: 候補生成前に探索会計を固定する。
 3. `Backtest Kill Gate v0`: backtest を攻める許可ではなく、候補を殺す装置にする。
 4. `Virtual Execution Gate v0`: actual cash 前に、demo / testnet / fixture で order lifecycle と reconciliation を検証する。
+5. `Risk / Actual Cash Handoff Contract v0`: 既存 `crypto-perp-risk-taker-review` と `crypto-perp-actual-cash-report-gate` へ渡せるもの、渡してはいけないものを固定する。
 
 `risk_taker_review` と `actual_cash_report_gate` は後段の最終判定器として維持する。C9 bridge と Strategy Authoring は完全なAddonではなく、候補を検証経路へ機械的に流すCore補助として扱う。NDX、Trade[XYZ]、generic Strategy Lab、optional backtest frameworks、full UI、full operations audit は明示scope時だけ使うAddonへ降格する。
 
@@ -147,6 +148,8 @@ volatility regime
 ### P4: Risk-Taker Review / Actual Cash integration
 
 - existing `crypto-perp-risk-taker-review` remains final human-risk precheck.
+- existing `crypto-perp-actual-cash-report-gate` requires actual-cash rows and must not consume virtual/backtest artifacts as cash evidence.
+- handoff artifact records candidate refs, backtest kill gate refs, virtual gate refs, and explicit `actual_cash_rows_required=true`.
 - existing actual cash vocabulary remains source of truth.
 
 ### P5: LLM Adversarial Evidence Review
@@ -174,10 +177,13 @@ volatility regime
 2. Edge Candidate Factory v0が、同じsourceとconfigから同じcandidate inventoryを再生成できる。
 3. 全candidate、全rejection、全trial count、validation peek count、sealed test non-use がartifactに残る。
 4. Backtest Kill Gate v0が、攻める許可ではなく `KILL / INCONCLUSIVE_DATA / RESEARCH_ONLY / SHORTLIST_FOR_VIRTUAL` を返す。
-5. Virtual Execution Gate v0が、PnLではなくorder lifecycle / cancel / reject / reduce-only close / flat reconciliationを評価する。
-6. `actual_cash=false` と `cash_metric_basis=virtual_exchange` をvirtual artifactに固定する。
-7. LLM reviewが入る場合でも、LLMはapproval、paper permission、live permission、actual cash判定を出さない。
-8. `uv run python scripts/check_cli_catalog.py`, `uv run python scripts/check_current_docs.py`, `./scripts/check` が通る。
+5. Backtest Kill Gate v0が読む既存backtest artifact、抽出metric、`NOT_ESTIMABLE` 条件が明示される。
+6. Virtual Execution Gate v0が、PnLではなくorder lifecycle / cancel / reject / reduce-only close / flat reconciliationを評価する。
+7. `actual_cash=false` と `cash_metric_basis=virtual_exchange` をvirtual artifactに固定する。
+8. 新artifactのboundaryが既存repoの安全検出語彙を含む。
+9. Risk / Actual Cash handoffが、virtual/backtest artifactをactual cash evidenceとして渡さない。
+10. LLM reviewが入る場合でも、LLMはapproval、paper permission、live permission、actual cash判定を出さない。
+11. `uv run python scripts/check_cli_catalog.py`, `uv run python scripts/check_current_docs.py`, `./scripts/check` が通る。
 
 ## 明示的な非目的
 
