@@ -30,6 +30,7 @@ BACKTEST_KILL_GATE_REQUIRED_CONDITION_IDS = frozenset(
         "largest_loss_within_limit",
         "profit_concentration_within_limit",
         "multiplicity_account_available",
+        "unexecutable_reason_count_zero",
         "sealed_test_not_used_for_selection",
         "execution_precheck_passed",
     }

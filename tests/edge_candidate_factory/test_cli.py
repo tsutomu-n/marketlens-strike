@@ -29,6 +29,16 @@ def test_edge_candidate_factory_build_help() -> None:
     assert "replace-exist" in stdout
 
 
+def test_edge_candidate_backtest_kill_gate_help() -> None:
+    result = runner.invoke(app, ["edge-candidate-backtest-kill-gate", "--help"])
+    stdout = normalized_stdout(result)
+
+    assert result.exit_code == 0
+    assert "--candidate-id" in stdout
+    assert "--family-id" in stdout
+    assert "--metrics" in stdout
+
+
 def test_edge_candidate_factory_build_cli_writes_artifacts(
     tmp_path: Path,
     monkeypatch,
@@ -108,3 +118,80 @@ def test_edge_candidate_factory_build_cli_writes_artifacts(
     )
     assert rerun.exit_code == 2
     assert "status=fail" in rerun.stdout
+
+
+def test_edge_candidate_backtest_kill_gate_cli_writes_artifact(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    build = runner.invoke(
+        app,
+        [
+            "edge-candidate-factory-build",
+            "--source-root",
+            "data/prep/watchdeck",
+            "--symbol",
+            "BTCUSDT",
+            "--family",
+            "liquidation_exhaustion_reversal",
+            "--candidate-cap",
+            "1",
+            "--out",
+            "data/edge_candidate_factory/test-run",
+            "--run-id",
+            "edge-cli-002",
+        ],
+    )
+    assert build.exit_code == 0, build.stdout
+
+    report_path = (
+        tmp_path / "data/edge_candidate_factory/test-run/smart_candidate_prior_report.json"
+    )
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    candidate_id = report["candidate_cards"][0]["candidate_id"]
+    metrics_path = tmp_path / "metrics.json"
+    metrics_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "strategy_backtest_baseline_comparison.v1",
+                "summary": {
+                    "event_count": 120,
+                    "closed_trade_count": 80,
+                    "after_cost_edge_over_no_trade_usd": 10.0,
+                    "stress_edge_over_no_trade_usd": 4.0,
+                    "largest_loss_usd": -100.0,
+                    "profit_concentration": 0.25,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "edge-candidate-backtest-kill-gate",
+            "--candidate-id",
+            candidate_id,
+            "--family-id",
+            "liquidation_exhaustion_reversal",
+            "--multiplicity-account",
+            "data/edge_candidate_factory/test-run/trial_multiplicity_account.json",
+            "--metrics",
+            str(metrics_path),
+            "--out",
+            "data/edge_candidate_factory/gates",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "network_attempted=false" in result.stdout
+    assert "status=research_only" in result.stdout
+    gate_path = tmp_path / f"data/edge_candidate_factory/gates/{candidate_id}.json"
+    assert gate_path.exists()
+    gate = json.loads(gate_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_schema("backtest_kill_gate.v1.schema.json")).validate(gate)
+    assert gate["gate_status"] == "RESEARCH_ONLY"
+    assert gate["boundary"]["paper_execution_allowed"] is False

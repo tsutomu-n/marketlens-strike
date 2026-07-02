@@ -27,6 +27,14 @@ from sis.edge_candidate_factory.multiplicity import (
     MultiplicityAccountError,
     build_trial_multiplicity_account,
 )
+from sis.edge_candidate_factory.backtest_inputs import (
+    BacktestMetricInputs,
+    extract_backtest_metrics,
+)
+from sis.edge_candidate_factory.backtest_kill_gate import (
+    build_backtest_kill_gate,
+    family_event_threshold,
+)
 from sis.edge_candidate_factory.smart_priors import (
     DEFAULT_SMART_PRIOR_CAUSE_IDS,
     DEFAULT_SMART_PRIOR_FAMILY_IDS,
@@ -40,6 +48,7 @@ from sis.edge_candidate_factory.smart_priors import (
 
 __all__ = [
     "BacktestKillGate",
+    "BacktestMetricInputs",
     "CandidateExecutionPrecheck",
     "CandidateMechanismCard",
     "CandidatePriorScore",
@@ -62,9 +71,12 @@ __all__ = [
     "DEFAULT_SMART_PRIOR_FAMILY_IDS",
     "build_default_candidate_card",
     "build_edge_candidate_factory_run",
+    "build_backtest_kill_gate",
     "build_trial_multiplicity_account",
     "default_smart_prior_families",
     "default_smart_prior_family_ids",
+    "extract_backtest_metrics",
+    "family_event_threshold",
     "smart_prior_family_by_id",
     "write_edge_candidate_factory_run",
     "MultiplicityAccountError",

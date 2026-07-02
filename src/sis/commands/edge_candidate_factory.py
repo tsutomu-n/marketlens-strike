@@ -14,7 +14,12 @@ from sis.edge_candidate_factory.generator import (
     build_edge_candidate_factory_run,
     write_edge_candidate_factory_run,
 )
+from sis.edge_candidate_factory.backtest_inputs import extract_backtest_metrics
+from sis.edge_candidate_factory.backtest_kill_gate import build_backtest_kill_gate
+from sis.edge_candidate_factory.models import ArtifactRef, TrialMultiplicityAccount
 from sis.settings import get_settings
+from sis.backtest.artifact_io import sha256_file
+from sis.strategy_inputs.io import read_mapping_file, write_json_artifact
 from sis.strategy_review.provenance import repo_relative_path
 
 
@@ -121,3 +126,107 @@ def register_edge_candidate_factory_commands(app: typer.Typer) -> None:
         typer.echo(f"trial_multiplicity_account_path={result.multiplicity_account_path.as_posix()}")
         typer.echo(f"candidate_rejections_path={result.rejection_ledger_path.as_posix()}")
         typer.echo(f"known_gap_count={len(run.report.known_gaps)}")
+
+    @app.command("edge-candidate-backtest-kill-gate")
+    def edge_candidate_backtest_kill_gate_cmd(
+        candidate_id: str = typer.Option(..., "--candidate-id"),
+        family_id: str = typer.Option(..., "--family-id"),
+        multiplicity_account: Path = typer.Option(
+            ...,
+            "--multiplicity-account",
+            dir_okay=False,
+            help="trial_multiplicity_account.v1 JSON.",
+        ),
+        metrics: list[Path] | None = typer.Option(
+            None,
+            "--metrics",
+            dir_okay=False,
+            help="Backtest metric JSON artifact. Repeat to pass multiple artifacts.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidate_factory/backtest_kill_gate"),
+            "--out",
+            help="Output directory for backtest kill gate artifacts.",
+        ),
+        source_available: bool = typer.Option(
+            True,
+            "--source-available/--source-missing",
+        ),
+        bridge_technical_ready: bool = typer.Option(
+            True,
+            "--bridge-technical-ready/--bridge-technical-blocked",
+        ),
+        execution_precheck_passed: bool = typer.Option(
+            True,
+            "--execution-precheck-passed/--execution-precheck-blocked",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing gate artifact.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        resolved_out = _resolve_workspace_path(out, settings.data_dir)
+        resolved_multiplicity = _resolve_workspace_path(multiplicity_account, settings.data_dir)
+        resolved_metrics = [
+            _resolve_workspace_path(path, settings.data_dir) for path in (metrics or [])
+        ]
+        try:
+            multiplicity = TrialMultiplicityAccount.model_validate(
+                read_mapping_file(resolved_multiplicity)
+            )
+            metric_payloads = [read_mapping_file(path) for path in resolved_metrics]
+            metric_refs = [
+                ArtifactRef(
+                    ref_id=f"metric-{index:03d}",
+                    schema_version=str(payload.get("schema_version", "unknown.v1")),
+                    path=repo_relative_path(path),
+                    sha256=sha256_file(path),
+                )
+                for index, (path, payload) in enumerate(
+                    zip(resolved_metrics, metric_payloads, strict=True),
+                    start=1,
+                )
+            ]
+            multiplicity_ref = ArtifactRef(
+                ref_id="multiplicity-account",
+                schema_version=multiplicity.schema_version,
+                path=repo_relative_path(resolved_multiplicity),
+                sha256=sha256_file(resolved_multiplicity),
+            )
+            gate = build_backtest_kill_gate(
+                gate_id=f"{candidate_id}-backtest-kill-gate",
+                created_at=datetime.now(timezone.utc).replace(microsecond=0),
+                candidate_id=candidate_id,
+                family_id=family_id,
+                candidate_source_refs=multiplicity.source_refs,
+                multiplicity_account=multiplicity,
+                multiplicity_account_ref=multiplicity_ref,
+                metrics=extract_backtest_metrics(metric_payloads),
+                source_available=source_available,
+                bridge_technical_ready=bridge_technical_ready,
+                execution_precheck_passed=execution_precheck_passed,
+                backtest_refs=metric_refs,
+            )
+            gate_path = resolved_out / f"{candidate_id}.json"
+            if gate_path.exists() and not replace_existing:
+                raise EdgeCandidateFactoryOutputExistsError(f"output already exists: {gate_path}")
+            write_json_artifact(gate_path, gate.model_dump(mode="json"))
+        except (
+            EdgeCandidateFactoryError,
+            EdgeCandidateFactoryOutputExistsError,
+            FileNotFoundError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            _echo_safe_stdout_prefix()
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        _echo_safe_stdout_prefix()
+        typer.echo(f"status={gate.gate_status.value.lower()}")
+        typer.echo(f"gate_status={gate.gate_status.value}")
+        typer.echo(f"artifact_path={gate_path.as_posix()}")
+        typer.echo(f"known_gap_count={len(gate.known_gaps)}")
