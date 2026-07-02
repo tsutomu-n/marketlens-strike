@@ -83,6 +83,7 @@ uv run python scripts/check_current_docs.py
 - `edge-candidate-factory-build`
 - `edge-candidate-backtest-kill-gate`
 - `edge-candidate-virtual-execution-gate`
+- `edge-candidate-risk-actual-cash-handoff`
 - `strategy-model-run-record`
 - `strategy-micro-live-plan`
 - `strategy-next-scale-plan`

@@ -17,6 +17,9 @@ from sis.edge_candidate_factory.generator import (
 from sis.edge_candidate_factory.backtest_inputs import extract_backtest_metrics
 from sis.edge_candidate_factory.backtest_kill_gate import build_backtest_kill_gate
 from sis.edge_candidate_factory.models import ArtifactRef, TrialMultiplicityAccount
+from sis.edge_candidate_factory.risk_actual_cash_handoff import (
+    build_risk_actual_cash_handoff,
+)
 from sis.edge_candidate_factory.virtual_execution_gate import build_virtual_execution_gate
 from sis.settings import get_settings
 from sis.backtest.artifact_io import sha256_file
@@ -31,6 +34,15 @@ def _echo_safe_stdout_prefix() -> None:
     typer.echo("production_exchange_write_used=false")
     typer.echo("live_order_submitted=false")
     typer.echo("permits_live_order=false")
+
+
+def _artifact_ref_from_file(*, ref_id: str, schema_version: str, path: Path) -> ArtifactRef:
+    return ArtifactRef(
+        ref_id=ref_id,
+        schema_version=schema_version,
+        path=repo_relative_path(path),
+        sha256=sha256_file(path),
+    )
 
 
 def register_edge_candidate_factory_commands(app: typer.Typer) -> None:
@@ -300,3 +312,117 @@ def register_edge_candidate_factory_commands(app: typer.Typer) -> None:
         typer.echo("cash_metric_basis=virtual_exchange")
         typer.echo(f"artifact_path={gate_path.as_posix()}")
         typer.echo(f"known_gap_count={len(gate.known_gaps)}")
+
+    @app.command("edge-candidate-risk-actual-cash-handoff")
+    def edge_candidate_risk_actual_cash_handoff_cmd(
+        candidate_id: str = typer.Option(..., "--candidate-id"),
+        candidate_report: Path = typer.Option(..., "--candidate-report", dir_okay=False),
+        search_ledger: Path = typer.Option(..., "--search-ledger", dir_okay=False),
+        multiplicity_account: Path = typer.Option(
+            ...,
+            "--multiplicity-account",
+            dir_okay=False,
+        ),
+        backtest_kill_gate: Path = typer.Option(..., "--backtest-kill-gate", dir_okay=False),
+        virtual_execution_gate: Path = typer.Option(
+            ...,
+            "--virtual-execution-gate",
+            dir_okay=False,
+        ),
+        actual_cash_rows: Path | None = typer.Option(
+            None,
+            "--actual-cash-rows",
+            dir_okay=False,
+            help="Actual cash rows JSONL. If omitted, handoff remains blocked.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidate_factory/risk_actual_cash_handoff"),
+            "--out",
+            help="Output directory for risk/actual-cash handoff artifacts.",
+        ),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing handoff artifact.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        resolved_out = _resolve_workspace_path(out, settings.data_dir)
+        resolved_candidate_report = _resolve_workspace_path(candidate_report, settings.data_dir)
+        resolved_search_ledger = _resolve_workspace_path(search_ledger, settings.data_dir)
+        resolved_multiplicity = _resolve_workspace_path(multiplicity_account, settings.data_dir)
+        resolved_backtest = _resolve_workspace_path(backtest_kill_gate, settings.data_dir)
+        resolved_virtual = _resolve_workspace_path(virtual_execution_gate, settings.data_dir)
+        resolved_actual_cash_rows = (
+            _resolve_workspace_path(actual_cash_rows, settings.data_dir)
+            if actual_cash_rows is not None
+            else None
+        )
+        try:
+            handoff = build_risk_actual_cash_handoff(
+                handoff_id=f"{candidate_id}-risk-actual-cash-handoff",
+                created_at=datetime.now(timezone.utc).replace(microsecond=0),
+                candidate_id=candidate_id,
+                candidate_report_ref=_artifact_ref_from_file(
+                    ref_id="smart-prior-report",
+                    schema_version="smart_candidate_prior_report.v1",
+                    path=resolved_candidate_report,
+                ),
+                search_ledger_ref=_artifact_ref_from_file(
+                    ref_id="search-ledger",
+                    schema_version="edge_candidate_search_ledger.v1",
+                    path=resolved_search_ledger,
+                ),
+                multiplicity_account_ref=_artifact_ref_from_file(
+                    ref_id="multiplicity-account",
+                    schema_version="trial_multiplicity_account.v1",
+                    path=resolved_multiplicity,
+                ),
+                backtest_kill_gate_ref=_artifact_ref_from_file(
+                    ref_id="backtest-kill-gate",
+                    schema_version="backtest_kill_gate.v1",
+                    path=resolved_backtest,
+                ),
+                virtual_execution_gate_ref=_artifact_ref_from_file(
+                    ref_id="virtual-execution-gate",
+                    schema_version="virtual_execution_gate.v1",
+                    path=resolved_virtual,
+                ),
+                actual_cash_rows_ref=_artifact_ref_from_file(
+                    ref_id="actual-cash-rows",
+                    schema_version="crypto_perp_tournament_rows.v2",
+                    path=resolved_actual_cash_rows,
+                )
+                if resolved_actual_cash_rows is not None
+                else None,
+            )
+            handoff_path = resolved_out / f"{candidate_id}.json"
+            if handoff_path.exists() and not replace_existing:
+                raise EdgeCandidateFactoryOutputExistsError(
+                    f"output already exists: {handoff_path}"
+                )
+            write_json_artifact(handoff_path, handoff.model_dump(mode="json"))
+        except (
+            EdgeCandidateFactoryError,
+            EdgeCandidateFactoryOutputExistsError,
+            FileNotFoundError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            _echo_safe_stdout_prefix()
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        _echo_safe_stdout_prefix()
+        status = handoff.actual_cash_report_gate_input_status.value.lower()
+        typer.echo(f"status={status}")
+        typer.echo(f"risk_taker_review_input_status={handoff.risk_taker_review_input_status.value}")
+        typer.echo(
+            "actual_cash_report_gate_input_status="
+            f"{handoff.actual_cash_report_gate_input_status.value}"
+        )
+        typer.echo("actual_cash_rows_required=true")
+        typer.echo("virtual_or_backtest_used_as_actual_cash=false")
+        typer.echo(f"artifact_path={handoff_path.as_posix()}")
+        typer.echo(f"known_gap_count={len(handoff.known_gaps)}")

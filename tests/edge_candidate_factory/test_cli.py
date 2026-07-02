@@ -49,6 +49,15 @@ def test_edge_candidate_virtual_execution_gate_help() -> None:
     assert "reconciliation" in stdout
 
 
+def test_edge_candidate_risk_actual_cash_handoff_help() -> None:
+    result = runner.invoke(app, ["edge-candidate-risk-actual-cash-handoff", "--help"])
+    stdout = normalized_stdout(result)
+
+    assert result.exit_code == 0
+    assert "--candidate-id" in stdout
+    assert "actual-cash" in stdout
+
+
 def test_edge_candidate_factory_build_cli_writes_artifacts(
     tmp_path: Path,
     monkeypatch,
@@ -239,3 +248,53 @@ def test_edge_candidate_virtual_execution_gate_cli_writes_artifact(
     assert gate["actual_cash"] is False
     assert gate["cash_metric_basis"] == "virtual_exchange"
     assert gate["production_exchange_write_used"] is False
+
+
+def test_edge_candidate_risk_actual_cash_handoff_cli_blocks_without_rows(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    inputs = {
+        "candidate_report.json": {"schema_version": "smart_candidate_prior_report.v1"},
+        "search_ledger.jsonl": {"schema_version": "edge_candidate_search_ledger.v1"},
+        "multiplicity.json": {"schema_version": "trial_multiplicity_account.v1"},
+        "backtest_gate.json": {"schema_version": "backtest_kill_gate.v1"},
+        "virtual_gate.json": {"schema_version": "virtual_execution_gate.v1"},
+    }
+    for name, payload in inputs.items():
+        (tmp_path / name).write_text(json.dumps(payload) + "\n", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "edge-candidate-risk-actual-cash-handoff",
+            "--candidate-id",
+            "edge-cand-001",
+            "--candidate-report",
+            "candidate_report.json",
+            "--search-ledger",
+            "search_ledger.jsonl",
+            "--multiplicity-account",
+            "multiplicity.json",
+            "--backtest-kill-gate",
+            "backtest_gate.json",
+            "--virtual-execution-gate",
+            "virtual_gate.json",
+            "--out",
+            "data/edge_candidate_factory/handoff",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "network_attempted=false" in result.stdout
+    assert "status=blocked_needs_actual_cash_rows" in result.stdout
+    assert "crypto-perp-actual-cash-report-gate" not in result.stdout
+    handoff_path = tmp_path / "data/edge_candidate_factory/handoff/edge-cand-001.json"
+    assert handoff_path.exists()
+    handoff = json.loads(handoff_path.read_text(encoding="utf-8"))
+    Draft202012Validator(
+        _schema("edge_candidate_risk_actual_cash_handoff.v1.schema.json")
+    ).validate(handoff)
+    assert handoff["actual_cash_rows_ref"] is None
+    assert handoff["virtual_or_backtest_used_as_actual_cash"] is False
