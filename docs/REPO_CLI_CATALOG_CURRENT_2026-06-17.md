@@ -84,6 +84,8 @@ uv run python scripts/check_current_docs.py
 - `edge-candidate-backtest-kill-gate`
 - `edge-candidate-virtual-execution-gate`
 - `edge-candidate-risk-actual-cash-handoff`
+- `edge-candidate-adversarial-packet-build`
+- `edge-candidate-adversarial-import`
 - `strategy-model-run-record`
 - `strategy-micro-live-plan`
 - `strategy-next-scale-plan`

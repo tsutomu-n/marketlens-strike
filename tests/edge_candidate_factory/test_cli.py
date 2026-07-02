@@ -58,6 +58,19 @@ def test_edge_candidate_risk_actual_cash_handoff_help() -> None:
     assert "actual-cash" in stdout
 
 
+def test_edge_candidate_adversarial_commands_help() -> None:
+    packet = runner.invoke(app, ["edge-candidate-adversarial-packet-build", "--help"])
+    packet_stdout = normalized_stdout(packet)
+    imported = runner.invoke(app, ["edge-candidate-adversarial-import", "--help"])
+    imported_stdout = normalized_stdout(imported)
+
+    assert packet.exit_code == 0
+    assert "--source" in packet_stdout
+    assert imported.exit_code == 0
+    assert "--packet" in imported_stdout
+    assert "--response" in imported_stdout
+
+
 def test_edge_candidate_factory_build_cli_writes_artifacts(
     tmp_path: Path,
     monkeypatch,
@@ -298,3 +311,57 @@ def test_edge_candidate_risk_actual_cash_handoff_cli_blocks_without_rows(
     ).validate(handoff)
     assert handoff["actual_cash_rows_ref"] is None
     assert handoff["virtual_or_backtest_used_as_actual_cash"] is False
+
+
+def test_edge_candidate_adversarial_cli_packet_and_import(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    source = tmp_path / "source.json"
+    missing = tmp_path / "missing.json"
+    response = tmp_path / "manual_response.json"
+    source.write_text('{"schema_version":"smart_candidate_prior_report.v1"}\n', encoding="utf-8")
+    response.write_text(
+        '{"approval":"approved for live trading","findings":[]}\n', encoding="utf-8"
+    )
+
+    packet = runner.invoke(
+        app,
+        [
+            "edge-candidate-adversarial-packet-build",
+            "--source",
+            str(source),
+            "--source",
+            str(missing),
+            "--out",
+            "data/edge_candidate_factory/adversarial",
+        ],
+    )
+    assert packet.exit_code == 0, packet.stdout
+    assert "network_attempted=false" in packet.stdout
+    packet_path = tmp_path / "data/edge_candidate_factory/adversarial/adversarial_packet.json"
+    assert packet_path.exists()
+
+    imported = runner.invoke(
+        app,
+        [
+            "edge-candidate-adversarial-import",
+            "--packet",
+            str(packet_path),
+            "--response",
+            str(response),
+            "--out",
+            "data/edge_candidate_factory/adversarial",
+        ],
+    )
+    assert imported.exit_code == 0, imported.stdout
+    assert "network_attempted=false" in imported.stdout
+    assert "llm_approval_ignored=true" in imported.stdout
+    review_path = tmp_path / "data/edge_candidate_factory/adversarial/llm_adversarial_review.json"
+    assert review_path.exists()
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    Draft202012Validator(_schema("llm_adversarial_evidence_review.v1.schema.json")).validate(review)
+    assert review["review_status"] == "MISSING_ARTIFACT"
+    assert review["paper_execution_allowed"] is False
+    assert review["live_allowed"] is False

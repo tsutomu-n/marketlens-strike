@@ -7,6 +7,10 @@ import typer
 from pydantic import ValidationError
 
 from sis.commands.strategy_authoring import _resolve_workspace_path
+from sis.edge_candidate_factory.adversarial_review import (
+    build_adversarial_packet,
+    import_adversarial_review,
+)
 from sis.edge_candidate_factory.generator import (
     EdgeCandidateFactoryConfig,
     EdgeCandidateFactoryError,
@@ -426,3 +430,114 @@ def register_edge_candidate_factory_commands(app: typer.Typer) -> None:
         typer.echo("virtual_or_backtest_used_as_actual_cash=false")
         typer.echo(f"artifact_path={handoff_path.as_posix()}")
         typer.echo(f"known_gap_count={len(handoff.known_gaps)}")
+
+    @app.command("edge-candidate-adversarial-packet-build")
+    def edge_candidate_adversarial_packet_build_cmd(
+        source: list[Path] | None = typer.Option(
+            None,
+            "--source",
+            help="Source artifact path. Repeat to include multiple sources.",
+        ),
+        out: Path = typer.Option(
+            Path("data/edge_candidate_factory/adversarial_review"),
+            "--out",
+            help="Output directory for adversarial packet artifacts.",
+        ),
+        packet_id: str = typer.Option("edge-candidate-adversarial-packet", "--packet-id"),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing packet artifact.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        resolved_out = _resolve_workspace_path(out, settings.data_dir)
+        resolved_sources = [
+            _resolve_workspace_path(path, settings.data_dir) for path in (source or [])
+        ]
+        try:
+            if not resolved_sources:
+                raise ValueError("at least one --source is required")
+            packet_path = resolved_out / "adversarial_packet.json"
+            if packet_path.exists() and not replace_existing:
+                raise EdgeCandidateFactoryOutputExistsError(f"output already exists: {packet_path}")
+            result = build_adversarial_packet(
+                packet_id=packet_id,
+                created_at=datetime.now(timezone.utc).replace(microsecond=0),
+                source_paths=resolved_sources,
+                out_dir=resolved_out,
+            )
+        except (
+            EdgeCandidateFactoryError,
+            EdgeCandidateFactoryOutputExistsError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            _echo_safe_stdout_prefix()
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        _echo_safe_stdout_prefix()
+        typer.echo("status=packet_built")
+        typer.echo("llm_api_called=false")
+        typer.echo(f"source_count={len(result.packet['sources'])}")
+        typer.echo(
+            "missing_source_count="
+            f"{sum(1 for item in result.packet['sources'] if item.get('exists') is False)}"
+        )
+        typer.echo(f"artifact_path={result.packet_path.as_posix()}")
+        typer.echo("known_gap_count=0")
+
+    @app.command("edge-candidate-adversarial-import")
+    def edge_candidate_adversarial_import_cmd(
+        packet: Path = typer.Option(..., "--packet", dir_okay=False),
+        response: Path = typer.Option(..., "--response", dir_okay=False),
+        out: Path = typer.Option(
+            Path("data/edge_candidate_factory/adversarial_review"),
+            "--out",
+            help="Output directory for adversarial review artifacts.",
+        ),
+        review_id: str = typer.Option("edge-candidate-adversarial-review", "--review-id"),
+        replace_existing: bool = typer.Option(
+            False,
+            "--replace-existing/--no-replace-existing",
+            help="Replace existing review artifact.",
+        ),
+    ) -> None:
+        settings = get_settings()
+        resolved_out = _resolve_workspace_path(out, settings.data_dir)
+        resolved_packet = _resolve_workspace_path(packet, settings.data_dir)
+        resolved_response = _resolve_workspace_path(response, settings.data_dir)
+        try:
+            review_path = resolved_out / "llm_adversarial_review.json"
+            if review_path.exists() and not replace_existing:
+                raise EdgeCandidateFactoryOutputExistsError(f"output already exists: {review_path}")
+            result = import_adversarial_review(
+                review_id=review_id,
+                created_at=datetime.now(timezone.utc).replace(microsecond=0),
+                packet_path=resolved_packet,
+                response_path=resolved_response,
+                out_dir=resolved_out,
+            )
+        except (
+            EdgeCandidateFactoryError,
+            EdgeCandidateFactoryOutputExistsError,
+            FileNotFoundError,
+            ValueError,
+            ValidationError,
+        ) as exc:
+            _echo_safe_stdout_prefix()
+            typer.echo("status=fail")
+            typer.echo(f"error={exc}")
+            raise typer.Exit(2) from exc
+
+        _echo_safe_stdout_prefix()
+        typer.echo(f"status={result.review.review_status.value.lower()}")
+        typer.echo("llm_approval_ignored=true")
+        typer.echo("paper_execution_allowed=false")
+        typer.echo("live_allowed=false")
+        typer.echo("actual_cash_decision_allowed=false")
+        typer.echo("gate_override_allowed=false")
+        typer.echo(f"artifact_path={result.review_path.as_posix()}")
+        typer.echo(f"known_gap_count={result.review.hard_blocker_count}")

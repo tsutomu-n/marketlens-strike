@@ -39,6 +39,10 @@ from sis.edge_candidate_factory.virtual_execution_gate import build_virtual_exec
 from sis.edge_candidate_factory.risk_actual_cash_handoff import (
     build_risk_actual_cash_handoff,
 )
+from sis.edge_candidate_factory.adversarial_review import (
+    build_adversarial_packet,
+    import_adversarial_review,
+)
 from sis.edge_candidate_factory.smart_priors import (
     DEFAULT_SMART_PRIOR_CAUSE_IDS,
     DEFAULT_SMART_PRIOR_FAMILY_IDS,
@@ -75,6 +79,7 @@ __all__ = [
     "DEFAULT_SMART_PRIOR_FAMILY_IDS",
     "build_default_candidate_card",
     "build_edge_candidate_factory_run",
+    "build_adversarial_packet",
     "build_backtest_kill_gate",
     "build_risk_actual_cash_handoff",
     "build_trial_multiplicity_account",
@@ -83,6 +88,7 @@ __all__ = [
     "default_smart_prior_family_ids",
     "extract_backtest_metrics",
     "family_event_threshold",
+    "import_adversarial_review",
     "smart_prior_family_by_id",
     "write_edge_candidate_factory_run",
     "MultiplicityAccountError",
