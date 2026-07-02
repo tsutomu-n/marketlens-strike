@@ -16,6 +16,16 @@ from sis.edge_candidate_factory.models import (
     TrialMultiplicityAccount,
     VirtualExecutionGate,
 )
+from sis.edge_candidate_factory.smart_priors import (
+    DEFAULT_SMART_PRIOR_CAUSE_IDS,
+    DEFAULT_SMART_PRIOR_FAMILY_IDS,
+    SmartPriorDefinition,
+    SmartPriorFamily,
+    build_default_candidate_card,
+    default_smart_prior_families,
+    default_smart_prior_family_ids,
+    smart_prior_family_by_id,
+)
 
 __all__ = [
     "BacktestKillGate",
@@ -30,6 +40,14 @@ __all__ = [
     "RiskActualCashHandoff",
     "SmartCandidateCard",
     "SmartCandidatePriorReport",
+    "SmartPriorDefinition",
+    "SmartPriorFamily",
     "TrialMultiplicityAccount",
     "VirtualExecutionGate",
+    "DEFAULT_SMART_PRIOR_CAUSE_IDS",
+    "DEFAULT_SMART_PRIOR_FAMILY_IDS",
+    "build_default_candidate_card",
+    "default_smart_prior_families",
+    "default_smart_prior_family_ids",
+    "smart_prior_family_by_id",
 ]
