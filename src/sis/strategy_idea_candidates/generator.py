@@ -862,6 +862,9 @@ def _perp_shortlist_rejection_reason(
     failures: list[str] = []
     if missing:
         failures.append("missing " + ", ".join(missing))
+    side_bias = str(parameter_set.get("side_bias") or "").lower()
+    if side_bias and side_bias not in {"long", "short"}:
+        failures.append("side_bias must be long or short for C9 v0 directional authoring bridge")
     if parameter_set.get("venue") != "bitget":
         failures.append("venue must be bitget")
     if parameter_set.get("product_type") != "USDT-FUTURES":
@@ -877,7 +880,7 @@ def _perp_shortlist_rejection_reason(
     if not isinstance(liquidation_buffer, int | float) or liquidation_buffer <= 0:
         failures.append("liquidation_buffer_bps must be positive")
     if failures:
-        return "missing perp risk modeling fields: " + "; ".join(failures)
+        return "perp shortlist constraints failed: " + "; ".join(failures)
     return None
 
 

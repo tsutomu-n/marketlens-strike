@@ -1,9 +1,52 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_12:49 JST
+更新日: 2026-07-03_13:01 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Directional Shortlist Policy
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Updated `crypto-perp-risk-taker` shortlist policy so only `side_bias=long|short` candidates can be shortlisted for the C9 v0 directional authoring bridge path.
+- Kept non-directional candidates in candidate inventory and search ledger as `REJECTED`; no candidate is silently dropped.
+- Did not convert `both` or `no_trade` into an order direction.
+- Regenerated BTCUSDT C9 dogfood candidate/bridge/reality-check artifacts under `data/profit_core_reality_check/dogfood/c9-directional-shortlist/`.
+
+Dogfood facts:
+
+- Candidate generation: 11 total, 5 shortlisted, 6 rejected.
+- Non-directional rejected before shortlist: reversal `both`, basis `both`, liquidity `no_trade`, open-interest/liquidation `both`.
+- C9 bridge: 4 `BRIDGED`, 1 `BLOCKED_MISSING_SOURCE_COLUMNS`.
+- Reality check: `next_single_blocker_to_fix=MISSING_SOURCE_COLUMNS_DOMINATES`.
+- Permission boundary remains false: no credentials, exchange write, production exchange write, live order, or live permission.
+
+Verification:
+
+- `uv run pytest tests/strategy_idea_candidates/test_perp_profile.py -q` -> 3 passed.
+- `uv run python scripts/check_current_docs.py` -> checked 199 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2866 passed`.
+
+Remaining work:
+
+- `liquidation_notional` source support is still absent.
+- Profit-readiness still stops at missing real event / matured outcome / actual cash source.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Revert the `generator.py` shortlist policy change, focused test, and docs updates.
 
 ## Latest Addendum: Source Blocker Priority
 

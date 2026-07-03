@@ -161,6 +161,39 @@ def test_perp_profile_rejects_missing_funding_or_liquidation_fields_before_short
     candidate = candidate_set.candidate_inventory[0]
     assert candidate.decision.value == "REJECTED"
     assert candidate.shortlist_reason is None
-    assert "missing perp risk modeling fields" in (candidate.rejection_reason or "")
+    assert "perp shortlist constraints failed" in (candidate.rejection_reason or "")
+    assert "missing funding_assumption, liquidation_buffer_bps" in (
+        candidate.rejection_reason or ""
+    )
     result = validate_perp_shortlist_constraints(candidate_set)
     assert result.passed is True
+
+
+def test_perp_profile_rejects_non_directional_side_bias_before_shortlist(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    contract, validation, validation_path = _input_evidence(tmp_path)
+    config = _config()
+    grid = dict(config.parameter_grids or {})
+    both_parameter = dict(grid["perp_momentum_continuation"][0])
+    both_parameter["side_bias"] = "both"
+    short_parameter = dict(grid["perp_momentum_continuation"][1])
+    short_parameter["side_bias"] = "short"
+    grid["perp_momentum_continuation"] = [both_parameter, short_parameter]
+    config = config.model_copy(update={"parameter_grids": grid})
+
+    candidate_set = build_deterministic_candidate_set_from_input_evidence(
+        contract=contract,
+        validation=validation,
+        validation_path=validation_path,
+        config=config,
+    )
+
+    rejected = candidate_set.candidate_inventory[0]
+    shortlisted = candidate_set.candidate_inventory[1]
+    assert rejected.decision.value == "REJECTED"
+    assert rejected.shortlist_reason is None
+    assert "side_bias must be long or short" in (rejected.rejection_reason or "")
+    assert shortlisted.decision.value == "SHORTLISTED"
+    assert shortlisted.parameter_set["side_bias"] == "short"
