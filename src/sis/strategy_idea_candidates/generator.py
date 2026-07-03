@@ -352,6 +352,7 @@ def build_deterministic_candidate_set_from_input_evidence(
 
             perp_shortlist_rejection = _perp_shortlist_rejection_reason(
                 profile=config.profile,
+                family=family,
                 parameter_set=parameter_set,
             )
             if perp_shortlist_rejection is not None:
@@ -826,6 +827,16 @@ PERP_REQUIRED_PARAMETER_FIELDS = (
     "kill_conditions",
 )
 
+PERP_C9_V0_SOURCE_BLOCKED_FAMILY_REASONS = {
+    CandidateFamilyId.PERP_REVERSAL_AFTER_LIQUIDATION_MOVE: (
+        "family requires liquidation_notional source not available in current C9 v0 public source"
+    ),
+    CandidateFamilyId.PERP_OPEN_INTEREST_LIQUIDATION_PRESSURE: (
+        "family requires open_interest and liquidation_notional sources not available in "
+        "current C9 v0 public source"
+    ),
+}
+
 
 def _perp_parameter_set(side_bias: str, **overrides: Any) -> dict[str, Any]:
     parameter_set: dict[str, Any] = {
@@ -850,6 +861,7 @@ def _perp_parameter_set(side_bias: str, **overrides: Any) -> dict[str, Any]:
 def _perp_shortlist_rejection_reason(
     *,
     profile: StrategyIdeaCandidateProfile,
+    family: CandidateFamilyId,
     parameter_set: dict[str, Any],
 ) -> str | None:
     if profile is not StrategyIdeaCandidateProfile.CRYPTO_PERP_RISK_TAKER:
@@ -860,6 +872,9 @@ def _perp_shortlist_rejection_reason(
         if parameter_set.get(field) in (None, "", [])
     ]
     failures: list[str] = []
+    source_gap = PERP_C9_V0_SOURCE_BLOCKED_FAMILY_REASONS.get(family)
+    if source_gap is not None:
+        failures.append(source_gap)
     if missing:
         failures.append("missing " + ", ".join(missing))
     side_bias = str(parameter_set.get("side_bias") or "").lower()

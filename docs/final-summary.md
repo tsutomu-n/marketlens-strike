@@ -1,9 +1,57 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_13:03 JST
+更新日: 2026-07-03_13:14 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Liquidation Source Shortlist Stop
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Updated `crypto-perp-risk-taker` shortlist policy so source-missing liquidation families do not enter the C9 v0 bridge-first shortlist.
+- Kept `perp_reversal_after_liquidation_move` and `perp_open_interest_liquidation_pressure` in candidate inventory and search ledger as `REJECTED`; no candidate is silently dropped.
+- Did not infer `liquidation_notional` from candles, regular fills, open interest, or an estimate-only proxy.
+- Regenerated BTCUSDT C9 dogfood candidate/bridge/reality-check artifacts under `data/profit_core_reality_check/dogfood/c9-liquidation-source-stop/`.
+
+Dogfood facts:
+
+- Candidate generation: 11 total, 5 shortlisted, 6 rejected.
+- Reversal candidates are rejected before shortlist because `liquidation_notional` is absent from the current C9 v0 public source.
+- Open-interest/liquidation-pressure candidate is rejected before shortlist because `open_interest` and `liquidation_notional` are absent from the current C9 v0 public source.
+- C9 bridge: 4 `BRIDGED`, 1 `BLOCKED_UNSUPPORTED_FAMILY_MAPPING`.
+- Reality check: `next_single_blocker_to_fix=UNSUPPORTED_FAMILY_DOMINATES`.
+- Current remaining bridge blocker: `perp_volatility_breakout_compression`.
+- Permission boundary remains false: no credentials, exchange write, production exchange write, live order, or live permission.
+
+Verification:
+
+- `uv run pytest tests/strategy_idea_candidates/test_perp_profile.py -q` -> 4 passed.
+- Dogfood `strategy-idea-candidates-build` -> `candidate_count_total=11`, `candidate_count_shortlisted=5`, `candidate_count_rejected=6`.
+- Dogfood `strategy-idea-candidates-authoring-bridge` -> `bridged_count=4`, `blocked_count=1`.
+- Dogfood `profit-core-reality-check` -> `next_single_blocker_to_fix=UNSUPPORTED_FAMILY_DOMINATES`.
+- `uv run python scripts/check_current_docs.py` -> checked 200 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2867 passed`.
+
+Remaining work:
+
+- `perp_volatility_breakout_compression` is now the first C9 bridge blocker.
+- Profit-readiness still stops at missing real event / matured outcome / actual cash source.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Revert the generator source-family shortlist policy change, focused test, and docs updates.
 
 ## Latest Addendum: Directional Shortlist Policy
 

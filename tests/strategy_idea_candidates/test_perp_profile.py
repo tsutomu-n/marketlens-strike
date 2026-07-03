@@ -197,3 +197,73 @@ def test_perp_profile_rejects_non_directional_side_bias_before_shortlist(
     assert "side_bias must be long or short" in (rejected.rejection_reason or "")
     assert shortlisted.decision.value == "SHORTLISTED"
     assert shortlisted.parameter_set["side_bias"] == "short"
+
+
+def test_perp_profile_rejects_liquidation_source_families_before_shortlist(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    contract, validation, validation_path = _input_evidence(tmp_path)
+    config = _config()
+    common = dict((config.parameter_grids or {})["perp_momentum_continuation"][0])
+    reversal_short = dict(common)
+    reversal_short.update(
+        {
+            "side_bias": "short",
+            "liquidation_move_bps": 250,
+            "reversal_wait_bars": 3,
+        }
+    )
+    funding_long = dict(common)
+    funding_long.update(
+        {
+            "side_bias": "long",
+            "funding_rate_threshold_bps": -2,
+            "holding_bars": 8,
+        }
+    )
+    open_interest_both = dict(common)
+    open_interest_both.update(
+        {
+            "side_bias": "both",
+            "oi_change_threshold_pct": 3,
+            "liquidation_pressure_bps": 100,
+        }
+    )
+    config = config.model_copy(
+        update={
+            "family_ids": [
+                CandidateFamilyId.PERP_REVERSAL_AFTER_LIQUIDATION_MOVE,
+                CandidateFamilyId.PERP_FUNDING_RATE_CARRY_FILTER,
+                CandidateFamilyId.PERP_OPEN_INTEREST_LIQUIDATION_PRESSURE,
+            ],
+            "candidate_cap": 3,
+            "shortlist_count": 1,
+            "parameter_grids": {
+                "perp_reversal_after_liquidation_move": [reversal_short],
+                "perp_funding_rate_carry_filter": [funding_long],
+                "perp_open_interest_liquidation_pressure": [open_interest_both],
+            },
+        }
+    )
+
+    candidate_set = build_deterministic_candidate_set_from_input_evidence(
+        contract=contract,
+        validation=validation,
+        validation_path=validation_path,
+        config=config,
+    )
+
+    reversal = candidate_set.candidate_inventory[0]
+    funding = candidate_set.candidate_inventory[1]
+    open_interest = candidate_set.candidate_inventory[2]
+    assert reversal.decision.value == "REJECTED"
+    assert reversal.shortlist_reason is None
+    assert "requires liquidation_notional source" in (reversal.rejection_reason or "")
+    assert funding.decision.value == "SHORTLISTED"
+    assert funding.family == CandidateFamilyId.PERP_FUNDING_RATE_CARRY_FILTER.value
+    assert open_interest.decision.value == "REJECTED"
+    assert "requires open_interest and liquidation_notional sources" in (
+        open_interest.rejection_reason or ""
+    )
+    assert "side_bias must be long or short" in (open_interest.rejection_reason or "")

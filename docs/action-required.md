@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-03_12:53 JST
-更新日: 2026-07-03_13:03 JST
+更新日: 2026-07-03_13:08 JST
 -->
 
 # Action Required
@@ -48,23 +48,35 @@ Changing `both` into an executable order direction changes candidate meaning. Th
 
 ## AR-2026-07-03-002: C9 liquidation notional source
 
-Status: open
+Status: resolved for C9 v0 bridge-first dogfood; future source acquisition deferred
 
 Context:
 
-- Current regenerated dogfood returns `next_single_blocker_to_fix=MISSING_SOURCE_COLUMNS_DOMINATES`.
-- The remaining bridge-blocked candidate is `cand-004-perp_reversal_after_liquidation_move`.
+- Earlier regenerated dogfood returned `next_single_blocker_to_fix=MISSING_SOURCE_COLUMNS_DOMINATES`.
+- The bridge-blocked candidate was `cand-004-perp_reversal_after_liquidation_move`.
 - It requires `liquidation_notional`.
 - Current repo-native Bitget public source refresh writes contracts, tickers, 5m candles, latest snapshot, and scanner rows.
 - Current local source root has no liquidation stream or liquidation notional column.
 
-Decision needed:
+Decision options:
 
 Choose one evidence source for `liquidation_notional` before reversal-after-liquidation candidates can be bridged:
 
 1. Add a public, credential-free liquidation feed if a vetted source exists and its license/terms allow local artifact use.
 2. Add an authenticated/private exchange source only under a separate permissioned plan.
 3. Keep `perp_reversal_after_liquidation_move` blocked in C9 v0 and avoid shortlisting this family for bridge-first dogfood until liquidation source exists.
+
+Resolution applied:
+
+- C9 v0 bridge-first dogfood uses option 3.
+- `crypto-perp-risk-taker` profile now rejects `perp_reversal_after_liquidation_move` before shortlist because `liquidation_notional` is not available in the current C9 v0 public source.
+- `perp_open_interest_liquidation_pressure` is rejected before shortlist for the same source-boundary reason because it requires `open_interest` and `liquidation_notional`.
+- Rejected candidates remain in candidate inventory and search ledger with explicit source reasons.
+- The C9 authoring bridge still fail-closes if a reversal candidate is manually passed to it.
+
+Remaining future decision:
+
+Choose option 1 or 2 in a separate plan only if reversal/liquidation-pressure families should become bridgeable from a real source.
 
 Rejected without decision:
 
