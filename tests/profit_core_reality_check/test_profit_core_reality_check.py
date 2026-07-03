@@ -260,6 +260,7 @@ def test_bridge_unsupported_family_dominates_before_profit_inventory(tmp_path: P
     assert check.bridge_summary.bridge_blocked_count == 2
     assert check.bridge_summary.blocked_by_family == {"perp_basis_mark_index_spread": 2}
     assert check.next_single_blocker_to_fix == "UNSUPPORTED_FAMILY_DOMINATES"
+    assert check.blocker_summary.top_blockers[0] == "UNSUPPORTED_FAMILY_DOMINATES"
     assert "PROFIT_READINESS_INVENTORY_MISSING" in check.blocker_summary.blocker_counts
 
 

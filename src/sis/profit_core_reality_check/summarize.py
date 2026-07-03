@@ -672,9 +672,13 @@ def _next_single_blocker_to_fix(blocker_counts: Counter[str]) -> str:
 
 
 def _top_blockers(blocker_counts: Counter[str]) -> list[str]:
+    priority_rank = {blocker: index for index, blocker in enumerate(NEXT_BLOCKER_PRIORITY)}
     return [
         blocker
-        for blocker, _ in sorted(blocker_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
+        for blocker, _ in sorted(
+            blocker_counts.items(),
+            key=lambda item: (priority_rank.get(item[0], len(priority_rank)), -item[1], item[0]),
+        )[:5]
     ]
 
 
