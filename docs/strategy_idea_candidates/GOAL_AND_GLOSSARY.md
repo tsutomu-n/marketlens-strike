@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:38 JST
-更新日: 2026-06-28_11:02 JST
+更新日: 2026-07-03_13:18 JST
 -->
 
 # Strategy Idea Candidate Goal And Glossary
@@ -100,7 +100,7 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 - C16: Perp local cost estimate。funding / fee / slippage / liquidation buffer を local parameter estimate として保存済み。
 - C17: Perp estimate bridge。shortlisted Perp candidate と `crypto_perp_outcome.v1` から candidate-scoped `crypto_perp_tournament_rows.v2` estimate を生成済み。
 - C18: Strategy Authoring preflight。`strategy_idea.v1` export availability と authoring/backtest/paper/live readiness gap を保存済み。
-- C9 v0: Prep Watchdeck authoring bridge。shortlisted Bitget `USDT-FUTURES` Perp candidate のうち `perp_momentum_continuation` と `perp_funding_rate_carry_filter` だけを candidate-scoped Strategy Authoring spec / suite / bundle / standard backtest pack へ変換し、変換不能・source 不足・pack 失敗は machine-readable blocker として保存済み。
+- C9 v0: Prep Watchdeck authoring bridge。shortlisted Bitget `USDT-FUTURES` Perp candidate のうち `perp_momentum_continuation`、`perp_funding_rate_carry_filter`、`perp_volatility_breakout_compression` を candidate-scoped Strategy Authoring spec / suite / bundle / standard backtest pack へ変換し、変換不能・source 不足・pack 失敗は machine-readable blocker として保存済み。
 
 未完了:
 

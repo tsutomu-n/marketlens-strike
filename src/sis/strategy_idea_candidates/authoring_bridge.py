@@ -36,6 +36,7 @@ AUTHORING_BRIDGE_SCHEMA_VERSION = "strategy_idea_candidate_authoring_bridge.v1"
 SUPPORTED_FAMILIES = {
     "perp_momentum_continuation",
     "perp_funding_rate_carry_filter",
+    "perp_volatility_breakout_compression",
 }
 FAMILY_REQUIRING_LIQUIDATION_SOURCE = "perp_reversal_after_liquidation_move"
 FAMILY_AWARE_SOURCE_BLOCKED_FAMILIES = {
@@ -394,8 +395,8 @@ def _feature_panel(
     symbols: list[str],
 ) -> pl.DataFrame:
     rows: list[dict[str, Any]] = []
-    lookback = _positive_int(candidate.parameter_set.get("lookback"), default=1)
-    breakout_z = _positive_float(candidate.parameter_set.get("breakout_z"), default=1.0)
+    lookback = _c9_lookback(candidate)
+    threshold_z = _c9_threshold_z(candidate)
     for symbol in symbols:
         contract = source.contracts_by_symbol.get(symbol)
         ticker = source.tickers_by_symbol.get(symbol)
@@ -421,7 +422,8 @@ def _feature_panel(
                     "trade_allowed": True,
                     "source_confidence": 0.8,
                     "venue_quality_score": 0.8,
-                    "momentum_breakout_z": breakout_z,
+                    "momentum_breakout_z": threshold_z,
+                    "volatility_expansion_z": threshold_z,
                 }
             )
     frame = pl.DataFrame(rows).sort(["canonical_symbol", "ts"])
@@ -429,7 +431,7 @@ def _feature_panel(
         return frame
     mark_return = f"mark_return_{lookback}bars"
     realized_vol = f"realized_volatility_{lookback}bars"
-    threshold = f"momentum_breakout_threshold_{lookback}bars"
+    threshold = _breakout_threshold_column(candidate, lookback)
     return (
         frame.with_columns(
             pl.col("close").pct_change(lookback).over("canonical_symbol").alias(mark_return),
@@ -443,7 +445,7 @@ def _feature_panel(
             pl.col(mark_return).fill_null(0.0),
             pl.col(realized_vol).fill_null(0.0),
         )
-        .with_columns((pl.col(realized_vol) * breakout_z).alias(threshold))
+        .with_columns((pl.col(realized_vol) * threshold_z).alias(threshold))
     )
 
 
@@ -528,7 +530,7 @@ def _authoring_spec(
     quote_data_path: Path,
     cost_model_path: Path,
 ) -> dict[str, Any]:
-    lookback = _positive_int(candidate.parameter_set.get("lookback"), default=1)
+    lookback = _c9_lookback(candidate)
     side = str(candidate.parameter_set.get("side_bias") or "long").lower()
     entry = _entry_rules(candidate, lookback)
     return {
@@ -621,7 +623,10 @@ def _entry_rules(
         {"column": "trade_allowed", "op": "is_true"},
         {"column": "spread_bps_estimate", "op": "lte", "value": 25.0},
     ]
-    if candidate.family == "perp_momentum_continuation":
+    if candidate.family in {
+        "perp_momentum_continuation",
+        "perp_volatility_breakout_compression",
+    }:
         side = str(candidate.parameter_set.get("side_bias") or "long").lower()
         op = "gt" if side == "long" else "lt"
         return {
@@ -630,7 +635,7 @@ def _entry_rules(
                 {
                     "column": f"mark_return_{lookback}bars",
                     "op": op,
-                    "value_column": f"momentum_breakout_threshold_{lookback}bars",
+                    "value_column": _breakout_threshold_column(candidate, lookback),
                 },
             ]
         }
@@ -789,10 +794,30 @@ def _normalize_symbols(symbols: list[str]) -> list[str]:
 
 def _label_horizon_minutes(candidate: StrategyIdeaCandidate) -> int:
     bars = _positive_int(
-        candidate.parameter_set.get("holding_bars") or candidate.parameter_set.get("lookback"),
+        candidate.parameter_set.get("holding_bars")
+        or candidate.parameter_set.get("lookback")
+        or candidate.parameter_set.get("compression_lookback"),
         default=2,
     )
     return max(5, bars * 5)
+
+
+def _c9_lookback(candidate: StrategyIdeaCandidate) -> int:
+    if candidate.family == "perp_volatility_breakout_compression":
+        return _positive_int(candidate.parameter_set.get("compression_lookback"), default=1)
+    return _positive_int(candidate.parameter_set.get("lookback"), default=1)
+
+
+def _c9_threshold_z(candidate: StrategyIdeaCandidate) -> float:
+    if candidate.family == "perp_volatility_breakout_compression":
+        return _positive_float(candidate.parameter_set.get("expansion_z"), default=1.0)
+    return _positive_float(candidate.parameter_set.get("breakout_z"), default=1.0)
+
+
+def _breakout_threshold_column(candidate: StrategyIdeaCandidate, lookback: int) -> str:
+    if candidate.family == "perp_volatility_breakout_compression":
+        return f"volatility_expansion_threshold_{lookback}bars"
+    return f"momentum_breakout_threshold_{lookback}bars"
 
 
 def _funding_rate_bps(ticker: PrepWatchdeckTicker | None) -> float | None:

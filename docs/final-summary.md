@@ -1,9 +1,55 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_13:14 JST
+更新日: 2026-07-03_13:21 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Volatility Family Bridge
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Added C9 v0 bridge support for `perp_volatility_breakout_compression`.
+- Kept the scope to one additional family; basis, liquidity, reversal, and OI/liquidation-pressure families were not broadened.
+- Used existing 5m candle-derived `mark_return`, `realized_volatility`, and `volatility_expansion_threshold` columns.
+- Regenerated BTCUSDT C9 dogfood candidate/bridge/reality-check artifacts under `data/profit_core_reality_check/dogfood/c9-volatility-bridge/`.
+
+Dogfood facts:
+
+- Candidate generation: 11 total, 5 shortlisted, 6 rejected.
+- C9 bridge: 5 `BRIDGED`, 0 blocked.
+- Reality check: `next_single_blocker_to_fix=BRIDGED_TECHNICAL_ONLY`.
+- `bridge_success_semantics=technical_only`, `economic_gate_status=NOT_EVALUATED`, and `actual_cash_result_available=false`.
+- Permission boundary remains false: no credentials, exchange write, production exchange write, live order, or live permission.
+
+Verification:
+
+- `uv run pytest tests/strategy_idea_candidates/test_authoring_bridge.py -q` -> 8 passed.
+- Dogfood `strategy-idea-candidates-build` -> `candidate_count_total=11`, `candidate_count_shortlisted=5`, `candidate_count_rejected=6`.
+- Dogfood `strategy-idea-candidates-authoring-bridge` -> `bridged_count=5`, `blocked_count=0`.
+- Dogfood `profit-core-reality-check` -> `next_single_blocker_to_fix=BRIDGED_TECHNICAL_ONLY`.
+- `uv run python scripts/check_current_docs.py` -> checked 201 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2868 passed`.
+
+Remaining work:
+
+- Technical bridge is complete for this shortlist, but economic evidence is still missing.
+- Profit-readiness still stops at missing real event / matured outcome / actual cash source.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Revert the volatility family support, focused test, and docs updates.
 
 ## Latest Addendum: Liquidation Source Shortlist Stop
 

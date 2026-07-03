@@ -457,6 +457,61 @@ def test_authoring_bridge_generates_candidate_scoped_artifacts_and_backtest_pack
     assert not (tmp_path / "data/research/backtest_pack/strategy_backtest_pack.json").exists()
 
 
+def test_authoring_bridge_bridges_volatility_breakout_from_candles(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    prep_root = tmp_path / "prep-watchdeck"
+    _write_prep_watchdeck_root(prep_root)
+    candidate_set_path, export_manifest_path, ledger_path = _write_candidate_inputs(
+        tmp_path,
+        [
+            _candidate(
+                "cand-volatility",
+                family="perp_volatility_breakout_compression",
+                parameter_set={
+                    "side_bias": "long",
+                    "compression_lookback": 2,
+                    "expansion_z": 0.5,
+                },
+            ),
+            _candidate(
+                "cand-rejected",
+                family="perp_momentum_continuation",
+                decision="REJECTED",
+            ),
+        ],
+    )
+
+    result = build_strategy_idea_candidate_authoring_bridge(
+        candidate_set_path=candidate_set_path,
+        export_manifest_path=export_manifest_path,
+        ledger_path=ledger_path,
+        prep_watchdeck_root=prep_root,
+        out_dir=tmp_path / "bridge_out",
+        replace_existing=False,
+    )
+
+    assert result.manifest.summary["status_counts"] == {"BRIDGED": 1}
+    candidate_dir = tmp_path / "bridge_out/cand-volatility"
+    feature = pl.read_parquet(candidate_dir / "feature_panel.parquet")
+    assert {
+        "mark_return_2bars",
+        "realized_volatility_2bars",
+        "volatility_expansion_threshold_2bars",
+    }.issubset(set(feature.columns))
+    spec = load_authoring_spec(candidate_dir / "strategy_authoring_spec.yaml")
+    spec_payload = spec.model_dump(mode="json")
+    entry_rules = spec_payload["rules"]["entry"]["all"]
+    assert any(
+        rule["column"] == "mark_return_2bars"
+        and rule["op"] == "gt"
+        and rule["value_column"] == "volatility_expansion_threshold_2bars"
+        for rule in entry_rules
+    )
+    assert (candidate_dir / "backtest_pack/strategy_backtest_pack.json").exists()
+
+
 def test_authoring_bridge_relative_out_uses_existing_artifact_paths_and_clears_stale_blocker(
     tmp_path: Path, monkeypatch
 ) -> None:

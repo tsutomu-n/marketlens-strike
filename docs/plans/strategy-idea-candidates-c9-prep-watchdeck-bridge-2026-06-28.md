@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-28_10:32 JST
-更新日: 2026-06-28_10:32 JST
+更新日: 2026-07-03_13:18 JST
 -->
 
 # C9 Prep Watchdeck Bridge Implementation
@@ -35,6 +35,7 @@ C9 v0 は、shortlist 済み Bitget `USDT-FUTURES` Perp candidate を `/home/tn/
 
 - `perp_momentum_continuation`
 - `perp_funding_rate_carry_filter`
+- `perp_volatility_breakout_compression`
 
 その他 family は `BLOCKED_UNSUPPORTED_FAMILY_MAPPING` で止める。symbol rows、funding rate、product type、side bias、pack 実行で不足があれば machine-readable blocker を出す。
 

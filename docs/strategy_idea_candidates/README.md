@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-07-03_13:08 JST
+更新日: 2026-07-03_13:18 JST
 -->
 
 # Strategy Idea Candidates
@@ -62,7 +62,7 @@
 - JSONL search ledger は candidate generation の全候補 row を保存する sidecar です。raw metric や AI score を proof として扱いません。
 - selection-adjusted metrics sidecar は local disclosure engine です。`AVAILABLE` は FDR 計算が可能だったことだけを示し、alpha proof や profit proof ではありません。
 - `perp_cost_estimates.json` と Perp estimate bridge は estimate artifact です。`crypto-perp-tournament-report` の actual-cash input ではありません。
-- C9 v0 `Strategy Lab / backtest bridge` で spec / suite / bundle / backtest pack まで生成する bridgeable family は `perp_momentum_continuation` と `perp_funding_rate_carry_filter` だけです。`perp_reversal_after_liquidation_move` は bridge-first shortlist では source 不足により `REJECTED` にし、手動で bridge に渡された場合も family-aware blocker として `BLOCKED_MISSING_SOURCE_COLUMNS` で止めます。candidate-scoped spec / suite / bundle / output を使い、default TradeXYZ / QQQ example backtest を候補 proof として流用しません。Bitget Perp の local feature / quote / cost-estimate source は `/home/tn/projects/prep-watchdeck` または `strategy-idea-candidates-bitget-source-refresh` が生成した互換 source root を使いますが、どちらも板厚・実測 slippage evaluator ではありません。
+- C9 v0 `Strategy Lab / backtest bridge` で spec / suite / bundle / backtest pack まで生成する bridgeable family は `perp_momentum_continuation`、`perp_funding_rate_carry_filter`、`perp_volatility_breakout_compression` です。`perp_reversal_after_liquidation_move` は bridge-first shortlist では source 不足により `REJECTED` にし、手動で bridge に渡された場合も family-aware blocker として `BLOCKED_MISSING_SOURCE_COLUMNS` で止めます。candidate-scoped spec / suite / bundle / output を使い、default TradeXYZ / QQQ example backtest を候補 proof として流用しません。Bitget Perp の local feature / quote / cost-estimate source は `/home/tn/projects/prep-watchdeck` または `strategy-idea-candidates-bitget-source-refresh` が生成した互換 source root を使いますが、どちらも板厚・実測 slippage evaluator ではありません。
 - C9 v0 bridge の `venue_cost_matrix.csv` は `ESTIMATE_ONLY` です。`quotes.parquet` の bid/ask は service DB に無い場合 `spread_bps_estimate` から推定し、source manifest に残します。
 - Bitget public source refresh は public REST だけを使います。`SIS_ALLOW_PUBLIC_NETWORK=1` または `--network` が無い場合は出力前に止まり、credential、exchange write、live order は使いません。
 - AI packet/import は local/manual だけです。repo 内から AI / LLM API へ送信しません。
