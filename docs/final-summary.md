@@ -1,9 +1,65 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_12:14 JST
+更新日: 2026-07-03_12:25 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core Reality Check Dogfood
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Ran `profit-core-reality-check` against existing C9 BTCUSDT real-data artifacts under `data/strategy_idea_candidates/c9-btcusdt-realdata-20260628T045945Z/`.
+- Built a local `crypto-perp-profit-readiness-inventory` artifact from `data/crypto_perp`; it correctly stopped at `BLOCKED_MISSING_EVENT_OR_OUTCOME`.
+- Confirmed the reality check result is `status=blocked` with `next_single_blocker_to_fix=UNSUPPORTED_FAMILY_DOMINATES`.
+- Fixed `blocker_summary.top_blockers` to sort by the same priority as `next_single_blocker_to_fix`, so the report does not visually over-prioritize later actual-cash blockers when counts tie.
+
+Dogfood facts:
+
+- Candidate generation: 11 total, 5 shortlisted, 6 rejected.
+- C9 bridge: 3 `BRIDGED`, 2 `BLOCKED_UNSUPPORTED_FAMILY_MAPPING`.
+- Blocked family: `perp_reversal_after_liquidation_move` with 2 blocked candidates.
+- Profit readiness: no real event, no matured outcome, no cash ledger, no source availability, no actual-cash rows.
+- Permission boundary: network, credentials, exchange write, production exchange write, live order, and live permission all false.
+
+Generated runtime artifacts:
+
+- `data/profit_core_reality_check/dogfood/c9-btcusdt-realdata-20260628T045945Z/profit_readiness_inventory/inventory.json`
+- `data/profit_core_reality_check/dogfood/c9-btcusdt-realdata-20260628T045945Z/summary/profit_core_reality_check.json`
+- `data/profit_core_reality_check/dogfood/c9-btcusdt-realdata-20260628T045945Z/summary/profit_core_reality_check.md`
+
+Verification:
+
+- `uv run pytest tests/profit_core_reality_check -q` -> 5 passed.
+- Reality check dogfood stdout -> `status=blocked`, `next_single_blocker_to_fix=UNSUPPORTED_FAMILY_DOMINATES`.
+- `profit_core_reality_check.json` schema validation -> passed.
+- `git diff --check` -> passed.
+
+Remaining work:
+
+- Next PR should fix exactly one C9 bridge blocker: add support for `perp_reversal_after_liquidation_move`, or explicitly reject it earlier if that family is not worth supporting.
+
+User decisions required:
+
+None.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Revert the `top_blockers` ordering change and the focused test assertion.
 
 ## Latest Addendum: Profit Core Reality Check
 
