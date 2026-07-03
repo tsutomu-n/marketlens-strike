@@ -1,9 +1,61 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_18:11 JST
+更新日: 2026-07-04_07:44 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Event Outcome Inputs
+
+Completed on branch `ai/profit-event-outcome-inputs-20260704-0730`.
+
+Achieved:
+
+- Added `market_window_v1` to `crypto_perp_event.v1`.
+- Added `crypto-perp-event-record` for already validated public candle CSV inputs.
+- Added `--settled-at` to `crypto-perp-outcome-record`.
+- Generated one BTCUSDT event/outcome input pair from the validated C9 public 5m candle CSV.
+- Re-ran profit-readiness inventory, plan, run-local, source availability, and Reality Check.
+
+Runtime artifact facts:
+
+- Event: `data/crypto_perp/profit_event_outcome_inputs/c9_btcusdt_20260627_1950/events/8c12c3e75494cfab964f97cabae141f5182d3c3dc929d2a2365f79c9c5b027de.json`.
+- Outcome: `data/crypto_perp/profit_event_outcome_inputs/c9_btcusdt_20260627_1950/outcomes/f8e71278a302ca0f4b145ad6b38b5f36749d84b23c090658964d2551ae2f1898.json`.
+- Event cutoff: `2026-06-27T19:50:00Z`.
+- Outcome settled_at: `2026-06-28T01:50:00Z`.
+- Inventory status: `READY_FOR_LOCAL_PLAN`.
+- Plan status: `READY_FOR_LOCAL_RUN`.
+- Run-local status: `blocked`.
+- Reality Check next blocker moved to `ACTUAL_CASH_SOURCE_MISSING`.
+- Permission boundary remains false.
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_events.py tests/crypto_perp/test_outcomes.py tests/crypto_perp/test_record_command_registration.py tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> 20 passed.
+- `uv run python scripts/check_current_docs.py` -> checked 207 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 233 public CLI commands.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2873 passed`.
+- `crypto-perp-profit-readiness-inventory` -> `event_count=1`, `outcome_count=1`.
+- `crypto-perp-profit-readiness-plan` -> `READY_FOR_LOCAL_RUN`.
+- `crypto-perp-source-availability` -> `can_compute_actual_cash=false`.
+- `profit-core-reality-check` -> `next_single_blocker_to_fix=ACTUAL_CASH_SOURCE_MISSING`.
+
+Remaining work:
+
+- Provide cash ledger plus explicit assignment, or live measurement artifact, before actual-cash rows/gate.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Revert `market_window_v1`, `crypto-perp-event-record`, `--settled-at`, tests, docs, and remove generated runtime artifacts under `data/`.
 
 ## Latest Addendum: Lineage-Aligned Dogfood
 

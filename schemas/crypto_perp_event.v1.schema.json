@@ -35,7 +35,9 @@
     "source_refs": {"type": "array", "items": {"$ref": "#/$defs/source_ref"}},
     "boundary": {"$ref": "#/$defs/boundary"},
     "event_id": {"type": "string", "minLength": 1},
-    "event_family": {"enum": ["slow_pump_74h_v1", "fast_pump_1h_v1", "near_miss_v1"]},
+    "event_family": {
+      "enum": ["slow_pump_74h_v1", "fast_pump_1h_v1", "near_miss_v1", "market_window_v1"]
+    },
     "provider_id": {"const": "bitget"},
     "native_symbol": {"type": "string"},
     "canonical_symbol": {"type": "string"},

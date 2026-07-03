@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_19:01 JST
-更新日: 2026-06-28_08:26 JST
+更新日: 2026-07-04_07:40 JST
 -->
 
 # Crypto Perp Profit-Readiness Surface Inventory
@@ -22,6 +22,7 @@
 
 | surface | purpose | primary non-permission boundary |
 |---|---|---|
+| `crypto-perp-event-record` | validated public candle CSVから `market_window_v1` eventを作る | market window is not detector trigger, alpha proof, actual cash, or live permission |
 | `crypto_perp_source_availability.v1` | eventごとの source 可用性と欠損をartifact化する | unavailable source is not zero-filled |
 | `crypto_perp_replay_slice.v1` | event cutoff 以前の再生単位を記録する | future data is rejected |
 | `crypto_perp_feature_pack.v1` | 最小feature packをaction決定から分離する | optional OFI/trade/depth features remain null when absent |

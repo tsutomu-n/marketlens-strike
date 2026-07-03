@@ -166,6 +166,41 @@ def test_crypto_perp_outcome_record_cli_writes_matured_outcome(tmp_path: Path) -
     assert payload["known_gaps"] == ["books15_missing"]
 
 
+def test_crypto_perp_outcome_record_cli_accepts_historical_settled_at(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-outcome-record",
+            "--event-id",
+            "event-1",
+            "--out",
+            str(tmp_path / "outcomes"),
+            "--horizon-minutes",
+            "360",
+            "--reference-price",
+            "100",
+            "--close-price",
+            "98",
+            "--high-price",
+            "104",
+            "--low-price",
+            "96",
+            "--settled-at",
+            "2026-06-28T01:50:00Z",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    outcome_path_line = next(
+        line for line in result.stdout.splitlines() if line.startswith("outcome_path=")
+    )
+    outcome_path = Path(outcome_path_line.split("=", 1)[1])
+    payload = json.loads(outcome_path.read_text(encoding="utf-8"))
+    assert payload["settled_at"] == "2026-06-28T01:50:00Z"
+    assert payload["horizons"][0]["horizon_minutes"] == 360
+    assert payload["horizons"][0]["raw_return"] == "-0.02"
+
+
 def test_crypto_perp_outcome_record_cli_requires_event_id_or_event() -> None:
     result = runner.invoke(
         app,

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-07-03_12:09 JST
+更新日: 2026-07-04_07:40 JST
 -->
 
 # Repo CLI Catalog Current
@@ -136,6 +136,7 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-raw-refresh`
 - `crypto-perp-refresh`
 - `crypto-perp-watchdeck`
+- `crypto-perp-event-record`
 - `crypto-perp-decision-record`
 - `crypto-perp-outcome-record`
 - `crypto-perp-account-probe`

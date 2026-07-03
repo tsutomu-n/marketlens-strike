@@ -17,6 +17,7 @@ def test_crypto_perp_record_commands_register_standalone() -> None:
     stdout = normalized_stdout(result)
 
     assert result.exit_code == 0
+    assert "crypto-perp-event-record" in stdout
     assert "crypto-perp-decision-record" in stdout
     assert "crypto-perp-outcome-record" in stdout
 
@@ -42,6 +43,28 @@ def test_crypto_perp_decision_record_keeps_core_options() -> None:
     assert "--review-seconds" in option_names
 
 
+def test_crypto_perp_event_record_keeps_core_options() -> None:
+    app = typer.Typer()
+    register_crypto_perp_record_commands(app)
+
+    root_command = get_command(app)
+    event_command = root_command.commands["crypto-perp-event-record"]
+    option_names = {
+        option
+        for parameter in event_command.params
+        if isinstance(parameter, click.Option)
+        for option in [*parameter.opts, *parameter.secondary_opts]
+    }
+
+    assert "--input-csv" in option_names
+    assert "--symbol" in option_names
+    assert "--information-cutoff-at" in option_names
+    assert "--out" in option_names
+    assert "--contract" in option_names
+    assert "--validation" in option_names
+    assert "--lookback-minutes" in option_names
+
+
 def test_crypto_perp_outcome_record_keeps_core_options() -> None:
     app = typer.Typer()
     register_crypto_perp_record_commands(app)
@@ -59,5 +82,6 @@ def test_crypto_perp_outcome_record_keeps_core_options() -> None:
     assert "--event-id" in option_names
     assert "--horizon-minutes" in option_names
     assert "--reference-price" in option_names
+    assert "--settled-at" in option_names
     assert "--observed-high-low-order" in option_names
     assert "--known-gap" in option_names
