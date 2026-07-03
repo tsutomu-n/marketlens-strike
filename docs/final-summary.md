@@ -1,9 +1,64 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-06-29_19:32 JST
+更新日: 2026-07-03_12:14 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Profit Core Reality Check
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Added `profit-core-reality-check` as a read-only local CLI over existing candidate, search ledger, C9 bridge, profit-readiness, risk review, and actual-cash artifacts.
+- Added `profit_core_reality_check.v1` JSON schema, Pydantic model, Markdown report, and focused tests.
+- Preserved permission boundaries: no network, credentials, exchange write, production exchange write, live order, demo/testnet lifecycle, actual-cash fabrication, or missing-artifact generation.
+- Removed the unrelated `.serena/project.yml` final-state change from the implementation result.
+
+Main files changed:
+
+- `src/sis/profit_core_reality_check/`
+- `src/sis/commands/profit_core_reality_check.py`
+- `src/sis/cli.py`
+- `schemas/profit_core_reality_check.v1.schema.json`
+- `tests/profit_core_reality_check/test_profit_core_reality_check.py`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/IMPLEMENTED_SURFACES.md`
+- `docs/CURRENT_STATE.md`
+
+Verification:
+
+- `uv run pytest tests/profit_core_reality_check -q` -> 5 passed.
+- `uv run sis profit-core-reality-check --help` -> help rendered.
+- `uv run python scripts/check_cli_catalog.py` -> checked 232 public CLI commands.
+- `uv run python scripts/check_current_docs.py` -> checked 196 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2862 passed`.
+
+Remaining work:
+
+- PR #18 is still open as a stale docs-only branch even though GitHub `main` now points at the implemented reality-check state.
+
+User decisions required:
+
+- Decide whether to close or retarget stale PR #18 after reviewing GitHub branch state.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Revert the `profit-core-reality-check` CLI registration, `src/sis/profit_core_reality_check/`, the schema, focused tests, and the current-doc/catalog updates.
 
 ## Latest Addendum: Full Check Green CP3
 
