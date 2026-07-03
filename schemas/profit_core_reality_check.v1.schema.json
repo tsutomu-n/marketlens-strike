@@ -1,0 +1,363 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "profit_core_reality_check.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "input_paths",
+    "summary",
+    "candidate_generation",
+    "bridge_summary",
+    "profit_readiness_summary",
+    "risk_review_summary",
+    "actual_cash_summary",
+    "lineage_summary",
+    "blocker_summary",
+    "next_single_blocker_to_fix",
+    "known_gaps",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "profit_core_reality_check.v1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "created_at": {"$ref": "#/$defs/utc_second"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_refs": {"type": "array", "items": {"$ref": "#/$defs/source_ref"}},
+    "input_paths": {"$ref": "#/$defs/input_paths"},
+    "summary": {"$ref": "#/$defs/summary"},
+    "candidate_generation": {"$ref": "#/$defs/candidate_generation"},
+    "bridge_summary": {"$ref": "#/$defs/bridge_summary"},
+    "profit_readiness_summary": {"$ref": "#/$defs/profit_readiness_summary"},
+    "risk_review_summary": {"$ref": "#/$defs/risk_review_summary"},
+    "actual_cash_summary": {"$ref": "#/$defs/actual_cash_summary"},
+    "lineage_summary": {"$ref": "#/$defs/lineage_summary"},
+    "blocker_summary": {"$ref": "#/$defs/blocker_summary"},
+    "next_single_blocker_to_fix": {"type": "string", "minLength": 1},
+    "known_gaps": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "utc_second": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "command"],
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"type": "string", "minLength": 1}
+      }
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schema_version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "schema_version": {"type": ["string", "null"]}
+      }
+    },
+    "input_paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_set_path",
+        "search_ledger_path",
+        "export_manifest_path",
+        "authoring_bridge_path",
+        "profit_readiness_inventory_path",
+        "source_availability_path",
+        "risk_review_path",
+        "actual_cash_rows_summary_path",
+        "actual_cash_report_gate_path"
+      ],
+      "properties": {
+        "candidate_set_path": {"type": "string", "minLength": 1},
+        "search_ledger_path": {"type": "string", "minLength": 1},
+        "export_manifest_path": {"type": ["string", "null"]},
+        "authoring_bridge_path": {"type": ["string", "null"]},
+        "profit_readiness_inventory_path": {"type": ["string", "null"]},
+        "source_availability_path": {"type": ["string", "null"]},
+        "risk_review_path": {"type": ["string", "null"]},
+        "actual_cash_rows_summary_path": {"type": ["string", "null"]},
+        "actual_cash_report_gate_path": {"type": ["string", "null"]}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overall_status",
+        "next_action",
+        "candidate_count_total",
+        "candidate_count_shortlisted",
+        "candidate_count_rejected",
+        "bridge_blocked_count",
+        "bridge_bridged_count",
+        "actual_cash_available_count",
+        "known_gap_count"
+      ],
+      "properties": {
+        "overall_status": {"enum": ["COMPLETE", "BLOCKED", "PARTIAL"]},
+        "next_action": {
+          "enum": ["FIX_BLOCKER", "COLLECT_INPUTS", "RUN_EXISTING_PIPELINE", "REVIEW_ONLY", "NO_ACTION"]
+        },
+        "candidate_count_total": {"type": "integer", "minimum": 0},
+        "candidate_count_shortlisted": {"type": "integer", "minimum": 0},
+        "candidate_count_rejected": {"type": "integer", "minimum": 0},
+        "bridge_blocked_count": {"type": "integer", "minimum": 0},
+        "bridge_bridged_count": {"type": "integer", "minimum": 0},
+        "actual_cash_available_count": {"type": "integer", "minimum": 0},
+        "known_gap_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "candidate_generation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_set_present",
+        "search_ledger_present",
+        "export_manifest_present",
+        "candidate_set_id",
+        "candidate_count_total",
+        "candidate_count_shortlisted",
+        "candidate_count_rejected",
+        "trial_count_total",
+        "candidate_cap",
+        "cap_rejection_count",
+        "duplicate_rejection_count",
+        "validation_peek_count",
+        "rerank_count",
+        "sealed_test_used_for_selection",
+        "success_only_reporting_detected",
+        "shortlisted_family_counts",
+        "rejected_family_counts",
+        "selection_adjusted_metrics_status_counts"
+      ],
+      "properties": {
+        "candidate_set_present": {"type": "boolean"},
+        "search_ledger_present": {"type": "boolean"},
+        "export_manifest_present": {"type": "boolean"},
+        "candidate_set_id": {"type": ["string", "null"]},
+        "candidate_count_total": {"type": "integer", "minimum": 0},
+        "candidate_count_shortlisted": {"type": "integer", "minimum": 0},
+        "candidate_count_rejected": {"type": "integer", "minimum": 0},
+        "trial_count_total": {"type": "integer", "minimum": 0},
+        "candidate_cap": {"type": "integer", "minimum": 0},
+        "cap_rejection_count": {"type": "integer", "minimum": 0},
+        "duplicate_rejection_count": {"type": "integer", "minimum": 0},
+        "validation_peek_count": {"type": "integer", "minimum": 0},
+        "rerank_count": {"type": "integer", "minimum": 0},
+        "sealed_test_used_for_selection": {"type": "boolean"},
+        "success_only_reporting_detected": {"type": "boolean"},
+        "shortlisted_family_counts": {"$ref": "#/$defs/string_int_map"},
+        "rejected_family_counts": {"$ref": "#/$defs/string_int_map"},
+        "selection_adjusted_metrics_status_counts": {"$ref": "#/$defs/string_int_map"}
+      }
+    },
+    "bridge_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bridge_manifest_present",
+        "bridge_candidate_count",
+        "bridge_bridged_count",
+        "bridge_blocked_count",
+        "bridge_status_counts",
+        "blocked_reason_counts",
+        "blocked_by_family",
+        "blocked_by_side_bias",
+        "blocked_by_symbol",
+        "technical_bridged_candidate_ids",
+        "blocked_candidate_ids",
+        "bridge_success_semantics",
+        "economic_gate_status",
+        "actual_cash_result_available"
+      ],
+      "properties": {
+        "bridge_manifest_present": {"type": "boolean"},
+        "bridge_candidate_count": {"type": "integer", "minimum": 0},
+        "bridge_bridged_count": {"type": "integer", "minimum": 0},
+        "bridge_blocked_count": {"type": "integer", "minimum": 0},
+        "bridge_status_counts": {"$ref": "#/$defs/string_int_map"},
+        "blocked_reason_counts": {"$ref": "#/$defs/string_int_map"},
+        "blocked_by_family": {"$ref": "#/$defs/string_int_map"},
+        "blocked_by_side_bias": {"$ref": "#/$defs/string_int_map"},
+        "blocked_by_symbol": {"$ref": "#/$defs/string_int_map"},
+        "technical_bridged_candidate_ids": {"type": "array", "items": {"type": "string"}},
+        "blocked_candidate_ids": {"type": "array", "items": {"type": "string"}},
+        "bridge_success_semantics": {"const": "technical_only"},
+        "economic_gate_status": {"const": "NOT_EVALUATED"},
+        "actual_cash_result_available": {"const": false}
+      }
+    },
+    "profit_readiness_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inventory_present",
+        "inventory_status",
+        "real_event_count",
+        "matured_outcome_count",
+        "cash_ledger_count",
+        "live_measurement_count",
+        "source_availability_present",
+        "can_compute_cost_adjusted_estimate",
+        "can_compute_actual_cash",
+        "source_status_counts"
+      ],
+      "properties": {
+        "inventory_present": {"type": "boolean"},
+        "inventory_status": {"type": ["string", "null"]},
+        "real_event_count": {"type": "integer", "minimum": 0},
+        "matured_outcome_count": {"type": "integer", "minimum": 0},
+        "cash_ledger_count": {"type": "integer", "minimum": 0},
+        "live_measurement_count": {"type": "integer", "minimum": 0},
+        "source_availability_present": {"type": "boolean"},
+        "can_compute_cost_adjusted_estimate": {"type": "boolean"},
+        "can_compute_actual_cash": {"type": "boolean"},
+        "source_status_counts": {"$ref": "#/$defs/string_int_map"}
+      }
+    },
+    "risk_review_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "risk_review_present",
+        "risk_review_status",
+        "recommended_action",
+        "leader_action",
+        "after_cost_edge_over_no_trade_usd",
+        "stress_edge_over_no_trade_usd",
+        "dollars_per_hour",
+        "largest_loss_usd",
+        "profit_concentration",
+        "actual_cash_available",
+        "failed_condition_count",
+        "condition_statuses"
+      ],
+      "properties": {
+        "risk_review_present": {"type": "boolean"},
+        "risk_review_status": {"type": ["string", "null"]},
+        "recommended_action": {"type": ["string", "null"]},
+        "leader_action": {"type": ["string", "null"]},
+        "after_cost_edge_over_no_trade_usd": {"type": ["string", "null"]},
+        "stress_edge_over_no_trade_usd": {"type": ["string", "null"]},
+        "dollars_per_hour": {"type": ["string", "null"]},
+        "largest_loss_usd": {"type": ["string", "null"]},
+        "profit_concentration": {"type": ["string", "null"]},
+        "actual_cash_available": {"type": "boolean"},
+        "failed_condition_count": {"type": "integer", "minimum": 0},
+        "condition_statuses": {"type": "object", "additionalProperties": {"type": "boolean"}}
+      }
+    },
+    "actual_cash_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actual_cash_rows_summary_present",
+        "actual_cash_row_count",
+        "actual_cash_event_count",
+        "action_set",
+        "actual_cash_report_gate_present",
+        "actual_cash_gate_status",
+        "report_actual_cash",
+        "fields_missing_for_actual_cash_result_usd"
+      ],
+      "properties": {
+        "actual_cash_rows_summary_present": {"type": "boolean"},
+        "actual_cash_row_count": {"type": "integer", "minimum": 0},
+        "actual_cash_event_count": {"type": "integer", "minimum": 0},
+        "action_set": {"type": "array", "items": {"type": "string"}},
+        "actual_cash_report_gate_present": {"type": "boolean"},
+        "actual_cash_gate_status": {"type": ["string", "null"]},
+        "report_actual_cash": {"type": "boolean"},
+        "fields_missing_for_actual_cash_result_usd": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "lineage_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lineage_status",
+        "candidate_id_count",
+        "candidate_ids_missing_from_ledger",
+        "shortlisted_ids_missing_from_export_manifest",
+        "exported_ids_missing_from_bridge",
+        "risk_review_candidate_link_status",
+        "actual_cash_candidate_link_status",
+        "lineage_gaps"
+      ],
+      "properties": {
+        "lineage_status": {"enum": ["COMPLETE", "PARTIAL", "BROKEN", "NOT_APPLICABLE"]},
+        "candidate_id_count": {"type": "integer", "minimum": 0},
+        "candidate_ids_missing_from_ledger": {"type": "array", "items": {"type": "string"}},
+        "shortlisted_ids_missing_from_export_manifest": {"type": "array", "items": {"type": "string"}},
+        "exported_ids_missing_from_bridge": {"type": "array", "items": {"type": "string"}},
+        "risk_review_candidate_link_status": {"type": "string"},
+        "actual_cash_candidate_link_status": {"type": "string"},
+        "lineage_gaps": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "blocker_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "blocker_counts",
+        "blockers_by_stage",
+        "blockers_by_family",
+        "top_blockers",
+        "next_single_blocker_to_fix"
+      ],
+      "properties": {
+        "blocker_counts": {"$ref": "#/$defs/string_int_map"},
+        "blockers_by_stage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1}
+          }
+        },
+        "blockers_by_family": {"$ref": "#/$defs/string_int_map"},
+        "top_blockers": {"type": "array", "items": {"type": "string"}},
+        "next_single_blocker_to_fix": {"type": "string", "minLength": 1}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paper_execution_allowed",
+        "live_allowed",
+        "wallet_allowed",
+        "signing_allowed",
+        "exchange_write_allowed",
+        "production_exchange_write_allowed",
+        "permits_live_order",
+        "auto_promote"
+      ],
+      "properties": {
+        "paper_execution_allowed": {"const": false},
+        "live_allowed": {"const": false},
+        "wallet_allowed": {"const": false},
+        "signing_allowed": {"const": false},
+        "exchange_write_allowed": {"const": false},
+        "production_exchange_write_allowed": {"const": false},
+        "permits_live_order": {"const": false},
+        "auto_promote": {"const": false}
+      }
+    },
+    "string_int_map": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    }
+  }
+}
