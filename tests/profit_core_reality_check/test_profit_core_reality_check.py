@@ -364,6 +364,7 @@ def test_profit_readiness_inputs_rank_before_technical_only_bridge(
 
     assert check.bridge_summary.technical_bridged_candidate_ids == ["cand-001"]
     assert check.next_single_blocker_to_fix == "BLOCKED_MISSING_EVENT_OR_OUTCOME"
+    assert check.summary.next_action == "COLLECT_INPUTS"
     assert "BRIDGED_TECHNICAL_ONLY" in check.blocker_summary.blocker_counts
     assert check.bridge_summary.bridge_success_semantics == "technical_only"
     assert check.bridge_summary.economic_gate_status == "NOT_EVALUATED"

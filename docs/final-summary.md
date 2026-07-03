@@ -1,9 +1,52 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_13:30 JST
+更新日: 2026-07-03_13:37 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Missing Event Next Action
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Changed `BLOCKED_MISSING_EVENT_OR_OUTCOME` from `next_action=FIX_BLOCKER` to `next_action=COLLECT_INPUTS`.
+- Kept `overall_status=BLOCKED`.
+- Did not create or infer real event / matured outcome artifacts from C9 bridge, dogfood status, or viewer artifacts.
+- Re-ran reality check against the RC6 dogfood candidate/bridge artifacts under `data/profit_core_reality_check/dogfood/c9-missing-event-next-action/`.
+
+Dogfood facts:
+
+- Reality check returns `next_single_blocker_to_fix=BLOCKED_MISSING_EVENT_OR_OUTCOME`.
+- Reality check now returns `next_action=COLLECT_INPUTS`.
+- `BRIDGED_TECHNICAL_ONLY` remains present in blocker counts.
+- Permission boundary remains false: no credentials, exchange write, production exchange write, live order, or live permission.
+
+Verification:
+
+- `uv run pytest tests/profit_core_reality_check/test_profit_core_reality_check.py -q` -> 8 passed.
+- Dogfood `profit-core-reality-check` JSON -> `next_action=COLLECT_INPUTS`.
+- `uv run python scripts/check_current_docs.py` -> checked 203 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2869 passed`.
+
+Remaining work:
+
+- Supply real `crypto_perp_event.v1` and matured `crypto_perp_outcome.v1` artifacts.
+- Do not use dogfood/status/viewer artifacts as profit evidence.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Revert the `_next_action()` mapping, focused test, and docs updates.
 
 ## Latest Addendum: Technical-Only Priority
 

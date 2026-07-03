@@ -703,7 +703,11 @@ def _next_action(blocker: str) -> NextAction:
         "ACTUAL_CASH_REPORT_GATE_MISSING",
     }:
         return "RUN_EXISTING_PIPELINE"
-    if blocker in {"SEARCH_LEDGER_MISSING", "ACTUAL_CASH_SOURCE_MISSING"}:
+    if blocker in {
+        "SEARCH_LEDGER_MISSING",
+        "BLOCKED_MISSING_EVENT_OR_OUTCOME",
+        "ACTUAL_CASH_SOURCE_MISSING",
+    }:
         return "COLLECT_INPUTS"
     return "FIX_BLOCKER"
 

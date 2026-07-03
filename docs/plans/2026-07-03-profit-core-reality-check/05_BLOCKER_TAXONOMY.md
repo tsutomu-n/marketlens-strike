@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-03_10:10 JST
-更新日: 2026-07-03_12:41 JST
+更新日: 2026-07-03_13:33 JST
 -->
 
 # Blocker Taxonomy
@@ -220,6 +220,7 @@ Severity: HARD_BLOCKER
 ```text
 truth-cycle artifactsを作る。
 dogfood/status/viewer artifactだけで解除しない。
+real event / matured outcome source values が無い場合は `COLLECT_INPUTS` として止める。
 ```
 
 ### ACTUAL_CASH_SOURCE_MISSING
@@ -390,7 +391,7 @@ UNSUPPORTED_FAMILY_DOMINATES -> add one C9 family mapping
 UNSUPPORTED_SIDE_BIAS_DOMINATES -> define both/no_trade bridge behavior
 NO_SYMBOL_DATA_DOMINATES -> fix source refresh/source root
 MISSING_SOURCE_COLUMNS_DOMINATES -> fix source adapter
-BLOCKED_MISSING_EVENT_OR_OUTCOME -> run truth-cycle event/outcome steps
+BLOCKED_MISSING_EVENT_OR_OUTCOME -> collect real event/outcome inputs before running truth-cycle steps
 ACTUAL_CASH_SOURCE_MISSING -> prepare cash ledger / assignment path
 NEEDS_ACTUAL_CASH -> build actual cash rows only from ledger + assignment
 KILL -> reject candidate/family variant
