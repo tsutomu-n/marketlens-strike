@@ -166,6 +166,7 @@ def test_cli_writes_blocked_reality_check_for_candidate_and_ledger_only(tmp_path
     assert "live_order_submitted=false" in result.stdout
     assert "permits_live_order=false" in result.stdout
     assert "status=blocked" in result.stdout
+    assert "next_action=RUN_EXISTING_PIPELINE" in result.stdout
     assert "next_single_blocker_to_fix=AUTHORING_BRIDGE_MISSING" in result.stdout
     payload = json.loads((out_dir / "profit_core_reality_check.json").read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(_schema())

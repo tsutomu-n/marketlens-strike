@@ -1,9 +1,54 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_13:46 JST
+更新日: 2026-07-03_13:52 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Stdout Next Action
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Added `next_action=<value>` to `profit-core-reality-check` stdout.
+- Kept the JSON schema, CLI options, artifact shape, and permission boundary unchanged.
+- Re-ran reality check under `data/profit_core_reality_check/dogfood/c9-stdout-next-action/`.
+
+Dogfood facts:
+
+- CLI stdout now includes `next_action=COLLECT_INPUTS`.
+- Reality check remains `overall_status=BLOCKED`.
+- Reality check remains `next_single_blocker_to_fix=BLOCKED_MISSING_EVENT_OR_OUTCOME`.
+- `bridge_success_semantics=technical_only`.
+- `actual_cash_result_available=false`.
+- Permission boundary remains false.
+
+Verification:
+
+- RED check: focused test failed before the stdout line was added.
+- `uv run pytest tests/profit_core_reality_check/test_profit_core_reality_check.py -q` -> 8 passed.
+- Dogfood `profit-core-reality-check` stdout -> `next_action=COLLECT_INPUTS`.
+- Dogfood JSON -> `next_action=COLLECT_INPUTS`, `real_event_count=0`, `matured_outcome_count=0`.
+- `uv run python scripts/check_current_docs.py` -> checked 205 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2869 passed`.
+
+Remaining work:
+
+- Supply real `crypto_perp_event.v1`, matured `crypto_perp_outcome.v1`, then actual cash source evidence.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Remove the stdout line and focused test assertion.
 
 ## Latest Addendum: Input Collection Report
 

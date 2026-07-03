@@ -101,6 +101,7 @@ def register_profit_core_reality_check_commands(app: typer.Typer) -> None:
         typer.echo("live_order_submitted=false")
         typer.echo("permits_live_order=false")
         typer.echo(f"status={check.summary.overall_status.lower()}")
+        typer.echo(f"next_action={check.summary.next_action}")
         typer.echo(f"next_single_blocker_to_fix={check.next_single_blocker_to_fix}")
         typer.echo(f"reality_check_path={json_path.as_posix()}")
         typer.echo(f"report_path={report_path.as_posix()}")
