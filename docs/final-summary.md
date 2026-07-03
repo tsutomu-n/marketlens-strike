@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_13:52 JST
+更新日: 2026-07-03_13:56 JST
 -->
 
 # Final Summary
@@ -12,6 +12,7 @@ Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
 Achieved:
 
 - Added `next_action=<value>` to `profit-core-reality-check` stdout.
+- Updated the Reality Check Sprint stdout spec examples to include `next_action=<action>`.
 - Kept the JSON schema, CLI options, artifact shape, and permission boundary unchanged.
 - Re-ran reality check under `data/profit_core_reality_check/dogfood/c9-stdout-next-action/`.
 

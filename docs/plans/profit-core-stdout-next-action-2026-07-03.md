@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-03_13:50 JST
-更新日: 2026-07-03_13:50 JST
+更新日: 2026-07-03_13:56 JST
 -->
 
 # Profit Core Stdout Next Action
@@ -33,6 +33,8 @@ Expose the existing `summary.next_action` value in stdout without changing schem
 
 - `src/sis/commands/profit_core_reality_check.py`
 - `tests/profit_core_reality_check/test_profit_core_reality_check.py`
+- `docs/plans/2026-07-03-profit-core-reality-check/README.md`
+- `docs/plans/2026-07-03-profit-core-reality-check/03_REALITY_CHECK_ARTIFACT_SPEC.md`
 - `docs/final-summary.md`
 - `.ai-work/state.md`
 
@@ -40,8 +42,9 @@ Expose the existing `summary.next_action` value in stdout without changing schem
 
 1. Add a focused CLI assertion that stdout includes `next_action=RUN_EXISTING_PIPELINE` for the candidate+ledger-only case.
 2. Add `typer.echo(f"next_action={check.summary.next_action}")` beside the existing status/blocker stdout.
-3. Re-run the current dogfood `profit-core-reality-check` command and confirm stdout includes `next_action=COLLECT_INPUTS`.
-4. Update final summary and local work state.
+3. Update the sprint stdout spec examples to include `next_action=<action>`.
+4. Re-run the current dogfood `profit-core-reality-check` command and confirm stdout includes `next_action=COLLECT_INPUTS`.
+5. Update final summary and local work state.
 
 ## Test Plan
 

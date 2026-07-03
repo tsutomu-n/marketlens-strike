@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-03_10:10 JST
-更新日: 2026-07-03_10:10 JST
+更新日: 2026-07-03_13:56 JST
 -->
 
 # Reality Check Artifact Spec
@@ -273,6 +273,7 @@ production_exchange_write_used=false
 live_order_submitted=false
 permits_live_order=false
 status=<complete|blocked|partial>
+next_action=<action>
 next_single_blocker_to_fix=<reason>
 reality_check_path=<path>
 report_path=<path>
