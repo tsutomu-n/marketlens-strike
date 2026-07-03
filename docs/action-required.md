@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-03_12:53 JST
-更新日: 2026-07-03_12:58 JST
+更新日: 2026-07-03_13:03 JST
 -->
 
 # Action Required
@@ -45,3 +45,34 @@ Rejected without decision:
 Why this needs a decision:
 
 Changing `both` into an executable order direction changes candidate meaning. That is a strategy semantics decision, not a safe local bug fix.
+
+## AR-2026-07-03-002: C9 liquidation notional source
+
+Status: open
+
+Context:
+
+- Current regenerated dogfood returns `next_single_blocker_to_fix=MISSING_SOURCE_COLUMNS_DOMINATES`.
+- The remaining bridge-blocked candidate is `cand-004-perp_reversal_after_liquidation_move`.
+- It requires `liquidation_notional`.
+- Current repo-native Bitget public source refresh writes contracts, tickers, 5m candles, latest snapshot, and scanner rows.
+- Current local source root has no liquidation stream or liquidation notional column.
+
+Decision needed:
+
+Choose one evidence source for `liquidation_notional` before reversal-after-liquidation candidates can be bridged:
+
+1. Add a public, credential-free liquidation feed if a vetted source exists and its license/terms allow local artifact use.
+2. Add an authenticated/private exchange source only under a separate permissioned plan.
+3. Keep `perp_reversal_after_liquidation_move` blocked in C9 v0 and avoid shortlisting this family for bridge-first dogfood until liquidation source exists.
+
+Rejected without decision:
+
+- Do not infer liquidation notional from candle return.
+- Do not infer liquidation notional from ordinary trade fills.
+- Do not infer liquidation notional from open interest alone.
+- Do not mark `liquidation_notional` as present using an estimate-only proxy.
+
+Why this needs a decision:
+
+`liquidation_notional` is evidence-specific. Substituting candles, OI, or regular fills would make the bridge look more complete while weakening the hypothesis semantics.

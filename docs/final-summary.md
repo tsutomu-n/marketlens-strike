@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_13:01 JST
+更新日: 2026-07-03_13:03 JST
 -->
 
 # Final Summary
@@ -34,6 +34,7 @@ Verification:
 Remaining work:
 
 - `liquidation_notional` source support is still absent.
+- `docs/action-required.md` records `AR-2026-07-03-002` for choosing a real liquidation notional source or keeping reversal-after-liquidation blocked.
 - Profit-readiness still stops at missing real event / matured outcome / actual cash source.
 
 Destructive change:
