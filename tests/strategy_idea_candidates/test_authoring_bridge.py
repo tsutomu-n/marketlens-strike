@@ -529,6 +529,67 @@ def test_authoring_bridge_writes_blocker_for_unsupported_family(tmp_path: Path) 
     assert not (tmp_path / "bridge_out/cand-unsupported/strategy_authoring_spec.yaml").exists()
 
 
+def test_authoring_bridge_reversal_family_blocks_precise_source_and_side_gaps(
+    tmp_path: Path,
+) -> None:
+    prep_root = tmp_path / "prep-watchdeck"
+    _write_prep_watchdeck_root(prep_root)
+    candidate_set_path, export_manifest_path, ledger_path = _write_candidate_inputs(
+        tmp_path,
+        [
+            _candidate(
+                "cand-reversal-both",
+                family="perp_reversal_after_liquidation_move",
+                parameter_set={
+                    "side_bias": "both",
+                    "liquidation_move_bps": 150,
+                    "reversal_wait_bars": 2,
+                },
+            ),
+            _candidate(
+                "cand-reversal-short",
+                family="perp_reversal_after_liquidation_move",
+                parameter_set={
+                    "side_bias": "short",
+                    "liquidation_move_bps": 250,
+                    "reversal_wait_bars": 3,
+                },
+            ),
+            _candidate(
+                "cand-rejected",
+                family="perp_momentum_continuation",
+                decision="REJECTED",
+            ),
+        ],
+    )
+
+    result = build_strategy_idea_candidate_authoring_bridge(
+        candidate_set_path=candidate_set_path,
+        export_manifest_path=export_manifest_path,
+        ledger_path=ledger_path,
+        prep_watchdeck_root=prep_root,
+        out_dir=tmp_path / "bridge_out",
+        replace_existing=False,
+    )
+
+    by_id = {candidate.candidate_id: candidate for candidate in result.manifest.candidates}
+    assert by_id["cand-reversal-both"].status == "BLOCKED_UNSUPPORTED_SIDE_BIAS"
+    assert by_id["cand-reversal-short"].status == "BLOCKED_MISSING_SOURCE_COLUMNS"
+    assert result.manifest.summary["status_counts"] == {
+        "BLOCKED_MISSING_SOURCE_COLUMNS": 1,
+        "BLOCKED_UNSUPPORTED_SIDE_BIAS": 1,
+    }
+    short_blocker = json.loads(
+        (tmp_path / "bridge_out/cand-reversal-short/bridge_blocker.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert short_blocker["blockers"] == [
+        "liquidation_notional missing from prep-watchdeck source: BTCUSDT"
+    ]
+    assert not (tmp_path / "bridge_out/cand-reversal-short/strategy_authoring_spec.yaml").exists()
+
+
 def test_authoring_bridge_blocks_missing_symbol_data(tmp_path: Path) -> None:
     prep_root = tmp_path / "prep-watchdeck"
     _write_prep_watchdeck_root(prep_root)

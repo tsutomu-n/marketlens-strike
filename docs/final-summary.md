@@ -1,9 +1,71 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_12:25 JST
+更新日: 2026-07-03_12:42 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: C9 Reversal Family Fail-Closed
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Added fail-closed C9 bridge recognition for `perp_reversal_after_liquidation_move`.
+- Kept bridgeable family scope unchanged: only `perp_momentum_continuation` and `perp_funding_rate_carry_filter` generate Strategy Authoring spec / suite / bundle / backtest pack.
+- Changed reversal blockers from generic `BLOCKED_UNSUPPORTED_FAMILY_MAPPING` to precise blockers:
+  - `side_bias=both` -> `BLOCKED_UNSUPPORTED_SIDE_BIAS`
+  - directional reversal without liquidation source -> `BLOCKED_MISSING_SOURCE_COLUMNS`
+- Documented that reversal is recognized only as a blocker path until explicit `liquidation_notional` source support exists.
+- Updated Reality Check plan docs so future `UNSUPPORTED_FAMILY_DOMINATES` work is driven by actual `blocked_by_family` counts, not the stale `perp_basis_mark_index_spread` first-candidate note.
+
+Dogfood facts:
+
+- Existing BTCUSDT C9 dogfood bridge after the change: 3 `BRIDGED`, 1 `BLOCKED_UNSUPPORTED_SIDE_BIAS`, 1 `BLOCKED_MISSING_SOURCE_COLUMNS`.
+- `profit-core-reality-check` now returns `next_single_blocker_to_fix=UNSUPPORTED_SIDE_BIAS_DOMINATES`.
+- `UNSUPPORTED_FAMILY_DOMINATES` is no longer the next blocker for this dogfood slice.
+- This is not profit evidence and not a live/paper permission improvement.
+
+Generated runtime artifacts:
+
+- `data/profit_core_reality_check/dogfood/c9-reversal-fail-closed/authoring_bridge/strategy_idea_candidate_authoring_bridge_manifest.json`
+- `data/profit_core_reality_check/dogfood/c9-reversal-fail-closed/summary/profit_core_reality_check.json`
+- `data/profit_core_reality_check/dogfood/c9-reversal-fail-closed/summary/profit_core_reality_check.md`
+
+Verification:
+
+- `uv run pytest tests/strategy_idea_candidates/test_authoring_bridge.py -q` -> 7 passed.
+- `strategy-idea-candidates-authoring-bridge` dogfood stdout -> `status=pass`, `bridged_count=3`, `blocked_count=2`.
+- `profit-core-reality-check` dogfood stdout -> `status=blocked`, `next_single_blocker_to_fix=UNSUPPORTED_SIDE_BIAS_DOMINATES`.
+- `uv run python scripts/check_current_docs.py` -> checked 197 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2863 passed`.
+
+Remaining work:
+
+- Define how C9 should represent `side_bias=both` without inventing orders.
+- Add an explicit liquidation source adapter before any reversal candidate can be `BRIDGED`.
+- Profit-readiness still stops at missing real event / matured outcome / actual cash source.
+
+User decisions required:
+
+None for this fail-closed correction.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+Revert the reversal-specific blocker mapping, focused test, and docs update.
 
 ## Latest Addendum: Profit Core Reality Check Dogfood
 

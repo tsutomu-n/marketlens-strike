@@ -37,6 +37,10 @@ SUPPORTED_FAMILIES = {
     "perp_momentum_continuation",
     "perp_funding_rate_carry_filter",
 }
+FAMILY_REQUIRING_LIQUIDATION_SOURCE = "perp_reversal_after_liquidation_move"
+FAMILY_AWARE_SOURCE_BLOCKED_FAMILIES = {
+    FAMILY_REQUIRING_LIQUIDATION_SOURCE,
+}
 SUPPORTED_PRODUCT_TYPE = "USDT-FUTURES"
 AUTHORING_VENUE = "trade_xyz"
 
@@ -266,7 +270,10 @@ def _candidate_blockers(
     source: PrepWatchdeckBundle,
     symbols: list[str],
 ) -> tuple[BridgeStatus, list[str]]:
-    if candidate.family not in SUPPORTED_FAMILIES:
+    if (
+        candidate.family not in SUPPORTED_FAMILIES
+        and candidate.family not in FAMILY_AWARE_SOURCE_BLOCKED_FAMILIES
+    ):
         return (
             "BLOCKED_UNSUPPORTED_FAMILY_MAPPING",
             [f"unsupported C9 v0 family: {candidate.family}"],
@@ -304,6 +311,11 @@ def _missing_source_columns(
     symbols: list[str],
 ) -> list[str]:
     missing: list[str] = []
+    if candidate.family == FAMILY_REQUIRING_LIQUIDATION_SOURCE:
+        return [
+            f"liquidation_notional missing from prep-watchdeck source: {symbol}"
+            for symbol in symbols
+        ] or ["liquidation_notional missing from prep-watchdeck source"]
     if candidate.family == "perp_funding_rate_carry_filter":
         for symbol in symbols:
             ticker = source.tickers_by_symbol.get(symbol)

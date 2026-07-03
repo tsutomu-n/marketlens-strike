@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-03_10:10 JST
-更新日: 2026-07-03_10:10 JST
+更新日: 2026-07-03_12:41 JST
 -->
 
 # Blocker Taxonomy
@@ -136,8 +136,8 @@ Severity: HARD_BLOCKER
 次action:
 
 ```text
-C9 bridgeの対応familyを1つだけ増やす。
-第一候補: perp_basis_mark_index_spread。
+C9 bridgeのblocked_by_family / blocked_reason_countsを読み、実artifactで支配的なfamilyを1つだけ扱う。
+source不足やside_bias不足が見えている場合は、成功扱いにせず precise blocker へ分解する。
 全family対応はしない。
 ```
 

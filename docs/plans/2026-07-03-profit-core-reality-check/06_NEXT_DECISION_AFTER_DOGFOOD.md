@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-03_10:10 JST
-更新日: 2026-07-03_10:10 JST
+更新日: 2026-07-03_12:41 JST
 -->
 
 # Next Decision After Dogfood
@@ -44,23 +44,23 @@ UNSUPPORTED_FAMILY_DOMINATES or UNSUPPORTED_SIDE_BIAS_DOMINATES
 PR: harden C9 bridge for one additional family
 ```
 
-第一候補:
+対象family:
 
 ```text
-perp_basis_mark_index_spread
+bridge manifest の blocked_by_family / blocked_reason_counts で支配的なfamilyを1つだけ選ぶ。
 ```
 
 理由:
 
-- 既存candidate familyにある。
-- momentum / funding と異なる構造。
-- liquidation / OI よりsource mappingが軽い。
-- mark/index/basisはPerp固有で、source rootから扱いやすい。
+- 事前に都合のよい family を選ばない。
+- 実dogfoodの詰まりを1つだけ直す。
+- source不足、side bias不足、unsupported family を混ぜて成功扱いにしない。
+- family-aware mapping は `BRIDGED` だけでなく、より正確な blocker への分解でもよい。
 
 ### 完了条件
 
-- 新familyが candidate-scoped authoring spec を生成できる。
-- unsupportedなら blocker を出す。
+- 対象familyが candidate-scoped authoring spec を生成できる、または source / side / product / symbol 不足を precise blocker として返す。
+- unsupported family のまま放置しない。
 - `BRIDGED` は technical-only のまま。
 - `economic_gate_status=NOT_EVALUATED` をsummaryに出す。
 - tests/strategy_idea_candidates/test_authoring_bridge.py にfocused testを追加する。
@@ -68,7 +68,7 @@ perp_basis_mark_index_spread
 ### やらないこと
 
 - 全family対応。
-- liquidation / OI まで同時対応。
+- sourceに無い liquidation / OI を推定で埋める。
 - production execution。
 - actual cash claim。
 
