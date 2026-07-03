@@ -1,9 +1,54 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_13:37 JST
+更新日: 2026-07-03_13:46 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Input Collection Report
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Added an `Input Collection` section to `profit-core-reality-check.md` when `next_action=COLLECT_INPUTS`.
+- The report now names real `crypto_perp_event.v1`, matured `crypto_perp_outcome.v1`, and cash source requirements.
+- The report explicitly rejects C9 bridge/backtest packs, dogfood/status/viewer artifacts, preview rows, estimates, virtual rows, and before-cost proxy rows as substitutes.
+- Did not change the JSON schema or public CLI surface.
+- Re-ran reality check under `data/profit_core_reality_check/dogfood/c9-input-collection-report/`.
+
+Dogfood facts:
+
+- Reality check remains `overall_status=BLOCKED`.
+- Reality check remains `next_action=COLLECT_INPUTS`.
+- `bridge_success_semantics=technical_only`.
+- `actual_cash_result_available=false`.
+- Permission boundary remains false.
+
+Verification:
+
+- `uv run pytest tests/profit_core_reality_check/test_profit_core_reality_check.py -q` -> 8 passed.
+- Dogfood Markdown contains `## Input Collection`.
+- Dogfood Markdown lists required inputs and rejected substitutes.
+- `uv run python scripts/check_current_docs.py` -> checked 204 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2869 passed`.
+
+Remaining work:
+
+- Supply real `crypto_perp_event.v1`, matured `crypto_perp_outcome.v1`, then actual cash source evidence.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Revert the renderer section, focused test, and docs updates.
 
 ## Latest Addendum: Missing Event Next Action
 

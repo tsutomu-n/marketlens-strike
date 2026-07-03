@@ -9,6 +9,7 @@ from typer.testing import CliRunner
 
 from sis.cli import app
 from sis.profit_core_reality_check import build_profit_core_reality_check
+from sis.profit_core_reality_check.rendering import render_profit_core_reality_check_markdown
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -368,6 +369,12 @@ def test_profit_readiness_inputs_rank_before_technical_only_bridge(
     assert "BRIDGED_TECHNICAL_ONLY" in check.blocker_summary.blocker_counts
     assert check.bridge_summary.bridge_success_semantics == "technical_only"
     assert check.bridge_summary.economic_gate_status == "NOT_EVALUATED"
+    report = render_profit_core_reality_check_markdown(check)
+    assert "## Input Collection" in report
+    assert "required_input: real `crypto_perp_event.v1`" in report
+    assert "required_input: matured `crypto_perp_outcome.v1`" in report
+    assert "rejected_substitute: C9 bridge outputs and backtest packs" in report
+    assert "dogfood/status/viewer artifacts are not profit evidence" in report
 
 
 def test_source_column_blocker_ranks_before_technical_bridge(tmp_path: Path) -> None:
