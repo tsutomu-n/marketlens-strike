@@ -1,9 +1,54 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_13:56 JST
+更新日: 2026-07-03_18:11 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Lineage-Aligned Dogfood
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Re-ran final dogfood with candidate set, search ledger, export manifest, and authoring bridge from the same dogfood run.
+- Added a focused CLI test for the aligned `COLLECT_INPUTS` path.
+- Updated the dogfood runbook to warn that mixed-run candidate/export/bridge artifacts are a lineage input error, not profit evidence.
+
+Dogfood facts:
+
+- Corrected path: `data/profit_core_reality_check/dogfood/c9-lineage-aligned/summary/`.
+- Reality check remains `overall_status=BLOCKED`.
+- Reality check remains `next_action=COLLECT_INPUTS`.
+- Reality check remains `next_single_blocker_to_fix=BLOCKED_MISSING_EVENT_OR_OUTCOME`.
+- `SHORTLISTED_IDS_MISSING_FROM_EXPORT_MANIFEST` is absent.
+- `EXPORTED_IDS_MISSING_FROM_BRIDGE` is absent.
+- Permission boundary remains false.
+
+Verification:
+
+- Corrected dogfood stdout -> `next_action=COLLECT_INPUTS`.
+- Corrected dogfood JSON -> `shortlisted_missing_export=0`, `exported_missing_bridge=0`.
+- `uv run pytest tests/profit_core_reality_check/test_profit_core_reality_check.py -q` -> 9 passed.
+- `uv run python scripts/check_current_docs.py` -> checked 206 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2870 passed`.
+
+Remaining work:
+
+- Supply real `crypto_perp_event.v1`, matured `crypto_perp_outcome.v1`, then actual cash source evidence.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Remove the focused aligned-lineage test and docs additions.
 
 ## Latest Addendum: Stdout Next Action
 

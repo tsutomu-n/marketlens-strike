@@ -378,6 +378,70 @@ def test_profit_readiness_inputs_rank_before_technical_only_bridge(
     assert "dogfood/status/viewer artifacts are not profit evidence" in report
 
 
+def test_cli_reports_collect_inputs_without_lineage_blockers_when_artifacts_align(
+    tmp_path: Path,
+) -> None:
+    candidates = [
+        _candidate("cand-001", decision="SHORTLISTED"),
+        _candidate("cand-002", decision="REJECTED"),
+    ]
+    candidate_set_path = _write_json(
+        tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates)
+    )
+    ledger_path = _write_ledger(tmp_path / "search_ledger.jsonl", ["cand-001", "cand-002"])
+    export_path = _write_json(tmp_path / "export.json", _export_manifest(["cand-001"]))
+    bridge_path = _write_json(
+        tmp_path / "bridge.json",
+        {
+            "schema_version": "strategy_idea_candidate_authoring_bridge.v1",
+            "manifest_id": "bridge-fixture",
+            "candidates": [
+                {
+                    "candidate_id": "cand-001",
+                    "family": "perp_momentum_continuation",
+                    "status": "BRIDGED",
+                    "symbols": ["BTCUSDT"],
+                    "blockers": [],
+                }
+            ],
+            "known_gaps": ["PREP_WATCHDECK_COSTS_ARE_ESTIMATE_ONLY"],
+        },
+    )
+    inventory_path = _write_json(tmp_path / "inventory.json", _blocked_profit_readiness_inventory())
+    out_dir = tmp_path / "reality"
+
+    result = runner.invoke(
+        app,
+        [
+            "profit-core-reality-check",
+            "--candidate-set",
+            str(candidate_set_path),
+            "--search-ledger",
+            str(ledger_path),
+            "--export-manifest",
+            str(export_path),
+            "--authoring-bridge",
+            str(bridge_path),
+            "--profit-readiness-inventory",
+            str(inventory_path),
+            "--out",
+            str(out_dir),
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "status=blocked" in result.stdout
+    assert "next_action=COLLECT_INPUTS" in result.stdout
+    assert "next_single_blocker_to_fix=BLOCKED_MISSING_EVENT_OR_OUTCOME" in result.stdout
+    payload = json.loads((out_dir / "profit_core_reality_check.json").read_text(encoding="utf-8"))
+    blocker_counts = payload["blocker_summary"]["blocker_counts"]
+    assert "SHORTLISTED_IDS_MISSING_FROM_EXPORT_MANIFEST" not in blocker_counts
+    assert "EXPORTED_IDS_MISSING_FROM_BRIDGE" not in blocker_counts
+    assert payload["summary"]["next_action"] == "COLLECT_INPUTS"
+    assert payload["next_single_blocker_to_fix"] == "BLOCKED_MISSING_EVENT_OR_OUTCOME"
+    assert payload["boundary"]["permits_live_order"] is False
+
+
 def test_source_column_blocker_ranks_before_technical_bridge(tmp_path: Path) -> None:
     candidates = [
         _candidate("cand-001", decision="SHORTLISTED"),

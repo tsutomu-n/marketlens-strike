@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-03_10:10 JST
-更新日: 2026-07-03_10:10 JST
+更新日: 2026-07-03_18:11 JST
 -->
 
 # Dogfood Runbook
@@ -215,6 +215,8 @@ uv run sis profit-core-reality-check \
 ```
 
 任意artifactは存在する場合だけ渡す。
+
+`candidate-set`、`search-ledger`、`export-manifest`、`authoring-bridge` は同じdogfood runから渡す。別runの export manifest を混ぜると、正しく `SHORTLISTED_IDS_MISSING_FROM_EXPORT_MANIFEST` や `EXPORTED_IDS_MISSING_FROM_BRIDGE` で止まる。その場合はprofit blockerではなくlineage入力ミスとして扱う。
 
 出力:
 
