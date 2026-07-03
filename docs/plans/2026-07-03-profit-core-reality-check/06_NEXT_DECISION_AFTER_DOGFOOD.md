@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-03_10:10 JST
-更新日: 2026-07-03_12:41 JST
+更新日: 2026-07-03_13:26 JST
 -->
 
 # Next Decision After Dogfood
@@ -22,7 +22,7 @@ Reality Check Sprint の後にやることは、結果で決める。事前に S
 | `UNSUPPORTED_FAMILY_DOMINATES` | 1 familyだけC9 mappingを追加 | 全family対応 |
 | `UNSUPPORTED_SIDE_BIAS_DOMINATES` | both/no_trade の橋渡し意味を定義 | 無理に売買spec化 |
 | `NO_SYMBOL_DATA_DOMINATES` | source refresh / source root修正 | candidate family追加 |
-| `BRIDGED_TECHNICAL_ONLY` | economic statusを明示、kill gateへ進む条件定義 | BRIDGEDを合格扱い |
+| `BRIDGED_TECHNICAL_ONLY` | concrete profit-readiness / actual-cash input 不足が無い場合だけ economic statusを明示 | BRIDGEDを合格扱い |
 | `BLOCKED_MISSING_EVENT_OR_OUTCOME` | truth-cycle event/outcome作成 | risk reviewやgate実行 |
 | `ACTUAL_CASH_SOURCE_MISSING` | cash ledger / assignment handoff設計 | virtual/estimateで代用 |
 | `NEEDS_ACTUAL_CASH` | actual cash rows handoff | strategyを勝ち扱い |
@@ -111,6 +111,8 @@ bridge_bridged_count > 0
 actual_cash_available_count = 0
 BRIDGED_TECHNICAL_ONLY
 ```
+
+注記: `BRIDGED_TECHNICAL_ONLY` は境界表示です。`BLOCKED_MISSING_EVENT_OR_OUTCOME` や `ACTUAL_CASH_SOURCE_MISSING` が同時にある場合は、そちらを次作業として優先する。
 
 ### 次PR
 

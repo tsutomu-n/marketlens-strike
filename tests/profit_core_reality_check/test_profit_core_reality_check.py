@@ -113,6 +113,21 @@ def _export_manifest(candidate_ids: list[str]) -> dict[str, Any]:
     }
 
 
+def _blocked_profit_readiness_inventory() -> dict[str, Any]:
+    return {
+        "schema_version": "crypto_perp_profit_readiness_inventory.v1",
+        "inventory_id": "fixture-inventory",
+        "inventory_status": "BLOCKED_MISSING_EVENT_OR_OUTCOME",
+        "summary": {
+            "real_event_count": 0,
+            "matured_outcome_count": 0,
+            "cash_ledger_count": 0,
+            "live_measurement_count": 0,
+        },
+        "known_gaps": ["BLOCKED_MISSING_EVENT_OR_OUTCOME"],
+    }
+
+
 def _schema() -> dict[str, Any]:
     return json.loads(
         (REPO_ROOT / "schemas/profit_core_reality_check.v1.schema.json").read_text(encoding="utf-8")
@@ -302,8 +317,56 @@ def test_bridged_candidates_remain_technical_only_not_live_permission(tmp_path: 
 
     assert check.bridge_summary.technical_bridged_candidate_ids == ["cand-001"]
     assert check.bridge_summary.actual_cash_result_available is False
-    assert check.next_single_blocker_to_fix == "BRIDGED_TECHNICAL_ONLY"
+    assert check.next_single_blocker_to_fix == "PROFIT_READINESS_INVENTORY_MISSING"
+    assert "BRIDGED_TECHNICAL_ONLY" in check.blocker_summary.blocker_counts
     assert check.boundary.permits_live_order is False
+
+
+def test_profit_readiness_inputs_rank_before_technical_only_bridge(
+    tmp_path: Path,
+) -> None:
+    candidates = [
+        _candidate("cand-001", decision="SHORTLISTED"),
+        _candidate("cand-002", decision="REJECTED"),
+    ]
+    candidate_set_path = _write_json(
+        tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates)
+    )
+    ledger_path = _write_ledger(tmp_path / "search_ledger.jsonl", ["cand-001", "cand-002"])
+    export_path = _write_json(tmp_path / "export.json", _export_manifest(["cand-001"]))
+    bridge_path = _write_json(
+        tmp_path / "bridge.json",
+        {
+            "schema_version": "strategy_idea_candidate_authoring_bridge.v1",
+            "manifest_id": "bridge-fixture",
+            "candidates": [
+                {
+                    "candidate_id": "cand-001",
+                    "family": "perp_momentum_continuation",
+                    "status": "BRIDGED",
+                    "symbols": ["BTCUSDT"],
+                    "blockers": [],
+                }
+            ],
+            "known_gaps": ["PREP_WATCHDECK_COSTS_ARE_ESTIMATE_ONLY"],
+        },
+    )
+    inventory_path = _write_json(tmp_path / "inventory.json", _blocked_profit_readiness_inventory())
+
+    check = build_profit_core_reality_check(
+        candidate_set_path=candidate_set_path,
+        search_ledger_path=ledger_path,
+        export_manifest_path=export_path,
+        authoring_bridge_path=bridge_path,
+        profit_readiness_inventory_path=inventory_path,
+        created_at="2026-07-03T03:00:00Z",
+    )
+
+    assert check.bridge_summary.technical_bridged_candidate_ids == ["cand-001"]
+    assert check.next_single_blocker_to_fix == "BLOCKED_MISSING_EVENT_OR_OUTCOME"
+    assert "BRIDGED_TECHNICAL_ONLY" in check.blocker_summary.blocker_counts
+    assert check.bridge_summary.bridge_success_semantics == "technical_only"
+    assert check.bridge_summary.economic_gate_status == "NOT_EVALUATED"
 
 
 def test_source_column_blocker_ranks_before_technical_bridge(tmp_path: Path) -> None:

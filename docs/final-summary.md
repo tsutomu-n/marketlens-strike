@@ -1,9 +1,53 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_13:21 JST
+更新日: 2026-07-03_13:30 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Technical-Only Priority
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Moved `BRIDGED_TECHNICAL_ONLY` behind concrete profit-readiness and actual-cash input blockers in `NEXT_BLOCKER_PRIORITY`.
+- Kept `BRIDGED_TECHNICAL_ONLY` visible in blocker counts and top blockers.
+- Did not change the public CLI or schema.
+- Re-ran reality check against the RC6 dogfood candidate/bridge artifacts under `data/profit_core_reality_check/dogfood/c9-technical-only-priority/`.
+
+Dogfood facts:
+
+- Bridge remains 5 `BRIDGED`, 0 blocked.
+- Reality check now returns `next_single_blocker_to_fix=BLOCKED_MISSING_EVENT_OR_OUTCOME`.
+- `BRIDGED_TECHNICAL_ONLY` remains present with `bridge_success_semantics=technical_only`.
+- `economic_gate_status=NOT_EVALUATED` and `actual_cash_result_available=false`.
+- Permission boundary remains false: no credentials, exchange write, production exchange write, live order, or live permission.
+
+Verification:
+
+- `uv run pytest tests/profit_core_reality_check/test_profit_core_reality_check.py -q` -> 8 passed.
+- Dogfood `profit-core-reality-check` -> `next_single_blocker_to_fix=BLOCKED_MISSING_EVENT_OR_OUTCOME`.
+- `uv run python scripts/check_current_docs.py` -> checked 202 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2869 passed`.
+
+Remaining work:
+
+- Create or supply real event / matured outcome artifacts; dogfood/status/viewer artifacts do not count.
+- Actual cash source and rows are still absent.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Revert the priority ordering change, focused tests, and docs updates.
 
 ## Latest Addendum: Volatility Family Bridge
 
