@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-28_19:04 JST
+更新日: 2026-07-03_12:09 JST
 -->
 
 # Current State
@@ -22,6 +22,7 @@
 - 戦略アイデア候補生成を実装する直前の現実的な境界、用語衝突、schema 必須項目、依存関係の修正判断を見る場合は [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md) を読む。
 - candidate generation pipeline の最終ゴールまでの checkpoint、順序、合格条件、停止条件を見る場合は [STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md](STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md) を読む。
 - 実装済みの pre-intake candidate set contract、writer、blocked input-evidence artifact、shortlist export sidecar を見る場合は [strategy_idea_candidates/README.md](strategy_idea_candidates/README.md) を読む。
+- Profit Core / Reality Check の次に直す1箇所を見る場合は `uv run sis profit-core-reality-check` を使う。これは既存 candidate / search ledger / C9 bridge / profit-readiness / risk / actual-cash artifact を読むだけで、missing artifact生成、actual-cash代用、demo/testnet、外部API、live permission は行わない。
 - 戦略アイデア候補生成をより良くする依存関係の採否、追加順、optional extra 境界を見る場合は [STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md) を読む。
 - backtest 結果を HTML / JS で見る入口は `uv run sis strategy-backtest-html-report`。生成先は `data/reports/strategy_backtest_html_report.html` と `data/research/backtest_html_report/strategy_backtest_html_report.json`。
 - 専門用語を減らして「できること / できないこと」を読む場合は [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) を読む。
@@ -47,6 +48,7 @@
 | 戦略アイデア候補生成の実装直前に、誤読・抜け・禁止事項を確認する | [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md) |
 | candidate generation pipeline の checkpoint を見る | [STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md](STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md) |
 | 実装済み candidate set contract と export sidecar を見る | [strategy_idea_candidates/README.md](strategy_idea_candidates/README.md) |
+| Profit Core / Reality Check の次blockerを読む | `uv run sis profit-core-reality-check` |
 | 戦略アイデア候補生成に依存関係を足すか判断する | [STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md) |
 | backtest 結果をHTMLで見る | `uv run sis strategy-backtest-html-report` |
 | 技術詳細の capability catalog を見る | [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) |

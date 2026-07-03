@@ -14,6 +14,8 @@ from sis.profit_core_reality_check.models import (
     BridgeSummary,
     CandidateGenerationSummary,
     LineageSummary,
+    NextAction,
+    OverallStatus,
     ProfitCoreRealityCheck,
     ProfitCoreRealityCheckProducer,
     ProfitReadinessSummary,
@@ -676,7 +678,7 @@ def _top_blockers(blocker_counts: Counter[str]) -> list[str]:
     ]
 
 
-def _overall_status(blocker_counts: Counter[str]) -> str:
+def _overall_status(blocker_counts: Counter[str]) -> OverallStatus:
     if not blocker_counts:
         return "COMPLETE"
     if any(blocker in HARD_BLOCKERS for blocker in blocker_counts):
@@ -684,7 +686,7 @@ def _overall_status(blocker_counts: Counter[str]) -> str:
     return "PARTIAL"
 
 
-def _next_action(blocker: str) -> str:
+def _next_action(blocker: str) -> NextAction:
     if blocker == "NO_BLOCKER_IDENTIFIED":
         return "NO_ACTION"
     if blocker in {

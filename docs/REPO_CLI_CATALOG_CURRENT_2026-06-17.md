@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-06-28_19:04 JST
+更新日: 2026-07-03_12:09 JST
 -->
 
 # Repo CLI Catalog Current
@@ -80,6 +80,7 @@ uv run python scripts/check_current_docs.py
 - `strategy-idea-candidates-perp-estimate`
 - `strategy-idea-candidates-authoring-bridge`
 - `strategy-idea-candidates-bitget-source-refresh`
+- `profit-core-reality-check`
 - `strategy-model-run-record`
 - `strategy-micro-live-plan`
 - `strategy-next-scale-plan`
