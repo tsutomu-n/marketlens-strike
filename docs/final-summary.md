@@ -1,9 +1,45 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-03_12:42 JST
+更新日: 2026-07-03_12:49 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Source Blocker Priority
+
+Completed on branch `ai/profit-core-reality-check-impl-20260703-1157`.
+
+Achieved:
+
+- Added `NO_SYMBOL_DATA_DOMINATES` and `MISSING_SOURCE_COLUMNS_DOMINATES` to `profit-core-reality-check` deterministic next-blocker priority.
+- Added focused tests proving source blockers rank before `BRIDGED_TECHNICAL_ONLY`.
+- Updated the Reality Check pipeline trace priority list to match code.
+- Re-ran the C9 dogfood reality check after RC2. Current result still chooses `UNSUPPORTED_SIDE_BIAS_DOMINATES` first, but now shows `MISSING_SOURCE_COLUMNS_DOMINATES` as the second top blocker instead of hiding it behind technical bridge status.
+
+Verification:
+
+- `uv run pytest tests/profit_core_reality_check/test_profit_core_reality_check.py -q` -> 7 passed.
+- Dogfood `profit-core-reality-check` -> `next_single_blocker_to_fix=UNSUPPORTED_SIDE_BIAS_DOMINATES`; top blockers include `MISSING_SOURCE_COLUMNS_DOMINATES`.
+- `uv run python scripts/check_current_docs.py` -> checked 198 current docs.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2865 passed`.
+
+Remaining work:
+
+- `side_bias=both` behavior is still undefined and remains the current first blocker.
+- Explicit liquidation source support is still absent.
+
+Destructive change:
+
+No.
+
+Dependency change:
+
+No.
+
+Rollback:
+
+Revert the `NEXT_BLOCKER_PRIORITY` additions, focused tests, and pipeline trace update.
 
 ## Latest Addendum: C9 Reversal Family Fail-Closed
 

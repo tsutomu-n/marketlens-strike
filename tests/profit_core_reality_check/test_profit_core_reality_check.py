@@ -304,3 +304,108 @@ def test_bridged_candidates_remain_technical_only_not_live_permission(tmp_path: 
     assert check.bridge_summary.actual_cash_result_available is False
     assert check.next_single_blocker_to_fix == "BRIDGED_TECHNICAL_ONLY"
     assert check.boundary.permits_live_order is False
+
+
+def test_source_column_blocker_ranks_before_technical_bridge(tmp_path: Path) -> None:
+    candidates = [
+        _candidate("cand-001", decision="SHORTLISTED"),
+        _candidate(
+            "cand-002",
+            decision="SHORTLISTED",
+            family="perp_reversal_after_liquidation_move",
+            side_bias="short",
+        ),
+        _candidate("cand-003", decision="REJECTED"),
+    ]
+    candidate_set_path = _write_json(
+        tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates)
+    )
+    ledger_path = _write_ledger(tmp_path / "search_ledger.jsonl", ["cand-001", "cand-002"])
+    export_path = _write_json(tmp_path / "export.json", _export_manifest(["cand-001", "cand-002"]))
+    bridge_path = _write_json(
+        tmp_path / "bridge.json",
+        {
+            "schema_version": "strategy_idea_candidate_authoring_bridge.v1",
+            "manifest_id": "bridge-fixture",
+            "candidates": [
+                {
+                    "candidate_id": "cand-001",
+                    "family": "perp_momentum_continuation",
+                    "status": "BRIDGED",
+                    "symbols": ["BTCUSDT"],
+                    "blockers": [],
+                },
+                {
+                    "candidate_id": "cand-002",
+                    "family": "perp_reversal_after_liquidation_move",
+                    "status": "BLOCKED_MISSING_SOURCE_COLUMNS",
+                    "symbols": ["BTCUSDT"],
+                    "blockers": [
+                        "liquidation_notional missing from prep-watchdeck source: BTCUSDT"
+                    ],
+                },
+            ],
+            "known_gaps": ["C9_V0_DOES_NOT_PROVE_ALPHA_OR_PROFIT"],
+        },
+    )
+
+    check = build_profit_core_reality_check(
+        candidate_set_path=candidate_set_path,
+        search_ledger_path=ledger_path,
+        export_manifest_path=export_path,
+        authoring_bridge_path=bridge_path,
+        created_at="2026-07-03T03:00:00Z",
+    )
+
+    assert check.next_single_blocker_to_fix == "MISSING_SOURCE_COLUMNS_DOMINATES"
+    assert check.blocker_summary.top_blockers[0] == "MISSING_SOURCE_COLUMNS_DOMINATES"
+    assert "BRIDGED_TECHNICAL_ONLY" in check.blocker_summary.top_blockers
+
+
+def test_no_symbol_data_blocker_ranks_before_technical_bridge(tmp_path: Path) -> None:
+    candidates = [
+        _candidate("cand-001", decision="SHORTLISTED"),
+        _candidate("cand-002", decision="SHORTLISTED"),
+        _candidate("cand-003", decision="REJECTED"),
+    ]
+    candidate_set_path = _write_json(
+        tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates)
+    )
+    ledger_path = _write_ledger(tmp_path / "search_ledger.jsonl", ["cand-001", "cand-002"])
+    export_path = _write_json(tmp_path / "export.json", _export_manifest(["cand-001", "cand-002"]))
+    bridge_path = _write_json(
+        tmp_path / "bridge.json",
+        {
+            "schema_version": "strategy_idea_candidate_authoring_bridge.v1",
+            "manifest_id": "bridge-fixture",
+            "candidates": [
+                {
+                    "candidate_id": "cand-001",
+                    "family": "perp_momentum_continuation",
+                    "status": "BRIDGED",
+                    "symbols": ["BTCUSDT"],
+                    "blockers": [],
+                },
+                {
+                    "candidate_id": "cand-002",
+                    "family": "perp_momentum_continuation",
+                    "status": "BLOCKED_NO_SYMBOL_DATA",
+                    "symbols": ["ETHUSDT"],
+                    "blockers": ["missing 5m candle rows: ETHUSDT"],
+                },
+            ],
+            "known_gaps": ["C9_V0_DOES_NOT_PROVE_ALPHA_OR_PROFIT"],
+        },
+    )
+
+    check = build_profit_core_reality_check(
+        candidate_set_path=candidate_set_path,
+        search_ledger_path=ledger_path,
+        export_manifest_path=export_path,
+        authoring_bridge_path=bridge_path,
+        created_at="2026-07-03T03:00:00Z",
+    )
+
+    assert check.next_single_blocker_to_fix == "NO_SYMBOL_DATA_DOMINATES"
+    assert check.blocker_summary.top_blockers[0] == "NO_SYMBOL_DATA_DOMINATES"
+    assert "BRIDGED_TECHNICAL_ONLY" in check.blocker_summary.top_blockers
