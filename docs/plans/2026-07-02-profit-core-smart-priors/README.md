@@ -1,15 +1,17 @@
 <!--
 作成日: 2026-07-02_00:00 JST
-更新日: 2026-07-03_09:09 JST
+更新日: 2026-07-03_11:35 JST
 -->
 
 # Profit Core Smart Priors Implementation Plan
 
 ## 結論
 
-次に実装するべきものは、単体の候補生成強化ではない。`marketlens-strike` の次Coreは、Smart Edge Candidate Factory、探索会計、候補別bridge、Backtest Kill Gate、Virtual Execution Gate、Risk-Taker Review、Actual Cash Report Gate を1本の検証throughputとして接続することです。
+このフォルダは、Profit Core Smart Priors の設計バックログです。次にそのまま実装する作業列ではない。
 
-ただし、最初から全機能を大きく作らない。最初の実装単位は次の5つです。
+現実的な次作業は [../2026-07-03-profit-core-reality-check/README.md](../2026-07-03-profit-core-reality-check/README.md) の Reality Check Sprint です。既存候補生成、search ledger、C9 bridge、risk review、actual-cash readiness を読んで、候補がどこで止まるかを先に測る。その結果の `next_single_blocker_to_fix` がこのフォルダのどの設計を実装対象へ昇格するかを決める。
+
+Reality Check の前に、次の5つをまとめて実装しない。
 
 1. `Smart Prior Generator v0`: feature list ではなく、flow cause から候補を作る。
 2. `Trial Multiplicity Account v0`: 候補生成前に探索会計を固定する。
@@ -19,9 +21,30 @@
 
 `risk_taker_review` と `actual_cash_report_gate` は後段の最終判定器として維持する。C9 bridge と Strategy Authoring は完全なAddonではなく、候補を検証経路へ機械的に流すCore補助として扱う。NDX、Trade[XYZ]、generic Strategy Lab、optional backtest frameworks、full UI、full operations audit は明示scope時だけ使うAddonへ降格する。
 
+## 実行ゲート
+
+このフォルダのT1以降は、Reality Check Sprint の後だけ実装候補にする。
+
+先に確認するもの:
+
+```text
+docs/plans/2026-07-03-profit-core-reality-check/README.md
+docs/plans/2026-07-03-profit-core-reality-check/01_CURRENT_REPO_FACTS.md
+docs/plans/2026-07-03-profit-core-reality-check/06_NEXT_DECISION_AFTER_DOGFOOD.md
+```
+
+実装へ進む条件:
+
+1. `profit_core_reality_check.v1` または同等の手元artifactで、既存pipelineの blocker 分布が出ている。
+2. `next_single_blocker_to_fix` が Smart Prior / multiplicity / kill gate / virtual lifecycle / actual-cash handoff のいずれかを指している。
+3. その blocker を解く最小PRが、このフォルダのタスク1つ以下に対応している。
+4. source / bridge / actual-cash rows 不足を、候補生成強化やLLMで隠していない。
+
+Reality Check なしでこのフォルダを上から実装すると、既存pipelineの詰まりを測る前に新しい仕組みを足すことになり、false positive と保守負債を増やす。
+
 ## この計画の目的
 
-この計画の目的は、貪欲な利益追求のために、個人・小口資金・高リスク許容の強みを活かしつつ、次の失敗を避ける実装順を固定することです。
+この計画の目的は、貪欲な利益追求のために、個人・小口資金・高リスク許容の強みを活かしつつ、次の失敗を避ける設計境界を固定することです。
 
 - 候補数だけを増やし、false positive を増やす。
 - backtest 上位候補を alpha proof と誤読する。
@@ -163,8 +186,8 @@ volatility regime
 
 このフォルダには次を置く。
 
-1. `README.md`: 全体方針、Core / Addon定義、実装順。
-2. `01_TASK_CHAIN.md`: コーダーが順に実装できるタスクチェーン。
+1. `README.md`: 全体方針、Core / Addon定義、Reality Check実行ゲート。
+2. `01_TASK_CHAIN.md`: Reality Check後に必要部分だけ選ぶタスクチェーン。
 3. `02_ARTIFACT_CONTRACTS.md`: 新artifact、schema、status、fieldの契約。
 4. `03_TEST_AND_ACCEPTANCE.md`: テスト方針、完了条件、CI確認。
 5. `04_RESEARCH_BASIS.md`: 論文・実務知見と実装への落とし込み。
@@ -173,7 +196,7 @@ volatility regime
 
 ## 完了条件
 
-この計画全体の初期完了条件は次です。
+この設計バックログを実装対象へ昇格する場合の完了条件は次です。Reality Check Sprint が別の blocker を示した場合、この完了条件をそのまま採用しない。
 
 1. 新規schemaのJSON SchemaとPydantic modelが存在する。
 2. Edge Candidate Factory v0が、同じsourceとconfigから同じcandidate inventoryを再生成できる。
@@ -198,6 +221,7 @@ volatility regime
 - GA / ML / GBDT / optimizer の初期Core採用。
 - NDX / Trade[XYZ] のdefault path復帰。
 - UI実装。
+- Reality Check Sprint を飛ばしてT1から順に実装すること。
 
 ## 誤謬リスク
 
@@ -209,3 +233,4 @@ volatility regime
 - BH/FDRは候補間依存が強い場合に甘くなり得る。
 - PBO/DSR/White Reality Checkは、必要なfold matrixやtrial return seriesがなければ計算不能。`NOT_ESTIMABLE` は正式な停止結果として扱う。
 - LLMは矛盾を見つける補助であり、裁定者ではない。
+- PR #17 を「次に上から実装する作業列」と誤読すると、既存pipelineの実測 blocker を見ずに新規Coreを増やす。

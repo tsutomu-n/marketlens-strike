@@ -1,13 +1,27 @@
 <!--
 作成日: 2026-07-02_00:00 JST
-更新日: 2026-07-02_19:40 JST
+更新日: 2026-07-03_11:35 JST
 -->
 
 # Task Chain: Profit Core Smart Priors
 
 ## 結論
 
-このタスクチェーンは、コーダーが上から順に実装すれば、Smart Edge Candidate Factory から Virtual Execution Gate と既存Risk / Actual Cash handoffまでの初期Coreを完了できる粒度に分解する。実装は一気に全部を作らず、T0からT11までを順に進める。各タスクは目的、対象ファイル、実装内容、テスト、完了条件を持つ。
+このタスクチェーンは、Profit Core Smart Priors の設計バックログです。コーダーが上から順に実装するための現在の作業列ではない。
+
+現実的な次作業は、`docs/plans/2026-07-03-profit-core-reality-check/` の Reality Check Sprint で既存pipelineの blocker 分布を測ることです。その結果の `next_single_blocker_to_fix` が、このT1-T11のどれを実装対象へ昇格するかを決める。
+
+## 実行前ゲート
+
+T1-T11へ進む前に、次を満たす。
+
+1. Reality Check Sprint の artifact で、candidate generation、search ledger、C9 bridge、risk review、actual-cash readiness の到達状況が読める。
+2. `next_single_blocker_to_fix` がこのタスクチェーンの1タスク以内に対応している。
+3. source / bridge / actual-cash rows 不足が主因なら、Smart Prior や Virtual Gate を先に作らない。
+4. `BRIDGED` を economic pass と読まず、technical bridge status として扱う。
+5. `NO_TRADE`、actual cash boundary、permission false boundary を維持する。
+
+Reality Check の結果が未取得なら、T1-T11は未選択のバックログとして読む。
 
 ## 共通制約
 
