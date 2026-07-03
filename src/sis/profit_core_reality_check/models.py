@@ -11,7 +11,9 @@ from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
 PROFIT_CORE_REALITY_CHECK_SCHEMA_VERSION = "profit_core_reality_check.v1"
 
 OverallStatus = Literal["COMPLETE", "BLOCKED", "PARTIAL"]
-NextAction = Literal["FIX_BLOCKER", "COLLECT_INPUTS", "RUN_EXISTING_PIPELINE", "REVIEW_ONLY", "NO_ACTION"]
+NextAction = Literal[
+    "FIX_BLOCKER", "COLLECT_INPUTS", "RUN_EXISTING_PIPELINE", "REVIEW_ONLY", "NO_ACTION"
+]
 LineageStatus = Literal["COMPLETE", "PARTIAL", "BROKEN", "NOT_APPLICABLE"]
 
 

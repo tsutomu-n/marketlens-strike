@@ -115,9 +115,7 @@ def _export_manifest(candidate_ids: list[str]) -> dict[str, Any]:
 
 def _schema() -> dict[str, Any]:
     return json.loads(
-        (REPO_ROOT / "schemas/profit_core_reality_check.v1.schema.json").read_text(
-            encoding="utf-8"
-        )
+        (REPO_ROOT / "schemas/profit_core_reality_check.v1.schema.json").read_text(encoding="utf-8")
     )
 
 
@@ -126,7 +124,9 @@ def test_cli_writes_blocked_reality_check_for_candidate_and_ledger_only(tmp_path
         _candidate("cand-001", decision="SHORTLISTED"),
         _candidate("cand-002", decision="REJECTED", family="perp_funding_rate_carry_filter"),
     ]
-    candidate_set_path = _write_json(tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates))
+    candidate_set_path = _write_json(
+        tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates)
+    )
     ledger_path = _write_ledger(tmp_path / "search_ledger.jsonl", ["cand-001", "cand-002"])
     out_dir = tmp_path / "reality"
 
@@ -217,8 +217,12 @@ def test_bridge_unsupported_family_dominates_before_profit_inventory(tmp_path: P
         ),
         _candidate("cand-003", decision="REJECTED"),
     ]
-    candidate_set_path = _write_json(tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates))
-    ledger_path = _write_ledger(tmp_path / "search_ledger.jsonl", ["cand-001", "cand-002", "cand-003"])
+    candidate_set_path = _write_json(
+        tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates)
+    )
+    ledger_path = _write_ledger(
+        tmp_path / "search_ledger.jsonl", ["cand-001", "cand-002", "cand-003"]
+    )
     export_path = _write_json(tmp_path / "export.json", _export_manifest(["cand-001", "cand-002"]))
     bridge_path = _write_json(
         tmp_path / "bridge.json",
@@ -264,7 +268,9 @@ def test_bridged_candidates_remain_technical_only_not_live_permission(tmp_path: 
         _candidate("cand-001", decision="SHORTLISTED"),
         _candidate("cand-002", decision="REJECTED"),
     ]
-    candidate_set_path = _write_json(tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates))
+    candidate_set_path = _write_json(
+        tmp_path / "strategy_idea_candidate_set.json", _candidate_set(candidates)
+    )
     ledger_path = _write_ledger(tmp_path / "search_ledger.jsonl", ["cand-001", "cand-002"])
     export_path = _write_json(tmp_path / "export.json", _export_manifest(["cand-001"]))
     bridge_path = _write_json(

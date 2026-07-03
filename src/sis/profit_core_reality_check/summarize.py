@@ -161,7 +161,9 @@ def build_profit_core_reality_check(
     next_blocker = _next_single_blocker_to_fix(blocker_counts)
     blocker_summary = BlockerSummary(
         blocker_counts=dict(sorted(blocker_counts.items())),
-        blockers_by_stage={key: list(dict.fromkeys(values)) for key, values in blockers_by_stage.items()},
+        blockers_by_stage={
+            key: list(dict.fromkeys(values)) for key, values in blockers_by_stage.items()
+        },
         blockers_by_family=bridge_summary.blocked_by_family,
         top_blockers=_top_blockers(blocker_counts),
         next_single_blocker_to_fix=next_blocker,
@@ -238,17 +240,29 @@ def _candidate_generation_summary(
     summary = _mapping(candidate_set.get("search_ledger_summary"))
     candidates = _candidate_inventory(candidate_set)
     total = _int(summary.get("candidate_count_total"), len(candidates))
-    shortlisted = _int(summary.get("candidate_count_shortlisted"), _decision_count(candidates, "SHORTLISTED"))
-    rejected = _int(summary.get("candidate_count_rejected"), _decision_count(candidates, "REJECTED"))
+    shortlisted = _int(
+        summary.get("candidate_count_shortlisted"), _decision_count(candidates, "SHORTLISTED")
+    )
+    rejected = _int(
+        summary.get("candidate_count_rejected"), _decision_count(candidates, "REJECTED")
+    )
     success_only = _bool(summary.get("success_only_reporting"), False) or (
         total > 0 and shortlisted > 0 and rejected == 0
     )
     sealed_test = (
         _bool(summary.get("sealed_test_used_for_selection"), False)
-        or _bool(_mapping(candidate_set.get("split_policy")).get("uses_sealed_test_for_selection"), False)
-        or _bool(_mapping(candidate_set.get("leakage_policy")).get("uses_sealed_test_for_selection"), False)
+        or _bool(
+            _mapping(candidate_set.get("split_policy")).get("uses_sealed_test_for_selection"), False
+        )
+        or _bool(
+            _mapping(candidate_set.get("leakage_policy")).get("uses_sealed_test_for_selection"),
+            False,
+        )
         or any(
-            _bool(_mapping(candidate.get("leakage_checks")).get("uses_sealed_test_for_selection"), False)
+            _bool(
+                _mapping(candidate.get("leakage_checks")).get("uses_sealed_test_for_selection"),
+                False,
+            )
             for candidate in candidates
         )
     )
@@ -380,7 +394,10 @@ def _profit_readiness_summary(
     if inventory_status == "BLOCKED_MISSING_EVENT_OR_OUTCOME":
         blockers_by_stage["profit_readiness"].append("BLOCKED_MISSING_EVENT_OR_OUTCOME")
     source_statuses = [
-        item for item in _list(source_availability.get("source_statuses") if source_availability else None)
+        item
+        for item in _list(
+            source_availability.get("source_statuses") if source_availability else None
+        )
         if isinstance(item, dict)
     ]
     source_counts = Counter()
@@ -395,7 +412,9 @@ def _profit_readiness_summary(
     if source_availability is not None and not can_compute_actual_cash:
         blockers_by_stage["profit_readiness"].append("ACTUAL_CASH_SOURCE_MISSING")
     known_gaps.extend(_strings(inventory.get("known_gaps") if inventory else None))
-    known_gaps.extend(_strings(source_availability.get("known_gaps") if source_availability else None))
+    known_gaps.extend(
+        _strings(source_availability.get("known_gaps") if source_availability else None)
+    )
     return ProfitReadinessSummary(
         inventory_present=inventory is not None,
         inventory_status=inventory_status,
@@ -450,7 +469,9 @@ def _risk_review_summary(
         after_cost_edge_over_no_trade_usd=_str_or_none(
             risk_review.get("after_cost_edge_over_no_trade_usd")
         ),
-        stress_edge_over_no_trade_usd=_str_or_none(risk_review.get("stress_edge_over_no_trade_usd")),
+        stress_edge_over_no_trade_usd=_str_or_none(
+            risk_review.get("stress_edge_over_no_trade_usd")
+        ),
         dollars_per_hour=_str_or_none(risk_review.get("dollars_per_hour")),
         largest_loss_usd=_str_or_none(risk_review.get("largest_loss_usd")),
         profit_concentration=_str_or_none(risk_review.get("profit_concentration")),
@@ -471,13 +492,24 @@ def _actual_cash_summary(
         blockers_by_stage["actual_cash"].append("ACTUAL_CASH_ROWS_MISSING")
     if actual_cash_report_gate is None:
         blockers_by_stage["actual_cash"].append("ACTUAL_CASH_REPORT_GATE_MISSING")
-    rows_summary = _mapping(actual_cash_rows_summary.get("summary") if actual_cash_rows_summary else None)
-    report_summary = _mapping(actual_cash_report_gate.get("summary") if actual_cash_report_gate else None)
+    rows_summary = _mapping(
+        actual_cash_rows_summary.get("summary") if actual_cash_rows_summary else None
+    )
+    report_summary = _mapping(
+        actual_cash_report_gate.get("summary") if actual_cash_report_gate else None
+    )
     report_actual_cash = _bool(report_summary.get("actual_cash"), False)
-    if actual_cash_rows_summary is not None and rows_summary.get("cash_metric_basis") != "actual_cash":
+    if (
+        actual_cash_rows_summary is not None
+        and rows_summary.get("cash_metric_basis") != "actual_cash"
+    ):
         blockers_by_stage["actual_cash"].append("NON_ACTUAL_ROWS_REJECTED")
-    known_gaps.extend(_strings(actual_cash_rows_summary.get("known_gaps") if actual_cash_rows_summary else None))
-    known_gaps.extend(_strings(actual_cash_report_gate.get("known_gaps") if actual_cash_report_gate else None))
+    known_gaps.extend(
+        _strings(actual_cash_rows_summary.get("known_gaps") if actual_cash_rows_summary else None)
+    )
+    known_gaps.extend(
+        _strings(actual_cash_report_gate.get("known_gaps") if actual_cash_report_gate else None)
+    )
     return ActualCashSummary(
         actual_cash_rows_summary_present=actual_cash_rows_summary is not None,
         actual_cash_row_count=_int(
@@ -488,7 +520,9 @@ def _actual_cash_summary(
             actual_cash_rows_summary.get("event_count") if actual_cash_rows_summary else None,
             0,
         ),
-        action_set=_strings(actual_cash_rows_summary.get("action_set") if actual_cash_rows_summary else None),
+        action_set=_strings(
+            actual_cash_rows_summary.get("action_set") if actual_cash_rows_summary else None
+        ),
         actual_cash_report_gate_present=actual_cash_report_gate is not None,
         actual_cash_gate_status=_str_or_none(
             actual_cash_report_gate.get("gate_status") if actual_cash_report_gate else None
@@ -520,7 +554,8 @@ def _lineage_summary(
     shortlisted_ids = [
         _string(candidate.get("idea_candidate_id"))
         for candidate in candidates
-        if _string(candidate.get("decision")) == "SHORTLISTED" and _string(candidate.get("idea_candidate_id"))
+        if _string(candidate.get("decision")) == "SHORTLISTED"
+        and _string(candidate.get("idea_candidate_id"))
     ]
     ledger_ids = {
         _string(row.get("candidate_id") or row.get("idea_candidate_id"))
@@ -540,7 +575,9 @@ def _lineage_summary(
     }
     bridge_ids.discard("")
     missing_from_ledger = sorted(
-        candidate_id for candidate_id in candidate_ids if search_ledger_rows is None or candidate_id not in ledger_ids
+        candidate_id
+        for candidate_id in candidate_ids
+        if search_ledger_rows is None or candidate_id not in ledger_ids
     )
     missing_from_export = sorted(
         candidate_id
@@ -582,7 +619,9 @@ def _lineage_summary(
 def _candidate_inventory(candidate_set: dict[str, Any] | None) -> list[dict[str, Any]]:
     if candidate_set is None:
         return []
-    return [item for item in _list(candidate_set.get("candidate_inventory")) if isinstance(item, dict)]
+    return [
+        item for item in _list(candidate_set.get("candidate_inventory")) if isinstance(item, dict)
+    ]
 
 
 def _side_bias_by_candidate(candidate_set: dict[str, Any] | None) -> dict[str, str]:
@@ -606,7 +645,9 @@ def _family_counts(candidates: list[dict[str, Any]], decision: str) -> dict[str,
 
 
 def _selection_status_counts(candidates: list[dict[str, Any]]) -> dict[str, int]:
-    counts = Counter(_string(candidate.get("selection_adjusted_metrics_status")) for candidate in candidates)
+    counts = Counter(
+        _string(candidate.get("selection_adjusted_metrics_status")) for candidate in candidates
+    )
     counts.pop("", None)
     return dict(sorted(counts.items()))
 
