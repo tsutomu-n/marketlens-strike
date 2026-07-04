@@ -15,6 +15,7 @@ from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
 from sis.crypto_perp.profit_readiness import (
     build_profit_readiness_inventory,
     build_profit_readiness_plan,
+    build_profit_readiness_run,
 )
 from sis.crypto_perp.quality import validate_candle_series
 from .test_features import make_bars, ticker
@@ -366,6 +367,7 @@ def test_pre_actual_cash_pack_cli_writes_required_outputs_for_ten_pairs(tmp_path
         "outcomes_summary.json",
         "source_availability_matrix.json",
         "known_gaps_by_source.json",
+        "replay_slice_summary.json",
         "feature_pack_summary.json",
         "edge_score_summary.json",
         "tournament_rows_v2_summary.json",
@@ -390,10 +392,13 @@ def test_pre_actual_cash_pack_cli_writes_required_outputs_for_ten_pairs(tmp_path
     assert decision["non_goal_flags"]["profit_proven"] is False
     assert decision["non_goal_flags"]["tiny_live_readiness_claimed"] is False
     assert decision["tournament_summary"]["actual_cash_result_null_count"] == 30
-    assert decision["source_gap_summary"]["run_manifest"]["status"] == "blocked"
+    assert decision["source_gap_summary"]["run_manifest"]["status"] == "missing"
     assert decision["source_gap_summary"]["run_manifest"]["known_gap_count"] > 0
+    replay_summary = json.loads((out / "replay_slice_summary.json").read_text(encoding="utf-8"))
+    assert replay_summary["event_count"] == 10
+    assert replay_summary["future_data_included"] is False
     events_summary = json.loads((out / "events_summary.json").read_text(encoding="utf-8"))
-    assert events_summary["run_manifest"]["status"] == "blocked"
+    assert events_summary["run_manifest"]["status"] == "missing"
     decision_md = (out / "decision.md").read_text(encoding="utf-8")
     assert "actual_cash_used: `false`" in decision_md
     assert "profit_proven: `false`" in decision_md
@@ -424,6 +429,50 @@ def test_pre_actual_cash_pack_blocks_small_sample_without_profit_claim(tmp_path:
     assert decision["decision"] == "COLLECT_MORE_SOURCES"
     assert "MIN_EVENT_OUTCOME_SAMPLE_NOT_MET" in decision["reason_codes"]
     assert decision["event_count"] == 1
-    assert decision["source_gap_summary"]["run_manifest"]["status"] == "blocked"
+    assert decision["source_gap_summary"]["run_manifest"]["status"] == "missing"
     assert decision["non_goal_flags"]["actual_cash_used"] is False
     assert decision["non_goal_flags"]["public_candle_outcome_is_profit_evidence"] is False
+
+
+def test_pre_actual_cash_pack_reads_existing_run_manifest(tmp_path: Path) -> None:
+    event = _event().model_copy(
+        update={"event_id": "event-with-run", "artifact_id": "event-artifact-with-run"}
+    )
+    outcome = _outcome(event.event_id)
+    event_path = _write_json(tmp_path / "inputs/events/event.json", event)
+    outcome_path = _write_json(tmp_path / "inputs/outcomes/outcome.json", outcome)
+    manifest = build_profit_readiness_run(
+        event=event,
+        outcome=outcome,
+        created_at="2026-06-21T07:00:00Z",
+        out=tmp_path / "inputs/run",
+        event_path=event_path,
+        outcome_path=outcome_path,
+        notional_usd=Decimal("100"),
+    )
+    _write_json(tmp_path / "inputs/run/manifest.json", manifest)
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-pre-actual-cash-evidence-pack",
+            "--data-dir",
+            str(tmp_path / "inputs"),
+            "--out",
+            str(tmp_path / "pack"),
+            "--notional-usd",
+            "100",
+            "--min-events",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    decision = json.loads((tmp_path / "pack/decision.json").read_text(encoding="utf-8"))
+    run_manifest = decision["source_gap_summary"]["run_manifest"]
+    assert run_manifest["status"] == "blocked"
+    assert run_manifest["existing_manifest_count"] == 1
+    assert run_manifest["matched_manifest_count"] == 1
+    assert run_manifest["missing_pair_count"] == 0
+    assert run_manifest["existing_manifest_known_gap_count"] == len(manifest.known_gaps)
+    assert run_manifest["manifests"][0]["known_gap_count"] == len(manifest.known_gaps)

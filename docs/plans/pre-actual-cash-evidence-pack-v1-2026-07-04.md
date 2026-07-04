@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-04_17:09 JST
-更新日: 2026-07-04_17:16 JST
+更新日: 2026-07-04_17:44 JST
 -->
 
 # Pre Actual Cash Evidence Pack v1 Implementation Plan
@@ -50,16 +50,17 @@ This is not a profit proof, actual-cash readiness proof, tiny-live proof, or liv
 
 ## Implementation Approach
 
-Add a focused pack builder in `sis.crypto_perp.profit_readiness` that:
+Add a focused pack builder in `sis.crypto_perp.pre_actual_cash` that:
 
 1. Scans a data directory with `build_profit_readiness_inventory`.
 2. Loads valid `crypto_perp_event.v1` artifacts and matured `crypto_perp_outcome.v1` artifacts.
 3. Matches at most one matured outcome per event for v1.
 4. Builds or summarizes source availability per selected event.
-5. Builds feature packs and edge scores per selected event.
+5. Builds replay summaries, feature packs, and edge scores per selected event.
 6. Builds one aggregate `crypto_perp_tournament_rows.v2` artifact over selected outcomes.
 7. Builds one aggregate bias guard over the aggregate tournament rows.
-8. Writes the required summary files and a `decision.json` / `decision.md`.
+8. Reads existing `crypto_perp_profit_readiness_run.v1` manifests when present and reflects their `status` / `known_gap_count`.
+9. Writes the required summary files and a `decision.json` / `decision.md`.
 
 Add one flat CLI command only if needed for operator use:
 
@@ -116,8 +117,9 @@ Run broader checks if the focused changes touch shared behavior unexpectedly.
   - `tournament_summary`
   - `bias_guard_summary`
   - `non_goal_flags`
-  - `created_at`
+- `created_at`
 - `decision.md` contains the human-readable decision, reasons, main gaps, NO_TRADE comparison, selected action state, bias guard state, and explicit non-goals.
+- Existing run manifests are reflected as `run_manifest.status` and `run_manifest.known_gap_count`; missing manifests are reported as missing, not silently treated as pass.
 - The decision is always one of the four allowed decisions.
 - No actual cash or live execution path is added.
 

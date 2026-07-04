@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_17:25 JST
+更新日: 2026-07-04_17:44 JST
 -->
 
 # Final Summary
@@ -25,6 +25,7 @@ Achieved:
   - `outcomes_summary.json`
   - `source_availability_matrix.json`
   - `known_gaps_by_source.json`
+  - `replay_slice_summary.json`
   - `feature_pack_summary.json`
   - `edge_score_summary.json`
   - `tournament_rows_v2_summary.json`
@@ -37,7 +38,7 @@ Achieved:
   - `COLLECT_MORE_SOURCES`
   - `HOLD_FOR_FUTURE_ACTUAL_CASH`
 - `decision.md` explicitly states `actual_cash_used=false`, `profit_proven=false`, `actual_cash_readiness_claimed=false`, `tiny_live_readiness_claimed=false`, and `live_trading_readiness_claimed=false`.
-- `decision.source_gap_summary.run_manifest` and `events_summary.run_manifest` include `status` and `known_gap_count`.
+- `decision.source_gap_summary.run_manifest` and `events_summary.run_manifest` include `status` and `known_gap_count`. Existing `crypto_perp_profit_readiness_run.v1` manifests are read when present; missing manifests are reported as missing.
 - A 10 event / 10 outcome focused test proves the v1 pack path and required outputs.
 - A 1 event focused test proves small samples stop at `COLLECT_MORE_SOURCES` and do not claim profit or actual cash.
 - Current runtime data under `data/crypto_perp` still produces `decision=COLLECT_MORE_SOURCES`, `status=blocked`, `run_manifest.status=blocked`, `event_count=1`, `outcome_count=1`, `leader_action=NO_TRADE`, `selected_action_counts={'UNKNOWN': 1}`, and `pbo_status=NOT_ESTIMABLE`.
@@ -59,7 +60,7 @@ Changed files:
 
 Verification:
 
-- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> 7 passed.
+- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> 8 passed.
 - `uv run sis crypto-perp-pre-actual-cash-evidence-pack --help` -> help rendered.
 - `uv run python scripts/check_cli_catalog.py` -> checked 234 public CLI commands.
 - `uv run python scripts/check_current_docs.py` -> checked 213 current docs.

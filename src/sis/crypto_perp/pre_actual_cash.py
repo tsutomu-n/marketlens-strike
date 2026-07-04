@@ -20,9 +20,10 @@ from sis.crypto_perp.models import CryptoPerpBoundary, CryptoPerpProducer, stabl
 from sis.crypto_perp.outcomes import CryptoPerpOutcome
 from sis.crypto_perp.profit_readiness import (
     ProfitReadinessInventory,
+    ProfitReadinessRunManifest,
     build_profit_readiness_inventory,
 )
-from sis.crypto_perp.replay import build_replay_slice
+from sis.crypto_perp.replay import CryptoPerpReplaySlice, build_replay_slice
 from sis.crypto_perp.source_availability import (
     CryptoPerpSourceAvailability,
     SourceId,
@@ -83,6 +84,12 @@ class _EventOutcomePair:
     outcome: CryptoPerpOutcome
 
 
+@dataclass(frozen=True)
+class _RunManifestRecord:
+    path: Path
+    manifest: ProfitReadinessRunManifest
+
+
 def _load_json_object(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -131,6 +138,24 @@ def _load_matured_outcomes(
     return outcomes_by_event
 
 
+def _load_run_manifests(data_dir: Path) -> list[_RunManifestRecord]:
+    records: list[_RunManifestRecord] = []
+    for path in sorted(data_dir.rglob("*.json")) if data_dir.exists() else []:
+        try:
+            payload = _load_json_object(path)
+        except Exception:
+            continue
+        if payload.get("schema_version") != "crypto_perp_profit_readiness_run.v1":
+            continue
+        records.append(
+            _RunManifestRecord(
+                path=path,
+                manifest=ProfitReadinessRunManifest.model_validate(payload),
+            )
+        )
+    return records
+
+
 def _select_pairs(
     *,
     events_by_id: dict[str, tuple[Path, CryptoPerpEvent]],
@@ -167,11 +192,13 @@ def _build_per_event_artifacts(
     created: datetime,
 ) -> tuple[
     list[CryptoPerpSourceAvailability],
+    list[CryptoPerpReplaySlice],
     list[CryptoPerpFeaturePack],
     list[CryptoPerpEdgeScore],
     list[str],
 ]:
     source_artifacts: list[CryptoPerpSourceAvailability] = []
+    replay_artifacts: list[CryptoPerpReplaySlice] = []
     feature_artifacts: list[CryptoPerpFeaturePack] = []
     edge_artifacts: list[CryptoPerpEdgeScore] = []
     known_gaps: list[str] = []
@@ -184,7 +211,7 @@ def _build_per_event_artifacts(
             source_refs=[_artifact_ref(pair.outcome_path, pair.outcome.schema_version)],
             producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
         )
-        build_replay_slice(
+        replay = build_replay_slice(
             event=pair.event,
             created_at=created,
             included_sources=["event", "outcome"],
@@ -205,12 +232,20 @@ def _build_per_event_artifacts(
             producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
         )
         source_artifacts.append(source)
+        replay_artifacts.append(replay)
         feature_artifacts.append(feature)
         edge_artifacts.append(edge)
         known_gaps.extend(source.known_gaps)
+        known_gaps.extend(replay.known_gaps)
         known_gaps.extend(feature.known_gaps)
         known_gaps.extend(edge.known_gaps)
-    return source_artifacts, feature_artifacts, edge_artifacts, _unique(known_gaps)
+    return (
+        source_artifacts,
+        replay_artifacts,
+        feature_artifacts,
+        edge_artifacts,
+        _unique(known_gaps),
+    )
 
 
 def _source_ids() -> tuple[SourceId, ...]:
@@ -373,6 +408,27 @@ def _feature_pack_summary(features: Sequence[CryptoPerpFeaturePack]) -> dict[str
     }
 
 
+def _replay_slice_summary(replays: Sequence[CryptoPerpReplaySlice]) -> dict[str, Any]:
+    return {
+        "event_count": len(replays),
+        "future_data_included": any(
+            bool(replay.summary.get("future_data_included")) for replay in replays
+        ),
+        "row_count_total": sum(int(replay.summary.get("row_count_total", 0)) for replay in replays),
+        "known_gap_count": sum(len(replay.known_gaps) for replay in replays),
+        "events": [
+            {
+                "event_id": replay.event_id,
+                "included_sources": list(replay.included_sources),
+                "row_counts": dict(replay.row_counts),
+                "future_data_included": bool(replay.summary.get("future_data_included")),
+                "known_gap_count": len(replay.known_gaps),
+            }
+            for replay in replays
+        ],
+    }
+
+
 def _edge_score_summary(edges: Sequence[CryptoPerpEdgeScore]) -> dict[str, Any]:
     selected_counts = Counter(edge.selected_action for edge in edges)
     return {
@@ -439,6 +495,52 @@ def _bias_guard_summary(guard: CryptoPerpBiasGuard | None) -> dict[str, Any]:
         "stop_reasons": list(guard.stop_reasons),
         "known_gaps": list(guard.known_gaps),
         "summary": _json_ready(guard.summary),
+    }
+
+
+def _run_manifest_summary(
+    *,
+    pairs: Sequence[_EventOutcomePair],
+    records: Sequence[_RunManifestRecord],
+    computed_known_gaps: Sequence[str],
+    reason_codes: Sequence[str],
+) -> dict[str, Any]:
+    by_pair = {(record.manifest.event_id, record.manifest.outcome_id): record for record in records}
+    matched: list[_RunManifestRecord] = []
+    missing_pair_count = 0
+    for pair in pairs:
+        record = by_pair.get((pair.event.event_id, pair.outcome.outcome_id))
+        if record is None:
+            missing_pair_count += 1
+            continue
+        matched.append(record)
+    status_counts = Counter(record.manifest.status for record in matched)
+    existing_known_gaps = _unique([gap for record in matched for gap in record.manifest.known_gaps])
+    if matched:
+        status = "blocked" if status_counts.get("blocked", 0) else "complete"
+    else:
+        status = "missing"
+    merged_known_gaps = _unique([*existing_known_gaps, *computed_known_gaps, *reason_codes])
+    return {
+        "status": status,
+        "known_gap_count": len(merged_known_gaps),
+        "existing_manifest_count": len(records),
+        "matched_manifest_count": len(matched),
+        "missing_pair_count": missing_pair_count,
+        "status_counts": dict(sorted(status_counts.items())),
+        "existing_manifest_known_gap_count": len(existing_known_gaps),
+        "computed_reason_code_count": len(reason_codes),
+        "manifests": [
+            {
+                "path": record.path.as_posix(),
+                "run_id": record.manifest.run_id,
+                "event_id": record.manifest.event_id,
+                "outcome_id": record.manifest.outcome_id,
+                "status": record.manifest.status,
+                "known_gap_count": len(record.manifest.known_gaps),
+            }
+            for record in matched
+        ],
     }
 
 
@@ -578,10 +680,11 @@ def build_pre_actual_cash_evidence_pack(
     inventory = build_profit_readiness_inventory(data_dir=data_dir, created_at=created)
     events_by_id = _load_events(inventory)
     outcomes_by_event = _load_matured_outcomes(inventory)
+    run_manifest_records = _load_run_manifests(data_dir)
     pairs, selection_gaps = _select_pairs(
         events_by_id=events_by_id, outcomes_by_event=outcomes_by_event
     )
-    source_artifacts, feature_artifacts, edge_artifacts, per_event_gaps = (
+    source_artifacts, replay_artifacts, feature_artifacts, edge_artifacts, per_event_gaps = (
         _build_per_event_artifacts(
             pairs=pairs,
             created=created,
@@ -623,6 +726,7 @@ def build_pre_actual_cash_evidence_pack(
     source_matrix = _source_availability_matrix(source_artifacts)
     known_gaps = _unique([*inventory.known_gaps, *selection_gaps, *per_event_gaps])
     known_gaps_by_source = _known_gaps_by_source(source_artifacts, known_gaps)
+    replay_summary = _replay_slice_summary(replay_artifacts)
     feature_summary = _feature_pack_summary(feature_artifacts)
     edge_summary = _edge_score_summary(edge_artifacts)
     tournament_summary = _tournament_summary(rows)
@@ -642,6 +746,7 @@ def build_pre_actual_cash_evidence_pack(
         ),
         "source_availability_matrix": source_matrix,
         "known_gaps_by_source": known_gaps_by_source,
+        "replay_slice_summary": replay_summary,
         "feature_pack_summary": feature_summary,
         "edge_score_summary": edge_summary,
         "tournament_rows_v2_summary": tournament_summary,
@@ -657,12 +762,13 @@ def build_pre_actual_cash_evidence_pack(
         tournament_summary=tournament_summary,
         bias_guard_summary=bias_summary,
     )
-    run_manifest_summary = {
-        "status": "blocked" if decision == "COLLECT_MORE_SOURCES" else "complete",
-        "known_gap_count": len(_unique([*known_gaps, *reason_codes])),
-        "reason_code_count": len(reason_codes),
-        "artifact_count": len(summaries) + 2,
-    }
+    run_manifest_summary = _run_manifest_summary(
+        pairs=pairs,
+        records=run_manifest_records,
+        computed_known_gaps=known_gaps,
+        reason_codes=reason_codes,
+    )
+    run_manifest_summary["artifact_count"] = len(summaries) + 2
     summaries["events_summary"]["run_manifest"] = run_manifest_summary
     summaries["known_gaps_by_source"]["run_manifest"] = run_manifest_summary
     artifact = _decision_artifact(
