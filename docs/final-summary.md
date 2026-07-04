@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_19:37 JST
+更新日: 2026-07-04_19:50 JST
 -->
 
 # Final Summary
@@ -31,15 +31,17 @@ Achieved:
   - `decision.md`
 - Added `PRE_ACTUAL_CASH_SUMMARY_ARTIFACT_NAMES` as the single expected summary list for writer tests.
 - Strengthened the 1 event / 1 outcome smoke test so it validates written `decision.json` against schema and checks sample insufficiency, missing source inputs, `selected_action=UNKNOWN`, `leader_action=NO_TRADE`, bias guard insufficiency, and false non-goal flags.
+- Hardened `crypto_perp_pre_actual_cash_decision.v1` so required `non_goal_flags` are schema-level `false` constants, and unexpected flags are rejected.
 - Updated `docs/crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md` so the implementation description matches the writer behavior.
-- Added `docs/plans/pre-actual-cash-writer-helper-2026-07-04.md`.
+- Added the completed implementation plan under `plan/archive/pre-actual-cash-writer-helper-2026-07-04.md` instead of reintroducing `docs/plans/`.
 
 Changed files:
 
 - `src/sis/crypto_perp/pre_actual_cash.py`
 - `tests/crypto_perp/test_profit_readiness_local_automation.py`
+- `schemas/crypto_perp_pre_actual_cash_decision.v1.schema.json`
 - `docs/crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md`
-- `docs/plans/pre-actual-cash-writer-helper-2026-07-04.md`
+- `plan/archive/pre-actual-cash-writer-helper-2026-07-04.md`
 - `docs/final-summary.md`
 
 Verification:

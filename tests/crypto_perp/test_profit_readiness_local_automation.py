@@ -456,9 +456,15 @@ def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
         "bias_guard_summary",
     }
     decision_payload = decision.model_dump(mode="json")
-    Draft202012Validator(_schema("crypto_perp_pre_actual_cash_decision.v1.schema.json")).validate(
-        decision_payload
-    )
+    decision_schema = _schema("crypto_perp_pre_actual_cash_decision.v1.schema.json")
+    validator = Draft202012Validator(decision_schema)
+    validator.validate(decision_payload)
+    overclaim_payload = json.loads(json.dumps(decision_payload))
+    overclaim_payload["non_goal_flags"]["profit_proven"] = True
+    assert list(validator.iter_errors(overclaim_payload))
+    extra_flag_payload = json.loads(json.dumps(decision_payload))
+    extra_flag_payload["non_goal_flags"]["unexpected_flag"] = False
+    assert list(validator.iter_errors(extra_flag_payload))
     assert decision.event_count == 10
     assert decision.outcome_count == 10
     assert decision.decision in {

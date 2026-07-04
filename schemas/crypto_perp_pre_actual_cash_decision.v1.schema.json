@@ -44,7 +44,7 @@
     "bias_guard_summary": {"type": "object", "additionalProperties": true},
     "non_goal_flags": {
       "type": "object",
-      "additionalProperties": {"type": "boolean"},
+      "additionalProperties": false,
       "required": [
         "actual_cash_used",
         "profit_proven",
@@ -58,7 +58,21 @@
         "cost_adjusted_estimate_is_actual_cash",
         "bias_guard_sample_insufficient_is_robustness_pass",
         "llm_trade_decision_used"
-      ]
+      ],
+      "properties": {
+        "actual_cash_used": {"const": false},
+        "profit_proven": {"const": false},
+        "actual_cash_readiness_claimed": {"const": false},
+        "tiny_live_readiness_claimed": {"const": false},
+        "live_trading_readiness_claimed": {"const": false},
+        "wallet_or_signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false},
+        "public_candle_outcome_is_profit_evidence": {"const": false},
+        "cost_adjusted_estimate_is_actual_cash": {"const": false},
+        "bias_guard_sample_insufficient_is_robustness_pass": {"const": false},
+        "llm_trade_decision_used": {"const": false}
+      }
     }
   },
   "$defs": {
