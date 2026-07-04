@@ -8,6 +8,7 @@ from urllib.parse import parse_qs
 
 import duckdb
 import httpx
+from jsonschema import Draft202012Validator
 import polars as pl
 from typer.testing import CliRunner
 
@@ -27,6 +28,7 @@ from .test_authoring_bridge import _candidate, _write_candidate_inputs
 
 runner = CliRunner()
 FIVE_MINUTES_MS = 300_000
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _utc_ms(value: datetime) -> int:
@@ -75,9 +77,15 @@ def _tickers_payload() -> dict[str, Any]:
                 "lastPr": "100.5",
                 "bidPr": "100.4",
                 "askPr": "100.6",
+                "bidSz": "2.5",
+                "askSz": "3.5",
                 "change24h": "0.02",
+                "baseVolume": "100",
+                "quoteVolume": "10000",
                 "usdtVolume": "1000000",
+                "indexPrice": "100.2",
                 "fundingRate": "0.0002",
+                "markPrice": "100.45",
                 "holdingAmount": "10",
             }
         ],
@@ -163,9 +171,45 @@ def test_refresh_generates_prep_watchdeck_compatible_source_root(tmp_path: Path)
     assert manifest["credentials_used"] is False
     assert manifest["exchange_write_used"] is False
     assert "bitget.mix.market.history_candles" in manifest["source_endpoint_ids"]
+    assert manifest["row_counts"]["ticker_rows"] == 1
     assert manifest["row_counts"]["candles_5m"] == 8
     assert manifest["source_root"] == result.source_root.as_posix()
     assert "ORDERBOOK_DEPTH_NOT_FETCHED" in manifest["known_gaps"]
+
+    ticker_manifest_path = result.source_root / "data/ticker_manifest.json"
+    ticker_manifest = json.loads(ticker_manifest_path.read_text(encoding="utf-8"))
+    Draft202012Validator(
+        json.loads(
+            (REPO_ROOT / "schemas/crypto_perp_ticker_manifest.v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+    ).validate(ticker_manifest)
+    assert ticker_manifest["exchange"] == "bitget"
+    assert ticker_manifest["coverage_class"] == "native"
+    assert ticker_manifest["supports_cost_adjusted_estimate"] is True
+    assert ticker_manifest["supports_edge_action"] is True
+    assert ticker_manifest["row_count_after_dedupe"] == 1
+    assert ticker_manifest["exchange_write_used"] is False
+    assert ticker_manifest["live_order_submitted"] is False
+
+    ticker_parquet = next(
+        (
+            result.source_root / "data/ticker_rows"
+        ).glob("exchange=bitget/symbol=BTCUSDT/date=*/ticker_rows.parquet")
+    )
+    ticker_rows = pl.read_parquet(ticker_parquet)
+    assert ticker_rows.height == 1
+    ticker = ticker_rows.row(0, named=True)
+    assert ticker["source_channel"] == "rest_ticker"
+    assert ticker["coverage_class"] == "native"
+    assert ticker["is_snapshot"] is True
+    assert ticker["bid_px"] == 100.4
+    assert ticker["ask_px"] == 100.6
+    assert ticker["mid_px"] == 100.5
+    assert ticker["mark_px"] == 100.45
+    assert ticker["index_px"] == 100.2
+    assert ticker["funding_rate"] == 0.0002
 
 
 def test_refresh_paginates_history_candles_beyond_single_request_limit(tmp_path: Path) -> None:
