@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-04_22:15 JST
-更新日: 2026-07-04_22:15 JST
+更新日: 2026-07-04_22:23 JST
 -->
 
 # Pre Actual Cash Existing Artifact Read Plan
@@ -33,9 +33,9 @@ The writer already selects event/outcome pairs, reads existing `crypto_perp_prof
 
 ## Implementation Approach
 
-Use the existing `build_profit_readiness_inventory()` classifications to locate known artifacts. Validate readable artifacts with their Pydantic models. Match per-event artifacts by `event_id`, match `tournament_rows_v2` by event set, and match `bias_guard` by event count while explicitly noting that the bias guard schema does not carry event ids.
+Use the existing `build_profit_readiness_inventory()` classifications to locate known artifacts. Validate readable artifacts with their Pydantic models. Match per-event artifacts by `event_id`, report the paired `outcome_id`, match `tournament_rows_v2` by event set, and match `bias_guard` by event count while explicitly noting that the bias guard schema does not carry event ids.
 
-When an artifact is used, write `artifact_origin=existing` and its path into the relevant summary. When an artifact is absent or unusable, preserve the existing minimal recomputation path and mark `artifact_origin=recomputed_minimal` with `artifact_gap_origin=minimal recomputed from event/outcome only`.
+When an artifact is used, write `artifact_origin=existing`, its path, `event_id`, and `outcome_id` into the relevant summary. When an artifact is absent or unusable, preserve the existing minimal recomputation path and mark `artifact_origin=recomputed_minimal` with `artifact_gap_origin=minimal recomputed from event/outcome only`.
 
 ## Implementation Steps
 

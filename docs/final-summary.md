@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_22:21 JST
+更新日: 2026-07-04_22:23 JST
 -->
 
 # Final Summary
@@ -18,11 +18,11 @@ Goal:
 Achieved:
 
 - `build_pre_actual_cash_evidence_pack()` now reads existing profit-readiness artifacts from the existing inventory surface.
-- Per-event artifacts are matched by `event_id`: `source_availability`, `replay_slice`, `feature_pack`, and `edge_score`.
+- Per-event artifacts are matched by `event_id` and reported with the paired `outcome_id`: `source_availability`, `replay_slice`, `feature_pack`, and `edge_score`.
 - `tournament_rows_v2` is matched by the selected event set.
 - `bias_guard` is matched by event count and explicitly marks that the current bias guard schema has no event ids.
 - Each affected summary now exposes `artifact_origin`, `artifact_path`, `artifact_gap_origin`, and aggregate `artifact_origin_counts`.
-- `decision.source_gap_summary.artifact_usage` records whether gaps came from an existing artifact payload or from `minimal recomputed from event/outcome only`.
+- `decision.source_gap_summary.artifact_usage` records event/outcome pairs and whether gaps came from an existing artifact payload or from `minimal recomputed from event/outcome only`.
 - Missing existing artifacts still fall back to the previous minimal recomputation path.
 - The existing run manifest read path remains in place and is now tested together with existing source artifacts.
 - `non_goal_flags` remain all `false`, and no public pre-actual-cash CLI was added.
