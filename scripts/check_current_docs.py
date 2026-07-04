@@ -82,6 +82,7 @@ CURRENT_DOC_DIRS = (
     "docs/plans",
     "docs/runbooks",
     "docs/crypto_perp",
+    "docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04",
     "docs/venues",
     "docs/references/crypto_perp",
     "docs/algo/strategy_factory",
