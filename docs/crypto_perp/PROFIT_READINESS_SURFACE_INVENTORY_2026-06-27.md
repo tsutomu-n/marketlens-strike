@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_19:01 JST
-更新日: 2026-07-04_07:40 JST
+更新日: 2026-07-04_16:00 JST
 -->
 
 # Crypto Perp Profit-Readiness Surface Inventory
@@ -34,5 +34,6 @@
 ## 入口
 
 - Vocabulary: [PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md)
+- Pre-actual-cash decision gate: [PRE_ACTUAL_CASH_DECISION_GATE.md](PRE_ACTUAL_CASH_DECISION_GATE.md)
 - Runbook: [../runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](../runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md)
 - Historical plans: [../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md](../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md), [../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md](../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md)
