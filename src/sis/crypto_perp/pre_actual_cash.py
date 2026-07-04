@@ -870,6 +870,26 @@ def _run_manifest_summary(
     }
 
 
+def _artifact_usage_summary(
+    *,
+    artifact_origins: Mapping[str, Mapping[str, _ArtifactOrigin]],
+    tournament_rows_origin: _ArtifactOrigin,
+    bias_guard_origin: _ArtifactOrigin,
+    existing_known_gaps: Sequence[str],
+) -> dict[str, Any]:
+    per_event_counts = {
+        name: _origin_counts(list(origins.values()))
+        for name, origins in sorted(artifact_origins.items())
+    }
+    return {
+        "per_event_artifacts": per_event_counts,
+        "tournament_rows_v2": _origin_payload(tournament_rows_origin),
+        "bias_guard": _origin_payload(bias_guard_origin),
+        "existing_artifact_known_gaps": list(existing_known_gaps),
+        "existing_artifact_known_gap_count": len(existing_known_gaps),
+    }
+
+
 def _decide(
     *,
     event_count: int,
@@ -1010,53 +1030,89 @@ def build_pre_actual_cash_evidence_pack(
     pairs, selection_gaps = _select_pairs(
         events_by_id=events_by_id, outcomes_by_event=outcomes_by_event
     )
-    source_artifacts, replay_artifacts, feature_artifacts, edge_artifacts, per_event_gaps = (
-        _build_per_event_artifacts(
-            pairs=pairs,
-            created=created,
-        )
+    existing_artifacts = _load_existing_artifacts(inventory=inventory, pairs=pairs)
+    (
+        source_artifacts,
+        replay_artifacts,
+        feature_artifacts,
+        edge_artifacts,
+        artifact_origins,
+        per_event_gaps,
+    ) = _build_per_event_artifacts(
+        pairs=pairs,
+        created=created,
+        existing_artifacts=existing_artifacts,
     )
     rows: CryptoPerpTournamentRowsV2 | None = None
     guard: CryptoPerpBiasGuard | None = None
+    rows_origin = _not_run_origin("no selected event/outcome pairs")
+    guard_origin = _not_run_origin("no selected event/outcome pairs")
     if pairs:
-        rows = build_cost_aware_tournament_rows(
-            outcomes=[pair.outcome for pair in pairs],
-            created_at=created,
-            notional_usd=notional_usd,
-            fee_rate=fee_rate,
-            funding_rate=funding_rate,
-            slippage_bps=slippage_bps,
-            operator_time_minutes=operator_time_minutes,
-            operator_hourly_cost_usd=operator_hourly_cost_usd,
-            source_refs=[
-                _artifact_ref(pair.outcome_path, pair.outcome.schema_version) for pair in pairs
-            ],
-            known_gaps=selection_gaps,
-            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
-        )
-        guard = build_bias_guard(
-            rows=rows.rows,
-            created_at=created,
-            min_events_for_pbo=min_events_for_pbo,
-            fold_count=fold_count,
-            source_refs=[
-                {
-                    "path": "tournament_rows_v2_summary.json",
-                    "sha256": rows.artifact_id,
-                    "schema_version": rows.schema_version,
-                }
-            ],
-            known_gaps=rows.known_gaps,
-            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
-        )
-    source_matrix = _source_availability_matrix(source_artifacts)
-    known_gaps = _unique([*inventory.known_gaps, *selection_gaps, *per_event_gaps])
+        rows_record = existing_artifacts.rows_v2
+        if rows_record is None:
+            rows = build_cost_aware_tournament_rows(
+                outcomes=[pair.outcome for pair in pairs],
+                created_at=created,
+                notional_usd=notional_usd,
+                fee_rate=fee_rate,
+                funding_rate=funding_rate,
+                slippage_bps=slippage_bps,
+                operator_time_minutes=operator_time_minutes,
+                operator_hourly_cost_usd=operator_hourly_cost_usd,
+                source_refs=[
+                    _artifact_ref(pair.outcome_path, pair.outcome.schema_version) for pair in pairs
+                ],
+                known_gaps=selection_gaps,
+                producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
+            )
+            rows_origin = _recomputed_origin("tournament_rows_v2 artifact missing for event set")
+        else:
+            rows_path, rows = rows_record
+            rows_origin = _existing_origin(rows_path, "matched_by_event_set")
+
+        guard_record = existing_artifacts.bias_guard
+        if guard_record is None:
+            guard = build_bias_guard(
+                rows=rows.rows,
+                created_at=created,
+                min_events_for_pbo=min_events_for_pbo,
+                fold_count=fold_count,
+                source_refs=[
+                    {
+                        "path": "tournament_rows_v2_summary.json",
+                        "sha256": rows.artifact_id,
+                        "schema_version": rows.schema_version,
+                    }
+                ],
+                known_gaps=rows.known_gaps,
+                producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
+            )
+            guard_origin = _recomputed_origin("bias_guard artifact missing for event count")
+        else:
+            guard_path, guard = guard_record
+            guard_origin = _existing_origin(
+                guard_path,
+                "matched_by_event_count; bias_guard schema has no event ids",
+            )
+    source_matrix = _source_availability_matrix(
+        source_artifacts,
+        artifact_origins["source_availability"],
+    )
+    known_gaps = _unique(
+        [*inventory.known_gaps, *selection_gaps, *per_event_gaps, *existing_artifacts.known_gaps]
+    )
     known_gaps_by_source = _known_gaps_by_source(source_artifacts, known_gaps)
-    replay_summary = _replay_slice_summary(replay_artifacts)
-    feature_summary = _feature_pack_summary(feature_artifacts)
-    edge_summary = _edge_score_summary(edge_artifacts)
-    tournament_summary = _tournament_summary(rows)
-    bias_summary = _bias_guard_summary(guard)
+    replay_summary = _replay_slice_summary(replay_artifacts, artifact_origins["replay_slice"])
+    feature_summary = _feature_pack_summary(feature_artifacts, artifact_origins["feature_pack"])
+    edge_summary = _edge_score_summary(edge_artifacts, artifact_origins["edge_score"])
+    tournament_summary = _tournament_summary(rows, rows_origin)
+    bias_summary = _bias_guard_summary(guard, guard_origin)
+    known_gaps_by_source["artifact_usage"] = _artifact_usage_summary(
+        artifact_origins=artifact_origins,
+        tournament_rows_origin=rows_origin,
+        bias_guard_origin=guard_origin,
+        existing_known_gaps=existing_artifacts.known_gaps,
+    )
     summaries = {
         "events_summary": _events_summary(
             pairs=pairs,

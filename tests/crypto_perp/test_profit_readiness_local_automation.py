@@ -484,7 +484,22 @@ def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
     assert decision.non_goal_flags["llm_trade_decision_used"] is False
     replay_summary = summaries["replay_slice_summary"]
     assert replay_summary["event_count"] == 10
+    assert replay_summary["artifact_origin_counts"] == {"recomputed_minimal": 10}
     assert replay_summary["future_data_included"] is False
+    assert summaries["source_availability_matrix"]["artifact_origin_counts"] == {
+        "recomputed_minimal": 10
+    }
+    assert (
+        summaries["source_availability_matrix"]["events"][0]["artifact_gap_origin"]
+        == "minimal recomputed from event/outcome only"
+    )
+    assert decision.source_gap_summary["artifact_usage"]["per_event_artifacts"][
+        "source_availability"
+    ] == {"recomputed_minimal": 10}
+    assert (
+        decision.source_gap_summary["artifact_usage"]["tournament_rows_v2"]["artifact_origin"]
+        == "recomputed_minimal"
+    )
     events_summary = summaries["events_summary"]
     assert events_summary["run_manifest"]["status"] == "missing"
     assert "event_count: `10`" in decision_md
@@ -628,28 +643,56 @@ def test_pre_actual_cash_pack_reads_existing_run_manifest(tmp_path: Path) -> Non
     outcome = _outcome(event.event_id)
     event_path = _write_json(tmp_path / "inputs/events/event.json", event)
     outcome_path = _write_json(tmp_path / "inputs/outcomes/outcome.json", outcome)
-    manifest = build_profit_readiness_run(
-        event=event,
-        outcome=outcome,
-        created_at="2026-06-21T07:00:00Z",
-        out=tmp_path / "inputs/run",
-        event_path=event_path,
-        outcome_path=outcome_path,
-        notional_usd=Decimal("100"),
+    run_dir = tmp_path / "inputs/run"
+    run_result = runner.invoke(
+        app,
+        [
+            "crypto-perp-profit-readiness-run-local",
+            "--event",
+            str(event_path),
+            "--outcome",
+            str(outcome_path),
+            "--out",
+            str(run_dir),
+            "--notional-usd",
+            "100",
+        ],
     )
-    _write_json(tmp_path / "inputs/run/manifest.json", manifest)
+    assert run_result.exit_code == 0, run_result.stdout
+    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
 
-    _, decision, _ = build_pre_actual_cash_evidence_pack(
+    summaries, decision, _ = build_pre_actual_cash_evidence_pack(
         data_dir=tmp_path / "inputs",
         created_at="2026-06-21T07:00:00Z",
         notional_usd=Decimal("100"),
         min_events=1,
     )
 
+    assert summaries["source_availability_matrix"]["artifact_origin_counts"] == {"existing": 1}
+    assert summaries["replay_slice_summary"]["artifact_origin_counts"] == {"existing": 1}
+    assert summaries["feature_pack_summary"]["artifact_origin_counts"] == {"existing": 1}
+    assert summaries["edge_score_summary"]["artifact_origin_counts"] == {"existing": 1}
+    source_event = summaries["source_availability_matrix"]["events"][0]
+    assert source_event["artifact_origin"] == "existing"
+    assert source_event["artifact_path"].endswith("run/source_availability.json")
+    assert source_event["artifact_gap_origin"] == "existing artifact payload"
+    assert summaries["tournament_rows_v2_summary"]["artifact_origin"] == "existing"
+    assert summaries["tournament_rows_v2_summary"]["artifact_path"].endswith(
+        "run/tournament_rows_v2.json"
+    )
+    assert summaries["bias_guard_summary"]["artifact_origin"] == "existing"
+    assert summaries["bias_guard_summary"]["artifact_path"].endswith("run/bias_guard.json")
+    artifact_usage = decision.source_gap_summary["artifact_usage"]
+    assert artifact_usage["per_event_artifacts"]["source_availability"] == {"existing": 1}
+    assert artifact_usage["per_event_artifacts"]["replay_slice"] == {"existing": 1}
+    assert artifact_usage["per_event_artifacts"]["feature_pack"] == {"existing": 1}
+    assert artifact_usage["per_event_artifacts"]["edge_score"] == {"existing": 1}
+    assert artifact_usage["tournament_rows_v2"]["artifact_origin"] == "existing"
+    assert artifact_usage["bias_guard"]["artifact_origin"] == "existing"
     run_manifest = decision.source_gap_summary["run_manifest"]
     assert run_manifest["status"] == "blocked"
     assert run_manifest["existing_manifest_count"] == 1
     assert run_manifest["matched_manifest_count"] == 1
     assert run_manifest["missing_pair_count"] == 0
-    assert run_manifest["existing_manifest_known_gap_count"] == len(manifest.known_gaps)
-    assert run_manifest["manifests"][0]["known_gap_count"] == len(manifest.known_gaps)
+    assert run_manifest["existing_manifest_known_gap_count"] == len(manifest["known_gaps"])
+    assert run_manifest["manifests"][0]["known_gap_count"] == len(manifest["known_gaps"])
