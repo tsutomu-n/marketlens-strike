@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_22:15 JST
+更新日: 2026-07-04_22:21 JST
 -->
 
 # Final Summary
@@ -40,6 +40,10 @@ Verification:
 - `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> 12 passed.
 - `uv run ruff check src/sis/crypto_perp/pre_actual_cash.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> passed.
 - `uv run ruff format --check src/sis/crypto_perp/pre_actual_cash.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> 2 files already formatted.
+- `uv run python scripts/check_current_docs.py` -> checked 178 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 233 public CLI commands.
+- `uv run sis --help | rg "pre-actual-cash|pre_actual_cash|evidence-pack"` -> no output; no pre-actual-cash public CLI is exposed.
+- `./scripts/check` -> 2880 passed.
 
 Remaining work:
 
