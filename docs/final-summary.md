@@ -53,7 +53,8 @@ Verification:
 - `uv run python scripts/check_cli_catalog.py` -> checked 233 public CLI commands.
 - `uv run sis --help | rg "pre-actual-cash|pre_actual_cash|evidence-pack" || true` -> no output; no pre-actual-cash public CLI is exposed.
 - `git diff --check` -> passed.
-- Direct writer dogfood over `data/crypto_perp` into `.tmp/pre_actual_cash_pack_current/` -> wrote 11 artifacts, validated `decision.json` against schema, and produced `decision=COLLECT_MORE_SOURCES`, `event_count=1`, `outcome_count=1`, `leader_action=NO_TRADE`, `selected_action_counts={'UNKNOWN': 1}`, `bias_guard_status=BLOCKED`, `pbo_status=NOT_ESTIMABLE`, `run_manifest.status=blocked`, and all `non_goal_flags=false`.
+- Direct writer dogfood over `data/crypto_perp` into `.tmp/pre_actual_cash_pack_current/` -> wrote 11 artifacts, validated `decision.json` against schema, produced `decision=COLLECT_MORE_SOURCES`, `event_count=1`, `outcome_count=1`, `leader_action=NO_TRADE`, `selected_action_counts={'UNKNOWN': 1}`, `bias_guard_status=BLOCKED`, `pbo_status=NOT_ESTIMABLE`, and all `non_goal_flags=false`.
+- Schema negative check -> `profit_proven=true` and unexpected `non_goal_flags` entries are rejected.
 - `./scripts/check` -> passed, including `2879 passed`.
 
 Remaining work:
